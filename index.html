@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rogue-like: Hall of the Goblin King</title>
+    <!-- Google Fonts: Outfit for UI, JetBrains Mono for clean code/log aesthetics -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <!-- Premium Retro-Modern Console Frame -->
+      <div class="console-frame">
+        <header class="console-header">
+          <div class="window-dots">
+            <span class="dot close"></span>
+            <span class="dot minimize"></span>
+            <span class="dot maximize"></span>
+          </div>
+          <h1 class="console-title">🔮 ROGUELIKE TEMPLATE 🔮</h1>
+          <div class="system-status">SYSTEM: ONLINE</div>
+        </header>
+
+        <div class="console-body">
+          <!-- Left Panel: Game Screen -->
+          <main class="game-container">
+            <div id="game-canvas-wrapper" class="canvas-wrapper">
+              <!-- ROT.js Canvas will be mounted here -->
+            </div>
+          </main>
+
+          <!-- Right Panel: Side Panel HUD / Logs -->
+          <aside class="side-panel">
+            <div class="hud-card stats-card">
+              <h2>Player Stats</h2>
+              <div class="stat-row">
+                <span class="stat-label">Hero</span>
+                <span class="stat-value text-highlight">@ (Adventurer)</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Health</span>
+                <div class="bar-container">
+                  <div class="bar-fill health-bar" style="width: 100%;"></div>
+                  <span class="bar-text">30 / 30</span>
+                </div>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Level</span>
+                <span class="stat-value">1</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">XP</span>
+                <div class="bar-container">
+                  <div class="bar-fill xp-bar" style="width: 0%;"></div>
+                  <span class="bar-text">0 / 100</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hud-card log-card">
+              <h2>Message Log</h2>
+              <div id="message-log" class="log-content">
+                <div class="log-entry system">Welcome to the Dungeon, Adventurer!</div>
+                <div class="log-entry system">Use Arrow keys or WASD to move. Walk into monsters to attack.</div>
+              </div>
+            </div>
+
+            <div class="hud-card controls-card">
+              <h2>Controls</h2>
+              <ul class="controls-list">
+                <li><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> : Move / Attack</li>
+                <li><kbd>Space</kbd> : Wait a turn</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+
+        <footer class="console-footer">
+          <span>TypeScript + ROT.js + Vite Engine v1.0.0</span>
+          <span>Press F11 for Fullscreen</span>
+        </footer>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
