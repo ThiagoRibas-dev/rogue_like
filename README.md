@@ -2,8 +2,6 @@
 
 A modern, highly-extensible, browser-based traditional roguelike engine built with **TypeScript**, **Vite**, and **ROT.js**. 
 
-This project is designed from the ground up to be a robust, data-driven template for creating deep, complex roguelike games. It completely avoids the common "spaghetti code" pitfalls of early roguelike development by strictly adhering to pure functional patterns and a custom Entity-Component-System (ECS).
-
 ## 🚀 Quick Start
 
 ### Prerequisites
