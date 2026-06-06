@@ -21,6 +21,7 @@ export interface Tile {
   readonly tileId: string;
   readonly x: number;
   readonly y: number;
+  readonly explored: boolean;
 }
 
 /**
@@ -41,6 +42,15 @@ export interface LogMessage {
 }
 
 /**
+ * Data associated with an inactive/saved dungeon level.
+ */
+export interface LevelData {
+  readonly map: GameMap;
+  readonly entities: ReadonlyArray<EntityId>;
+  readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
+}
+
+/**
  * Immutable shape of the global game state.
  */
 export interface GameState {
@@ -49,4 +59,6 @@ export interface GameState {
   readonly map: GameMap;
   readonly nextEntityId: number;
   readonly messages: ReadonlyArray<LogMessage>;
+  readonly currentDepth: number;
+  readonly levels: ReadonlyMap<number, LevelData>;
 }

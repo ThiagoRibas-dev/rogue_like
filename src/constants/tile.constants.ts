@@ -1,5 +1,5 @@
-import { COLOR_BACKGROUND, COLOR_FLOOR_FG, COLOR_WALL_FG } from './colors.constants.ts';
-import { GLYPH_FLOOR, GLYPH_WALL } from './glyphs.constants.ts';
+import { COLOR_BACKGROUND, COLOR_FLOOR_FG, COLOR_WALL_FG, COLOR_STAIRS_FG } from './colors.constants.ts';
+import { GLYPH_FLOOR, GLYPH_WALL, GLYPH_STAIRS_UP, GLYPH_STAIRS_DOWN } from './glyphs.constants.ts';
 
 /**
  * Definition of properties and visual layout of a specific tile type.
@@ -28,6 +28,20 @@ export const TILE_REGISTRY: Readonly<Record<string, TileDefinition>> = {
     transparent: false,
     glyph: GLYPH_WALL,
     fg: COLOR_WALL_FG,
+    bg: COLOR_BACKGROUND,
+  },
+  stairs_up: {
+    walkable: true,
+    transparent: true,
+    glyph: GLYPH_STAIRS_UP,
+    fg: COLOR_STAIRS_FG,
+    bg: COLOR_BACKGROUND,
+  },
+  stairs_down: {
+    walkable: true,
+    transparent: true,
+    glyph: GLYPH_STAIRS_DOWN,
+    fg: COLOR_STAIRS_FG,
     bg: COLOR_BACKGROUND,
   },
 };

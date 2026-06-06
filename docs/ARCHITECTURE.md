@@ -38,7 +38,7 @@ The dependency graph flows strictly downward. Circular imports are banned. Modul
 ### Entity-Component-System (ECS-lite)
 We use a low-overhead, framework-free ECS:
 - **Entities** are simple numeric IDs (`EntityId` branded type), not class instances.
-- **Components** are pure data objects (TS interfaces) with no methods. They are mapped using a `Map<EntityId, Component[]>` or sparse sets.
+- **Components** are pure data objects (TS interfaces) with no methods. They are stored in a `ReadonlyMap<EntityId, ReadonlyArray<Component>>` within the global `GameState`.
 - **Systems** are pure functions that query components, process game state changes, and return new state.
 
 ### Map Generation & FOV
@@ -75,3 +75,11 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Data-Driven Tile Registry
 - **Decision**: Map tiles reference string IDs (e.g., `"stone_wall"`, `"stone_floor"`) instead of numeric or enum types, resolving their properties from a shared `TILE_REGISTRY` database.
 - **Rationale**: This decouples tile rendering and mechanical properties (walkability, transparency) from the map structure itself. It makes it extremely simple to serialize and save maps, add new tilesets, and load tile configurations from external YAML/JSON configuration files without modifying core movement or rendering code.
+
+### Persistent Level Transitions via State Swapping
+- **Decision**: We store the maps and non-player entities of inactive levels in a `levels` dictionary on the global `GameState`, swapping them into active ECS arrays only when transitioning floors.
+- **Rationale**: Keeps active ECS queries and rendering passes lightweight since they only iterate over entities on the player's current floor, while fully preserving the state and layout of visited floors for traditional roguelike progression.
+
+### Pre-emptive Data-Driven Architecture
+- **Decision**: We strictly avoid Object-Oriented inheritance (classes/subclasses) for game entities. We prefer string IDs over TypeScript `enums`, and we design Actions to emit generic `Intents` (events) rather than executing hardcoded logic directly.
+- **Rationale**: This paves the way for our end-goal of Modding & Extensibility. By using a "Prefab" pattern (plain TypeScript objects that mirror JSON schemas) and an Event-driven action system, we ensure that logic is never "baked in" to the engine. This makes the transition to loading external `.json`/`.yaml` campaigns and content trivial later on.

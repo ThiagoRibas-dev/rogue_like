@@ -9,18 +9,18 @@ Establish the strict structural and architectural patterns that the rest of the 
 - [x] Immutable GameState definition.
 - [x] Data-Driven Tile Registry (decoupling rendering/logic from map arrays).
 - [x] Player rendering and basic grid movement with collision against walls.
-- [ ] **Implement Seeded RNG wrapper (`src/core/rng.ts`).**
-- [ ] **Implement Keybinds configuration (`config/keybinds.ts`).**
-- [ ] **Implement a Message Log scaffold/stub (`addMessage`).**
+- [x] **Implement Seeded RNG wrapper (`src/core/rng.ts`).**
+- [x] **Implement Keybinds configuration (`src/constants/keybinds.constants.ts`).**
+- [x] **Implement a Message Log scaffold/stub (`src/systems/message.system.ts`).**
 
 ## 🟡 Milestone 2: Map Generation & Vision
 Introduce procedural generation and line-of-sight to make the world feel like a true dungeon.
-- [ ] Integrate `ROT.Map.Digger` for procedural dungeon generation.
-- [ ] Implement Map wrappers to handle rooms and corridors.
-- [ ] Implement `ROT.FOV.PreciseShadowcasting` for Field of View.
-- [ ] Update Renderer to only draw explored/visible tiles.
-- [ ] Implement a **static centered** Camera/Viewport system.
-- [ ] Implement Stairs and multiple dungeon levels (Up, Down, Ground Floor).
+- [x] Integrate `ROT.Map.Digger` for procedural dungeon generation.
+- [x] Implement Map wrappers to handle rooms and corridors.
+- [x] Implement `ROT.FOV.PreciseShadowcasting` for Field of View.
+- [x] Update Renderer to only draw explored/visible tiles.
+- [x] Implement a **static centered** Camera/Viewport system.
+- [x] Implement Stairs and multiple dungeon levels (Up, Down, Ground Floor).
 
 ## 🟡 Milestone 3: The Engine, Scheduling, & Extensible Actions
 Transition from simple input-driven updates to a robust turn queue with a generalized, pluggable action system.
@@ -73,9 +73,14 @@ Features to be added once the core MVP loop is playable and balanced.
 - **Deep Resource Management:** Hunger, stamina, or ammo systems.
 - **Interactive Terrain:** Expanding the base 'Interact' action with complex terrain types.
 
-## ⚪ Milestone 9: Modding & Extensibility (Data-Driven Goal)
-- Extract all Tile, Entity, and Item definitions into raw `.json` or `.yaml` files.
-- Write loaders to fetch and parse these files on game start, allowing end-users to add content without touching TypeScript.
+## ⚪ Milestone 9: Modding & Extensibility (Data-Driven Engine)
+- **Campaign Manifests & Progression:** Define campaigns, starting stats, and floor generation logic in data.
+- **Spawn & Loot Tables:** Move random generation weights and item drop chances out of code.
+- **Factions & AI Profiles:** Define hostility matrices and AI behavior parameters (aggro radius, flee thresholds).
+- **Abilities & Status Effects:** Define spell shapes, ranges, damage types, and buff/debuff modifiers via JSON schemas.
+- **Terrain Properties:** Move interactive terrain rules (movement cost, damage, interactables) to definitions.
+- **Themes & UI:** Allow custom ASCII tilesets, color palettes, and message log templates per campaign.
+- **Loaders & Validation:** Write robust loaders to fetch, parse, and validate these `.json`/`.yaml` files at game start, allowing users to add content without touching TypeScript.
 
 ## ⚪ Milestone 10: RTwP (Real-Time with Pause) Engine Toggle
 - Implement the real-time continuous loop utilizing `requestAnimationFrame` on top of our pure systems.

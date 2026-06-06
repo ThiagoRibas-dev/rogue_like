@@ -3,7 +3,7 @@ import './index.css';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, FONT_SIZE, FONT_FAMILY } from './constants/ui.constants.ts';
 import { COLOR_BACKGROUND, COLOR_PLAYER_FG } from './constants/colors.constants.ts';
 import { GLYPH_PLAYER } from './constants/glyphs.constants.ts';
-import { type GameState, type Tile } from './types/game-state.types.ts';
+import { type GameState } from './types/game-state.types.ts';
 import { ComponentType, type PlayerComponent, type PositionComponent, type RenderableComponent } from './types/components.types.ts';
 import { addComponent, createEntity } from './core/ecs.ts';
 import { Direction } from './utils/direction.ts';
@@ -13,6 +13,9 @@ import { initRNG } from './core/rng.ts';
 import { MOVEMENT_KEYS, WAIT_KEY } from './constants/keybinds.constants.ts';
 import { addMessage } from './systems/message.system.ts';
 import { renderMessageLog } from './rendering/ui.ts';
+import { generateDungeon } from './map/generator.ts';
+import { updateExploredTiles, transitionFloor } from './systems/map.system.ts';
+import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
 
 // 0. Initialize RNG
 initRNG();
@@ -41,42 +44,26 @@ if (container) {
   console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
 }
 
-// 4. Initialize the Game State with a simple walled room map and Player entity
-const tiles: Tile[] = [];
-for (let y: number = 0; y < DISPLAY_HEIGHT; y++) {
-  for (let x: number = 0; x < DISPLAY_WIDTH; x++) {
-    const isBoundary: boolean = x === 0 || x === DISPLAY_WIDTH - 1 || y === 0 || y === DISPLAY_HEIGHT - 1;
-    tiles.push({
-      tileId: isBoundary ? "stone_wall" : "stone_floor",
-      x,
-      y
-    });
-  }
-}
-
-const initialMap = {
-  width: DISPLAY_WIDTH,
-  height: DISPLAY_HEIGHT,
-  tiles
-};
+// 4. Initialize the Game State with a procedurally generated level and Player entity
+const { map: initialMap, startPos } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
 
 const emptyState: GameState = {
   entities: [],
   components: new Map(),
   map: initialMap,
   nextEntityId: 1,
-  messages: []
+  messages: [],
+  currentDepth: 1,
+  levels: new Map()
 };
 
 // Spawn the player entity
 const [stateWithPlayer, playerEntityId] = createEntity(emptyState);
-const playerX: number = Math.floor(DISPLAY_WIDTH / 2);
-const playerY: number = Math.floor(DISPLAY_HEIGHT / 2);
 
 const playerPos: PositionComponent = {
   type: ComponentType.Position,
-  x: playerX,
-  y: playerY
+  x: startPos.x,
+  y: startPos.y
 };
 
 const playerRender: RenderableComponent = {
@@ -100,8 +87,26 @@ let state: GameState = addComponent(
   playerTag
 );
 
-// Add initial startup message
+// Initial FOV compute
+state = updateExploredTiles(state);
+
+// Add initial startup messages
 state = addMessage(state, 'ECS Core, Seeded RNG, and Keybinds loaded!', 'system');
+state = addMessage(state, 'Milestone 2: Map Gen & Vision active.', 'system');
+
+/**
+ * Updates the HTML-based HUD sidebar to show the current level depth.
+ * @param s The current GameState.
+ */
+function updateHUD(s: GameState): void {
+  const depthElement = document.getElementById('dungeon-depth');
+  if (depthElement !== null) {
+    depthElement.textContent = `B${s.currentDepth}`;
+  }
+}
+
+// Initialize HUD display values
+updateHUD(state);
 
 // 5. Initial Render
 render(display, state);
@@ -109,14 +114,14 @@ renderMessageLog(state);
 
 // 6. Hook up Keyboard input handlers
 window.addEventListener('keydown', (event: KeyboardEvent) => {
-  const direction: Direction | undefined = MOVEMENT_KEYS[event.keyCode];
   let didAct = false;
 
+  const direction: Direction | undefined = MOVEMENT_KEYS[event.keyCode];
   if (direction !== undefined) {
     event.preventDefault(); // Prevent standard page scroll
     const nextState = tryMovePlayer(state, direction);
     if (nextState !== state) {
-      state = nextState;
+      state = updateExploredTiles(nextState);
       didAct = true;
     } else {
       // The player hit a wall; let's log it to test the message system
@@ -127,11 +132,20 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     event.preventDefault();
     state = addMessage(state, 'You wait a moment.', 'system');
     didAct = true;
+  } else if (event.key === '>' || event.keyCode === ROT.KEYS.VK_GREATER_THAN) {
+    event.preventDefault();
+    state = transitionFloor(state, 'down');
+    didAct = true;
+  } else if (event.key === '<' || event.keyCode === ROT.KEYS.VK_LESS_THAN) {
+    event.preventDefault();
+    state = transitionFloor(state, 'up');
+    didAct = true;
   }
 
   // If the state changed or we logged a message, re-render
   if (didAct) {
     render(display, state);
     renderMessageLog(state);
+    updateHUD(state);
   }
 });
