@@ -1,3 +1,4 @@
+import * as ROT from 'rot-js';
 import {
   ComponentType,
   type PositionComponent,
@@ -6,11 +7,21 @@ import {
   type RenderableComponent
 } from '../types/components.types.ts';
 import { type GameState, type LevelData, type EntityId, type GameMap } from '../types/game-state.types.ts';
-import { getComponent, queryEntities, updateSpatialIndex, createEntity, addComponent } from '../core/ecs.ts';
+import {
+  getComponent,
+  queryEntities,
+  updateSpatialIndex,
+  createEntity,
+  addComponent,
+  spawnEntity,
+  spawnItem
+} from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateDungeon } from '../map/generator.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT, MAX_DUNGEON_DEPTH } from '../constants/map.constants.ts';
+import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from '../constants/spawning.constants.ts';
+import { LOOT_TABLE, MAX_ITEMS_PER_ROOM } from '../constants/items.constants.ts';
 import { IntentType, type ChangeFloorIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
 import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
@@ -198,6 +209,28 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
       );
     }
 
+    // Spawn monsters and items in all rooms except the first one (where the player spawns)
+    for (let i = 1; i < generated.rooms.length; i++) {
+      const room = generated.rooms[i];
+      if (!room) continue;
+
+      const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
+      for (let m = 0; m < numMonsters; m++) {
+        const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+        const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+        const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+        [tempState] = spawnEntity(tempState, template, mx, my);
+      }
+
+      const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
+      for (let n = 0; n < numItems; n++) {
+        const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+        const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+        const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
+        [tempState] = spawnItem(tempState, itemId, ix, iy);
+      }
+    }
+
     nextEntities = tempState.entities;
     nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
   }
@@ -224,6 +257,11 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
   // 4. Update Scheduler
   clearScheduler();
   for (const id of nextState.entities) {
+    if (id === entityId) {
+      const actor = getComponent(nextState, id, ComponentType.Actor);
+      if (actor) addActor(id, actor.speed);
+      continue;
+    }
     const actor = getComponent(nextState, id, ComponentType.Actor);
     if (actor) {
       addActor(id, actor.speed);

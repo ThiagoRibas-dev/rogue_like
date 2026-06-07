@@ -56,6 +56,12 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Camera**: Handles camera scrolling/viewport offsets, keeping the player centered when maps are larger than the screen dimensions.
 - **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas.
 
+### Items & Inventory
+- **Registries**: Items and Effects are defined declaratively in `src/constants/items.constants.ts` and `effects.constants.ts`. They are pure data objects keyed by string IDs.
+- **Inventory System**: The player has an `InventoryComponent` holding references to item `EntityId`s. Picking up an item removes its `PositionComponent` (taking it off the map); dropping it restores it.
+- **Equipment & Stats**: Equipment modifies stats dynamically at query time via `getEffectiveStats()` and `getEffectiveCapacity()`, rather than mutating base values on `FighterComponent` or `InventoryComponent`.
+- **Item Effects**: Consumable effects are dispatched by `effects.system.ts` based on their declarative definitions.
+
 ---
 
 ## 4. Decision Log
@@ -91,3 +97,11 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Global Overrides vs O(N) Iteration
 - **Decision**: For state alterations that affect an entire collection identically (e.g., revealing the entire map, global buffs, freezing time), we prefer adding a boolean flag/override property to the parent object (e.g., `GameMap.isFullyExplored`) rather than iterating and mutating every single child object.
 - **Rationale**: Rebuilding large immutable arrays (like 4,000+ map tiles) is computationally cheap but causes massive memory allocation spikes, which eventually triggers Garbage Collection pauses. Using global override flags avoids allocation entirely and scales safely to massive maps.
+
+### "Bonus at Query Time" Stat Model
+- **Decision**: Equipment bonuses are *never* baked into `FighterComponent` or `InventoryComponent`. Instead, a utility like `getEffectiveStats()` dynamically sums the base stats with equipment bonuses on demand.
+- **Rationale**: If we mutated base stats when equipping/unequipping, we risk desyncs or permanent stat damage if an item is forcibly removed or destroyed. By computing the sum at query time, we compose cleanly with future stat modifiers like level-up gains or magical curses without refactoring combat logic.
+
+### Declarative Item Effects Registry
+- **Decision**: Item effects are defined as pure data objects (`ItemEffectDefinition`) mapped by string ID (`ITEM_EFFECTS`). The effect processor (`effects.system.ts`) interprets this data rather than executing inline functions.
+- **Rationale**: Function closures cannot be serialized or safely synced over a network. Data objects can be trivially serialized for save/load (M7) and ultimately moved out of TypeScript into JSON/YAML configuration files for Modding (M9).

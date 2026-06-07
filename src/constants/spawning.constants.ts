@@ -26,6 +26,10 @@ export interface EntityTemplate {
     readonly aggroRadius?: number;
     readonly wanders?: boolean;
   };
+  /** Inventory configuration — only required for player-type entities. */
+  readonly inventoryConfig?: {
+    readonly baseCapacity: number;
+  };
 }
 
 export const ENTITY_TEMPLATES: Readonly<Record<string, EntityTemplate>> = {
@@ -37,7 +41,8 @@ export const ENTITY_TEMPLATES: Readonly<Record<string, EntityTemplate>> = {
     bg: COLOR_TRANSPARENT,
     isActor: true,
     speed: 100,
-    fighter: { maxHp: 30, attack: 5, defense: 2 }
+    fighter: { maxHp: 30, attack: 5, defense: 2 },
+    inventoryConfig: { baseCapacity: 10 }
   },
   orc: {
     id: 'orc',

@@ -14,6 +14,14 @@ import {
 } from '../systems/targeting.system.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
+import {
+  processPickUpIntent,
+  processDropIntent,
+  processEquipItemIntent,
+  processUnequipItemIntent
+} from '../systems/inventory.system.ts';
+import { processUseItemIntent } from '../systems/effects.system.ts';
+import { UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { assertNever } from '../utils/assert.ts';
 import { TILE_REGISTRY } from '../constants/tile.constants.ts';
@@ -61,9 +69,11 @@ export function queuePlayerIntent(intent: Intent): void {
     IntentType.Interact,
     IntentType.ChangeFloor,
     IntentType.MeleeAttack,
-    IntentType.FireAimed
+    IntentType.FireAimed,
+    IntentType.PickUp
   ].includes(intent.type);
 
+  // Opening/closing inventory does not consume a turn
   if (consumesTurn) {
     unlockEngine();
   }
@@ -117,6 +127,20 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       return processMoveTargetIntent(state, intent);
     case IntentType.FireAimed:
       return processFireAimedIntent(state, intent);
+
+    // --- INVENTORY INTENTS ---
+    case IntentType.PickUp:
+      return processPickUpIntent(state, intent.entityId);
+    case IntentType.Drop:
+      return processDropIntent(state, intent.entityId, intent.itemIndex);
+    case IntentType.UseItem:
+      return processUseItemIntent(state, intent.entityId, intent.itemIndex);
+    case IntentType.EquipItem:
+      return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
+    case IntentType.UnequipItem:
+      return processUnequipItemIntent(state, intent.entityId, intent.slot);
+    case IntentType.ToggleInventory:
+      return { ...state, uiMode: state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game };
 
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {

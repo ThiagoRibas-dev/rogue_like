@@ -1,6 +1,16 @@
 import type { Component } from './components.types.ts';
 
 /**
+ * Enum defining the current UI interaction mode.
+ * Controls how keyboard input is interpreted (game actions vs. menu selections).
+ * Serializable for M7 save/load.
+ */
+export const enum UIMode {
+  Game = 'game',
+  Inventory = 'inventory'
+}
+
+/**
  * Branded type for Entity ID to prevent mixing it up with other numeric types.
  */
 export type EntityId = number & { readonly __brand: unique symbol };
@@ -60,11 +70,18 @@ export interface GameState {
   readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
   readonly map: GameMap;
   readonly nextEntityId: number;
+  /** Counter used to generate unique ItemInstanceIds for new item entities. */
+  readonly nextItemInstanceId: number;
   readonly messages: ReadonlyArray<LogMessage>;
   readonly currentDepth: number;
   readonly levels: ReadonlyMap<number, LevelData>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
   readonly isGameOver: boolean;
+  /**
+   * Current UI mode. Controls how keyboard input is interpreted.
+   * 'game' = normal play; 'inventory' = inventory panel open.
+   */
+  readonly uiMode: UIMode;
   readonly targetingMode?: {
     readonly active: boolean;
     readonly x: number;

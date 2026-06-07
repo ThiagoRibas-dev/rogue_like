@@ -40,7 +40,7 @@ export const WAIT_KEY = ROT.KEYS.VK_SPACE;
  * Debug/Cheat tools keys (Must be used with Shift modifier).
  */
 export const DEBUG_REVEAL_MAP_KEY = ROT.KEYS.VK_R;
-export const DEBUG_GOD_MODE_KEY = ROT.KEYS.VK_G;
+export const DEBUG_GOD_MODE_KEY = ROT.KEYS.VK_O;
 export const DEBUG_SPAWN_ENTITY_KEY = ROT.KEYS.VK_E;
 
 /**
@@ -48,3 +48,11 @@ export const DEBUG_SPAWN_ENTITY_KEY = ROT.KEYS.VK_E;
  */
 export const TARGET_TOGGLE_KEY = ROT.KEYS.VK_F;
 export const TARGET_CONFIRM_KEY = ROT.KEYS.VK_RETURN;
+
+/**
+ * Item interaction keys.
+ */
+/** Pick up an item from the current tile. */
+export const PICK_UP_KEY = ROT.KEYS.VK_G;
+/** Toggle the inventory panel open/closed. */
+export const INVENTORY_TOGGLE_KEY = ROT.KEYS.VK_I;

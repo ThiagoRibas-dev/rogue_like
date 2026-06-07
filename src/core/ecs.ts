@@ -6,10 +6,15 @@ import {
   type ActorComponent,
   type FighterComponent,
   type AIComponent,
-  type PlayerComponent
+  type PlayerComponent,
+  type ItemComponent,
+  type InventoryComponent,
+  type EquipmentComponent,
+  toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 import { ENTITY_TEMPLATES } from '../constants/spawning.constants.ts';
+import { ITEM_REGISTRY } from '../constants/items.constants.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -174,7 +179,62 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
   if (templateId === 'player') {
     const player: PlayerComponent = { type: ComponentType.Player };
     nextState = addComponent(nextState, entityId, player);
+
+    // Attach Inventory and Equipment components to the player
+    const template = ENTITY_TEMPLATES[templateId];
+    const inventoryCmp: InventoryComponent = {
+      type: ComponentType.Inventory,
+      items: [],
+      baseCapacity: template?.inventoryConfig?.baseCapacity ?? 10
+    };
+    const equipmentCmp: EquipmentComponent = {
+      type: ComponentType.Equipment,
+      weapon: null,
+      armor: null
+    };
+    nextState = addComponent(nextState, entityId, inventoryCmp);
+    nextState = addComponent(nextState, entityId, equipmentCmp);
   }
+
+  return [nextState, entityId];
+}
+
+/**
+ * Spawns an item entity on the map from an ITEM_REGISTRY definition.
+ * Creates the entity with Position, Renderable, and Item components.
+ * @param state The current game state.
+ * @param itemId The ID of the item definition in ITEM_REGISTRY.
+ * @param x The map X coordinate.
+ * @param y The map Y coordinate.
+ * @returns A tuple of the updated state and the new EntityId.
+ */
+export function spawnItem(state: GameState, itemId: string, x: number, y: number): [GameState, EntityId] {
+  const def = ITEM_REGISTRY[itemId];
+  if (!def) throw new Error(`Unknown item ID: ${itemId}`);
+
+  const [stateAfterCreate, entityId] = createEntity(state);
+  let nextState = stateAfterCreate;
+
+  const pos: PositionComponent = { type: ComponentType.Position, x, y };
+  const render: RenderableComponent = {
+    type: ComponentType.Renderable,
+    glyph: def.glyph,
+    fg: def.fg,
+    bg: def.bg
+  };
+  const instanceId = toItemInstanceId(`${itemId}_${nextState.nextItemInstanceId}`);
+  const item: ItemComponent = {
+    type: ComponentType.Item,
+    itemId: def.id,
+    instanceId,
+    identified: true, // M8: change to false for unidentified items
+    ...(def.consumable !== undefined ? { charges: def.consumable.charges } : {})
+  };
+
+  nextState = addComponent(nextState, entityId, pos);
+  nextState = addComponent(nextState, entityId, render);
+  nextState = addComponent(nextState, entityId, item);
+  nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
 
   return [nextState, entityId];
 }

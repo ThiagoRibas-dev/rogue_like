@@ -9,7 +9,10 @@ export const enum ComponentType {
   Interactable = 'Interactable',
   GodMode = 'GodMode',
   Fighter = 'Fighter',
-  AI = 'AI'
+  AI = 'AI',
+  Item = 'Item',
+  Inventory = 'Inventory',
+  Equipment = 'Equipment'
 }
 
 /**
@@ -50,6 +53,23 @@ export interface ActorComponent {
  * Component indicating the entity can be interacted with, yielding Intents.
  */
 import type { Intent } from './intents.types.ts';
+import type { EntityId } from './game-state.types.ts';
+
+/**
+ * A branded string type uniquely identifying a single item instance.
+ * Two items with the same itemId (same template) will have different instanceIds.
+ * Critical for future stacking and save/load disambiguation (M7/M8/M9).
+ */
+export type ItemInstanceId = string & { readonly __brand: unique symbol };
+
+/**
+ * Helper to cast a string to ItemInstanceId.
+ * @param id The raw string to cast.
+ * @returns The branded ItemInstanceId.
+ */
+export function toItemInstanceId(id: string): ItemInstanceId {
+  return id as ItemInstanceId;
+}
 
 export interface InteractableComponent {
   readonly type: ComponentType.Interactable;
@@ -92,6 +112,51 @@ export interface AIComponent {
 }
 
 /**
+ * Component tagging an entity as an item and linking it to its ITEM_REGISTRY definition.
+ * Every field here is serializable — no functions or closures.
+ */
+export interface ItemComponent {
+  readonly type: ComponentType.Item;
+  /** String key into ITEM_REGISTRY identifying the item type. */
+  readonly itemId: string;
+  /**
+   * Unique per-instance ID. Two health potions will have different instanceIds.
+   * Generated from GameState.nextItemInstanceId counter.
+   */
+  readonly instanceId: ItemInstanceId;
+  /** Whether the player knows the item's true name (M8 prep, defaults true for MVP). */
+  readonly identified: boolean;
+  /** Remaining charges for consumables with multiple uses (M8 prep for wands). */
+  readonly charges?: number;
+}
+
+/**
+ * Component attached to entities that can hold items (player, containers).
+ * Effective capacity = baseCapacity + bonuses from equipment/effects.
+ */
+export interface InventoryComponent {
+  readonly type: ComponentType.Inventory;
+  /** Ordered list of item entity IDs currently in this inventory. */
+  readonly items: ReadonlyArray<EntityId>;
+  /**
+   * Base inventory size before equipment/effect bonuses.
+   * Use getEffectiveCapacity() from stats.ts to get the true available slots.
+   */
+  readonly baseCapacity: number;
+}
+
+/**
+ * Component attached to entities that can equip gear.
+ * Slots hold EntityId references to equipped item entities (which may also be in inventory).
+ * null means the slot is empty.
+ */
+export interface EquipmentComponent {
+  readonly type: ComponentType.Equipment;
+  readonly weapon: EntityId | null;
+  readonly armor: EntityId | null;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -102,4 +167,7 @@ export type Component =
   | InteractableComponent
   | GodModeComponent
   | FighterComponent
-  | AIComponent;
+  | AIComponent
+  | ItemComponent
+  | InventoryComponent
+  | EquipmentComponent;

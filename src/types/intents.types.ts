@@ -14,7 +14,13 @@ export const enum IntentType {
   ToggleTargeting = 'ToggleTargeting',
   MoveTarget = 'MoveTarget',
   FireAimed = 'FireAimed',
-  MeleeAttack = 'MeleeAttack'
+  MeleeAttack = 'MeleeAttack',
+  PickUp = 'PickUp',
+  Drop = 'Drop',
+  UseItem = 'UseItem',
+  EquipItem = 'EquipItem',
+  UnequipItem = 'UnequipItem',
+  ToggleInventory = 'ToggleInventory'
 }
 
 /**
@@ -112,6 +118,62 @@ export interface MeleeAttackIntent {
 }
 
 /**
+ * Intent to pick up an item at the entity's current position.
+ */
+export interface PickUpIntent {
+  readonly type: IntentType.PickUp;
+  readonly entityId: EntityId;
+}
+
+/**
+ * Intent to drop an item from inventory onto the current tile.
+ * itemIndex is the position of the item in the entity's inventory array.
+ */
+export interface DropIntent {
+  readonly type: IntentType.Drop;
+  readonly entityId: EntityId;
+  readonly itemIndex: number;
+}
+
+/**
+ * Intent to use a consumable item from inventory.
+ * itemIndex is the position of the item in the entity's inventory array.
+ */
+export interface UseItemIntent {
+  readonly type: IntentType.UseItem;
+  readonly entityId: EntityId;
+  readonly itemIndex: number;
+}
+
+/**
+ * Intent to equip an item from inventory into its appropriate equipment slot.
+ * itemIndex is the position of the item in the entity's inventory array.
+ */
+export interface EquipItemIntent {
+  readonly type: IntentType.EquipItem;
+  readonly entityId: EntityId;
+  readonly itemIndex: number;
+}
+
+/**
+ * Intent to unequip a piece of gear from a slot back into inventory.
+ */
+export interface UnequipItemIntent {
+  readonly type: IntentType.UnequipItem;
+  readonly entityId: EntityId;
+  readonly slot: import('../constants/items.constants.ts').EquipmentSlot;
+}
+
+/**
+ * Intent to toggle the inventory panel open or closed.
+ * Does not consume a turn.
+ */
+export interface ToggleInventoryIntent {
+  readonly type: IntentType.ToggleInventory;
+  readonly entityId: EntityId;
+}
+
+/**
  * Discriminated union of all possible Intents.
  */
 export type Intent =
@@ -125,4 +187,10 @@ export type Intent =
   | ToggleTargetingIntent
   | MoveTargetIntent
   | FireAimedIntent
-  | MeleeAttackIntent;
+  | MeleeAttackIntent
+  | PickUpIntent
+  | DropIntent
+  | UseItemIntent
+  | EquipItemIntent
+  | UnequipItemIntent
+  | ToggleInventoryIntent;

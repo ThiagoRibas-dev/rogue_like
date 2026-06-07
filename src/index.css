@@ -341,3 +341,85 @@ kbd {
     opacity: 0.7;
   }
 }
+
+/* Inventory Panel */
+.inventory-panel {
+  display: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(5px);
+  margin-bottom: 16px;
+}
+
+.inventory-panel.visible {
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-header {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--text-highlight);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.inv-hint {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.inv-empty {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.inv-slot {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border-radius: 4px;
+}
+
+.inv-slot:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.inv-slot-label {
+  color: var(--text-dim);
+  min-width: 20px;
+}
+
+.inv-slot-name {
+  flex-grow: 1;
+}
+
+/* Category colors */
+.inv-cat-consumable .inv-slot-name {
+  color: #ff9f43; /* Orange */
+}
+
+.inv-cat-weapon .inv-slot-name {
+  color: #ee5253; /* Red/Pink */
+}
+
+.inv-cat-armor .inv-slot-name {
+  color: #0abde3; /* Cyan */
+}
+
+.inv-equipped .inv-slot-name {
+  color: var(--color-xp); /* Green */
+  font-weight: bold;
+}

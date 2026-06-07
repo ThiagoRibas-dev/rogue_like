@@ -10,7 +10,7 @@ import {
   type RenderableComponent,
   type InteractableComponent
 } from './types/components.types.ts';
-import { addComponent, createEntity, spawnEntity, getComponent } from './core/ecs.ts';
+import { addComponent, createEntity, spawnEntity, spawnItem, getComponent } from './core/ecs.ts';
 import { Direction } from './utils/direction.ts';
 import { render } from './rendering/renderer.ts';
 import { initRNG } from './core/rng.ts';
@@ -21,14 +21,17 @@ import {
   DEBUG_GOD_MODE_KEY,
   DEBUG_SPAWN_ENTITY_KEY,
   TARGET_TOGGLE_KEY,
-  TARGET_CONFIRM_KEY
+  TARGET_CONFIRM_KEY,
+  PICK_UP_KEY,
+  INVENTORY_TOGGLE_KEY
 } from './constants/keybinds.constants.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
-import { renderMessageLog } from './rendering/ui.ts';
+import { renderMessageLog, renderInventoryPanel } from './rendering/ui.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
 import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from './constants/spawning.constants.ts';
+import { LOOT_TABLE, MAX_ITEMS_PER_ROOM } from './constants/items.constants.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
@@ -42,7 +45,14 @@ import {
   createMoveTargetAction,
   createFireAimedAction
 } from './actions/targeting.actions.ts';
+import {
+  createPickUpAction,
+  createDropAction,
+  createUseItemAction,
+  createToggleInventoryAction
+} from './actions/inventory.actions.ts';
 import { IntentType, type ChangeFloorIntent } from './types/intents.types.ts';
+import { UIMode } from './types/game-state.types.ts';
 import { getDirectionDelta } from './utils/direction.ts';
 
 // 0. Initialize RNG
@@ -80,11 +90,13 @@ let state: GameState = {
   components: new Map(),
   map: initialMap,
   nextEntityId: 1,
+  nextItemInstanceId: 1,
   messages: [],
   currentDepth: 1,
   levels: new Map(),
   spatialIndex: new Map(),
-  isGameOver: false
+  isGameOver: false,
+  uiMode: UIMode.Game
 };
 
 // Spawn the player entity
@@ -104,6 +116,15 @@ for (let i = 1; i < rooms.length; i++) {
 
     // Quick check to avoid spawning exactly on stairs or another entity (for now, just spawn)
     [state] = spawnEntity(state, template, mx, my);
+  }
+
+  // Spawn items in this room
+  const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
+  for (let n = 0; n < numItems; n++) {
+    const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+    const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+    const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
+    [state] = spawnItem(state, itemId, ix, iy);
   }
 }
 
@@ -170,11 +191,13 @@ function updateHUD(s: GameState): void {
 onStateChange((newState: GameState) => {
   render(display, newState);
   renderMessageLog(newState);
+  renderInventoryPanel(newState);
   updateHUD(newState);
 });
 
 // Initialize HUD display values and pass the initial state
 updateHUD(state);
+renderInventoryPanel(state);
 setGameState(state);
 
 // 5. Initial Render
@@ -185,6 +208,31 @@ renderMessageLog(state);
 window.addEventListener('keydown', (event: KeyboardEvent) => {
   const currentState = getGameState();
   const isTargeting = currentState.targetingMode?.active;
+  const isInventoryOpen = currentState.uiMode === UIMode.Inventory;
+
+  // Inventory panel: letter keys select a slot, Escape closes
+  if (isInventoryOpen) {
+    if (event.key === 'Escape' || event.keyCode === INVENTORY_TOGGLE_KEY) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleInventoryAction(playerEntityId));
+      return;
+    }
+    // a-z selects inventory slot 0-25
+    if (event.key.length === 1) {
+      const code = event.key.toLowerCase().charCodeAt(0);
+      if (code >= 97 && code <= 122) {
+        event.preventDefault();
+        const slotIndex = code - 97;
+        // Use with Shift = drop, plain = use/equip
+        if (event.shiftKey) {
+          queuePlayerIntent(createDropAction(playerEntityId, slotIndex));
+        } else {
+          queuePlayerIntent(createUseItemAction(playerEntityId, slotIndex));
+        }
+      }
+    }
+    return; // Swallow all other keys when inventory is open
+  }
 
   if (event.shiftKey) {
     if (event.keyCode === DEBUG_REVEAL_MAP_KEY) {
@@ -202,6 +250,19 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
       queuePlayerIntent(createDebugSpawnEntityAction(playerEntityId));
       return;
     }
+  }
+
+  // Item interaction
+  if (event.keyCode === PICK_UP_KEY) {
+    event.preventDefault();
+    queuePlayerIntent(createPickUpAction(playerEntityId));
+    return;
+  }
+
+  if (event.keyCode === INVENTORY_TOGGLE_KEY) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleInventoryAction(playerEntityId));
+    return;
   }
 
   // Handle targeting specific keys

@@ -4,6 +4,7 @@ import { ComponentType, type FighterComponent } from '../types/components.types.
 import { getComponent, removeEntity } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { getEffectiveStats } from '../utils/stats.ts';
 
 /**
  * Processes a MeleeAttackIntent.
@@ -33,7 +34,11 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
   const isDefenderPlayer = getComponent(state, defenderId, ComponentType.Player) !== undefined;
   const isDefenderGod = getComponent(state, defenderId, ComponentType.GodMode) !== undefined;
 
-  let damage = Math.max(1, attackerFighter.attack - defenderFighter.defense);
+  // Use effective stats so equipment bonuses are applied
+  const attackerStats = getEffectiveStats(state, entityId);
+  const defenderStats = getEffectiveStats(state, defenderId);
+
+  let damage = Math.max(1, attackerStats.attack - defenderStats.defense);
 
   if (isDefenderGod) {
     damage = 0;

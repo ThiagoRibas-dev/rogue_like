@@ -42,15 +42,15 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 - [x] Implement Monster Death.
 - [x] **Implement Player Death state flag (halt game processing).**
 
-## 🟢 Milestone 5: Items & Inventory (Currently Active)
-Add tactical depth through loot.
-- [ ] **Implement the Data-driven Item Registry.**
-- [ ] Spawning items on the map.
-- [ ] Inventory System (Pick up, Drop actions).
-- [ ] Usable items (Consumables).
-- [ ] Equipment slots (Weapons, Armor).
+### 🟢 Milestone 5: Items & Inventory (Complete)
+- [x] Create a data-driven Item Registry (consumables, weapons, armor)
+- [x] Add ItemComponent, InventoryComponent, EquipmentComponent
+- [x] Add ground items and Pick Up / Drop mechanics
+- [x] Add Consumable items with targeted effects (health potions, scrolls)
+- [x] Implement "Bonus at Query Time" stat calculation for Equipment slots
+- [x] Render inventory UI panel for interaction
 
-## 🟡 Milestone 6: Progression & Polish
+### 🟢 Milestone 6: XP & Leveling (Active)
 Transform the mechanical systems into a cohesive game experience.
 - [ ] XP and Leveling System for the Player.
 - [ ] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
