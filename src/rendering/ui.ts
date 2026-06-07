@@ -4,6 +4,8 @@ import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ITEM_REGISTRY } from '../constants/items.constants.ts';
 import { getEffectiveCapacity } from '../systems/inventory.system.ts';
+import { getEffectiveStats } from '../utils/stats.ts';
+import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
 
 /**
  * Renders the GameState's messages to the DOM.
@@ -112,4 +114,55 @@ export function renderInventoryPanel(state: GameState): void {
     row.appendChild(name);
     panel.appendChild(row);
   });
+}
+
+/**
+ * Renders the player's stats (HP, Level, XP) to the DOM.
+ * @param state The current GameState.
+ */
+export function renderPlayerStats(state: GameState): void {
+  const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+  if (playerEntityId === undefined) return;
+
+  const fighter = getComponent(state, playerEntityId, ComponentType.Fighter);
+  if (!fighter) return;
+
+  const effectiveStats = getEffectiveStats(state, playerEntityId);
+
+  // Update Health
+  const hpFill = document.getElementById('health-bar-fill');
+  const hpText = document.getElementById('health-bar-text');
+  if (hpFill && hpText) {
+    const hpPercent = Math.max(0, Math.min(100, (fighter.hp / effectiveStats.maxHp) * 100));
+    hpFill.style.width = `${hpPercent}%`;
+    hpText.textContent = `${fighter.hp} / ${effectiveStats.maxHp}`;
+  }
+
+  // Update Level
+  const levelText = document.getElementById('player-level-text');
+  if (levelText) {
+    levelText.textContent = fighter.level.toString();
+  }
+
+  // Update XP
+  const xpFill = document.getElementById('xp-bar-fill');
+  const xpText = document.getElementById('xp-bar-text');
+  if (xpFill && xpText) {
+    const currentAdvancement = getAdvancementForLevel(fighter.level);
+    const nextAdvancement = getAdvancementForLevel(fighter.level + 1);
+
+    const baseLevelXp = currentAdvancement ? currentAdvancement.requiredXp : 0;
+    const currentXpInLevel = Math.max(0, fighter.xp - baseLevelXp);
+
+    if (nextAdvancement) {
+      const xpNeededForNextLevel = nextAdvancement.requiredXp - baseLevelXp;
+      const xpPercent = Math.max(0, Math.min(100, (currentXpInLevel / xpNeededForNextLevel) * 100));
+      xpFill.style.width = `${xpPercent}%`;
+      xpText.textContent = `${fighter.xp} / ${nextAdvancement.requiredXp}`;
+    } else {
+      // Max level reached
+      xpFill.style.width = '100%';
+      xpText.textContent = `MAX (${fighter.xp})`;
+    }
+  }
 }

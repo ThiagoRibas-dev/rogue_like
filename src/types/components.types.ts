@@ -92,6 +92,9 @@ export interface FighterComponent {
   readonly hp: number;
   readonly attack: number;
   readonly defense: number;
+  readonly xp: number;
+  readonly level: number;
+  readonly xpGiven: number;
 }
 
 /**

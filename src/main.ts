@@ -26,7 +26,7 @@ import {
   INVENTORY_TOGGLE_KEY
 } from './constants/keybinds.constants.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
-import { renderMessageLog, renderInventoryPanel } from './rendering/ui.ts';
+import { renderMessageLog, renderInventoryPanel, renderPlayerStats } from './rendering/ui.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
@@ -191,18 +191,22 @@ function updateHUD(s: GameState): void {
 onStateChange((newState: GameState) => {
   render(display, newState);
   renderMessageLog(newState);
+  renderPlayerStats(newState);
   renderInventoryPanel(newState);
   updateHUD(newState);
 });
 
 // Initialize HUD display values and pass the initial state
 updateHUD(state);
+renderMessageLog(state);
+renderPlayerStats(state);
 renderInventoryPanel(state);
 setGameState(state);
 
 // 5. Initial Render
 render(display, state);
 renderMessageLog(state);
+renderPlayerStats(state);
 
 // 6. Hook up Keyboard input handlers to the Command Queue
 window.addEventListener('keydown', (event: KeyboardEvent) => {

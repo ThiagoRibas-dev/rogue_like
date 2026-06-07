@@ -166,7 +166,10 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
       maxHp: template.fighter.maxHp,
       hp: template.fighter.maxHp,
       attack: template.fighter.attack,
-      defense: template.fighter.defense
+      defense: template.fighter.defense,
+      xp: 0,
+      level: 1,
+      xpGiven: template.fighter.xpGiven ?? 0
     };
     nextState = addComponent(nextState, entityId, fighter);
   }

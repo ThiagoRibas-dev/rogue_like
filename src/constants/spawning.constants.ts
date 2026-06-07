@@ -20,6 +20,7 @@ export interface EntityTemplate {
     readonly maxHp: number;
     readonly attack: number;
     readonly defense: number;
+    readonly xpGiven?: number;
   };
   readonly ai?: {
     readonly behavior: AIBehavior;
@@ -52,7 +53,7 @@ export const ENTITY_TEMPLATES: Readonly<Record<string, EntityTemplate>> = {
     bg: COLOR_TRANSPARENT,
     isActor: true,
     speed: 100,
-    fighter: { maxHp: 10, attack: 3, defense: 0 },
+    fighter: { maxHp: 10, attack: 3, defense: 0, xpGiven: 50 },
     ai: { behavior: AIBehavior.BasicMelee, aggroRadius: 5, wanders: true }
   },
   troll: {
@@ -63,7 +64,7 @@ export const ENTITY_TEMPLATES: Readonly<Record<string, EntityTemplate>> = {
     bg: COLOR_TRANSPARENT,
     isActor: true,
     speed: 80,
-    fighter: { maxHp: 16, attack: 4, defense: 1 },
+    fighter: { maxHp: 16, attack: 4, defense: 1, xpGiven: 150 },
     ai: { behavior: AIBehavior.BasicMelee, aggroRadius: 4, wanders: false }
   }
 };
