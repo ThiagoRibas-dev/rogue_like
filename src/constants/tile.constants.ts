@@ -44,4 +44,11 @@ export const TILE_REGISTRY: Readonly<Record<string, TileDefinition>> = {
     fg: COLOR_STAIRS_FG,
     bg: COLOR_BACKGROUND,
   },
+  empty_space: {
+    walkable: false,
+    transparent: false,
+    glyph: ' ',
+    fg: '#000000',
+    bg: COLOR_BACKGROUND,
+  },
 };

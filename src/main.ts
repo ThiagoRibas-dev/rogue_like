@@ -1,21 +1,27 @@
 import * as ROT from 'rot-js';
 import './index.css';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, FONT_SIZE, FONT_FAMILY } from './constants/ui.constants.ts';
-import { COLOR_BACKGROUND, COLOR_PLAYER_FG } from './constants/colors.constants.ts';
-import { GLYPH_PLAYER } from './constants/glyphs.constants.ts';
-import { type GameState } from './types/game-state.types.ts';
-import { ComponentType, type PlayerComponent, type PositionComponent, type RenderableComponent } from './types/components.types.ts';
+import { COLOR_BACKGROUND, COLOR_PLAYER_FG, COLOR_STAIRS_FG } from './constants/colors.constants.ts';
+import { GLYPH_PLAYER, GLYPH_STAIRS_UP, GLYPH_STAIRS_DOWN } from './constants/glyphs.constants.ts';
+import { type GameState, type EntityId } from './types/game-state.types.ts';
+import { ComponentType, type PlayerComponent, type PositionComponent, type RenderableComponent, type ActorComponent, type InteractableComponent } from './types/components.types.ts';
 import { addComponent, createEntity } from './core/ecs.ts';
 import { Direction } from './utils/direction.ts';
-import { tryMovePlayer } from './systems/movement.system.ts';
 import { render } from './rendering/renderer.ts';
 import { initRNG } from './core/rng.ts';
-import { MOVEMENT_KEYS, WAIT_KEY } from './constants/keybinds.constants.ts';
+import { MOVEMENT_KEYS, WAIT_KEY, DEBUG_REVEAL_MAP_KEY, DEBUG_GOD_MODE_KEY, DEBUG_SPAWN_ENTITY_KEY, TARGET_TOGGLE_KEY, TARGET_CONFIRM_KEY } from './constants/keybinds.constants.ts';
 import { addMessage } from './systems/message.system.ts';
 import { renderMessageLog } from './rendering/ui.ts';
 import { generateDungeon } from './map/generator.ts';
-import { updateExploredTiles, transitionFloor } from './systems/map.system.ts';
+import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
+import { initEngine, startEngine, addActor } from './core/scheduler.ts';
+import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
+import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
+import { createDebugRevealMapAction, createDebugGodModeAction, createDebugSpawnEntityAction } from './actions/debug.actions.ts';
+import { createToggleTargetingAction, createMoveTargetAction, createFireAimedAction } from './actions/targeting.actions.ts';
+import { IntentType } from './types/intents.types.ts';
+import { getDirectionDelta } from './utils/direction.ts';
 
 // 0. Initialize RNG
 initRNG();
@@ -44,55 +50,61 @@ if (container) {
   console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
 }
 
-// 4. Initialize the Game State with a procedurally generated level and Player entity
-const { map: initialMap, startPos } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
+// 4. Initialize the Game State with a procedurally generated level
+const { map: initialMap, startPos, stairs } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
 
-const emptyState: GameState = {
+let state: GameState = {
   entities: [],
   components: new Map(),
   map: initialMap,
   nextEntityId: 1,
   messages: [],
   currentDepth: 1,
-  levels: new Map()
+  levels: new Map(),
+  spatialIndex: new Map()
 };
 
 // Spawn the player entity
-const [stateWithPlayer, playerEntityId] = createEntity(emptyState);
+let playerEntityId: EntityId;
+[state, playerEntityId] = createEntity(state);
 
-const playerPos: PositionComponent = {
-  type: ComponentType.Position,
-  x: startPos.x,
-  y: startPos.y
-};
+const playerPos: PositionComponent = { type: ComponentType.Position, x: startPos.x, y: startPos.y };
+const playerRender: RenderableComponent = { type: ComponentType.Renderable, glyph: GLYPH_PLAYER, fg: COLOR_PLAYER_FG, bg: COLOR_BACKGROUND };
+const playerTag: PlayerComponent = { type: ComponentType.Player };
+const playerActor: ActorComponent = { type: ComponentType.Actor, speed: 100 };
 
-const playerRender: RenderableComponent = {
-  type: ComponentType.Renderable,
-  glyph: GLYPH_PLAYER,
-  fg: COLOR_PLAYER_FG,
-  bg: COLOR_BACKGROUND
-};
+state = addComponent(state, playerEntityId, playerPos);
+state = addComponent(state, playerEntityId, playerRender);
+state = addComponent(state, playerEntityId, playerTag);
+state = addComponent(state, playerEntityId, playerActor);
 
-const playerTag: PlayerComponent = {
-  type: ComponentType.Player
-};
-
-let state: GameState = addComponent(
-  addComponent(
-    addComponent(stateWithPlayer, playerEntityId, playerPos),
-    playerEntityId,
-    playerRender
-  ),
-  playerEntityId,
-  playerTag
-);
+// Spawn the stairs for the first floor
+for (const stair of stairs) {
+  let stairId: EntityId;
+  [state, stairId] = createEntity(state);
+  
+  const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
+  const renderCmp: RenderableComponent = {
+    type: ComponentType.Renderable,
+    glyph: stair.direction === 'up' ? GLYPH_STAIRS_UP : GLYPH_STAIRS_DOWN,
+    fg: COLOR_STAIRS_FG,
+    bg: 'transparent'
+  };
+  const interactable: InteractableComponent = {
+    type: ComponentType.Interactable,
+    intents: [ { type: IntentType.ChangeFloor, direction: stair.direction } as any ]
+  };
+  
+  state = addComponent(state, stairId, pos);
+  state = addComponent(state, stairId, renderCmp);
+  state = addComponent(state, stairId, interactable);
+}
 
 // Initial FOV compute
 state = updateExploredTiles(state);
 
 // Add initial startup messages
-state = addMessage(state, 'ECS Core, Seeded RNG, and Keybinds loaded!', 'system');
-state = addMessage(state, 'Milestone 2: Map Gen & Vision active.', 'system');
+state = addMessage(state, 'Milestone 3: Engine, Scheduling & Intents active.', 'system');
 
 /**
  * Updates the HTML-based HUD sidebar to show the current level depth.
@@ -105,47 +117,78 @@ function updateHUD(s: GameState): void {
   }
 }
 
-// Initialize HUD display values
+// Subscribe to state changes to update the UI
+onStateChange((newState: GameState) => {
+  render(display, newState);
+  renderMessageLog(newState);
+  updateHUD(newState);
+});
+
+// Initialize HUD display values and pass the initial state
 updateHUD(state);
+setGameState(state);
 
 // 5. Initial Render
 render(display, state);
 renderMessageLog(state);
 
-// 6. Hook up Keyboard input handlers
+// 6. Hook up Keyboard input handlers to the Command Queue
 window.addEventListener('keydown', (event: KeyboardEvent) => {
-  let didAct = false;
+  const currentState = getGameState();
+  const isTargeting = currentState.targetingMode?.active;
+
+  if (event.shiftKey) {
+    if (event.keyCode === DEBUG_REVEAL_MAP_KEY) {
+      event.preventDefault();
+      queuePlayerIntent(createDebugRevealMapAction(playerEntityId));
+      return;
+    }
+    if (event.keyCode === DEBUG_GOD_MODE_KEY) {
+      event.preventDefault();
+      queuePlayerIntent(createDebugGodModeAction(playerEntityId));
+      return;
+    }
+    if (event.keyCode === DEBUG_SPAWN_ENTITY_KEY) {
+      event.preventDefault();
+      queuePlayerIntent(createDebugSpawnEntityAction(playerEntityId));
+      return;
+    }
+  }
+
+  // Handle targeting specific keys
+  if (event.keyCode === TARGET_TOGGLE_KEY) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleTargetingAction(playerEntityId));
+    return;
+  }
+
+  if (isTargeting && event.keyCode === TARGET_CONFIRM_KEY) {
+    event.preventDefault();
+    queuePlayerIntent(createFireAimedAction(playerEntityId));
+    return;
+  }
 
   const direction: Direction | undefined = MOVEMENT_KEYS[event.keyCode];
+  
   if (direction !== undefined) {
     event.preventDefault(); // Prevent standard page scroll
-    const nextState = tryMovePlayer(state, direction);
-    if (nextState !== state) {
-      state = updateExploredTiles(nextState);
-      didAct = true;
+    const { dx, dy } = getDirectionDelta(direction);
+    
+    if (isTargeting) {
+      queuePlayerIntent(createMoveTargetAction(playerEntityId, dx, dy));
     } else {
-      // The player hit a wall; let's log it to test the message system
-      state = addMessage(state, 'Ouch! You bumped into a wall.', 'combat-hit');
-      didAct = true;
+      queuePlayerIntent(createMoveAction(playerEntityId, dx, dy));
     }
   } else if (event.keyCode === WAIT_KEY) {
     event.preventDefault();
-    state = addMessage(state, 'You wait a moment.', 'system');
-    didAct = true;
-  } else if (event.key === '>' || event.keyCode === ROT.KEYS.VK_GREATER_THAN) {
+    queuePlayerIntent(createWaitAction(playerEntityId));
+  } else if (!isTargeting && (event.key === '>' || event.key === '<' || event.keyCode === ROT.KEYS.VK_LESS_THAN || event.keyCode === ROT.KEYS.VK_GREATER_THAN)) {
     event.preventDefault();
-    state = transitionFloor(state, 'down');
-    didAct = true;
-  } else if (event.key === '<' || event.keyCode === ROT.KEYS.VK_LESS_THAN) {
-    event.preventDefault();
-    state = transitionFloor(state, 'up');
-    didAct = true;
-  }
-
-  // If the state changed or we logged a message, re-render
-  if (didAct) {
-    render(display, state);
-    renderMessageLog(state);
-    updateHUD(state);
+    queuePlayerIntent(createInteractAction(playerEntityId));
   }
 });
+
+// 7. Start the Engine
+initEngine();
+addActor(playerEntityId, 100);
+startEngine();

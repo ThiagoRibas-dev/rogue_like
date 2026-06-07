@@ -25,7 +25,11 @@ export function generateDungeon(
   width: number,
   height: number,
   depth: number
-): { readonly map: GameMap; readonly startPos: { readonly x: number; readonly y: number } } {
+): { 
+  readonly map: GameMap; 
+  readonly startPos: { readonly x: number; readonly y: number };
+  readonly stairs: ReadonlyArray<{ readonly x: number; readonly y: number; readonly direction: 'up' | 'down' }>;
+} {
   // 1. Initialize empty flat array of tiles filled with walls
   const tiles: Tile[] = [];
   for (let y = 0; y < height; y++) {
@@ -79,6 +83,8 @@ export function generateDungeon(
     throw new Error('Dungeon generation failed: Start position coordinates are undefined.');
   }
 
+  const stairs: Array<{ readonly x: number; readonly y: number; readonly direction: 'up' | 'down' }> = [];
+
   // If depth > 1, place stairs up at the entry point
   if (depth > 1) {
     const startIndex = coordToIndex(startX, startY, width);
@@ -86,8 +92,9 @@ export function generateDungeon(
     if (tile !== undefined) {
       tiles[startIndex] = {
         ...tile,
-        tileId: 'stairs_up',
+        tileId: 'stone_floor', // Ensure it's a floor underneath
       };
+      stairs.push({ x: startX, y: startY, direction: 'up' });
     }
   }
 
@@ -108,8 +115,39 @@ export function generateDungeon(
     if (tile !== undefined) {
       tiles[exitIndex] = {
         ...tile,
-        tileId: 'stairs_down',
+        tileId: 'stone_floor', // Ensure it's a floor underneath
       };
+      stairs.push({ x: stairsDownX, y: stairsDownY, direction: 'down' });
+    }
+  }
+
+  // 5. Cull deep walls (replace walls that don't border a floor with empty_space)
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = coordToIndex(x, y, width);
+      const tile = tiles[idx];
+      if (tile && tile.tileId === 'stone_wall') {
+        let bordersFloor = false;
+        // Check 8 neighbors
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              const nIdx = coordToIndex(nx, ny, width);
+              if (tiles[nIdx]?.tileId === 'stone_floor') {
+                bordersFloor = true;
+                break;
+              }
+            }
+          }
+          if (bordersFloor) break;
+        }
+        if (!bordersFloor) {
+          tiles[idx] = { ...tile, tileId: 'empty_space' };
+        }
+      }
     }
   }
 
@@ -122,5 +160,6 @@ export function generateDungeon(
   return {
     map,
     startPos: { x: startX, y: startY },
+    stairs,
   };
 }

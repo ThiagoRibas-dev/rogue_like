@@ -5,7 +5,7 @@
 1. **Basics.** When starting a new conversation, look at the last 5 git commit messages for context. Never commit or push to a git repository.
 2. **NEVER assume. ASK.** If a task is ambiguous, under-specified, or could be interpreted multiple ways, stop and ask clarifying questions or discuss the changes before writing any code. List your assumptions explicitly and ask the user to confirm. 
 3. **NEVER hallucinate APIs.** If you are unsure whether a function, method, class, or config option exists in ROT.js, Vite, or any dependency, say so. Do not invent plausible-sounding API calls. Refer to the documentation or ask the user to verify.
-4. **Push back and propose alternatives.** Do not blindly agree with the user. If a requested architecture, design, or query is flawed, misunderstood, or outright wrong, point it out. Offer alternatives with arguments and comparisons. However, if the instructions are clear, comprehensive, and correct, execute them.
+4. **Push back and propose alternatives.** Do not blindly agree with the user. If a requested architecture, design, or query is flawed, misunderstood, over engineered, or outright wrong, point it out. Offer alternatives with arguments and comparisons. However, if the instructions are clear, comprehensive, and correct, execute them.
 5. **NEVER use `any`.** There are zero acceptable uses of `any` in this project. Use `unknown` + type narrowing, generics, or branded types instead.
 6. **NEVER use magic strings or magic numbers.** Every literal value that controls game behavior must be a named constant or enum member. No exceptions.
 7. **Prefer SMALL, reviewable changes.** Each response should address one logical change. Do not refactor unrelated code while implementing a feature.

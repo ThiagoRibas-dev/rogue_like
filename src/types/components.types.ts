@@ -5,6 +5,9 @@ export const enum ComponentType {
   Position = "Position",
   Renderable = "Renderable",
   Player = "Player",
+  Actor = "Actor",
+  Interactable = "Interactable",
+  GodMode = "GodMode",
 }
 
 /**
@@ -34,6 +37,37 @@ export interface PlayerComponent {
 }
 
 /**
+ * Component indicating the entity takes turns in the scheduler.
+ */
+export interface ActorComponent {
+  readonly type: ComponentType.Actor;
+  readonly speed: number;
+}
+
+/**
+ * Component indicating the entity can be interacted with, yielding Intents.
+ */
+import type { Intent } from './intents.types.ts';
+
+export interface InteractableComponent {
+  readonly type: ComponentType.Interactable;
+  readonly intents: ReadonlyArray<Intent>;
+}
+
+/**
+ * Component indicating the entity takes no damage (cheat).
+ */
+export interface GodModeComponent {
+  readonly type: ComponentType.GodMode;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
-export type Component = PositionComponent | RenderableComponent | PlayerComponent;
+export type Component = 
+  | PositionComponent 
+  | RenderableComponent 
+  | PlayerComponent
+  | ActorComponent
+  | InteractableComponent
+  | GodModeComponent;

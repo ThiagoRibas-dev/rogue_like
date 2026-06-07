@@ -46,11 +46,12 @@ export function render(display: Display, state: GameState): void {
 
       const tileIndex = coordToIndex(mapX, mapY, state.map.width);
       const tile = state.map.tiles[tileIndex];
+      const isTileExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
 
-      if (tile !== undefined && tile.explored) {
+      if (isTileExplored) {
         const tileDef = TILE_REGISTRY[tile.tileId];
         if (tileDef !== undefined) {
-          const isVisible = visibleIndices.has(tileIndex);
+          const isVisible = state.map.isFullyExplored || visibleIndices.has(tileIndex);
 
           // Determine foreground color based on visibility (Fog of War)
           let fgColor = tileDef.fg;
@@ -81,8 +82,8 @@ export function render(display: Display, state: GameState): void {
     if (position !== undefined && renderable !== undefined) {
       const tileIndex = coordToIndex(position.x, position.y, state.map.width);
 
-      // Only draw entities that are in the player's active field of view
-      if (visibleIndices.has(tileIndex)) {
+      // Only draw entities that are in the player's active field of view (or if map is fully explored)
+      if (state.map.isFullyExplored || visibleIndices.has(tileIndex)) {
         const vx = position.x - cameraX;
         const vy = position.y - cameraY;
 
@@ -97,6 +98,16 @@ export function render(display: Display, state: GameState): void {
           );
         }
       }
+    }
+  }
+
+  // 6. Draw Targeting Highlight
+  if (state.targetingMode?.active) {
+    const vx = state.targetingMode.x - cameraX;
+    const vy = state.targetingMode.y - cameraY;
+    if (vx >= 0 && vx < viewportW && vy >= 0 && vy < viewportH) {
+      // Draw a yellow targeting crosshair over whatever is there
+      display.draw(vx, vy, 'X', '#000000', '#ffff00'); 
     }
   }
 }

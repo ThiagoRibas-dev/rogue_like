@@ -1,4 +1,4 @@
-import type { Component, ComponentType } from '../types/components.types.ts';
+import { type Component, ComponentType } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 
 /**
@@ -41,9 +41,40 @@ export function addComponent<C extends Component>(
   const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
   nextComponents.set(entityId, [...entityComponents, component]);
   
-  return {
+  const nextState = {
     ...state,
     components: nextComponents,
+  };
+  
+  if (component.type === ComponentType.Position) {
+    return updateSpatialIndex(nextState);
+  }
+  
+  return nextState;
+}
+
+/**
+ * Rebuilds the spatial index by scanning all entities for Position components.
+ * @param state The current game state.
+ * @returns The updated game state with the new spatial index.
+ */
+export function updateSpatialIndex(state: GameState): GameState {
+  const newIndex = new Map<string, EntityId[]>();
+  for (const entityId of state.entities) {
+    const pos = getComponent(state, entityId, ComponentType.Position);
+    if (pos !== undefined) {
+      const key = `${pos.x},${pos.y}`;
+      let arr = newIndex.get(key);
+      if (!arr) {
+        arr = [];
+        newIndex.set(key, arr);
+      }
+      arr.push(entityId);
+    }
+  }
+  return {
+    ...state,
+    spatialIndex: newIndex
   };
 }
 

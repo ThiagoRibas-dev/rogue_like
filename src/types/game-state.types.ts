@@ -31,6 +31,7 @@ export interface GameMap {
   readonly width: number;
   readonly height: number;
   readonly tiles: ReadonlyArray<Tile>;
+  readonly isFullyExplored?: boolean;
 }
 
 /**
@@ -48,6 +49,7 @@ export interface LevelData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
+  readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
 }
 
 /**
@@ -61,4 +63,11 @@ export interface GameState {
   readonly messages: ReadonlyArray<LogMessage>;
   readonly currentDepth: number;
   readonly levels: ReadonlyMap<number, LevelData>;
+  readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
+  readonly targetingMode?: {
+    readonly active: boolean;
+    readonly x: number;
+    readonly y: number;
+    readonly radius?: number;
+  };
 }

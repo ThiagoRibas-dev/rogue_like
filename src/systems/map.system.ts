@@ -1,29 +1,20 @@
-import { ComponentType, type PositionComponent, type Component } from '../types/components.types.ts';
+import { ComponentType, type PositionComponent, type Component, type InteractableComponent, type RenderableComponent } from '../types/components.types.ts';
 import { type GameState, type LevelData, type EntityId, type GameMap } from '../types/game-state.types.ts';
-import { getComponent, queryEntities } from '../core/ecs.ts';
+import { getComponent, queryEntities, updateSpatialIndex, createEntity, addComponent } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateDungeon } from '../map/generator.ts';
 import { addMessage } from './message.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT, MAX_DUNGEON_DEPTH } from '../constants/map.constants.ts';
+import { IntentType, type ChangeFloorIntent, type InteractIntent } from '../types/intents.types.ts';
+import { queuePlayerIntent } from '../core/game-loop.ts';
 
-/**
- * Pure system function that computes the player's field of view
- * and marks visible tiles as explored in the GameState.
- *
- * @param state The current GameState.
- * @returns The updated GameState with newly explored tiles.
- */
 export function updateExploredTiles(state: GameState): GameState {
   const players: ReadonlyArray<EntityId> = queryEntities(state, [ComponentType.Player, ComponentType.Position]);
   const playerEntityId = players[0];
-  if (playerEntityId === undefined) {
-    return state;
-  }
+  if (playerEntityId === undefined) return state;
 
   const playerPos = getComponent(state, playerEntityId, ComponentType.Position);
-  if (playerPos === undefined) {
-    return state;
-  }
+  if (playerPos === undefined) return state;
 
   const visibleIndices: Set<number> = computeFOV(state, playerPos.x, playerPos.y);
 
@@ -31,77 +22,65 @@ export function updateExploredTiles(state: GameState): GameState {
   const nextTiles = state.map.tiles.map((tile, idx) => {
     if (visibleIndices.has(idx) && !tile.explored) {
       modified = true;
-      return {
-        ...tile,
-        explored: true,
-      };
+      return { ...tile, explored: true };
     }
     return tile;
   });
 
-  if (!modified) {
-    return state;
-  }
+  if (!modified) return state;
 
   return {
     ...state,
-    map: {
-      ...state.map,
-      tiles: nextTiles,
-    },
+    map: { ...state.map, tiles: nextTiles },
   };
 }
 
-/**
- * Transition the player between dungeon levels.
- * Saves the current floor's non-player entities and level layout,
- * and loads/generates the destination level.
- *
- * @param state The current GameState.
- * @param direction Whether ascending ('up') or descending ('down').
- * @returns The updated GameState.
- */
-export function transitionFloor(state: GameState, direction: 'up' | 'down'): GameState {
-  const players: ReadonlyArray<EntityId> = queryEntities(state, [ComponentType.Player, ComponentType.Position]);
-  const playerEntityId = players[0];
-  if (playerEntityId === undefined) {
-    return state;
+export function processInteractIntent(state: GameState, intent: InteractIntent): GameState {
+  const pos = getComponent(state, intent.entityId, ComponentType.Position);
+  if (!pos) return state;
+  
+  const key = `${pos.x},${pos.y}`;
+  const entities = state.spatialIndex.get(key) || [];
+  
+  let interacted = false;
+  for (const targetId of entities) {
+    if (targetId === intent.entityId) continue;
+    
+    const interactable = getComponent(state, targetId, ComponentType.Interactable);
+    if (interactable) {
+      interactable.intents.forEach(i => {
+        const boundIntent = { ...i, entityId: intent.entityId };
+        queuePlayerIntent(boundIntent as any);
+      });
+      interacted = true;
+    }
   }
-
-  const playerPos = getComponent(state, playerEntityId, ComponentType.Position);
-  if (playerPos === undefined) {
-    return state;
+  
+  if (!interacted) {
+    const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+    if (isPlayer) {
+      return addMessage(state, 'There is nothing here to interact with.', 'system');
+    }
   }
+  
+  return state;
+}
 
-  // Check if player is actually standing on the appropriate stair tile
-  const playerIndex = playerPos.y * state.map.width + playerPos.x;
-  const currentTile = state.map.tiles[playerIndex];
-  const requiredTileId = direction === 'up' ? 'stairs_up' : 'stairs_down';
-
-  if (currentTile === undefined || currentTile.tileId !== requiredTileId) {
-    return addMessage(state, `There are no stairs leading ${direction} here.`, 'system');
-  }
-
+export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIntent): GameState {
+  const { direction, entityId } = intent;
+  
   const targetDepth: number = state.currentDepth + (direction === 'up' ? -1 : 1);
 
   if (targetDepth <= 0) {
-    return addMessage(
-      state,
-      "You cannot escape back to the surface yet! The Goblin King still lives.",
-      "system"
-    );
+    return addMessage(state, "You cannot escape back to the surface yet! The Goblin King still lives.", "system");
   }
 
   if (targetDepth > MAX_DUNGEON_DEPTH) {
-    return addMessage(
-      state,
-      "You have reached the bottom of the dungeon. There is nowhere deeper to go.",
-      "system"
-    );
+    return addMessage(state, "You have reached the bottom of the dungeon. There is nowhere deeper to go.", "system");
   }
 
-  // 1. Pack and save the current floor's non-player entities and map
-  const nonPlayerEntityIds = state.entities.filter((id) => id !== playerEntityId);
+  // 1. Pack and save the current floor
+  const nonPlayerEntityIds = state.entities.filter((id) => id !== entityId);
   const currentLevelComponents = new Map<EntityId, ReadonlyArray<Component>>();
   for (const id of nonPlayerEntityIds) {
     const comps = state.components.get(id);
@@ -110,67 +89,92 @@ export function transitionFloor(state: GameState, direction: 'up' | 'down'): Gam
     }
   }
 
+  // Remove the player's position from the saved index so they don't block stairs for others
   const currentLevelData: LevelData = {
     map: state.map,
     entities: nonPlayerEntityIds,
     components: currentLevelComponents,
+    spatialIndex: updateSpatialIndex({ ...state, entities: nonPlayerEntityIds, components: currentLevelComponents }).spatialIndex,
   };
 
   const nextLevels = new Map(state.levels);
   nextLevels.set(state.currentDepth, currentLevelData);
 
-  // 2. Load or generate the target floor
+  // 2. Load or generate target floor
   let targetMap: GameMap;
-  let nextEntities: ReadonlyArray<EntityId>;
-  let nextComponents: Map<EntityId, ReadonlyArray<Component>>;
+  let nextEntities: ReadonlyArray<EntityId> = [];
+  let nextComponents = new Map<EntityId, ReadonlyArray<Component>>();
   let spawnX: number;
   let spawnY: number;
 
   const savedTargetLevel = nextLevels.get(targetDepth);
 
   if (savedTargetLevel !== undefined) {
-    // Return to an existing floor
     targetMap = savedTargetLevel.map;
-    nextEntities = [playerEntityId, ...savedTargetLevel.entities];
+    nextEntities = [...savedTargetLevel.entities];
     nextComponents = new Map(savedTargetLevel.components);
 
-    // Find the corresponding stairs on the target map to place the player on
-    const entryStairsId = direction === 'up' ? 'stairs_down' : 'stairs_up';
-    const entryTile = targetMap.tiles.find((t) => t.tileId === entryStairsId);
-    if (entryTile !== undefined) {
-      spawnX = entryTile.x;
-      spawnY = entryTile.y;
-    } else {
-      // Fallback to center
+    // Find the corresponding stairs
+    let foundStairs = false;
+    for (const id of nextEntities) {
+      const interactable = nextComponents.get(id)?.find(c => c.type === ComponentType.Interactable) as InteractableComponent;
+      if (interactable && interactable.intents.some(i => i.type === IntentType.ChangeFloor && (i as ChangeFloorIntent).direction !== direction)) {
+        const pos = nextComponents.get(id)?.find(c => c.type === ComponentType.Position) as PositionComponent;
+        if (pos) {
+          spawnX = pos.x;
+          spawnY = pos.y;
+          foundStairs = true;
+          break;
+        }
+      }
+    }
+    
+    if (!foundStairs) {
       spawnX = Math.floor(targetMap.width / 2);
       spawnY = Math.floor(targetMap.height / 2);
     }
   } else {
-    // Generate a new floor
+    // Generate new floor
     const generated = generateDungeon(MAP_WIDTH, MAP_HEIGHT, targetDepth);
     targetMap = generated.map;
-    nextEntities = [playerEntityId];
-    nextComponents = new Map();
     spawnX = generated.startPos.x;
     spawnY = generated.startPos.y;
+    
+    // We can't use createEntity easily without a state object.
+    // Let's create a temporary state to use ECS functions.
+    let tempState: GameState = { ...state, entities: [], components: new Map(), map: targetMap };
+    
+    for (const stair of generated.stairs) {
+      let stairId: EntityId;
+      [tempState, stairId] = createEntity(tempState);
+      
+      const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
+      const render: RenderableComponent = {
+        type: ComponentType.Renderable,
+        glyph: stair.direction === 'up' ? '<' : '>',
+        fg: '#fff',
+        bg: '#000'
+      };
+      const interactable: InteractableComponent = {
+        type: ComponentType.Interactable,
+        intents: [ { type: IntentType.ChangeFloor, direction: stair.direction } as any ]
+      };
+      
+      tempState = addComponent(addComponent(addComponent(tempState, stairId, pos), stairId, render), stairId, interactable);
+    }
+    
+    nextEntities = tempState.entities;
+    nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
   }
 
-  // 3. Move the player entity to the spawn position on the target floor
-  const playerComponents = state.components.get(playerEntityId) ?? [];
-  const nextPlayerComponents = playerComponents.map((c) => {
-    if (c.type === ComponentType.Position) {
-      const nextPos: PositionComponent = {
-        type: ComponentType.Position,
-        x: spawnX,
-        y: spawnY,
-      };
-      return nextPos;
-    }
-    return c;
-  });
-  nextComponents.set(playerEntityId, nextPlayerComponents);
+  // 3. Move Player
+  nextEntities = [entityId, ...nextEntities];
+  const playerComponents = state.components.get(entityId) ?? [];
+  const nextPlayerComponents = playerComponents.map((c) =>
+    c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c
+  );
+  nextComponents.set(entityId, nextPlayerComponents);
 
-  // 4. Construct the new GameState
   let nextState: GameState = {
     ...state,
     entities: nextEntities,
@@ -179,13 +183,11 @@ export function transitionFloor(state: GameState, direction: 'up' | 'down'): Gam
     currentDepth: targetDepth,
     levels: nextLevels,
   };
+  
+  nextState = updateSpatialIndex(nextState);
 
-  // 5. Append a descriptive message log entry
-  const msg = direction === 'up'
-    ? `You ascend to level ${targetDepth}.`
-    : `You descend to level ${targetDepth}.`;
+  const msg = direction === 'up' ? `You ascend to level ${targetDepth}.` : `You descend to level ${targetDepth}.`;
   nextState = addMessage(nextState, msg, 'system');
 
-  // 6. Refresh FOV for the player on the new floor
   return updateExploredTiles(nextState);
 }

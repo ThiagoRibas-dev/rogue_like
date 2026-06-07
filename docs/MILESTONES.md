@@ -22,14 +22,14 @@ Introduce procedural generation and line-of-sight to make the world feel like a 
 - [x] Implement a **static centered** Camera/Viewport system.
 - [x] Implement Stairs and multiple dungeon levels (Up, Down, Ground Floor).
 
-## 🟡 Milestone 3: The Engine, Scheduling, & Extensible Actions
+## 🟢 Milestone 3: The Engine, Scheduling, & Extensible Actions
 Transition from simple input-driven updates to a robust turn queue with a generalized, pluggable action system.
-- [ ] Implement `ROT.Scheduler.Speed` and the formal Game Loop.
-- [ ] **Formalize the Command (intent) -> Action (validation) -> Event (result) distinction.**
-- [ ] Design an Extensible Action System (actions are classes/functions that return intents).
-- [ ] Support Contextual 'Interact' Actions and Aimed/AoE actions.
-- [ ] **Implement an Entity Spatial Index (fast "what is at X,Y?" lookups).**
-- [ ] **Implement Debug/Cheat tools (reveal map, god mode, spawn entity).**
+- [x] Implement `ROT.Scheduler.Speed` and the formal Game Loop.
+- [x] **Formalize the Command (intent) -> Action (validation) -> Event (result) distinction.**
+- [x] Design an Extensible Action System (actions are classes/functions that return intents).
+- [x] Support Contextual 'Interact' Actions and Aimed/AoE actions.
+- [x] **Implement an Entity Spatial Index (fast "what is at X,Y?" lookups).**
+- [x] **Implement Debug/Cheat tools (reveal map, god mode, spawn entity).**
 
 ## 🟡 Milestone 4: Entities & Combat (MVP Baseline)
 Bring the dungeon to life with interactive actors and the core combat loop.
