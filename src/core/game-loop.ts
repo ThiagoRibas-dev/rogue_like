@@ -1,14 +1,21 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type GodModeComponent, type PositionComponent, type RenderableComponent, type ActorComponent } from '../types/components.types.ts';
-import { getComponent, createEntity, addComponent, updateSpatialIndex } from './ecs.ts';
-import { lockEngine, unlockEngine } from './scheduler.ts';
+import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
+import { getComponent, spawnEntity } from './ecs.ts';
+import { lockEngine, unlockEngine, addActor } from './scheduler.ts';
 import { IntentType, type Intent } from '../types/intents.types.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import { processInteractIntent, processChangeFloorIntent } from '../systems/map.system.ts';
-import { addMessage } from '../systems/message.system.ts';
+import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
-import { processToggleTargetingIntent, processMoveTargetIntent, processFireAimedIntent } from '../systems/targeting.system.ts';
+import {
+  processToggleTargetingIntent,
+  processMoveTargetIntent,
+  processFireAimedIntent
+} from '../systems/targeting.system.ts';
+import { processMeleeAttackIntent } from '../systems/combat.system.ts';
+import { processAITurn } from '../systems/ai.system.ts';
 import { coordToIndex } from '../utils/grid.ts';
+import { assertNever } from '../utils/assert.ts';
 import { TILE_REGISTRY } from '../constants/tile.constants.ts';
 
 let currentState: GameState | null = null;
@@ -19,7 +26,7 @@ export function setGameState(state: GameState): void {
 }
 
 export function getGameState(): GameState {
-  if (!currentState) throw new Error("Game state not initialized");
+  if (!currentState) throw new Error('Game state not initialized');
   return currentState;
 }
 
@@ -34,15 +41,32 @@ function updateState(newState: GameState): void {
   }
 }
 
-// The command queue for the player
-const playerQueue: Intent[] = [];
-
 /**
- * Pushes an intent into the player's queue and resumes the engine if it was locked.
+ * Immediately applies the player's intent and unlocks the engine so AI can act.
  */
 export function queuePlayerIntent(intent: Intent): void {
-  playerQueue.push(intent);
-  unlockEngine();
+  const state = getGameState();
+  if (state.isGameOver) return;
+
+  const nextState = applyIntent(state, intent);
+  if (nextState !== state) {
+    // Always update FOV after the player acts
+    updateState(updateExploredTiles(nextState));
+  }
+
+  // Only unlock the engine if the intent consumes a turn (time)
+  const consumesTurn = [
+    IntentType.Move,
+    IntentType.Wait,
+    IntentType.Interact,
+    IntentType.ChangeFloor,
+    IntentType.MeleeAttack,
+    IntentType.FireAimed
+  ].includes(intent.type);
+
+  if (consumesTurn) {
+    unlockEngine();
+  }
 }
 
 /**
@@ -50,25 +74,23 @@ export function queuePlayerIntent(intent: Intent): void {
  */
 export function processTurn(entityId: EntityId): void {
   const state = getGameState();
+  if (state.isGameOver) {
+    lockEngine();
+    return;
+  }
+
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
 
   if (isPlayer) {
-    if (playerQueue.length === 0) {
-      // Pause engine, wait for UI to call queuePlayerIntent()
-      lockEngine();
-      return;
-    }
-    
-    const intent = playerQueue.shift();
-    if (intent) {
-      const nextState = applyIntent(state, intent);
-      if (nextState !== state) {
-         // After player acts, always update FOV
-         updateState(updateExploredTiles(nextState));
-      }
-    }
+    // It's the player's turn. We lock the engine and wait for UI input.
+    // The UI will call queuePlayerIntent() which executes the move and unlocks the engine.
+    lockEngine();
   } else {
-    // For now (M3), AI just skips its turn.
+    // AI Turn
+    const nextState = processAITurn(state, entityId);
+    if (nextState !== state) {
+      updateState(nextState);
+    }
   }
 }
 
@@ -80,12 +102,14 @@ function applyIntent(state: GameState, intent: Intent): GameState {
     case IntentType.Move:
       return processMoveIntent(state, intent);
     case IntentType.Wait:
-      return addMessage(state, 'You wait a moment.', 'system');
+      return addMessage(state, 'You wait a moment.', MessageLogCategory.System);
     case IntentType.Interact:
       return processInteractIntent(state, intent);
     case IntentType.ChangeFloor:
       return processChangeFloorIntent(state, intent);
-      
+    case IntentType.MeleeAttack:
+      return processMeleeAttackIntent(state, intent);
+
     // --- TARGETING INTENTS ---
     case IntentType.ToggleTargeting:
       return processToggleTargetingIntent(state, intent);
@@ -93,46 +117,59 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       return processMoveTargetIntent(state, intent);
     case IntentType.FireAimed:
       return processFireAimedIntent(state, intent);
-      
+
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {
       const nextMap = { ...state.map, isFullyExplored: !state.map.isFullyExplored };
       const msg = nextMap.isFullyExplored ? '[DEBUG] Map Revealed.' : '[DEBUG] Map Hidden.';
-      return addMessage({ ...state, map: nextMap }, msg, 'system');
+      return addMessage({ ...state, map: nextMap }, msg, MessageLogCategory.System);
     }
-    
+
     case IntentType.DebugGodMode: {
       const { entityId } = intent;
       const hasGodMode = getComponent(state, entityId, ComponentType.GodMode) !== undefined;
-      
-      let nextComponents = new Map(state.components);
-      let entityComps = state.components.get(entityId) || [];
-      
+
+      const nextComponents = new Map(state.components);
+      const entityComps = state.components.get(entityId) || [];
+
       if (hasGodMode) {
         // Remove GodMode
-        nextComponents.set(entityId, entityComps.filter(c => c.type !== ComponentType.GodMode));
-        return addMessage({ ...state, components: nextComponents }, '[DEBUG] God Mode Disabled.', 'system');
+        nextComponents.set(
+          entityId,
+          entityComps.filter((c) => c.type !== ComponentType.GodMode)
+        );
+        return addMessage(
+          { ...state, components: nextComponents },
+          '[DEBUG] God Mode Disabled.',
+          MessageLogCategory.System
+        );
       } else {
         // Add GodMode
         const godCmp: GodModeComponent = { type: ComponentType.GodMode };
         nextComponents.set(entityId, [...entityComps, godCmp]);
-        return addMessage({ ...state, components: nextComponents }, '[DEBUG] God Mode Enabled.', 'system');
+        return addMessage(
+          { ...state, components: nextComponents },
+          '[DEBUG] God Mode Enabled.',
+          MessageLogCategory.System
+        );
       }
     }
-    
+
     case IntentType.DebugSpawnEntity: {
       const pos = getComponent(state, intent.entityId, ComponentType.Position);
       if (!pos) return state;
-      
+
       // Find an empty adjacent tile
       const neighbors = [
-        { x: pos.x + 1, y: pos.y }, { x: pos.x - 1, y: pos.y },
-        { x: pos.x, y: pos.y + 1 }, { x: pos.x, y: pos.y - 1 }
+        { x: pos.x + 1, y: pos.y },
+        { x: pos.x - 1, y: pos.y },
+        { x: pos.x, y: pos.y + 1 },
+        { x: pos.x, y: pos.y - 1 }
       ];
-      
+
       let spawnX = -1;
       let spawnY = -1;
-      
+
       for (const n of neighbors) {
         const idx = coordToIndex(n.x, n.y, state.map.width);
         const tile = state.map.tiles[idx];
@@ -145,29 +182,21 @@ function applyIntent(state: GameState, intent: Intent): GameState {
           }
         }
       }
-      
+
       if (spawnX === -1) {
-         return addMessage(state, '[DEBUG] No room to spawn entity.', 'system');
+        return addMessage(state, '[DEBUG] No room to spawn entity.', MessageLogCategory.System);
       }
-      
-      let nextState = state;
-      let newEntityId: EntityId;
-      [nextState, newEntityId] = createEntity(nextState);
-      
-      const newPos: PositionComponent = { type: ComponentType.Position, x: spawnX, y: spawnY };
-      const render: RenderableComponent = { type: ComponentType.Renderable, glyph: 'o', fg: '#2ecc71', bg: 'transparent' };
-      const actor: ActorComponent = { type: ComponentType.Actor, speed: 100 };
-      
-      nextState = addComponent(nextState, newEntityId, newPos);
-      nextState = addComponent(nextState, newEntityId, render);
-      nextState = addComponent(nextState, newEntityId, actor);
-      
-      nextState = updateSpatialIndex(nextState);
-      
-      return addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, 'system');
+
+      const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
+      const nextState = stateAfterSpawn;
+
+      const actorSpeed = getComponent(nextState, newEntityId, ComponentType.Actor)?.speed ?? 100;
+      addActor(newEntityId, actorSpeed);
+
+      return addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System);
     }
-    
+
     default:
-      return state;
+      return assertNever(intent);
   }
 }

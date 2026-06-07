@@ -6,13 +6,13 @@ import { type GameState } from '../types/game-state.types.ts';
  */
 export function renderMessageLog(state: GameState): void {
   const messageLog = document.getElementById('message-log');
-  
+
   if (!messageLog) {
     return; // Fast fail if DOM element doesn't exist
   }
 
   // Clear existing messages
-  // (In a more complex app, we might diff this or use a virtual DOM, 
+  // (In a more complex app, we might diff this or use a virtual DOM,
   // but for our MVP, replacing innerHTML is fast enough given the small count)
   messageLog.innerHTML = '';
 
@@ -22,7 +22,7 @@ export function renderMessageLog(state: GameState): void {
     entry.className = 'log-entry';
     if (msg.cssClass) {
       // Allow adding multiple classes separated by spaces if needed
-      msg.cssClass.split(' ').forEach(cls => entry.classList.add(cls));
+      msg.cssClass.split(' ').forEach((cls) => entry.classList.add(cls));
     }
     entry.textContent = msg.text;
     messageLog.appendChild(entry);

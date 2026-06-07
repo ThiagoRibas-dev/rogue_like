@@ -2,25 +2,47 @@ import * as ROT from 'rot-js';
 import './index.css';
 import { DISPLAY_WIDTH, DISPLAY_HEIGHT, FONT_SIZE, FONT_FAMILY } from './constants/ui.constants.ts';
 import { COLOR_BACKGROUND, COLOR_PLAYER_FG, COLOR_STAIRS_FG } from './constants/colors.constants.ts';
-import { GLYPH_PLAYER, GLYPH_STAIRS_UP, GLYPH_STAIRS_DOWN } from './constants/glyphs.constants.ts';
+import { GLYPH_STAIRS_UP, GLYPH_STAIRS_DOWN } from './constants/glyphs.constants.ts';
 import { type GameState, type EntityId } from './types/game-state.types.ts';
-import { ComponentType, type PlayerComponent, type PositionComponent, type RenderableComponent, type ActorComponent, type InteractableComponent } from './types/components.types.ts';
-import { addComponent, createEntity } from './core/ecs.ts';
+import {
+  ComponentType,
+  type PositionComponent,
+  type RenderableComponent,
+  type InteractableComponent
+} from './types/components.types.ts';
+import { addComponent, createEntity, spawnEntity, getComponent } from './core/ecs.ts';
 import { Direction } from './utils/direction.ts';
 import { render } from './rendering/renderer.ts';
 import { initRNG } from './core/rng.ts';
-import { MOVEMENT_KEYS, WAIT_KEY, DEBUG_REVEAL_MAP_KEY, DEBUG_GOD_MODE_KEY, DEBUG_SPAWN_ENTITY_KEY, TARGET_TOGGLE_KEY, TARGET_CONFIRM_KEY } from './constants/keybinds.constants.ts';
-import { addMessage } from './systems/message.system.ts';
+import {
+  MOVEMENT_KEYS,
+  WAIT_KEY,
+  DEBUG_REVEAL_MAP_KEY,
+  DEBUG_GOD_MODE_KEY,
+  DEBUG_SPAWN_ENTITY_KEY,
+  TARGET_TOGGLE_KEY,
+  TARGET_CONFIRM_KEY
+} from './constants/keybinds.constants.ts';
+import { addMessage, MessageLogCategory } from './systems/message.system.ts';
 import { renderMessageLog } from './rendering/ui.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
+import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from './constants/spawning.constants.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
-import { createDebugRevealMapAction, createDebugGodModeAction, createDebugSpawnEntityAction } from './actions/debug.actions.ts';
-import { createToggleTargetingAction, createMoveTargetAction, createFireAimedAction } from './actions/targeting.actions.ts';
-import { IntentType } from './types/intents.types.ts';
+import {
+  createDebugRevealMapAction,
+  createDebugGodModeAction,
+  createDebugSpawnEntityAction
+} from './actions/debug.actions.ts';
+import {
+  createToggleTargetingAction,
+  createMoveTargetAction,
+  createFireAimedAction
+} from './actions/targeting.actions.ts';
+import { IntentType, type ChangeFloorIntent } from './types/intents.types.ts';
 import { getDirectionDelta } from './utils/direction.ts';
 
 // 0. Initialize RNG
@@ -51,7 +73,7 @@ if (container) {
 }
 
 // 4. Initialize the Game State with a procedurally generated level
-const { map: initialMap, startPos, stairs } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
+const { map: initialMap, startPos, stairs, rooms } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
 
 let state: GameState = {
   entities: [],
@@ -61,28 +83,35 @@ let state: GameState = {
   messages: [],
   currentDepth: 1,
   levels: new Map(),
-  spatialIndex: new Map()
+  spatialIndex: new Map(),
+  isGameOver: false
 };
 
 // Spawn the player entity
-let playerEntityId: EntityId;
-[state, playerEntityId] = createEntity(state);
+const [stateAfterPlayerSpawn, playerEntityId] = spawnEntity(state, 'player', startPos.x, startPos.y);
+state = stateAfterPlayerSpawn;
 
-const playerPos: PositionComponent = { type: ComponentType.Position, x: startPos.x, y: startPos.y };
-const playerRender: RenderableComponent = { type: ComponentType.Renderable, glyph: GLYPH_PLAYER, fg: COLOR_PLAYER_FG, bg: COLOR_BACKGROUND };
-const playerTag: PlayerComponent = { type: ComponentType.Player };
-const playerActor: ActorComponent = { type: ComponentType.Actor, speed: 100 };
+// Spawn monsters in rooms
+for (let i = 1; i < rooms.length; i++) {
+  const room = rooms[i];
+  if (!room) continue;
 
-state = addComponent(state, playerEntityId, playerPos);
-state = addComponent(state, playerEntityId, playerRender);
-state = addComponent(state, playerEntityId, playerTag);
-state = addComponent(state, playerEntityId, playerActor);
+  const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
+  for (let m = 0; m < numMonsters; m++) {
+    const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+    const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+    const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+
+    // Quick check to avoid spawning exactly on stairs or another entity (for now, just spawn)
+    [state] = spawnEntity(state, template, mx, my);
+  }
+}
 
 // Spawn the stairs for the first floor
 for (const stair of stairs) {
   let stairId: EntityId;
   [state, stairId] = createEntity(state);
-  
+
   const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
   const renderCmp: RenderableComponent = {
     type: ComponentType.Renderable,
@@ -92,9 +121,9 @@ for (const stair of stairs) {
   };
   const interactable: InteractableComponent = {
     type: ComponentType.Interactable,
-    intents: [ { type: IntentType.ChangeFloor, direction: stair.direction } as any ]
+    intents: [{ type: IntentType.ChangeFloor, direction: stair.direction } as ChangeFloorIntent]
   };
-  
+
   state = addComponent(state, stairId, pos);
   state = addComponent(state, stairId, renderCmp);
   state = addComponent(state, stairId, interactable);
@@ -104,16 +133,36 @@ for (const stair of stairs) {
 state = updateExploredTiles(state);
 
 // Add initial startup messages
-state = addMessage(state, 'Milestone 3: Engine, Scheduling & Intents active.', 'system');
+state = addMessage(state, 'Milestone 3: Engine, Scheduling & Intents active.', MessageLogCategory.System);
 
 /**
- * Updates the HTML-based HUD sidebar to show the current level depth.
+ * Updates the HTML-based HUD sidebar to show the current level depth and player health.
  * @param s The current GameState.
  */
 function updateHUD(s: GameState): void {
   const depthElement = document.getElementById('dungeon-depth');
   if (depthElement !== null) {
     depthElement.textContent = `B${s.currentDepth}`;
+  }
+
+  const hpBarFill = document.querySelector('.health-bar') as HTMLElement | null;
+  const hpBarText = document.querySelector('.health-bar + .bar-text') as HTMLElement | null;
+
+  const players = s.entities.filter((id) => getComponent(s, id, ComponentType.Player));
+  if (players.length > 0 && players[0] !== undefined) {
+    const fighter = getComponent(s, players[0], ComponentType.Fighter);
+    if (fighter) {
+      if (hpBarFill) {
+        const percent = Math.max(0, Math.min(100, Math.round((fighter.hp / fighter.maxHp) * 100)));
+        hpBarFill.style.width = `${percent}%`;
+      }
+      if (hpBarText) {
+        hpBarText.textContent = `${fighter.hp} / ${fighter.maxHp}`;
+      }
+    }
+  } else if (s.isGameOver) {
+    if (hpBarFill) hpBarFill.style.width = '0%';
+    if (hpBarText) hpBarText.textContent = 'DEAD';
   }
 }
 
@@ -169,11 +218,11 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   }
 
   const direction: Direction | undefined = MOVEMENT_KEYS[event.keyCode];
-  
+
   if (direction !== undefined) {
     event.preventDefault(); // Prevent standard page scroll
     const { dx, dy } = getDirectionDelta(direction);
-    
+
     if (isTargeting) {
       queuePlayerIntent(createMoveTargetAction(playerEntityId, dx, dy));
     } else {
@@ -182,7 +231,7 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   } else if (event.keyCode === WAIT_KEY) {
     event.preventDefault();
     queuePlayerIntent(createWaitAction(playerEntityId));
-  } else if (!isTargeting && (event.key === '>' || event.key === '<' || event.keyCode === ROT.KEYS.VK_LESS_THAN || event.keyCode === ROT.KEYS.VK_GREATER_THAN)) {
+  } else if (!isTargeting && (event.key === '>' || event.key === '<' || event.key === '.' || event.key === ',')) {
     event.preventDefault();
     queuePlayerIntent(createInteractAction(playerEntityId));
   }
@@ -190,5 +239,10 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
 
 // 7. Start the Engine
 initEngine();
-addActor(playerEntityId, 100);
+for (const id of state.entities) {
+  const actor = getComponent(state, id, ComponentType.Actor);
+  if (actor) {
+    addActor(id, actor.speed);
+  }
+}
 startEngine();

@@ -4,10 +4,10 @@ import { assertNever } from './assert.ts';
  * Enum of possible movement directions.
  */
 export const enum Direction {
-  North = "North",
-  South = "South",
-  East = "East",
-  West = "West",
+  North = 'North',
+  South = 'South',
+  East = 'East',
+  West = 'West'
 }
 
 /**

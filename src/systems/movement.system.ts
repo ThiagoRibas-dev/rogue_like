@@ -4,7 +4,9 @@ import { getComponent, updateSpatialIndex } from '../core/ecs.ts';
 import { TILE_REGISTRY } from '../constants/tile.constants.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import type { MoveIntent } from '../types/intents.types.ts';
-import { addMessage } from './message.system.ts';
+import { IntentType } from '../types/intents.types.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
+import { processMeleeAttackIntent } from './combat.system.ts';
 
 /**
  * Processes a MoveIntent.
@@ -16,7 +18,7 @@ import { addMessage } from './message.system.ts';
  */
 export function processMoveIntent(state: GameState, intent: MoveIntent): GameState {
   const { entityId, dx, dy } = intent;
-  
+
   const position = getComponent(state, entityId, ComponentType.Position);
   if (position === undefined) {
     return state;
@@ -40,7 +42,7 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): GameSta
   if (tileDef === undefined || !tileDef.walkable) {
     const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
     if (isPlayer) {
-      return addMessage(state, 'Ouch! You bumped into a wall.', 'combat-hit');
+      return addMessage(state, 'Ouch! You bumped into a wall.', MessageLogCategory.CombatHit);
     }
     return state;
   }
@@ -49,20 +51,32 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): GameSta
   const targetKey = `${targetX},${targetY}`;
   const entitiesAtTarget = state.spatialIndex.get(targetKey);
   if (entitiesAtTarget !== undefined && entitiesAtTarget.length > 0) {
+    let defenderId: EntityId | undefined;
     let isBlocked = false;
+
     for (const id of entitiesAtTarget) {
-      if (getComponent(state, id, ComponentType.Actor) !== undefined) {
+      if (getComponent(state, id, ComponentType.Fighter) !== undefined) {
+        defenderId = id;
         isBlocked = true;
         break;
       }
+      if (getComponent(state, id, ComponentType.Actor) !== undefined) {
+        isBlocked = true;
+      }
     }
-    
+
+    if (defenderId !== undefined) {
+      return processMeleeAttackIntent(state, {
+        type: IntentType.MeleeAttack,
+        entityId,
+        defenderId
+      });
+    }
+
     if (isBlocked) {
-      // For M3, any Actor blocks movement. 
-      // In M4, this will trigger a MeleeAttackIntent instead.
       const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
       if (isPlayer) {
-        return addMessage(state, 'Something is in the way.', 'combat-hit');
+        return addMessage(state, 'Something is in the way.', MessageLogCategory.CombatHit);
       }
       return state;
     }
@@ -72,7 +86,7 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): GameSta
   const nextPosition: PositionComponent = {
     type: ComponentType.Position,
     x: targetX,
-    y: targetY,
+    y: targetY
   };
 
   const entityComponents: ReadonlyArray<Component> | undefined = state.components.get(entityId);
@@ -89,7 +103,7 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): GameSta
 
   const nextState = {
     ...state,
-    components: nextComponents,
+    components: nextComponents
   };
 
   // Rebuild spatial index since a position changed

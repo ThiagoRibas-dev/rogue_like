@@ -31,18 +31,18 @@ Transition from simple input-driven updates to a robust turn queue with a genera
 - [x] **Implement an Entity Spatial Index (fast "what is at X,Y?" lookups).**
 - [x] **Implement Debug/Cheat tools (reveal map, god mode, spawn entity).**
 
-## 🟡 Milestone 4: Entities & Combat (MVP Baseline)
+## 🟢 Milestone 4: Entities & Combat (MVP Baseline)
 Bring the dungeon to life with interactive actors and the core combat loop.
-- [ ] Implement the Entity Registry (Data-driven spawning).
-- [ ] **Define basic Entity Stat schema (HP, attack, defense).**
-- [ ] **Implement Bump-to-Attack collision resolution.**
-- [ ] Implement the Combat System (Baseline Health only for MVP, attack stats, melee damage).
-- [ ] Implement a basic AI System (Wandering, Hunting).
-- [ ] Connect combat events to the Message Log UI.
-- [ ] Implement Monster Death.
-- [ ] **Implement Player Death state flag (halt game processing).**
+- [x] Implement the Entity Registry (Data-driven spawning).
+- [x] **Define basic Entity Stat schema (HP, attack, defense).**
+- [x] **Implement Bump-to-Attack collision resolution.**
+- [x] Implement the Combat System (Baseline Health only for MVP, attack stats, melee damage).
+- [x] Implement a basic AI System (Wandering, Hunting).
+- [x] Connect combat events to the Message Log UI.
+- [x] Implement Monster Death.
+- [x] **Implement Player Death state flag (halt game processing).**
 
-## 🟡 Milestone 5: Items & Inventory
+## 🟢 Milestone 5: Items & Inventory (Currently Active)
 Add tactical depth through loot.
 - [ ] **Implement the Data-driven Item Registry.**
 - [ ] Spawning items on the map.

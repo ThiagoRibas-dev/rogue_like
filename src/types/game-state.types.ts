@@ -64,6 +64,7 @@ export interface GameState {
   readonly currentDepth: number;
   readonly levels: ReadonlyMap<number, LevelData>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
+  readonly isGameOver: boolean;
   readonly targetingMode?: {
     readonly active: boolean;
     readonly x: number;

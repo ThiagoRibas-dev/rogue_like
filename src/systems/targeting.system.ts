@@ -2,7 +2,7 @@ import { type GameState } from '../types/game-state.types.ts';
 import { type ToggleTargetingIntent, type MoveTargetIntent, type FireAimedIntent } from '../types/intents.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
-import { addMessage } from './message.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
  * Toggles targeting mode on or off.
@@ -10,22 +10,26 @@ import { addMessage } from './message.system.ts';
 export function processToggleTargetingIntent(state: GameState, intent: ToggleTargetingIntent): GameState {
   if (state.targetingMode?.active) {
     // Turn off targeting mode
-    const { targetingMode, ...restState } = state;
-    return addMessage(restState as GameState, 'Targeting cancelled.', 'system');
+    const { targetingMode: _targetingMode, ...restState } = state;
+    return addMessage(restState as GameState, 'Targeting cancelled.', MessageLogCategory.System);
   }
 
   // Turn on targeting mode, default target to the entity's current position
   const pos = getComponent(state, intent.entityId, ComponentType.Position);
   if (!pos) return state;
 
-  return addMessage({
-    ...state,
-    targetingMode: {
-      active: true,
-      x: pos.x,
-      y: pos.y
-    }
-  }, 'Targeting mode active. Move cursor to aim.', 'system');
+  return addMessage(
+    {
+      ...state,
+      targetingMode: {
+        active: true,
+        x: pos.x,
+        y: pos.y
+      }
+    },
+    'Targeting mode active. Move cursor to aim.',
+    MessageLogCategory.System
+  );
 }
 
 /**
@@ -62,9 +66,13 @@ export function processFireAimedIntent(state: GameState, _intent: FireAimedInten
   const targetY = state.targetingMode.y;
 
   // In Milestone 3, we just log a message as a stub, since Combat comes in M4.
-  const stateWithMsg = addMessage(state, `You target the tile at ${targetX}, ${targetY}.`, 'combat');
+  const stateWithMsg = addMessage(
+    state,
+    `You target the tile at ${targetX}, ${targetY}.`,
+    MessageLogCategory.CombatHit
+  );
 
   // Turn off targeting
-  const { targetingMode, ...restState } = stateWithMsg;
+  const { targetingMode: _targetingMode, ...restState } = stateWithMsg;
   return restState as GameState;
 }

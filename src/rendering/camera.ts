@@ -19,11 +19,7 @@ export interface CameraOffset {
  * @param viewportHeight The height of the screen viewport in cells.
  * @returns The CameraOffset coordinate object.
  */
-export function getCameraOffset(
-  state: GameState,
-  viewportWidth: number,
-  viewportHeight: number
-): CameraOffset {
+export function getCameraOffset(state: GameState, viewportWidth: number, viewportHeight: number): CameraOffset {
   const players = queryEntities(state, [ComponentType.Player, ComponentType.Position]);
   const playerEntityId = players[0];
 

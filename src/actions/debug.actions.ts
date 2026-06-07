@@ -1,5 +1,10 @@
 import type { EntityId } from '../types/game-state.types.ts';
-import { IntentType, type DebugRevealMapIntent, type DebugGodModeIntent, type DebugSpawnEntityIntent } from '../types/intents.types.ts';
+import {
+  IntentType,
+  type DebugRevealMapIntent,
+  type DebugGodModeIntent,
+  type DebugSpawnEntityIntent
+} from '../types/intents.types.ts';
 
 /**
  * Creates a debug intent to reveal the map.

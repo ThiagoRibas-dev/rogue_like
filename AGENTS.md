@@ -147,8 +147,8 @@ my-roguelike/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
+├── verify.bat                    ← runs tsc && vite build
 ├── scripts/
-│   ├── check.sh                  ← runs tsc --noEmit && eslint && prettier --check
 │   └── map-codebase.ts           ← generates a summary of all exports (see §8)
 └── src/
     ├── main.ts                   ← entry point: bootstraps Display, starts game

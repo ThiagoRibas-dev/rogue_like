@@ -28,7 +28,7 @@ export const MOVEMENT_KEYS: Readonly<Record<number, Direction>> = {
   [ROT.KEYS.VK_NUMPAD8]: Direction.North,
   [ROT.KEYS.VK_NUMPAD2]: Direction.South,
   [ROT.KEYS.VK_NUMPAD4]: Direction.West,
-  [ROT.KEYS.VK_NUMPAD6]: Direction.East,
+  [ROT.KEYS.VK_NUMPAD6]: Direction.East
 };
 
 /**

@@ -4,16 +4,17 @@ import type { EntityId } from './game-state.types.ts';
  * Enum defining the different types of Intents that can be returned by Actions.
  */
 export const enum IntentType {
-  Move = "Move",
-  Wait = "Wait",
-  Interact = "Interact",
-  ChangeFloor = "ChangeFloor",
-  DebugRevealMap = "DebugRevealMap",
-  DebugGodMode = "DebugGodMode",
-  DebugSpawnEntity = "DebugSpawnEntity",
-  ToggleTargeting = "ToggleTargeting",
-  MoveTarget = "MoveTarget",
-  FireAimed = "FireAimed",
+  Move = 'Move',
+  Wait = 'Wait',
+  Interact = 'Interact',
+  ChangeFloor = 'ChangeFloor',
+  DebugRevealMap = 'DebugRevealMap',
+  DebugGodMode = 'DebugGodMode',
+  DebugSpawnEntity = 'DebugSpawnEntity',
+  ToggleTargeting = 'ToggleTargeting',
+  MoveTarget = 'MoveTarget',
+  FireAimed = 'FireAimed',
+  MeleeAttack = 'MeleeAttack'
 }
 
 /**
@@ -102,16 +103,26 @@ export interface FireAimedIntent {
 }
 
 /**
+ * Intent to attack a specific entity in melee.
+ */
+export interface MeleeAttackIntent {
+  readonly type: IntentType.MeleeAttack;
+  readonly entityId: EntityId;
+  readonly defenderId: EntityId;
+}
+
+/**
  * Discriminated union of all possible Intents.
  */
-export type Intent = 
-  | MoveIntent 
-  | WaitIntent 
-  | InteractIntent 
+export type Intent =
+  | MoveIntent
+  | WaitIntent
+  | InteractIntent
   | ChangeFloorIntent
   | DebugRevealMapIntent
   | DebugGodModeIntent
   | DebugSpawnEntityIntent
   | ToggleTargetingIntent
   | MoveTargetIntent
-  | FireAimedIntent;
+  | FireAimedIntent
+  | MeleeAttackIntent;

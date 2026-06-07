@@ -3,12 +3,15 @@ import type { EntityId } from '../types/game-state.types.ts';
 import { processTurn } from './game-loop.ts';
 
 class SchedulerActor {
-  constructor(public readonly id: EntityId, private speed: number) {}
-  
+  constructor(
+    public readonly id: EntityId,
+    private speed: number
+  ) {}
+
   act(): void {
     processTurn(this.id);
   }
-  
+
   getSpeed(): number {
     return this.speed;
   }

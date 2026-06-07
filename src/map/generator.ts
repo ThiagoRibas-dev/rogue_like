@@ -9,7 +9,7 @@ import {
   MIN_CORRIDOR_LENGTH,
   MAX_CORRIDOR_LENGTH,
   DUG_PERCENTAGE,
-  MAX_DUNGEON_DEPTH,
+  MAX_DUNGEON_DEPTH
 } from '../constants/map.constants.ts';
 
 /**
@@ -25,10 +25,18 @@ export function generateDungeon(
   width: number,
   height: number,
   depth: number
-): { 
-  readonly map: GameMap; 
+): {
+  readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };
   readonly stairs: ReadonlyArray<{ readonly x: number; readonly y: number; readonly direction: 'up' | 'down' }>;
+  readonly rooms: ReadonlyArray<{
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+    readonly centerX: number;
+    readonly centerY: number;
+  }>;
 } {
   // 1. Initialize empty flat array of tiles filled with walls
   const tiles: Tile[] = [];
@@ -38,7 +46,7 @@ export function generateDungeon(
         tileId: 'stone_wall',
         x,
         y,
-        explored: false,
+        explored: false
       });
     }
   }
@@ -49,7 +57,7 @@ export function generateDungeon(
     roomWidth: [MIN_ROOM_WIDTH, MAX_ROOM_WIDTH],
     roomHeight: [MIN_ROOM_HEIGHT, MAX_ROOM_HEIGHT],
     corridorLength: [MIN_CORRIDOR_LENGTH, MAX_CORRIDOR_LENGTH],
-    dugPercentage: DUG_PERCENTAGE,
+    dugPercentage: DUG_PERCENTAGE
   });
 
   // 3. Dig the dungeon!
@@ -61,7 +69,7 @@ export function generateDungeon(
       if (tile !== undefined) {
         tiles[index] = {
           ...tile,
-          tileId: 'stone_floor',
+          tileId: 'stone_floor'
         };
       }
     }
@@ -92,7 +100,7 @@ export function generateDungeon(
     if (tile !== undefined) {
       tiles[startIndex] = {
         ...tile,
-        tileId: 'stone_floor', // Ensure it's a floor underneath
+        tileId: 'stone_floor' // Ensure it's a floor underneath
       };
       stairs.push({ x: startX, y: startY, direction: 'up' });
     }
@@ -115,7 +123,7 @@ export function generateDungeon(
     if (tile !== undefined) {
       tiles[exitIndex] = {
         ...tile,
-        tileId: 'stone_floor', // Ensure it's a floor underneath
+        tileId: 'stone_floor' // Ensure it's a floor underneath
       };
       stairs.push({ x: stairsDownX, y: stairsDownY, direction: 'down' });
     }
@@ -154,12 +162,25 @@ export function generateDungeon(
   const map: GameMap = {
     width,
     height,
-    tiles,
+    tiles
   };
+
+  const parsedRooms = rooms.map((r) => {
+    const center = r.getCenter();
+    return {
+      left: r.getLeft(),
+      right: r.getRight(),
+      top: r.getTop(),
+      bottom: r.getBottom(),
+      centerX: center[0]!,
+      centerY: center[1]!
+    };
+  });
 
   return {
     map,
     startPos: { x: startX, y: startY },
     stairs,
+    rooms: parsedRooms
   };
 }

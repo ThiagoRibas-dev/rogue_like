@@ -2,12 +2,14 @@
  * Enum defining the types of components available in the Entity-Component-System.
  */
 export const enum ComponentType {
-  Position = "Position",
-  Renderable = "Renderable",
-  Player = "Player",
-  Actor = "Actor",
-  Interactable = "Interactable",
-  GodMode = "GodMode",
+  Position = 'Position',
+  Renderable = 'Renderable',
+  Player = 'Player',
+  Actor = 'Actor',
+  Interactable = 'Interactable',
+  GodMode = 'GodMode',
+  Fighter = 'Fighter',
+  AI = 'AI'
 }
 
 /**
@@ -62,12 +64,42 @@ export interface GodModeComponent {
 }
 
 /**
+ * Component representing the combat stats of an entity.
+ */
+export interface FighterComponent {
+  readonly type: ComponentType.Fighter;
+  readonly maxHp: number;
+  readonly hp: number;
+  readonly attack: number;
+  readonly defense: number;
+}
+
+/**
+ * Enum defining the types of AI behavior.
+ */
+export const enum AIBehavior {
+  BasicMelee = 'basic_melee'
+}
+
+/**
+ * Component representing the AI behavior type of an entity.
+ */
+export interface AIComponent {
+  readonly type: ComponentType.AI;
+  readonly behavior: AIBehavior;
+  readonly aggroRadius?: number;
+  readonly wanders?: boolean;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
-export type Component = 
-  | PositionComponent 
-  | RenderableComponent 
+export type Component =
+  | PositionComponent
+  | RenderableComponent
   | PlayerComponent
   | ActorComponent
   | InteractableComponent
-  | GodModeComponent;
+  | GodModeComponent
+  | FighterComponent
+  | AIComponent;

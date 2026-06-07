@@ -21,34 +21,34 @@ export const TILE_REGISTRY: Readonly<Record<string, TileDefinition>> = {
     transparent: true,
     glyph: GLYPH_FLOOR,
     fg: COLOR_FLOOR_FG,
-    bg: COLOR_BACKGROUND,
+    bg: COLOR_BACKGROUND
   },
   stone_wall: {
     walkable: false,
     transparent: false,
     glyph: GLYPH_WALL,
     fg: COLOR_WALL_FG,
-    bg: COLOR_BACKGROUND,
+    bg: COLOR_BACKGROUND
   },
   stairs_up: {
     walkable: true,
     transparent: true,
     glyph: GLYPH_STAIRS_UP,
     fg: COLOR_STAIRS_FG,
-    bg: COLOR_BACKGROUND,
+    bg: COLOR_BACKGROUND
   },
   stairs_down: {
     walkable: true,
     transparent: true,
     glyph: GLYPH_STAIRS_DOWN,
     fg: COLOR_STAIRS_FG,
-    bg: COLOR_BACKGROUND,
+    bg: COLOR_BACKGROUND
   },
   empty_space: {
     walkable: false,
     transparent: false,
     glyph: ' ',
     fg: '#000000',
-    bg: COLOR_BACKGROUND,
-  },
+    bg: COLOR_BACKGROUND
+  }
 };

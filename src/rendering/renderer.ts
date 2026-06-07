@@ -72,10 +72,20 @@ export function render(display: Display, state: GameState): void {
   // 5. Query and draw all entities that are in the player's line of sight
   const renderableEntities: ReadonlyArray<EntityId> = queryEntities(state, [
     ComponentType.Position,
-    ComponentType.Renderable,
+    ComponentType.Renderable
   ]);
 
-  for (const entityId of renderableEntities) {
+  const sortedEntities = [...renderableEntities].sort((a, b) => {
+    const aPlayer = getComponent(state, a, ComponentType.Player) ? 1 : 0;
+    const bPlayer = getComponent(state, b, ComponentType.Player) ? 1 : 0;
+    if (aPlayer !== bPlayer) return aPlayer - bPlayer; // Player draws last
+
+    const aActor = getComponent(state, a, ComponentType.Actor) ? 1 : 0;
+    const bActor = getComponent(state, b, ComponentType.Actor) ? 1 : 0;
+    return aActor - bActor; // Actors draw above non-actors (like stairs)
+  });
+
+  for (const entityId of sortedEntities) {
     const position = getComponent(state, entityId, ComponentType.Position);
     const renderable = getComponent(state, entityId, ComponentType.Renderable);
 
@@ -89,13 +99,7 @@ export function render(display: Display, state: GameState): void {
 
         // Draw only if within the display viewport bounds
         if (vx >= 0 && vx < viewportW && vy >= 0 && vy < viewportH) {
-          display.draw(
-            vx,
-            vy,
-            renderable.glyph,
-            renderable.fg,
-            renderable.bg
-          );
+          display.draw(vx, vy, renderable.glyph, renderable.fg, renderable.bg);
         }
       }
     }
@@ -107,8 +111,7 @@ export function render(display: Display, state: GameState): void {
     const vy = state.targetingMode.y - cameraY;
     if (vx >= 0 && vx < viewportW && vy >= 0 && vy < viewportH) {
       // Draw a yellow targeting crosshair over whatever is there
-      display.draw(vx, vy, 'X', '#000000', '#ffff00'); 
+      display.draw(vx, vy, 'X', '#000000', '#ffff00');
     }
   }
 }
-

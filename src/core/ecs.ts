@@ -1,5 +1,15 @@
-import { type Component, ComponentType } from '../types/components.types.ts';
+import {
+  type Component,
+  ComponentType,
+  type PositionComponent,
+  type RenderableComponent,
+  type ActorComponent,
+  type FighterComponent,
+  type AIComponent,
+  type PlayerComponent
+} from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
+import { ENTITY_TEMPLATES } from '../constants/spawning.constants.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -8,19 +18,19 @@ import { type EntityId, type GameState, toEntityId } from '../types/game-state.t
  */
 export function createEntity(state: GameState): [GameState, EntityId] {
   const newId: EntityId = toEntityId(state.nextEntityId);
-  
+
   const nextEntities: ReadonlyArray<EntityId> = [...state.entities, newId];
-  
+
   const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
   nextComponents.set(newId, []);
-  
+
   const nextState: GameState = {
     ...state,
     entities: nextEntities,
     components: nextComponents,
-    nextEntityId: state.nextEntityId + 1,
+    nextEntityId: state.nextEntityId + 1
   };
-  
+
   return [nextState, newId];
 }
 
@@ -31,25 +41,21 @@ export function createEntity(state: GameState): [GameState, EntityId] {
  * @param component The Component to add.
  * @returns The updated game state.
  */
-export function addComponent<C extends Component>(
-  state: GameState,
-  entityId: EntityId,
-  component: C
-): GameState {
+export function addComponent<C extends Component>(state: GameState, entityId: EntityId, component: C): GameState {
   const entityComponents: ReadonlyArray<Component> = state.components.get(entityId) ?? [];
-  
+
   const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
   nextComponents.set(entityId, [...entityComponents, component]);
-  
+
   const nextState = {
     ...state,
-    components: nextComponents,
+    components: nextComponents
   };
-  
+
   if (component.type === ComponentType.Position) {
     return updateSpatialIndex(nextState);
   }
-  
+
   return nextState;
 }
 
@@ -94,7 +100,7 @@ export function getComponent<T extends ComponentType>(
   if (entityComponents === undefined) {
     return undefined;
   }
-  
+
   const match: Component | undefined = entityComponents.find((c: Component) => c.type === type);
   return match as Extract<Component, { readonly type: T }> | undefined;
 }
@@ -114,8 +120,79 @@ export function queryEntities<T extends ComponentType>(
     if (entityComponents === undefined) {
       return false;
     }
-    return types.every((type: T) =>
-      entityComponents.some((c: Component) => c.type === type)
-    );
+    return types.every((type: T) => entityComponents.some((c: Component) => c.type === type));
+  });
+}
+
+/**
+ * Spawns an entity from a template at the given coordinates.
+ * @param state The current game state.
+ * @param templateId The ID of the template from ENTITY_TEMPLATES.
+ * @param x The map X coordinate.
+ * @param y The map Y coordinate.
+ * @returns A tuple of the updated state and the new EntityId.
+ */
+export function spawnEntity(state: GameState, templateId: string, x: number, y: number): [GameState, EntityId] {
+  const template = ENTITY_TEMPLATES[templateId];
+  if (!template) throw new Error(`Unknown entity template: ${templateId}`);
+
+  const [stateAfterCreate, entityId] = createEntity(state);
+  let nextState = stateAfterCreate;
+
+  const pos: PositionComponent = { type: ComponentType.Position, x, y };
+  const render: RenderableComponent = {
+    type: ComponentType.Renderable,
+    glyph: template.glyph,
+    fg: template.fg,
+    bg: template.bg
+  };
+
+  nextState = addComponent(nextState, entityId, pos);
+  nextState = addComponent(nextState, entityId, render);
+
+  if (template.isActor) {
+    const actor: ActorComponent = { type: ComponentType.Actor, speed: template.speed ?? 100 };
+    nextState = addComponent(nextState, entityId, actor);
+  }
+
+  if (template.fighter) {
+    const fighter: FighterComponent = {
+      type: ComponentType.Fighter,
+      maxHp: template.fighter.maxHp,
+      hp: template.fighter.maxHp,
+      attack: template.fighter.attack,
+      defense: template.fighter.defense
+    };
+    nextState = addComponent(nextState, entityId, fighter);
+  }
+
+  if (template.ai) {
+    const ai: AIComponent = { type: ComponentType.AI, behavior: template.ai.behavior };
+    nextState = addComponent(nextState, entityId, ai);
+  }
+
+  if (templateId === 'player') {
+    const player: PlayerComponent = { type: ComponentType.Player };
+    nextState = addComponent(nextState, entityId, player);
+  }
+
+  return [nextState, entityId];
+}
+
+/**
+ * Completely removes an entity and all its components from the game state.
+ * @param state The current game state.
+ * @param entityId The ID of the entity to remove.
+ * @returns The updated game state.
+ */
+export function removeEntity(state: GameState, entityId: EntityId): GameState {
+  const nextEntities = state.entities.filter((id) => id !== entityId);
+  const nextComponents = new Map(state.components);
+  nextComponents.delete(entityId);
+
+  return updateSpatialIndex({
+    ...state,
+    entities: nextEntities,
+    components: nextComponents
   });
 }
