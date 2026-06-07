@@ -52,14 +52,14 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 
 ### 🟢 Milestone 6: XP & Leveling (Active)
 Transform the mechanical systems into a cohesive game experience.
-- [ ] XP and Leveling System for the Player.
-- [ ] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
+- [x] XP and Leveling System for the Player.
+- [x] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
 
 ## 🟡 Milestone 7: Persistence & Game Flow
 Implement the full lifecycle of a play session.
-- [ ] Implement the Initial Page (Main Menu).
-- [ ] Implement starting a New Game / full Game Over screens.
-- [ ] Implement Saving/Loading (serializing the immutable `GameState` to `localStorage`).
+- [x] Implement the Initial Page (Main Menu).
+- [x] Implement starting a New Game / full Game Over screens.
+- [x] Implement Saving/Loading (serializing the immutable `GameState` to `localStorage`).
 
 ---
 

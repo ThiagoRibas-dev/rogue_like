@@ -6,7 +6,8 @@ import { removeActor } from '../core/scheduler.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
-import { type EntityId } from '../types/game-state.types.ts';
+import { type EntityId, UIMode } from '../types/game-state.types.ts';
+import { deleteSave } from '../core/save.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -133,7 +134,8 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
 
       if (isDefenderPlayer) {
         nextState = addMessage(nextState, `Game Over! You have been slain.`, MessageLogCategory.CombatDeath);
-        nextState = { ...nextState, isGameOver: true };
+        nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
+        deleteSave(); // Enforce permadeath
       } else {
         // Strip the dead entity from the world
         nextState = removeEntity(nextState, defenderId);

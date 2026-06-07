@@ -92,6 +92,32 @@
           <span>TypeScript + ROT.js + Vite Engine v1.0.0</span>
           <span>Press F11 for Fullscreen</span>
         </footer>
+
+        <!-- Overlays -->
+        <div id="main-menu" class="modal-overlay hidden">
+          <div class="modal-content">
+            <h1 class="modal-title">Hall of the Goblin King</h1>
+            <div class="modal-buttons">
+              <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
+              <button id="btn-new-game" class="modal-btn">New Game</button>
+              <div style="display: flex; gap: 8px; margin-top: 16px;">
+                <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export Save</button>
+                <button id="btn-import-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;">Import Save</button>
+                <input type="file" id="file-import-save" accept=".json" style="display: none;" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="game-over-screen" class="modal-overlay hidden">
+          <div class="modal-content">
+            <h1 class="modal-title dead-title">YOU DIED</h1>
+            <p class="death-stats">Your journey ends here.</p>
+            <div class="modal-buttons">
+              <button id="btn-return-menu" class="modal-btn">Return to Menu</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>

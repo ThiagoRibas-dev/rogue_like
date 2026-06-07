@@ -166,3 +166,39 @@ export function renderPlayerStats(state: GameState): void {
     }
   }
 }
+
+/**
+ * Toggles the visibility of the Main Menu and Game Over overlays based on UIMode.
+ * @param state The current GameState.
+ * @param hasSave Whether a save game currently exists (enables Continue).
+ */
+export function renderMenus(state: GameState, hasSave: boolean): void {
+  const mainMenu = document.getElementById('main-menu');
+  const gameOverScreen = document.getElementById('game-over-screen');
+  const btnContinue = document.getElementById('btn-continue') as HTMLButtonElement | null;
+  const btnExport = document.getElementById('btn-export-save') as HTMLButtonElement | null;
+
+  if (mainMenu) {
+    if (state.uiMode === UIMode.MainMenu) {
+      mainMenu.classList.remove('hidden');
+      if (btnContinue) btnContinue.disabled = !hasSave;
+      if (btnExport) btnExport.disabled = !hasSave;
+    } else {
+      mainMenu.classList.add('hidden');
+    }
+  }
+
+  if (gameOverScreen) {
+    if (state.uiMode === UIMode.GameOver) {
+      gameOverScreen.classList.remove('hidden');
+      const deathStats = gameOverScreen.querySelector('.death-stats');
+      if (deathStats) {
+        const player = state.entities.find((id) => getComponent(state, id, ComponentType.Player));
+        const level = player ? (getComponent(state, player, ComponentType.Fighter)?.level ?? 1) : 1;
+        deathStats.textContent = `You reached Level ${level} on Floor ${state.currentDepth}.`;
+      }
+    } else {
+      gameOverScreen.classList.add('hidden');
+    }
+  }
+}

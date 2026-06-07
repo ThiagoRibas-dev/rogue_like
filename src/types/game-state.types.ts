@@ -6,8 +6,10 @@ import type { Component } from './components.types.ts';
  * Serializable for M7 save/load.
  */
 export const enum UIMode {
+  MainMenu = 'main_menu',
   Game = 'game',
-  Inventory = 'inventory'
+  Inventory = 'inventory',
+  GameOver = 'game_over'
 }
 
 /**
@@ -88,4 +90,29 @@ export interface GameState {
     readonly y: number;
     readonly radius?: number;
   };
+}
+
+/**
+ * Shape of LevelData when serialized to JSON.
+ */
+export interface SerializedLevelData {
+  readonly map: GameMap;
+  readonly entities: ReadonlyArray<EntityId>;
+  readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
+}
+
+/**
+ * Shape of GameState when serialized to JSON.
+ */
+export interface SerializedGameState {
+  readonly entities: ReadonlyArray<EntityId>;
+  readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
+  readonly map: GameMap;
+  readonly nextEntityId: number;
+  readonly nextItemInstanceId: number;
+  readonly messages: ReadonlyArray<LogMessage>;
+  readonly currentDepth: number;
+  readonly levels: ReadonlyArray<[number, SerializedLevelData]>;
+  readonly isGameOver: boolean;
+  readonly uiMode: UIMode;
 }

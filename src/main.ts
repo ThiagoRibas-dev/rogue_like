@@ -26,7 +26,9 @@ import {
   INVENTORY_TOGGLE_KEY
 } from './constants/keybinds.constants.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
-import { renderMessageLog, renderInventoryPanel, renderPlayerStats } from './rendering/ui.ts';
+import { renderMessageLog, renderInventoryPanel, renderPlayerStats, renderMenus } from './rendering/ui.ts';
+import { hasSaveGame, deleteSave, loadGame } from './core/save.ts';
+import { clearScheduler } from './core/scheduler.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
@@ -82,13 +84,13 @@ if (container) {
   console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
 }
 
-// 4. Initialize the Game State with a procedurally generated level
-const { map: initialMap, startPos, stairs, rooms } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
+// 4. Initialize the Game State in Main Menu mode
+let playerEntityId: EntityId = -1 as unknown as EntityId; // Will be set when game starts
 
 let state: GameState = {
   entities: [],
   components: new Map(),
-  map: initialMap,
+  map: { width: MAP_WIDTH, height: MAP_HEIGHT, tiles: [] },
   nextEntityId: 1,
   nextItemInstanceId: 1,
   messages: [],
@@ -96,65 +98,170 @@ let state: GameState = {
   levels: new Map(),
   spatialIndex: new Map(),
   isGameOver: false,
-  uiMode: UIMode.Game
+  uiMode: UIMode.MainMenu
 };
 
-// Spawn the player entity
-const [stateAfterPlayerSpawn, playerEntityId] = spawnEntity(state, 'player', startPos.x, startPos.y);
-state = stateAfterPlayerSpawn;
+function startNewGame() {
+  deleteSave();
+  clearScheduler();
+  initEngine();
 
-// Spawn monsters in rooms
-for (let i = 1; i < rooms.length; i++) {
-  const room = rooms[i];
-  if (!room) continue;
+  const { map: initialMap, startPos, stairs, rooms } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
+  state = {
+    ...state,
+    map: initialMap,
+    uiMode: UIMode.Game,
+    isGameOver: false,
+    entities: [],
+    components: new Map(),
+    spatialIndex: new Map(),
+    messages: [],
+    currentDepth: 1,
+    levels: new Map()
+  };
 
-  const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
-  for (let m = 0; m < numMonsters; m++) {
-    const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
-    const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-    const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+  // Spawn the player entity
+  const [stateAfterPlayerSpawn, newPlayerEntityId] = spawnEntity(state, 'player', startPos.x, startPos.y);
+  state = stateAfterPlayerSpawn;
+  playerEntityId = newPlayerEntityId;
 
-    // Quick check to avoid spawning exactly on stairs or another entity (for now, just spawn)
-    [state] = spawnEntity(state, template, mx, my);
+  // Spawn monsters in rooms
+  for (let i = 1; i < rooms.length; i++) {
+    const room = rooms[i];
+    if (!room) continue;
+
+    const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
+    for (let m = 0; m < numMonsters; m++) {
+      const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+      const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+      const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+      [state] = spawnEntity(state, template, mx, my);
+    }
+
+    // Spawn items in this room
+    const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
+    for (let n = 0; n < numItems; n++) {
+      const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
+      const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
+      const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
+      [state] = spawnItem(state, itemId, ix, iy);
+    }
   }
 
-  // Spawn items in this room
-  const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
-  for (let n = 0; n < numItems; n++) {
-    const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
-    const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-    const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
-    [state] = spawnItem(state, itemId, ix, iy);
+  // Spawn the stairs for the first floor
+  for (const stair of stairs) {
+    let stairId: EntityId;
+    [state, stairId] = createEntity(state);
+
+    const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
+    const renderCmp: RenderableComponent = {
+      type: ComponentType.Renderable,
+      glyph: stair.direction === 'up' ? GLYPH_STAIRS_UP : GLYPH_STAIRS_DOWN,
+      fg: COLOR_STAIRS_FG,
+      bg: 'transparent'
+    };
+    const interactable: InteractableComponent = {
+      type: ComponentType.Interactable,
+      intents: [{ type: IntentType.ChangeFloor, direction: stair.direction } as ChangeFloorIntent]
+    };
+
+    state = addComponent(state, stairId, pos);
+    state = addComponent(state, stairId, renderCmp);
+    state = addComponent(state, stairId, interactable);
+  }
+
+  // Initial FOV compute
+  state = updateExploredTiles(state);
+
+  // Add initial startup messages
+  state = addMessage(state, 'Welcome to the Dungeon, Adventurer!', MessageLogCategory.System);
+
+  for (const id of state.entities) {
+    const actor = getComponent(state, id, ComponentType.Actor);
+    if (actor) {
+      addActor(id, actor.speed);
+    }
+  }
+
+  setGameState(state);
+  startEngine();
+}
+
+function continueGame() {
+  const loadedState = loadGame();
+  if (loadedState) {
+    state = loadedState;
+    playerEntityId = state.entities.find(
+      (id) => getComponent(state, id, ComponentType.Player) !== undefined
+    ) as EntityId;
+
+    clearScheduler();
+    initEngine();
+
+    for (const id of state.entities) {
+      const actor = getComponent(state, id, ComponentType.Actor);
+      if (actor) {
+        addActor(id, actor.speed);
+      }
+    }
+
+    setGameState(state);
+    startEngine();
   }
 }
 
-// Spawn the stairs for the first floor
-for (const stair of stairs) {
-  let stairId: EntityId;
-  [state, stairId] = createEntity(state);
+document.getElementById('btn-new-game')?.addEventListener('click', startNewGame);
+document.getElementById('btn-continue')?.addEventListener('click', continueGame);
+document.getElementById('btn-return-menu')?.addEventListener('click', () => {
+  state = { ...state, uiMode: UIMode.MainMenu };
+  setGameState(state);
+});
 
-  const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
-  const renderCmp: RenderableComponent = {
-    type: ComponentType.Renderable,
-    glyph: stair.direction === 'up' ? GLYPH_STAIRS_UP : GLYPH_STAIRS_DOWN,
-    fg: COLOR_STAIRS_FG,
-    bg: 'transparent'
+// Export Save
+document.getElementById('btn-export-save')?.addEventListener('click', () => {
+  const data = localStorage.getItem('roguelike_save');
+  if (data) {
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roguelike_save_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+});
+
+// Import Save
+const fileInput = document.getElementById('file-import-save') as HTMLInputElement | null;
+document.getElementById('btn-import-save')?.addEventListener('click', () => {
+  fileInput?.click();
+});
+
+fileInput?.addEventListener('change', (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    try {
+      const content = event.target?.result as string;
+      // Basic validation (does it parse?)
+      JSON.parse(content);
+      localStorage.setItem('roguelike_save', content);
+      
+      // Update UI so continue button lights up immediately if we were on the menu
+      renderMenus(state, hasSaveGame());
+      
+      // Clear the input so you can import the same file again if needed
+      target.value = '';
+    } catch (err) {
+      alert('Invalid save file format!');
+      console.error(err);
+    }
   };
-  const interactable: InteractableComponent = {
-    type: ComponentType.Interactable,
-    intents: [{ type: IntentType.ChangeFloor, direction: stair.direction } as ChangeFloorIntent]
-  };
-
-  state = addComponent(state, stairId, pos);
-  state = addComponent(state, stairId, renderCmp);
-  state = addComponent(state, stairId, interactable);
-}
-
-// Initial FOV compute
-state = updateExploredTiles(state);
-
-// Add initial startup messages
-state = addMessage(state, 'Milestone 3: Engine, Scheduling & Intents active.', MessageLogCategory.System);
+  reader.readAsText(file);
+});
 
 /**
  * Updates the HTML-based HUD sidebar to show the current level depth and player health.
@@ -193,24 +300,21 @@ onStateChange((newState: GameState) => {
   renderMessageLog(newState);
   renderPlayerStats(newState);
   renderInventoryPanel(newState);
+  renderMenus(newState, hasSaveGame());
   updateHUD(newState);
 });
 
 // Initialize HUD display values and pass the initial state
-updateHUD(state);
-renderMessageLog(state);
-renderPlayerStats(state);
-renderInventoryPanel(state);
 setGameState(state);
-
-// 5. Initial Render
-render(display, state);
-renderMessageLog(state);
-renderPlayerStats(state);
 
 // 6. Hook up Keyboard input handlers to the Command Queue
 window.addEventListener('keydown', (event: KeyboardEvent) => {
   const currentState = getGameState();
+
+  if (currentState.uiMode === UIMode.MainMenu || currentState.uiMode === UIMode.GameOver) {
+    return; // Menu buttons handle input
+  }
+
   const isTargeting = currentState.targetingMode?.active;
   const isInventoryOpen = currentState.uiMode === UIMode.Inventory;
 
@@ -301,13 +405,3 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     queuePlayerIntent(createInteractAction(playerEntityId));
   }
 });
-
-// 7. Start the Engine
-initEngine();
-for (const id of state.entities) {
-  const actor = getComponent(state, id, ComponentType.Actor);
-  if (actor) {
-    addActor(id, actor.speed);
-  }
-}
-startEngine();

@@ -2,6 +2,7 @@ import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
 import { getComponent, spawnEntity } from './ecs.ts';
 import { lockEngine, unlockEngine, addActor } from './scheduler.ts';
+import { saveGame } from './save.ts';
 import { IntentType, type Intent } from '../types/intents.types.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import { processInteractIntent, processChangeFloorIntent } from '../systems/map.system.ts';
@@ -30,7 +31,7 @@ let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
 
 export function setGameState(state: GameState): void {
-  currentState = state;
+  updateState(state);
 }
 
 export function getGameState(): GameState {
@@ -44,6 +45,9 @@ export function onStateChange(callback: (state: GameState) => void): void {
 
 function updateState(newState: GameState): void {
   currentState = newState;
+  if (newState.uiMode === UIMode.Game) {
+    saveGame(newState);
+  }
   if (stateChangeCallback) {
     stateChangeCallback(newState);
   }
