@@ -19,9 +19,7 @@ import {
 import { computeFOV } from '../map/fov.ts';
 import { generateDungeon } from '../map/generator.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { MAP_WIDTH, MAP_HEIGHT, MAX_DUNGEON_DEPTH } from '../constants/map.constants.ts';
-import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from '../constants/spawning.constants.ts';
-import { LOOT_TABLE, MAX_ITEMS_PER_ROOM } from '../constants/items.constants.ts';
+
 import { IntentType, type ChangeFloorIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
 import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
@@ -54,9 +52,12 @@ export function updateExploredTiles(state: GameState): GameState {
   };
 }
 
-export function processInteractIntent(state: GameState, intent: InteractIntent): GameState {
+export function processInteractIntent(
+  state: GameState,
+  intent: InteractIntent
+): { state: GameState; success: boolean } {
   const pos = getComponent(state, intent.entityId, ComponentType.Position);
-  if (!pos) return state;
+  if (!pos) return { state, success: false };
 
   const key = `${pos.x},${pos.y}`;
   const entities = state.spatialIndex.get(key) || [];
@@ -72,7 +73,8 @@ export function processInteractIntent(state: GameState, intent: InteractIntent):
       for (const i of interactable.intents) {
         if (i.type === IntentType.ChangeFloor) {
           const boundIntent = { ...i, entityId: intent.entityId } as ChangeFloorIntent;
-          nextState = processChangeFloorIntent(nextState, boundIntent);
+          const result = processChangeFloorIntent(nextState, boundIntent);
+          nextState = result.state;
         } else {
           // Queue other intents if necessary, but ChangeFloor should be synchronous
           const boundIntent = { ...i, entityId: intent.entityId };
@@ -84,50 +86,65 @@ export function processInteractIntent(state: GameState, intent: InteractIntent):
   }
 
   if (!interacted) {
-    // Check if there's an open door at this tile to close
     const tileIdx = coordToIndex(pos.x, pos.y, state.map.width);
     const tile = state.map.tiles[tileIdx];
-    if (tile && tile.tileId === 'open_door') {
-      const nextTiles = [...state.map.tiles];
-      nextTiles[tileIdx] = { ...tile, tileId: 'closed_door' };
-      const nextMap = { ...state.map, tiles: nextTiles };
-      let nextState: GameState = { ...state, map: nextMap };
+    if (tile) {
+      const tileDef = state.campaign.tiles[tile.tileId];
+      if (tileDef?.interactTransition) {
+        const nextTiles = [...state.map.tiles];
+        nextTiles[tileIdx] = { ...tile, tileId: tileDef.interactTransition };
+        const nextMap = { ...state.map, tiles: nextTiles };
+        let nextState: GameState = { ...state, map: nextMap };
 
-      const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-      if (isPlayer) {
-        nextState = addMessage(nextState, 'You close the door.', MessageLogCategory.System);
+        const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+        if (isPlayer) {
+          const msg = tileDef.interactMessage ?? 'You interact with it.';
+          nextState = addMessage(nextState, msg, MessageLogCategory.System);
+        }
+        return { state: nextState, success: true };
       }
-      return nextState;
     }
 
     const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
     if (isPlayer) {
-      return addMessage(nextState, 'There is nothing here to interact with.', MessageLogCategory.System);
+      return {
+        state: addMessage(nextState, 'There is nothing here to interact with.', MessageLogCategory.System),
+        success: false
+      };
     }
   }
 
-  return nextState;
+  return { state: nextState, success: interacted };
 }
 
-export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIntent): GameState {
+export function processChangeFloorIntent(
+  state: GameState,
+  intent: ChangeFloorIntent
+): { state: GameState; success: boolean } {
   const { direction, entityId } = intent;
 
   const targetDepth: number = state.currentDepth + (direction === 'up' ? -1 : 1);
 
   if (targetDepth <= 0) {
-    return addMessage(
-      state,
-      'You cannot escape back to the surface yet! The Goblin King still lives.',
-      MessageLogCategory.System
-    );
+    return {
+      state: addMessage(
+        state,
+        'You cannot escape back to the surface yet! The Goblin King still lives.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
   }
 
-  if (targetDepth > MAX_DUNGEON_DEPTH) {
-    return addMessage(
-      state,
-      'You have reached the bottom of the dungeon. There is nowhere deeper to go.',
-      MessageLogCategory.System
-    );
+  if (targetDepth > state.campaign.rules.map.maxDungeonDepth) {
+    return {
+      state: addMessage(
+        state,
+        'You have reached the bottom of the dungeon. There is nowhere deeper to go.',
+        MessageLogCategory.System
+      ),
+      success: false
+    };
   }
 
   // 1. Determine which entities migrate with the player (inventory, equipment)
@@ -207,7 +224,12 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
     }
   } else {
     // Generate new floor
-    const generated = generateDungeon(MAP_WIDTH, MAP_HEIGHT, targetDepth);
+    const generated = generateDungeon(
+      state.campaign.rules.map.width,
+      state.campaign.rules.map.height,
+      targetDepth,
+      state.campaign.rules.map
+    );
     targetMap = generated.map;
     spawnX = generated.startPos.x;
     spawnY = generated.startPos.y;
@@ -223,9 +245,12 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
       const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
       const render: RenderableComponent = {
         type: ComponentType.Renderable,
-        glyph: stair.direction === 'up' ? '<' : '>',
-        fg: '#fff',
-        bg: '#000'
+        glyph:
+          stair.direction === 'up'
+            ? (state.campaign.theme.glyphs.stairsUp ?? '<')
+            : (state.campaign.theme.glyphs.stairsDown ?? '>'),
+        fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
+        bg: state.campaign.theme.colors.transparent ?? 'transparent'
       };
       const interactable: InteractableComponent = {
         type: ComponentType.Interactable,
@@ -244,19 +269,22 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
       const room = generated.rooms[i];
       if (!room) continue;
 
-      const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
+      const numMonsters = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxMonstersPerRoom);
       for (let m = 0; m < numMonsters; m++) {
         const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
         const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-        const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+        const template =
+          ROT.RNG.getWeightedValue(state.campaign.rules.spawning.spawnWeights as Record<string, number>) || 'orc';
         [tempState] = spawnEntity(tempState, template, mx, my);
       }
 
-      const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
+      const numItems = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxItemsPerRoom);
       for (let n = 0; n < numItems; n++) {
         const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
         const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-        const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
+        const itemId =
+          ROT.RNG.getWeightedValue(state.campaign.rules.spawning.lootTable as Record<string, number>) ||
+          'health_potion';
         [tempState] = spawnItem(tempState, itemId, ix, iy);
       }
     }
@@ -307,5 +335,5 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
   const msg = direction === 'up' ? `You ascend to level ${targetDepth}.` : `You descend to level ${targetDepth}.`;
   nextState = addMessage(nextState, msg, MessageLogCategory.System);
 
-  return updateExploredTiles(nextState);
+  return { state: updateExploredTiles(nextState), success: true };
 }

@@ -1,7 +1,7 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type InventoryComponent, type EquipmentComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { ITEM_REGISTRY, type EquipmentSlot } from '../constants/items.constants.ts';
+import { type EquipmentSlot } from '../types/campaign.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
@@ -26,7 +26,7 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
     if (itemEntityId !== null) {
       const item = getComponent(state, itemEntityId, ComponentType.Item);
       if (item) {
-        const def = ITEM_REGISTRY[item.itemId];
+        const def = state.campaign.items[item.itemId];
         bonus += def?.equippable?.carryBonus ?? 0;
       }
     }
@@ -44,9 +44,9 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
  * @param entityId The entity picking up the item.
  * @returns The updated GameState.
  */
-export function processPickUpIntent(state: GameState, entityId: EntityId): GameState {
+export function processPickUpIntent(state: GameState, entityId: EntityId): { state: GameState; success: boolean } {
   const pos = getComponent(state, entityId, ComponentType.Position);
-  if (!pos) return state;
+  if (!pos) return { state, success: false };
 
   const key = `${pos.x},${pos.y}`;
   const entitiesAtTile = state.spatialIndex.get(key) ?? [];
@@ -61,22 +61,22 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): GameS
   }
 
   if (itemEntityId === undefined) {
-    return addMessage(state, 'There is nothing here to pick up.', MessageLogCategory.System);
+    return { state: addMessage(state, 'There is nothing here to pick up.', MessageLogCategory.System), success: false };
   }
 
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
-  if (!inventory) return state;
+  if (!inventory) return { state, success: false };
 
   const effectiveCapacity = getEffectiveCapacity(state, entityId);
   if (inventory.items.length >= effectiveCapacity) {
-    return addMessage(state, 'Your inventory is full!', MessageLogCategory.System);
+    return { state: addMessage(state, 'Your inventory is full!', MessageLogCategory.System), success: false };
   }
 
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return state;
+  if (!itemComp) return { state, success: false };
 
-  const def = ITEM_REGISTRY[itemComp.itemId];
-  if (!def) return state;
+  const def = state.campaign.items[itemComp.itemId];
+  if (!def) return { state, success: false };
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
@@ -113,11 +113,14 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): GameS
     }
   }
 
-  return addMessage(
-    { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
-    `You pick up the ${itemName}.`,
-    MessageLogCategory.System
-  );
+  return {
+    state: addMessage(
+      { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
+      `You pick up the ${itemName}.`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
 }
 
 /**
@@ -130,19 +133,23 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): GameS
  * @param itemIndex The index of the item in the inventory array.
  * @returns The updated GameState.
  */
-export function processDropIntent(state: GameState, entityId: EntityId, itemIndex: number): GameState {
+export function processDropIntent(
+  state: GameState,
+  entityId: EntityId,
+  itemIndex: number
+): { state: GameState; success: boolean } {
   const pos = getComponent(state, entityId, ComponentType.Position);
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
-  if (!pos || !inventory) return state;
+  if (!pos || !inventory) return { state, success: false };
 
   const itemEntityId = inventory.items[itemIndex];
-  if (itemEntityId === undefined) return state;
+  if (itemEntityId === undefined) return { state, success: false };
 
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return state;
+  if (!itemComp) return { state, success: false };
 
-  const def = ITEM_REGISTRY[itemComp.itemId];
-  if (!def) return state;
+  const def = state.campaign.items[itemComp.itemId];
+  if (!def) return { state, success: false };
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
@@ -150,7 +157,10 @@ export function processDropIntent(state: GameState, entityId: EntityId, itemInde
   // Check if the item is equipped — must unequip first
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (equipment && (equipment.weapon === itemEntityId || equipment.armor === itemEntityId)) {
-    return addMessage(state, `You must unequip the ${itemName} before dropping it.`, MessageLogCategory.System);
+    return {
+      state: addMessage(state, `You must unequip the ${itemName} before dropping it.`, MessageLogCategory.System),
+      success: false
+    };
   }
 
   const nextComponents = new Map(state.components);
@@ -184,11 +194,14 @@ export function processDropIntent(state: GameState, entityId: EntityId, itemInde
     }
   }
 
-  return addMessage(
-    { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
-    `You drop the ${itemName}.`,
-    MessageLogCategory.System
-  );
+  return {
+    state: addMessage(
+      { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
+      `You drop the ${itemName}.`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
 }
 
 /**
@@ -201,24 +214,31 @@ export function processDropIntent(state: GameState, entityId: EntityId, itemInde
  * @param itemIndex The index of the item in the inventory array.
  * @returns The updated GameState.
  */
-export function processEquipItemIntent(state: GameState, entityId: EntityId, itemIndex: number): GameState {
+export function processEquipItemIntent(
+  state: GameState,
+  entityId: EntityId,
+  itemIndex: number
+): { state: GameState; success: boolean } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
-  if (!inventory || !equipment) return state;
+  if (!inventory || !equipment) return { state, success: false };
 
   const itemEntityId = inventory.items[itemIndex];
-  if (itemEntityId === undefined) return state;
+  if (itemEntityId === undefined) return { state, success: false };
 
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return state;
+  if (!itemComp) return { state, success: false };
 
-  const def = ITEM_REGISTRY[itemComp.itemId];
+  const def = state.campaign.items[itemComp.itemId];
   if (!def?.equippable) {
     const isIdentified = state.identifiedItems.has(def?.id ?? '');
     const itemName =
       (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def?.id ?? '') ?? def?.unidentifiedName)) ??
       itemComp.itemId;
-    return addMessage(state, `The ${itemName} cannot be equipped.`, MessageLogCategory.System);
+    return {
+      state: addMessage(state, `The ${itemName} cannot be equipped.`, MessageLogCategory.System),
+      success: false
+    };
   }
 
   const slot = def.equippable.slot;
@@ -230,7 +250,7 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
   // We don't need to swap items back into inventory since they never left.
   const currentlyEquipped = slot === 'weapon' ? equipment.weapon : equipment.armor;
   if (currentlyEquipped !== null && currentlyEquipped !== itemEntityId) {
-    const oldDef = ITEM_REGISTRY[getComponent(state, currentlyEquipped, ComponentType.Item)?.itemId ?? ''];
+    const oldDef = state.campaign.items[getComponent(state, currentlyEquipped, ComponentType.Item)?.itemId ?? ''];
     const oldName = oldDef?.name ?? 'item';
     state = addMessage(state, `You unequip the ${oldName}.`, MessageLogCategory.System);
   }
@@ -251,7 +271,14 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
     })
   );
 
-  return addMessage({ ...state, components: nextComponents }, `You equip the ${itemName}.`, MessageLogCategory.System);
+  return {
+    state: addMessage(
+      { ...state, components: nextComponents },
+      `You equip the ${itemName}.`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
 }
 
 /**
@@ -263,18 +290,22 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
  * @param slot The equipment slot to unequip from.
  * @returns The updated GameState.
  */
-export function processUnequipItemIntent(state: GameState, entityId: EntityId, slot: EquipmentSlot): GameState {
+export function processUnequipItemIntent(
+  state: GameState,
+  entityId: EntityId,
+  slot: EquipmentSlot
+): { state: GameState; success: boolean } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
-  if (!inventory || !equipment) return state;
+  if (!inventory || !equipment) return { state, success: false };
 
   const itemEntityId = slot === 'weapon' ? equipment.weapon : equipment.armor;
   if (itemEntityId === null) {
-    return addMessage(state, 'Nothing equipped in that slot.', MessageLogCategory.System);
+    return { state: addMessage(state, 'Nothing equipped in that slot.', MessageLogCategory.System), success: false };
   }
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
-  if (!itemComp || !def) return state;
+  const def = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+  if (!itemComp || !def) return { state, success: false };
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
@@ -295,9 +326,12 @@ export function processUnequipItemIntent(state: GameState, entityId: EntityId, s
     })
   );
 
-  return addMessage(
-    { ...state, components: nextComponents },
-    `You unequip the ${itemName}.`,
-    MessageLogCategory.System
-  );
+  return {
+    state: addMessage(
+      { ...state, components: nextComponents },
+      `You unequip the ${itemName}.`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
 }

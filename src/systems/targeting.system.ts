@@ -7,60 +7,78 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 /**
  * Toggles targeting mode on or off.
  */
-export function processToggleTargetingIntent(state: GameState, intent: ToggleTargetingIntent): GameState {
+export function processToggleTargetingIntent(
+  state: GameState,
+  intent: ToggleTargetingIntent
+): { state: GameState; success: boolean } {
   if (state.targetingMode?.active) {
     // Turn off targeting mode
     const { targetingMode: _targetingMode, ...restState } = state;
-    return addMessage(restState as GameState, 'Targeting cancelled.', MessageLogCategory.System);
+    return {
+      state: addMessage(restState as GameState, 'Targeting cancelled.', MessageLogCategory.System),
+      success: false
+    };
   }
 
   // Turn on targeting mode, default target to the entity's current position
   const pos = getComponent(state, intent.entityId, ComponentType.Position);
-  if (!pos) return state;
+  if (!pos) return { state, success: false };
 
-  return addMessage(
-    {
-      ...state,
-      targetingMode: {
-        active: true,
-        x: pos.x,
-        y: pos.y
-      }
-    },
-    'Targeting mode active. Move cursor to aim.',
-    MessageLogCategory.System
-  );
+  return {
+    state: addMessage(
+      {
+        ...state,
+        targetingMode: {
+          active: true,
+          x: pos.x,
+          y: pos.y
+        }
+      },
+      'Targeting mode active. Move cursor to aim.',
+      MessageLogCategory.System
+    ),
+    success: false
+  };
 }
 
 /**
  * Moves the targeting crosshair.
  */
-export function processMoveTargetIntent(state: GameState, intent: MoveTargetIntent): GameState {
-  if (!state.targetingMode?.active) return state;
+export function processMoveTargetIntent(
+  state: GameState,
+  intent: MoveTargetIntent
+): { state: GameState; success: boolean } {
+  if (!state.targetingMode?.active) return { state, success: false };
 
   const newX = state.targetingMode.x + intent.dx;
   const newY = state.targetingMode.y + intent.dy;
 
   // Clamp to map boundaries
   if (newX < 0 || newX >= state.map.width || newY < 0 || newY >= state.map.height) {
-    return state;
+    return { state, success: false };
   }
 
   return {
-    ...state,
-    targetingMode: {
-      ...state.targetingMode,
-      x: newX,
-      y: newY
-    }
+    state: {
+      ...state,
+      targetingMode: {
+        ...state.targetingMode,
+        x: newX,
+        y: newY
+      }
+    },
+    success: false
   };
 }
 
 /**
  * Fires the aimed action at the targeted tile and turns off targeting mode.
  */
-export function processFireAimedIntent(state: GameState, _intent: FireAimedIntent): GameState {
-  if (!state.targetingMode?.active) return state;
+export function processFireAimedIntent(
+  state: GameState,
+  _intent: FireAimedIntent
+): { state: GameState; success: boolean } {
+  if (!state.targetingMode?.active) return { state, success: false };
 
   const targetX = state.targetingMode.x;
   const targetY = state.targetingMode.y;
@@ -74,5 +92,5 @@ export function processFireAimedIntent(state: GameState, _intent: FireAimedInten
 
   // Turn off targeting
   const { targetingMode: _targetingMode, ...restState } = stateWithMsg;
-  return restState as GameState;
+  return { state: restState as GameState, success: true };
 }

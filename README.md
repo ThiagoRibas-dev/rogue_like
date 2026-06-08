@@ -1,4 +1,4 @@
-# Roguelike Template: Hall of the Goblin King
+# Roguelike Template
 
 A modern, highly-extensible, browser-based traditional roguelike engine built with **TypeScript**, **Vite**, and **ROT.js**. 
 

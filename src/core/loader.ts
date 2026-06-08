@@ -1,0 +1,99 @@
+import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
+
+/**
+ * Loads and validates all JSON files for a given campaign ID.
+ * @param campaignId The ID of the campaign to load (e.g., 'default')
+ * @returns A promise that resolves to the fully populated and validated CampaignData
+ */
+export async function loadCampaign(campaignId: string): Promise<CampaignData> {
+  const basePath = `/data/campaigns/${campaignId}`;
+
+  try {
+    const [
+      manifestRes,
+      rulesRes,
+      themeRes,
+      advancementRes,
+      itemsRes,
+      effectsRes,
+      entitiesRes,
+      statusRes,
+      tilesRes,
+      factionsRes,
+      aiRes
+    ] = await Promise.all([
+      fetch(`${basePath}/manifest.json`),
+      fetch(`${basePath}/rules.json`),
+      fetch(`${basePath}/theme.json`),
+      fetch(`${basePath}/advancement.json`),
+      fetch(`${basePath}/items.json`),
+      fetch(`${basePath}/effects.json`),
+      fetch(`${basePath}/entities.json`),
+      fetch(`${basePath}/status.json`),
+      fetch(`${basePath}/tiles.json`),
+      fetch(`${basePath}/factions.json`),
+      fetch(`${basePath}/ai.json`)
+    ]);
+
+    // Check if any requests failed (e.g., 404)
+    const responses = [
+      manifestRes,
+      rulesRes,
+      themeRes,
+      advancementRes,
+      itemsRes,
+      effectsRes,
+      entitiesRes,
+      statusRes,
+      tilesRes,
+      factionsRes,
+      aiRes
+    ];
+
+    for (const res of responses) {
+      if (!res.ok) {
+        throw new Error(`Failed to fetch ${res.url}: ${res.status} ${res.statusText}`);
+      }
+    }
+
+    const [manifest, rules, theme, advancement, items, effects, entities, status, tiles, factions, ai] =
+      await Promise.all([
+        manifestRes.json(),
+        rulesRes.json(),
+        themeRes.json(),
+        advancementRes.json(),
+        itemsRes.json(),
+        effectsRes.json(),
+        entitiesRes.json(),
+        statusRes.json(),
+        tilesRes.json(),
+        factionsRes.json(),
+        aiRes.json()
+      ]);
+
+    const data = {
+      manifest,
+      rules,
+      theme,
+      advancement,
+      items,
+      effects,
+      entities,
+      status,
+      tiles,
+      factions,
+      ai
+    };
+
+    const result = CampaignDataSchema.safeParse(data);
+    if (!result.success) {
+      console.error('Campaign Validation Failed:', result.error);
+      throw new Error(`Failed to validate campaign ${campaignId}: ${result.error.message}`);
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error(`Error loading campaign ${campaignId}:`, error);
+    throw error;
+  }
+}

@@ -5,6 +5,7 @@ import type { GameState, EntityId } from './game-state.types.ts';
  */
 export interface ActionResult {
   readonly state: GameState;
+  readonly success: boolean;
   readonly energyCost: number;
 }
 
@@ -170,7 +171,7 @@ export interface EquipItemIntent {
 export interface UnequipItemIntent {
   readonly type: IntentType.UnequipItem;
   readonly entityId: EntityId;
-  readonly slot: import('../constants/items.constants.ts').EquipmentSlot;
+  readonly slot: import('../types/campaign.types.ts').EquipmentSlot;
 }
 
 /**

@@ -2,11 +2,10 @@ import { type GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { ITEM_REGISTRY } from '../constants/items.constants.ts';
-import { STATUS_EFFECTS } from '../constants/status.constants.ts';
+
 import { getEffectiveCapacity } from '../systems/inventory.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
-import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
+
 import { getHungerState } from '../systems/hunger.system.ts';
 
 /**
@@ -93,7 +92,7 @@ export function renderInventoryPanel(state: GameState): void {
     const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
     if (!itemComp) return;
 
-    const def = ITEM_REGISTRY[itemComp.itemId];
+    const def = state.campaign.items[itemComp.itemId];
     const isIdentified = state.identifiedItems.has(itemComp.itemId);
     const displayName = isIdentified
       ? def?.name
@@ -154,7 +153,7 @@ export function renderPlayerStats(state: GameState): void {
   if (hungerText) {
     const hunger = getComponent(state, playerEntityId, ComponentType.Hunger);
     if (hunger) {
-      const stateLabel = getHungerState(hunger.satiation);
+      const stateLabel = getHungerState(state, hunger.satiation);
       hungerText.textContent = stateLabel;
       // Optional: Add color styling based on state
       hungerText.style.color = stateLabel === 'Starving' ? '#e74c3c' : stateLabel === 'Hungry' ? '#f39c12' : '#ecf0f1';
@@ -165,8 +164,8 @@ export function renderPlayerStats(state: GameState): void {
   const xpFill = document.getElementById('xp-bar-fill');
   const xpText = document.getElementById('xp-bar-text');
   if (xpFill && xpText) {
-    const currentAdvancement = getAdvancementForLevel(fighter.level);
-    const nextAdvancement = getAdvancementForLevel(fighter.level + 1);
+    const currentAdvancement = state.campaign.advancement.find((a) => a.level === fighter.level);
+    const nextAdvancement = state.campaign.advancement.find((a) => a.level === fighter.level + 1);
 
     const baseLevelXp = currentAdvancement ? currentAdvancement.requiredXp : 0;
     const currentXpInLevel = Math.max(0, fighter.xp - baseLevelXp);
@@ -196,7 +195,7 @@ export function renderPlayerStats(state: GameState): void {
       statusContainer.appendChild(empty);
     } else {
       for (const active of statuses.activeEffects) {
-        const def = STATUS_EFFECTS[active.effectId];
+        const def = state.campaign.status[active.effectId];
         const effectDiv = document.createElement('div');
         effectDiv.className = 'status-row';
 

@@ -1,0 +1,57 @@
+{
+  "heal_5": {
+    "id": "heal_5",
+    "type": "heal",
+    "value": 5,
+    "message": "You drink the {item}. You recover {value} HP."
+  },
+  "damage_nearest_10": {
+    "id": "damage_nearest_10",
+    "type": "damage_nearest",
+    "value": 10,
+    "range": 8,
+    "message": "A bolt of lightning strikes {target} for {value} damage!"
+  },
+  "scroll_fireball": {
+    "id": "scroll_fireball",
+    "type": "damage_area",
+    "value": 15,
+    "radius": 3,
+    "message": "A fireball erupts! {target} takes {value} damage."
+  },
+  "scroll_confusion": {
+    "id": "scroll_confusion",
+    "type": "apply_status",
+    "value": 0,
+    "range": 8,
+    "statusId": "confusion",
+    "duration": 10,
+    "message": "You read the scroll. {target} looks confused!"
+  },
+  "potion_haste": {
+    "id": "potion_haste",
+    "type": "apply_status",
+    "value": 0,
+    "statusId": "haste",
+    "duration": 15,
+    "message": "You drink the {item} and feel incredibly fast!"
+  },
+  "scroll_identify": {
+    "id": "scroll_identify",
+    "type": "identify",
+    "value": 0,
+    "message": "You read the {item}. All items in your inventory are identified!"
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "type": "satiate",
+    "value": 500,
+    "message": "You eat the {item}. You feel less hungry."
+  },
+  "apple": {
+    "id": "apple",
+    "type": "satiate",
+    "value": 200,
+    "message": "You eat the {item}. It is sweet and refreshing."
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "melee_aggressive": {
+    "id": "melee_aggressive",
+    "behaviors": [
+      {
+        "behaviorId": "hunt",
+        "params": {
+          "aggroRadius": 5
+        }
+      },
+      {
+        "behaviorId": "wander",
+        "params": {}
+      }
+    ]
+  },
+  "melee_coward": {
+    "id": "melee_coward",
+    "behaviors": [
+      {
+        "behaviorId": "flee",
+        "params": {
+          "threshold": 0.3
+        }
+      },
+      {
+        "behaviorId": "hunt",
+        "params": {
+          "aggroRadius": 5
+        }
+      },
+      {
+        "behaviorId": "wander",
+        "params": {}
+      }
+    ]
+  },
+  "ranged_archer": {
+    "id": "ranged_archer",
+    "behaviors": [
+      {
+        "behaviorId": "flee",
+        "params": {
+          "threshold": 0.3
+        }
+      },
+      {
+        "behaviorId": "ranged",
+        "params": {
+          "range": 6
+        }
+      },
+      {
+        "behaviorId": "hunt",
+        "params": {
+          "aggroRadius": 6
+        }
+      },
+      {
+        "behaviorId": "wander",
+        "params": {}
+      }
+    ]
+  },
+  "caster_mage": {
+    "id": "caster_mage",
+    "behaviors": [
+      {
+        "behaviorId": "flee",
+        "params": {
+          "threshold": 0.4
+        }
+      },
+      {
+        "behaviorId": "spell",
+        "params": {
+          "abilities": [
+            {
+              "effectId": "scroll_confusion",
+              "range": 5,
+              "cooldown": 10
+            },
+            {
+              "effectId": "scroll_lightning",
+              "range": 8,
+              "cooldown": 5
+            }
+          ]
+        }
+      },
+      {
+        "behaviorId": "hunt",
+        "params": {
+          "aggroRadius": 8
+        }
+      },
+      {
+        "behaviorId": "wander",
+        "params": {}
+      }
+    ]
+  }
+}

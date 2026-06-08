@@ -5,6 +5,7 @@ import {
   type SerializedLevelData
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
+import { loadCampaign } from './loader.ts';
 
 const SAVE_KEY = 'roguelike_save';
 
@@ -39,6 +40,7 @@ export function saveGame(state: GameState): void {
   );
 
   const serializedState: SerializedGameState = {
+    campaignId: state.campaignId,
     entities: state.entities,
     components: Array.from(state.components.entries()),
     map: state.map,
@@ -65,12 +67,16 @@ export function saveGame(state: GameState): void {
  * Reconstructs Map objects and rebuilds the spatial index.
  * @returns The GameState, or null if no save exists or loading fails.
  */
-export function loadGame(): GameState | null {
+export async function loadGame(): Promise<GameState | null> {
   const data = localStorage.getItem(SAVE_KEY);
   if (!data) return null;
 
   try {
     const sState: SerializedGameState = JSON.parse(data);
+
+    // Default to 'default' if an old save is loaded
+    const campaignId = sState.campaignId || 'default';
+    const campaign = await loadCampaign(campaignId);
 
     const rehydratedLevels = new Map<number, LevelData>();
     for (const [depth, sLevelData] of sState.levels) {
@@ -83,6 +89,8 @@ export function loadGame(): GameState | null {
     }
 
     const stateWithoutIndex: GameState = {
+      campaignId,
+      campaign,
       entities: sState.entities,
       components: new Map(sState.components),
       map: sState.map,

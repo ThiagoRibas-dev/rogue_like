@@ -1,0 +1,29 @@
+{
+  "colors": {
+    "background": "#000000",
+    "floorDimFg": "#0b0c0e",
+    "floorFg": "#1a1d24",
+    "goblinFg": "#8B4513",
+    "orcFg": "#2ecc71",
+    "playerFg": "#00ffff",
+    "shamanFg": "#9b59b6",
+    "stairsFg": "#ffffff",
+    "transparent": "transparent",
+    "trollFg": "#27ae60",
+    "wallDimFg": "#202225",
+    "wallFg": "#4a4d53"
+  },
+  "glyphs": {
+    "floor": ".",
+    "player": "@",
+    "stairsDown": ">",
+    "stairsUp": "<",
+    "wall": "#"
+  },
+  "ui": {
+    "displayWidth": 50,
+    "displayHeight": 25,
+    "fontSize": 18,
+    "fontFamily": "JetBrains Mono, Courier New, monospace"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "player": {
+    "id": "player",
+    "name": "Player",
+    "glyph": "@",
+    "fg": "#00ffff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 5,
+      "defense": 2
+    },
+    "inventoryConfig": {
+      "baseCapacity": 10
+    },
+    "faction": "player"
+  },
+  "orc": {
+    "id": "orc",
+    "name": "Orc",
+    "glyph": "o",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 10,
+      "attack": 3,
+      "defense": 0,
+      "xpGiven": 50
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster"
+  },
+  "troll": {
+    "id": "troll",
+    "name": "Troll",
+    "glyph": "T",
+    "fg": "#27ae60",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 80,
+    "fighter": {
+      "maxHp": 16,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 4,
+      "wanders": false
+    },
+    "faction": "monster"
+  },
+  "goblin_archer": {
+    "id": "goblin_archer",
+    "name": "Goblin Archer",
+    "glyph": "g",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 40
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "monster"
+  },
+  "orc_shaman": {
+    "id": "orc_shaman",
+    "name": "Orc Shaman",
+    "glyph": "s",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 100
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": true
+    },
+    "faction": "monster"
+  },
+  "hidden_trap": {
+    "id": "hidden_trap",
+    "name": "Hidden Trap",
+    "glyph": "^",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": false
+  }
+}

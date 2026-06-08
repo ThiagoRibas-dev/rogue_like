@@ -1,7 +1,6 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type FactionComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { HOSTILITY_MATRIX, FactionRelation, FactionId } from '../constants/faction.constants.ts';
 
 /**
  * Gets the faction relation between two entities.
@@ -11,21 +10,25 @@ import { HOSTILITY_MATRIX, FactionRelation, FactionId } from '../constants/facti
  * @param target The EntityId being checked against.
  * @returns The FactionRelation enum value.
  */
-export function getFactionRelation(state: GameState, subject: EntityId, target: EntityId): FactionRelation {
+export function getFactionRelation(
+  state: GameState,
+  subject: EntityId,
+  target: EntityId
+): 'hostile' | 'neutral' | 'friendly' {
   const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;
   const targetFactionCmp = getComponent(state, target, ComponentType.Faction) as FactionComponent | undefined;
 
-  const subjectFaction = subjectFactionCmp?.factionId ?? FactionId.Neutral;
-  const targetFaction = targetFactionCmp?.factionId ?? FactionId.Neutral;
+  const subjectFaction = subjectFactionCmp?.factionId ?? 'neutral';
+  const targetFaction = targetFactionCmp?.factionId ?? 'neutral';
 
-  const relations = HOSTILITY_MATRIX[subjectFaction];
+  const relations = state.campaign.factions[subjectFaction];
   if (!relations) {
-    return FactionRelation.Neutral;
+    return 'neutral';
   }
 
   const relation = relations[targetFaction];
   if (!relation) {
-    return FactionRelation.Neutral;
+    return 'neutral';
   }
 
   return relation;
@@ -39,5 +42,5 @@ export function getFactionRelation(state: GameState, subject: EntityId, target: 
  * @returns True if the subject is hostile to the target.
  */
 export function isHostile(state: GameState, subject: EntityId, target: EntityId): boolean {
-  return getFactionRelation(state, subject, target) === FactionRelation.Hostile;
+  return getFactionRelation(state, subject, target) === 'hostile';
 }

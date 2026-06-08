@@ -1,0 +1,40 @@
+{
+  "poison": {
+    "id": "poison",
+    "name": "Poisoned",
+    "color": "#00d2d3",
+    "perTurnDamage": 2
+  },
+  "haste": {
+    "id": "haste",
+    "name": "Hasted",
+    "color": "#feca57",
+    "statModifiers": {
+      "speed": 50
+    }
+  },
+  "weakness": {
+    "id": "weakness",
+    "name": "Weakened",
+    "color": "#ff9f43",
+    "statModifiers": {
+      "attack": -5
+    }
+  },
+  "stun": {
+    "id": "stun",
+    "name": "Stunned",
+    "color": "#c8d6e5",
+    "flags": {
+      "skipTurn": true
+    }
+  },
+  "confusion": {
+    "id": "confusion",
+    "name": "Confused",
+    "color": "#f368e0",
+    "flags": {
+      "confused": true
+    }
+  }
+}

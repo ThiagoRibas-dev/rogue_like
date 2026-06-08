@@ -1,8 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { ITEM_REGISTRY } from '../constants/items.constants.ts';
-import { STATUS_EFFECTS } from '../constants/status.constants.ts';
 
 /**
  * The effective combat stats for an entity after applying all equipment bonuses.
@@ -57,7 +55,7 @@ export function getEffectiveStats(state: GameState, entityId: EntityId): Effecti
       if (itemEntityId !== null) {
         const item = getComponent(state, itemEntityId, ComponentType.Item);
         if (item) {
-          const def = ITEM_REGISTRY[item.itemId];
+          const def = state.campaign.items[item.itemId];
           if (def?.equippable) {
             attackBonus += def.equippable.attackBonus;
             defenseBonus += def.equippable.defenseBonus;
@@ -71,7 +69,7 @@ export function getEffectiveStats(state: GameState, entityId: EntityId): Effecti
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   if (statuses) {
     for (const active of statuses.activeEffects) {
-      const def = STATUS_EFFECTS[active.effectId];
+      const def = state.campaign.status[active.effectId];
       if (def?.statModifiers) {
         attackBonus += def.statModifiers.attack ?? 0;
         defenseBonus += def.statModifiers.defense ?? 0;

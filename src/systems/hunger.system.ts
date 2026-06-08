@@ -4,16 +4,22 @@ import { ComponentType, type HungerComponent, type FighterComponent } from '../t
 import { getComponent, removeEntity } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
-import { HUNGER_THRESHOLDS, HungerState } from '../constants/hunger.constants.ts';
+export enum HungerState {
+  Satiated = 'Satiated',
+  Normal = 'Normal',
+  Hungry = 'Hungry',
+  Starving = 'Starving'
+}
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
  * Returns the current HungerState for a given satiation value.
  */
-export function getHungerState(satiation: number): HungerState {
-  if (satiation >= HUNGER_THRESHOLDS.SATIATED) return HungerState.Satiated;
-  if (satiation >= HUNGER_THRESHOLDS.NORMAL) return HungerState.Normal;
-  if (satiation >= HUNGER_THRESHOLDS.HUNGRY) return HungerState.Hungry;
+export function getHungerState(state: GameState, satiation: number): HungerState {
+  const t = state.campaign.rules.hunger.thresholds;
+  if (satiation >= t.satiated) return HungerState.Satiated;
+  if (satiation >= t.normal) return HungerState.Normal;
+  if (satiation >= t.hungry) return HungerState.Hungry;
   return HungerState.Starving;
 }
 
@@ -35,8 +41,8 @@ export function processHungerTick(state: GameState, entityId: EntityId, energyCo
   const satiationLoss = energyCost / 100;
   const newSatiation = Math.max(0, hunger.satiation - satiationLoss);
 
-  const oldState = getHungerState(hunger.satiation);
-  const newState = getHungerState(newSatiation);
+  const oldState = getHungerState(state, hunger.satiation);
+  const newState = getHungerState(state, newSatiation);
 
   let nextState = state;
   const nextComponents = new Map(nextState.components);

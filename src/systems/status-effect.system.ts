@@ -7,7 +7,7 @@ import {
   type ActiveStatusEffect
 } from '../types/components.types.ts';
 import { getComponent, removeEntity } from '../core/ecs.ts';
-import { STATUS_EFFECTS } from '../constants/status.constants.ts';
+
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
@@ -39,7 +39,7 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
   let xpToGrant: { source: EntityId; amount: number } | null = null;
 
   for (const active of statuses.activeEffects) {
-    const def = STATUS_EFFECTS[active.effectId];
+    const def = state.campaign.status[active.effectId];
     if (def) {
       if (def.perTurnDamage) damageTaken += def.perTurnDamage;
       if (def.perTurnHeal) healthGained += def.perTurnHeal;
@@ -157,7 +157,7 @@ export function shouldSkipTurn(state: GameState, entityId: EntityId): boolean {
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   if (!statuses) return false;
   return statuses.activeEffects.some((e) => {
-    const def = STATUS_EFFECTS[e.effectId];
+    const def = state.campaign.status[e.effectId];
     return def?.flags?.skipTurn === true;
   });
 }
@@ -205,7 +205,7 @@ export function applyStatusEffect(
     nextComponents.set(entityId, [...comps, nextStatuses]);
   }
 
-  const def = STATUS_EFFECTS[effectId];
+  const def = state.campaign.status[effectId];
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
   let nextState: GameState = { ...state, components: nextComponents };
 

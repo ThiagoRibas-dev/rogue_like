@@ -1,4 +1,5 @@
 import type { Component } from './components.types.ts';
+import type { CampaignData } from './campaign.types.ts';
 
 /**
  * Enum defining the current UI interaction mode.
@@ -68,6 +69,8 @@ export interface LevelData {
  * Immutable shape of the global game state.
  */
 export interface GameState {
+  readonly campaignId: string;
+  readonly campaign: CampaignData;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
   readonly map: GameMap;
@@ -107,6 +110,7 @@ export interface SerializedLevelData {
  * Shape of GameState when serialized to JSON.
  */
 export interface SerializedGameState {
+  readonly campaignId: string;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
   readonly map: GameMap;

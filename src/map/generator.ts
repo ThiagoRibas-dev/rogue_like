@@ -1,16 +1,7 @@
 import * as ROT from 'rot-js';
 import { type GameMap, type Tile } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import {
-  MIN_ROOM_WIDTH,
-  MAX_ROOM_WIDTH,
-  MIN_ROOM_HEIGHT,
-  MAX_ROOM_HEIGHT,
-  MIN_CORRIDOR_LENGTH,
-  MAX_CORRIDOR_LENGTH,
-  DUG_PERCENTAGE,
-  MAX_DUNGEON_DEPTH
-} from '../constants/map.constants.ts';
+import { type RulesConfig } from '../types/campaign.types.ts';
 
 /**
  * Generates a procedural room-and-corridor dungeon map using ROT.Map.Digger.
@@ -24,7 +15,8 @@ import {
 export function generateDungeon(
   width: number,
   height: number,
-  depth: number
+  depth: number,
+  rules: RulesConfig['map']
 ): {
   readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };
@@ -54,10 +46,10 @@ export function generateDungeon(
   // 2. Create the digger generator
   // ROT.Map.Digger internally queries the global ROT.RNG instance (which we configured in core/rng.ts)
   const digger = new ROT.Map.Digger(width, height, {
-    roomWidth: [MIN_ROOM_WIDTH, MAX_ROOM_WIDTH],
-    roomHeight: [MIN_ROOM_HEIGHT, MAX_ROOM_HEIGHT],
-    corridorLength: [MIN_CORRIDOR_LENGTH, MAX_CORRIDOR_LENGTH],
-    dugPercentage: DUG_PERCENTAGE
+    roomWidth: [rules.minRoomWidth, rules.maxRoomWidth],
+    roomHeight: [rules.minRoomHeight, rules.maxRoomHeight],
+    corridorLength: [rules.minCorridorLength, rules.maxCorridorLength],
+    dugPercentage: rules.dugPercentage
   });
 
   // 3. Dig the dungeon!
@@ -116,8 +108,7 @@ export function generateDungeon(
     throw new Error('Dungeon generation failed: Stairs down coordinates are undefined.');
   }
 
-  // Place stairs down at the exit point (if we aren't at the maximum depth of MAX_DUNGEON_DEPTH)
-  if (depth < MAX_DUNGEON_DEPTH) {
+  if (depth < rules.maxDungeonDepth) {
     const exitIndex = coordToIndex(stairsDownX, stairsDownY, width);
     const tile = tiles[exitIndex];
     if (tile !== undefined) {

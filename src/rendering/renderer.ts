@@ -2,8 +2,7 @@ import type { Display } from 'rot-js';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { getComponent, queryEntities } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
-import { TILE_REGISTRY } from '../constants/tile.constants.ts';
-import { COLOR_WALL_DIM_FG, COLOR_FLOOR_DIM_FG } from '../constants/colors.constants.ts';
+
 import { coordToIndex } from '../utils/grid.ts';
 import { computeFOV } from '../map/fov.ts';
 import { getCameraOffset } from './camera.ts';
@@ -49,7 +48,7 @@ export function render(display: Display, state: GameState): void {
       const isTileExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
 
       if (isTileExplored) {
-        const tileDef = TILE_REGISTRY[tile.tileId];
+        const tileDef = state.campaign.tiles[tile.tileId];
         if (tileDef !== undefined) {
           const isVisible = state.map.isFullyExplored || visibleIndices.has(tileIndex);
 
@@ -57,9 +56,9 @@ export function render(display: Display, state: GameState): void {
           let fgColor = tileDef.fg;
           if (!isVisible) {
             if (tile.tileId === 'stone_wall') {
-              fgColor = COLOR_WALL_DIM_FG;
+              fgColor = state.campaign.theme.colors.wallDimFg ?? fgColor;
             } else {
-              fgColor = COLOR_FLOOR_DIM_FG;
+              fgColor = state.campaign.theme.colors.floorDimFg ?? fgColor;
             }
           }
 

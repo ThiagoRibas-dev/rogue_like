@@ -3,7 +3,6 @@ import { type Intent, IntentType } from '../types/intents.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { isHostile } from '../utils/faction.ts';
-import { ITEM_EFFECTS } from '../constants/effects.constants.ts';
 
 interface AbilityDef {
   readonly effectId: string;
@@ -55,7 +54,7 @@ export function spellBehavior(
   // Try to use the first ability that is in range
   for (const ability of abilities) {
     if (minDistance <= ability.range) {
-      const effectDef = ITEM_EFFECTS[ability.effectId];
+      const effectDef = state.campaign.effects[ability.effectId];
       if (effectDef) {
         return {
           type: IntentType.UseAbility,

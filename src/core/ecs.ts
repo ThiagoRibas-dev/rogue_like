@@ -14,8 +14,6 @@ import {
   type FactionComponent
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
-import { ENTITY_TEMPLATES } from '../constants/spawning.constants.ts';
-import { ITEM_REGISTRY } from '../constants/items.constants.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -139,7 +137,7 @@ export function queryEntities<T extends ComponentType>(
  * @returns A tuple of the updated state and the new EntityId.
  */
 export function spawnEntity(state: GameState, templateId: string, x: number, y: number): [GameState, EntityId] {
-  const template = ENTITY_TEMPLATES[templateId];
+  const template = state.campaign.entities[templateId];
   if (!template) throw new Error(`Unknown entity template: ${templateId}`);
 
   const [stateAfterCreate, entityId] = createEntity(state);
@@ -205,7 +203,7 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     nextState = addComponent(nextState, entityId, player);
 
     // Attach Inventory and Equipment components to the player
-    const template = ENTITY_TEMPLATES[templateId];
+    const template = state.campaign.entities[templateId];
     const inventoryCmp: InventoryComponent = {
       type: ComponentType.Inventory,
       items: [],
@@ -238,7 +236,7 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
  * @returns A tuple of the updated state and the new EntityId.
  */
 export function spawnItem(state: GameState, itemId: string, x: number, y: number): [GameState, EntityId] {
-  const def = ITEM_REGISTRY[itemId];
+  const def = state.campaign.items[itemId];
   if (!def) throw new Error(`Unknown item ID: ${itemId}`);
 
   const [stateAfterCreate, entityId] = createEntity(state);

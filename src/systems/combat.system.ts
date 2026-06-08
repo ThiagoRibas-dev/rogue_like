@@ -10,9 +10,9 @@ import { getComponent, removeEntity } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
-import { ITEM_REGISTRY } from '../constants/items.constants.ts';
+
 import { getEffectiveStats } from '../utils/stats.ts';
-import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
+
 import { type EntityId, UIMode } from '../types/game-state.types.ts';
 import { deleteSave } from '../core/save.ts';
 
@@ -38,7 +38,7 @@ export function grantXp(state: GameState, entityId: EntityId, amount: number): G
     nextState = addMessage(nextState, `You gained ${amount} XP.`, MessageLogCategory.System);
   }
 
-  let nextLevelDef = getAdvancementForLevel(nextFighter.level + 1);
+  let nextLevelDef = state.campaign.advancement.find((a) => a.level === nextFighter.level + 1);
 
   while (nextLevelDef && nextFighter.xp >= nextLevelDef.requiredXp) {
     nextFighter = {
@@ -55,7 +55,7 @@ export function grantXp(state: GameState, entityId: EntityId, amount: number): G
       nextState = addMessage(nextState, `You reached level ${nextFighter.level}!`, MessageLogCategory.System);
     }
 
-    nextLevelDef = getAdvancementForLevel(nextFighter.level + 1);
+    nextLevelDef = state.campaign.advancement.find((a) => a.level === nextFighter.level + 1);
   }
 
   const nextComponents = new Map(nextState.components);
@@ -80,7 +80,10 @@ export function grantXp(state: GameState, entityId: EntityId, amount: number): G
  * @param intent The MeleeAttackIntent to process.
  * @returns The updated GameState.
  */
-export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIntent): GameState {
+export function processMeleeAttackIntent(
+  state: GameState,
+  intent: MeleeAttackIntent
+): { state: GameState; success: boolean } {
   const { entityId, defenderId } = intent;
 
   const attackerFighter = getComponent(state, entityId, ComponentType.Fighter);
@@ -89,7 +92,7 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
   const defenderRenderable = getComponent(state, defenderId, ComponentType.Renderable);
 
   if (!attackerFighter || !defenderFighter) {
-    return state;
+    return { state, success: false };
   }
 
   const attackerName = attackerRenderable ? attackerRenderable.glyph : 'Someone';
@@ -142,7 +145,7 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
       if (equipment && equipment.weapon !== null) {
         const weaponItem = getComponent(state, equipment.weapon, ComponentType.Item) as ItemComponent | undefined;
         if (weaponItem) {
-          const itemDef = ITEM_REGISTRY[weaponItem.itemId];
+          const itemDef = state.campaign.items[weaponItem.itemId];
           if (itemDef?.equippable?.onHit) {
             nextState = applyStatusEffect(
               nextState,
@@ -180,5 +183,5 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
     );
   }
 
-  return nextState;
+  return { state: nextState, success: true };
 }

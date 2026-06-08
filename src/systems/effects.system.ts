@@ -1,5 +1,3 @@
-import { ITEM_EFFECTS, ItemEffectType } from '../constants/effects.constants.ts';
-import { ITEM_REGISTRY } from '../constants/items.constants.ts';
 import { getComponent, removeEntity } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import {
@@ -13,7 +11,6 @@ import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
-import { MAX_SATIATION } from '../constants/hunger.constants.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -27,13 +24,13 @@ import { MAX_SATIATION } from '../constants/hunger.constants.ts';
  * @returns The updated GameState.
  */
 export function applyItemEffect(state: GameState, userId: EntityId, effectId: string, itemName: string): GameState {
-  const effectDef = ITEM_EFFECTS[effectId];
+  const effectDef = state.campaign.effects[effectId];
   if (!effectDef) {
     return addMessage(state, `Unknown effect: ${effectId}`, MessageLogCategory.System);
   }
 
   switch (effectDef.type) {
-    case ItemEffectType.Heal: {
+    case 'heal': {
       const fighter = getComponent(state, userId, ComponentType.Fighter);
       if (!fighter) return state;
 
@@ -59,7 +56,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.CombatHit);
     }
 
-    case ItemEffectType.DamageNearest: {
+    case 'damage_nearest': {
       const userPos = getComponent(state, userId, ComponentType.Position);
       if (!userPos) return state;
 
@@ -113,7 +110,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return nextState;
     }
 
-    case ItemEffectType.DamageArea: {
+    case 'damage_area': {
       const userPos = getComponent(state, userId, ComponentType.Position);
       if (!userPos) return state;
 
@@ -160,7 +157,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return nextState;
     }
 
-    case ItemEffectType.ApplyStatus: {
+    case 'apply_status': {
       if (!effectDef.statusId || !effectDef.duration) return state;
 
       if (effectDef.range) {
@@ -204,7 +201,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       }
     }
 
-    case ItemEffectType.Identify: {
+    case 'identify': {
       const inventory = getComponent(state, userId, ComponentType.Inventory);
       if (!inventory) return state;
 
@@ -221,11 +218,11 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return { ...nextState, identifiedItems: newIdentifiedSet };
     }
 
-    case ItemEffectType.Satiate: {
+    case 'satiate': {
       const hunger = getComponent(state, userId, ComponentType.Hunger);
       if (!hunger) return state;
 
-      const newSatiation = Math.min(MAX_SATIATION, hunger.satiation + effectDef.value);
+      const newSatiation = Math.min(state.campaign.rules.hunger.maxSatiation, hunger.satiation + effectDef.value);
       const nextHunger = { ...hunger, satiation: newSatiation };
 
       const nextComponents = new Map(state.components);
@@ -254,24 +251,31 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
  * @param itemIndex The index of the item in the entity's inventory array.
  * @returns The updated GameState.
  */
-export function processUseItemIntent(state: GameState, entityId: EntityId, itemIndex: number): GameState {
+export function processUseItemIntent(
+  state: GameState,
+  entityId: EntityId,
+  itemIndex: number
+): { state: GameState; success: boolean } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
-  if (!inventory) return state;
+  if (!inventory) return { state, success: false };
 
   const itemEntityId = inventory.items[itemIndex];
-  if (itemEntityId === undefined) return state;
+  if (itemEntityId === undefined) return { state, success: false };
 
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return state;
+  if (!itemComp) return { state, success: false };
 
-  const def = ITEM_REGISTRY[itemComp.itemId];
+  const def = state.campaign.items[itemComp.itemId];
   const isIdentified = state.identifiedItems.has(itemComp.itemId);
   const itemName = isIdentified
     ? def?.name
     : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
 
   if (!def?.consumable) {
-    return addMessage(state, `The ${itemName} cannot be used directly. Try equipping it.`, MessageLogCategory.System);
+    return {
+      state: addMessage(state, `The ${itemName} cannot be used directly. Try equipping it.`, MessageLogCategory.System),
+      success: false
+    };
   }
 
   // Identify on use
@@ -317,7 +321,7 @@ export function processUseItemIntent(state: GameState, entityId: EntityId, itemI
     nextState = { ...nextState, components: nextComponents };
   }
 
-  return nextState;
+  return { state: nextState, success: true };
 }
 
 /**
@@ -329,6 +333,6 @@ export function processUseAbilityIntent(
   entityId: EntityId,
   effectId: string,
   abilityName: string
-): GameState {
-  return applyItemEffect(state, entityId, effectId, abilityName);
+): { state: GameState; success: boolean } {
+  return { state: applyItemEffect(state, entityId, effectId, abilityName), success: true };
 }

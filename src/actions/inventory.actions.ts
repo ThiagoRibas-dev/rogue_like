@@ -8,7 +8,7 @@ import {
   type UnequipItemIntent,
   type ToggleInventoryIntent
 } from '../types/intents.types.ts';
-import { type EquipmentSlot } from '../constants/items.constants.ts';
+import { type EquipmentSlot } from '../types/campaign.types.ts';
 
 /**
  * Creates a PickUp intent.

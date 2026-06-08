@@ -1,0 +1,198 @@
+{
+  "health_potion": {
+    "id": "health_potion",
+    "name": "Health Potion",
+    "unidentifiedName": "Potion",
+    "description": "A vial of crimson liquid that restores vitality when consumed.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    }
+  },
+  "scroll_of_lightning": {
+    "id": "scroll_of_lightning",
+    "name": "Scroll of Lightning",
+    "unidentifiedName": "Scroll",
+    "description": "A crackling scroll that strikes the nearest enemy with a bolt of lightning.",
+    "glyph": "?",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "damage_nearest_10",
+      "charges": 1
+    }
+  },
+  "potion_haste": {
+    "id": "potion_haste",
+    "name": "Potion of Haste",
+    "unidentifiedName": "Potion",
+    "description": "A potion that greatly increases your speed for a short duration.",
+    "glyph": "!",
+    "fg": "#feca57",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "potion_haste",
+      "charges": 1
+    }
+  },
+  "scroll_confusion": {
+    "id": "scroll_confusion",
+    "name": "Scroll of Confusion",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll covered in erratic runes. Confuses the nearest enemy.",
+    "glyph": "?",
+    "fg": "#f368e0",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_confusion",
+      "charges": 1
+    }
+  },
+  "scroll_fireball": {
+    "id": "scroll_fireball",
+    "name": "Scroll of Fireball",
+    "unidentifiedName": "Scroll",
+    "description": "Unleashes a massive fireball that damages all enemies in a wide radius.",
+    "glyph": "?",
+    "fg": "#ee5253",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_fireball",
+      "charges": 1
+    }
+  },
+  "scroll_identify": {
+    "id": "scroll_identify",
+    "name": "Scroll of Identify",
+    "unidentifiedName": "Scroll",
+    "description": "Magical script that reveals the true nature of all items in your inventory.",
+    "glyph": "?",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_identify",
+      "charges": 1
+    }
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "name": "Food Ration",
+    "unidentifiedName": "Ration",
+    "description": "A wrapped bundle of dried meats and bread. Highly nutritious.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "food_ration",
+      "charges": 1
+    }
+  },
+  "apple": {
+    "id": "apple",
+    "name": "Apple",
+    "unidentifiedName": "Fruit",
+    "description": "A crisp, red apple. Good for a quick snack.",
+    "glyph": "%",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "apple",
+      "charges": 1
+    }
+  },
+  "short_sword": {
+    "id": "short_sword",
+    "name": "Short Sword",
+    "unidentifiedName": "Short Sword",
+    "description": "A light, double-edged blade favored by adventurers for its speed.",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 3,
+    "equippable": {
+      "slot": "weapon",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "leather_armor": {
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "unidentifiedName": "Leather Armor",
+    "description": "Tanned hide stitched into a vest. Provides modest protection.",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "equippable": {
+      "slot": "armor",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 2,
+      "carryBonus": 0
+    }
+  },
+  "backpack": {
+    "id": "backpack",
+    "name": "Backpack",
+    "unidentifiedName": "Backpack",
+    "description": "A sturdy pack that increases the amount of items you can carry.",
+    "glyph": "b",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "equippable": {
+      "slot": "armor",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 5
+    }
+  },
+  "venom_dagger": {
+    "id": "venom_dagger",
+    "name": "Venom Dagger",
+    "unidentifiedName": "Green-Tinged Dagger",
+    "description": "A wicked blade dripping with corrosive poison.",
+    "glyph": "/",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "equippable": {
+      "slot": "weapon",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0,
+      "onHit": {
+        "statusId": "poison",
+        "duration": 5
+      }
+    }
+  }
+}

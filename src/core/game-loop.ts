@@ -9,6 +9,7 @@ import { processMoveIntent } from '../systems/movement.system.ts';
 import { processInteractIntent, processChangeFloorIntent } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
+import { processTriggers } from '../systems/trigger.system.ts';
 import {
   processToggleTargetingIntent,
   processMoveTargetIntent,
@@ -26,7 +27,7 @@ import { processUseItemIntent, processUseAbilityIntent } from '../systems/effect
 import { UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { assertNever } from '../utils/assert.ts';
-import { TILE_REGISTRY } from '../constants/tile.constants.ts';
+
 import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { processHungerTick } from '../systems/hunger.system.ts';
 
@@ -128,6 +129,10 @@ export function processTurn(entityId: EntityId): void {
       if (result.energyCost > 0) {
         nextState = processHungerTick(nextState, entityId, result.energyCost);
         setTurnDuration(result.energyCost);
+      } else {
+        // AI failed to execute its intended action (e.g., bumped into a friendly unit).
+        // Force a turn duration to prevent an infinite 0-energy loop.
+        setTurnDuration(100);
       }
       if (nextState !== state) {
         updateState(nextState);
@@ -147,27 +152,23 @@ export function processTurn(entityId: EntityId): void {
  * Executes an intent and computes its energy cost based on success.
  */
 function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
-  const nextState = applyIntent(state, intent);
+  const result = applyIntent(state, intent);
+  let nextState = result.state;
 
   let energyCost = 100; // default cost
 
-  if (intent.type === IntentType.Move) {
-    const posBefore = getComponent(state, intent.entityId, ComponentType.Position);
+  if (!result.success) {
+    energyCost = 0;
+  } else if (intent.type === IntentType.Move) {
     const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
-    if (posBefore && posAfter && (posBefore.x !== posAfter.x || posBefore.y !== posAfter.y)) {
-      // Move succeeded! Look up movement cost
+    if (posAfter) {
       const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
       const tile = state.map.tiles[tileIdx];
       if (tile) {
-        energyCost = TILE_REGISTRY[tile.tileId]?.movementCost ?? 100;
+        energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
       }
-    } else if (state !== nextState) {
-      // It was likely a MeleeAttack substitution or interaction
-      energyCost = 100;
-    } else {
-      // Complete failure (bumping into wall without message etc)
-      energyCost = 0;
     }
+    nextState = processTriggers(nextState, intent.entityId);
   } else if (
     intent.type === IntentType.ToggleInventory ||
     intent.type === IntentType.ToggleTargeting ||
@@ -187,18 +188,18 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
     }
   }
 
-  return { state: nextState, energyCost };
+  return { state: nextState, success: result.success, energyCost };
 }
 
 /**
  * Dispatches an intent to the appropriate system for validation and execution.
  */
-function applyIntent(state: GameState, intent: Intent): GameState {
+function applyIntent(state: GameState, intent: Intent): { state: GameState; success: boolean } {
   switch (intent.type) {
     case IntentType.Move:
       return processMoveIntent(state, intent);
     case IntentType.Wait:
-      return addMessage(state, 'You wait a moment.', MessageLogCategory.System);
+      return { state: addMessage(state, 'You wait a moment.', MessageLogCategory.System), success: true };
     case IntentType.Interact:
       return processInteractIntent(state, intent);
     case IntentType.ChangeFloor:
@@ -228,13 +229,16 @@ function applyIntent(state: GameState, intent: Intent): GameState {
     case IntentType.UnequipItem:
       return processUnequipItemIntent(state, intent.entityId, intent.slot);
     case IntentType.ToggleInventory:
-      return { ...state, uiMode: state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game };
+      return {
+        state: { ...state, uiMode: state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game },
+        success: false
+      };
 
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {
       const nextMap = { ...state.map, isFullyExplored: !state.map.isFullyExplored };
       const msg = nextMap.isFullyExplored ? '[DEBUG] Map Revealed.' : '[DEBUG] Map Hidden.';
-      return addMessage({ ...state, map: nextMap }, msg, MessageLogCategory.System);
+      return { state: addMessage({ ...state, map: nextMap }, msg, MessageLogCategory.System), success: false };
     }
 
     case IntentType.DebugGodMode: {
@@ -250,26 +254,32 @@ function applyIntent(state: GameState, intent: Intent): GameState {
           entityId,
           entityComps.filter((c) => c.type !== ComponentType.GodMode)
         );
-        return addMessage(
-          { ...state, components: nextComponents },
-          '[DEBUG] God Mode Disabled.',
-          MessageLogCategory.System
-        );
+        return {
+          state: addMessage(
+            { ...state, components: nextComponents },
+            '[DEBUG] God Mode Disabled.',
+            MessageLogCategory.System
+          ),
+          success: false
+        };
       } else {
         // Add GodMode
         const godCmp: GodModeComponent = { type: ComponentType.GodMode };
         nextComponents.set(entityId, [...entityComps, godCmp]);
-        return addMessage(
-          { ...state, components: nextComponents },
-          '[DEBUG] God Mode Enabled.',
-          MessageLogCategory.System
-        );
+        return {
+          state: addMessage(
+            { ...state, components: nextComponents },
+            '[DEBUG] God Mode Enabled.',
+            MessageLogCategory.System
+          ),
+          success: false
+        };
       }
     }
 
     case IntentType.DebugSpawnEntity: {
       const pos = getComponent(state, intent.entityId, ComponentType.Position);
-      if (!pos) return state;
+      if (!pos) return { state, success: false };
 
       // Find an empty adjacent tile
       const neighbors = [
@@ -285,7 +295,7 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       for (const n of neighbors) {
         const idx = coordToIndex(n.x, n.y, state.map.width);
         const tile = state.map.tiles[idx];
-        if (tile && TILE_REGISTRY[tile.tileId]?.walkable) {
+        if (tile && state.campaign.tiles[tile.tileId]?.walkable) {
           const entitiesAt = state.spatialIndex.get(`${n.x},${n.y}`);
           if (!entitiesAt || entitiesAt.length === 0) {
             spawnX = n.x;
@@ -296,7 +306,10 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       }
 
       if (spawnX === -1) {
-        return addMessage(state, '[DEBUG] No room to spawn entity.', MessageLogCategory.System);
+        return {
+          state: addMessage(state, '[DEBUG] No room to spawn entity.', MessageLogCategory.System),
+          success: false
+        };
       }
 
       const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
@@ -307,7 +320,10 @@ function applyIntent(state: GameState, intent: Intent): GameState {
         addActor(newEntityId);
       }
 
-      return addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System);
+      return {
+        state: addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System),
+        success: false
+      };
     }
 
     default:

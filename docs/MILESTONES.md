@@ -105,21 +105,22 @@ Layer in identification mystery, resource pressure, and environmental hazards on
 - [x] Implement **Interactive Terrain: Traps** (hidden until stepped on or detected; trigger status effects like poison or teleportation).
 - [x] Add **terrain movement cost modifiers** to the Tile Registry (e.g., shallow water = 2x movement cost via speed penalty).
 
-## ⚪ Milestone 11: Modding & Extensibility (Data-Driven Engine)
+## 🟢 Milestone 11: Modding & Extensibility (Data-Driven Engine)
 Extract all hardcoded registries and tables into external data files, and build the loading/validation pipeline.
-- [ ] Design a **Campaign Manifest** JSON schema (campaign name, starting stats, floor generation parameters, which data files to load).
-- [ ] Extract the **Entity Registry** (monster/NPC prefabs) from TypeScript constants to loadable `.json` files.
-- [ ] Extract **Spawn Tables & Loot Tables** from TypeScript constants to `.json` files.
-- [ ] Extract **Item Registry & Effect Definitions** to `.json` files.
-- [ ] Extract **Status Effect Definitions** to `.json` files.
-- [ ] Extract **AI Profiles & Faction Hostility Matrix** to `.json` files.
-- [ ] Extract **Tile Registry & Terrain Properties** to `.json` files.
-- [ ] Implement a robust **Loader & Validation** pipeline that fetches, parses, and validates all data files at game start (with clear error messages for malformed data).
-- [ ] Add **Theme & Tileset** support: custom ASCII glyph mappings, color palettes, and message log templates selectable per campaign.
-- [ ] Implement a **Campaign Selection** screen on the Main Menu that lists available campaigns from loaded manifests.
+- [x] Design a **Campaign Manifest** JSON schema (campaign name, starting stats, floor generation parameters, which data files to load).
+- [x] Extract the **Entity Registry** (monster/NPC prefabs) from TypeScript constants to loadable `.json` files.
+- [x] Extract **Spawn Tables & Loot Tables** from TypeScript constants to `.json` files.
+- [x] Extract **Item Registry & Effect Definitions** to `.json` files.
+- [x] Extract **Status Effect Definitions** to `.json` files.
+- [x] Extract **AI Profiles & Faction Hostility Matrix** to `.json` files.
+- [x] Extract **Tile Registry & Terrain Properties** to `.json` files.
+- [x] Implement a robust **Loader & Validation** pipeline that fetches, parses, and validates all data files at game start (with clear error messages for malformed data).
+- [x] Add **Theme & Tileset** support: custom ASCII glyph mappings, color palettes, and message log templates selectable per campaign.
+- [x] Implement a **Campaign Selection** screen on the Main Menu that lists available campaigns from loaded manifests.
 
 ## ⚪ Milestone 12: RTwP (Real-Time with Pause) Engine Toggle
 Re-use the pure systems architecture to support an optional real-time mode alongside the existing turn-based mode.
+- [x] **Phase 1: Architectural Foundation**: Refactor Intent results to explicitly return `{ state, success }` to eliminate 0-energy inference, and decouple hardcoded terrain/trigger logic (doors, traps) into data-driven definitions.
 - [ ] Implement a **real-time game loop** using `requestAnimationFrame` that continuously advances entity turns based on elapsed time and speed.
 - [ ] Add a **Pause state** that freezes the real-time loop while allowing UI interaction (inventory, menus).
 - [ ] Implement **Command Queuing** so the player can issue orders while paused, which execute when unpaused.

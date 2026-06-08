@@ -1,8 +1,6 @@
 import * as ROT from 'rot-js';
 import './index.css';
-import { DISPLAY_WIDTH, DISPLAY_HEIGHT, FONT_SIZE, FONT_FAMILY } from './constants/ui.constants.ts';
-import { COLOR_BACKGROUND, COLOR_PLAYER_FG, COLOR_STAIRS_FG } from './constants/colors.constants.ts';
-import { GLYPH_STAIRS_UP, GLYPH_STAIRS_DOWN } from './constants/glyphs.constants.ts';
+import { loadCampaign } from './core/loader.ts';
 import { type GameState, type EntityId } from './types/game-state.types.ts';
 import {
   ComponentType,
@@ -34,9 +32,6 @@ import { hasSaveGame, deleteSave, loadGame } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
-import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
-import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from './constants/spawning.constants.ts';
-import { LOOT_TABLE, MAX_ITEMS_PER_ROOM, ITEM_REGISTRY } from './constants/items.constants.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
@@ -65,14 +60,17 @@ import { getDirectionDelta } from './utils/direction.ts';
 // 0. Initialize RNG
 initRNG();
 
+// Await the default campaign data to bootstrap the engine
+const defaultCampaign = await loadCampaign('default');
+
 // 1. Initialize Display Options
 const displayOptions = {
-  width: DISPLAY_WIDTH,
-  height: DISPLAY_HEIGHT,
-  fontSize: FONT_SIZE,
-  fontFamily: FONT_FAMILY,
-  bg: COLOR_BACKGROUND,
-  fg: COLOR_PLAYER_FG
+  width: defaultCampaign.theme.ui.displayWidth,
+  height: defaultCampaign.theme.ui.displayHeight,
+  fontSize: defaultCampaign.theme.ui.fontSize,
+  fontFamily: defaultCampaign.theme.ui.fontFamily,
+  bg: defaultCampaign.theme.colors.background ?? '#000000',
+  fg: defaultCampaign.theme.colors.playerFg ?? '#ffffff'
 };
 
 // 2. Create the Display
@@ -93,9 +91,11 @@ if (container) {
 let playerEntityId: EntityId = -1 as unknown as EntityId; // Will be set when game starts
 
 let state: GameState = {
+  campaignId: 'default',
+  campaign: defaultCampaign,
   entities: [],
   components: new Map(),
-  map: { width: MAP_WIDTH, height: MAP_HEIGHT, tiles: [] },
+  map: { width: defaultCampaign.rules.map.width, height: defaultCampaign.rules.map.height, tiles: [] },
   nextEntityId: 1,
   nextItemInstanceId: 1,
   messages: [],
@@ -108,7 +108,19 @@ let state: GameState = {
   itemUnidentifiedNames: new Map()
 };
 
-import { POTION_DESCRIPTORS, SCROLL_DESCRIPTORS, ItemCategory } from './constants/items.constants.ts';
+const POTION_DESCRIPTORS = [
+  'Red',
+  'Blue',
+  'Green',
+  'Yellow',
+  'Purple',
+  'Murky',
+  'Bubbling',
+  'Clear',
+  'Swirling',
+  'Thick'
+];
+const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing', 'Crumbling', 'Blood-Stained', 'Dusty'];
 
 function startNewGame() {
   deleteSave();
@@ -122,8 +134,8 @@ function startNewGame() {
   let pIdx = 0;
   let sIdx = 0;
 
-  for (const [id, def] of Object.entries(ITEM_REGISTRY)) {
-    if (def.category === ItemCategory.Consumable) {
+  for (const [id, def] of Object.entries(state.campaign.items)) {
+    if (def.category === 'consumable') {
       if (def.id.includes('potion')) {
         itemUnidentifiedNames.set(id, `${potionDesc[pIdx++ % potionDesc.length]} Potion`);
       } else if (def.id.includes('scroll')) {
@@ -132,7 +144,12 @@ function startNewGame() {
     }
   }
 
-  const { map: initialMap, startPos, stairs, rooms } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
+  const {
+    map: initialMap,
+    startPos,
+    stairs,
+    rooms
+  } = generateDungeon(state.campaign.rules.map.width, state.campaign.rules.map.height, 1, state.campaign.rules.map);
   state = {
     ...state,
     map: initialMap,
@@ -158,20 +175,22 @@ function startNewGame() {
     const room = rooms[i];
     if (!room) continue;
 
-    const numMonsters = ROT.RNG.getUniformInt(0, MAX_MONSTERS_PER_ROOM);
+    const numMonsters = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxMonstersPerRoom);
     for (let m = 0; m < numMonsters; m++) {
       const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
       const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-      const template = ROT.RNG.getWeightedValue(SPAWN_WEIGHTS as Record<string, number>) || 'orc';
+      const template =
+        ROT.RNG.getWeightedValue(state.campaign.rules.spawning.spawnWeights as Record<string, number>) || 'orc';
       [state] = spawnEntity(state, template, mx, my);
     }
 
     // Spawn items in this room
-    const numItems = ROT.RNG.getUniformInt(0, MAX_ITEMS_PER_ROOM);
+    const numItems = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxItemsPerRoom);
     for (let n = 0; n < numItems; n++) {
       const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
       const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-      const itemId = ROT.RNG.getWeightedValue(LOOT_TABLE as Record<string, number>) || 'health_potion';
+      const itemId =
+        ROT.RNG.getWeightedValue(state.campaign.rules.spawning.lootTable as Record<string, number>) || 'health_potion';
       [state] = spawnItem(state, itemId, ix, iy);
     }
   }
@@ -184,9 +203,12 @@ function startNewGame() {
     const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
     const renderCmp: RenderableComponent = {
       type: ComponentType.Renderable,
-      glyph: stair.direction === 'up' ? GLYPH_STAIRS_UP : GLYPH_STAIRS_DOWN,
-      fg: COLOR_STAIRS_FG,
-      bg: 'transparent'
+      glyph:
+        stair.direction === 'up'
+          ? (state.campaign.theme.glyphs.stairsUp ?? '<')
+          : (state.campaign.theme.glyphs.stairsDown ?? '>'),
+      fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
+      bg: state.campaign.theme.colors.transparent ?? 'transparent'
     };
     const interactable: InteractableComponent = {
       type: ComponentType.Interactable,
@@ -215,8 +237,8 @@ function startNewGame() {
   startEngine();
 }
 
-function continueGame() {
-  const loadedState = loadGame();
+async function continueGame() {
+  const loadedState = await loadGame();
   if (loadedState) {
     state = loadedState;
     playerEntityId = state.entities.find(
@@ -380,7 +402,7 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
       const itemComp = itemEntityId
         ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined)
         : undefined;
-      const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
+      const def = itemComp ? currentState.campaign.items[itemComp.itemId] : undefined;
 
       if (
         itemEntityId &&

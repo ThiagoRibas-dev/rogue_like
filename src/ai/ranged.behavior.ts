@@ -1,4 +1,3 @@
-import { ITEM_EFFECTS } from '../constants/effects.constants.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
@@ -46,11 +45,11 @@ export function rangedBehavior(
   if (!nearestTarget) return null;
 
   // For a generic ranged attack, we can use a hardcoded 'damage_nearest' effect or pass it via params.
-  const effectId = (params.effectId as string) ?? ITEM_EFFECTS.damage_nearest_10;
+  const effectId = (params.effectId as string) ?? 'damage_nearest_10';
   const abilityName = (params.abilityName as string) ?? 'bow';
 
   // Ensure effect exists
-  if (!ITEM_EFFECTS[effectId]) return null;
+  if (!state.campaign.effects[effectId]) return null;
 
   // Fire!
   return {

@@ -1,0 +1,17 @@
+{
+  "player": {
+    "player": "friendly",
+    "monster": "hostile",
+    "neutral": "neutral"
+  },
+  "monster": {
+    "player": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral"
+  },
+  "neutral": {
+    "player": "neutral",
+    "monster": "neutral",
+    "neutral": "friendly"
+  }
+}
