@@ -14,7 +14,8 @@ import {
 export function createToggleTargetingAction(entityId: EntityId): ToggleTargetingIntent {
   return {
     type: IntentType.ToggleTargeting,
-    entityId
+    entityId,
+    isImmediate: true
   };
 }
 
@@ -30,7 +31,8 @@ export function createMoveTargetAction(entityId: EntityId, dx: number, dy: numbe
     type: IntentType.MoveTarget,
     entityId,
     dx,
-    dy
+    dy,
+    isImmediate: true
   };
 }
 

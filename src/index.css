@@ -533,3 +533,63 @@ kbd {
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+/* Time Controls */
+.time-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rtwp-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.speed-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.time-btn {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+}
+
+.time-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.time-btn.active {
+  background: rgba(0, 255, 255, 0.15);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.mode-btn {
+  width: 100%;
+  font-weight: bold;
+}
+
+.pause-btn {
+  flex-grow: 1;
+}
+
+.pause-btn.paused {
+  color: var(--color-health);
+  border-color: var(--color-health);
+  background: rgba(255, 71, 87, 0.15);
+}

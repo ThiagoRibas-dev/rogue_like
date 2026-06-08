@@ -66,5 +66,5 @@ export function createUnequipItemAction(entityId: EntityId, slot: EquipmentSlot)
  * @returns The generated ToggleInventoryIntent.
  */
 export function createToggleInventoryAction(entityId: EntityId): ToggleInventoryIntent {
-  return { type: IntentType.ToggleInventory, entityId };
+  return { type: IntentType.ToggleInventory, entityId, isImmediate: true };
 }

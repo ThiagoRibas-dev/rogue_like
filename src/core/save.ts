@@ -2,7 +2,8 @@ import {
   type GameState,
   type LevelData,
   type SerializedGameState,
-  type SerializedLevelData
+  type SerializedLevelData,
+  EngineMode
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
@@ -52,7 +53,9 @@ export function saveGame(state: GameState): void {
     isGameOver: state.isGameOver,
     uiMode: state.uiMode,
     identifiedItems: Array.from(state.identifiedItems),
-    itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries())
+    itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries()),
+    engineMode: state.engineMode,
+    rtwpState: state.rtwpState
   };
 
   try {
@@ -103,7 +106,10 @@ export async function loadGame(): Promise<GameState | null> {
       isGameOver: sState.isGameOver,
       uiMode: sState.uiMode,
       identifiedItems: new Set(sState.identifiedItems || []),
-      itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || [])
+      itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
+      engineMode: sState.engineMode || EngineMode.TurnBased,
+      rtwpState: sState.rtwpState || { paused: false, speedMultiplier: 1 },
+      playerCommandQueue: []
     };
 
     // Rebuild the spatial index for the active floor

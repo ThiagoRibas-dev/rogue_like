@@ -118,14 +118,14 @@ Extract all hardcoded registries and tables into external data files, and build 
 - [x] Add **Theme & Tileset** support: custom ASCII glyph mappings, color palettes, and message log templates selectable per campaign.
 - [x] Implement a **Campaign Selection** screen on the Main Menu that lists available campaigns from loaded manifests.
 
-## ⚪ Milestone 12: RTwP (Real-Time with Pause) Engine Toggle
+## 🟢 Milestone 12: RTwP (Real-Time with Pause) Engine Toggle (Complete)
 Re-use the pure systems architecture to support an optional real-time mode alongside the existing turn-based mode.
 - [x] **Phase 1: Architectural Foundation**: Refactor Intent results to explicitly return `{ state, success }` to eliminate 0-energy inference, and decouple hardcoded terrain/trigger logic (doors, traps) into data-driven definitions.
-- [ ] Implement a **real-time game loop** using `requestAnimationFrame` that continuously advances entity turns based on elapsed time and speed.
-- [ ] Add a **Pause state** that freezes the real-time loop while allowing UI interaction (inventory, menus).
-- [ ] Implement **Command Queuing** so the player can issue orders while paused, which execute when unpaused.
-- [ ] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
-- [ ] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
+- [x] Implement a **real-time game loop** using `requestAnimationFrame` that continuously advances entity turns based on elapsed time and speed.
+- [x] Add a **Pause state** that freezes the real-time loop while allowing UI interaction (inventory, menus).
+- [x] Implement **Command Queuing** so the player can issue orders while paused, which execute when unpaused.
+- [x] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
+- [x] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
 
 ## ⚪ Milestone 13: UI Polish & Isometric View
 Overhaul the user interface to support more complex panels and a dynamic isometric perspective.

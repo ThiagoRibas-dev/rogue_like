@@ -14,7 +14,8 @@ import {
 export function createDebugRevealMapAction(entityId: EntityId): DebugRevealMapIntent {
   return {
     type: IntentType.DebugRevealMap,
-    entityId
+    entityId,
+    isImmediate: true
   };
 }
 
@@ -26,7 +27,8 @@ export function createDebugRevealMapAction(entityId: EntityId): DebugRevealMapIn
 export function createDebugGodModeAction(entityId: EntityId): DebugGodModeIntent {
   return {
     type: IntentType.DebugGodMode,
-    entityId
+    entityId,
+    isImmediate: true
   };
 }
 
@@ -38,6 +40,7 @@ export function createDebugGodModeAction(entityId: EntityId): DebugGodModeIntent
 export function createDebugSpawnEntityAction(entityId: EntityId): DebugSpawnEntityIntent {
   return {
     type: IntentType.DebugSpawnEntity,
-    entityId
+    entityId,
+    isImmediate: true
   };
 }

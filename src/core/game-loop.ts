@@ -1,8 +1,8 @@
-import { type GameState, type EntityId } from '../types/game-state.types.ts';
+import { type GameState, type EntityId, EngineMode } from '../types/game-state.types.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
 import { setTurnDuration } from './scheduler.ts';
 import { getComponent, spawnEntity } from './ecs.ts';
-import { lockEngine, unlockEngine, addActor } from './scheduler.ts';
+import { lockEngine, unlockEngine, addActor, switchEngineMode } from './scheduler.ts';
 import { saveGame } from './save.ts';
 import { IntentType, type Intent, type ActionResult } from '../types/intents.types.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
@@ -58,30 +58,35 @@ function updateState(newState: GameState): void {
 }
 
 /**
- * Immediately applies the player's intent and unlocks the engine so AI can act.
+ * Queues or immediately executes a player intent.
  */
 export function queuePlayerIntent(intent: Intent): void {
   const state = getGameState();
   if (state.isGameOver) return;
 
-  const result = applyIntentWithCost(state, intent);
-  let nextState = result.state;
+  const isImmediate = 'isImmediate' in intent && intent.isImmediate;
 
-  if (result.energyCost > 0) {
-    nextState = processHungerTick(nextState, intent.entityId, result.energyCost);
+  if (isImmediate) {
+    const result = applyIntentWithCost(state, intent);
+    updateState(result.state);
+    return;
   }
 
-  if (nextState !== state) {
-    // Always update FOV after the player acts
-    updateState(updateExploredTiles(nextState));
+  if (state.engineMode === EngineMode.RTwP && !state.rtwpState.paused) {
+    // Unpaused override
+    updateState({ ...state, playerCommandQueue: [intent] });
+  } else {
+    // Append to queue
+    const nextQueue = [...state.playerCommandQueue, intent];
+    updateState({ ...state, playerCommandQueue: nextQueue });
   }
 
-  // Only unlock the engine if the intent consumes a turn (energyCost > 0)
-  if (result.energyCost > 0) {
-    setTurnDuration(result.energyCost);
+  if (state.engineMode === EngineMode.TurnBased) {
     unlockEngine();
   }
 }
+
+import { getEffectiveStats } from '../utils/stats.ts';
 
 /**
  * Called by ROT.Engine when it is an actor's turn.
@@ -103,6 +108,13 @@ export function processTurn(entityId: EntityId): void {
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
   if (!fighter && getComponent(state, entityId, ComponentType.Actor)) {
     // Wait, if they are dead, they might have been removed. But just in case:
+    setTurnDuration(100);
+    if (
+      getComponent(state, entityId, ComponentType.Player) !== undefined &&
+      state.engineMode === EngineMode.TurnBased
+    ) {
+      unlockEngine();
+    }
     return;
   }
 
@@ -112,14 +124,47 @@ export function processTurn(entityId: EntityId): void {
   if (shouldSkipTurn(state, entityId)) {
     if (isPlayer) {
       updateState(addMessage(state, `You are unable to act and skip your turn!`, MessageLogCategory.System));
+      setTurnDuration(100);
+      if (state.engineMode === EngineMode.TurnBased) unlockEngine();
+    } else {
+      setTurnDuration(100);
     }
     return;
   }
 
   if (isPlayer) {
-    // It's the player's turn. We lock the engine and wait for UI input.
-    // The UI will call queuePlayerIntent() which executes the move and unlocks the engine.
-    lockEngine();
+    if (state.playerCommandQueue.length > 0) {
+      const intent = state.playerCommandQueue[0];
+      const nextQueue = state.playerCommandQueue.slice(1);
+
+      const stateWithPoppedQueue = { ...state, playerCommandQueue: nextQueue };
+      updateState(stateWithPoppedQueue);
+
+      const result = applyIntentWithCost(stateWithPoppedQueue, intent as Intent);
+      let nextState = result.state;
+
+      if (result.energyCost > 0) {
+        nextState = processHungerTick(nextState, entityId, result.energyCost);
+        setTurnDuration(result.energyCost);
+      } else {
+        setTurnDuration(0);
+      }
+
+      if (nextState !== stateWithPoppedQueue) {
+        updateState(updateExploredTiles(nextState));
+      }
+      return;
+    }
+
+    if (state.engineMode === EngineMode.TurnBased) {
+      lockEngine();
+      return;
+    } else {
+      setTurnDuration(10);
+      const nextState = processHungerTick(state, entityId, 10);
+      updateState(nextState);
+      return;
+    }
   } else {
     // AI Turn
     const intent = processAITurn(state, entityId);
@@ -169,22 +214,17 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
       }
     }
     nextState = processTriggers(nextState, intent.entityId);
-  } else if (
-    intent.type === IntentType.ToggleInventory ||
-    intent.type === IntentType.ToggleTargeting ||
-    intent.type === IntentType.MoveTarget ||
-    intent.type === IntentType.DebugGodMode ||
-    intent.type === IntentType.DebugRevealMap ||
-    intent.type === IntentType.DebugSpawnEntity
-  ) {
+  } else if ('isImmediate' in intent && intent.isImmediate) {
     energyCost = 0; // UI/Debug actions take no time
   }
 
   // Scale cost by actor speed
   if (energyCost > 0) {
     const actor = getComponent(state, intent.entityId, ComponentType.Actor);
-    if (actor && actor.speed > 0) {
-      energyCost = Math.max(1, Math.round((energyCost * 100) / actor.speed));
+    if (actor) {
+      const stats = getEffectiveStats(state, intent.entityId);
+      const speed = Math.max(1, stats.speed);
+      energyCost = Math.max(1, Math.round((energyCost * 100) / speed));
     }
   }
 
@@ -228,11 +268,14 @@ function applyIntent(state: GameState, intent: Intent): { state: GameState; succ
       return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UnequipItem:
       return processUnequipItemIntent(state, intent.entityId, intent.slot);
-    case IntentType.ToggleInventory:
+    case IntentType.ToggleInventory: {
+      const nextUiModeInv = state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game;
+      const invPaused = state.engineMode === EngineMode.RTwP ? nextUiModeInv !== UIMode.Game : state.rtwpState.paused;
       return {
-        state: { ...state, uiMode: state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game },
+        state: { ...state, uiMode: nextUiModeInv, rtwpState: { ...state.rtwpState, paused: invPaused } },
         success: false
       };
+    }
 
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {
@@ -322,6 +365,24 @@ function applyIntent(state: GameState, intent: Intent): { state: GameState; succ
 
       return {
         state: addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System),
+        success: false
+      };
+    }
+
+    case IntentType.ToggleEngineMode: {
+      const nextMode = state.engineMode === EngineMode.TurnBased ? EngineMode.RTwP : EngineMode.TurnBased;
+      setTimeout(() => switchEngineMode(nextMode), 0);
+      return { state: { ...state, engineMode: nextMode }, success: false };
+    }
+
+    case IntentType.TogglePause: {
+      const nextPaused = !state.rtwpState.paused;
+      return { state: { ...state, rtwpState: { ...state.rtwpState, paused: nextPaused } }, success: false };
+    }
+
+    case IntentType.SetRTwPSpeed: {
+      return {
+        state: { ...state, rtwpState: { ...state.rtwpState, speedMultiplier: intent.speedMultiplier } },
         success: false
       };
     }

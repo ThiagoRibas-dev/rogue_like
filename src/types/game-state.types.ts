@@ -1,5 +1,14 @@
 import type { Component } from './components.types.ts';
 import type { CampaignData } from './campaign.types.ts';
+import type { Intent } from './intents.types.ts';
+
+/**
+ * Enum defining the engine mode.
+ */
+export enum EngineMode {
+  TurnBased = 'turn-based',
+  RTwP = 'rtwp'
+}
 
 /**
  * Enum defining the current UI interaction mode.
@@ -95,6 +104,12 @@ export interface GameState {
   };
   readonly identifiedItems: ReadonlySet<string>;
   readonly itemUnidentifiedNames: ReadonlyMap<string, string>;
+  readonly engineMode: EngineMode;
+  readonly rtwpState: {
+    readonly paused: boolean;
+    readonly speedMultiplier: number;
+  };
+  readonly playerCommandQueue: ReadonlyArray<Intent>;
 }
 
 /**
@@ -123,4 +138,9 @@ export interface SerializedGameState {
   readonly uiMode: UIMode;
   readonly identifiedItems: ReadonlyArray<string>;
   readonly itemUnidentifiedNames: ReadonlyArray<[string, string]>;
+  readonly engineMode: EngineMode;
+  readonly rtwpState: {
+    readonly paused: boolean;
+    readonly speedMultiplier: number;
+  };
 }

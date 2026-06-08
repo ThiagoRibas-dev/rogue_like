@@ -27,14 +27,27 @@ import {
   INVENTORY_TOGGLE_KEY
 } from './constants/keybinds.constants.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
-import { renderMessageLog, renderInventoryPanel, renderPlayerStats, renderMenus } from './rendering/ui.ts';
+import {
+  renderMessageLog,
+  renderInventoryPanel,
+  renderPlayerStats,
+  renderMenus,
+  renderRTwPControls
+} from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
-import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
+import {
+  createMoveAction,
+  createWaitAction,
+  createInteractAction,
+  createToggleEngineModeAction,
+  createTogglePauseAction,
+  createSetRTwPSpeedAction
+} from './actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
   createDebugGodModeAction,
@@ -54,7 +67,7 @@ import {
   createUnequipItemAction
 } from './actions/inventory.actions.ts';
 import { IntentType, type ChangeFloorIntent } from './types/intents.types.ts';
-import { UIMode } from './types/game-state.types.ts';
+import { UIMode, EngineMode } from './types/game-state.types.ts';
 import { getDirectionDelta } from './utils/direction.ts';
 
 // 0. Initialize RNG
@@ -105,7 +118,10 @@ let state: GameState = {
   isGameOver: false,
   uiMode: UIMode.MainMenu,
   identifiedItems: new Set(),
-  itemUnidentifiedNames: new Map()
+  itemUnidentifiedNames: new Map(),
+  engineMode: EngineMode.TurnBased,
+  rtwpState: { paused: false, speedMultiplier: 1 },
+  playerCommandQueue: []
 };
 
 const POTION_DESCRIPTORS = [
@@ -162,7 +178,8 @@ function startNewGame() {
     currentDepth: 1,
     levels: new Map(),
     identifiedItems: new Set(),
-    itemUnidentifiedNames
+    itemUnidentifiedNames,
+    playerCommandQueue: []
   };
 
   // Spawn the player entity
@@ -240,7 +257,7 @@ function startNewGame() {
 async function continueGame() {
   const loadedState = await loadGame();
   if (loadedState) {
-    state = loadedState;
+    state = { ...loadedState, playerCommandQueue: [] };
     playerEntityId = state.entities.find(
       (id) => getComponent(state, id, ComponentType.Player) !== undefined
     ) as EntityId;
@@ -265,6 +282,22 @@ document.getElementById('btn-continue')?.addEventListener('click', continueGame)
 document.getElementById('btn-return-menu')?.addEventListener('click', () => {
   state = { ...state, uiMode: UIMode.MainMenu };
   setGameState(state);
+});
+
+document.getElementById('btn-engine-mode')?.addEventListener('click', () => {
+  queuePlayerIntent(createToggleEngineModeAction(playerEntityId));
+});
+document.getElementById('btn-pause')?.addEventListener('click', () => {
+  queuePlayerIntent(createTogglePauseAction(playerEntityId));
+});
+document.getElementById('btn-speed-1')?.addEventListener('click', () => {
+  queuePlayerIntent(createSetRTwPSpeedAction(playerEntityId, 1));
+});
+document.getElementById('btn-speed-2')?.addEventListener('click', () => {
+  queuePlayerIntent(createSetRTwPSpeedAction(playerEntityId, 2));
+});
+document.getElementById('btn-speed-4')?.addEventListener('click', () => {
+  queuePlayerIntent(createSetRTwPSpeedAction(playerEntityId, 4));
 });
 
 // Export Save
@@ -352,6 +385,7 @@ onStateChange((newState: GameState) => {
   renderInventoryPanel(newState);
   renderMenus(newState, hasSaveGame());
   updateHUD(newState);
+  renderRTwPControls(newState);
 });
 
 // Initialize HUD display values and pass the initial state
@@ -384,40 +418,44 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     event.preventDefault();
     const slotIndex = code - 97;
 
+    const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
+    if (!inventory || slotIndex >= inventory.items.length) return;
+
+    const itemEntityId = inventory.items[slotIndex];
+    const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+    const itemComp = itemEntityId ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined) : undefined;
+    const def = itemComp ? currentState.campaign.items[itemComp.itemId] : undefined;
+
+    let itemName = 'item';
+    if (def && itemComp) {
+      const isIdentified = currentState.identifiedItems.has(itemComp.itemId);
+      itemName = isIdentified ? def.name : (currentState.itemUnidentifiedNames.get(itemComp.itemId) ?? def.unidentifiedName ?? itemComp.itemId);
+    }
+
     if (event.shiftKey) {
+      setGameState(addMessage(currentState, `Queued: Drop ${itemName}`, MessageLogCategory.System));
       queuePlayerIntent(createDropAction(playerEntityId, slotIndex));
       return;
     }
 
     if (event.altKey) {
-      const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as
-        | InventoryComponent
-        | undefined;
-      if (!inventory || slotIndex >= inventory.items.length) return;
-
-      const itemEntityId = inventory.items[slotIndex];
-      const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as
-        | EquipmentComponent
-        | undefined;
-      const itemComp = itemEntityId
-        ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined)
-        : undefined;
-      const def = itemComp ? currentState.campaign.items[itemComp.itemId] : undefined;
-
       if (
         itemEntityId &&
         equipment &&
         (equipment.weapon === itemEntityId || equipment.armor === itemEntityId) &&
         def?.equippable
       ) {
+        setGameState(addMessage(currentState, `Queued: Unequip ${itemName}`, MessageLogCategory.System));
         queuePlayerIntent(createUnequipItemAction(playerEntityId, def.equippable.slot));
         return;
       }
 
+      setGameState(addMessage(currentState, `Queued: Equip ${itemName}`, MessageLogCategory.System));
       queuePlayerIntent(createEquipItemAction(playerEntityId, slotIndex));
       return;
     }
 
+    setGameState(addMessage(currentState, `Queued: Use ${itemName}`, MessageLogCategory.System));
     queuePlayerIntent(createUseItemAction(playerEntityId, slotIndex));
     return;
   }
@@ -479,7 +517,11 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     }
   } else if (event.keyCode === WAIT_KEY) {
     event.preventDefault();
-    queuePlayerIntent(createWaitAction(playerEntityId));
+    if (currentState.engineMode === EngineMode.RTwP) {
+      queuePlayerIntent(createTogglePauseAction(playerEntityId));
+    } else {
+      queuePlayerIntent(createWaitAction(playerEntityId));
+    }
   } else if (!isTargeting && (event.key === '>' || event.key === '<' || event.key === '.' || event.key === ',')) {
     event.preventDefault();
     queuePlayerIntent(createInteractAction(playerEntityId));

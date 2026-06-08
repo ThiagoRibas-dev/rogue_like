@@ -1,5 +1,13 @@
 import type { EntityId } from '../types/game-state.types.ts';
-import { IntentType, type MoveIntent, type WaitIntent, type InteractIntent } from '../types/intents.types.ts';
+import {
+  IntentType,
+  type MoveIntent,
+  type WaitIntent,
+  type InteractIntent,
+  type ToggleEngineModeIntent,
+  type TogglePauseIntent,
+  type SetRTwPSpeedIntent
+} from '../types/intents.types.ts';
 
 /**
  * Creates a move intent.
@@ -38,5 +46,39 @@ export function createInteractAction(entityId: EntityId): InteractIntent {
   return {
     type: IntentType.Interact,
     entityId
+  };
+}
+
+/**
+ * Creates a toggle engine mode intent.
+ */
+export function createToggleEngineModeAction(entityId: EntityId): ToggleEngineModeIntent {
+  return {
+    type: IntentType.ToggleEngineMode,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle pause intent.
+ */
+export function createTogglePauseAction(entityId: EntityId): TogglePauseIntent {
+  return {
+    type: IntentType.TogglePause,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a set RTwP speed intent.
+ */
+export function createSetRTwPSpeedAction(entityId: EntityId, speedMultiplier: number): SetRTwPSpeedIntent {
+  return {
+    type: IntentType.SetRTwPSpeed,
+    entityId,
+    speedMultiplier,
+    isImmediate: true
   };
 }

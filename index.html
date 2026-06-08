@@ -34,6 +34,22 @@
           <!-- Right Panel: Side Panel HUD / Logs -->
           <aside class="side-panel">
             <div id="inventory-panel" class="inventory-panel"></div>
+
+            <div class="hud-card time-card">
+              <h2>Engine</h2>
+              <div class="time-controls">
+                <button id="btn-engine-mode" class="time-btn mode-btn">Turn-Based</button>
+                <div class="rtwp-controls" id="rtwp-controls" style="display: none;">
+                  <button id="btn-pause" class="time-btn pause-btn">⏸ Paused</button>
+                  <div class="speed-btns">
+                    <button id="btn-speed-1" class="time-btn speed-btn active">1x</button>
+                    <button id="btn-speed-2" class="time-btn speed-btn">2x</button>
+                    <button id="btn-speed-4" class="time-btn speed-btn">4x</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="hud-card stats-card">
               <h2>Player Stats</h2>
               <div class="stat-row">

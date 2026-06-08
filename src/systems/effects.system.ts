@@ -7,10 +7,12 @@ import {
   type ItemComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
+import { UIMode } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
+import { deleteSave } from '../core/save.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -103,8 +105,15 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
 
       if (newHp === 0) {
         nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
-        nextState = removeEntity(nextState, nearestId);
-        removeActor(nearestId);
+        const isPlayer = getComponent(nextState, nearestId, ComponentType.Player) !== undefined;
+        if (isPlayer) {
+          nextState = addMessage(nextState, `Game Over! You were slain by a spell.`, MessageLogCategory.CombatDeath);
+          nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
+          deleteSave();
+        } else {
+          nextState = removeEntity(nextState, nearestId);
+          removeActor(nearestId);
+        }
       }
 
       return nextState;
@@ -145,8 +154,15 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
 
           if (newHp === 0) {
             nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
-            nextState = removeEntity(nextState, id);
-            removeActor(id);
+            const isPlayer = getComponent(nextState, id, ComponentType.Player) !== undefined;
+            if (isPlayer) {
+              nextState = addMessage(nextState, `Game Over! You were slain by a spell.`, MessageLogCategory.CombatDeath);
+              nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
+              deleteSave();
+            } else {
+              nextState = removeEntity(nextState, id);
+              removeActor(id);
+            }
           }
         }
       }

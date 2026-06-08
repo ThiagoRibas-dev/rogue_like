@@ -30,7 +30,10 @@ export const enum IntentType {
   EquipItem = 'EquipItem',
   UnequipItem = 'UnequipItem',
   ToggleInventory = 'ToggleInventory',
-  UseAbility = 'UseAbility'
+  UseAbility = 'UseAbility',
+  ToggleEngineMode = 'ToggleEngineMode',
+  TogglePause = 'TogglePause',
+  SetRTwPSpeed = 'SetRTwPSpeed'
 }
 
 /**
@@ -74,6 +77,7 @@ export interface ChangeFloorIntent {
 export interface DebugRevealMapIntent {
   readonly type: IntentType.DebugRevealMap;
   readonly entityId: EntityId;
+  readonly isImmediate: true;
 }
 
 /**
@@ -82,6 +86,7 @@ export interface DebugRevealMapIntent {
 export interface DebugGodModeIntent {
   readonly type: IntentType.DebugGodMode;
   readonly entityId: EntityId;
+  readonly isImmediate: true;
 }
 
 /**
@@ -90,6 +95,7 @@ export interface DebugGodModeIntent {
 export interface DebugSpawnEntityIntent {
   readonly type: IntentType.DebugSpawnEntity;
   readonly entityId: EntityId;
+  readonly isImmediate: true;
 }
 
 /**
@@ -98,6 +104,7 @@ export interface DebugSpawnEntityIntent {
 export interface ToggleTargetingIntent {
   readonly type: IntentType.ToggleTargeting;
   readonly entityId: EntityId;
+  readonly isImmediate: true;
 }
 
 /**
@@ -108,6 +115,7 @@ export interface MoveTargetIntent {
   readonly entityId: EntityId;
   readonly dx: number;
   readonly dy: number;
+  readonly isImmediate: true;
 }
 
 /**
@@ -181,6 +189,7 @@ export interface UnequipItemIntent {
 export interface ToggleInventoryIntent {
   readonly type: IntentType.ToggleInventory;
   readonly entityId: EntityId;
+  readonly isImmediate: true;
 }
 
 /**
@@ -191,6 +200,34 @@ export interface UseAbilityIntent {
   readonly entityId: EntityId;
   readonly effectId: string;
   readonly abilityName: string;
+}
+
+/**
+ * Intent to toggle the engine mode between turn-based and RTwP.
+ */
+export interface ToggleEngineModeIntent {
+  readonly type: IntentType.ToggleEngineMode;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to toggle pause in RTwP mode.
+ */
+export interface TogglePauseIntent {
+  readonly type: IntentType.TogglePause;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to set the RTwP simulation speed.
+ */
+export interface SetRTwPSpeedIntent {
+  readonly type: IntentType.SetRTwPSpeed;
+  readonly entityId: EntityId;
+  readonly speedMultiplier: number;
+  readonly isImmediate: true;
 }
 
 /**
@@ -214,4 +251,7 @@ export type Intent =
   | EquipItemIntent
   | UnequipItemIntent
   | ToggleInventoryIntent
-  | UseAbilityIntent;
+  | UseAbilityIntent
+  | ToggleEngineModeIntent
+  | TogglePauseIntent
+  | SetRTwPSpeedIntent;

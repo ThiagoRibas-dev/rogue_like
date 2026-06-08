@@ -1,6 +1,6 @@
 import * as ROT from 'rot-js';
-import type { EntityId } from '../types/game-state.types.ts';
-import { processTurn } from './game-loop.ts';
+import { type EntityId, UIMode, EngineMode } from '../types/game-state.types.ts';
+import { processTurn, getGameState } from './game-loop.ts';
 
 class SchedulerActor {
   constructor(public readonly id: EntityId) {}
@@ -11,24 +11,96 @@ class SchedulerActor {
 }
 
 const scheduler = new ROT.Scheduler.Action<SchedulerActor>();
-let engine: ROT.Engine | null = null;
-
 const actors = new Map<EntityId, SchedulerActor>();
 
+let isEngineLocked = true;
+let accumulatedTime = 0;
+let lastFrameTime = 0;
+let rtwpLoopId = 0;
+
 export function initEngine(): void {
-  engine = new ROT.Engine(scheduler);
+  scheduler.clear();
+  actors.clear();
+  isEngineLocked = true;
+  accumulatedTime = 0;
+  cancelAnimationFrame(rtwpLoopId);
 }
 
 export function startEngine(): void {
-  if (engine) engine.start();
+  isEngineLocked = false;
+  const state = getGameState();
+  if (state.engineMode === EngineMode.TurnBased) {
+    runTurnBasedLoop();
+  } else {
+    lastFrameTime = performance.now();
+    rtwpLoopId = requestAnimationFrame(rtwpLoop);
+  }
 }
 
 export function lockEngine(): void {
-  if (engine) engine.lock();
+  isEngineLocked = true;
 }
 
 export function unlockEngine(): void {
-  if (engine) engine.unlock();
+  if (!isEngineLocked) return;
+  isEngineLocked = false;
+  const state = getGameState();
+  if (state.engineMode === EngineMode.TurnBased) {
+    runTurnBasedLoop();
+  }
+}
+
+export function switchEngineMode(mode: EngineMode): void {
+  if (mode === EngineMode.RTwP) {
+    isEngineLocked = false;
+    lastFrameTime = performance.now();
+    rtwpLoopId = requestAnimationFrame(rtwpLoop);
+  } else {
+    cancelAnimationFrame(rtwpLoopId);
+    isEngineLocked = true;
+    unlockEngine(); // Resume turn-based execution
+  }
+}
+
+function runTurnBasedLoop(): void {
+  while (!isEngineLocked) {
+    const actor = scheduler.next();
+    if (!actor) break;
+    actor.act();
+  }
+}
+
+function rtwpLoop(time: number): void {
+  const state = getGameState();
+  if (state.engineMode !== EngineMode.RTwP) return;
+
+  rtwpLoopId = requestAnimationFrame(rtwpLoop);
+
+  // If paused or showing a menu/inventory, do not accumulate time
+  if (state.rtwpState.paused || state.uiMode !== UIMode.Game || state.targetingMode?.active || isEngineLocked) {
+    lastFrameTime = time;
+    return;
+  }
+
+  const deltaMs = time - lastFrameTime;
+  lastFrameTime = time;
+
+  const speed = state.rtwpState.speedMultiplier;
+
+  // 500ms = 100 duration at 1x speed
+  const durationDelta = (deltaMs / 500) * 100 * speed;
+  accumulatedTime += durationDelta;
+
+  while (accumulatedTime >= 0 && !isEngineLocked) {
+    const prevTime = scheduler.getTime();
+    const actor = scheduler.next();
+    if (!actor) break;
+
+    actor.act();
+
+    const newTime = scheduler.getTime();
+    accumulatedTime -= Math.max(0, newTime - prevTime);
+  }
 }
 
 export function addActor(id: EntityId, repeat: boolean = true, initialDuration: number = 0): void {
@@ -53,4 +125,6 @@ export function setTurnDuration(duration: number): void {
 export function clearScheduler(): void {
   scheduler.clear();
   actors.clear();
+  isEngineLocked = true;
+  cancelAnimationFrame(rtwpLoopId);
 }
