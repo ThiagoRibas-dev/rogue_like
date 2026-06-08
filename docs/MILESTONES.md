@@ -93,17 +93,17 @@ Refactor the monolithic `processAITurn` into composable behavior modules and int
 - [x] Define data-driven AI Profiles that compose behaviors with parameters (aggro radius, flee threshold, preferred spell list) and assign them via the Entity Registry.
 - [x] Add at least two new monster templates that showcase the new AI (e.g., a ranged archer, a mage that casts confusion).
 
-## ⚪ Milestone 10: Deep Mechanics
+## 🟢 Milestone 10: Deep Mechanics
 Layer in identification mystery, resource pressure, and environmental hazards on top of the mature combat and AI systems.
-- [ ] Implement an **Identification System**: unidentified items display randomized placeholder names (e.g., "Murky Potion") until identified.
-- [ ] Randomize unidentified names per run using the seeded RNG so that the same item type gets a consistent placeholder within a single playthrough.
-- [ ] Add identification methods: **Scroll of Identify**, and **identify-on-use** (using a consumable reveals its true name for future pickups).
-- [ ] Implement a **Hunger/Satiation System**: `HungerComponent` with a satiation counter that decrements each turn.
-- [ ] Define hunger thresholds (Satiated → Normal → Hungry → Starving) with gameplay consequences (starving = HP loss per turn via status effect).
-- [ ] Add **Food items** to the Item Registry and Loot Tables.
-- [ ] Implement **Interactive Terrain: Doors** (closed doors block FOV/movement; Interact opens them; monsters can bash them).
-- [ ] Implement **Interactive Terrain: Traps** (hidden until stepped on or detected; trigger status effects like poison or teleportation).
-- [ ] Add **terrain movement cost modifiers** to the Tile Registry (e.g., shallow water = 2x movement cost via speed penalty).
+- [x] Implement an **Identification System**: unidentified items display randomized placeholder names (e.g., "Murky Potion") until identified.
+- [x] Randomize unidentified names per run using the seeded RNG so that the same item type gets a consistent placeholder within a single playthrough.
+- [x] Add identification methods: **Scroll of Identify**, and **identify-on-use** (using a consumable reveals its true name for future pickups).
+- [x] Implement a **Hunger/Satiation System**: `HungerComponent` with a satiation counter that decrements each turn.
+- [x] Define hunger thresholds (Satiated → Normal → Hungry → Starving) with gameplay consequences (starving = HP loss per turn via status effect).
+- [x] Add **Food items** to the Item Registry and Loot Tables.
+- [x] Implement **Interactive Terrain: Doors** (closed doors block FOV/movement; Interact opens them; monsters can bash them).
+- [x] Implement **Interactive Terrain: Traps** (hidden until stepped on or detected; trigger status effects like poison or teleportation).
+- [x] Add **terrain movement cost modifiers** to the Tile Registry (e.g., shallow water = 2x movement cost via speed penalty).
 
 ## ⚪ Milestone 11: Modding & Extensibility (Data-Driven Engine)
 Extract all hardcoded registries and tables into external data files, and build the loading/validation pipeline.
