@@ -47,3 +47,7 @@ Thumbs.db
 
 # Reference projects
 references/
+
+# Misc
+*.txt
+*.pdf
