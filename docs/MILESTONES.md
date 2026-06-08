@@ -66,22 +66,62 @@ Implement the full lifecycle of a play session.
 # 🚀 Phase 2: Post-MVP Expansion
 Features to be added once the core MVP loop is playable and balanced.
 
-## ⚪ Milestone 8: Advanced Mechanics & Systems
-- **Premium UI Polish:** CSS animations, transitions, and enhanced visual feedback.
-- **Identification System:** Unidentified items that require experimentation or scrolls to reveal.
-- **Composable AI Packages:** Modular AI behaviors (hostile, ranged, spells-first) that can be mixed and matched.
-- **Deep Resource Management:** Hunger, stamina, or ammo systems.
-- **Interactive Terrain:** Expanding the base 'Interact' action with complex terrain types.
+*(Note: Premium UI Polish is treated as a continuous concern and should be integrated into every milestone rather than being its own distinct phase.)*
 
-## ⚪ Milestone 9: Modding & Extensibility (Data-Driven Engine)
-- **Campaign Manifests & Progression:** Define campaigns, starting stats, and floor generation logic in data.
-- **Spawn & Loot Tables:** Move random generation weights and item drop chances out of code.
-- **Factions & AI Profiles:** Define hostility matrices and AI behavior parameters (aggro radius, flee thresholds).
-- **Abilities & Status Effects:** Define spell shapes, ranges, damage types, and buff/debuff modifiers via JSON schemas.
-- **Terrain Properties:** Move interactive terrain rules (movement cost, damage, interactables) to definitions.
-- **Themes & UI:** Allow custom ASCII tilesets, color palettes, and message log templates per campaign.
-- **Loaders & Validation:** Write robust loaders to fetch, parse, and validate these `.json`/`.yaml` files at game start, allowing users to add content without touching TypeScript.
+## ⚪ Milestone 8: Status Effects & Abilities
+Add temporary, duration-based modifiers to entities, and implement the `DamageArea` effect type already stubbed in `effects.system.ts`.
+- [x] Define `StatusEffectComponent` and a declarative `StatusEffectDefinition` registry (effect ID, stat modifiers, duration, per-turn damage/heal, behavior flags like `stunned`/`confused`).
+- [x] Add a `status-effect.system.ts` that ticks durations each turn, applies per-turn effects (e.g., poison damage), and removes expired effects.
+- [x] Integrate status effects into `getEffectiveStats()` so active buffs/debuffs modify attack, defense, maxHp, and speed dynamically.
+- [x] Implement concrete damage-over-time effects: **Poison** (HP loss per turn).
+- [x] Implement concrete stat-modifier effects: **Haste** (speed buff), **Weakness** (attack debuff).
+- [x] Implement concrete crowd-control effects: **Stun** (skip turn), **Confusion** (randomize movement direction).
+- [x] Implement the `DamageArea` item effect type in `effects.system.ts` (currently stubbed), using the existing targeting/AoE infrastructure.
+- [x] Create consumable items that apply status effects (e.g., Scroll of Confusion, Potion of Haste, Venom Dagger on-hit poison).
+- [x] Render active status effects on the player in the HUD sidebar (icon/label + remaining duration).
+- [x] Ensure status effects serialize/deserialize correctly with the M7 save system.
 
-## ⚪ Milestone 10: RTwP (Real-Time with Pause) Engine Toggle
-- Implement the real-time continuous loop utilizing `requestAnimationFrame` on top of our pure systems.
-- Add pause state, command queuing, and UI controls.
+## ⚪ Milestone 9: Advanced AI & Factions
+Refactor the monolithic `processAITurn` into composable behavior modules and introduce a faction system that governs who attacks whom.
+- [ ] Define a `FactionComponent` and a Faction Hostility Matrix (data-driven lookup: faction A vs. faction B → hostile / neutral / friendly).
+- [ ] Refactor bump-to-attack and AI targeting to consult the hostility matrix instead of assuming "all non-player entities are enemies."
+- [ ] Design a composable AI Behavior interface (e.g., `AIBehaviorFn: (state, entityId) => Intent | null`) and a priority-ordered behavior pipeline.
+- [ ] Extract the current hunt/wander logic from `ai.system.ts` into discrete behavior modules (`hunt.behavior.ts`, `wander.behavior.ts`).
+- [ ] Implement **Flee** behavior (disengage when HP falls below a configurable threshold).
+- [ ] Implement **Ranged Attack** behavior (maintain distance, prefer ranged items/abilities).
+- [ ] Implement **Spell-Casting** behavior (use status-effect abilities from M8 on targets).
+- [ ] Define data-driven AI Profiles that compose behaviors with parameters (aggro radius, flee threshold, preferred spell list) and assign them via the Entity Registry.
+- [ ] Add at least two new monster templates that showcase the new AI (e.g., a ranged archer, a mage that casts confusion).
+
+## ⚪ Milestone 10: Deep Mechanics
+Layer in identification mystery, resource pressure, and environmental hazards on top of the mature combat and AI systems.
+- [ ] Implement an **Identification System**: unidentified items display randomized placeholder names (e.g., "Murky Potion") until identified.
+- [ ] Randomize unidentified names per run using the seeded RNG so that the same item type gets a consistent placeholder within a single playthrough.
+- [ ] Add identification methods: **Scroll of Identify**, and **identify-on-use** (using a consumable reveals its true name for future pickups).
+- [ ] Implement a **Hunger/Satiation System**: `HungerComponent` with a satiation counter that decrements each turn.
+- [ ] Define hunger thresholds (Satiated → Normal → Hungry → Starving) with gameplay consequences (starving = HP loss per turn via status effect).
+- [ ] Add **Food items** to the Item Registry and Loot Tables.
+- [ ] Implement **Interactive Terrain: Doors** (closed doors block FOV/movement; Interact opens them; monsters can bash them).
+- [ ] Implement **Interactive Terrain: Traps** (hidden until stepped on or detected; trigger status effects like poison or teleportation).
+- [ ] Add **terrain movement cost modifiers** to the Tile Registry (e.g., shallow water = 2x movement cost via speed penalty).
+
+## ⚪ Milestone 11: Modding & Extensibility (Data-Driven Engine)
+Extract all hardcoded registries and tables into external data files, and build the loading/validation pipeline.
+- [ ] Design a **Campaign Manifest** JSON schema (campaign name, starting stats, floor generation parameters, which data files to load).
+- [ ] Extract the **Entity Registry** (monster/NPC prefabs) from TypeScript constants to loadable `.json` files.
+- [ ] Extract **Spawn Tables & Loot Tables** from TypeScript constants to `.json` files.
+- [ ] Extract **Item Registry & Effect Definitions** to `.json` files.
+- [ ] Extract **Status Effect Definitions** to `.json` files.
+- [ ] Extract **AI Profiles & Faction Hostility Matrix** to `.json` files.
+- [ ] Extract **Tile Registry & Terrain Properties** to `.json` files.
+- [ ] Implement a robust **Loader & Validation** pipeline that fetches, parses, and validates all data files at game start (with clear error messages for malformed data).
+- [ ] Add **Theme & Tileset** support: custom ASCII glyph mappings, color palettes, and message log templates selectable per campaign.
+- [ ] Implement a **Campaign Selection** screen on the Main Menu that lists available campaigns from loaded manifests.
+
+## ⚪ Milestone 12: RTwP (Real-Time with Pause) Engine Toggle
+Re-use the pure systems architecture to support an optional real-time mode alongside the existing turn-based mode.
+- [ ] Implement a **real-time game loop** using `requestAnimationFrame` that continuously advances entity turns based on elapsed time and speed.
+- [ ] Add a **Pause state** that freezes the real-time loop while allowing UI interaction (inventory, menus).
+- [ ] Implement **Command Queuing** so the player can issue orders while paused, which execute when unpaused.
+- [ ] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
+- [ ] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.

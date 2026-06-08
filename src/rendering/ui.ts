@@ -3,6 +3,7 @@ import { UIMode } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ITEM_REGISTRY } from '../constants/items.constants.ts';
+import { STATUS_EFFECTS } from '../constants/status.constants.ts';
 import { getEffectiveCapacity } from '../systems/inventory.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
@@ -76,7 +77,7 @@ export function renderInventoryPanel(state: GameState): void {
 
   const hint = document.createElement('div');
   hint.className = 'inv-hint';
-  hint.textContent = '[a-z] Use/Equip  [Shift+a-z] Drop  [I/Esc] Close';
+  hint.textContent = '[a-z] Use  [Alt+a-z] Equip/Unequip  [Shift+a-z] Drop  [I/Esc] Close';
   panel.appendChild(hint);
 
   if (inventory.items.length === 0) {
@@ -163,6 +164,41 @@ export function renderPlayerStats(state: GameState): void {
       // Max level reached
       xpFill.style.width = '100%';
       xpText.textContent = `MAX (${fighter.xp})`;
+    }
+  }
+
+  // Update Status Effects
+  const statusContainer = document.getElementById('status-effects-container');
+  if (statusContainer) {
+    const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects);
+    statusContainer.innerHTML = ''; // Clear current
+
+    if (!statuses || statuses.activeEffects.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'status-empty';
+      empty.textContent = 'Normal';
+      statusContainer.appendChild(empty);
+    } else {
+      for (const active of statuses.activeEffects) {
+        const def = STATUS_EFFECTS[active.effectId];
+        const effectDiv = document.createElement('div');
+        effectDiv.className = 'status-row';
+
+        const label = document.createElement('span');
+        label.className = 'status-label';
+        label.textContent = def?.name ?? active.effectId;
+        if (def?.color) {
+          label.style.color = def.color;
+        }
+
+        const duration = document.createElement('span');
+        duration.className = 'status-duration';
+        duration.textContent = `(${active.duration}t)`;
+
+        effectDiv.appendChild(label);
+        effectDiv.appendChild(duration);
+        statusContainer.appendChild(effectDiv);
+      }
     }
   }
 }

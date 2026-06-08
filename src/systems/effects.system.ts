@@ -7,6 +7,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { removeActor } from '../core/scheduler.ts';
+import { applyStatusEffect } from './status-effect.system.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -106,9 +107,96 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return nextState;
     }
 
-    case ItemEffectType.DamageArea:
-      // Stub — full AoE targeting implemented in M8
-      return addMessage(state, 'The scroll fizzles... (Area effect not yet implemented.)', MessageLogCategory.System);
+    case ItemEffectType.DamageArea: {
+      const userPos = getComponent(state, userId, ComponentType.Position);
+      if (!userPos) return state;
+
+      const radius = effectDef.radius ?? 3;
+      let nextState = state;
+      let hitSomeone = false;
+
+      for (const id of state.entities) {
+        if (id === userId) continue; // Assume PBAoE that doesn't hit caster for now
+        const targetFighter = getComponent(state, id, ComponentType.Fighter);
+        const targetPos = getComponent(state, id, ComponentType.Position);
+        if (!targetFighter || !targetPos) continue;
+
+        const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
+        if (dist <= radius) {
+          hitSomeone = true;
+          const targetRenderable = getComponent(state, id, ComponentType.Renderable);
+          const targetName = targetRenderable?.glyph ?? 'target';
+          const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
+
+          nextState = addMessage(nextState, msg, MessageLogCategory.CombatHit);
+
+          const newHp = Math.max(0, targetFighter.hp - effectDef.value);
+          const nextFighter: FighterComponent = { ...targetFighter, hp: newHp };
+          const nextComponents = new Map(nextState.components);
+          const targetComps = nextComponents.get(id) ?? [];
+          nextComponents.set(
+            id,
+            targetComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
+          );
+          nextState = { ...nextState, components: nextComponents };
+
+          if (newHp === 0) {
+            nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
+            nextState = removeEntity(nextState, id);
+            removeActor(id);
+          }
+        }
+      }
+
+      if (!hitSomeone) {
+        nextState = addMessage(nextState, 'The area is blasted, but nothing was hit.', MessageLogCategory.System);
+      }
+      return nextState;
+    }
+
+    case ItemEffectType.ApplyStatus: {
+      if (!effectDef.statusId || !effectDef.duration) return state;
+
+      if (effectDef.range) {
+        // Hit nearest target
+        const userPos = getComponent(state, userId, ComponentType.Position);
+        if (!userPos) return state;
+
+        let nearestId: EntityId | undefined;
+        let nearestDist = Infinity;
+
+        for (const id of state.entities) {
+          if (id === userId) continue;
+          const targetFighter = getComponent(state, id, ComponentType.Fighter);
+          const targetPos = getComponent(state, id, ComponentType.Position);
+          if (!targetFighter || !targetPos) continue;
+
+          const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
+          if (dist <= effectDef.range && dist < nearestDist) {
+            nearestDist = dist;
+            nearestId = id;
+          }
+        }
+
+        if (nearestId === undefined) {
+          return addMessage(state, 'The magic crackles... but finds no target.', MessageLogCategory.System);
+        }
+
+        const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
+        const targetName = targetRenderable?.glyph ?? 'target';
+        const msg = effectDef.message.replace('{target}', targetName);
+
+        let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
+        nextState = applyStatusEffect(nextState, nearestId, effectDef.statusId, effectDef.duration, userId);
+        return nextState;
+      } else {
+        // Apply to self
+        const msg = effectDef.message.replace('{item}', itemName);
+        let nextState = addMessage(state, msg, MessageLogCategory.System);
+        nextState = applyStatusEffect(nextState, userId, effectDef.statusId, effectDef.duration, userId);
+        return nextState;
+      }
+    }
 
     default:
       return assertNever(effectDef.type);

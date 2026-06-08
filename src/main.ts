@@ -8,7 +8,10 @@ import {
   ComponentType,
   type PositionComponent,
   type RenderableComponent,
-  type InteractableComponent
+  type InteractableComponent,
+  type InventoryComponent,
+  type EquipmentComponent,
+  type ItemComponent
 } from './types/components.types.ts';
 import { addComponent, createEntity, spawnEntity, spawnItem, getComponent } from './core/ecs.ts';
 import { Direction } from './utils/direction.ts';
@@ -33,7 +36,7 @@ import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { MAP_WIDTH, MAP_HEIGHT } from './constants/map.constants.ts';
 import { MAX_MONSTERS_PER_ROOM, SPAWN_WEIGHTS } from './constants/spawning.constants.ts';
-import { LOOT_TABLE, MAX_ITEMS_PER_ROOM } from './constants/items.constants.ts';
+import { LOOT_TABLE, MAX_ITEMS_PER_ROOM, ITEM_REGISTRY } from './constants/items.constants.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { createMoveAction, createWaitAction, createInteractAction } from './actions/core.actions.ts';
@@ -51,7 +54,9 @@ import {
   createPickUpAction,
   createDropAction,
   createUseItemAction,
-  createToggleInventoryAction
+  createToggleInventoryAction,
+  createEquipItemAction,
+  createUnequipItemAction
 } from './actions/inventory.actions.ts';
 import { IntentType, type ChangeFloorIntent } from './types/intents.types.ts';
 import { UIMode } from './types/game-state.types.ts';
@@ -249,10 +254,10 @@ fileInput?.addEventListener('change', (e: Event) => {
       // Basic validation (does it parse?)
       JSON.parse(content);
       localStorage.setItem('roguelike_save', content);
-      
+
       // Update UI so continue button lights up immediately if we were on the menu
       renderMenus(state, hasSaveGame());
-      
+
       // Clear the input so you can import the same file again if needed
       target.value = '';
     } catch (err) {
@@ -325,21 +330,40 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
       queuePlayerIntent(createToggleInventoryAction(playerEntityId));
       return;
     }
-    // a-z selects inventory slot 0-25
-    if (event.key.length === 1) {
-      const code = event.key.toLowerCase().charCodeAt(0);
-      if (code >= 97 && code <= 122) {
-        event.preventDefault();
-        const slotIndex = code - 97;
-        // Use with Shift = drop, plain = use/equip
-        if (event.shiftKey) {
-          queuePlayerIntent(createDropAction(playerEntityId, slotIndex));
-        } else {
-          queuePlayerIntent(createUseItemAction(playerEntityId, slotIndex));
-        }
-      }
+
+    // Ignore multi-character keys or non a-z keys
+    if (event.key.length !== 1) return;
+    const code = event.key.toLowerCase().charCodeAt(0);
+    if (code < 97 || code > 122) return;
+
+    event.preventDefault();
+    const slotIndex = code - 97;
+
+    if (event.shiftKey) {
+      queuePlayerIntent(createDropAction(playerEntityId, slotIndex));
+      return;
     }
-    return; // Swallow all other keys when inventory is open
+
+    if (event.altKey) {
+      const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
+      if (!inventory || slotIndex >= inventory.items.length) return;
+
+      const itemEntityId = inventory.items[slotIndex];
+      const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+      const itemComp = itemEntityId ? getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined : undefined;
+      const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
+
+      if (itemEntityId && equipment && (equipment.weapon === itemEntityId || equipment.armor === itemEntityId) && def?.equippable) {
+        queuePlayerIntent(createUnequipItemAction(playerEntityId, def.equippable.slot));
+        return;
+      }
+
+      queuePlayerIntent(createEquipItemAction(playerEntityId, slotIndex));
+      return;
+    }
+
+    queuePlayerIntent(createUseItemAction(playerEntityId, slotIndex));
+    return;
   }
 
   if (event.shiftKey) {

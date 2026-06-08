@@ -2,6 +2,7 @@ import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ITEM_REGISTRY } from '../constants/items.constants.ts';
+import { STATUS_EFFECTS } from '../constants/status.constants.ts';
 
 /**
  * The effective combat stats for an entity after applying all equipment bonuses.
@@ -11,6 +12,7 @@ export interface EffectiveStats {
   readonly attack: number;
   readonly defense: number;
   readonly maxHp: number;
+  readonly speed: number;
 }
 
 /**
@@ -26,13 +28,27 @@ export interface EffectiveStats {
  */
 export function getEffectiveStats(state: GameState, entityId: EntityId): EffectiveStats {
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
-  if (!fighter) {
-    return { attack: 0, defense: 0, maxHp: 0 };
+  const actor = getComponent(state, entityId, ComponentType.Actor);
+
+  let baseAttack = 0;
+  let baseDefense = 0;
+  let baseMaxHp = 0;
+  let baseSpeed = 100;
+
+  if (fighter) {
+    baseAttack = fighter.attack;
+    baseDefense = fighter.defense;
+    baseMaxHp = fighter.maxHp;
+  }
+
+  if (actor) {
+    baseSpeed = actor.speed;
   }
 
   let attackBonus = 0;
   let defenseBonus = 0;
   let maxHpBonus = 0;
+  let speedBonus = 0;
 
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (equipment) {
@@ -52,9 +68,23 @@ export function getEffectiveStats(state: GameState, entityId: EntityId): Effecti
     }
   }
 
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
+  if (statuses) {
+    for (const active of statuses.activeEffects) {
+      const def = STATUS_EFFECTS[active.effectId];
+      if (def?.statModifiers) {
+        attackBonus += def.statModifiers.attack ?? 0;
+        defenseBonus += def.statModifiers.defense ?? 0;
+        maxHpBonus += def.statModifiers.maxHp ?? 0;
+        speedBonus += def.statModifiers.speed ?? 0;
+      }
+    }
+  }
+
   return {
-    attack: fighter.attack + attackBonus,
-    defense: fighter.defense + defenseBonus,
-    maxHp: fighter.maxHp + maxHpBonus
+    attack: baseAttack + attackBonus,
+    defense: baseDefense + defenseBonus,
+    maxHp: baseMaxHp + maxHpBonus,
+    speed: baseSpeed + speedBonus
   };
 }

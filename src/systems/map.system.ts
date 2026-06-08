@@ -113,22 +113,35 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
     );
   }
 
-  // 1. Pack and save the current floor
-  const nonPlayerEntityIds = state.entities.filter((id) => id !== entityId);
+  // 1. Determine which entities migrate with the player (inventory, equipment)
+  const inventory = getComponent(state, entityId, ComponentType.Inventory);
+  const equipment = getComponent(state, entityId, ComponentType.Equipment);
+  
+  const migratingEntities = new Set<EntityId>([entityId]);
+  if (inventory) {
+    inventory.items.forEach(id => migratingEntities.add(id));
+  }
+  if (equipment) {
+    if (equipment.weapon !== null) migratingEntities.add(equipment.weapon);
+    if (equipment.armor !== null) migratingEntities.add(equipment.armor);
+  }
+
+  // Pack and save the current floor (excluding migrating entities)
+  const savedEntityIds = state.entities.filter((id) => !migratingEntities.has(id));
   const currentLevelComponents = new Map<EntityId, ReadonlyArray<Component>>();
-  for (const id of nonPlayerEntityIds) {
+  for (const id of savedEntityIds) {
     const comps = state.components.get(id);
     if (comps !== undefined) {
       currentLevelComponents.set(id, comps);
     }
   }
 
-  // Remove the player's position from the saved index so they don't block stairs for others
+  // Remove the migrating entities' positions from the saved index
   const currentLevelData: LevelData = {
     map: state.map,
-    entities: nonPlayerEntityIds,
+    entities: savedEntityIds,
     components: currentLevelComponents,
-    spatialIndex: updateSpatialIndex({ ...state, entities: nonPlayerEntityIds, components: currentLevelComponents })
+    spatialIndex: updateSpatialIndex({ ...state, entities: savedEntityIds, components: currentLevelComponents })
       .spatialIndex
   };
 
@@ -235,13 +248,21 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
     nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
   }
 
-  // 3. Move Player
-  nextEntities = [entityId, ...nextEntities];
-  const playerComponents = state.components.get(entityId) ?? [];
-  const nextPlayerComponents = playerComponents.map((c) =>
-    c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c
-  );
-  nextComponents.set(entityId, nextPlayerComponents);
+  // 3. Move Player and their owned items
+  const migratingArray = Array.from(migratingEntities);
+  nextEntities = [...migratingArray, ...nextEntities];
+  
+  // Bring migrating components into the new floor
+  for (const id of migratingArray) {
+    let comps = state.components.get(id) ?? [];
+    if (id === entityId) {
+      // Update player position
+      comps = comps.map((c) =>
+        c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c
+      );
+    }
+    nextComponents.set(id, comps);
+  }
 
   let nextState: GameState = {
     ...state,

@@ -26,6 +26,7 @@ import { UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { assertNever } from '../utils/assert.ts';
 import { TILE_REGISTRY } from '../constants/tile.constants.ts';
+import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -87,13 +88,34 @@ export function queuePlayerIntent(intent: Intent): void {
  * Called by ROT.Engine when it is an actor's turn.
  */
 export function processTurn(entityId: EntityId): void {
-  const state = getGameState();
+  let state = getGameState();
   if (state.isGameOver) {
     lockEngine();
     return;
   }
 
+  const stateAfterTick = processStatusEffectsTick(state, entityId);
+  if (stateAfterTick !== state) {
+    updateState(stateAfterTick);
+    state = stateAfterTick;
+  }
+
+  // If the entity died from DoT (like poison), end their turn
+  const fighter = getComponent(state, entityId, ComponentType.Fighter);
+  if (!fighter && getComponent(state, entityId, ComponentType.Actor)) {
+    // Wait, if they are dead, they might have been removed. But just in case:
+    return;
+  }
+
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+
+  // Check if any active effect requires this entity to skip its turn
+  if (shouldSkipTurn(state, entityId)) {
+    if (isPlayer) {
+      updateState(addMessage(state, `You are unable to act and skip your turn!`, MessageLogCategory.System));
+    }
+    return;
+  }
 
   if (isPlayer) {
     // It's the player's turn. We lock the engine and wait for UI input.

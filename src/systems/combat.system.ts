@@ -1,9 +1,16 @@
 import type { GameState } from '../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../types/intents.types.ts';
-import { ComponentType, type FighterComponent } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type FighterComponent,
+  type EquipmentComponent,
+  type ItemComponent
+} from '../types/components.types.ts';
 import { getComponent, removeEntity } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { applyStatusEffect } from './status-effect.system.ts';
+import { ITEM_REGISTRY } from '../constants/items.constants.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
 import { type EntityId, UIMode } from '../types/game-state.types.ts';
@@ -16,7 +23,7 @@ import { deleteSave } from '../core/save.ts';
  * @param amount The amount of XP to grant.
  * @returns The updated GameState.
  */
-function grantXp(state: GameState, entityId: EntityId, amount: number): GameState {
+export function grantXp(state: GameState, entityId: EntityId, amount: number): GameState {
   if (amount <= 0) return state;
 
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
@@ -129,7 +136,25 @@ export function processMeleeAttackIntent(state: GameState, intent: MeleeAttackIn
       components: nextComponents
     };
 
-    if (newHp === 0) {
+    if (newHp > 0) {
+      // Check for on-hit weapon effects
+      const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+      if (equipment && equipment.weapon !== null) {
+        const weaponItem = getComponent(state, equipment.weapon, ComponentType.Item) as ItemComponent | undefined;
+        if (weaponItem) {
+          const itemDef = ITEM_REGISTRY[weaponItem.itemId];
+          if (itemDef?.equippable?.onHit) {
+            nextState = applyStatusEffect(
+              nextState,
+              defenderId,
+              itemDef.equippable.onHit.statusId,
+              itemDef.equippable.onHit.duration,
+              entityId
+            );
+          }
+        }
+      }
+    } else {
       nextState = addMessage(nextState, `${defenderName} dies!`, MessageLogCategory.CombatDeath);
 
       if (isDefenderPlayer) {

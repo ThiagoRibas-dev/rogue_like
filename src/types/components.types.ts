@@ -12,7 +12,8 @@ export const enum ComponentType {
   AI = 'AI',
   Item = 'Item',
   Inventory = 'Inventory',
-  Equipment = 'Equipment'
+  Equipment = 'Equipment',
+  StatusEffects = 'StatusEffects'
 }
 
 /**
@@ -160,6 +161,23 @@ export interface EquipmentComponent {
 }
 
 /**
+ * An instance of a status effect applied to an entity.
+ */
+export interface ActiveStatusEffect {
+  readonly effectId: string; // Key to STATUS_EFFECTS registry
+  readonly duration: number; // Turns remaining
+  readonly sourceEntityId?: EntityId; // The entity that applied this effect
+}
+
+/**
+ * Component holding all active status effects on an entity.
+ */
+export interface StatusEffectsComponent {
+  readonly type: ComponentType.StatusEffects;
+  readonly activeEffects: ReadonlyArray<ActiveStatusEffect>;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -173,4 +191,5 @@ export type Component =
   | AIComponent
   | ItemComponent
   | InventoryComponent
-  | EquipmentComponent;
+  | EquipmentComponent
+  | StatusEffectsComponent;

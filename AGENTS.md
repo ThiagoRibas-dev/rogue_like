@@ -303,6 +303,8 @@ Keep this script up to date.
 | Use `setTimeout` / `setInterval` for turns    | Use ROT.Scheduler; this is a turn-based game      |
 | Mutate arrays/objects you don't own            | Clone or use immutable update patterns            |
 | Skip the plan step for multi-file changes     | Always state the plan and get confirmation first  |
+| Leak subsystem knowledge into the game loop   | Subsystems expose query helpers (e.g., `shouldSkipTurn()`); the core loop calls those instead of inspecting registries or component internals directly |
+| Forget that entities own other entities via ID| Traverse and migrate foreign keys (like inventory items) when moving entities between distinct ECS states (e.g., floor transitions). |
 
 ---
 
@@ -321,3 +323,4 @@ When in doubt, consult these canonical sources:
 ## 11. Lessons Learned
 
 - **ROT.js TypeScript Definitions:** In modern versions of ROT.js (v2+), certain type interfaces such as `DisplayOptions` are not explicitly exported from the main `index.d.ts` module.
+- **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).

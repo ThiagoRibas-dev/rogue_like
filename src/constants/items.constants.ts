@@ -73,6 +73,11 @@ export interface ItemDefinition {
     readonly maxHpBonus: number;
     /** Bonus added to the wielder's effective inventory capacity. */
     readonly carryBonus: number;
+    /** Optional status effect applied to the target on a successful melee hit (Weapons only). */
+    readonly onHit?: {
+      readonly statusId: string;
+      readonly duration: number;
+    };
   };
 }
 
@@ -104,6 +109,42 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
     category: ItemCategory.Consumable,
     weight: 1,
     consumable: { effectId: 'damage_nearest_10', charges: 1 }
+  },
+  potion_haste: {
+    id: 'potion_haste',
+    name: 'Potion of Haste',
+    unidentifiedName: 'Swirling Yellow Potion',
+    description: 'A potion that greatly increases your speed for a short duration.',
+    glyph: '!',
+    fg: '#feca57',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'potion_haste', charges: 1 }
+  },
+  scroll_confusion: {
+    id: 'scroll_confusion',
+    name: 'Scroll of Confusion',
+    unidentifiedName: 'Dizzying Scroll',
+    description: 'A scroll covered in erratic runes. Confuses the nearest enemy.',
+    glyph: '?',
+    fg: '#f368e0',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'scroll_confusion', charges: 1 }
+  },
+  scroll_fireball: {
+    id: 'scroll_fireball',
+    name: 'Scroll of Fireball',
+    unidentifiedName: 'Scorched Scroll',
+    description: 'Unleashes a massive fireball that damages all enemies in a wide radius.',
+    glyph: '?',
+    fg: '#ee5253',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'scroll_fireball', charges: 1 }
   },
   short_sword: {
     id: 'short_sword',
@@ -158,6 +199,28 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
       maxHpBonus: 0,
       carryBonus: 5
     }
+  },
+  venom_dagger: {
+    id: 'venom_dagger',
+    name: 'Venom Dagger',
+    unidentifiedName: 'Green-Tinged Dagger',
+    description: 'A wicked blade dripping with corrosive poison.',
+    glyph: '/',
+    fg: '#1abc9c', // Teal
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Weapon,
+    weight: 2,
+    equippable: {
+      slot: EquipmentSlot.Weapon,
+      attackBonus: 2,
+      defenseBonus: 0,
+      maxHpBonus: 0,
+      carryBonus: 0,
+      onHit: {
+        statusId: 'poison',
+        duration: 5
+      }
+    }
   }
 } satisfies Record<string, ItemDefinition>;
 
@@ -167,9 +230,13 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
  * Higher weight = more likely to spawn.
  */
 export const LOOT_TABLE: Readonly<Record<string, number>> = {
-  health_potion: 60,
-  scroll_of_lightning: 15,
+  health_potion: 50,
+  potion_haste: 10,
+  scroll_of_lightning: 10,
+  scroll_confusion: 10,
+  scroll_fireball: 5,
   short_sword: 10,
+  venom_dagger: 5,
   leather_armor: 10,
   backpack: 5
 };
