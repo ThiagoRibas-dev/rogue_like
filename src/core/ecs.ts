@@ -154,7 +154,17 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
   };
 
   nextState = addComponent(nextState, entityId, pos);
-  nextState = addComponent(nextState, entityId, render);
+
+  if (templateId !== 'hidden_trap') {
+    nextState = addComponent(nextState, entityId, render);
+  } else {
+    const trapCmp = {
+      type: ComponentType.Trap,
+      effectId: 'scroll_fireball', // Trap effect (hardcoded for now, could be in template)
+      triggered: false
+    } as const;
+    nextState = addComponent(nextState, entityId, trapCmp);
+  }
 
   if (template.isActor) {
     const actor: ActorComponent = { type: ComponentType.Actor, speed: template.speed ?? 100 };
@@ -206,8 +216,13 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
       weapon: null,
       armor: null
     };
+    const hungerCmp = {
+      type: ComponentType.Hunger,
+      satiation: 1000 // Start at Normal threshold
+    } as const;
     nextState = addComponent(nextState, entityId, inventoryCmp);
     nextState = addComponent(nextState, entityId, equipmentCmp);
+    nextState = addComponent(nextState, entityId, hungerCmp);
   }
 
   return [nextState, entityId];
@@ -241,7 +256,6 @@ export function spawnItem(state: GameState, itemId: string, x: number, y: number
     type: ComponentType.Item,
     itemId: def.id,
     instanceId,
-    identified: true, // M8: change to false for unidentified items
     ...(def.consumable !== undefined ? { charges: def.consumable.charges } : {})
   };
 

@@ -76,7 +76,10 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): GameS
   if (!itemComp) return state;
 
   const def = ITEM_REGISTRY[itemComp.itemId];
-  const itemName = (itemComp.identified ? def?.name : def?.unidentifiedName) ?? itemComp.itemId;
+  if (!def) return state;
+  const isIdentified = state.identifiedItems.has(def.id);
+  const itemName =
+    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
   // Remove PositionComponent from the item (takes it off the map / spatial index)
   const nextComponents = new Map(state.components);
@@ -139,7 +142,10 @@ export function processDropIntent(state: GameState, entityId: EntityId, itemInde
   if (!itemComp) return state;
 
   const def = ITEM_REGISTRY[itemComp.itemId];
-  const itemName = (itemComp.identified ? def?.name : def?.unidentifiedName) ?? itemComp.itemId;
+  if (!def) return state;
+  const isIdentified = state.identifiedItems.has(def.id);
+  const itemName =
+    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
   // Check if the item is equipped — must unequip first
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
@@ -208,12 +214,17 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
 
   const def = ITEM_REGISTRY[itemComp.itemId];
   if (!def?.equippable) {
-    const itemName = (itemComp.identified ? def?.name : def?.unidentifiedName) ?? itemComp.itemId;
+    const isIdentified = state.identifiedItems.has(def?.id ?? '');
+    const itemName =
+      (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def?.id ?? '') ?? def?.unidentifiedName)) ??
+      itemComp.itemId;
     return addMessage(state, `The ${itemName} cannot be equipped.`, MessageLogCategory.System);
   }
 
   const slot = def.equippable.slot;
-  const itemName = itemComp.identified ? def.name : def.unidentifiedName;
+  const isIdentified = state.identifiedItems.has(def.id);
+  const itemName =
+    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
   // We no longer remove the item from inventory, it just stays there.
   // We don't need to swap items back into inventory since they never left.
@@ -263,7 +274,10 @@ export function processUnequipItemIntent(state: GameState, entityId: EntityId, s
   }
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
-  const itemName = (itemComp?.identified ? def?.name : def?.unidentifiedName) ?? 'item';
+  if (!itemComp || !def) return state;
+  const isIdentified = state.identifiedItems.has(def.id);
+  const itemName =
+    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
   const nextEquipment: EquipmentComponent = {
     ...equipment,

@@ -3,21 +3,14 @@ import type { EntityId } from '../types/game-state.types.ts';
 import { processTurn } from './game-loop.ts';
 
 class SchedulerActor {
-  constructor(
-    public readonly id: EntityId,
-    private speed: number
-  ) {}
+  constructor(public readonly id: EntityId) {}
 
   act(): void {
     processTurn(this.id);
   }
-
-  getSpeed(): number {
-    return this.speed;
-  }
 }
 
-const scheduler = new ROT.Scheduler.Speed<SchedulerActor>();
+const scheduler = new ROT.Scheduler.Action<SchedulerActor>();
 let engine: ROT.Engine | null = null;
 
 const actors = new Map<EntityId, SchedulerActor>();
@@ -38,11 +31,11 @@ export function unlockEngine(): void {
   if (engine) engine.unlock();
 }
 
-export function addActor(id: EntityId, speed: number): void {
+export function addActor(id: EntityId, repeat: boolean = true, initialDuration: number = 0): void {
   if (actors.has(id)) return;
-  const actor = new SchedulerActor(id, speed);
+  const actor = new SchedulerActor(id);
   actors.set(id, actor);
-  scheduler.add(actor, true);
+  scheduler.add(actor, repeat, initialDuration);
 }
 
 export function removeActor(id: EntityId): void {
@@ -51,6 +44,10 @@ export function removeActor(id: EntityId): void {
     scheduler.remove(actor);
     actors.delete(id);
   }
+}
+
+export function setTurnDuration(duration: number): void {
+  scheduler.setDuration(duration);
 }
 
 export function clearScheduler(): void {

@@ -103,13 +103,34 @@ let state: GameState = {
   levels: new Map(),
   spatialIndex: new Map(),
   isGameOver: false,
-  uiMode: UIMode.MainMenu
+  uiMode: UIMode.MainMenu,
+  identifiedItems: new Set(),
+  itemUnidentifiedNames: new Map()
 };
+
+import { POTION_DESCRIPTORS, SCROLL_DESCRIPTORS, ItemCategory } from './constants/items.constants.ts';
 
 function startNewGame() {
   deleteSave();
   clearScheduler();
   initEngine();
+
+  const itemUnidentifiedNames = new Map<string, string>();
+  const potionDesc = [...POTION_DESCRIPTORS].sort(() => ROT.RNG.getUniform() - 0.5);
+  const scrollDesc = [...SCROLL_DESCRIPTORS].sort(() => ROT.RNG.getUniform() - 0.5);
+
+  let pIdx = 0;
+  let sIdx = 0;
+
+  for (const [id, def] of Object.entries(ITEM_REGISTRY)) {
+    if (def.category === ItemCategory.Consumable) {
+      if (def.id.includes('potion')) {
+        itemUnidentifiedNames.set(id, `${potionDesc[pIdx++ % potionDesc.length]} Potion`);
+      } else if (def.id.includes('scroll')) {
+        itemUnidentifiedNames.set(id, `${scrollDesc[sIdx++ % scrollDesc.length]} Scroll`);
+      }
+    }
+  }
 
   const { map: initialMap, startPos, stairs, rooms } = generateDungeon(MAP_WIDTH, MAP_HEIGHT, 1);
   state = {
@@ -122,7 +143,9 @@ function startNewGame() {
     spatialIndex: new Map(),
     messages: [],
     currentDepth: 1,
-    levels: new Map()
+    levels: new Map(),
+    identifiedItems: new Set(),
+    itemUnidentifiedNames
   };
 
   // Spawn the player entity
@@ -184,7 +207,7 @@ function startNewGame() {
   for (const id of state.entities) {
     const actor = getComponent(state, id, ComponentType.Actor);
     if (actor) {
-      addActor(id, actor.speed);
+      addActor(id);
     }
   }
 
@@ -206,7 +229,7 @@ function continueGame() {
     for (const id of state.entities) {
       const actor = getComponent(state, id, ComponentType.Actor);
       if (actor) {
-        addActor(id, actor.speed);
+        addActor(id);
       }
     }
 

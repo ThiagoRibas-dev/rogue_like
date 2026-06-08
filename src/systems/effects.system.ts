@@ -13,6 +13,7 @@ import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
+import { MAX_SATIATION } from '../constants/hunger.constants.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -203,6 +204,41 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       }
     }
 
+    case ItemEffectType.Identify: {
+      const inventory = getComponent(state, userId, ComponentType.Inventory);
+      if (!inventory) return state;
+
+      const newIdentifiedSet = new Set(state.identifiedItems);
+      for (const itemEntityId of inventory.items) {
+        const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+        if (itemComp) {
+          newIdentifiedSet.add(itemComp.itemId);
+        }
+      }
+
+      const msg = effectDef.message.replace('{item}', itemName);
+      const nextState = addMessage(state, msg, MessageLogCategory.System);
+      return { ...nextState, identifiedItems: newIdentifiedSet };
+    }
+
+    case ItemEffectType.Satiate: {
+      const hunger = getComponent(state, userId, ComponentType.Hunger);
+      if (!hunger) return state;
+
+      const newSatiation = Math.min(MAX_SATIATION, hunger.satiation + effectDef.value);
+      const nextHunger = { ...hunger, satiation: newSatiation };
+
+      const nextComponents = new Map(state.components);
+      const userComps = nextComponents.get(userId) ?? [];
+      nextComponents.set(
+        userId,
+        userComps.map((c) => (c.type === ComponentType.Hunger ? nextHunger : c))
+      );
+
+      const msg = effectDef.message.replace('{item}', itemName);
+      return addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.System);
+    }
+
     default:
       return assertNever(effectDef.type);
   }
@@ -229,14 +265,28 @@ export function processUseItemIntent(state: GameState, entityId: EntityId, itemI
   if (!itemComp) return state;
 
   const def = ITEM_REGISTRY[itemComp.itemId];
-  const itemName = (itemComp.identified ? def?.name : def?.unidentifiedName) ?? itemComp.itemId;
+  const isIdentified = state.identifiedItems.has(itemComp.itemId);
+  const itemName = isIdentified
+    ? def?.name
+    : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
 
   if (!def?.consumable) {
     return addMessage(state, `The ${itemName} cannot be used directly. Try equipping it.`, MessageLogCategory.System);
   }
 
-  // Apply the effect
-  let nextState = applyItemEffect(state, entityId, def.consumable.effectId, itemName);
+  // Identify on use
+  let nextState = state;
+  if (!isIdentified) {
+    const newIdentifiedSet = new Set(nextState.identifiedItems);
+    newIdentifiedSet.add(itemComp.itemId);
+    nextState = { ...nextState, identifiedItems: newIdentifiedSet };
+  }
+
+  const itemNameFinal =
+    (nextState.identifiedItems.has(def.id) ? def.name : nextState.itemUnidentifiedNames.get(def.id)) ??
+    def.unidentifiedName ??
+    def.name;
+  nextState = applyItemEffect(nextState, entityId, def.consumable.effectId, itemNameFinal);
 
   // Remove item from inventory
   const remainingCharges = (itemComp.charges ?? 1) - 1;

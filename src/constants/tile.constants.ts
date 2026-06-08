@@ -10,6 +10,8 @@ export interface TileDefinition {
   readonly glyph: string;
   readonly fg: string;
   readonly bg: string;
+  /** Optional movement cost multiplier (100 = normal speed). Defaults to 100 if undefined. */
+  readonly movementCost?: number;
 }
 
 /**
@@ -49,6 +51,28 @@ export const TILE_REGISTRY: Readonly<Record<string, TileDefinition>> = {
     transparent: false,
     glyph: ' ',
     fg: '#000000',
+    bg: COLOR_BACKGROUND
+  },
+  shallow_water: {
+    walkable: true,
+    transparent: true,
+    glyph: '~',
+    fg: '#3498db',
+    bg: COLOR_BACKGROUND,
+    movementCost: 200 // Takes twice as long to move through
+  },
+  closed_door: {
+    walkable: false,
+    transparent: false,
+    glyph: '+',
+    fg: '#d35400',
+    bg: COLOR_BACKGROUND
+  },
+  open_door: {
+    walkable: true,
+    transparent: true,
+    glyph: '/',
+    fg: '#d35400',
     bg: COLOR_BACKGROUND
   }
 };

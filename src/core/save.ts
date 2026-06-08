@@ -48,7 +48,9 @@ export function saveGame(state: GameState): void {
     currentDepth: state.currentDepth,
     levels: serializedLevels,
     isGameOver: state.isGameOver,
-    uiMode: state.uiMode
+    uiMode: state.uiMode,
+    identifiedItems: Array.from(state.identifiedItems),
+    itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries())
   };
 
   try {
@@ -91,7 +93,9 @@ export function loadGame(): GameState | null {
       levels: rehydratedLevels,
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
-      uiMode: sState.uiMode
+      uiMode: sState.uiMode,
+      identifiedItems: new Set(sState.identifiedItems || []),
+      itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || [])
     };
 
     // Rebuild the spatial index for the active floor

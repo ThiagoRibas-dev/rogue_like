@@ -7,6 +7,7 @@ import { STATUS_EFFECTS } from '../constants/status.constants.ts';
 import { getEffectiveCapacity } from '../systems/inventory.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getAdvancementForLevel } from '../constants/advancement.constants.ts';
+import { getHungerState } from '../systems/hunger.system.ts';
 
 /**
  * Renders the GameState's messages to the DOM.
@@ -93,7 +94,10 @@ export function renderInventoryPanel(state: GameState): void {
     if (!itemComp) return;
 
     const def = ITEM_REGISTRY[itemComp.itemId];
-    const displayName = (itemComp.identified ? def?.name : def?.unidentifiedName) ?? itemComp.itemId;
+    const isIdentified = state.identifiedItems.has(itemComp.itemId);
+    const displayName = isIdentified
+      ? def?.name
+      : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
     const slotLabel = String.fromCharCode(97 + index);
     const isEquippedWeapon = equipment?.weapon === itemEntityId;
     const isEquippedArmor = equipment?.armor === itemEntityId;
@@ -143,6 +147,18 @@ export function renderPlayerStats(state: GameState): void {
   const levelText = document.getElementById('player-level-text');
   if (levelText) {
     levelText.textContent = fighter.level.toString();
+  }
+
+  // Update Hunger
+  const hungerText = document.getElementById('hunger-text');
+  if (hungerText) {
+    const hunger = getComponent(state, playerEntityId, ComponentType.Hunger);
+    if (hunger) {
+      const stateLabel = getHungerState(hunger.satiation);
+      hungerText.textContent = stateLabel;
+      // Optional: Add color styling based on state
+      hungerText.style.color = stateLabel === 'Starving' ? '#e74c3c' : stateLabel === 'Hungry' ? '#f39c12' : '#ecf0f1';
+    }
   }
 
   // Update XP

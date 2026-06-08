@@ -1,4 +1,12 @@
-import type { EntityId } from './game-state.types.ts';
+import type { GameState, EntityId } from './game-state.types.ts';
+
+/**
+ * Result of processing an Intent, containing the new state and the energy cost of the action.
+ */
+export interface ActionResult {
+  readonly state: GameState;
+  readonly energyCost: number;
+}
 
 /**
  * Enum defining the different types of Intents that can be returned by Actions.

@@ -104,5 +104,13 @@ export const ENTITY_TEMPLATES: Readonly<Record<string, EntityTemplate>> = {
     fighter: { maxHp: 12, attack: 2, defense: 0, xpGiven: 100 },
     ai: { profileId: AIProfileId.CasterMage, aggroRadius: 8, wanders: true },
     faction: FactionId.Monster
+  },
+  hidden_trap: {
+    id: 'hidden_trap',
+    name: 'Hidden Trap',
+    glyph: '^', // Revealed glyph
+    fg: '#e74c3c',
+    bg: COLOR_TRANSPARENT,
+    isActor: false
   }
 };

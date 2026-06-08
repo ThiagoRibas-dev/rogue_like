@@ -90,6 +90,8 @@ export interface GameState {
     readonly y: number;
     readonly radius?: number;
   };
+  readonly identifiedItems: ReadonlySet<string>;
+  readonly itemUnidentifiedNames: ReadonlyMap<string, string>;
 }
 
 /**
@@ -115,4 +117,6 @@ export interface SerializedGameState {
   readonly levels: ReadonlyArray<[number, SerializedLevelData]>;
   readonly isGameOver: boolean;
   readonly uiMode: UIMode;
+  readonly identifiedItems: ReadonlyArray<string>;
+  readonly itemUnidentifiedNames: ReadonlyArray<[string, string]>;
 }

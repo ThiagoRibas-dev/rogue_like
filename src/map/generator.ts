@@ -144,7 +144,7 @@ export function generateDungeon(
             const ny = y + dy;
             if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
               const nIdx = coordToIndex(nx, ny, width);
-              if (tiles[nIdx]?.tileId === 'stone_floor') {
+              if (tiles[nIdx]?.tileId === 'stone_floor' || tiles[nIdx]?.tileId === 'shallow_water') {
                 bordersFloor = true;
                 break;
               }
@@ -154,6 +154,12 @@ export function generateDungeon(
         }
         if (!bordersFloor) {
           tiles[idx] = { ...tile, tileId: 'empty_space' };
+        }
+      } else if (tile && tile.tileId === 'stone_floor') {
+        // Scatter some shallow water
+        if (ROT.RNG.getUniform() < 0.05) {
+          // 5% chance for a floor tile to be water
+          tiles[idx] = { ...tile, tileId: 'shallow_water' };
         }
       }
     }
@@ -166,6 +172,16 @@ export function generateDungeon(
   };
 
   const parsedRooms = rooms.map((r) => {
+    r.getDoors((x: number, y: number) => {
+      const idx = coordToIndex(x, y, width);
+      const tile = tiles[idx];
+      if (tile) {
+        // Only place doors occasionally to avoid over-cluttering, or place them everywhere?
+        // Let's place them everywhere a door is defined.
+        tiles[idx] = { ...tile, tileId: 'closed_door' };
+      }
+    });
+
     const center = r.getCenter();
     return {
       left: r.getLeft(),

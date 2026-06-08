@@ -1,9 +1,10 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
+import { setTurnDuration } from './scheduler.ts';
 import { getComponent, spawnEntity } from './ecs.ts';
 import { lockEngine, unlockEngine, addActor } from './scheduler.ts';
 import { saveGame } from './save.ts';
-import { IntentType, type Intent } from '../types/intents.types.ts';
+import { IntentType, type Intent, type ActionResult } from '../types/intents.types.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import { processInteractIntent, processChangeFloorIntent } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
@@ -27,6 +28,7 @@ import { coordToIndex } from '../utils/grid.ts';
 import { assertNever } from '../utils/assert.ts';
 import { TILE_REGISTRY } from '../constants/tile.constants.ts';
 import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
+import { processHungerTick } from '../systems/hunger.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -61,25 +63,21 @@ export function queuePlayerIntent(intent: Intent): void {
   const state = getGameState();
   if (state.isGameOver) return;
 
-  const nextState = applyIntent(state, intent);
+  const result = applyIntentWithCost(state, intent);
+  let nextState = result.state;
+
+  if (result.energyCost > 0) {
+    nextState = processHungerTick(nextState, intent.entityId, result.energyCost);
+  }
+
   if (nextState !== state) {
     // Always update FOV after the player acts
     updateState(updateExploredTiles(nextState));
   }
 
-  // Only unlock the engine if the intent consumes a turn (time)
-  const consumesTurn = [
-    IntentType.Move,
-    IntentType.Wait,
-    IntentType.Interact,
-    IntentType.ChangeFloor,
-    IntentType.MeleeAttack,
-    IntentType.FireAimed,
-    IntentType.PickUp
-  ].includes(intent.type);
-
-  // Opening/closing inventory does not consume a turn
-  if (consumesTurn) {
+  // Only unlock the engine if the intent consumes a turn (energyCost > 0)
+  if (result.energyCost > 0) {
+    setTurnDuration(result.energyCost);
     unlockEngine();
   }
 }
@@ -123,11 +121,73 @@ export function processTurn(entityId: EntityId): void {
     lockEngine();
   } else {
     // AI Turn
-    const nextState = processAITurn(state, entityId);
-    if (nextState !== state) {
-      updateState(nextState);
+    const intent = processAITurn(state, entityId);
+    if (intent !== null) {
+      const result = applyIntentWithCost(state, intent);
+      let nextState = result.state;
+      if (result.energyCost > 0) {
+        nextState = processHungerTick(nextState, entityId, result.energyCost);
+        setTurnDuration(result.energyCost);
+      }
+      if (nextState !== state) {
+        updateState(nextState);
+      }
+    } else {
+      // AI waited / skipped turn
+      const nextState = processHungerTick(state, entityId, 100);
+      if (nextState !== state) {
+        updateState(nextState);
+      }
+      setTurnDuration(100);
     }
   }
+}
+
+/**
+ * Executes an intent and computes its energy cost based on success.
+ */
+function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
+  const nextState = applyIntent(state, intent);
+
+  let energyCost = 100; // default cost
+
+  if (intent.type === IntentType.Move) {
+    const posBefore = getComponent(state, intent.entityId, ComponentType.Position);
+    const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
+    if (posBefore && posAfter && (posBefore.x !== posAfter.x || posBefore.y !== posAfter.y)) {
+      // Move succeeded! Look up movement cost
+      const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
+      const tile = state.map.tiles[tileIdx];
+      if (tile) {
+        energyCost = TILE_REGISTRY[tile.tileId]?.movementCost ?? 100;
+      }
+    } else if (state !== nextState) {
+      // It was likely a MeleeAttack substitution or interaction
+      energyCost = 100;
+    } else {
+      // Complete failure (bumping into wall without message etc)
+      energyCost = 0;
+    }
+  } else if (
+    intent.type === IntentType.ToggleInventory ||
+    intent.type === IntentType.ToggleTargeting ||
+    intent.type === IntentType.MoveTarget ||
+    intent.type === IntentType.DebugGodMode ||
+    intent.type === IntentType.DebugRevealMap ||
+    intent.type === IntentType.DebugSpawnEntity
+  ) {
+    energyCost = 0; // UI/Debug actions take no time
+  }
+
+  // Scale cost by actor speed
+  if (energyCost > 0) {
+    const actor = getComponent(state, intent.entityId, ComponentType.Actor);
+    if (actor && actor.speed > 0) {
+      energyCost = Math.max(1, Math.round((energyCost * 100) / actor.speed));
+    }
+  }
+
+  return { state: nextState, energyCost };
 }
 
 /**
@@ -242,8 +302,10 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
       const nextState = stateAfterSpawn;
 
-      const actorSpeed = getComponent(nextState, newEntityId, ComponentType.Actor)?.speed ?? 100;
-      addActor(newEntityId, actorSpeed);
+      const actor = getComponent(nextState, newEntityId, ComponentType.Actor);
+      if (actor) {
+        addActor(newEntityId);
+      }
 
       return addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System);
     }

@@ -1,6 +1,36 @@
 import { COLOR_TRANSPARENT } from './colors.constants.ts';
 
 /**
+ * Adjectives used to randomize potion names per playthrough.
+ */
+export const POTION_DESCRIPTORS = [
+  'Red',
+  'Blue',
+  'Green',
+  'Yellow',
+  'Purple',
+  'Murky',
+  'Bubbling',
+  'Clear',
+  'Swirling',
+  'Thick'
+];
+
+/**
+ * Adjectives used to randomize scroll names per playthrough.
+ */
+export const SCROLL_DESCRIPTORS = [
+  'Scorched',
+  'Runed',
+  'Faded',
+  'Tattered',
+  'Glowing',
+  'Crumbling',
+  'Blood-Stained',
+  'Dusty'
+];
+
+/**
  * Enum categorizing items by their mechanical role.
  * Maps directly to future JSON schema categories for M9 data-driven loading.
  */
@@ -89,7 +119,7 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
   health_potion: {
     id: 'health_potion',
     name: 'Health Potion',
-    unidentifiedName: 'Red Potion',
+    unidentifiedName: 'Potion',
     description: 'A vial of crimson liquid that restores vitality when consumed.',
     glyph: '!',
     fg: '#e74c3c',
@@ -101,7 +131,7 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
   scroll_of_lightning: {
     id: 'scroll_of_lightning',
     name: 'Scroll of Lightning',
-    unidentifiedName: 'Strange Scroll',
+    unidentifiedName: 'Scroll',
     description: 'A crackling scroll that strikes the nearest enemy with a bolt of lightning.',
     glyph: '?',
     fg: '#f1c40f',
@@ -113,7 +143,7 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
   potion_haste: {
     id: 'potion_haste',
     name: 'Potion of Haste',
-    unidentifiedName: 'Swirling Yellow Potion',
+    unidentifiedName: 'Potion',
     description: 'A potion that greatly increases your speed for a short duration.',
     glyph: '!',
     fg: '#feca57',
@@ -125,7 +155,7 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
   scroll_confusion: {
     id: 'scroll_confusion',
     name: 'Scroll of Confusion',
-    unidentifiedName: 'Dizzying Scroll',
+    unidentifiedName: 'Scroll',
     description: 'A scroll covered in erratic runes. Confuses the nearest enemy.',
     glyph: '?',
     fg: '#f368e0',
@@ -137,7 +167,7 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
   scroll_fireball: {
     id: 'scroll_fireball',
     name: 'Scroll of Fireball',
-    unidentifiedName: 'Scorched Scroll',
+    unidentifiedName: 'Scroll',
     description: 'Unleashes a massive fireball that damages all enemies in a wide radius.',
     glyph: '?',
     fg: '#ee5253',
@@ -145,6 +175,42 @@ export const ITEM_REGISTRY: Readonly<Record<string, ItemDefinition>> = {
     category: ItemCategory.Consumable,
     weight: 1,
     consumable: { effectId: 'scroll_fireball', charges: 1 }
+  },
+  scroll_identify: {
+    id: 'scroll_identify',
+    name: 'Scroll of Identify',
+    unidentifiedName: 'Scroll',
+    description: 'Magical script that reveals the true nature of all items in your inventory.',
+    glyph: '?',
+    fg: '#ecf0f1',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'scroll_identify', charges: 1 }
+  },
+  food_ration: {
+    id: 'food_ration',
+    name: 'Food Ration',
+    unidentifiedName: 'Ration',
+    description: 'A wrapped bundle of dried meats and bread. Highly nutritious.',
+    glyph: '%',
+    fg: '#d35400',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'food_ration', charges: 1 }
+  },
+  apple: {
+    id: 'apple',
+    name: 'Apple',
+    unidentifiedName: 'Fruit',
+    description: 'A crisp, red apple. Good for a quick snack.',
+    glyph: '%',
+    fg: '#e74c3c',
+    bg: COLOR_TRANSPARENT,
+    category: ItemCategory.Consumable,
+    weight: 1,
+    consumable: { effectId: 'apple', charges: 1 }
   },
   short_sword: {
     id: 'short_sword',
@@ -235,6 +301,9 @@ export const LOOT_TABLE: Readonly<Record<string, number>> = {
   scroll_of_lightning: 10,
   scroll_confusion: 10,
   scroll_fireball: 5,
+  scroll_identify: 15,
+  food_ration: 15,
+  apple: 10,
   short_sword: 10,
   venom_dagger: 5,
   leather_armor: 10,

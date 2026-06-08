@@ -25,6 +25,7 @@ import { LOOT_TABLE, MAX_ITEMS_PER_ROOM } from '../constants/items.constants.ts'
 import { IntentType, type ChangeFloorIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
 import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
+import { coordToIndex } from '../utils/grid.ts';
 
 export function updateExploredTiles(state: GameState): GameState {
   const players: ReadonlyArray<EntityId> = queryEntities(state, [ComponentType.Player, ComponentType.Position]);
@@ -83,6 +84,22 @@ export function processInteractIntent(state: GameState, intent: InteractIntent):
   }
 
   if (!interacted) {
+    // Check if there's an open door at this tile to close
+    const tileIdx = coordToIndex(pos.x, pos.y, state.map.width);
+    const tile = state.map.tiles[tileIdx];
+    if (tile && tile.tileId === 'open_door') {
+      const nextTiles = [...state.map.tiles];
+      nextTiles[tileIdx] = { ...tile, tileId: 'closed_door' };
+      const nextMap = { ...state.map, tiles: nextTiles };
+      let nextState: GameState = { ...state, map: nextMap };
+
+      const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+      if (isPlayer) {
+        nextState = addMessage(nextState, 'You close the door.', MessageLogCategory.System);
+      }
+      return nextState;
+    }
+
     const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
     if (isPlayer) {
       return addMessage(nextState, 'There is nothing here to interact with.', MessageLogCategory.System);
@@ -278,12 +295,12 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
   for (const id of nextState.entities) {
     if (id === entityId) {
       const actor = getComponent(nextState, id, ComponentType.Actor);
-      if (actor) addActor(id, actor.speed);
+      if (actor) addActor(id);
       continue;
     }
     const actor = getComponent(nextState, id, ComponentType.Actor);
     if (actor) {
-      addActor(id, actor.speed);
+      addActor(id);
     }
   }
 

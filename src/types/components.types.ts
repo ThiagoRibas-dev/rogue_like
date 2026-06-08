@@ -14,7 +14,9 @@ export const enum ComponentType {
   Inventory = 'Inventory',
   Equipment = 'Equipment',
   StatusEffects = 'StatusEffects',
-  Faction = 'Faction'
+  Faction = 'Faction',
+  Hunger = 'Hunger',
+  Trap = 'Trap'
 }
 
 /**
@@ -122,8 +124,6 @@ export interface ItemComponent {
    * Generated from GameState.nextItemInstanceId counter.
    */
   readonly instanceId: ItemInstanceId;
-  /** Whether the player knows the item's true name (M8 prep, defaults true for MVP). */
-  readonly identified: boolean;
   /** Remaining charges for consumables with multiple uses (M8 prep for wands). */
   readonly charges?: number;
 }
@@ -180,6 +180,23 @@ export interface FactionComponent {
 }
 
 /**
+ * Component representing an entity's hunger state.
+ */
+export interface HungerComponent {
+  readonly type: ComponentType.Hunger;
+  readonly satiation: number;
+}
+
+/**
+ * Component representing a hidden trap that triggers when stepped on.
+ */
+export interface TrapComponent {
+  readonly type: ComponentType.Trap;
+  readonly effectId: string;
+  readonly triggered: boolean;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -195,4 +212,6 @@ export type Component =
   | InventoryComponent
   | EquipmentComponent
   | StatusEffectsComponent
-  | FactionComponent;
+  | FactionComponent
+  | HungerComponent
+  | TrapComponent;

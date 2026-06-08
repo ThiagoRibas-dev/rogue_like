@@ -7,7 +7,9 @@ export const enum ItemEffectType {
   Heal = 'heal',
   DamageNearest = 'damage_nearest',
   DamageArea = 'damage_area',
-  ApplyStatus = 'apply_status'
+  ApplyStatus = 'apply_status',
+  Identify = 'identify',
+  Satiate = 'satiate'
 }
 
 /**
@@ -79,5 +81,23 @@ export const ITEM_EFFECTS: Readonly<Record<string, ItemEffectDefinition>> = {
     statusId: 'haste',
     duration: 15,
     message: 'You drink the {item} and feel incredibly fast!'
+  },
+  scroll_identify: {
+    id: 'scroll_identify',
+    type: ItemEffectType.Identify,
+    value: 0,
+    message: 'You read the {item}. All items in your inventory are identified!'
+  },
+  food_ration: {
+    id: 'food_ration',
+    type: ItemEffectType.Satiate,
+    value: 500,
+    message: 'You eat the {item}. You feel less hungry.'
+  },
+  apple: {
+    id: 'apple',
+    type: ItemEffectType.Satiate,
+    value: 200,
+    message: 'You eat the {item}. It is sweet and refreshing.'
   }
 } satisfies Record<string, ItemEffectDefinition>;

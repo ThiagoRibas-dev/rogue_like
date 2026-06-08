@@ -121,3 +121,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Data-Driven Faction Matrix
 - **Decision**: Entity hostility is resolved by looking up their respective `FactionId`s in a global `HOSTILITY_MATRIX`, rather than hardcoding "player vs monsters".
 - **Rationale**: Lays the groundwork for complex relationships (e.g., monster infighting, neutral NPCs, allied summons) without littering combat code with explicit type checks. It easily extends into the Modding milestone, as the matrix can be loaded from JSON.
+
+### Player Knowledge vs Physical Properties (ECS Domain Modeling)
+- **Decision**: Information that represents the player's memory or global knowledge (e.g., whether an item type is "Identified") is stored as a global set on `GameState` rather than an `identified: boolean` flag on individual `ItemComponent` instances.
+- **Rationale**: An ECS component should represent a localized physical property of an entity. The player's memory is not a physical property of the sword sitting on the floor. If we used an instance flag, using a "Scroll of Identify" would require iterating over and mutating every single item across all active and inactive dungeon levels (an O(N) operation that breaks the encapsulation of inactive floors). By modeling this as Global Player Knowledge, any rendering system can instantly check the global set without mutating entity instances. This also perfectly supports future features like "Amnesia" spells or pre-identified starting loadouts.
