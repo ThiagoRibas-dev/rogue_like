@@ -13,7 +13,8 @@ export const enum ComponentType {
   Item = 'Item',
   Inventory = 'Inventory',
   Equipment = 'Equipment',
-  StatusEffects = 'StatusEffects'
+  StatusEffects = 'StatusEffects',
+  Faction = 'Faction'
 }
 
 /**
@@ -99,18 +100,11 @@ export interface FighterComponent {
 }
 
 /**
- * Enum defining the types of AI behavior.
- */
-export const enum AIBehavior {
-  BasicMelee = 'basic_melee'
-}
-
-/**
- * Component representing the AI behavior type of an entity.
+ * Component representing the AI behavior profile of an entity.
  */
 export interface AIComponent {
   readonly type: ComponentType.AI;
-  readonly behavior: AIBehavior;
+  readonly profileId: string;
   readonly aggroRadius?: number;
   readonly wanders?: boolean;
 }
@@ -178,6 +172,14 @@ export interface StatusEffectsComponent {
 }
 
 /**
+ * Component representing the faction an entity belongs to.
+ */
+export interface FactionComponent {
+  readonly type: ComponentType.Faction;
+  readonly factionId: string;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -192,4 +194,5 @@ export type Component =
   | ItemComponent
   | InventoryComponent
   | EquipmentComponent
-  | StatusEffectsComponent;
+  | StatusEffectsComponent
+  | FactionComponent;

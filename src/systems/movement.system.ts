@@ -7,6 +7,7 @@ import type { MoveIntent } from '../types/intents.types.ts';
 import { IntentType } from '../types/intents.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
+import { isHostile } from '../utils/faction.ts';
 
 /**
  * Processes a MoveIntent.
@@ -56,11 +57,14 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): GameSta
 
     for (const id of entitiesAtTarget) {
       if (getComponent(state, id, ComponentType.Fighter) !== undefined) {
-        defenderId = id;
-        isBlocked = true;
-        break;
-      }
-      if (getComponent(state, id, ComponentType.Actor) !== undefined) {
+        if (isHostile(state, entityId, id)) {
+          defenderId = id;
+          isBlocked = true;
+          break;
+        } else {
+          isBlocked = true;
+        }
+      } else if (getComponent(state, id, ComponentType.Actor) !== undefined) {
         isBlocked = true;
       }
     }

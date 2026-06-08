@@ -116,10 +116,10 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
   // 1. Determine which entities migrate with the player (inventory, equipment)
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
-  
+
   const migratingEntities = new Set<EntityId>([entityId]);
   if (inventory) {
-    inventory.items.forEach(id => migratingEntities.add(id));
+    inventory.items.forEach((id) => migratingEntities.add(id));
   }
   if (equipment) {
     if (equipment.weapon !== null) migratingEntities.add(equipment.weapon);
@@ -251,15 +251,13 @@ export function processChangeFloorIntent(state: GameState, intent: ChangeFloorIn
   // 3. Move Player and their owned items
   const migratingArray = Array.from(migratingEntities);
   nextEntities = [...migratingArray, ...nextEntities];
-  
+
   // Bring migrating components into the new floor
   for (const id of migratingArray) {
     let comps = state.components.get(id) ?? [];
     if (id === entityId) {
       // Update player position
-      comps = comps.map((c) =>
-        c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c
-      );
+      comps = comps.map((c) => (c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c));
     }
     nextComponents.set(id, comps);
   }

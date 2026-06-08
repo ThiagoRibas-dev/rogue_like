@@ -28,5 +28,11 @@ export const COLOR_ORC_FG: string = '#2ecc71';
 /** Foreground color for Trolls. */
 export const COLOR_TROLL_FG: string = '#27ae60';
 
+/** Foreground color for Goblins. */
+export const COLOR_GOBLIN_FG: string = '#8B4513';
+
+/** Foreground color for Shamans. */
+export const COLOR_SHAMAN_FG: string = '#9b59b6';
+
 /** Transparent background color. */
 export const COLOR_TRANSPARENT: string = 'transparent';

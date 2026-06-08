@@ -20,7 +20,8 @@ export const enum IntentType {
   UseItem = 'UseItem',
   EquipItem = 'EquipItem',
   UnequipItem = 'UnequipItem',
-  ToggleInventory = 'ToggleInventory'
+  ToggleInventory = 'ToggleInventory',
+  UseAbility = 'UseAbility'
 }
 
 /**
@@ -174,6 +175,16 @@ export interface ToggleInventoryIntent {
 }
 
 /**
+ * Intent to use an innate ability or spell (used by AI).
+ */
+export interface UseAbilityIntent {
+  readonly type: IntentType.UseAbility;
+  readonly entityId: EntityId;
+  readonly effectId: string;
+  readonly abilityName: string;
+}
+
+/**
  * Discriminated union of all possible Intents.
  */
 export type Intent =
@@ -193,4 +204,5 @@ export type Intent =
   | UseItemIntent
   | EquipItemIntent
   | UnequipItemIntent
-  | ToggleInventoryIntent;
+  | ToggleInventoryIntent
+  | UseAbilityIntent;

@@ -1,12 +1,17 @@
-import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type FighterComponent, type InventoryComponent } from '../types/components.types.ts';
-import { getComponent, removeEntity } from '../core/ecs.ts';
 import { ITEM_EFFECTS, ItemEffectType } from '../constants/effects.constants.ts';
 import { ITEM_REGISTRY } from '../constants/items.constants.ts';
-import { addMessage, MessageLogCategory } from './message.system.ts';
+import { getComponent, removeEntity } from '../core/ecs.ts';
+import { removeActor } from '../core/scheduler.ts';
+import {
+  ComponentType,
+  type FighterComponent,
+  type InventoryComponent,
+  type ItemComponent
+} from '../types/components.types.ts';
+import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
-import { removeActor } from '../core/scheduler.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
 /**
@@ -249,18 +254,31 @@ export function processUseItemIntent(state: GameState, entityId: EntityId, itemI
       entityComps.map((c) => (c.type === ComponentType.Inventory ? nextInventory : c))
     );
     nextComponents.delete(itemEntityId);
-    const nextEntities = nextState.entities.filter((id) => id !== itemEntityId);
-    nextState = { ...nextState, entities: nextEntities, components: nextComponents };
+    nextState = { ...nextState, components: nextComponents };
+    nextState = removeEntity(nextState, itemEntityId);
   } else {
-    // Decrement charges
-    const updatedItem = { ...itemComp, charges: remainingCharges };
-    const itemComps = nextComponents.get(itemEntityId) ?? [];
+    // Just decrement charges
+    const nextItemComp: ItemComponent = { ...itemComp, charges: remainingCharges };
+    const entityComps = nextComponents.get(itemEntityId) ?? [];
     nextComponents.set(
       itemEntityId,
-      itemComps.map((c) => (c.type === ComponentType.Item ? updatedItem : c))
+      entityComps.map((c) => (c.type === ComponentType.Item ? nextItemComp : c))
     );
     nextState = { ...nextState, components: nextComponents };
   }
 
   return nextState;
+}
+
+/**
+ * Processes a UseAbility intent (typically from AI).
+ * Re-uses applyItemEffect but doesn't require an actual Item entity.
+ */
+export function processUseAbilityIntent(
+  state: GameState,
+  entityId: EntityId,
+  effectId: string,
+  abilityName: string
+): GameState {
+  return applyItemEffect(state, entityId, effectId, abilityName);
 }

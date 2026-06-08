@@ -21,7 +21,7 @@ import {
   processEquipItemIntent,
   processUnequipItemIntent
 } from '../systems/inventory.system.ts';
-import { processUseItemIntent } from '../systems/effects.system.ts';
+import { processUseItemIntent, processUseAbilityIntent } from '../systems/effects.system.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { assertNever } from '../utils/assert.ts';
@@ -161,6 +161,8 @@ function applyIntent(state: GameState, intent: Intent): GameState {
       return processDropIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UseItem:
       return processUseItemIntent(state, intent.entityId, intent.itemIndex);
+    case IntentType.UseAbility:
+      return processUseAbilityIntent(state, intent.entityId, intent.effectId, intent.abilityName);
     case IntentType.EquipItem:
       return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UnequipItem:

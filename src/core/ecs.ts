@@ -10,7 +10,8 @@ import {
   type ItemComponent,
   type InventoryComponent,
   type EquipmentComponent,
-  toItemInstanceId
+  toItemInstanceId,
+  type FactionComponent
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 import { ENTITY_TEMPLATES } from '../constants/spawning.constants.ts';
@@ -175,8 +176,18 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
   }
 
   if (template.ai) {
-    const ai: AIComponent = { type: ComponentType.AI, behavior: template.ai.behavior };
+    const ai: AIComponent = {
+      type: ComponentType.AI,
+      profileId: template.ai.profileId,
+      ...(template.ai.aggroRadius !== undefined ? { aggroRadius: template.ai.aggroRadius } : {}),
+      ...(template.ai.wanders !== undefined ? { wanders: template.ai.wanders } : {})
+    };
     nextState = addComponent(nextState, entityId, ai);
+  }
+
+  if (template.faction !== undefined) {
+    const faction: FactionComponent = { type: ComponentType.Faction, factionId: template.faction };
+    nextState = addComponent(nextState, entityId, faction);
   }
 
   if (templateId === 'player') {

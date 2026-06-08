@@ -55,7 +55,7 @@ Transform the mechanical systems into a cohesive game experience.
 - [x] XP and Leveling System for the Player.
 - [x] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
 
-## 🟡 Milestone 7: Persistence & Game Flow
+## 🟢 Milestone 7: Persistence & Game Flow
 Implement the full lifecycle of a play session.
 - [x] Implement the Initial Page (Main Menu).
 - [x] Implement starting a New Game / full Game Over screens.
@@ -68,7 +68,7 @@ Features to be added once the core MVP loop is playable and balanced.
 
 *(Note: Premium UI Polish is treated as a continuous concern and should be integrated into every milestone rather than being its own distinct phase.)*
 
-## ⚪ Milestone 8: Status Effects & Abilities
+## 🟢 Milestone 8: Status Effects & Abilities
 Add temporary, duration-based modifiers to entities, and implement the `DamageArea` effect type already stubbed in `effects.system.ts`.
 - [x] Define `StatusEffectComponent` and a declarative `StatusEffectDefinition` registry (effect ID, stat modifiers, duration, per-turn damage/heal, behavior flags like `stunned`/`confused`).
 - [x] Add a `status-effect.system.ts` that ticks durations each turn, applies per-turn effects (e.g., poison damage), and removes expired effects.
@@ -81,17 +81,17 @@ Add temporary, duration-based modifiers to entities, and implement the `DamageAr
 - [x] Render active status effects on the player in the HUD sidebar (icon/label + remaining duration).
 - [x] Ensure status effects serialize/deserialize correctly with the M7 save system.
 
-## ⚪ Milestone 9: Advanced AI & Factions
+## 🟢 Milestone 9: Advanced AI & Factions
 Refactor the monolithic `processAITurn` into composable behavior modules and introduce a faction system that governs who attacks whom.
-- [ ] Define a `FactionComponent` and a Faction Hostility Matrix (data-driven lookup: faction A vs. faction B → hostile / neutral / friendly).
-- [ ] Refactor bump-to-attack and AI targeting to consult the hostility matrix instead of assuming "all non-player entities are enemies."
-- [ ] Design a composable AI Behavior interface (e.g., `AIBehaviorFn: (state, entityId) => Intent | null`) and a priority-ordered behavior pipeline.
-- [ ] Extract the current hunt/wander logic from `ai.system.ts` into discrete behavior modules (`hunt.behavior.ts`, `wander.behavior.ts`).
-- [ ] Implement **Flee** behavior (disengage when HP falls below a configurable threshold).
-- [ ] Implement **Ranged Attack** behavior (maintain distance, prefer ranged items/abilities).
-- [ ] Implement **Spell-Casting** behavior (use status-effect abilities from M8 on targets).
-- [ ] Define data-driven AI Profiles that compose behaviors with parameters (aggro radius, flee threshold, preferred spell list) and assign them via the Entity Registry.
-- [ ] Add at least two new monster templates that showcase the new AI (e.g., a ranged archer, a mage that casts confusion).
+- [x] Define a `FactionComponent` and a Faction Hostility Matrix (data-driven lookup: faction A vs. faction B → hostile / neutral / friendly).
+- [x] Refactor bump-to-attack and AI targeting to consult the hostility matrix instead of assuming "all non-player entities are enemies."
+- [x] Design a composable AI Behavior interface (e.g., `AIBehaviorFn: (state, entityId) => Intent | null`) and a priority-ordered behavior pipeline.
+- [x] Extract the current hunt/wander logic from `ai.system.ts` into discrete behavior modules (`hunt.behavior.ts`, `wander.behavior.ts`).
+- [x] Implement **Flee** behavior (disengage when HP falls below a configurable threshold).
+- [x] Implement **Ranged Attack** behavior (maintain distance, prefer ranged items/abilities).
+- [x] Implement **Spell-Casting** behavior (use status-effect abilities from M8 on targets).
+- [x] Define data-driven AI Profiles that compose behaviors with parameters (aggro radius, flee threshold, preferred spell list) and assign them via the Entity Registry.
+- [x] Add at least two new monster templates that showcase the new AI (e.g., a ranged archer, a mage that casts confusion).
 
 ## ⚪ Milestone 10: Deep Mechanics
 Layer in identification mystery, resource pressure, and environmental hazards on top of the mature combat and AI systems.
@@ -125,3 +125,11 @@ Re-use the pure systems architecture to support an optional real-time mode along
 - [ ] Implement **Command Queuing** so the player can issue orders while paused, which execute when unpaused.
 - [ ] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
 - [ ] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
+
+## ⚪ Milestone 13: UI Polish & Isometric View
+Overhaul the user interface to support more complex panels and a dynamic isometric perspective.
+- [ ] Create a **3-column layout** instead of 2 to support more UI panels.
+- [ ] Implement a **tabbed interface** to swap between elements that don't need to be seen concurrently.
+- [ ] Expand the game to use the **browser's full viewport** instead of a constrained subset.
+- [ ] Add a dedicated **Equipment panel** separate from the inventory.
+- [ ] Implement an **Isometric View** toggle that rotates the canvas 45 degrees (potentially with a 3D-like perspective effect).

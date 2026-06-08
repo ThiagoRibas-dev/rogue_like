@@ -215,19 +215,15 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
   const slot = def.equippable.slot;
   const itemName = itemComp.identified ? def.name : def.unidentifiedName;
 
-  // Remove the item from inventory
-  let newItems = inventory.items.filter((_, i) => i !== itemIndex);
-
-  // If slot was occupied, swap old item back to inventory
+  // We no longer remove the item from inventory, it just stays there.
+  // We don't need to swap items back into inventory since they never left.
   const currentlyEquipped = slot === 'weapon' ? equipment.weapon : equipment.armor;
-  if (currentlyEquipped !== null) {
+  if (currentlyEquipped !== null && currentlyEquipped !== itemEntityId) {
     const oldDef = ITEM_REGISTRY[getComponent(state, currentlyEquipped, ComponentType.Item)?.itemId ?? ''];
     const oldName = oldDef?.name ?? 'item';
-    newItems = [...newItems, currentlyEquipped];
     state = addMessage(state, `You unequip the ${oldName}.`, MessageLogCategory.System);
   }
 
-  const nextInventory: InventoryComponent = { ...inventory, items: newItems };
   const nextEquipment: EquipmentComponent = {
     ...equipment,
     weapon: slot === 'weapon' ? itemEntityId : equipment.weapon,
@@ -239,7 +235,6 @@ export function processEquipItemIntent(state: GameState, entityId: EntityId, ite
   nextComponents.set(
     entityId,
     entityComps.map((c) => {
-      if (c.type === ComponentType.Inventory) return nextInventory;
       if (c.type === ComponentType.Equipment) return nextEquipment;
       return c;
     })
@@ -266,20 +261,10 @@ export function processUnequipItemIntent(state: GameState, entityId: EntityId, s
   if (itemEntityId === null) {
     return addMessage(state, 'Nothing equipped in that slot.', MessageLogCategory.System);
   }
-
-  const effectiveCapacity = getEffectiveCapacity(state, entityId);
-  if (inventory.items.length >= effectiveCapacity) {
-    return addMessage(state, 'Your inventory is full! Cannot unequip.', MessageLogCategory.System);
-  }
-
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
   const itemName = (itemComp?.identified ? def?.name : def?.unidentifiedName) ?? 'item';
 
-  const nextInventory: InventoryComponent = {
-    ...inventory,
-    items: [...inventory.items, itemEntityId]
-  };
   const nextEquipment: EquipmentComponent = {
     ...equipment,
     weapon: slot === 'weapon' ? null : equipment.weapon,
@@ -291,7 +276,6 @@ export function processUnequipItemIntent(state: GameState, entityId: EntityId, s
   nextComponents.set(
     entityId,
     entityComps.map((c) => {
-      if (c.type === ComponentType.Inventory) return nextInventory;
       if (c.type === ComponentType.Equipment) return nextEquipment;
       return c;
     })

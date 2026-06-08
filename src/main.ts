@@ -345,15 +345,26 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     }
 
     if (event.altKey) {
-      const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
+      const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as
+        | InventoryComponent
+        | undefined;
       if (!inventory || slotIndex >= inventory.items.length) return;
 
       const itemEntityId = inventory.items[slotIndex];
-      const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-      const itemComp = itemEntityId ? getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined : undefined;
+      const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as
+        | EquipmentComponent
+        | undefined;
+      const itemComp = itemEntityId
+        ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined)
+        : undefined;
       const def = itemComp ? ITEM_REGISTRY[itemComp.itemId] : undefined;
 
-      if (itemEntityId && equipment && (equipment.weapon === itemEntityId || equipment.armor === itemEntityId) && def?.equippable) {
+      if (
+        itemEntityId &&
+        equipment &&
+        (equipment.weapon === itemEntityId || equipment.armor === itemEntityId) &&
+        def?.equippable
+      ) {
         queuePlayerIntent(createUnequipItemAction(playerEntityId, def.equippable.slot));
         return;
       }
