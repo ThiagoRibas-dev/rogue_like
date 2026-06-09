@@ -6,7 +6,7 @@ A traditional turn-based ASCII/grid roguelike game built for modern browsers.
 
 ## 1. Project Summary
 
-This project is a grid-based, turn-based roguelike game built using TypeScript, ROT.js, and Vite. The game runs natively in web browsers and is structured to compile efficiently and run deterministically. It uses an Entity-Component-System (ECS) architecture for managing game entities and state.
+This project is a grid-based traditional roguelike game featuring dual **Turn-Based** and **Real-Time with Pause (RTwP)** engine modes, built using TypeScript, ROT.js, and Vite. It runs natively in web browsers and is structured to compile efficiently and run deterministically. It uses an Entity-Component-System (ECS) architecture for managing game entities and state.
 
 ---
 
@@ -57,10 +57,26 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas.
 
 ### Items & Inventory
-- **Registries**: Items and Effects are defined declaratively in `src/constants/items.constants.ts` and `effects.constants.ts`. They are pure data objects keyed by string IDs.
+- **Registries**: Items and Effects are defined declaratively in JSON registries and loaded into the `GameState`. They are pure data objects keyed by string IDs.
 - **Inventory System**: The player has an `InventoryComponent` holding references to item `EntityId`s. Picking up an item removes its `PositionComponent` (taking it off the map); dropping it restores it.
 - **Equipment & Stats**: Equipment modifies stats dynamically at query time via `getEffectiveStats()` and `getEffectiveCapacity()`, rather than mutating base values on `FighterComponent` or `InventoryComponent`.
 - **Item Effects**: Consumable effects are dispatched by `effects.system.ts` based on their declarative definitions.
+
+### Status Effects Engine
+- **Declarative Effects**: A declarative `StatusEffectDefinition` registry describes the effect behavior (duration, stat modifiers, per-turn damage/heal, and flags like `stunned` or `skipTurn`).
+- **Processing**: The `status-effect.system.ts` processes these ticks every turn, removing expired effects and modifying stats dynamically in conjunction with `getEffectiveStats()`.
+
+### AI Pipeline & Factions
+- **Composable Behaviors**: AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`). These are composed into data-driven AI Profiles (e.g., `MeleeAggressive`, `RangedArcher`).
+- **Faction Matrix**: Hostility is determined by looking up `FactionId`s in a `HOSTILITY_MATRIX`, replacing hardcoded "player vs monster" logic to allow infighting and neutral NPCs.
+
+### Save & Persistence
+- **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.
+- **Inactive Levels**: Non-active floors are stored in a compressed/serialized format within the `GameState` and swapped back into active ECS arrays upon level transitions.
+
+### Triggers & Interactive Terrain
+- **Data-Driven Terrain**: Terrain features like doors and shallow water define interaction outcomes and movement costs directly in their JSON definitions.
+- **Traps & Triggers**: Handled by `trigger.system.ts`, hidden entities like traps use a `TrapComponent` to process effects when a unit steps on them.
 
 ---
 
@@ -129,4 +145,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Campaign Data Format & Validation
 - **Decision**: Campaign data (entities, items, map tiles, effects, etc.) is stored as JSON files bundled in the application and loaded dynamically at runtime via `fetch()`. We use `zod` for defining schemas, which provides both runtime validation and TypeScript type inference. The built-in TS constants will be deleted, and all subsystems will read registry data directly from the loaded campaign state (attached to `GameState`). The base game itself is just the `default` campaign.
 - **Rationale**: JSON is universally supported and familiar to modders. While `zod` adds ~50KB to the bundle, it provides an invaluable single source of truth for our data definitions, ensuring that malformed mod JSONs throw precise, human-readable errors immediately upon loading, rather than causing cryptic undefined behavior during gameplay.
+
+### Data-Driven Polymorphism over Routing Logic
+- **Decision**: When building scalable architectures (like our Intents/Actions system), avoid writing centralized "routing" logic (massive `switch` or `if/else` trees) that determines how a piece of data behaves based on its type. Instead, encode meta-properties directly into the data shape (e.g., adding `isImmediate: true` directly to an Intent interface). 
+- **Rationale**: This respects the Open-Closed Principle, allowing new data types to be added without modifying the core engine loops.
 

@@ -16,7 +16,7 @@
 
 | Key              | Value                                           |
 | ---------------- | ----------------------------------------------- |
-| Genre            | Traditional turn-based roguelike (grid, ASCII)  |
+| Genre            | Dual-mode traditional roguelike (Turn-based and RTwP, grid, ASCII)  |
 | Language          | TypeScript (strict mode)                        |
 | Roguelike Toolkit | ROT.js (rot-js on npm)                         |
 | Package Manager  | bun                                             |
@@ -97,41 +97,17 @@ compiles cleanly under these settings:
 
 ---
 
-## 3. Constants & Enums — No Magic Values
+## 3. Data-Driven Design & JSON Registries
+
+The project has transitioned from static TypeScript constants to a data-driven architecture using JSON schemas.
 
 ### Rules
 
-1. **Every numeric literal that affects gameplay** (damage, HP, map dimensions,
-   FOV radius, spawn rates, weights) must be a named constant in the
-   appropriate `constants` file.
-2. **Every string that acts as a key or tag** (component names, tile types,
-   action types, AI states) must be an `enum` or a `const` object `as const`.
-3. **Prefer `const enum` for internal enums** (they are erased at compile time).
-   Use regular `enum` only if the value must exist at runtime (e.g.,
-   serialization).
-4. **Group constants by domain:**
-
-```
-src/constants/
-├── map.constants.ts      // MAP_WIDTH, MAP_HEIGHT, MAX_ROOMS, etc.
-├── combat.constants.ts   // BASE_ATTACK, BASE_DEFENSE, XP_PER_LEVEL, etc.
-├── fov.constants.ts      // FOV_RADIUS, LIGHT_WALL, etc.
-├── ui.constants.ts       // SCREEN_WIDTH, SCREEN_HEIGHT, BAR_WIDTH, etc.
-├── spawning.constants.ts // MAX_MONSTERS_PER_ROOM, SPAWN_TABLE, etc.
-└── colors.constants.ts   // COLOR_PLAYER, COLOR_ORC, COLOR_WALL, etc.
-```
-
-### Example
-
-```ts
-// ❌ Bad
-display.draw(x, y, "@", "#ff0", "#000");
-
-// ✅ Good
-import { Glyph, Color } from "@/constants";
-
-display.draw(x, y, Glyph.Player, Color.PlayerFg, Color.BackgroundDefault);
-```
+1. **No Magic Values:** Every literal value that affects gameplay (damage, HP, spawn rates, etc.) must be defined in the appropriate JSON registry, not hardcoded in TypeScript.
+2. **Zod Validation:** All JSON data must conform to Zod schemas defined in `src/types/campaign.types.ts`. These schemas are the single source of truth for the shape of game data.
+3. **Data Access:** Systems must access data definitions via the loaded `CampaignData` attached to the `GameState`, rather than importing static constants.
+4. **Enums vs. Strings:** Prefer literal string IDs over TypeScript `enum`s for data definitions (e.g., `"stone_wall"` instead of `TileType.StoneWall`). This ensures seamless JSON serialization and moddability.
+5. **Internal Constants:** For engine-internal values that cannot be data-driven (e.g., keyboard mappings, max message log size, default colors), group them into `src/constants/` files and use `as const` objects or `const enum`s.
 
 ---
 
@@ -166,12 +142,22 @@ my-roguelike/
     │   ├── generator.ts          ← dungeon generation (uses ROT.Map.Digger)
     │   ├── tile.ts               ← Tile type definitions
     │   └── fov.ts                ← wraps ROT.FOV.PreciseShadowcasting
+    ├── actions/                  ← Intent creators (core, inventory, targeting)
+    │   └── *.actions.ts
+    ├── ai/                       ← Composable AI behavior modules
+    │   └── *.behavior.ts
     ├── systems/                  ← pure-ish functions: (state, action) → state
-    │   ├── movement.system.ts
-    │   ├── combat.system.ts
     │   ├── ai.system.ts
+    │   ├── combat.system.ts
+    │   ├── effects.system.ts
+    │   ├── hunger.system.ts
     │   ├── inventory.system.ts
-    │   └── death.system.ts
+    │   ├── map.system.ts
+    │   ├── message.system.ts
+    │   ├── movement.system.ts
+    │   ├── status-effect.system.ts
+    │   ├── targeting.system.ts
+    │   └── trigger.system.ts
     ├── rendering/
     │   ├── renderer.ts           ← draws map + entities via ROT.Display
     │   ├── ui.ts                 ← HUD, message log, health bars
@@ -300,7 +286,7 @@ Keep this script up to date.
 | Create a `God` class or `GameManager`         | Use systems as focused functions                  |
 | Put rendering logic in a system               | Systems return state; renderer reads state        |
 | Store derived state (e.g., visible tile cache)| Recompute in the render pass from FOV             |
-| Use `setTimeout` / `setInterval` for turns    | Use ROT.Scheduler; this is a turn-based game      |
+| Use `setTimeout` / `setInterval` for turns    | Use ROT.Scheduler and the RTwP engine loop      |
 | Mutate arrays/objects you don't own            | Clone or use immutable update patterns            |
 | Skip the plan step for multi-file changes     | Always state the plan and get confirmation first  |
 | Leak subsystem knowledge into the game loop   | Subsystems expose query helpers (e.g., `shouldSkipTurn()`); the core loop calls those instead of inspecting registries or component internals directly |
@@ -323,5 +309,4 @@ When in doubt, consult these canonical sources:
 ## 11. Lessons Learned
 
 - **ROT.js TypeScript Definitions:** In modern versions of ROT.js (v2+), certain type interfaces such as `DisplayOptions` are not explicitly exported from the main `index.d.ts` module.
-- **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).
-- **Data-Driven Polymorphism over Routing Logic:** When building scalable architectures (like our Intents/Actions system), avoid writing centralized "routing" logic (massive `switch` or `if/else` trees) that determines how a piece of data behaves based on its type. Instead, encode meta-properties directly into the data shape (e.g., adding `isImmediate: true` directly to an Intent interface). This respects the Open-Closed Principle, allowing new data types to be added without modifying the core engine loops.
+- **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).

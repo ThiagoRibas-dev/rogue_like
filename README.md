@@ -1,6 +1,6 @@
 # Roguelike Template
 
-A modern, highly-extensible, browser-based traditional roguelike engine built with **TypeScript**, **Vite**, and **ROT.js**. 
+A modern, highly-extensible, browser-based traditional roguelike engine featuring both **Turn-Based** and **Real-Time with Pause (RTwP)** modes, built with **TypeScript**, **Vite**, and **ROT.js**. 
 
 ## 🚀 Quick Start
 
