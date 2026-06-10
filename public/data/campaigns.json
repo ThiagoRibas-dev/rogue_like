@@ -1,0 +1,12 @@
+{
+  "campaigns": [
+    {
+      "id": "default",
+      "name": "The Default Dungeon",
+      "description": "The standard rogue-like experience. Explore the depths, fight monsters, and survive.",
+      "version": "1.0.0",
+      "mapSize": "50x50",
+      "maxDepth": 10
+    }
+  ]
+}

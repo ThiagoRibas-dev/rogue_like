@@ -138,3 +138,4 @@ Overhaul the user interface to support robust UX models and dynamic layouts base
 - [x] Build a **Tooltip / Inspect Architecture** (nested hover inspects for stats, status effects, and map entities) to explain rules in-context.
 - [x] Implement **Accessibility as a Core System** (UI/Font scaling, contrast modes, disable animations).
 - [x] Build an **Input Rebinding Menu** to customize keyboard controls.
+- [x] Update the new game flow to include the campaign selection screen.

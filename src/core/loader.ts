@@ -1,4 +1,9 @@
-import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
+import {
+  type CampaignData,
+  CampaignDataSchema,
+  type CampaignRegistry,
+  CampaignRegistrySchema
+} from '../types/campaign.types.ts';
 
 /**
  * Loads and validates all JSON files for a given campaign ID.
@@ -94,6 +99,29 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
     return result.data;
   } catch (error) {
     console.error(`Error loading campaign ${campaignId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Loads the campaign registry containing all available campaigns.
+ * @returns A promise resolving to the CampaignRegistry
+ */
+export async function loadCampaignRegistry(): Promise<CampaignRegistry> {
+  try {
+    const res = await fetch('/data/campaigns.json');
+    if (!res.ok) {
+      throw new Error(`Failed to fetch campaigns.json: ${res.status} ${res.statusText}`);
+    }
+    const data = await res.json();
+    const result = CampaignRegistrySchema.safeParse(data);
+    if (!result.success) {
+      console.error('Campaign Registry Validation Failed:', result.error);
+      throw new Error(`Failed to validate campaign registry: ${result.error.message}`);
+    }
+    return result.data;
+  } catch (error) {
+    console.error('Error loading campaign registry:', error);
     throw error;
   }
 }

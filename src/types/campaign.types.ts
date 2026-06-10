@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 // ==========================================
-// 1. MANIFEST
+// 1. MANIFEST & REGISTRY
 // ==========================================
 export const CampaignManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
@@ -10,6 +10,21 @@ export const CampaignManifestSchema = z.object({
   version: z.string()
 });
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
+
+export const CampaignRegistryEntrySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  version: z.string(),
+  mapSize: z.string(),
+  maxDepth: z.number().int()
+});
+export type CampaignRegistryEntry = z.infer<typeof CampaignRegistryEntrySchema>;
+
+export const CampaignRegistrySchema = z.object({
+  campaigns: z.array(CampaignRegistryEntrySchema)
+});
+export type CampaignRegistry = z.infer<typeof CampaignRegistrySchema>;
 
 // ==========================================
 // 2. RULES

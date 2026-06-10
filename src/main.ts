@@ -1,6 +1,6 @@
 import * as ROT from 'rot-js';
 import './index.css';
-import { loadCampaign } from './core/loader.ts';
+import { loadCampaign, loadCampaignRegistry } from './core/loader.ts';
 import { type GameState, type EntityId } from './types/game-state.types.ts';
 import {
   ComponentType,
@@ -34,7 +34,8 @@ import {
   renderViewControls,
   initUITooltips,
   applySettingsToDOM,
-  renderSettingsMenu
+  renderSettingsMenu,
+  populateCampaignList
 } from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
@@ -82,6 +83,7 @@ initRNG();
 
 // Await the default campaign data and settings to bootstrap the engine
 const defaultCampaign = await loadCampaign('default');
+const campaignRegistry = await loadCampaignRegistry();
 await initSettings('default');
 applySettingsToDOM();
 
@@ -151,7 +153,24 @@ const POTION_DESCRIPTORS = [
 ];
 const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing', 'Crumbling', 'Blood-Stained', 'Dusty'];
 
-function startNewGame() {
+async function startNewGame(campaignId: string) {
+  const newCampaign = await loadCampaign(campaignId);
+
+  state = {
+    ...state,
+    campaignId,
+    campaign: newCampaign
+  };
+
+  display.setOptions({
+    width: newCampaign.theme.ui.displayWidth,
+    height: newCampaign.theme.ui.displayHeight,
+    fontSize: newCampaign.theme.ui.fontSize,
+    fontFamily: newCampaign.theme.ui.fontFamily,
+    bg: newCampaign.theme.colors.background ?? '#000000',
+    fg: newCampaign.theme.colors.playerFg ?? '#ffffff'
+  });
+
   deleteSave();
   clearScheduler();
   initEngine();
@@ -294,7 +313,27 @@ async function continueGame() {
   }
 }
 
-document.getElementById('btn-new-game')?.addEventListener('click', startNewGame);
+let selectedCampaignId: string | null = null;
+populateCampaignList(campaignRegistry.campaigns, (campaign) => {
+  selectedCampaignId = campaign.id;
+});
+
+document.getElementById('btn-new-game')?.addEventListener('click', () => {
+  state = { ...state, uiMode: UIMode.CampaignSelect };
+  setGameState(state);
+});
+
+document.getElementById('btn-campaign-back')?.addEventListener('click', () => {
+  state = { ...state, uiMode: UIMode.MainMenu };
+  setGameState(state);
+});
+
+document.getElementById('btn-campaign-start')?.addEventListener('click', () => {
+  if (selectedCampaignId) {
+    startNewGame(selectedCampaignId);
+  }
+});
+
 document.getElementById('btn-continue')?.addEventListener('click', continueGame);
 document.getElementById('btn-return-menu')?.addEventListener('click', () => {
   state = { ...state, uiMode: UIMode.MainMenu };
@@ -522,7 +561,11 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
 
   const currentState = getGameState();
 
-  if (currentState.uiMode === UIMode.MainMenu || currentState.uiMode === UIMode.GameOver) {
+  if (
+    currentState.uiMode === UIMode.MainMenu ||
+    currentState.uiMode === UIMode.GameOver ||
+    currentState.uiMode === UIMode.CampaignSelect
+  ) {
     return; // Menu buttons handle input
   }
 

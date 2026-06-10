@@ -17,6 +17,7 @@ export enum EngineMode {
  */
 export const enum UIMode {
   MainMenu = 'main_menu',
+  CampaignSelect = 'campaign_select',
   Game = 'game',
   Inventory = 'inventory',
   GameOver = 'game_over',
