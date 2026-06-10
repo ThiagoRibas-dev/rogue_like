@@ -1,4 +1,4 @@
-import { getComponent, removeEntity } from '../core/ecs.ts';
+import { getComponent, removeEntity, addComponent } from '../core/ecs.ts';
 import { removeActor } from '../core/scheduler.ts';
 import {
   ComponentType,
@@ -156,7 +156,11 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
             nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
             const isPlayer = getComponent(nextState, id, ComponentType.Player) !== undefined;
             if (isPlayer) {
-              nextState = addMessage(nextState, `Game Over! You were slain by a spell.`, MessageLogCategory.CombatDeath);
+              nextState = addMessage(
+                nextState,
+                `Game Over! You were slain by a spell.`,
+                MessageLogCategory.CombatDeath
+              );
               nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
               deleteSave();
             } else {
@@ -346,9 +350,18 @@ export function processUseItemIntent(
  */
 export function processUseAbilityIntent(
   state: GameState,
-  entityId: EntityId,
-  effectId: string,
-  abilityName: string
+  intent: import('../types/intents.types.ts').UseAbilityIntent
 ): { state: GameState; success: boolean } {
-  return { state: applyItemEffect(state, entityId, effectId, abilityName), success: true };
+  let nextState = applyItemEffect(state, intent.entityId, intent.effectId, intent.abilityName);
+
+  if (intent.cooldown && intent.cooldown > 0) {
+    const aiComponent = getComponent(nextState, intent.entityId, ComponentType.AI);
+    if (aiComponent) {
+      const currentCooldowns = aiComponent.cooldowns ?? {};
+      const newCooldowns = { ...currentCooldowns, [intent.effectId]: intent.cooldown };
+      nextState = addComponent(nextState, intent.entityId, { ...aiComponent, cooldowns: newCooldowns });
+    }
+  }
+
+  return { state: nextState, success: true };
 }

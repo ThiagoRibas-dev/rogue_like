@@ -74,7 +74,7 @@ export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
 // 4. ITEMS
 // ==========================================
 export const ItemCategoryEnum = z.enum(['consumable', 'weapon', 'armor']);
-export const EquipmentSlotEnum = z.enum(['weapon', 'armor']);
+export const EquipmentSlotEnum = z.enum(['head', 'neck', 'torso', 'back', 'arm', 'hand', 'finger', 'leg', 'foot']);
 export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 
 export const ItemDefinitionSchema = z.object({
@@ -166,6 +166,7 @@ export const EntityTemplateSchema = z.object({
       baseCapacity: z.number().int().nonnegative()
     })
     .optional(),
+  equipmentSlots: z.array(EquipmentSlotEnum).optional(),
   faction: z.string().optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
@@ -176,6 +177,7 @@ export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 export const StatusEffectDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string().optional(),
   color: z.string(),
   statModifiers: z
     .object({

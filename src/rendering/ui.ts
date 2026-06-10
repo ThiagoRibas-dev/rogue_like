@@ -1,12 +1,13 @@
-import { type GameState, EngineMode } from '../types/game-state.types.ts';
+import { type GameState, type EntityId, EngineMode } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 
 import { getEffectiveCapacity } from '../systems/inventory.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
-
 import { getHungerState } from '../systems/hunger.system.ts';
+import { UITooltipType, UIStatId } from '../constants/ui.constants.ts';
+import { getSettings } from '../core/settings.ts';
 
 /**
  * Renders the GameState's messages to the DOM.
@@ -47,17 +48,21 @@ export function renderMessageLog(state: GameState): void {
  * @param state The current GameState.
  */
 export function renderInventoryPanel(state: GameState): void {
-  const panel = document.getElementById('inventory-panel');
-  if (!panel) return;
+  const overlay = document.getElementById('inventory-overlay');
+  const equipPanel = document.getElementById('equipment-panel');
+  const packPanel = document.getElementById('backpack-panel');
+  if (!overlay || !equipPanel || !packPanel) return;
 
   if (state.uiMode !== UIMode.Inventory) {
-    panel.classList.remove('visible');
-    panel.innerHTML = '';
+    overlay.classList.add('hidden');
+    equipPanel.innerHTML = '';
+    packPanel.innerHTML = '';
     return;
   }
 
-  panel.classList.add('visible');
-  panel.innerHTML = '';
+  overlay.classList.remove('hidden');
+  equipPanel.innerHTML = '';
+  packPanel.innerHTML = '';
 
   // Find player
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
@@ -69,55 +74,175 @@ export function renderInventoryPanel(state: GameState): void {
   const equipment = getComponent(state, playerEntityId, ComponentType.Equipment);
   const effectiveCapacity = getEffectiveCapacity(state, playerEntityId);
 
-  // Header
-  const header = document.createElement('div');
-  header.className = 'inv-header';
-  header.textContent = `Inventory (${inventory.items.length}/${effectiveCapacity})`;
-  panel.appendChild(header);
+  // Headers
+  const equipHeader = document.createElement('div');
+  equipHeader.className = 'inv-header';
+  equipHeader.textContent = `Equipment`;
+  equipPanel.appendChild(equipHeader);
+
+  const packHeader = document.createElement('div');
+  packHeader.className = 'inv-header';
+  packHeader.textContent = `Backpack (${inventory.items.length}/${effectiveCapacity})`;
+  packPanel.appendChild(packHeader);
 
   const hint = document.createElement('div');
   hint.className = 'inv-hint';
-  hint.textContent = '[a-z] Use  [Alt+a-z] Equip/Unequip  [Shift+a-z] Drop  [I/Esc] Close';
-  panel.appendChild(hint);
+  hint.textContent = '[a-z] Use/Equip  [Shift+a-z] Drop  [I/Esc] Close';
+  packPanel.appendChild(hint);
 
-  if (inventory.items.length === 0) {
-    const empty = document.createElement('div');
-    empty.className = 'inv-empty';
-    empty.textContent = '(empty)';
-    panel.appendChild(empty);
-    return;
+  // --- Equipment Panel (Paperdoll Layout) ---
+  const paperdoll = document.createElement('div');
+  paperdoll.className = 'paperdoll-layout';
+
+  const renderEquipSlot = (slotName: string, itemEntityId: EntityId | null): HTMLElement => {
+    const slotDiv = document.createElement('div');
+    slotDiv.className = 'paperdoll-slot';
+
+    const header = document.createElement('div');
+    header.className = 'equipment-slot-header';
+    header.textContent = slotName;
+    slotDiv.appendChild(header);
+
+    if (itemEntityId === null) {
+      const empty = document.createElement('div');
+      empty.className = 'equipment-slot-empty';
+      empty.textContent = '(Empty)';
+      slotDiv.appendChild(empty);
+    } else {
+      const index = inventory.items.indexOf(itemEntityId);
+      if (index === -1) return slotDiv;
+
+      const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+      if (!itemComp) return slotDiv;
+
+      const def = state.campaign.items[itemComp.itemId];
+      const isIdentified = state.identifiedItems.has(itemComp.itemId);
+      const displayName = isIdentified
+        ? def?.name
+        : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
+      const slotLabel = String.fromCharCode(97 + index);
+
+      const row = document.createElement('div');
+      row.className = `inv-slot inv-cat-${def?.category ?? 'consumable'} inv-equipped`;
+      row.dataset.tooltipType = UITooltipType.Item;
+      row.dataset.tooltipId = itemEntityId.toString();
+
+      const label = document.createElement('span');
+      label.className = 'inv-slot-label';
+      label.textContent = `[${slotLabel}]`;
+
+      const name = document.createElement('span');
+      name.className = 'inv-slot-name';
+      name.textContent = `${displayName}`;
+
+      row.appendChild(label);
+      row.appendChild(name);
+      slotDiv.appendChild(row);
+    }
+    return slotDiv;
+  };
+
+  const createZone = (zoneName: string, slotTypes: string[]) => {
+    const zoneDiv = document.createElement('div');
+    zoneDiv.className = `paperdoll-zone zone-${zoneName}`;
+
+    if (equipment) {
+      const zoneSlots = equipment.slots.filter((s) => slotTypes.includes(s.slotType));
+      if (zoneSlots.length > 0) {
+        zoneSlots.forEach((slot) => {
+          zoneDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
+        });
+        paperdoll.appendChild(zoneDiv);
+      }
+    }
+  };
+
+  const createSplitZone = (zonePrefix: string, slotTypes: string[]) => {
+    if (equipment) {
+      const leftSlots: typeof equipment.slots = [];
+      const rightSlots: typeof equipment.slots = [];
+
+      slotTypes.forEach((type) => {
+        const slotsOfType = equipment.slots.filter((s) => s.slotType === type);
+        slotsOfType.forEach((slot, index) => {
+          if (index % 2 === 0) leftSlots.push(slot);
+          else rightSlots.push(slot);
+        });
+      });
+
+      if (leftSlots.length > 0) {
+        const leftDiv = document.createElement('div');
+        leftDiv.className = `paperdoll-zone zone-${zonePrefix}-left`;
+        leftSlots.forEach((slot) => {
+          leftDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
+        });
+        paperdoll.appendChild(leftDiv);
+      }
+
+      if (rightSlots.length > 0) {
+        const rightDiv = document.createElement('div');
+        rightDiv.className = `paperdoll-zone zone-${zonePrefix}-right`;
+        rightSlots.forEach((slot) => {
+          rightDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
+        });
+        paperdoll.appendChild(rightDiv);
+      }
+    }
+  };
+
+  createZone('head', ['head', 'neck']);
+  createZone('torso', ['torso', 'back']);
+  createSplitZone('arms', ['arm', 'hand', 'finger']);
+  createZone('legs', ['leg', 'foot']);
+
+  equipPanel.appendChild(paperdoll);
+
+  // --- Backpack Panel (Grid Layout) ---
+  const gridContainer = document.createElement('div');
+  gridContainer.className = 'inventory-grid';
+
+  for (let i = 0; i < effectiveCapacity; i++) {
+    const itemEntityId = inventory.items[i];
+
+    const slotDiv = document.createElement('div');
+    slotDiv.className = 'inv-grid-slot';
+
+    // Add label for hotkey
+    if (i < 26) {
+      const label = document.createElement('span');
+      label.className = 'inv-grid-label';
+      label.textContent = String.fromCharCode(97 + i);
+      slotDiv.appendChild(label);
+    }
+
+    if (itemEntityId !== undefined) {
+      // It has an item
+      const isEquipped = equipment?.slots.some((s) => s.equippedItem === itemEntityId) ?? false;
+      if (isEquipped) {
+        slotDiv.classList.add('inv-equipped-grid');
+      }
+
+      const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+      if (itemComp) {
+        const renderable = getComponent(state, itemEntityId, ComponentType.Renderable);
+        const icon = document.createElement('span');
+        icon.className = 'inv-item-icon';
+        icon.textContent = renderable ? renderable.glyph : '?';
+        icon.style.color = renderable ? renderable.fg : '#fff';
+
+        slotDiv.appendChild(icon);
+
+        slotDiv.dataset.tooltipType = UITooltipType.Item;
+        slotDiv.dataset.tooltipId = itemEntityId.toString();
+      }
+    } else {
+      slotDiv.classList.add('inv-grid-empty');
+    }
+
+    gridContainer.appendChild(slotDiv);
   }
 
-  inventory.items.forEach((itemEntityId, index) => {
-    const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-    if (!itemComp) return;
-
-    const def = state.campaign.items[itemComp.itemId];
-    const isIdentified = state.identifiedItems.has(itemComp.itemId);
-    const displayName = isIdentified
-      ? def?.name
-      : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
-    const slotLabel = String.fromCharCode(97 + index);
-    const isEquippedWeapon = equipment?.weapon === itemEntityId;
-    const isEquippedArmor = equipment?.armor === itemEntityId;
-    const isEquipped = isEquippedWeapon || isEquippedArmor;
-
-    const row = document.createElement('div');
-    row.className = `inv-slot inv-cat-${def?.category ?? 'consumable'}`;
-    if (isEquipped) row.classList.add('inv-equipped');
-
-    const label = document.createElement('span');
-    label.className = 'inv-slot-label';
-    label.textContent = `${slotLabel})`;
-
-    const name = document.createElement('span');
-    name.className = 'inv-slot-name';
-    name.textContent = `${displayName}${isEquipped ? ' (equipped)' : ''}`;
-
-    row.appendChild(label);
-    row.appendChild(name);
-    panel.appendChild(row);
-  });
+  packPanel.appendChild(gridContainer);
 }
 
 /**
@@ -140,6 +265,33 @@ export function renderPlayerStats(state: GameState): void {
     const hpPercent = Math.max(0, Math.min(100, (fighter.hp / effectiveStats.maxHp) * 100));
     hpFill.style.width = `${hpPercent}%`;
     hpText.textContent = `${fighter.hp} / ${effectiveStats.maxHp}`;
+
+    const hpRow = hpFill.closest('.stat-row') as HTMLElement;
+    if (hpRow) {
+      hpRow.dataset.tooltipType = UITooltipType.Stat;
+      hpRow.dataset.tooltipId = UIStatId.HP;
+    }
+  }
+
+  // Update ATK/DEF
+  const atkText = document.getElementById('atk-text');
+  if (atkText) {
+    atkText.textContent = effectiveStats.attack.toString();
+    const atkRow = atkText.closest('.stat-row') as HTMLElement;
+    if (atkRow) {
+      atkRow.dataset.tooltipType = UITooltipType.Stat;
+      atkRow.dataset.tooltipId = UIStatId.Attack;
+    }
+  }
+
+  const defText = document.getElementById('def-text');
+  if (defText) {
+    defText.textContent = effectiveStats.defense.toString();
+    const defRow = defText.closest('.stat-row') as HTMLElement;
+    if (defRow) {
+      defRow.dataset.tooltipType = UITooltipType.Stat;
+      defRow.dataset.tooltipId = UIStatId.Defense;
+    }
   }
 
   // Update Level
@@ -198,6 +350,8 @@ export function renderPlayerStats(state: GameState): void {
         const def = state.campaign.status[active.effectId];
         const effectDiv = document.createElement('div');
         effectDiv.className = 'status-row';
+        effectDiv.dataset.tooltipType = UITooltipType.Status;
+        effectDiv.dataset.tooltipId = active.effectId;
 
         const label = document.createElement('span');
         label.className = 'status-label';
@@ -248,6 +402,23 @@ export function renderMenus(state: GameState, hasSave: boolean): void {
         const level = player ? (getComponent(state, player, ComponentType.Fighter)?.level ?? 1) : 1;
         deathStats.textContent = `You reached Level ${level} on Floor ${state.currentDepth}.`;
       }
+
+      const deathLog = document.getElementById('death-message-log');
+      if (deathLog) {
+        deathLog.innerHTML = '';
+        // Show the last 5 messages so the player knows what killed them
+        const lastMessages = state.messages.slice(-5);
+        for (const msg of lastMessages) {
+          const entry = document.createElement('div');
+          entry.className = 'log-entry';
+          if (msg.cssClass) {
+            msg.cssClass.split(' ').forEach((cls) => entry.classList.add(cls));
+          }
+          entry.textContent = msg.text;
+          deathLog.appendChild(entry);
+        }
+        deathLog.scrollTop = deathLog.scrollHeight;
+      }
     } else {
       gameOverScreen.classList.add('hidden');
     }
@@ -290,4 +461,249 @@ export function renderRTwPControls(state: GameState): void {
     if (btnSpeed2) btnSpeed2.classList.toggle('active', state.rtwpState.speedMultiplier === 2);
     if (btnSpeed4) btnSpeed4.classList.toggle('active', state.rtwpState.speedMultiplier === 4);
   }
+}
+
+/**
+ * Updates the view controls (Rotation, 3D tilt, and Zoom) and applies the canvas transform.
+ * @param state The current GameState.
+ */
+export function renderViewControls(state: GameState): void {
+  const canvasWrapper = document.getElementById('game-canvas-wrapper');
+  const btnToggleRotate = document.getElementById('btn-toggle-rotate');
+  const btnToggle3D = document.getElementById('btn-toggle-3d');
+
+  if (canvasWrapper) {
+    let transformStr = `perspective(1000px)`;
+
+    if (state.is3D) {
+      transformStr += ` rotateX(55deg)`;
+    }
+
+    if (state.isRotated) {
+      transformStr += ` rotateZ(45deg)`;
+    }
+
+    transformStr += ` scale(${state.zoomLevel})`;
+
+    canvasWrapper.style.transform = transformStr;
+
+    // Remove shadow if 3D tilted because it looks weird
+    if (state.is3D) {
+      canvasWrapper.style.boxShadow = 'none';
+    } else {
+      canvasWrapper.style.boxShadow = ''; // restore CSS default
+    }
+  }
+
+  if (btnToggleRotate) {
+    btnToggleRotate.classList.toggle('active', state.isRotated);
+  }
+  if (btnToggle3D) {
+    btnToggle3D.classList.toggle('active', state.is3D);
+  }
+}
+
+/**
+ * Initializes the global UI tooltip system using event delegation.
+ * @param getState Function to retrieve the current GameState.
+ */
+export function initUITooltips(getState: () => GameState | undefined): void {
+  const tooltip = document.getElementById('ui-tooltip');
+  if (!tooltip) return;
+
+  const handleMouseMove = (e: MouseEvent) => {
+    // Look for a target with data-tooltip-type
+    const target = (e.target as HTMLElement).closest('[data-tooltip-type]') as HTMLElement | null;
+
+    if (!target) {
+      tooltip.classList.add('hidden');
+      return;
+    }
+
+    const state = getState();
+    if (!state) return;
+
+    const type = target.dataset.tooltipType;
+    const id = target.dataset.tooltipId;
+
+    let contentHTML = '';
+
+    if (type === UITooltipType.Item && id) {
+      const entityId = parseInt(id, 10) as EntityId;
+      const itemComp = getComponent(state, entityId, ComponentType.Item);
+      if (itemComp) {
+        const itemDef = state.campaign.items[itemComp.itemId];
+        const isIdentified = state.identifiedItems.has(itemComp.itemId);
+        const name = isIdentified
+          ? itemDef?.name
+          : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? itemDef?.unidentifiedName ?? itemComp.itemId);
+
+        contentHTML += `<div class="ui-tooltip-header">${name}</div>`;
+        if (itemDef?.description && isIdentified) {
+          contentHTML += `<div class="ui-tooltip-desc">${itemDef.description}</div>`;
+        }
+      }
+    } else if (type === UITooltipType.Status && id) {
+      const def = state.campaign.status[id];
+      if (def) {
+        contentHTML += `<div class="ui-tooltip-header" style="color: ${def.color ?? 'inherit'}">${def.name}</div>`;
+        if (def.description) {
+          contentHTML += `<div class="ui-tooltip-desc">${def.description}</div>`;
+        }
+      }
+    } else if (type === UITooltipType.Stat && id) {
+      const playerEntityId = state.entities.find((eid) => getComponent(state, eid, ComponentType.Player) !== undefined);
+      if (playerEntityId !== undefined) {
+        const fighter = getComponent(state, playerEntityId, ComponentType.Fighter);
+        const stats = getEffectiveStats(state, playerEntityId);
+
+        if (id === UIStatId.HP && fighter) {
+          contentHTML += `<div class="ui-tooltip-header">Health Points</div>`;
+          contentHTML += `<div class="ui-tooltip-desc">Current health. If this reaches 0, you die.</div>`;
+          contentHTML += `<div class="ui-tooltip-stat"><span>Base Max HP</span><span>${fighter.maxHp}</span></div>`;
+          const bonus = stats.maxHp - fighter.maxHp;
+          if (bonus !== 0) {
+            contentHTML += `<div class="ui-tooltip-stat"><span>Bonus</span><span>${bonus > 0 ? '+' : ''}${bonus}</span></div>`;
+          }
+        } else if (id === UIStatId.Attack && fighter) {
+          contentHTML += `<div class="ui-tooltip-header">Attack Power</div>`;
+          contentHTML += `<div class="ui-tooltip-desc">Damage dealt with melee attacks.</div>`;
+          contentHTML += `<div class="ui-tooltip-stat"><span>Base Attack</span><span>${fighter.attack}</span></div>`;
+          const bonus = stats.attack - fighter.attack;
+          if (bonus !== 0) {
+            contentHTML += `<div class="ui-tooltip-stat"><span>Bonus</span><span>${bonus > 0 ? '+' : ''}${bonus}</span></div>`;
+          }
+        } else if (id === UIStatId.Defense && fighter) {
+          contentHTML += `<div class="ui-tooltip-header">Defense</div>`;
+          contentHTML += `<div class="ui-tooltip-desc">Reduces incoming physical damage.</div>`;
+          contentHTML += `<div class="ui-tooltip-stat"><span>Base Defense</span><span>${fighter.defense}</span></div>`;
+          const bonus = stats.defense - fighter.defense;
+          if (bonus !== 0) {
+            contentHTML += `<div class="ui-tooltip-stat"><span>Bonus</span><span>${bonus > 0 ? '+' : ''}${bonus}</span></div>`;
+          }
+        }
+      }
+    }
+
+    if (contentHTML) {
+      tooltip.innerHTML = contentHTML;
+      tooltip.classList.remove('hidden');
+
+      // Position tooltip near cursor, offset to not be under the cursor
+      const offset = 15;
+
+      // Calculate position
+      let x = e.clientX + offset;
+      let y = e.clientY + offset;
+
+      // Keep within bounds
+      const rect = tooltip.getBoundingClientRect();
+      if (x + rect.width > window.innerWidth) {
+        x = e.clientX - rect.width - offset;
+      }
+      if (y + rect.height > window.innerHeight) {
+        y = e.clientY - rect.height - offset;
+      }
+
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+    } else {
+      tooltip.classList.add('hidden');
+    }
+  };
+
+  document.body.addEventListener('mousemove', handleMouseMove);
+
+  // Hide when mouse leaves
+  document.body.addEventListener('mouseleave', () => {
+    tooltip.classList.add('hidden');
+  });
+}
+
+/**
+ * Applies the current settings to the DOM (e.g. data attributes for CSS).
+ */
+export function applySettingsToDOM(): void {
+  const settings = getSettings();
+  const acc = settings.accessibility;
+
+  if (acc.uiScale) {
+    document.body.setAttribute('data-ui-scale', acc.uiScale);
+  } else {
+    document.body.removeAttribute('data-ui-scale');
+  }
+
+  if (acc.highContrast) {
+    document.body.setAttribute('data-high-contrast', 'true');
+  } else {
+    document.body.removeAttribute('data-high-contrast');
+  }
+
+  if (acc.disableAnimations) {
+    document.body.setAttribute('data-no-animations', 'true');
+  } else {
+    document.body.removeAttribute('data-no-animations');
+  }
+}
+
+/**
+ * Populates the Settings modal with the current config.
+ */
+export function renderSettingsMenu(state?: GameState): void {
+  const overlay = document.getElementById('settings-overlay');
+  if (state && overlay) {
+    if (state.uiMode === UIMode.Settings) {
+      overlay.classList.remove('hidden');
+    } else {
+      overlay.classList.add('hidden');
+      return; // Skip rendering if hidden
+    }
+  }
+
+  const settings = getSettings();
+
+  // Render Keybinds
+  const keybindsContainer = document.getElementById('keybinds-container');
+  if (keybindsContainer) {
+    keybindsContainer.innerHTML = '';
+    const actions = Object.keys(settings.keybinds) as Array<keyof typeof settings.keybinds>;
+    for (const action of actions) {
+      const row = document.createElement('div');
+      row.className = 'keybind-row';
+      row.style.display = 'flex';
+      row.style.justifyContent = 'space-between';
+      row.style.marginBottom = '8px';
+
+      const label = document.createElement('span');
+      label.textContent = action.replace(/_/g, ' ').toUpperCase();
+
+      const btn = document.createElement('button');
+      btn.className = 'keybind-btn';
+      btn.style.padding = '4px 8px';
+      btn.style.minWidth = '80px';
+      // Just show the primary key
+      btn.textContent = settings.keybinds[action][0] || 'UNBOUND';
+      btn.dataset.action = action; // For main.ts to hook into
+
+      row.appendChild(label);
+      row.appendChild(btn);
+      keybindsContainer.appendChild(row);
+    }
+  }
+
+  const dmgNumbers = document.getElementById('setting-dmg-numbers') as HTMLInputElement;
+  const statusText = document.getElementById('setting-status-text') as HTMLInputElement;
+  const dangerTel = document.getElementById('setting-danger-telegraphs') as HTMLInputElement;
+
+  if (dmgNumbers) dmgNumbers.checked = settings.visualFeedback.showDamageNumbers;
+  if (statusText) statusText.checked = settings.visualFeedback.showStatusText;
+  if (dangerTel) dangerTel.checked = settings.visualFeedback.showDangerTelegraphs;
+
+  const uiScale = document.getElementById('setting-ui-scale') as HTMLSelectElement;
+  const highContrast = document.getElementById('setting-high-contrast') as HTMLInputElement;
+  const disableAnim = document.getElementById('setting-disable-animations') as HTMLInputElement;
+
+  if (uiScale) uiScale.value = settings.accessibility.uiScale;
+  if (highContrast) highContrast.checked = settings.accessibility.highContrast;
+  if (disableAnim) disableAnim.checked = settings.accessibility.disableAnimations;
 }

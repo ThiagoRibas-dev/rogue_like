@@ -1,7 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type InventoryComponent, type EquipmentComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { type EquipmentSlot } from '../types/campaign.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
@@ -21,10 +20,9 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
   if (!equipment) return inventory.baseCapacity;
 
   let bonus = 0;
-  const slots = [equipment.weapon, equipment.armor] as const;
-  for (const itemEntityId of slots) {
-    if (itemEntityId !== null) {
-      const item = getComponent(state, itemEntityId, ComponentType.Item);
+  for (const slot of equipment.slots) {
+    if (slot.equippedItem !== null) {
+      const item = getComponent(state, slot.equippedItem, ComponentType.Item);
       if (item) {
         const def = state.campaign.items[item.itemId];
         bonus += def?.equippable?.carryBonus ?? 0;
@@ -156,7 +154,7 @@ export function processDropIntent(
 
   // Check if the item is equipped — must unequip first
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
-  if (equipment && (equipment.weapon === itemEntityId || equipment.armor === itemEntityId)) {
+  if (equipment && equipment.slots.some((s) => s.equippedItem === itemEntityId)) {
     return {
       state: addMessage(state, `You must unequip the ${itemName} before dropping it.`, MessageLogCategory.System),
       success: false
@@ -241,24 +239,35 @@ export function processEquipItemIntent(
     };
   }
 
-  const slot = def.equippable.slot;
+  const slotType = def.equippable.slot;
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
-  // We no longer remove the item from inventory, it just stays there.
-  // We don't need to swap items back into inventory since they never left.
-  const currentlyEquipped = slot === 'weapon' ? equipment.weapon : equipment.armor;
-  if (currentlyEquipped !== null && currentlyEquipped !== itemEntityId) {
-    const oldDef = state.campaign.items[getComponent(state, currentlyEquipped, ComponentType.Item)?.itemId ?? ''];
+  // Find an available slot of this type
+  const matchingSlots = equipment.slots.filter((s) => s.slotType === slotType);
+  if (matchingSlots.length === 0) {
+    return {
+      state: addMessage(state, `You have no ${slotType} slot to equip the ${itemName}.`, MessageLogCategory.System),
+      success: false
+    };
+  }
+
+  // Find the first empty slot, or if all full, swap the first one
+  let targetSlot = matchingSlots.find((s) => s.equippedItem === null);
+  if (!targetSlot) {
+    targetSlot = matchingSlots[0]!;
+  }
+
+  if (targetSlot.equippedItem !== null && targetSlot.equippedItem !== itemEntityId) {
+    const oldDef = state.campaign.items[getComponent(state, targetSlot.equippedItem, ComponentType.Item)?.itemId ?? ''];
     const oldName = oldDef?.name ?? 'item';
     state = addMessage(state, `You unequip the ${oldName}.`, MessageLogCategory.System);
   }
 
   const nextEquipment: EquipmentComponent = {
     ...equipment,
-    weapon: slot === 'weapon' ? itemEntityId : equipment.weapon,
-    armor: slot === 'armor' ? itemEntityId : equipment.armor
+    slots: equipment.slots.map((s) => (s.id === targetSlot!.id ? { ...s, equippedItem: itemEntityId } : s))
   };
 
   const nextComponents = new Map(state.components);
@@ -293,16 +302,17 @@ export function processEquipItemIntent(
 export function processUnequipItemIntent(
   state: GameState,
   entityId: EntityId,
-  slot: EquipmentSlot
+  slotId: string
 ): { state: GameState; success: boolean } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (!inventory || !equipment) return { state, success: false };
 
-  const itemEntityId = slot === 'weapon' ? equipment.weapon : equipment.armor;
-  if (itemEntityId === null) {
+  const targetSlot = equipment.slots.find((s) => s.id === slotId);
+  if (!targetSlot || targetSlot.equippedItem === null) {
     return { state: addMessage(state, 'Nothing equipped in that slot.', MessageLogCategory.System), success: false };
   }
+  const itemEntityId = targetSlot.equippedItem;
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   const def = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
   if (!itemComp || !def) return { state, success: false };
@@ -312,8 +322,7 @@ export function processUnequipItemIntent(
 
   const nextEquipment: EquipmentComponent = {
     ...equipment,
-    weapon: slot === 'weapon' ? null : equipment.weapon,
-    armor: slot === 'armor' ? null : equipment.armor
+    slots: equipment.slots.map((s) => (s.id === slotId ? { ...s, equippedItem: null } : s))
   };
 
   const nextComponents = new Map(state.components);

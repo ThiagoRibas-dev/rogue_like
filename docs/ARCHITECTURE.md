@@ -55,6 +55,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Renderer**: Translates map tiles and entities into characters and colors drawn on `ROT.Display`.
 - **Camera**: Handles camera scrolling/viewport offsets, keeping the player centered when maps are larger than the screen dimensions.
 - **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas.
+- **View Controls**: Implements dynamic CSS 3D transforms (Rotate 45° and 3D Tilt) on the canvas wrapper to achieve a flexible 2.5D visual style without complicating the underlying 2D ROT.js renderer.
 
 ### Items & Inventory
 - **Registries**: Items and Effects are defined declaratively in JSON registries and loaded into the `GameState`. They are pure data objects keyed by string IDs.
@@ -69,6 +70,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### AI Pipeline & Factions
 - **Composable Behaviors**: AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`). These are composed into data-driven AI Profiles (e.g., `MeleeAggressive`, `RangedArcher`).
 - **Faction Matrix**: Hostility is determined by looking up `FactionId`s in a `HOSTILITY_MATRIX`, replacing hardcoded "player vs monster" logic to allow infighting and neutral NPCs.
+- **Line of Sight & Cooldowns**: AI modules utilize the FOV system (`computeFOV`) to ensure they only attack visible targets, and the `AIComponent` statefully tracks ability cooldowns to prevent spell spam.
 
 ### Save & Persistence
 - **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.

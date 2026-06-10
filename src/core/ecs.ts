@@ -198,28 +198,35 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     nextState = addComponent(nextState, entityId, faction);
   }
 
+  if (template.inventoryConfig) {
+    const inventoryCmp: InventoryComponent = {
+      type: ComponentType.Inventory,
+      items: [],
+      baseCapacity: template.inventoryConfig.baseCapacity
+    };
+    nextState = addComponent(nextState, entityId, inventoryCmp);
+  }
+
+  if (template.equipmentSlots) {
+    const equipmentCmp: EquipmentComponent = {
+      type: ComponentType.Equipment,
+      slots: template.equipmentSlots.map((slotType, index) => ({
+        id: `${slotType}_${index}`,
+        slotType,
+        equippedItem: null
+      }))
+    };
+    nextState = addComponent(nextState, entityId, equipmentCmp);
+  }
+
   if (templateId === 'player') {
     const player: PlayerComponent = { type: ComponentType.Player };
     nextState = addComponent(nextState, entityId, player);
 
-    // Attach Inventory and Equipment components to the player
-    const template = state.campaign.entities[templateId];
-    const inventoryCmp: InventoryComponent = {
-      type: ComponentType.Inventory,
-      items: [],
-      baseCapacity: template?.inventoryConfig?.baseCapacity ?? 10
-    };
-    const equipmentCmp: EquipmentComponent = {
-      type: ComponentType.Equipment,
-      weapon: null,
-      armor: null
-    };
     const hungerCmp = {
       type: ComponentType.Hunger,
       satiation: 1000 // Start at Normal threshold
     } as const;
-    nextState = addComponent(nextState, entityId, inventoryCmp);
-    nextState = addComponent(nextState, entityId, equipmentCmp);
     nextState = addComponent(nextState, entityId, hungerCmp);
   }
 

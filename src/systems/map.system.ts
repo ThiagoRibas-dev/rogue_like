@@ -156,8 +156,9 @@ export function processChangeFloorIntent(
     inventory.items.forEach((id) => migratingEntities.add(id));
   }
   if (equipment) {
-    if (equipment.weapon !== null) migratingEntities.add(equipment.weapon);
-    if (equipment.armor !== null) migratingEntities.add(equipment.armor);
+    equipment.slots.forEach((s) => {
+      if (s.equippedItem !== null) migratingEntities.add(s.equippedItem);
+    });
   }
 
   // Pack and save the current floor (excluding migrating entities)

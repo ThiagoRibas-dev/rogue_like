@@ -81,7 +81,7 @@
               "cooldown": 10
             },
             {
-              "effectId": "scroll_lightning",
+              "effectId": "damage_nearest_10",
               "range": 8,
               "cooldown": 5
             }

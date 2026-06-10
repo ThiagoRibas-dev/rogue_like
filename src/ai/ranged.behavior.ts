@@ -4,6 +4,9 @@ import { type EntityId, type GameState } from '../types/game-state.types.ts';
 import { type Intent, IntentType } from '../types/intents.types.ts';
 import { isHostile } from '../utils/faction.ts';
 
+import { computeFOV } from '../map/fov.ts';
+import { coordToIndex } from '../utils/grid.ts';
+
 /**
  * Ranged behavior: finds the nearest hostile entity within range.
  * If one is found, fires a ranged attack (represented by an effect).
@@ -17,6 +20,7 @@ export function rangedBehavior(
   if (!pos) return null;
 
   const range = (params.range as number) ?? 6;
+  const fov = computeFOV(state, pos.x, pos.y, range);
 
   let nearestTarget: EntityId | undefined;
   let minDistance = Infinity;
@@ -29,6 +33,9 @@ export function rangedBehavior(
     const otherFighter = getComponent(state, id, ComponentType.Fighter);
 
     if (otherPos && otherFighter && isHostile(state, entityId, id)) {
+      const targetIndex = coordToIndex(otherPos.x, otherPos.y, state.map.width);
+      if (!fov.has(targetIndex)) continue;
+
       const dx = otherPos.x - pos.x;
       const dy = otherPos.y - pos.y;
       const distance = Math.max(Math.abs(dx), Math.abs(dy)); // Chebyshev distance

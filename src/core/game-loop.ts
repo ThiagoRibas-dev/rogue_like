@@ -1,7 +1,7 @@
 import { type GameState, type EntityId, EngineMode } from '../types/game-state.types.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
 import { setTurnDuration } from './scheduler.ts';
-import { getComponent, spawnEntity } from './ecs.ts';
+import { getComponent, spawnEntity, addComponent } from './ecs.ts';
 import { lockEngine, unlockEngine, addActor, switchEngineMode } from './scheduler.ts';
 import { saveGame } from './save.ts';
 import { IntentType, type Intent, type ActionResult } from '../types/intents.types.ts';
@@ -15,6 +15,7 @@ import {
   processMoveTargetIntent,
   processFireAimedIntent
 } from '../systems/targeting.system.ts';
+import { processToggleInspectIntent, processMoveInspectIntent } from '../systems/inspect.system.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
 import {
@@ -167,9 +168,27 @@ export function processTurn(entityId: EntityId): void {
     }
   } else {
     // AI Turn
-    const intent = processAITurn(state, entityId);
+    let aiTurnState = state;
+    const aiComponent = getComponent(aiTurnState, entityId, ComponentType.AI);
+    if (aiComponent && aiComponent.cooldowns) {
+      const newCooldowns: Record<string, number> = {};
+      let changed = false;
+      for (const [key, val] of Object.entries(aiComponent.cooldowns)) {
+        if (val > 0) {
+          newCooldowns[key] = val - 1;
+          changed = true;
+        } else {
+          newCooldowns[key] = 0;
+        }
+      }
+      if (changed) {
+        aiTurnState = addComponent(aiTurnState, entityId, { ...aiComponent, cooldowns: newCooldowns });
+      }
+    }
+
+    const intent = processAITurn(aiTurnState, entityId);
     if (intent !== null) {
-      const result = applyIntentWithCost(state, intent);
+      const result = applyIntentWithCost(aiTurnState, intent);
       let nextState = result.state;
       if (result.energyCost > 0) {
         nextState = processHungerTick(nextState, entityId, result.energyCost);
@@ -255,6 +274,12 @@ function applyIntent(state: GameState, intent: Intent): { state: GameState; succ
     case IntentType.FireAimed:
       return processFireAimedIntent(state, intent);
 
+    // --- INSPECT INTENTS ---
+    case IntentType.ToggleInspect:
+      return processToggleInspectIntent(state, intent);
+    case IntentType.MoveInspect:
+      return processMoveInspectIntent(state, intent);
+
     // --- INVENTORY INTENTS ---
     case IntentType.PickUp:
       return processPickUpIntent(state, intent.entityId);
@@ -263,16 +288,28 @@ function applyIntent(state: GameState, intent: Intent): { state: GameState; succ
     case IntentType.UseItem:
       return processUseItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UseAbility:
-      return processUseAbilityIntent(state, intent.entityId, intent.effectId, intent.abilityName);
+      return processUseAbilityIntent(state, intent as import('../types/intents.types.ts').UseAbilityIntent);
     case IntentType.EquipItem:
       return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UnequipItem:
-      return processUnequipItemIntent(state, intent.entityId, intent.slot);
+      return processUnequipItemIntent(state, intent.entityId, intent.slotId);
     case IntentType.ToggleInventory: {
       const nextUiModeInv = state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game;
       const invPaused = state.engineMode === EngineMode.RTwP ? nextUiModeInv !== UIMode.Game : state.rtwpState.paused;
       return {
         state: { ...state, uiMode: nextUiModeInv, rtwpState: { ...state.rtwpState, paused: invPaused } },
+        success: false
+      };
+    }
+    case IntentType.ToggleSettings: {
+      const isGameStarted = state.entities.length > 0;
+      const defaultMode = isGameStarted ? UIMode.Game : UIMode.MainMenu;
+      const nextUiModeSettings = state.uiMode !== UIMode.Settings ? UIMode.Settings : defaultMode;
+      // Also pause if entering settings
+      const settingsPaused =
+        state.engineMode === EngineMode.RTwP ? nextUiModeSettings !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiModeSettings, rtwpState: { ...state.rtwpState, paused: settingsPaused } },
         success: false
       };
     }
@@ -383,6 +420,29 @@ function applyIntent(state: GameState, intent: Intent): { state: GameState; succ
     case IntentType.SetRTwPSpeed: {
       return {
         state: { ...state, rtwpState: { ...state.rtwpState, speedMultiplier: intent.speedMultiplier } },
+        success: false
+      };
+    }
+
+    case IntentType.ToggleRotated: {
+      return {
+        state: { ...state, isRotated: !state.isRotated },
+        success: false
+      };
+    }
+
+    case IntentType.Toggle3D: {
+      return {
+        state: { ...state, is3D: !state.is3D },
+        success: false
+      };
+    }
+
+    case IntentType.SetZoomLevel: {
+      // Clamping zoom level between 0.5 and 3.0
+      const nextZoom = Math.max(0.5, Math.min(3.0, state.zoomLevel + intent.zoomDelta));
+      return {
+        state: { ...state, zoomLevel: nextZoom },
         success: false
       };
     }

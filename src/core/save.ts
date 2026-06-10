@@ -25,6 +25,20 @@ export function deleteSave(): void {
 }
 
 /**
+ * Gets the raw serialized save string (useful for exporting to a file).
+ */
+export function getSaveData(): string | null {
+  return localStorage.getItem(SAVE_KEY);
+}
+
+/**
+ * Overwrites the save game with a raw serialized string (useful for importing from a file).
+ */
+export function setSaveData(data: string): void {
+  localStorage.setItem(SAVE_KEY, data);
+}
+
+/**
  * Serializes the GameState and saves it to localStorage.
  * Converts Map objects to arrays of tuples for JSON compatibility.
  */
@@ -55,7 +69,11 @@ export function saveGame(state: GameState): void {
     identifiedItems: Array.from(state.identifiedItems),
     itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries()),
     engineMode: state.engineMode,
-    rtwpState: state.rtwpState
+    rtwpState: state.rtwpState,
+    visualEffects: state.visualEffects,
+    isRotated: state.isRotated,
+    is3D: state.is3D,
+    zoomLevel: state.zoomLevel
   };
 
   try {
@@ -109,6 +127,10 @@ export async function loadGame(): Promise<GameState | null> {
       itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
       engineMode: sState.engineMode || EngineMode.TurnBased,
       rtwpState: sState.rtwpState || { paused: false, speedMultiplier: 1 },
+      visualEffects: sState.visualEffects || [],
+      isRotated: sState.isRotated || false,
+      is3D: sState.is3D || false,
+      zoomLevel: sState.zoomLevel ?? 1.0,
       playerCommandQueue: []
     };
 

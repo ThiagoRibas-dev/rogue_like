@@ -6,7 +6,11 @@ import {
   type InteractIntent,
   type ToggleEngineModeIntent,
   type TogglePauseIntent,
-  type SetRTwPSpeedIntent
+  type SetRTwPSpeedIntent,
+  type ToggleRotatedIntent,
+  type Toggle3DIntent,
+  type SetZoomLevelIntent,
+  type ToggleSettingsIntent
 } from '../types/intents.types.ts';
 
 /**
@@ -79,6 +83,51 @@ export function createSetRTwPSpeedAction(entityId: EntityId, speedMultiplier: nu
     type: IntentType.SetRTwPSpeed,
     entityId,
     speedMultiplier,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle rotated mode intent.
+ */
+export function createToggleRotatedAction(entityId: EntityId): ToggleRotatedIntent {
+  return {
+    type: IntentType.ToggleRotated,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle 3D tilt mode intent.
+ */
+export function createToggle3DAction(entityId: EntityId): Toggle3DIntent {
+  return {
+    type: IntentType.Toggle3D,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a set zoom level intent.
+ */
+export function createSetZoomLevelAction(entityId: EntityId, zoomDelta: number): SetZoomLevelIntent {
+  return {
+    type: IntentType.SetZoomLevel,
+    entityId,
+    zoomDelta,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle settings intent.
+ */
+export function createToggleSettingsAction(entityId: EntityId): ToggleSettingsIntent {
+  return {
+    type: IntentType.ToggleSettings,
+    entityId,
     isImmediate: true
   };
 }

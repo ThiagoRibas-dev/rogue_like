@@ -15,6 +15,11 @@
     "inventoryConfig": {
       "baseCapacity": 10
     },
+    "equipmentSlots": [
+      "head", "neck", "torso", "back",
+      "arm", "arm", "hand", "hand",
+      "finger", "finger", "leg", "foot"
+    ],
     "faction": "player"
   },
   "orc": {

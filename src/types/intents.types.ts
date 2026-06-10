@@ -30,10 +30,16 @@ export const enum IntentType {
   EquipItem = 'EquipItem',
   UnequipItem = 'UnequipItem',
   ToggleInventory = 'ToggleInventory',
+  ToggleSettings = 'ToggleSettings',
   UseAbility = 'UseAbility',
   ToggleEngineMode = 'ToggleEngineMode',
   TogglePause = 'TogglePause',
-  SetRTwPSpeed = 'SetRTwPSpeed'
+  SetRTwPSpeed = 'SetRTwPSpeed',
+  ToggleInspect = 'ToggleInspect',
+  MoveInspect = 'MoveInspect',
+  ToggleRotated = 'ToggleRotated',
+  Toggle3D = 'Toggle3D',
+  SetZoomLevel = 'SetZoomLevel'
 }
 
 /**
@@ -179,7 +185,7 @@ export interface EquipItemIntent {
 export interface UnequipItemIntent {
   readonly type: IntentType.UnequipItem;
   readonly entityId: EntityId;
-  readonly slot: import('../types/campaign.types.ts').EquipmentSlot;
+  readonly slotId: string;
 }
 
 /**
@@ -193,6 +199,16 @@ export interface ToggleInventoryIntent {
 }
 
 /**
+ * Intent to toggle the settings panel open or closed.
+ * Does not consume a turn.
+ */
+export interface ToggleSettingsIntent {
+  readonly type: IntentType.ToggleSettings;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
  * Intent to use an innate ability or spell (used by AI).
  */
 export interface UseAbilityIntent {
@@ -200,6 +216,7 @@ export interface UseAbilityIntent {
   readonly entityId: EntityId;
   readonly effectId: string;
   readonly abilityName: string;
+  readonly cooldown?: number;
 }
 
 /**
@@ -231,6 +248,54 @@ export interface SetRTwPSpeedIntent {
 }
 
 /**
+ * Intent to toggle inspect mode.
+ */
+export interface ToggleInspectIntent {
+  readonly type: IntentType.ToggleInspect;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to move the inspect cursor.
+ */
+export interface MoveInspectIntent {
+  readonly type: IntentType.MoveInspect;
+  readonly entityId: EntityId;
+  readonly dx: number;
+  readonly dy: number;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to toggle 45-degree rotated view mode.
+ */
+export interface ToggleRotatedIntent {
+  readonly type: IntentType.ToggleRotated;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to toggle 3D tilt perspective mode.
+ */
+export interface Toggle3DIntent {
+  readonly type: IntentType.Toggle3D;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to set the zoom level of the canvas.
+ */
+export interface SetZoomLevelIntent {
+  readonly type: IntentType.SetZoomLevel;
+  readonly entityId: EntityId;
+  readonly zoomDelta: number;
+  readonly isImmediate: true;
+}
+
+/**
  * Discriminated union of all possible Intents.
  */
 export type Intent =
@@ -251,7 +316,13 @@ export type Intent =
   | EquipItemIntent
   | UnequipItemIntent
   | ToggleInventoryIntent
+  | ToggleSettingsIntent
   | UseAbilityIntent
   | ToggleEngineModeIntent
   | TogglePauseIntent
-  | SetRTwPSpeedIntent;
+  | SetRTwPSpeedIntent
+  | ToggleInspectIntent
+  | MoveInspectIntent
+  | ToggleRotatedIntent
+  | Toggle3DIntent
+  | SetZoomLevelIntent;

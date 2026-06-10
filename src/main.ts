@@ -16,25 +16,27 @@ import { Direction } from './utils/direction.ts';
 import { render } from './rendering/renderer.ts';
 import { initRNG } from './core/rng.ts';
 import {
-  MOVEMENT_KEYS,
-  WAIT_KEY,
-  DEBUG_REVEAL_MAP_KEY,
-  DEBUG_GOD_MODE_KEY,
-  DEBUG_SPAWN_ENTITY_KEY,
-  TARGET_TOGGLE_KEY,
-  TARGET_CONFIRM_KEY,
-  PICK_UP_KEY,
-  INVENTORY_TOGGLE_KEY
-} from './constants/keybinds.constants.ts';
+  initSettings,
+  isAction,
+  getSettings,
+  updateSettings,
+  rebindAction,
+  resetSettings,
+  type ActionType
+} from './core/settings.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
 import {
   renderMessageLog,
   renderInventoryPanel,
   renderPlayerStats,
   renderMenus,
-  renderRTwPControls
+  renderRTwPControls,
+  renderViewControls,
+  initUITooltips,
+  applySettingsToDOM,
+  renderSettingsMenu
 } from './rendering/ui.ts';
-import { hasSaveGame, deleteSave, loadGame } from './core/save.ts';
+import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
 import { generateDungeon } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
@@ -46,7 +48,11 @@ import {
   createInteractAction,
   createToggleEngineModeAction,
   createTogglePauseAction,
-  createSetRTwPSpeedAction
+  createSetRTwPSpeedAction,
+  createToggleRotatedAction,
+  createToggle3DAction,
+  createSetZoomLevelAction,
+  createToggleSettingsAction
 } from './actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
@@ -58,6 +64,7 @@ import {
   createMoveTargetAction,
   createFireAimedAction
 } from './actions/targeting.actions.ts';
+import { createToggleInspectAction, createMoveInspectAction } from './actions/inspect.actions.ts';
 import {
   createPickUpAction,
   createDropAction,
@@ -73,8 +80,10 @@ import { getDirectionDelta } from './utils/direction.ts';
 // 0. Initialize RNG
 initRNG();
 
-// Await the default campaign data to bootstrap the engine
+// Await the default campaign data and settings to bootstrap the engine
 const defaultCampaign = await loadCampaign('default');
+await initSettings('default');
+applySettingsToDOM();
 
 // 1. Initialize Display Options
 const displayOptions = {
@@ -120,7 +129,11 @@ let state: GameState = {
   identifiedItems: new Set(),
   itemUnidentifiedNames: new Map(),
   engineMode: EngineMode.TurnBased,
+  visualEffects: [],
   rtwpState: { paused: false, speedMultiplier: 1 },
+  isRotated: false,
+  is3D: false,
+  zoomLevel: 1.0,
   playerCommandQueue: []
 };
 
@@ -179,6 +192,10 @@ function startNewGame() {
     levels: new Map(),
     identifiedItems: new Set(),
     itemUnidentifiedNames,
+    visualEffects: [],
+    isRotated: state.isRotated, // preserve setting
+    is3D: state.is3D, // preserve setting
+    zoomLevel: state.zoomLevel, // preserve setting
     playerCommandQueue: []
   };
 
@@ -300,9 +317,97 @@ document.getElementById('btn-speed-4')?.addEventListener('click', () => {
   queuePlayerIntent(createSetRTwPSpeedAction(playerEntityId, 4));
 });
 
+document.getElementById('btn-toggle-rotate')?.addEventListener('click', () => {
+  queuePlayerIntent(createToggleRotatedAction(playerEntityId));
+});
+document.getElementById('btn-toggle-3d')?.addEventListener('click', () => {
+  queuePlayerIntent(createToggle3DAction(playerEntityId));
+});
+document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+  queuePlayerIntent(createSetZoomLevelAction(playerEntityId, 0.2));
+});
+document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+  queuePlayerIntent(createSetZoomLevelAction(playerEntityId, -0.2));
+});
+
+// Settings UI Listeners
+const btnOpenSettings = document.getElementById('btn-open-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+const btnMainMenuSettings = document.getElementById('btn-main-menu-settings');
+
+if (btnOpenSettings && btnCloseSettings) {
+  btnOpenSettings.addEventListener('click', () => {
+    queuePlayerIntent(createToggleSettingsAction(playerEntityId));
+  });
+
+  btnCloseSettings.addEventListener('click', () => {
+    queuePlayerIntent(createToggleSettingsAction(playerEntityId));
+  });
+}
+
+if (btnMainMenuSettings) {
+  btnMainMenuSettings.addEventListener('click', () => {
+    // If we're in the main menu, clicking settings should transition to Settings Mode.
+    // Wait, the main menu doesn't have a player entity acting? Actually, game logic uses intents.
+    // We can just set UI mode directly if it's the main menu, or just dispatch the intent.
+    queuePlayerIntent(createToggleSettingsAction(playerEntityId));
+  });
+}
+
+// Bind settings inputs
+const bindSetting = (id: string, key: string, category: 'visualFeedback' | 'accessibility', isCheckbox = true) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement;
+    const value = isCheckbox ? (target as HTMLInputElement).checked : target.value;
+    const current = getSettings();
+    if (category === 'visualFeedback') {
+      updateSettings({
+        visualFeedback: { ...current.visualFeedback, [key]: value } as typeof current.visualFeedback
+      });
+    } else if (category === 'accessibility') {
+      updateSettings({
+        accessibility: { ...current.accessibility, [key]: value } as typeof current.accessibility
+      });
+    }
+    applySettingsToDOM();
+  });
+};
+
+bindSetting('setting-dmg-numbers', 'showDamageNumbers', 'visualFeedback');
+bindSetting('setting-status-text', 'showStatusText', 'visualFeedback');
+bindSetting('setting-danger-telegraphs', 'showDangerTelegraphs', 'visualFeedback');
+bindSetting('setting-ui-scale', 'uiScale', 'accessibility', false);
+bindSetting('setting-high-contrast', 'highContrast', 'accessibility');
+bindSetting('setting-disable-animations', 'disableAnimations', 'accessibility');
+
+// Rebinding State
+let rebindingAction: ActionType | null = null;
+const rebindingOverlay = document.getElementById('rebinding-overlay');
+const rebindingActionName = document.getElementById('rebinding-action-name');
+
+document.getElementById('keybinds-container')?.addEventListener('click', (e) => {
+  const target = (e.target as HTMLElement).closest('.keybind-btn') as HTMLButtonElement | null;
+  if (!target) return;
+  const action = target.dataset.action as ActionType | undefined;
+  if (action) {
+    rebindingAction = action;
+    if (rebindingActionName) {
+      rebindingActionName.textContent = action.replace(/_/g, ' ').toUpperCase();
+    }
+    rebindingOverlay?.classList.remove('hidden');
+  }
+});
+
+document.getElementById('btn-reset-keybinds')?.addEventListener('click', () => {
+  resetSettings();
+  renderSettingsMenu();
+});
+
 // Export Save
 document.getElementById('btn-export-save')?.addEventListener('click', () => {
-  const data = localStorage.getItem('roguelike_save');
+  const data = getSaveData();
   if (data) {
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -331,7 +436,7 @@ fileInput?.addEventListener('change', (e: Event) => {
       const content = event.target?.result as string;
       // Basic validation (does it parse?)
       JSON.parse(content);
-      localStorage.setItem('roguelike_save', content);
+      setSaveData(content);
 
       // Update UI so continue button lights up immediately if we were on the menu
       renderMenus(state, hasSaveGame());
@@ -386,13 +491,35 @@ onStateChange((newState: GameState) => {
   renderMenus(newState, hasSaveGame());
   updateHUD(newState);
   renderRTwPControls(newState);
+  renderViewControls(newState);
+  renderSettingsMenu(newState);
 });
 
 // Initialize HUD display values and pass the initial state
 setGameState(state);
 
+// Initialize global UI hover tooltips
+initUITooltips(getGameState);
+
 // 6. Hook up Keyboard input handlers to the Command Queue
 window.addEventListener('keydown', (event: KeyboardEvent) => {
+  if (rebindingAction) {
+    event.preventDefault();
+    if (event.key === 'Escape') {
+      rebindingAction = null;
+      rebindingOverlay?.classList.add('hidden');
+      return;
+    }
+    // Only bind single characters, arrows, space, enter, etc. Ignore modifiers alone.
+    if (['Shift', 'Control', 'Alt', 'Meta'].includes(event.key)) return;
+
+    rebindAction(rebindingAction, event.key);
+    rebindingAction = null;
+    rebindingOverlay?.classList.add('hidden');
+    renderSettingsMenu(getGameState());
+    return;
+  }
+
   const currentState = getGameState();
 
   if (currentState.uiMode === UIMode.MainMenu || currentState.uiMode === UIMode.GameOver) {
@@ -402,9 +529,19 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   const isTargeting = currentState.targetingMode?.active;
   const isInventoryOpen = currentState.uiMode === UIMode.Inventory;
 
+  const isSettingsOpen = currentState.uiMode === UIMode.Settings;
+
+  if (isSettingsOpen) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      queuePlayerIntent(createToggleSettingsAction(playerEntityId));
+    }
+    return;
+  }
+
   // Inventory panel: letter keys select a slot, Escape closes
   if (isInventoryOpen) {
-    if (event.key === 'Escape' || event.keyCode === INVENTORY_TOGGLE_KEY) {
+    if (event.key === 'Escape' || isAction(event, 'inventory')) {
       event.preventDefault();
       queuePlayerIntent(createToggleInventoryAction(playerEntityId));
       return;
@@ -418,18 +555,26 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     event.preventDefault();
     const slotIndex = code - 97;
 
-    const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
+    const inventory = getComponent(currentState, playerEntityId, ComponentType.Inventory) as
+      | InventoryComponent
+      | undefined;
     if (!inventory || slotIndex >= inventory.items.length) return;
 
     const itemEntityId = inventory.items[slotIndex];
-    const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-    const itemComp = itemEntityId ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined) : undefined;
+    const equipment = getComponent(currentState, playerEntityId, ComponentType.Equipment) as
+      | EquipmentComponent
+      | undefined;
+    const itemComp = itemEntityId
+      ? (getComponent(currentState, itemEntityId, ComponentType.Item) as ItemComponent | undefined)
+      : undefined;
     const def = itemComp ? currentState.campaign.items[itemComp.itemId] : undefined;
 
     let itemName = 'item';
     if (def && itemComp) {
       const isIdentified = currentState.identifiedItems.has(itemComp.itemId);
-      itemName = isIdentified ? def.name : (currentState.itemUnidentifiedNames.get(itemComp.itemId) ?? def.unidentifiedName ?? itemComp.itemId);
+      itemName = isIdentified
+        ? def.name
+        : (currentState.itemUnidentifiedNames.get(itemComp.itemId) ?? def.unidentifiedName ?? itemComp.itemId);
     }
 
     if (event.shiftKey) {
@@ -439,15 +584,13 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     }
 
     if (event.altKey) {
-      if (
-        itemEntityId &&
-        equipment &&
-        (equipment.weapon === itemEntityId || equipment.armor === itemEntityId) &&
-        def?.equippable
-      ) {
-        setGameState(addMessage(currentState, `Queued: Unequip ${itemName}`, MessageLogCategory.System));
-        queuePlayerIntent(createUnequipItemAction(playerEntityId, def.equippable.slot));
-        return;
+      if (itemEntityId && equipment && def?.equippable) {
+        const equippedSlot = equipment.slots.find((s) => s.equippedItem === itemEntityId);
+        if (equippedSlot) {
+          setGameState(addMessage(currentState, `Queued: Unequip ${itemName}`, MessageLogCategory.System));
+          queuePlayerIntent(createUnequipItemAction(playerEntityId, equippedSlot.id));
+          return;
+        }
       }
 
       setGameState(addMessage(currentState, `Queued: Equip ${itemName}`, MessageLogCategory.System));
@@ -460,51 +603,61 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     return;
   }
 
-  if (event.shiftKey) {
-    if (event.keyCode === DEBUG_REVEAL_MAP_KEY) {
-      event.preventDefault();
-      queuePlayerIntent(createDebugRevealMapAction(playerEntityId));
-      return;
-    }
-    if (event.keyCode === DEBUG_GOD_MODE_KEY) {
-      event.preventDefault();
-      queuePlayerIntent(createDebugGodModeAction(playerEntityId));
-      return;
-    }
-    if (event.keyCode === DEBUG_SPAWN_ENTITY_KEY) {
-      event.preventDefault();
-      queuePlayerIntent(createDebugSpawnEntityAction(playerEntityId));
-      return;
-    }
+  // Debug keys
+  if (isAction(event, 'debug_reveal_map')) {
+    event.preventDefault();
+    queuePlayerIntent(createDebugRevealMapAction(playerEntityId));
+    return;
+  }
+  if (isAction(event, 'debug_god_mode')) {
+    event.preventDefault();
+    queuePlayerIntent(createDebugGodModeAction(playerEntityId));
+    return;
+  }
+  if (isAction(event, 'debug_spawn_entity')) {
+    event.preventDefault();
+    queuePlayerIntent(createDebugSpawnEntityAction(playerEntityId));
+    return;
   }
 
   // Item interaction
-  if (event.keyCode === PICK_UP_KEY) {
+  if (isAction(event, 'pick_up')) {
     event.preventDefault();
     queuePlayerIntent(createPickUpAction(playerEntityId));
     return;
   }
 
-  if (event.keyCode === INVENTORY_TOGGLE_KEY) {
+  if (isAction(event, 'inventory')) {
     event.preventDefault();
     queuePlayerIntent(createToggleInventoryAction(playerEntityId));
     return;
   }
 
   // Handle targeting specific keys
-  if (event.keyCode === TARGET_TOGGLE_KEY) {
+  if (isAction(event, 'target_toggle')) {
     event.preventDefault();
     queuePlayerIntent(createToggleTargetingAction(playerEntityId));
     return;
   }
 
-  if (isTargeting && event.keyCode === TARGET_CONFIRM_KEY) {
+  if (isTargeting && isAction(event, 'target_confirm')) {
     event.preventDefault();
     queuePlayerIntent(createFireAimedAction(playerEntityId));
     return;
   }
 
-  const direction: Direction | undefined = MOVEMENT_KEYS[event.keyCode];
+  // Handle inspect specific keys
+  if (isAction(event, 'inspect')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleInspectAction(playerEntityId));
+    return;
+  }
+
+  let direction: Direction | undefined;
+  if (isAction(event, 'move_north')) direction = Direction.North;
+  else if (isAction(event, 'move_south')) direction = Direction.South;
+  else if (isAction(event, 'move_east')) direction = Direction.East;
+  else if (isAction(event, 'move_west')) direction = Direction.West;
 
   if (direction !== undefined) {
     event.preventDefault(); // Prevent standard page scroll
@@ -512,18 +665,35 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
 
     if (isTargeting) {
       queuePlayerIntent(createMoveTargetAction(playerEntityId, dx, dy));
+    } else if (currentState.inspectMode?.active) {
+      queuePlayerIntent(createMoveInspectAction(playerEntityId, dx, dy));
     } else {
       queuePlayerIntent(createMoveAction(playerEntityId, dx, dy));
     }
-  } else if (event.keyCode === WAIT_KEY) {
+  } else if (isAction(event, 'wait')) {
     event.preventDefault();
     if (currentState.engineMode === EngineMode.RTwP) {
       queuePlayerIntent(createTogglePauseAction(playerEntityId));
     } else {
       queuePlayerIntent(createWaitAction(playerEntityId));
     }
-  } else if (!isTargeting && (event.key === '>' || event.key === '<' || event.key === '.' || event.key === ',')) {
+  } else if (!isTargeting && isAction(event, 'interact')) {
     event.preventDefault();
     queuePlayerIntent(createInteractAction(playerEntityId));
   }
 });
+
+// 7. Global UI Loop (for transient visual effects)
+function globalUILoop() {
+  requestAnimationFrame(globalUILoop);
+  const currentState = getGameState();
+  if (!currentState) return;
+
+  const now = performance.now();
+  if (currentState.visualEffects.some((e) => now > e.expiresAt)) {
+    const nextEffects = currentState.visualEffects.filter((e) => now <= e.expiresAt);
+    // Use an internal method or just queue an empty state update to avoid polluting command queue
+    setGameState({ ...currentState, visualEffects: nextEffects });
+  }
+}
+requestAnimationFrame(globalUILoop);

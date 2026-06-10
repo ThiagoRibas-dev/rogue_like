@@ -8,7 +8,6 @@ import {
   type UnequipItemIntent,
   type ToggleInventoryIntent
 } from '../types/intents.types.ts';
-import { type EquipmentSlot } from '../types/campaign.types.ts';
 
 /**
  * Creates a PickUp intent.
@@ -52,11 +51,11 @@ export function createEquipItemAction(entityId: EntityId, itemIndex: number): Eq
 /**
  * Creates an UnequipItem intent.
  * @param entityId The entity unequipping the item.
- * @param slot The equipment slot to unequip from.
+ * @param slotId The equipment slot instance id to unequip from.
  * @returns The generated UnequipItemIntent.
  */
-export function createUnequipItemAction(entityId: EntityId, slot: EquipmentSlot): UnequipItemIntent {
-  return { type: IntentType.UnequipItem, entityId, slot };
+export function createUnequipItemAction(entityId: EntityId, slotId: string): UnequipItemIntent {
+  return { type: IntentType.UnequipItem, entityId, slotId };
 }
 
 /**

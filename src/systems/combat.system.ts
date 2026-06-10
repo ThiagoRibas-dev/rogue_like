@@ -12,9 +12,30 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
 import { getEffectiveStats } from '../utils/stats.ts';
+import { getSettings } from '../core/settings.ts';
 
 import { type EntityId, UIMode } from '../types/game-state.types.ts';
 import { deleteSave } from '../core/save.ts';
+
+/**
+ * Helper to add floating text above an entity.
+ */
+export function addFloatingText(state: GameState, entityId: EntityId, content: string, color: string): GameState {
+  const pos = getComponent(state, entityId, ComponentType.Position);
+  if (!pos) return state;
+
+  const visualEffect = {
+    id: `txt_${Date.now()}_${Math.random()}`,
+    type: 'floating_text' as const,
+    x: pos.x,
+    y: pos.y,
+    content,
+    color,
+    expiresAt: performance.now() + 1000
+  };
+
+  return { ...state, visualEffects: [...state.visualEffects, visualEffect] };
+}
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -139,21 +160,29 @@ export function processMeleeAttackIntent(
       components: nextComponents
     };
 
+    if (getSettings().visualFeedback.showDamageNumbers) {
+      nextState = addFloatingText(nextState, defenderId, `-${damage}`, '#ff4757'); // var(--color-health)
+    }
+
     if (newHp > 0) {
-      // Check for on-hit weapon effects
+      // Check for on-hit effects from all equipped items
       const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-      if (equipment && equipment.weapon !== null) {
-        const weaponItem = getComponent(state, equipment.weapon, ComponentType.Item) as ItemComponent | undefined;
-        if (weaponItem) {
-          const itemDef = state.campaign.items[weaponItem.itemId];
-          if (itemDef?.equippable?.onHit) {
-            nextState = applyStatusEffect(
-              nextState,
-              defenderId,
-              itemDef.equippable.onHit.statusId,
-              itemDef.equippable.onHit.duration,
-              entityId
-            );
+      if (equipment) {
+        for (const slot of equipment.slots) {
+          if (slot.equippedItem !== null) {
+            const item = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
+            if (item) {
+              const itemDef = state.campaign.items[item.itemId];
+              if (itemDef?.equippable?.onHit) {
+                nextState = applyStatusEffect(
+                  nextState,
+                  defenderId,
+                  itemDef.equippable.onHit.statusId,
+                  itemDef.equippable.onHit.duration,
+                  entityId
+                );
+              }
+            }
           }
         }
       }
@@ -181,6 +210,21 @@ export function processMeleeAttackIntent(
       `${attackerName} attacks ${defenderName} but deals no damage.`,
       MessageLogCategory.CombatMiss
     );
+    if (getSettings().visualFeedback.showDamageNumbers) {
+      const defenderPos = getComponent(state, defenderId, ComponentType.Position);
+      if (defenderPos) {
+        const visualEffect = {
+          id: `blk_${Date.now()}_${Math.random()}`,
+          type: 'floating_text' as const,
+          x: defenderPos.x,
+          y: defenderPos.y,
+          content: `Blocked`,
+          color: '#7f8490', // var(--text-dim)
+          expiresAt: performance.now() + 1000
+        };
+        nextState = { ...nextState, visualEffects: [...nextState.visualEffects, visualEffect] };
+      }
+    }
   }
 
   return { state: nextState, success: true };

@@ -50,10 +50,9 @@ export function getEffectiveStats(state: GameState, entityId: EntityId): Effecti
 
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (equipment) {
-    const slots = [equipment.weapon, equipment.armor] as const;
-    for (const itemEntityId of slots) {
-      if (itemEntityId !== null) {
-        const item = getComponent(state, itemEntityId, ComponentType.Item);
+    for (const slot of equipment.slots) {
+      if (slot.equippedItem !== null) {
+        const item = getComponent(state, slot.equippedItem, ComponentType.Item);
         if (item) {
           const def = state.campaign.items[item.itemId];
           if (def?.equippable) {

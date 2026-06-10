@@ -109,6 +109,8 @@ export interface AIComponent {
   readonly profileId: string;
   readonly aggroRadius?: number;
   readonly wanders?: boolean;
+  /** Map of effectId or ability name to remaining turns on cooldown */
+  readonly cooldowns?: Readonly<Record<string, number>>;
 }
 
 /**
@@ -148,10 +150,15 @@ export interface InventoryComponent {
  * Slots hold EntityId references to equipped item entities (which may also be in inventory).
  * null means the slot is empty.
  */
+export interface EquipmentSlotInstance {
+  readonly id: string; // Unique instance ID, e.g., "head_1", "arm_2", "finger_3"
+  readonly slotType: import('./campaign.types.ts').EquipmentSlot;
+  readonly equippedItem: EntityId | null;
+}
+
 export interface EquipmentComponent {
   readonly type: ComponentType.Equipment;
-  readonly weapon: EntityId | null;
-  readonly armor: EntityId | null;
+  readonly slots: EquipmentSlotInstance[];
 }
 
 /**

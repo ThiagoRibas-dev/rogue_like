@@ -19,7 +19,8 @@ export const enum UIMode {
   MainMenu = 'main_menu',
   Game = 'game',
   Inventory = 'inventory',
-  GameOver = 'game_over'
+  GameOver = 'game_over',
+  Settings = 'settings'
 }
 
 /**
@@ -65,6 +66,19 @@ export interface LogMessage {
 }
 
 /**
+ * A transient visual effect to be rendered on the map.
+ */
+export interface VisualEffect {
+  readonly id: string;
+  readonly type: 'floating_text';
+  readonly x: number;
+  readonly y: number;
+  readonly content: string;
+  readonly color: string;
+  readonly expiresAt: number; // performance.now() + duration
+}
+
+/**
  * Data associated with an inactive/saved dungeon level.
  */
 export interface LevelData {
@@ -96,19 +110,32 @@ export interface GameState {
    * 'game' = normal play; 'inventory' = inventory panel open.
    */
   readonly uiMode: UIMode;
-  readonly targetingMode?: {
-    readonly active: boolean;
-    readonly x: number;
-    readonly y: number;
-    readonly radius?: number;
-  };
+  readonly targetingMode?:
+    | {
+        readonly active: boolean;
+        readonly x: number;
+        readonly y: number;
+        readonly radius?: number;
+      }
+    | undefined;
+  readonly inspectMode?:
+    | {
+        readonly active: boolean;
+        readonly x: number;
+        readonly y: number;
+      }
+    | undefined;
   readonly identifiedItems: ReadonlySet<string>;
   readonly itemUnidentifiedNames: ReadonlyMap<string, string>;
   readonly engineMode: EngineMode;
+  readonly visualEffects: ReadonlyArray<VisualEffect>;
   readonly rtwpState: {
     readonly paused: boolean;
     readonly speedMultiplier: number;
   };
+  readonly isRotated: boolean;
+  readonly is3D: boolean;
+  readonly zoomLevel: number;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
 }
 
@@ -139,8 +166,12 @@ export interface SerializedGameState {
   readonly identifiedItems: ReadonlyArray<string>;
   readonly itemUnidentifiedNames: ReadonlyArray<[string, string]>;
   readonly engineMode: EngineMode;
+  readonly visualEffects: ReadonlyArray<VisualEffect>;
   readonly rtwpState: {
     readonly paused: boolean;
     readonly speedMultiplier: number;
   };
+  readonly isRotated: boolean;
+  readonly is3D: boolean;
+  readonly zoomLevel: number;
 }

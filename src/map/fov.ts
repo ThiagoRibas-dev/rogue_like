@@ -11,7 +11,7 @@ import { coordToIndex } from '../utils/grid.ts';
  * @param py The center grid y coordinate (usually player position).
  * @returns A Set containing the 1D flat indices of visible coordinates.
  */
-export function computeFOV(state: GameState, px: number, py: number): Set<number> {
+export function computeFOV(state: GameState, px: number, py: number, radius?: number): Set<number> {
   const visibleIndices = new Set<number>();
   const mapWidth = state.map.width;
 
@@ -27,17 +27,14 @@ export function computeFOV(state: GameState, px: number, py: number): Set<number
     return tileDef ? tileDef.transparent : false;
   });
 
+  const fovRadius = radius ?? state.campaign.rules.map.fovRadius;
+
   // Compute visibility
-  fov.compute(
-    px,
-    py,
-    state.campaign.rules.map.fovRadius,
-    (x: number, y: number, _r: number, visibility: number): void => {
-      if (visibility > 0) {
-        visibleIndices.add(coordToIndex(x, y, mapWidth));
-      }
+  fov.compute(px, py, fovRadius, (x: number, y: number, _r: number, visibility: number): void => {
+    if (visibility > 0) {
+      visibleIndices.add(coordToIndex(x, y, mapWidth));
     }
-  );
+  });
 
   return visibleIndices;
 }

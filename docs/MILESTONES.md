@@ -13,7 +13,7 @@ Establish the strict structural and architectural patterns that the rest of the 
 - [x] **Implement Keybinds configuration (`src/constants/keybinds.constants.ts`).**
 - [x] **Implement a Message Log scaffold/stub (`src/systems/message.system.ts`).**
 
-## 🟡 Milestone 2: Map Generation & Vision
+## 🟢 Milestone 2: Map Generation & Vision
 Introduce procedural generation and line-of-sight to make the world feel like a true dungeon.
 - [x] Integrate `ROT.Map.Digger` for procedural dungeon generation.
 - [x] Implement Map wrappers to handle rooms and corridors.
@@ -127,10 +127,14 @@ Re-use the pure systems architecture to support an optional real-time mode along
 - [x] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
 - [x] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
 
-## ⚪ Milestone 13: UI Polish & Isometric View
-Overhaul the user interface to support more complex panels and a dynamic isometric perspective.
-- [ ] Create a **3-column layout** instead of 2 to support more UI panels.
-- [ ] Implement a **tabbed interface** to swap between elements that don't need to be seen concurrently.
-- [ ] Expand the game to use the **browser's full viewport** instead of a constrained subset.
-- [ ] Add a dedicated **Equipment panel** separate from the inventory.
-- [ ] Implement an **Isometric View** toggle that rotates the canvas 45 degrees (potentially with a 3D-like perspective effect).
+## 🟢 Milestone 13: UI Architecture & UX Polish (Active)
+Overhaul the user interface to support robust UX models and dynamic layouts based on modern roguelike UI research.
+- [x] Create a **3-column layout** instead of 2 to support more UI panels.
+- [x] Expand the game to use the **browser's full viewport** instead of a constrained subset.
+- [x] Migrate persistent inventory to a **Floating Semi-Modal Overlay** for better scalability.
+- [x] Add a dedicated **Equipment panel** separate from the inventory.
+- [x] Implement **View Controls** (Rotate 45° and 3D Tilt) to dynamically change the canvas perspective.
+- [x] Implement **World-Space Feedback** (floating combat text, danger telegraphs, hit animations) to supplement the message log.
+- [x] Build a **Tooltip / Inspect Architecture** (nested hover inspects for stats, status effects, and map entities) to explain rules in-context.
+- [x] Implement **Accessibility as a Core System** (UI/Font scaling, contrast modes, disable animations).
+- [x] Build an **Input Rebinding Menu** to customize keyboard controls.

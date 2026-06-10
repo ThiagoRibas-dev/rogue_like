@@ -11,45 +11,45 @@
   </head>
   <body>
     <div id="app">
-      <!-- Premium Retro-Modern Console Frame -->
-      <div class="console-frame">
-        <header class="console-header">
-          <div class="window-dots">
-            <span class="dot close"></span>
-            <span class="dot minimize"></span>
-            <span class="dot maximize"></span>
+      <div class="layout-wrapper">
+        
+        <!-- Top Bar -->
+        <header class="top-bar">
+          <div class="top-bar-left">
+            <h1 class="game-title">🔮 ROGUELIKE 🔮</h1>
           </div>
-          <h1 class="console-title">🔮 ROGUELIKE TEMPLATE 🔮</h1>
-          <div class="system-status">SYSTEM: ONLINE</div>
-        </header>
-
-        <div class="console-body">
-          <!-- Left Panel: Game Screen -->
-          <main class="game-container">
-            <div id="game-canvas-wrapper" class="canvas-wrapper">
-              <!-- ROT.js Canvas will be mounted here -->
-            </div>
-          </main>
-
-          <!-- Right Panel: Side Panel HUD / Logs -->
-          <aside class="side-panel">
-            <div id="inventory-panel" class="inventory-panel"></div>
-
-            <div class="hud-card time-card">
-              <h2>Engine</h2>
-              <div class="time-controls">
-                <button id="btn-engine-mode" class="time-btn mode-btn">Turn-Based</button>
-                <div class="rtwp-controls" id="rtwp-controls" style="display: none;">
-                  <button id="btn-pause" class="time-btn pause-btn">⏸ Paused</button>
-                  <div class="speed-btns">
-                    <button id="btn-speed-1" class="time-btn speed-btn active">1x</button>
-                    <button id="btn-speed-2" class="time-btn speed-btn">2x</button>
-                    <button id="btn-speed-4" class="time-btn speed-btn">4x</button>
-                  </div>
+          
+          <div class="top-bar-center">
+            <div class="time-controls">
+              <button id="btn-engine-mode" class="time-btn mode-btn">Turn-Based</button>
+              <div class="rtwp-controls" id="rtwp-controls" style="display: none;">
+                <button id="btn-pause" class="time-btn pause-btn">⏸ Paused</button>
+                <div class="speed-btns">
+                  <button id="btn-speed-1" class="time-btn speed-btn active">1x</button>
+                  <button id="btn-speed-2" class="time-btn speed-btn">2x</button>
+                  <button id="btn-speed-4" class="time-btn speed-btn">4x</button>
                 </div>
               </div>
             </div>
+          </div>
+          
+          <div class="top-bar-right">
+            <div class="view-controls" style="display: flex; gap: 8px; margin-right: 16px;">
+              <button id="btn-toggle-rotate" class="time-btn">Rotate 45°</button>
+              <button id="btn-toggle-3d" class="time-btn">3D Tilt</button>
+              <button id="btn-zoom-out" class="time-btn">-</button>
+              <button id="btn-zoom-in" class="time-btn">+</button>
+              <button id="btn-open-settings" class="time-btn">⚙️ Settings</button>
+            </div>
+            <div class="system-status">SYSTEM: ONLINE</div>
+          </div>
+        </header>
 
+        <!-- Main Body (3 Columns) -->
+        <div class="main-body">
+          
+          <!-- Left Panel -->
+          <aside class="left-panel side-panel">
             <div class="hud-card stats-card">
               <h2>Player Stats</h2>
               <div class="stat-row">
@@ -76,6 +76,14 @@
                 <span id="hunger-text" class="stat-value">Normal</span>
               </div>
               <div class="stat-row">
+                <span class="stat-label">Attack</span>
+                <span id="atk-text" class="stat-value">0</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Defense</span>
+                <span id="def-text" class="stat-value">0</span>
+              </div>
+              <div class="stat-row">
                 <span class="stat-label">XP</span>
                 <div class="bar-container">
                   <div id="xp-bar-fill" class="bar-fill xp-bar" style="width: 0%;"></div>
@@ -87,11 +95,22 @@
             <div class="hud-card status-card">
               <h2>Status Effects</h2>
               <div id="status-effects-container" class="status-content">
-                <!-- Status effects injected here -->
                 <div class="status-empty">Normal</div>
               </div>
             </div>
+          </aside>
 
+          <!-- Center Game Canvas -->
+          <main class="game-container">
+            <div id="game-canvas-wrapper" class="canvas-wrapper">
+              <!-- ROT.js Canvas will be mounted here -->
+              <div id="effects-overlay" class="effects-overlay"></div>
+              <div id="inspect-tooltip" class="inspect-tooltip hidden"></div>
+            </div>
+          </main>
+
+          <!-- Right Panel -->
+          <aside class="right-panel side-panel">
             <div class="hud-card log-card">
               <h2>Message Log</h2>
               <div id="message-log" class="log-content">
@@ -100,54 +119,145 @@
               </div>
             </div>
 
-            <div class="hud-card controls-card">
-              <h2>Controls</h2>
-              <ul class="controls-list">
-                <li><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> : Move / Attack</li>
-                <li><kbd>Space</kbd> : Wait a turn</li>
-                <li><kbd>&lt;</kbd> <kbd>&gt;</kbd> : Interact (Stairs)</li>
-                <li><kbd>F</kbd> : Toggle Aim/Target</li>
-                <li><kbd>Enter</kbd> : Confirm Target</li>
-                <li><kbd>Shift</kbd> + <kbd>R</kbd> : Debug Reveal Map</li>
-                <li><kbd>Shift</kbd> + <kbd>G</kbd> : Debug God Mode</li>
-                <li><kbd>Shift</kbd> + <kbd>E</kbd> : Debug Spawn Entity</li>
-              </ul>
-            </div>
-          </aside>
-        </div>
-
-        <footer class="console-footer">
-          <span>TypeScript + ROT.js + Vite Engine v1.0.0</span>
-          <span>Press F11 for Fullscreen</span>
-        </footer>
-
-        <!-- Overlays -->
-        <div id="main-menu" class="modal-overlay hidden">
-          <div class="modal-content">
-            <h1 class="modal-title">Rogue-like</h1>
-            <div class="modal-buttons">
-              <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
-              <button id="btn-new-game" class="modal-btn">New Game</button>
-              <div style="display: flex; gap: 8px; margin-top: 16px;">
-                <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export Save</button>
-                <button id="btn-import-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;">Import Save</button>
-                <input type="file" id="file-import-save" accept=".json" style="display: none;" />
+            <!-- Inspect Panel -->
+            <div id="inspect-panel" class="hud-card inspect-card hidden">
+              <h2>Inspect</h2>
+              <div id="inspect-content" class="inspect-content">
+                <div class="status-empty">Nothing inspected.</div>
               </div>
             </div>
-          </div>
+          </aside>
+          
         </div>
 
-        <div id="game-over-screen" class="modal-overlay hidden">
-          <div class="modal-content">
-            <h1 class="modal-title dead-title">YOU DIED</h1>
-            <p class="death-stats">Your journey ends here.</p>
-            <div class="modal-buttons">
-              <button id="btn-return-menu" class="modal-btn">Return to Menu</button>
-            </div>
+        <!-- Bottom Bar -->
+        <footer class="bottom-bar">
+          <div class="controls-ticker">
+            <kbd>↑↓←→</kbd>/<kbd>WASD</kbd> Move/Attack | 
+            <kbd>Space</kbd> Wait | 
+            <kbd>&lt;</kbd> <kbd>&gt;</kbd> Stairs | 
+            <kbd>G</kbd> Pick Up | 
+            <kbd>I</kbd> Inventory | 
+            <kbd>F</kbd> Aim | 
+            <kbd>Enter</kbd> Confirm Target |
+            <kbd>X</kbd> Inspect |
+            <kbd>R</kbd> Reveal Map |
+            <kbd>O</kbd> God Mode |
+            <kbd>E</kbd> Spawn
+          </div>
+          <div class="version-info">
+            <span>TypeScript + ROT.js + Vite Engine v1.0.0</span>
+          </div>
+        </footer>
+
+      </div> <!-- /layout-wrapper -->
+
+      <!-- Global UI Tooltip -->
+      <div id="ui-tooltip" class="ui-tooltip hidden"></div>
+
+      <!-- Overlays -->
+      <div id="inventory-overlay" class="modal-overlay hidden">
+        <div class="modal-content inventory-modal">
+          <div class="inventory-split-view">
+            <!-- ui.ts populates these -->
+            <div id="equipment-panel" class="equipment-panel visible"></div>
+            <div id="backpack-panel" class="inventory-panel visible"></div>
           </div>
         </div>
       </div>
-    </div>
+
+      <div id="main-menu" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h1 class="modal-title">Rogue-like</h1>
+          <div class="modal-buttons">
+            <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
+            <button id="btn-new-game" class="modal-btn">New Game</button>
+            <div style="display: flex; gap: 8px; margin-top: 16px;">
+              <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export Save</button>
+              <button id="btn-import-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;">Import Save</button>
+              <input type="file" id="file-import-save" accept=".json" style="display: none;" />
+            </div>
+            <button id="btn-main-menu-settings" class="modal-btn" style="margin-top: 16px;">⚙️ Settings</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="settings-overlay" class="modal-overlay hidden">
+        <div class="modal-content" style="text-align: left; max-width: 500px; max-height: 80vh; overflow-y: auto;">
+          <h1 class="modal-title" style="margin-bottom: 16px;">Settings</h1>
+          
+          <div class="settings-group">
+            <h3 class="settings-group-title">Keybinds</h3>
+            <div id="keybinds-container">
+              <!-- ui.ts populates this -->
+            </div>
+            <button id="btn-reset-keybinds" class="modal-btn" style="margin-top: 12px; font-size: 0.8rem; background: #c0392b;">Reset to Defaults</button>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-title">Visual Feedback</h3>
+            <label class="settings-label">
+              <input type="checkbox" id="setting-dmg-numbers" />
+              Show Damage Numbers
+            </label>
+            <label class="settings-label">
+              <input type="checkbox" id="setting-status-text" />
+              Show Status Effect Text
+            </label>
+            <label class="settings-label">
+              <input type="checkbox" id="setting-danger-telegraphs" />
+              Show Danger Telegraphs
+            </label>
+          </div>
+
+          <div class="settings-group">
+            <h3 class="settings-group-title">Accessibility</h3>
+            <label class="settings-label">
+              <span>UI Scale</span>
+              <select id="setting-ui-scale" class="settings-select">
+                <option value="small">Small</option>
+                <option value="normal">Normal</option>
+                <option value="large">Large</option>
+              </select>
+            </label>
+            <label class="settings-label">
+              <input type="checkbox" id="setting-high-contrast" />
+              High Contrast Mode
+            </label>
+            <label class="settings-label">
+              <input type="checkbox" id="setting-disable-animations" />
+              Disable Animations
+            </label>
+          </div>
+
+          <div class="modal-buttons" style="margin-top: 24px;">
+            <button id="btn-close-settings" class="modal-btn">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="rebinding-overlay" class="modal-overlay hidden" style="z-index: 10000; background: rgba(0,0,0,0.85);">
+        <div class="modal-content">
+          <h2 id="rebinding-title" class="modal-title" style="color: #f1c40f;">Waiting for input...</h2>
+          <p id="rebinding-desc" style="color: var(--text-color); margin-top: 16px;">Press any key to bind to <strong id="rebinding-action-name" style="color: #fff;"></strong>.</p>
+          <p style="color: var(--text-dim); margin-top: 8px; font-size: 0.8rem;">Press ESC to cancel.</p>
+        </div>
+      </div>
+
+      <div id="game-over-screen" class="modal-overlay hidden">
+        <div class="modal-content">
+          <h1 class="modal-title dead-title">YOU DIED</h1>
+          <p class="death-stats">Your journey ends here.</p>
+          <div id="death-message-log" class="log-content" style="margin: 16px 0; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; text-align: left; font-size: 0.9rem;">
+            <!-- death logs go here -->
+          </div>
+          <div class="modal-buttons">
+            <button id="btn-return-menu" class="modal-btn">Return to Menu</button>
+          </div>
+        </div>
+      </div>
+
+    </div> <!-- /app -->
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
