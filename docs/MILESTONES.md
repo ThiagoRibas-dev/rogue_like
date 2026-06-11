@@ -145,19 +145,19 @@ Overhaul the user interface to support robust UX models and dynamic layouts base
 # 🚀 Phase 3: Deep Narrative & Advanced Systems
 Transitioning from a flat simulation into a world with causal narrative depth, supported by highly scalable architecture.
 
-## ⚪ Milestone 14: Stabilization & Polish
+## 🟢 Milestone 14: Stabilization & Polish
 Ensure the foundation is rock-solid and balanced before introducing massive systemic complexity.
-- [ ] **Audit Combat Math**: Normalize HP, damage scaling, and status effect scaling to ensure mid-to-late game viability.
-- [ ] **RTwP Robustness**: Implement strict error boundaries and fallback states in the Real-Time loop to prevent silent soft-locks during complex interactions.
-- [ ] **UI Edge Cases**: Refine floating combat text, tooltips, and log grouping to gracefully handle dozens of simultaneous events (e.g., AoE explosions).
+- [x] **Audit Combat Math**: Normalize HP, damage scaling, and status effect scaling to ensure mid-to-late game viability.
+- [x] **RTwP Robustness**: Implement strict error boundaries and fallback states in the Real-Time loop to prevent silent soft-locks during complex interactions.
+- [x] **UI Edge Cases**: Refine floating combat text, tooltips, and log grouping to gracefully handle dozens of simultaneous events (e.g., AoE explosions).
 
-## ⚪ Milestone 15: Core Architecture (Commands & Tags)
+## 🟢 Milestone 15: Core Architecture (Commands & Tags)
 Low-risk, high-reward refactoring to support combinatorial depth.
-- [ ] **The Command Pattern**: Define a formal `Action` interface (e.g., `execute(state, entityId): ActionResult`). Crucially, Actions must emit structured `Events` to form a unified event ledger.
-- [ ] **Migrate Intents**: Refactor `applyIntentWithCost` and the massive `switch` statement into discrete, self-contained Action objects (e.g., `WalkAction`, `AttackAction`).
-- [ ] **Tags Component**: Add a `TagsComponent` to entities and `AreaTags` to maps for semantic descriptors (e.g., `["undead", "fire_aligned"]`, `["forest", "surface"]`).
-- [ ] **Traits Component**: Add a `TraitsComponent` for mechanical modifiers (e.g., `Regeneration`, `Fragile`).
-- [ ] **System Integration**: Update `getEffectiveStats()` and AI behaviors to dynamically query Traits and Tags instead of hardcoded component checks.
+- [x] **The Command Pattern**: Define a formal `Action` interface (e.g., `execute(state, entityId): ActionResult`). Crucially, Actions must emit structured `Events` to form a unified event ledger.
+- [x] **Migrate Intents**: Refactor `applyIntentWithCost` and the massive `switch` statement into discrete, self-contained Action objects (e.g., `WalkAction`, `AttackAction`).
+- [x] **Tags Component**: Add a `TagsComponent` to entities and `AreaTags` to maps for semantic descriptors (e.g., `["undead", "fire_aligned"]`, `["forest", "surface"]`).
+- [x] **Traits Component**: Add a `TraitsComponent` for mechanical modifiers (e.g., `Regeneration`, `Fragile`).
+- [x] **System Integration**: Update `getEffectiveStats()` and AI behaviors to dynamically query Traits and Tags instead of hardcoded component checks.
 
 ## ⚪ Milestone 16: World Interconnectivity & Biomes
 Move away from a strict vertical dungeon descent into an interconnected "overworld" of distinct zones.

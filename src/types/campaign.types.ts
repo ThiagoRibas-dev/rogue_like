@@ -182,7 +182,9 @@ export const EntityTemplateSchema = z.object({
     })
     .optional(),
   equipmentSlots: z.array(EquipmentSlotEnum).optional(),
-  faction: z.string().optional()
+  faction: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  traits: z.array(z.string()).optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
@@ -225,7 +227,8 @@ export const TileDefinitionSchema = z.object({
   movementCost: z.number().int().positive().optional(),
   bumpTransition: z.string().optional(),
   interactTransition: z.string().optional(),
-  interactMessage: z.string().optional()
+  interactMessage: z.string().optional(),
+  tags: z.array(z.string()).optional()
 });
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
 

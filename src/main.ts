@@ -123,6 +123,7 @@ let state: GameState = {
   nextEntityId: 1,
   nextItemInstanceId: 1,
   messages: [],
+  events: [],
   currentDepth: 1,
   levels: new Map(),
   spatialIndex: new Map(),

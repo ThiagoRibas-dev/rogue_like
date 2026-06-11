@@ -1,6 +1,7 @@
 import type { Component } from './components.types.ts';
 import type { CampaignData } from './campaign.types.ts';
 import type { Intent } from './intents.types.ts';
+import type { GameEvent } from './events.types.ts';
 
 /**
  * Enum defining the engine mode.
@@ -103,6 +104,7 @@ export interface GameState {
   /** Counter used to generate unique ItemInstanceIds for new item entities. */
   readonly nextItemInstanceId: number;
   readonly messages: ReadonlyArray<LogMessage>;
+  readonly events: ReadonlyArray<GameEvent>;
   readonly currentDepth: number;
   readonly levels: ReadonlyMap<number, LevelData>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;

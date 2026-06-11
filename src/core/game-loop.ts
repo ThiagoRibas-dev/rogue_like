@@ -1,36 +1,18 @@
-import { type GameState, type EntityId, EngineMode } from '../types/game-state.types.ts';
-import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
-import { setTurnDuration } from './scheduler.ts';
-import { getComponent, spawnEntity, addComponent } from './ecs.ts';
-import { lockEngine, unlockEngine, addActor, switchEngineMode } from './scheduler.ts';
+import { dispatchAction } from '../actions/action.registry.ts';
+import { ComponentType } from '../types/components.types.ts';
+import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { IntentType, type ActionResult, type Intent } from '../types/intents.types.ts';
+import { addComponent, getComponent } from './ecs.ts';
 import { saveGame } from './save.ts';
-import { IntentType, type Intent, type ActionResult } from '../types/intents.types.ts';
-import { processMoveIntent } from '../systems/movement.system.ts';
-import { processInteractIntent, processChangeFloorIntent } from '../systems/map.system.ts';
+import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
+
+import { processHungerTick } from '../systems/hunger.system.ts';
+import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
-import { processTriggers } from '../systems/trigger.system.ts';
-import {
-  processToggleTargetingIntent,
-  processMoveTargetIntent,
-  processFireAimedIntent
-} from '../systems/targeting.system.ts';
-import { processToggleInspectIntent, processMoveInspectIntent } from '../systems/inspect.system.ts';
-import { processMeleeAttackIntent } from '../systems/combat.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
-import {
-  processPickUpIntent,
-  processDropIntent,
-  processEquipItemIntent,
-  processUnequipItemIntent
-} from '../systems/inventory.system.ts';
-import { processUseItemIntent, processUseAbilityIntent } from '../systems/effects.system.ts';
-import { UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { assertNever } from '../utils/assert.ts';
-
-import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
-import { processHungerTick } from '../systems/hunger.system.ts';
+import { processTriggers } from '../systems/trigger.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -257,207 +239,26 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
     }
   }
 
-  return { state: nextState, success: result.success, energyCost };
+  const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
+
+  if (result.events && result.events.length > 0) {
+    nextState = { ...nextState, events: [...nextState.events, ...result.events] };
+    return {
+      ...finalResult,
+      state: nextState,
+      events: result.events as ReadonlyArray<import('../types/events.types.ts').GameEvent>
+    };
+  }
+
+  return finalResult;
 }
 
 /**
  * Dispatches an intent to the appropriate system for validation and execution.
  */
-function applyIntent(state: GameState, intent: Intent): { state: GameState; success: boolean } {
-  switch (intent.type) {
-    case IntentType.Move:
-      return processMoveIntent(state, intent);
-    case IntentType.Wait:
-      return { state: addMessage(state, 'You wait a moment.', MessageLogCategory.System), success: true };
-    case IntentType.Interact:
-      return processInteractIntent(state, intent);
-    case IntentType.ChangeFloor:
-      return processChangeFloorIntent(state, intent);
-    case IntentType.MeleeAttack:
-      return processMeleeAttackIntent(state, intent);
-
-    // --- TARGETING INTENTS ---
-    case IntentType.ToggleTargeting:
-      return processToggleTargetingIntent(state, intent);
-    case IntentType.MoveTarget:
-      return processMoveTargetIntent(state, intent);
-    case IntentType.FireAimed:
-      return processFireAimedIntent(state, intent);
-
-    // --- INSPECT INTENTS ---
-    case IntentType.ToggleInspect:
-      return processToggleInspectIntent(state, intent);
-    case IntentType.MoveInspect:
-      return processMoveInspectIntent(state, intent);
-
-    // --- INVENTORY INTENTS ---
-    case IntentType.PickUp:
-      return processPickUpIntent(state, intent.entityId);
-    case IntentType.Drop:
-      return processDropIntent(state, intent.entityId, intent.itemIndex);
-    case IntentType.UseItem:
-      return processUseItemIntent(state, intent.entityId, intent.itemIndex);
-    case IntentType.UseAbility:
-      return processUseAbilityIntent(state, intent as import('../types/intents.types.ts').UseAbilityIntent);
-    case IntentType.EquipItem:
-      return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
-    case IntentType.UnequipItem:
-      return processUnequipItemIntent(state, intent.entityId, intent.slotId);
-    case IntentType.ToggleInventory: {
-      const nextUiModeInv = state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game;
-      const invPaused = state.engineMode === EngineMode.RTwP ? nextUiModeInv !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiModeInv, rtwpState: { ...state.rtwpState, paused: invPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleSettings: {
-      const isGameStarted = state.entities.length > 0;
-      const defaultMode = isGameStarted ? UIMode.Game : UIMode.MainMenu;
-      const nextUiModeSettings = state.uiMode !== UIMode.Settings ? UIMode.Settings : defaultMode;
-      // Also pause if entering settings
-      const settingsPaused =
-        state.engineMode === EngineMode.RTwP ? nextUiModeSettings !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiModeSettings, rtwpState: { ...state.rtwpState, paused: settingsPaused } },
-        success: false
-      };
-    }
-
-    // --- DEBUG INTENTS ---
-    case IntentType.DebugRevealMap: {
-      const nextMap = { ...state.map, isFullyExplored: !state.map.isFullyExplored };
-      const msg = nextMap.isFullyExplored ? '[DEBUG] Map Revealed.' : '[DEBUG] Map Hidden.';
-      return { state: addMessage({ ...state, map: nextMap }, msg, MessageLogCategory.System), success: false };
-    }
-
-    case IntentType.DebugGodMode: {
-      const { entityId } = intent;
-      const hasGodMode = getComponent(state, entityId, ComponentType.GodMode) !== undefined;
-
-      const nextComponents = new Map(state.components);
-      const entityComps = state.components.get(entityId) || [];
-
-      if (hasGodMode) {
-        // Remove GodMode
-        nextComponents.set(
-          entityId,
-          entityComps.filter((c) => c.type !== ComponentType.GodMode)
-        );
-        return {
-          state: addMessage(
-            { ...state, components: nextComponents },
-            '[DEBUG] God Mode Disabled.',
-            MessageLogCategory.System
-          ),
-          success: false
-        };
-      } else {
-        // Add GodMode
-        const godCmp: GodModeComponent = { type: ComponentType.GodMode };
-        nextComponents.set(entityId, [...entityComps, godCmp]);
-        return {
-          state: addMessage(
-            { ...state, components: nextComponents },
-            '[DEBUG] God Mode Enabled.',
-            MessageLogCategory.System
-          ),
-          success: false
-        };
-      }
-    }
-
-    case IntentType.DebugSpawnEntity: {
-      const pos = getComponent(state, intent.entityId, ComponentType.Position);
-      if (!pos) return { state, success: false };
-
-      // Find an empty adjacent tile
-      const neighbors = [
-        { x: pos.x + 1, y: pos.y },
-        { x: pos.x - 1, y: pos.y },
-        { x: pos.x, y: pos.y + 1 },
-        { x: pos.x, y: pos.y - 1 }
-      ];
-
-      let spawnX = -1;
-      let spawnY = -1;
-
-      for (const n of neighbors) {
-        const idx = coordToIndex(n.x, n.y, state.map.width);
-        const tile = state.map.tiles[idx];
-        if (tile && state.campaign.tiles[tile.tileId]?.walkable) {
-          const entitiesAt = state.spatialIndex.get(`${n.x},${n.y}`);
-          if (!entitiesAt || entitiesAt.length === 0) {
-            spawnX = n.x;
-            spawnY = n.y;
-            break;
-          }
-        }
-      }
-
-      if (spawnX === -1) {
-        return {
-          state: addMessage(state, '[DEBUG] No room to spawn entity.', MessageLogCategory.System),
-          success: false
-        };
-      }
-
-      const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
-      const nextState = stateAfterSpawn;
-
-      const actor = getComponent(nextState, newEntityId, ComponentType.Actor);
-      if (actor) {
-        addActor(newEntityId);
-      }
-
-      return {
-        state: addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System),
-        success: false
-      };
-    }
-
-    case IntentType.ToggleEngineMode: {
-      const nextMode = state.engineMode === EngineMode.TurnBased ? EngineMode.RTwP : EngineMode.TurnBased;
-      setTimeout(() => switchEngineMode(nextMode), 0);
-      return { state: { ...state, engineMode: nextMode }, success: false };
-    }
-
-    case IntentType.TogglePause: {
-      const nextPaused = !state.rtwpState.paused;
-      return { state: { ...state, rtwpState: { ...state.rtwpState, paused: nextPaused } }, success: false };
-    }
-
-    case IntentType.SetRTwPSpeed: {
-      return {
-        state: { ...state, rtwpState: { ...state.rtwpState, speedMultiplier: intent.speedMultiplier } },
-        success: false
-      };
-    }
-
-    case IntentType.ToggleRotated: {
-      return {
-        state: { ...state, isRotated: !state.isRotated },
-        success: false
-      };
-    }
-
-    case IntentType.Toggle3D: {
-      return {
-        state: { ...state, is3D: !state.is3D },
-        success: false
-      };
-    }
-
-    case IntentType.SetZoomLevel: {
-      // Clamping zoom level between 0.5 and 3.0
-      const nextZoom = Math.max(0.5, Math.min(3.0, state.zoomLevel + intent.zoomDelta));
-      return {
-        state: { ...state, zoomLevel: nextZoom },
-        success: false
-      };
-    }
-
-    default:
-      return assertNever(intent);
-  }
+function applyIntent(
+  state: GameState,
+  intent: Intent
+): { state: GameState; success: boolean; events?: import('../types/events.types.ts').GameEvent[] } {
+  return dispatchAction(state, intent);
 }

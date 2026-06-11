@@ -16,7 +16,9 @@ export const enum ComponentType {
   StatusEffects = 'StatusEffects',
   Faction = 'Faction',
   Hunger = 'Hunger',
-  Trap = 'Trap'
+  Trap = 'Trap',
+  Tags = 'Tags',
+  Traits = 'Traits'
 }
 
 /**
@@ -204,6 +206,22 @@ export interface TrapComponent {
 }
 
 /**
+ * Component holding semantic string tags (e.g., 'undead', 'fire_aligned')
+ */
+export interface TagsComponent {
+  readonly type: ComponentType.Tags;
+  readonly tags: ReadonlyArray<string>;
+}
+
+/**
+ * Component holding mechanical traits (e.g., 'Regeneration', 'Fragile')
+ */
+export interface TraitsComponent {
+  readonly type: ComponentType.Traits;
+  readonly traits: ReadonlyArray<string>;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -221,4 +239,6 @@ export type Component =
   | StatusEffectsComponent
   | FactionComponent
   | HungerComponent
-  | TrapComponent;
+  | TrapComponent
+  | TagsComponent
+  | TraitsComponent;

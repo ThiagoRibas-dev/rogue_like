@@ -78,10 +78,25 @@ export function getEffectiveStats(state: GameState, entityId: EntityId): Effecti
     }
   }
 
+  const finalAttack = baseAttack + attackBonus;
+  let finalDefense = baseDefense + defenseBonus;
+  const finalMaxHp = baseMaxHp + maxHpBonus;
+  const finalSpeed = baseSpeed + speedBonus;
+
+  const traitsCmp = getComponent(state, entityId, ComponentType.Traits);
+  if (traitsCmp) {
+    if (traitsCmp.traits.includes('fragile')) {
+      finalDefense = Math.max(0, finalDefense - 2);
+    }
+    if (traitsCmp.traits.includes('tough')) {
+      finalDefense += 2;
+    }
+  }
+
   return {
-    attack: baseAttack + attackBonus,
-    defense: baseDefense + defenseBonus,
-    maxHp: baseMaxHp + maxHpBonus,
-    speed: baseSpeed + speedBonus
+    attack: Math.max(0, finalAttack),
+    defense: Math.max(0, finalDefense),
+    maxHp: Math.max(1, finalMaxHp),
+    speed: Math.max(0, finalSpeed)
   };
 }

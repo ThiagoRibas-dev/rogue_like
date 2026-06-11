@@ -10,8 +10,7 @@ import {
   type ItemComponent,
   type InventoryComponent,
   type EquipmentComponent,
-  toItemInstanceId,
-  type FactionComponent
+  toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 
@@ -193,9 +192,25 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     nextState = addComponent(nextState, entityId, ai);
   }
 
-  if (template.faction !== undefined) {
-    const faction: FactionComponent = { type: ComponentType.Faction, factionId: template.faction };
-    nextState = addComponent(nextState, entityId, faction);
+  if (template.faction) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Faction,
+      factionId: template.faction
+    });
+  }
+
+  if (template.tags && template.tags.length > 0) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Tags,
+      tags: template.tags
+    });
+  }
+
+  if (template.traits && template.traits.length > 0) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Traits,
+      traits: template.traits
+    });
   }
 
   if (template.inventoryConfig) {

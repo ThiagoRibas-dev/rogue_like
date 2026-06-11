@@ -118,6 +118,7 @@ export async function loadGame(): Promise<GameState | null> {
       nextEntityId: sState.nextEntityId,
       nextItemInstanceId: sState.nextItemInstanceId,
       messages: sState.messages,
+      events: [], // Events are transient per-turn, so we start with empty on load
       currentDepth: sState.currentDepth,
       levels: rehydratedLevels,
       spatialIndex: new Map(), // Will be rebuilt below

@@ -1,4 +1,5 @@
-import type { GameState, EntityId } from './game-state.types.ts';
+import type { GameEvent } from './events.types.ts';
+import type { EntityId, GameState } from './game-state.types.ts';
 
 /**
  * Result of processing an Intent, containing the new state and the energy cost of the action.
@@ -7,6 +8,7 @@ export interface ActionResult {
   readonly state: GameState;
   readonly success: boolean;
   readonly energyCost: number;
+  readonly events?: ReadonlyArray<GameEvent>;
 }
 
 /**
