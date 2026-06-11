@@ -12,7 +12,44 @@
 
 ---
 
-## 1. Project Overview
+## 1. Workflow & Process
+
+### Before Writing Code
+
+1. **Milestone Kickoff:** When starting a new milestone or major feature, you MUST read `docs/ARCHITECTURE.md` first. Summarize the relevant architectural considerations, constraints, and how the new feature aligns with the existing ECS base before proposing an implementation plan.
+2. **Read the relevant source files** the user references. Summarize your
+   understanding of the current state back to the user before proposing changes.
+3. **State your plan** in a numbered list of steps. Wait for confirmation if
+   the change touches more than 2 files.
+4. **Check for existing utilities** in `utils/`, `constants/`, and `types/`
+   before creating anything new. Duplication is a bug.
+
+### While Writing Code
+
+4. **Run the check script mentally.** Before presenting code, verify:
+   - No `any` types.
+   - No magic literals.
+   - All functions have explicit return types.
+   - All switch statements are exhaustive.
+   - No unused imports or variables.
+5. **Add a JSDoc comment** to every exported function, type, and constant.
+   Include `@param`, `@returns`, and a one-line description at minimum.
+6. **Name things precisely.** `processEntities` is bad. `applyMeleeDamage` is
+   good. Variable names should make the code read like prose.
+
+### After Writing Code
+
+7. **Identify downstream effects.** If you changed an interface or enum, list
+   every file that will need to be updated and present those changes too.
+8. **Suggest a test scenario.** Describe a manual play-test action the user can
+   take to verify the change works (e.g., "Walk into an orc. You should see a
+   damage message in the log and the orc's HP should decrease.").
+9. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
+10. **Record Lessons Learned.** If the task revealed a new pitfall, edge-case, or architecture quirk, add it to the Lessons Learned section of `AGENTS.md`.
+
+---
+
+## 2. Project Overview
 
 | Key              | Value                                           |
 | ---------------- | ----------------------------------------------- |
@@ -27,7 +64,7 @@
 
 ---
 
-## 2. TypeScript Rules
+## 3. TypeScript Rules
 
 ### Compiler Settings (tsconfig.json is the source of truth)
 
@@ -97,7 +134,7 @@ compiles cleanly under these settings:
 
 ---
 
-## 3. Data-Driven Design & JSON Registries
+## 4. Data-Driven Design & JSON Registries
 
 The project has transitioned from static TypeScript constants to a data-driven architecture using JSON schemas.
 
@@ -111,7 +148,7 @@ The project has transitioned from static TypeScript constants to a data-driven a
 
 ---
 
-## 4. Project Structure
+## 5. Project Structure
 
 ```
 my-roguelike/
@@ -183,7 +220,7 @@ my-roguelike/
 
 ---
 
-## 5. ECS Patterns
+## 6. ECS Patterns
 
 For the full high-level ECS architecture, see [docs/ARCHITECTURE.md](file:///d:/Projects/Game%20Dev/rogue-like/docs/ARCHITECTURE.md).
 
@@ -205,7 +242,7 @@ For the full high-level ECS architecture, see [docs/ARCHITECTURE.md](file:///d:/
 
 ---
 
-## 6. ROT.js-Specific Guidelines
+## 7. ROT.js-Specific Guidelines
 
 For the subsystem wrapper design details, see [docs/ARCHITECTURE.md](file:///d:/Projects/Game%20Dev/rogue-like/docs/ARCHITECTURE.md).
 
@@ -214,43 +251,6 @@ For the subsystem wrapper design details, see [docs/ARCHITECTURE.md](file:///d:/
 - **Seeded RNG only**: Never call `Math.random()` directly. You must use the shared `ROT.RNG` instance exported from `src/core/rng.ts` to ensure gameplay is deterministic.
 - **Use Speed Scheduler**: Use the energy-based Speed Scheduler (`ROT.Scheduler.Speed`) wrapper for turn scheduling.
 - **Keyboard handling**: Use the `ROT.KEYS` constants, never raw keycodes.
-
----
-
-## 7. Workflow & Process
-
-### Before Writing Code
-
-1. **Milestone Kickoff:** When starting a new milestone or major feature, you MUST read `docs/ARCHITECTURE.md` first. Summarize the relevant architectural considerations, constraints, and how the new feature aligns with the existing ECS base before proposing an implementation plan.
-2. **Read the relevant source files** the user references. Summarize your
-   understanding of the current state back to the user before proposing changes.
-3. **State your plan** in a numbered list of steps. Wait for confirmation if
-   the change touches more than 2 files.
-4. **Check for existing utilities** in `utils/`, `constants/`, and `types/`
-   before creating anything new. Duplication is a bug.
-
-### While Writing Code
-
-4. **Run the check script mentally.** Before presenting code, verify:
-   - No `any` types.
-   - No magic literals.
-   - All functions have explicit return types.
-   - All switch statements are exhaustive.
-   - No unused imports or variables.
-5. **Add a JSDoc comment** to every exported function, type, and constant.
-   Include `@param`, `@returns`, and a one-line description at minimum.
-6. **Name things precisely.** `processEntities` is bad. `applyMeleeDamage` is
-   good. Variable names should make the code read like prose.
-
-### After Writing Code
-
-7. **Identify downstream effects.** If you changed an interface or enum, list
-   every file that will need to be updated and present those changes too.
-8. **Suggest a test scenario.** Describe a manual play-test action the user can
-   take to verify the change works (e.g., "Walk into an orc. You should see a
-   damage message in the log and the orc's HP should decrease.").
-9. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
-10. **Record Lessons Learned.** If the task revealed a new pitfall, edge-case, or architecture quirk, add it to the Lessons Learned section of `AGENTS.md`.
 
 ---
 
