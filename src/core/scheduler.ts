@@ -66,7 +66,12 @@ function runTurnBasedLoop(): void {
   while (!isEngineLocked) {
     const actor = scheduler.next();
     if (!actor) break;
-    actor.act();
+    try {
+      actor.act();
+    } catch (e) {
+      console.error(`Error in turn-based loop for actor ${actor.id}:`, e);
+      removeActor(actor.id);
+    }
   }
 }
 
@@ -96,7 +101,12 @@ function rtwpLoop(time: number): void {
     const actor = scheduler.next();
     if (!actor) break;
 
-    actor.act();
+    try {
+      actor.act();
+    } catch (e) {
+      console.error(`Error in RTwP loop for actor ${actor.id}:`, e);
+      removeActor(actor.id);
+    }
 
     const newTime = scheduler.getTime();
     accumulatedTime -= Math.max(0, newTime - prevTime);

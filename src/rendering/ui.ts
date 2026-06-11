@@ -34,7 +34,7 @@ export function renderMessageLog(state: GameState): void {
       // Allow adding multiple classes separated by spaces if needed
       msg.cssClass.split(' ').forEach((cls) => entry.classList.add(cls));
     }
-    entry.textContent = msg.text;
+    entry.textContent = msg.count && msg.count > 1 ? `${msg.text} (x${msg.count})` : msg.text;
     messageLog.appendChild(entry);
   }
 

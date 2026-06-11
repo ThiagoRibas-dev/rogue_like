@@ -64,6 +64,7 @@ export interface GameMap {
 export interface LogMessage {
   readonly text: string;
   readonly cssClass?: string;
+  readonly count?: number;
 }
 
 /**

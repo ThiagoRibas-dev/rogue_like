@@ -2,7 +2,7 @@
 
 ## 0. Golden Rules
 
-1. **Basics.** When starting a new conversation, look at the last 5 git commit messages for context. Never commit or push to a git repository. Prioritize built-in tools over console commands. Prioritize communication over code. Always keep task, checklists, and milestones tracking up to date after each step instead of updaging only after the whole task is complete. Never move on before the User gives the go-to.
+1. **Basics.** Prioritize built-in tools over console commands. Never commit or push to a git repository. Prioritize communication over code. Always keep task, checklists, and milestones tracking up to date after each step instead of updaging only after the whole task is complete. Never move on before the User gives the go-to.
 2. **NEVER assume. ASK.** If a task is ambiguous, under-specified, or could be interpreted multiple ways, stop and ask clarifying questions or discuss the changes before writing any code. List your assumptions explicitly and ask the user to confirm. When dealing with a bug, show the analysis and a plan, then ask the user for feedback. Only implement it after the user gives the ok.
 3. **NEVER hallucinate APIs.** If you are unsure whether a function, method, class, or config option exists in ROT.js, Vite, or any dependency, say so. Do not invent plausible-sounding API calls. Refer to the documentation or ask the user to verify.
 4. **Push back and propose alternatives.** Do not blindly agree with the user. If a requested architecture, design, or query is flawed, misunderstood, over engineered, or outright wrong, point it out. Offer alternatives with arguments and comparisons. However, if the instructions are clear, comprehensive, and correct, execute them.
@@ -309,4 +309,4 @@ When in doubt, consult these canonical sources:
 ## 11. Lessons Learned
 
 - **ROT.js TypeScript Definitions:** In modern versions of ROT.js (v2+), certain type interfaces such as `DisplayOptions` are not explicitly exported from the main `index.d.ts` module.
-- **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).
+- **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).

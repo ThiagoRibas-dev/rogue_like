@@ -27,8 +27,8 @@ export function addFloatingText(state: GameState, entityId: EntityId, content: s
   const visualEffect = {
     id: `txt_${Date.now()}_${Math.random()}`,
     type: 'floating_text' as const,
-    x: pos.x,
-    y: pos.y,
+    x: pos.x + (Math.random() - 0.5) * 0.8,
+    y: pos.y + (Math.random() - 0.5) * 0.8,
     content,
     color,
     expiresAt: performance.now() + 1000

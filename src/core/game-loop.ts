@@ -141,18 +141,23 @@ export function processTurn(entityId: EntityId): void {
       const stateWithPoppedQueue = { ...state, playerCommandQueue: nextQueue };
       updateState(stateWithPoppedQueue);
 
-      const result = applyIntentWithCost(stateWithPoppedQueue, intent as Intent);
-      let nextState = result.state;
+      try {
+        const result = applyIntentWithCost(stateWithPoppedQueue, intent as Intent);
+        let nextState = result.state;
 
-      if (result.energyCost > 0) {
-        nextState = processHungerTick(nextState, entityId, result.energyCost);
-        setTurnDuration(result.energyCost);
-      } else {
+        if (result.energyCost > 0) {
+          nextState = processHungerTick(nextState, entityId, result.energyCost);
+          setTurnDuration(result.energyCost);
+        } else {
+          setTurnDuration(0);
+        }
+
+        if (nextState !== stateWithPoppedQueue) {
+          updateState(updateExploredTiles(nextState));
+        }
+      } catch (e) {
+        console.error(`Error processing player intent:`, e);
         setTurnDuration(0);
-      }
-
-      if (nextState !== stateWithPoppedQueue) {
-        updateState(updateExploredTiles(nextState));
       }
       return;
     }
@@ -186,27 +191,32 @@ export function processTurn(entityId: EntityId): void {
       }
     }
 
-    const intent = processAITurn(aiTurnState, entityId);
-    if (intent !== null) {
-      const result = applyIntentWithCost(aiTurnState, intent);
-      let nextState = result.state;
-      if (result.energyCost > 0) {
-        nextState = processHungerTick(nextState, entityId, result.energyCost);
-        setTurnDuration(result.energyCost);
+    try {
+      const intent = processAITurn(aiTurnState, entityId);
+      if (intent !== null) {
+        const result = applyIntentWithCost(aiTurnState, intent);
+        let nextState = result.state;
+        if (result.energyCost > 0) {
+          nextState = processHungerTick(nextState, entityId, result.energyCost);
+          setTurnDuration(result.energyCost);
+        } else {
+          // AI failed to execute its intended action (e.g., bumped into a friendly unit).
+          // Force a turn duration to prevent an infinite 0-energy loop.
+          setTurnDuration(100);
+        }
+        if (nextState !== state) {
+          updateState(nextState);
+        }
       } else {
-        // AI failed to execute its intended action (e.g., bumped into a friendly unit).
-        // Force a turn duration to prevent an infinite 0-energy loop.
+        // AI waited / skipped turn
+        const nextState = processHungerTick(state, entityId, 100);
+        if (nextState !== state) {
+          updateState(nextState);
+        }
         setTurnDuration(100);
       }
-      if (nextState !== state) {
-        updateState(nextState);
-      }
-    } else {
-      // AI waited / skipped turn
-      const nextState = processHungerTick(state, entityId, 100);
-      if (nextState !== state) {
-        updateState(nextState);
-      }
+    } catch (e) {
+      console.error(`AI Turn Error for ${entityId}:`, e);
       setTurnDuration(100);
     }
   }

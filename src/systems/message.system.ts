@@ -20,7 +20,16 @@ export const enum MessageLogCategory {
  * @returns A new GameState with the updated message log.
  */
 export function addMessage(state: GameState, text: string, cssClass?: MessageLogCategory): GameState {
-  const newMessage = cssClass !== undefined ? { text, cssClass } : { text };
+  const newMessage = cssClass !== undefined ? { text, cssClass, count: 1 } : { text, count: 1 };
+
+  if (state.messages.length > 0) {
+    const lastMessage = state.messages[state.messages.length - 1];
+    if (lastMessage && lastMessage.text === text && lastMessage.cssClass === cssClass) {
+      const nextMessages = [...state.messages];
+      nextMessages[nextMessages.length - 1] = { ...lastMessage, count: (lastMessage.count ?? 1) + 1 };
+      return { ...state, messages: nextMessages };
+    }
+  }
 
   // Create a new array, appending the new message
   let newMessages = [...state.messages, newMessage];
