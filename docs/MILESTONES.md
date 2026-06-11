@@ -159,14 +159,14 @@ Low-risk, high-reward refactoring to support combinatorial depth.
 - [x] **Traits Component**: Add a `TraitsComponent` for mechanical modifiers (e.g., `Regeneration`, `Fragile`).
 - [x] **System Integration**: Update `getEffectiveStats()` and AI behaviors to dynamically query Traits and Tags instead of hardcoded component checks.
 
-## ⚪ Milestone 16: World Interconnectivity & Biomes
+## 🟢 Milestone 16: World Interconnectivity & Biomes (Complete)
 Move away from a strict vertical dungeon descent into an interconnected "overworld" of distinct zones.
-- [ ] **Area Data Model**: Rename internal concepts of "Floor" and "Level" to "Area" or "Zone" within the `GameState`.
-- [ ] **Biome Generators**: Update Map Generation to select `ROT.Map` algorithms dynamically based on Area tags (e.g., `Cellular` for wild/forests, `BSP` for urban/villages).
-- [ ] **Contextual Spawns**: Modify `spawnWeights` to filter the global entity/item pools by the Area's semantic tags.
-- [ ] **Lateral Transitions**: Add `EdgeTransitionComponent` and `PortalComponent` to handle walking off the map or entering buildings.
-- [ ] **Entity Migration**: Extend the existing stair-transition `migratingEntities` logic to seamlessly move the player's party through these new lateral portals.
-- [ ] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
+- [x] **Area Data Model**: Rename internal concepts of "Floor" and "Level" to "Area" or "Zone" within the `GameState`.
+- [x] **Biome Generators**: Update Map Generation to select `ROT.Map` algorithms dynamically based on Area tags (e.g., `Cellular` for wild/forests, `BSP` for urban/villages).
+- [x] **Contextual Spawns**: Modify `spawnWeights` to filter the global entity/item pools by the Area's semantic tags.
+- [x] **Lateral Transitions**: Add `EdgeTransitionComponent` and `PortalComponent` to handle walking off the map or entering buildings.
+- [x] **Entity Migration**: Extend the existing stair-transition `migratingEntities` logic to seamlessly move the player's party through these new lateral portals.
+- [x] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
 
 ## ⚪ Milestone 17: Persistent Entities & Relationships
 The missing prerequisite for procedural narrative: entities that exist and act outside the player's immediate vicinity.

@@ -6,7 +6,7 @@
       "description": "The standard rogue-like experience. Explore the depths, fight monsters, and survive.",
       "version": "1.0.0",
       "mapSize": "50x50",
-      "maxDepth": 10
+      "startingAreaId": "dungeon_1"
     }
   ]
 }

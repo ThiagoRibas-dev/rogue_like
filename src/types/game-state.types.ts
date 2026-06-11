@@ -82,9 +82,9 @@ export interface VisualEffect {
 }
 
 /**
- * Data associated with an inactive/saved dungeon level.
+ * Data associated with an inactive/saved area.
  */
-export interface LevelData {
+export interface AreaData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
@@ -105,8 +105,8 @@ export interface GameState {
   readonly nextItemInstanceId: number;
   readonly messages: ReadonlyArray<LogMessage>;
   readonly events: ReadonlyArray<GameEvent>;
-  readonly currentDepth: number;
-  readonly levels: ReadonlyMap<number, LevelData>;
+  readonly currentAreaId: string;
+  readonly areas: ReadonlyMap<string, AreaData>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
   readonly isGameOver: boolean;
   /**
@@ -144,9 +144,9 @@ export interface GameState {
 }
 
 /**
- * Shape of LevelData when serialized to JSON.
+ * Shape of AreaData when serialized to JSON.
  */
-export interface SerializedLevelData {
+export interface SerializedAreaData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
@@ -163,8 +163,8 @@ export interface SerializedGameState {
   readonly nextEntityId: number;
   readonly nextItemInstanceId: number;
   readonly messages: ReadonlyArray<LogMessage>;
-  readonly currentDepth: number;
-  readonly levels: ReadonlyArray<[number, SerializedLevelData]>;
+  readonly currentAreaId: string;
+  readonly areas: ReadonlyArray<[string, SerializedAreaData]>;
   readonly isGameOver: boolean;
   readonly uiMode: UIMode;
   readonly identifiedItems: ReadonlyArray<string>;

@@ -1,7 +1,8 @@
 import * as ROT from 'rot-js';
 import { type GameMap, type Tile } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { type RulesConfig } from '../types/campaign.types.ts';
+import { type CampaignData, type AreaConnection } from '../types/campaign.types.ts';
+import { parseStaticMap } from './static-parser.ts';
 
 /**
  * Generates a procedural room-and-corridor dungeon map using ROT.Map.Digger.
@@ -12,15 +13,13 @@ import { type RulesConfig } from '../types/campaign.types.ts';
  * @param depth The current dungeon depth.
  * @returns An object containing the generated GameMap and the player's starting coordinates.
  */
-export function generateDungeon(
-  width: number,
-  height: number,
-  depth: number,
-  rules: RulesConfig['map']
+export function generateArea(
+  campaign: CampaignData,
+  areaId: string
 ): {
   readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };
-  readonly stairs: ReadonlyArray<{ readonly x: number; readonly y: number; readonly direction: 'up' | 'down' }>;
+  readonly portals: ReadonlyArray<{ readonly x: number; readonly y: number; readonly connection: AreaConnection }>;
   readonly rooms: ReadonlyArray<{
     readonly left: number;
     readonly right: number;
@@ -30,6 +29,29 @@ export function generateDungeon(
     readonly centerY: number;
   }>;
 } {
+  const areaDef = campaign.areas[areaId];
+  if (!areaDef) {
+    throw new Error(`Area ${areaId} not found in campaign.`);
+  }
+
+  if (areaDef.generatorType === 'static' && areaDef.staticMap) {
+    const map = parseStaticMap(areaDef.staticMap);
+    const portals = (areaDef.connections ?? []).map((conn, idx) => ({
+      x: 1 + idx,
+      y: 1,
+      connection: conn
+    }));
+    return {
+      map,
+      startPos: { x: Math.floor(map.width / 2), y: Math.floor(map.height / 2) },
+      portals,
+      rooms: []
+    };
+  }
+
+  const rules = campaign.rules.map;
+  const width = rules.width;
+  const height = rules.height;
   // 1. Initialize empty flat array of tiles filled with walls
   const tiles: Tile[] = [];
   for (let y = 0; y < height; y++) {
@@ -83,41 +105,20 @@ export function generateDungeon(
     throw new Error('Dungeon generation failed: Start position coordinates are undefined.');
   }
 
-  const stairs: Array<{ readonly x: number; readonly y: number; readonly direction: 'up' | 'down' }> = [];
-
-  // If depth > 1, place stairs up at the entry point
-  if (depth > 1) {
-    const startIndex = coordToIndex(startX, startY, width);
-    const tile = tiles[startIndex];
-    if (tile !== undefined) {
-      tiles[startIndex] = {
-        ...tile,
-        tileId: 'stone_floor' // Ensure it's a floor underneath
-      };
-      stairs.push({ x: startX, y: startY, direction: 'up' });
-    }
-  }
-
-  // Last room is the exit point
-  const lastRoom = rooms[rooms.length - 1];
-  if (lastRoom === undefined) {
-    throw new Error('Dungeon generation failed: Last room is undefined.');
-  }
-  const [stairsDownX, stairsDownY] = lastRoom.getCenter();
-  if (stairsDownX === undefined || stairsDownY === undefined) {
-    throw new Error('Dungeon generation failed: Stairs down coordinates are undefined.');
-  }
-
-  if (depth < rules.maxDungeonDepth) {
-    const exitIndex = coordToIndex(stairsDownX, stairsDownY, width);
-    const tile = tiles[exitIndex];
-    if (tile !== undefined) {
-      tiles[exitIndex] = {
-        ...tile,
-        tileId: 'stone_floor' // Ensure it's a floor underneath
-      };
-      stairs.push({ x: stairsDownX, y: stairsDownY, direction: 'down' });
-    }
+  const portals: Array<{ x: number; y: number; connection: AreaConnection }> = [];
+  if (areaDef.connections) {
+    areaDef.connections.forEach((conn, index) => {
+      const room = rooms[index % rooms.length];
+      if (room) {
+        const [px, py] = room.getCenter();
+        const pIndex = coordToIndex(px!, py!, width);
+        const tile = tiles[pIndex];
+        if (tile) {
+          tiles[pIndex] = { ...tile, tileId: 'stone_floor' };
+          portals.push({ x: px!, y: py!, connection: conn });
+        }
+      }
+    });
   }
 
   // 5. Cull deep walls (replace walls that don't border a floor with empty_space)
@@ -187,7 +188,7 @@ export function generateDungeon(
   return {
     map,
     startPos: { x: startX, y: startY },
-    stairs,
+    portals,
     rooms: parsedRooms
   };
 }

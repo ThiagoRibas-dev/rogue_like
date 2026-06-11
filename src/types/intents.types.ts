@@ -18,7 +18,7 @@ export const enum IntentType {
   Move = 'Move',
   Wait = 'Wait',
   Interact = 'Interact',
-  ChangeFloor = 'ChangeFloor',
+  ChangeArea = 'ChangeArea',
   DebugRevealMap = 'DebugRevealMap',
   DebugGodMode = 'DebugGodMode',
   DebugSpawnEntity = 'DebugSpawnEntity',
@@ -71,12 +71,14 @@ export interface InteractIntent {
 }
 
 /**
- * Intent to change the floor (used by stairs and portals).
+ * Intent to change the area (used by stairs and portals).
  */
-export interface ChangeFloorIntent {
-  readonly type: IntentType.ChangeFloor;
+export interface ChangeAreaIntent {
+  readonly type: IntentType.ChangeArea;
   readonly entityId: EntityId;
-  readonly direction: 'up' | 'down';
+  readonly targetAreaId: string;
+  readonly targetX?: number;
+  readonly targetY?: number;
 }
 
 /**
@@ -304,7 +306,7 @@ export type Intent =
   | MoveIntent
   | WaitIntent
   | InteractIntent
-  | ChangeFloorIntent
+  | ChangeAreaIntent
   | DebugRevealMapIntent
   | DebugGodModeIntent
   | DebugSpawnEntityIntent

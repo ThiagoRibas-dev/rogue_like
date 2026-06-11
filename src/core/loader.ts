@@ -25,7 +25,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       statusRes,
       tilesRes,
       factionsRes,
-      aiRes
+      aiRes,
+      areasRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -37,7 +38,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/status.json`),
       fetch(`${basePath}/tiles.json`),
       fetch(`${basePath}/factions.json`),
-      fetch(`${basePath}/ai.json`)
+      fetch(`${basePath}/ai.json`),
+      fetch(`${basePath}/areas.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -52,7 +54,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       statusRes,
       tilesRes,
       factionsRes,
-      aiRes
+      aiRes,
+      areasRes
     ];
 
     for (const res of responses) {
@@ -61,12 +64,13 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       }
     }
 
-    const [manifest, rules, theme, advancement, items, effects, entities, status, tiles, factions, ai] =
+    const [manifest, rules, theme, advancement, areas, items, effects, entities, status, tiles, factions, ai] =
       await Promise.all([
         manifestRes.json(),
         rulesRes.json(),
         themeRes.json(),
         advancementRes.json(),
+        areasRes.json(),
         itemsRes.json(),
         effectsRes.json(),
         entitiesRes.json(),
@@ -81,6 +85,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       rules,
       theme,
       advancement,
+      areas,
       items,
       effects,
       entities,

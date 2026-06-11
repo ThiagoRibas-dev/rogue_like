@@ -17,7 +17,7 @@ export const CampaignRegistryEntrySchema = z.object({
   description: z.string(),
   version: z.string(),
   mapSize: z.string(),
-  maxDepth: z.number().int()
+  startingAreaId: z.string()
 });
 export type CampaignRegistryEntry = z.infer<typeof CampaignRegistryEntrySchema>;
 
@@ -49,7 +49,7 @@ export const RulesConfigSchema = z.object({
     minCorridorLength: z.number().int().positive(),
     maxCorridorLength: z.number().int().positive(),
     dugPercentage: z.number().positive().max(1),
-    maxDungeonDepth: z.number().int().positive(),
+    startingAreaId: z.string(),
     fovRadius: z.number().int().positive()
   }),
   hunger: z.object({
@@ -254,6 +254,36 @@ export const AIProfileSchema = z.object({
 export type AIProfile = z.infer<typeof AIProfileSchema>;
 
 // ==========================================
+// 11. AREAS & WORLD MAP
+// ==========================================
+export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static']);
+export type AreaGeneratorType = z.infer<typeof AreaGeneratorTypeEnum>;
+
+export const AreaConnectionSchema = z.object({
+  targetAreaId: z.string(),
+  targetX: z.number().int().nonnegative().optional(),
+  targetY: z.number().int().nonnegative().optional(),
+  direction: z.enum(['up', 'down', 'edge', 'portal'])
+});
+export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
+
+export const StaticMapLayoutSchema = z.object({
+  layout: z.array(z.string()),
+  legend: z.record(z.string(), z.string())
+});
+
+export const AreaDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  generatorType: AreaGeneratorTypeEnum,
+  dangerRating: z.number().int().nonnegative(),
+  tags: z.array(z.string()).optional(),
+  connections: z.array(AreaConnectionSchema).optional(),
+  staticMap: StaticMapLayoutSchema.optional()
+});
+export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
+
+// ==========================================
 // THE MEGA CAMPAIGN DATA SCHEMA
 // ==========================================
 export const CampaignDataSchema = z.object({
@@ -261,6 +291,7 @@ export const CampaignDataSchema = z.object({
   rules: RulesConfigSchema,
   theme: ThemeConfigSchema,
   advancement: z.array(AdvancementLevelSchema),
+  areas: z.record(z.string(), AreaDefinitionSchema),
   items: z.record(z.string(), ItemDefinitionSchema),
   effects: z.record(z.string(), ItemEffectDefinitionSchema),
   entities: z.record(z.string(), EntityTemplateSchema),

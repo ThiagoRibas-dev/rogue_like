@@ -410,7 +410,8 @@ export function renderMenus(state: GameState, hasSave: boolean): void {
       if (deathStats) {
         const player = state.entities.find((id) => getComponent(state, id, ComponentType.Player));
         const level = player ? (getComponent(state, player, ComponentType.Fighter)?.level ?? 1) : 1;
-        deathStats.textContent = `You reached Level ${level} on Floor ${state.currentDepth}.`;
+        const areaName = state.campaign.areas[state.currentAreaId]?.name ?? state.currentAreaId;
+        deathStats.textContent = `You reached Level ${level} in ${areaName}.`;
       }
 
       const deathLog = document.getElementById('death-message-log');
@@ -762,7 +763,7 @@ export function populateCampaignList(
       if (desc) desc.textContent = campaign.description;
       if (version) version.textContent = campaign.version;
       if (mapSize) mapSize.textContent = campaign.mapSize;
-      if (depth) depth.textContent = campaign.maxDepth.toString();
+      if (depth) depth.textContent = campaign.startingAreaId;
       if (startBtn) startBtn.disabled = false;
 
       onSelect(campaign);

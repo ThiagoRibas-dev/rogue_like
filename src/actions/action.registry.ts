@@ -15,7 +15,7 @@ import {
   processPickUpIntent,
   processUnequipItemIntent
 } from '../systems/inventory.system.ts';
-import { processChangeFloorIntent, processInteractIntent } from '../systems/map.system.ts';
+import { processChangeAreaIntent, processInteractIntent } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import {
@@ -41,8 +41,8 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
       return { state: addMessage(state, 'You wait a moment.', MessageLogCategory.System), success: true };
     case IntentType.Interact:
       return processInteractIntent(state, intent);
-    case IntentType.ChangeFloor:
-      return processChangeFloorIntent(state, intent);
+    case IntentType.ChangeArea:
+      return processChangeAreaIntent(state, intent);
     case IntentType.MeleeAttack:
       return processMeleeAttackIntent(state, intent);
 

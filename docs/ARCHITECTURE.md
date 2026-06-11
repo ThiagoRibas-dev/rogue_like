@@ -166,3 +166,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Action Registry vs Instantiated Commands
 - **Decision**: Instead of following the traditional OOP Command Pattern where the UI/AI instantiates class objects (`new WalkAction()`) containing `.execute()` closures and pushes them into the command queue, we split the pattern in half. We push pure data `Intents` into the queue, and use a stateless `ActionRegistry` (mapping `IntentType` -> `ActionHandler`) inside the engine to resolve them.
 - **Rationale**: The `GameState` must remain 100% pure, serializable data to support seamless `localStorage` saving (and future multiplayer networking). If we placed objects with method closures into the command queue, we could no longer easily serialize the queue. The `ActionRegistry` provides the exact same architectural decoupling (removing massive `switch` routers from the engine) while completely preserving the strict data boundaries of the ECS.
+
+### Save File Backwards Compatibility
+- **Decision**: During development phases (pre-v1.0), there is strictly no need to concern ourselves with backwards compatibility for `localStorage` save files. When the `GameState` shape changes, old saves can be safely invalidated or discarded.
+- **Rationale**: Writing complex migration scripts to preserve save states between rapidly evolving milestones wastes development time and increases bug surface area. The game should fail fast or discard old saves rather than attempting to load them into incompatible new structures.

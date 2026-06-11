@@ -1,0 +1,69 @@
+{
+  "dungeon_1": {
+    "id": "dungeon_1",
+    "name": "The Upper Dungeons",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "tags": ["dungeon", "early_game"],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_2",
+        "direction": "down"
+      }
+    ]
+  },
+  "dungeon_2": {
+    "id": "dungeon_2",
+    "name": "The Deep Caverns",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "tags": ["cave", "mid_game"],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_1",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "goblin_camp",
+        "direction": "down"
+      }
+    ]
+  },
+  "goblin_camp": {
+    "id": "goblin_camp",
+    "name": "Goblin Encampment",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": ["camp", "boss"],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_2",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "####################",
+        "#..................#",
+        "#.o..o........o..o.#",
+        "#...G..........G...#",
+        "#..................#",
+        "###+############+###",
+        "  #.#          #.#  ",
+        "  #.#          #.#  ",
+        "  #<#          #>#  ",
+        "  ###          ###  "
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "+": "closed_door",
+        "<": "stone_floor",
+        ">": "stone_floor",
+        "G": "stone_floor",
+        "o": "stone_floor",
+        " ": "empty_space"
+      }
+    }
+  }
+}

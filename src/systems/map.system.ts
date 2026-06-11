@@ -6,7 +6,7 @@ import {
   type InteractableComponent,
   type RenderableComponent
 } from '../types/components.types.ts';
-import { type GameState, type LevelData, type EntityId, type GameMap } from '../types/game-state.types.ts';
+import { type GameState, type AreaData, type EntityId, type GameMap } from '../types/game-state.types.ts';
 import {
   getComponent,
   queryEntities,
@@ -17,10 +17,10 @@ import {
   spawnItem
 } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
-import { generateDungeon } from '../map/generator.ts';
+import { generateArea } from '../map/generator.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
-import { IntentType, type ChangeFloorIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
+import { IntentType, type ChangeAreaIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
 import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
 import { coordToIndex } from '../utils/grid.ts';
@@ -71,9 +71,9 @@ export function processInteractIntent(
     const interactable = getComponent(state, targetId, ComponentType.Interactable);
     if (interactable) {
       for (const i of interactable.intents) {
-        if (i.type === IntentType.ChangeFloor) {
-          const boundIntent = { ...i, entityId: intent.entityId } as ChangeFloorIntent;
-          const result = processChangeFloorIntent(nextState, boundIntent);
+        if (i.type === IntentType.ChangeArea) {
+          const boundIntent = { ...i, entityId: intent.entityId } as ChangeAreaIntent;
+          const result = processChangeAreaIntent(nextState, boundIntent);
           nextState = result.state;
         } else {
           // Queue other intents if necessary, but ChangeFloor should be synchronous
@@ -117,35 +117,11 @@ export function processInteractIntent(
   return { state: nextState, success: interacted };
 }
 
-export function processChangeFloorIntent(
+export function processChangeAreaIntent(
   state: GameState,
-  intent: ChangeFloorIntent
+  intent: ChangeAreaIntent
 ): { state: GameState; success: boolean } {
-  const { direction, entityId } = intent;
-
-  const targetDepth: number = state.currentDepth + (direction === 'up' ? -1 : 1);
-
-  if (targetDepth <= 0) {
-    return {
-      state: addMessage(
-        state,
-        'You cannot escape back to the surface yet! The Goblin King still lives.',
-        MessageLogCategory.System
-      ),
-      success: false
-    };
-  }
-
-  if (targetDepth > state.campaign.rules.map.maxDungeonDepth) {
-    return {
-      state: addMessage(
-        state,
-        'You have reached the bottom of the dungeon. There is nowhere deeper to go.',
-        MessageLogCategory.System
-      ),
-      success: false
-    };
-  }
+  const { targetAreaId, targetX, targetY, entityId } = intent;
 
   // 1. Determine which entities migrate with the player (inventory, equipment)
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
@@ -172,7 +148,7 @@ export function processChangeFloorIntent(
   }
 
   // Remove the migrating entities' positions from the saved index
-  const currentLevelData: LevelData = {
+  const currentAreaData: AreaData = {
     map: state.map,
     entities: savedEntityIds,
     components: currentLevelComponents,
@@ -180,22 +156,22 @@ export function processChangeFloorIntent(
       .spatialIndex
   };
 
-  const nextLevels = new Map(state.levels);
-  nextLevels.set(state.currentDepth, currentLevelData);
+  const nextAreas = new Map(state.areas);
+  nextAreas.set(state.currentAreaId, currentAreaData);
 
   // 2. Load or generate target floor
   let targetMap: GameMap;
   let nextEntities: ReadonlyArray<EntityId> = [];
   let nextComponents = new Map<EntityId, ReadonlyArray<Component>>();
-  let spawnX: number;
-  let spawnY: number;
+  let spawnX: number = targetX ?? -1;
+  let spawnY: number = targetY ?? -1;
 
-  const savedTargetLevel = nextLevels.get(targetDepth);
+  const savedTargetArea = nextAreas.get(targetAreaId);
 
-  if (savedTargetLevel !== undefined) {
-    targetMap = savedTargetLevel.map;
-    nextEntities = [...savedTargetLevel.entities];
-    nextComponents = new Map(savedTargetLevel.components);
+  if (savedTargetArea !== undefined) {
+    targetMap = savedTargetArea.map;
+    nextEntities = [...savedTargetArea.entities];
+    nextComponents = new Map(savedTargetArea.components);
 
     // Find the corresponding stairs
     let foundStairs = false;
@@ -206,11 +182,11 @@ export function processChangeFloorIntent(
       if (
         interactable &&
         interactable.intents.some(
-          (i) => i.type === IntentType.ChangeFloor && (i as ChangeFloorIntent).direction !== direction
+          (i) => i.type === IntentType.ChangeArea && (i as ChangeAreaIntent).targetAreaId === state.currentAreaId
         )
       ) {
         const pos = nextComponents.get(id)?.find((c) => c.type === ComponentType.Position) as PositionComponent;
-        if (pos) {
+        if (pos && spawnX === -1) {
           spawnX = pos.x;
           spawnY = pos.y;
           foundStairs = true;
@@ -219,18 +195,13 @@ export function processChangeFloorIntent(
       }
     }
 
-    if (!foundStairs) {
+    if (!foundStairs && spawnX === -1) {
       spawnX = Math.floor(targetMap.width / 2);
       spawnY = Math.floor(targetMap.height / 2);
     }
   } else {
     // Generate new floor
-    const generated = generateDungeon(
-      state.campaign.rules.map.width,
-      state.campaign.rules.map.height,
-      targetDepth,
-      state.campaign.rules.map
-    );
+    const generated = generateArea(state.campaign, targetAreaId);
     targetMap = generated.map;
     spawnX = generated.startPos.x;
     spawnY = generated.startPos.y;
@@ -239,15 +210,15 @@ export function processChangeFloorIntent(
     // Let's create a temporary state to use ECS functions.
     let tempState: GameState = { ...state, entities: [], components: new Map(), map: targetMap };
 
-    for (const stair of generated.stairs) {
+    for (const portal of generated.portals) {
       let stairId: EntityId;
       [tempState, stairId] = createEntity(tempState);
 
-      const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
+      const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
       const render: RenderableComponent = {
         type: ComponentType.Renderable,
         glyph:
-          stair.direction === 'up'
+          portal.connection.direction === 'up'
             ? (state.campaign.theme.glyphs.stairsUp ?? '<')
             : (state.campaign.theme.glyphs.stairsDown ?? '>'),
         fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
@@ -255,7 +226,14 @@ export function processChangeFloorIntent(
       };
       const interactable: InteractableComponent = {
         type: ComponentType.Interactable,
-        intents: [{ type: IntentType.ChangeFloor, direction: stair.direction } as ChangeFloorIntent]
+        intents: [
+          {
+            type: IntentType.ChangeArea,
+            targetAreaId: portal.connection.targetAreaId,
+            targetX: portal.connection.targetX,
+            targetY: portal.connection.targetY
+          } as ChangeAreaIntent
+        ]
       };
 
       tempState = addComponent(
@@ -313,8 +291,8 @@ export function processChangeFloorIntent(
     entities: nextEntities,
     components: nextComponents,
     map: targetMap,
-    currentDepth: targetDepth,
-    levels: nextLevels
+    currentAreaId: targetAreaId,
+    areas: nextAreas
   };
 
   nextState = updateSpatialIndex(nextState);
@@ -333,7 +311,7 @@ export function processChangeFloorIntent(
     }
   }
 
-  const msg = direction === 'up' ? `You ascend to level ${targetDepth}.` : `You descend to level ${targetDepth}.`;
+  const msg = `You travel to ${targetAreaId}.`;
   nextState = addMessage(nextState, msg, MessageLogCategory.System);
 
   return { state: updateExploredTiles(nextState), success: true };

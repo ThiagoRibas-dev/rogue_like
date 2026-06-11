@@ -9,7 +9,7 @@
     "minCorridorLength": 3,
     "maxCorridorLength": 10,
     "dugPercentage": 0.25,
-    "maxDungeonDepth": 5,
+    "startingAreaId": "dungeon_1",
     "fovRadius": 8
   },
   "hunger": {

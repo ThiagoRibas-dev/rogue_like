@@ -1,8 +1,8 @@
 import {
   type GameState,
-  type LevelData,
+  type AreaData,
   type SerializedGameState,
-  type SerializedLevelData,
+  type SerializedAreaData,
   EngineMode
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
@@ -43,14 +43,14 @@ export function setSaveData(data: string): void {
  * Converts Map objects to arrays of tuples for JSON compatibility.
  */
 export function saveGame(state: GameState): void {
-  const serializedLevels: Array<[number, SerializedLevelData]> = Array.from(state.levels.entries()).map(
-    ([depth, levelData]) => {
-      const sLevelData: SerializedLevelData = {
-        map: levelData.map,
-        entities: levelData.entities,
-        components: Array.from(levelData.components.entries())
+  const serializedAreas: Array<[string, SerializedAreaData]> = Array.from(state.areas.entries()).map(
+    ([areaId, areaData]) => {
+      const sAreaData: SerializedAreaData = {
+        map: areaData.map,
+        entities: areaData.entities,
+        components: Array.from(areaData.components.entries())
       };
-      return [depth, sLevelData];
+      return [areaId, sAreaData];
     }
   );
 
@@ -62,8 +62,8 @@ export function saveGame(state: GameState): void {
     nextEntityId: state.nextEntityId,
     nextItemInstanceId: state.nextItemInstanceId,
     messages: state.messages,
-    currentDepth: state.currentDepth,
-    levels: serializedLevels,
+    currentAreaId: state.currentAreaId,
+    areas: serializedAreas,
     isGameOver: state.isGameOver,
     uiMode: state.uiMode,
     identifiedItems: Array.from(state.identifiedItems),
@@ -99,12 +99,12 @@ export async function loadGame(): Promise<GameState | null> {
     const campaignId = sState.campaignId || 'default';
     const campaign = await loadCampaign(campaignId);
 
-    const rehydratedLevels = new Map<number, LevelData>();
-    for (const [depth, sLevelData] of sState.levels) {
-      rehydratedLevels.set(depth, {
-        map: sLevelData.map,
-        entities: sLevelData.entities,
-        components: new Map(sLevelData.components),
+    const rehydratedAreas = new Map<string, AreaData>();
+    for (const [areaId, sAreaData] of sState.areas) {
+      rehydratedAreas.set(areaId, {
+        map: sAreaData.map,
+        entities: sAreaData.entities,
+        components: new Map(sAreaData.components),
         spatialIndex: new Map()
       });
     }
@@ -119,8 +119,8 @@ export async function loadGame(): Promise<GameState | null> {
       nextItemInstanceId: sState.nextItemInstanceId,
       messages: sState.messages,
       events: [], // Events are transient per-turn, so we start with empty on load
-      currentDepth: sState.currentDepth,
-      levels: rehydratedLevels,
+      currentAreaId: sState.currentAreaId,
+      areas: rehydratedAreas,
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
       uiMode: sState.uiMode,

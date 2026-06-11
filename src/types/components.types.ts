@@ -18,7 +18,9 @@ export const enum ComponentType {
   Hunger = 'Hunger',
   Trap = 'Trap',
   Tags = 'Tags',
-  Traits = 'Traits'
+  Traits = 'Traits',
+  Portal = 'Portal',
+  EdgeTransition = 'EdgeTransition'
 }
 
 /**
@@ -222,6 +224,24 @@ export interface TraitsComponent {
 }
 
 /**
+ * Component representing a portal to another area.
+ */
+export interface PortalComponent {
+  readonly type: ComponentType.Portal;
+  readonly targetAreaId: string;
+  readonly targetX?: number;
+  readonly targetY?: number;
+}
+
+/**
+ * Component marking an entity that has walked off the edge of the map.
+ */
+export interface EdgeTransitionComponent {
+  readonly type: ComponentType.EdgeTransition;
+  readonly targetAreaId: string;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -241,4 +261,6 @@ export type Component =
   | HungerComponent
   | TrapComponent
   | TagsComponent
-  | TraitsComponent;
+  | TraitsComponent
+  | PortalComponent
+  | EdgeTransitionComponent;

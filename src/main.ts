@@ -39,7 +39,7 @@ import {
 } from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
-import { generateDungeon } from './map/generator.ts';
+import { generateArea } from './map/generator.ts';
 import { updateExploredTiles } from './systems/map.system.ts';
 import { initEngine, startEngine, addActor } from './core/scheduler.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
@@ -74,7 +74,7 @@ import {
   createEquipItemAction,
   createUnequipItemAction
 } from './actions/inventory.actions.ts';
-import { IntentType, type ChangeFloorIntent } from './types/intents.types.ts';
+import { IntentType, type ChangeAreaIntent } from './types/intents.types.ts';
 import { UIMode, EngineMode } from './types/game-state.types.ts';
 import { getDirectionDelta } from './utils/direction.ts';
 
@@ -124,8 +124,8 @@ let state: GameState = {
   nextItemInstanceId: 1,
   messages: [],
   events: [],
-  currentDepth: 1,
-  levels: new Map(),
+  currentAreaId: defaultCampaign.rules.map.startingAreaId,
+  areas: new Map(),
   spatialIndex: new Map(),
   isGameOver: false,
   uiMode: UIMode.MainMenu,
@@ -196,9 +196,9 @@ async function startNewGame(campaignId: string) {
   const {
     map: initialMap,
     startPos,
-    stairs,
+    portals,
     rooms
-  } = generateDungeon(state.campaign.rules.map.width, state.campaign.rules.map.height, 1, state.campaign.rules.map);
+  } = generateArea(state.campaign, state.campaign.rules.map.startingAreaId);
   state = {
     ...state,
     map: initialMap,
@@ -208,8 +208,8 @@ async function startNewGame(campaignId: string) {
     components: new Map(),
     spatialIndex: new Map(),
     messages: [],
-    currentDepth: 1,
-    levels: new Map(),
+    currentAreaId: state.campaign.rules.map.startingAreaId,
+    areas: new Map(),
     identifiedItems: new Set(),
     itemUnidentifiedNames,
     visualEffects: [],
@@ -249,16 +249,16 @@ async function startNewGame(campaignId: string) {
     }
   }
 
-  // Spawn the stairs for the first floor
-  for (const stair of stairs) {
+  // Spawn the portals for the first floor
+  for (const portal of portals) {
     let stairId: EntityId;
     [state, stairId] = createEntity(state);
 
-    const pos: PositionComponent = { type: ComponentType.Position, x: stair.x, y: stair.y };
+    const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
     const renderCmp: RenderableComponent = {
       type: ComponentType.Renderable,
       glyph:
-        stair.direction === 'up'
+        portal.connection.direction === 'up'
           ? (state.campaign.theme.glyphs.stairsUp ?? '<')
           : (state.campaign.theme.glyphs.stairsDown ?? '>'),
       fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
@@ -266,7 +266,14 @@ async function startNewGame(campaignId: string) {
     };
     const interactable: InteractableComponent = {
       type: ComponentType.Interactable,
-      intents: [{ type: IntentType.ChangeFloor, direction: stair.direction } as ChangeFloorIntent]
+      intents: [
+        {
+          type: IntentType.ChangeArea,
+          targetAreaId: portal.connection.targetAreaId,
+          targetX: portal.connection.targetX,
+          targetY: portal.connection.targetY
+        } as ChangeAreaIntent
+      ]
     };
 
     state = addComponent(state, stairId, pos);
@@ -498,7 +505,7 @@ fileInput?.addEventListener('change', (e: Event) => {
 function updateHUD(s: GameState): void {
   const depthElement = document.getElementById('dungeon-depth');
   if (depthElement !== null) {
-    depthElement.textContent = `B${s.currentDepth}`;
+    depthElement.textContent = s.campaign.areas[s.currentAreaId]?.name ?? s.currentAreaId;
   }
 
   const hpBarFill = document.querySelector('.health-bar') as HTMLElement | null;

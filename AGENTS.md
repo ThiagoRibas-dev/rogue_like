@@ -221,11 +221,12 @@ For the subsystem wrapper design details, see [docs/ARCHITECTURE.md](file:///d:/
 
 ### Before Writing Code
 
-1. **Read the relevant source files** the user references. Summarize your
+1. **Milestone Kickoff:** When starting a new milestone or major feature, you MUST read `docs/ARCHITECTURE.md` first. Summarize the relevant architectural considerations, constraints, and how the new feature aligns with the existing ECS base before proposing an implementation plan.
+2. **Read the relevant source files** the user references. Summarize your
    understanding of the current state back to the user before proposing changes.
-2. **State your plan** in a numbered list of steps. Wait for confirmation if
+3. **State your plan** in a numbered list of steps. Wait for confirmation if
    the change touches more than 2 files.
-3. **Check for existing utilities** in `utils/`, `constants/`, and `types/`
+4. **Check for existing utilities** in `utils/`, `constants/`, and `types/`
    before creating anything new. Duplication is a bug.
 
 ### While Writing Code
@@ -248,6 +249,8 @@ For the subsystem wrapper design details, see [docs/ARCHITECTURE.md](file:///d:/
 8. **Suggest a test scenario.** Describe a manual play-test action the user can
    take to verify the change works (e.g., "Walk into an orc. You should see a
    damage message in the log and the orc's HP should decrease.").
+9. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
+10. **Record Lessons Learned.** If the task revealed a new pitfall, edge-case, or architecture quirk, add it to the Lessons Learned section of `AGENTS.md`.
 
 ---
 
@@ -310,3 +313,6 @@ When in doubt, consult these canonical sources:
 
 - **ROT.js TypeScript Definitions:** In modern versions of ROT.js (v2+), certain type interfaces such as `DisplayOptions` are not explicitly exported from the main `index.d.ts` module.
 - **`exactOptionalPropertyTypes`:** The project uses the strict `exactOptionalPropertyTypes: true` TypeScript compiler option. This means you **cannot** explicitly assign `undefined` to an optional property (e.g., `const obj: { foo?: string } = { foo: undefined };` will throw a compiler error). You must either conditionally construct the object to completely omit the property, or update the interface to explicitly accept undefined (e.g., `foo?: string | undefined;`).
+- **Zod Inferred Types:** Defining a Zod schema is only half the battle. You must explicitly export the inferred TypeScript type (e.g., `export type AreaConnection = z.infer<typeof AreaConnectionSchema>;`) if other modules need to reference the shape.
+- **The Data Pipeline is Explicit:** Creating a new JSON registry (like `areas.json`) is not automatically detected. You must explicitly update `src/core/loader.ts` to `fetch()` the new file and attach it to the `CampaignData` object.
+- **GameState Refactoring Cascades:** Changing the shape of the global `GameState` (e.g., swapping depths for Area IDs) touches almost every subsystem (save/load, rendering, UI, main loop, map systems). Rely on the strict TypeScript compiler (`tsc --noEmit`) to systematically hunt down and fix these cascading breaks rather than guessing where they are.
