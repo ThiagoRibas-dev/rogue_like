@@ -1,4 +1,4 @@
-# Project Milestones: Rogue-like Template
+# Project Milestones: Rogue-like
 
 This document outlines the high-level roadmap for the project, organizing our progression from a basic moving character to a fully modular, extensible roguelike with a robust engine.
 
@@ -139,3 +139,54 @@ Overhaul the user interface to support robust UX models and dynamic layouts base
 - [x] Implement **Accessibility as a Core System** (UI/Font scaling, contrast modes, disable animations).
 - [x] Build an **Input Rebinding Menu** to customize keyboard controls.
 - [x] Update the new game flow to include the campaign selection screen.
+
+---
+
+# 🚀 Phase 3: Deep Narrative & Advanced Systems
+Transitioning from a flat simulation into a world with causal narrative depth, supported by highly scalable architecture.
+
+## ⚪ Milestone 14: Stabilization & Polish
+Ensure the foundation is rock-solid and balanced before introducing massive systemic complexity.
+- [ ] **Audit Combat Math**: Normalize HP, damage scaling, and status effect scaling to ensure mid-to-late game viability.
+- [ ] **RTwP Robustness**: Implement strict error boundaries and fallback states in the Real-Time loop to prevent silent soft-locks during complex interactions.
+- [ ] **UI Edge Cases**: Refine floating combat text, tooltips, and log grouping to gracefully handle dozens of simultaneous events (e.g., AoE explosions).
+
+## ⚪ Milestone 15: Core Architecture (Commands & Tags)
+Low-risk, high-reward refactoring to support combinatorial depth.
+- [ ] **The Command Pattern**: Define a formal `Action` interface (e.g., `execute(state, entityId): ActionResult`). Crucially, Actions must emit structured `Events` to form a unified event ledger.
+- [ ] **Migrate Intents**: Refactor `applyIntentWithCost` and the massive `switch` statement into discrete, self-contained Action objects (e.g., `WalkAction`, `AttackAction`).
+- [ ] **Tags Component**: Add a `TagsComponent` to entities and `AreaTags` to maps for semantic descriptors (e.g., `["undead", "fire_aligned"]`, `["forest", "surface"]`).
+- [ ] **Traits Component**: Add a `TraitsComponent` for mechanical modifiers (e.g., `Regeneration`, `Fragile`).
+- [ ] **System Integration**: Update `getEffectiveStats()` and AI behaviors to dynamically query Traits and Tags instead of hardcoded component checks.
+
+## ⚪ Milestone 16: World Interconnectivity & Biomes
+Move away from a strict vertical dungeon descent into an interconnected "overworld" of distinct zones.
+- [ ] **Area Data Model**: Rename internal concepts of "Floor" and "Level" to "Area" or "Zone" within the `GameState`.
+- [ ] **Biome Generators**: Update Map Generation to select `ROT.Map` algorithms dynamically based on Area tags (e.g., `Cellular` for wild/forests, `BSP` for urban/villages).
+- [ ] **Contextual Spawns**: Modify `spawnWeights` to filter the global entity/item pools by the Area's semantic tags.
+- [ ] **Lateral Transitions**: Add `EdgeTransitionComponent` and `PortalComponent` to handle walking off the map or entering buildings.
+- [ ] **Entity Migration**: Extend the existing stair-transition `migratingEntities` logic to seamlessly move the player's party through these new lateral portals.
+- [ ] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
+
+## ⚪ Milestone 17: Persistent Entities & Relationships
+The missing prerequisite for procedural narrative: entities that exist and act outside the player's immediate vicinity.
+- [ ] **Global Persistence**: Extract unique/named NPCs into a global `PersistentEntities` map on `GameState` that survives regardless of the active floor.
+- [ ] **Sleep/Wake Pipeline**: Build logic that syncs persistent NPCs into the active ECS arrays when the player enters their Area, and packages them back out when the player leaves.
+- [ ] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
+- [ ] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
+
+## ⚪ Milestone 18: The Social Layer (Conversations & Quests)
+Build the foundational UI and logic for interacting with persistent NPCs, ensuring the player has a way to engage with the world's inhabitants before villains start scheming.
+- [ ] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
+- [ ] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
+- [ ] **Dynamic Quests**: Implement logic for friendly NPCs to procedurally generate and assign missions (e.g., retrieve item, slay monster) directly to the player.
+- [ ] **Quest Journal UI**: Build a dedicated interface panel for the player to track active, failed, and completed quests.
+- [ ] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Factions, Traits, Locations) directly within the dialogue and quest UIs.
+
+## ⚪ Milestone 19: The Adversarial Layer (Schemes & Investigation)
+Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
+- [ ] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
+- [ ] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.
+- [ ] **Scheme Simulator**: Build the background system that hooks directly into the `ROT.Scheduler.Speed` (decoupled from player input) to advance villain goals and dispatch missions across Areas.
+- [ ] **Clue Generation**: Mechanically drop physical evidence or generate witness memories whenever a mission executes (emitting structured `ClueEvents`).
+- [ ] **Investigation Board UI**: Build a "conspiracy board" UI engineered as a filtered view of the global *Event Ledger*, allowing the player to naturally review discovered clues and expose active schemes.

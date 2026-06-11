@@ -152,3 +152,6 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Decision**: When building scalable architectures (like our Intents/Actions system), avoid writing centralized "routing" logic (massive `switch` or `if/else` trees) that determines how a piece of data behaves based on its type. Instead, encode meta-properties directly into the data shape (e.g., adding `isImmediate: true` directly to an Intent interface). 
 - **Rationale**: This respects the Open-Closed Principle, allowing new data types to be added without modifying the core engine loops.
 
+### Token Pools over O(N) Verification (The "Bag" Pattern)
+- **Decision**: When enforcing global limits (e.g., "spawn a maximum of 1 Unique Boss" or "only 3 Elite Guards per level"), do not run an O(N) loop over all existing entities to count them at query time. Instead, initialize a stateful data structure (a "bag" or "deck") containing tokens representing the allowed spawns. When an entity is spawned, its token is popped from the pool.
+- **Rationale**: Pre-structuring the data avoids expensive loops during gameplay. If an entity's token is not in the bag, it physically cannot be drawn, providing 100% reliable limit enforcement for free. This elegantly handles both Uniques (N=1) and Extinction mechanics (N=50) with the exact same logic.
