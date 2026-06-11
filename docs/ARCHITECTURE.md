@@ -136,8 +136,18 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Rationale**: Function closures cannot be serialized or safely synced over a network. Data objects can be trivially serialized for save/load (M7) and ultimately moved out of TypeScript into JSON/YAML configuration files for Modding (M9).
 
 ### Entity Ownership and Foreign Keys
-- **Decision**: The ECS flattens the entity hierarchy. Components (like `InventoryComponent` or `EquipmentComponent`) do not "contain" other entities; they only store their `EntityId` (effectively a foreign key). When migrating an entity between distinct state boundaries (e.g., transitioning between map floors), the engine must manually traverse and package these owned "child" entities.
+- **Decision**: The ECS flattens the entity hierarchy. Components (like `InventoryComponent` or `EquipmentComponent`) do not "contain" other entities; they only store their `EntityId` (effectively a foreign key). When migrating an entity between distinct state boundaries, the engine must manually traverse and package these owned "child" entities.
 - **Rationale**: If we fail to resolve these foreign keys during a transition, the parent entity arrives in the new state holding IDs for items that were left behind in the previous state's arrays, resulting in soft-locks or missing components.
+
+### Areas and Transitions
+The game world is divided into distinct "Areas", which can be procedurally generated dungeons or static, hand-crafted hubs.
+The `GameState` tracks the `currentAreaId`, while inactive areas are serialized into an `areas` map. When the player uses a transition portal, the current ECS state is packed into cold storage, and the target area is unpacked (or generated) and brought into the active ECS.
+
+### Persistent Entities (Sleep/Wake Pipeline)
+To allow certain entities (like named NPCs) to persist and maintain state (such as health, inventory, or memories) when the player is not in their area, the engine uses a Sleep/Wake pipeline:
+1. **Sleep Phase:** When unloading an Area, any entity with a `PersistentComponent` is saved into a global `persistentEntities` pool on the `GameState`, rather than the Area's local storage.
+2. **Wake Phase:** When loading an Area, the system checks the `persistentEntities` pool for any entities mapped to the incoming `targetAreaId`. Those entities are pulled from the pool and re-injected into the active ECS.
+This ensures that persistent NPCs don't get trapped in a specific Area's serialized state and can potentially migrate between areas without breaking data integrity.
 
 ### Composable AI Behavior Pipeline
 - **Decision**: AI logic is split into discrete, pure functions (behaviors like `hunt`, `flee`, `ranged`). Entities receive an `AIProfileId` referencing a data-driven list of behaviors. During an entity's turn, the pipeline evaluates these behaviors in priority order until one returns an executable `Intent`.

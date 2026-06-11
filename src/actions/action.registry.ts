@@ -81,6 +81,15 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
         success: false
       };
     }
+    case IntentType.ToggleFactions: {
+      const nextUiModeFactions = state.uiMode === UIMode.Game ? UIMode.Factions : UIMode.Game;
+      const factionsPaused =
+        state.engineMode === EngineMode.RTwP ? nextUiModeFactions !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiModeFactions, rtwpState: { ...state.rtwpState, paused: factionsPaused } },
+        success: false
+      };
+    }
     case IntentType.ToggleSettings: {
       const isGameStarted = state.entities.length > 0;
       const defaultMode = isGameStarted ? UIMode.Game : UIMode.MainMenu;

@@ -184,7 +184,14 @@ export const EntityTemplateSchema = z.object({
   equipmentSlots: z.array(EquipmentSlotEnum).optional(),
   faction: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  traits: z.array(z.string()).optional()
+  traits: z.array(z.string()).optional(),
+  persistent: z.boolean().optional(),
+  memory: z
+    .object({
+      factionStandings: z.record(z.string(), z.number().int()).optional(),
+      grudges: z.array(z.string()).optional()
+    })
+    .optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 

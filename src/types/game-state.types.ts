@@ -22,7 +22,8 @@ export const enum UIMode {
   Game = 'game',
   Inventory = 'inventory',
   GameOver = 'game_over',
-  Settings = 'settings'
+  Settings = 'settings',
+  Factions = 'factions'
 }
 
 /**
@@ -92,6 +93,14 @@ export interface AreaData {
 }
 
 /**
+ * Data associated with an entity stored in global persistence, disconnected from the active Area.
+ */
+export interface PersistentEntityRecord {
+  readonly areaId: string;
+  readonly components: ReadonlyArray<Component>;
+}
+
+/**
  * Immutable shape of the global game state.
  */
 export interface GameState {
@@ -107,6 +116,7 @@ export interface GameState {
   readonly events: ReadonlyArray<GameEvent>;
   readonly currentAreaId: string;
   readonly areas: ReadonlyMap<string, AreaData>;
+  readonly persistentEntities: ReadonlyMap<EntityId, PersistentEntityRecord>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
   readonly isGameOver: boolean;
   /**
@@ -153,6 +163,14 @@ export interface SerializedAreaData {
 }
 
 /**
+ * Shape of PersistentEntityRecord when serialized.
+ */
+export interface SerializedPersistentEntityRecord {
+  readonly areaId: string;
+  readonly components: ReadonlyArray<Component>;
+}
+
+/**
  * Shape of GameState when serialized to JSON.
  */
 export interface SerializedGameState {
@@ -165,6 +183,7 @@ export interface SerializedGameState {
   readonly messages: ReadonlyArray<LogMessage>;
   readonly currentAreaId: string;
   readonly areas: ReadonlyArray<[string, SerializedAreaData]>;
+  readonly persistentEntities: ReadonlyArray<[EntityId, SerializedPersistentEntityRecord]>;
   readonly isGameOver: boolean;
   readonly uiMode: UIMode;
   readonly identifiedItems: ReadonlyArray<string>;

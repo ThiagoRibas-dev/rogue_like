@@ -168,22 +168,29 @@ Move away from a strict vertical dungeon descent into an interconnected "overwor
 - [x] **Entity Migration**: Extend the existing stair-transition `migratingEntities` logic to seamlessly move the player's party through these new lateral portals.
 - [x] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
 
-## ⚪ Milestone 17: Persistent Entities & Relationships
+## 🟢 Milestone 17: Persistent Entities & Relationships
 The missing prerequisite for procedural narrative: entities that exist and act outside the player's immediate vicinity.
-- [ ] **Global Persistence**: Extract unique/named NPCs into a global `PersistentEntities` map on `GameState` that survives regardless of the active floor.
-- [ ] **Sleep/Wake Pipeline**: Build logic that syncs persistent NPCs into the active ECS arrays when the player enters their Area, and packages them back out when the player leaves.
-- [ ] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
-- [ ] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
+- [x] **Global Persistence**: Extract unique/named NPCs into a global `PersistentEntities` map on `GameState` that survives regardless of the active floor.
+- [x] **Sleep/Wake Pipeline**: Build logic that syncs persistent NPCs into the active ECS arrays when the player enters their Area, and packages them back out when the player leaves.
+- [x] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
+- [x] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
 
-## ⚪ Milestone 18: The Social Layer (Conversations & Quests)
-Build the foundational UI and logic for interacting with persistent NPCs, ensuring the player has a way to engage with the world's inhabitants before villains start scheming.
+### ⚪ Milestone 18: Component-Driven Combat Pipeline
+**Goal:** Transition combat resolution from a monolithic intent handler to a true ECS pipeline, setting the stage for AoE, DoTs, and environmental hazards.
+- [ ] **Damage Components:** Introduce `DamageComponent` to represent incoming damage events.
+- [ ] **Damage System:** Build `damage.system.ts` to process `DamageComponents`, reducing HP, applying on-hit effects, and emitting floating text.
+- [ ] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
+- [ ] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
+
+### ⚪ Milestone 19: The Social Layer
+**Goal:** Introduce dialogue, quests, and rich interaction menus.
 - [ ] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
 - [ ] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
 - [ ] **Dynamic Quests**: Implement logic for friendly NPCs to procedurally generate and assign missions (e.g., retrieve item, slay monster) directly to the player.
 - [ ] **Quest Journal UI**: Build a dedicated interface panel for the player to track active, failed, and completed quests.
 - [ ] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Factions, Traits, Locations) directly within the dialogue and quest UIs.
 
-## ⚪ Milestone 19: The Adversarial Layer (Schemes & Investigation)
+## ⚪ Milestone 20: The Adversarial Layer (Schemes & Investigation)
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
 - [ ] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
 - [ ] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.

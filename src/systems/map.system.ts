@@ -137,22 +137,35 @@ export function processChangeAreaIntent(
     });
   }
 
-  // Pack and save the current floor (excluding migrating entities)
+  // Pack and save the current floor (excluding migrating entities and persistent entities)
   const savedEntityIds = state.entities.filter((id) => !migratingEntities.has(id));
+  const regularSavedEntityIds: EntityId[] = [];
+  const nextPersistentEntities = new Map(state.persistentEntities);
+
   const currentLevelComponents = new Map<EntityId, ReadonlyArray<Component>>();
+
   for (const id of savedEntityIds) {
     const comps = state.components.get(id);
-    if (comps !== undefined) {
+    if (comps === undefined) continue;
+
+    const isPersistent = comps.some((c) => c.type === ComponentType.Persistent);
+    if (isPersistent) {
+      nextPersistentEntities.set(id, {
+        areaId: state.currentAreaId,
+        components: comps
+      });
+    } else {
+      regularSavedEntityIds.push(id);
       currentLevelComponents.set(id, comps);
     }
   }
 
-  // Remove the migrating entities' positions from the saved index
+  // Remove the migrating & persistent entities' positions from the saved index
   const currentAreaData: AreaData = {
     map: state.map,
-    entities: savedEntityIds,
+    entities: regularSavedEntityIds,
     components: currentLevelComponents,
-    spatialIndex: updateSpatialIndex({ ...state, entities: savedEntityIds, components: currentLevelComponents })
+    spatialIndex: updateSpatialIndex({ ...state, entities: regularSavedEntityIds, components: currentLevelComponents })
       .spatialIndex
   };
 
@@ -272,6 +285,17 @@ export function processChangeAreaIntent(
     nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
   }
 
+  // Wake up persistent entities that belong to the target area
+  const nextEntitiesArray = [...nextEntities];
+  for (const [id, record] of nextPersistentEntities.entries()) {
+    if (record.areaId === targetAreaId) {
+      nextEntitiesArray.push(id);
+      nextComponents.set(id, record.components);
+      nextPersistentEntities.delete(id); // Remove from global cold storage, it's now in active ECS
+    }
+  }
+  nextEntities = nextEntitiesArray;
+
   // 3. Move Player and their owned items
   const migratingArray = Array.from(migratingEntities);
   nextEntities = [...migratingArray, ...nextEntities];
@@ -292,7 +316,8 @@ export function processChangeAreaIntent(
     components: nextComponents,
     map: targetMap,
     currentAreaId: targetAreaId,
-    areas: nextAreas
+    areas: nextAreas,
+    persistentEntities: nextPersistentEntities
   };
 
   nextState = updateSpatialIndex(nextState);

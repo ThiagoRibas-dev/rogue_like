@@ -20,7 +20,9 @@ export const enum ComponentType {
   Tags = 'Tags',
   Traits = 'Traits',
   Portal = 'Portal',
-  EdgeTransition = 'EdgeTransition'
+  EdgeTransition = 'EdgeTransition',
+  Persistent = 'Persistent',
+  Memory = 'Memory'
 }
 
 /**
@@ -242,6 +244,22 @@ export interface EdgeTransitionComponent {
 }
 
 /**
+ * Component marking an entity as persistent (survives map transitions).
+ */
+export interface PersistentComponent {
+  readonly type: ComponentType.Persistent;
+}
+
+/**
+ * Component tracking an entity's memories, grudges, and faction reputations.
+ */
+export interface MemoryComponent {
+  readonly type: ComponentType.Memory;
+  readonly factionStandings: Readonly<Record<string, number>>;
+  readonly grudges: ReadonlyArray<string>; // Array of stringified EntityIds
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -263,4 +281,6 @@ export type Component =
   | TagsComponent
   | TraitsComponent
   | PortalComponent
-  | EdgeTransitionComponent;
+  | EdgeTransitionComponent
+  | PersistentComponent
+  | MemoryComponent;

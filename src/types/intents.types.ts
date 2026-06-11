@@ -32,6 +32,7 @@ export const enum IntentType {
   EquipItem = 'EquipItem',
   UnequipItem = 'UnequipItem',
   ToggleInventory = 'ToggleInventory',
+  ToggleFactions = 'ToggleFactions',
   ToggleSettings = 'ToggleSettings',
   UseAbility = 'UseAbility',
   ToggleEngineMode = 'ToggleEngineMode',
@@ -203,6 +204,16 @@ export interface ToggleInventoryIntent {
 }
 
 /**
+ * Intent to toggle the factions panel open or closed.
+ * Does not consume a turn.
+ */
+export interface ToggleFactionsIntent {
+  readonly type: IntentType.ToggleFactions;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
  * Intent to toggle the settings panel open or closed.
  * Does not consume a turn.
  */
@@ -320,6 +331,7 @@ export type Intent =
   | EquipItemIntent
   | UnequipItemIntent
   | ToggleInventoryIntent
+  | ToggleFactionsIntent
   | ToggleSettingsIntent
   | UseAbilityIntent
   | ToggleEngineModeIntent

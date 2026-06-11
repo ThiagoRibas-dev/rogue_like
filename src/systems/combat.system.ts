@@ -134,6 +134,36 @@ export function processMeleeAttackIntent(
   }
 
   let nextState = state;
+  let nextComponents = new Map(state.components);
+  let stateModified = false;
+
+  const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as
+    | import('../types/components.types.ts').MemoryComponent
+    | undefined;
+  const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as
+    | import('../types/components.types.ts').FactionComponent
+    | undefined;
+
+  if (attackerMemory && defenderFaction) {
+    const currentStanding = attackerMemory.factionStandings[defenderFaction.factionId] ?? 0;
+    const nextMemory: import('../types/components.types.ts').MemoryComponent = {
+      ...attackerMemory,
+      factionStandings: {
+        ...attackerMemory.factionStandings,
+        [defenderFaction.factionId]: currentStanding - 5
+      }
+    };
+    const attackerComps = nextComponents.get(entityId) ?? [];
+    nextComponents.set(
+      entityId,
+      attackerComps.map((c) => (c.type === ComponentType.Memory ? nextMemory : c))
+    );
+    stateModified = true;
+  }
+
+  if (stateModified) {
+    nextState = { ...nextState, components: nextComponents };
+  }
 
   if (damage > 0) {
     nextState = addMessage(
@@ -148,7 +178,7 @@ export function processMeleeAttackIntent(
       hp: newHp
     };
 
-    const nextComponents = new Map(nextState.components);
+    nextComponents = new Map(nextState.components);
     const entityComponents = nextComponents.get(defenderId) ?? [];
     nextComponents.set(
       defenderId,

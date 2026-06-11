@@ -234,6 +234,20 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     nextState = addComponent(nextState, entityId, equipmentCmp);
   }
 
+  if (template.persistent) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Persistent
+    });
+  }
+
+  if (template.memory) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Memory,
+      factionStandings: template.memory.factionStandings ?? {},
+      grudges: template.memory.grudges ?? []
+    });
+  }
+
   if (templateId === 'player') {
     const player: PlayerComponent = { type: ComponentType.Player };
     nextState = addComponent(nextState, entityId, player);
@@ -243,6 +257,15 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
       satiation: 1000 // Start at Normal threshold
     } as const;
     nextState = addComponent(nextState, entityId, hungerCmp);
+
+    // Player automatically gets a Memory component for tracking faction standing
+    if (!template.memory) {
+      nextState = addComponent(nextState, entityId, {
+        type: ComponentType.Memory,
+        factionStandings: {},
+        grudges: []
+      });
+    }
   }
 
   return [nextState, entityId];

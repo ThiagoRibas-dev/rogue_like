@@ -35,7 +35,8 @@ import {
   initUITooltips,
   applySettingsToDOM,
   renderSettingsMenu,
-  populateCampaignList
+  populateCampaignList,
+  renderFactionsPanel
 } from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
@@ -53,7 +54,8 @@ import {
   createToggleRotatedAction,
   createToggle3DAction,
   createSetZoomLevelAction,
-  createToggleSettingsAction
+  createToggleSettingsAction,
+  createToggleFactionsAction
 } from './actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
@@ -126,6 +128,7 @@ let state: GameState = {
   events: [],
   currentAreaId: defaultCampaign.rules.map.startingAreaId,
   areas: new Map(),
+  persistentEntities: new Map(),
   spatialIndex: new Map(),
   isGameOver: false,
   uiMode: UIMode.MainMenu,
@@ -210,6 +213,7 @@ async function startNewGame(campaignId: string) {
     messages: [],
     currentAreaId: state.campaign.rules.map.startingAreaId,
     areas: new Map(),
+    persistentEntities: new Map(),
     identifiedItems: new Set(),
     itemUnidentifiedNames,
     visualEffects: [],
@@ -540,6 +544,7 @@ onStateChange((newState: GameState) => {
   renderRTwPControls(newState);
   renderViewControls(newState);
   renderSettingsMenu(newState);
+  renderFactionsPanel(newState);
 });
 
 // Initialize HUD display values and pass the initial state
@@ -581,11 +586,20 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   const isInventoryOpen = currentState.uiMode === UIMode.Inventory;
 
   const isSettingsOpen = currentState.uiMode === UIMode.Settings;
+  const isFactionsOpen = currentState.uiMode === UIMode.Factions;
 
   if (isSettingsOpen) {
     if (event.key === 'Escape') {
       event.preventDefault();
       queuePlayerIntent(createToggleSettingsAction(playerEntityId));
+    }
+    return;
+  }
+
+  if (isFactionsOpen) {
+    if (event.key === 'Escape' || isAction(event, 'factions')) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleFactionsAction(playerEntityId));
     }
     return;
   }
@@ -681,6 +695,12 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   if (isAction(event, 'inventory')) {
     event.preventDefault();
     queuePlayerIntent(createToggleInventoryAction(playerEntityId));
+    return;
+  }
+
+  if (isAction(event, 'factions')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleFactionsAction(playerEntityId));
     return;
   }
 

@@ -1,4 +1,5 @@
 import {
+  type EntityId,
   type GameState,
   type AreaData,
   type SerializedGameState,
@@ -54,6 +55,18 @@ export function saveGame(state: GameState): void {
     }
   );
 
+  const serializedPersistentEntities: Array<
+    [EntityId, import('../types/game-state.types.ts').SerializedPersistentEntityRecord]
+  > = Array.from(state.persistentEntities.entries()).map(([id, record]) => {
+    return [
+      id,
+      {
+        areaId: record.areaId,
+        components: record.components
+      }
+    ];
+  });
+
   const serializedState: SerializedGameState = {
     campaignId: state.campaignId,
     entities: state.entities,
@@ -64,6 +77,7 @@ export function saveGame(state: GameState): void {
     messages: state.messages,
     currentAreaId: state.currentAreaId,
     areas: serializedAreas,
+    persistentEntities: serializedPersistentEntities,
     isGameOver: state.isGameOver,
     uiMode: state.uiMode,
     identifiedItems: Array.from(state.identifiedItems),
@@ -109,6 +123,19 @@ export async function loadGame(): Promise<GameState | null> {
       });
     }
 
+    const rehydratedPersistentEntities = new Map<
+      EntityId,
+      import('../types/game-state.types.ts').PersistentEntityRecord
+    >();
+    if (sState.persistentEntities) {
+      for (const [id, record] of sState.persistentEntities) {
+        rehydratedPersistentEntities.set(id, {
+          areaId: record.areaId,
+          components: record.components
+        });
+      }
+    }
+
     const stateWithoutIndex: GameState = {
       campaignId,
       campaign,
@@ -121,6 +148,7 @@ export async function loadGame(): Promise<GameState | null> {
       events: [], // Events are transient per-turn, so we start with empty on load
       currentAreaId: sState.currentAreaId,
       areas: rehydratedAreas,
+      persistentEntities: rehydratedPersistentEntities,
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
       uiMode: sState.uiMode,

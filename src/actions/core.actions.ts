@@ -10,7 +10,8 @@ import {
   type ToggleRotatedIntent,
   type Toggle3DIntent,
   type SetZoomLevelIntent,
-  type ToggleSettingsIntent
+  type ToggleSettingsIntent,
+  type ToggleFactionsIntent
 } from '../types/intents.types.ts';
 
 /**
@@ -127,6 +128,17 @@ export function createSetZoomLevelAction(entityId: EntityId, zoomDelta: number):
 export function createToggleSettingsAction(entityId: EntityId): ToggleSettingsIntent {
   return {
     type: IntentType.ToggleSettings,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle factions intent.
+ */
+export function createToggleFactionsAction(entityId: EntityId): ToggleFactionsIntent {
+  return {
+    type: IntentType.ToggleFactions,
     entityId,
     isImmediate: true
   };
