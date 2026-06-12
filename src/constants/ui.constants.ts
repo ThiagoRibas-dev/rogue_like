@@ -4,7 +4,8 @@
 export const enum UITooltipType {
   Item = 'item',
   Status = 'status',
-  Stat = 'stat'
+  Stat = 'stat',
+  Entity = 'entity'
 }
 
 /**

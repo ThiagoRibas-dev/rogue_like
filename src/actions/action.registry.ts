@@ -23,6 +23,12 @@ import {
   processMoveTargetIntent,
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
+import {
+  processCloseDialogueIntent,
+  processSelectDialogueOptionIntent,
+  processStartDialogueIntent
+} from './dialogue.actions.ts';
+import { processToggleQuestsIntent } from './core.actions.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
@@ -228,6 +234,15 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
         success: false
       };
     }
+
+    case IntentType.StartDialogue:
+      return processStartDialogueIntent(state, intent);
+    case IntentType.SelectDialogueOption:
+      return processSelectDialogueOptionIntent(state, intent);
+    case IntentType.CloseDialogue:
+      return processCloseDialogueIntent(state, intent);
+    case IntentType.ToggleQuests:
+      return processToggleQuestsIntent(state, intent);
 
     default:
       return assertNever(intent);

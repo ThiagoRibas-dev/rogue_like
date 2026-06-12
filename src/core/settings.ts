@@ -13,7 +13,8 @@ export type ActionType =
   | 'debug_reveal_map'
   | 'debug_god_mode'
   | 'debug_spawn_entity'
-  | 'factions';
+  | 'factions'
+  | 'quests';
 
 export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
@@ -49,7 +50,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     debug_reveal_map: ['r'],
     debug_god_mode: ['o'],
     debug_spawn_entity: ['e'],
-    factions: ['c']
+    factions: ['c'],
+    quests: ['q']
   },
   visualFeedback: {
     showDamageNumbers: true,

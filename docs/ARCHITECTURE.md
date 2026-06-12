@@ -48,6 +48,14 @@ We use a low-overhead, framework-free ECS:
 - **Components** are pure data objects (TS interfaces) with no methods. They are stored in a `ReadonlyMap<EntityId, ReadonlyArray<Component>>` within the global `GameState`.
 - **Systems** are pure functions that query components, process game state changes, and return new state.
 
+### 4. Event Routing Buckets
+Rather than having global Event Listeners or looping `O(N)` queries every frame (e.g., checking all quests when an entity dies), we rely on cached inverted indexes (buckets) stored directly on the related components (e.g., `QuestLogComponent.activeTriggers`).
+*Decision:* This turns an `O(Quests * Objectives)` operation into an `O(1)` map lookup during high-frequency combat events, isolating the performance cost only to the moment a quest is granted or completed.
+
+### 5. Strict Seed Determinism
+The game relies entirely on a shared `ROT.RNG` instance and strict global counters (`nextEntityId`, `nextQuestId`).
+*Decision:* No system is permitted to use `Math.random()` or `Date.now()`, even for string ID generation. This guarantees that any two players with the same seed and input sequence will experience the exact same game state.
+
 ### Map Generation & FOV
 - **Generator**: Uses `ROT.Map.Digger` wrapped in `src/map/generator.ts` to create standard room-and-corridor layouts.
 - **FOV**: Uses `ROT.FOV.PreciseShadowcasting` wrapped in `src/map/fov.ts` to calculate light and visible cells based on wall transparency.
@@ -85,6 +93,13 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Faction Matrix**: Hostility is determined by looking up `FactionId`s in a `HOSTILITY_MATRIX`, replacing hardcoded "player vs monster" logic to allow infighting and neutral NPCs.
 - **Line of Sight & Cooldowns**: AI modules utilize the FOV system (`computeFOV`) to ensure they only attack visible targets, and the `AIComponent` statefully tracks ability cooldowns to prevent spell spam.
 
+### Dialogue Engine & The Social Layer
+- **Data-Driven Dialogues**: Dialogues are defined as JSON trees (`DialogueTreeSchema`), mapping nodes and branching options. This decouples conversation logic from code, allowing rich interactions via simple configuration files.
+- **Conditional Gating**: Dialogue options dynamically evaluate conditions against the NPC's `MemoryComponent` (e.g., faction standing, grudges) or global state to determine availability.
+- **Event Emission**: Selecting dialogue options dispatches configurable effects or generic `emit_event` actions, fully integrating conversations into the event-driven ECS without tight coupling.
+- **Declarative Quests**: Quests are data-driven structures with multiple observable objectives (e.g., kill X monsters, talk to Y NPC). Progress is tracked via a `QuestLogComponent`.
+- **Event Hook Integration**: Subsystems (like combat/death) emit generic events that the `quest.system.ts` listens to, ensuring that objectives are updated without tightly coupling combat to quest logic.
+
 ### Save & Persistence
 - **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.
 - **Inactive Levels**: Non-active floors are stored in a compressed/serialized format within the `GameState` and swapped back into active ECS arrays upon level transitions.
@@ -96,6 +111,18 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ---
 
 ## 4. Decision Log
+
+### State Mutability vs ECS Design
+- **Decision**: Components are stored in a `ReadonlyMap<EntityId, ReadonlyArray<Component>>`. Systems clone the map and then replace only the arrays for entities that changed.
+- **Rationale**: The `GameState` must be strictly immutable, but replacing the entire components map on every turn is extremely expensive. This offers a middle ground between pure immutability and performance viability.
+
+### Event Routing Buckets
+- **Decision**: Rather than having global Event Listeners or looping `O(N)` queries every frame (e.g., checking all quests when an entity dies), we rely on cached inverted indexes (buckets) stored directly on the related components (e.g., `QuestLogComponent.activeTriggers`).
+- **Rationale**: This turns an `O(Quests * Objectives)` operation into an `O(1)` map lookup during high-frequency combat events, isolating the performance cost only to the moment a quest is granted or completed.
+
+### Strict Seed Determinism
+- **Decision**: The game relies entirely on a shared `ROT.RNG` instance and strict global counters (`nextEntityId`, `nextQuestId`). No system is permitted to use `Math.random()` or `Date.now()`, even for string ID generation.
+- **Rationale**: This guarantees that any two players with the same seed and input sequence will experience the exact same game state, which is a foundational requirement for traditional roguelikes.
 
 ### Flat Array for Tile Map
 - **Decision**: We store the map's tile grid in a single flat array (`Tile[]`) rather than a 2D array (`Tile[][]`).

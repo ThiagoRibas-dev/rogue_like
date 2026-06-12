@@ -23,6 +23,8 @@ export const enum ComponentType {
   EdgeTransition = 'EdgeTransition',
   Persistent = 'Persistent',
   Memory = 'Memory',
+  QuestLog = 'QuestLog',
+  Template = 'Template',
   Damage = 'Damage',
   Death = 'Death'
 }
@@ -253,12 +255,39 @@ export interface PersistentComponent {
 }
 
 /**
+ * Stores the original ID of the template from which this entity was spawned.
+ */
+export interface TemplateComponent {
+  readonly type: ComponentType.Template;
+  readonly templateId: string;
+}
+
+/**
  * Component tracking an entity's memories, grudges, and faction reputations.
  */
 export interface MemoryComponent {
   readonly type: ComponentType.Memory;
-  readonly factionStandings: Readonly<Record<string, number>>;
-  readonly grudges: ReadonlyArray<string>; // Array of stringified EntityIds
+  readonly grudges: ReadonlyArray<string>;
+  readonly factionStandings: Record<string, number>;
+  readonly facts: ReadonlyArray<string>;
+}
+
+/**
+ * Represents the state of a single quest.
+ */
+export interface QuestState {
+  readonly questId: string;
+  readonly status: 'active' | 'completed' | 'failed';
+  readonly objectiveProgress: Record<string, number>;
+}
+
+/**
+ * Tracks active and completed quests for an entity (usually the player).
+ */
+export interface QuestLogComponent {
+  readonly type: ComponentType.QuestLog;
+  readonly quests: Readonly<Record<string, QuestState>>;
+  readonly activeTriggers?: Readonly<Record<string, ReadonlyArray<string>>>;
 }
 
 export interface DamageInstance {
@@ -308,6 +337,8 @@ export type Component =
   | PortalComponent
   | EdgeTransitionComponent
   | PersistentComponent
+  | TemplateComponent
   | MemoryComponent
+  | QuestLogComponent
   | DamageComponent
   | DeathComponent;

@@ -36,7 +36,9 @@ import {
   applySettingsToDOM,
   renderSettingsMenu,
   populateCampaignList,
-  renderFactionsPanel
+  renderFactionsPanel,
+  renderDialoguePanel,
+  renderQuestJournal
 } from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
@@ -55,7 +57,8 @@ import {
   createToggle3DAction,
   createSetZoomLevelAction,
   createToggleSettingsAction,
-  createToggleFactionsAction
+  createToggleFactionsAction,
+  createToggleQuestsAction
 } from './actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
@@ -124,6 +127,8 @@ let state: GameState = {
   map: { width: defaultCampaign.rules.map.width, height: defaultCampaign.rules.map.height, tiles: [] },
   nextEntityId: 1,
   nextItemInstanceId: 1,
+  nextQuestId: 1,
+  dynamicQuests: {},
   messages: [],
   events: [],
   currentAreaId: defaultCampaign.rules.map.startingAreaId,
@@ -556,6 +561,8 @@ onStateChange((newState: GameState) => {
   renderViewControls(newState);
   renderSettingsMenu(newState);
   renderFactionsPanel(newState);
+  renderDialoguePanel(newState);
+  renderQuestJournal(newState);
 });
 
 // Initialize HUD display values and pass the initial state
@@ -598,6 +605,7 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
 
   const isSettingsOpen = currentState.uiMode === UIMode.Settings;
   const isFactionsOpen = currentState.uiMode === UIMode.Factions;
+  const isQuestsOpen = currentState.uiMode === UIMode.Quests;
 
   if (isSettingsOpen) {
     if (event.key === 'Escape') {
@@ -611,6 +619,14 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape' || isAction(event, 'factions')) {
       event.preventDefault();
       queuePlayerIntent(createToggleFactionsAction(playerEntityId));
+    }
+    return;
+  }
+
+  if (isQuestsOpen) {
+    if (event.key === 'Escape' || isAction(event, 'quests')) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleQuestsAction(playerEntityId));
     }
     return;
   }
@@ -712,6 +728,12 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   if (isAction(event, 'factions')) {
     event.preventDefault();
     queuePlayerIntent(createToggleFactionsAction(playerEntityId));
+    return;
+  }
+
+  if (isAction(event, 'quests')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleQuestsAction(playerEntityId));
     return;
   }
 

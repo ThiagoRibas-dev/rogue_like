@@ -26,7 +26,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       tilesRes,
       factionsRes,
       aiRes,
-      areasRes
+      areasRes,
+      dialoguesRes,
+      questsRes,
+      questTemplatesRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -39,7 +42,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/tiles.json`),
       fetch(`${basePath}/factions.json`),
       fetch(`${basePath}/ai.json`),
-      fetch(`${basePath}/areas.json`)
+      fetch(`${basePath}/areas.json`),
+      fetch(`${basePath}/dialogues.json`),
+      fetch(`${basePath}/quests.json`),
+      fetch(`${basePath}/quest_templates.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -55,7 +61,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       tilesRes,
       factionsRes,
       aiRes,
-      areasRes
+      areasRes,
+      dialoguesRes,
+      questsRes,
+      questTemplatesRes
     ];
 
     for (const res of responses) {
@@ -64,21 +73,39 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       }
     }
 
-    const [manifest, rules, theme, advancement, areas, items, effects, entities, status, tiles, factions, ai] =
-      await Promise.all([
-        manifestRes.json(),
-        rulesRes.json(),
-        themeRes.json(),
-        advancementRes.json(),
-        areasRes.json(),
-        itemsRes.json(),
-        effectsRes.json(),
-        entitiesRes.json(),
-        statusRes.json(),
-        tilesRes.json(),
-        factionsRes.json(),
-        aiRes.json()
-      ]);
+    const [
+      manifest,
+      rules,
+      theme,
+      advancement,
+      areas,
+      items,
+      effects,
+      entities,
+      status,
+      tiles,
+      factions,
+      ai,
+      dialogues,
+      quests,
+      questTemplates
+    ] = await Promise.all([
+      manifestRes.json(),
+      rulesRes.json(),
+      themeRes.json(),
+      advancementRes.json(),
+      areasRes.json(),
+      itemsRes.json(),
+      effectsRes.json(),
+      entitiesRes.json(),
+      statusRes.json(),
+      tilesRes.json(),
+      factionsRes.json(),
+      aiRes.json(),
+      dialoguesRes.json(),
+      questsRes.json(),
+      questTemplatesRes.json()
+    ]);
 
     const data = {
       manifest,
@@ -92,7 +119,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       status,
       tiles,
       factions,
-      ai
+      ai,
+      dialogues,
+      quests,
+      questTemplates
     };
 
     const result = CampaignDataSchema.safeParse(data);

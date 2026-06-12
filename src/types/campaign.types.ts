@@ -1,4 +1,7 @@
 import { z } from 'zod';
+import { DialogueTreeSchema } from './dialogue.types.ts';
+
+import { QuestSchema } from './quests.types.ts';
 
 // ==========================================
 // 1. MANIFEST & REGISTRY
@@ -190,9 +193,11 @@ export const EntityTemplateSchema = z.object({
   memory: z
     .object({
       factionStandings: z.record(z.string(), z.number().int()).optional(),
+      facts: z.array(z.string()).optional(),
       grudges: z.array(z.string()).optional()
     })
-    .optional()
+    .optional(),
+  dialogueId: z.string().optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
@@ -294,6 +299,19 @@ export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 // ==========================================
 // THE MEGA CAMPAIGN DATA SCHEMA
 // ==========================================
+export const ProceduralQuestTemplateSchema = z.object({
+  id: z.string(),
+  titleTemplate: z.string(),
+  descriptionTemplate: z.string(),
+  objectiveType: z.enum(['kill', 'gather', 'explore', 'talk']),
+  targetTags: z.array(z.string()).optional(),
+  targetFactions: z.array(z.string()).optional(),
+  amountRange: z.tuple([z.number(), z.number()]),
+  rewardXpMultiplier: z.number()
+});
+
+export type ProceduralQuestTemplate = z.infer<typeof ProceduralQuestTemplateSchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -306,6 +324,9 @@ export const CampaignDataSchema = z.object({
   status: z.record(z.string(), StatusEffectDefinitionSchema),
   tiles: z.record(z.string(), TileDefinitionSchema),
   factions: FactionMatrixSchema,
-  ai: z.record(z.string(), AIProfileSchema)
+  ai: z.record(z.string(), AIProfileSchema),
+  dialogues: z.record(z.string(), DialogueTreeSchema),
+  quests: z.record(z.string(), QuestSchema),
+  questTemplates: z.record(z.string(), ProceduralQuestTemplateSchema)
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;

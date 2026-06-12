@@ -5,6 +5,7 @@ import { getComponent, removeEntity } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
+import { processQuestEvent } from './quest.system.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -94,6 +95,16 @@ export function processDeathSystem(state: GameState): GameState {
       // Grant XP to killer if applicable
       if (deathComp.killerId !== undefined && fighter && fighter.xpGiven > 0) {
         nextState = grantXp(nextState, deathComp.killerId, fighter.xpGiven);
+
+        // Notify quest system if player killed it
+        if (deathComp.killerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
+          const templateComp = getComponent(nextState, entityId, ComponentType.Template) as
+            | import('../types/components.types.ts').TemplateComponent
+            | undefined;
+          if (templateComp) {
+            nextState = processQuestEvent(nextState, 'kill', templateComp.templateId, 1);
+          }
+        }
       }
 
       // Strip the dead entity from the world

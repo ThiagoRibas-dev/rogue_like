@@ -1,4 +1,4 @@
-import type { EntityId } from '../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import {
   IntentType,
   type MoveIntent,
@@ -11,7 +11,8 @@ import {
   type Toggle3DIntent,
   type SetZoomLevelIntent,
   type ToggleSettingsIntent,
-  type ToggleFactionsIntent
+  type ToggleFactionsIntent,
+  type ToggleQuestsIntent
 } from '../types/intents.types.ts';
 
 /**
@@ -141,5 +142,26 @@ export function createToggleFactionsAction(entityId: EntityId): ToggleFactionsIn
     type: IntentType.ToggleFactions,
     entityId,
     isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle quests intent.
+ */
+export function createToggleQuestsAction(entityId: EntityId): ToggleQuestsIntent {
+  return {
+    type: IntentType.ToggleQuests,
+    entityId,
+    isImmediate: true
+  };
+}
+
+export function processToggleQuestsIntent(state: GameState, _intent: ToggleQuestsIntent) {
+  return {
+    state: {
+      ...state,
+      uiMode: state.uiMode === UIMode.Quests ? UIMode.Game : UIMode.Quests
+    },
+    success: true
   };
 }

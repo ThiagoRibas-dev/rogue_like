@@ -182,13 +182,14 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
 - [x] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
 
-### ⚪ Milestone 19: The Social Layer
+### 🟢 Milestone 19: The Social Layer
 **Goal:** Introduce dialogue, quests, and rich interaction menus.
-- [ ] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
-- [ ] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
-- [ ] **Dynamic Quests**: Implement logic for friendly NPCs to procedurally generate and assign missions (e.g., retrieve item, slay monster) directly to the player.
-- [ ] **Quest Journal UI**: Build a dedicated interface panel for the player to track active, failed, and completed quests.
-- [ ] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Factions, Traits, Locations) directly within the dialogue and quest UIs.
+- [x] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
+- [x] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
+- [x] **Declarative Quests**: Implement logic for friendly NPCs to assign missions (e.g., retrieve item, slay monster) directly to the player using JSON-defined quests.
+- [x] **Quest Journal UI**: Build a dedicated interface panel for the player to track active, failed, and completed quests.
+- [x] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Entities, Items, Status Effects) directly within the dialogue and quest UIs.
+- [x] **Procedural Quests**: Implement a dynamic quest generator that builds randomized missions at runtime from JSON templates (e.g., bounties), storing them in the GameState.
 
 ## ⚪ Milestone 20: The Adversarial Layer (Schemes & Investigation)
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.

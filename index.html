@@ -280,6 +280,18 @@
         </div>
       </div>
 
+      <div id="dialogue-overlay" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 600px; text-align: left;">
+          <h1 class="modal-title" style="margin-bottom: 16px; color: #f1c40f;">NPC Name</h1>
+          <div id="dialogue-content" style="margin-bottom: 24px;">
+            <!-- dialogue text here -->
+          </div>
+          <div id="dialogue-options" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- buttons here -->
+          </div>
+        </div>
+      </div>
+
       <div id="game-over-screen" class="modal-overlay hidden">
         <div class="modal-content">
           <h1 class="modal-title dead-title">YOU DIED</h1>
@@ -292,7 +304,18 @@
           </div>
         </div>
       </div>
-
+      
+      <!-- Quest Panel Overlay -->
+      <div id="quest-panel" class="hidden fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-900 border-2 border-yellow-600 rounded-lg p-6 min-w-[500px] z-[60] shadow-2xl flex flex-col text-white">
+        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+          <h2 class="text-xl font-bold font-serif text-yellow-500">Quest Journal</h2>
+          <span class="text-xs text-gray-500">Press 'J' or 'Esc' to close</span>
+        </div>
+        <div id="quest-content" class="flex-grow overflow-y-auto max-h-[60vh] text-sm">
+          <!-- Quests injected here -->
+        </div>
+      </div>
+      
     </div> <!-- /app -->
     <script type="module" src="/src/main.ts"></script>
   </body>

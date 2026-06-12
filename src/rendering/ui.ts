@@ -9,6 +9,8 @@ import { getEffectiveStats } from '../utils/stats.ts';
 import { getHungerState } from '../systems/hunger.system.ts';
 import { UITooltipType, UIStatId } from '../constants/ui.constants.ts';
 import { getSettings } from '../core/settings.ts';
+export { renderQuestJournal } from './ui/quest.ui.ts';
+export { renderDialoguePanel } from './ui/dialogue.ui.ts';
 
 /**
  * Renders the GameState's messages to the DOM.
@@ -560,6 +562,17 @@ export function initUITooltips(getState: () => GameState | undefined): void {
         contentHTML += `<div class="ui-tooltip-header" style="color: ${def.color ?? 'inherit'}">${def.name}</div>`;
         if (def.description) {
           contentHTML += `<div class="ui-tooltip-desc">${def.description}</div>`;
+        }
+      }
+    } else if (type === UITooltipType.Entity && id) {
+      const def = state.campaign.entities[id];
+      if (def) {
+        contentHTML += `<div class="ui-tooltip-header" style="color: ${def.fg ?? 'inherit'}">${def.name}</div>`;
+        contentHTML += `<div class="ui-tooltip-desc">A creature of the world.</div>`;
+        if (def.fighter) {
+          contentHTML += `<div class="ui-tooltip-stat"><span>HP</span><span>${def.fighter.maxHp}</span></div>`;
+          contentHTML += `<div class="ui-tooltip-stat"><span>Attack</span><span>${def.fighter.attack}</span></div>`;
+          contentHTML += `<div class="ui-tooltip-stat"><span>Defense</span><span>${def.fighter.defense}</span></div>`;
         }
       }
     } else if (type === UITooltipType.Stat && id) {

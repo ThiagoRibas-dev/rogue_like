@@ -1,5 +1,6 @@
 import type { Component } from './components.types.ts';
 import type { CampaignData } from './campaign.types.ts';
+import type { Quest } from './quests.types.ts';
 import type { Intent } from './intents.types.ts';
 import type { GameEvent } from './events.types.ts';
 
@@ -23,7 +24,9 @@ export const enum UIMode {
   Inventory = 'inventory',
   GameOver = 'game_over',
   Settings = 'settings',
-  Factions = 'factions'
+  Factions = 'factions',
+  Dialogue = 'dialogue',
+  Quests = 'quests'
 }
 
 /**
@@ -106,12 +109,15 @@ export interface PersistentEntityRecord {
 export interface GameState {
   readonly campaignId: string;
   readonly campaign: CampaignData;
+  readonly dynamicQuests: Readonly<Record<string, Quest>>;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
   readonly map: GameMap;
   readonly nextEntityId: number;
   /** Counter used to generate unique ItemInstanceIds for new item entities. */
   readonly nextItemInstanceId: number;
+  /** Counter used to generate unique dynamic quest IDs. */
+  readonly nextQuestId: number;
   readonly messages: ReadonlyArray<LogMessage>;
   readonly events: ReadonlyArray<GameEvent>;
   readonly currentAreaId: string;
@@ -137,6 +143,13 @@ export interface GameState {
         readonly active: boolean;
         readonly x: number;
         readonly y: number;
+      }
+    | undefined;
+  readonly activeDialogue?:
+    | {
+        readonly treeId: string;
+        readonly currentNodeId: string;
+        readonly npcEntityId: EntityId;
       }
     | undefined;
   readonly identifiedItems: ReadonlySet<string>;
@@ -175,17 +188,26 @@ export interface SerializedPersistentEntityRecord {
  */
 export interface SerializedGameState {
   readonly campaignId: string;
+  readonly dynamicQuests: Readonly<Record<string, Quest>>;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
   readonly map: GameMap;
   readonly nextEntityId: number;
   readonly nextItemInstanceId: number;
+  readonly nextQuestId: number;
   readonly messages: ReadonlyArray<LogMessage>;
   readonly currentAreaId: string;
   readonly areas: ReadonlyArray<[string, SerializedAreaData]>;
   readonly persistentEntities: ReadonlyArray<[EntityId, SerializedPersistentEntityRecord]>;
   readonly isGameOver: boolean;
   readonly uiMode: UIMode;
+  readonly activeDialogue?:
+    | {
+        readonly treeId: string;
+        readonly currentNodeId: string;
+        readonly npcEntityId: number;
+      }
+    | undefined;
   readonly identifiedItems: ReadonlyArray<string>;
   readonly itemUnidentifiedNames: ReadonlyArray<[string, string]>;
   readonly engineMode: EngineMode;

@@ -42,7 +42,11 @@ export const enum IntentType {
   MoveInspect = 'MoveInspect',
   ToggleRotated = 'ToggleRotated',
   Toggle3D = 'Toggle3D',
-  SetZoomLevel = 'SetZoomLevel'
+  SetZoomLevel = 'SetZoomLevel',
+  StartDialogue = 'StartDialogue',
+  SelectDialogueOption = 'SelectDialogueOption',
+  CloseDialogue = 'CloseDialogue',
+  ToggleQuests = 'ToggleQuests'
 }
 
 /**
@@ -214,6 +218,16 @@ export interface ToggleFactionsIntent {
 }
 
 /**
+ * Intent to toggle the quests panel open or closed.
+ * Does not consume a turn.
+ */
+export interface ToggleQuestsIntent {
+  readonly type: IntentType.ToggleQuests;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
  * Intent to toggle the settings panel open or closed.
  * Does not consume a turn.
  */
@@ -311,6 +325,35 @@ export interface SetZoomLevelIntent {
 }
 
 /**
+ * Intent to start a dialogue with an NPC.
+ */
+export interface StartDialogueIntent {
+  readonly type: IntentType.StartDialogue;
+  readonly entityId: EntityId;
+  readonly targetId: EntityId;
+  readonly dialogueId: string;
+}
+
+/**
+ * Intent to select a dialogue option in the active dialogue tree.
+ */
+export interface SelectDialogueOptionIntent {
+  readonly type: IntentType.SelectDialogueOption;
+  readonly entityId: EntityId;
+  readonly optionId: string;
+  readonly isImmediate: true;
+}
+
+/**
+ * Intent to close the currently active dialogue.
+ */
+export interface CloseDialogueIntent {
+  readonly type: IntentType.CloseDialogue;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
  * Discriminated union of all possible Intents.
  */
 export type Intent =
@@ -332,6 +375,7 @@ export type Intent =
   | UnequipItemIntent
   | ToggleInventoryIntent
   | ToggleFactionsIntent
+  | ToggleQuestsIntent
   | ToggleSettingsIntent
   | UseAbilityIntent
   | ToggleEngineModeIntent
@@ -341,4 +385,7 @@ export type Intent =
   | MoveInspectIntent
   | ToggleRotatedIntent
   | Toggle3DIntent
-  | SetZoomLevelIntent;
+  | SetZoomLevelIntent
+  | StartDialogueIntent
+  | SelectDialogueOptionIntent
+  | CloseDialogueIntent;

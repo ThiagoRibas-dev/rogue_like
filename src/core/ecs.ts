@@ -10,9 +10,11 @@ import {
   type ItemComponent,
   type InventoryComponent,
   type EquipmentComponent,
+  type QuestLogComponent,
   toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents.types.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -151,6 +153,7 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
   };
 
   nextState = addComponent(nextState, entityId, pos);
+  nextState = addComponent(nextState, entityId, { type: ComponentType.Template, templateId });
 
   if (templateId !== 'hidden_trap') {
     nextState = addComponent(nextState, entityId, render);
@@ -244,7 +247,22 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Memory,
       factionStandings: template.memory.factionStandings ?? {},
-      grudges: template.memory.grudges ?? []
+      grudges: template.memory.grudges ?? [],
+      facts: template.memory.facts ?? []
+    });
+  }
+
+  if (template.dialogueId) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Interactable,
+      intents: [
+        {
+          type: IntentType.StartDialogue,
+          entityId: -1 as unknown as EntityId,
+          targetId: entityId,
+          dialogueId: template.dialogueId
+        } as import('../types/intents.types.ts').StartDialogueIntent
+      ]
     });
   }
 
@@ -263,9 +281,17 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
       nextState = addComponent(nextState, entityId, {
         type: ComponentType.Memory,
         factionStandings: {},
-        grudges: []
+        grudges: [],
+        facts: []
       });
     }
+
+    // Player automatically gets a QuestLog
+    const questLog: QuestLogComponent = {
+      type: ComponentType.QuestLog,
+      quests: {}
+    };
+    nextState = addComponent(nextState, entityId, questLog);
   }
 
   return [nextState, entityId];

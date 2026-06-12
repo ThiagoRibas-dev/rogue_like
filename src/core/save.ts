@@ -74,6 +74,8 @@ export function saveGame(state: GameState): void {
     map: state.map,
     nextEntityId: state.nextEntityId,
     nextItemInstanceId: state.nextItemInstanceId,
+    nextQuestId: state.nextQuestId,
+    dynamicQuests: state.dynamicQuests,
     messages: state.messages,
     currentAreaId: state.currentAreaId,
     areas: serializedAreas,
@@ -144,6 +146,8 @@ export async function loadGame(): Promise<GameState | null> {
       map: sState.map,
       nextEntityId: sState.nextEntityId,
       nextItemInstanceId: sState.nextItemInstanceId,
+      nextQuestId: sState.nextQuestId ?? 1, // Fallback for old saves
+      dynamicQuests: sState.dynamicQuests ?? {},
       messages: sState.messages,
       events: [], // Events are transient per-turn, so we start with empty on load
       currentAreaId: sState.currentAreaId,
