@@ -1,5 +1,4 @@
 import { getComponent, removeEntity, addComponent } from '../core/ecs.ts';
-import { removeActor } from '../core/scheduler.ts';
 import {
   ComponentType,
   type FighterComponent,
@@ -7,12 +6,10 @@ import {
   type ItemComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
-import { UIMode } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
-import { deleteSave } from '../core/save.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -54,7 +51,11 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         userComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
       );
 
-      const msg = effectDef.message.replace('{item}', itemName).replace('{value}', String(healed));
+      const targetName = getComponent(state, userId, ComponentType.Player) !== undefined ? 'You' : 'Something';
+      const msg = effectDef.message
+        .replace('{item}', itemName)
+        .replace('{value}', String(healed))
+        .replace('{target}', targetName);
       return addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.CombatHit);
     }
 
@@ -91,32 +92,37 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
       const targetName = targetRenderable?.glyph ?? 'target';
 
-      const newHp = Math.max(0, targetFighter.hp - effectDef.value);
-      const nextFighter: FighterComponent = { ...targetFighter, hp: newHp };
-      const nextComponents = new Map(state.components);
-      const targetComps = nextComponents.get(nearestId) ?? [];
-      nextComponents.set(
-        nearestId,
-        targetComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-      );
-
       const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
-      let nextState = addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.CombatHit);
+      const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
 
-      if (newHp === 0) {
-        nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
-        const isPlayer = getComponent(nextState, nearestId, ComponentType.Player) !== undefined;
-        if (isPlayer) {
-          nextState = addMessage(nextState, `Game Over! You were slain by a spell.`, MessageLogCategory.CombatDeath);
-          nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
-          deleteSave();
-        } else {
-          nextState = removeEntity(nextState, nearestId);
-          removeActor(nearestId);
-        }
+      // Attach DamageComponent
+      const nextComponents = new Map(nextState.components);
+      const targetComps = nextComponents.get(nearestId) ?? [];
+      const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
+        | import('../types/components.types.ts').DamageComponent
+        | undefined;
+
+      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+        amount: effectDef.value,
+        sourceEntityId: userId,
+        tags: ['spell', 'magic']
+      };
+
+      if (existingDamageComp) {
+        const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
+        nextComponents.set(
+          nearestId,
+          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
+        );
+      } else {
+        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+          type: ComponentType.Damage,
+          instances: [damageInstance]
+        };
+        nextComponents.set(nearestId, [...targetComps, newDamageComp]);
       }
 
-      return nextState;
+      return { ...nextState, components: nextComponents };
     }
 
     case 'damage_area': {
@@ -139,35 +145,38 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
           const targetRenderable = getComponent(state, id, ComponentType.Renderable);
           const targetName = targetRenderable?.glyph ?? 'target';
           const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
-
           nextState = addMessage(nextState, msg, MessageLogCategory.CombatHit);
 
-          const newHp = Math.max(0, targetFighter.hp - effectDef.value);
-          const nextFighter: FighterComponent = { ...targetFighter, hp: newHp };
+          // Attach DamageComponent
           const nextComponents = new Map(nextState.components);
           const targetComps = nextComponents.get(id) ?? [];
-          nextComponents.set(
-            id,
-            targetComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-          );
-          nextState = { ...nextState, components: nextComponents };
+          const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
+            | import('../types/components.types.ts').DamageComponent
+            | undefined;
 
-          if (newHp === 0) {
-            nextState = addMessage(nextState, `${targetName} dies!`, MessageLogCategory.CombatDeath);
-            const isPlayer = getComponent(nextState, id, ComponentType.Player) !== undefined;
-            if (isPlayer) {
-              nextState = addMessage(
-                nextState,
-                `Game Over! You were slain by a spell.`,
-                MessageLogCategory.CombatDeath
-              );
-              nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
-              deleteSave();
-            } else {
-              nextState = removeEntity(nextState, id);
-              removeActor(id);
-            }
+          const damageInstance: import('../types/components.types.ts').DamageInstance = {
+            amount: effectDef.value,
+            sourceEntityId: userId,
+            tags: ['spell', 'magic', 'aoe']
+          };
+
+          if (existingDamageComp) {
+            const newDamageComp = {
+              ...existingDamageComp,
+              instances: [...existingDamageComp.instances, damageInstance]
+            };
+            nextComponents.set(
+              id,
+              targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
+            );
+          } else {
+            const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+              type: ComponentType.Damage,
+              instances: [damageInstance]
+            };
+            nextComponents.set(id, [...targetComps, newDamageComp]);
           }
+          nextState = { ...nextState, components: nextComponents };
         }
       }
 
@@ -206,7 +215,8 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         }
 
         const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
-        const targetName = targetRenderable?.glyph ?? 'target';
+        const isPlayer = getComponent(state, nearestId, ComponentType.Player) !== undefined;
+        const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
         const msg = effectDef.message.replace('{target}', targetName);
 
         let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
@@ -214,7 +224,11 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         return nextState;
       } else {
         // Apply to self
-        const msg = effectDef.message.replace('{item}', itemName);
+        const isPlayer = getComponent(state, userId, ComponentType.Player) !== undefined;
+        const targetName = isPlayer
+          ? 'You'
+          : (getComponent(state, userId, ComponentType.Renderable)?.glyph ?? 'Something');
+        const msg = effectDef.message.replace('{item}', itemName).replace('{target}', targetName);
         let nextState = addMessage(state, msg, MessageLogCategory.System);
         nextState = applyStatusEffect(nextState, userId, effectDef.statusId, effectDef.duration, userId);
         return nextState;
@@ -310,6 +324,12 @@ export function processUseItemIntent(
     (nextState.identifiedItems.has(def.id) ? def.name : nextState.itemUnidentifiedNames.get(def.id)) ??
     def.unidentifiedName ??
     def.name;
+
+  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+  const userName = isPlayer ? 'You' : (getComponent(state, entityId, ComponentType.Renderable)?.glyph ?? 'Something');
+  const verb = isPlayer ? 'use' : 'uses';
+  nextState = addMessage(nextState, `${userName} ${verb} the ${itemNameFinal}.`, MessageLogCategory.System);
+
   nextState = applyItemEffect(nextState, entityId, def.consumable.effectId, itemNameFinal);
 
   // Remove item from inventory
@@ -352,7 +372,14 @@ export function processUseAbilityIntent(
   state: GameState,
   intent: import('../types/intents.types.ts').UseAbilityIntent
 ): { state: GameState; success: boolean } {
-  let nextState = applyItemEffect(state, intent.entityId, intent.effectId, intent.abilityName);
+  const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+  const userName = isPlayer
+    ? 'You'
+    : (getComponent(state, intent.entityId, ComponentType.Renderable)?.glyph ?? 'Something');
+  const verb = isPlayer ? 'cast' : 'casts';
+  let nextState = addMessage(state, `${userName} ${verb} ${intent.abilityName}.`, MessageLogCategory.System);
+
+  nextState = applyItemEffect(nextState, intent.entityId, intent.effectId, intent.abilityName);
 
   if (intent.cooldown && intent.cooldown > 0) {
     const aiComponent = getComponent(nextState, intent.entityId, ComponentType.AI);

@@ -127,7 +127,7 @@ Re-use the pure systems architecture to support an optional real-time mode along
 - [x] Add an **Engine Mode Toggle** (turn-based vs. RTwP) accessible from settings or the Main Menu.
 - [x] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
 
-## 🟢 Milestone 13: UI Architecture & UX Polish (Active)
+## 🟢 Milestone 13: UI Architecture & UX Polish (Complete)
 Overhaul the user interface to support robust UX models and dynamic layouts based on modern roguelike UI research.
 - [x] Create a **3-column layout** instead of 2 to support more UI panels.
 - [x] Expand the game to use the **browser's full viewport** instead of a constrained subset.
@@ -168,19 +168,19 @@ Move away from a strict vertical dungeon descent into an interconnected "overwor
 - [x] **Entity Migration**: Extend the existing stair-transition `migratingEntities` logic to seamlessly move the player's party through these new lateral portals.
 - [x] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
 
-## 🟢 Milestone 17: Persistent Entities & Relationships
+## 🟢 Milestone 17: Persistent Entities & Relationships (Complete)
 The missing prerequisite for procedural narrative: entities that exist and act outside the player's immediate vicinity.
 - [x] **Global Persistence**: Extract unique/named NPCs into a global `PersistentEntities` map on `GameState` that survives regardless of the active floor.
 - [x] **Sleep/Wake Pipeline**: Build logic that syncs persistent NPCs into the active ECS arrays when the player enters their Area, and packages them back out when the player leaves.
 - [x] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
 - [x] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
 
-### ⚪ Milestone 18: Component-Driven Combat Pipeline
+### 🟢 Milestone 18: Component-Driven Combat Pipeline (Complete)
 **Goal:** Transition combat resolution from a monolithic intent handler to a true ECS pipeline, setting the stage for AoE, DoTs, and environmental hazards.
-- [ ] **Damage Components:** Introduce `DamageComponent` to represent incoming damage events.
-- [ ] **Damage System:** Build `damage.system.ts` to process `DamageComponents`, reducing HP, applying on-hit effects, and emitting floating text.
-- [ ] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
-- [ ] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
+- [x] **Damage Components:** Introduce `DamageComponent` to represent incoming damage events.
+- [x] **Damage System:** Build `damage.system.ts` to process `DamageComponents`, reducing HP, applying on-hit effects, and emitting floating text.
+- [x] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
+- [x] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
 
 ### ⚪ Milestone 19: The Social Layer
 **Goal:** Introduce dialogue, quests, and rich interaction menus.

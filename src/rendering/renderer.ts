@@ -158,9 +158,7 @@ function renderVisualEffects(
   });
 
   // Calculate the rendered size of a single tile in pixels
-  const canvasRect = canvas.getBoundingClientRect();
-  const tileWidthPx = canvasRect.width / viewportW;
-  const tileHeightPx = canvasRect.height / viewportH;
+  const { tileWidthPx, tileHeightPx, offsetX, offsetY } = getTilePixelMetrics(canvas, viewportW, viewportH);
 
   for (const effect of state.visualEffects) {
     let el = document.getElementById(effect.id);
@@ -182,8 +180,8 @@ function renderVisualEffects(
     if (vx >= 0 && vx < viewportW && vy >= 0 && vy < viewportH) {
       el.style.display = 'block';
       // Center over the tile
-      const pxX = vx * tileWidthPx + tileWidthPx / 2;
-      const pxY = vy * tileHeightPx + tileHeightPx / 2;
+      const pxX = offsetX + vx * tileWidthPx + tileWidthPx / 2;
+      const pxY = offsetY + vy * tileHeightPx + tileHeightPx / 2;
       el.style.left = `${pxX}px`;
       el.style.top = `${pxY}px`;
     } else {
@@ -229,11 +227,9 @@ function renderInspectTooltip(
   if (tooltip && !state.is3D) {
     const canvas = display.getContainer() as HTMLCanvasElement | null;
     if (canvas) {
-      const canvasRect = canvas.getBoundingClientRect();
-      const tileWidthPx = canvasRect.width / viewportW;
-      const tileHeightPx = canvasRect.height / viewportH;
-      const pxX = vx * tileWidthPx + tileWidthPx;
-      const pxY = vy * tileHeightPx;
+      const { tileWidthPx, tileHeightPx, offsetX, offsetY } = getTilePixelMetrics(canvas, viewportW, viewportH);
+      const pxX = offsetX + vx * tileWidthPx + tileWidthPx;
+      const pxY = offsetY + vy * tileHeightPx;
       tooltip.style.left = `${pxX + 10}px`;
       tooltip.style.top = `${pxY}px`;
       tooltip.classList.remove('hidden');
@@ -363,4 +359,16 @@ function renderInspectTooltip(
     inspectContent.innerHTML = '';
     inspectContent.appendChild(fragment);
   }
+}
+
+/**
+ * Calculates the true rendering bounds of the canvas, compensating for 'object-fit: contain' letterboxing.
+ */
+function getTilePixelMetrics(canvas: HTMLCanvasElement, viewportW: number, viewportH: number) {
+  return {
+    tileWidthPx: canvas.clientWidth / viewportW,
+    tileHeightPx: canvas.clientHeight / viewportH,
+    offsetX: canvas.offsetLeft,
+    offsetY: canvas.offsetTop
+  };
 }

@@ -13,6 +13,8 @@ import { updateExploredTiles } from '../systems/map.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { processTriggers } from '../systems/trigger.system.ts';
+import { processDamageSystem } from '../systems/damage.system.ts';
+import { processDeathSystem } from '../systems/death.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -81,7 +83,10 @@ export function processTurn(entityId: EntityId): void {
     return;
   }
 
-  const stateAfterTick = processStatusEffectsTick(state, entityId);
+  let stateAfterTick = processStatusEffectsTick(state, entityId);
+  stateAfterTick = processDamageSystem(stateAfterTick);
+  stateAfterTick = processDeathSystem(stateAfterTick);
+
   if (stateAfterTick !== state) {
     updateState(stateAfterTick);
     state = stateAfterTick;
@@ -238,6 +243,10 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
       energyCost = Math.max(1, Math.round((energyCost * 100) / speed));
     }
   }
+
+  // Run the combat damage & death pipeline
+  nextState = processDamageSystem(nextState);
+  nextState = processDeathSystem(nextState);
 
   const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
 

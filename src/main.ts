@@ -340,9 +340,20 @@ document.getElementById('btn-campaign-back')?.addEventListener('click', () => {
   setGameState(state);
 });
 
-document.getElementById('btn-campaign-start')?.addEventListener('click', () => {
+document.getElementById('btn-campaign-start')?.addEventListener('click', (e) => {
   if (selectedCampaignId) {
-    startNewGame(selectedCampaignId);
+    const btn = e.target as HTMLButtonElement;
+    const originalText = btn.textContent;
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+
+    // Yield to browser to render the loading state
+    setTimeout(() => {
+      startNewGame(selectedCampaignId!).finally(() => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      });
+    }, 50);
   }
 });
 

@@ -8,6 +8,7 @@ import { coordToIndex } from '../utils/grid.ts';
 
 interface AbilityDef {
   readonly effectId: string;
+  readonly abilityName?: string;
   readonly range: number;
   readonly cooldown: number;
 }
@@ -73,7 +74,7 @@ export function spellBehavior(
             type: IntentType.UseAbility,
             entityId,
             effectId: ability.effectId,
-            abilityName: 'spell',
+            abilityName: ability.abilityName ?? 'spell',
             cooldown: ability.cooldown
           };
         }

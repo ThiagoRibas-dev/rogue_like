@@ -1,9 +1,7 @@
 import { ComponentType } from '../types/components.types.ts';
-import { type GameState, type EntityId, UIMode } from '../types/game-state.types.ts';
-import { getComponent, removeEntity } from '../core/ecs.ts';
-import { removeActor } from '../core/scheduler.ts';
+import { type GameState, type EntityId } from '../types/game-state.types.ts';
+import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { deleteSave } from '../core/save.ts';
 
 /**
  * Checks if the entity stepped on any triggers (like traps) and applies their effects.
@@ -50,43 +48,46 @@ export function processTriggers(state: GameState, entityId: EntityId): GameState
       nextState = { ...nextState, components: newCompsMap };
 
       const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
-      if (isPlayer) {
-        nextState = addMessage(nextState, 'You triggered a trap!', MessageLogCategory.System);
-      }
-
-      // Hardcoded flat damage for now to ensure stability
       const fighter = getComponent(nextState, entityId, ComponentType.Fighter);
       if (fighter) {
         const damage = 10;
-        const newHp = Math.max(0, fighter.hp - damage);
-        const nextFighter = { ...fighter, hp: newHp };
-
-        const finalComps = new Map(nextState.components);
-        const entityComps = finalComps.get(entityId) ?? [];
-        finalComps.set(
-          entityId,
-          entityComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-        );
-        nextState = { ...nextState, components: finalComps };
 
         const targetName = isPlayer ? 'You' : 'Something';
         nextState = addMessage(
           nextState,
-          `${targetName} takes ${damage} damage from the trap!`,
+          `${targetName} triggered a trap for ${damage} damage!`,
           MessageLogCategory.CombatHit
         );
 
-        if (newHp === 0) {
-          nextState = addMessage(nextState, `${targetName} dies from the trap!`, MessageLogCategory.CombatDeath);
-          if (isPlayer) {
-            nextState = addMessage(nextState, `Game Over! You were killed by a trap.`, MessageLogCategory.CombatDeath);
-            nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
-            deleteSave();
-          } else {
-            nextState = removeEntity(nextState, entityId);
-            removeActor(entityId);
-          }
+        // Attach DamageComponent to leverage the unified combat pipeline
+        const existingDamageComp = newCompsMap.get(entityId)?.find((c) => c.type === ComponentType.Damage) as
+          | import('../types/components.types.ts').DamageComponent
+          | undefined;
+
+        const damageInstance: import('../types/components.types.ts').DamageInstance = {
+          amount: damage,
+          sourceEntityId: id, // The trap entity is the source
+          tags: ['trap', 'physical']
+        };
+
+        const targetComps = newCompsMap.get(entityId) ?? [];
+        if (existingDamageComp) {
+          const newDamageComp = {
+            ...existingDamageComp,
+            instances: [...existingDamageComp.instances, damageInstance]
+          };
+          newCompsMap.set(
+            entityId,
+            targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
+          );
+        } else {
+          const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+            type: ComponentType.Damage,
+            instances: [damageInstance]
+          };
+          newCompsMap.set(entityId, [...targetComps, newDamageComp]);
         }
+        nextState = { ...nextState, components: newCompsMap };
       }
     }
   }

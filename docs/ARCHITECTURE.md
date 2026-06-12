@@ -70,6 +70,12 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Equipment & Stats**: Equipment modifies stats dynamically at query time via `getEffectiveStats()` and `getEffectiveCapacity()`, rather than mutating base values on `FighterComponent` or `InventoryComponent`.
 - **Item Effects**: Consumable effects are dispatched by `effects.system.ts` based on their declarative definitions.
 
+### Unified Combat Pipeline
+- **Damage Components**: All forms of damage (melee, traps, spells, environmental) inject a `DamageComponent` onto the target containing an array of `DamageInstance`s. These instances hold the `amount`, `sourceEntityId`, and semantic `tags` (e.g., `["spell", "lightning"]` or `["trap", "physical"]`).
+- **Damage System**: The `damage.system.ts` processes all instances across all entities. It aggregates damage, reduces HP, processes on-hit status effects, and generates floating combat text.
+- **Death System**: If `DamageSystem` reduces an entity's HP to 0, it attaches a `DeathComponent` storing the `killerId` and `causeOfDeath` (derived from tags). `death.system.ts` runs directly after, handling death messages, XP distribution, item dropping, and cleanup.
+- **Rationale**: This fully decouples the *cause* of damage from the *resolution* of damage, allowing traps, AI abilities, and items to simply emit a generic component rather than manually subtracting HP and managing Game Over states.
+
 ### Status Effects Engine
 - **Declarative Effects**: A declarative `StatusEffectDefinition` registry describes the effect behavior (duration, stat modifiers, per-turn damage/heal, and flags like `stunned` or `skipTurn`).
 - **Processing**: The `status-effect.system.ts` processes these ticks every turn, removing expired effects and modifying stats dynamically in conjunction with `getEffectiveStats()`.

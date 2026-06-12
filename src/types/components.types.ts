@@ -22,7 +22,9 @@ export const enum ComponentType {
   Portal = 'Portal',
   EdgeTransition = 'EdgeTransition',
   Persistent = 'Persistent',
-  Memory = 'Memory'
+  Memory = 'Memory',
+  Damage = 'Damage',
+  Death = 'Death'
 }
 
 /**
@@ -259,6 +261,29 @@ export interface MemoryComponent {
   readonly grudges: ReadonlyArray<string>; // Array of stringified EntityIds
 }
 
+export interface DamageInstance {
+  readonly amount: number;
+  readonly sourceEntityId?: EntityId | undefined;
+  readonly tags: ReadonlyArray<string>; // e.g. ['melee', 'physical'], ['spell', 'fire']
+}
+
+/**
+ * Component holding incoming damage events to be processed by the damage system.
+ */
+export interface DamageComponent {
+  readonly type: ComponentType.Damage;
+  readonly instances: ReadonlyArray<DamageInstance>;
+}
+
+/**
+ * Component marking an entity as dead, to be processed by the death system.
+ */
+export interface DeathComponent {
+  readonly type: ComponentType.Death;
+  readonly killerId?: EntityId | undefined;
+  readonly causeOfDeath?: string | undefined;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -283,4 +308,6 @@ export type Component =
   | PortalComponent
   | EdgeTransitionComponent
   | PersistentComponent
-  | MemoryComponent;
+  | MemoryComponent
+  | DamageComponent
+  | DeathComponent;

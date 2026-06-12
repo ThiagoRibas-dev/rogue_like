@@ -76,12 +76,14 @@
         "params": {
           "abilities": [
             {
-              "effectId": "scroll_confusion",
+              "effectId": "spell_confusion",
+              "abilityName": "Hex of Confusion",
               "range": 5,
               "cooldown": 10
             },
             {
-              "effectId": "damage_nearest_10",
+              "effectId": "spell_lightning",
+              "abilityName": "Lightning Bolt",
               "range": 8,
               "cooldown": 5
             }

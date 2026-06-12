@@ -1,17 +1,13 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { UIMode } from '../types/game-state.types.ts';
 import {
   ComponentType,
   type FighterComponent,
   type StatusEffectsComponent,
   type ActiveStatusEffect
 } from '../types/components.types.ts';
-import { getComponent, removeEntity } from '../core/ecs.ts';
+import { getComponent } from '../core/ecs.ts';
 
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { removeActor } from '../core/scheduler.ts';
-import { deleteSave } from '../core/save.ts';
-import { grantXp } from './combat.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 
 /**
@@ -72,49 +68,48 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
     const isGod = getComponent(nextState, entityId, ComponentType.GodMode) !== undefined;
     const actualDamage = isGod ? 0 : damageTaken;
 
-    let newHp = fighter.hp;
-    if (actualDamage > 0) {
-      newHp = Math.max(0, newHp - actualDamage);
-      nextState = addMessage(
-        nextState,
-        `${name} takes ${actualDamage} damage from status effects.`,
-        MessageLogCategory.CombatHit
-      );
-    }
-
-    if (healthGained > 0 && newHp > 0) {
+    if (healthGained > 0) {
       const stats = getEffectiveStats(nextState, entityId);
-      newHp = Math.min(stats.maxHp, newHp + healthGained);
+      const newHp = Math.min(stats.maxHp, fighter.hp + healthGained);
+      const nextFighter: FighterComponent = { ...fighter, hp: newHp };
+      const nextComponents = new Map(nextState.components);
+      const comps = nextComponents.get(entityId) ?? [];
+      nextComponents.set(
+        entityId,
+        comps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
+      );
+      nextState = { ...nextState, components: nextComponents };
     }
 
-    const nextFighter: FighterComponent = { ...fighter, hp: newHp };
-    const nextComponents = new Map(nextState.components);
-    const comps = nextComponents.get(entityId) ?? [];
-    nextComponents.set(
-      entityId,
-      comps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-    );
-    nextState = { ...nextState, components: nextComponents };
+    if (actualDamage > 0) {
+      nextState = addMessage(nextState, `${name} suffers from afflictions.`, MessageLogCategory.CombatHit);
 
-    if (newHp === 0) {
-      nextState = addMessage(nextState, `${name} dies from status effects!`, MessageLogCategory.CombatDeath);
+      const nextComponents = new Map(nextState.components);
+      const targetComps = nextComponents.get(entityId) ?? [];
+      const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
+        | import('../types/components.types.ts').DamageComponent
+        | undefined;
 
-      if (isPlayer) {
-        nextState = addMessage(
-          nextState,
-          `Game Over! You have succumbed to your afflictions.`,
-          MessageLogCategory.CombatDeath
+      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+        amount: actualDamage,
+        sourceEntityId: xpToGrant ? xpToGrant.source : undefined,
+        tags: ['status_effect', 'dot']
+      };
+
+      if (existingDamageComp) {
+        const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
+        nextComponents.set(
+          entityId,
+          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
         );
-        nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
-        deleteSave();
       } else {
-        nextState = removeEntity(nextState, entityId);
-        removeActor(entityId);
-
-        if (xpToGrant) {
-          nextState = grantXp(nextState, xpToGrant.source, xpToGrant.amount);
-        }
+        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+          type: ComponentType.Damage,
+          instances: [damageInstance]
+        };
+        nextComponents.set(entityId, [...targetComps, newDamageComp]);
       }
+      nextState = { ...nextState, components: nextComponents };
     }
   }
 

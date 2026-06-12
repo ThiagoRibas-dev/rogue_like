@@ -146,7 +146,8 @@ export const ItemEffectDefinitionSchema = z.object({
   radius: z.number().int().positive().optional(),
   statusId: z.string().optional(),
   duration: z.number().int().positive().optional(),
-  message: z.string()
+  message: z.string(),
+  tags: z.array(z.string()).optional()
 });
 export type ItemEffectDefinition = z.infer<typeof ItemEffectDefinitionSchema>;
 
