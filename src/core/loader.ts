@@ -29,7 +29,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       areasRes,
       dialoguesRes,
       questsRes,
-      questTemplatesRes
+      questTemplatesRes,
+      villainsRes,
+      schemesRes,
+      agreementsRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -45,7 +48,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/areas.json`),
       fetch(`${basePath}/dialogues.json`),
       fetch(`${basePath}/quests.json`),
-      fetch(`${basePath}/quest_templates.json`)
+      fetch(`${basePath}/quest_templates.json`),
+      fetch(`${basePath}/villains.json`),
+      fetch(`${basePath}/schemes.json`),
+      fetch(`${basePath}/agreements.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -64,7 +70,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       areasRes,
       dialoguesRes,
       questsRes,
-      questTemplatesRes
+      questTemplatesRes,
+      villainsRes,
+      schemesRes,
+      agreementsRes
     ];
 
     for (const res of responses) {
@@ -88,7 +97,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       ai,
       dialogues,
       quests,
-      questTemplates
+      questTemplates,
+      villains,
+      schemes,
+      agreements
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -104,7 +116,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       aiRes.json(),
       dialoguesRes.json(),
       questsRes.json(),
-      questTemplatesRes.json()
+      questTemplatesRes.json(),
+      villainsRes.json(),
+      schemesRes.json(),
+      agreementsRes.json()
     ]);
 
     const data = {
@@ -122,7 +137,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       ai,
       dialogues,
       quests,
-      questTemplates
+      questTemplates,
+      villains,
+      schemes,
+      agreements
     };
 
     const result = CampaignDataSchema.safeParse(data);

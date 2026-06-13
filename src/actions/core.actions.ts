@@ -12,7 +12,8 @@ import {
   type SetZoomLevelIntent,
   type ToggleSettingsIntent,
   type ToggleFactionsIntent,
-  type ToggleQuestsIntent
+  type ToggleQuestsIntent,
+  type ToggleInvestigationIntent
 } from '../types/intents.types.ts';
 
 /**
@@ -161,6 +162,27 @@ export function processToggleQuestsIntent(state: GameState, _intent: ToggleQuest
     state: {
       ...state,
       uiMode: state.uiMode === UIMode.Quests ? UIMode.Game : UIMode.Quests
+    },
+    success: true
+  };
+}
+
+/**
+ * Creates a toggle investigation intent.
+ */
+export function createToggleInvestigationAction(entityId: EntityId): ToggleInvestigationIntent {
+  return {
+    type: IntentType.ToggleInvestigation,
+    entityId,
+    isImmediate: true
+  };
+}
+
+export function processToggleInvestigationIntent(state: GameState, _intent: ToggleInvestigationIntent) {
+  return {
+    state: {
+      ...state,
+      uiMode: state.uiMode === UIMode.Investigation ? UIMode.Game : UIMode.Investigation
     },
     success: true
   };

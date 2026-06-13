@@ -100,6 +100,11 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Declarative Quests**: Quests are data-driven structures with multiple observable objectives (e.g., kill X monsters, talk to Y NPC). Progress is tracked via a `QuestLogComponent`.
 - **Event Hook Integration**: Subsystems (like combat/death) emit generic events that the `quest.system.ts` listens to, ensuring that objectives are updated without tightly coupling combat to quest logic.
 
+### The Adversarial Layer (Scheme Simulator)
+- **Background Execution**: The `scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue objectives and dispatch minions without requiring player input or proximity.
+- **Data-Driven Schemes**: Masterminds use JSON-defined `SchemeDefinition`s containing sequential phases and `AgreementDefinition`s to recruit minions.
+- **Investigation Ledger**: Global scheme state is decoupled from localized entities. As the player interferes with villainous agreements (e.g., defeating minions), the combat system drops randomized clues. `investigation.system.ts` processes these events to update the `investigation` object on `GameState`, which is then exposed to the player via the Investigation Board UI.
+
 ### Save & Persistence
 - **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.
 - **Inactive Levels**: Non-active floors are stored in a compressed/serialized format within the `GameState` and swapped back into active ECS arrays upon level transitions.

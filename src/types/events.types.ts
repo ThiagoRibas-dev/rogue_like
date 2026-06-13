@@ -12,7 +12,8 @@ export const enum GameEventType {
   ItemDropped = 'ItemDropped',
   ItemUsed = 'ItemUsed',
   ItemEquipped = 'ItemEquipped',
-  ItemUnequipped = 'ItemUnequipped'
+  ItemUnequipped = 'ItemUnequipped',
+  ClueDiscovered = 'ClueDiscovered'
 }
 
 export interface BaseGameEvent {
@@ -57,6 +58,13 @@ export interface ItemDroppedEvent extends BaseGameEvent {
   readonly itemId: EntityId;
 }
 
+export interface ClueDiscoveredEvent extends BaseGameEvent {
+  readonly type: GameEventType.ClueDiscovered;
+  readonly clueId: string;
+  readonly sourceEntityId: EntityId;
+  readonly implicatesEntityId?: EntityId | undefined;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -66,4 +74,5 @@ export type GameEvent =
   | EntityDiedEvent
   | EntityHealedEvent
   | ItemPickedUpEvent
-  | ItemDroppedEvent;
+  | ItemDroppedEvent
+  | ClueDiscoveredEvent;

@@ -1,0 +1,21 @@
+{
+  "bandit_uprising": {
+    "id": "bandit_uprising",
+    "villainArchetypeId": "bandit_king",
+    "phases": [
+      {
+        "requiredAgreements": 1,
+        "missionIntents": [
+          "scout_area"
+        ]
+      },
+      {
+        "requiredAgreements": 2,
+        "missionIntents": [
+          "raid_caravan",
+          "assassinate_guard"
+        ]
+      }
+    ]
+  }
+}

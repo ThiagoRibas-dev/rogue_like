@@ -89,7 +89,8 @@ export function saveGame(state: GameState): void {
     visualEffects: state.visualEffects,
     isRotated: state.isRotated,
     is3D: state.is3D,
-    zoomLevel: state.zoomLevel
+    zoomLevel: state.zoomLevel,
+    investigation: state.investigation
   };
 
   try {
@@ -164,7 +165,12 @@ export async function loadGame(): Promise<GameState | null> {
       isRotated: sState.isRotated || false,
       is3D: sState.is3D || false,
       zoomLevel: sState.zoomLevel ?? 1.0,
-      playerCommandQueue: []
+      playerCommandQueue: [],
+      investigation: sState.investigation ?? {
+        knownActors: [],
+        discoveredClues: [],
+        exposedAgreements: []
+      }
     };
 
     // Rebuild the spatial index for the active floor

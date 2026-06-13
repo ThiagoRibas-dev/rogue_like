@@ -191,10 +191,10 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Entities, Items, Status Effects) directly within the dialogue and quest UIs.
 - [x] **Procedural Quests**: Implement a dynamic quest generator that builds randomized missions at runtime from JSON templates (e.g., bounties), storing them in the GameState.
 
-## ⚪ Milestone 20: The Adversarial Layer (Schemes & Investigation)
+## 🟢 Milestone 20: The Adversarial Layer (Schemes & Investigation)
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
-- [ ] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
-- [ ] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.
-- [ ] **Scheme Simulator**: Build the background system that hooks directly into the `ROT.Scheduler.Speed` (decoupled from player input) to advance villain goals and dispatch missions across Areas.
-- [ ] **Clue Generation**: Mechanically drop physical evidence or generate witness memories whenever a mission executes (emitting structured `ClueEvents`).
-- [ ] **Investigation Board UI**: Build a "conspiracy board" UI engineered as a filtered view of the global *Event Ledger*, allowing the player to naturally review discovered clues and expose active schemes.
+- [x] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
+- [x] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.
+- [x] **Scheme Simulator**: Build the background system that hooks directly into the `ROT.Scheduler.Speed` (decoupled from player input) to advance villain goals and dispatch missions across Areas.
+- [x] **Clue Generation**: Mechanically drop physical evidence or generate witness memories whenever a mission executes (emitting structured `ClueEvents`).
+- [x] **Investigation Board UI**: Build a "conspiracy board" UI engineered as a filtered view of the global *Event Ledger*, allowing the player to naturally review discovered clues and expose active schemes.

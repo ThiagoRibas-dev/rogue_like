@@ -2,7 +2,7 @@
 
 ## 0. Golden Rules
 
-1. **Basics.** Prioritize specialized, built-in tools over console commands. Never commit or push to a git repository. Prioritize communication over code. Always keep task, checklists, and milestones tracking up to date after each step instead of updaging only after the whole task is complete. Never move on before the User gives the go-to.
+1. **Basics.** Prioritize specialized, built-in tools over console commands. Never commit or push to a git repository. Prioritize communication over code. Always keep task, checklists, and milestones tracking up to date after each step instead of only after the whole task is complete. Always look at existing artifacts when building a plan. Never move on before the User gives the go-to.
 2. **NEVER assume. ASK.** If a task is ambiguous, under-specified, or could be interpreted multiple ways, stop and ask clarifying questions or discuss the changes before writing any code. List your assumptions explicitly and ask the user to confirm. When dealing with a bug, show the analysis and a plan, then ask the user for feedback. Only implement it after the user gives the ok.
 3. **NEVER hallucinate APIs.** If you are unsure whether a function, method, class, or config option exists in ROT.js, Vite, or any dependency, say so. Do not invent plausible-sounding API calls. Refer to the documentation or ask the user to verify.
 4. **Push back and propose alternatives.** Do not blindly agree with the user. If a requested architecture, design, or query is flawed, misunderstood, over engineered, or outright wrong, point it out. Offer alternatives with arguments and comparisons. However, if the instructions are clear, comprehensive, and correct, execute them.

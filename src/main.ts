@@ -26,10 +26,10 @@ import {
 } from './core/settings.ts';
 import { addMessage, MessageLogCategory } from './systems/message.system.ts';
 import {
-  renderMessageLog,
   renderInventoryPanel,
-  renderPlayerStats,
   renderMenus,
+  renderMessageLog,
+  renderPlayerStats,
   renderRTwPControls,
   renderViewControls,
   initUITooltips,
@@ -37,8 +37,9 @@ import {
   renderSettingsMenu,
   populateCampaignList,
   renderFactionsPanel,
+  renderQuestJournal,
   renderDialoguePanel,
-  renderQuestJournal
+  renderInvestigationBoard
 } from './rendering/ui.ts';
 import { hasSaveGame, deleteSave, loadGame, getSaveData, setSaveData } from './core/save.ts';
 import { clearScheduler } from './core/scheduler.ts';
@@ -58,7 +59,8 @@ import {
   createSetZoomLevelAction,
   createToggleSettingsAction,
   createToggleFactionsAction,
-  createToggleQuestsAction
+  createToggleQuestsAction,
+  createToggleInvestigationAction
 } from './actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
@@ -145,7 +147,12 @@ let state: GameState = {
   isRotated: false,
   is3D: false,
   zoomLevel: 1.0,
-  playerCommandQueue: []
+  playerCommandQueue: [],
+  investigation: {
+    knownActors: [],
+    discoveredClues: [],
+    exposedAgreements: []
+  }
 };
 
 const POTION_DESCRIPTORS = [
@@ -225,13 +232,39 @@ async function startNewGame(campaignId: string) {
     isRotated: state.isRotated, // preserve setting
     is3D: state.is3D, // preserve setting
     zoomLevel: state.zoomLevel, // preserve setting
-    playerCommandQueue: []
+    playerCommandQueue: [],
+    investigation: {
+      knownActors: [],
+      discoveredClues: [],
+      exposedAgreements: []
+    }
   };
 
   // Spawn the player entity
   const [stateAfterPlayerSpawn, newPlayerEntityId] = spawnEntity(state, 'player', startPos.x, startPos.y);
   state = stateAfterPlayerSpawn;
   playerEntityId = newPlayerEntityId;
+
+  // Pre-seed the MVP Mastermind (Bandit King)
+  const mastermindId = state.nextEntityId as EntityId;
+  state = { ...state, nextEntityId: state.nextEntityId + 1 };
+  const schemeComp: import('./types/components.types.ts').SchemeComponent = {
+    type: ComponentType.Scheme,
+    schemeId: 'bandit_uprising',
+    currentPhase: 0,
+    activeMinions: []
+  };
+  const mastermindActor: import('./types/components.types.ts').ActorComponent = {
+    type: ComponentType.Actor,
+    speed: 100
+  };
+  state = {
+    ...state,
+    persistentEntities: new Map([
+      ...state.persistentEntities.entries(),
+      [mastermindId, { areaId: 'world', components: [schemeComp, mastermindActor] }]
+    ])
+  };
 
   // Spawn monsters in rooms
   for (let i = 1; i < rooms.length; i++) {
@@ -303,6 +336,13 @@ async function startNewGame(campaignId: string) {
     }
   }
 
+  // Also add persistent actors (like the Mastermind) to the scheduler
+  for (const [id, record] of state.persistentEntities.entries()) {
+    if (record.components.find((c) => c.type === ComponentType.Actor)) {
+      addActor(id);
+    }
+  }
+
   setGameState(state);
   startEngine();
 }
@@ -321,6 +361,12 @@ async function continueGame() {
     for (const id of state.entities) {
       const actor = getComponent(state, id, ComponentType.Actor);
       if (actor) {
+        addActor(id);
+      }
+    }
+
+    for (const [id, record] of state.persistentEntities.entries()) {
+      if (record.components.find((c) => c.type === ComponentType.Actor)) {
         addActor(id);
       }
     }
@@ -563,6 +609,7 @@ onStateChange((newState: GameState) => {
   renderFactionsPanel(newState);
   renderDialoguePanel(newState);
   renderQuestJournal(newState);
+  renderInvestigationBoard(newState);
 });
 
 // Initialize HUD display values and pass the initial state
@@ -606,6 +653,7 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   const isSettingsOpen = currentState.uiMode === UIMode.Settings;
   const isFactionsOpen = currentState.uiMode === UIMode.Factions;
   const isQuestsOpen = currentState.uiMode === UIMode.Quests;
+  const isInvestigationOpen = currentState.uiMode === UIMode.Investigation;
 
   if (isSettingsOpen) {
     if (event.key === 'Escape') {
@@ -627,6 +675,14 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape' || isAction(event, 'quests')) {
       event.preventDefault();
       queuePlayerIntent(createToggleQuestsAction(playerEntityId));
+    }
+    return;
+  }
+
+  if (isInvestigationOpen) {
+    if (event.key === 'Escape' || isAction(event, 'investigation')) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleInvestigationAction(playerEntityId));
     }
     return;
   }
@@ -734,6 +790,12 @@ window.addEventListener('keydown', (event: KeyboardEvent) => {
   if (isAction(event, 'quests')) {
     event.preventDefault();
     queuePlayerIntent(createToggleQuestsAction(playerEntityId));
+    return;
+  }
+
+  if (isAction(event, 'investigation')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleInvestigationAction(playerEntityId));
     return;
   }
 

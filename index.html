@@ -316,6 +316,32 @@
         </div>
       </div>
       
+      <!-- Investigation Board Overlay -->
+      <div id="investigation-overlay" class="modal-overlay hidden">
+        <div class="modal-content" style="max-width: 800px; display: flex; flex-direction: column; height: 80vh;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px;">
+            <h1 class="modal-title" style="margin: 0; color: #e74c3c;">Investigation Board</h1>
+            <span style="color: var(--text-dim); font-size: 0.8rem;">Press V or Esc to close.</span>
+          </div>
+          
+          <div style="display: flex; gap: 16px; flex: 1; min-height: 0;">
+            <!-- Suspects Panel -->
+            <div style="flex: 1; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
+              <div style="background: rgba(0,0,0,0.5); padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--text-color);">Known Suspects</div>
+              <div id="investigation-suspects" style="padding: 8px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left;">
+              </div>
+            </div>
+            
+            <!-- Clues Panel -->
+            <div style="flex: 1; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
+              <div style="background: rgba(0,0,0,0.5); padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--text-color);">Evidence & Clues</div>
+              <div id="investigation-clues" style="padding: 8px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left;">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
     </div> <!-- /app -->
     <script type="module" src="/src/main.ts"></script>
   </body>

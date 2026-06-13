@@ -15,6 +15,8 @@ import { coordToIndex } from '../utils/grid.ts';
 import { processTriggers } from '../systems/trigger.system.ts';
 import { processDamageSystem } from '../systems/damage.system.ts';
 import { processDeathSystem } from '../systems/death.system.ts';
+import { processSchemeTurn } from '../systems/scheme.system.ts';
+import { processInvestigationEvents } from '../systems/investigation.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -159,6 +161,25 @@ export function processTurn(entityId: EntityId): void {
       return;
     }
   } else {
+    // Scheme Simulator
+    if (getComponent(state, entityId, ComponentType.Scheme)) {
+      try {
+        const nextState = processSchemeTurn(state, entityId);
+        if (nextState !== state) {
+          updateState(nextState);
+        }
+
+        // Scheme actions take time relative to the mastermind's speed
+        const stats = getEffectiveStats(state, entityId);
+        const speed = Math.max(1, stats.speed);
+        setTurnDuration(Math.max(1, Math.round(10000 / speed)));
+      } catch (e) {
+        console.error(`Scheme Turn Error for ${entityId}:`, e);
+        setTurnDuration(100);
+      }
+      return;
+    }
+
     // AI Turn
     let aiTurnState = state;
     const aiComponent = getComponent(aiTurnState, entityId, ComponentType.AI);
@@ -252,6 +273,8 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 
   if (result.events && result.events.length > 0) {
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
+    nextState = processInvestigationEvents(nextState);
+
     return {
       ...finalResult,
       state: nextState,
@@ -259,7 +282,8 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
     };
   }
 
-  return finalResult;
+  nextState = processInvestigationEvents(nextState);
+  return { ...finalResult, state: nextState };
 }
 
 /**

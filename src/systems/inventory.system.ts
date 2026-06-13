@@ -2,6 +2,7 @@ import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type InventoryComponent, type EquipmentComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { GameEventType, type GameEvent } from '../types/events.types.ts';
 
 /**
  * Computes the effective inventory capacity for an entity by summing
@@ -42,9 +43,12 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
  * @param entityId The entity picking up the item.
  * @returns The updated GameState.
  */
-export function processPickUpIntent(state: GameState, entityId: EntityId): { state: GameState; success: boolean } {
+export function processPickUpIntent(
+  state: GameState,
+  entityId: EntityId
+): import('../types/intents.types.ts').ActionResult {
   const pos = getComponent(state, entityId, ComponentType.Position);
-  if (!pos) return { state, success: false };
+  if (!pos) return { state, success: false, energyCost: 0 };
 
   const key = `${pos.x},${pos.y}`;
   const entitiesAtTile = state.spatialIndex.get(key) ?? [];
@@ -59,22 +63,30 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): { sta
   }
 
   if (itemEntityId === undefined) {
-    return { state: addMessage(state, 'There is nothing here to pick up.', MessageLogCategory.System), success: false };
+    return {
+      state: addMessage(state, 'There is nothing here to pick up.', MessageLogCategory.System),
+      success: false,
+      energyCost: 0
+    };
   }
 
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
-  if (!inventory) return { state, success: false };
+  if (!inventory) return { state, success: false, energyCost: 0 };
 
   const effectiveCapacity = getEffectiveCapacity(state, entityId);
   if (inventory.items.length >= effectiveCapacity) {
-    return { state: addMessage(state, 'Your inventory is full!', MessageLogCategory.System), success: false };
+    return {
+      state: addMessage(state, 'Your inventory is full!', MessageLogCategory.System),
+      success: false,
+      energyCost: 0
+    };
   }
 
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return { state, success: false };
+  if (!itemComp) return { state, success: false, energyCost: 0 };
 
   const def = state.campaign.items[itemComp.itemId];
-  if (!def) return { state, success: false };
+  if (!def) return { state, success: false, energyCost: 0 };
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
@@ -111,13 +123,28 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): { sta
     }
   }
 
+  const clueComp = getComponent(stateWithNewComponents, itemEntityId, ComponentType.Clue) as
+    | import('../types/components.types.ts').ClueComponent
+    | undefined;
+  const events: GameEvent[] = [];
+  if (clueComp) {
+    events.push({
+      type: GameEventType.ClueDiscovered,
+      clueId: clueComp.clueId,
+      sourceEntityId: itemEntityId,
+      implicatesEntityId: clueComp.implicatesEntityId
+    });
+  }
+
   return {
     state: addMessage(
       { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
       `You pick up the ${itemName}.`,
       MessageLogCategory.System
     ),
-    success: true
+    success: true,
+    energyCost: 100, // ActionRegistry defaults
+    events
   };
 }
 

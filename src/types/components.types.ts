@@ -26,7 +26,10 @@ export const enum ComponentType {
   QuestLog = 'QuestLog',
   Template = 'Template',
   Damage = 'Damage',
-  Death = 'Death'
+  Death = 'Death',
+  Scheme = 'Scheme',
+  Agreement = 'Agreement',
+  Clue = 'Clue'
 }
 
 /**
@@ -313,6 +316,32 @@ export interface DeathComponent {
   readonly causeOfDeath?: string | undefined;
 }
 
+// ==========================================
+// ADVERSARIAL LAYER COMPONENTS
+// ==========================================
+
+export interface SchemeComponent {
+  readonly type: ComponentType.Scheme;
+  readonly schemeId: string;
+  readonly currentPhase: number;
+  readonly activeMinions: ReadonlyArray<EntityId>;
+  readonly schemeTargetId?: EntityId | undefined;
+}
+
+export interface AgreementComponent {
+  readonly type: ComponentType.Agreement;
+  readonly mastermindId: EntityId;
+  readonly agreementId: string;
+  readonly leverageUsed: 'money' | 'ideology' | 'coercion' | 'ego';
+}
+
+export interface ClueComponent {
+  readonly type: ComponentType.Clue;
+  readonly clueId: string;
+  readonly text: string;
+  readonly implicatesEntityId: EntityId;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -341,4 +370,7 @@ export type Component =
   | MemoryComponent
   | QuestLogComponent
   | DamageComponent
-  | DeathComponent;
+  | DeathComponent
+  | SchemeComponent
+  | AgreementComponent
+  | ClueComponent;

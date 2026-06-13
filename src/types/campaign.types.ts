@@ -297,6 +297,43 @@ export const AreaDefinitionSchema = z.object({
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 
 // ==========================================
+// 12. ADVERSARIAL LAYER (SCHEMES)
+// ==========================================
+export const LeverageTypeEnum = z.enum(['money', 'ideology', 'coercion', 'ego']);
+export type LeverageType = z.infer<typeof LeverageTypeEnum>;
+
+export const AgreementDefinitionSchema = z.object({
+  id: z.string(),
+  task: z.string(),
+  incriminatingWeight: z.number().int().positive(),
+  clueTemplates: z.array(z.string())
+});
+export type AgreementDefinition = z.infer<typeof AgreementDefinitionSchema>;
+
+export const VillainArchetypeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  goals: z.array(z.string()),
+  recruitmentPreferences: z.object({
+    targetTags: z.array(z.string()),
+    leverageWeight: z.record(LeverageTypeEnum, z.number())
+  })
+});
+export type VillainArchetype = z.infer<typeof VillainArchetypeSchema>;
+
+export const SchemeTemplateSchema = z.object({
+  id: z.string(),
+  villainArchetypeId: z.string(),
+  phases: z.array(
+    z.object({
+      requiredAgreements: z.number().int().nonnegative(),
+      missionIntents: z.array(z.string())
+    })
+  )
+});
+export type SchemeTemplate = z.infer<typeof SchemeTemplateSchema>;
+
+// ==========================================
 // THE MEGA CAMPAIGN DATA SCHEMA
 // ==========================================
 export const ProceduralQuestTemplateSchema = z.object({
@@ -327,6 +364,9 @@ export const CampaignDataSchema = z.object({
   ai: z.record(z.string(), AIProfileSchema),
   dialogues: z.record(z.string(), DialogueTreeSchema),
   quests: z.record(z.string(), QuestSchema),
-  questTemplates: z.record(z.string(), ProceduralQuestTemplateSchema)
+  questTemplates: z.record(z.string(), ProceduralQuestTemplateSchema),
+  villains: z.record(z.string(), VillainArchetypeSchema),
+  schemes: z.record(z.string(), SchemeTemplateSchema),
+  agreements: z.record(z.string(), AgreementDefinitionSchema)
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;

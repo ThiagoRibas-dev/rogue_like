@@ -11,6 +11,7 @@ import { UITooltipType, UIStatId } from '../constants/ui.constants.ts';
 import { getSettings } from '../core/settings.ts';
 export { renderQuestJournal } from './ui/quest.ui.ts';
 export { renderDialoguePanel } from './ui/dialogue.ui.ts';
+export { renderInvestigationBoard } from './ui/investigation.ui.ts';
 
 /**
  * Renders the GameState's messages to the DOM.

@@ -14,7 +14,8 @@ export type ActionType =
   | 'debug_god_mode'
   | 'debug_spawn_entity'
   | 'factions'
-  | 'quests';
+  | 'quests'
+  | 'investigation';
 
 export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
@@ -51,7 +52,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     debug_god_mode: ['o'],
     debug_spawn_entity: ['e'],
     factions: ['c'],
-    quests: ['q']
+    quests: ['q'],
+    investigation: ['v']
   },
   visualFeedback: {
     showDamageNumbers: true,

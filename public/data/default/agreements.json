@@ -1,0 +1,20 @@
+{
+  "raid_contract": {
+    "id": "raid_contract",
+    "task": "raid_caravan",
+    "incriminatingWeight": 10,
+    "clueTemplates": [
+      "found_payment_ledger",
+      "confession"
+    ]
+  },
+  "assassination_contract": {
+    "id": "assassination_contract",
+    "task": "assassinate_guard",
+    "incriminatingWeight": 20,
+    "clueTemplates": [
+      "found_orders",
+      "confession"
+    ]
+  }
+}

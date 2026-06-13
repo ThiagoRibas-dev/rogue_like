@@ -26,7 +26,8 @@ export const enum UIMode {
   Settings = 'settings',
   Factions = 'factions',
   Dialogue = 'dialogue',
-  Quests = 'quests'
+  Quests = 'quests',
+  Investigation = 'investigation'
 }
 
 /**
@@ -103,6 +104,12 @@ export interface PersistentEntityRecord {
   readonly components: ReadonlyArray<Component>;
 }
 
+export interface InvestigationKnowledge {
+  readonly knownActors: ReadonlyArray<EntityId>;
+  readonly discoveredClues: ReadonlyArray<string>;
+  readonly exposedAgreements: ReadonlyArray<{ readonly minionId: EntityId; readonly mastermindId: EntityId }>;
+}
+
 /**
  * Immutable shape of the global game state.
  */
@@ -164,6 +171,7 @@ export interface GameState {
   readonly is3D: boolean;
   readonly zoomLevel: number;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
+  readonly investigation: InvestigationKnowledge;
 }
 
 /**
@@ -219,4 +227,5 @@ export interface SerializedGameState {
   readonly isRotated: boolean;
   readonly is3D: boolean;
   readonly zoomLevel: number;
+  readonly investigation: InvestigationKnowledge;
 }

@@ -46,7 +46,8 @@ export const enum IntentType {
   StartDialogue = 'StartDialogue',
   SelectDialogueOption = 'SelectDialogueOption',
   CloseDialogue = 'CloseDialogue',
-  ToggleQuests = 'ToggleQuests'
+  ToggleQuests = 'ToggleQuests',
+  ToggleInvestigation = 'ToggleInvestigation'
 }
 
 /**
@@ -228,6 +229,16 @@ export interface ToggleQuestsIntent {
 }
 
 /**
+ * Intent to toggle the investigation board open or closed.
+ * Does not consume a turn.
+ */
+export interface ToggleInvestigationIntent {
+  readonly type: IntentType.ToggleInvestigation;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}
+
+/**
  * Intent to toggle the settings panel open or closed.
  * Does not consume a turn.
  */
@@ -377,6 +388,7 @@ export type Intent =
   | ToggleFactionsIntent
   | ToggleQuestsIntent
   | ToggleSettingsIntent
+  | ToggleInvestigationIntent
   | UseAbilityIntent
   | ToggleEngineModeIntent
   | TogglePauseIntent
