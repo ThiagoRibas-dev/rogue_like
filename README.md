@@ -2,6 +2,18 @@
 
 A modern, highly-extensible, browser-based traditional roguelike engine featuring both **Turn-Based** and **Real-Time with Pause (RTwP)** modes,  **Systemic Narrative** systems, and a  **Data-Driven** architecture. Built with **TypeScript**, **Vite**, and **ROT.js**. 
 
+## ✨ Current Features
+
+- **Dual-Mode Gameplay**: Play as a traditional turn-based roguelike or toggle into Real-Time with Pause (RTwP) mode.
+- **Systemic Narrative**: NPCs remember interactions. Engage in branching dialogues, accept data-driven quests, and track progress in the journal.
+- **Adversarial Schemes & Investigation**: Villains pursue goals in the background. Discover clues, track plots on the Conspiracy Board, and intercept minions.
+- **Tactical Combat**: Melee bumps, ranged attacks, and area-of-effect spells. Utilize environmental traps, doors, and status effects (poison, stun, confusion).
+- **AI & Factions**: Entities have unique behaviors (hunting, fleeing, spell-casting) and belong to factions that dictate interactions and infighting.
+- **Survival Mechanics**: Manage hunger and satiation, identify unknown potions and scrolls, and manage inventory and equipment loadouts.
+- **Interconnected Worlds**: Explore procedurally generated biomes and hand-crafted static hubs connected by transition portals.
+- **UX & Accessibility**: 3-column UI featuring floating combat text, nested tooltips, dynamic 2.5D camera tilt, scaleable UI, and full key rebinding.
+- **Data-Driven Architecture**: The game uses JSON registries. Select, play, and switch between campaigns from the main menu.
+
 ## 🚀 Quick Start
 
 ### Prerequisites

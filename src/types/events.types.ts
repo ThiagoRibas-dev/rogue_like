@@ -16,7 +16,9 @@ export const enum GameEventType {
   ClueDiscovered = 'ClueDiscovered',
   TileEntered = 'TileEntered',
   DialogueSelected = 'DialogueSelected',
-  TrapTriggered = 'TrapTriggered'
+  TrapTriggered = 'TrapTriggered',
+  QuestStageChanged = 'QuestStageChanged',
+  QuestCompleted = 'QuestCompleted'
 }
 
 export interface BaseGameEvent {
@@ -89,6 +91,17 @@ export interface TrapTriggeredEvent extends BaseGameEvent {
   readonly triggerId: string;
 }
 
+export interface QuestStageChangedEvent extends BaseGameEvent {
+  readonly type: GameEventType.QuestStageChanged;
+  readonly questId: string;
+  readonly objectiveId: string;
+}
+
+export interface QuestCompletedEvent extends BaseGameEvent {
+  readonly type: GameEventType.QuestCompleted;
+  readonly questId: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -102,4 +115,6 @@ export type GameEvent =
   | ClueDiscoveredEvent
   | TileEnteredEvent
   | DialogueSelectedEvent
-  | TrapTriggeredEvent;
+  | TrapTriggeredEvent
+  | QuestStageChangedEvent
+  | QuestCompletedEvent;

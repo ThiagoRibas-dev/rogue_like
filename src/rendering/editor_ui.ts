@@ -4,6 +4,7 @@ import { setGameState } from '../core/game-loop.ts';
 import type { CampaignData } from '../types/campaign.types.ts';
 import type { PatchOperation } from '../utils/json-patch.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
+import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
 import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
 import { loadCampaign } from '../core/loader.ts';
 import { CampaignCategorySchemas } from '../types/campaign.types.ts';
@@ -403,7 +404,12 @@ function refreshActiveViews(controller: EditorController) {
         const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
         const itemObj = dict[currentItemId];
         const schema = CampaignCategorySchemas[currentCategory];
-        renderFormForZodSchema(controller, schema, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+
+        if (currentCategory === 'dialogues') {
+          renderDialogueTreeEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+        } else {
+          renderFormForZodSchema(controller, schema, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+        }
       } else {
         formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
       }

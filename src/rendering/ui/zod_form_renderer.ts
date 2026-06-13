@@ -63,7 +63,14 @@ export function renderFormForZodSchema(
 
   // Handle Arrays
   if (innerSchema instanceof z.ZodArray) {
-    renderArrayField(controller, innerSchema as z.ZodArray<z.ZodTypeAny>, obj as unknown[], basePath, container, isOptional);
+    renderArrayField(
+      controller,
+      innerSchema as z.ZodArray<z.ZodTypeAny>,
+      obj as unknown[],
+      basePath,
+      container,
+      isOptional
+    );
     return;
   }
 

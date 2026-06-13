@@ -1,12 +1,12 @@
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
-import { GameEventType } from '../types/events.types.ts';
+import { GameEventType, type DialogueSelectedEvent } from '../types/events.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import type { CloseDialogueIntent, SelectDialogueOptionIntent, StartDialogueIntent } from '../types/intents.types.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
-import { processQuestEvent, completeQuest, getQuestDef, rebuildQuestTriggers } from '../systems/quest.system.ts';
-import { generateProceduralQuest } from '../systems/procedural-quest.system.ts';
+import { processQuestEvent } from '../systems/quest.system.ts';
+import { applyConsequence } from '../systems/trigger.system.ts';
 
 export function processStartDialogueIntent(
   state: GameState,
@@ -78,106 +78,19 @@ export function processSelectDialogueOptionIntent(
     ]
   };
 
-  if (option.actions) {
-    for (const action of option.actions) {
-      if (action.type === 'grant_quest') {
-        const questLog = getComponent(nextState, intent.entityId, ComponentType.QuestLog) as
-          | import('../types/components.types.ts').QuestLogComponent
-          | undefined;
-        if (questLog) {
-          const questId = action.targetId;
-          const questDef = nextState.campaign.quests[questId];
-          if (questDef && !questLog.quests[questId]) {
-            const nextQuests = { ...questLog.quests };
-            const initialProgress: Record<string, number> = {};
-            questDef.objectives.forEach((obj) => {
-              initialProgress[obj.id] = 0;
-            });
-            nextQuests[questId] = {
-              questId,
-              status: 'active',
-              objectiveProgress: initialProgress
-            };
-            const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
-            const nextComps = new Map(nextState.components);
-            const playerComps =
-              nextComps
-                .get(intent.entityId)
-                ?.map((c) =>
-                  c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
-                ) ?? [];
-            nextComps.set(intent.entityId, playerComps);
-            nextState = { ...nextState, components: nextComps };
-          }
-        }
-      } else if (action.type === 'complete_quest') {
-        const questLog = getComponent(nextState, intent.entityId, ComponentType.QuestLog) as
-          | import('../types/components.types.ts').QuestLogComponent
-          | undefined;
-        if (questLog) {
-          const questId = action.targetId;
-          const questDef = getQuestDef(nextState, questId);
-          const qState = questLog.quests[questId];
+  if (option.consequences) {
+    const dummyEvent: DialogueSelectedEvent = {
+      type: GameEventType.DialogueSelected,
+      dialogueId: treeId,
+      optionId: intent.optionId
+    };
 
-          if (questDef && qState && qState.status === 'active') {
-            // Verify objectives are met
-            const isComplete = questDef.objectives.every(
-              (obj) => (qState.objectiveProgress[obj.id] ?? 0) >= obj.requiredAmount
-            );
-            if (isComplete) {
-              nextState = completeQuest(nextState, intent.entityId, questId);
-            }
-          }
-        }
-      } else if (action.type === 'grant_dynamic_quest') {
-        const { nextState: newState, questId } = generateProceduralQuest(nextState, action.targetId);
-        nextState = newState;
-        if (questId) {
-          const questLog = getComponent(nextState, intent.entityId, ComponentType.QuestLog) as
-            | import('../types/components.types.ts').QuestLogComponent
-            | undefined;
-          if (questLog && !questLog.quests[questId]) {
-            const nextQuests = {
-              ...questLog.quests,
-              [questId]: { questId, status: 'active' as const, objectiveProgress: {} }
-            };
-            const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
-            const nextComps = new Map(nextState.components);
-            const playerComps =
-              nextComps
-                .get(intent.entityId)
-                ?.map((c) =>
-                  c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
-                ) ?? [];
-            nextComps.set(intent.entityId, playerComps);
-            nextState = { ...nextState, components: nextComps };
-
-            const questDef = getQuestDef(nextState, questId);
-            if (questDef) {
-              nextState = addMessage(nextState, `New Quest: ${questDef.title}`, MessageLogCategory.System);
-            }
-          }
-
-          // Give NPC a memory that they granted this template
-          const npcMemory = getComponent(nextState, npcEntityId, ComponentType.Memory) as
-            | import('../types/components.types.ts').MemoryComponent
-            | undefined;
-          if (npcMemory) {
-            const nextFacts = [...npcMemory.facts, `gave_${action.targetId}`];
-            const nextComps = new Map(nextState.components);
-            const npcComps =
-              nextComps
-                .get(npcEntityId)
-                ?.map((c) => (c.type === ComponentType.Memory ? { ...c, facts: nextFacts } : c)) ?? [];
-            nextComps.set(npcEntityId, npcComps);
-            nextState = { ...nextState, components: nextComps };
-          }
-        }
-      } else if (action.type === 'emit_event') {
-        // Just log it for now
-        nextState = addMessage(nextState, `[Event Emitted: ${action.targetId}]`, MessageLogCategory.System);
-      }
-      // other actions...
+    for (const consequence of option.consequences) {
+      const evalCons = {
+        ...consequence,
+        params: { ...consequence.params, _npcEntityId: npcEntityId, _playerEntityId: intent.entityId }
+      };
+      nextState = applyConsequence(nextState, dummyEvent, evalCons);
     }
   }
 

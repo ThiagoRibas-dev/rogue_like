@@ -4,6 +4,8 @@ import { getComponent } from '../../core/ecs.ts';
 import { IntentType, type SelectDialogueOptionIntent } from '../../types/intents.types.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
+import { evaluateCondition } from '../../systems/trigger.system.ts';
+import { GameEventType, type DialogueSelectedEvent } from '../../types/events.types.ts';
 
 function appendWikiSegments(container: HTMLElement, text: string) {
   const segments = parseWikiSegments(text);
@@ -90,32 +92,20 @@ export function renderDialoguePanel(state: GameState): void {
     // Condition check
     let valid = true;
     if (option.conditions) {
-      const memory = getComponent(state, npcEntityId, ComponentType.Memory);
+      const dummyEvent: DialogueSelectedEvent = {
+        type: GameEventType.DialogueSelected,
+        dialogueId: treeId,
+        optionId: option.id
+      };
       for (const cond of option.conditions) {
-        if (cond.type === 'faction_standing') {
-          const standing = memory?.factionStandings[cond.target] ?? 0;
-          if (cond.operator === '>=') valid = standing >= (cond.value ?? 0);
-          else if (cond.operator === '<=') valid = standing <= (cond.value ?? 0);
-          else valid = standing === (cond.value ?? 0);
-        } else if (cond.type === 'has_fact') {
-          valid = memory?.facts.includes(cond.target) ?? false;
-        } else if (cond.type === 'not_has_fact') {
-          valid = !(memory?.facts.includes(cond.target) ?? false);
-        } else if (cond.type === 'quest_status') {
-          const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as
-            | import('../../types/components.types.ts').QuestLogComponent
-            | undefined;
-          const qStatus = questLog?.quests[cond.target]?.status;
-
-          if (cond.operator === '==') {
-            // For '==', cond.value isn't a string so we might need a workaround or check payload
-            // Actually cond.value is a number. We need to check if quest status equals a string.
-            // Our schema for cond.value is a number. We can map: 0 = active, 1 = completed, 2 = failed.
-            const numStatus = qStatus === 'active' ? 0 : qStatus === 'completed' ? 1 : qStatus === 'failed' ? 2 : -1;
-            valid = numStatus === cond.value;
-          }
+        const evalCond = {
+          ...cond,
+          params: { ...cond.params, _npcEntityId: npcEntityId, _playerEntityId: playerEntityId }
+        };
+        if (!evaluateCondition(state, dummyEvent, evalCond)) {
+          valid = false;
+          break;
         }
-        if (!valid) break;
       }
     }
 

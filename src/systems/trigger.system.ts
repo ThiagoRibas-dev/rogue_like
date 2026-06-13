@@ -5,6 +5,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType } from '../types/events.types.ts';
 import type { GameEvent } from '../types/events.types.ts';
 import * as ROT from 'rot-js';
+import { completeQuest, grantQuest } from './quest.system.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -74,24 +75,84 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
 /**
  * Evaluates a single condition predicate against the game state and event.
  */
-function evaluateCondition(
+export function evaluateCondition(
   state: Readonly<GameState>,
   event: GameEvent,
   condition: import('../types/trigger.types.ts').ConditionPredicate
 ): boolean {
-  if (condition.type === 'is_player') {
-    return (
-      'entityId' in event &&
-      getComponent(state, (event as unknown as { entityId: EntityId }).entityId, ComponentType.Player) !== undefined
-    );
-  } else if (condition.type === 'has_agreement') {
-    if (event.type === GameEventType.EntityDied) {
+  switch (condition.type) {
+    case 'is_player':
+      return (
+        'entityId' in event &&
+        getComponent(state, (event as unknown as { entityId: EntityId }).entityId, ComponentType.Player) !== undefined
+      );
+
+    case 'has_agreement': {
+      if (event.type !== GameEventType.EntityDied) return false;
       const diedEvent = event as import('../types/events.types.ts').EntityDiedEvent;
       return getComponent(state, diedEvent.victimId, ComponentType.Agreement) !== undefined;
     }
-    return false;
+
+    case 'faction_standing': {
+      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      if (memoryOwnerId === undefined) return false;
+
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
+        | import('../types/components.types.ts').MemoryComponent
+        | undefined;
+      const standing = memory?.factionStandings[condition.params['target'] as string] ?? 0;
+
+      const operator = condition.params['operator'] as string | undefined;
+      const value = (condition.params['value'] as number) ?? 0;
+
+      if (operator === '>=') return standing >= value;
+      if (operator === '<=') return standing <= value;
+      return standing === value;
+    }
+
+    case 'has_fact': {
+      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      if (memoryOwnerId === undefined) return false;
+
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
+        | import('../types/components.types.ts').MemoryComponent
+        | undefined;
+      return memory?.facts.includes(condition.params['target'] as string) ?? false;
+    }
+
+    case 'not_has_fact': {
+      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      if (memoryOwnerId === undefined) return true;
+
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
+        | import('../types/components.types.ts').MemoryComponent
+        | undefined;
+      return !(memory?.facts.includes(condition.params['target'] as string) ?? false);
+    }
+
+    case 'quest_status': {
+      const playerEntityId = (condition.params['_playerEntityId'] ?? condition.params['entityId']) as
+        | EntityId
+        | undefined;
+      if (playerEntityId === undefined) return false;
+
+      const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as
+        | import('../types/components.types.ts').QuestLogComponent
+        | undefined;
+      const qStatus = questLog?.quests[condition.params['target'] as string]?.status;
+      const numStatus = qStatus === 'active' ? 0 : qStatus === 'completed' ? 1 : qStatus === 'failed' ? 2 : -1;
+
+      const operator = condition.params['operator'] as string | undefined;
+      const value = condition.params['value'] as number;
+
+      if (operator === '>=') return numStatus >= value;
+      if (operator === '<=') return numStatus <= value;
+      return numStatus === value;
+    }
+
+    default:
+      return true;
   }
-  return true;
 }
 
 import { createEntity, addComponent } from '../core/ecs.ts';
@@ -100,16 +161,17 @@ import { toItemInstanceId } from '../types/components.types.ts';
 /**
  * Applies a single consequence to the game state.
  */
-function applyConsequence(
+export function applyConsequence(
   state: GameState,
   event: GameEvent,
   consequence: import('../types/trigger.types.ts').ConsequenceAction
 ): GameState {
   let nextState = state;
-  // Consequence registry placeholder
-  if (consequence.type === 'run_script') {
-    const code = consequence.params['scriptCode'] as string;
-    if (code) {
+
+  switch (consequence.type) {
+    case 'run_script': {
+      const code = consequence.params['scriptCode'] as string | undefined;
+      if (!code) break;
       try {
         const sandboxFn = new Function('context', code) as import('../types/trigger.types.ts').RunScriptConsequenceFn;
         const context = { event, state, rng: ROT.RNG };
@@ -122,52 +184,61 @@ function applyConsequence(
       } catch (e) {
         console.error('Failed to run trigger script:', e);
       }
-    }
-  } else if (consequence.type === 'damage') {
-    const targetId = consequence.params['targetId'] as string;
-    const amount = consequence.params['amount'] as number;
-    let eId: EntityId | undefined;
-    if (targetId === 'event.entityId' && 'entityId' in event) {
-      eId = (event as unknown as { entityId: EntityId }).entityId;
+      break;
     }
 
-    if (eId !== undefined && amount > 0) {
-      const fighter = getComponent(nextState, eId, ComponentType.Fighter);
-      if (fighter) {
-        const existingDamageComp = nextState.components.get(eId)?.find((c) => c.type === ComponentType.Damage) as
-          | import('../types/components.types.ts').DamageComponent
-          | undefined;
+    case 'damage': {
+      const targetId = consequence.params['targetId'] as string;
+      const amount = consequence.params['amount'] as number;
 
-        const damageInstance: import('../types/components.types.ts').DamageInstance = {
-          amount,
-          tags: ['trigger', 'physical']
-        };
-
-        const targetComps = nextState.components.get(eId) ?? [];
-        const newCompsMap = new Map(nextState.components);
-        if (existingDamageComp) {
-          const newDamageComp = {
-            ...existingDamageComp,
-            instances: [...existingDamageComp.instances, damageInstance]
-          };
-          newCompsMap.set(
-            eId,
-            targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-          );
-        } else {
-          const newDamageComp: import('../types/components.types.ts').DamageComponent = {
-            type: ComponentType.Damage,
-            instances: [damageInstance]
-          };
-          newCompsMap.set(eId, [...targetComps, newDamageComp]);
-        }
-        nextState = { ...nextState, components: newCompsMap };
+      let eId: EntityId | undefined;
+      if (targetId === 'event.entityId' && 'entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
       }
+
+      if (eId === undefined || amount <= 0) break;
+
+      const fighter = getComponent(nextState, eId, ComponentType.Fighter);
+      if (!fighter) break;
+
+      const existingDamageComp = nextState.components.get(eId)?.find((c) => c.type === ComponentType.Damage) as
+        | import('../types/components.types.ts').DamageComponent
+        | undefined;
+
+      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+        amount,
+        tags: ['trigger', 'physical']
+      };
+
+      const targetComps = nextState.components.get(eId) ?? [];
+      const newCompsMap = new Map(nextState.components);
+
+      if (existingDamageComp) {
+        const newDamageComp = {
+          ...existingDamageComp,
+          instances: [...existingDamageComp.instances, damageInstance]
+        };
+        newCompsMap.set(
+          eId,
+          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
+        );
+      } else {
+        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+          type: ComponentType.Damage,
+          instances: [damageInstance]
+        };
+        newCompsMap.set(eId, [...targetComps, newDamageComp]);
+      }
+
+      nextState = { ...nextState, components: newCompsMap };
+      break;
     }
-  } else if (consequence.type === 'spawn_clue') {
-    if (event.type === GameEventType.EntityDied) {
+
+    case 'spawn_clue': {
+      if (event.type !== GameEventType.EntityDied) break;
       const diedEvent = event as import('../types/events.types.ts').EntityDiedEvent;
       const victimId = diedEvent.victimId;
+
       const agreement = getComponent(nextState, victimId, ComponentType.Agreement) as
         | import('../types/components.types.ts').AgreementComponent
         | undefined;
@@ -177,41 +248,120 @@ function applyConsequence(
       const renderable = getComponent(nextState, victimId, ComponentType.Renderable);
       const name = renderable ? renderable.glyph : 'Someone';
 
-      if (agreement && pos) {
-        const agreementDef = nextState.campaign.agreements[agreement.agreementId];
-        if (agreementDef && agreementDef.clueTemplates.length > 0) {
-          const clueTemplateId = agreementDef.clueTemplates[0]!;
+      if (!agreement || !pos) break;
 
-          let clueEntity: EntityId;
-          [nextState, clueEntity] = createEntity(nextState);
+      const agreementDef = nextState.campaign.agreements[agreement.agreementId];
+      if (!agreementDef || agreementDef.clueTemplates.length === 0) break;
 
-          nextState = addComponent(nextState, clueEntity, pos);
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Renderable,
-            glyph: '?',
-            fg: '#ffff00',
-            bg: 'transparent'
-          });
-          const instanceId = toItemInstanceId(`clue_item_${nextState.nextItemInstanceId}`);
-          nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Item,
-            itemId: 'clue_item',
-            instanceId
-          });
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Clue,
-            clueId: clueTemplateId,
-            text: `Incriminating evidence regarding a ${agreementDef.task}...`,
-            implicatesEntityId: agreement.mastermindId
-          } as import('../types/components.types.ts').ClueComponent);
+      const clueTemplateId = agreementDef.clueTemplates[0]!;
+      let clueEntity: EntityId;
+      [nextState, clueEntity] = createEntity(nextState);
 
-          const msg = (consequence.params['message'] as string | undefined) ?? 'dropped something suspicious!';
-          nextState = addMessage(nextState, `${name} ${msg}`, MessageLogCategory.System);
-        }
+      nextState = addComponent(nextState, clueEntity, pos);
+      nextState = addComponent(nextState, clueEntity, {
+        type: ComponentType.Renderable,
+        glyph: '?',
+        fg: '#ffff00',
+        bg: 'transparent'
+      });
+
+      const instanceId = toItemInstanceId(`clue_item_${nextState.nextItemInstanceId}`);
+      nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
+
+      nextState = addComponent(nextState, clueEntity, {
+        type: ComponentType.Item,
+        itemId: 'clue_item',
+        instanceId
+      });
+      nextState = addComponent(nextState, clueEntity, {
+        type: ComponentType.Clue,
+        clueId: clueTemplateId,
+        text: `Incriminating evidence regarding a ${agreementDef.task}...`,
+        implicatesEntityId: agreement.mastermindId
+      } as import('../types/components.types.ts').ClueComponent);
+
+      const msg = (consequence.params['message'] as string | undefined) ?? 'dropped something suspicious!';
+      nextState = addMessage(nextState, `${name} ${msg}`, MessageLogCategory.System);
+      break;
+    }
+
+    case 'grant_quest': {
+      const questId = consequence.params['targetId'] as string | undefined;
+      const playerId = (consequence.params['_playerEntityId'] ??
+        consequence.params['entityId'] ??
+        ('entityId' in event ? (event as unknown as Record<string, unknown>).entityId : undefined)) as
+        | EntityId
+        | undefined;
+
+      if (playerId !== undefined && questId) {
+        nextState = grantQuest(nextState, playerId, questId);
       }
+      break;
+    }
+
+    case 'complete_quest': {
+      const questId = consequence.params['targetId'] as string | undefined;
+      const playerId = (consequence.params['_playerEntityId'] ??
+        consequence.params['entityId'] ??
+        ('entityId' in event ? (event as unknown as Record<string, unknown>).entityId : undefined)) as
+        | EntityId
+        | undefined;
+
+      if (playerId !== undefined && questId) {
+        nextState = completeQuest(nextState, playerId, questId);
+      }
+      break;
+    }
+
+    case 'change_standing': {
+      const amount = consequence.params['amount'] as number | undefined;
+      const factionId = consequence.params['targetId'] as string | undefined;
+      const memoryOwnerId = (consequence.params['_npcEntityId'] ?? consequence.params['entityId']) as
+        | EntityId
+        | undefined;
+
+      if (memoryOwnerId === undefined || !factionId || !amount) break;
+
+      const targetComps = nextState.components.get(memoryOwnerId) ?? [];
+      const memory = targetComps.find((c) => c.type === ComponentType.Memory) as
+        | import('../types/components.types.ts').MemoryComponent
+        | undefined;
+
+      if (!memory) break;
+
+      const newStanding = (memory.factionStandings[factionId] ?? 0) + amount;
+      const newMemory = { ...memory, factionStandings: { ...memory.factionStandings, [factionId]: newStanding } };
+
+      const newCompsMap = new Map(nextState.components);
+      newCompsMap.set(
+        memoryOwnerId,
+        targetComps.map((c) => (c.type === ComponentType.Memory ? newMemory : c))
+      );
+
+      nextState = { ...nextState, components: newCompsMap };
+      break;
+    }
+
+    case 'emit_event': {
+      const eventType = consequence.params['targetId'] as string | undefined;
+      const payload = consequence.params['payload'] as Record<string, unknown> | undefined;
+
+      if (!eventType) break;
+
+      nextState = {
+        ...nextState,
+        events: [
+          ...nextState.events,
+          {
+            type: eventType as GameEventType,
+            ...payload
+          } as unknown as GameEvent
+        ]
+      };
+      break;
     }
   }
+
   return nextState;
 }
 

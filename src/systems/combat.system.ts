@@ -3,6 +3,7 @@ import type { MeleeAttackIntent } from '../types/intents.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { rng } from '../core/rng.ts';
 
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getSettings } from '../core/settings.ts';
@@ -111,7 +112,7 @@ export function processMeleeAttackIntent(
       const defenderPos = getComponent(state, defenderId, ComponentType.Position);
       if (defenderPos) {
         const visualEffect = {
-          id: `blk_${Date.now()}_${Math.random()}`,
+          id: `blk_${Math.floor(rng.getUniform() * 1000000)}`,
           type: 'floating_text' as const,
           x: defenderPos.x,
           y: defenderPos.y,

@@ -4,6 +4,7 @@ import { ComponentType, type QuestLogComponent } from '../types/components.types
 import type { Quest } from '../types/quests.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { grantXp } from './death.system.ts';
+import { GameEventType, type QuestCompletedEvent, type QuestStageChangedEvent } from '../types/events.types.ts';
 
 /**
  * Gets a quest definition from either the static campaign registry or dynamic quests.
@@ -63,6 +64,50 @@ export function completeQuest(
       // Future: handle item/standing rewards here
     }
   }
+
+  nextState = {
+    ...nextState,
+    events: [
+      ...nextState.events,
+      {
+        type: GameEventType.QuestCompleted,
+        questId
+      } as QuestCompletedEvent
+    ]
+  };
+
+  const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
+
+  const nextComps = new Map(nextState.components);
+  const playerComps =
+    nextComps
+      .get(playerId)
+      ?.map((c) =>
+        c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
+      ) ?? [];
+  nextComps.set(playerId, playerComps);
+  return { ...nextState, components: nextComps };
+}
+
+/**
+ * Grants a new quest to a player.
+ */
+export function grantQuest(
+  state: GameState,
+  playerId: import('../types/game-state.types.ts').EntityId,
+  questId: string
+): GameState {
+  const questLog = getComponent(state, playerId, ComponentType.QuestLog) as QuestLogComponent | undefined;
+  if (!questLog) return state;
+  if (questLog.quests[questId]) return state; // Already has quest
+
+  const questDef = getQuestDef(state, questId);
+  if (!questDef) return state;
+
+  const nextQuests = { ...questLog.quests };
+  nextQuests[questId] = { questId, status: 'active', objectiveProgress: {} };
+
+  const nextState = addMessage(state, `New Quest: ${questDef.title}`, MessageLogCategory.System);
 
   const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
 
@@ -125,6 +170,17 @@ export function processQuestEvent(
             `Quest Progress: ${obj.description} (${nextProgress[obj.id]}/${obj.requiredAmount})`,
             MessageLogCategory.System
           );
+          nextState = {
+            ...nextState,
+            events: [
+              ...nextState.events,
+              {
+                type: GameEventType.QuestStageChanged,
+                questId,
+                objectiveId: obj.id
+              } as QuestStageChangedEvent
+            ]
+          };
         }
       }
     }

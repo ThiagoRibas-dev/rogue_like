@@ -8,6 +8,7 @@ import {
   type ItemComponent
 } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { rng } from '../core/rng.ts';
 import { getSettings } from '../core/settings.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 
@@ -19,10 +20,10 @@ export function addFloatingText(state: GameState, entityId: EntityId, content: s
   if (!pos) return state;
 
   const visualEffect = {
-    id: `txt_${Date.now()}_${Math.random()}`,
+    id: `txt_${Math.floor(rng.getUniform() * 1000000)}`,
     type: 'floating_text' as const,
-    x: pos.x + (Math.random() - 0.5) * 0.8,
-    y: pos.y + (Math.random() - 0.5) * 0.8,
+    x: pos.x + (rng.getUniform() - 0.5) * 0.8,
+    y: pos.y + (rng.getUniform() - 0.5) * 0.8,
     content,
     color,
     expiresAt: performance.now() + 1000

@@ -264,16 +264,15 @@ Promote scattered condition/action primitives into a single, unified, event-reac
 
 ## 🟢 Milestone 23: Narrative Architect (Dialogue, Quests & Flow)
 Construct narrative structures and test conditional triggers in-editor on top of the Trigger System.
-- [ ] **Conversation Editor (Tree-First, Scope-Protected)**
+- [x] **Conversation Editor (Tree-First, Scope-Protected)**
   - Build a folder-style nested branching list dialogue editor in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts), modifying dialogue schemas in [src/types/dialogue.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/dialogue.types.ts).
-  - SVG Graph view is a secondary descope-able visualization in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) to protect the timeline from canvas creep.
-- [ ] **Dialogue Triggers**
+- [x] **Dialogue Triggers**
   - Refactor options in [src/rendering/ui/dialogue.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dialogue.ui.ts) to gate choices and trigger node consequences directly using the Milestone 22 condition/consequence pickers, removing legacy action structures.
-- [ ] **Quest Sequence Designer**
+- [x] **Quest Sequence Designer**
   - Drag-and-drop quest stages, configuring objective parameters and journal logs mapped to schemas in [src/types/quests.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/quests.types.ts).
-- [ ] **Quest-Trigger Integration**
+- [x] **Quest-Trigger Integration**
   - Update quest state tracking in [src/systems/quest.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/quest.system.ts) so quest stage changes publish events; triggers can easily hook into them (e.g. spawning a boss when quest stage reaches X).
-- [ ] **Emergent Dialogue Gating Simulator (State Injector)**
+- [x] **Emergent Dialogue Gating Simulator (State Injector)**
   - Integrate an editor sidebar panel in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) to mock player memory fact logs and standings from `MemoryComponent` in [src/types/components.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/components.types.ts), highlighting visible dialogue branches.
 
 ## 🟢 Milestone 24: World & Area Builder
@@ -318,5 +317,5 @@ Enhance the Developer Tools to feel like a modern visual game engine rather than
 - [ ] **Live Map Previews**
   - Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
 - [ ] **Bespoke UI for Complex Types**
-  - Replace generic nested object forms with visual node editors or custom components for complex data (e.g., visual graph for Dialogue Trees instead of just JSON-style nested properties).
+  - Replace generic nested object forms with visual node editors or custom components for complex data (e.g., SVG Graph view for Dialogue Trees instead of just JSON-style nested properties).
   - Implement a visual grid selector for sprite/glyph selection.
