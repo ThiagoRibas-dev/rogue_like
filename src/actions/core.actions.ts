@@ -1,19 +1,19 @@
-import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { type EntityId } from '../types/game-state.types.ts';
 import {
   IntentType,
-  type MoveIntent,
-  type WaitIntent,
   type InteractIntent,
-  type ToggleEngineModeIntent,
-  type TogglePauseIntent,
+  type MoveIntent,
   type SetRTwPSpeedIntent,
-  type ToggleRotatedIntent,
-  type Toggle3DIntent,
   type SetZoomLevelIntent,
-  type ToggleSettingsIntent,
+  type Toggle3DIntent,
+  type ToggleEngineModeIntent,
   type ToggleFactionsIntent,
+  type ToggleInvestigationIntent,
+  type TogglePauseIntent,
   type ToggleQuestsIntent,
-  type ToggleInvestigationIntent
+  type ToggleRotatedIntent,
+  type ToggleSettingsIntent,
+  type WaitIntent
 } from '../types/intents.types.ts';
 
 /**
@@ -157,8 +157,6 @@ export function createToggleQuestsAction(entityId: EntityId): ToggleQuestsIntent
   };
 }
 
-
-
 /**
  * Creates a toggle investigation intent.
  */
@@ -169,5 +167,3 @@ export function createToggleInvestigationAction(entityId: EntityId): ToggleInves
     isImmediate: true
   };
 }
-
-

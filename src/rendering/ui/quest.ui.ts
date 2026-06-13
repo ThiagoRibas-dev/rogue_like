@@ -59,7 +59,8 @@ export function renderQuestJournal(state: GameState): void {
     if (!questDef) continue;
 
     const questContainer = document.createElement('div');
-    questContainer.style.cssText = 'margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); border-radius: 4px;';
+    questContainer.style.cssText =
+      'margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); border-radius: 4px;';
 
     const title = document.createElement('h3');
     title.style.cssText = `margin: 0 0 8px 0; font-size: 1.1rem; color: ${qState.status === 'completed' ? '#2ecc71' : '#f1c40f'};`;
@@ -72,7 +73,8 @@ export function renderQuestJournal(state: GameState): void {
     questContainer.appendChild(desc);
 
     const objTitle = document.createElement('div');
-    objTitle.style.cssText = 'color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;';
+    objTitle.style.cssText =
+      'color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;';
     objTitle.textContent = 'Objectives:';
     questContainer.appendChild(objTitle);
 
