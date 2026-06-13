@@ -182,7 +182,7 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
 - [x] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
 
-### 🟢 Milestone 19: The Social Layer
+### 🟢 Milestone 19: The Social Layer (Complete)
 **Goal:** Introduce dialogue, quests, and rich interaction menus.
 - [x] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
 - [x] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
@@ -191,7 +191,7 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Entities, Items, Status Effects) directly within the dialogue and quest UIs.
 - [x] **Procedural Quests**: Implement a dynamic quest generator that builds randomized missions at runtime from JSON templates (e.g., bounties), storing them in the GameState.
 
-## 🟢 Milestone 20: The Adversarial Layer (Schemes & Investigation)
+## 🟢 Milestone 20: The Adversarial Layer (Schemes & Investigation) (Complete)
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
 - [x] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
 - [x] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.
@@ -204,40 +204,40 @@ Introduce systemic villains that act against the player, pairing the background 
 # 🚀 Phase 4: Campaign Creator & Modular Tooling (Refined)
 Features to allow building, testing, and sharing campaigns using structured JSON data and custom map configurations.
 
-## 🟢 Milestone 21: Editor Foundation & Database Forms (Active)
-Establish the campaign editor foundation, modular form templates, and direct local workspace interaction.
-- [ ] **Developer Workspace Toggle & Routing**
+### Milestone 21: Editor Foundation & Database Forms
+**Goal:** Create the basic workspace shell, modular form templates, and simple string/number fields for JSON data editing, with direct local workspace interaction.
+- [x] **Developer Workspace Toggle & Routing**
   - Add a "Dev Tools" action button on the Main Menu screen.
   - Setup screen switching between the main game state and the editor workspace state in [src/main.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/main.ts) and [src/core/game-loop.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/game-loop.ts).
   - Ensure entering the editor halts active schedulers, hides the main game canvas, and opens the editor layout.
-- [ ] **Top-Level Editor Workspace & Dependency Graph Guard**
+- [x] **Top-Level Editor Workspace & Dependency Graph Guard**
   - Create a dedicated [src/editor/](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/) directory at the top of the dependency graph (peer to `main.ts`).
   - Implement the controller logic in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) and loading service in [src/editor/workspace_file_service.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/workspace_file_service.ts) using the browser's `showDirectoryPicker()` API.
   - Keep [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) as a pure rendering/view module that only imports downward (from `types`, `constants`, `utils`) and communicates with the editor controller via upward event/command dispatching.
-- [ ] **Dual Import/Export Fallback**
+- [x] **Dual Import/Export Fallback**
   - Integrate a fallback drag-and-drop `.zip` reader/writer in [src/editor/workspace_file_service.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/workspace_file_service.ts) for browsers that do not support directory pickers.
   - Allow compiling all edited registries into a single ZIP archive for distribution.
-- [ ] **⭐ Undo/Redo + Change History (JSON Patch)**
+- [x] **⭐ Undo/Redo + Change History (JSON Patch)**
   - Implement an editor command stack in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) over the in-memory campaign document using **JSON Patch (RFC 6902) deltas** rather than full-state snapshots, so history is cheap and memory-stable.
   - Bind `Ctrl+Z` / `Ctrl+Shift+Z` to undo/redo changes in forms.
   - *RNG Note:* This stack tracks editor changes only. We document that gameplay turn-rewinds require RNG checkpointing due to state-counter dependencies in [src/core/rng.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/rng.ts).
-- [ ] **⭐ Fast Iteration & "Round-Trip" Goal**
+- [x] **⭐ Fast Iteration & "Round-Trip" Goal**
   - Establish a fast-path re-injection of the in-memory doc to the campaign loader [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) to avoid full page reload on playtest.
   - Track iteration speeds in the developer toolbar.
-- [ ] **Scaffolding Selector (New Campaign Wizard)**
+- [x] **Scaffolding Selector (New Campaign Wizard)**
   - Create a startup editor wizard screen in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts).
   - **Clone Template Option:** Clone the existing `default` campaign templates as a starting point.
   - **Blank Slate Option:** Initialize empty arrays and raw baseline files for an adventure built from scratch.
   - **Example Campaign:** Ship a small, annotated reference campaign to teach designers how templates connect.
-- [ ] **Modular DOM Database Editor Components**
+- [x] **Modular DOM Database Editor Components**
   - Design a modular CSS layout in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts): Left sidebar list and Right editing pane.
   - Build granular, reusable DOM field elements in Vanilla TS: `StringField`, `NumberField`, `ColorPickerField`, `ListField`, and `NestedRecordField`.
   - **⭐ `ReferenceField` / Autocomplete Pickers:** Fields referencing IDs (e.g. entities to factions, items to effects) render as searchable dropdowns rather than raw text to prevent link errors, reading live tables in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
-- [ ] **Zod Schema Compiler & Link Auditor**
+- [x] **Zod Schema Compiler & Link Auditor**
   - Hook Zod's `safeParse` to validate fields on input change, showing validation errors inline based on Zod types in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
   - Implement a **Campaign Auditor** utility in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) to audit cross-registry links.
   - Display error counts in the dev toolbar; block Playtest and Export when unresolved Zod errors exist.
-- [ ] **Live Playtest Mode**
+- [x] **Live Playtest Mode**
   - Add a "Play Test" button that serializes the campaign, injects it into memory in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts), clears active save files in [src/core/save.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/save.ts), and runs the game.
   - **⭐ "Return to Editor" Re-entry:** Preserve the editor document state across playtest detours in [src/main.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/main.ts) so authors return to the exact object they were editing.
 

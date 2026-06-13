@@ -27,15 +27,17 @@ bun run build
 
 ## 🏗️ Architecture Highlights
 
-This codebase enforces very strict architectural rules to ensure long-term maintainability:
+This codebase enforces very strict architectural rules and heavily leans into several established software design patterns to ensure long-term maintainability:
 
-- **Strict TypeScript**: Compiled with maximum strictness (`noImplicitAny`, `exactOptionalPropertyTypes`, etc.). There are zero `any` types in this codebase.
-- **Pure ECS (Entity-Component-System)**: Logic is entirely decoupled from data. Entities are simply branded numeric IDs. Components are plain data interfaces. Systems are pure functions.
-- **Immutable State**: The `GameState` object is an immutable snapshot of a single turn. Systems take the current state and return a brand new state object, making saving, loading, and time-travel debugging trivial.
-- **No Magic Values**: Every string and number that affects gameplay logic is extracted into the `src/constants/` directory or loaded from JSON registries.
+- **Entity-Component-System (ECS-lite)**: Logic is entirely decoupled from data. Entities are simply branded numeric IDs. Components are plain data interfaces. Systems are pure functions.
+- **Data-Driven Design (Registry/Prefab Pattern)**: Campaigns, entities, items, and map features are defined entirely in Zod-validated JSON schemas, allowing for trivial modding without touching core logic or relying on Object-Oriented inheritance.
+- **The Command Pattern (Intent System)**: UI events and Keypresses do not execute logic directly. Instead, they push declarative `Intents` to a queue, which the engine processes later. This decouples input from simulation, making RTwP modes possible.
+- **Strict Immutable State Management**: The `GameState` object is an immutable snapshot of a single turn. Systems take the current state and return a brand new state object, making saving, loading, and time-travel debugging trivial.
+- **Model-View-Controller (MVC) UI Separation**: The UI is strictly layered. The DOM acts purely as a dumb View (`src/rendering/ui/`), the Controller handles user input and dispatches intents (`src/core/input_handler.ts`), and the ECS acts as the Model.
+- **The "Token Pool" (Bag) Pattern**: Used for global spawn limits and probability distribution (e.g., ensuring a "Unique Boss" only spawns once) without requiring expensive `O(N)` entity loops.
+- **Sleep/Wake Boundary (Persistence)**: Handling level transitions by archiving components to a global memory pool when unloading areas, and injecting them back when the area reloads, allowing persistent NPCs to exist decoupled from specific maps.
+- **JSON Patch (RFC 6902)**: Used exclusively in the Editor tools to compute state deltas and provide undo/redo functionality over the data-driven JSON registries.
 - **Subsystem Encapsulation**: Third-party libraries like `ROT.js` are never called directly by game logic. They are wrapped in `src/core/` modules (e.g., `rng.ts`, `scheduler.ts`) to ensure deterministic behavior.
-- **Data-Driven Moddability**: Campaigns, entities, items, and map features are defined entirely in Zod-validated JSON schemas, allowing for trivial modding without touching core logic.
-- **Systemic Narrative & Adversarial Layers**: Features a standalone Scheme Simulator that advances villainous plots asynchronously, generating clues and adapting to the player's interference.
 
 ## 📁 Repository Structure
 

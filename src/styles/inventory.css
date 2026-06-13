@@ -1,0 +1,225 @@
+/* Inventory Panel / Modal */
+.inventory-modal {
+  max-width: 900px;
+  width: 80vw;
+  min-width: 700px;
+}
+
+.inventory-split-view {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+}
+
+.equipment-panel,
+.inventory-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.equipment-panel {
+  border-right: 1px solid var(--border-color);
+  padding-right: 20px;
+}
+
+.inventory-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.inventory-panel.visible {
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-header {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: var(--text-highlight);
+  margin-bottom: 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+}
+
+.inv-hint {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.inv-empty {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.inv-slot {
+  display: flex;
+  gap: 12px;
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  border-radius: 4px;
+}
+
+.inv-slot:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.inv-equipped {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.equipment-slot-header {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.equipment-slot-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  border: 1px dashed var(--border-color);
+}
+
+.inv-slot-label {
+  color: var(--text-dim);
+  min-width: 20px;
+}
+
+.inv-slot-name {
+  flex-grow: 1;
+}
+
+/* Category colors */
+.inv-cat-consumable .inv-slot-name {
+  color: #ff9f43; /* Orange */
+}
+
+.inv-cat-weapon .inv-slot-name {
+  color: #ee5253; /* Red/Pink */
+}
+
+.inv-cat-armor .inv-slot-name {
+  color: #0abde3; /* Cyan */
+}
+
+.inv-cat-usable .inv-slot-name {
+  color: #10ac84; /* Green */
+}
+
+.inv-equipped .inv-slot-name {
+  color: var(--color-xp); /* Green */
+  font-weight: bold;
+}
+
+/* --- Paperdoll Layout --- */
+.paperdoll-layout {
+  display: grid;
+  grid-template-areas:
+    '. head .'
+    'arms-left torso arms-right'
+    '. legs .';
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 16px;
+  justify-items: center;
+  align-items: start;
+  padding: 10px;
+}
+
+.paperdoll-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.zone-head {
+  grid-area: head;
+}
+.zone-torso {
+  grid-area: torso;
+}
+.zone-arms-left {
+  grid-area: arms-left;
+}
+.zone-arms-right {
+  grid-area: arms-right;
+}
+.zone-legs {
+  grid-area: legs;
+}
+
+.paperdoll-slot {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* --- Grid Inventory --- */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: 6px;
+  padding: 10px;
+}
+
+.inv-grid-slot {
+  width: 44px;
+  height: 44px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.inv-grid-slot:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.inv-grid-empty {
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  cursor: default;
+}
+
+.inv-equipped-grid {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-highlight);
+}
+
+.inv-grid-label {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  pointer-events: none;
+}
+
+.inv-item-icon {
+  font-size: 1.4rem;
+  font-family: var(--font-mono);
+  font-weight: bold;
+}

@@ -71,7 +71,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Rendering & Camera
 - **Renderer**: Translates map tiles and entities into characters and colors drawn on `ROT.Display`.
 - **Camera**: Handles camera scrolling/viewport offsets, keeping the player centered when maps are larger than the screen dimensions.
-- **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas.
+- **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas. This layer is fully modularized (`src/rendering/ui/`) and acts purely as a "dump" pattern View layer, decoupled from ECS update logic.
+- **Styling**: CSS is modularized by domain in `src/styles/` (layout, HUD, modals, etc.) and aggregated via `@import` in `index.css`.
 - **View Controls**: Implements dynamic CSS 3D transforms (Rotate 45° and 3D Tilt) on the canvas wrapper to achieve a flexible 2.5D visual style without complicating the underlying 2D ROT.js renderer.
 
 ### Items & Inventory
@@ -220,3 +221,7 @@ This ensures that persistent NPCs don't get trapped in a specific Area's seriali
 ### Save File Backwards Compatibility
 - **Decision**: During development phases (pre-v1.0), there is strictly no need to concern ourselves with backwards compatibility for `localStorage` save files. When the `GameState` shape changes, old saves can be safely invalidated or discarded.
 - **Rationale**: Writing complex migration scripts to preserve save states between rapidly evolving milestones wastes development time and increases bug surface area. The game should fail fast or discard old saves rather than attempting to load them into incompatible new structures.
+
+### Modular View & Controller Separation for UI
+- **Decision**: The HTML/CSS UI layer (`src/rendering/ui/`) is cleanly separated into domain-specific rendering functions (e.g. `hud.ui.ts`, `inventory.ui.ts`) and CSS files (`src/styles/hud.css`). `main.ts` purely handles DOM event bindings and intent dispatching, while `bootstrap.ts` and `input_handler.ts` handle game startup and keyboard mappings respectively.
+- **Rationale**: A massive monolithic UI file inevitably leads to massive merge conflicts, cross-contamination of logic, and spaghetti CSS. By strictly separating the view code by domain and decoupling DOM event generation (Controller) from DOM mutation (View), the top layer of the application remains maintainable even as complex development tools are added.

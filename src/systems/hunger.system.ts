@@ -1,9 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { UIMode } from '../types/game-state.types.ts';
 import { ComponentType, type HungerComponent, type FighterComponent } from '../types/components.types.ts';
-import { getComponent, removeEntity } from '../core/ecs.ts';
-import { removeActor } from '../core/scheduler.ts';
-import { deleteSave } from '../core/save.ts';
+import { getComponent, addComponent } from '../core/ecs.ts';
 export enum HungerState {
   Satiated = 'Satiated',
   Normal = 'Normal',
@@ -89,16 +86,10 @@ export function processHungerTick(state: GameState, entityId: EntityId, energyCo
       }
 
       if (newHp === 0) {
-        // Handle death
-        if (isPlayer) {
-          nextState = addMessage(nextState, `Game Over! You have starved to death.`, MessageLogCategory.CombatDeath);
-          nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
-          deleteSave();
-        } else {
-          // AI starvation death? We don't have hunger for AI yet, but if we do...
-          nextState = removeEntity(nextState, entityId);
-          removeActor(entityId);
-        }
+        nextState = addComponent(nextState, entityId, {
+          type: ComponentType.Death,
+          causeOfDeath: 'starvation'
+        });
       }
     }
   }

@@ -1,0 +1,162 @@
+/* Side Panel HUD Cards */
+.hud-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+  backdrop-filter: blur(5px);
+}
+
+.hud-card h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+
+.stat-row {
+  margin-bottom: 10px;
+}
+
+.stat-row:last-child {
+  margin-bottom: 0;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.text-highlight {
+  color: var(--color-accent);
+}
+
+/* Bar meters */
+.bar-container {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  height: 20px;
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.health-bar {
+  background: linear-gradient(90deg, #ff4757, #ff6b81);
+  box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+.xp-bar {
+  background: linear-gradient(90deg, #2ed573, #7bed9f);
+  box-shadow: 0 0 10px rgba(46, 213, 115, 0.3);
+}
+
+.bar-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* Status Effects */
+.status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.status-label {
+  font-weight: bold;
+}
+
+.status-duration {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+/* Log Screen */
+.log-card {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+}
+
+.log-content {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-y: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-right: 4px;
+}
+
+.log-entry {
+  color: var(--text-main);
+}
+
+.log-entry.system {
+  color: var(--text-dim);
+}
+
+.log-entry.combat-hit {
+  color: var(--color-health);
+}
+
+.log-entry.combat-heal {
+  color: var(--color-xp);
+}
+
+.log-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

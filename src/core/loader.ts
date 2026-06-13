@@ -11,6 +11,21 @@ import {
  * @returns A promise that resolves to the fully populated and validated CampaignData
  */
 export async function loadCampaign(campaignId: string): Promise<CampaignData> {
+  // Playtest interceptor
+  const editorDoc = sessionStorage.getItem('editor_active_document');
+  if (editorDoc) {
+    try {
+      const parsed = JSON.parse(editorDoc);
+      const result = CampaignDataSchema.safeParse(parsed);
+      if (result.success) {
+        return result.data;
+      }
+      console.warn('Invalid editor document in sessionStorage, falling back to disk fetch', result.error);
+    } catch (e) {
+      console.warn('Failed to parse editor document from sessionStorage', e);
+    }
+  }
+
   const basePath = `/data/campaigns/${campaignId}`;
 
   try {

@@ -27,7 +27,8 @@ export const enum UIMode {
   Factions = 'factions',
   Dialogue = 'dialogue',
   Quests = 'quests',
-  Investigation = 'investigation'
+  Investigation = 'investigation',
+  Editor = 'editor'
 }
 
 /**

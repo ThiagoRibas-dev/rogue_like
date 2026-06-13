@@ -15,7 +15,7 @@
 
 <body>
   <div id="app">
-    <div class="layout-wrapper">
+    <div class="layout-wrapper" id="game-layout">
 
       <!-- Top Bar -->
       <header class="top-bar">
@@ -158,6 +158,9 @@
 
     </div> <!-- /layout-wrapper -->
 
+    <!-- Campaign Editor Layout -->
+    <div id="editor-layout" class="editor-layout-wrapper hidden"></div>
+
     <!-- Global UI Tooltip -->
     <div id="ui-tooltip" class="ui-tooltip hidden"></div>
 
@@ -178,6 +181,7 @@
         <div class="modal-buttons">
           <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
           <button id="btn-new-game" class="modal-btn">New Game</button>
+          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign Editor</button>
           <div style="display: flex; gap: 8px; margin-top: 16px;">
             <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export
               Save</button>
