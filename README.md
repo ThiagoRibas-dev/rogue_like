@@ -1,6 +1,6 @@
 # Roguelike Template
 
-A modern, highly-extensible, browser-based traditional roguelike engine featuring both **Turn-Based** and **Real-Time with Pause (RTwP)** modes, built with **TypeScript**, **Vite**, and **ROT.js**. 
+A modern, highly-extensible, browser-based traditional roguelike engine featuring both **Turn-Based** and **Real-Time with Pause (RTwP)** modes,  **Systemic Narrative** systems, and a  **Data-Driven** architecture. Built with **TypeScript**, **Vite**, and **ROT.js**. 
 
 ## 🚀 Quick Start
 
@@ -32,8 +32,10 @@ This codebase enforces very strict architectural rules to ensure long-term maint
 - **Strict TypeScript**: Compiled with maximum strictness (`noImplicitAny`, `exactOptionalPropertyTypes`, etc.). There are zero `any` types in this codebase.
 - **Pure ECS (Entity-Component-System)**: Logic is entirely decoupled from data. Entities are simply branded numeric IDs. Components are plain data interfaces. Systems are pure functions.
 - **Immutable State**: The `GameState` object is an immutable snapshot of a single turn. Systems take the current state and return a brand new state object, making saving, loading, and time-travel debugging trivial.
-- **No Magic Values**: Every string and number that affects gameplay logic is extracted into the `src/constants/` directory.
+- **No Magic Values**: Every string and number that affects gameplay logic is extracted into the `src/constants/` directory or loaded from JSON registries.
 - **Subsystem Encapsulation**: Third-party libraries like `ROT.js` are never called directly by game logic. They are wrapped in `src/core/` modules (e.g., `rng.ts`, `scheduler.ts`) to ensure deterministic behavior.
+- **Data-Driven Moddability**: Campaigns, entities, items, and map features are defined entirely in Zod-validated JSON schemas, allowing for trivial modding without touching core logic.
+- **Systemic Narrative & Adversarial Layers**: Features a standalone Scheme Simulator that advances villainous plots asynchronously, generating clues and adapting to the player's interference.
 
 ## 📁 Repository Structure
 
@@ -56,7 +58,7 @@ This codebase enforces very strict architectural rules to ensure long-term maint
 
 For a deep dive into how the engine is built and how to extend it, please refer to:
 - `docs/ARCHITECTURE.md`: High-level system design and decision logs.
-- `docs/MILESTONES.md`: The roadmap from MVP to full Real-Time-with-Pause (RTwP) depth.
+- `docs/MILESTONES.md`: The roadmap from a MVP to a systemic engine with narrative and adversarial layers.
 - `AGENTS.md`: The core tenets of how code must be written for this project.
 
 ## 🛠️ Scripts

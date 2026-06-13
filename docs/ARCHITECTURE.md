@@ -19,16 +19,18 @@ Beyond the technical ECS constraints, the development of systemic mechanics (lik
 
 ## 3. Module Dependency Graph
 
-The dependency graph flows strictly downward. Circular imports are banned. Modules at lower layers (e.g., `types`, `constants`, `utils`) may never import from upper layers.
+The dependency graph flows strictly downward. Circular imports are banned. Modules at lower layers (e.g., `types`, `constants`, `utils`) may never import from upper layers. 
+
+Since the Campaign Editor is a top-level creator tool rather than a part of the active gameplay loops, the `editor/` controller folder sits at the top tier of the graph alongside the game bootstrap, permitting it to import from any engine layer while keeping the `rendering/` view layer completely isolated.
 
 ```
-       [ main.ts ]  (Entry point, bootstrapping, event listeners)
+       [ main.ts ]                 [ editor/ ]  (Campaign Creator, Workspace controller)
+            │                            │
+            ▼                            │ (Direct imports allowed for tooling orchestration)
+       [ core/ ]   (Loop, scheduler, RNG)◄┘
             │
             ▼
-       [ core/ ]    (Game loop, scheduler, RNG, ECS core)
-            │
-            ▼
-     [ systems/ ]   (Pure game logic: movement, combat, AI, death)
+     [ systems/ ]  (Pure game logic: movement, combat, AI, death)
        │        │
        ▼        ▼
   [ map/ ]    [ rendering/ ]  (Dungeon generation, FOV | drawing, camera, HUD)
