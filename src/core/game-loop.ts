@@ -12,7 +12,7 @@ import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { processTriggers } from '../systems/trigger.system.ts';
+import { processTraps, processGlobalTriggers } from '../systems/trigger.system.ts';
 import { processDamageSystem } from '../systems/damage.system.ts';
 import { processDeathSystem } from '../systems/death.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
@@ -250,7 +250,7 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
         energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
       }
     }
-    nextState = processTriggers(nextState, intent.entityId);
+    nextState = processTraps(nextState, intent.entityId);
   } else if ('isImmediate' in intent && intent.isImmediate) {
     energyCost = 0; // UI/Debug actions take no time
   }
@@ -273,17 +273,23 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 
   if (result.events && result.events.length > 0) {
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
-    nextState = processInvestigationEvents(nextState);
-
-    return {
-      ...finalResult,
-      state: nextState,
-      events: result.events as ReadonlyArray<import('../types/events.types.ts').GameEvent>
-    };
   }
 
+  // Run the new global triggers
+  nextState = processGlobalTriggers(nextState);
+
+  // Investigation system consumes events
   nextState = processInvestigationEvents(nextState);
-  return { ...finalResult, state: nextState };
+
+  // Clear events at the end of the intent tick so they don't persist
+  const eventsToReturn = [...nextState.events];
+  nextState = { ...nextState, events: [] };
+
+  return {
+    ...finalResult,
+    state: nextState,
+    events: eventsToReturn as ReadonlyArray<import('../types/events.types.ts').GameEvent>
+  };
 }
 
 /**

@@ -1,5 +1,6 @@
 import { ComponentType, type PositionComponent, type Component } from '../types/components.types.ts';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
+import { GameEventType } from '../types/events.types.ts';
 import { getComponent, updateSpatialIndex } from '../core/ecs.ts';
 
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
@@ -17,7 +18,10 @@ import { isHostile } from '../utils/faction.ts';
  * @param intent The MoveIntent to process.
  * @returns The new or original GameState.
  */
-export function processMoveIntent(state: GameState, intent: MoveIntent): { state: GameState; success: boolean } {
+export function processMoveIntent(
+  state: GameState,
+  intent: MoveIntent
+): { state: GameState; success: boolean; events?: import('../types/events.types.ts').GameEvent[] } {
   const { entityId, dx, dy } = intent;
 
   const position = getComponent(state, entityId, ComponentType.Position);
@@ -128,5 +132,14 @@ export function processMoveIntent(state: GameState, intent: MoveIntent): { state
 
   nextState = updateSpatialIndex(nextState);
 
-  return { state: nextState, success: true };
+  const tileTags = state.campaign.tiles[targetTile.tileId]?.tags ?? [targetTile.tileId];
+  const events = tileTags.map((tag) => ({
+    type: GameEventType.TileEntered as const,
+    entityId,
+    x: targetX,
+    y: targetY,
+    tileTag: tag
+  }));
+
+  return { state: nextState, success: true, events };
 }

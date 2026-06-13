@@ -339,6 +339,7 @@ export function createBlankSlateCampaign(): CampaignData {
     dialogues: {},
     quests: {},
     questTemplates: {},
+    triggers: {},
     villains: {},
     schemes: {},
     agreements: {}

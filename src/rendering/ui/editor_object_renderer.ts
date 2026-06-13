@@ -93,6 +93,17 @@ function getReferenceOptions(key: string, doc: CampaignData): { value: string; l
   if (key === 'profileId') {
     return Object.keys(doc.ai).map((k) => ({ value: k, label: k }));
   }
+  if (key === 'eventType') {
+    return [
+      { value: 'TurnPassed', label: 'Turn Passed' },
+      { value: 'PlayerMoved', label: 'Player Moved' },
+      { value: 'TileEntered', label: 'Tile Entered' },
+      { value: 'EntityDied', label: 'Entity Died' },
+      { value: 'TrapTriggered', label: 'Trap Triggered' },
+      { value: 'ClueDiscovered', label: 'Clue Discovered' },
+      { value: 'DialogueSelected', label: 'Dialogue Selected' }
+    ];
+  }
   return null;
 }
 

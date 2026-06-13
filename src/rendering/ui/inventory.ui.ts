@@ -187,10 +187,21 @@ export function renderInventoryPanel(state: GameState): void {
 
       const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
       if (itemComp) {
+        const isIdentified = state.identifiedItems.has(itemComp.itemId);
+        const def = state.campaign.items[itemComp.itemId];
+        const displayName = isIdentified
+          ? def?.name
+          : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
+
         const renderable = getComponent(state, itemEntityId, ComponentType.Renderable);
         const icon = document.createElement('span');
         icon.className = 'inv-item-icon';
-        icon.textContent = renderable ? renderable.glyph : '?';
+        if (displayName) {
+          icon.textContent = displayName.substring(0, 3);
+          icon.style.fontSize = '0.7rem';
+        } else {
+          icon.textContent = renderable ? renderable.glyph : '?';
+        }
         icon.style.color = renderable ? renderable.fg : '#fff';
 
         slotDiv.appendChild(icon);

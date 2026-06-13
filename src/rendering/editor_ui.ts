@@ -3,9 +3,10 @@ import { UIMode } from '../types/game-state.types.ts';
 import { setGameState } from '../core/game-loop.ts';
 import type { CampaignData } from '../types/campaign.types.ts';
 import type { PatchOperation } from '../utils/json-patch.ts';
-import { renderFormForObject } from './ui/editor_object_renderer.ts';
+import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
 import { loadCampaign } from '../core/loader.ts';
+import { CampaignCategorySchemas } from '../types/campaign.types.ts';
 
 export interface ValidationError {
   readonly path: string;
@@ -54,14 +55,11 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
   if (!isInitialized) {
     editorLayout.innerHTML = ''; // Clear previous
 
-    const container = document.createElement('div');
-    container.className = 'editor-container';
-
     // Toolbar
     const toolbar = document.createElement('header');
     toolbar.className = 'editor-toolbar';
     toolbar.innerHTML = `
-      <div class="toolbar-left">
+      <div class="editor-toolbar-left">
         <h1 class="editor-title">🛠️ Campaign Editor</h1>
         <button id="btn-editor-new" class="editor-btn">✨ New</button>
         <button id="btn-editor-open" class="editor-btn">📂 Open Workspace</button>
@@ -71,11 +69,11 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         <button id="btn-editor-import-zip" class="editor-btn">📦 Import ZIP</button>
         <button id="btn-editor-export-zip" class="editor-btn">📦 Export ZIP</button>
       </div>
-      <div class="toolbar-center">
+      <div class="editor-toolbar-center">
         <button id="btn-editor-undo" class="editor-btn">↩️ Undo</button>
         <button id="btn-editor-redo" class="editor-btn">↪️ Redo</button>
       </div>
-      <div class="toolbar-right">
+      <div class="editor-toolbar-right">
         <span id="editor-validation-status" class="validation-status">✅ OK</span>
         <button id="btn-editor-playtest" class="editor-btn playtest-btn">▶️ Play Test</button>
         <button id="btn-editor-exit" class="editor-btn exit-btn">✖ Exit</button>
@@ -100,6 +98,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         <li><button class="sidebar-item-btn" data-target="factions">Factions</button></li>
         <li><button class="sidebar-item-btn" data-target="dialogues">Dialogues</button></li>
         <li><button class="sidebar-item-btn" data-target="quests">Quests</button></li>
+        <li><button class="sidebar-item-btn" data-target="triggers">Triggers</button></li>
         <li><button class="sidebar-item-btn" data-target="villains">Villains</button></li>
       </ul>
     `;
@@ -139,9 +138,11 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     // Update body layout CSS initially
     bodyLayout.style.gridTemplateColumns = '220px 1fr';
 
-    container.appendChild(toolbar);
-    container.appendChild(bodyLayout);
-    editorLayout.appendChild(container);
+    editorLayout.appendChild(toolbar);
+    editorLayout.appendChild(bodyLayout);
+
+    // Initial render of whatever is selected
+    refreshActiveViews(controller);
 
     // Bind basic events
     document.getElementById('btn-editor-exit')?.addEventListener('click', () => {
@@ -315,6 +316,7 @@ function refreshActiveViews(controller: EditorController) {
     'factions',
     'dialogues',
     'quests',
+    'triggers',
     'villains',
     'schemes',
     'agreements'
@@ -400,14 +402,16 @@ function refreshActiveViews(controller: EditorController) {
         // Render dictionary item form
         const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
         const itemObj = dict[currentItemId];
-        renderFormForObject(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+        const schema = CampaignCategorySchemas[currentCategory];
+        renderFormForZodSchema(controller, schema, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
       } else {
         formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
       }
     } else {
       // Render singleton form
       const obj = doc[currentCategory as keyof CampaignData];
-      renderFormForObject(controller, obj, `/${currentCategory}`, formContainer);
+      const schema = CampaignCategorySchemas[currentCategory];
+      renderFormForZodSchema(controller, schema, obj, `/${currentCategory}`, formContainer);
     }
 
     workspacePane.appendChild(formContainer);

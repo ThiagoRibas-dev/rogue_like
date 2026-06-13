@@ -1,5 +1,6 @@
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
+import { GameEventType } from '../types/events.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import type { CloseDialogueIntent, SelectDialogueOptionIntent, StartDialogueIntent } from '../types/intents.types.ts';
@@ -65,7 +66,18 @@ export function processSelectDialogueOptionIntent(
   if (!option) return { state, success: false };
 
   // Evaluate actions
-  let nextState = state;
+  let nextState: GameState = {
+    ...state,
+    events: [
+      ...state.events,
+      {
+        type: GameEventType.DialogueSelected as const,
+        dialogueId: treeId,
+        optionId: intent.optionId
+      }
+    ]
+  };
+
   if (option.actions) {
     for (const action of option.actions) {
       if (action.type === 'grant_quest') {

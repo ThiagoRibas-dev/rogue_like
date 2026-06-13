@@ -28,6 +28,7 @@
 }
 
 .editor-toolbar-left,
+.editor-toolbar-center,
 .editor-toolbar-right {
   display: flex;
   align-items: center;

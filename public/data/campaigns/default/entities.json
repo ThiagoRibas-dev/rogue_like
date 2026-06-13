@@ -112,6 +112,10 @@
     "glyph": "^",
     "fg": "#e74c3c",
     "bg": "transparent",
-    "isActor": false
+    "isActor": false,
+    "renderable": false,
+    "trap": {
+      "triggerId": "hidden_trap_trigger"
+    }
   }
 }

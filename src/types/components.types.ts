@@ -212,7 +212,7 @@ export interface HungerComponent {
  */
 export interface TrapComponent {
   readonly type: ComponentType.Trap;
-  readonly effectId: string;
+  readonly triggerId: string;
   readonly triggered: boolean;
 }
 

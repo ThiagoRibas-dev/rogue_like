@@ -13,7 +13,10 @@ export const enum GameEventType {
   ItemUsed = 'ItemUsed',
   ItemEquipped = 'ItemEquipped',
   ItemUnequipped = 'ItemUnequipped',
-  ClueDiscovered = 'ClueDiscovered'
+  ClueDiscovered = 'ClueDiscovered',
+  TileEntered = 'TileEntered',
+  DialogueSelected = 'DialogueSelected',
+  TrapTriggered = 'TrapTriggered'
 }
 
 export interface BaseGameEvent {
@@ -36,8 +39,9 @@ export interface EntityDamagedEvent extends BaseGameEvent {
 
 export interface EntityDiedEvent extends BaseGameEvent {
   readonly type: GameEventType.EntityDied;
-  readonly entityId: EntityId;
-  readonly killerEntityId?: EntityId;
+  readonly victimId: EntityId;
+  readonly killerId?: EntityId;
+  readonly tags: ReadonlyArray<string>;
 }
 
 export interface EntityHealedEvent extends BaseGameEvent {
@@ -65,6 +69,26 @@ export interface ClueDiscoveredEvent extends BaseGameEvent {
   readonly implicatesEntityId?: EntityId | undefined;
 }
 
+export interface TileEnteredEvent extends BaseGameEvent {
+  readonly type: GameEventType.TileEntered;
+  readonly entityId: EntityId;
+  readonly x: number;
+  readonly y: number;
+  readonly tileTag: string;
+}
+
+export interface DialogueSelectedEvent extends BaseGameEvent {
+  readonly type: GameEventType.DialogueSelected;
+  readonly dialogueId: string;
+  readonly optionId: string;
+}
+
+export interface TrapTriggeredEvent extends BaseGameEvent {
+  readonly type: GameEventType.TrapTriggered;
+  readonly entityId: EntityId;
+  readonly triggerId: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -75,4 +99,7 @@ export type GameEvent =
   | EntityHealedEvent
   | ItemPickedUpEvent
   | ItemDroppedEvent
-  | ClueDiscoveredEvent;
+  | ClueDiscoveredEvent
+  | TileEnteredEvent
+  | DialogueSelectedEvent
+  | TrapTriggeredEvent;

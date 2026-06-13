@@ -155,15 +155,16 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
   nextState = addComponent(nextState, entityId, pos);
   nextState = addComponent(nextState, entityId, { type: ComponentType.Template, templateId });
 
-  if (templateId !== 'hidden_trap') {
+  if (template.renderable !== false) {
     nextState = addComponent(nextState, entityId, render);
-  } else {
-    const trapCmp = {
+  }
+
+  if (template.trap) {
+    nextState = addComponent(nextState, entityId, {
       type: ComponentType.Trap,
-      effectId: 'scroll_fireball', // Trap effect (hardcoded for now, could be in template)
+      triggerId: template.trap.triggerId,
       triggered: false
-    } as const;
-    nextState = addComponent(nextState, entityId, trapCmp);
+    });
   }
 
   if (template.isActor) {

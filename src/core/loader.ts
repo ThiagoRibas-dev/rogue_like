@@ -47,7 +47,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       questTemplatesRes,
       villainsRes,
       schemesRes,
-      agreementsRes
+      agreementsRes,
+      triggersRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -66,7 +67,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/quest_templates.json`),
       fetch(`${basePath}/villains.json`),
       fetch(`${basePath}/schemes.json`),
-      fetch(`${basePath}/agreements.json`)
+      fetch(`${basePath}/agreements.json`),
+      fetch(`${basePath}/triggers.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -88,7 +90,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       questTemplatesRes,
       villainsRes,
       schemesRes,
-      agreementsRes
+      agreementsRes,
+      triggersRes
     ];
 
     for (const res of responses) {
@@ -115,7 +118,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       questTemplates,
       villains,
       schemes,
-      agreements
+      agreements,
+      triggers
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -134,7 +138,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       questTemplatesRes.json(),
       villainsRes.json(),
       schemesRes.json(),
-      agreementsRes.json()
+      agreementsRes.json(),
+      triggersRes.json()
     ]);
 
     const data = {
@@ -155,7 +160,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       questTemplates,
       villains,
       schemes,
-      agreements
+      agreements,
+      triggers,
+      triggerBuckets: {} // We'll build this next
     };
 
     const result = CampaignDataSchema.safeParse(data);
@@ -164,7 +171,18 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       throw new Error(`Failed to validate campaign ${campaignId}: ${result.error.message}`);
     }
 
-    return result.data;
+    // Build the O(1) trigger routing buckets
+    const campaignData = result.data;
+    const triggerBuckets: Record<string, import('../types/trigger.types.ts').TriggerDefinition[]> = {};
+    for (const trigger of Object.values(campaignData.triggers)) {
+      if (!triggerBuckets[trigger.eventType]) {
+        triggerBuckets[trigger.eventType] = [];
+      }
+      triggerBuckets[trigger.eventType]!.push(trigger);
+    }
+    campaignData.triggerBuckets = triggerBuckets;
+
+    return campaignData;
   } catch (error) {
     console.error(`Error loading campaign ${campaignId}:`, error);
     throw error;

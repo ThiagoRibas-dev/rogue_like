@@ -123,7 +123,7 @@ export function handleKeyDown(
 
   // Inventory panel: letter keys select a slot, Escape closes
   if (isInventoryOpen) {
-    if (event.key === 'Escape' || isAction(event, 'inventory')) {
+    if (event.key === 'Escape') {
       event.preventDefault();
       queuePlayerIntent(createToggleInventoryAction(playerEntityId));
       return;

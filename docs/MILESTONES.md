@@ -232,6 +232,7 @@ Features to allow building, testing, and sharing campaigns using structured JSON
 - [x] **Modular DOM Database Editor Components**
   - Design a modular CSS layout in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts): Left sidebar list and Right editing pane.
   - Build granular, reusable DOM field elements in Vanilla TS: `StringField`, `NumberField`, `ColorPickerField`, `ListField`, and `NestedRecordField`.
+  - **⭐ Zod-Driven Form Generation:** Refactor the editor renderer to recursively parse Zod schema definitions (`ZodObject`, `ZodOptional`, `ZodArray`, etc.) so that all possible fields are presented to the user, even on newly created empty objects.
   - **⭐ `ReferenceField` / Autocomplete Pickers:** Fields referencing IDs (e.g. entities to factions, items to effects) render as searchable dropdowns rather than raw text to prevent link errors, reading live tables in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
 - [x] **Zod Schema Compiler & Link Auditor**
   - Hook Zod's `safeParse` to validate fields on input change, showing validation errors inline based on Zod types in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
@@ -243,20 +244,20 @@ Features to allow building, testing, and sharing campaigns using structured JSON
 
 ## 🟢 Milestone 22: The Trigger System (Events → Conditions → Consequences) ⭐ KEYSTONE
 Promote scattered condition/action primitives into a single, unified, event-reactive trigger engine.
-- [ ] **Generalize the Event Surface**
+- [x] **Generalize the Event Surface**
   - Audit and expand the existing `GameEventType` enum and event ledger in [src/types/events.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/events.types.ts); ensure all state changes publish uniformly in [src/core/game-loop.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/game-loop.ts).
-- [ ] **Declarative Trigger Schema**
+- [x] **Declarative Trigger Schema**
   - Define Zod `TriggerDefinition` `{ id, event, conditions[], consequences[] }` serializable to JSON in [src/types/trigger.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/trigger.types.ts).
   - **Conditions:** Composable predicates (e.g., `entityHasTag`, `factionStandingBetween`, `hasMemoryFact`).
   - **Consequences:** Extensible effect types (e.g., `modify_standing`, `complete_quest`, `spawn_entity`, `emit_clue`).
-- [ ] **Trigger Routing via Buckets**
+- [x] **Trigger Routing via Buckets**
   - Refactor [src/systems/trigger.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/trigger.system.ts) to index triggers by event type (`event → triggers`) on campaign load for fast O(1) matching during game ticks, replacing old local checks.
-- [ ] **Authoring UI: The Trigger Card Builder**
+- [x] **Authoring UI: The Trigger Card Builder**
   - Create the trigger-card composer interface in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) of `WHEN [event] IF [conditions...] THEN [consequences...]` using reference dropdowns.
-- [ ] **⭐ Power-User Scripting Hatch**
+- [x] **⭐ Power-User Scripting Hatch**
   - **Phase A:** Ship declarative core triggers first.
   - **Phase B:** Add a sandboxed `run_script` consequence in [src/systems/trigger.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/trigger.system.ts) that evaluates event/state context as a pure function and returns new declarative consequences (maintaining determinism and serialization).
-- [ ] **⭐ De-risked Trigger Migration Loop**
+- [x] **⭐ De-risked Trigger Migration Loop**
   - **Phase 1 Clue Migration:** Port clue drops inside [src/systems/investigation.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/investigation.system.ts) to triggers first to test the engine with low blast radius.
   - **Phase 2 Validator Helper:** Implement a basic headless state-diffing runner in `src/editor/campaign_validator.ts` early to assert the default campaign generates identical gameplay logs before and after refactoring.
   - **Phase 3 Narrative Migrations:** Port heavy NPC dialogues and quest events to triggers once diff-testing passes.
@@ -308,3 +309,14 @@ Implement packaging structure and install operations for modular campaigns.
 - [ ] **One-Click Install / Import**
   - Modify the campaign select screen UI in [src/rendering/ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui.ts) to allow uploading ZIP campaign files, parsing and validating schemas in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) before importing.
   - Add "Install Campaign" drag-and-drop or file picker option to the main game menu screen.
+
+## 🟢 Milestone 27: Visual Editor Enhancements (Drag-and-Drop & Previews)
+Enhance the Developer Tools to feel like a modern visual game engine rather than just a smart forms editor.
+- [ ] **Drag-and-Drop Form Elements**
+  - Upgrade the Zod-driven arrays and lists in [src/rendering/ui/zod_form_renderer.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/zod_form_renderer.ts) to support drag-and-drop reordering.
+  - Implement drag-and-drop linking (e.g., dragging an Item from the sidebar into a Monster's loot table).
+- [ ] **Live Map Previews**
+  - Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
+- [ ] **Bespoke UI for Complex Types**
+  - Replace generic nested object forms with visual node editors or custom components for complex data (e.g., visual graph for Dialogue Trees instead of just JSON-style nested properties).
+  - Implement a visual grid selector for sprite/glyph selection.

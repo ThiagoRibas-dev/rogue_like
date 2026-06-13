@@ -10,10 +10,10 @@ import { HOSTILITY_MATRIX } from '../src/constants/faction.constants.ts';
 import * as glyphs from '../src/constants/glyphs.constants.ts';
 import { HUNGER_THRESHOLDS, MAX_SATIATION } from '../src/constants/hunger.constants.ts';
 import { ITEM_REGISTRY, LOOT_TABLE, MAX_ITEMS_PER_ROOM } from '../src/constants/items.constants.ts';
-import { 
-  MAP_WIDTH, MAP_HEIGHT, MIN_ROOM_WIDTH, MAX_ROOM_WIDTH, 
-  MIN_ROOM_HEIGHT, MAX_ROOM_HEIGHT, MIN_CORRIDOR_LENGTH, 
-  MAX_CORRIDOR_LENGTH, DUG_PERCENTAGE, MAX_DUNGEON_DEPTH, FOV_RADIUS 
+import {
+  MAP_WIDTH, MAP_HEIGHT, MIN_ROOM_WIDTH, MAX_ROOM_WIDTH,
+  MIN_ROOM_HEIGHT, MAX_ROOM_HEIGHT, MIN_CORRIDOR_LENGTH,
+  MAX_CORRIDOR_LENGTH, DUG_PERCENTAGE, MAX_DUNGEON_DEPTH, FOV_RADIUS
 } from '../src/constants/map.constants.ts';
 import { ENTITY_TEMPLATES, SPAWN_WEIGHTS, MAX_MONSTERS_PER_ROOM } from '../src/constants/spawning.constants.ts';
 import { STATUS_EFFECTS } from '../src/constants/status.constants.ts';
@@ -34,7 +34,7 @@ async function main() {
   // 1. Manifest
   await writeJson('manifest.json', {
     id: 'default',
-    name: 'Hall of the Goblin King',
+    name: 'Descent',
     description: 'The base roguelike experience. Descend the dungeon and survive.',
     version: '1.0.0'
   });

@@ -1,7 +1,8 @@
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
-import { ComponentType, type DeathComponent, toItemInstanceId } from '../types/components.types.ts';
-import { getComponent, removeEntity, createEntity, addComponent } from '../core/ecs.ts';
+import { GameEventType } from '../types/events.types.ts';
+import { ComponentType, type DeathComponent } from '../types/components.types.ts';
+import { getComponent, removeEntity } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
@@ -83,6 +84,24 @@ export function processDeathSystem(state: GameState): GameState {
 
     nextState = addMessage(nextState, `${name} dies!`, MessageLogCategory.CombatDeath);
 
+    const tagsComponent = getComponent(nextState, entityId, ComponentType.Tags) as
+      | import('../types/components.types.ts').TagsComponent
+      | undefined;
+    const tags = tagsComponent ? tagsComponent.tags : [];
+
+    nextState = {
+      ...nextState,
+      events: [
+        ...nextState.events,
+        {
+          type: GameEventType.EntityDied,
+          victimId: entityId,
+          ...(deathComp.killerId !== undefined ? { killerId: deathComp.killerId } : {}),
+          tags
+        }
+      ]
+    };
+
     if (isPlayer) {
       let causeText = 'slain';
       if (deathComp.causeOfDeath) {
@@ -107,45 +126,8 @@ export function processDeathSystem(state: GameState): GameState {
         }
       }
 
-      // Drop Clue if they had an agreement
-      const agreement = getComponent(nextState, entityId, ComponentType.Agreement) as
-        | import('../types/components.types.ts').AgreementComponent
-        | undefined;
-      const pos = getComponent(nextState, entityId, ComponentType.Position) as
-        | import('../types/components.types.ts').PositionComponent
-        | undefined;
-      if (agreement && pos) {
-        const agreementDef = state.campaign.agreements[agreement.agreementId];
-        if (agreementDef && agreementDef.clueTemplates.length > 0) {
-          const clueTemplateId = agreementDef.clueTemplates[0]!;
-
-          let clueEntity: EntityId;
-          [nextState, clueEntity] = createEntity(nextState);
-
-          nextState = addComponent(nextState, clueEntity, pos);
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Renderable,
-            glyph: '?',
-            fg: '#ffff00',
-            bg: 'transparent'
-          });
-          const instanceId = toItemInstanceId(`clue_item_${nextState.nextItemInstanceId}`);
-          nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Item,
-            itemId: 'clue_item',
-            instanceId
-          });
-          nextState = addComponent(nextState, clueEntity, {
-            type: ComponentType.Clue,
-            clueId: clueTemplateId,
-            text: `Incriminating evidence regarding a ${agreementDef.task}...`,
-            implicatesEntityId: agreement.mastermindId
-          } as import('../types/components.types.ts').ClueComponent);
-
-          nextState = addMessage(nextState, `${name} dropped something suspicious!`, MessageLogCategory.System);
-        }
-      }
+      // Let the Trigger system handle clue drops and narrative consequences.
+      // E.g., `EntityDiedEvent` is evaluated by `processGlobalTriggers`.
 
       // Strip the dead entity from the world
       nextState = removeEntity(nextState, entityId);

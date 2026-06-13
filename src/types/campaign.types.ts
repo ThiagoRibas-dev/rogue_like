@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DialogueTreeSchema } from './dialogue.types.ts';
 
 import { QuestSchema } from './quests.types.ts';
+import { TriggerDefinitionSchema } from './trigger.types.ts';
 
 // ==========================================
 // 1. MANIFEST & REGISTRY
@@ -197,7 +198,13 @@ export const EntityTemplateSchema = z.object({
       grudges: z.array(z.string()).optional()
     })
     .optional(),
-  dialogueId: z.string().optional()
+  dialogueId: z.string().optional(),
+  trap: z
+    .object({
+      triggerId: z.string()
+    })
+    .optional(),
+  renderable: z.boolean().optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
@@ -365,8 +372,34 @@ export const CampaignDataSchema = z.object({
   dialogues: z.record(z.string(), DialogueTreeSchema),
   quests: z.record(z.string(), QuestSchema),
   questTemplates: z.record(z.string(), ProceduralQuestTemplateSchema),
+  triggers: z.record(z.string(), TriggerDefinitionSchema),
+  triggerBuckets: z.record(z.string(), z.array(TriggerDefinitionSchema)).optional(),
   villains: z.record(z.string(), VillainArchetypeSchema),
   schemes: z.record(z.string(), SchemeTemplateSchema),
   agreements: z.record(z.string(), AgreementDefinitionSchema)
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
+
+// Helper registry for editor to resolve specific schemas by category key
+export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> = {
+  manifest: CampaignManifestSchema,
+  rules: RulesConfigSchema,
+  theme: ThemeConfigSchema,
+  advancement: AdvancementLevelSchema.array(),
+  areas: AreaDefinitionSchema,
+  items: ItemDefinitionSchema,
+  effects: ItemEffectDefinitionSchema,
+  entities: EntityTemplateSchema,
+  status: StatusEffectDefinitionSchema,
+  tiles: TileDefinitionSchema,
+  factions: FactionMatrixSchema,
+  ai: AIProfileSchema,
+  dialogues: DialogueTreeSchema,
+  quests: QuestSchema,
+  questTemplates: ProceduralQuestTemplateSchema,
+  triggers: TriggerDefinitionSchema,
+  triggerBuckets: z.array(TriggerDefinitionSchema),
+  villains: VillainArchetypeSchema,
+  schemes: SchemeTemplateSchema,
+  agreements: AgreementDefinitionSchema
+};
