@@ -9,7 +9,8 @@ function appendWikiSegments(container: HTMLElement, text: string) {
   for (const seg of segments) {
     if (seg.type) {
       const span = document.createElement('span');
-      span.className = 'wiki-link text-blue-400 cursor-help underline decoration-blue-400/50 decoration-dashed';
+      span.className = 'wiki-link';
+      span.style.cssText = 'color: #3498db; cursor: help; text-decoration: underline dashed rgba(52, 152, 219, 0.5);';
       span.dataset.tooltipType = seg.type;
       span.dataset.tooltipId = seg.id;
       span.textContent = seg.text;
@@ -58,20 +59,20 @@ export function renderQuestJournal(state: GameState): void {
     if (!questDef) continue;
 
     const questContainer = document.createElement('div');
-    questContainer.className = 'mb-4 p-2 bg-gray-800 rounded border border-gray-600';
+    questContainer.style.cssText = 'margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); border-radius: 4px;';
 
     const title = document.createElement('h3');
-    title.className = `text-lg font-bold mb-1 ${qState.status === 'completed' ? 'text-green-400' : 'text-yellow-400'}`;
+    title.style.cssText = `margin: 0 0 8px 0; font-size: 1.1rem; color: ${qState.status === 'completed' ? '#2ecc71' : '#f1c40f'};`;
     title.textContent = questDef.title;
     questContainer.appendChild(title);
 
     const desc = document.createElement('p');
-    desc.className = 'text-gray-300 text-sm mb-2';
+    desc.style.cssText = 'color: var(--text-dim); font-size: 0.9rem; margin-bottom: 12px;';
     appendWikiSegments(desc, questDef.description);
     questContainer.appendChild(desc);
 
     const objTitle = document.createElement('div');
-    objTitle.className = 'text-gray-400 text-xs uppercase tracking-wide mb-1';
+    objTitle.style.cssText = 'color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;';
     objTitle.textContent = 'Objectives:';
     questContainer.appendChild(objTitle);
 
@@ -79,7 +80,7 @@ export function renderQuestJournal(state: GameState): void {
       const progress = qState.objectiveProgress[obj.id] || 0;
       const isDone = progress >= obj.requiredAmount;
       const objLine = document.createElement('div');
-      objLine.className = `text-sm flex justify-between ${isDone ? 'text-green-500 line-through' : 'text-gray-200'}`;
+      objLine.style.cssText = `display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; color: ${isDone ? '#2ecc71' : 'var(--text-color)'}; text-decoration: ${isDone ? 'line-through' : 'none'};`;
 
       const objDesc = document.createElement('span');
       appendWikiSegments(objDesc, obj.description);

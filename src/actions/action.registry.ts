@@ -28,7 +28,6 @@ import {
   processSelectDialogueOptionIntent,
   processStartDialogueIntent
 } from './dialogue.actions.ts';
-import { processToggleQuestsIntent, processToggleInvestigationIntent } from './core.actions.ts';
 import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
@@ -104,6 +103,22 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
         state.engineMode === EngineMode.RTwP ? nextUiModeSettings !== UIMode.Game : state.rtwpState.paused;
       return {
         state: { ...state, uiMode: nextUiModeSettings, rtwpState: { ...state.rtwpState, paused: settingsPaused } },
+        success: false
+      };
+    }
+    case IntentType.ToggleQuests: {
+      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Quests : UIMode.Game;
+      const questsPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: questsPaused } },
+        success: false
+      };
+    }
+    case IntentType.ToggleInvestigation: {
+      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Investigation : UIMode.Game;
+      const invPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: invPaused } },
         success: false
       };
     }
@@ -241,11 +256,6 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
       return processSelectDialogueOptionIntent(state, intent);
     case IntentType.CloseDialogue:
       return processCloseDialogueIntent(state, intent);
-    case IntentType.ToggleQuests:
-      return processToggleQuestsIntent(state, intent);
-    case IntentType.ToggleInvestigation:
-      return processToggleInvestigationIntent(state, intent);
-
     default:
       return assertNever(intent);
   }

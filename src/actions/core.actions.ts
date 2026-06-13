@@ -157,15 +157,7 @@ export function createToggleQuestsAction(entityId: EntityId): ToggleQuestsIntent
   };
 }
 
-export function processToggleQuestsIntent(state: GameState, _intent: ToggleQuestsIntent) {
-  return {
-    state: {
-      ...state,
-      uiMode: state.uiMode === UIMode.Quests ? UIMode.Game : UIMode.Quests
-    },
-    success: true
-  };
-}
+
 
 /**
  * Creates a toggle investigation intent.
@@ -178,12 +170,4 @@ export function createToggleInvestigationAction(entityId: EntityId): ToggleInves
   };
 }
 
-export function processToggleInvestigationIntent(state: GameState, _intent: ToggleInvestigationIntent) {
-  return {
-    state: {
-      ...state,
-      uiMode: state.uiMode === UIMode.Investigation ? UIMode.Game : UIMode.Investigation
-    },
-    success: true
-  };
-}
+
