@@ -281,6 +281,18 @@ export function processChangeAreaIntent(
       }
     }
 
+    if (generated.placedEntities) {
+      for (const ent of generated.placedEntities) {
+        if (state.campaign.items[ent.templateId]) {
+          [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
+        } else if (state.campaign.entities[ent.templateId]) {
+          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y);
+        } else {
+          console.warn(`Placed entity template ${ent.templateId} not found in items or entities registries.`);
+        }
+      }
+    }
+
     nextEntities = tempState.entities;
     nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
   }

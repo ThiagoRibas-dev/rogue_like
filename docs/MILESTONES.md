@@ -275,17 +275,17 @@ Construct narrative structures and test conditional triggers in-editor on top of
 - [x] **Emergent Dialogue Gating Simulator (State Injector)**
   - Integrate an editor sidebar panel in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) to mock player memory fact logs and standings from `MemoryComponent` in [src/types/components.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/components.types.ts), highlighting visible dialogue branches.
 
-## 🟢 Milestone 24: World & Area Builder
+## 🟢 Milestone 24: World & Area Builder (Complete)
 Provide visual environment design and portal networking.
-- [ ] **Visual Grid Painter**
+- [x] **Visual Grid Painter**
   - Setup a tile painter canvas in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) utilizing `ROT.Display` or custom Canvas elements, painting tiles mapped to [src/types/game-state.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/game-state.types.ts) (`Tile` and `GameMap`) and properties in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts) (`TileDefinitionSchema`).
   - Integrate undo/redo command stack patches with paint brush actions.
-- [ ] **Dynamic Spawner & Portal Markers**
+- [x] **Dynamic Spawner & Portal Markers**
   - Paint procedural spawner nodes and configure portal connections in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts), mapping them to `PortalComponent` in [src/types/components.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/components.types.ts).
   - Modify [src/systems/map.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/map.system.ts) to parse dynamic spawners on level load/wakeup.
-- [ ] **Area Graph Editor**
+- [x] **Area Graph Editor**
   - A link node layout of `areas.json` in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) showing overworld topology and transition connectivity based on `areas` structures in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
-- [ ] **Live Generator Sandbox**
+- [x] **Live Generator Sandbox**
   - Real-time preview of cellular/digger parameters inside [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) by invoking [src/map/generator.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/map/generator.ts) with seed rerolling and exit pathfinding reachability checks.
 
 ## 🟢 Milestone 25: Simulation Lab & Campaign Validator

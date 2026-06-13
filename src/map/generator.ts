@@ -4,19 +4,7 @@ import { coordToIndex } from '../utils/grid.ts';
 import { type CampaignData, type AreaConnection } from '../types/campaign.types.ts';
 import { parseStaticMap } from './static-parser.ts';
 
-/**
- * Generates a procedural room-and-corridor dungeon map using ROT.Map.Digger.
- * Places stairs up and down at the centers of rooms.
- *
- * @param width The width of the dungeon map.
- * @param height The height of the dungeon map.
- * @param depth The current dungeon depth.
- * @returns An object containing the generated GameMap and the player's starting coordinates.
- */
-export function generateArea(
-  campaign: CampaignData,
-  areaId: string
-): {
+export interface GeneratedArea {
   readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };
   readonly portals: ReadonlyArray<{ readonly x: number; readonly y: number; readonly connection: AreaConnection }>;
@@ -28,7 +16,16 @@ export function generateArea(
     readonly centerX: number;
     readonly centerY: number;
   }>;
-} {
+  readonly placedEntities?: ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>;
+}
+
+/**
+ * Generates an area map based on its definition using ROT.js.
+ */
+export function generateArea(
+  campaign: CampaignData,
+  areaId: string
+): GeneratedArea {
   const areaDef = campaign.areas[areaId];
   if (!areaDef) {
     throw new Error(`Area ${areaId} not found in campaign.`);
@@ -37,15 +34,16 @@ export function generateArea(
   if (areaDef.generatorType === 'static' && areaDef.staticMap) {
     const map = parseStaticMap(areaDef.staticMap);
     const portals = (areaDef.connections ?? []).map((conn, idx) => ({
-      x: 1 + idx,
-      y: 1,
+      x: conn.placementX ?? 1 + idx,
+      y: conn.placementY ?? 1,
       connection: conn
     }));
     return {
       map,
       startPos: { x: Math.floor(map.width / 2), y: Math.floor(map.height / 2) },
       portals,
-      rooms: []
+      rooms: [],
+      ...(areaDef.placedEntities ? { placedEntities: areaDef.placedEntities } : {})
     };
   }
 
@@ -189,6 +187,7 @@ export function generateArea(
     map,
     startPos: { x: startX, y: startY },
     portals,
-    rooms: parsedRooms
+    rooms: parsedRooms,
+    ...(areaDef.placedEntities ? { placedEntities: areaDef.placedEntities } : {})
   };
 }

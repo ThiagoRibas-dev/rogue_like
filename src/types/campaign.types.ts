@@ -283,6 +283,8 @@ export const AreaConnectionSchema = z.object({
   targetAreaId: z.string(),
   targetX: z.number().int().nonnegative().optional(),
   targetY: z.number().int().nonnegative().optional(),
+  placementX: z.number().int().nonnegative().optional(),
+  placementY: z.number().int().nonnegative().optional(),
   direction: z.enum(['up', 'down', 'edge', 'portal'])
 });
 export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
@@ -299,7 +301,12 @@ export const AreaDefinitionSchema = z.object({
   dangerRating: z.number().int().nonnegative(),
   tags: z.array(z.string()).optional(),
   connections: z.array(AreaConnectionSchema).optional(),
-  staticMap: StaticMapLayoutSchema.optional()
+  staticMap: StaticMapLayoutSchema.optional(),
+  placedEntities: z.array(z.object({
+    templateId: z.string(),
+    x: z.number().int().nonnegative(),
+    y: z.number().int().nonnegative()
+  })).optional()
 });
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 

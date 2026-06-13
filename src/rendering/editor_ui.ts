@@ -8,6 +8,9 @@ import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
 import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
 import { loadCampaign } from '../core/loader.ts';
 import { CampaignCategorySchemas } from '../types/campaign.types.ts';
+import { renderAreaEditor } from './ui/area_editor.ts';
+import { renderWorldGraph } from './ui/world_graph.ts';
+import type { GeneratedArea } from '../map/generator.ts';
 
 export interface ValidationError {
   readonly path: string;
@@ -29,6 +32,7 @@ export interface EditorController {
   canRedo(): boolean;
   validate(): ReadonlyArray<ValidationError>;
   onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>) => void): void;
+  generateSandboxArea(areaId: string): GeneratedArea;
 }
 
 // Local UI State for the Editor
@@ -393,13 +397,13 @@ function refreshActiveViews(controller: EditorController) {
     const formContainer = document.createElement('div');
     formContainer.className = 'editor-form';
 
-    const header = document.createElement('div');
-    header.className = 'workspace-header';
-    header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
-    workspacePane.appendChild(header);
-
     if (dictCategories.includes(currentCategory)) {
+      const header = document.createElement('div');
+      header.className = 'workspace-header';
+      header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
+
       if (currentItemId) {
+        workspacePane.appendChild(header);
         // Render dictionary item form
         const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
         const itemObj = dict[currentItemId];
@@ -407,13 +411,31 @@ function refreshActiveViews(controller: EditorController) {
 
         if (currentCategory === 'dialogues') {
           renderDialogueTreeEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+        } else if (currentCategory === 'areas') {
+          renderAreaEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
         } else {
           renderFormForZodSchema(controller, schema, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
         }
       } else {
-        formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
+        if (currentCategory === 'areas') {
+          // World Graph renders its own full layout, no standard header needed
+          renderWorldGraph(doc, formContainer, (nodeId) => {
+            currentItemId = nodeId;
+            refreshActiveViews(controller);
+          });
+        } else {
+          const header = document.createElement('div');
+          header.className = 'workspace-header';
+          header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
+          workspacePane.appendChild(header);
+          formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
+        }
       }
     } else {
+      const header = document.createElement('div');
+      header.className = 'workspace-header';
+      header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
+      workspacePane.appendChild(header);
       // Render singleton form
       const obj = doc[currentCategory as keyof CampaignData];
       const schema = CampaignCategorySchemas[currentCategory];

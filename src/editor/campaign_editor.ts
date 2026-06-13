@@ -6,6 +6,7 @@ import {
   readCampaignFromZip,
   writeCampaignToZip
 } from './workspace_file_service.ts';
+import { generateArea } from '../map/generator.ts';
 
 /**
  * Structure representing a validation error from Zod or the link auditor.
@@ -67,6 +68,13 @@ export class CampaignEditor {
     this.lastEditedPath = null;
     this.coalescedOriginalValue = undefined;
     this.emitChange();
+  }
+
+  /**
+   * Generates a sample map for the given area using the map generator.
+   */
+  public generateSandboxArea(areaId: string): ReturnType<typeof generateArea> {
+    return generateArea(this.doc, areaId);
   }
 
   /**
