@@ -1,5 +1,9 @@
 import { type GameState } from '../types/game-state.types.ts';
-import { type ToggleTargetingIntent, type MoveTargetIntent, type FireAimedIntent } from '../types/intents.types.ts';
+import {
+  type ToggleTargetingIntent,
+  type MoveTargetIntent,
+  type FireAimedIntent
+} from '../types/intents/combat.intents.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';

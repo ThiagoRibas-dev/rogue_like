@@ -1,7 +1,8 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
-import { IntentType, type SelectDialogueOptionIntent } from '../../types/intents.types.ts';
+import { IntentType } from '../../types/intents/intent.enum.ts';
+import { type SelectDialogueOptionIntent } from '../../types/intents/ui.intents.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';

@@ -403,6 +403,16 @@ export function processGlobalTriggers(state: GameState): GameState {
         for (const consequence of trigger.consequences) {
           nextState = applyConsequence(nextState, event, consequence);
         }
+        const traceEvent: import('../types/events.types.ts').DebugTriggerTraceEvent = {
+          type: GameEventType.DebugTriggerTrace,
+          triggerId: trigger.id,
+          triggeringEvent: event,
+          executedConsequences: trigger.consequences.map((c) => c.type)
+        };
+        nextState = {
+          ...nextState,
+          events: [...nextState.events, traceEvent as unknown as GameEvent]
+        };
       }
     }
   }

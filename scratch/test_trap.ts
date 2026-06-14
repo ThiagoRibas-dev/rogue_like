@@ -1,5 +1,5 @@
 import { getGameState, setGameState, queuePlayerIntent, processTurn } from '../src/core/game-loop.ts';
-import { IntentType } from '../src/types/intents.types.ts';
+import { IntentType } from '../src/types/intents/intent.enum.ts';
 import { EngineMode, UIMode } from '../src/types/game-state.types.ts';
 import { createEntity, addComponent, updateSpatialIndex, spawnEntity } from '../src/core/ecs.ts';
 import { ComponentType } from '../src/types/components.types.ts';

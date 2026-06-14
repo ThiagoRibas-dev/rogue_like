@@ -1,20 +1,24 @@
 import { type EntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { type InteractIntent, type MoveIntent } from '../types/intents/movement.intents.ts';
 import {
-  IntentType,
-  type InteractIntent,
-  type MoveIntent,
   type SetRTwPSpeedIntent,
+  type ToggleEngineModeIntent,
+  type TogglePauseIntent,
+  type WaitIntent
+} from '../types/intents/core.intents.ts';
+import {
   type SetZoomLevelIntent,
   type Toggle3DIntent,
-  type ToggleEngineModeIntent,
+  type ToggleRotatedIntent
+} from '../types/intents/camera.intents.ts';
+import {
   type ToggleFactionsIntent,
   type ToggleInvestigationIntent,
-  type TogglePauseIntent,
   type ToggleQuestsIntent,
-  type ToggleRotatedIntent,
   type ToggleSettingsIntent,
-  type WaitIntent
-} from '../types/intents.types.ts';
+  type ToggleDebugIntent
+} from '../types/intents/ui.intents.ts';
 
 /**
  * Creates a move intent.
@@ -163,6 +167,17 @@ export function createToggleQuestsAction(entityId: EntityId): ToggleQuestsIntent
 export function createToggleInvestigationAction(entityId: EntityId): ToggleInvestigationIntent {
   return {
     type: IntentType.ToggleInvestigation,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle debug intent.
+ */
+export function createToggleDebugAction(entityId: EntityId): ToggleDebugIntent {
+  return {
+    type: IntentType.ToggleDebug,
     entityId,
     isImmediate: true
   };

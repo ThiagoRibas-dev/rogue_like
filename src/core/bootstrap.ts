@@ -13,7 +13,8 @@ import { updateExploredTiles } from '../systems/map.system.ts';
 import { generateArea } from '../map/generator.ts';
 import { loadCampaign } from './loader.ts';
 import { loadGame, deleteSave } from './save.ts';
-import { IntentType, type ChangeAreaIntent } from '../types/intents.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { type ChangeAreaIntent } from '../types/intents/movement.intents.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',

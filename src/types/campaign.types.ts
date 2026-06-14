@@ -78,13 +78,23 @@ export type RulesConfig = z.infer<typeof RulesConfigSchema>;
 // 3. THEME
 // ==========================================
 export const ThemeConfigSchema = z.object({
-  colors: z.record(z.string(), z.string()),
-  glyphs: z.record(z.string(), z.string()),
+  colors: z.object({
+    background: z.string().describe('Canvas Background Color'),
+    floorDimFg: z.string().describe('Floor Fog of War Color'),
+    playerFg: z.string().describe('Default Canvas Text Color'),
+    stairsFg: z.string().describe('Procedural Stairs Color'),
+    transparent: z.string().describe('Transparency Key'),
+    wallDimFg: z.string().describe('Wall Fog of War Color')
+  }),
+  glyphs: z.object({
+    stairsDown: z.string().length(1).describe('Stairs Down Glyph'),
+    stairsUp: z.string().length(1).describe('Stairs Up Glyph')
+  }),
   ui: z.object({
-    displayWidth: z.number().int().positive(),
-    displayHeight: z.number().int().positive(),
-    fontSize: z.number().int().positive(),
-    fontFamily: z.string()
+    displayWidth: z.number().int().positive().describe('Display Width (Tiles)'),
+    displayHeight: z.number().int().positive().describe('Display Height (Tiles)'),
+    fontSize: z.number().int().positive().describe('Font Size (px)'),
+    fontFamily: z.string().describe('Font Family')
   })
 });
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
@@ -302,11 +312,24 @@ export const AreaDefinitionSchema = z.object({
   tags: z.array(z.string()).optional(),
   connections: z.array(AreaConnectionSchema).optional(),
   staticMap: StaticMapLayoutSchema.optional(),
-  placedEntities: z.array(z.object({
-    templateId: z.string(),
-    x: z.number().int().nonnegative(),
-    y: z.number().int().nonnegative()
-  })).optional()
+  placedEntities: z
+    .array(
+      z.object({
+        templateId: z.string(),
+        x: z.number().int().nonnegative(),
+        y: z.number().int().nonnegative()
+      })
+    )
+    .optional(),
+  proceduralPalette: z
+    .object({
+      floor: z.string().describe('Floor Tile ID'),
+      wall: z.string().describe('Wall Tile ID'),
+      door: z.string().describe('Door Tile ID'),
+      water: z.string().describe('Liquid/Water Tile ID')
+    })
+    .optional()
+    .describe('Procedural Generator Biome Palette')
 });
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 

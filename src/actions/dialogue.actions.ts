@@ -3,7 +3,11 @@ import { ComponentType } from '../types/components.types.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../types/events.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
-import type { CloseDialogueIntent, SelectDialogueOptionIntent, StartDialogueIntent } from '../types/intents.types.ts';
+import type {
+  CloseDialogueIntent,
+  SelectDialogueOptionIntent,
+  StartDialogueIntent
+} from '../types/intents/ui.intents.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processQuestEvent } from '../systems/quest.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';

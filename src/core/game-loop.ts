@@ -1,7 +1,8 @@
 import { dispatchAction } from '../actions/action.registry.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
-import { IntentType, type ActionResult, type Intent } from '../types/intents.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { type ActionResult, type Intent } from '../types/intents/intent.union.ts';
 import { addComponent, getComponent } from './ecs.ts';
 import { saveGame } from './save.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';

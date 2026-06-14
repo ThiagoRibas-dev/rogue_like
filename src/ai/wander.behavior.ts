@@ -1,5 +1,6 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import { type Intent, IntentType } from '../types/intents.types.ts';
+import { type Intent } from '../types/intents/intent.union.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import * as ROT from 'rot-js';
 
 const DIRECTIONS = [

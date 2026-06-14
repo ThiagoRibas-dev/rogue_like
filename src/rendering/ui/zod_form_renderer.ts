@@ -77,6 +77,7 @@ export function renderFormForZodSchema(
   // Primitives
   const key = basePath.split('/').pop() || 'Field';
   const val = hasValue ? obj : undefined;
+  const label = innerSchema.description || key;
 
   const wrapper = document.createElement('div');
   wrapper.style.display = 'flex';
@@ -88,16 +89,16 @@ export function renderFormForZodSchema(
   fieldContainer.style.flexGrow = '1';
 
   if (innerSchema instanceof z.ZodString) {
-    renderStringField(controller, key, (val as string) || '', basePath, fieldContainer);
+    renderStringField(controller, key, label, (val as string) || '', basePath, fieldContainer);
   } else if (innerSchema instanceof z.ZodNumber) {
-    renderNumberField(controller, key, (val as number) || 0, basePath, fieldContainer);
+    renderNumberField(controller, key, label, (val as number) || 0, basePath, fieldContainer);
   } else if (innerSchema instanceof z.ZodBoolean) {
-    renderBooleanField(controller, key, !!val, basePath, fieldContainer);
+    renderBooleanField(controller, key, label, !!val, basePath, fieldContainer);
   } else if (innerSchema instanceof z.ZodEnum) {
     const options = innerSchema.options.map((opt: string | number) => ({ value: String(opt), label: String(opt) }));
     fieldContainer.appendChild(
       createSelectField({
-        label: key,
+        label: label,
         value: (val as string) || options[0]?.value || '',
         options,
         onChange: (newVal) => controller.applyOperations([{ op: 'replace', path: basePath, value: newVal }], true)
@@ -105,10 +106,10 @@ export function renderFormForZodSchema(
     );
   } else if (innerSchema instanceof z.ZodRecord) {
     // Fallback for Record<string, unknown>
-    renderRawJsonField(controller, key, val, basePath, fieldContainer);
+    renderRawJsonField(controller, key, label, val, basePath, fieldContainer);
   } else {
     // Fallback for custom schemas (e.g. unknown params)
-    renderRawJsonField(controller, key, val, basePath, fieldContainer);
+    renderRawJsonField(controller, key, label, val, basePath, fieldContainer);
   }
 
   wrapper.appendChild(fieldContainer);
@@ -132,6 +133,7 @@ export function renderFormForZodSchema(
 function renderRawJsonField(
   controller: EditorController,
   key: string,
+  labelStr: string,
   val: unknown,
   path: string,
   container: HTMLElement
@@ -141,7 +143,7 @@ function renderRawJsonField(
 
   const label = document.createElement('label');
   label.className = 'form-label';
-  label.textContent = key;
+  label.textContent = labelStr;
   group.appendChild(label);
 
   const textarea = document.createElement('textarea');
@@ -166,6 +168,7 @@ function renderRawJsonField(
 function renderStringField(
   controller: EditorController,
   key: string,
+  label: string,
   val: string,
   path: string,
   container: HTMLElement
@@ -174,19 +177,25 @@ function renderStringField(
   const onChange = (newVal: string) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
 
   // Heuristics for specialized fields
-  if (key.toLowerCase().includes('color') || key === 'fg' || key === 'bg') {
-    container.appendChild(createColorPickerField({ label: key, value: val, onChange }));
+  const lowerKey = key.toLowerCase();
+  if (
+    lowerKey.includes('color') ||
+    lowerKey.endsWith('fg') ||
+    lowerKey.endsWith('bg') ||
+    lowerKey === 'background'
+  ) {
+    container.appendChild(createColorPickerField({ label, value: val, onChange }));
     return;
   }
 
   const selectOptions = getReferenceOptions(key, doc);
   if (selectOptions) {
-    container.appendChild(createSelectField({ label: key, value: val, options: selectOptions, onChange }));
+    container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange }));
     return;
   }
 
   // Fallback to plain string
-  container.appendChild(createStringField({ label: key, value: val, onChange }));
+  container.appendChild(createStringField({ label, value: val, onChange }));
 }
 
 function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
@@ -225,23 +234,25 @@ function getReferenceOptions(key: string, doc: CampaignData): { value: string; l
 function renderNumberField(
   controller: EditorController,
   key: string,
+  label: string,
   val: number,
   path: string,
   container: HTMLElement
 ) {
   const onChange = (newVal: number) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-  container.appendChild(createNumberField({ label: key, value: val, onChange }));
+  container.appendChild(createNumberField({ label, value: val, onChange }));
 }
 
 function renderBooleanField(
   controller: EditorController,
   key: string,
+  label: string,
   val: boolean,
   path: string,
   container: HTMLElement
 ) {
   const onChange = (newVal: boolean) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-  container.appendChild(createBooleanField({ label: key, value: val, onChange }));
+  container.appendChild(createBooleanField({ label, value: val, onChange }));
 }
 
 function renderNestedObjectField(

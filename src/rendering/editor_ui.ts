@@ -11,12 +11,9 @@ import { CampaignCategorySchemas } from '../types/campaign.types.ts';
 import { renderAreaEditor } from './ui/area_editor.ts';
 import { renderWorldGraph } from './ui/world_graph.ts';
 import type { GeneratedArea } from '../map/generator.ts';
+import { renderSimulationLab } from './ui/ai_arena.ui.ts';
 
-export interface ValidationError {
-  readonly path: string;
-  readonly message: string;
-  readonly severity: 'error' | 'warning';
-}
+import type { ValidationError } from '../editor/validator/validator.types.ts';
 
 export interface EditorController {
   getDocument(): CampaignData;
@@ -36,7 +33,7 @@ export interface EditorController {
 }
 
 // Local UI State for the Editor
-let currentCategory: keyof CampaignData | null = null;
+let currentCategory: keyof CampaignData | 'simulation' | null = null;
 let currentItemId: string | null = null;
 let isInitialized = false;
 
@@ -100,11 +97,20 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         <li><button class="sidebar-item-btn" data-target="areas">Areas (Maps)</button></li>
         <li><button class="sidebar-item-btn" data-target="entities">Entities</button></li>
         <li><button class="sidebar-item-btn" data-target="items">Items & Equip</button></li>
+        <li><button class="sidebar-item-btn" data-target="tiles">Tiles</button></li>
         <li><button class="sidebar-item-btn" data-target="factions">Factions</button></li>
+        <li><button class="sidebar-item-btn" data-target="status">Status Effects</button></li>
+        <li><button class="sidebar-item-btn" data-target="effects">Item Effects</button></li>
+        <li><button class="sidebar-item-btn" data-target="ai">AI Profiles</button></li>
         <li><button class="sidebar-item-btn" data-target="dialogues">Dialogues</button></li>
         <li><button class="sidebar-item-btn" data-target="quests">Quests</button></li>
+        <li><button class="sidebar-item-btn" data-target="questTemplates">Quest Templates</button></li>
         <li><button class="sidebar-item-btn" data-target="triggers">Triggers</button></li>
         <li><button class="sidebar-item-btn" data-target="villains">Villains</button></li>
+        <li><button class="sidebar-item-btn" data-target="schemes">Schemes</button></li>
+        <li><button class="sidebar-item-btn" data-target="agreements">Agreements</button></li>
+        <li><button class="sidebar-item-btn" data-target="advancement">Advancement Levels</button></li>
+        <li><button class="sidebar-item-btn" data-target="simulation">Simulation Lab</button></li>
       </ul>
     `;
 
@@ -189,27 +195,83 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       }
     });
 
-    document.getElementById('btn-editor-export-zip')?.addEventListener('click', () => {
-      controller.exportZipWorkspace().catch(console.error);
+    document.getElementById('btn-editor-export-zip')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-editor-export-zip') as HTMLButtonElement | null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Validating...';
+      }
+      try {
+        const doc = controller.getDocument();
+        const shallowErrors = controller.validate();
+        if (shallowErrors.filter((e) => e.severity === 'error').length > 0) {
+          alert('Cannot export with validation errors. Please fix them first.');
+          return;
+        }
+
+        const { validateCampaign } = await import('../editor/campaign_validator.ts');
+        const deepReport = await validateCampaign(doc);
+        if (deepReport.errors.length > 0) {
+          alert(
+            'Campaign deep validation failed:\\n\\n' +
+              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\\n')
+          );
+          return;
+        }
+
+        await controller.exportZipWorkspace();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📦 Export ZIP';
+        }
+      }
     });
 
     document.getElementById('btn-editor-undo')?.addEventListener('click', () => controller.undo());
     document.getElementById('btn-editor-redo')?.addEventListener('click', () => controller.redo());
 
-    document.getElementById('btn-editor-playtest')?.addEventListener('click', () => {
-      const doc = controller.getDocument();
-      const validationErrors = controller.validate();
-      if (validationErrors.filter((e) => e.severity === 'error').length > 0) {
-        alert('Cannot playtest with validation errors. Please fix them first.');
-        return;
+    document.getElementById('btn-editor-playtest')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-editor-playtest') as HTMLButtonElement | null;
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Validating...';
       }
-      sessionStorage.setItem('editor_active_document', JSON.stringify(doc));
-      if (currentCategory) sessionStorage.setItem('editor_active_category', currentCategory);
-      if (currentItemId) sessionStorage.setItem('editor_active_item', currentItemId);
-      else sessionStorage.removeItem('editor_active_item');
+      try {
+        const doc = controller.getDocument();
+        const validationErrors = controller.validate();
+        if (validationErrors.filter((e) => e.severity === 'error').length > 0) {
+          alert('Cannot playtest with validation errors. Please fix them first.');
+          return;
+        }
 
-      // Reload the page to bootstrap the engine with the injected document
-      window.location.reload();
+        const { validateCampaign } = await import('../editor/campaign_validator.ts');
+        const deepReport = await validateCampaign(doc);
+        if (deepReport.errors.length > 0) {
+          alert(
+            'Campaign deep validation failed:\\n\\n' +
+              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\\n')
+          );
+          return;
+        }
+
+        sessionStorage.setItem('editor_active_document', JSON.stringify(doc));
+        if (currentCategory) sessionStorage.setItem('editor_active_category', currentCategory);
+        if (currentItemId) sessionStorage.setItem('editor_active_item', currentItemId);
+        else sessionStorage.removeItem('editor_active_item');
+
+        // Reload the page to bootstrap the engine with the injected document
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '▶️ Play Test';
+        }
+      }
     });
 
     // Bind keyboard shortcuts
@@ -242,7 +304,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     const savedCat = sessionStorage.getItem('editor_active_category');
     const savedItem = sessionStorage.getItem('editor_active_item');
     if (savedCat) {
-      currentCategory = savedCat as keyof CampaignData;
+      currentCategory = savedCat as keyof CampaignData | 'simulation';
       if (savedItem) currentItemId = savedItem;
       const btn = navMenu?.querySelector(`[data-target="${savedCat}"]`);
       if (btn) {
@@ -257,7 +319,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       const btn = (e.target as HTMLElement).closest('.sidebar-item-btn') as HTMLButtonElement | null;
       if (!btn) return;
 
-      const target = btn.dataset.target as keyof CampaignData;
+      const target = btn.dataset.target as keyof CampaignData | 'simulation';
       if (target) {
         currentCategory = target;
         currentItemId = null; // Reset selection when changing categories
@@ -407,7 +469,7 @@ function refreshActiveViews(controller: EditorController) {
         // Render dictionary item form
         const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
         const itemObj = dict[currentItemId];
-        const schema = CampaignCategorySchemas[currentCategory];
+        const schema = CampaignCategorySchemas[currentCategory as unknown as keyof CampaignData];
 
         if (currentCategory === 'dialogues') {
           renderDialogueTreeEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
@@ -435,11 +497,16 @@ function refreshActiveViews(controller: EditorController) {
       const header = document.createElement('div');
       header.className = 'workspace-header';
       header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
-      workspacePane.appendChild(header);
-      // Render singleton form
-      const obj = doc[currentCategory as keyof CampaignData];
-      const schema = CampaignCategorySchemas[currentCategory];
-      renderFormForZodSchema(controller, schema, obj, `/${currentCategory}`, formContainer);
+
+      if (currentCategory === 'simulation') {
+        renderSimulationLab(controller, formContainer);
+      } else {
+        workspacePane.appendChild(header);
+        // Render singleton form
+        const obj = doc[currentCategory as unknown as keyof CampaignData];
+        const schema = CampaignCategorySchemas[currentCategory as unknown as keyof CampaignData];
+        renderFormForZodSchema(controller, schema, obj, `/${currentCategory}`, formContainer);
+      }
     }
 
     workspacePane.appendChild(formContainer);

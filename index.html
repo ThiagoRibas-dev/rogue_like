@@ -181,7 +181,8 @@
         <div class="modal-buttons">
           <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
           <button id="btn-new-game" class="modal-btn">New Game</button>
-          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign Editor</button>
+          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign
+            Editor</button>
           <div style="display: flex; gap: 8px; margin-top: 16px;">
             <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export
               Save</button>
@@ -327,12 +328,15 @@
 
     <!-- Quest Panel Overlay -->
     <div id="quest-panel" class="modal-overlay hidden">
-      <div class="modal-content" style="max-width: 600px; text-align: left; display: flex; flex-direction: column; max-height: 80vh;">
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px;">
+      <div class="modal-content"
+        style="max-width: 600px; text-align: left; display: flex; flex-direction: column; max-height: 80vh;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px;">
           <h1 class="modal-title" style="margin: 0; color: #f1c40f;">Quest Journal</h1>
           <span style="color: var(--text-dim); font-size: 0.8rem;">Press Q or Esc to close.</span>
         </div>
-        <div id="quest-content" style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 12px;">
+        <div id="quest-content"
+          style="overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 12px;">
           <!-- Quests injected here -->
         </div>
       </div>
@@ -367,6 +371,23 @@
               style="padding: 8px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; text-align: left;">
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debug Overlay -->
+    <div id="debug-overlay" class="modal-overlay hidden" style="pointer-events: none; background: transparent;">
+      <div class="modal-content"
+        style="pointer-events: auto; position: absolute; right: 16px; top: 64px; width: 450px; max-height: 80vh; background: rgba(0,0,0,0.85); text-align: left; display: flex; flex-direction: column;">
+        <h2
+          style="color: #00ff00; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 4px;">
+          System Ledger (Debug)</h2>
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button id="btn-debug-ff-schemes" class="modal-btn" style="flex: 1; font-size: 0.8rem; background: #8e44ad;">⏩ Fast-Forward Schemes (10 Turns)</button>
+        </div>
+        <div id="debug-event-ledger"
+          style="overflow-y: auto; flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; display: flex; flex-direction: column; gap: 6px;">
+          <!-- debug.ui.ts populates this -->
         </div>
       </div>
     </div>

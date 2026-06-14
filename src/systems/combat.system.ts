@@ -1,5 +1,5 @@
 import type { GameState } from '../types/game-state.types.ts';
-import type { MeleeAttackIntent } from '../types/intents.types.ts';
+import type { MeleeAttackIntent } from '../types/intents/combat.intents.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';

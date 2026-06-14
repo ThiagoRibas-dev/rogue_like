@@ -20,7 +20,9 @@ import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
-import { IntentType, type ChangeAreaIntent, type InteractIntent, type Intent } from '../types/intents.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { type ChangeAreaIntent, type InteractIntent } from '../types/intents/movement.intents.ts';
+import { type Intent } from '../types/intents/intent.union.ts';
 import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
 import { coordToIndex } from '../utils/grid.ts';

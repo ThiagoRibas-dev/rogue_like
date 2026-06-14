@@ -20,7 +20,8 @@ import {
   renderFactionsPanel,
   renderQuestJournal,
   renderDialoguePanel,
-  renderInvestigationBoard
+  renderInvestigationBoard,
+  renderDebugOverlay
 } from './rendering/ui.ts';
 import { renderEditorUI } from './rendering/editor_ui.ts';
 import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
@@ -36,6 +37,7 @@ import {
   createSetZoomLevelAction,
   createToggleSettingsAction
 } from './actions/core.actions.ts';
+import { createDebugFastForwardSchemesAction } from './actions/debug.actions.ts';
 import { getComponent } from './core/ecs.ts';
 import { ComponentType } from './types/components.types.ts';
 import { CampaignEditor } from './editor/campaign_editor.ts';
@@ -208,6 +210,12 @@ document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
   if (pId) queuePlayerIntent(createSetZoomLevelAction(pId, -0.2));
 });
 
+// Debug
+document.getElementById('btn-debug-ff-schemes')?.addEventListener('click', () => {
+  const pId = getPlayerId();
+  if (pId) queuePlayerIntent(createDebugFastForwardSchemesAction(pId, 10));
+});
+
 // Settings UI Listeners
 const btnOpenSettings = document.getElementById('btn-open-settings');
 const btnCloseSettings = document.getElementById('btn-close-settings');
@@ -377,6 +385,7 @@ onStateChange((newState: GameState) => {
     renderDialoguePanel(newState);
     renderQuestJournal(newState);
     renderInvestigationBoard(newState);
+    renderDebugOverlay(newState);
   }
 });
 

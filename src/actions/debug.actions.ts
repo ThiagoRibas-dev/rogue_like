@@ -1,10 +1,11 @@
 import type { EntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import {
-  IntentType,
   type DebugRevealMapIntent,
   type DebugGodModeIntent,
-  type DebugSpawnEntityIntent
-} from '../types/intents.types.ts';
+  type DebugSpawnEntityIntent,
+  type DebugFastForwardSchemesIntent
+} from '../types/intents/debug.intents.ts';
 
 /**
  * Creates a debug intent to reveal the map.
@@ -42,5 +43,23 @@ export function createDebugSpawnEntityAction(entityId: EntityId): DebugSpawnEnti
     type: IntentType.DebugSpawnEntity,
     entityId,
     isImmediate: true
+  };
+}
+
+/**
+ * Creates a debug intent to fast-forward mastermind schemes.
+ * @param entityId The entity invoking the debug tool.
+ * @param iterations The number of scheme turns to process.
+ * @returns The generated DebugFastForwardSchemesIntent.
+ */
+export function createDebugFastForwardSchemesAction(
+  entityId: EntityId,
+  iterations: number = 10
+): DebugFastForwardSchemesIntent {
+  return {
+    type: IntentType.DebugFastForwardSchemes,
+    entityId,
+    isImmediate: true,
+    iterations
   };
 }

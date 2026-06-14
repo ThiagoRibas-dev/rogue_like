@@ -1,5 +1,5 @@
 import type { GameState } from '../types/game-state.types.ts';
-import type { ToggleInspectIntent, MoveInspectIntent } from '../actions/inspect.actions.ts';
+import type { ToggleInspectIntent, MoveInspectIntent } from '../types/intents/inspect.intents.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { coordToIndex } from '../utils/grid.ts';

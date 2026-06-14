@@ -1,5 +1,5 @@
 import { type GameState, type EntityId } from './game-state.types.ts';
-import { type Intent } from './intents.types.ts';
+import { type Intent } from './intents/intent.union.ts';
 
 /**
  * A function that encapsulates a single AI behavior.

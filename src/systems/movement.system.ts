@@ -4,8 +4,8 @@ import { GameEventType } from '../types/events.types.ts';
 import { getComponent, updateSpatialIndex } from '../core/ecs.ts';
 
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
-import type { MoveIntent } from '../types/intents.types.ts';
-import { IntentType } from '../types/intents.types.ts';
+import type { MoveIntent } from '../types/intents/movement.intents.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { isHostile } from '../utils/faction.ts';

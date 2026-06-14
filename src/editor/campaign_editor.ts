@@ -8,14 +8,7 @@ import {
 } from './workspace_file_service.ts';
 import { generateArea } from '../map/generator.ts';
 
-/**
- * Structure representing a validation error from Zod or the link auditor.
- */
-export interface ValidationError {
-  readonly path: string; // JSON Pointer path, e.g. "/entities/orc/faction"
-  readonly message: string;
-  readonly severity: 'error' | 'warning';
-}
+import type { ValidationError } from './validator/validator.types.ts';
 
 /**
  * Controller class coordinating active workspace document modifications and undo/redo stacks.

@@ -1,13 +1,13 @@
 import type { EntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import {
-  IntentType,
   type PickUpIntent,
   type DropIntent,
   type UseItemIntent,
   type EquipItemIntent,
-  type UnequipItemIntent,
-  type ToggleInventoryIntent
-} from '../types/intents.types.ts';
+  type UnequipItemIntent
+} from '../types/intents/inventory.intents.ts';
+import { type ToggleInventoryIntent } from '../types/intents/ui.intents.ts';
 
 /**
  * Creates a PickUp intent.

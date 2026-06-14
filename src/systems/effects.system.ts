@@ -370,7 +370,7 @@ export function processUseItemIntent(
  */
 export function processUseAbilityIntent(
   state: GameState,
-  intent: import('../types/intents.types.ts').UseAbilityIntent
+  intent: import('../types/intents/combat.intents.ts').UseAbilityIntent
 ): { state: GameState; success: boolean } {
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const userName = isPlayer

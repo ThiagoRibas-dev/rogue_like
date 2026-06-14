@@ -22,10 +22,7 @@ export interface GeneratedArea {
 /**
  * Generates an area map based on its definition using ROT.js.
  */
-export function generateArea(
-  campaign: CampaignData,
-  areaId: string
-): GeneratedArea {
+export function generateArea(campaign: CampaignData, areaId: string): GeneratedArea {
   const areaDef = campaign.areas[areaId];
   if (!areaDef) {
     throw new Error(`Area ${areaId} not found in campaign.`);
@@ -50,12 +47,20 @@ export function generateArea(
   const rules = campaign.rules.map;
   const width = rules.width;
   const height = rules.height;
+
+  const palette = areaDef.proceduralPalette || {
+    wall: 'stone_wall',
+    floor: 'stone_floor',
+    door: 'closed_door',
+    water: 'shallow_water'
+  };
+
   // 1. Initialize empty flat array of tiles filled with walls
   const tiles: Tile[] = [];
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       tiles.push({
-        tileId: 'stone_wall',
+        tileId: palette.wall,
         x,
         y,
         explored: false
@@ -81,7 +86,7 @@ export function generateArea(
       if (tile !== undefined) {
         tiles[index] = {
           ...tile,
-          tileId: 'stone_floor'
+          tileId: palette.floor
         };
       }
     }
@@ -112,7 +117,7 @@ export function generateArea(
         const pIndex = coordToIndex(px!, py!, width);
         const tile = tiles[pIndex];
         if (tile) {
-          tiles[pIndex] = { ...tile, tileId: 'stone_floor' };
+          tiles[pIndex] = { ...tile, tileId: palette.floor };
           portals.push({ x: px!, y: py!, connection: conn });
         }
       }
@@ -124,7 +129,7 @@ export function generateArea(
     for (let x = 0; x < width; x++) {
       const idx = coordToIndex(x, y, width);
       const tile = tiles[idx];
-      if (tile && tile.tileId === 'stone_wall') {
+      if (tile && tile.tileId === palette.wall) {
         let bordersFloor = false;
         // Check 8 neighbors
         for (let dy = -1; dy <= 1; dy++) {
@@ -134,7 +139,7 @@ export function generateArea(
             const ny = y + dy;
             if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
               const nIdx = coordToIndex(nx, ny, width);
-              if (tiles[nIdx]?.tileId === 'stone_floor' || tiles[nIdx]?.tileId === 'shallow_water') {
+              if (tiles[nIdx]?.tileId === palette.floor || tiles[nIdx]?.tileId === palette.water) {
                 bordersFloor = true;
                 break;
               }
@@ -145,11 +150,11 @@ export function generateArea(
         if (!bordersFloor) {
           tiles[idx] = { ...tile, tileId: 'empty_space' };
         }
-      } else if (tile && tile.tileId === 'stone_floor') {
+      } else if (tile && tile.tileId === palette.floor) {
         // Scatter some shallow water
         if (ROT.RNG.getUniform() < 0.05) {
           // 5% chance for a floor tile to be water
-          tiles[idx] = { ...tile, tileId: 'shallow_water' };
+          tiles[idx] = { ...tile, tileId: palette.water };
         }
       }
     }
@@ -168,7 +173,7 @@ export function generateArea(
       if (tile) {
         // Only place doors occasionally to avoid over-cluttering, or place them everywhere?
         // Let's place them everywhere a door is defined.
-        tiles[idx] = { ...tile, tileId: 'closed_door' };
+        tiles[idx] = { ...tile, tileId: palette.door };
       }
     });
 

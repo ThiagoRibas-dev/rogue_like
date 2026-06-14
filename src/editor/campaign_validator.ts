@@ -1,108 +1,58 @@
-import { loadCampaign } from '../core/loader.ts';
-import { GameEventType } from '../types/events.types.ts';
-import { processGlobalTriggers } from '../systems/trigger.system.ts';
-import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { EngineMode, UIMode } from '../types/game-state.types.ts';
-import { createEntity, addComponent } from '../core/ecs.ts';
-import { ComponentType } from '../types/components.types.ts';
+import type { CampaignData } from '../types/campaign.types.ts';
+import type { ValidationReport, ValidationError } from './validator/validator.types.ts';
+import { validateReachability } from './validator/reachability.validator.ts';
+import { validateQuests } from './validator/quest.validator.ts';
+import { validateTriggers } from './validator/trigger.validator.ts';
 
 /**
  * Headless state-diffing runner to validate that a campaign's triggers
  * function correctly without requiring a full browser DOM.
  */
 export async function runHeadlessSmokeTest(campaignId: string = 'default'): Promise<boolean> {
+  // We keep this signature for existing tests, but we'll import loadCampaign locally
+  // to avoid circular dependency if needed, or just let it fail fast.
+  const { loadCampaign } = await import('../core/loader.ts');
   console.log(`Starting headless smoke test for campaign: ${campaignId}`);
   try {
     const campaign = await loadCampaign(campaignId);
-
-    // Initialize a mock game state
-    let state: GameState = {
-      campaignId,
-      campaign,
-      entities: [],
-      components: new Map(),
-      map: { width: 10, height: 10, tiles: [] },
-      nextEntityId: 1,
-      nextItemInstanceId: 1,
-      nextQuestId: 1,
-      dynamicQuests: {},
-      messages: [],
-      events: [],
-      currentAreaId: 'test_area',
-      areas: new Map(),
-      persistentEntities: new Map(),
-      spatialIndex: new Map(),
-      isGameOver: false,
-      uiMode: UIMode.Game,
-      identifiedItems: new Set(),
-      itemUnidentifiedNames: new Map(),
-      engineMode: EngineMode.TurnBased,
-      rtwpState: { paused: false, speedMultiplier: 1 },
-      visualEffects: [],
-      isRotated: false,
-      is3D: false,
-      zoomLevel: 1.0,
-      playerCommandQueue: [],
-      investigation: {
-        knownActors: [],
-        discoveredClues: [],
-        exposedAgreements: []
-      }
-    };
-
-    // Set up a mock victim entity with an agreement
-    const [stateAfterCreate, victimId] = createEntity(state);
-    state = stateAfterCreate;
-    state = addComponent(state, victimId, {
-      type: ComponentType.Position,
-      x: 5,
-      y: 5
-    });
-    state = addComponent(state, victimId, {
-      type: ComponentType.Agreement,
-      agreementId: 'test_agreement',
-      mastermindId: 999 as unknown as EntityId,
-      leverageUsed: 'money'
-    });
-
-    // Mock an agreement in the campaign data for the test
-    state.campaign.agreements['test_agreement'] = {
-      id: 'test_agreement',
-      task: 'do bad things',
-      incriminatingWeight: 1,
-      clueTemplates: ['test_clue_template']
-    };
-
-    // Push the EntityDiedEvent
-    state = {
-      ...state,
-      events: [
-        {
-          type: GameEventType.EntityDied,
-          victimId,
-          killerId: 999 as unknown as EntityId,
-          tags: []
-        }
-      ]
-    };
-
-    console.log('Dispatching EntityDiedEvent to processGlobalTriggers...');
-    const nextState = processGlobalTriggers(state);
-
-    // Assert that a clue was spawned
-    const spawnedClues = nextState.entities.filter((eId) =>
-      nextState.components.get(eId)?.some((c) => c.type === ComponentType.Clue)
-    );
-
-    if (spawnedClues.length > 0) {
-      console.log('✅ Smoke Test Passed: Clue successfully spawned via declarative trigger!');
-      return true;
-    } else {
-      console.error('❌ Smoke Test Failed: No clue was spawned. Trigger engine did not fire correctly.');
+    const report = await validateCampaign(campaign);
+    if (report.errors.length > 0) {
+      console.error('❌ Smoke Test Failed: Validation errors found', report.errors);
       return false;
     }
+    console.log('✅ Smoke Test Passed: Campaign validation clean.');
+    return true;
   } catch (err) {
     console.error('❌ Smoke Test Exception:', err);
     return false;
   }
+}
+
+/**
+ * Orchestrates all asynchronous deep validation checks for a campaign.
+ * Returns a comprehensive report of all errors and warnings.
+ *
+ * @param campaign The campaign data to validate
+ * @returns A promise that resolves to the ValidationReport
+ */
+export async function validateCampaign(campaign: Readonly<CampaignData>): Promise<ValidationReport> {
+  const errors: ValidationError[] = [];
+  const warnings: ValidationError[] = [];
+
+  // Run validators sequentially to keep CPU yielding predictable
+  const reachabilityErrs = await validateReachability(campaign);
+  const questErrs = await validateQuests(campaign);
+  const triggerErrs = await validateTriggers(campaign);
+
+  const allErrs = [...reachabilityErrs, ...questErrs, ...triggerErrs];
+
+  for (const e of allErrs) {
+    if (e.severity === 'error') {
+      errors.push(e);
+    } else {
+      warnings.push(e);
+    }
+  }
+
+  return { errors, warnings };
 }

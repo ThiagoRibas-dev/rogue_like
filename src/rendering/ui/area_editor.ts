@@ -90,7 +90,12 @@ export function renderAreaEditor(
 
         while (queue.length > 0) {
           const [cx, cy] = queue.shift()!;
-          for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]] as const) {
+          for (const [dx, dy] of [
+            [0, 1],
+            [0, -1],
+            [1, 0],
+            [-1, 0]
+          ] as const) {
             const nx = cx + dx;
             const ny = cy + dy;
             if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
@@ -115,7 +120,6 @@ export function renderAreaEditor(
             display.drawText(0, 0, `%c{#f00}Warning: Portal at ${portal.x},${portal.y} is unreachable!`);
           }
         }
-
       } catch (e: unknown) {
         if (e instanceof Error) {
           display.drawText(0, 0, `%c{#f00}Error generating map: ${e.message}`);
@@ -181,7 +185,7 @@ export function renderAreaEditor(
 
   let activePaintMode: 'tiles' | 'entities' | 'items' = 'tiles';
   let activePaintId: string | null = null;
-  
+
   interface PaintDef {
     glyph: string;
     fg?: string;
@@ -191,7 +195,9 @@ export function renderAreaEditor(
 
   const buildPalette = (): void => {
     paletteContainer.innerHTML = '';
-    const items = (activePaintMode === 'tiles' ? doc.tiles : (activePaintMode === 'entities' ? doc.entities : doc.items)) as Record<string, PaintDef>;
+    const items = (
+      activePaintMode === 'tiles' ? doc.tiles : activePaintMode === 'entities' ? doc.entities : doc.items
+    ) as Record<string, PaintDef>;
 
     Object.entries(items).forEach(([id, def]) => {
       const btn = document.createElement('button');
@@ -352,7 +358,7 @@ export function renderAreaEditor(
       // Only place on click, not drag, to avoid spam
       if (!isPainting) {
         // Find if one exists here
-        const existingIdx = (area.placedEntities || []).findIndex(e => e.x === x && e.y === y);
+        const existingIdx = (area.placedEntities || []).findIndex((e) => e.x === x && e.y === y);
 
         // Ensure array exists
         if (!area.placedEntities) {
@@ -364,11 +370,16 @@ export function renderAreaEditor(
           controller.applyOperations([{ op: 'remove', path: `${basePath}/placedEntities/${existingIdx}` }], false);
         } else if (!e.shiftKey) {
           // Add
-          controller.applyOperations([{
-            op: 'add',
-            path: `${basePath}/placedEntities/-`,
-            value: { templateId: activePaintId, x, y }
-          }], false);
+          controller.applyOperations(
+            [
+              {
+                op: 'add',
+                path: `${basePath}/placedEntities/-`,
+                value: { templateId: activePaintId, x, y }
+              }
+            ],
+            false
+          );
         }
 
         // A hacky quick redraw

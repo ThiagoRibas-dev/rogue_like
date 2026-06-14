@@ -1,7 +1,8 @@
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
-import { type Intent, IntentType } from '../types/intents.types.ts';
+import { type Intent } from '../types/intents/intent.union.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import { isHostile } from '../utils/faction.ts';
 
 import { computeFOV } from '../map/fov.ts';

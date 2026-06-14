@@ -18,7 +18,8 @@ export const enum GameEventType {
   DialogueSelected = 'DialogueSelected',
   TrapTriggered = 'TrapTriggered',
   QuestStageChanged = 'QuestStageChanged',
-  QuestCompleted = 'QuestCompleted'
+  QuestCompleted = 'QuestCompleted',
+  DebugTriggerTrace = 'DebugTriggerTrace'
 }
 
 export interface BaseGameEvent {
@@ -102,6 +103,13 @@ export interface QuestCompletedEvent extends BaseGameEvent {
   readonly questId: string;
 }
 
+export interface DebugTriggerTraceEvent extends BaseGameEvent {
+  readonly type: GameEventType.DebugTriggerTrace;
+  readonly triggerId: string;
+  readonly triggeringEvent: Readonly<GameEvent>;
+  readonly executedConsequences: ReadonlyArray<string>;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -117,4 +125,5 @@ export type GameEvent =
   | DialogueSelectedEvent
   | TrapTriggeredEvent
   | QuestStageChangedEvent
-  | QuestCompletedEvent;
+  | QuestCompletedEvent
+  | DebugTriggerTraceEvent;

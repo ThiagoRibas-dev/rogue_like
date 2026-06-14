@@ -46,7 +46,7 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
 export function processPickUpIntent(
   state: GameState,
   entityId: EntityId
-): import('../types/intents.types.ts').ActionResult {
+): import('../types/intents/intent.union.ts').ActionResult {
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return { state, success: false, energyCost: 0 };
 

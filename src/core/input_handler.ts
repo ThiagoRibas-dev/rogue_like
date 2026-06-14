@@ -21,7 +21,8 @@ import {
   createToggleFactionsAction,
   createToggleQuestsAction,
   createToggleInvestigationAction,
-  createTogglePauseAction
+  createTogglePauseAction,
+  createToggleDebugAction
 } from '../actions/core.actions.ts';
 import {
   createDebugRevealMapAction,
@@ -88,6 +89,21 @@ export function handleKeyDown(
   const isFactionsOpen = currentState.uiMode === UIMode.Factions;
   const isQuestsOpen = currentState.uiMode === UIMode.Quests;
   const isInvestigationOpen = currentState.uiMode === UIMode.Investigation;
+  const isDebugOpen = currentState.uiMode === UIMode.Debug;
+
+  if (event.key === '`') {
+    event.preventDefault();
+    queuePlayerIntent(createToggleDebugAction(playerEntityId));
+    return;
+  }
+
+  if (isDebugOpen) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      queuePlayerIntent(createToggleDebugAction(playerEntityId));
+    }
+    return;
+  }
 
   if (isSettingsOpen) {
     if (event.key === 'Escape') {

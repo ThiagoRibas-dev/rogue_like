@@ -69,7 +69,7 @@ export interface ActorComponent {
 /**
  * Component indicating the entity can be interacted with, yielding Intents.
  */
-import type { Intent } from './intents.types.ts';
+import type { Intent } from './intents/intent.union.ts';
 import type { EntityId } from './game-state.types.ts';
 
 /**

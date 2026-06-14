@@ -290,14 +290,14 @@ Provide visual environment design and portal networking.
 
 ## 🟢 Milestone 25: Simulation Lab & Campaign Validator
 Real-time simulation testing and campaign-wide sanity check validations.
-- [ ] **Emergent AI Arena**
-  - Spawn selected actor templates in a sandbox map, stepping through [src/systems/ai.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/ai.system.ts) turns, FOV ranges in [src/map/fov.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/map/fov.ts), and combat pipeline outputs in [src/systems/damage.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/damage.system.ts).
-- [ ] **Scheme Acceleration Simulator**
+- [x] **⭐ Campaign Smoke-Test / Validator**
+  - Build out the final automated asynchronous checker in [src/editor/campaign_validator.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_validator.ts): starting area reachability, complete path graph solvability, quest parameter sanity, and trigger loop/recursion traps. Block exports on major validation failures and show a loading state in the UI.
+- [x] **Observability Overlays**
+  - Connect debug logs and trigger tracer panels in [src/rendering/ui/debug.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/debug.ui.ts) to visualize events and system state. Required to effectively debug upcoming simulations.
+- [x] **Emergent AI Arena**
+  - Spawn selected actor templates in a headless sandbox environment. Extract and reuse existing engine logic by stepping through [src/systems/ai.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/ai.system.ts) and [src/systems/damage.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/damage.system.ts) to output clean text logs for debugging AI math and behaviors without duplicating game logic.
+- [x] **Scheme Acceleration Simulator**
   - Run background mastermind villain schemes in [src/systems/scheme.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/scheme.system.ts) in a fast-forward loop, verifying clue compilation on the Investigation Board UI in [src/rendering/ui/investigation.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/investigation.ui.ts).
-- [ ] **⭐ Campaign Smoke-Test / Validator**
-  - Build out the final automated checker in [src/editor/campaign_validator.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_validator.ts): starting area reachability, complete path graph solvability, quest parameter sanity, and trigger loop/recursion traps. Block exports on major validation failures.
-- [ ] **Observability Overlays**
-  - Connect debug logs and trigger tracer panels in [src/rendering/ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui.ts) to visualize events and AI state.
 
 ## 🟢 Milestone 26: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.

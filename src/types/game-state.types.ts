@@ -1,7 +1,7 @@
 import type { Component } from './components.types.ts';
 import type { CampaignData } from './campaign.types.ts';
 import type { Quest } from './quests.types.ts';
-import type { Intent } from './intents.types.ts';
+import type { Intent } from './intents/intent.union.ts';
 import type { GameEvent } from './events.types.ts';
 
 /**
@@ -28,7 +28,8 @@ export const enum UIMode {
   Dialogue = 'dialogue',
   Quests = 'quests',
   Investigation = 'investigation',
-  Editor = 'editor'
+  Editor = 'editor',
+  Debug = 'debug'
 }
 
 /**

@@ -1,10 +1,10 @@
 import type { EntityId } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import {
-  IntentType,
   type ToggleTargetingIntent,
   type MoveTargetIntent,
   type FireAimedIntent
-} from '../types/intents.types.ts';
+} from '../types/intents/combat.intents.ts';
 
 /**
  * Creates an intent to toggle targeting mode.

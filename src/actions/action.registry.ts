@@ -1,6 +1,8 @@
-import type { GameState } from '../types/game-state.types.ts';
-import type { Intent } from '../types/intents.types.ts';
-import { IntentType } from '../types/intents.types.ts';
+import type { GameState, EntityId } from '../types/game-state.types.ts';
+import type { Intent } from '../types/intents/intent.union.ts';
+import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
+import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import { assertNever } from '../utils/assert.ts';
 
 // Handlers
@@ -23,13 +25,15 @@ import {
   processMoveTargetIntent,
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
+import { processSchemeTurn } from '../systems/scheme.system.ts';
 import {
   processCloseDialogueIntent,
   processSelectDialogueOptionIntent,
   processStartDialogueIntent
 } from './dialogue.actions.ts';
-import { ComponentType, type GodModeComponent } from '../types/components.types.ts';
+import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
+import { GameEventType, type ClueDiscoveredEvent } from '../types/events.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
 export type ActionHandler<T extends Intent> = (state: GameState, intent: T) => { state: GameState; success: boolean };
@@ -73,7 +77,7 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
     case IntentType.UseItem:
       return processUseItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UseAbility:
-      return processUseAbilityIntent(state, intent as import('../types/intents.types.ts').UseAbilityIntent);
+      return processUseAbilityIntent(state, intent as UseAbilityIntent);
     case IntentType.EquipItem:
       return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UnequipItem:
@@ -119,6 +123,14 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
       const invPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
       return {
         state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: invPaused } },
+        success: false
+      };
+    }
+    case IntentType.ToggleDebug: {
+      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Debug : UIMode.Game;
+      const debugPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: debugPaused } },
         success: false
       };
     }
@@ -208,6 +220,61 @@ export function dispatchAction(state: GameState, intent: Intent): { state: GameS
         state: addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System),
         success: false
       };
+    }
+
+    case IntentType.DebugFastForwardSchemes: {
+      const intentFF = intent as DebugFastForwardSchemesIntent;
+      let nextState = state;
+
+      // Find all masterminds
+      const masterminds: EntityId[] = [];
+      for (const id of state.entities) {
+        if (getComponent(state, id, ComponentType.Scheme)) masterminds.push(id);
+      }
+      for (const [id, record] of state.persistentEntities.entries()) {
+        if (record.components.find((c) => c.type === ComponentType.Scheme)) masterminds.push(id);
+      }
+
+      if (masterminds.length === 0) {
+        return {
+          state: addMessage(state, '[DEBUG] No masterminds found to fast-forward.', MessageLogCategory.System),
+          success: false
+        };
+      }
+
+      // Fast-forward loop
+      for (let i = 0; i < intentFF.iterations; i++) {
+        for (const mastermindId of masterminds) {
+          nextState = processSchemeTurn(nextState, mastermindId);
+        }
+      }
+
+      // Artificially inject clues for recently recruited minions
+      let cluesInjected = 0;
+      for (const mastermindId of masterminds) {
+        const schemeComp = getComponent(nextState, mastermindId, ComponentType.Scheme) as SchemeComponent | undefined;
+        if (!schemeComp) continue;
+
+        for (const minionId of schemeComp.activeMinions) {
+          // For the sake of the simulation, we'll just force a clue to drop if they have a minion
+          const clueEvent: ClueDiscoveredEvent = {
+            type: GameEventType.ClueDiscovered,
+            clueId: `simulated_clue_${minionId}`,
+            sourceEntityId: minionId,
+            implicatesEntityId: mastermindId
+          };
+          nextState = { ...nextState, events: [...nextState.events, clueEvent] };
+          cluesInjected++;
+        }
+      }
+
+      nextState = addMessage(
+        nextState,
+        `[DEBUG] Fast-forwarded schemes ${intentFF.iterations} turns. Injected ${cluesInjected} simulated clues.`,
+        MessageLogCategory.System
+      );
+
+      return { state: nextState, success: false };
     }
 
     case IntentType.ToggleEngineMode: {
