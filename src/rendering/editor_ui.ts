@@ -12,6 +12,7 @@ import type { PatchOperation } from '../utils/json-patch.ts';
 import { renderSimulationLab } from './ui/ai_arena.ui.ts';
 import { renderAreaEditor } from './ui/area_editor.ts';
 import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
+import { renderFactionMatrixEditor } from './ui/faction_matrix_editor.ts';
 import { showPromptModal } from './ui/modal.ui.ts';
 import { renderWorldGraph } from './ui/world_graph.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
@@ -31,13 +32,15 @@ export interface EditorController {
   canUndo(): boolean;
   canRedo(): boolean;
   validate(): ReadonlyArray<ValidationError>;
-  onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>) => void): void;
+  hasUnsavedChanges(): boolean;
+  onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void): void;
   generateSandboxArea(areaId: string): GeneratedArea;
 }
 
 // Local UI State for the Editor
 let currentCategory: keyof CampaignData | 'simulation' | null = null;
 let currentItemId: string | null = null;
+let searchFilter = '';
 let isInitialized = false;
 
 /**
@@ -123,8 +126,8 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     middlePane.id = 'editor-middle-pane';
     middlePane.style.display = 'none'; // Hidden by default
     middlePane.innerHTML = `
-      <div class="middle-pane-header">
-        <span class="middle-pane-title">Select a Category</span>
+      <div class="middle-pane-header" style="display: flex; align-items: center; justify-content: space-between;">
+        <input type="text" id="editor-search-input" class="form-input" placeholder="Filter..." style="flex:1; margin-right:8px; padding:4px 8px; font-size:0.8rem; background: #111; color: #fff; border: 1px solid #444;" />
         <button id="btn-editor-add-item" class="editor-btn" style="padding: 4px 8px; font-size: 0.8rem;">➕ Add</button>
       </div>
       <div class="middle-pane-list" id="editor-middle-list"></div>
@@ -160,13 +163,19 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
 
     // Bind basic events
     document.getElementById('btn-editor-exit')?.addEventListener('click', () => {
+      if (controller.hasUnsavedChanges() && !confirm('You have unsaved changes. Are you sure you want to exit?')) {
+        return;
+      }
       setGameState({ ...state, uiMode: UIMode.MainMenu });
     });
 
     document.getElementById('btn-editor-new')?.addEventListener('click', async () => {
+      if (controller.hasUnsavedChanges() && !confirm('You have unsaved changes that will be lost. Continue?')) {
+        return;
+      }
       if (
         confirm(
-          'Create a new workspace? Any unsaved changes will be lost.\n\nPress OK to start with a Clone of Default, or Cancel to start from a Blank Slate.'
+          'Create a new workspace?\n\nPress OK to start with a Clone of Default, or Cancel to start from a Blank Slate.'
         )
       ) {
         // Clone Default
@@ -215,8 +224,8 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         const deepReport = await validateCampaign(doc);
         if (deepReport.errors.length > 0) {
           alert(
-            'Campaign deep validation failed:\\n\\n' +
-              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\\n')
+            'Campaign deep validation failed:\n\n' +
+              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\n')
           );
           return;
         }
@@ -252,8 +261,8 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         const deepReport = await validateCampaign(doc);
         if (deepReport.errors.length > 0) {
           alert(
-            'Campaign deep validation failed:\\n\\n' +
-              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\\n')
+            'Campaign deep validation failed:\n\n' +
+              deepReport.errors.map((e) => `- [${e.path}] ${e.message}`).join('\n')
           );
           return;
         }
@@ -294,8 +303,25 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     };
     window.addEventListener('keydown', handleKeydown);
 
+    window.addEventListener('beforeunload', (e) => {
+      if (controller.hasUnsavedChanges()) {
+        e.preventDefault();
+        e.returnValue = true;
+      }
+    });
+
+    const searchInput = document.getElementById('editor-search-input') as HTMLInputElement | null;
+    searchInput?.addEventListener('input', () => {
+      searchFilter = searchInput.value;
+      rebuildMiddleList(controller);
+    });
+
     // Subscribe to controller changes to update toolbar state
-    controller.onChange(async (_doc, _errors) => {
+    controller.onChange(async (_doc, _errors, isCoalesced) => {
+      if (isCoalesced) {
+        updateToolbar(controller, _errors);
+        return;
+      }
       try {
         const report = await validateCampaign(controller.getDocument());
         updateToolbar(controller, report.errors);
@@ -326,15 +352,18 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       if (!btn) return;
 
       const target = btn.dataset.target as keyof CampaignData | 'simulation';
-      if (target) {
+      if (target && target !== currentCategory) {
         currentCategory = target;
-        currentItemId = null; // Reset selection when changing categories
+        currentItemId = null;
+        searchFilter = '';
+        const searchIn = document.getElementById('editor-search-input') as HTMLInputElement | null;
+        if (searchIn) searchIn.value = '';
 
-        // Update active class
         navMenu.querySelectorAll('.sidebar-item-btn').forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
 
         refreshActiveViews(controller);
+        sessionStorage.setItem('editor_active_category', currentCategory);
       }
     });
 
@@ -368,7 +397,6 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
 function refreshActiveViews(controller: EditorController, report?: ValidationReport) {
   const doc = controller.getDocument();
   const middlePane = document.getElementById('editor-middle-pane');
-  const middleList = document.getElementById('editor-middle-list');
   const workspacePane = document.getElementById('editor-workspace-pane');
   const bodyLayout = document.querySelector('.editor-main') as HTMLElement | null;
 
@@ -386,7 +414,6 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     'effects',
     'status',
     'tiles',
-    'factions',
     'dialogues',
     'quests',
     'triggers',
@@ -399,92 +426,9 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     // Show Middle Pane
     if (middlePane) middlePane.style.display = 'flex';
     if (bodyLayout) bodyLayout.style.gridTemplateColumns = '220px 280px 1fr';
-    if (middleList) {
-      middleList.innerHTML = '';
-      const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
-      for (const key of Object.keys(dict)) {
-        const itemObj = dict[key] as Record<string, unknown> | undefined;
-        const btn = document.createElement('div');
-        btn.className = `database-list-item ${currentItemId === key ? 'active' : ''}`;
-
-        const nameText = (itemObj?.name as string | undefined) || key;
-        const glyphText = (itemObj?.glyph as string | undefined) || '📄';
-
-        btn.innerHTML = `
-          <div style="display:flex;align-items:center;flex-grow:1;cursor:pointer;" class="item-click-target">
-            <span class="database-list-item-glyph">${glyphText}</span>
-            <span>${nameText}</span>
-          </div>
-          <div style="display:flex;gap:4px;">
-            <button class="editor-btn editor-btn-secondary btn-duplicate-item" data-key="${key}" title="Duplicate" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">📋</button>
-            <button class="editor-btn editor-btn-danger btn-delete-item" data-key="${key}" title="Delete" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">✖</button>
-          </div>
-        `;
-
-        btn.querySelector('.item-click-target')?.addEventListener('click', () => {
-          currentItemId = key;
-          refreshActiveViews(controller); // re-render just the workspace
-        });
-
-        btn.querySelector('.btn-delete-item')?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (confirm(`Are you sure you want to delete ${key}?`)) {
-            controller.applyOperations([{ op: 'remove', path: `/${currentCategory}/${key}` }]);
-            if (currentItemId === key) currentItemId = null;
-          }
-        });
-
-        btn.querySelector('.btn-duplicate-item')?.addEventListener('click', (e) => {
-          e.stopPropagation();
-          showPromptModal({
-            title: 'Duplicate Item',
-            defaultValue: `${key}_copy`,
-            placeholder: 'Enter a unique ID',
-            validator: (val: string) => {
-              if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
-              if (dict[val]) return 'An item with that ID already exists.';
-              return null;
-            },
-            onConfirm: (newId: string) => {
-              const copy = JSON.parse(JSON.stringify(dict[key]));
-              copy.id = newId;
-              if (copy.name) copy.name = `${copy.name} (Copy)`;
-              controller.applyOperations([{ op: 'add', path: `/${currentCategory}/${newId}`, value: copy }]);
-              currentItemId = newId;
-            }
-          });
-        });
-
-        middleList.appendChild(btn);
-      }
-
-      // Wire up Add New button
-      const btnAdd = document.getElementById('btn-editor-add-item');
-      if (btnAdd) {
-        // Clone and replace to clear old listeners
-        const newBtnAdd = btnAdd.cloneNode(true) as HTMLButtonElement;
-        btnAdd.parentNode?.replaceChild(newBtnAdd, btnAdd);
-        newBtnAdd.addEventListener('click', () => {
-          showPromptModal({
-            title: 'New Item',
-            placeholder: 'Enter a unique ID',
-            validator: (val: string) => {
-              if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
-              if (dict[val]) return 'An item with that ID already exists.';
-              return null;
-            },
-            onConfirm: (newId: string) => {
-              controller.applyOperations([
-                { op: 'add', path: `/${currentCategory}/${newId}`, value: { id: newId, name: 'New Item' } }
-              ]);
-              currentItemId = newId;
-            }
-          });
-        });
-      }
-    }
+    rebuildMiddleList(controller);
   } else {
-    // Singleton (Manifest, Rules, Theme)
+    // Singleton (Manifest, Rules, Theme, Factions)
     if (middlePane) middlePane.style.display = 'none';
     if (bodyLayout) bodyLayout.style.gridTemplateColumns = '220px 1fr';
   }
@@ -498,28 +442,30 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     if (dictCategories.includes(currentCategory)) {
       const header = document.createElement('div');
       header.className = 'workspace-header';
-      header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
 
       if (currentItemId) {
+        const h2 = document.createElement('h2');
+        h2.className = 'workspace-title';
+        h2.textContent = `Editing: ${currentItemId}`;
+        header.appendChild(h2);
         workspacePane.appendChild(header);
-        // Render dictionary item form
-        const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown>;
-        const itemObj = dict[currentItemId];
-        const schema = CampaignCategorySchemas[currentCategory as unknown as keyof CampaignData];
 
-        if (currentCategory === 'dialogues') {
-          renderDialogueTreeEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
-        } else if (currentCategory === 'areas') {
-          renderAreaEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
-        } else {
-          renderFormForZodSchema(
-            controller,
-            schema,
-            itemObj,
-            `/${currentCategory}/${currentItemId}`,
-            formContainer,
-            report?.errors
-          );
+        if (currentCategory && (doc[currentCategory as keyof CampaignData] as Record<string, unknown>)[currentItemId]) {
+          const itemObj = (doc[currentCategory as keyof CampaignData] as Record<string, unknown>)[currentItemId];
+          if (currentCategory === 'dialogues') {
+            renderDialogueTreeEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+          } else if (currentCategory === 'areas') {
+            renderAreaEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+          } else {
+            renderFormForZodSchema(
+              controller,
+              CampaignCategorySchemas[currentCategory as unknown as keyof CampaignData],
+              itemObj,
+              `/${currentCategory}/${currentItemId}`,
+              formContainer,
+              report?.errors
+            );
+          }
         }
       } else {
         if (currentCategory === 'areas') {
@@ -529,13 +475,18 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
             refreshActiveViews(controller);
           });
         } else {
-          const header = document.createElement('div');
-          header.className = 'workspace-header';
           header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
           workspacePane.appendChild(header);
           formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
         }
       }
+    } else if (currentCategory === 'factions') {
+      const header = document.createElement('div');
+      header.className = 'workspace-header';
+      header.innerHTML = `<h2 class="workspace-title">FACTIONS</h2>`;
+      workspacePane.appendChild(header);
+
+      renderFactionMatrixEditor(controller, '/factions', formContainer);
     } else {
       const header = document.createElement('div');
       header.className = 'workspace-header';
@@ -553,5 +504,121 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     }
 
     workspacePane.appendChild(formContainer);
+    // Check for inline validation errors (Task B logic placeholder if needed)
+  }
+}
+
+function rebuildMiddleList(controller: EditorController): void {
+  const middleList = document.getElementById('editor-middle-list');
+  if (!middleList || !currentCategory) return;
+
+  const doc = controller.getDocument();
+  const dict = doc[currentCategory as keyof CampaignData] as Record<string, unknown> | undefined;
+  if (!dict) return;
+
+  middleList.innerHTML = '';
+  for (const key of Object.keys(dict)) {
+    const itemObj = dict[key] as Record<string, unknown> | undefined;
+    const nameText = (itemObj?.name as string | undefined) || key;
+
+    // Search Filtering
+    if (searchFilter) {
+      const term = searchFilter.toLowerCase();
+      if (!key.toLowerCase().includes(term) && !nameText.toLowerCase().includes(term)) {
+        continue;
+      }
+    }
+
+    const btn = document.createElement('div');
+    btn.className = `database-list-item ${currentItemId === key ? 'active' : ''}`;
+    btn.draggable = true;
+    btn.addEventListener('dragstart', (e: DragEvent) => {
+      e.dataTransfer?.setData(
+        'application/x-editor-ref',
+        JSON.stringify({
+          id: key,
+          category: currentCategory
+        })
+      );
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'link';
+      }
+    });
+
+    const glyphText = (itemObj?.glyph as string | undefined) || '📄';
+    const fgColor = (itemObj?.fg as string | undefined) || '#ccc';
+    const bgColor = (itemObj?.bg as string | undefined) || 'transparent';
+
+    btn.innerHTML = `
+      <div style="display:flex;align-items:center;flex-grow:1;cursor:pointer;" class="item-click-target">
+        <span class="database-list-item-glyph" style="color:${fgColor};background:${bgColor};font-family:monospace;width:24px;text-align:center;border-radius:3px;">${glyphText}</span>
+        <span>${nameText}</span>
+      </div>
+      <div style="display:flex;gap:4px;">
+        <button class="editor-btn editor-btn-secondary btn-duplicate-item" data-key="${key}" title="Duplicate" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">📋</button>
+        <button class="editor-btn editor-btn-danger btn-delete-item" data-key="${key}" title="Delete" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">✖</button>
+      </div>
+    `;
+
+    btn.querySelector('.item-click-target')?.addEventListener('click', () => {
+      currentItemId = key;
+      refreshActiveViews(controller); // re-render just the workspace
+    });
+
+    btn.querySelector('.btn-delete-item')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm(`Are you sure you want to delete ${key}?`)) {
+        controller.applyOperations([{ op: 'remove', path: `/${currentCategory}/${key}` }]);
+        if (currentItemId === key) currentItemId = null;
+      }
+    });
+
+    btn.querySelector('.btn-duplicate-item')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showPromptModal({
+        title: 'Duplicate Item',
+        defaultValue: `${key}_copy`,
+        placeholder: 'Enter a unique ID',
+        validator: (val: string) => {
+          if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
+          if (dict[val]) return 'An item with that ID already exists.';
+          return null;
+        },
+        onConfirm: (newId: string) => {
+          const copy = JSON.parse(JSON.stringify(dict[key]));
+          copy.id = newId;
+          if (copy.name) copy.name = `${copy.name} (Copy)`;
+          controller.applyOperations([{ op: 'add', path: `/${currentCategory}/${newId}`, value: copy }]);
+          currentItemId = newId;
+        }
+      });
+    });
+
+    middleList.appendChild(btn);
+  }
+
+  // Wire up Add New button
+  const btnAdd = document.getElementById('btn-editor-add-item');
+  if (btnAdd) {
+    // Clone and replace to clear old listeners
+    const newBtnAdd = btnAdd.cloneNode(true) as HTMLButtonElement;
+    btnAdd.parentNode?.replaceChild(newBtnAdd, btnAdd);
+    newBtnAdd.addEventListener('click', () => {
+      showPromptModal({
+        title: 'New Item',
+        placeholder: 'Enter a unique ID',
+        validator: (val: string) => {
+          if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
+          if (dict[val]) return 'An item with that ID already exists.';
+          return null;
+        },
+        onConfirm: (newId: string) => {
+          controller.applyOperations([
+            { op: 'add', path: `/${currentCategory}/${newId}`, value: { id: newId, name: 'New Item' } }
+          ]);
+          currentItemId = newId;
+        }
+      });
+    });
   }
 }

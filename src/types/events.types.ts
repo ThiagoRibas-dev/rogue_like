@@ -3,7 +3,7 @@ import type { EntityId } from './game-state.types.ts';
 /**
  * Enum defining the types of events that can be emitted to the global event ledger.
  */
-export const enum GameEventType {
+export enum GameEventType {
   EntityMoved = 'EntityMoved',
   EntityDamaged = 'EntityDamaged',
   EntityDied = 'EntityDied',

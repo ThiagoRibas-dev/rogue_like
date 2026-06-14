@@ -210,6 +210,36 @@ export function createSelectField(
     opts.onChange(select.value);
   });
 
+  group.addEventListener('dragover', (e: DragEvent) => {
+    e.preventDefault();
+    select.style.borderColor = '#89b4fa';
+    select.style.boxShadow = '0 0 0 2px rgba(137,180,250,0.3)';
+  });
+
+  group.addEventListener('dragleave', () => {
+    select.style.borderColor = '';
+    select.style.boxShadow = '';
+  });
+
+  group.addEventListener('drop', (e: DragEvent) => {
+    e.preventDefault();
+    select.style.borderColor = '';
+    select.style.boxShadow = '';
+    const refData = e.dataTransfer?.getData('application/x-editor-ref');
+    if (!refData) return;
+    try {
+      const parsed = JSON.parse(refData) as { id: string; category: string };
+      // Check if the dropped ID exists in our options
+      const optionExists = opts.options.some((o) => o.value === parsed.id);
+      if (optionExists) {
+        select.value = parsed.id;
+        opts.onChange(parsed.id);
+      }
+    } catch {
+      // ignore invalid data
+    }
+  });
+
   group.appendChild(label);
   group.appendChild(select);
 

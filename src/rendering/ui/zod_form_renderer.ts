@@ -331,6 +331,40 @@ function renderNestedObjectField(
   const safeObj = (obj as Record<string, unknown>) || {};
   const shape = schema.shape;
 
+  // Inject glyph preview if the object has glyph+fg+bg fields
+  if ('glyph' in shape && 'fg' in shape && 'bg' in shape) {
+    const previewRow = document.createElement('div');
+    previewRow.style.display = 'flex';
+    previewRow.style.alignItems = 'center';
+    previewRow.style.gap = '12px';
+    previewRow.style.marginBottom = '12px';
+
+    const swatch = document.createElement('div');
+    swatch.className = 'glyph-preview-swatch';
+    swatch.textContent = (safeObj.glyph as string) || '?';
+    swatch.style.color = (safeObj.fg as string) || '#fff';
+    swatch.style.backgroundColor = (safeObj.bg as string) || '#000';
+    swatch.style.fontSize = '2.5rem';
+    swatch.style.width = '56px';
+    swatch.style.height = '56px';
+    swatch.style.display = 'flex';
+    swatch.style.alignItems = 'center';
+    swatch.style.justifyContent = 'center';
+    swatch.style.borderRadius = '6px';
+    swatch.style.border = '1px solid rgba(255,255,255,0.2)';
+    swatch.style.fontFamily = 'monospace';
+    swatch.style.flexShrink = '0';
+
+    const nameLabel = document.createElement('span');
+    nameLabel.style.fontSize = '1.1rem';
+    nameLabel.style.color = '#cdd6f4';
+    nameLabel.textContent = (safeObj.name as string) || (safeObj.id as string) || '';
+
+    previewRow.appendChild(swatch);
+    previewRow.appendChild(nameLabel);
+    group.appendChild(previewRow);
+  }
+
   // Render all fields defined in the schema
   for (const [key, propSchema] of Object.entries(shape)) {
     const propPath = `${basePath}/${key}`;
@@ -381,10 +415,24 @@ function renderArrayField(
   // Render each existing element
   safeArr.forEach((item, index) => {
     const itemContainer = document.createElement('div');
+    itemContainer.draggable = true;
+    itemContainer.dataset.index = String(index);
     itemContainer.style.display = 'flex';
     itemContainer.style.gap = '8px';
     itemContainer.style.alignItems = 'flex-start';
     itemContainer.style.marginBottom = '8px';
+    itemContainer.style.cursor = 'grab';
+    itemContainer.style.transition = 'border-color 0.15s ease';
+
+    // Drag handle
+    const dragHandle = document.createElement('span');
+    dragHandle.textContent = '⠿';
+    dragHandle.style.cursor = 'grab';
+    dragHandle.style.color = 'rgba(255,255,255,0.3)';
+    dragHandle.style.fontSize = '1.2rem';
+    dragHandle.style.padding = '4px';
+    dragHandle.style.marginTop = '24px';
+    itemContainer.appendChild(dragHandle);
 
     const fieldContainer = document.createElement('div');
     fieldContainer.style.flexGrow = '1';
@@ -405,6 +453,55 @@ function renderArrayField(
     itemContainer.appendChild(removeBtn);
 
     group.appendChild(itemContainer);
+  });
+
+  // HTML5 Drag and Drop for array reordering
+  let dragSourceIndex: number | null = null;
+
+  group.addEventListener('dragstart', (e: DragEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
+    if (!target) return;
+    dragSourceIndex = parseInt(target.dataset.index ?? '-1', 10);
+    e.dataTransfer?.setData('text/plain', String(dragSourceIndex));
+    target.style.opacity = '0.4';
+  });
+
+  group.addEventListener('dragend', (e: DragEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
+    if (target) target.style.opacity = '1';
+    dragSourceIndex = null;
+  });
+
+  group.addEventListener('dragover', (e: DragEvent) => {
+    e.preventDefault(); // Allow drop
+    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
+    if (target) {
+      target.style.borderTop = '2px solid #89b4fa';
+    }
+  });
+
+  group.addEventListener('dragleave', (e: DragEvent) => {
+    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
+    if (target) {
+      target.style.borderTop = '';
+    }
+  });
+
+  group.addEventListener('drop', (e: DragEvent) => {
+    e.preventDefault();
+    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
+    if (!target || dragSourceIndex === null) return;
+    target.style.borderTop = '';
+
+    const dropIndex = parseInt(target.dataset.index ?? '-1', 10);
+    if (dropIndex === dragSourceIndex || dropIndex < 0) return;
+
+    // Emit move as remove + add
+    const movedItem = safeArr[dragSourceIndex];
+    controller.applyOperations([
+      { op: 'remove', path: `${basePath}/${dragSourceIndex}` },
+      { op: 'add', path: `${basePath}/${dropIndex}`, value: movedItem }
+    ]);
   });
 
   // Add Item Button

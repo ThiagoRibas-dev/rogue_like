@@ -18,14 +18,15 @@ export class CampaignEditor {
   private undoStack: Array<PatchOperation[]> = [];
   private redoStack: Array<PatchOperation[]> = [];
   private dirHandle: FileSystemDirectoryHandle | null = null;
-
-  // Coalescing state
+  private isDirty = false;
   private lastEditedPath: string | null = null;
   private lastEditedTime = 0;
   private coalescedOriginalValue: unknown = undefined;
 
   // Listeners
-  private onChangeListeners: Array<(doc: CampaignData, errors: ReadonlyArray<ValidationError>) => void> = [];
+  private onChangeListeners: Array<
+    (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void
+  > = [];
 
   constructor(initialData: CampaignData) {
     this.doc = initialData;
@@ -35,10 +36,12 @@ export class CampaignEditor {
    * Subscribes a listener to change events.
    * @param listener The listener function to add.
    */
-  public onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>) => void): void {
+  public onChange(
+    listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void
+  ): void {
     this.onChangeListeners.push(listener);
     // Trigger immediately with initial state
-    listener(this.doc, this.validate());
+    listener(this.doc, this.validate(), false);
   }
 
   /**
@@ -58,6 +61,7 @@ export class CampaignEditor {
     this.undoStack = [];
     this.redoStack = [];
     this.dirHandle = null;
+    this.isDirty = false;
     this.lastEditedPath = null;
     this.coalescedOriginalValue = undefined;
     this.emitChange();
@@ -87,6 +91,7 @@ export class CampaignEditor {
       this.dirHandle = handle;
       this.undoStack = [];
       this.redoStack = [];
+      this.isDirty = false;
       this.lastEditedPath = null;
       this.coalescedOriginalValue = undefined;
       this.emitChange();
@@ -103,12 +108,12 @@ export class CampaignEditor {
    */
   public async saveWorkspace(): Promise<void> {
     if (!this.dirHandle) {
-      alert('No workspace directory is currently open. Use "Open Workspace" first.');
-      return;
+      throw new Error('Workspace directory is not set.');
     }
 
     try {
       await writeCampaignToDirectory(this.dirHandle, this.doc);
+      this.isDirty = false;
       alert('Workspace saved successfully!');
     } catch (err) {
       console.error('Failed to save workspace:', err);
@@ -161,6 +166,7 @@ export class CampaignEditor {
    */
   public applyOperations(ops: PatchOperation[], coalesce = false): void {
     if (ops.length === 0) return;
+    this.isDirty = true;
 
     const now = Date.now();
     const primaryOp = ops[0];
@@ -173,7 +179,7 @@ export class CampaignEditor {
         try {
           this.doc = applyPatch(this.doc, ops);
           this.lastEditedTime = now;
-          this.emitChange();
+          this.emitChange(true);
           return;
         } catch (err) {
           console.error('Failed to apply coalesced operation:', err);
@@ -442,11 +448,16 @@ export class CampaignEditor {
   /**
    * Notifies listeners of changes in the campaign document.
    */
-  private emitChange(): void {
+  /** Returns whether the document has unsaved changes. */
+  public hasUnsavedChanges(): boolean {
+    return this.isDirty;
+  }
+
+  private emitChange(isCoalesced = false): void {
     const errors = this.validate();
     for (const listener of this.onChangeListeners) {
       try {
-        listener(this.doc, errors);
+        listener(this.doc, errors, isCoalesced);
       } catch (err) {
         console.error('Error in change listener:', err);
       }

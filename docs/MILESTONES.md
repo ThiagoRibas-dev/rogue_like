@@ -301,22 +301,16 @@ Real-time simulation testing and campaign-wide sanity check validations.
 
 ## 🟢 Milestone 26: Visual Editor Enhancements (Drag-and-Drop & Previews)
 Enhance the Developer Tools to feel like a modern visual game engine rather than just a smart forms editor.
-
-### 🟢 Foundational Editor Polish (Active)
-- [ ] **Targeted DOM Updates (Cursor Loss Fix):** Refactor the editor controller and renderer to use differential updates instead of full-tree re-renders on keystrokes, which is a strict prerequisite for drag-and-drop.
-- [ ] **Sidebar Search & Filtering:** Add a search bar to the middle pane to easily locate specific entities or items in massive campaigns.
-- [ ] **Unsaved Changes Protection:** Add a `beforeunload` event listener to warn users of unsaved changes before closing the tab.
-
-### 🟢 Bespoke UI for Complex Types
+- [x] **Targeted DOM Updates (Cursor Loss Fix):** Refactor the editor controller and renderer to use differential updates instead of full-tree re-renders on keystrokes, which is a strict prerequisite for drag-and-drop.
+- [x] **Sidebar Search & Filtering:** Add a search bar to the middle pane to easily locate specific entities or items in massive campaigns.
+- [x] **Unsaved Changes Protection:** Add a `beforeunload` event listener to warn users of unsaved changes before closing the tab.
 - [x] **Dialogue Tree Editor:** Built a specialized nested-list editor for dialogue nodes and options instead of using the generic JSON form.
 - [x] **World Area Graph:** Built a topology node-link graph view to visualize Area portal connections.
-- [ ] **Faction Matrix Data-Grid:** Replace the generic nested Zod object form for faction hostility with a 2D interactive grid UI.
-- [ ] **Visual Glyph & Color Previews:** Update the editor panel to render the literal ASCII glyph in its defined color when editing entities and tiles.
-
-### 🟢 Advanced Visual Tooling
-- [ ] **Drag-and-Drop Form Elements:** Upgrade the Zod-driven arrays and lists in `src/rendering/ui/zod_form_renderer.ts` to support drag-and-drop reordering.
-- [ ] **Drag-and-Drop Linking:** Implement dragging an Item from the sidebar into a Monster's loot table.
-- [ ] **Live Map Previews:** Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
+- [x] **Faction Matrix Data-Grid:** Replace the generic nested Zod object form for faction hostility with a 2D interactive grid UI.
+- [x] **Visual Glyph & Color Previews:** Update the editor panel to render the literal ASCII glyph in its defined color when editing entities and tiles.
+- [x] **Drag-and-Drop Form Elements:** Upgrade the Zod-driven arrays and lists in `src/rendering/ui/zod_form_renderer.ts` to support drag-and-drop reordering.
+- [x] **Drag-and-Drop Linking:** Implement dragging an Item from the sidebar into a Monster's loot table.
+- [x] **Live Map Previews:** Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
 
 ## 🟢 Milestone 27: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.

@@ -1,4 +1,5 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
+import { GameEventType } from '../../types/events.types.ts';
 
 export function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
   if (key === 'faction' || key.toLowerCase().includes('factionid')) {
@@ -20,15 +21,11 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
     return Object.keys(doc.dialogues).map((k) => ({ value: k, label: k }));
   }
   if (key === 'eventType') {
-    return [
-      { value: 'TurnPassed', label: 'Turn Passed' },
-      { value: 'PlayerMoved', label: 'Player Moved' },
-      { value: 'TileEntered', label: 'Tile Entered' },
-      { value: 'EntityDied', label: 'Entity Died' },
-      { value: 'TrapTriggered', label: 'Trap Triggered' },
-      { value: 'ClueDiscovered', label: 'Clue Discovered' },
-      { value: 'DialogueSelected', label: 'Dialogue Selected' }
-    ];
+    return Object.values(GameEventType).map((val) => {
+      // Split PascalCase into Words for the label
+      const label = val.replace(/([A-Z])/g, ' $1').trim();
+      return { value: val, label };
+    });
   }
   if (key.toLowerCase().includes('tag')) {
     return Object.keys(doc.tagRegistry || {}).map((k) => ({
