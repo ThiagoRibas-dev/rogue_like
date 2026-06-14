@@ -17,8 +17,8 @@ export function renderAreaEditor(
   const doc = controller.getDocument();
 
   container.innerHTML = `
-    <div style="display: flex; gap: 20px; width: 100%; height: 100%;">
-      <div id="area-form-container" style="flex: 1; max-width: 400px; overflow-y: auto; padding-right: 10px;"></div>
+    <div style="display: flex; gap: 20px; width: 50%; height: 100%;">
+      <div id="area-form-container" style="flex: 1; min-width: 400px; overflow-y: auto; padding-right: 10px;"></div>
       <div id="area-painter-container" style="flex: 2; border-left: 1px solid #444; padding-left: 20px; display: flex; flex-direction: column;"></div>
     </div>
   `;

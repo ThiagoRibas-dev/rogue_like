@@ -25,6 +25,7 @@
     "maxMonstersPerRoom": 2,
     "maxItemsPerRoom": 2,
     "spawnWeights": {
+      "goblin": 80,
       "orc": 60,
       "goblin_archer": 30,
       "orc_shaman": 10,

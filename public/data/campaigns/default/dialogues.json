@@ -72,7 +72,7 @@
             "text": "I will handle it.",
             "consequences": [
               {
-                "type": "grant_dynamic_quest",
+                "type": "grant_quest",
                 "targetId": "bounty_kill"
               }
             ]

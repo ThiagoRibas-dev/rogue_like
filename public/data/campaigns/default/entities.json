@@ -16,9 +16,18 @@
       "baseCapacity": 10
     },
     "equipmentSlots": [
-      "head", "neck", "torso", "back",
-      "arm", "arm", "hand", "hand",
-      "finger", "finger", "leg", "foot"
+      "head",
+      "neck",
+      "torso",
+      "back",
+      "arm",
+      "arm",
+      "hand",
+      "hand",
+      "finger",
+      "finger",
+      "leg",
+      "foot"
     ],
     "faction": "player"
   },
@@ -35,6 +44,27 @@
       "attack": 3,
       "defense": 0,
       "xpGiven": 50
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster"
+  },
+  "goblin": {
+    "id": "goblin",
+    "name": "Goblin",
+    "glyph": "g",
+    "fg": "#84e6ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 5,
+      "attack": 1,
+      "defense": 0,
+      "xpGiven": 10
     },
     "ai": {
       "profileId": "melee_aggressive",

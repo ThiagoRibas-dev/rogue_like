@@ -16,7 +16,7 @@
     "behaviors": [
       {
         "behaviorId": "flee",
-        "threshold": 0.3
+        "hpThreshold": 0.3
       },
       {
         "behaviorId": "hunt",
@@ -31,12 +31,8 @@
     "id": "ranged_archer",
     "behaviors": [
       {
-        "behaviorId": "flee",
-        "threshold": 0.3
-      },
-      {
         "behaviorId": "ranged",
-        "range": 6
+        "spellId": "shoot_arrow"
       },
       {
         "behaviorId": "hunt",
@@ -52,24 +48,11 @@
     "behaviors": [
       {
         "behaviorId": "flee",
-        "threshold": 0.4
+        "hpThreshold": 0.4
       },
       {
-        "behaviorId": "spell",
-        "abilities": [
-          {
-            "effectId": "spell_confusion",
-            "abilityName": "Hex of Confusion",
-            "range": 5,
-            "cooldown": 10
-          },
-          {
-            "effectId": "spell_lightning",
-            "abilityName": "Lightning Bolt",
-            "range": 8,
-            "cooldown": 5
-          }
-        ]
+        "behaviorId": "ranged",
+        "spellId": "spell_confusion"
       },
       {
         "behaviorId": "hunt",

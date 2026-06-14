@@ -108,11 +108,25 @@ export class CampaignEditor {
    */
   public async saveWorkspace(): Promise<void> {
     if (!this.dirHandle) {
-      throw new Error('Workspace directory is not set.');
+      if (!('showDirectoryPicker' in window)) {
+        alert('Your browser does not support the File System Access API. Please export as ZIP instead.');
+        throw new Error('Workspace directory is not set.');
+      }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const handle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
+        this.dirHandle = handle;
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Failed to select workspace directory:', err);
+          alert(`Failed to select workspace directory: ${(err as Error).message}`);
+        }
+        return;
+      }
     }
 
     try {
-      await writeCampaignToDirectory(this.dirHandle, this.doc);
+      await writeCampaignToDirectory(this.dirHandle!, this.doc);
       this.isDirty = false;
       alert('Workspace saved successfully!');
     } catch (err) {
