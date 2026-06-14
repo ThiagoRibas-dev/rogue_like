@@ -24,15 +24,19 @@
             "conditions": [
               {
                 "type": "quest_status",
-                "target": "tutorial_quest",
-                "operator": "==",
-                "value": 0
+                "params": {
+                  "target": "tutorial_quest",
+                  "operator": "==",
+                  "value": 0
+                }
               }
             ],
             "consequences": [
               {
                 "type": "complete_quest",
-                "targetId": "tutorial_quest"
+                "params": {
+                  "targetId": "tutorial_quest"
+                }
               }
             ]
           },
@@ -43,7 +47,9 @@
             "conditions": [
               {
                 "type": "not_has_fact",
-                "target": "gave_bounty_kill"
+                "params": {
+                  "target": "gave_bounty_kill"
+                }
               }
             ]
           },
@@ -73,7 +79,9 @@
             "consequences": [
               {
                 "type": "grant_dynamic_quest",
-                "targetId": "bounty_kill"
+                "params": {
+                  "targetId": "bounty_kill"
+                }
               }
             ]
           }
@@ -89,7 +97,9 @@
             "consequences": [
               {
                 "type": "grant_quest",
-                "targetId": "tutorial_quest"
+                "params": {
+                  "targetId": "tutorial_quest"
+                }
               }
             ]
           },

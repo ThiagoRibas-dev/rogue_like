@@ -1,5 +1,5 @@
 import type { EditorController } from '../editor_ui.ts';
-import type { CampaignData } from '../../types/campaign.types.ts';
+
 import {
   createStringField,
   createNumberField,
@@ -7,6 +7,7 @@ import {
   createColorPickerField,
   createSelectField
 } from './editor_forms.ts';
+import { getReferenceOptions } from './ui_utils.ts';
 
 /**
  * A basic recursive form renderer for objects.
@@ -78,33 +79,6 @@ function renderStringField(
 
   // Fallback to plain string
   container.appendChild(createStringField({ label: key, value: val, onChange }));
-}
-
-function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
-  if (key === 'faction' || key.toLowerCase().includes('factionid')) {
-    return Object.keys(doc.factions).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'startingAreaId' || key === 'targetArea') {
-    return Object.keys(doc.areas).map((k) => ({ value: k, label: doc.areas[k]?.name || k }));
-  }
-  if (key === 'effectId') {
-    return Object.keys(doc.effects).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'profileId') {
-    return Object.keys(doc.ai).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'eventType') {
-    return [
-      { value: 'TurnPassed', label: 'Turn Passed' },
-      { value: 'PlayerMoved', label: 'Player Moved' },
-      { value: 'TileEntered', label: 'Tile Entered' },
-      { value: 'EntityDied', label: 'Entity Died' },
-      { value: 'TrapTriggered', label: 'Trap Triggered' },
-      { value: 'ClueDiscovered', label: 'Clue Discovered' },
-      { value: 'DialogueSelected', label: 'Dialogue Selected' }
-    ];
-  }
-  return null;
 }
 
 function renderNumberField(

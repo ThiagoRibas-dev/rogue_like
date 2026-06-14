@@ -20,7 +20,7 @@ export async function validateTriggers(campaign: Readonly<CampaignData>): Promis
     for (const consequence of trigger.consequences) {
       if (consequence.type !== 'emit_event') continue;
 
-      const emittedEventType = consequence.params['eventType'] as string;
+      const emittedEventType = consequence.type === 'emit_event' ? consequence.eventType : undefined;
       if (!emittedEventType) continue;
 
       const chainedTriggers = eventToTriggers.get(emittedEventType) || [];

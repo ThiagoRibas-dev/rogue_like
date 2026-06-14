@@ -33,16 +33,22 @@ import {
 } from './dialogue.actions.ts';
 import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
-import { GameEventType, type ClueDiscoveredEvent } from '../types/events.types.ts';
+import { GameEventType, type ClueDiscoveredEvent, type GameEvent } from '../types/events.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
-export type ActionHandler<T extends Intent> = (state: GameState, intent: T) => { state: GameState; success: boolean };
+export type ActionHandler<T extends Intent> = (
+  state: GameState,
+  intent: T
+) => { state: GameState; success: boolean; events?: readonly GameEvent[] };
 
 /**
  * Dispatches an intent to the appropriate system for validation and execution.
  * This replaces the monolithic switch statement in game-loop.ts.
  */
-export function dispatchAction(state: GameState, intent: Intent): { state: GameState; success: boolean } {
+export function dispatchAction(
+  state: GameState,
+  intent: Intent
+): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   switch (intent.type) {
     case IntentType.Move:
       return processMoveIntent(state, intent);

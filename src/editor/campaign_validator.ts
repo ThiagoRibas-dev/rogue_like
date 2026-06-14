@@ -3,15 +3,14 @@ import type { ValidationReport, ValidationError } from './validator/validator.ty
 import { validateReachability } from './validator/reachability.validator.ts';
 import { validateQuests } from './validator/quest.validator.ts';
 import { validateTriggers } from './validator/trigger.validator.ts';
+import { validateTags } from './validator/tag.validator.ts';
+import { loadCampaign } from '../core/loader.ts';
 
 /**
  * Headless state-diffing runner to validate that a campaign's triggers
  * function correctly without requiring a full browser DOM.
  */
 export async function runHeadlessSmokeTest(campaignId: string = 'default'): Promise<boolean> {
-  // We keep this signature for existing tests, but we'll import loadCampaign locally
-  // to avoid circular dependency if needed, or just let it fail fast.
-  const { loadCampaign } = await import('../core/loader.ts');
   console.log(`Starting headless smoke test for campaign: ${campaignId}`);
   try {
     const campaign = await loadCampaign(campaignId);
@@ -43,8 +42,9 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const reachabilityErrs = await validateReachability(campaign);
   const questErrs = await validateQuests(campaign);
   const triggerErrs = await validateTriggers(campaign);
+  const tagErrs = await validateTags(campaign);
 
-  const allErrs = [...reachabilityErrs, ...questErrs, ...triggerErrs];
+  const allErrs = [...reachabilityErrs, ...questErrs, ...triggerErrs, ...tagErrs];
 
   for (const e of allErrs) {
     if (e.severity === 'error') {

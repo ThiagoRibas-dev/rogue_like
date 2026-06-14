@@ -75,6 +75,7 @@ export function queuePlayerIntent(intent: Intent): void {
 }
 
 import { getEffectiveStats } from '../utils/stats.ts';
+import type { GameEvent } from '../types/events.types.ts';
 
 /**
  * Called by ROT.Engine when it is an actor's turn.
@@ -289,7 +290,7 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   return {
     ...finalResult,
     state: nextState,
-    events: eventsToReturn as ReadonlyArray<import('../types/events.types.ts').GameEvent>
+    events: eventsToReturn as ReadonlyArray<GameEvent>
   };
 }
 
@@ -299,6 +300,6 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 function applyIntent(
   state: GameState,
   intent: Intent
-): { state: GameState; success: boolean; events?: import('../types/events.types.ts').GameEvent[] } {
+): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   return dispatchAction(state, intent);
 }

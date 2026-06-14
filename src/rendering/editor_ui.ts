@@ -1,17 +1,20 @@
+import { setGameState } from '../core/game-loop.ts';
+import { loadCampaign } from '../core/loader.ts';
+import { validateCampaign } from '../editor/campaign_validator.ts';
+import type { ValidationReport } from '../editor/validator/validator.types.ts';
+import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
+import type { GeneratedArea } from '../map/generator.ts';
+import type { CampaignData } from '../types/campaign.types.ts';
+import { CampaignCategorySchemas } from '../types/campaign.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
-import { setGameState } from '../core/game-loop.ts';
-import type { CampaignData } from '../types/campaign.types.ts';
 import type { PatchOperation } from '../utils/json-patch.ts';
-import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
-import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
-import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
-import { loadCampaign } from '../core/loader.ts';
-import { CampaignCategorySchemas } from '../types/campaign.types.ts';
-import { renderAreaEditor } from './ui/area_editor.ts';
-import { renderWorldGraph } from './ui/world_graph.ts';
-import type { GeneratedArea } from '../map/generator.ts';
 import { renderSimulationLab } from './ui/ai_arena.ui.ts';
+import { renderAreaEditor } from './ui/area_editor.ts';
+import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
+import { showPromptModal } from './ui/modal.ui.ts';
+import { renderWorldGraph } from './ui/world_graph.ts';
+import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 
@@ -209,7 +212,6 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
           return;
         }
 
-        const { validateCampaign } = await import('../editor/campaign_validator.ts');
         const deepReport = await validateCampaign(doc);
         if (deepReport.errors.length > 0) {
           alert(
@@ -247,7 +249,6 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
           return;
         }
 
-        const { validateCampaign } = await import('../editor/campaign_validator.ts');
         const deepReport = await validateCampaign(doc);
         if (deepReport.errors.length > 0) {
           alert(
@@ -294,9 +295,14 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     window.addEventListener('keydown', handleKeydown);
 
     // Subscribe to controller changes to update toolbar state
-    controller.onChange((_doc, errors) => {
-      updateToolbar(controller, errors);
-      refreshActiveViews(controller);
+    controller.onChange(async (_doc, _errors) => {
+      try {
+        const report = await validateCampaign(controller.getDocument());
+        updateToolbar(controller, report.errors);
+        refreshActiveViews(controller, report);
+      } catch (err) {
+        console.error(err);
+      }
     });
 
     // Restore state from session storage if coming back from playtest
@@ -359,7 +365,7 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
   }
 }
 
-function refreshActiveViews(controller: EditorController) {
+function refreshActiveViews(controller: EditorController, report?: ValidationReport) {
   const doc = controller.getDocument();
   const middlePane = document.getElementById('editor-middle-pane');
   const middleList = document.getElementById('editor-middle-list');
@@ -409,7 +415,10 @@ function refreshActiveViews(controller: EditorController) {
             <span class="database-list-item-glyph">${glyphText}</span>
             <span>${nameText}</span>
           </div>
-          <button class="editor-btn editor-btn-danger btn-delete-item" data-key="${key}" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">✖</button>
+          <div style="display:flex;gap:4px;">
+            <button class="editor-btn editor-btn-secondary btn-duplicate-item" data-key="${key}" title="Duplicate" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">📋</button>
+            <button class="editor-btn editor-btn-danger btn-delete-item" data-key="${key}" title="Delete" style="padding:2px 6px;font-size:0.75rem;opacity:0.5;">✖</button>
+          </div>
         `;
 
         btn.querySelector('.item-click-target')?.addEventListener('click', () => {
@@ -425,6 +434,27 @@ function refreshActiveViews(controller: EditorController) {
           }
         });
 
+        btn.querySelector('.btn-duplicate-item')?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          showPromptModal({
+            title: 'Duplicate Item',
+            defaultValue: `${key}_copy`,
+            placeholder: 'Enter a unique ID',
+            validator: (val: string) => {
+              if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
+              if (dict[val]) return 'An item with that ID already exists.';
+              return null;
+            },
+            onConfirm: (newId: string) => {
+              const copy = JSON.parse(JSON.stringify(dict[key]));
+              copy.id = newId;
+              if (copy.name) copy.name = `${copy.name} (Copy)`;
+              controller.applyOperations([{ op: 'add', path: `/${currentCategory}/${newId}`, value: copy }]);
+              currentItemId = newId;
+            }
+          });
+        });
+
         middleList.appendChild(btn);
       }
 
@@ -435,15 +465,21 @@ function refreshActiveViews(controller: EditorController) {
         const newBtnAdd = btnAdd.cloneNode(true) as HTMLButtonElement;
         btnAdd.parentNode?.replaceChild(newBtnAdd, btnAdd);
         newBtnAdd.addEventListener('click', () => {
-          const newId = prompt('Enter a unique ID for the new item:');
-          if (newId && !dict[newId]) {
-            controller.applyOperations([
-              { op: 'add', path: `/${currentCategory}/${newId}`, value: { id: newId, name: 'New Item' } }
-            ]);
-            currentItemId = newId;
-          } else if (newId && dict[newId]) {
-            alert('An item with that ID already exists.');
-          }
+          showPromptModal({
+            title: 'New Item',
+            placeholder: 'Enter a unique ID',
+            validator: (val: string) => {
+              if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
+              if (dict[val]) return 'An item with that ID already exists.';
+              return null;
+            },
+            onConfirm: (newId: string) => {
+              controller.applyOperations([
+                { op: 'add', path: `/${currentCategory}/${newId}`, value: { id: newId, name: 'New Item' } }
+              ]);
+              currentItemId = newId;
+            }
+          });
         });
       }
     }
@@ -476,7 +512,14 @@ function refreshActiveViews(controller: EditorController) {
         } else if (currentCategory === 'areas') {
           renderAreaEditor(controller, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
         } else {
-          renderFormForZodSchema(controller, schema, itemObj, `/${currentCategory}/${currentItemId}`, formContainer);
+          renderFormForZodSchema(
+            controller,
+            schema,
+            itemObj,
+            `/${currentCategory}/${currentItemId}`,
+            formContainer,
+            report?.errors
+          );
         }
       } else {
         if (currentCategory === 'areas') {
@@ -505,7 +548,7 @@ function refreshActiveViews(controller: EditorController) {
         // Render singleton form
         const obj = doc[currentCategory as unknown as keyof CampaignData];
         const schema = CampaignCategorySchemas[currentCategory as unknown as keyof CampaignData];
-        renderFormForZodSchema(controller, schema, obj, `/${currentCategory}`, formContainer);
+        renderFormForZodSchema(controller, schema, obj, `/${currentCategory}`, formContainer, report?.errors);
       }
     }
 

@@ -15,8 +15,8 @@
     "rewards": [
       {
         "type": "item",
-        "amount": 2,
-        "itemId": "health_potion"
+        "targetId": "health_potion",
+        "amount": 2
       },
       {
         "type": "xp",

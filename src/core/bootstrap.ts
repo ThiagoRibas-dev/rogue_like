@@ -15,6 +15,7 @@ import { loadCampaign } from './loader.ts';
 import { loadGame, deleteSave } from './save.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { type ChangeAreaIntent } from '../types/intents/movement.intents.ts';
+import type { SchemeComponent, ActorComponent } from '../types/components.types.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -114,13 +115,13 @@ export async function startNewGame(
   // Pre-seed the MVP Mastermind (Bandit King)
   const mastermindId = state.nextEntityId as EntityId;
   state = { ...state, nextEntityId: state.nextEntityId + 1 };
-  const schemeComp: import('../types/components.types.ts').SchemeComponent = {
+  const schemeComp: SchemeComponent = {
     type: ComponentType.Scheme,
     schemeId: 'bandit_uprising',
     currentPhase: 0,
     activeMinions: []
   };
-  const mastermindActor: import('../types/components.types.ts').ActorComponent = {
+  const mastermindActor: ActorComponent = {
     type: ComponentType.Actor,
     speed: 100
   };

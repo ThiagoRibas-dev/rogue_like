@@ -68,7 +68,7 @@ export function processAITurn(state: GameState, entityId: EntityId): Intent | nu
     if (behaviorFn) {
       // Merge component overrides with profile params
       const params = {
-        ...entry.params,
+        ...entry,
         ...(ai.aggroRadius !== undefined ? { aggroRadius: ai.aggroRadius } : {}),
         ...(ai.wanders !== undefined ? { wanders: ai.wanders } : {})
       };

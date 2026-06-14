@@ -71,6 +71,7 @@ export interface ActorComponent {
  */
 import type { Intent } from './intents/intent.union.ts';
 import type { EntityId } from './game-state.types.ts';
+import type { EquipmentSlot } from './campaign.types.ts';
 
 /**
  * A branded string type uniquely identifying a single item instance.
@@ -165,7 +166,7 @@ export interface InventoryComponent {
  */
 export interface EquipmentSlotInstance {
   readonly id: string; // Unique instance ID, e.g., "head_1", "arm_2", "finger_3"
-  readonly slotType: import('./campaign.types.ts').EquipmentSlot;
+  readonly slotType: EquipmentSlot;
   readonly equippedItem: EntityId | null;
 }
 

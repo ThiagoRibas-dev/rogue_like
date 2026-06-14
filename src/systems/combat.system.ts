@@ -7,6 +7,7 @@ import { rng } from '../core/rng.ts';
 
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getSettings } from '../core/settings.ts';
+import type { MemoryComponent, FactionComponent, DamageComponent, DamageInstance } from '../types/components.types.ts';
 
 /**
  * Processes a MeleeAttackIntent.
@@ -43,16 +44,12 @@ export function processMeleeAttackIntent(
   let nextComponents = new Map(state.components);
   let stateModified = false;
 
-  const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as
-    | import('../types/components.types.ts').MemoryComponent
-    | undefined;
-  const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as
-    | import('../types/components.types.ts').FactionComponent
-    | undefined;
+  const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+  const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as FactionComponent | undefined;
 
   if (attackerMemory && defenderFaction) {
     const currentStanding = attackerMemory.factionStandings[defenderFaction.factionId] ?? 0;
-    const nextMemory: import('../types/components.types.ts').MemoryComponent = {
+    const nextMemory: MemoryComponent = {
       ...attackerMemory,
       factionStandings: {
         ...attackerMemory.factionStandings,
@@ -78,10 +75,10 @@ export function processMeleeAttackIntent(
     nextComponents = new Map(nextState.components);
     const defenderComps = nextComponents.get(defenderId) ?? [];
     const existingDamageComp = defenderComps.find((c) => c.type === ComponentType.Damage) as
-      | import('../types/components.types.ts').DamageComponent
+      | DamageComponent
       | undefined;
 
-    const damageInstance: import('../types/components.types.ts').DamageInstance = {
+    const damageInstance: DamageInstance = {
       amount: damage,
       sourceEntityId: entityId,
       tags: ['melee', 'physical']
@@ -94,7 +91,7 @@ export function processMeleeAttackIntent(
         defenderComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
       );
     } else {
-      const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+      const newDamageComp: DamageComponent = {
         type: ComponentType.Damage,
         instances: [damageInstance]
       };

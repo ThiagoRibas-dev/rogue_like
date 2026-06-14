@@ -21,7 +21,9 @@ const CAMPAIGN_FILES: ReadonlyArray<{ readonly key: keyof CampaignData; readonly
   { key: 'questTemplates', filename: 'quest_templates.json' },
   { key: 'villains', filename: 'villains.json' },
   { key: 'schemes', filename: 'schemes.json' },
-  { key: 'agreements', filename: 'agreements.json' }
+  { key: 'agreements', filename: 'agreements.json' },
+  { key: 'tagRegistry', filename: 'tag_registry.json' },
+  { key: 'reactions', filename: 'reactions.json' }
 ];
 
 /**
@@ -196,7 +198,9 @@ export function createBlankSlateCampaign(): CampaignData {
         background: '#000000',
         playerFg: '#ffffff',
         stairsFg: '#f1c40f',
-        transparent: 'transparent'
+        transparent: 'transparent',
+        floorDimFg: '#333333',
+        wallDimFg: '#444444'
       },
       glyphs: {
         stairsUp: '<',
@@ -244,6 +248,7 @@ export function createBlankSlateCampaign(): CampaignData {
         fg: '#e74c3c',
         bg: 'transparent',
         category: 'consumable',
+        tags: ['potion', 'healing'],
         weight: 1,
         consumable: {
           effectId: 'heal_light',
@@ -330,10 +335,7 @@ export function createBlankSlateCampaign(): CampaignData {
     ai: {
       melee_aggro: {
         id: 'melee_aggro',
-        behaviors: [
-          { behaviorId: 'hunt', params: {} },
-          { behaviorId: 'wander', params: {} }
-        ]
+        behaviors: [{ behaviorId: 'hunt' }, { behaviorId: 'wander' }]
       }
     },
     dialogues: {},
@@ -342,6 +344,8 @@ export function createBlankSlateCampaign(): CampaignData {
     triggers: {},
     villains: {},
     schemes: {},
-    agreements: {}
+    agreements: {},
+    tagRegistry: {},
+    reactions: []
   };
 }

@@ -3,6 +3,7 @@ import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { getQuestDef } from '../../systems/quest.system.ts';
+import type { QuestLogComponent } from '../../types/components.types.ts';
 
 function appendWikiSegments(container: HTMLElement, text: string) {
   const segments = parseWikiSegments(text);
@@ -45,9 +46,7 @@ export function renderQuestJournal(state: GameState): void {
   const playerId = playerEntities[0];
   if (playerId === undefined) return;
 
-  const questLog = getComponent(state, playerId, ComponentType.QuestLog) as
-    | import('../../types/components.types.ts').QuestLogComponent
-    | undefined;
+  const questLog = getComponent(state, playerId, ComponentType.QuestLog) as QuestLogComponent | undefined;
 
   if (!questLog || Object.keys(questLog.quests).length === 0) {
     content.innerHTML = '<div class="text-gray-400 italic">No quests in your journal.</div>';

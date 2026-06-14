@@ -8,6 +8,7 @@ import {
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
+import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
 
 const SAVE_KEY = 'roguelike_save';
 
@@ -55,9 +56,9 @@ export function saveGame(state: GameState): void {
     }
   );
 
-  const serializedPersistentEntities: Array<
-    [EntityId, import('../types/game-state.types.ts').SerializedPersistentEntityRecord]
-  > = Array.from(state.persistentEntities.entries()).map(([id, record]) => {
+  const serializedPersistentEntities: Array<[EntityId, SerializedPersistentEntityRecord]> = Array.from(
+    state.persistentEntities.entries()
+  ).map(([id, record]) => {
     return [
       id,
       {
@@ -126,10 +127,7 @@ export async function loadGame(): Promise<GameState | null> {
       });
     }
 
-    const rehydratedPersistentEntities = new Map<
-      EntityId,
-      import('../types/game-state.types.ts').PersistentEntityRecord
-    >();
+    const rehydratedPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
     if (sState.persistentEntities) {
       for (const [id, record] of sState.persistentEntities) {
         rehydratedPersistentEntities.set(id, {

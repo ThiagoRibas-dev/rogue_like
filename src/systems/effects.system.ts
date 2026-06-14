@@ -10,6 +10,9 @@ import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
+import { GameEventType, type GameEvent } from '../types/events.types.ts';
+import type { DamageComponent, DamageInstance } from '../types/components.types.ts';
+import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -99,10 +102,10 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       const nextComponents = new Map(nextState.components);
       const targetComps = nextComponents.get(nearestId) ?? [];
       const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
-        | import('../types/components.types.ts').DamageComponent
+        | DamageComponent
         | undefined;
 
-      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+      const damageInstance: DamageInstance = {
         amount: effectDef.value,
         sourceEntityId: userId,
         tags: ['spell', 'magic']
@@ -115,7 +118,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
           targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
         );
       } else {
-        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+        const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };
@@ -151,10 +154,10 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
           const nextComponents = new Map(nextState.components);
           const targetComps = nextComponents.get(id) ?? [];
           const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
-            | import('../types/components.types.ts').DamageComponent
+            | DamageComponent
             | undefined;
 
-          const damageInstance: import('../types/components.types.ts').DamageInstance = {
+          const damageInstance: DamageInstance = {
             amount: effectDef.value,
             sourceEntityId: userId,
             tags: ['spell', 'magic', 'aoe']
@@ -170,7 +173,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
               targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
             );
           } else {
-            const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+            const newDamageComp: DamageComponent = {
               type: ComponentType.Damage,
               instances: [damageInstance]
             };
@@ -289,7 +292,7 @@ export function processUseItemIntent(
   state: GameState,
   entityId: EntityId,
   itemIndex: number
-): { state: GameState; success: boolean } {
+): { state: GameState; success: boolean; events?: GameEvent[] } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   if (!inventory) return { state, success: false };
 
@@ -361,7 +364,11 @@ export function processUseItemIntent(
     nextState = { ...nextState, components: nextComponents };
   }
 
-  return { state: nextState, success: true };
+  return {
+    state: nextState,
+    success: true,
+    events: [{ type: GameEventType.ItemUsed, entityId, itemId: itemEntityId }]
+  };
 }
 
 /**
@@ -370,7 +377,7 @@ export function processUseItemIntent(
  */
 export function processUseAbilityIntent(
   state: GameState,
-  intent: import('../types/intents/combat.intents.ts').UseAbilityIntent
+  intent: UseAbilityIntent
 ): { state: GameState; success: boolean } {
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const userName = isPlayer

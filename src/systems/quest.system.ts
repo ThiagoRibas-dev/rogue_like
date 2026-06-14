@@ -5,6 +5,8 @@ import type { Quest } from '../types/quests.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { grantXp } from './death.system.ts';
 import { GameEventType, type QuestCompletedEvent, type QuestStageChangedEvent } from '../types/events.types.ts';
+import type { QuestState } from '../types/components.types.ts';
+import type { EntityId } from '../types/game-state.types.ts';
 
 /**
  * Gets a quest definition from either the static campaign registry or dynamic quests.
@@ -16,10 +18,7 @@ export function getQuestDef(state: GameState, questId: string): Quest | undefine
 /**
  * Rebuilds the active triggers bucket for O(1) event routing.
  */
-export function rebuildQuestTriggers(
-  state: GameState,
-  quests: Record<string, import('../types/components.types.ts').QuestState>
-): Record<string, string[]> {
+export function rebuildQuestTriggers(state: GameState, quests: Record<string, QuestState>): Record<string, string[]> {
   const triggers: Record<string, string[]> = {};
   for (const [questId, qState] of Object.entries(quests)) {
     if (qState.status !== 'active') continue;
@@ -37,11 +36,7 @@ export function rebuildQuestTriggers(
 /**
  * Manually completes a quest, granting rewards and updating its status.
  */
-export function completeQuest(
-  state: GameState,
-  playerId: import('../types/game-state.types.ts').EntityId,
-  questId: string
-): GameState {
+export function completeQuest(state: GameState, playerId: EntityId, questId: string): GameState {
   const questLog = getComponent(state, playerId, ComponentType.QuestLog) as QuestLogComponent | undefined;
   if (!questLog) return state;
 
@@ -92,11 +87,7 @@ export function completeQuest(
 /**
  * Grants a new quest to a player.
  */
-export function grantQuest(
-  state: GameState,
-  playerId: import('../types/game-state.types.ts').EntityId,
-  questId: string
-): GameState {
+export function grantQuest(state: GameState, playerId: EntityId, questId: string): GameState {
   const questLog = getComponent(state, playerId, ComponentType.QuestLog) as QuestLogComponent | undefined;
   if (!questLog) return state;
   if (questLog.quests[questId]) return state; // Already has quest

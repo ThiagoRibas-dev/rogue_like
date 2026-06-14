@@ -4,13 +4,10 @@
     "behaviors": [
       {
         "behaviorId": "hunt",
-        "params": {
-          "aggroRadius": 5
-        }
+        "aggroRadius": 5
       },
       {
-        "behaviorId": "wander",
-        "params": {}
+        "behaviorId": "wander"
       }
     ]
   },
@@ -19,19 +16,14 @@
     "behaviors": [
       {
         "behaviorId": "flee",
-        "params": {
-          "threshold": 0.3
-        }
+        "threshold": 0.3
       },
       {
         "behaviorId": "hunt",
-        "params": {
-          "aggroRadius": 5
-        }
+        "aggroRadius": 5
       },
       {
-        "behaviorId": "wander",
-        "params": {}
+        "behaviorId": "wander"
       }
     ]
   },
@@ -40,25 +32,18 @@
     "behaviors": [
       {
         "behaviorId": "flee",
-        "params": {
-          "threshold": 0.3
-        }
+        "threshold": 0.3
       },
       {
         "behaviorId": "ranged",
-        "params": {
-          "range": 6
-        }
+        "range": 6
       },
       {
         "behaviorId": "hunt",
-        "params": {
-          "aggroRadius": 6
-        }
+        "aggroRadius": 6
       },
       {
-        "behaviorId": "wander",
-        "params": {}
+        "behaviorId": "wander"
       }
     ]
   },
@@ -67,38 +52,31 @@
     "behaviors": [
       {
         "behaviorId": "flee",
-        "params": {
-          "threshold": 0.4
-        }
+        "threshold": 0.4
       },
       {
         "behaviorId": "spell",
-        "params": {
-          "abilities": [
-            {
-              "effectId": "spell_confusion",
-              "abilityName": "Hex of Confusion",
-              "range": 5,
-              "cooldown": 10
-            },
-            {
-              "effectId": "spell_lightning",
-              "abilityName": "Lightning Bolt",
-              "range": 8,
-              "cooldown": 5
-            }
-          ]
-        }
+        "abilities": [
+          {
+            "effectId": "spell_confusion",
+            "abilityName": "Hex of Confusion",
+            "range": 5,
+            "cooldown": 10
+          },
+          {
+            "effectId": "spell_lightning",
+            "abilityName": "Lightning Bolt",
+            "range": 8,
+            "cooldown": 5
+          }
+        ]
       },
       {
         "behaviorId": "hunt",
-        "params": {
-          "aggroRadius": 8
-        }
+        "aggroRadius": 8
       },
       {
-        "behaviorId": "wander",
-        "params": {}
+        "behaviorId": "wander"
       }
     ]
   }

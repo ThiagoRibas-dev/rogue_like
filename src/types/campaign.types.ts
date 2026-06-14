@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { DialogueTreeSchema } from './dialogue.types.ts';
 
 import { QuestSchema } from './quests.types.ts';
-import { TriggerDefinitionSchema } from './trigger.types.ts';
+import { TriggerDefinitionSchema, ConsequenceActionSchema } from './trigger.types.ts';
 
 // ==========================================
 // 1. MANIFEST & REGISTRY
@@ -115,6 +115,7 @@ export const ItemDefinitionSchema = z.object({
   fg: z.string(),
   bg: z.string(),
   category: ItemCategoryEnum,
+  tags: z.array(z.string()).default([]),
   weight: z.number().int().nonnegative(),
   consumable: z
     .object({
@@ -272,10 +273,12 @@ export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 // ==========================================
 // 10. AI PROFILES
 // ==========================================
-export const AIBehaviorEntrySchema = z.object({
-  behaviorId: z.string(),
-  params: z.record(z.string(), z.unknown())
-});
+export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
+  z.object({ behaviorId: z.literal('hunt'), aggroRadius: z.number().int().positive().optional() }),
+  z.object({ behaviorId: z.literal('flee'), hpThreshold: z.number().optional() }),
+  z.object({ behaviorId: z.literal('ranged'), spellId: z.string() }),
+  z.object({ behaviorId: z.literal('wander') })
+]);
 
 export const AIProfileSchema = z.object({
   id: z.string(),
@@ -373,6 +376,26 @@ export type SchemeTemplate = z.infer<typeof SchemeTemplateSchema>;
 // ==========================================
 // THE MEGA CAMPAIGN DATA SCHEMA
 // ==========================================
+// ==========================================
+// TAGS & REACTIONS (Phase 2)
+// ==========================================
+export const TagDefinitionSchema = z.object({
+  category: z.string(),
+  color: z.string(),
+  description: z.string()
+});
+export type TagDefinition = z.infer<typeof TagDefinitionSchema>;
+
+export const ReactionDefinitionSchema = z.object({
+  id: z.string(),
+  trigger: z.literal('item_combine'),
+  sourceTag: z.string(),
+  targetTag: z.string(),
+  result: ConsequenceActionSchema,
+  message: z.string()
+});
+export type ReactionDefinition = z.infer<typeof ReactionDefinitionSchema>;
+
 export const ProceduralQuestTemplateSchema = z.object({
   id: z.string(),
   titleTemplate: z.string(),
@@ -406,7 +429,9 @@ export const CampaignDataSchema = z.object({
   triggerBuckets: z.record(z.string(), z.array(TriggerDefinitionSchema)).optional(),
   villains: z.record(z.string(), VillainArchetypeSchema),
   schemes: z.record(z.string(), SchemeTemplateSchema),
-  agreements: z.record(z.string(), AgreementDefinitionSchema)
+  agreements: z.record(z.string(), AgreementDefinitionSchema),
+  tagRegistry: z.record(z.string(), TagDefinitionSchema).default({}),
+  reactions: z.array(ReactionDefinitionSchema).default([])
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -431,5 +456,7 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   triggerBuckets: z.array(TriggerDefinitionSchema),
   villains: VillainArchetypeSchema,
   schemes: SchemeTemplateSchema,
-  agreements: AgreementDefinitionSchema
+  agreements: AgreementDefinitionSchema,
+  tagRegistry: TagDefinitionSchema,
+  reactions: ReactionDefinitionSchema
 };

@@ -11,6 +11,7 @@ import type {
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processQuestEvent } from '../systems/quest.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';
+import type { TemplateComponent } from '../types/components.types.ts';
 
 export function processStartDialogueIntent(
   state: GameState,
@@ -27,9 +28,7 @@ export function processStartDialogueIntent(
   }
 
   let targetTemplateId = targetId.toString();
-  const templateComp = getComponent(state, targetId, ComponentType.Template) as
-    | import('../types/components.types.ts').TemplateComponent
-    | undefined;
+  const templateComp = getComponent(state, targetId, ComponentType.Template) as TemplateComponent | undefined;
   if (templateComp) {
     targetTemplateId = templateComp.templateId;
   }
@@ -90,10 +89,7 @@ export function processSelectDialogueOptionIntent(
     };
 
     for (const consequence of option.consequences) {
-      const evalCons = {
-        ...consequence,
-        params: { ...consequence.params, _npcEntityId: npcEntityId, _playerEntityId: intent.entityId }
-      };
+      const evalCons = { ...consequence, _npcEntityId: npcEntityId, _playerEntityId: intent.entityId };
       nextState = applyConsequence(nextState, dummyEvent, evalCons);
     }
   }

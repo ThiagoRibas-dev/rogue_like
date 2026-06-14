@@ -9,6 +9,7 @@ import { getComponent } from '../core/ecs.ts';
 
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
+import type { DamageComponent, DamageInstance } from '../types/components.types.ts';
 
 /**
  * Ticks active status effects on an entity.
@@ -87,10 +88,10 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
       const nextComponents = new Map(nextState.components);
       const targetComps = nextComponents.get(entityId) ?? [];
       const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
-        | import('../types/components.types.ts').DamageComponent
+        | DamageComponent
         | undefined;
 
-      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+      const damageInstance: DamageInstance = {
         amount: actualDamage,
         sourceEntityId: xpToGrant ? xpToGrant.source : undefined,
         tags: ['status_effect', 'dot']
@@ -103,7 +104,7 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
           targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
         );
       } else {
-        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+        const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };

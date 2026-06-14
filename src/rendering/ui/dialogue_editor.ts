@@ -1,7 +1,13 @@
-import type { EditorController } from '../editor_ui.ts';
+import { ComponentType } from '@/types/components.types.ts';
+import { evaluateCondition } from '../../systems/trigger.system.ts';
 import type { DialogueTree } from '../../types/dialogue.types.ts';
-import { renderFormForZodSchema } from './zod_form_renderer.ts';
 import { DialogueOptionSchema } from '../../types/dialogue.types.ts';
+import type { GameEvent } from '../../types/events.types.ts';
+import { GameEventType } from '../../types/events.types.ts';
+import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import type { EditorController } from '../editor_ui.ts';
+import { showPromptModal } from './modal.ui.ts';
+import { renderFormForZodSchema } from './zod_form_renderer.ts';
 
 /**
  * Renders a specialized tree-first editor for Dialogue Trees.
@@ -122,16 +128,21 @@ export function renderDialogueTreeEditor(
     btnAddOpt.style.marginTop = '10px';
     btnAddOpt.style.fontSize = '0.75rem';
     btnAddOpt.addEventListener('click', () => {
-      const newOptId = prompt('Option ID:');
-      if (newOptId) {
-        controller.applyOperations([
-          {
-            op: 'add',
-            path: `${basePath}/nodes/${nodeId}/options/-`,
-            value: { id: newOptId, text: 'New Option', conditions: [], consequences: [] }
-          }
-        ]);
-      }
+      showPromptModal({
+        title: 'New Option',
+        placeholder: 'Enter Option ID',
+        validator: (val) =>
+          /^[a-z0-9_-]+$/.test(val) ? null : 'ID must be lowercase alphanumeric, dashes, or underscores.',
+        onConfirm: (newOptId) => {
+          controller.applyOperations([
+            {
+              op: 'add',
+              path: `${basePath}/nodes/${nodeId}/options/-`,
+              value: { id: newOptId, text: 'New Option', conditions: [], consequences: [] }
+            }
+          ]);
+        }
+      });
     });
     optionsContainer.appendChild(btnAddOpt);
     nodeEl.appendChild(optionsContainer);
@@ -143,16 +154,24 @@ export function renderDialogueTreeEditor(
   btnAddNode.className = 'editor-btn';
   btnAddNode.style.marginTop = '10px';
   btnAddNode.addEventListener('click', () => {
-    const newNodeId = prompt('Node ID:');
-    if (newNodeId) {
-      controller.applyOperations([
-        {
-          op: 'add',
-          path: `${basePath}/nodes/${newNodeId}`,
-          value: { id: newNodeId, text: 'New text', options: [] }
-        }
-      ]);
-    }
+    showPromptModal({
+      title: 'New Node',
+      placeholder: 'Enter Node ID',
+      validator: (val) => {
+        if (!/^[a-z0-9_-]+$/.test(val)) return 'ID must be lowercase alphanumeric, dashes, or underscores.';
+        if (tree.nodes && tree.nodes[val]) return 'A node with that ID already exists.';
+        return null;
+      },
+      onConfirm: (newNodeId) => {
+        controller.applyOperations([
+          {
+            op: 'add',
+            path: `${basePath}/nodes/${newNodeId}`,
+            value: { id: newNodeId, text: 'New text', options: [] }
+          }
+        ]);
+      }
+    });
   });
   treeContainer.appendChild(btnAddNode);
 
@@ -174,7 +193,77 @@ export function renderDialogueTreeEditor(
 
   const testBtn = simContainer.querySelector('#sim-test-btn');
   testBtn?.addEventListener('click', () => {
-    const results = simContainer.querySelector('#sim-results');
-    if (results) results.textContent = 'Simulating evaluation against local state variables... (WIP)';
+    const results = simContainer.querySelector('#sim-results') as HTMLElement;
+    if (!results) return;
+
+    const factsInput = (simContainer.querySelector('#sim-facts') as HTMLInputElement).value;
+    const factionsInput = (simContainer.querySelector('#sim-factions') as HTMLTextAreaElement).value;
+
+    let factionsObj: Record<string, number> = {};
+    try {
+      factionsObj = JSON.parse(factionsInput);
+    } catch {
+      results.textContent = 'Invalid JSON in Faction Standing.';
+      results.style.color = '#e74c3c';
+      return;
+    }
+
+    const factsArr = factsInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    // Build a mock state
+    const mockState = {
+      campaign: { ...controller.getDocument() },
+      components: new Map([
+        [1 as EntityId, [{ type: ComponentType.Player }]],
+        [
+          2 as EntityId,
+          [
+            {
+              type: ComponentType.Memory,
+              facts: factsArr,
+              factionStanding: factionsObj,
+              grudges: []
+            }
+          ]
+        ]
+      ])
+    } as unknown as GameState;
+
+    const dummyEvent = { type: GameEventType.EntityMoved } as unknown as GameEvent;
+
+    let outputHtml = '';
+
+    Object.entries(tree.nodes || {}).forEach(([nodeId, node]) => {
+      outputHtml += `<div style="margin-bottom:10px;"><strong>Node: ${nodeId}</strong><br/>`;
+      if (!node.options || node.options.length === 0) {
+        outputHtml += `<span style="color:#888;">No options.</span>`;
+      } else {
+        node.options.forEach((opt, idx) => {
+          let allPassed = true;
+          for (const cond of opt.conditions || []) {
+            const evalCond = {
+              ...cond,
+              _npcEntityId: 2 as EntityId,
+              entityId: 2 as EntityId,
+              _playerEntityId: 1 as EntityId
+            };
+            const passed = evaluateCondition(mockState, dummyEvent, evalCond);
+            if (!passed) allPassed = false;
+          }
+          if (allPassed) {
+            outputHtml += `<div style="color:#2ecc71;">[V] Option ${idx}: ${opt.text}</div>`;
+          } else {
+            outputHtml += `<div style="color:#e74c3c;text-decoration:line-through;">[X] Option ${idx}: ${opt.text}</div>`;
+          }
+        });
+      }
+      outputHtml += `</div>`;
+    });
+
+    results.innerHTML = outputHtml;
+    results.style.color = '#fff';
   });
 }

@@ -9,6 +9,7 @@ import { IntentType } from '../types/intents/intent.enum.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { isHostile } from '../utils/faction.ts';
+import type { GameEvent } from '../types/events.types.ts';
 
 /**
  * Processes a MoveIntent.
@@ -21,7 +22,7 @@ import { isHostile } from '../utils/faction.ts';
 export function processMoveIntent(
   state: GameState,
   intent: MoveIntent
-): { state: GameState; success: boolean; events?: import('../types/events.types.ts').GameEvent[] } {
+): { state: GameState; success: boolean; events?: GameEvent[] } {
   const { entityId, dx, dy } = intent;
 
   const position = getComponent(state, entityId, ComponentType.Position);

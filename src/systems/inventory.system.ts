@@ -3,6 +3,8 @@ import { ComponentType, type InventoryComponent, type EquipmentComponent } from 
 import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
+import type { ActionResult } from '../types/intents/intent.union.ts';
+import type { ClueComponent } from '../types/components.types.ts';
 
 /**
  * Computes the effective inventory capacity for an entity by summing
@@ -43,10 +45,7 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
  * @param entityId The entity picking up the item.
  * @returns The updated GameState.
  */
-export function processPickUpIntent(
-  state: GameState,
-  entityId: EntityId
-): import('../types/intents/intent.union.ts').ActionResult {
+export function processPickUpIntent(state: GameState, entityId: EntityId): ActionResult {
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return { state, success: false, energyCost: 0 };
 
@@ -123,9 +122,7 @@ export function processPickUpIntent(
     }
   }
 
-  const clueComp = getComponent(stateWithNewComponents, itemEntityId, ComponentType.Clue) as
-    | import('../types/components.types.ts').ClueComponent
-    | undefined;
+  const clueComp = getComponent(stateWithNewComponents, itemEntityId, ComponentType.Clue) as ClueComponent | undefined;
   const events: GameEvent[] = [];
   if (clueComp) {
     events.push({
@@ -243,7 +240,7 @@ export function processEquipItemIntent(
   state: GameState,
   entityId: EntityId,
   itemIndex: number
-): { state: GameState; success: boolean } {
+): { state: GameState; success: boolean; events?: GameEvent[] } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (!inventory || !equipment) return { state, success: false };
@@ -313,7 +310,8 @@ export function processEquipItemIntent(
       `You equip the ${itemName}.`,
       MessageLogCategory.System
     ),
-    success: true
+    success: true,
+    events: [{ type: GameEventType.ItemEquipped, entityId, itemId: itemEntityId }]
   };
 }
 
@@ -330,7 +328,7 @@ export function processUnequipItemIntent(
   state: GameState,
   entityId: EntityId,
   slotId: string
-): { state: GameState; success: boolean } {
+): { state: GameState; success: boolean; events?: GameEvent[] } {
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (!inventory || !equipment) return { state, success: false };
@@ -368,6 +366,7 @@ export function processUnequipItemIntent(
       `You unequip the ${itemName}.`,
       MessageLogCategory.System
     ),
-    success: true
+    success: true,
+    events: [{ type: GameEventType.ItemUnequipped, entityId, itemId: itemEntityId }]
   };
 }

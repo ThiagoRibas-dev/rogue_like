@@ -41,6 +41,7 @@ import { createDebugFastForwardSchemesAction } from './actions/debug.actions.ts'
 import { getComponent } from './core/ecs.ts';
 import { ComponentType } from './types/components.types.ts';
 import { CampaignEditor } from './editor/campaign_editor.ts';
+import { clearScheduler } from './core/scheduler.ts';
 
 // 0. Initialize RNG
 initRNG();
@@ -163,9 +164,7 @@ document.getElementById('btn-return-menu')?.addEventListener('click', () => {
 
 document.getElementById('btn-dev-tools')?.addEventListener('click', () => {
   // Clear any running game loops
-  import('./core/scheduler.ts').then(({ clearScheduler }) => {
-    clearScheduler();
-  });
+  clearScheduler();
   state = { ...getGameState(), uiMode: UIMode.Editor };
   setGameState(state);
 });

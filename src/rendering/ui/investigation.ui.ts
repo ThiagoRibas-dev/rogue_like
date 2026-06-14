@@ -1,6 +1,7 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
+import type { RenderableComponent, FighterComponent } from '../../types/components.types.ts';
 
 /**
  * Renders the Investigation Board UI panel.
@@ -37,12 +38,8 @@ export function renderInvestigationBoard(state: GameState): void {
       let isAlive = false;
 
       // Check active entities
-      const activeRender = getComponent(state, actorId, ComponentType.Renderable) as
-        | import('../../types/components.types.ts').RenderableComponent
-        | undefined;
-      const activeFighter = getComponent(state, actorId, ComponentType.Fighter) as
-        | import('../../types/components.types.ts').FighterComponent
-        | undefined;
+      const activeRender = getComponent(state, actorId, ComponentType.Renderable) as RenderableComponent | undefined;
+      const activeFighter = getComponent(state, actorId, ComponentType.Fighter) as FighterComponent | undefined;
 
       if (activeRender) {
         name = activeRender.glyph === '@' ? 'The Mastermind' : `Suspect (${activeRender.glyph})`;
@@ -52,10 +49,10 @@ export function renderInvestigationBoard(state: GameState): void {
         const pRecord = state.persistentEntities.get(actorId);
         if (pRecord) {
           const pRender = pRecord.components.find((c) => c.type === ComponentType.Renderable) as
-            | import('../../types/components.types.ts').RenderableComponent
+            | RenderableComponent
             | undefined;
           const pFighter = pRecord.components.find((c) => c.type === ComponentType.Fighter) as
-            | import('../../types/components.types.ts').FighterComponent
+            | FighterComponent
             | undefined;
           if (pRender) {
             name = pRender.glyph === '@' ? 'The Mastermind' : `Suspect (${pRender.glyph})`;

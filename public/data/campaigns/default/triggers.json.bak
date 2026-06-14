@@ -4,13 +4,16 @@
     "eventType": "EntityDied",
     "conditions": [
       {
-        "type": "has_agreement"
+        "type": "has_agreement",
+        "params": {}
       }
     ],
     "consequences": [
       {
         "type": "spawn_clue",
-        "message": "dropped something suspicious!"
+        "params": {
+          "message": "dropped something suspicious!"
+        }
       }
     ]
   }

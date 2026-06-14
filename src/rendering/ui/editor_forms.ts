@@ -6,6 +6,7 @@ export interface FieldOptions<T> {
   label: string;
   value: T;
   onChange: (newValue: T) => void;
+  onBlur?: (value: T) => string | null | undefined;
   error?: string;
   placeholder?: string;
 }
@@ -29,15 +30,28 @@ export function createStringField(opts: FieldOptions<string>): HTMLElement {
     opts.onChange(input.value);
   });
 
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'form-field-error';
+  errorDiv.style.display = opts.error ? 'block' : 'none';
+  errorDiv.textContent = opts.error || '';
+
+  input.addEventListener('blur', () => {
+    if (opts.onBlur) {
+      const err = opts.onBlur(input.value);
+      if (err) {
+        input.classList.add('invalid');
+        errorDiv.textContent = err;
+        errorDiv.style.display = 'block';
+      } else {
+        input.classList.remove('invalid');
+        errorDiv.style.display = 'none';
+      }
+    }
+  });
+
   group.appendChild(label);
   group.appendChild(input);
-
-  if (opts.error) {
-    const err = document.createElement('div');
-    err.className = 'form-field-error';
-    err.textContent = opts.error;
-    group.appendChild(err);
-  }
+  group.appendChild(errorDiv);
 
   return group;
 }
@@ -63,15 +77,29 @@ export function createNumberField(opts: FieldOptions<number>): HTMLElement {
     }
   });
 
+  const errorDiv = document.createElement('div');
+  errorDiv.className = 'form-field-error';
+  errorDiv.style.display = opts.error ? 'block' : 'none';
+  errorDiv.textContent = opts.error || '';
+
+  input.addEventListener('blur', () => {
+    if (opts.onBlur) {
+      const parsed = parseFloat(input.value);
+      const err = opts.onBlur(isNaN(parsed) ? 0 : parsed);
+      if (err) {
+        input.classList.add('invalid');
+        errorDiv.textContent = err;
+        errorDiv.style.display = 'block';
+      } else {
+        input.classList.remove('invalid');
+        errorDiv.style.display = 'none';
+      }
+    }
+  });
+
   group.appendChild(label);
   group.appendChild(input);
-
-  if (opts.error) {
-    const err = document.createElement('div');
-    err.className = 'form-field-error';
-    err.textContent = opts.error;
-    group.appendChild(err);
-  }
+  group.appendChild(errorDiv);
 
   return group;
 }
@@ -184,6 +212,65 @@ export function createSelectField(
 
   group.appendChild(label);
   group.appendChild(select);
+
+  if (opts.error) {
+    const err = document.createElement('div');
+    err.className = 'form-field-error';
+    err.textContent = opts.error;
+    group.appendChild(err);
+  }
+
+  return group;
+}
+
+export function createMultiSelectField(
+  opts: FieldOptions<string[]> & { options: { value: string; label: string }[] }
+): HTMLElement {
+  const group = document.createElement('div');
+  group.className = 'form-group';
+
+  const label = document.createElement('label');
+  label.className = 'form-label';
+  label.textContent = opts.label;
+  group.appendChild(label);
+
+  const container = document.createElement('div');
+  container.style.display = 'flex';
+  container.style.flexDirection = 'column';
+  container.style.gap = '4px';
+
+  for (const o of opts.options) {
+    const checkGroup = document.createElement('label');
+    checkGroup.style.display = 'flex';
+    checkGroup.style.alignItems = 'center';
+    checkGroup.style.gap = '8px';
+    checkGroup.style.cursor = 'pointer';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = o.value;
+    checkbox.checked = opts.value.includes(o.value);
+
+    checkbox.addEventListener('change', () => {
+      const currentSet = new Set(opts.value);
+      if (checkbox.checked) {
+        currentSet.add(o.value);
+      } else {
+        currentSet.delete(o.value);
+      }
+      opts.onChange(Array.from(currentSet));
+    });
+
+    const text = document.createElement('span');
+    text.textContent = o.label;
+    text.style.color = 'var(--text-normal)';
+
+    checkGroup.appendChild(checkbox);
+    checkGroup.appendChild(text);
+    container.appendChild(checkGroup);
+  }
+
+  group.appendChild(container);
 
   if (opts.error) {
     const err = document.createElement('div');

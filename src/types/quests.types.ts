@@ -10,11 +10,12 @@ export const QuestObjectiveSchema = z.object({
 
 export type QuestObjective = z.infer<typeof QuestObjectiveSchema>;
 
-export const QuestRewardSchema = z.object({
-  type: z.enum(['item', 'xp', 'standing', 'event']),
-  targetId: z.string().optional(), // ID of item, faction, or event
-  amount: z.number().int().optional() // Amount of item, XP, or standing change
-});
+export const QuestRewardSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('item'), itemId: z.string(), amount: z.number().int().optional() }),
+  z.object({ type: z.literal('xp'), amount: z.number().int().optional() }),
+  z.object({ type: z.literal('standing'), factionId: z.string(), amount: z.number().int().optional() }),
+  z.object({ type: z.literal('event'), eventType: z.string() })
+]);
 
 export type QuestReward = z.infer<typeof QuestRewardSchema>;
 

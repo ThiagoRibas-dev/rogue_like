@@ -1,13 +1,16 @@
 import { z } from 'zod';
 import type { EditorController } from '../editor_ui.ts';
-import type { CampaignData } from '../../types/campaign.types.ts';
+import type { ValidationError } from '../../editor/validator/validator.types.ts';
+
 import {
   createStringField,
   createNumberField,
   createBooleanField,
   createColorPickerField,
-  createSelectField
+  createSelectField,
+  createMultiSelectField
 } from './editor_forms.ts';
+import { getReferenceOptions } from './ui_utils.ts';
 
 /**
  * Renders a form dynamically based on a Zod schema.
@@ -17,7 +20,8 @@ export function renderFormForZodSchema(
   schema: z.ZodTypeAny,
   obj: unknown,
   basePath: string,
-  container: HTMLElement
+  container: HTMLElement,
+  errors?: ReadonlyArray<ValidationError>
 ) {
   // Unwrap optional/nullable types
   let isOptional = false;
@@ -57,19 +61,27 @@ export function renderFormForZodSchema(
 
   // Handle Objects
   if (innerSchema instanceof z.ZodObject) {
-    renderNestedObjectField(controller, innerSchema, obj, basePath, container, isOptional);
+    renderNestedObjectField(controller, innerSchema, obj, basePath, container, isOptional, errors);
     return;
   }
 
   // Handle Arrays
   if (innerSchema instanceof z.ZodArray) {
+    const key = basePath.split('/').pop() || 'Field';
+    if (key.toLowerCase().includes('tag')) {
+      const label = innerSchema.description || key;
+      renderMultiSelectTagsField(controller, key, label, (obj as string[]) || [], basePath, container);
+      return;
+    }
+
     renderArrayField(
       controller,
       innerSchema as z.ZodArray<z.ZodTypeAny>,
       obj as unknown[],
       basePath,
       container,
-      isOptional
+      isOptional,
+      errors
     );
     return;
   }
@@ -89,11 +101,11 @@ export function renderFormForZodSchema(
   fieldContainer.style.flexGrow = '1';
 
   if (innerSchema instanceof z.ZodString) {
-    renderStringField(controller, key, label, (val as string) || '', basePath, fieldContainer);
+    renderStringField(controller, key, label, (val as string) || '', basePath, fieldContainer, innerSchema);
   } else if (innerSchema instanceof z.ZodNumber) {
-    renderNumberField(controller, key, label, (val as number) || 0, basePath, fieldContainer);
+    renderNumberField(controller, label, (val as number) || 0, basePath, fieldContainer, innerSchema);
   } else if (innerSchema instanceof z.ZodBoolean) {
-    renderBooleanField(controller, key, label, !!val, basePath, fieldContainer);
+    renderBooleanField(controller, label, !!val, basePath, fieldContainer);
   } else if (innerSchema instanceof z.ZodEnum) {
     const options = innerSchema.options.map((opt: string | number) => ({ value: String(opt), label: String(opt) }));
     fieldContainer.appendChild(
@@ -106,10 +118,10 @@ export function renderFormForZodSchema(
     );
   } else if (innerSchema instanceof z.ZodRecord) {
     // Fallback for Record<string, unknown>
-    renderRawJsonField(controller, key, label, val, basePath, fieldContainer);
+    renderRawJsonField(controller, label, val, basePath, fieldContainer);
   } else {
     // Fallback for custom schemas (e.g. unknown params)
-    renderRawJsonField(controller, key, label, val, basePath, fieldContainer);
+    renderRawJsonField(controller, label, val, basePath, fieldContainer);
   }
 
   wrapper.appendChild(fieldContainer);
@@ -128,11 +140,26 @@ export function renderFormForZodSchema(
   }
 
   container.appendChild(wrapper);
+
+  // Render Inline Validation Errors
+  if (errors) {
+    const fieldErrors = errors.filter((e) => e.path === basePath);
+    for (const err of fieldErrors) {
+      const errEl = document.createElement('div');
+      errEl.textContent = `[${err.severity.toUpperCase()}] ${err.message}`;
+      errEl.className = 'validation-error-inline';
+      errEl.style.color = err.severity === 'error' ? '#f38ba8' : '#f9e2af';
+      errEl.style.fontSize = '0.8rem';
+      errEl.style.marginTop = '4px';
+      errEl.style.marginBottom = '8px';
+      errEl.style.marginLeft = '4px';
+      container.appendChild(errEl);
+    }
+  }
 }
 
 function renderRawJsonField(
   controller: EditorController,
-  key: string,
   labelStr: string,
   val: unknown,
   path: string,
@@ -171,81 +198,74 @@ function renderStringField(
   label: string,
   val: string,
   path: string,
-  container: HTMLElement
+  container: HTMLElement,
+  schema?: z.ZodTypeAny
 ) {
   const doc = controller.getDocument();
   const onChange = (newVal: string) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
 
+  let onBlur: ((v: string) => string | null | undefined) | undefined;
+  if (schema) {
+    onBlur = (newVal: string) => {
+      const res = schema.safeParse(newVal);
+      if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
+      return null;
+    };
+  }
+
   // Heuristics for specialized fields
   const lowerKey = key.toLowerCase();
-  if (
-    lowerKey.includes('color') ||
-    lowerKey.endsWith('fg') ||
-    lowerKey.endsWith('bg') ||
-    lowerKey === 'background'
-  ) {
+  if (lowerKey.includes('color') || lowerKey.endsWith('fg') || lowerKey.endsWith('bg') || lowerKey === 'background') {
     container.appendChild(createColorPickerField({ label, value: val, onChange }));
     return;
   }
 
   const selectOptions = getReferenceOptions(key, doc);
   if (selectOptions) {
-    container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange }));
+    if (onBlur) {
+      container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange, onBlur }));
+    } else {
+      container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange }));
+    }
     return;
   }
 
   // Fallback to plain string
-  container.appendChild(createStringField({ label, value: val, onChange }));
-}
-
-function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
-  if (key === 'faction' || key.toLowerCase().includes('factionid')) {
-    return Object.keys(doc.factions).map((k) => ({ value: k, label: k }));
+  if (onBlur) {
+    container.appendChild(createStringField({ label, value: val, onChange, onBlur }));
+  } else {
+    container.appendChild(createStringField({ label, value: val, onChange }));
   }
-  if (key === 'startingAreaId' || key === 'targetArea' || key === 'targetAreaId') {
-    return Object.keys(doc.areas).map((k) => ({ value: k, label: doc.areas[k]?.name || k }));
-  }
-  if (key === 'effectId') {
-    return Object.keys(doc.effects).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'profileId') {
-    return Object.keys(doc.ai).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'statusId') {
-    return Object.keys(doc.status).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'dialogueId') {
-    return Object.keys(doc.dialogues).map((k) => ({ value: k, label: k }));
-  }
-  if (key === 'eventType') {
-    return [
-      { value: 'TurnPassed', label: 'Turn Passed' },
-      { value: 'PlayerMoved', label: 'Player Moved' },
-      { value: 'TileEntered', label: 'Tile Entered' },
-      { value: 'EntityDied', label: 'Entity Died' },
-      { value: 'TrapTriggered', label: 'Trap Triggered' },
-      { value: 'ClueDiscovered', label: 'Clue Discovered' },
-      { value: 'DialogueSelected', label: 'Dialogue Selected' }
-    ];
-  }
-  return null;
 }
 
 function renderNumberField(
   controller: EditorController,
-  key: string,
   label: string,
   val: number,
   path: string,
-  container: HTMLElement
+  container: HTMLElement,
+  schema?: z.ZodTypeAny
 ) {
   const onChange = (newVal: number) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-  container.appendChild(createNumberField({ label, value: val, onChange }));
+
+  let onBlur: ((v: number) => string | null | undefined) | undefined;
+  if (schema) {
+    onBlur = (newVal: number) => {
+      const res = schema.safeParse(newVal);
+      if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
+      return null;
+    };
+  }
+
+  if (onBlur) {
+    container.appendChild(createNumberField({ label, value: val, onChange, onBlur }));
+  } else {
+    container.appendChild(createNumberField({ label, value: val, onChange }));
+  }
 }
 
 function renderBooleanField(
   controller: EditorController,
-  key: string,
   label: string,
   val: boolean,
   path: string,
@@ -255,13 +275,30 @@ function renderBooleanField(
   container.appendChild(createBooleanField({ label, value: val, onChange }));
 }
 
+function renderMultiSelectTagsField(
+  controller: EditorController,
+  key: string,
+  label: string,
+  val: string[],
+  path: string,
+  container: HTMLElement
+) {
+  const doc = controller.getDocument();
+  const options = getReferenceOptions(key, doc);
+  if (!options) return; // Fallback to array rendering if no options found
+
+  const onChange = (newVal: string[]) => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
+  container.appendChild(createMultiSelectField({ label, value: val, options, onChange }));
+}
+
 function renderNestedObjectField(
   controller: EditorController,
   schema: z.ZodObject<z.ZodRawShape>,
   obj: unknown,
   basePath: string,
   container: HTMLElement,
-  canBeRemoved: boolean
+  canBeRemoved: boolean,
+  errors?: ReadonlyArray<ValidationError>
 ) {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
@@ -297,7 +334,7 @@ function renderNestedObjectField(
   // Render all fields defined in the schema
   for (const [key, propSchema] of Object.entries(shape)) {
     const propPath = `${basePath}/${key}`;
-    renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, group);
+    renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, group, errors);
   }
 
   container.appendChild(group);
@@ -309,7 +346,8 @@ function renderArrayField(
   arr: unknown[] | undefined,
   basePath: string,
   container: HTMLElement,
-  canBeRemoved: boolean
+  canBeRemoved: boolean,
+  errors?: ReadonlyArray<ValidationError>
 ) {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
@@ -352,7 +390,7 @@ function renderArrayField(
     fieldContainer.style.flexGrow = '1';
 
     // We pass index as the path segment
-    renderFormForZodSchema(controller, schema.element, item, `${basePath}/${index}`, fieldContainer);
+    renderFormForZodSchema(controller, schema.element, item, `${basePath}/${index}`, fieldContainer, errors);
     itemContainer.appendChild(fieldContainer);
 
     // Remove item button

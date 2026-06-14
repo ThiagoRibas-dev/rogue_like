@@ -15,6 +15,7 @@ import {
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
+import type { StartDialogueIntent } from '../types/intents/ui.intents.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -262,7 +263,7 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
           entityId: -1 as unknown as EntityId,
           targetId: entityId,
           dialogueId: template.dialogueId
-        } as import('../types/intents/ui.intents.ts').StartDialogueIntent
+        } as StartDialogueIntent
       ]
     });
   }

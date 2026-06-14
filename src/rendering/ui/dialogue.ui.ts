@@ -99,10 +99,7 @@ export function renderDialoguePanel(state: GameState): void {
         optionId: option.id
       };
       for (const cond of option.conditions) {
-        const evalCond = {
-          ...cond,
-          params: { ...cond.params, _npcEntityId: npcEntityId, _playerEntityId: playerEntityId }
-        };
+        const evalCond = { ...cond, _npcEntityId: npcEntityId, _playerEntityId: playerEntityId };
         if (!evaluateCondition(state, dummyEvent, evalCond)) {
           valid = false;
           break;

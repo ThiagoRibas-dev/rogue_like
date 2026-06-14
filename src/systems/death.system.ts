@@ -7,6 +7,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
+import type { TagsComponent, TemplateComponent } from '../types/components.types.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -84,9 +85,7 @@ export function processDeathSystem(state: GameState): GameState {
 
     nextState = addMessage(nextState, `${name} dies!`, MessageLogCategory.CombatDeath);
 
-    const tagsComponent = getComponent(nextState, entityId, ComponentType.Tags) as
-      | import('../types/components.types.ts').TagsComponent
-      | undefined;
+    const tagsComponent = getComponent(nextState, entityId, ComponentType.Tags) as TagsComponent | undefined;
     const tags = tagsComponent ? tagsComponent.tags : [];
 
     nextState = {
@@ -118,7 +117,7 @@ export function processDeathSystem(state: GameState): GameState {
         // Notify quest system if player killed it
         if (deathComp.killerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
           const templateComp = getComponent(nextState, entityId, ComponentType.Template) as
-            | import('../types/components.types.ts').TemplateComponent
+            | TemplateComponent
             | undefined;
           if (templateComp) {
             nextState = processQuestEvent(nextState, 'kill', templateComp.templateId, 1);

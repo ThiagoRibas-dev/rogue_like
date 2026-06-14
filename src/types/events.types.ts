@@ -65,6 +65,24 @@ export interface ItemDroppedEvent extends BaseGameEvent {
   readonly itemId: EntityId;
 }
 
+export interface ItemUsedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ItemUsed;
+  readonly entityId: EntityId;
+  readonly itemId: EntityId;
+}
+
+export interface ItemEquippedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ItemEquipped;
+  readonly entityId: EntityId;
+  readonly itemId: EntityId;
+}
+
+export interface ItemUnequippedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ItemUnequipped;
+  readonly entityId: EntityId;
+  readonly itemId: EntityId;
+}
+
 export interface ClueDiscoveredEvent extends BaseGameEvent {
   readonly type: GameEventType.ClueDiscovered;
   readonly clueId: string;
@@ -120,6 +138,9 @@ export type GameEvent =
   | EntityHealedEvent
   | ItemPickedUpEvent
   | ItemDroppedEvent
+  | ItemUsedEvent
+  | ItemEquippedEvent
+  | ItemUnequippedEvent
   | ClueDiscoveredEvent
   | TileEnteredEvent
   | DialogueSelectedEvent

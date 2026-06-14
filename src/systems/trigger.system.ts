@@ -23,9 +23,7 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
   for (const id of entitiesAtNewTarget) {
     if (id === entityId) continue;
 
-    const trap = getComponent(nextState, id, ComponentType.Trap) as
-      | import('../types/components.types.ts').TrapComponent
-      | undefined;
+    const trap = getComponent(nextState, id, ComponentType.Trap) as TrapComponent | undefined;
     if (trap && !trap.triggered) {
       // Trigger it!
       const nextTrap = { ...trap, triggered: true };
@@ -78,7 +76,7 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
 export function evaluateCondition(
   state: Readonly<GameState>,
   event: GameEvent,
-  condition: import('../types/trigger.types.ts').ConditionPredicate
+  condition: ConditionPredicate
 ): boolean {
   switch (condition.type) {
     case 'is_player':
@@ -89,21 +87,19 @@ export function evaluateCondition(
 
     case 'has_agreement': {
       if (event.type !== GameEventType.EntityDied) return false;
-      const diedEvent = event as import('../types/events.types.ts').EntityDiedEvent;
+      const diedEvent = event as EntityDiedEvent;
       return getComponent(state, diedEvent.victimId, ComponentType.Agreement) !== undefined;
     }
 
     case 'faction_standing': {
-      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
       if (memoryOwnerId === undefined) return false;
 
-      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
-        | import('../types/components.types.ts').MemoryComponent
-        | undefined;
-      const standing = memory?.factionStandings[condition.params['target'] as string] ?? 0;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      const standing = memory?.factionStandings[condition.target] ?? 0;
 
-      const operator = condition.params['operator'] as string | undefined;
-      const value = (condition.params['value'] as number) ?? 0;
+      const operator = condition.operator;
+      const value = condition.value;
 
       if (operator === '>=') return standing >= value;
       if (operator === '<=') return standing <= value;
@@ -111,39 +107,31 @@ export function evaluateCondition(
     }
 
     case 'has_fact': {
-      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
       if (memoryOwnerId === undefined) return false;
 
-      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
-        | import('../types/components.types.ts').MemoryComponent
-        | undefined;
-      return memory?.facts.includes(condition.params['target'] as string) ?? false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      return memory?.facts.includes(condition.target) ?? false;
     }
 
     case 'not_has_fact': {
-      const memoryOwnerId = (condition.params['_npcEntityId'] ?? condition.params['entityId']) as EntityId | undefined;
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
       if (memoryOwnerId === undefined) return true;
 
-      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as
-        | import('../types/components.types.ts').MemoryComponent
-        | undefined;
-      return !(memory?.facts.includes(condition.params['target'] as string) ?? false);
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      return !(memory?.facts.includes(condition.target) ?? false);
     }
 
     case 'quest_status': {
-      const playerEntityId = (condition.params['_playerEntityId'] ?? condition.params['entityId']) as
-        | EntityId
-        | undefined;
+      const playerEntityId = condition._playerEntityId ?? condition.entityId;
       if (playerEntityId === undefined) return false;
 
-      const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as
-        | import('../types/components.types.ts').QuestLogComponent
-        | undefined;
-      const qStatus = questLog?.quests[condition.params['target'] as string]?.status;
+      const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as QuestLogComponent | undefined;
+      const qStatus = questLog?.quests[condition.target]?.status;
       const numStatus = qStatus === 'active' ? 0 : qStatus === 'completed' ? 1 : qStatus === 'failed' ? 2 : -1;
 
-      const operator = condition.params['operator'] as string | undefined;
-      const value = condition.params['value'] as number;
+      const operator = condition.operator;
+      const value = condition.value;
 
       if (operator === '>=') return numStatus >= value;
       if (operator === '<=') return numStatus <= value;
@@ -157,23 +145,31 @@ export function evaluateCondition(
 
 import { createEntity, addComponent } from '../core/ecs.ts';
 import { toItemInstanceId } from '../types/components.types.ts';
+import type {
+  TrapComponent,
+  MemoryComponent,
+  QuestLogComponent,
+  DamageComponent,
+  DamageInstance,
+  AgreementComponent,
+  PositionComponent,
+  ClueComponent
+} from '../types/components.types.ts';
+import type { ConditionPredicate, ConsequenceAction, RunScriptConsequenceFn } from '../types/trigger.types.ts';
+import type { EntityDiedEvent, TrapTriggeredEvent, DebugTriggerTraceEvent } from '../types/events.types.ts';
 
 /**
  * Applies a single consequence to the game state.
  */
-export function applyConsequence(
-  state: GameState,
-  event: GameEvent,
-  consequence: import('../types/trigger.types.ts').ConsequenceAction
-): GameState {
+export function applyConsequence(state: GameState, event: GameEvent, consequence: ConsequenceAction): GameState {
   let nextState = state;
 
   switch (consequence.type) {
     case 'run_script': {
-      const code = consequence.params['scriptCode'] as string | undefined;
+      const code = consequence.scriptCode;
       if (!code) break;
       try {
-        const sandboxFn = new Function('context', code) as import('../types/trigger.types.ts').RunScriptConsequenceFn;
+        const sandboxFn = new Function('context', code) as RunScriptConsequenceFn;
         const context = { event, state, rng: ROT.RNG };
         const dynamicConsequences = sandboxFn(code, context);
         if (dynamicConsequences && Array.isArray(dynamicConsequences)) {
@@ -188,8 +184,8 @@ export function applyConsequence(
     }
 
     case 'damage': {
-      const targetId = consequence.params['targetId'] as string;
-      const amount = consequence.params['amount'] as number;
+      const targetId = consequence.targetId;
+      const amount = consequence.amount;
 
       let eId: EntityId | undefined;
       if (targetId === 'event.entityId' && 'entityId' in event) {
@@ -202,10 +198,10 @@ export function applyConsequence(
       if (!fighter) break;
 
       const existingDamageComp = nextState.components.get(eId)?.find((c) => c.type === ComponentType.Damage) as
-        | import('../types/components.types.ts').DamageComponent
+        | DamageComponent
         | undefined;
 
-      const damageInstance: import('../types/components.types.ts').DamageInstance = {
+      const damageInstance: DamageInstance = {
         amount,
         tags: ['trigger', 'physical']
       };
@@ -223,7 +219,7 @@ export function applyConsequence(
           targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
         );
       } else {
-        const newDamageComp: import('../types/components.types.ts').DamageComponent = {
+        const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };
@@ -236,15 +232,11 @@ export function applyConsequence(
 
     case 'spawn_clue': {
       if (event.type !== GameEventType.EntityDied) break;
-      const diedEvent = event as import('../types/events.types.ts').EntityDiedEvent;
+      const diedEvent = event as EntityDiedEvent;
       const victimId = diedEvent.victimId;
 
-      const agreement = getComponent(nextState, victimId, ComponentType.Agreement) as
-        | import('../types/components.types.ts').AgreementComponent
-        | undefined;
-      const pos = getComponent(nextState, victimId, ComponentType.Position) as
-        | import('../types/components.types.ts').PositionComponent
-        | undefined;
+      const agreement = getComponent(nextState, victimId, ComponentType.Agreement) as AgreementComponent | undefined;
+      const pos = getComponent(nextState, victimId, ComponentType.Position) as PositionComponent | undefined;
       const renderable = getComponent(nextState, victimId, ComponentType.Renderable);
       const name = renderable ? renderable.glyph : 'Someone';
 
@@ -278,20 +270,19 @@ export function applyConsequence(
         clueId: clueTemplateId,
         text: `Incriminating evidence regarding a ${agreementDef.task}...`,
         implicatesEntityId: agreement.mastermindId
-      } as import('../types/components.types.ts').ClueComponent);
+      } as ClueComponent);
 
-      const msg = (consequence.params['message'] as string | undefined) ?? 'dropped something suspicious!';
+      const msg = consequence.message ?? 'dropped something suspicious!';
       nextState = addMessage(nextState, `${name} ${msg}`, MessageLogCategory.System);
       break;
     }
 
     case 'grant_quest': {
-      const questId = consequence.params['targetId'] as string | undefined;
-      const playerId = (consequence.params['_playerEntityId'] ??
-        consequence.params['entityId'] ??
-        ('entityId' in event ? (event as unknown as Record<string, unknown>).entityId : undefined)) as
-        | EntityId
-        | undefined;
+      const questId = consequence.targetId;
+      const playerId =
+        consequence._playerEntityId ??
+        consequence.entityId ??
+        ('entityId' in event ? ((event as unknown as Record<string, unknown>).entityId as EntityId) : undefined);
 
       if (playerId !== undefined && questId) {
         nextState = grantQuest(nextState, playerId, questId);
@@ -300,12 +291,11 @@ export function applyConsequence(
     }
 
     case 'complete_quest': {
-      const questId = consequence.params['targetId'] as string | undefined;
-      const playerId = (consequence.params['_playerEntityId'] ??
-        consequence.params['entityId'] ??
-        ('entityId' in event ? (event as unknown as Record<string, unknown>).entityId : undefined)) as
-        | EntityId
-        | undefined;
+      const questId = consequence.targetId;
+      const playerId =
+        consequence._playerEntityId ??
+        consequence.entityId ??
+        ('entityId' in event ? ((event as unknown as Record<string, unknown>).entityId as EntityId) : undefined);
 
       if (playerId !== undefined && questId) {
         nextState = completeQuest(nextState, playerId, questId);
@@ -314,18 +304,14 @@ export function applyConsequence(
     }
 
     case 'change_standing': {
-      const amount = consequence.params['amount'] as number | undefined;
-      const factionId = consequence.params['targetId'] as string | undefined;
-      const memoryOwnerId = (consequence.params['_npcEntityId'] ?? consequence.params['entityId']) as
-        | EntityId
-        | undefined;
+      const amount = consequence.amount;
+      const factionId = consequence.targetId;
+      const memoryOwnerId = consequence._npcEntityId ?? consequence.entityId;
 
       if (memoryOwnerId === undefined || !factionId || !amount) break;
 
       const targetComps = nextState.components.get(memoryOwnerId) ?? [];
-      const memory = targetComps.find((c) => c.type === ComponentType.Memory) as
-        | import('../types/components.types.ts').MemoryComponent
-        | undefined;
+      const memory = targetComps.find((c) => c.type === ComponentType.Memory) as MemoryComponent | undefined;
 
       if (!memory) break;
 
@@ -343,8 +329,8 @@ export function applyConsequence(
     }
 
     case 'emit_event': {
-      const eventType = consequence.params['targetId'] as string | undefined;
-      const payload = consequence.params['payload'] as Record<string, unknown> | undefined;
+      const eventType = consequence.eventType;
+      const payload = consequence.payload;
 
       if (!eventType) break;
 
@@ -390,7 +376,7 @@ export function processGlobalTriggers(state: GameState): GameState {
 
     for (const trigger of triggers) {
       if (event.type === GameEventType.TrapTriggered) {
-        const trapEvent = event as import('../types/events.types.ts').TrapTriggeredEvent;
+        const trapEvent = event as TrapTriggeredEvent;
         // The trigger ID in the JSON must match the triggerId in the trap.
         // Or wait, does the JSON trigger use its own `id` as the physical triggerId? Yes, that was the design.
         if (trapEvent.triggerId !== trigger.id) {
@@ -403,7 +389,7 @@ export function processGlobalTriggers(state: GameState): GameState {
         for (const consequence of trigger.consequences) {
           nextState = applyConsequence(nextState, event, consequence);
         }
-        const traceEvent: import('../types/events.types.ts').DebugTriggerTraceEvent = {
+        const traceEvent: DebugTriggerTraceEvent = {
           type: GameEventType.DebugTriggerTrace,
           triggerId: trigger.id,
           triggeringEvent: event,

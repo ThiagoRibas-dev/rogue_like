@@ -8,6 +8,7 @@ import {
 import { getComponent, addComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import * as ROT from 'rot-js';
+import type { VillainArchetype } from '../types/campaign.types.ts';
 
 /**
  * Executes a mastermind's background scheme plot.
@@ -68,7 +69,7 @@ function recruitMinion(
   state: GameState,
   mastermindId: EntityId,
   schemeComponent: SchemeComponent,
-  archetype: import('../types/campaign.types.ts').VillainArchetype
+  archetype: VillainArchetype
 ): GameState {
   // Find all active and persistent entities that are Actors but not the Player and not already minions
   const potentialTargets: EntityId[] = [];

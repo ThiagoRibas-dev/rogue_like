@@ -1,3 +1,4 @@
+import type { TriggerDefinition } from '../types/trigger.types.ts';
 import {
   type CampaignData,
   CampaignDataSchema,
@@ -48,7 +49,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       villainsRes,
       schemesRes,
       agreementsRes,
-      triggersRes
+      triggersRes,
+      tagRegistryRes,
+      reactionsRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -68,7 +71,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/villains.json`),
       fetch(`${basePath}/schemes.json`),
       fetch(`${basePath}/agreements.json`),
-      fetch(`${basePath}/triggers.json`)
+      fetch(`${basePath}/triggers.json`),
+      fetch(`${basePath}/tag_registry.json`),
+      fetch(`${basePath}/reactions.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -91,7 +96,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       villainsRes,
       schemesRes,
       agreementsRes,
-      triggersRes
+      triggersRes,
+      tagRegistryRes,
+      reactionsRes
     ];
 
     for (const res of responses) {
@@ -119,7 +126,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       villains,
       schemes,
       agreements,
-      triggers
+      triggers,
+      tagRegistry,
+      reactions
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -139,7 +148,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       villainsRes.json(),
       schemesRes.json(),
       agreementsRes.json(),
-      triggersRes.json()
+      triggersRes.json(),
+      tagRegistryRes.json(),
+      reactionsRes.json()
     ]);
 
     const data = {
@@ -162,6 +173,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       schemes,
       agreements,
       triggers,
+      tagRegistry,
+      reactions,
       triggerBuckets: {} // We'll build this next
     };
 
@@ -173,7 +186,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
 
     // Build the O(1) trigger routing buckets
     const campaignData = result.data;
-    const triggerBuckets: Record<string, import('../types/trigger.types.ts').TriggerDefinition[]> = {};
+    const triggerBuckets: Record<string, TriggerDefinition[]> = {};
     for (const trigger of Object.values(campaignData.triggers)) {
       if (!triggerBuckets[trigger.eventType]) {
         triggerBuckets[trigger.eventType] = [];
