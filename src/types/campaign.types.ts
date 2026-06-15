@@ -11,7 +11,10 @@ export const CampaignManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
   description: z.string(),
-  version: z.string()
+  version: z.string(),
+  author: z.string().default('Unknown'),
+  tags: z.array(z.string()).default([]),
+  schemaVersion: z.number().int().nonnegative().default(0)
 });
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
 
@@ -21,7 +24,9 @@ export const CampaignRegistryEntrySchema = z.object({
   description: z.string(),
   version: z.string(),
   mapSize: z.string(),
-  startingAreaId: z.string()
+  startingAreaId: z.string(),
+  source: z.enum(['builtin', 'installed', 'editor']).default('builtin'),
+  author: z.string().default('Unknown')
 });
 export type CampaignRegistryEntry = z.infer<typeof CampaignRegistryEntrySchema>;
 

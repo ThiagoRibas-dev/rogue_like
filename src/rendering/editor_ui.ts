@@ -3,6 +3,7 @@ import { loadCampaign } from '../core/loader.ts';
 import { validateCampaign } from '../editor/campaign_validator.ts';
 import type { ValidationReport } from '../editor/validator/validator.types.ts';
 import { createBlankSlateCampaign } from '../editor/workspace_file_service.ts';
+import { listEditorWorkspaces } from '../core/campaign_store.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import type { CampaignData } from '../types/campaign.types.ts';
 import { CampaignCategorySchemas } from '../types/campaign.types.ts';
@@ -22,7 +23,7 @@ import type { ValidationError } from '../editor/validator/validator.types.ts';
 export interface EditorController {
   getDocument(): CampaignData;
   resetDocument(newDoc: CampaignData): void;
-  openWorkspace(): Promise<void>;
+  loadFromIDB(workspaceId: string): Promise<void>;
   saveWorkspace(): Promise<void>;
   importZipWorkspace(file: File): Promise<void>;
   exportZipWorkspace(): Promise<void>;
@@ -70,7 +71,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       <div class="editor-toolbar-left">
         <h1 class="editor-title">🛠️ Campaign Editor</h1>
         <button id="btn-editor-new" class="editor-btn">✨ New</button>
-        <button id="btn-editor-open" class="editor-btn">📂 Open Workspace</button>
+        <button id="btn-editor-open" class="editor-btn">📂 Resume Workspace</button>
         <button id="btn-editor-save" class="editor-btn">💾 Save</button>
         <div style="width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 8px;"></div>
         <input type="file" id="input-editor-import-zip" accept=".zip" style="display:none;" />
@@ -141,12 +142,36 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       <div class="workspace-header">
         <h2 class="workspace-title">Welcome to the Campaign Creator</h2>
       </div>
-      <div class="workspace-placeholder editor-drag-splash">
+      <div class="workspace-placeholder editor-drag-splash" id="editor-start-screen">
         <div class="editor-drag-icon">📁</div>
-        <h2>Open a Workspace to Begin</h2>
-        <p style="color: var(--text-dim)">Click 'Open Workspace' in the toolbar to select your campaign folder.</p>
+        <h2>Select a Workspace to Begin</h2>
+        <div id="editor-workspace-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
+           <p style="color: var(--text-dim)">Loading workspaces...</p>
+        </div>
       </div>
     `;
+
+    // Fetch and display IDB workspaces
+    listEditorWorkspaces()
+      .then((workspaces) => {
+        const listEl = document.getElementById('editor-workspace-list');
+        if (!listEl) return;
+        if (workspaces.length === 0) {
+          listEl.innerHTML = `<p style="color: var(--text-dim)">No saved workspaces found. Click 'New' to start.</p>`;
+          return;
+        }
+        listEl.innerHTML = '';
+        workspaces.forEach((ws) => {
+          const btn = document.createElement('button');
+          btn.className = 'modal-btn';
+          btn.style.width = '300px';
+          btn.style.textAlign = 'left';
+          btn.innerHTML = `<strong>${ws.name}</strong><br><small style="opacity:0.7">Last modified: ${new Date(ws.lastModified).toLocaleString()}</small>`;
+          btn.onclick = () => controller.loadFromIDB(ws.id).catch(console.error);
+          listEl.appendChild(btn);
+        });
+      })
+      .catch(console.error);
 
     bodyLayout.appendChild(navPane);
     bodyLayout.appendChild(middlePane);
@@ -188,7 +213,35 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     });
 
     document.getElementById('btn-editor-open')?.addEventListener('click', () => {
-      controller.openWorkspace().catch(console.error);
+      // Just reset view to show the start screen again
+      currentCategory = null;
+      currentItemId = null;
+      document.querySelectorAll('.sidebar-item-btn').forEach((b) => b.classList.remove('active'));
+      refreshActiveViews(controller);
+
+      // Re-fetch workspaces for the splash screen
+      const listEl = document.getElementById('editor-workspace-list');
+      if (listEl) {
+        listEl.innerHTML = `<p style="color: var(--text-dim)">Loading workspaces...</p>`;
+        listEditorWorkspaces()
+          .then((workspaces) => {
+            if (workspaces.length === 0) {
+              listEl.innerHTML = `<p style="color: var(--text-dim)">No saved workspaces found. Click 'New' to start.</p>`;
+              return;
+            }
+            listEl.innerHTML = '';
+            workspaces.forEach((ws) => {
+              const btn = document.createElement('button');
+              btn.className = 'modal-btn';
+              btn.style.width = '300px';
+              btn.style.textAlign = 'left';
+              btn.innerHTML = `<strong>${ws.name}</strong><br><small style="opacity:0.7">Last modified: ${new Date(ws.lastModified).toLocaleString()}</small>`;
+              btn.onclick = () => controller.loadFromIDB(ws.id).catch(console.error);
+              listEl.appendChild(btn);
+            });
+          })
+          .catch(console.error);
+      }
     });
 
     document.getElementById('btn-editor-save')?.addEventListener('click', () => {

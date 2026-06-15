@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
 import { loadCampaign } from '../core/loader.ts';
+import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 
 // List of the 18 JSON files making up the campaign data package
 const CAMPAIGN_FILES: ReadonlyArray<{ readonly key: keyof CampaignData; readonly filename: string }> = [
@@ -25,59 +26,6 @@ const CAMPAIGN_FILES: ReadonlyArray<{ readonly key: keyof CampaignData; readonly
   { key: 'tagRegistry', filename: 'tag_registry.json' },
   { key: 'reactions', filename: 'reactions.json' }
 ];
-
-/**
- * Loads a campaign from a local directory handle.
- * @param dirHandle The directory handle selected by the user.
- * @returns A promise that resolves to the parsed and validated CampaignData.
- */
-export async function readCampaignFromDirectory(dirHandle: FileSystemDirectoryHandle): Promise<CampaignData> {
-  const data: Partial<CampaignData> = {};
-
-  for (const fileItem of CAMPAIGN_FILES) {
-    try {
-      const fileHandle = await dirHandle.getFileHandle(fileItem.filename);
-      const file = await fileHandle.getFile();
-      const text = await file.text();
-      data[fileItem.key] = JSON.parse(text) as never;
-    } catch {
-      console.warn(`Failed to read or parse ${fileItem.filename}.`);
-      throw new Error(`Failed to read required file ${fileItem.filename} from workspace.`);
-    }
-  }
-
-  const result = CampaignDataSchema.safeParse(data);
-  if (!result.success) {
-    console.error('Validation failed for workspace directory:', result.error);
-    throw new Error(`Workspace campaign validation failed: ${result.error.message}`);
-  }
-
-  return result.data;
-}
-
-/**
- * Writes the in-memory CampaignData back to the selected directory handle.
- * @param dirHandle The directory handle to write to.
- * @param data The CampaignData to save.
- * @returns A promise that resolves when writing completes.
- */
-export async function writeCampaignToDirectory(
-  dirHandle: FileSystemDirectoryHandle,
-  data: CampaignData
-): Promise<void> {
-  for (const fileItem of CAMPAIGN_FILES) {
-    const fileContent = data[fileItem.key];
-    try {
-      const fileHandle = await dirHandle.getFileHandle(fileItem.filename, { create: true });
-      const writable = await fileHandle.createWritable();
-      await writable.write(JSON.stringify(fileContent, null, 2));
-      await writable.close();
-    } catch (err) {
-      console.error(`Failed to write file ${fileItem.filename} to workspace:`, err);
-      throw new Error(`Failed to write campaign file: ${fileItem.filename}`);
-    }
-  }
-}
 
 /**
  * Parses and extracts a campaign from a flat ZIP container.
@@ -157,7 +105,10 @@ export function createBlankSlateCampaign(): CampaignData {
       id: 'custom-campaign',
       name: 'My Custom Campaign',
       description: 'A custom-built adventure.',
-      version: '1.0.0'
+      version: '1.0.0',
+      author: 'Unknown',
+      tags: [],
+      schemaVersion: CURRENT_SCHEMA_VERSION
     },
     rules: {
       map: {

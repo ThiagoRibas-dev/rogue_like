@@ -319,12 +319,17 @@ Transition the ECS internal data structures from arrays to constant-time diction
 - [x] **FOV Caching:** Decouple FOV `PreciseShadowcasting` math from the active render loop. Recompute FOV only when a new `fovNeedsUpdate` flag is tripped by a system (like moving or opening a door).
 - [x] **O(1) Spatial Rendering:** Eliminate the global `queryEntities` rendering loop. Instead, iterate exactly over the camera viewport bounds, retrieving standing entities via `state.spatialIndex` to ensure the render layer scales perfectly regardless of the total number of entities in the dungeon.
 
-## 🟢 Milestone 28: Campaign Packaging & Standalone Distribution
+## ✅ Milestone 28: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.
-- [ ] **Campaign Manifest & Versioning**
+- [x] **Campaign Manifest & Versioning**
   - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts).
-- [ ] **⭐ Standalone Baked Campaigns (No Load Order)**
+- [x] **IndexedDB Workspace Storage**
+  - Migrate the Campaign Editor's active workspaces to use IndexedDB, entirely replacing the experimental File System Access API (`showDirectoryPicker`). This ensures the editor works seamlessly on all modern browsers. Maintain "Export/Import ZIP" for sharing campaigns.
+- [x] **⭐ Standalone Baked Campaigns (No Load Order)**
   - Implement package cloning in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) to duplicate all asset dependencies directly on campaign creation, making campaigns completely self-contained.
-- [ ] **One-Click Install / Import**
-  - Modify the campaign select screen UI in [src/rendering/ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui.ts) to allow uploading ZIP campaign files, parsing and validating schemas in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) before importing.
-  - Add "Install Campaign" drag-and-drop or file picker option to the main game menu screen.
+- [x] **One-Click Install / Import**
+  - Add an "Install Campaign" (.zip) drag-and-drop or file picker to the main menu.
+  - Use `JSZip` to extract the uploaded JSON files in-memory, validate them against our Zod schemas, and persist the extracted campaign object directly into a new IndexedDB `installed_campaigns` store.
+- [x] **The Hybrid Campaign Loader**
+  - Refactor `loadCampaignRegistry()` in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) to query both the hardcoded `public/` directory AND the IndexedDB `installed_campaigns` store, merging them into a single list for the Campaign Select UI.
+  - Refactor `loadCampaign(id)` to attempt loading the requested ID from IndexedDB first. If not found, gracefully fall back to the `public/` folder `fetch()`. This completely removes the need for manual file transfers or backend servers.

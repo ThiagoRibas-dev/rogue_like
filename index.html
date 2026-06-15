@@ -181,8 +181,9 @@
         <div class="modal-buttons">
           <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
           <button id="btn-new-game" class="modal-btn">New Game</button>
-          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign
-            Editor</button>
+          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign Editor</button>
+          <button id="btn-install-campaign" class="modal-btn" style="margin-top: 8px; background: #27ae60;">📦 Install Campaign (.zip)</button>
+          <input type="file" id="file-install-campaign" accept=".zip" style="display: none;" />
           <div style="display: flex; gap: 8px; margin-top: 16px;">
             <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export
               Save</button>
@@ -210,9 +211,11 @@
             </p>
             <div style="margin-top: 16px; font-size: 0.85rem; color: var(--text-color); line-height: 1.6;">
               <div><strong>Version:</strong> <span id="campaign-detail-version">-</span></div>
+              <div><strong>Author:</strong> <span id="campaign-detail-author">-</span></div>
               <div><strong>Map Size:</strong> <span id="campaign-detail-map">-</span></div>
               <div><strong>Max Depth:</strong> <span id="campaign-detail-depth">-</span></div>
             </div>
+            <div id="campaign-actions" style="margin-top: 12px;"></div>
           </div>
         </div>
         <div class="modal-buttons" style="flex-direction: row; justify-content: space-between; margin-top: 0;">

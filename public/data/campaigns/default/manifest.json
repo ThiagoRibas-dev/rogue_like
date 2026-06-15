@@ -2,5 +2,8 @@
   "id": "default",
   "name": "Descent",
   "description": "The base roguelike experience. Descend the dungeon and survive.",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "author": "Core Team",
+  "tags": ["dungeon-crawler", "traditional"],
+  "schemaVersion": 1
 }

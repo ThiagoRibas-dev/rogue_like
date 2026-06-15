@@ -71,7 +71,8 @@ export function renderMenus(state: GameState, hasSave: boolean): void {
  */
 export function populateCampaignList(
   campaigns: CampaignRegistryEntry[],
-  onSelect: (campaign: CampaignRegistryEntry) => void
+  onSelect: (campaign: CampaignRegistryEntry) => void,
+  onUninstall?: (campaignId: string) => void
 ): void {
   const list = document.getElementById('campaign-list');
   if (!list) return;
@@ -87,7 +88,8 @@ export function populateCampaignList(
     btn.style.color = 'var(--text-color)';
     btn.style.cursor = 'pointer';
     btn.style.width = '100%';
-    btn.textContent = campaign.name;
+    const sourceBadge = campaign.source === 'installed' ? ' 📦' : campaign.source === 'editor' ? ' 🛠️' : ' 🏛️';
+    btn.innerHTML = `<strong>${campaign.name}</strong><span style="float:right; opacity:0.7">${sourceBadge}</span>`;
 
     btn.addEventListener('click', () => {
       // Highlight selection
@@ -102,16 +104,33 @@ export function populateCampaignList(
       const title = document.getElementById('campaign-detail-title');
       const desc = document.getElementById('campaign-detail-desc');
       const version = document.getElementById('campaign-detail-version');
+      const author = document.getElementById('campaign-detail-author');
       const mapSize = document.getElementById('campaign-detail-map');
       const depth = document.getElementById('campaign-detail-depth');
       const startBtn = document.getElementById('btn-campaign-start') as HTMLButtonElement | null;
+      const actions = document.getElementById('campaign-actions');
 
       if (title) title.textContent = campaign.name;
       if (desc) desc.textContent = campaign.description;
       if (version) version.textContent = campaign.version;
+      if (author) author.textContent = campaign.author;
       if (mapSize) mapSize.textContent = campaign.mapSize;
       if (depth) depth.textContent = campaign.startingAreaId;
       if (startBtn) startBtn.disabled = false;
+
+      if (actions) {
+        actions.innerHTML = '';
+        if (campaign.source === 'installed' && onUninstall) {
+          const btnUninstall = document.createElement('button');
+          btnUninstall.className = 'modal-btn';
+          btnUninstall.style.padding = '4px 8px';
+          btnUninstall.style.fontSize = '0.8rem';
+          btnUninstall.style.background = '#c0392b';
+          btnUninstall.textContent = '🗑️ Uninstall';
+          btnUninstall.onclick = () => onUninstall(campaign.id);
+          actions.appendChild(btnUninstall);
+        }
+      }
 
       onSelect(campaign);
     });

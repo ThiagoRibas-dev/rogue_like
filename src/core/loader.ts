@@ -1,10 +1,12 @@
 import type { TriggerDefinition } from '../types/trigger.types.ts';
+import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 import {
   type CampaignData,
   CampaignDataSchema,
   type CampaignRegistry,
   CampaignRegistrySchema
 } from '../types/campaign.types.ts';
+import { getInstalledCampaign, listInstalledCampaigns } from './campaign_store.ts';
 
 /**
  * Loads and validates all JSON files for a given campaign ID.
@@ -25,6 +27,29 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
     } catch (e) {
       console.warn('Failed to parse editor document from sessionStorage', e);
     }
+  }
+
+  // Check if it's an installed campaign in IDB first
+  const installedCampaign = await getInstalledCampaign(campaignId);
+  if (installedCampaign) {
+    if (installedCampaign.manifest.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+      console.warn(
+        `Campaign "${installedCampaign.manifest.name}" was built with schema v${installedCampaign.manifest.schemaVersion}, ` +
+          `but the engine expects v${CURRENT_SCHEMA_VERSION}. It loaded successfully, but some features may not work.`
+      );
+    }
+
+    // Build the O(1) trigger routing buckets
+    const triggerBuckets: Record<string, TriggerDefinition[]> = {};
+    for (const trigger of Object.values(installedCampaign.triggers)) {
+      if (!triggerBuckets[trigger.eventType]) {
+        triggerBuckets[trigger.eventType] = [];
+      }
+      triggerBuckets[trigger.eventType]!.push(trigger);
+    }
+    installedCampaign.triggerBuckets = triggerBuckets;
+
+    return installedCampaign;
   }
 
   const basePath = `/data/campaigns/${campaignId}`;
@@ -184,8 +209,17 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       throw new Error(`Failed to validate campaign ${campaignId}: ${result.error.message}`);
     }
 
-    // Build the O(1) trigger routing buckets
     const campaignData = result.data;
+
+    // Check schema version compatibility (non-blocking)
+    if (campaignData.manifest.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+      console.warn(
+        `Campaign "${campaignData.manifest.name}" was built with schema v${campaignData.manifest.schemaVersion}, ` +
+          `but the engine expects v${CURRENT_SCHEMA_VERSION}. It loaded successfully, but some features may not work.`
+      );
+    }
+
+    // Build the O(1) trigger routing buckets
     const triggerBuckets: Record<string, TriggerDefinition[]> = {};
     for (const trigger of Object.values(campaignData.triggers)) {
       if (!triggerBuckets[trigger.eventType]) {
@@ -218,7 +252,18 @@ export async function loadCampaignRegistry(): Promise<CampaignRegistry> {
       console.error('Campaign Registry Validation Failed:', result.error);
       throw new Error(`Failed to validate campaign registry: ${result.error.message}`);
     }
-    return result.data;
+
+    const registry = result.data;
+
+    // Merge installed campaigns from IndexedDB
+    const installed = await listInstalledCampaigns();
+    for (const campaign of installed) {
+      // Remove any existing entry with the same ID so IDB overrides builtin
+      registry.campaigns = registry.campaigns.filter((c) => c.id !== campaign.id);
+      registry.campaigns.push(campaign);
+    }
+
+    return registry;
   } catch (error) {
     console.error('Error loading campaign registry:', error);
     throw error;

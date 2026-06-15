@@ -12,9 +12,11 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache"
   },
   "dependencies": {
+    "jszip": "^3.10.1",
     "rot-js": "^2.2.0"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/node": "^20.12.12",
     "typescript": "^5.4.5",
     "vite": "^5.2.11"

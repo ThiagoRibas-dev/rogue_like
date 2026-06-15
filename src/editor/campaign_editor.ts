@@ -1,11 +1,8 @@
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
 import { type PatchOperation, applyPatch, generateInversePatch } from '../utils/json-patch.ts';
-import {
-  readCampaignFromDirectory,
-  writeCampaignToDirectory,
-  readCampaignFromZip,
-  writeCampaignToZip
-} from './workspace_file_service.ts';
+import { readCampaignFromZip, writeCampaignToZip } from './workspace_file_service.ts';
+import { saveEditorWorkspace, loadEditorWorkspace } from '../core/campaign_store.ts';
+import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 import { generateArea } from '../map/generator.ts';
 
 import type { ValidationError } from './validator/validator.types.ts';
@@ -17,7 +14,7 @@ export class CampaignEditor {
   private doc: CampaignData;
   private undoStack: Array<PatchOperation[]> = [];
   private redoStack: Array<PatchOperation[]> = [];
-  private dirHandle: FileSystemDirectoryHandle | null = null;
+  private workspaceId: string | null = null;
   private isDirty = false;
   private lastEditedPath: string | null = null;
   private lastEditedTime = 0;
@@ -60,7 +57,7 @@ export class CampaignEditor {
     this.doc = newDoc;
     this.undoStack = [];
     this.redoStack = [];
-    this.dirHandle = null;
+    this.workspaceId = null;
     this.isDirty = false;
     this.lastEditedPath = null;
     this.coalescedOriginalValue = undefined;
@@ -75,20 +72,14 @@ export class CampaignEditor {
   }
 
   /**
-   * Prompts the user to select a local directory and loads the workspace.
+   * Loads a workspace from IndexedDB.
    */
-  public async openWorkspace(): Promise<void> {
-    if (!('showDirectoryPicker' in window)) {
-      alert('Your browser does not support the File System Access API. Please use a Chromium-based browser.');
-      return;
-    }
-
+  public async loadFromIDB(workspaceId: string): Promise<void> {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const handle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
-      const newDoc = await readCampaignFromDirectory(handle);
+      const newDoc = await loadEditorWorkspace(workspaceId);
+      if (!newDoc) throw new Error('Workspace not found in database.');
       this.doc = newDoc;
-      this.dirHandle = handle;
+      this.workspaceId = workspaceId;
       this.undoStack = [];
       this.redoStack = [];
       this.isDirty = false;
@@ -96,37 +87,21 @@ export class CampaignEditor {
       this.coalescedOriginalValue = undefined;
       this.emitChange();
     } catch (err) {
-      if ((err as Error).name !== 'AbortError') {
-        console.error('Failed to open workspace:', err);
-        alert(`Failed to open workspace: ${(err as Error).message}`);
-      }
+      console.error('Failed to load workspace:', err);
+      alert(`Failed to load workspace: ${(err as Error).message}`);
     }
   }
 
   /**
-   * Saves the current workspace to the associated directory handle.
+   * Saves the current workspace to IndexedDB.
    */
   public async saveWorkspace(): Promise<void> {
-    if (!this.dirHandle) {
-      if (!('showDirectoryPicker' in window)) {
-        alert('Your browser does not support the File System Access API. Please export as ZIP instead.');
-        throw new Error('Workspace directory is not set.');
-      }
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handle = await (window as any).showDirectoryPicker({ mode: 'readwrite' });
-        this.dirHandle = handle;
-      } catch (err) {
-        if ((err as Error).name !== 'AbortError') {
-          console.error('Failed to select workspace directory:', err);
-          alert(`Failed to select workspace directory: ${(err as Error).message}`);
-        }
-        return;
-      }
+    if (!this.workspaceId) {
+      this.workspaceId = crypto.randomUUID();
     }
 
     try {
-      await writeCampaignToDirectory(this.dirHandle!, this.doc);
+      await saveEditorWorkspace(this.workspaceId, this.doc);
       this.isDirty = false;
       alert('Workspace saved successfully!');
     } catch (err) {
@@ -142,7 +117,7 @@ export class CampaignEditor {
     try {
       const newDoc = await readCampaignFromZip(file);
       this.doc = newDoc;
-      this.dirHandle = null; // Detach from any directory handle
+      this.workspaceId = null; // Detach from any previous IDB workspace
       this.undoStack = [];
       this.redoStack = [];
       this.lastEditedPath = null;
@@ -158,6 +133,18 @@ export class CampaignEditor {
    * Exports the current campaign document as a ZIP blob and triggers a download.
    */
   public async exportZipWorkspace(): Promise<void> {
+    // 1. Stamp schema version
+    this.doc.manifest.schemaVersion = CURRENT_SCHEMA_VERSION;
+
+    // 2. Run completeness validator
+    const errors = this.validate();
+    const hasErrors = errors.some((e) => e.severity === 'error');
+    if (hasErrors) {
+      if (!confirm(`Campaign has validation errors. Export anyway?`)) {
+        return;
+      }
+    }
+
     try {
       const blob = await writeCampaignToZip(this.doc);
       const url = URL.createObjectURL(blob);
@@ -438,13 +425,39 @@ export class CampaignEditor {
       });
     }
 
+    // Audit Area Graph Reachability (BFS)
+    const startingArea = data.rules.map.startingAreaId;
+    if (areas.includes(startingArea)) {
+      const visited = new Set<string>([startingArea]);
+      const queue = [startingArea];
+      while (queue.length > 0) {
+        const curr = queue.shift()!;
+        const connections = data.areas[curr]?.connections || [];
+        for (const conn of connections) {
+          if (!visited.has(conn.targetAreaId) && areas.includes(conn.targetAreaId)) {
+            visited.add(conn.targetAreaId);
+            queue.push(conn.targetAreaId);
+          }
+        }
+      }
+      for (const areaId of areas) {
+        if (!visited.has(areaId)) {
+          errors.push({
+            path: `/areas/${areaId}`,
+            message: `Area '${data.areas[areaId]?.name}' is unreachable from the starting area.`,
+            severity: 'warning'
+          });
+        }
+      }
+    }
+
     // Spawning lists checking
     for (const entId of Object.keys(data.rules.spawning.spawnWeights)) {
       if (!Object.keys(data.entities).includes(entId)) {
         errors.push({
           path: `/rules/spawning/spawnWeights/${entId}`,
           message: `Spawn weight table references invalid entity template ID: '${entId}'.`,
-          severity: 'warning'
+          severity: 'error'
         });
       }
     }
@@ -453,7 +466,7 @@ export class CampaignEditor {
         errors.push({
           path: `/rules/spawning/lootTable/${itemId}`,
           message: `Loot spawn table references invalid item definition ID: '${itemId}'.`,
-          severity: 'warning'
+          severity: 'error'
         });
       }
     }

@@ -68,6 +68,13 @@ async function main() {
   
   let totalExports = 0;
 
+  const useColor = process.stdout.isTTY;
+  const color = {
+    cyan: (str: string) => useColor ? `\x1b[36m${str}\x1b[0m` : str,
+    yellow: (str: string) => useColor ? `\x1b[33m${str}\x1b[0m` : str,
+    green: (str: string) => useColor ? `\x1b[32m${str}\x1b[0m` : str,
+  };
+
   for (const file of files) {
     const content = await readFile(file, 'utf-8');
     const fileExports = extractExports(content);
@@ -75,10 +82,10 @@ async function main() {
     if (fileExports.length > 0) {
       // Print the file path relative to src/
       const relativePath = file.substring(srcDir.length + 1).replace(/\\/g, '/');
-      console.log(`\x1b[36m📄 src/${relativePath}\x1b[0m`);
+      console.log(color.cyan(`📄 src/${relativePath}`));
       
       for (const exp of fileExports) {
-        console.log(`  \x1b[33m[${exp.type}]\x1b[0m \x1b[32m${exp.name}\x1b[0m: ${exp.summary}`);
+        console.log(`  ${color.yellow(`[${exp.type}]`)} ${color.green(exp.name)}: ${exp.summary}`);
         totalExports++;
       }
       console.log(''); // Empty line between files

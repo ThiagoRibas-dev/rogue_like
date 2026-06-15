@@ -42,13 +42,14 @@ import { getComponent } from './core/ecs.ts';
 import { ComponentType } from './types/components.types.ts';
 import { CampaignEditor } from './editor/campaign_editor.ts';
 import { clearScheduler } from './core/scheduler.ts';
+import { installCampaign, getInstalledCampaign, uninstallCampaign } from './core/campaign_store.ts';
+import { readCampaignFromZip } from './editor/workspace_file_service.ts';
 
 // 0. Initialize RNG
 initRNG();
 
 // Await the default campaign data and settings to bootstrap the engine
 const defaultCampaign = await loadCampaign('default');
-const campaignRegistry = await loadCampaignRegistry();
 await initSettings('default');
 applySettingsToDOM();
 
@@ -117,9 +118,36 @@ let state: GameState = {
 };
 
 let selectedCampaignId: string | null = null;
-populateCampaignList(campaignRegistry.campaigns, (campaign) => {
-  selectedCampaignId = campaign.id;
-});
+
+async function refreshCampaignList() {
+  const registry = await loadCampaignRegistry();
+  populateCampaignList(
+    registry.campaigns,
+    (campaign) => {
+      selectedCampaignId = campaign.id;
+    },
+    async (campaignId) => {
+      if (hasSaveGame()) {
+        const saveStr = getSaveData();
+        if (saveStr && saveStr.includes(`"campaignId":"${campaignId}"`)) {
+          if (!confirm('Uninstalling this campaign will orphan your current save file. Continue?')) {
+            return;
+          }
+        }
+      } else {
+        if (!confirm('Are you sure you want to uninstall this campaign?')) return;
+      }
+      try {
+        await uninstallCampaign(campaignId);
+        selectedCampaignId = null;
+        await refreshCampaignList();
+      } catch (err) {
+        alert(`Failed to uninstall campaign: ${(err as Error).message}`);
+      }
+    }
+  );
+}
+refreshCampaignList();
 
 if (sessionStorage.getItem('editor_playtest') === 'true') {
   sessionStorage.removeItem('editor_playtest');
@@ -140,6 +168,36 @@ document.getElementById('btn-new-game')?.addEventListener('click', () => {
 document.getElementById('btn-campaign-back')?.addEventListener('click', () => {
   state = { ...getGameState(), uiMode: UIMode.MainMenu };
   setGameState(state);
+});
+
+const fileInstallCampaign = document.getElementById('file-install-campaign') as HTMLInputElement | null;
+document.getElementById('btn-install-campaign')?.addEventListener('click', () => {
+  fileInstallCampaign?.click();
+});
+
+fileInstallCampaign?.addEventListener('change', async (e: Event) => {
+  const target = e.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  try {
+    const campaignData = await readCampaignFromZip(file);
+    const existing = await getInstalledCampaign(campaignData.manifest.id);
+    if (existing) {
+      if (!confirm(`Campaign "${campaignData.manifest.name}" is already installed. Overwrite?`)) {
+        target.value = '';
+        return;
+      }
+    }
+    await installCampaign(campaignData);
+    await refreshCampaignList();
+    alert(`Campaign "${campaignData.manifest.name}" installed successfully!`);
+    target.value = '';
+  } catch (err) {
+    alert(`Failed to install campaign: ${(err as Error).message}`);
+    console.error(err);
+    target.value = '';
+  }
 });
 
 document.getElementById('btn-campaign-start')?.addEventListener('click', (e) => {
