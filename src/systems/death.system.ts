@@ -2,7 +2,7 @@ import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import { ComponentType, type DeathComponent } from '../types/components.types.ts';
-import { getComponent, removeEntity } from '../core/ecs.ts';
+import { getComponent, removeEntity, addComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
@@ -48,17 +48,7 @@ export function grantXp(state: GameState, entityId: EntityId, amount: number): G
     nextLevelDef = state.campaign.advancement.find((a) => a.level === nextFighter.level + 1);
   }
 
-  const nextComponents = new Map(nextState.components);
-  const entityComponents = nextComponents.get(entityId) ?? [];
-  nextComponents.set(
-    entityId,
-    entityComponents.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-  );
-
-  return {
-    ...nextState,
-    components: nextComponents
-  };
+  return addComponent(nextState, entityId, nextFighter);
 }
 
 /**

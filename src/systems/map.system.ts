@@ -28,6 +28,8 @@ import { clearScheduler, addActor } from '../core/scheduler.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
 export function updateExploredTiles(state: GameState): GameState {
+  if (!state.fovNeedsUpdate) return state;
+
   const players: ReadonlyArray<EntityId> = queryEntities(state, [ComponentType.Player, ComponentType.Position]);
   const playerEntityId = players[0];
   if (playerEntityId === undefined) return state;
@@ -46,11 +48,11 @@ export function updateExploredTiles(state: GameState): GameState {
     return tile;
   });
 
-  if (!modified) return state;
-
   return {
     ...state,
-    map: { ...state.map, tiles: nextTiles }
+    fovNeedsUpdate: false,
+    cachedFov: visibleIndices,
+    map: modified ? { ...state.map, tiles: nextTiles } : state.map
   };
 }
 
@@ -144,13 +146,13 @@ export function processChangeAreaIntent(
   const regularSavedEntityIds: EntityId[] = [];
   const nextPersistentEntities = new Map(state.persistentEntities);
 
-  const currentLevelComponents = new Map<EntityId, ReadonlyArray<Component>>();
+  const currentLevelComponents = new Map<EntityId, Readonly<Record<string, Component>>>();
 
   for (const id of savedEntityIds) {
     const comps = state.components.get(id);
     if (comps === undefined) continue;
 
-    const isPersistent = comps.some((c) => c.type === ComponentType.Persistent);
+    const isPersistent = comps[ComponentType.Persistent] !== undefined;
     if (isPersistent) {
       nextPersistentEntities.set(id, {
         areaId: state.currentAreaId,
@@ -177,7 +179,7 @@ export function processChangeAreaIntent(
   // 2. Load or generate target floor
   let targetMap: GameMap;
   let nextEntities: ReadonlyArray<EntityId> = [];
-  let nextComponents = new Map<EntityId, ReadonlyArray<Component>>();
+  let nextComponents = new Map<EntityId, Readonly<Record<string, Component>>>();
   let spawnX: number = targetX ?? -1;
   let spawnY: number = targetY ?? -1;
 
@@ -191,16 +193,14 @@ export function processChangeAreaIntent(
     // Find the corresponding stairs
     let foundStairs = false;
     for (const id of nextEntities) {
-      const interactable = nextComponents
-        .get(id)
-        ?.find((c) => c.type === ComponentType.Interactable) as InteractableComponent;
+      const interactable = nextComponents.get(id)?.[ComponentType.Interactable] as InteractableComponent;
       if (
         interactable &&
         interactable.intents.some(
           (i) => i.type === IntentType.ChangeArea && (i as ChangeAreaIntent).targetAreaId === state.currentAreaId
         )
       ) {
-        const pos = nextComponents.get(id)?.find((c) => c.type === ComponentType.Position) as PositionComponent;
+        const pos = nextComponents.get(id)?.[ComponentType.Position] as PositionComponent;
         if (pos && spawnX === -1) {
           spawnX = pos.x;
           spawnY = pos.y;
@@ -296,7 +296,7 @@ export function processChangeAreaIntent(
     }
 
     nextEntities = tempState.entities;
-    nextComponents = tempState.components as Map<EntityId, ReadonlyArray<Component>>;
+    nextComponents = tempState.components as Map<EntityId, Readonly<Record<string, Component>>>;
   }
 
   // Wake up persistent entities that belong to the target area
@@ -316,10 +316,13 @@ export function processChangeAreaIntent(
 
   // Bring migrating components into the new floor
   for (const id of migratingArray) {
-    let comps = state.components.get(id) ?? [];
+    let comps = state.components.get(id) ?? {};
     if (id === entityId) {
       // Update player position
-      comps = comps.map((c) => (c.type === ComponentType.Position ? { ...c, x: spawnX, y: spawnY } : c));
+      comps = {
+        ...comps,
+        [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: spawnX, y: spawnY }
+      };
     }
     nextComponents.set(id, comps);
   }
@@ -331,7 +334,9 @@ export function processChangeAreaIntent(
     map: targetMap,
     currentAreaId: targetAreaId,
     areas: nextAreas,
-    persistentEntities: nextPersistentEntities
+    persistentEntities: nextPersistentEntities,
+    fovNeedsUpdate: true,
+    cachedFov: new Set()
   };
 
   nextState = updateSpatialIndex(nextState);

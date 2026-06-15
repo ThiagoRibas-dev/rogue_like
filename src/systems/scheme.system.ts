@@ -85,7 +85,7 @@ function recruitMinion(
   // Search persistent entities
   for (const [id, record] of state.persistentEntities.entries()) {
     if (id === mastermindId || schemeComponent.activeMinions.includes(id)) continue;
-    if (record.components.find((c) => c.type === ComponentType.Actor)) {
+    if (record.components[ComponentType.Actor]) {
       potentialTargets.push(id);
     }
   }
@@ -101,9 +101,7 @@ function recruitMinion(
     if (tagsComp) {
       tags = [...tagsComp.tags];
     } else if (persistentRecord) {
-      const pTagsComp = persistentRecord.components.find((c) => c.type === ComponentType.Tags) as
-        | TagsComponent
-        | undefined;
+      const pTagsComp = persistentRecord.components[ComponentType.Tags] as TagsComponent | undefined;
       if (pTagsComp) tags = [...pTagsComp.tags];
     }
 

@@ -5,7 +5,7 @@ import {
   type StatusEffectsComponent,
   type ActiveStatusEffect
 } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
@@ -73,23 +73,13 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
       const stats = getEffectiveStats(nextState, entityId);
       const newHp = Math.min(stats.maxHp, fighter.hp + healthGained);
       const nextFighter: FighterComponent = { ...fighter, hp: newHp };
-      const nextComponents = new Map(nextState.components);
-      const comps = nextComponents.get(entityId) ?? [];
-      nextComponents.set(
-        entityId,
-        comps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-      );
-      nextState = { ...nextState, components: nextComponents };
+      nextState = addComponent(nextState, entityId, nextFighter);
     }
 
     if (actualDamage > 0) {
       nextState = addMessage(nextState, `${name} suffers from afflictions.`, MessageLogCategory.CombatHit);
 
-      const nextComponents = new Map(nextState.components);
-      const targetComps = nextComponents.get(entityId) ?? [];
-      const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
-        | DamageComponent
-        | undefined;
+      const existingDamageComp = getComponent(nextState, entityId, ComponentType.Damage) as DamageComponent | undefined;
 
       const damageInstance: DamageInstance = {
         amount: actualDamage,
@@ -99,43 +89,29 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
 
       if (existingDamageComp) {
         const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
-        nextComponents.set(
-          entityId,
-          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-        );
+        nextState = addComponent(nextState, entityId, newDamageComp);
       } else {
         const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };
-        nextComponents.set(entityId, [...targetComps, newDamageComp]);
+        nextState = addComponent(nextState, entityId, newDamageComp);
       }
-      nextState = { ...nextState, components: nextComponents };
     }
   }
 
   // Update StatusEffectsComponent
   // Note: if entity died, it was removed from nextState, so we don't update its components
   if (getComponent(nextState, entityId, ComponentType.Fighter)) {
-    const nextComponents = new Map(nextState.components);
-    const comps = nextComponents.get(entityId) ?? [];
-
     if (nextActiveEffects.length === 0) {
-      nextComponents.set(
-        entityId,
-        comps.filter((c) => c.type !== ComponentType.StatusEffects)
-      );
+      nextState = removeComponent(nextState, entityId, ComponentType.StatusEffects);
     } else {
       const nextStatuses: StatusEffectsComponent = {
         type: ComponentType.StatusEffects,
         activeEffects: nextActiveEffects
       };
-      nextComponents.set(
-        entityId,
-        comps.map((c) => (c.type === ComponentType.StatusEffects ? nextStatuses : c))
-      );
+      nextState = addComponent(nextState, entityId, nextStatuses);
     }
-    nextState = { ...nextState, components: nextComponents };
   }
 
   return nextState;
@@ -172,8 +148,7 @@ export function applyStatusEffect(
   const nextActive: ActiveStatusEffect =
     sourceEntityId !== undefined ? { effectId, duration, sourceEntityId } : { effectId, duration };
 
-  const nextComponents = new Map(state.components);
-  const comps = nextComponents.get(entityId) ?? [];
+  let nextState = state;
 
   if (statuses) {
     // If the effect is already active, we refresh the duration to the max of current vs new
@@ -192,18 +167,14 @@ export function applyStatusEffect(
     }
 
     const nextStatuses: StatusEffectsComponent = { type: ComponentType.StatusEffects, activeEffects: nextEffects };
-    nextComponents.set(
-      entityId,
-      comps.map((c) => (c.type === ComponentType.StatusEffects ? nextStatuses : c))
-    );
+    nextState = addComponent(nextState, entityId, nextStatuses);
   } else {
     const nextStatuses: StatusEffectsComponent = { type: ComponentType.StatusEffects, activeEffects: [nextActive] };
-    nextComponents.set(entityId, [...comps, nextStatuses]);
+    nextState = addComponent(nextState, entityId, nextStatuses);
   }
 
   const def = state.campaign.status[effectId];
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-  let nextState: GameState = { ...state, components: nextComponents };
 
   if (isPlayer && def) {
     nextState = addMessage(nextState, `You are now ${def.name}.`, MessageLogCategory.System);

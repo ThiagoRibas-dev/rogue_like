@@ -312,7 +312,14 @@ Enhance the Developer Tools to feel like a modern visual game engine rather than
 - [x] **Drag-and-Drop Linking:** Implement dragging an Item from the sidebar into a Monster's loot table.
 - [x] **Live Map Previews:** Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
 
-## 🟢 Milestone 27: Campaign Packaging & Standalone Distribution
+## ✅ Milestone 27: Engine Data Structures & Render Optimizations
+Transition the ECS internal data structures from arrays to constant-time dictionaries and optimize the per-frame render loop.
+- [x] **O(1) Component Access:** Refactor `GameState.components` from `ReadonlyArray<Component>` to an `O(1)` dictionary `Readonly<Record<string, Component>>` keyed by `ComponentType`.
+- [x] **Array Loop Elimination:** Remove expensive `.filter` and `.find` operations across the codebase by adopting the new `getComponent`, `addComponent`, and `removeComponent` architecture.
+- [x] **FOV Caching:** Decouple FOV `PreciseShadowcasting` math from the active render loop. Recompute FOV only when a new `fovNeedsUpdate` flag is tripped by a system (like moving or opening a door).
+- [x] **O(1) Spatial Rendering:** Eliminate the global `queryEntities` rendering loop. Instead, iterate exactly over the camera viewport bounds, retrieving standing entities via `state.spatialIndex` to ensure the render layer scales perfectly regardless of the total number of entities in the dungeon.
+
+## 🟢 Milestone 28: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.
 - [ ] **Campaign Manifest & Versioning**
   - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts).

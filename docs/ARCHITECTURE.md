@@ -23,21 +23,82 @@ The dependency graph flows strictly downward. Circular imports are banned. Modul
 
 Since the Campaign Editor is a top-level creator tool rather than a part of the active gameplay loops, the `editor/` controller folder sits at the top tier of the graph alongside the game bootstrap, permitting it to import from any engine layer while keeping the `rendering/` view layer completely isolated.
 
-```
-       [ main.ts ]                 [ editor/ ]  (Campaign Creator, Workspace controller)
-            │                            │
-            ▼                            │ (Direct imports allowed for tooling orchestration)
-       [ core/ ]   (Loop, scheduler, RNG)◄┘
-            │
-            ▼
-     [ systems/ ]  (Pure game logic: movement, combat, AI, death)
-       │        │
-       ▼        ▼
-  [ map/ ]    [ rendering/ ]  (Dungeon generation, FOV | drawing, camera, HUD)
-       │        │
-       └────┬───┘
-            ▼
-[ types/ | constants/ | utils/ ]  (Shared definitions, static data, helpers)
+```mermaid
+graph TD
+    %% Styling
+    classDef input fill:#2d3436,stroke:#74b9ff,stroke-width:2px,color:#dfe6e9;
+    classDef core fill:#0984e3,stroke:#0984e3,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef ecs fill:#d63031,stroke:#d63031,stroke-width:2px,color:#ffffff,font-weight:bold;
+    classDef sys fill:#00b894,stroke:#00b894,stroke-width:2px,color:#ffffff;
+    classDef data fill:#fdcb6e,stroke:#fdcb6e,stroke-width:2px,color:#2d3436;
+    classDef output fill:#6c5ce7,stroke:#6c5ce7,stroke-width:2px,color:#ffffff;
+
+    subgraph Input Layer
+        IH[Keyboard / DOM Events]:::input
+        UI[HTML UI Controllers]:::input
+    end
+
+    subgraph Core Loop
+        GL[Game Loop]:::core
+        Intent(Intent / Action)
+        AR[Action Registry]:::core
+        SCH[ROT.Scheduler.Speed]:::core
+    end
+
+    subgraph Systems Layer
+        SysMap[Map System]:::sys
+        SysMove[Movement System]:::sys
+        SysCombat[Combat System]:::sys
+        SysDeath[Death System]:::sys
+        SysScheme[Scheme System]:::sys
+        SysQuest[Quest System]:::sys
+    end
+
+    subgraph State & Data
+        ECS[(Global GameState)]:::ecs
+        Dict[[O_1 Dictionary<br/>Record<string, Component>]]:::ecs
+        JSON[Campaign JSON Data]:::data
+    end
+
+    subgraph Render Layer
+        Render[ROT.js Canvas Renderer]:::output
+        FOV[FOV Shadowcasting]:::output
+        DOM[HTML UI Overlays]:::output
+    end
+
+    %% Input to Core
+    IH --> |Keypress| GL
+    UI --> |Click| GL
+    GL --> |Generates| Intent
+    
+    %% Core to Systems
+    Intent --> |Dispatched via| AR
+    AR --> SysMap
+    AR --> SysMove
+    AR --> SysCombat
+    
+    %% Systems interacting with ECS
+    SysMove --> |1. getComponent| Dict
+    SysMove --> |2. Calculates next pos| SysMove
+    SysMove --> |3. addComponent| Dict
+    
+    SysCombat --> |Calculates Damage| SysDeath
+    SysDeath --> |Emits Event| SysQuest
+    
+    %% State to Render
+    Dict --- ECS
+    ECS --> |Current State| Render
+    ECS --> |Current State| DOM
+    Render --> FOV
+    
+    %% Scheduler loop
+    ECS --> SCH
+    SCH --> |AI Turns| GL
+    SCH --> |Background Ticks| SysScheme
+    
+    %% JSON Validation
+    JSON -.-> |Defines rules/stats| SysCombat
+    JSON -.-> |Defines map rules| SysMap
 ```
 
 ---
@@ -47,8 +108,8 @@ Since the Campaign Editor is a top-level creator tool rather than a part of the 
 ### Entity-Component-System (ECS-lite)
 We use a low-overhead, framework-free ECS:
 - **Entities** are simple numeric IDs (`EntityId` branded type), not class instances.
-- **Components** are pure data objects (TS interfaces) with no methods. They are stored in a `ReadonlyMap<EntityId, ReadonlyArray<Component>>` within the global `GameState`.
-- **Systems** are pure functions that query components, process game state changes, and return new state.
+- **Components** are pure data objects (TS interfaces) with no methods. They are stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>` within the global `GameState` for `O(1)` access.
+- **Systems** are pure functions that query components using `getComponent`, process game state changes, and return new state via `addComponent` / `removeComponent`.
 
 ### 4. Event Routing Buckets
 Rather than having global Event Listeners or looping `O(N)` queries every frame (e.g., checking all quests when an entity dies), we rely on cached inverted indexes (buckets) stored directly on the related components (e.g., `QuestLogComponent.activeTriggers`).
@@ -60,7 +121,8 @@ The game relies entirely on a shared `ROT.RNG` instance and strict global counte
 
 ### Map Generation & FOV
 - **Generator**: Uses `ROT.Map.Digger` wrapped in `src/map/generator.ts` to create standard room-and-corridor layouts.
-- **FOV**: Uses `ROT.FOV.PreciseShadowcasting` wrapped in `src/map/fov.ts` to calculate light and visible cells based on wall transparency.
+- **FOV Computation**: FOV shadowcasting is computationally expensive. It is calculated via `computeFOV` in `map.system.ts` but *only* when the `GameState.fovNeedsUpdate` flag is set (e.g. when the player moves or when terrain visibility changes). The results are stored in `GameState.cachedFov`.
+- **Spatial Rendering**: The renderer uses an `O(1)` spatial index (`GameState.spatialIndex`) combined with `GameState.cachedFov` to draw only entities actively inside the camera bounds and in line-of-sight, eliminating the need to globally query and sort thousands of entities every frame.
 
 ### Turn Scheduler
 Turn management is wrapped in `src/core/scheduler.ts` using `ROT.Scheduler.Speed`. This speed/energy-based scheduler handles entities with varying speeds (e.g., fast monsters moving twice as often as the player).
@@ -121,8 +183,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ## 4. Decision Log
 
 ### State Mutability vs ECS Design
-- **Decision**: Components are stored in a `ReadonlyMap<EntityId, ReadonlyArray<Component>>`. Systems clone the map and then replace only the arrays for entities that changed.
-- **Rationale**: The `GameState` must be strictly immutable, but replacing the entire components map on every turn is extremely expensive. This offers a middle ground between pure immutability and performance viability.
+- **Decision**: Components are stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>`. Systems clone the outer map when an entity is added/removed, but during state updates, they only clone and replace the specific dictionary for the modified entity.
+- **Rationale**: The `GameState` must be strictly immutable to support simple serialization and state rewinding. Initially, we used `ReadonlyArray<Component>`, but this required expensive `O(N)` `.filter()` and `.find()` operations across the codebase. By shifting to an `O(1)` dictionary keyed by `ComponentType`, we preserve immutability while massively speeding up component access and modification operations.
 
 ### Event Routing Buckets
 - **Decision**: Rather than having global Event Listeners or looping `O(N)` queries every frame (e.g., checking all quests when an entity dies), we rely on cached inverted indexes (buckets) stored directly on the related components (e.g., `QuestLogComponent.activeTriggers`).

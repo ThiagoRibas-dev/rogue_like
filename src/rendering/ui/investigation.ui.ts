@@ -48,12 +48,8 @@ export function renderInvestigationBoard(state: GameState): void {
         // Check persistent entities
         const pRecord = state.persistentEntities.get(actorId);
         if (pRecord) {
-          const pRender = pRecord.components.find((c) => c.type === ComponentType.Renderable) as
-            | RenderableComponent
-            | undefined;
-          const pFighter = pRecord.components.find((c) => c.type === ComponentType.Fighter) as
-            | FighterComponent
-            | undefined;
+          const pRender = pRecord.components[ComponentType.Renderable] as RenderableComponent | undefined;
+          const pFighter = pRecord.components[ComponentType.Fighter] as FighterComponent | undefined;
           if (pRender) {
             name = pRender.glyph === '@' ? 'The Mastermind' : `Suspect (${pRender.glyph})`;
           } else {

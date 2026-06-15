@@ -1,13 +1,18 @@
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { rng } from '../core/rng.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../types/intents/combat.intents.ts';
-import { ComponentType } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { rng } from '../core/rng.ts';
 
-import { getEffectiveStats } from '../utils/stats.ts';
 import { getSettings } from '../core/settings.ts';
-import type { MemoryComponent, FactionComponent, DamageComponent, DamageInstance } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type DamageComponent,
+  type DamageInstance,
+  type FactionComponent,
+  type MemoryComponent
+} from '../types/components.types.ts';
+import { getEffectiveStats } from '../utils/stats.ts';
 
 /**
  * Processes a MeleeAttackIntent.
@@ -41,8 +46,6 @@ export function processMeleeAttackIntent(
   const damage = Math.max(1, attackerStats.attack - defenderStats.defense);
 
   let nextState = state;
-  let nextComponents = new Map(state.components);
-  let stateModified = false;
 
   const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
   const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as FactionComponent | undefined;
@@ -56,27 +59,14 @@ export function processMeleeAttackIntent(
         [defenderFaction.factionId]: currentStanding - 5
       }
     };
-    const attackerComps = nextComponents.get(entityId) ?? [];
-    nextComponents.set(
-      entityId,
-      attackerComps.map((c) => (c.type === ComponentType.Memory ? nextMemory : c))
-    );
-    stateModified = true;
-  }
-
-  if (stateModified) {
-    nextState = { ...nextState, components: nextComponents };
+    nextState = addComponent(nextState, entityId, nextMemory);
   }
 
   if (damage > 0) {
     nextState = addMessage(nextState, `${attackerName} hits ${defenderName}.`, MessageLogCategory.CombatHit);
 
     // Attach DamageComponent
-    nextComponents = new Map(nextState.components);
-    const defenderComps = nextComponents.get(defenderId) ?? [];
-    const existingDamageComp = defenderComps.find((c) => c.type === ComponentType.Damage) as
-      | DamageComponent
-      | undefined;
+    const existingDamageComp = getComponent(nextState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
 
     const damageInstance: DamageInstance = {
       amount: damage,
@@ -86,19 +76,14 @@ export function processMeleeAttackIntent(
 
     if (existingDamageComp) {
       const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
-      nextComponents.set(
-        defenderId,
-        defenderComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-      );
+      nextState = addComponent(nextState, defenderId, newDamageComp);
     } else {
       const newDamageComp: DamageComponent = {
         type: ComponentType.Damage,
         instances: [damageInstance]
       };
-      nextComponents.set(defenderId, [...defenderComps, newDamageComp]);
+      nextState = addComponent(nextState, defenderId, newDamageComp);
     }
-
-    nextState = { ...nextState, components: nextComponents };
   } else {
     nextState = addMessage(
       nextState,

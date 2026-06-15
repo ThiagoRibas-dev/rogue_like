@@ -44,6 +44,9 @@ import {
   createUnequipItemAction
 } from '../actions/inventory.actions.ts';
 
+let lastMoveTime = 0;
+const MOVE_THROTTLE_MS = 225;
+
 export function handleKeyDown(
   event: KeyboardEvent,
   currentState: GameState,
@@ -277,6 +280,14 @@ export function handleKeyDown(
 
   if (direction !== undefined) {
     event.preventDefault(); // Prevent standard page scroll
+
+    // Throttle movement in turn-based mode to prevent teleporting/spam
+    if (currentState.engineMode === EngineMode.TurnBased) {
+      const now = performance.now();
+      if (now - lastMoveTime < MOVE_THROTTLE_MS) return;
+      lastMoveTime = now;
+    }
+
     const { dx, dy } = getDirectionDelta(direction);
 
     if (isTargeting) {
@@ -291,6 +302,11 @@ export function handleKeyDown(
     if (currentState.engineMode === EngineMode.RTwP) {
       queuePlayerIntent(createTogglePauseAction(playerEntityId));
     } else {
+      // Throttle waiting in turn-based mode
+      const now = performance.now();
+      if (now - lastMoveTime < MOVE_THROTTLE_MS) return;
+      lastMoveTime = now;
+
       queuePlayerIntent(createWaitAction(playerEntityId));
     }
   } else if (!isTargeting && isAction(event, 'interact')) {

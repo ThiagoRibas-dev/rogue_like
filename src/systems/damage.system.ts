@@ -7,7 +7,7 @@ import {
   type EquipmentComponent,
   type ItemComponent
 } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { getSettings } from '../core/settings.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
@@ -39,8 +39,6 @@ export function addFloatingText(state: GameState, entityId: EntityId, content: s
  */
 export function processDamageSystem(state: GameState): GameState {
   let nextState = state;
-  let nextComponents = new Map(nextState.components);
-  let anyModified = false;
 
   for (const entityId of nextState.entities) {
     const damageComp = getComponent(nextState, entityId, ComponentType.Damage) as DamageComponent | undefined;
@@ -76,12 +74,7 @@ export function processDamageSystem(state: GameState): GameState {
 
     if (!fighter) {
       // Entity can't take damage, just clear the component
-      const comps = nextComponents.get(entityId) ?? [];
-      nextComponents.set(
-        entityId,
-        comps.filter((c) => c.type !== ComponentType.Damage)
-      );
-      anyModified = true;
+      nextState = removeComponent(nextState, entityId, ComponentType.Damage);
       continue;
     }
 
@@ -93,19 +86,14 @@ export function processDamageSystem(state: GameState): GameState {
         hp: newHp
       };
 
-      const entityComps = nextComponents.get(entityId) ?? [];
-      const withoutDamage = entityComps.filter((c) => c.type !== ComponentType.Damage);
-
-      const newComps = withoutDamage.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c));
+      nextState = removeComponent(nextState, entityId, ComponentType.Damage);
+      nextState = addComponent(nextState, entityId, nextFighter);
 
       if (newHp === 0) {
         // Entity died, attach DeathComponent
         const deathComp: DeathComponent = { type: ComponentType.Death, killerId: lastKillerId, causeOfDeath };
-        newComps.push(deathComp);
+        nextState = addComponent(nextState, entityId, deathComp);
       }
-
-      nextComponents.set(entityId, newComps);
-      anyModified = true;
 
       if (getSettings().visualFeedback.showDamageNumbers) {
         nextState = addFloatingText(nextState, entityId, `-${totalDamage}`, '#ff4757'); // var(--color-health)
@@ -123,8 +111,6 @@ export function processDamageSystem(state: GameState): GameState {
               if (item) {
                 const itemDef = nextState.campaign.items[item.itemId];
                 if (itemDef?.equippable?.onHit) {
-                  // We update nextState with the status effect application
-                  nextState = { ...nextState, components: nextComponents };
                   nextState = applyStatusEffect(
                     nextState,
                     entityId,
@@ -132,8 +118,6 @@ export function processDamageSystem(state: GameState): GameState {
                     itemDef.equippable.onHit.duration,
                     meleeSourceId
                   );
-                  // Refresh components map after status effect
-                  nextComponents = new Map(nextState.components);
                 }
               }
             }
@@ -142,17 +126,8 @@ export function processDamageSystem(state: GameState): GameState {
       }
     } else {
       // No damage taken, just clear component
-      const comps = nextComponents.get(entityId) ?? [];
-      nextComponents.set(
-        entityId,
-        comps.filter((c) => c.type !== ComponentType.Damage)
-      );
-      anyModified = true;
+      nextState = removeComponent(nextState, entityId, ComponentType.Damage);
     }
-  }
-
-  if (anyModified) {
-    nextState = { ...nextState, components: nextComponents };
   }
 
   return nextState;

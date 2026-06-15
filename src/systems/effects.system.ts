@@ -47,19 +47,14 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       }
 
       const nextFighter: FighterComponent = { ...fighter, hp: fighter.hp + healed };
-      const nextComponents = new Map(state.components);
-      const userComps = nextComponents.get(userId) ?? [];
-      nextComponents.set(
-        userId,
-        userComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-      );
+      const nextState = addComponent(state, userId, nextFighter);
 
       const targetName = getComponent(state, userId, ComponentType.Player) !== undefined ? 'You' : 'Something';
       const msg = effectDef.message
         .replace('{item}', itemName)
         .replace('{value}', String(healed))
         .replace('{target}', targetName);
-      return addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.CombatHit);
+      return addMessage(nextState, msg, MessageLogCategory.CombatHit);
     }
 
     case 'damage_nearest': {
@@ -99,9 +94,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
 
       // Attach DamageComponent
-      const nextComponents = new Map(nextState.components);
-      const targetComps = nextComponents.get(nearestId) ?? [];
-      const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
+      const existingDamageComp = getComponent(nextState, nearestId, ComponentType.Damage) as
         | DamageComponent
         | undefined;
 
@@ -113,19 +106,14 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
 
       if (existingDamageComp) {
         const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
-        nextComponents.set(
-          nearestId,
-          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-        );
+        return addComponent(nextState, nearestId, newDamageComp);
       } else {
         const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };
-        nextComponents.set(nearestId, [...targetComps, newDamageComp]);
+        return addComponent(nextState, nearestId, newDamageComp);
       }
-
-      return { ...nextState, components: nextComponents };
     }
 
     case 'damage_area': {
@@ -151,11 +139,7 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
           nextState = addMessage(nextState, msg, MessageLogCategory.CombatHit);
 
           // Attach DamageComponent
-          const nextComponents = new Map(nextState.components);
-          const targetComps = nextComponents.get(id) ?? [];
-          const existingDamageComp = targetComps.find((c) => c.type === ComponentType.Damage) as
-            | DamageComponent
-            | undefined;
+          const existingDamageComp = getComponent(nextState, id, ComponentType.Damage) as DamageComponent | undefined;
 
           const damageInstance: DamageInstance = {
             amount: effectDef.value,
@@ -168,18 +152,14 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
               ...existingDamageComp,
               instances: [...existingDamageComp.instances, damageInstance]
             };
-            nextComponents.set(
-              id,
-              targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-            );
+            nextState = addComponent(nextState, id, newDamageComp);
           } else {
             const newDamageComp: DamageComponent = {
               type: ComponentType.Damage,
               instances: [damageInstance]
             };
-            nextComponents.set(id, [...targetComps, newDamageComp]);
+            nextState = addComponent(nextState, id, newDamageComp);
           }
-          nextState = { ...nextState, components: nextComponents };
         }
       }
 
@@ -261,16 +241,10 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
 
       const newSatiation = Math.min(state.campaign.rules.hunger.maxSatiation, hunger.satiation + effectDef.value);
       const nextHunger = { ...hunger, satiation: newSatiation };
-
-      const nextComponents = new Map(state.components);
-      const userComps = nextComponents.get(userId) ?? [];
-      nextComponents.set(
-        userId,
-        userComps.map((c) => (c.type === ComponentType.Hunger ? nextHunger : c))
-      );
+      const nextState = addComponent(state, userId, nextHunger);
 
       const msg = effectDef.message.replace('{item}', itemName);
-      return addMessage({ ...state, components: nextComponents }, msg, MessageLogCategory.System);
+      return addMessage(nextState, msg, MessageLogCategory.System);
     }
 
     default:
@@ -337,7 +311,6 @@ export function processUseItemIntent(
 
   // Remove item from inventory
   const remainingCharges = (itemComp.charges ?? 1) - 1;
-  const nextComponents = new Map(nextState.components);
 
   if (remainingCharges <= 0) {
     // Remove item entity entirely
@@ -345,23 +318,12 @@ export function processUseItemIntent(
       ...inventory,
       items: inventory.items.filter((_, i) => i !== itemIndex)
     };
-    const entityComps = nextComponents.get(entityId) ?? [];
-    nextComponents.set(
-      entityId,
-      entityComps.map((c) => (c.type === ComponentType.Inventory ? nextInventory : c))
-    );
-    nextComponents.delete(itemEntityId);
-    nextState = { ...nextState, components: nextComponents };
+    nextState = addComponent(nextState, entityId, nextInventory);
     nextState = removeEntity(nextState, itemEntityId);
   } else {
     // Just decrement charges
     const nextItemComp: ItemComponent = { ...itemComp, charges: remainingCharges };
-    const entityComps = nextComponents.get(itemEntityId) ?? [];
-    nextComponents.set(
-      itemEntityId,
-      entityComps.map((c) => (c.type === ComponentType.Item ? nextItemComp : c))
-    );
-    nextState = { ...nextState, components: nextComponents };
+    nextState = addComponent(nextState, itemEntityId, nextItemComp);
   }
 
   return {

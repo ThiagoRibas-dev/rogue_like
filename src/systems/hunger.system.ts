@@ -42,14 +42,8 @@ export function processHungerTick(state: GameState, entityId: EntityId, energyCo
   const newState = getHungerState(state, newSatiation);
 
   let nextState = state;
-  const nextComponents = new Map(nextState.components);
-  const entityComps = nextComponents.get(entityId) ?? [];
   const nextHunger: HungerComponent = { ...hunger, satiation: newSatiation };
-  nextComponents.set(
-    entityId,
-    entityComps.map((c) => (c.type === ComponentType.Hunger ? nextHunger : c))
-  );
-  nextState = { ...nextState, components: nextComponents };
+  nextState = addComponent(nextState, entityId, nextHunger);
 
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
 
@@ -72,14 +66,7 @@ export function processHungerTick(state: GameState, entityId: EntityId, energyCo
       const damage = Math.max(1, Math.floor(energyCost / 100));
       const newHp = Math.max(0, fighter.hp - damage);
       const nextFighter: FighterComponent = { ...fighter, hp: newHp };
-
-      const newEntityComps = nextState.components.get(entityId) ?? [];
-      const updatedComponents = new Map(nextState.components);
-      updatedComponents.set(
-        entityId,
-        newEntityComps.map((c) => (c.type === ComponentType.Fighter ? nextFighter : c))
-      );
-      nextState = { ...nextState, components: updatedComponents };
+      nextState = addComponent(nextState, entityId, nextFighter);
 
       if (isPlayer && damage > 0) {
         nextState = addMessage(nextState, `You suffer ${damage} starvation damage!`, MessageLogCategory.CombatHit);

@@ -143,6 +143,8 @@ export async function loadGame(): Promise<GameState | null> {
       entities: sState.entities,
       components: new Map(sState.components),
       map: sState.map,
+      fovNeedsUpdate: true,
+      cachedFov: new Set(),
       nextEntityId: sState.nextEntityId,
       nextItemInstanceId: sState.nextItemInstanceId,
       nextQuestId: sState.nextQuestId ?? 1, // Fallback for old saves

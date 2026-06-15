@@ -272,6 +272,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         if (currentItemId) sessionStorage.setItem('editor_active_item', currentItemId);
         else sessionStorage.removeItem('editor_active_item');
 
+        sessionStorage.setItem('editor_playtest', 'true');
         // Reload the page to bootstrap the engine with the injected document
         window.location.reload();
       } catch (err) {

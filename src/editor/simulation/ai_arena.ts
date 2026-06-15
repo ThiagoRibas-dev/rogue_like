@@ -49,6 +49,8 @@ export function runAIArena(
     isRotated: false,
     is3D: false,
     zoomLevel: 1,
+    fovNeedsUpdate: true,
+    cachedFov: new Set(),
     playerCommandQueue: [],
     investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] }
   };

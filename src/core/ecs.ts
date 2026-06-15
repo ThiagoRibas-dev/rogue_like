@@ -27,8 +27,8 @@ export function createEntity(state: GameState): [GameState, EntityId] {
 
   const nextEntities: ReadonlyArray<EntityId> = [...state.entities, newId];
 
-  const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
-  nextComponents.set(newId, []);
+  const nextComponents: Map<EntityId, Readonly<Record<string, Component>>> = new Map(state.components);
+  nextComponents.set(newId, {});
 
   const nextState: GameState = {
     ...state,
@@ -48,10 +48,10 @@ export function createEntity(state: GameState): [GameState, EntityId] {
  * @returns The updated game state.
  */
 export function addComponent<C extends Component>(state: GameState, entityId: EntityId, component: C): GameState {
-  const entityComponents: ReadonlyArray<Component> = state.components.get(entityId) ?? [];
+  const entityComponents = state.components.get(entityId) ?? {};
 
-  const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
-  nextComponents.set(entityId, [...entityComponents, component]);
+  const nextComponents = new Map(state.components);
+  nextComponents.set(entityId, { ...entityComponents, [component.type]: component });
 
   const nextState = {
     ...state,
@@ -59,6 +59,32 @@ export function addComponent<C extends Component>(state: GameState, entityId: En
   };
 
   if (component.type === ComponentType.Position) {
+    return updateSpatialIndex(nextState);
+  }
+
+  return nextState;
+}
+
+/**
+ * Removes a component of a specific type from an entity.
+ * @param state The current game state.
+ * @param entityId The EntityId to modify.
+ * @param type The ComponentType to remove.
+ * @returns The updated game state.
+ */
+export function removeComponent<T extends ComponentType>(state: GameState, entityId: EntityId, type: T): GameState {
+  const entityComponents = state.components.get(entityId);
+  if (!entityComponents) return state;
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { [type]: removed, ...rest } = entityComponents;
+
+  const nextComponents = new Map(state.components);
+  nextComponents.set(entityId, rest);
+
+  const nextState = { ...state, components: nextComponents };
+
+  if (type === (ComponentType.Position as ComponentType)) {
     return updateSpatialIndex(nextState);
   }
 
@@ -102,13 +128,12 @@ export function getComponent<T extends ComponentType>(
   entityId: EntityId,
   type: T
 ): Extract<Component, { readonly type: T }> | undefined {
-  const entityComponents: ReadonlyArray<Component> | undefined = state.components.get(entityId);
+  const entityComponents = state.components.get(entityId);
   if (entityComponents === undefined) {
     return undefined;
   }
 
-  const match: Component | undefined = entityComponents.find((c: Component) => c.type === type);
-  return match as Extract<Component, { readonly type: T }> | undefined;
+  return entityComponents[type] as Extract<Component, { readonly type: T }> | undefined;
 }
 
 /**
@@ -122,11 +147,11 @@ export function queryEntities<T extends ComponentType>(
   types: ReadonlyArray<T>
 ): ReadonlyArray<EntityId> {
   return state.entities.filter((entityId: EntityId) => {
-    const entityComponents: ReadonlyArray<Component> | undefined = state.components.get(entityId);
+    const entityComponents = state.components.get(entityId);
     if (entityComponents === undefined) {
       return false;
     }
-    return types.every((type: T) => entityComponents.some((c: Component) => c.type === type));
+    return types.every((type: T) => entityComponents[type] !== undefined);
   });
 }
 

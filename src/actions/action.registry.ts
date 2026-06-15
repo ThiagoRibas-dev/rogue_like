@@ -6,7 +6,7 @@ import { IntentType } from '../types/intents/intent.enum.ts';
 import { assertNever } from '../utils/assert.ts';
 
 // Handlers
-import { getComponent, spawnEntity } from '../core/ecs.ts';
+import { getComponent, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
 import { addActor, switchEngineMode } from '../core/scheduler.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
 import { processUseAbilityIntent, processUseItemIntent } from '../systems/effects.system.ts';
@@ -151,17 +151,11 @@ export function dispatchAction(
     case IntentType.DebugGodMode: {
       const { entityId } = intent;
       const hasGodMode = getComponent(state, entityId, ComponentType.GodMode) !== undefined;
-      const nextComponents = new Map(state.components);
-      const entityComps = state.components.get(entityId) || [];
 
       if (hasGodMode) {
-        nextComponents.set(
-          entityId,
-          entityComps.filter((c) => c.type !== ComponentType.GodMode)
-        );
         return {
           state: addMessage(
-            { ...state, components: nextComponents },
+            removeComponent(state, entityId, ComponentType.GodMode),
             '[DEBUG] God Mode Disabled.',
             MessageLogCategory.System
           ),
@@ -169,10 +163,9 @@ export function dispatchAction(
         };
       } else {
         const godCmp: GodModeComponent = { type: ComponentType.GodMode };
-        nextComponents.set(entityId, [...entityComps, godCmp]);
         return {
           state: addMessage(
-            { ...state, components: nextComponents },
+            addComponent(state, entityId, godCmp),
             '[DEBUG] God Mode Enabled.',
             MessageLogCategory.System
           ),
@@ -238,7 +231,7 @@ export function dispatchAction(
         if (getComponent(state, id, ComponentType.Scheme)) masterminds.push(id);
       }
       for (const [id, record] of state.persistentEntities.entries()) {
-        if (record.components.find((c) => c.type === ComponentType.Scheme)) masterminds.push(id);
+        if (record.components[ComponentType.Scheme]) masterminds.push(id);
       }
 
       if (masterminds.length === 0) {

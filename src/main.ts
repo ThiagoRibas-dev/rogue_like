@@ -106,6 +106,8 @@ let state: GameState = {
   isRotated: false,
   is3D: false,
   zoomLevel: 1.0,
+  fovNeedsUpdate: true,
+  cachedFov: new Set(),
   playerCommandQueue: [],
   investigation: {
     knownActors: [],
@@ -118,6 +120,16 @@ let selectedCampaignId: string | null = null;
 populateCampaignList(campaignRegistry.campaigns, (campaign) => {
   selectedCampaignId = campaign.id;
 });
+
+if (sessionStorage.getItem('editor_playtest') === 'true') {
+  sessionStorage.removeItem('editor_playtest');
+  setTimeout(() => {
+    startNewGame('default', getGameState(), display, (newState) => {
+      state = newState;
+      setGameState(newState);
+    }).catch(console.error);
+  }, 50);
+}
 
 // DOM Event Bindings
 document.getElementById('btn-new-game')?.addEventListener('click', () => {
@@ -228,14 +240,19 @@ if (btnOpenSettings && btnCloseSettings) {
 
   btnCloseSettings.addEventListener('click', () => {
     const pId = getPlayerId();
-    if (pId) queuePlayerIntent(createToggleSettingsAction(pId));
+    if (pId) {
+      queuePlayerIntent(createToggleSettingsAction(pId));
+    } else {
+      state = { ...getGameState(), uiMode: UIMode.MainMenu };
+      setGameState(state);
+    }
   });
 }
 
 if (btnMainMenuSettings) {
   btnMainMenuSettings.addEventListener('click', () => {
-    const pId = getPlayerId();
-    if (pId) queuePlayerIntent(createToggleSettingsAction(pId));
+    state = { ...getGameState(), uiMode: UIMode.Settings };
+    setGameState(state);
   });
 }
 

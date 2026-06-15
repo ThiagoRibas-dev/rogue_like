@@ -100,6 +100,8 @@ export async function startNewGame(
     isRotated: state.isRotated,
     is3D: state.is3D,
     zoomLevel: state.zoomLevel,
+    fovNeedsUpdate: true,
+    cachedFov: new Set(),
     playerCommandQueue: [],
     investigation: {
       knownActors: [],
@@ -129,7 +131,16 @@ export async function startNewGame(
     ...state,
     persistentEntities: new Map([
       ...state.persistentEntities.entries(),
-      [mastermindId, { areaId: 'world', components: [schemeComp, mastermindActor] }]
+      [
+        mastermindId,
+        {
+          areaId: 'world',
+          components: {
+            [ComponentType.Scheme]: schemeComp,
+            [ComponentType.Actor]: mastermindActor
+          }
+        }
+      ]
     ])
   };
 
@@ -201,7 +212,7 @@ export async function startNewGame(
   }
 
   for (const [id, record] of state.persistentEntities.entries()) {
-    if (record.components.find((c) => c.type === ComponentType.Actor)) {
+    if (record.components[ComponentType.Actor]) {
       addActor(id);
     }
   }
@@ -226,7 +237,7 @@ export async function continueGame(setGlobalState: (s: GameState) => void): Prom
     }
 
     for (const [id, record] of state.persistentEntities.entries()) {
-      if (record.components.find((c) => c.type === ComponentType.Actor)) {
+      if (record.components[ComponentType.Actor]) {
         addActor(id);
       }
     }

@@ -1,6 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type InventoryComponent, type EquipmentComponent } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
 import type { ActionResult } from '../types/intents/intent.union.ts';
@@ -91,38 +91,16 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
   // Remove PositionComponent from the item (takes it off the map / spatial index)
-  const nextComponents = new Map(state.components);
-  const itemComps = nextComponents.get(itemEntityId) ?? [];
-  nextComponents.set(
-    itemEntityId,
-    itemComps.filter((c) => c.type !== ComponentType.Position)
-  );
+  let nextState = removeComponent(state, itemEntityId, ComponentType.Position);
 
   // Add item to inventory
   const nextInventory: InventoryComponent = {
     ...inventory,
     items: [...inventory.items, itemEntityId]
   };
-  const entityComps = nextComponents.get(entityId) ?? [];
-  nextComponents.set(
-    entityId,
-    entityComps.map((c) => (c.type === ComponentType.Inventory ? nextInventory : c))
-  );
+  nextState = addComponent(nextState, entityId, nextInventory);
 
-  // Rebuild the spatial index since a Position was removed
-  const newSpatialIndex = new Map<string, EntityId[]>();
-  const stateWithNewComponents = { ...state, components: nextComponents };
-  for (const id of stateWithNewComponents.entities) {
-    const p = getComponent(stateWithNewComponents, id, ComponentType.Position);
-    if (p !== undefined) {
-      const k = `${p.x},${p.y}`;
-      const arr = newSpatialIndex.get(k) ?? [];
-      arr.push(id);
-      newSpatialIndex.set(k, arr);
-    }
-  }
-
-  const clueComp = getComponent(stateWithNewComponents, itemEntityId, ComponentType.Clue) as ClueComponent | undefined;
+  const clueComp = getComponent(nextState, itemEntityId, ComponentType.Clue) as ClueComponent | undefined;
   const events: GameEvent[] = [];
   if (clueComp) {
     events.push({
@@ -134,11 +112,7 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
   }
 
   return {
-    state: addMessage(
-      { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
-      `You pick up the ${itemName}.`,
-      MessageLogCategory.System
-    ),
+    state: addMessage(nextState, `You pick up the ${itemName}.`, MessageLogCategory.System),
     success: true,
     energyCost: 100, // ActionRegistry defaults
     events
@@ -185,43 +159,21 @@ export function processDropIntent(
     };
   }
 
-  const nextComponents = new Map(state.components);
+  let nextState = state;
 
   // Remove item from inventory
   const nextInventory: InventoryComponent = {
     ...inventory,
     items: inventory.items.filter((_, i) => i !== itemIndex)
   };
-  const entityComps = nextComponents.get(entityId) ?? [];
-  nextComponents.set(
-    entityId,
-    entityComps.map((c) => (c.type === ComponentType.Inventory ? nextInventory : c))
-  );
+  nextState = addComponent(nextState, entityId, nextInventory);
 
   // Add PositionComponent back to the item (place it on the map)
-  const itemComps = nextComponents.get(itemEntityId) ?? [];
   const droppedPos = { type: ComponentType.Position as const, x: pos.x, y: pos.y };
-  nextComponents.set(itemEntityId, [...itemComps, droppedPos]);
-
-  // Rebuild spatial index
-  const newSpatialIndex = new Map<string, EntityId[]>();
-  const stateWithNewComponents = { ...state, components: nextComponents };
-  for (const id of stateWithNewComponents.entities) {
-    const p = getComponent(stateWithNewComponents, id, ComponentType.Position);
-    if (p !== undefined) {
-      const k = `${p.x},${p.y}`;
-      const arr = newSpatialIndex.get(k) ?? [];
-      arr.push(id);
-      newSpatialIndex.set(k, arr);
-    }
-  }
+  nextState = addComponent(nextState, itemEntityId, droppedPos);
 
   return {
-    state: addMessage(
-      { ...stateWithNewComponents, spatialIndex: newSpatialIndex },
-      `You drop the ${itemName}.`,
-      MessageLogCategory.System
-    ),
+    state: addMessage(nextState, `You drop the ${itemName}.`, MessageLogCategory.System),
     success: true
   };
 }
@@ -283,10 +235,11 @@ export function processEquipItemIntent(
     targetSlot = matchingSlots[0]!;
   }
 
+  let nextState = state;
   if (targetSlot.equippedItem !== null && targetSlot.equippedItem !== itemEntityId) {
     const oldDef = state.campaign.items[getComponent(state, targetSlot.equippedItem, ComponentType.Item)?.itemId ?? ''];
     const oldName = oldDef?.name ?? 'item';
-    state = addMessage(state, `You unequip the ${oldName}.`, MessageLogCategory.System);
+    nextState = addMessage(nextState, `You unequip the ${oldName}.`, MessageLogCategory.System);
   }
 
   const nextEquipment: EquipmentComponent = {
@@ -294,22 +247,10 @@ export function processEquipItemIntent(
     slots: equipment.slots.map((s) => (s.id === targetSlot!.id ? { ...s, equippedItem: itemEntityId } : s))
   };
 
-  const nextComponents = new Map(state.components);
-  const entityComps = nextComponents.get(entityId) ?? [];
-  nextComponents.set(
-    entityId,
-    entityComps.map((c) => {
-      if (c.type === ComponentType.Equipment) return nextEquipment;
-      return c;
-    })
-  );
+  nextState = addComponent(nextState, entityId, nextEquipment);
 
   return {
-    state: addMessage(
-      { ...state, components: nextComponents },
-      `You equip the ${itemName}.`,
-      MessageLogCategory.System
-    ),
+    state: addMessage(nextState, `You equip the ${itemName}.`, MessageLogCategory.System),
     success: true,
     events: [{ type: GameEventType.ItemEquipped, entityId, itemId: itemEntityId }]
   };
@@ -350,22 +291,10 @@ export function processUnequipItemIntent(
     slots: equipment.slots.map((s) => (s.id === slotId ? { ...s, equippedItem: null } : s))
   };
 
-  const nextComponents = new Map(state.components);
-  const entityComps = nextComponents.get(entityId) ?? [];
-  nextComponents.set(
-    entityId,
-    entityComps.map((c) => {
-      if (c.type === ComponentType.Equipment) return nextEquipment;
-      return c;
-    })
-  );
+  const nextState = addComponent(state, entityId, nextEquipment);
 
   return {
-    state: addMessage(
-      { ...state, components: nextComponents },
-      `You unequip the ${itemName}.`,
-      MessageLogCategory.System
-    ),
+    state: addMessage(nextState, `You unequip the ${itemName}.`, MessageLogCategory.System),
     success: true,
     events: [{ type: GameEventType.ItemUnequipped, entityId, itemId: itemEntityId }]
   };

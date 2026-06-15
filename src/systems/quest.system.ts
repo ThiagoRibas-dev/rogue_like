@@ -1,5 +1,5 @@
 import type { GameState } from '../types/game-state.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, addComponent } from '../core/ecs.ts';
 import { ComponentType, type QuestLogComponent } from '../types/components.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -73,15 +73,8 @@ export function completeQuest(state: GameState, playerId: EntityId, questId: str
 
   const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
 
-  const nextComps = new Map(nextState.components);
-  const playerComps =
-    nextComps
-      .get(playerId)
-      ?.map((c) =>
-        c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
-      ) ?? [];
-  nextComps.set(playerId, playerComps);
-  return { ...nextState, components: nextComps };
+  const nextQuestLog: QuestLogComponent = { ...questLog, quests: nextQuests, activeTriggers: nextTriggers };
+  return addComponent(nextState, playerId, nextQuestLog);
 }
 
 /**
@@ -102,15 +95,8 @@ export function grantQuest(state: GameState, playerId: EntityId, questId: string
 
   const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
 
-  const nextComps = new Map(nextState.components);
-  const playerComps =
-    nextComps
-      .get(playerId)
-      ?.map((c) =>
-        c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
-      ) ?? [];
-  nextComps.set(playerId, playerComps);
-  return { ...nextState, components: nextComps };
+  const nextQuestLog: QuestLogComponent = { ...questLog, quests: nextQuests, activeTriggers: nextTriggers };
+  return addComponent(nextState, playerId, nextQuestLog);
 }
 
 /**
@@ -194,15 +180,8 @@ export function processQuestEvent(
 
   if (questsModified) {
     const nextTriggers = rebuildQuestTriggers(nextState, nextQuests);
-    const nextComps = new Map(nextState.components);
-    const playerComps =
-      nextComps
-        .get(playerId)
-        ?.map((c) =>
-          c.type === ComponentType.QuestLog ? { ...c, quests: nextQuests, activeTriggers: nextTriggers } : c
-        ) ?? [];
-    nextComps.set(playerId, playerComps);
-    nextState = { ...nextState, components: nextComps };
+    const nextQuestLog: QuestLogComponent = { ...questLog, quests: nextQuests, activeTriggers: nextTriggers };
+    nextState = addComponent(nextState, playerId, nextQuestLog);
   }
 
   // Now process completions

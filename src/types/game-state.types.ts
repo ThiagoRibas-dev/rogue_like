@@ -94,7 +94,7 @@ export interface VisualEffect {
 export interface AreaData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
-  readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
+  readonly components: ReadonlyMap<EntityId, Readonly<Record<string, Component>>>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
 }
 
@@ -103,7 +103,7 @@ export interface AreaData {
  */
 export interface PersistentEntityRecord {
   readonly areaId: string;
-  readonly components: ReadonlyArray<Component>;
+  readonly components: Readonly<Record<string, Component>>;
 }
 
 export interface InvestigationKnowledge {
@@ -120,8 +120,10 @@ export interface GameState {
   readonly campaign: CampaignData;
   readonly dynamicQuests: Readonly<Record<string, Quest>>;
   readonly entities: ReadonlyArray<EntityId>;
-  readonly components: ReadonlyMap<EntityId, ReadonlyArray<Component>>;
+  readonly components: ReadonlyMap<EntityId, Readonly<Record<string, Component>>>;
   readonly map: GameMap;
+  readonly fovNeedsUpdate: boolean;
+  readonly cachedFov: ReadonlySet<number>;
   readonly nextEntityId: number;
   /** Counter used to generate unique ItemInstanceIds for new item entities. */
   readonly nextItemInstanceId: number;
@@ -182,7 +184,7 @@ export interface GameState {
 export interface SerializedAreaData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
-  readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
+  readonly components: ReadonlyArray<[EntityId, Readonly<Record<string, Component>>]>;
 }
 
 /**
@@ -190,7 +192,7 @@ export interface SerializedAreaData {
  */
 export interface SerializedPersistentEntityRecord {
   readonly areaId: string;
-  readonly components: ReadonlyArray<Component>;
+  readonly components: Readonly<Record<string, Component>>;
 }
 
 /**
@@ -200,7 +202,7 @@ export interface SerializedGameState {
   readonly campaignId: string;
   readonly dynamicQuests: Readonly<Record<string, Quest>>;
   readonly entities: ReadonlyArray<EntityId>;
-  readonly components: ReadonlyArray<[EntityId, ReadonlyArray<Component>]>;
+  readonly components: ReadonlyArray<[EntityId, Readonly<Record<string, Component>>]>;
   readonly map: GameMap;
   readonly nextEntityId: number;
   readonly nextItemInstanceId: number;

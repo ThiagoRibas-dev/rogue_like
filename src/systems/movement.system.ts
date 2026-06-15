@@ -1,15 +1,15 @@
-import { ComponentType, type PositionComponent, type Component } from '../types/components.types.ts';
-import type { GameState, EntityId } from '../types/game-state.types.ts';
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { ComponentType, type PositionComponent } from '../types/components.types.ts';
 import { GameEventType } from '../types/events.types.ts';
-import { getComponent, updateSpatialIndex } from '../core/ecs.ts';
+import type { EntityId, GameState } from '../types/game-state.types.ts';
 
-import { coordToIndex, isInBounds } from '../utils/grid.ts';
-import type { MoveIntent } from '../types/intents/movement.intents.ts';
-import { IntentType } from '../types/intents/intent.enum.ts';
-import { addMessage, MessageLogCategory } from './message.system.ts';
-import { processMeleeAttackIntent } from './combat.system.ts';
-import { isHostile } from '../utils/faction.ts';
 import type { GameEvent } from '../types/events.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import type { MoveIntent } from '../types/intents/movement.intents.ts';
+import { isHostile } from '../utils/faction.ts';
+import { coordToIndex, isInBounds } from '../utils/grid.ts';
+import { processMeleeAttackIntent } from './combat.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
  * Processes a MoveIntent.
@@ -52,7 +52,7 @@ export function processMoveIntent(
       const nextTiles = [...state.map.tiles];
       nextTiles[targetTileIndex] = { ...targetTile, tileId: tileDef.bumpTransition };
       const nextMap = { ...state.map, tiles: nextTiles };
-      let nextState: GameState = { ...state, map: nextMap };
+      let nextState: GameState = { ...state, map: nextMap, fovNeedsUpdate: true };
       if (isPlayer) {
         const msg = tileDef.interactMessage ?? 'You bump into it.';
         nextState = addMessage(nextState, msg, MessageLogCategory.System);
@@ -114,24 +114,12 @@ export function processMoveIntent(
     y: targetY
   };
 
-  const entityComponents: ReadonlyArray<Component> | undefined = state.components.get(entityId);
-  if (entityComponents === undefined) {
-    return { state, success: false };
+  let nextState = addComponent(state, entityId, nextPosition);
+
+  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+  if (isPlayer) {
+    nextState = { ...nextState, fovNeedsUpdate: true };
   }
-
-  const nextEntityComponents: ReadonlyArray<Component> = entityComponents.map((c: Component) =>
-    c.type === ComponentType.Position ? nextPosition : c
-  );
-
-  const nextComponents: Map<EntityId, ReadonlyArray<Component>> = new Map(state.components);
-  nextComponents.set(entityId, nextEntityComponents);
-
-  let nextState: GameState = {
-    ...state,
-    components: nextComponents
-  };
-
-  nextState = updateSpatialIndex(nextState);
 
   const tileTags = state.campaign.tiles[targetTile.tileId]?.tags ?? [targetTile.tileId];
   const events = tileTags.map((tag) => ({

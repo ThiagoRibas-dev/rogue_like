@@ -1,10 +1,10 @@
-import { ComponentType } from '../types/components.types.ts';
-import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import { getComponent } from '../core/ecs.ts';
-import { addMessage, MessageLogCategory } from './message.system.ts';
-import { GameEventType } from '../types/events.types.ts';
-import type { GameEvent } from '../types/events.types.ts';
 import * as ROT from 'rot-js';
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { ComponentType } from '../types/components.types.ts';
+import type { GameEvent } from '../types/events.types.ts';
+import { GameEventType } from '../types/events.types.ts';
+import { type EntityId, type GameState } from '../types/game-state.types.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 import { completeQuest, grantQuest } from './quest.system.ts';
 
 /**
@@ -27,26 +27,18 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
     if (trap && !trap.triggered) {
       // Trigger it!
       const nextTrap = { ...trap, triggered: true };
-
-      const newCompsMap = new Map(nextState.components);
-      const trapComps = newCompsMap.get(id) ?? [];
-
-      // Update TrapComponent to triggered
-      newCompsMap.set(
-        id,
-        trapComps.map((c) => (c.type === ComponentType.Trap ? nextTrap : c))
-      );
+      nextState = addComponent(nextState, id, nextTrap);
 
       // Add a RenderableComponent so the trap becomes visible (or update existing)
-      const renderCmp = newCompsMap.get(id)?.find((c) => c.type === ComponentType.Renderable);
+      const renderCmp = getComponent(nextState, id, ComponentType.Renderable);
       if (!renderCmp) {
-        newCompsMap.set(id, [
-          ...(newCompsMap.get(id) ?? []),
-          { type: ComponentType.Renderable, glyph: '^', fg: '#e74c3c', bg: 'transparent' }
-        ]);
+        nextState = addComponent(nextState, id, {
+          type: ComponentType.Renderable,
+          glyph: '^',
+          fg: '#e74c3c',
+          bg: 'transparent'
+        });
       }
-
-      nextState = { ...nextState, components: newCompsMap };
 
       const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
       const targetName = isPlayer ? 'You' : 'Something';
@@ -143,20 +135,20 @@ export function evaluateCondition(
   }
 }
 
-import { createEntity, addComponent } from '../core/ecs.ts';
-import { toItemInstanceId } from '../types/components.types.ts';
+import { createEntity } from '../core/ecs.ts';
 import type {
-  TrapComponent,
-  MemoryComponent,
-  QuestLogComponent,
+  AgreementComponent,
+  ClueComponent,
   DamageComponent,
   DamageInstance,
-  AgreementComponent,
+  MemoryComponent,
   PositionComponent,
-  ClueComponent
+  QuestLogComponent,
+  TrapComponent
 } from '../types/components.types.ts';
+import { toItemInstanceId } from '../types/components.types.ts';
+import type { DebugTriggerTraceEvent, EntityDiedEvent, TrapTriggeredEvent } from '../types/events.types.ts';
 import type { ConditionPredicate, ConsequenceAction, RunScriptConsequenceFn } from '../types/trigger.types.ts';
-import type { EntityDiedEvent, TrapTriggeredEvent, DebugTriggerTraceEvent } from '../types/events.types.ts';
 
 /**
  * Applies a single consequence to the game state.
@@ -197,36 +189,26 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       const fighter = getComponent(nextState, eId, ComponentType.Fighter);
       if (!fighter) break;
 
-      const existingDamageComp = nextState.components.get(eId)?.find((c) => c.type === ComponentType.Damage) as
-        | DamageComponent
-        | undefined;
+      const existingDamageComp = getComponent(nextState, eId, ComponentType.Damage) as DamageComponent | undefined;
 
       const damageInstance: DamageInstance = {
         amount,
         tags: ['trigger', 'physical']
       };
 
-      const targetComps = nextState.components.get(eId) ?? [];
-      const newCompsMap = new Map(nextState.components);
-
       if (existingDamageComp) {
         const newDamageComp = {
           ...existingDamageComp,
           instances: [...existingDamageComp.instances, damageInstance]
         };
-        newCompsMap.set(
-          eId,
-          targetComps.map((c) => (c.type === ComponentType.Damage ? newDamageComp : c))
-        );
+        nextState = addComponent(nextState, eId, newDamageComp);
       } else {
         const newDamageComp: DamageComponent = {
           type: ComponentType.Damage,
           instances: [damageInstance]
         };
-        newCompsMap.set(eId, [...targetComps, newDamageComp]);
+        nextState = addComponent(nextState, eId, newDamageComp);
       }
-
-      nextState = { ...nextState, components: newCompsMap };
       break;
     }
 
@@ -310,21 +292,14 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
 
       if (memoryOwnerId === undefined || !factionId || !amount) break;
 
-      const targetComps = nextState.components.get(memoryOwnerId) ?? [];
-      const memory = targetComps.find((c) => c.type === ComponentType.Memory) as MemoryComponent | undefined;
+      const memory = getComponent(nextState, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
 
       if (!memory) break;
 
       const newStanding = (memory.factionStandings[factionId] ?? 0) + amount;
       const newMemory = { ...memory, factionStandings: { ...memory.factionStandings, [factionId]: newStanding } };
 
-      const newCompsMap = new Map(nextState.components);
-      newCompsMap.set(
-        memoryOwnerId,
-        targetComps.map((c) => (c.type === ComponentType.Memory ? newMemory : c))
-      );
-
-      nextState = { ...nextState, components: newCompsMap };
+      nextState = addComponent(nextState, memoryOwnerId, newMemory);
       break;
     }
 
