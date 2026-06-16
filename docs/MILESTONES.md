@@ -382,15 +382,15 @@ Turn doors, chests, and storage objects into procedural tactical/loot/access cha
 - [x] Add editor support in `src/rendering/editor_ui.ts` for container inventory, lock difficulty, key tags, and trap-trigger references.
 - [x] Extend the Campaign Validator (`src/editor/campaign_validator.ts`) to flag critical quest items placed behind inaccessible locks.
 
-## 🟡 Milestone 33: Fields & Lightweight Substance Simulation
+## 🟢 Milestone 33: Fields & Lightweight Substance Simulation (Complete)
 Represent persistent environmental effects as entities rather than building a full fluid simulation.
-- [ ] Define `FieldComponent { fieldType, intensity, duration, spreadRuleId }` in `src/types/components.types.ts` and a data-driven `FieldDefinitionSchema` in `src/types/campaign.types.ts`.
-- [ ] Build `src/systems/field.system.ts` to tick duration, decay intensity, process deterministic spread, and apply effects to occupants.
-- [ ] Ship an initial field set in the default campaign data: `fire`, `smoke`, and `poison_gas`.
-- [ ] Integrate fields with FOV (`src/map/fov.ts`), movement (`src/systems/movement.system.ts`), damage (`src/systems/damage.system.ts`), status effects, and `src/rendering/renderer.ts`.
-- [ ] Allow reactions between fields, items, and terrain via `src/systems/reaction.system.ts`: fire ignites flammable tags, smoke blocks sight, poison gas applies poison, water extinguishes fire.
-- [ ] Ensure fields serialize correctly across saves, area sleep/wake (`src/core/save.ts`), and inactive area storage.
-- [ ] Add debug overlay rendering in `src/rendering/ui/debug.ui.ts` for field type, intensity, duration, and spread decisions.
+- [x] Define `FieldComponent { fieldType, intensity, duration, spreadRuleId }` in `src/types/components.types.ts` and a data-driven `FieldDefinitionSchema` in `src/types/campaign.types.ts`.
+- [x] Build `src/systems/field.system.ts` to tick duration, decay intensity, process deterministic spread, and apply effects to occupants.
+- [x] Ship an initial field set in the default campaign data: `fire`, `smoke`, and `poison_gas`.
+- [x] Integrate fields with FOV (`src/map/fov.ts`), movement (`src/systems/movement.system.ts`), damage (`src/systems/damage.system.ts`), status effects, and `src/rendering/renderer.ts`.
+- [x] Allow reactions between fields, items, and terrain via `src/systems/reaction.system.ts`: fire ignites flammable tags, smoke blocks sight, poison gas applies poison, water extinguishes fire.
+- [x] Ensure fields serialize correctly across saves, area sleep/wake (`src/core/save.ts`), and inactive area storage.
+- [x] Add debug overlay rendering in `src/rendering/ui/debug.ui.ts` for field type, intensity, duration, and spread decisions.
 
 ## 🟡 Milestone 34: Dip/Coat, Wands/Zaps, Fountains & Altars
 Add the first compact content pack that proves the unified Apply + Reaction architecture creates combinatorial depth.

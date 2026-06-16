@@ -143,5 +143,22 @@
       { "type": "change_intents", "intents": [] }
     ],
     "message": "You kick the door open! It shatters into pieces."
+  },
+  {
+    "id": "extinguish_fire",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["water"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["field:fire"]
+    },
+    "consequences": [
+      { "type": "remove_entity" }
+    ],
+    "message": "The water extinguishes the fire!"
   }
 ]

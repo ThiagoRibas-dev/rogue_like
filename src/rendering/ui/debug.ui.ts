@@ -5,6 +5,8 @@ import {
   type DebugTriggerTraceEvent,
   type ReactionResolvedEvent
 } from '../../types/events.types.ts';
+import { getComponent } from '../../core/ecs.ts';
+import { ComponentType, type FieldComponent } from '../../types/components.types.ts';
 
 export function renderDebugOverlay(state: GameState): void {
   const overlay = document.getElementById('debug-overlay');
@@ -87,6 +89,48 @@ export function renderDebugOverlay(state: GameState): void {
 
   // Auto-scroll to bottom
   ledgerContainer.scrollTop = ledgerContainer.scrollHeight;
+
+  // Render Field Metrics under cursor
+  let fieldsInfo = document.getElementById('debug-fields-info');
+  if (!fieldsInfo) {
+    fieldsInfo = document.createElement('div');
+    fieldsInfo.id = 'debug-fields-info';
+    fieldsInfo.style.marginTop = '16px';
+    fieldsInfo.style.padding = '8px';
+    fieldsInfo.style.border = '1px solid #555';
+    fieldsInfo.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    overlay.appendChild(fieldsInfo);
+  }
+
+  const cursorX = state.inspectMode?.active
+    ? state.inspectMode.x
+    : state.targetingMode?.active
+      ? state.targetingMode.x
+      : undefined;
+  const cursorY = state.inspectMode?.active
+    ? state.inspectMode.y
+    : state.targetingMode?.active
+      ? state.targetingMode.y
+      : undefined;
+
+  if (cursorX !== undefined && cursorY !== undefined) {
+    const key = `${cursorX},${cursorY}`;
+    const entitiesAt = state.spatialIndex.get(key) || [];
+    const fieldsAt = entitiesAt
+      .map((eId) => getComponent(state, eId, ComponentType.Field) as FieldComponent | undefined)
+      .filter(Boolean);
+
+    if (fieldsAt.length > 0) {
+      fieldsInfo.innerHTML =
+        `<strong>Fields at ${cursorX},${cursorY}:</strong><br/>` +
+        fieldsAt.map((f) => `[${f!.fieldType}] Intensity: ${f!.intensity}, Duration: ${f!.duration}`).join('<br/>');
+      fieldsInfo.style.display = 'block';
+    } else {
+      fieldsInfo.style.display = 'none';
+    }
+  } else {
+    fieldsInfo.style.display = 'none';
+  }
 }
 
 function formatStandardEvent(event: GameEvent): string {

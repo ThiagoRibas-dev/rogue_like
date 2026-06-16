@@ -18,6 +18,7 @@ import { processDamageSystem } from '../systems/damage.system.ts';
 import { processDeathSystem } from '../systems/death.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { processInvestigationEvents } from '../systems/investigation.system.ts';
+import { processFieldsTick } from '../systems/field.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -279,6 +280,9 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 
   // Run the new global triggers
   nextState = processGlobalTriggers(nextState);
+
+  // Tick fields
+  nextState = processFieldsTick(nextState);
 
   // Investigation system consumes events
   nextState = processInvestigationEvents(nextState);

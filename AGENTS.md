@@ -14,15 +14,17 @@
 
 ## 1. Workflow & Process
 
-### Before Writing Code
+### Before Writing Code (The 5-Step Kickoff Flow)
 
-1. **Milestone Kickoff:** When starting a new milestone or major feature, you MUST read `docs/ARCHITECTURE.md` first. Summarize the relevant architectural considerations, constraints, and how the new feature aligns with the existing ECS base before proposing an implementation plan.
-2. **Read the relevant source files** the user references. Summarize your
-   understanding of the current state back to the user before proposing changes.
-3. **State your plan** in a numbered list of steps. Wait for confirmation if
-   the change touches more than 2 files.
-4. **Check for existing utilities** in `utils/`, `constants/`, and `types/`
-   before creating anything new. Duplication is a bug.
+When starting a new milestone or major feature, you MUST execute the following flow strictly in order:
+
+1. **Reiterate rules and standards:** Acknowledge the core constraints (e.g., ECS purity, Data-Driven JSON, TypeScript strictness). Review `AGENTS.md` and `docs/ARCHITECTURE.md` first.
+2. **Research:** Read the relevant source files, reference documents, and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
+3. **Compile:** Before proposing a plan, summarize your findings into a concrete research document. Explicitly map each task to the specific architectural rules and design documents that govern it.
+4. **Plan:** Draft a step-by-step implementation plan based strictly on the compiled research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
+5. **Enhance:** Once the high-level plan is formed, enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
+
+Wait for the User's confirmation before writing or modifying any actual codebase files.
 
 ### While Writing Code
 

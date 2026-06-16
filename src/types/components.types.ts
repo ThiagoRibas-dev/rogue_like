@@ -30,7 +30,8 @@ export const enum ComponentType {
   Scheme = 'Scheme',
   Agreement = 'Agreement',
   Clue = 'Clue',
-  Lock = 'Lock'
+  Lock = 'Lock',
+  Field = 'Field'
 }
 
 /**
@@ -356,6 +357,14 @@ export interface ClueComponent {
   readonly implicatesEntityId: EntityId;
 }
 
+export interface FieldComponent {
+  readonly type: ComponentType.Field;
+  readonly fieldType: string;
+  readonly intensity: number;
+  readonly duration: number;
+  readonly spreadRuleId?: string | undefined;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -388,4 +397,5 @@ export type Component =
   | SchemeComponent
   | AgreementComponent
   | ClueComponent
-  | LockComponent;
+  | LockComponent
+  | FieldComponent;

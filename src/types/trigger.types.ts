@@ -41,6 +41,10 @@ type InjectedContext = {
 export type ConditionPredicate = z.infer<typeof ConditionPredicateSchema> & InjectedContext;
 
 export const ConsequenceActionSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('remove_entity'),
+    targetId: z.string().optional()
+  }),
   z.object({ type: z.literal('run_script'), scriptCode: z.string() }),
   z.object({ type: z.literal('damage'), targetId: z.string(), amount: z.number() }),
   z.object({ type: z.literal('spawn_clue'), message: z.string().optional() }),

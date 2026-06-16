@@ -3,7 +3,7 @@ import { type GameState } from '../types/game-state.types.ts';
 
 import { coordToIndex } from '../utils/grid.ts';
 import { getComponent } from '../core/ecs.ts';
-import { ComponentType, type TagsComponent } from '../types/components.types.ts';
+import { ComponentType, type TagsComponent, type FieldComponent } from '../types/components.types.ts';
 /**
  * Computes the Field of View from a specific center point using Precise Shadowcasting.
  * Returns a Set of 1D coordinate indices representing visible cells.
@@ -37,6 +37,12 @@ export function computeFOV(state: GameState, px: number, py: number, radius?: nu
         const tagsCmp = getComponent(state, eId, ComponentType.Tags) as TagsComponent | undefined;
         if (tagsCmp && tagsCmp.tags.includes('opaque')) {
           return false;
+        }
+
+        const fieldCmp = getComponent(state, eId, ComponentType.Field) as FieldComponent | undefined;
+        if (fieldCmp) {
+          const fieldDef = state.campaign.fields[fieldCmp.fieldType];
+          if (fieldDef && fieldDef.blocksSight) return false;
         }
       }
     }

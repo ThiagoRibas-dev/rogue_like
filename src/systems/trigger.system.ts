@@ -170,6 +170,28 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
   let nextState = state;
 
   switch (consequence.type) {
+    case 'remove_entity': {
+      let eId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        const targetPayload = (
+          event as unknown as { target?: { type: string; entityId?: EntityId; itemEntityId?: EntityId } }
+        ).target;
+        if (targetPayload) {
+          if (targetPayload.type === 'entity') eId = targetPayload.entityId;
+          else if (targetPayload.type === 'item') eId = targetPayload.itemEntityId;
+        }
+      }
+
+      if (eId !== undefined) {
+        nextState = removeEntity(nextState, eId);
+      }
+      break;
+    }
+
     case 'run_script': {
       const code = consequence.scriptCode;
       if (!code) break;

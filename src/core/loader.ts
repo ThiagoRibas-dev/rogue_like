@@ -76,7 +76,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       agreementsRes,
       triggersRes,
       tagRegistryRes,
-      reactionsRes
+      reactionsRes,
+      fieldsRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -98,7 +99,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/agreements.json`),
       fetch(`${basePath}/triggers.json`),
       fetch(`${basePath}/tag_registry.json`),
-      fetch(`${basePath}/reactions.json`)
+      fetch(`${basePath}/reactions.json`),
+      fetch(`${basePath}/fields.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -123,7 +125,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       agreementsRes,
       triggersRes,
       tagRegistryRes,
-      reactionsRes
+      reactionsRes,
+      fieldsRes
     ];
 
     for (const res of responses) {
@@ -153,7 +156,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       agreements,
       triggers,
       tagRegistry,
-      reactions
+      reactions,
+      fields
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -175,7 +179,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       agreementsRes.json(),
       triggersRes.json(),
       tagRegistryRes.json(),
-      reactionsRes.json()
+      reactionsRes.json(),
+      fieldsRes.json()
     ]);
 
     const data = {
@@ -200,7 +205,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       triggers,
       tagRegistry,
       reactions,
-      triggerBuckets: {} // We'll build this next
+      fields,
+      triggerBuckets: {}
     };
 
     const result = CampaignDataSchema.safeParse(data);

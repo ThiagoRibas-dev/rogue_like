@@ -396,6 +396,21 @@ export const SchemeTemplateSchema = z.object({
 export type SchemeTemplate = z.infer<typeof SchemeTemplateSchema>;
 
 // ==========================================
+// 13. FIELDS
+// ==========================================
+export const FieldDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  glyph: z.string().length(1),
+  fg: z.string(),
+  bg: z.string(),
+  blocksSight: z.boolean().default(false),
+  damagePerTurn: z.number().int().nonnegative().optional(),
+  statusEffectId: z.string().optional()
+});
+export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
+
+// ==========================================
 // THE MEGA CAMPAIGN DATA SCHEMA
 // ==========================================
 // ==========================================
@@ -485,7 +500,8 @@ export const CampaignDataSchema = z.object({
   schemes: z.record(z.string(), SchemeTemplateSchema),
   agreements: z.record(z.string(), AgreementDefinitionSchema),
   tagRegistry: z.record(z.string(), TagDefinitionSchema).default({}),
-  reactions: z.array(ReactionDefinitionSchema).default([])
+  reactions: z.array(ReactionDefinitionSchema).default([]),
+  fields: z.record(z.string(), FieldDefinitionSchema).default({})
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -512,5 +528,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   schemes: SchemeTemplateSchema,
   agreements: AgreementDefinitionSchema,
   tagRegistry: TagDefinitionSchema,
-  reactions: ReactionDefinitionSchema
+  reactions: ReactionDefinitionSchema,
+  fields: FieldDefinitionSchema
 };

@@ -60,7 +60,7 @@ export function render(display: Display, state: GameState): void {
       if (isVisible) {
         const entitiesAtTile = state.spatialIndex.get(`${mapX},${mapY}`);
         if (entitiesAtTile && entitiesAtTile.length > 0) {
-          // Sort entities so actors draw over items
+          // Sort entities so actors draw over items, and fields draw below everything
           const sortedEntitiesAtTile = [...entitiesAtTile].sort((a, b) => {
             const aPlayer = getComponent(state, a, ComponentType.Player) ? 1 : 0;
             const bPlayer = getComponent(state, b, ComponentType.Player) ? 1 : 0;
@@ -68,7 +68,11 @@ export function render(display: Display, state: GameState): void {
 
             const aActor = getComponent(state, a, ComponentType.Actor) ? 1 : 0;
             const bActor = getComponent(state, b, ComponentType.Actor) ? 1 : 0;
-            return aActor - bActor; // Actors draw above non-actors (like stairs)
+            if (aActor !== bActor) return aActor - bActor; // Actors draw above non-actors
+
+            const aField = getComponent(state, a, ComponentType.Field) ? 1 : 0;
+            const bField = getComponent(state, b, ComponentType.Field) ? 1 : 0;
+            return bField - aField; // Fields draw below everything else
           });
 
           for (const entityId of sortedEntitiesAtTile) {
