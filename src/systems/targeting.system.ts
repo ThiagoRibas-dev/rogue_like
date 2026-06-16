@@ -35,7 +35,8 @@ export function processToggleTargetingIntent(
         targetingMode: {
           active: true,
           x: pos.x,
-          y: pos.y
+          y: pos.y,
+          context: intent.context
         }
       },
       'Targeting mode active. Move cursor to aim.',

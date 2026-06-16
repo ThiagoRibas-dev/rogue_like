@@ -312,14 +312,14 @@ Enhance the Developer Tools to feel like a modern visual game engine rather than
 - [x] **Drag-and-Drop Linking:** Implement dragging an Item from the sidebar into a Monster's loot table.
 - [x] **Live Map Previews:** Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
 
-## ✅ Milestone 27: Engine Data Structures & Render Optimizations
+## 🟢 Milestone 27: Engine Data Structures & Render Optimizations
 Transition the ECS internal data structures from arrays to constant-time dictionaries and optimize the per-frame render loop.
 - [x] **O(1) Component Access:** Refactor `GameState.components` from `ReadonlyArray<Component>` to an `O(1)` dictionary `Readonly<Record<string, Component>>` keyed by `ComponentType`.
 - [x] **Array Loop Elimination:** Remove expensive `.filter` and `.find` operations across the codebase by adopting the new `getComponent`, `addComponent`, and `removeComponent` architecture.
 - [x] **FOV Caching:** Decouple FOV `PreciseShadowcasting` math from the active render loop. Recompute FOV only when a new `fovNeedsUpdate` flag is tripped by a system (like moving or opening a door).
 - [x] **O(1) Spatial Rendering:** Eliminate the global `queryEntities` rendering loop. Instead, iterate exactly over the camera viewport bounds, retrieving standing entities via `state.spatialIndex` to ensure the render layer scales perfectly regardless of the total number of entities in the dungeon.
 
-## ✅ Milestone 28: Campaign Packaging & Standalone Distribution
+## 🟢 Milestone 28: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.
 - [x] **Campaign Manifest & Versioning**
   - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts).
@@ -333,3 +333,310 @@ Implement packaging structure and install operations for modular campaigns.
 - [x] **The Hybrid Campaign Loader**
   - Refactor `loadCampaignRegistry()` in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) to query both the hardcoded `public/` directory AND the IndexedDB `installed_campaigns` store, merging them into a single list for the Campaign Select UI.
   - Refactor `loadCampaign(id)` to attempt loading the requested ID from IndexedDB first. If not found, gracefully fall back to the `public/` folder `fetch()`. This completely removes the need for manual file transfers or backend servers.
+
+---
+
+# 🚀 Phase 5: Interaction Combinatorics & Roguelike Depth
+**Goal:** Close the classic roguelike interaction-depth gap by adding more verbs, more target surfaces, and persistent world-state modifications — without hardcoding item-specific special cases. This phase should produce the “70% NetHack/Qud feel” through tag-based combinatorics, strong observability, and designer-authorable reactions.
+
+## 🟢 Milestone 29: Unified Apply Intent & Verb Vocabulary ⭐ KEYSTONE
+Unify bespoke item-use, terrain interaction, and aimed interaction plumbing behind one canonical verb/tool/target pipeline.
+- [x] Define `ApplyIntent` in `src/types/intents/interaction.intents.ts` with `actorId`, `verb`, optional `toolEntityId`, and a target union covering self, entity, item, and tile targets.
+- [x] Add `IntentType.Apply` to `src/types/intents/intent.enum.ts` and route it through `src/actions/action.registry.ts` without adding a new monolithic switch/router to the core game loop.
+- [x] Keep existing `UseItemIntent`, `InteractIntent`, and targeting flows as temporary compatibility wrappers/adapters in `src/core/game-loop.ts` until migration is complete.
+- [x] Define an initial deterministic verb set in a new constants file (e.g., `src/constants/verbs.constants.ts`): `apply`, `throw`, `kick`, `open`, `close`, `lock`, `unlock`, `dip`, `zap`, `ignite`, `read`, and `eat`.
+- [x] Emit structured `ApplyResolvedEvent` and `ApplyFailedEvent` in `src/types/events.types.ts` so interactions are visible to the event ledger, triggers, debugging, and editor tests.
+- [x] Ensure all Apply outcomes return explicit `{ state, success }` and deterministic energy costs to `src/core/game-loop.ts`, preserving RTwP compatibility.
+
+## 🟢 Milestone 30: Reaction System 2.0 — Verb + Source/Target Matchers
+Upgrade the existing tag-based reaction system into the primary combinatorial interaction engine.
+- [x] Extend `ReactionDefinitionSchema` in `src/types/campaign.types.ts` with `verb`, `sourceMatcher`, `targetMatcher`, optional `contextMatcher`, `priority`, and declarative `consequences`.
+- [x] Update `src/systems/reaction.system.ts` to allow matchers to check tags, traits (`src/types/components.types.ts`), item categories, tile tags, field types, and faction/memory context.
+- [x] Validate all tag references in `ReactionDefinitionSchema` against the campaign `tagRegistry` at load time in `src/core/loader.ts`.
+- [x] Implement deterministic tie-breaking in `processReactions()`: higher priority first, then stable ID ordering.
+- [x] Add explicit ambiguity handling for conflicting reactions, including editor warnings in `src/editor/campaign_validator.ts` for same-priority overlaps.
+- [x] Emit `ReactionResolvedEvent { reactionId, verb, sourceId, target, whyMatched }` from `src/systems/reaction.system.ts` for observability.
+- [x] Add a Reaction Trace panel to `src/rendering/ui/debug.ui.ts` and the Simulation Lab so designers can see exactly why a reaction did or did not fire.
+- [x] Migrate existing legacy reactions in `public/campaigns/default/data/` to the new schema.
+- [x] **Migrate legacy `UseItemIntent` and `InteractIntent` entirely over to the `ApplyIntent` pipeline, removing the old wrappers from `action.registry.ts`.**
+
+## 🟢 Milestone 31: Throwing, Projectiles & On-Impact Consequences
+Implement the highest-ROI roguelike verb: throwing items and resolving their impact through the targeting/reaction pipeline.
+- [x] Implement `throw` as an Apply verb reusing the existing targeting crosshair and line-trace infrastructure from `src/actions/targeting.actions.ts`.
+- [x] Add deterministic projectile resolution in a new `src/systems/projectile.system.ts` or within the targeting system: range, blocked tiles, hit entities, miss scatter, item weight, and stack quantity handling.
+- [x] Support on-impact consequences through `src/systems/reaction.system.ts`: shatter, explode, spill field, apply status, create noise, break item, or land on the floor.
+- [x] Add core throwable content to the JSON registries: rocks, throwing knives, throwable potions, bombs/flasks, and nets.
+- [x] Allow selected AI profiles (`src/ai/`) to throw items when they have line of sight and appropriate inventory/tools.
+- [x] Render projectile travel and impact with floating text / transient visual effects in `src/rendering/renderer.ts`.
+- [x] Add validator tests in `src/editor/campaign_validator.ts` ensuring thrown unique/key items cannot be silently destroyed unless explicitly allowed.
+
+## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Complete)
+Turn doors, chests, and storage objects into procedural tactical/loot/access challenges.
+- [x] Add `ContainerComponent` or extend `InventoryComponent` semantics in `src/types/components.types.ts` so chest entities can hold item entity IDs safely.
+- [x] Add `LockComponent { difficulty, keyTag?, locked, jammed?, breakable? }` to `src/types/components.types.ts` for doors, chests, cages, and special containers.
+- [x] Implement `open`, `close`, `lock`, `unlock`, and `kick` as Apply verbs resolved by reactions and the existing `InteractableComponent`.
+- [x] Add lockpick/key workflows using tag matching (`src/systems/reaction.system.ts`) rather than specific item IDs.
+- [x] Support force-open attempts with noise emission, break chance, tool damage, and possible faction/reputation consequences.
+- [x] Support trap-on-open behavior via the existing Trigger System (`src/systems/trigger.system.ts`) instead of bespoke chest logic.
+- [x] Build a container UI panel in `src/rendering/ui/container.ui.ts` for viewing/taking items from opened containers.
+- [x] Add editor support in `src/rendering/editor_ui.ts` for container inventory, lock difficulty, key tags, and trap-trigger references.
+- [x] Extend the Campaign Validator (`src/editor/campaign_validator.ts`) to flag critical quest items placed behind inaccessible locks.
+
+## 🟡 Milestone 33: Fields & Lightweight Substance Simulation
+Represent persistent environmental effects as entities rather than building a full fluid simulation.
+- [ ] Define `FieldComponent { fieldType, intensity, duration, spreadRuleId }` in `src/types/components.types.ts` and a data-driven `FieldDefinitionSchema` in `src/types/campaign.types.ts`.
+- [ ] Build `src/systems/field.system.ts` to tick duration, decay intensity, process deterministic spread, and apply effects to occupants.
+- [ ] Ship an initial field set in the default campaign data: `fire`, `smoke`, and `poison_gas`.
+- [ ] Integrate fields with FOV (`src/map/fov.ts`), movement (`src/systems/movement.system.ts`), damage (`src/systems/damage.system.ts`), status effects, and `src/rendering/renderer.ts`.
+- [ ] Allow reactions between fields, items, and terrain via `src/systems/reaction.system.ts`: fire ignites flammable tags, smoke blocks sight, poison gas applies poison, water extinguishes fire.
+- [ ] Ensure fields serialize correctly across saves, area sleep/wake (`src/core/save.ts`), and inactive area storage.
+- [ ] Add debug overlay rendering in `src/rendering/ui/debug.ui.ts` for field type, intensity, duration, and spread decisions.
+
+## 🟡 Milestone 34: Dip/Coat, Wands/Zaps, Fountains & Altars
+Add the first compact content pack that proves the unified Apply + Reaction architecture creates combinatorial depth.
+- [ ] Implement `dip` reactions in `src/systems/reaction.system.ts` for item-to-item and item-to-terrain interactions.
+- [ ] Support temporary item coatings such as poisoned blades or coated arrows with finite on-hit charges, updating `getEffectiveStats` or weapon hit resolution.
+- [ ] Implement `zap` delivery modes for wands in targeting logic: beam, bolt, cone, and simple bounce/reflection where tractable.
+- [ ] Add terrain-as-content entities: fountains, altars, shrines, and sacrificial surfaces utilizing `InteractableComponent` + semantic tags.
+- [ ] Create reaction examples in `public/campaigns/default/data/reactions.json`: dip weapon in poison, dip item in fountain, ignite oil/fire tags, sacrifice corpse at altar, zap wand at entity/tile.
+- [ ] Add campaign data examples and editor presets in `src/rendering/editor_ui.ts` so designers can clone working interaction templates.
+- [ ] Surface all hidden consequences through messages (`src/systems/message.system.ts`), clues, tooltips, or Reaction Trace entries.
+
+## 🟡 Milestone 35: Action Discovery, Verb Menu & Interaction UX
+Make the expanded interaction vocabulary discoverable instead of requiring players to memorize every verb.
+- [ ] Extend UI input handling in `src/rendering/ui.ts` and `input_handler.ts` so inventory items, map entities, ground items, and target tiles can all be selected as valid Apply targets.
+- [ ] Build a contextual Verb Menu in `src/rendering/ui/verb_menu.ui.ts` that lists valid Apply verbs for the selected actor/tool/target combination (**utilizing the internal ECS target-selection foundation established in M29**).
+- [ ] Add a “smart apply” default action in input handling that chooses the highest-confidence valid verb while still allowing manual override.
+- [ ] Use a dry-run validation path in `src/actions/action.registry.ts` to show why an action is valid or invalid without mutating the `GameState`.
+- [ ] Add tooltip explanations in `src/rendering/ui/tooltip.ui.ts` for tool tags, target tags, reaction previews, lock difficulty, and field hazards.
+- [ ] Extend key rebinding in `src/constants/keybinds.constants.ts` for new verbs and preserve accessibility settings.
+- [ ] Add a tutorial/example campaign segment demonstrating throw, unlock, kick, dip, zap, and field reactions.
+
+---
+
+# 🚀 Phase 6: Encounter Director & Tactical Procedural Generation
+**Goal:** Replace flat spawn-table population with an algorithmic “Micro Game Master” that spends area budgets across tactical axes: objective, advantages, hazards, and chaos. This phase turns procedural rooms into authored-feeling combat puzzles.
+
+## 🟡 Milestone 36: Area Budgets, Spawn Roles & Director Schemas ⭐ KEYSTONE
+Add the data model the Encounter Director needs to reason about difficulty and encounter composition.
+- [ ] Extend `AreaDefinitionSchema` with `crBudget`, `encounterProfileId`, optional `directorTags`, and budget scaling by depth/difficulty.
+- [ ] Extend entity templates with `crCost`, role tags, encounter tags, and optional director hints.
+- [ ] Define spawn pools that filter by area tags, biome tags, faction tags, role tags, and global token-pool availability.
+- [ ] Define data for encounter ingredients: objectives/proteins, optimizers/appetizers, hazards/sides, chaos/desserts.
+- [ ] Add dynamic trait/template costs, such as `elite`, `volatile`, `fiendish`, `armored`, or `cowardly`.
+- [ ] Validate all costs and role tags in the Campaign Validator.
+- [ ] Add editor fields and tooltips for budgets, role tags, spawn pools, and dynamic templates.
+
+## 🟡 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
+Implement the budget-spending algorithm inside area/room population.
+- [ ] Hook the Encounter Director into `src/map/generator.ts` after terrain generation and before final entity placement.
+- [ ] Split encounter budget across tactical axes: main objective, player advantages, environmental hazards, and chaotic disruptors.
+- [ ] Generate an explicit Director Receipt recording budget inputs, selected ingredients, rejected candidates, and final cost.
+- [ ] Place objectives and hazards with reachability/pathing checks so generated encounters remain solvable.
+- [ ] Support both room-local encounters and area-wide encounter plans.
+- [ ] Allow static areas to opt out or to use hand-authored director markers.
+- [ ] Preserve strict seed determinism for all selection and placement decisions.
+
+## 🟡 Milestone 38: Dynamic Templates, Sub-Biomes & Token Pools
+Make procedural generation adaptive without losing designer control.
+- [ ] Implement dynamic trait/template application as budget padding for under-cost encounters.
+- [ ] Add sub-biome generation: rooms can acquire tags such as `spider_nest`, `corrupted`, `flooded`, `burned`, or `shrine_vault`.
+- [ ] Filter enemy, item, field, and hazard candidates by combined area + sub-biome tags.
+- [ ] Integrate existing token-pool/bag rules so uniques, elites, and extinctable populations obey global limits.
+- [ ] Support contextual loot generation based on encounter tags and defeated actors.
+- [ ] Add optional “bones-like” persistent remains/content hooks for future dead-adventurer or previous-run artifacts.
+- [ ] Add regression tests proving unique actors/items cannot be duplicated by the Director.
+
+## 🟡 Milestone 39: Encounter Director Sandbox & Validation UI
+Give designers a window into the Director before relying on it in real campaigns.
+- [ ] Add an Encounter Director preview panel to the editor’s Simulation Lab.
+- [ ] Let designers select an area, seed, budget, and encounter profile, then reroll deterministic previews.
+- [ ] Render the generated map, placed actors, hazards, fields, portals, loot, and objectives.
+- [ ] Show the Director Receipt with “why chosen” and “why rejected” explanations.
+- [ ] Integrate AI Arena simulations against generated encounters and summarize survival, damage, and turn-count telemetry.
+- [ ] Add validator checks for overspent budgets, empty candidate pools, unreachable objectives, unavoidable lethal hazards, and impossible exits.
+- [ ] Block export on fatal Director configuration errors.
+
+## 🟡 Milestone 40: Macro/Micro Integration — Schemes Mutate Encounters
+Let the existing Scheme Simulator influence future area generation and encounter composition.
+- [ ] Allow schemes to mutate area tags, sub-biome probabilities, encounter profiles, or budget modifiers.
+- [ ] Let villain agreements reserve encounter slots/tokens for minions, lieutenants, clues, or ritual objectives.
+- [ ] Surface scheme-driven area changes through investigation clues, rumors, map annotations, or faction dialogue.
+- [ ] Ensure inactive/generated areas reconcile scheme mutations safely during sleep/wake and reload.
+- [ ] Extend the Scheme Acceleration Simulator to display how schemes change encounter generation over time.
+- [ ] Add fail-graceful behavior when a scheme references an exhausted token pool or an unavailable area.
+
+## 🟡 Milestone 41: Tactical Content Pass — First Directed Biomes
+Prove the Director with a compact but high-quality content set.
+- [ ] Build at least four directed encounter families: orc camp, corrupted forest, spider nest, and shrine vault.
+- [ ] Ensure each family uses at least three Phase 5 interaction ingredients: locks, fields, throwing, altars/fountains, or dip/zap reactions.
+- [ ] Add designer-authored examples showing static, parameterized, and fully dynamic encounter variants.
+- [ ] Balance initial CR budgets, rewards, hazard severity, and escape routes through Simulation Lab telemetry.
+- [ ] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
+
+---
+
+# 🚀 Phase 7: Chronicle, Personality & Nemesis
+**Goal:** Give important entities identity, memory, growth, autonomy, and surfacing. This phase turns repeated interactions into personal stories while reusing the existing Memory, AI, Faction, Trigger, Scheme, and Investigation infrastructure.
+
+## 🟡 Milestone 42: Chronicle & Identity Layer ⭐ KEYSTONE
+Create a generalized memory/identity wrapper for entities the player may care about.
+- [ ] Add a `ChronicleComponent` or expand `MemoryComponent` with identity hooks, player interaction score, scars, relationships, and important event references.
+- [ ] Generate salient names, titles, mannerisms, and visual identity cues from data-driven tables.
+- [ ] Support promotion of eligible generic entities into persistent named entities when they become narratively important.
+- [ ] Store chronicle-bearing entities safely in `persistentEntities` across area transitions.
+- [ ] Record compact event excerpts rather than unbounded raw logs to avoid save bloat.
+- [ ] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
+
+## 🟡 Milestone 43: Personality Facets, Values, Stress & Core Memories
+Add Dwarf-Fortress-inspired internal causality without making a separate AI stack.
+- [ ] Define data schemas for personality facets, values, needs/goals, stress, thoughts, and core memories.
+- [ ] Generate facet/value distributions deterministically, with extreme traits rare and therefore memorable.
+- [ ] Implement event-to-memory filters: defeat, mercy, humiliation, betrayal, gift, rescue, faction harm, and repeated combat style.
+- [ ] Accumulate stress from negative memories and promote extreme/repeated memories into core memories.
+- [ ] Let core memories mutate facets and values permanently.
+- [ ] Add editor tools for inspecting and manually seeding personalities, values, and core memories.
+- [ ] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
+
+## 🟡 Milestone 44: Personality-Weighted AI & Social Gating
+Make personality mechanically visible through behavior and dialogue.
+- [ ] Refactor AI behavior evaluation to support numeric weights where needed, allowing personality facets to multiply existing hunt/flee/ranged/spell/wander preferences.
+- [ ] Connect values/core memories to faction standing changes and hostility shifts where appropriate.
+- [ ] Add Trigger/Dialogue condition predicates for facets, values, stress thresholds, memories, grudges, and PIS.
+- [ ] Gate dialogue options based on personality: cruel NPCs reject comfort, honorable NPCs respond to mercy, fearful NPCs are more intimidatable, etc.
+- [ ] Add behavior surfacing barks: cowardly retreat lines, vengeful charge lines, grateful ally lines, suspicious merchant lines.
+- [ ] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
+
+## 🟡 Milestone 45: Nemesis Hierarchy, Promotion & Cheating Death
+Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and replacement.
+- [ ] Define hierarchy data: grunts, champions/captains, lieutenants, chiefs/bosses, faction-specific titles, and vacancies.
+- [ ] Promote entities based on PIS, victories, surviving defeat, killing allies, humiliating the player, or completing off-screen goals.
+- [ ] Implement controlled “cheat death” events with scars, changed stats/traits, changed dialogue, and strict pacing cooldowns.
+- [ ] Fill hierarchy vacancies deterministically via candidates from the faction/area pool.
+- [ ] Display known hierarchy information in a Nemesis/Dossier UI, with unknown slots and clue-gated reveals.
+- [ ] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
+
+## 🟡 Milestone 46: Background Rivalries & Power Struggles
+Let important NPCs act autonomously even when the player is elsewhere.
+- [ ] Build a `nemesis.system.ts` or extend the scheme scheduler to tick power struggles, duels, betrayals, recruitment, territory shifts, and training.
+- [ ] Resolve off-screen conflicts using deterministic combat/contest summaries rather than full map simulation.
+- [ ] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives.
+- [ ] Handle dead/missing/intercepted participants defensively by cancelling, replacing, or transforming events into visible failures.
+- [ ] Add fast-forward simulation and debug receipts for rivalry outcomes.
+- [ ] Integrate rivalry outcomes with factions, schemes, area tags, and encounter budgets.
+
+## 🟡 Milestone 47: Player Manipulation & Relationship Levers
+Give players ways to intentionally shape the emerging cast.
+- [ ] Add interaction/dialogue consequences for spare, humiliate, recruit, brand/convert, ransom, gift, intimidate, apologize, or argue values.
+- [ ] Add relationship axes such as loyalty, fear, resentment, respect, debt, and ideological alignment.
+- [ ] Let companions/allies become nemeses if betrayed, abandoned, or ideologically opposed.
+- [ ] Support value mutation through arguments/dialogue and facet mutation through experiences.
+- [ ] Add Trigger consequences for relationship mutation and hierarchy manipulation.
+- [ ] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed.
+
+## 🟡 Milestone 48: Nemesis Surfacing & Narrative UX
+Make the system legible, dramatic, and emotionally sticky.
+- [ ] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
+- [ ] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
+- [ ] Connect rumors, witnesses, clues, and investigation board entries to nemesis changes.
+- [ ] Add a chronicle timeline for the player, factions, and notable NPCs.
+- [ ] Add accessibility options to shorten/collapse repeated dramatic presentations.
+- [ ] Ensure every major off-screen narrative event has at least one player-facing surface: message, rumor, clue, board entry, quest, or map change.
+
+---
+
+# 🚀 Phase 8: Drama Director & Dynamic Composition
+**Goal:** Use the Event Ledger + Trigger System as a pacing-aware Drama Director that dynamically composes narrative triggers for characters, factions, areas, dungeons, and artifacts.
+
+## 🟡 Milestone 49: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
+Turn the event ledger into a durable, queryable narrative substrate without storing infinite noise.
+- [ ] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
+- [ ] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
+- [ ] Add deterministic decay/boost rules so recent and repeated interactions matter more.
+- [ ] Store references from chronicle entries to ledger summaries rather than duplicating full event payloads.
+- [ ] Add query helpers for “most interesting enemy,” “recently harmed faction,” “area with escalating danger,” etc.
+- [ ] Add debug timeline visualization and exportable simulation logs.
+
+## 🟡 Milestone 50: Drama Trigger Composer — Runtime Trigger Generation
+Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.
+- [ ] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
+- [ ] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
+- [ ] Compose full `TriggerDefinition` objects at runtime and inject them into active campaign data.
+- [ ] Rebuild trigger buckets safely after dynamic trigger injection/removal.
+- [ ] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
+- [ ] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
+
+## 🟡 Milestone 51: Pacing Governor & Surprise Budget
+Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
+- [ ] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
+- [ ] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
+- [ ] Add cooldowns per character, faction, area, and event type.
+- [ ] Support foreshadowing requirements for high-impact events: rumor, clue, omen, visible preparation, or investigation board entry.
+- [ ] Add fallback events for invalidated setups, such as participant death or inaccessible area.
+- [ ] Surface Drama Director decisions in debug receipts.
+
+## 🟡 Milestone 52: Narrative Simulation Lab & Fuzzer
+Stress-test emergent narrative systems across many seeds before they reach players.
+- [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
+- [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
+- [ ] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
+- [ ] Add deterministic replay support for a failing simulation seed and input/event sequence.
+- [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
+- [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
+
+## 🟡 Milestone 53: Generalized Chronicles for Regions, Dungeons & Artifacts
+Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/surfacing makes sense.
+- [ ] Add chronicle support for regions/areas: stability, corruption, prosperity, scars, faction control, and remembered player actions.
+- [ ] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
+- [ ] Add chronicle support for factions: internal schisms, vendettas, debts, leadership changes, and goals.
+- [ ] Let the Encounter Director and Scheme Simulator read chronicle state when generating future content.
+- [ ] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
+- [ ] Keep all chronicle data compact and serializable.
+
+## 🟡 Milestone 54: Authoring Continuum Tools — Static, Blueprint, Dynamic
+Make the three authoring levels explicit in the Campaign Editor.
+- [ ] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
+- [ ] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
+- [ ] Allow designers to bake a generated result into static data for hand-polishing.
+- [ ] Add primitive libraries for encounters, reactions, personality memories, drama triggers, and scheme consequences.
+- [ ] Teach validators to evaluate both authored source data and representative generated outputs.
+- [ ] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
+
+---
+
+# 🚀 Phase 9: Default Campaign Vertical Slice, Balance & Release Hardening
+**Goal:** Convert the systemic engine into a coherent playable campaign and robust creator platform. This phase is less about new architecture and more about proving the full stack through content, balance, polish, and documentation.
+
+## 🟡 Milestone 55: Default Campaign Vertical Slice
+Ship a compact campaign that exercises every major system in a coherent arc.
+- [ ] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
+- [ ] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
+- [ ] Add a clear campaign objective and finale that can be won, failed, or transformed by systemic outcomes.
+- [ ] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
+- [ ] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
+
+## 🟡 Milestone 56: Balance, Telemetry & Deterministic Replay QA
+Create repeatable ways to tune and debug the game as a game, not just an engine.
+- [ ] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
+- [ ] Add seed-based replay capture for bug reports and deterministic regression tests.
+- [ ] Track difficulty metrics: player deaths, damage taken, resources consumed, flee frequency, average encounter duration, and quest completion rate.
+- [ ] Use AI Arena and Encounter Director simulations to tune CR costs and dynamic templates.
+- [ ] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
+- [ ] Establish target performance budgets for browser play and editor simulations.
+
+## 🟡 Milestone 57: Modding Documentation, Examples & Creator Onboarding
+Make the system understandable to campaign authors.
+- [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
+- [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
+- [ ] Add in-editor help text, warning explanations, and “fix-it” suggestions for common validation errors.
+- [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
+- [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
+
+## 🟡 Milestone 58: Release Robustness & Distribution Polish
+Prepare for public builds and long-term iteration.
+- [ ] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
+- [ ] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
+- [ ] Test browser compatibility across Chromium, Firefox, Safari, and mobile/tablet where feasible.
+- [ ] Add graceful error boundaries for campaign loading, runtime simulation errors, editor validation crashes, and corrupt saves.
+- [ ] Optimize production bundle size and loading time.
+- [ ] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.

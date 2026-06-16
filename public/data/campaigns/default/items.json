@@ -194,5 +194,66 @@
         "duration": 5
       }
     }
+  },
+  "rock": {
+    "id": "rock",
+    "name": "Heavy Rock",
+    "unidentifiedName": "Rock",
+    "description": "A heavy, jagged rock. Good for throwing.",
+    "glyph": "*",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 5,
+    "throwable": { "range": 4, "damage": 2 }
+  },
+  "throwing_knife": {
+    "id": "throwing_knife",
+    "name": "Throwing Knife",
+    "unidentifiedName": "Small Blade",
+    "description": "A perfectly balanced throwing knife.",
+    "glyph": "-",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 1,
+    "throwable": { "range": 6, "damage": 3 }
+  },
+  "potion_of_fire": {
+    "id": "potion_of_fire",
+    "name": "Flask of Alchemist's Fire",
+    "unidentifiedName": "Orange Flask",
+    "description": "A volatile mixture that explodes on impact.",
+    "glyph": "!",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "tags": ["explosive", "flask"],
+    "throwable": { "range": 5, "destroyOnImpact": true }
+  },
+  "bronze_key": {
+    "id": "bronze_key",
+    "name": "Bronze Key",
+    "unidentifiedName": "Key",
+    "description": "A heavy bronze key.",
+    "glyph": "[",
+    "fg": "#cd7f32",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["key:bronze"]
+  },
+  "lockpick": {
+    "id": "lockpick",
+    "name": "Lockpick",
+    "unidentifiedName": "Tool",
+    "description": "A set of tools for picking locks.",
+    "glyph": "~",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["tool:lockpick"]
   }
 }

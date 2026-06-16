@@ -3,7 +3,9 @@ import type { GameEvent } from '../events.types.ts';
 
 import type { WaitIntent, ToggleEngineModeIntent, TogglePauseIntent, SetRTwPSpeedIntent } from './core.intents.ts';
 
-import type { MoveIntent, InteractIntent, ChangeAreaIntent } from './movement.intents.ts';
+import type { MoveIntent, ChangeAreaIntent } from './movement.intents.ts';
+
+import type { ApplyIntent } from './interaction.intents.ts';
 
 import type {
   MeleeAttackIntent,
@@ -13,13 +15,7 @@ import type {
   UseAbilityIntent
 } from './combat.intents.ts';
 
-import type {
-  PickUpIntent,
-  DropIntent,
-  UseItemIntent,
-  EquipItemIntent,
-  UnequipItemIntent
-} from './inventory.intents.ts';
+import type { PickUpIntent, DropIntent, EquipItemIntent, UnequipItemIntent } from './inventory.intents.ts';
 
 import type {
   ToggleInventoryIntent,
@@ -47,7 +43,6 @@ import type { ToggleInspectIntent, MoveInspectIntent } from './inspect.intents.t
 export type Intent =
   | MoveIntent
   | WaitIntent
-  | InteractIntent
   | ChangeAreaIntent
   | DebugRevealMapIntent
   | DebugGodModeIntent
@@ -59,7 +54,6 @@ export type Intent =
   | MeleeAttackIntent
   | PickUpIntent
   | DropIntent
-  | UseItemIntent
   | EquipItemIntent
   | UnequipItemIntent
   | ToggleInventoryIntent
@@ -79,7 +73,8 @@ export type Intent =
   | CloseDialogueIntent
   | ToggleQuestsIntent
   | ToggleInvestigationIntent
-  | ToggleDebugIntent;
+  | ToggleDebugIntent
+  | ApplyIntent;
 
 export interface ActionResult {
   readonly state: GameState;

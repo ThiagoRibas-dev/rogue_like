@@ -9,7 +9,7 @@ import { assertNever } from '../utils/assert.ts';
 import { getComponent, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
 import { addActor, switchEngineMode } from '../core/scheduler.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
-import { processUseAbilityIntent, processUseItemIntent } from '../systems/effects.system.ts';
+import { processUseAbilityIntent } from '../systems/effects.system.ts';
 import { processMoveInspectIntent, processToggleInspectIntent } from '../systems/inspect.system.ts';
 import {
   processDropIntent,
@@ -17,7 +17,7 @@ import {
   processPickUpIntent,
   processUnequipItemIntent
 } from '../systems/inventory.system.ts';
-import { processChangeAreaIntent, processInteractIntent } from '../systems/map.system.ts';
+import { processChangeAreaIntent } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processMoveIntent } from '../systems/movement.system.ts';
 import {
@@ -26,6 +26,7 @@ import {
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
+import { processApplyIntent } from '../systems/apply.system.ts';
 import {
   processCloseDialogueIntent,
   processSelectDialogueOptionIntent,
@@ -54,12 +55,12 @@ export function dispatchAction(
       return processMoveIntent(state, intent);
     case IntentType.Wait:
       return { state: addMessage(state, 'You wait a moment.', MessageLogCategory.System), success: true };
-    case IntentType.Interact:
-      return processInteractIntent(state, intent);
     case IntentType.ChangeArea:
       return processChangeAreaIntent(state, intent);
     case IntentType.MeleeAttack:
       return processMeleeAttackIntent(state, intent);
+    case IntentType.Apply:
+      return processApplyIntent(state, intent);
 
     // --- TARGETING INTENTS ---
     case IntentType.ToggleTargeting:
@@ -80,8 +81,6 @@ export function dispatchAction(
       return processPickUpIntent(state, intent.entityId);
     case IntentType.Drop:
       return processDropIntent(state, intent.entityId, intent.itemIndex);
-    case IntentType.UseItem:
-      return processUseItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UseAbility:
       return processUseAbilityIntent(state, intent as UseAbilityIntent);
     case IntentType.EquipItem:

@@ -147,5 +147,37 @@
     "trap": {
       "triggerId": "hidden_trap_trigger"
     }
+  },
+  "wooden_door": {
+    "id": "wooden_door",
+    "name": "Wooden Door",
+    "glyph": "+",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["door", "solid", "opaque"],
+    "lock": {
+      "difficulty": 10,
+      "locked": false,
+      "breakable": true
+    }
+  },
+  "wooden_chest": {
+    "id": "wooden_chest",
+    "name": "Wooden Chest",
+    "glyph": "c",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["chest", "solid"],
+    "inventoryConfig": {
+      "baseCapacity": 5
+    },
+    "lock": {
+      "difficulty": 20,
+      "keyTag": "key:bronze",
+      "locked": true,
+      "breakable": true
+    }
   }
 }

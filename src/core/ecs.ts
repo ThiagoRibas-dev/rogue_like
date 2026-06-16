@@ -11,11 +11,14 @@ import {
   type InventoryComponent,
   type EquipmentComponent,
   type QuestLogComponent,
+  type LockComponent,
+  type InteractableComponent,
   toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../types/intents/ui.intents.ts';
+import type { Intent } from '../types/intents/intent.union.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -277,6 +280,48 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
       grudges: template.memory.grudges ?? [],
       facts: template.memory.facts ?? []
     });
+  }
+
+  if (template.lock) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Lock,
+      difficulty: template.lock.difficulty,
+      keyTag: template.lock.keyTag,
+      locked: template.lock.locked,
+      jammed: template.lock.jammed,
+      breakable: template.lock.breakable
+    } as LockComponent);
+
+    // Initial interactable setup for locked/openable objects
+    const interactable = getComponent(nextState, entityId, ComponentType.Interactable) as
+      | InteractableComponent
+      | undefined;
+    const intents = interactable ? [...interactable.intents] : [];
+
+    intents.push({
+      type: IntentType.Apply,
+      entityId: -1 as unknown as EntityId,
+      verb: template.lock.locked ? 'unlock' : 'open',
+      target: { type: 'self' } as const
+    } as Intent);
+
+    if (template.lock.breakable) {
+      intents.push({
+        type: IntentType.Apply,
+        entityId: -1 as unknown as EntityId,
+        verb: 'kick',
+        target: { type: 'self' } as const
+      } as Intent);
+    }
+
+    if (interactable) {
+      nextState = addComponent(nextState, entityId, { ...interactable, intents });
+    } else {
+      nextState = addComponent(nextState, entityId, {
+        type: ComponentType.Interactable,
+        intents
+      });
+    }
   }
 
   if (template.dialogueId) {

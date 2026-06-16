@@ -1,1 +1,147 @@
-[]
+[
+  {
+    "id": "use_consumable",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["actor"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["consumable"]
+    },
+    "consequences": [
+      {
+        "type": "apply_item_effect"
+      },
+      {
+        "type": "consume_item"
+      }
+    ]
+  },
+  {
+    "id": "use_portal",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["actor"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["portal"]
+    },
+    "consequences": [
+      {
+        "type": "change_area"
+      }
+    ]
+  },
+  {
+    "id": "explode_fire_flask_tile",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive", "flask"]
+    },
+    "targetMatcher": {
+      "targetType": "tile"
+    },
+    "consequences": [
+      { "type": "damage_area", "radius": 1, "amount": 10, "tags": ["fire"] }
+    ],
+    "message": "The flask shatters in a burst of flames!"
+  },
+  {
+    "id": "explode_fire_flask_entity",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive", "flask"]
+    },
+    "targetMatcher": {
+      "targetType": "entity"
+    },
+    "consequences": [
+      { "type": "damage_area", "radius": 1, "amount": 10, "tags": ["fire"] }
+    ],
+    "message": "The flask shatters in a burst of flames!"
+  },
+  {
+    "id": "open_door",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door", "solid"] },
+    "consequences": [
+      { "type": "modify_tags", "remove": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "/" },
+      { "type": "change_intents", "intents": ["close"] }
+    ],
+    "message": "The door opens."
+  },
+  {
+    "id": "close_door",
+    "verb": "close",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "modify_tags", "add": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "+" },
+      { "type": "change_intents", "intents": ["open"] }
+    ],
+    "message": "The door closes."
+  },
+  {
+    "id": "unlock_door_bronze",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity", "tags": ["key:bronze"] },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "set_lock_state", "locked": false }
+    ],
+    "message": "You unlock the door."
+  },
+  {
+    "id": "unlock_chest_bronze",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity", "tags": ["key:bronze"] },
+    "targetMatcher": { "targetType": "entity", "tags": ["chest"] },
+    "consequences": [
+      { "type": "set_lock_state", "locked": false }
+    ],
+    "message": "You unlock the chest."
+  },
+  {
+    "id": "open_chest",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["chest"] },
+    "consequences": [
+      { "type": "spill_inventory" },
+      { "type": "change_glyph", "glyph": "C" },
+      { "type": "change_intents", "intents": [] }
+    ],
+    "message": "You open the chest and its contents spill out."
+  },
+  {
+    "id": "kick_door",
+    "verb": "kick",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "modify_tags", "remove": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "_" },
+      { "type": "change_intents", "intents": [] }
+    ],
+    "message": "You kick the door open! It shatters into pieces."
+  }
+]

@@ -1,6 +1,6 @@
 import { type EntityId } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
-import { type InteractIntent, type MoveIntent } from '../types/intents/movement.intents.ts';
+import { type MoveIntent } from '../types/intents/movement.intents.ts';
 import {
   type SetRTwPSpeedIntent,
   type ToggleEngineModeIntent,
@@ -44,18 +44,6 @@ export function createMoveAction(entityId: EntityId, dx: number, dy: number): Mo
 export function createWaitAction(entityId: EntityId): WaitIntent {
   return {
     type: IntentType.Wait,
-    entityId
-  };
-}
-
-/**
- * Creates an interact intent.
- * @param entityId The entity taking the action.
- * @returns The generated InteractIntent.
- */
-export function createInteractAction(entityId: EntityId): InteractIntent {
-  return {
-    type: IntentType.Interact,
     entityId
   };
 }

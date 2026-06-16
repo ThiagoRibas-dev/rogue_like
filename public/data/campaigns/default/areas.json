@@ -46,7 +46,7 @@
         "####################",
         "#..................#",
         "#.o..o........o..o.#",
-        "#...G..........G...#",
+        "#...G.....c....G...#",
         "#..................#",
         "###+############+###",
         "  #.#          #.#  ",
@@ -57,12 +57,17 @@
       "legend": {
         "#": "stone_wall",
         ".": "stone_floor",
-        "+": "closed_door",
         "<": "stone_floor",
         ">": "stone_floor",
         "G": "stone_floor",
         "o": "stone_floor",
+        "c": "stone_floor",
+        "+": "stone_floor",
         " ": "empty_space"
+      },
+      "entityLegend": {
+        "+": "wooden_door",
+        "c": "wooden_chest"
       }
     }
   }

@@ -10,6 +10,12 @@ export interface MeleeAttackIntent extends BaseIntent {
 export interface ToggleTargetingIntent extends BaseIntent {
   readonly type: IntentType.ToggleTargeting;
   readonly isImmediate: true;
+  readonly context?:
+    | {
+        readonly verb: string;
+        readonly toolEntityId?: EntityId;
+      }
+    | undefined;
 }
 
 export interface MoveTargetIntent extends BaseIntent {

@@ -7,13 +7,9 @@ export interface MoveIntent extends BaseIntent {
   readonly dy: number;
 }
 
-export interface InteractIntent extends BaseIntent {
-  readonly type: IntentType.Interact;
-}
-
 export interface ChangeAreaIntent extends BaseIntent {
   readonly type: IntentType.ChangeArea;
   readonly targetAreaId: string;
-  readonly targetX?: number;
-  readonly targetY?: number;
+  readonly targetX?: number | undefined;
+  readonly targetY?: number | undefined;
 }

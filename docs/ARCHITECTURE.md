@@ -174,9 +174,14 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.
 - **Inactive Levels**: Non-active floors are stored in a compressed/serialized format within the `GameState` and swapped back into active ECS arrays upon level transitions.
 
+### The Reaction System & Data-Driven Interactions
+- **Unified Apply Intent**: All interactions (using items, opening doors, triggering stairs) are funneled through a single `ApplyIntent` carrying a generic `verb` (e.g., `apply`, `kick`). This replaces hardcoded bespoke intents like `InteractIntent` and `UseItemIntent`.
+- **Combinatorial Reactions**: The `reaction.system.ts` evaluates `reactions.json` definitions against the source and target entities. It matches on `tags` and `verbs` rather than specific entity IDs, allowing designers to author new mechanics (like shrines or consumable items) entirely in data without writing TypeScript.
+- **Trigger Consequences**: Once a reaction matches successfully, it delegates to the Trigger System to execute data-driven consequences (like `change_area`, `apply_item_effect`, or `emit_event`).
+
 ### Triggers & Interactive Terrain
 - **Data-Driven Terrain**: Terrain features like doors and shallow water define interaction outcomes and movement costs directly in their JSON definitions.
-- **Traps & Triggers**: Handled by `trigger.system.ts`, hidden entities like traps use a `TrapComponent` to process effects when a unit steps on them.
+- **Traps**: Handled by `trigger.system.ts`, hidden entities like traps use a `TrapComponent` to process effects when a unit steps on them.
 
 ---
 

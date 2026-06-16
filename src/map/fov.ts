@@ -2,6 +2,8 @@ import * as ROT from 'rot-js';
 import { type GameState } from '../types/game-state.types.ts';
 
 import { coordToIndex } from '../utils/grid.ts';
+import { getComponent } from '../core/ecs.ts';
+import { ComponentType, type TagsComponent } from '../types/components.types.ts';
 /**
  * Computes the Field of View from a specific center point using Precise Shadowcasting.
  * Returns a Set of 1D coordinate indices representing visible cells.
@@ -24,7 +26,22 @@ export function computeFOV(state: GameState, px: number, py: number, radius?: nu
       return false;
     }
     const tileDef = state.campaign.tiles[tile.tileId];
-    return tileDef ? tileDef.transparent : false;
+    if (!tileDef || !tileDef.transparent) {
+      return false;
+    }
+
+    const targetKey = `${x},${y}`;
+    const entitiesAtTarget = state.spatialIndex.get(targetKey);
+    if (entitiesAtTarget) {
+      for (const eId of entitiesAtTarget) {
+        const tagsCmp = getComponent(state, eId, ComponentType.Tags) as TagsComponent | undefined;
+        if (tagsCmp && tagsCmp.tags.includes('opaque')) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   });
 
   const fovRadius = radius ?? state.campaign.rules.map.fovRadius;

@@ -29,7 +29,8 @@ export const enum ComponentType {
   Death = 'Death',
   Scheme = 'Scheme',
   Agreement = 'Agreement',
-  Clue = 'Clue'
+  Clue = 'Clue',
+  Lock = 'Lock'
 }
 
 /**
@@ -239,8 +240,8 @@ export interface TraitsComponent {
 export interface PortalComponent {
   readonly type: ComponentType.Portal;
   readonly targetAreaId: string;
-  readonly targetX?: number;
-  readonly targetY?: number;
+  readonly targetX?: number | undefined;
+  readonly targetY?: number | undefined;
 }
 
 /**
@@ -264,6 +265,18 @@ export interface PersistentComponent {
 export interface TemplateComponent {
   readonly type: ComponentType.Template;
   readonly templateId: string;
+}
+
+/**
+ * Component for tracking access state on doors, chests, and containers.
+ */
+export interface LockComponent {
+  readonly type: ComponentType.Lock;
+  readonly difficulty: number; // For lockpicking attempts
+  readonly keyTag?: string | undefined; // Tag required on an item to open this lock (e.g., 'key:bronze')
+  readonly locked: boolean;
+  readonly jammed?: boolean | undefined; // True if broken/unpickable
+  readonly breakable?: boolean | undefined; // True if it can be kicked down or destroyed
 }
 
 /**
@@ -374,4 +387,5 @@ export type Component =
   | DeathComponent
   | SchemeComponent
   | AgreementComponent
-  | ClueComponent;
+  | ClueComponent
+  | LockComponent;

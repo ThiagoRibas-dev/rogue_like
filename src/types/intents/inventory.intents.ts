@@ -10,11 +10,6 @@ export interface DropIntent extends BaseIntent {
   readonly itemIndex: number;
 }
 
-export interface UseItemIntent extends BaseIntent {
-  readonly type: IntentType.UseItem;
-  readonly itemIndex: number;
-}
-
 export interface EquipItemIntent extends BaseIntent {
   readonly type: IntentType.EquipItem;
   readonly itemIndex: number;

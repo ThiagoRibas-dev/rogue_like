@@ -147,6 +147,12 @@ export interface GameState {
         readonly x: number;
         readonly y: number;
         readonly radius?: number;
+        readonly context?:
+          | {
+              readonly verb: string;
+              readonly toolEntityId?: EntityId;
+            }
+          | undefined;
       }
     | undefined;
   readonly inspectMode?:

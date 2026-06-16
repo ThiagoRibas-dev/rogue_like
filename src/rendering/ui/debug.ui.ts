@@ -1,5 +1,10 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
-import { GameEventType, type GameEvent, type DebugTriggerTraceEvent } from '../../types/events.types.ts';
+import {
+  GameEventType,
+  type GameEvent,
+  type DebugTriggerTraceEvent,
+  type ReactionResolvedEvent
+} from '../../types/events.types.ts';
 
 export function renderDebugOverlay(state: GameState): void {
   const overlay = document.getElementById('debug-overlay');
@@ -50,6 +55,28 @@ export function renderDebugOverlay(state: GameState): void {
       entry.appendChild(title);
       entry.appendChild(cause);
       entry.appendChild(consequences);
+    } else if (event.type === GameEventType.ReactionResolved) {
+      const trace = event as ReactionResolvedEvent;
+      entry.style.color = '#3498db'; // Blue for reactions
+      entry.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+
+      const title = document.createElement('div');
+      title.style.fontWeight = 'bold';
+      title.textContent = `⚡ REACTION [${trace.reactionId}] resolved`;
+
+      const match = document.createElement('div');
+      match.style.color = '#ccc';
+      match.style.marginLeft = '8px';
+      match.textContent = `↳ Match: ${trace.whyMatched}`;
+
+      const details = document.createElement('div');
+      details.style.color = '#ccc';
+      details.style.marginLeft = '8px';
+      details.textContent = `↳ Source: ${trace.sourceId} | Target: ${JSON.stringify(trace.target)}`;
+
+      entry.appendChild(title);
+      entry.appendChild(match);
+      entry.appendChild(details);
     } else {
       entry.style.color = '#bdc3c7'; // Standard light gray
       entry.textContent = formatStandardEvent(event);

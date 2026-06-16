@@ -4,7 +4,6 @@
 export const enum IntentType {
   Move = 'Move',
   Wait = 'Wait',
-  Interact = 'Interact',
   ChangeArea = 'ChangeArea',
   DebugRevealMap = 'DebugRevealMap',
   DebugGodMode = 'DebugGodMode',
@@ -15,7 +14,6 @@ export const enum IntentType {
   MeleeAttack = 'MeleeAttack',
   PickUp = 'PickUp',
   Drop = 'Drop',
-  UseItem = 'UseItem',
   EquipItem = 'EquipItem',
   UnequipItem = 'UnequipItem',
   ToggleInventory = 'ToggleInventory',
@@ -36,5 +34,6 @@ export const enum IntentType {
   ToggleQuests = 'ToggleQuests',
   ToggleInvestigation = 'ToggleInvestigation',
   ToggleDebug = 'ToggleDebug',
-  DebugFastForwardSchemes = 'DebugFastForwardSchemes'
+  DebugFastForwardSchemes = 'DebugFastForwardSchemes',
+  Apply = 'Apply'
 }

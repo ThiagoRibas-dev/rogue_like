@@ -9,13 +9,18 @@ import {
 /**
  * Creates an intent to toggle targeting mode.
  * @param entityId The entity aiming.
+ * @param context Optional context about the targeting intent (e.g. throwing an item).
  * @returns The ToggleTargetingIntent.
  */
-export function createToggleTargetingAction(entityId: EntityId): ToggleTargetingIntent {
+export function createToggleTargetingAction(
+  entityId: EntityId,
+  context?: { verb: string; toolEntityId?: EntityId }
+): ToggleTargetingIntent {
   return {
     type: IntentType.ToggleTargeting,
     entityId,
-    isImmediate: true
+    isImmediate: true,
+    context
   };
 }
 

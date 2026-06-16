@@ -3,7 +3,6 @@ import { IntentType } from '../types/intents/intent.enum.ts';
 import {
   type PickUpIntent,
   type DropIntent,
-  type UseItemIntent,
   type EquipItemIntent,
   type UnequipItemIntent
 } from '../types/intents/inventory.intents.ts';
@@ -26,16 +25,6 @@ export function createPickUpAction(entityId: EntityId): PickUpIntent {
  */
 export function createDropAction(entityId: EntityId, itemIndex: number): DropIntent {
   return { type: IntentType.Drop, entityId, itemIndex };
-}
-
-/**
- * Creates a UseItem intent.
- * @param entityId The entity using the item.
- * @param itemIndex The position of the item in the inventory array.
- * @returns The generated UseItemIntent.
- */
-export function createUseItemAction(entityId: EntityId, itemIndex: number): UseItemIntent {
-  return { type: IntentType.UseItem, entityId, itemIndex };
 }
 
 /**

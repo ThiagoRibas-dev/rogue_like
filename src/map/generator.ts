@@ -16,7 +16,9 @@ export interface GeneratedArea {
     readonly centerX: number;
     readonly centerY: number;
   }>;
-  readonly placedEntities?: ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>;
+  readonly placedEntities?:
+    | ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>
+    | undefined;
 }
 
 /**
@@ -29,7 +31,7 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
   }
 
   if (areaDef.generatorType === 'static' && areaDef.staticMap) {
-    const map = parseStaticMap(areaDef.staticMap);
+    const { map, parsedEntities } = parseStaticMap(areaDef.staticMap);
     const portals = (areaDef.connections ?? []).map((conn, idx) => ({
       x: conn.placementX ?? 1 + idx,
       y: conn.placementY ?? 1,
@@ -40,7 +42,7 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
       startPos: { x: Math.floor(map.width / 2), y: Math.floor(map.height / 2) },
       portals,
       rooms: [],
-      ...(areaDef.placedEntities ? { placedEntities: areaDef.placedEntities } : {})
+      placedEntities: [...(areaDef.placedEntities || []), ...parsedEntities]
     };
   }
 
@@ -166,14 +168,17 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
     tiles
   };
 
+  const finalPlacedEntities = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
+
   const parsedRooms = rooms.map((r) => {
     r.getDoors((x: number, y: number) => {
       const idx = coordToIndex(x, y, width);
       const tile = tiles[idx];
       if (tile) {
-        // Only place doors occasionally to avoid over-cluttering, or place them everywhere?
-        // Let's place them everywhere a door is defined.
-        tiles[idx] = { ...tile, tileId: palette.door };
+        // Place floor underneath
+        tiles[idx] = { ...tile, tileId: palette.floor };
+        // Place door entity
+        finalPlacedEntities.push({ templateId: palette.door, x, y });
       }
     });
 
@@ -193,6 +198,6 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
     startPos: { x: startX, y: startY },
     portals,
     rooms: parsedRooms,
-    ...(areaDef.placedEntities ? { placedEntities: areaDef.placedEntities } : {})
+    placedEntities: finalPlacedEntities.length > 0 ? finalPlacedEntities : undefined
   };
 }

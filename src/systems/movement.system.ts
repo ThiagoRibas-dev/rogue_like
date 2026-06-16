@@ -1,5 +1,5 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
-import { ComponentType, type PositionComponent } from '../types/components.types.ts';
+import { ComponentType, type PositionComponent, type TagsComponent } from '../types/components.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 
@@ -87,6 +87,11 @@ export function processMoveIntent(
         }
       } else if (getComponent(state, id, ComponentType.Actor) !== undefined) {
         isBlocked = true;
+      } else {
+        const tagsCmp = getComponent(state, id, ComponentType.Tags) as TagsComponent | undefined;
+        if (tagsCmp && tagsCmp.tags.includes('solid')) {
+          isBlocked = true;
+        }
       }
     }
 

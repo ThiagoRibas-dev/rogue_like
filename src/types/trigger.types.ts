@@ -33,9 +33,9 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
 import type { EntityId } from './game-state.types.ts';
 
 type InjectedContext = {
-  _npcEntityId?: EntityId;
-  _playerEntityId?: EntityId;
-  entityId?: EntityId;
+  _npcEntityId?: EntityId | undefined;
+  _playerEntityId?: EntityId | undefined;
+  entityId?: EntityId | undefined;
 };
 
 export type ConditionPredicate = z.infer<typeof ConditionPredicateSchema> & InjectedContext;
@@ -51,6 +51,45 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('emit_event'),
     eventType: z.string(),
     payload: z.record(z.string(), z.unknown()).optional()
+  }),
+  z.object({
+    type: z.literal('change_area'),
+    targetAreaId: z.string().optional(),
+    targetX: z.number().int().nonnegative().optional(),
+    targetY: z.number().int().nonnegative().optional()
+  }),
+  z.object({
+    type: z.literal('apply_item_effect'),
+    targetId: z.string().optional() // "target" means who receives the effect. If omitted, applies to source
+  }),
+  z.object({
+    type: z.literal('consume_item'),
+    targetId: z.string().optional() // "target" is the item to consume
+  }),
+  z.object({
+    type: z.literal('spill_inventory'),
+    targetId: z.string().optional() // Optional target entity. If omitted, applies to the reaction target.
+  }),
+  z.object({
+    type: z.literal('modify_tags'),
+    add: z.array(z.string()).optional(),
+    remove: z.array(z.string()).optional(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('change_glyph'),
+    glyph: z.string(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('set_lock_state'),
+    locked: z.boolean(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('change_intents'),
+    intents: z.array(z.string()),
+    targetId: z.string().optional()
   })
 ]);
 

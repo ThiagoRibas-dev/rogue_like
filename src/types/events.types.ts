@@ -19,7 +19,10 @@ export enum GameEventType {
   TrapTriggered = 'TrapTriggered',
   QuestStageChanged = 'QuestStageChanged',
   QuestCompleted = 'QuestCompleted',
-  DebugTriggerTrace = 'DebugTriggerTrace'
+  DebugTriggerTrace = 'DebugTriggerTrace',
+  ApplyResolved = 'ApplyResolved',
+  ApplyFailed = 'ApplyFailed',
+  ReactionResolved = 'ReactionResolved'
 }
 
 export interface BaseGameEvent {
@@ -128,6 +131,32 @@ export interface DebugTriggerTraceEvent extends BaseGameEvent {
   readonly executedConsequences: ReadonlyArray<string>;
 }
 
+export interface ApplyResolvedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ApplyResolved;
+  readonly entityId: EntityId;
+  readonly verb: string;
+  readonly target: unknown;
+  readonly toolEntityId?: EntityId | undefined;
+}
+
+export interface ApplyFailedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ApplyFailed;
+  readonly entityId: EntityId;
+  readonly verb: string;
+  readonly target: unknown;
+  readonly toolEntityId?: EntityId | undefined;
+  readonly reason: string;
+}
+
+export interface ReactionResolvedEvent extends BaseGameEvent {
+  readonly type: GameEventType.ReactionResolved;
+  readonly reactionId: string;
+  readonly verb: string;
+  readonly sourceId: EntityId;
+  readonly target: unknown;
+  readonly whyMatched: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -147,4 +176,7 @@ export type GameEvent =
   | TrapTriggeredEvent
   | QuestStageChangedEvent
   | QuestCompletedEvent
-  | DebugTriggerTraceEvent;
+  | DebugTriggerTraceEvent
+  | ApplyResolvedEvent
+  | ApplyFailedEvent
+  | ReactionResolvedEvent;

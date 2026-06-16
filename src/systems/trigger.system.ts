@@ -6,6 +6,12 @@ import { GameEventType } from '../types/events.types.ts';
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { completeQuest, grantQuest } from './quest.system.ts';
+import { processChangeAreaIntent } from './map.system.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import { applyItemEffect } from './effects.system.ts';
+import { removeEntity } from '../core/ecs.ts';
+import type { Verb } from '../constants/verbs.constants.ts';
+import type { Intent } from '../types/intents/intent.union.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -144,7 +150,14 @@ import type {
   MemoryComponent,
   PositionComponent,
   QuestLogComponent,
-  TrapComponent
+  TrapComponent,
+  ItemComponent,
+  InventoryComponent,
+  PortalComponent,
+  TagsComponent,
+  RenderableComponent,
+  LockComponent,
+  InteractableComponent
 } from '../types/components.types.ts';
 import { toItemInstanceId } from '../types/components.types.ts';
 import type { DebugTriggerTraceEvent, EntityDiedEvent, TrapTriggeredEvent } from '../types/events.types.ts';
@@ -319,6 +332,245 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
           } as unknown as GameEvent
         ]
       };
+      break;
+    }
+
+    case 'change_area': {
+      let targetAreaId = consequence.targetAreaId;
+      let targetX = consequence.targetX;
+      let targetY = consequence.targetY;
+
+      let eId: EntityId | undefined;
+      if ('entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
+      }
+
+      if (!targetAreaId && event.type === GameEventType.ReactionResolved) {
+        const rxEvent = event as unknown as { target: unknown };
+        const targetPayload = rxEvent.target as { type: string; entityId?: EntityId } | undefined;
+        if (targetPayload?.type === 'entity' && targetPayload.entityId !== undefined) {
+          const portalComp = getComponent(nextState, targetPayload.entityId, ComponentType.Portal) as
+            | PortalComponent
+            | undefined;
+          if (portalComp) {
+            targetAreaId = portalComp.targetAreaId;
+            targetX = portalComp.targetX;
+            targetY = portalComp.targetY;
+          }
+        }
+      }
+
+      if (eId !== undefined && targetAreaId) {
+        const result = processChangeAreaIntent(nextState, {
+          type: IntentType.ChangeArea,
+          entityId: eId,
+          targetAreaId,
+          targetX,
+          targetY
+        });
+        if (result.success) {
+          nextState = result.state;
+        }
+      }
+      break;
+    }
+
+    case 'apply_item_effect': {
+      // Typically used from ReactionResolvedEvent when an item is applied
+      if (event.type !== GameEventType.ReactionResolved) break;
+      const rxEvent = event as unknown as { sourceId: EntityId; target: unknown };
+      const sourceId = rxEvent.sourceId;
+
+      const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId } | undefined;
+      const itemEntityId = targetPayload?.itemEntityId;
+
+      if (itemEntityId === undefined) break;
+
+      const itemComp = getComponent(nextState, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+      if (!itemComp) break;
+
+      const def = nextState.campaign.items[itemComp.itemId];
+      if (!def?.consumable) break;
+
+      const isIdentified = nextState.identifiedItems.has(itemComp.itemId);
+      if (!isIdentified) {
+        const newIdentifiedSet = new Set(nextState.identifiedItems);
+        newIdentifiedSet.add(itemComp.itemId);
+        nextState = { ...nextState, identifiedItems: newIdentifiedSet };
+      }
+
+      const itemName = nextState.campaign.items[itemComp.itemId]?.name ?? itemComp.itemId;
+      const effectTargetId =
+        consequence.targetId === 'source'
+          ? sourceId
+          : consequence.targetId
+            ? (parseInt(consequence.targetId) as EntityId)
+            : sourceId;
+
+      nextState = applyItemEffect(nextState, effectTargetId, def.consumable.effectId, itemName);
+      break;
+    }
+
+    case 'consume_item': {
+      if (event.type !== GameEventType.ReactionResolved) break;
+      const rxEvent = event as unknown as { sourceId: EntityId; target: unknown };
+      const sourceId = rxEvent.sourceId;
+
+      const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId } | undefined;
+      const itemEntityId = targetPayload?.itemEntityId;
+
+      if (itemEntityId === undefined) break;
+
+      const itemComp = getComponent(nextState, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+      if (!itemComp) break;
+
+      // Decrement charges or remove
+      const remainingCharges = (itemComp.charges ?? 1) - 1;
+
+      if (remainingCharges <= 0) {
+        const inventory = getComponent(nextState, sourceId, ComponentType.Inventory) as InventoryComponent | undefined;
+        if (inventory) {
+          const nextInventory = {
+            ...inventory,
+            items: inventory.items.filter((id) => id !== itemEntityId)
+          };
+          nextState = addComponent(nextState, sourceId, nextInventory);
+        }
+        nextState = removeEntity(nextState, itemEntityId);
+      } else {
+        const nextItemComp = { ...itemComp, charges: remainingCharges };
+        nextState = addComponent(nextState, itemEntityId, nextItemComp);
+      }
+
+      nextState = {
+        ...nextState,
+        events: [...nextState.events, { type: GameEventType.ItemUsed, entityId: sourceId, itemId: itemEntityId }]
+      };
+      break;
+    }
+
+    case 'spill_inventory': {
+      let eId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        // default to target of reaction
+        if (event.type === GameEventType.ReactionResolved) {
+          const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
+          if (targetPayload.type === 'entity') {
+            eId = targetPayload.entityId;
+          }
+        }
+      }
+
+      if (eId === undefined) break;
+
+      const inventory = getComponent(nextState, eId, ComponentType.Inventory) as InventoryComponent | undefined;
+      const pos = getComponent(nextState, eId, ComponentType.Position) as PositionComponent | undefined;
+
+      if (!inventory || !pos || inventory.items.length === 0) break;
+
+      for (const itemId of inventory.items) {
+        // give the item a PositionComponent to drop it
+        nextState = addComponent(nextState, itemId, pos);
+      }
+
+      // clear the inventory
+      nextState = addComponent(nextState, eId, { ...inventory, items: [] });
+      break;
+    }
+
+    case 'modify_tags': {
+      let eId: EntityId | undefined;
+      if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        }
+      }
+      if (eId === undefined) break;
+
+      const tagsCmp = getComponent(nextState, eId, ComponentType.Tags) as TagsComponent | undefined;
+      let newTags = [...(tagsCmp?.tags ?? [])];
+
+      if (consequence.remove) {
+        newTags = newTags.filter((t) => !consequence.remove!.includes(t));
+      }
+      if (consequence.add) {
+        for (const t of consequence.add) {
+          if (!newTags.includes(t)) newTags.push(t);
+        }
+      }
+
+      if (tagsCmp) {
+        nextState = addComponent(nextState, eId, { ...tagsCmp, tags: newTags });
+      } else {
+        nextState = addComponent(nextState, eId, { type: ComponentType.Tags, tags: newTags });
+      }
+      break;
+    }
+
+    case 'change_glyph': {
+      let eId: EntityId | undefined;
+      if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        }
+      }
+      if (eId === undefined) break;
+
+      const rendCmp = getComponent(nextState, eId, ComponentType.Renderable) as RenderableComponent | undefined;
+      if (rendCmp) {
+        nextState = addComponent(nextState, eId, { ...rendCmp, glyph: consequence.glyph });
+      }
+      break;
+    }
+
+    case 'set_lock_state': {
+      let eId: EntityId | undefined;
+      if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        }
+      }
+      if (eId === undefined) break;
+
+      const lockCmp = getComponent(nextState, eId, ComponentType.Lock) as LockComponent | undefined;
+      if (lockCmp) {
+        nextState = addComponent(nextState, eId, { ...lockCmp, locked: consequence.locked });
+      }
+      break;
+    }
+
+    case 'change_intents': {
+      let eId: EntityId | undefined;
+      if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        }
+      }
+      if (eId === undefined) break;
+
+      const interactable = getComponent(nextState, eId, ComponentType.Interactable) as
+        | InteractableComponent
+        | undefined;
+      if (interactable) {
+        const newIntents = consequence.intents.map(
+          (v) =>
+            ({
+              type: IntentType.Apply,
+              entityId: -1 as unknown as EntityId,
+              verb: v as Verb,
+              target: { type: 'self' } as const
+            }) as Intent
+        );
+        nextState = addComponent(nextState, eId, { ...interactable, intents: newIntents });
+      }
       break;
     }
   }

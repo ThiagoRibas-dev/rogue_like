@@ -3,8 +3,9 @@ import {
   ComponentType,
   type PositionComponent,
   type Component,
-  type InteractableComponent,
-  type RenderableComponent
+  type PortalComponent,
+  type RenderableComponent,
+  type TagsComponent
 } from '../types/components.types.ts';
 import { type GameState, type AreaData, type EntityId, type GameMap } from '../types/game-state.types.ts';
 import {
@@ -20,12 +21,8 @@ import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
-import { IntentType } from '../types/intents/intent.enum.ts';
-import { type ChangeAreaIntent, type InteractIntent } from '../types/intents/movement.intents.ts';
-import { type Intent } from '../types/intents/intent.union.ts';
-import { queuePlayerIntent } from '../core/game-loop.ts';
 import { clearScheduler, addActor } from '../core/scheduler.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import type { ChangeAreaIntent } from '@/types/intents/movement.intents.ts';
 
 export function updateExploredTiles(state: GameState): GameState {
   if (!state.fovNeedsUpdate) return state;
@@ -54,71 +51,6 @@ export function updateExploredTiles(state: GameState): GameState {
     cachedFov: visibleIndices,
     map: modified ? { ...state.map, tiles: nextTiles } : state.map
   };
-}
-
-export function processInteractIntent(
-  state: GameState,
-  intent: InteractIntent
-): { state: GameState; success: boolean } {
-  const pos = getComponent(state, intent.entityId, ComponentType.Position);
-  if (!pos) return { state, success: false };
-
-  const key = `${pos.x},${pos.y}`;
-  const entities = state.spatialIndex.get(key) || [];
-
-  let nextState = state;
-  let interacted = false;
-
-  for (const targetId of entities) {
-    if (targetId === intent.entityId) continue;
-
-    const interactable = getComponent(state, targetId, ComponentType.Interactable);
-    if (interactable) {
-      for (const i of interactable.intents) {
-        if (i.type === IntentType.ChangeArea) {
-          const boundIntent = { ...i, entityId: intent.entityId } as ChangeAreaIntent;
-          const result = processChangeAreaIntent(nextState, boundIntent);
-          nextState = result.state;
-        } else {
-          // Queue other intents if necessary, but ChangeFloor should be synchronous
-          const boundIntent = { ...i, entityId: intent.entityId };
-          queuePlayerIntent(boundIntent as Intent);
-        }
-      }
-      interacted = true;
-    }
-  }
-
-  if (!interacted) {
-    const tileIdx = coordToIndex(pos.x, pos.y, state.map.width);
-    const tile = state.map.tiles[tileIdx];
-    if (tile) {
-      const tileDef = state.campaign.tiles[tile.tileId];
-      if (tileDef?.interactTransition) {
-        const nextTiles = [...state.map.tiles];
-        nextTiles[tileIdx] = { ...tile, tileId: tileDef.interactTransition };
-        const nextMap = { ...state.map, tiles: nextTiles };
-        let nextState: GameState = { ...state, map: nextMap };
-
-        const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-        if (isPlayer) {
-          const msg = tileDef.interactMessage ?? 'You interact with it.';
-          nextState = addMessage(nextState, msg, MessageLogCategory.System);
-        }
-        return { state: nextState, success: true };
-      }
-    }
-
-    const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-    if (isPlayer) {
-      return {
-        state: addMessage(nextState, 'There is nothing here to interact with.', MessageLogCategory.System),
-        success: false
-      };
-    }
-  }
-
-  return { state: nextState, success: interacted };
 }
 
 export function processChangeAreaIntent(
@@ -193,13 +125,8 @@ export function processChangeAreaIntent(
     // Find the corresponding stairs
     let foundStairs = false;
     for (const id of nextEntities) {
-      const interactable = nextComponents.get(id)?.[ComponentType.Interactable] as InteractableComponent;
-      if (
-        interactable &&
-        interactable.intents.some(
-          (i) => i.type === IntentType.ChangeArea && (i as ChangeAreaIntent).targetAreaId === state.currentAreaId
-        )
-      ) {
+      const portal = nextComponents.get(id)?.[ComponentType.Portal] as PortalComponent;
+      if (portal && portal.targetAreaId === state.currentAreaId) {
         const pos = nextComponents.get(id)?.[ComponentType.Position] as PositionComponent;
         if (pos && spawnX === -1) {
           spawnX = pos.x;
@@ -239,22 +166,22 @@ export function processChangeAreaIntent(
         fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
         bg: state.campaign.theme.colors.transparent ?? 'transparent'
       };
-      const interactable: InteractableComponent = {
-        type: ComponentType.Interactable,
-        intents: [
-          {
-            type: IntentType.ChangeArea,
-            targetAreaId: portal.connection.targetAreaId,
-            targetX: portal.connection.targetX,
-            targetY: portal.connection.targetY
-          } as ChangeAreaIntent
-        ]
+      const portalComp: PortalComponent = {
+        type: ComponentType.Portal,
+        targetAreaId: portal.connection.targetAreaId,
+        targetX: portal.connection.targetX,
+        targetY: portal.connection.targetY
+      };
+
+      const tags: TagsComponent = {
+        type: ComponentType.Tags,
+        tags: ['portal']
       };
 
       tempState = addComponent(
-        addComponent(addComponent(tempState, stairId, pos), stairId, render),
+        addComponent(addComponent(addComponent(tempState, stairId, pos), stairId, render), stairId, portalComp),
         stairId,
-        interactable
+        tags
       );
     }
 

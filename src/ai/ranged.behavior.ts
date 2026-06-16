@@ -20,8 +20,34 @@ export function rangedBehavior(
   const pos = getComponent(state, entityId, ComponentType.Position);
   if (!pos) return null;
 
-  const range = (params.range as number) ?? 6;
-  const fov = computeFOV(state, pos.x, pos.y, range);
+  // 1. Determine available spells and throwables
+  // If no spell is explicitly configured, default spellRange to 0 so we don't hallucinate spells.
+  const spellRange = params.effectId ? ((params.range as number) ?? 6) : 0;
+  const spellEffectId = params.effectId as string | undefined;
+
+  let maxThrowableRange = 0;
+  let bestThrowableId: EntityId | undefined;
+
+  const inventory = getComponent(state, entityId, ComponentType.Inventory);
+  if (inventory && 'items' in inventory) {
+    for (const itemId of inventory.items) {
+      const itemComp = getComponent(state, itemId, ComponentType.Item);
+      if (itemComp && 'itemId' in itemComp) {
+        const itemDef = state.campaign.items[itemComp.itemId];
+        if (itemDef?.throwable) {
+          if (itemDef.throwable.range > maxThrowableRange) {
+            maxThrowableRange = itemDef.throwable.range;
+            bestThrowableId = itemId;
+          }
+        }
+      }
+    }
+  }
+
+  const effectiveRange = Math.max(spellRange, maxThrowableRange);
+  if (effectiveRange === 0) return null; // No ranged capabilities
+
+  const fov = computeFOV(state, pos.x, pos.y, effectiveRange);
 
   let nearestTarget: EntityId | undefined;
   let minDistance = Infinity;
@@ -41,9 +67,7 @@ export function rangedBehavior(
       const dy = otherPos.y - pos.y;
       const distance = Math.max(Math.abs(dx), Math.abs(dy)); // Chebyshev distance
 
-      // Needs to be > 1 to prefer ranged over melee, but AI pipeline orders matter.
-      // Usually, we just fire if within range.
-      if (distance <= range && distance < minDistance) {
+      if (distance <= effectiveRange && distance < minDistance) {
         minDistance = distance;
         nearestTarget = id;
       }
@@ -52,18 +76,30 @@ export function rangedBehavior(
 
   if (!nearestTarget) return null;
 
-  // For a generic ranged attack, we can use a hardcoded 'damage_nearest' effect or pass it via params.
-  const effectId = (params.effectId as string) ?? 'damage_nearest_10';
-  const abilityName = (params.abilityName as string) ?? 'bow';
+  // 2. Decide action
+  // Prefer spell if we have one and it's in range
+  if (spellEffectId && minDistance <= spellRange) {
+    // Ensure effect exists
+    if (!state.campaign.effects[spellEffectId]) return null;
 
-  // Ensure effect exists
-  if (!state.campaign.effects[effectId]) return null;
+    return {
+      type: IntentType.UseAbility,
+      entityId,
+      effectId: spellEffectId,
+      abilityName: (params.abilityName as string) ?? 'spell'
+    };
+  }
 
-  // Fire!
-  return {
-    type: IntentType.UseAbility,
-    entityId,
-    effectId,
-    abilityName
-  };
+  // Otherwise fallback to throwable
+  if (bestThrowableId && minDistance <= maxThrowableRange) {
+    return {
+      type: IntentType.Apply,
+      entityId,
+      verb: 'throw',
+      target: { type: 'entity', entityId: nearestTarget },
+      toolEntityId: bestThrowableId
+    };
+  }
+
+  return null;
 }

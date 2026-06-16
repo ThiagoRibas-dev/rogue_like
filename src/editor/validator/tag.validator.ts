@@ -28,19 +28,30 @@ export async function validateTags(campaign: Readonly<CampaignData>): Promise<Va
   if (campaign.reactions) {
     for (let i = 0; i < campaign.reactions.length; i++) {
       const reaction = campaign.reactions[i];
-      if (reaction && reaction.sourceTag && !tagSet.has(reaction.sourceTag)) {
-        errors.push({
-          severity: 'error',
-          path: `/reactions/${i}/sourceTag`,
-          message: `Reaction references unregistered source tag: "${reaction.sourceTag}"`
-        });
+      if (!reaction) continue;
+
+      if (reaction.sourceMatcher && reaction.sourceMatcher.tags) {
+        for (const tag of reaction.sourceMatcher.tags) {
+          if (!tagSet.has(tag)) {
+            errors.push({
+              severity: 'error',
+              path: `/reactions/${i}/sourceMatcher/tags`,
+              message: `Reaction references unregistered source tag: "${tag}"`
+            });
+          }
+        }
       }
-      if (reaction && reaction.targetTag && !tagSet.has(reaction.targetTag)) {
-        errors.push({
-          severity: 'error',
-          path: `/reactions/${i}/targetTag`,
-          message: `Reaction references unregistered target tag: "${reaction.targetTag}"`
-        });
+
+      if (reaction.targetMatcher && reaction.targetMatcher.tags) {
+        for (const tag of reaction.targetMatcher.tags) {
+          if (!tagSet.has(tag)) {
+            errors.push({
+              severity: 'error',
+              path: `/reactions/${i}/targetMatcher/tags`,
+              message: `Reaction references unregistered target tag: "${tag}"`
+            });
+          }
+        }
       }
     }
   }

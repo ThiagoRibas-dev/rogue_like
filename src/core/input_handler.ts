@@ -16,7 +16,6 @@ import { renderSettingsMenu } from '../rendering/ui.ts';
 import {
   createMoveAction,
   createWaitAction,
-  createInteractAction,
   createToggleSettingsAction,
   createToggleFactionsAction,
   createToggleQuestsAction,
@@ -24,6 +23,7 @@ import {
   createTogglePauseAction,
   createToggleDebugAction
 } from '../actions/core.actions.ts';
+import { createApplyAction } from '../actions/interaction.actions.ts';
 import {
   createDebugRevealMapAction,
   createDebugGodModeAction,
@@ -38,7 +38,6 @@ import { createToggleInspectAction, createMoveInspectAction } from '../actions/i
 import {
   createPickUpAction,
   createDropAction,
-  createUseItemAction,
   createToggleInventoryAction,
   createEquipItemAction,
   createUnequipItemAction
@@ -200,7 +199,9 @@ export function handleKeyDown(
     }
 
     setGameState(addMessage(currentState, `Queued: Use ${itemName}`, MessageLogCategory.System));
-    queuePlayerIntent(createUseItemAction(playerEntityId, slotIndex));
+    if (itemEntityId) {
+      queuePlayerIntent(createApplyAction(playerEntityId, 'apply', { type: 'item', itemEntityId }));
+    }
     return;
   }
 
@@ -261,7 +262,21 @@ export function handleKeyDown(
 
   if (isTargeting && isAction(event, 'target_confirm')) {
     event.preventDefault();
-    queuePlayerIntent(createFireAimedAction(playerEntityId));
+    const context = currentState.targetingMode?.context;
+
+    if (context?.verb === 'throw' && context.toolEntityId) {
+      queuePlayerIntent(
+        createApplyAction(
+          playerEntityId,
+          'throw',
+          { type: 'tile', x: currentState.targetingMode!.x, y: currentState.targetingMode!.y },
+          context.toolEntityId
+        )
+      );
+      queuePlayerIntent(createToggleTargetingAction(playerEntityId));
+    } else {
+      queuePlayerIntent(createFireAimedAction(playerEntityId));
+    }
     return;
   }
 
@@ -311,6 +326,9 @@ export function handleKeyDown(
     }
   } else if (!isTargeting && isAction(event, 'interact')) {
     event.preventDefault();
-    queuePlayerIntent(createInteractAction(playerEntityId));
+    const pos = getComponent(currentState, playerEntityId, ComponentType.Position);
+    if (pos) {
+      queuePlayerIntent(createApplyAction(playerEntityId, 'apply', { type: 'tile', x: pos.x, y: pos.y }));
+    }
   }
 }

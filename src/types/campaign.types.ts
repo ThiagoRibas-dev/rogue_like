@@ -142,6 +142,13 @@ export const ItemDefinitionSchema = z.object({
         })
         .optional()
     })
+    .optional(),
+  throwable: z
+    .object({
+      range: z.number().int().positive(),
+      damage: z.number().int().nonnegative().optional(),
+      destroyOnImpact: z.boolean().optional()
+    })
     .optional()
 });
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;
@@ -218,6 +225,15 @@ export const EntityTemplateSchema = z.object({
   trap: z
     .object({
       triggerId: z.string()
+    })
+    .optional(),
+  lock: z
+    .object({
+      difficulty: z.number().int().nonnegative(),
+      keyTag: z.string().optional(),
+      locked: z.boolean(),
+      jammed: z.boolean().optional(),
+      breakable: z.boolean().optional()
     })
     .optional(),
   renderable: z.boolean().optional()
@@ -309,7 +325,8 @@ export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
 
 export const StaticMapLayoutSchema = z.object({
   layout: z.array(z.string()),
-  legend: z.record(z.string(), z.string())
+  legend: z.record(z.string(), z.string()),
+  entityLegend: z.record(z.string(), z.string()).optional()
 });
 
 export const AreaDefinitionSchema = z.object({
@@ -391,13 +408,45 @@ export const TagDefinitionSchema = z.object({
 });
 export type TagDefinition = z.infer<typeof TagDefinitionSchema>;
 
+export const ReactionEntityMatcherSchema = z.object({
+  targetType: z.literal('entity'),
+  tags: z.array(z.string()).optional(),
+  traits: z.array(z.string()).optional(),
+  categories: z.array(z.string()).optional(), // e.g., 'consumable', 'weapon'
+  entityId: z.string().optional()
+});
+
+export const ReactionTileMatcherSchema = z.object({
+  targetType: z.literal('tile'),
+  tags: z.array(z.string()).optional(),
+  tileId: z.string().optional(),
+  fieldTypes: z.array(z.string()).optional()
+});
+
+export const ReactionTargetMatcherSchema = z.discriminatedUnion('targetType', [
+  ReactionEntityMatcherSchema,
+  ReactionTileMatcherSchema
+]);
+
+export const ReactionContextMatcherSchema = z.object({
+  factionStanding: z
+    .object({
+      factionId: z.string(),
+      min: z.number().int().optional(),
+      max: z.number().int().optional()
+    })
+    .optional()
+});
+
 export const ReactionDefinitionSchema = z.object({
   id: z.string(),
-  trigger: z.literal('item_combine'),
-  sourceTag: z.string(),
-  targetTag: z.string(),
-  result: ConsequenceActionSchema,
-  message: z.string()
+  verb: z.string(),
+  priority: z.number().int().default(0),
+  sourceMatcher: ReactionTargetMatcherSchema,
+  targetMatcher: ReactionTargetMatcherSchema,
+  contextMatcher: ReactionContextMatcherSchema.optional(),
+  consequences: z.array(ConsequenceActionSchema),
+  message: z.string().optional()
 });
 export type ReactionDefinition = z.infer<typeof ReactionDefinitionSchema>;
 
