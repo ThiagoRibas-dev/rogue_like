@@ -173,7 +173,8 @@ export function processReactions(
 
   // Apply Consequences
   const dummyEvent = {
-    type: GameEventType.ApplyResolved,
+    type: GameEventType.ReactionResolved,
+    sourceId: sourceEntityId,
     entityId: sourceEntityId,
     verb,
     target,

@@ -1,1 +1,77 @@
-{}
+{
+  "explosive": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Highly volatile. Will explode on impact."
+  },
+  "flask": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "A fragile glass container."
+  },
+  "key:bronze": {
+    "category": "item",
+    "color": "#cd7f32",
+    "description": "A simple bronze key."
+  },
+  "tool:lockpick": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Used to bypass mechanical locks."
+  },
+  "actor": {
+    "category": "entity",
+    "color": "#ffffff",
+    "description": "An entity capable of taking actions."
+  },
+  "consumable": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "An item that is destroyed upon use."
+  },
+  "portal": {
+    "category": "terrain",
+    "color": "#9b59b6",
+    "description": "A gateway to another area."
+  },
+  "door": {
+    "category": "terrain",
+    "color": "#d35400",
+    "description": "A door that can be opened or closed."
+  },
+  "solid": {
+    "category": "physical",
+    "color": "#7f8c8d",
+    "description": "A physical object that blocks movement."
+  },
+  "chest": {
+    "category": "terrain",
+    "color": "#f39c12",
+    "description": "A container for holding items."
+  },
+  "water": {
+    "category": "elemental",
+    "color": "#3498db",
+    "description": "Water-based substance or entity."
+  },
+  "field:fire": {
+    "category": "field",
+    "color": "#e67e22",
+    "description": "A burning area of effect."
+  },
+  "fountain": {
+    "category": "terrain",
+    "color": "#00cec9",
+    "description": "A decorative source of liquid."
+  },
+  "altar": {
+    "category": "terrain",
+    "color": "#dfe6e9",
+    "description": "A religious or magical focal point."
+  },
+  "water_source": {
+    "category": "terrain",
+    "color": "#0984e3",
+    "description": "Provides drinkable water."
+  }
+}

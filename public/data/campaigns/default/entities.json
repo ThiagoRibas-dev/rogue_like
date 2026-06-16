@@ -29,6 +29,7 @@
       "leg",
       "foot"
     ],
+    "tags": ["actor"],
     "faction": "player"
   },
   "orc": {

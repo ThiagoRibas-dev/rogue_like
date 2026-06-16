@@ -421,14 +421,30 @@ export function handleKeyDown(
     } else {
       const pos = getComponent(currentState, playerEntityId, ComponentType.Position);
       if (pos) {
-        handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
+        const spatialIndexKey = `${pos.x},${pos.y}`;
+        const entitiesOnTile = currentState.spatialIndex.get(spatialIndexKey) ?? [];
+        const interactableEntity = entitiesOnTile.find((id) => id !== playerEntityId);
+
+        if (interactableEntity) {
+          handleSmartInteraction(currentState, playerEntityId, { type: 'entity', entityId: interactableEntity });
+        } else {
+          handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
+        }
       }
     }
   } else if (isAction(event, 'verb_menu')) {
     event.preventDefault();
     const pos = getComponent(currentState, playerEntityId, ComponentType.Position);
     if (pos) {
-      handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
+      const spatialIndexKey = `${pos.x},${pos.y}`;
+      const entitiesOnTile = currentState.spatialIndex.get(spatialIndexKey) ?? [];
+      const interactableEntity = entitiesOnTile.find((id) => id !== playerEntityId);
+
+      if (interactableEntity) {
+        handleSmartInteraction(currentState, playerEntityId, { type: 'entity', entityId: interactableEntity });
+      } else {
+        handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
+      }
     }
   }
 }

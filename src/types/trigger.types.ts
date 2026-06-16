@@ -42,6 +42,23 @@ export type ConditionPredicate = z.infer<typeof ConditionPredicateSchema> & Inje
 
 export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({
+    type: z.literal('damage_area'),
+    radius: z.number().int().nonnegative().optional(),
+    amount: z.number().int().optional(),
+    tags: z.array(z.string()).optional()
+  }),
+  z.object({
+    type: z.literal('spawn_entity'),
+    entityTemplateId: z.string(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('apply_status'),
+    statusId: z.string(),
+    duration: z.number().int().positive().optional(),
+    targetId: z.string().optional()
+  }),
+  z.object({
     type: z.literal('remove_entity'),
     targetId: z.string().optional()
   }),

@@ -107,7 +107,7 @@ export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
 // ==========================================
 // 4. ITEMS
 // ==========================================
-export const ItemCategoryEnum = z.enum(['consumable', 'weapon', 'armor']);
+export const ItemCategoryEnum = z.enum(['consumable', 'weapon', 'armor', 'tool']);
 export const EquipmentSlotEnum = z.enum(['head', 'neck', 'torso', 'back', 'arm', 'hand', 'finger', 'leg', 'foot']);
 export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 
@@ -367,7 +367,7 @@ export const AreaDefinitionSchema = z.object({
     .object({
       floor: z.string().describe('Floor Tile ID'),
       wall: z.string().describe('Wall Tile ID'),
-      door: z.string().describe('Door Tile ID'),
+      door: z.string().describe('Door Entity ID'),
       water: z.string().describe('Liquid/Water Tile ID')
     })
     .optional()

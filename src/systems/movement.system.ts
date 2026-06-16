@@ -9,6 +9,7 @@ import type { MoveIntent } from '../types/intents/movement.intents.ts';
 import { isHostile } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
+import { processApplyIntent } from './apply.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
@@ -22,7 +23,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 export function processMoveIntent(
   state: GameState,
   intent: MoveIntent
-): { state: GameState; success: boolean; events?: GameEvent[] } {
+): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   const { entityId, dx, dy } = intent;
 
   const position = getComponent(state, entityId, ComponentType.Position);
@@ -75,6 +76,7 @@ export function processMoveIntent(
   if (entitiesAtTarget !== undefined && entitiesAtTarget.length > 0) {
     let defenderId: EntityId | undefined;
     let isBlocked = false;
+    let blockedByEntityId: EntityId | undefined;
 
     for (const id of entitiesAtTarget) {
       if (getComponent(state, id, ComponentType.Fighter) !== undefined) {
@@ -84,13 +86,16 @@ export function processMoveIntent(
           break;
         } else {
           isBlocked = true;
+          blockedByEntityId = id;
         }
       } else if (getComponent(state, id, ComponentType.Actor) !== undefined) {
         isBlocked = true;
+        blockedByEntityId = id;
       } else {
         const tagsCmp = getComponent(state, id, ComponentType.Tags) as TagsComponent | undefined;
         if (tagsCmp && tagsCmp.tags.includes('solid')) {
           isBlocked = true;
+          blockedByEntityId = id;
         }
       }
     }
@@ -104,6 +109,21 @@ export function processMoveIntent(
     }
 
     if (isBlocked) {
+      if (defenderId === undefined && blockedByEntityId !== undefined) {
+        const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
+        if (interactable && interactable.type === ComponentType.Interactable && interactable.intents.length > 0) {
+          const firstIntent = interactable.intents[0];
+          if (firstIntent && firstIntent.type === IntentType.Apply) {
+            return processApplyIntent(state, {
+              type: IntentType.Apply,
+              entityId,
+              verb: firstIntent.verb,
+              target: { type: 'entity', entityId: blockedByEntityId }
+            });
+          }
+        }
+      }
+
       const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
       if (isPlayer) {
         return { state: addMessage(state, 'Something is in the way.', MessageLogCategory.CombatHit), success: false };

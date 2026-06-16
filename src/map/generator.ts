@@ -53,7 +53,7 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
   const palette = areaDef.proceduralPalette || {
     wall: 'stone_wall',
     floor: 'stone_floor',
-    door: 'closed_door',
+    door: 'wooden_door',
     water: 'shallow_water'
   };
 

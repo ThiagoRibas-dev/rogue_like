@@ -1,21 +1,20 @@
 import * as ROT from 'rot-js';
-import { type GameState, type EntityId, UIMode } from '../types/game-state.types.ts';
+import { generateArea } from '../map/generator.ts';
+import { updateExploredTiles } from '../systems/map.system.ts';
+import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
+import type { ActorComponent, SchemeComponent } from '../types/components.types.ts';
 import {
   ComponentType,
+  type PortalComponent,
   type PositionComponent,
   type RenderableComponent,
-  type InteractableComponent
+  type TagsComponent
 } from '../types/components.types.ts';
-import { addComponent, createEntity, spawnEntity, spawnItem, getComponent } from './ecs.ts';
-import { initEngine, startEngine, addActor, clearScheduler } from './scheduler.ts';
-import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
-import { updateExploredTiles } from '../systems/map.system.ts';
-import { generateArea } from '../map/generator.ts';
+import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
-import { loadGame, deleteSave } from './save.ts';
-import { IntentType } from '../types/intents/intent.enum.ts';
-import { type ChangeAreaIntent } from '../types/intents/movement.intents.ts';
-import type { SchemeComponent, ActorComponent } from '../types/components.types.ts';
+import { deleteSave, loadGame } from './save.ts';
+import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -79,7 +78,8 @@ export async function startNewGame(
     map: initialMap,
     startPos,
     portals,
-    rooms
+    rooms,
+    placedEntities
   } = generateArea(state.campaign, state.campaign.rules.map.startingAreaId);
 
   state = {
@@ -184,21 +184,33 @@ export async function startNewGame(
       fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
       bg: state.campaign.theme.colors.transparent ?? 'transparent'
     };
-    const interactable: InteractableComponent = {
-      type: ComponentType.Interactable,
-      intents: [
-        {
-          type: IntentType.ChangeArea,
-          targetAreaId: portal.connection.targetAreaId,
-          targetX: portal.connection.targetX,
-          targetY: portal.connection.targetY
-        } as ChangeAreaIntent
-      ]
+    const portalComp: PortalComponent = {
+      type: ComponentType.Portal,
+      targetAreaId: portal.connection.targetAreaId,
+      targetX: portal.connection.targetX,
+      targetY: portal.connection.targetY
+    };
+    const tagsCmp: TagsComponent = {
+      type: ComponentType.Tags,
+      tags: ['portal']
     };
 
     state = addComponent(state, stairId, pos);
     state = addComponent(state, stairId, renderCmp);
-    state = addComponent(state, stairId, interactable);
+    state = addComponent(state, stairId, portalComp);
+    state = addComponent(state, stairId, tagsCmp);
+  }
+
+  if (placedEntities) {
+    for (const ent of placedEntities) {
+      if (state.campaign.items[ent.templateId]) {
+        [state] = spawnItem(state, ent.templateId, ent.x, ent.y);
+      } else if (state.campaign.entities[ent.templateId]) {
+        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y);
+      } else {
+        console.warn(`Placed entity template ${ent.templateId} not found in registries.`);
+      }
+    }
   }
 
   state = updateExploredTiles(state);

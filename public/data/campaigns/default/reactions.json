@@ -9,7 +9,7 @@
     },
     "targetMatcher": {
       "targetType": "entity",
-      "tags": ["consumable"]
+      "categories": ["consumable"]
     },
     "consequences": [
       {

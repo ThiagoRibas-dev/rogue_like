@@ -518,10 +518,13 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       const tagsCmp = getComponent(nextState, eId, ComponentType.Tags) as TagsComponent | undefined;
       let newTags = [...(tagsCmp?.tags ?? [])];
 
+      let requiresFovUpdate = false;
       if (consequence.remove) {
+        if (consequence.remove.includes('opaque')) requiresFovUpdate = true;
         newTags = newTags.filter((t) => !consequence.remove!.includes(t));
       }
       if (consequence.add) {
+        if (consequence.add.includes('opaque')) requiresFovUpdate = true;
         for (const t of consequence.add) {
           if (!newTags.includes(t)) newTags.push(t);
         }
@@ -531,6 +534,10 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
         nextState = addComponent(nextState, eId, { ...tagsCmp, tags: newTags });
       } else {
         nextState = addComponent(nextState, eId, { type: ComponentType.Tags, tags: newTags });
+      }
+
+      if (requiresFovUpdate) {
+        nextState = { ...nextState, fovNeedsUpdate: true };
       }
       break;
     }
