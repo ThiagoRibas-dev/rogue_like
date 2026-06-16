@@ -5,8 +5,12 @@ import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processProjectileThrow } from './projectile.system.ts';
 import { processWandZap } from './zap.system.ts';
-import { processReactions } from './reaction.system.ts';
-
+import { processReactions, getValidReactionsForTarget } from './reaction.system.ts';
+import { VERBS, type Verb } from '../constants/verbs.constants.ts';
+import { ComponentType, type ItemComponent } from '../types/components.types.ts';
+import { getComponent } from '../core/ecs.ts';
+import type { EntityId } from '../types/game-state.types.ts';
+import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
 /**
  * Processes an ApplyIntent, which represents a generic attempt by an actor
  * to apply a specific verb to a specific target, optionally using a tool.
@@ -52,4 +56,41 @@ export function processApplyIntent(
     success: false,
     events: [failedEvent]
   };
+}
+
+/**
+ * Returns a list of valid verbs for a given target combination,
+ * evaluating both hardcoded item mechanics (throw/zap) and data-driven reactions.
+ */
+export function getValidVerbsForTarget(
+  state: GameState,
+  sourceEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): Verb[] {
+  const validVerbs = new Set<Verb>();
+
+  // 1. Check hardcoded fallback verb systems (if holding a tool)
+  if (toolEntityId) {
+    const itemComp = getComponent(state, toolEntityId, ComponentType.Item) as ItemComponent | undefined;
+    if (itemComp) {
+      const itemDef = state.campaign.items[itemComp.itemId];
+      if (itemDef) {
+        if (itemDef.throwable) validVerbs.add('throw');
+        if (itemDef.zappable) validVerbs.add('zap');
+      }
+    }
+  }
+
+  // 2. Check all verbs against data-driven reactions
+  for (const verb of VERBS) {
+    if (validVerbs.has(verb)) continue; // Already validated
+
+    const matches = getValidReactionsForTarget(state, verb, sourceEntityId, target, toolEntityId);
+    if (matches.length > 0) {
+      validVerbs.add(verb);
+    }
+  }
+
+  return Array.from(validVerbs);
 }

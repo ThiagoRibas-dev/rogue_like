@@ -4,7 +4,8 @@ import {
   ComponentType,
   type ItemComponent,
   type PositionComponent,
-  type DamageComponent
+  type DamageComponent,
+  type CoatingComponent
 } from '../types/components.types.ts';
 import { getComponent, addComponent, removeComponent, removeEntity } from '../core/ecs.ts';
 import { processReactions } from './reaction.system.ts';
@@ -179,9 +180,7 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     nextState = addMessage(nextState, `The ${itemName} hits!`, MessageLogCategory.CombatHit);
 
     // Apply weapon coating if present
-    const coating = getComponent(nextState, intent.toolEntityId, ComponentType.Coating) as
-      | import('../types/components.types.ts').CoatingComponent
-      | undefined;
+    const coating = getComponent(nextState, intent.toolEntityId, ComponentType.Coating) as CoatingComponent | undefined;
     if (coating) {
       nextState = applyStatusEffect(nextState, hitEntityId, coating.statusId, coating.duration, intent.entityId);
 

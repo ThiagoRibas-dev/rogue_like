@@ -15,7 +15,8 @@ export type ActionType =
   | 'debug_spawn_entity'
   | 'factions'
   | 'quests'
-  | 'investigation';
+  | 'investigation'
+  | 'verb_menu';
 
 export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
@@ -53,7 +54,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     debug_spawn_entity: ['e'],
     factions: ['c'],
     quests: ['q'],
-    investigation: ['v']
+    investigation: ['v'],
+    verb_menu: ['m', 'enter']
   },
   visualFeedback: {
     showDamageNumbers: true,

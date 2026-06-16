@@ -12,7 +12,9 @@ import {
   type DamageComponent,
   type DamageInstance,
   type FactionComponent,
-  type MemoryComponent
+  type MemoryComponent,
+  type EquipmentComponent,
+  type CoatingComponent
 } from '../types/components.types.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 
@@ -88,16 +90,12 @@ export function processMeleeAttackIntent(
     }
 
     // Apply weapon coating if present
-    const equipment = getComponent(state, entityId, ComponentType.Equipment) as
-      | import('../types/components.types.ts').EquipmentComponent
-      | undefined;
+    const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
     if (equipment && equipment.slots) {
       const weaponSlot = equipment.slots.find((s) => s.slotType === 'hand' && s.equippedItem !== null);
       if (weaponSlot && weaponSlot.equippedItem) {
         const weaponId = weaponSlot.equippedItem;
-        const coating = getComponent(nextState, weaponId, ComponentType.Coating) as
-          | import('../types/components.types.ts').CoatingComponent
-          | undefined;
+        const coating = getComponent(nextState, weaponId, ComponentType.Coating) as CoatingComponent | undefined;
         if (coating) {
           nextState = applyStatusEffect(nextState, defenderId, coating.statusId, coating.duration, entityId);
 

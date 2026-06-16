@@ -14,6 +14,7 @@ export type Verb =
   | 'ignite'
   | 'read'
   | 'eat'
+  | 'drink'
   | 'impact';
 
 export const VERBS: ReadonlyArray<Verb> = [
@@ -29,5 +30,6 @@ export const VERBS: ReadonlyArray<Verb> = [
   'ignite',
   'read',
   'eat',
+  'drink',
   'impact'
 ];

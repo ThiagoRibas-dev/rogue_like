@@ -12,6 +12,8 @@ import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { getDirectionDelta } from '../utils/direction.ts';
 import { Direction } from '../utils/direction.ts';
 import { renderSettingsMenu } from '../rendering/ui.ts';
+import { getValidVerbsForTarget } from '../systems/apply.system.ts';
+import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
 
 import {
   createMoveAction,
@@ -46,6 +48,37 @@ import {
 let lastMoveTime = 0;
 const MOVE_THROTTLE_MS = 225;
 
+function handleSmartInteraction(
+  state: GameState,
+  playerEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): void {
+  const validVerbs = getValidVerbsForTarget(state, playerEntityId, target, toolEntityId);
+
+  if (validVerbs.length === 0) {
+    setGameState(addMessage(state, `Nothing interesting to interact with there.`, MessageLogCategory.System));
+    return;
+  }
+
+  // If there's exactly 1 verb, or we want to smartly execute the first (highest priority? Verb array isn't sorted by priority yet, but maybe we just take the first).
+  // The plan says: if exactly 1 verb -> execute.
+  if (validVerbs.length === 1 && validVerbs[0] !== undefined) {
+    queuePlayerIntent(createApplyAction(playerEntityId, validVerbs[0], target, toolEntityId));
+    return;
+  }
+
+  // Otherwise, open verb menu
+  setGameState({
+    ...state,
+    uiMode: UIMode.VerbMenu,
+    verbMenu:
+      toolEntityId !== undefined
+        ? { target, toolEntityId, availableVerbs: validVerbs }
+        : { target, availableVerbs: validVerbs }
+  });
+}
+
 export function handleKeyDown(
   event: KeyboardEvent,
   currentState: GameState,
@@ -79,10 +112,46 @@ export function handleKeyDown(
     return; // Menu buttons handle input
   }
 
-  const playerEntityId = currentState.entities.find((id) =>
-    getComponent(currentState, id, ComponentType.Player)
-  ) as EntityId;
+  const playerEntityId = currentState.entities.find((id) => getComponent(currentState, id, ComponentType.Player)) as
+    | EntityId
+    | undefined;
   if (!playerEntityId) return;
+
+  if (currentState.uiMode === UIMode.VerbMenu) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      // Revert to Game mode, targeting mode remains if it was active
+      setGameState({ ...currentState, uiMode: UIMode.Game, verbMenu: undefined });
+      return;
+    }
+
+    const { availableVerbs, target, toolEntityId } = currentState.verbMenu!;
+
+    // Check 1-9
+    const num = parseInt(event.key, 10);
+    if (!isNaN(num) && num > 0 && num <= availableVerbs.length) {
+      const verb = availableVerbs[num - 1];
+      if (verb) {
+        event.preventDefault();
+        queuePlayerIntent(createApplyAction(playerEntityId, verb, target, toolEntityId));
+        setGameState({ ...currentState, uiMode: UIMode.Game, verbMenu: undefined });
+        return;
+      }
+    }
+
+    // Enter = first verb
+    if (event.key === 'Enter' && availableVerbs.length > 0) {
+      const verb = availableVerbs[0];
+      if (verb) {
+        event.preventDefault();
+        queuePlayerIntent(createApplyAction(playerEntityId, verb, target, toolEntityId));
+        setGameState({ ...currentState, uiMode: UIMode.Game, verbMenu: undefined });
+        return;
+      }
+    }
+
+    return; // Block other input
+  }
 
   const isTargeting = currentState.targetingMode?.active;
   const isInventoryOpen = currentState.uiMode === UIMode.Inventory;
@@ -280,6 +349,17 @@ export function handleKeyDown(
     return;
   }
 
+  if (isTargeting && isAction(event, 'verb_menu')) {
+    event.preventDefault();
+    // Open verb menu for targeted tile
+    handleSmartInteraction(currentState, playerEntityId, {
+      type: 'tile',
+      x: currentState.targetingMode!.x,
+      y: currentState.targetingMode!.y
+    });
+    return;
+  }
+
   // Handle inspect specific keys
   if (isAction(event, 'inspect')) {
     event.preventDefault();
@@ -324,11 +404,31 @@ export function handleKeyDown(
 
       queuePlayerIntent(createWaitAction(playerEntityId));
     }
-  } else if (!isTargeting && isAction(event, 'interact')) {
+  } else if (isAction(event, 'interact')) {
+    event.preventDefault();
+    if (isTargeting) {
+      handleSmartInteraction(currentState, playerEntityId, {
+        type: 'tile',
+        x: currentState.targetingMode!.x,
+        y: currentState.targetingMode!.y
+      });
+    } else if (currentState.inspectMode?.active) {
+      handleSmartInteraction(currentState, playerEntityId, {
+        type: 'tile',
+        x: currentState.inspectMode.x,
+        y: currentState.inspectMode.y
+      });
+    } else {
+      const pos = getComponent(currentState, playerEntityId, ComponentType.Position);
+      if (pos) {
+        handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
+      }
+    }
+  } else if (isAction(event, 'verb_menu')) {
     event.preventDefault();
     const pos = getComponent(currentState, playerEntityId, ComponentType.Position);
     if (pos) {
-      queuePlayerIntent(createApplyAction(playerEntityId, 'apply', { type: 'tile', x: pos.x, y: pos.y }));
+      handleSmartInteraction(currentState, playerEntityId, { type: 'tile', x: pos.x, y: pos.y });
     }
   }
 }

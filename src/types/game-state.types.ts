@@ -3,6 +3,8 @@ import type { CampaignData } from './campaign.types.ts';
 import type { Quest } from './quests.types.ts';
 import type { Intent } from './intents/intent.union.ts';
 import type { GameEvent } from './events.types.ts';
+import type { ApplyIntentTarget } from './intents/interaction.intents.ts';
+import type { Verb } from '../constants/verbs.constants.ts';
 
 /**
  * Enum defining the engine mode.
@@ -29,7 +31,8 @@ export const enum UIMode {
   Quests = 'quests',
   Investigation = 'investigation',
   Editor = 'editor',
-  Debug = 'debug'
+  Debug = 'debug',
+  VerbMenu = 'verb_menu'
 }
 
 /**
@@ -182,6 +185,13 @@ export interface GameState {
   readonly zoomLevel: number;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
+  readonly verbMenu?:
+    | {
+        readonly target: ApplyIntentTarget;
+        readonly toolEntityId?: EntityId;
+        readonly availableVerbs: ReadonlyArray<Verb>;
+      }
+    | undefined;
 }
 
 /**

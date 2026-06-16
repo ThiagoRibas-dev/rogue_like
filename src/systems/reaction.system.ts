@@ -12,7 +12,7 @@ import type { ReactionDefinition } from '../types/campaign.types.ts';
 /**
  * Helper to extract tags, traits, and item category from an entity.
  */
-function getEntityMatcherData(state: GameState, entityId: EntityId) {
+export function getEntityMatcherData(state: GameState, entityId: EntityId) {
   const tagsCmp = getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined;
   const traitsCmp = getComponent(state, entityId, ComponentType.Traits) as TraitsComponent | undefined;
   const itemCmp = getComponent(state, entityId, ComponentType.Item) as ItemComponent | undefined;
@@ -30,7 +30,7 @@ function getEntityMatcherData(state: GameState, entityId: EntityId) {
 /**
  * Helper to evaluate a specific target against a matcher definition.
  */
-function evaluateTargetMatcher(
+export function evaluateTargetMatcher(
   state: GameState,
   matcher: ReactionDefinition['targetMatcher'],
   target: ApplyIntentTarget
@@ -82,30 +82,24 @@ function evaluateTargetMatcher(
 }
 
 /**
- * Processes declarative reactions between game entities based on their tags, traits, and the verb applied.
+ * Returns all matching reactions for a specific verb, source, and target without applying consequences.
  */
-export function processReactions(
+export function getValidReactionsForTarget(
   state: GameState,
   verb: Verb,
   sourceEntityId: EntityId,
   target: ApplyIntentTarget,
   toolEntityId?: EntityId
-): { state: GameState; success: boolean } {
-  // Resolve source entity for matcher.
-  // If a tool is used, the tool is the source for the reaction matching purposes.
-  // E.g., apply(tool: Key, target: Door). The key is the source.
-  // If no tool, the actor is the source.
+): ReactionDefinition[] {
   const activeSourceId = toolEntityId ?? sourceEntityId;
   const sourceData = getEntityMatcherData(state, activeSourceId);
-
-  // Filter matching reactions
   const matches: ReactionDefinition[] = [];
 
   for (const reaction of state.campaign.reactions) {
     if (reaction.verb !== verb) continue;
 
     // Evaluate Source
-    if (reaction.sourceMatcher.targetType !== 'entity') continue; // source is always an entity
+    if (reaction.sourceMatcher.targetType !== 'entity') continue;
     if (reaction.sourceMatcher.entityId && reaction.sourceMatcher.entityId !== activeSourceId.toString()) continue;
     if (
       reaction.sourceMatcher.categories &&
@@ -141,10 +135,6 @@ export function processReactions(
     matches.push(reaction);
   }
 
-  if (matches.length === 0) {
-    return { state, success: false };
-  }
-
   // Tie-breaking: Highest priority first, then stable ID sort
   matches.sort((a, b) => {
     if (a.priority !== b.priority) {
@@ -152,6 +142,25 @@ export function processReactions(
     }
     return a.id.localeCompare(b.id);
   });
+
+  return matches;
+}
+
+/**
+ * Processes declarative reactions between game entities based on their tags, traits, and the verb applied.
+ */
+export function processReactions(
+  state: GameState,
+  verb: Verb,
+  sourceEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): { state: GameState; success: boolean } {
+  const matches = getValidReactionsForTarget(state, verb, sourceEntityId, target, toolEntityId);
+
+  if (matches.length === 0) {
+    return { state, success: false };
+  }
 
   const winningReaction = matches[0]!;
 

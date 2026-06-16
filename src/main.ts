@@ -21,7 +21,8 @@ import {
   renderQuestJournal,
   renderDialoguePanel,
   renderInvestigationBoard,
-  renderDebugOverlay
+  renderDebugOverlay,
+  renderVerbMenu
 } from './rendering/ui.ts';
 import { renderEditorUI } from './rendering/editor_ui.ts';
 import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
@@ -460,6 +461,7 @@ onStateChange((newState: GameState) => {
     renderQuestJournal(newState);
     renderInvestigationBoard(newState);
     renderDebugOverlay(newState);
+    renderVerbMenu(newState);
   }
 });
 

@@ -195,5 +195,16 @@
       { "type": "spawn_entity", "entityTemplateId": "fire_surface" }
     ],
     "message": "The wooden door goes up in flames and burns to ashes!"
+  },
+  {
+    "id": "drink_fountain",
+    "verb": "drink",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["water_source"] },
+    "consequences": [
+      { "type": "apply_status", "statusId": "regeneration", "duration": 50 }
+    ],
+    "message": "You take a refreshing drink from the water source. You feel revitalized!"
   }
 ]

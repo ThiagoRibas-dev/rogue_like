@@ -5,7 +5,10 @@ export const enum UITooltipType {
   Item = 'item',
   Status = 'status',
   Stat = 'stat',
-  Entity = 'entity'
+  Entity = 'entity',
+  Reaction = 'reaction',
+  Tag = 'tag',
+  Field = 'field'
 }
 
 /**

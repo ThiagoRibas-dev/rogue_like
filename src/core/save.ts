@@ -4,7 +4,8 @@ import {
   type AreaData,
   type SerializedGameState,
   type SerializedAreaData,
-  EngineMode
+  EngineMode,
+  UIMode
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
@@ -156,7 +157,7 @@ export async function loadGame(): Promise<GameState | null> {
       persistentEntities: rehydratedPersistentEntities,
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
-      uiMode: sState.uiMode,
+      uiMode: sState.uiMode === UIMode.VerbMenu ? UIMode.Game : sState.uiMode,
       identifiedItems: new Set(sState.identifiedItems || []),
       itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
       engineMode: sState.engineMode || EngineMode.TurnBased,

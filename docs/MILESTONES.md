@@ -402,20 +402,18 @@ Add the first compact content pack that proves the unified Apply + Reaction arch
 - [x] Add campaign data examples and editor presets in `src/rendering/editor_ui.ts` so designers can clone working interaction templates.
 - [x] Surface all hidden consequences through messages (`src/systems/message.system.ts`), clues, tooltips, or Reaction Trace entries.
 
-## 🟡 Milestone 35: Action Discovery, Verb Menu & Interaction UX
+## 🟢 Milestone 35: Action Discovery, Verb Menu & Interaction UX
 Make the expanded interaction vocabulary discoverable instead of requiring players to memorize every verb.
-- [ ] Extend UI input handling in `src/rendering/ui.ts` and `input_handler.ts` so inventory items, map entities, ground items, and target tiles can all be selected as valid Apply targets.
-- [ ] Build a contextual Verb Menu in `src/rendering/ui/verb_menu.ui.ts` that lists valid Apply verbs for the selected actor/tool/target combination (**utilizing the internal ECS target-selection foundation established in M29**).
-- [ ] Add a “smart apply” default action in input handling that chooses the highest-confidence valid verb while still allowing manual override.
-- [ ] Use a dry-run validation path in `src/actions/action.registry.ts` to show why an action is valid or invalid without mutating the `GameState`.
-- [ ] Add tooltip explanations in `src/rendering/ui/tooltip.ui.ts` for tool tags, target tags, reaction previews, lock difficulty, and field hazards.
-- [ ] Extend key rebinding in `src/constants/keybinds.constants.ts` for new verbs and preserve accessibility settings.
-- [ ] Add a tutorial/example campaign segment demonstrating throw, unlock, kick, dip, zap, and field reactions.
+- [x] Add a “smart apply” default action in input handling that chooses the highest-confidence valid verb while still allowing manual override.
+- [x] Use a dry-run validation path in `src/actions/action.registry.ts` to show why an action is valid or invalid without mutating the `GameState`.
+- [x] Add tooltip explanations in `src/rendering/ui/tooltip.ui.ts` for tool tags, target tags, reaction previews, lock difficulty, and field hazards.
+- [x] Extend key rebinding in `src/constants/keybinds.constants.ts` for new verbs and preserve accessibility settings.
+- [x] Add a tutorial/example campaign segment demonstrating throw, unlock, kick, dip, zap, and field reactions.
 
 ---
 
 # 🚀 Phase 6: Encounter Director & Tactical Procedural Generation
-**Goal:** Replace flat spawn-table population with an algorithmic “Micro Game Master” that spends area budgets across tactical axes: objective, advantages, hazards, and chaos. This phase turns procedural rooms into authored-feeling combat puzzles.
+**Goal:** Replace flat spawn-table population with an algorithmic “Game Master” that spends area budgets across tactical axes: objective, advantages, hazards, and chaos. This phase turns procedural rooms into authored-feeling combat puzzles.
 
 ## 🟡 Milestone 36: Area Budgets, Spawn Roles & Director Schemas ⭐ KEYSTONE
 Add the data model the Encounter Director needs to reason about difficulty and encounter composition.

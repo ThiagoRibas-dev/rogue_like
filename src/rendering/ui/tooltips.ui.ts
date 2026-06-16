@@ -3,6 +3,7 @@ import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
+import { type Verb } from '../../constants/verbs.constants.ts';
 
 /**
  * Initializes the global UI tooltip system using event delegation.
@@ -93,6 +94,32 @@ export function initUITooltips(getState: () => GameState | undefined): void {
           if (bonus !== 0) {
             contentHTML += `<div class="ui-tooltip-stat"><span>Bonus</span><span>${bonus > 0 ? '+' : ''}${bonus}</span></div>`;
           }
+        }
+      }
+    } else if (type === UITooltipType.Reaction && target.dataset.tooltipVerb) {
+      const verb = target.dataset.tooltipVerb as Verb;
+
+      // Look up what this verb generally does, or if we have a specific reaction matching it.
+      // For now, let's just show a generic explanation of the verb based on the UI context
+      // if it's in the verb menu, it means it's a valid action!
+      contentHTML += `<div class="ui-tooltip-header">Action: ${verb.toUpperCase()}</div>`;
+      contentHTML += `<div class="ui-tooltip-desc">Select this action to attempt it. Consequences depend on the target.</div>`;
+    } else if (type === UITooltipType.Tag && id) {
+      const tagDef = state.campaign.tagRegistry?.[id];
+      if (tagDef) {
+        contentHTML += `<div class="ui-tooltip-header" style="color: ${tagDef.color ?? 'inherit'}">Tag: ${id}</div>`;
+        contentHTML += `<div class="ui-tooltip-desc">${tagDef.description}</div>`;
+      } else {
+        contentHTML += `<div class="ui-tooltip-header">Tag: ${id}</div>`;
+        contentHTML += `<div class="ui-tooltip-desc">An entity property.</div>`;
+      }
+    } else if (type === UITooltipType.Field && id) {
+      const fieldDef = state.campaign.fields?.[id];
+      if (fieldDef) {
+        contentHTML += `<div class="ui-tooltip-header" style="color: ${fieldDef.fg ?? 'inherit'}">${fieldDef.name}</div>`;
+        contentHTML += `<div class="ui-tooltip-desc">A persistent field effect.</div>`;
+        if (fieldDef.damagePerTurn) {
+          contentHTML += `<div class="ui-tooltip-stat"><span>Damage/Turn</span><span style="color: #ff4444">${fieldDef.damagePerTurn}</span></div>`;
         }
       }
     }

@@ -11,3 +11,4 @@ export { renderQuestJournal } from './ui/quest.ui.ts';
 export { renderDialoguePanel } from './ui/dialogue.ui.ts';
 export { renderInvestigationBoard } from './ui/investigation.ui.ts';
 export { renderDebugOverlay } from './ui/debug.ui.ts';
+export { renderVerbMenu } from './ui/verb_menu.ui.ts';

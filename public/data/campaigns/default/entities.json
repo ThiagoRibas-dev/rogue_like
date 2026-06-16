@@ -187,7 +187,7 @@
     "fg": "#3498db",
     "bg": "transparent",
     "isActor": false,
-    "tags": ["fountain", "liquid", "terrain"],
+    "tags": ["fountain", "liquid", "terrain", "water_source"],
     "renderable": true
   },
   "altar": {
