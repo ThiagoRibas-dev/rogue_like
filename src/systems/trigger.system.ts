@@ -157,7 +157,8 @@ import type {
   TagsComponent,
   RenderableComponent,
   LockComponent,
-  InteractableComponent
+  InteractableComponent,
+  CoatingComponent
 } from '../types/components.types.ts';
 import { toItemInstanceId } from '../types/components.types.ts';
 import type { DebugTriggerTraceEvent, EntityDiedEvent, TrapTriggeredEvent } from '../types/events.types.ts';
@@ -593,6 +594,37 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
         );
         nextState = addComponent(nextState, eId, { ...interactable, intents: newIntents });
       }
+      break;
+    }
+
+    case 'apply_coating': {
+      let eId: EntityId | undefined;
+      if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (
+          event as unknown as { target: { type: string; entityId?: EntityId; itemEntityId?: EntityId } }
+        ).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        } else if (targetPayload.type === 'item') {
+          eId = targetPayload.itemEntityId;
+        }
+      }
+
+      if (eId === undefined) break;
+
+      const newCoating: CoatingComponent = {
+        type: ComponentType.Coating,
+        statusId: consequence.statusId,
+        charges: consequence.charges,
+        duration: consequence.duration ?? 10
+      };
+
+      nextState = addComponent(nextState, eId, newCoating);
+
+      const itemName = getComponent(nextState, eId, ComponentType.Renderable)?.glyph ?? 'The item';
+      nextState = addMessage(nextState, `${itemName} is now coated!`, MessageLogCategory.System);
       break;
     }
   }

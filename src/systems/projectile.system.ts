@@ -10,6 +10,7 @@ import { getComponent, addComponent, removeComponent, removeEntity } from '../co
 import { processReactions } from './reaction.system.ts';
 import { rng } from '../core/rng.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { applyStatusEffect } from './status-effect.system.ts';
 
 /**
  * Returns an array of points representing a line from (x0, y0) to (x1, y1)
@@ -176,6 +177,22 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     };
     nextState = addComponent(nextState, hitEntityId, dmgComp);
     nextState = addMessage(nextState, `The ${itemName} hits!`, MessageLogCategory.CombatHit);
+
+    // Apply weapon coating if present
+    const coating = getComponent(nextState, intent.toolEntityId, ComponentType.Coating) as
+      | import('../types/components.types.ts').CoatingComponent
+      | undefined;
+    if (coating) {
+      nextState = applyStatusEffect(nextState, hitEntityId, coating.statusId, coating.duration, intent.entityId);
+
+      const newCharges = coating.charges - 1;
+      if (newCharges <= 0) {
+        nextState = removeComponent(nextState, intent.toolEntityId, ComponentType.Coating);
+        nextState = addMessage(nextState, `The coating on the ${itemName} wears off.`, MessageLogCategory.System);
+      } else {
+        nextState = addComponent(nextState, intent.toolEntityId, { ...coating, charges: newCharges });
+      }
+    }
   } else if (missed) {
     nextState = addMessage(nextState, `The ${itemName} misses.`, MessageLogCategory.CombatMiss);
   }

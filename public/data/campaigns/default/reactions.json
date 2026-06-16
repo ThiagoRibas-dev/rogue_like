@@ -160,5 +160,40 @@
       { "type": "remove_entity" }
     ],
     "message": "The water extinguishes the fire!"
+  },
+  {
+    "id": "dip_weapon_fountain",
+    "verb": "dip",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["fountain"] },
+    "toolMatcher": { "targetType": "entity", "tags": ["weapon"] },
+    "consequences": [
+      { "type": "apply_coating", "statusId": "poison", "charges": 5, "duration": 10 }
+    ],
+    "message": "You dip the weapon into the fountain. It is now coated!"
+  },
+  {
+    "id": "zap_altar",
+    "verb": "zap",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["altar"] },
+    "consequences": [
+      { "type": "spawn_clue", "clueId": "divine_secret" }
+    ],
+    "message": "The altar absorbs the magical energy and glows brightly!"
+  },
+  {
+    "id": "ignite_door",
+    "verb": "ignite",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door", "solid"] },
+    "consequences": [
+      { "type": "remove_entity", "targetId": "event.entityId" },
+      { "type": "spawn_entity", "entityTemplateId": "fire_surface" }
+    ],
+    "message": "The wooden door goes up in flames and burns to ashes!"
   }
 ]

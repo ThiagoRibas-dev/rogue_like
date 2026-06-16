@@ -392,15 +392,15 @@ Represent persistent environmental effects as entities rather than building a fu
 - [x] Ensure fields serialize correctly across saves, area sleep/wake (`src/core/save.ts`), and inactive area storage.
 - [x] Add debug overlay rendering in `src/rendering/ui/debug.ui.ts` for field type, intensity, duration, and spread decisions.
 
-## 🟡 Milestone 34: Dip/Coat, Wands/Zaps, Fountains & Altars
+## 🟢 Milestone 34: Dip/Coat, Wands/Zaps, Fountains & Altars
 Add the first compact content pack that proves the unified Apply + Reaction architecture creates combinatorial depth.
-- [ ] Implement `dip` reactions in `src/systems/reaction.system.ts` for item-to-item and item-to-terrain interactions.
-- [ ] Support temporary item coatings such as poisoned blades or coated arrows with finite on-hit charges, updating `getEffectiveStats` or weapon hit resolution.
-- [ ] Implement `zap` delivery modes for wands in targeting logic: beam, bolt, cone, and simple bounce/reflection where tractable.
-- [ ] Add terrain-as-content entities: fountains, altars, shrines, and sacrificial surfaces utilizing `InteractableComponent` + semantic tags.
-- [ ] Create reaction examples in `public/campaigns/default/data/reactions.json`: dip weapon in poison, dip item in fountain, ignite oil/fire tags, sacrifice corpse at altar, zap wand at entity/tile.
-- [ ] Add campaign data examples and editor presets in `src/rendering/editor_ui.ts` so designers can clone working interaction templates.
-- [ ] Surface all hidden consequences through messages (`src/systems/message.system.ts`), clues, tooltips, or Reaction Trace entries.
+- [x] Implement `dip` reactions in `src/systems/reaction.system.ts` for item-to-item and item-to-terrain interactions.
+- [x] Support temporary item coatings such as poisoned blades or coated arrows with finite on-hit charges, updating `getEffectiveStats` or weapon hit resolution.
+- [x] Implement `zap` delivery modes for wands in targeting logic: beam, bolt, cone, and simple bounce/reflection where tractable.
+- [x] Add terrain-as-content entities: fountains, altars, shrines, and sacrificial surfaces utilizing `InteractableComponent` + semantic tags.
+- [x] Create reaction examples in `public/campaigns/default/data/reactions.json`: dip weapon in poison, dip item in fountain, ignite oil/fire tags, sacrifice corpse at altar, zap wand at entity/tile.
+- [x] Add campaign data examples and editor presets in `src/rendering/editor_ui.ts` so designers can clone working interaction templates.
+- [x] Surface all hidden consequences through messages (`src/systems/message.system.ts`), clues, tooltips, or Reaction Trace entries.
 
 ## 🟡 Milestone 35: Action Discovery, Verb Menu & Interaction UX
 Make the expanded interaction vocabulary discoverable instead of requiring players to memorize every verb.

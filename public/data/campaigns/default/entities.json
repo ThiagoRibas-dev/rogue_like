@@ -179,5 +179,25 @@
       "locked": true,
       "breakable": true
     }
+  },
+  "fountain": {
+    "id": "fountain",
+    "name": "Fountain",
+    "glyph": "{",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["fountain", "liquid", "terrain"],
+    "renderable": true
+  },
+  "altar": {
+    "id": "altar",
+    "name": "Altar",
+    "glyph": "_",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": ["altar", "divine", "terrain"],
+    "renderable": true
   }
 }

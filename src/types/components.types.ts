@@ -4,6 +4,7 @@
 export const enum ComponentType {
   Position = 'Position',
   Renderable = 'Renderable',
+  Coating = 'Coating',
   Player = 'Player',
   Actor = 'Actor',
   Interactable = 'Interactable',
@@ -144,6 +145,16 @@ export interface ItemComponent {
   readonly instanceId: ItemInstanceId;
   /** Remaining charges for consumables with multiple uses (M8 prep for wands). */
   readonly charges?: number;
+}
+
+/**
+ * Component applied to an item representing a temporary coating or buff (e.g., dipped in poison).
+ */
+export interface CoatingComponent {
+  readonly type: ComponentType.Coating;
+  readonly statusId: string;
+  readonly charges: number;
+  readonly duration: number;
 }
 
 /**
@@ -398,4 +409,5 @@ export type Component =
   | AgreementComponent
   | ClueComponent
   | LockComponent
-  | FieldComponent;
+  | FieldComponent
+  | CoatingComponent;

@@ -149,6 +149,14 @@ export const ItemDefinitionSchema = z.object({
       damage: z.number().int().nonnegative().optional(),
       destroyOnImpact: z.boolean().optional()
     })
+    .optional(),
+  zappable: z
+    .object({
+      range: z.number().int().positive(),
+      pattern: z.enum(['beam', 'bolt', 'cone']),
+      effectId: z.string(),
+      charges: z.number().int().positive().optional()
+    })
     .optional()
 });
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;
@@ -156,8 +164,11 @@ export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;
 // ==========================================
 // 5. EFFECTS (Item Effects)
 // ==========================================
+export const FactionRelationEnum = z.enum(['hostile', 'neutral', 'friendly']);
+
 export const ItemEffectTypeEnum = z.enum([
   'heal',
+  'damage',
   'damage_nearest',
   'damage_area',
   'apply_status',
@@ -174,7 +185,14 @@ export const ItemEffectDefinitionSchema = z.object({
   statusId: z.string().optional(),
   duration: z.number().int().positive().optional(),
   message: z.string(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
+  targetFilters: z
+    .object({
+      requireTags: z.array(z.string()).optional(),
+      excludeTags: z.array(z.string()).optional(),
+      factions: z.array(FactionRelationEnum).optional()
+    })
+    .optional()
 });
 export type ItemEffectDefinition = z.infer<typeof ItemEffectDefinitionSchema>;
 
@@ -287,7 +305,6 @@ export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
 // ==========================================
 // 9. FACTIONS
 // ==========================================
-export const FactionRelationEnum = z.enum(['hostile', 'neutral', 'friendly']);
 export const FactionMatrixSchema = z.record(z.string(), z.record(z.string(), FactionRelationEnum));
 export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 

@@ -94,6 +94,13 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('change_intents'),
     intents: z.array(z.string()),
     targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('apply_coating'),
+    statusId: z.string(),
+    charges: z.number().int().positive(),
+    duration: z.number().int().positive().default(10),
+    targetId: z.string().optional()
   })
 ]);
 

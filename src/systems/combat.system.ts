@@ -3,6 +3,8 @@ import { rng } from '../core/rng.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../types/intents/combat.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { applyStatusEffect } from './status-effect.system.ts';
+import { removeComponent } from '../core/ecs.ts';
 
 import { getSettings } from '../core/settings.ts';
 import {
@@ -83,6 +85,35 @@ export function processMeleeAttackIntent(
         instances: [damageInstance]
       };
       nextState = addComponent(nextState, defenderId, newDamageComp);
+    }
+
+    // Apply weapon coating if present
+    const equipment = getComponent(state, entityId, ComponentType.Equipment) as
+      | import('../types/components.types.ts').EquipmentComponent
+      | undefined;
+    if (equipment && equipment.slots) {
+      const weaponSlot = equipment.slots.find((s) => s.slotType === 'hand' && s.equippedItem !== null);
+      if (weaponSlot && weaponSlot.equippedItem) {
+        const weaponId = weaponSlot.equippedItem;
+        const coating = getComponent(nextState, weaponId, ComponentType.Coating) as
+          | import('../types/components.types.ts').CoatingComponent
+          | undefined;
+        if (coating) {
+          nextState = applyStatusEffect(nextState, defenderId, coating.statusId, coating.duration, entityId);
+
+          const newCharges = coating.charges - 1;
+          if (newCharges <= 0) {
+            nextState = removeComponent(nextState, weaponId, ComponentType.Coating);
+            nextState = addMessage(
+              nextState,
+              `The coating on ${attackerName}'s weapon wears off.`,
+              MessageLogCategory.System
+            );
+          } else {
+            nextState = addComponent(nextState, weaponId, { ...coating, charges: newCharges });
+          }
+        }
+      }
     }
   } else {
     nextState = addMessage(

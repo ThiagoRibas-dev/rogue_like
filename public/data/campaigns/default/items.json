@@ -255,5 +255,59 @@
     "category": "tool",
     "weight": 1,
     "tags": ["tool:lockpick"]
+  },
+  "wand_of_lightning": {
+    "id": "wand_of_lightning",
+    "name": "Wand of Lightning",
+    "unidentifiedName": "Glass Wand",
+    "description": "A wand that shoots a beam of lightning, piercing through enemies.",
+    "glyph": "/",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "beam",
+      "range": 6,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_fire": {
+    "id": "wand_of_fire",
+    "name": "Wand of Fire",
+    "unidentifiedName": "Ruby Wand",
+    "description": "A wand that shoots a bolt of fire, stopping at the first enemy hit.",
+    "glyph": "/",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "bolt",
+      "range": 5,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_cold": {
+    "id": "wand_of_cold",
+    "name": "Wand of Cold",
+    "unidentifiedName": "Frosty Wand",
+    "description": "A wand that emits a cone of freezing cold air.",
+    "glyph": "/",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_5_cold",
+      "pattern": "cone",
+      "range": 3,
+      "maxCharges": 3,
+      "currentCharges": 3
+    }
   }
 }

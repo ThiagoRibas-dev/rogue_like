@@ -23,6 +23,8 @@ The dependency graph flows strictly downward. Circular imports are banned. Modul
 
 Since the Campaign Editor is a top-level creator tool rather than a part of the active gameplay loops, the `editor/` controller folder sits at the top tier of the graph alongside the game bootstrap, permitting it to import from any engine layer while keeping the `rendering/` view layer completely isolated.
 
+**Top-Level Tooling Orchestration:** To respect downward dependency constraints, developer tools and builders that coordinate multiple systems (like the map generator, AI behaviors, and dialogue trees) must reside in a dedicated `src/editor/` namespace at the top tier of the graph rather than in lower view layers like `src/rendering/`. The UI view layer remains a dumb component tree that only communicates upward via event dispatching.
+
 ```mermaid
 graph TD
     %% Styling
@@ -103,21 +105,13 @@ graph TD
 
 ---
 
-## 3. Major Subsystems
+## 4. Major Subsystems
 
 ### Entity-Component-System (ECS-lite)
 We use a low-overhead, framework-free ECS:
 - **Entities** are simple numeric IDs (`EntityId` branded type), not class instances.
 - **Components** are pure data objects (TS interfaces) with no methods. They are stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>` within the global `GameState` for `O(1)` access.
 - **Systems** are pure functions that query components using `getComponent`, process game state changes, and return new state via `addComponent` / `removeComponent`.
-
-### 4. Event Routing Buckets
-Rather than having global Event Listeners or looping `O(N)` queries every frame (e.g., checking all quests when an entity dies), we rely on cached inverted indexes (buckets) stored directly on the related components (e.g., `QuestLogComponent.activeTriggers`).
-*Decision:* This turns an `O(Quests * Objectives)` operation into an `O(1)` map lookup during high-frequency combat events, isolating the performance cost only to the moment a quest is granted or completed.
-
-### 5. Strict Seed Determinism
-The game relies entirely on a shared `ROT.RNG` instance and strict global counters (`nextEntityId`, `nextQuestId`).
-*Decision:* No system is permitted to use `Math.random()` or `Date.now()`, even for string ID generation. This guarantees that any two players with the same seed and input sequence will experience the exact same game state.
 
 ### Map Generation & FOV
 - **Generator**: Uses `ROT.Map.Digger` wrapped in `src/map/generator.ts` to create standard room-and-corridor layouts.
@@ -156,6 +150,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### AI Pipeline & Factions
 - **Composable Behaviors**: AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`). These are composed into data-driven AI Profiles (e.g., `MeleeAggressive`, `RangedArcher`).
 - **Faction Matrix**: Hostility is determined by looking up `FactionId`s in a `HOSTILITY_MATRIX`, replacing hardcoded "player vs monster" logic to allow infighting and neutral NPCs.
+- **Memory Separation of Concerns**: AI combat tracking data (like `grudges` tracking attacker IDs) is kept strictly separated from narrative state tracking (like boolean `facts` for dialogues). Mixing them creates brittle code that can falsely trigger AI hostility.
 - **Line of Sight & Cooldowns**: AI modules utilize the FOV system (`computeFOV`) to ensure they only attack visible targets, and the `AIComponent` statefully tracks ability cooldowns to prevent spell spam.
 
 ### Dialogue Engine & The Social Layer
@@ -173,6 +168,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 ### Save & Persistence
 - **State Serialization**: The `GameState` is strictly immutable and contains all active data, making serialization to JSON for `localStorage` saving trivial via `src/core/save.ts`.
 - **Inactive Levels**: Non-active floors are stored in a compressed/serialized format within the `GameState` and swapped back into active ECS arrays upon level transitions.
+- **JSON Patch & RNG Entanglement**: JSON Patches (RFC 6902) are highly effective for tracking static database changes in editor environments. However, turn-rewinding in the active gameplay loop requires checkpointing the state of `src/core/rng.ts` (seed counters and `rng` state) alongside the state delta patches, otherwise future random results will desync.
 
 ### The Reaction System & Data-Driven Interactions
 - **Unified Apply Intent**: All interactions (using items, opening doors, triggering stairs) are funneled through a single `ApplyIntent` carrying a generic `verb` (e.g., `apply`, `kick`). This replaces hardcoded bespoke intents like `InteractIntent` and `UseItemIntent`.
@@ -183,9 +179,19 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Data-Driven Terrain**: Terrain features like doors and shallow water define interaction outcomes and movement costs directly in their JSON definitions.
 - **Traps**: Handled by `trigger.system.ts`, hidden entities like traps use a `TrapComponent` to process effects when a unit steps on them.
 
+### Areas and Transitions
+The game world is divided into distinct "Areas", which can be procedurally generated dungeons or static, hand-crafted hubs.
+The `GameState` tracks the `currentAreaId`, while inactive areas are serialized into an `areas` map. When the player uses a transition portal, the current ECS state is packed into cold storage, and the target area is unpacked (or generated) and brought into the active ECS.
+
+### Persistent Entities (Sleep/Wake Pipeline)
+To allow certain entities (like named NPCs) to persist and maintain state (such as health, inventory, or memories) when the player is not in their area, the engine uses a Sleep/Wake pipeline:
+1. **Sleep Phase:** When unloading an Area, any entity with a `PersistentComponent` is saved into a global `persistentEntities` pool on the `GameState`, rather than the Area's local storage.
+2. **Wake Phase:** When loading an Area, the system checks the `persistentEntities` pool for any entities mapped to the incoming `targetAreaId`. Those entities are pulled from the pool and re-injected into the active ECS.
+This ensures that persistent NPCs don't get trapped in a specific Area's serialized state and can potentially migrate between areas without breaking data integrity.
+
 ---
 
-## 4. Decision Log
+## 5. Decision Log
 
 ### State Mutability vs ECS Design
 - **Decision**: Components are stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>`. Systems clone the outer map when an entity is added/removed, but during state updates, they only clone and replace the specific dictionary for the modified entity.
@@ -241,21 +247,11 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 
 ### Declarative Item Effects Registry
 - **Decision**: Item effects are defined as pure data objects (`ItemEffectDefinition`) mapped by string ID (`ITEM_EFFECTS`). The effect processor (`effects.system.ts`) interprets this data rather than executing inline functions.
-- **Rationale**: Function closures cannot be serialized or safely synced over a network. Data objects can be trivially serialized for save/load (M7) and ultimately moved out of TypeScript into JSON/YAML configuration files for Modding (M9).
+- **Rationale**: Function closures cannot be serialized or safely synced over a network. Data objects can be trivially serialized for save/load and ultimately moved out of TypeScript into JSON/YAML configuration files for Modding.
 
 ### Entity Ownership and Foreign Keys
 - **Decision**: The ECS flattens the entity hierarchy. Components (like `InventoryComponent` or `EquipmentComponent`) do not "contain" other entities; they only store their `EntityId` (effectively a foreign key). When migrating an entity between distinct state boundaries, the engine must manually traverse and package these owned "child" entities.
 - **Rationale**: If we fail to resolve these foreign keys during a transition, the parent entity arrives in the new state holding IDs for items that were left behind in the previous state's arrays, resulting in soft-locks or missing components.
-
-### Areas and Transitions
-The game world is divided into distinct "Areas", which can be procedurally generated dungeons or static, hand-crafted hubs.
-The `GameState` tracks the `currentAreaId`, while inactive areas are serialized into an `areas` map. When the player uses a transition portal, the current ECS state is packed into cold storage, and the target area is unpacked (or generated) and brought into the active ECS.
-
-### Persistent Entities (Sleep/Wake Pipeline)
-To allow certain entities (like named NPCs) to persist and maintain state (such as health, inventory, or memories) when the player is not in their area, the engine uses a Sleep/Wake pipeline:
-1. **Sleep Phase:** When unloading an Area, any entity with a `PersistentComponent` is saved into a global `persistentEntities` pool on the `GameState`, rather than the Area's local storage.
-2. **Wake Phase:** When loading an Area, the system checks the `persistentEntities` pool for any entities mapped to the incoming `targetAreaId`. Those entities are pulled from the pool and re-injected into the active ECS.
-This ensures that persistent NPCs don't get trapped in a specific Area's serialized state and can potentially migrate between areas without breaking data integrity.
 
 ### Composable AI Behavior Pipeline
 - **Decision**: AI logic is split into discrete, pure functions (behaviors like `hunt`, `flee`, `ranged`). Entities receive an `AIProfileId` referencing a data-driven list of behaviors. During an entity's turn, the pipeline evaluates these behaviors in priority order until one returns an executable `Intent`.
@@ -267,11 +263,11 @@ This ensures that persistent NPCs don't get trapped in a specific Area's seriali
 
 ### Player Knowledge vs Physical Properties (ECS Domain Modeling)
 - **Decision**: Information that represents the player's memory or global knowledge (e.g., whether an item type is "Identified") is stored as a global set on `GameState` rather than an `identified: boolean` flag on individual `ItemComponent` instances.
-- **Rationale**: An ECS component should represent a localized physical property of an entity. The player's memory is not a physical property of the sword sitting on the floor. If we used an instance flag, using a "Scroll of Identify" would require iterating over and mutating every single item across all active and inactive dungeon levels (an O(N) operation that breaks the encapsulation of inactive floors). By modeling this as Global Player Knowledge, any rendering system can instantly check the global set without mutating entity instances. This also perfectly supports future features like "Amnesia" spells or pre-identified starting loadouts.
+- **Rationale**: An ECS component should represent a localized physical property of an entity. The player's memory is not a physical property of the sword sitting on the floor. If we used an instance flag, using a "Scroll of Identify" would require iterating over and mutating every single item across all active and inactive dungeon levels (an O(N) operation that breaks the encapsulation of inactive floors). By modeling this as Global Player Knowledge, any rendering system can instantly check the global set without mutating entity instances.
 
 ### Campaign Data Format & Validation
-- **Decision**: Campaign data (entities, items, map tiles, effects, etc.) is stored as JSON files bundled in the application and loaded dynamically at runtime via `fetch()`. A global registry (`public/data/campaigns.json`) acts as the single source of truth for all available campaigns and their basic metadata. We use `zod` for defining schemas, which provides both runtime validation and TypeScript type inference. The built-in TS constants have been deleted, and all subsystems read registry data directly from the loaded campaign state (attached to `GameState`). The base game itself is just the `default` campaign.
-- **Rationale**: JSON is universally supported and familiar to modders. The central `campaigns.json` registry allows the frontend to easily list and select campaigns without needing a dynamic backend to read directory contents. While `zod` adds ~50KB to the bundle, it provides an invaluable single source of truth for our data definitions, ensuring that malformed mod JSONs throw precise, human-readable errors immediately upon loading, rather than causing cryptic undefined behavior during gameplay.
+- **Decision**: Campaign data (entities, items, map tiles, effects, etc.) is stored as JSON files bundled in the application and loaded dynamically at runtime via `fetch()`. A global registry (`public/data/campaigns.json`) acts as the single source of truth for all available campaigns and their basic metadata. We use `zod` for defining schemas. The base game itself is just the `default` campaign.
+- **Rationale**: JSON is universally supported and familiar to modders. The central `campaigns.json` registry allows the frontend to easily list and select campaigns without needing a dynamic backend. `zod` provides an invaluable single source of truth for our data definitions, ensuring that malformed mod JSONs throw precise, human-readable errors immediately upon loading.
 
 ### Data-Driven Polymorphism over Routing Logic
 - **Decision**: When building scalable architectures (like our Intents/Actions system), avoid writing centralized "routing" logic (massive `switch` or `if/else` trees) that determines how a piece of data behaves based on its type. Instead, encode meta-properties directly into the data shape (e.g., adding `isImmediate: true` directly to an Intent interface). 
@@ -288,19 +284,3 @@ This ensures that persistent NPCs don't get trapped in a specific Area's seriali
 ### Save File Backwards Compatibility
 - **Decision**: During development phases (pre-v1.0), there is strictly no need to concern ourselves with backwards compatibility for `localStorage` save files. When the `GameState` shape changes, old saves can be safely invalidated or discarded.
 - **Rationale**: Writing complex migration scripts to preserve save states between rapidly evolving milestones wastes development time and increases bug surface area. The game should fail fast or discard old saves rather than attempting to load them into incompatible new structures.
-
-### Modular View & Controller Separation for UI
-- **Decision**: The HTML/CSS UI layer (`src/rendering/ui/`) is cleanly separated into domain-specific rendering functions (e.g. `hud.ui.ts`, `inventory.ui.ts`) and CSS files (`src/styles/hud.css`). `main.ts` purely handles DOM event bindings and intent dispatching, while `bootstrap.ts` and `input_handler.ts` handle game startup and keyboard mappings respectively.
-- **Rationale**: A massive monolithic UI file inevitably leads to massive merge conflicts, cross-contamination of logic, and spaghetti CSS. By strictly separating the view code by domain and decoupling DOM event generation (Controller) from DOM mutation (View), the top layer of the application remains maintainable even as complex development tools are added.
-
-### Discriminated Union Schemas for Data-Driven Dispatch
-- **Decision**: Whenever the runtime engine dispatches behavior based on a `type` discriminator (e.g., `switch (condition.type)` in the trigger system, or `switch (behavior.id)` in the AI pipeline), the corresponding Zod schema must model this as a `z.discriminatedUnion('type', [...])` with explicit, named param shapes per variant — never as `z.record(z.string(), z.unknown())`.
-- **Rationale**: Opaque param bags (`Record<string, unknown>`) push all structural knowledge into runtime `switch` cases, making it invisible to the type checker, the Campaign Editor's form renderer, and the validation pipeline. By encoding each variant's expected params directly in the Zod schema, we get: (a) the editor auto-generates the correct form fields per variant, (b) `tsc` enforces exhaustive handling when new variants are added, and (c) campaign data is validated at load time rather than failing silently at runtime. This is a direct application of the "Data-Driven Polymorphism over Routing Logic" principle.
-
-### Tag-Based Interaction Rules
-- **Decision**: Data-driven interaction systems (item reactions, crafting, conditional triggers) must operate on **tags** (category-level string identifiers from a `tagRegistry` on `CampaignData`) rather than on specific item or entity IDs. Tag references in campaign data are validated against the registry at load time.
-- **Rationale**: Item-specific interaction rules (e.g., "if item is `amethyst` and target is `potion_of_booze`") produce a combinatorial explosion of brittle, non-composable entries — the same maintenance nightmare that makes NetHack's `eat.c` and `potion.c` impossible to extend. Tag-based rules (e.g., "if source has tag `gemstone` and target has tag `alcohol`") scale combinatorially in the designer's favor: adding one new tag to an item automatically grants it all existing interactions for that tag category, with zero new rules required.
-
-### Editor-to-Engine Schema Parity
-- **Decision**: The Campaign Editor's form renderers and dropdown generators must always derive their options programmatically from canonical sources (`GameEventType` enum values, `CampaignData` registry keys, Zod schema enum members). No handwritten, hardcoded lists of options are permitted in UI code.
-- **Rationale**: Handcoded dropdown lists silently diverge from the engine whenever a new event type, entity, or registry entry is added. This creates a "phantom availability" problem where the engine supports a feature but the editor hides it, forcing designers to type raw strings with no validation. Deriving from canonical sources guarantees that the editor's surface area always matches the engine's capabilities.

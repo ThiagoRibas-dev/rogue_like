@@ -4,6 +4,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processProjectileThrow } from './projectile.system.ts';
+import { processWandZap } from './zap.system.ts';
 import { processReactions } from './reaction.system.ts';
 
 /**
@@ -20,6 +21,10 @@ export function processApplyIntent(
 ): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
   if (intent.verb === 'throw' && intent.toolEntityId) {
     return processProjectileThrow(state, intent);
+  }
+
+  if (intent.verb === 'zap' && intent.toolEntityId) {
+    return processWandZap(state, intent);
   }
 
   const result = processReactions(state, intent.verb, intent.entityId, intent.target, intent.toolEntityId);

@@ -75,5 +75,17 @@
     "type": "satiate",
     "value": 200,
     "message": "It is sweet and refreshing."
+  },
+  "damage_10": {
+    "id": "damage_10",
+    "type": "damage",
+    "value": 10,
+    "message": "{target} takes {value} damage!"
+  },
+  "damage_5_cold": {
+    "id": "damage_5_cold",
+    "type": "damage",
+    "value": 5,
+    "message": "{target} is frozen for {value} damage!"
   }
 }

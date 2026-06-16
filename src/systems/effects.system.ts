@@ -11,8 +11,45 @@ import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
-import type { DamageComponent, DamageInstance } from '../types/components.types.ts';
+import type { DamageComponent, DamageInstance, TagsComponent } from '../types/components.types.ts';
 import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
+import type { ItemEffectDefinition } from '../types/campaign.types.ts';
+import { getFactionRelation } from '../utils/faction.ts';
+
+function matchesTargetFilters(
+  state: GameState,
+  sourceId: EntityId,
+  targetId: EntityId,
+  effectDef: ItemEffectDefinition
+): boolean {
+  const filters = effectDef.targetFilters;
+  if (!filters) return true;
+
+  if (filters.requireTags || filters.excludeTags) {
+    const targetTags = getComponent(state, targetId, ComponentType.Tags) as TagsComponent | undefined;
+    const tagsArray = targetTags?.tags || [];
+
+    if (filters.requireTags && filters.requireTags.length > 0) {
+      if (!filters.requireTags.every((tag) => tagsArray.includes(tag))) return false;
+    }
+
+    if (filters.excludeTags && filters.excludeTags.length > 0) {
+      if (filters.excludeTags.some((tag) => tagsArray.includes(tag))) return false;
+    }
+  }
+
+  if (filters.factions && filters.factions.length > 0) {
+    let relation: 'friendly' | 'neutral' | 'hostile' = 'neutral';
+    if (sourceId === targetId) {
+      relation = 'friendly';
+    } else {
+      relation = getFactionRelation(state, sourceId, targetId);
+    }
+    if (!filters.factions.includes(relation)) return false;
+  }
+
+  return true;
+}
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -23,9 +60,16 @@ import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
  * @param userId The entity that used the item (for range calculations, messaging).
  * @param effectId The effectId string from the consumable's ItemDefinition.
  * @param itemName The display name of the item (for log messages).
+ * @param explicitTargetId Optional explicit target for direct effects (like wand zaps).
  * @returns The updated GameState.
  */
-export function applyItemEffect(state: GameState, userId: EntityId, effectId: string, itemName: string): GameState {
+export function applyItemEffect(
+  state: GameState,
+  userId: EntityId,
+  effectId: string,
+  itemName: string,
+  explicitTargetId?: EntityId
+): GameState {
   const effectDef = state.campaign.effects[effectId];
   if (!effectDef) {
     return addMessage(state, `Unknown effect: ${effectId}`, MessageLogCategory.System);
@@ -57,6 +101,38 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
       return addMessage(nextState, msg, MessageLogCategory.CombatHit);
     }
 
+    case 'damage': {
+      if (explicitTargetId === undefined) return state;
+
+      const targetFighter = getComponent(state, explicitTargetId, ComponentType.Fighter);
+      if (!targetFighter) return state;
+
+      if (!matchesTargetFilters(state, userId, explicitTargetId, effectDef)) return state;
+
+      const targetRenderable = getComponent(state, explicitTargetId, ComponentType.Renderable);
+      const targetName = targetRenderable?.glyph ?? 'target';
+
+      const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
+      const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
+
+      const existingDamageComp = getComponent(nextState, explicitTargetId, ComponentType.Damage) as
+        | DamageComponent
+        | undefined;
+      const damageInstance: DamageInstance = {
+        amount: effectDef.value,
+        sourceEntityId: userId,
+        tags: ['spell', 'magic']
+      };
+
+      if (existingDamageComp) {
+        const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
+        return addComponent(nextState, explicitTargetId, newDamageComp);
+      } else {
+        const newDamageComp: DamageComponent = { type: ComponentType.Damage, instances: [damageInstance] };
+        return addComponent(nextState, explicitTargetId, newDamageComp);
+      }
+    }
+
     case 'damage_nearest': {
       const userPos = getComponent(state, userId, ComponentType.Position);
       if (!userPos) return state;
@@ -72,6 +148,8 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         const targetFighter = getComponent(state, id, ComponentType.Fighter);
         const targetPos = getComponent(state, id, ComponentType.Position);
         if (!targetFighter || !targetPos) continue;
+
+        if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
 
         const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
         if (dist <= range && dist < nearestDist) {
@@ -130,6 +208,8 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         const targetPos = getComponent(state, id, ComponentType.Position);
         if (!targetFighter || !targetPos) continue;
 
+        if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
+
         const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
         if (dist <= radius) {
           hitSomeone = true;
@@ -172,6 +252,19 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
     case 'apply_status': {
       if (!effectDef.statusId || !effectDef.duration) return state;
 
+      if (explicitTargetId !== undefined) {
+        if (!matchesTargetFilters(state, userId, explicitTargetId, effectDef)) return state;
+
+        const targetRenderable = getComponent(state, explicitTargetId, ComponentType.Renderable);
+        const isPlayer = getComponent(state, explicitTargetId, ComponentType.Player) !== undefined;
+        const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
+        const msg = effectDef.message.replace('{target}', targetName);
+
+        let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
+        nextState = applyStatusEffect(nextState, explicitTargetId, effectDef.statusId, effectDef.duration, userId);
+        return nextState;
+      }
+
       if (effectDef.range) {
         // Hit nearest target
         const userPos = getComponent(state, userId, ComponentType.Position);
@@ -185,6 +278,8 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
           const targetFighter = getComponent(state, id, ComponentType.Fighter);
           const targetPos = getComponent(state, id, ComponentType.Position);
           if (!targetFighter || !targetPos) continue;
+
+          if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
 
           const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
           if (dist <= effectDef.range && dist < nearestDist) {
@@ -207,6 +302,9 @@ export function applyItemEffect(state: GameState, userId: EntityId, effectId: st
         return nextState;
       } else {
         // Apply to self
+        if (!matchesTargetFilters(state, userId, userId, effectDef)) {
+          return addMessage(state, `The magic fizzles, having no effect on you.`, MessageLogCategory.System);
+        }
         const isPlayer = getComponent(state, userId, ComponentType.Player) !== undefined;
         const targetName = isPlayer
           ? 'You'

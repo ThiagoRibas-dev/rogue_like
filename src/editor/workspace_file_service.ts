@@ -297,6 +297,7 @@ export function createBlankSlateCampaign(): CampaignData {
     schemes: {},
     agreements: {},
     tagRegistry: {},
-    reactions: []
+    reactions: [],
+    fields: {}
   };
 }
