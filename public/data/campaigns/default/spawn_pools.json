@@ -1,0 +1,26 @@
+{
+  "early_dungeon_monsters": {
+    "id": "early_dungeon_monsters",
+    "name": "Early Dungeon Monsters",
+    "conditions": {
+      "areaTags": ["early_game", "mid_game"]
+    },
+    "entities": {
+      "goblin": 100,
+      "goblin_archer": 50,
+      "orc": 30,
+      "orc_shaman": 10,
+      "troll": 5
+    }
+  },
+  "dungeon_hazards": {
+    "id": "dungeon_hazards",
+    "name": "Dungeon Hazards",
+    "conditions": {
+      "areaTags": ["dungeon", "cave"]
+    },
+    "entities": {
+      "hidden_trap": 100
+    }
+  }
+}

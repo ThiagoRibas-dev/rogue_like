@@ -3,6 +3,7 @@ import { type GameMap, type Tile } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { type CampaignData, type AreaConnection } from '../types/campaign.types.ts';
 import { parseStaticMap } from './static-parser.ts';
+import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
 
 export interface GeneratedArea {
   readonly map: GameMap;
@@ -19,12 +20,13 @@ export interface GeneratedArea {
   readonly placedEntities?:
     | ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>
     | undefined;
+  readonly directorReceipt?: DirectorReceipt | undefined;
 }
 
 /**
  * Generates an area map based on its definition using ROT.js.
  */
-export function generateArea(campaign: CampaignData, areaId: string): GeneratedArea {
+export function generateArea(campaign: CampaignData, areaId: string, context?: DirectorContext): GeneratedArea {
   const areaDef = campaign.areas[areaId];
   if (!areaDef) {
     throw new Error(`Area ${areaId} not found in campaign.`);
@@ -111,9 +113,13 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
   }
 
   const portals: Array<{ x: number; y: number; connection: AreaConnection }> = [];
+  const portalRoomIndices = new Set<number>();
+
   if (areaDef.connections) {
     areaDef.connections.forEach((conn, index) => {
-      const room = rooms[index % rooms.length];
+      const roomIndex = index % rooms.length;
+      portalRoomIndices.add(roomIndex);
+      const room = rooms[roomIndex];
       if (room) {
         const [px, py] = room.getCenter();
         const pIndex = coordToIndex(px!, py!, width);
@@ -170,7 +176,11 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
 
   const finalPlacedEntities = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
 
-  const parsedRooms = rooms.map((r) => {
+  const parsedRooms = rooms.map((r, index) => {
+    // Mark room 0 (start pos) and any room with a portal as a "safe" room
+    // to prevent the Encounter Director from dropping hazards or bosses directly on the player
+    const isSafe = index === 0 || portalRoomIndices.has(index);
+
     r.getDoors((x: number, y: number) => {
       const idx = coordToIndex(x, y, width);
       const tile = tiles[idx];
@@ -189,15 +199,23 @@ export function generateArea(campaign: CampaignData, areaId: string): GeneratedA
       top: r.getTop(),
       bottom: r.getBottom(),
       centerX: center[0]!,
-      centerY: center[1]!
+      centerY: center[1]!,
+      isSafe
     };
   });
+
+  const directorResult = runEncounterDirector(campaign, areaDef, map, parsedRooms, finalPlacedEntities, context);
+
+  if (directorResult.newEntities.length > 0) {
+    finalPlacedEntities.push(...directorResult.newEntities);
+  }
 
   return {
     map,
     startPos: { x: startX, y: startY },
     portals,
     rooms: parsedRooms,
-    placedEntities: finalPlacedEntities.length > 0 ? finalPlacedEntities : undefined
+    placedEntities: finalPlacedEntities.length > 0 ? finalPlacedEntities : undefined,
+    directorReceipt: directorResult.receipt
   };
 }

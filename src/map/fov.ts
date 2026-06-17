@@ -19,6 +19,10 @@ export function computeFOV(state: GameState, px: number, py: number, radius?: nu
 
   // Create the Precise Shadowcasting FOV instance
   const fov = new ROT.FOV.PreciseShadowcasting((x: number, y: number): boolean => {
+    // Bounds check to prevent light wrapping on smaller maps
+    if (x < 0 || x >= state.map.width || y < 0 || y >= state.map.height) {
+      return false;
+    }
     // Return whether light passes through the cell
     const index = coordToIndex(x, y, mapWidth);
     const tile = state.map.tiles[index];

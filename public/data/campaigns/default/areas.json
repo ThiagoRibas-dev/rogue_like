@@ -1,11 +1,56 @@
 {
+  "safe_hub": {
+    "id": "safe_hub",
+    "name": "Camp",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": ["hub", "safe"],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_1",
+        "direction": "down",
+        "placementX": 4,
+        "placementY": 5
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.......#...........#",
+        "#.......#...........#",
+        "#.......+...........#",
+        "#.......#...........#",
+        "#...>...#...........#",
+        "#.......#...........#",
+        "#.......#...........#",
+        "#.......+...........#",
+        "#.......#...........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        ">": "stone_floor",
+        "+": "stone_floor"
+      },
+      "entityLegend": {
+        "+": "wooden_door"
+      }
+    }
+  },
   "dungeon_1": {
     "id": "dungeon_1",
     "name": "The Upper Dungeons",
     "generatorType": "digger",
     "dangerRating": 1,
+    "crBudget": 15,
+    "encounterProfileId": "standard_dungeon",
     "tags": ["dungeon", "early_game"],
     "connections": [
+      {
+        "targetAreaId": "safe_hub",
+        "direction": "up"
+      },
       {
         "targetAreaId": "dungeon_2",
         "direction": "down"
@@ -17,6 +62,8 @@
     "name": "The Deep Caverns",
     "generatorType": "cellular",
     "dangerRating": 2,
+    "crBudget": 50,
+    "encounterProfileId": "standard_dungeon",
     "tags": ["cave", "mid_game"],
     "connections": [
       {

@@ -51,7 +51,9 @@
       "aggroRadius": 5,
       "wanders": true
     },
-    "faction": "monster"
+    "faction": "monster",
+    "crCost": 10,
+    "roleTags": ["protein"]
   },
   "goblin": {
     "id": "goblin",
@@ -72,7 +74,9 @@
       "aggroRadius": 5,
       "wanders": true
     },
-    "faction": "monster"
+    "faction": "monster",
+    "crCost": 5,
+    "roleTags": ["protein", "dessert"]
   },
   "troll": {
     "id": "troll",
@@ -93,7 +97,9 @@
       "aggroRadius": 4,
       "wanders": false
     },
-    "faction": "monster"
+    "faction": "monster",
+    "crCost": 25,
+    "roleTags": ["protein"]
   },
   "goblin_archer": {
     "id": "goblin_archer",
@@ -114,7 +120,9 @@
       "aggroRadius": 6,
       "wanders": true
     },
-    "faction": "monster"
+    "faction": "monster",
+    "crCost": 8,
+    "roleTags": ["protein"]
   },
   "orc_shaman": {
     "id": "orc_shaman",
@@ -135,7 +143,9 @@
       "aggroRadius": 8,
       "wanders": true
     },
-    "faction": "monster"
+    "faction": "monster",
+    "crCost": 15,
+    "roleTags": ["protein", "dessert"]
   },
   "hidden_trap": {
     "id": "hidden_trap",
@@ -147,7 +157,9 @@
     "renderable": false,
     "trap": {
       "triggerId": "hidden_trap_trigger"
-    }
+    },
+    "crCost": 5,
+    "roleTags": ["side"]
   },
   "wooden_door": {
     "id": "wooden_door",

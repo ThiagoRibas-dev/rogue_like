@@ -77,7 +77,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       triggersRes,
       tagRegistryRes,
       reactionsRes,
-      fieldsRes
+      fieldsRes,
+      spawnPoolsRes,
+      encounterProfilesRes,
+      traitRegistryRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -100,7 +103,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/triggers.json`),
       fetch(`${basePath}/tag_registry.json`),
       fetch(`${basePath}/reactions.json`),
-      fetch(`${basePath}/fields.json`)
+      fetch(`${basePath}/fields.json`),
+      fetch(`${basePath}/spawn_pools.json`),
+      fetch(`${basePath}/encounter_profiles.json`),
+      fetch(`${basePath}/trait_registry.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -126,7 +132,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       triggersRes,
       tagRegistryRes,
       reactionsRes,
-      fieldsRes
+      fieldsRes,
+      spawnPoolsRes,
+      encounterProfilesRes,
+      traitRegistryRes
     ];
 
     for (const res of responses) {
@@ -157,7 +166,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       triggers,
       tagRegistry,
       reactions,
-      fields
+      fields,
+      spawnPools,
+      encounterProfiles,
+      traitRegistry
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -180,7 +192,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       triggersRes.json(),
       tagRegistryRes.json(),
       reactionsRes.json(),
-      fieldsRes.json()
+      fieldsRes.json(),
+      spawnPoolsRes.json(),
+      encounterProfilesRes.json(),
+      traitRegistryRes.json()
     ]);
 
     const data = {
@@ -206,6 +221,9 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       tagRegistry,
       reactions,
       fields,
+      spawnPools,
+      encounterProfiles,
+      traitRegistry,
       triggerBuckets: {}
     };
 

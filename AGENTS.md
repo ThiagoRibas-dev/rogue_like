@@ -104,6 +104,7 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 
 ## 5. Data-Driven & JSON Rules
 
+- **The Default Campaign as the Feature Showcase:** The `default` campaign must represent ALL of the game's engine features. Whenever a new system is added (like Encounter Director, Schemes, Dialogues), the default campaign JSON files MUST be updated to actively use and showcase those features.
 - **No Magic Values:** Every literal value affecting gameplay must be in a JSON registry.
 - **Zod Validation:** All JSON data must conform to Zod schemas defined in `src/types/campaign.types.ts`.
 - **Zod Inferred Types:** You must explicitly export the inferred TypeScript type (e.g., `export type AreaConnection = z.infer<typeof AreaConnectionSchema>;`) if other modules need to reference the shape.

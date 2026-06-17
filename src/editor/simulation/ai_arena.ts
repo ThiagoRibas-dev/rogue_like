@@ -48,7 +48,7 @@ export function runAIArena(
     rtwpState: { paused: false, speedMultiplier: 1 },
     isRotated: false,
     is3D: false,
-    zoomLevel: 1,
+    zoomLevel: 1.4,
     fovNeedsUpdate: true,
     cachedFov: new Set(),
     playerCommandQueue: [],

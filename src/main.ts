@@ -107,7 +107,7 @@ let state: GameState = {
   rtwpState: { paused: false, speedMultiplier: 1 },
   isRotated: false,
   is3D: false,
-  zoomLevel: 1.0,
+  zoomLevel: 1.4,
   fovNeedsUpdate: true,
   cachedFov: new Set(),
   playerCommandQueue: [],

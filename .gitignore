@@ -52,3 +52,4 @@ references/
 *.txt
 *.pdf
 scratch/
+vite.config.ts.timestamp-*

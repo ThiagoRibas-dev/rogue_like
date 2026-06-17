@@ -46,7 +46,7 @@ import {
 } from '../actions/inventory.actions.ts';
 
 let lastMoveTime = 0;
-const MOVE_THROTTLE_MS = 225;
+const MOVE_THROTTLE_MS = 175;
 
 function handleSmartInteraction(
   state: GameState,

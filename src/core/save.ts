@@ -165,7 +165,7 @@ export async function loadGame(): Promise<GameState | null> {
       visualEffects: sState.visualEffects || [],
       isRotated: sState.isRotated || false,
       is3D: sState.is3D || false,
-      zoomLevel: sState.zoomLevel ?? 1.0,
+      zoomLevel: sState.zoomLevel ?? 1.4,
       playerCommandQueue: [],
       investigation: sState.investigation ?? {
         knownActors: [],

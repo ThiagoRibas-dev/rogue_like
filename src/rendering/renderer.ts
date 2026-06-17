@@ -34,6 +34,11 @@ export function render(display: Display, state: GameState): void {
       const mapX = vx + cameraX;
       const mapY = vy + cameraY;
 
+      // Ensure we do not render or calculate indexes for out-of-bounds coordinates
+      if (mapX < 0 || mapX >= state.map.width || mapY < 0 || mapY >= state.map.height) {
+        continue;
+      }
+
       const tileIndex = coordToIndex(mapX, mapY, state.map.width);
       const tile = state.map.tiles[tileIndex];
       const isTileExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
