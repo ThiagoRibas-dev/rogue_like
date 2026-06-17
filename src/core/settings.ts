@@ -80,7 +80,7 @@ const SETTINGS_STORAGE_KEY = 'roguelike_settings';
 export async function initSettings(campaignId: string = 'default'): Promise<void> {
   // 1. Fetch defaults from campaign JSON if needed
   try {
-    const response = await fetch(`/data/campaigns/${campaignId}/keybinds.json`);
+    const response = await fetch(`${import.meta.env.BASE_URL}data/campaigns/${campaignId}/keybinds.json`);
     if (response.ok) {
       const defaultBinds = await response.json();
       DEFAULT_SETTINGS.keybinds = { ...DEFAULT_SETTINGS.keybinds, ...defaultBinds };

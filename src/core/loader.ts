@@ -52,7 +52,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
     return installedCampaign;
   }
 
-  const basePath = `/data/campaigns/${campaignId}`;
+  const basePath = `${import.meta.env.BASE_URL}data/campaigns/${campaignId}`;
 
   try {
     const [
@@ -266,7 +266,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
  */
 export async function loadCampaignRegistry(): Promise<CampaignRegistry> {
   try {
-    const res = await fetch('/data/campaigns.json');
+    const res = await fetch(`${import.meta.env.BASE_URL}data/campaigns.json`);
     if (!res.ok) {
       throw new Error(`Failed to fetch campaigns.json: ${res.status} ${res.statusText}`);
     }
