@@ -254,7 +254,11 @@ export const EntityTemplateSchema = z.object({
       breakable: z.boolean().optional()
     })
     .optional(),
-  renderable: z.boolean().optional()
+  renderable: z.boolean().optional(),
+  crCost: z.number().int().nonnegative().optional(),
+  roleTags: z.array(z.string()).optional(),
+  encounterTags: z.array(z.string()).optional(),
+  directorHints: z.record(z.string(), z.unknown()).optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
@@ -371,7 +375,11 @@ export const AreaDefinitionSchema = z.object({
       water: z.string().describe('Liquid/Water Tile ID')
     })
     .optional()
-    .describe('Procedural Generator Biome Palette')
+    .describe('Procedural Generator Biome Palette'),
+  crBudget: z.number().int().nonnegative().optional(),
+  encounterProfileId: z.string().optional(),
+  directorTags: z.array(z.string()).optional(),
+  budgetScaling: z.object({ baseBudget: z.number(), scalingFactor: z.number() }).optional()
 });
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 
@@ -495,6 +503,46 @@ export const ProceduralQuestTemplateSchema = z.object({
 
 export type ProceduralQuestTemplate = z.infer<typeof ProceduralQuestTemplateSchema>;
 
+// ==========================================
+// ENCOUNTER DIRECTOR (Phase 3)
+// ==========================================
+export const SpawnPoolDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  conditions: z
+    .object({
+      areaTags: z.array(z.string()).optional(),
+      biomeTags: z.array(z.string()).optional(),
+      factionTags: z.array(z.string()).optional(),
+      roleTags: z.array(z.string()).optional()
+    })
+    .optional(),
+  entities: z.record(z.string(), z.number().int().positive())
+});
+export type SpawnPoolDefinition = z.infer<typeof SpawnPoolDefinitionSchema>;
+
+export const EncounterProfileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  budgetAllocation: z.object({
+    protein: z.number(),
+    appetizer: z.number(),
+    side: z.number(),
+    dessert: z.number()
+  })
+});
+export type EncounterProfile = z.infer<typeof EncounterProfileSchema>;
+
+export const TraitDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  crCostModifier: z.number().optional(),
+  crCostMultiplier: z.number().optional(),
+  statModifiers: z.record(z.string(), z.number()).optional(),
+  tagsAdded: z.array(z.string()).optional()
+});
+export type TraitDefinition = z.infer<typeof TraitDefinitionSchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -518,7 +566,10 @@ export const CampaignDataSchema = z.object({
   agreements: z.record(z.string(), AgreementDefinitionSchema),
   tagRegistry: z.record(z.string(), TagDefinitionSchema).default({}),
   reactions: z.array(ReactionDefinitionSchema).default([]),
-  fields: z.record(z.string(), FieldDefinitionSchema).default({})
+  fields: z.record(z.string(), FieldDefinitionSchema).default({}),
+  spawnPools: z.record(z.string(), SpawnPoolDefinitionSchema).default({}),
+  encounterProfiles: z.record(z.string(), EncounterProfileSchema).default({}),
+  traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({})
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -546,5 +597,8 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   agreements: AgreementDefinitionSchema,
   tagRegistry: TagDefinitionSchema,
   reactions: ReactionDefinitionSchema,
-  fields: FieldDefinitionSchema
+  fields: FieldDefinitionSchema,
+  spawnPools: SpawnPoolDefinitionSchema,
+  encounterProfiles: EncounterProfileSchema,
+  traitRegistry: TraitDefinitionSchema
 };

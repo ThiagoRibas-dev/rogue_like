@@ -415,15 +415,15 @@ Make the expanded interaction vocabulary discoverable instead of requiring playe
 # 🚀 Phase 6: Encounter Director & Tactical Procedural Generation
 **Goal:** Replace flat spawn-table population with an algorithmic “Game Master” that spends area budgets across tactical axes: objective, advantages, hazards, and chaos. This phase turns procedural rooms into authored-feeling combat puzzles.
 
-## 🟡 Milestone 36: Area Budgets, Spawn Roles & Director Schemas ⭐ KEYSTONE
+## 🟢 Milestone 36: Area Budgets, Spawn Roles & Director Schemas (Complete) ⭐ KEYSTONE
 Add the data model the Encounter Director needs to reason about difficulty and encounter composition.
-- [ ] Extend `AreaDefinitionSchema` with `crBudget`, `encounterProfileId`, optional `directorTags`, and budget scaling by depth/difficulty.
-- [ ] Extend entity templates with `crCost`, role tags, encounter tags, and optional director hints.
-- [ ] Define spawn pools that filter by area tags, biome tags, faction tags, role tags, and global token-pool availability.
-- [ ] Define data for encounter ingredients: objectives/proteins, optimizers/appetizers, hazards/sides, chaos/desserts.
-- [ ] Add dynamic trait/template costs, such as `elite`, `volatile`, `fiendish`, `armored`, or `cowardly`.
-- [ ] Validate all costs and role tags in the Campaign Validator.
-- [ ] Add editor fields and tooltips for budgets, role tags, spawn pools, and dynamic templates.
+- [x] Extend `AreaDefinitionSchema` with `crBudget`, `encounterProfileId`, optional `directorTags`, and budget scaling by depth/difficulty.
+- [x] Extend entity templates with `crCost`, role tags, encounter tags, and optional director hints.
+- [x] Define spawn pools that filter by area tags, biome tags, faction tags, role tags, and global token-pool availability.
+- [x] Define data for encounter ingredients: objectives/proteins, optimizers/appetizers, hazards/sides, chaos/desserts.
+- [x] Add dynamic trait/template costs, such as `elite`, `volatile`, `fiendish`, `armored`, or `cowardly`.
+- [x] Validate all costs and role tags in the Campaign Validator.
+- [x] Add editor fields and tooltips for budgets, role tags, spawn pools, and dynamic templates.
 
 ## 🟡 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
 Implement the budget-spending algorithm inside area/room population.

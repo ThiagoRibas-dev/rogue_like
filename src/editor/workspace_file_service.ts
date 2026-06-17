@@ -298,6 +298,9 @@ export function createBlankSlateCampaign(): CampaignData {
     agreements: {},
     tagRegistry: {},
     reactions: [],
-    fields: {}
+    fields: {},
+    spawnPools: {},
+    encounterProfiles: {},
+    traitRegistry: {}
   };
 }

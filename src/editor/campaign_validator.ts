@@ -6,6 +6,7 @@ import { validateTriggers } from './validator/trigger.validator.ts';
 import { validateTags } from './validator/tag.validator.ts';
 import { validateReactions } from './validator/reaction.validator.ts';
 import { validateItems } from './validator/item.validator.ts';
+import { validateEncounters } from './validator/encounter.validator.ts';
 import { loadCampaign } from '../core/loader.ts';
 
 /**
@@ -47,8 +48,17 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const tagErrs = await validateTags(campaign);
   const reactionErrs = await validateReactions(campaign);
   const itemErrs = await validateItems(campaign);
+  const encounterErrs = validateEncounters(campaign);
 
-  const allErrs = [...reachabilityErrs, ...questErrs, ...triggerErrs, ...tagErrs, ...reactionErrs, ...itemErrs];
+  const allErrs = [
+    ...reachabilityErrs,
+    ...questErrs,
+    ...triggerErrs,
+    ...tagErrs,
+    ...reactionErrs,
+    ...itemErrs,
+    ...encounterErrs
+  ];
 
   for (const e of allErrs) {
     if (e.severity === 'error') {

@@ -20,6 +20,20 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
   if (key === 'dialogueId') {
     return Object.keys(doc.dialogues).map((k) => ({ value: k, label: k }));
   }
+  if (key === 'encounterProfileId') {
+    return Object.keys(doc.encounterProfiles || {}).map((k) => ({
+      value: k,
+      label: doc.encounterProfiles[k]?.name || k
+    }));
+  }
+  if (key === 'templateId') {
+    const ents = Object.keys(doc.entities || {}).map((k) => ({
+      value: k,
+      label: `Entity: ${doc.entities[k]?.name || k}`
+    }));
+    const itms = Object.keys(doc.items || {}).map((k) => ({ value: k, label: `Item: ${doc.items[k]?.name || k}` }));
+    return [...ents, ...itms];
+  }
   if (key === 'eventType') {
     return Object.values(GameEventType).map((val) => {
       // Split PascalCase into Words for the label
