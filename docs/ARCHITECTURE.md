@@ -284,3 +284,7 @@ This ensures that persistent NPCs don't get trapped in a specific Area's seriali
 ### Save File Backwards Compatibility
 - **Decision**: During development phases (pre-v1.0), there is strictly no need to concern ourselves with backwards compatibility for `localStorage` save files. When the `GameState` shape changes, old saves can be safely invalidated or discarded.
 - **Rationale**: Writing complex migration scripts to preserve save states between rapidly evolving milestones wastes development time and increases bug surface area. The game should fail fast or discard old saves rather than attempting to load them into incompatible new structures.
+
+### Encounter Director Reachability & Pathing Overheads
+- **Decision**: During procedural generation, the Encounter Director deliberately skips running `ROT.Path.AStar` to verify if randomly placed entities (like hazards) block paths or doors. We rely on the statistical improbability of random placement creating perfect soft-locks, rather than enforcing strict graph connectivity per-entity.
+- **Rationale**: Running AStar checks on every candidate spawn attempt introduces immense computational overhead, significantly slowing down map generation and creating latency spikes during area transitions. If soft-locks become a persistent gameplay issue in the future, we will revisit this optimization.

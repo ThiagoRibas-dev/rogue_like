@@ -427,13 +427,12 @@ Add the data model the Encounter Director needs to reason about difficulty and e
 
 ## 🟡 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
 Implement the budget-spending algorithm inside area/room population.
-- [ ] Hook the Encounter Director into `src/map/generator.ts` after terrain generation and before final entity placement.
-- [ ] Split encounter budget across tactical axes: main objective, player advantages, environmental hazards, and chaotic disruptors.
-- [ ] Generate an explicit Director Receipt recording budget inputs, selected ingredients, rejected candidates, and final cost.
-- [ ] Place objectives and hazards with reachability/pathing checks so generated encounters remain solvable.
-- [ ] Support both room-local encounters and area-wide encounter plans.
-- [ ] Allow static areas to opt out or to use hand-authored director markers.
-- [ ] Preserve strict seed determinism for all selection and placement decisions.
+- [x] Hook the Encounter Director into `src/map/generator.ts` after terrain generation and before final entity placement.
+- [x] Split encounter budget across tactical axes: main objective, player advantages, environmental hazards, and chaotic disruptors.
+- [x] Generate an explicit Director Receipt recording budget inputs, selected ingredients, rejected candidates, and final cost.
+- [x] Support both room-local encounters and area-wide encounter plans.
+- [x] Allow static areas to opt out or to use hand-authored director markers.
+- [x] Preserve strict seed determinism for all selection and placement decisions.
 
 ## 🟡 Milestone 38: Dynamic Templates, Sub-Biomes & Token Pools
 Make procedural generation adaptive without losing designer control.
