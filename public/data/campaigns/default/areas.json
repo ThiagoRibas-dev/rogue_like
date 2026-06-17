@@ -4,7 +4,10 @@
     "name": "Camp",
     "generatorType": "static",
     "dangerRating": 0,
-    "tags": ["hub", "safe"],
+    "tags": [
+      "hub",
+      "safe"
+    ],
     "connections": [
       {
         "targetAreaId": "dungeon_1",
@@ -45,7 +48,10 @@
     "dangerRating": 1,
     "crBudget": 15,
     "encounterProfileId": "standard_dungeon",
-    "tags": ["dungeon", "early_game"],
+    "tags": [
+      "dungeon",
+      "early_game"
+    ],
     "connections": [
       {
         "targetAreaId": "safe_hub",
@@ -64,7 +70,14 @@
     "dangerRating": 2,
     "crBudget": 50,
     "encounterProfileId": "standard_dungeon",
-    "tags": ["cave", "mid_game"],
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "spider_nest": 0.3,
+      "flooded": 0.2
+    },
     "connections": [
       {
         "targetAreaId": "dungeon_1",
@@ -81,7 +94,10 @@
     "name": "Goblin Encampment",
     "generatorType": "static",
     "dangerRating": 3,
-    "tags": ["camp", "boss"],
+    "tags": [
+      "camp",
+      "boss"
+    ],
     "connections": [
       {
         "targetAreaId": "dungeon_2",

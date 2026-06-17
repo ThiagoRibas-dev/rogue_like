@@ -425,7 +425,7 @@ Add the data model the Encounter Director needs to reason about difficulty and e
 - [x] Validate all costs and role tags in the Campaign Validator.
 - [x] Add editor fields and tooltips for budgets, role tags, spawn pools, and dynamic templates.
 
-## 🟡 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
+## 🟢 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
 Implement the budget-spending algorithm inside area/room population.
 - [x] Hook the Encounter Director into `src/map/generator.ts` after terrain generation and before final entity placement.
 - [x] Split encounter budget across tactical axes: main objective, player advantages, environmental hazards, and chaotic disruptors.
@@ -434,15 +434,15 @@ Implement the budget-spending algorithm inside area/room population.
 - [x] Allow static areas to opt out or to use hand-authored director markers.
 - [x] Preserve strict seed determinism for all selection and placement decisions.
 
-## 🟡 Milestone 38: Dynamic Templates, Sub-Biomes & Token Pools
+## 🟢 Milestone 38: Dynamic Templates, Sub-Biomes & Token Pools
 Make procedural generation adaptive without losing designer control.
-- [ ] Implement dynamic trait/template application as budget padding for under-cost encounters.
-- [ ] Add sub-biome generation: rooms can acquire tags such as `spider_nest`, `corrupted`, `flooded`, `burned`, or `shrine_vault`.
-- [ ] Filter enemy, item, field, and hazard candidates by combined area + sub-biome tags.
-- [ ] Integrate existing token-pool/bag rules so uniques, elites, and extinctable populations obey global limits.
-- [ ] Support contextual loot generation based on encounter tags and defeated actors.
-- [ ] Add optional “bones-like” persistent remains/content hooks for future dead-adventurer or previous-run artifacts.
-- [ ] Add regression tests proving unique actors/items cannot be duplicated by the Director.
+- [x] Implement dynamic trait/template application as budget padding for under-cost encounters.
+- [x] Add sub-biome generation: rooms can acquire tags such as `spider_nest`, `corrupted`, `flooded`, `burned`, or `shrine_vault`.
+- [x] Filter enemy, item, field, and hazard candidates by combined area + sub-biome tags.
+- [x] Integrate existing token-pool/bag rules so uniques, elites, and extinctable populations obey global limits.
+- [x] Support contextual loot generation based on encounter tags and defeated actors (death system drops + appetizer axis).
+- [x] Add optional "bones-like" persistent remains/content hooks for future dead-adventurer or previous-run artifacts.
+- [x] Add regression tests proving unique actors/items cannot be duplicated by the Director.
 
 ## 🟡 Milestone 39: Encounter Director Sandbox & Validation UI
 Give designers a window into the Director before relying on it in real campaigns.

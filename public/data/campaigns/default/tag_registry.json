@@ -73,5 +73,35 @@
     "category": "terrain",
     "color": "#0984e3",
     "description": "Provides drinkable water."
+  },
+  "spider_nest": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Infested with spiders and webbing."
+  },
+  "flooded": {
+    "category": "biome",
+    "color": "#3498db",
+    "description": "Partially submerged in water."
+  },
+  "bones": {
+    "category": "terrain",
+    "color": "#bdc3c7",
+    "description": "The skeletal remains of a fallen creature."
+  },
+  "remains": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "Leftover remains or debris."
+  },
+  "elite": {
+    "category": "trait",
+    "color": "#f1c40f",
+    "description": "A superior variant with enhanced stats."
+  },
+  "regenerating": {
+    "category": "trait",
+    "color": "#2ecc71",
+    "description": "Slowly recovers health over time."
   }
 }

@@ -215,7 +215,7 @@ export function processChangeAreaIntent(
         if (state.campaign.items[ent.templateId]) {
           [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
         } else if (state.campaign.entities[ent.templateId]) {
-          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y);
+          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
         } else {
           console.warn(`Placed entity template ${ent.templateId} not found in items or entities registries.`);
         }

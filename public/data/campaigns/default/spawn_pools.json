@@ -3,7 +3,10 @@
     "id": "early_dungeon_monsters",
     "name": "Early Dungeon Monsters",
     "conditions": {
-      "areaTags": ["early_game", "mid_game"]
+      "areaTags": [
+        "early_game",
+        "mid_game"
+      ]
     },
     "entities": {
       "goblin": 100,
@@ -17,10 +20,47 @@
     "id": "dungeon_hazards",
     "name": "Dungeon Hazards",
     "conditions": {
-      "areaTags": ["dungeon", "cave"]
+      "areaTags": [
+        "dungeon",
+        "cave"
+      ]
     },
     "entities": {
       "hidden_trap": 100
+    }
+  },
+  "dungeon_appetizers": {
+    "id": "dungeon_appetizers",
+    "name": "Dungeon Loot Containers",
+    "conditions": {
+      "areaTags": [
+        "dungeon",
+        "cave",
+        "early_game",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "wooden_chest": 80,
+      "bones_pile": 20
+    }
+  },
+  "spider_nest_denizens": {
+    "id": "spider_nest_denizens",
+    "name": "Spider Nest Denizens",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "dungeon"
+      ],
+      "biomeTags": [
+        "spider_nest"
+      ]
+    },
+    "entities": {
+      "goblin": 100,
+      "goblin_archer": 50,
+      "orc": 20
     }
   }
 }

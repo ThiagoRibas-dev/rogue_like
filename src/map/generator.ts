@@ -18,7 +18,12 @@ export interface GeneratedArea {
     readonly centerY: number;
   }>;
   readonly placedEntities?:
-    | ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>
+    | ReadonlyArray<{
+        readonly templateId: string;
+        readonly x: number;
+        readonly y: number;
+        readonly dynamicTraits?: ReadonlyArray<string>;
+      }>
     | undefined;
   readonly directorReceipt?: DirectorReceipt | undefined;
 }
@@ -159,9 +164,8 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
           tiles[idx] = { ...tile, tileId: 'empty_space' };
         }
       } else if (tile && tile.tileId === palette.floor) {
-        // Scatter some shallow water
-        if (ROT.RNG.getUniform() < 0.05) {
-          // 5% chance for a floor tile to be water
+        // Scatter some shallow water at data-driven probability
+        if (ROT.RNG.getUniform() < rules.waterScatterChance) {
           tiles[idx] = { ...tile, tileId: palette.water };
         }
       }
@@ -175,6 +179,9 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
   };
 
   const finalPlacedEntities = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
+
+  // Resolve sub-biome tags for rooms based on area definition probabilities
+  const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
 
   const parsedRooms = rooms.map((r, index) => {
     // Mark room 0 (start pos) and any room with a portal as a "safe" room
@@ -192,8 +199,18 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
       }
     });
 
+    // Assign sub-biome tags probabilistically for non-safe rooms
+    const roomTags: string[] = [];
+    if (!isSafe && subBiomeEntries.length > 0) {
+      for (const [tag, probability] of subBiomeEntries) {
+        if (ROT.RNG.getUniform() < probability) {
+          roomTags.push(tag);
+        }
+      }
+    }
+
     const center = r.getCenter();
-    return {
+    const baseRoom = {
       left: r.getLeft(),
       right: r.getRight(),
       top: r.getTop(),
@@ -202,6 +219,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
       centerY: center[1]!,
       isSafe
     };
+    return roomTags.length > 0 ? { ...baseRoom, tags: roomTags } : baseRoom;
   });
 
   const directorResult = runEncounterDirector(campaign, areaDef, map, parsedRooms, finalPlacedEntities, context);

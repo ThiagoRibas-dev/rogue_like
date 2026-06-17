@@ -48,8 +48,9 @@ Wait for the User's confirmation before writing or modifying any actual codebase
 
 ### After Writing Code
 7. **Identify downstream effects.** If you changed an interface or enum, list every file that will need to be updated and present those changes too.
-8. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
-9. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
+8. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.
+9. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
+10. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
 
 ---
 
@@ -83,7 +84,7 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 - **`satisfies` over `as`:** Use `satisfies` to validate shapes without losing strict inference.
 - **Exhaustive Switch:** Every `switch` on a union/enum must include a `default: return assertNever(x)` to force a compile error when adding new variants.
 - **Intents & Discriminated Unions:** Missing a member in a discriminator enum (like `IntentType`) causes TS to fail type narrowing for the entire union. Check your enums if you see massive cascading `Argument of type X is not assignable to type Y` errors.
-- **GameState Refactoring Cascades:** Changing the global `GameState` breaks almost every subsystem. Rely heavily on the TypeScript compiler (`tsc --noEmit`) to hunt down and fix these cascading breaks systematically.
+- **GameState Refactoring Cascades:** Changing the global `GameState` breaks almost every subsystem. Rely heavily on `.\verify.bat` to hunt down and fix these cascading breaks systematically.
 
 ### Style Guide
 - **Add a JSDoc comment** to every exported function, type, and constant (`@param`, `@returns`, and description).

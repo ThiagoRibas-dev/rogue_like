@@ -29,7 +29,9 @@
       "leg",
       "foot"
     ],
-    "tags": ["actor"],
+    "tags": [
+      "actor"
+    ],
     "faction": "player"
   },
   "orc": {
@@ -53,7 +55,9 @@
     },
     "faction": "monster",
     "crCost": 10,
-    "roleTags": ["protein"]
+    "roleTags": [
+      "protein"
+    ]
   },
   "goblin": {
     "id": "goblin",
@@ -76,7 +80,10 @@
     },
     "faction": "monster",
     "crCost": 5,
-    "roleTags": ["protein", "dessert"]
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
   },
   "troll": {
     "id": "troll",
@@ -99,7 +106,9 @@
     },
     "faction": "monster",
     "crCost": 25,
-    "roleTags": ["protein"]
+    "roleTags": [
+      "protein"
+    ]
   },
   "goblin_archer": {
     "id": "goblin_archer",
@@ -122,7 +131,9 @@
     },
     "faction": "monster",
     "crCost": 8,
-    "roleTags": ["protein"]
+    "roleTags": [
+      "protein"
+    ]
   },
   "orc_shaman": {
     "id": "orc_shaman",
@@ -145,7 +156,10 @@
     },
     "faction": "monster",
     "crCost": 15,
-    "roleTags": ["protein", "dessert"]
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
   },
   "hidden_trap": {
     "id": "hidden_trap",
@@ -159,7 +173,9 @@
       "triggerId": "hidden_trap_trigger"
     },
     "crCost": 5,
-    "roleTags": ["side"]
+    "roleTags": [
+      "side"
+    ]
   },
   "wooden_door": {
     "id": "wooden_door",
@@ -168,7 +184,11 @@
     "fg": "#d35400",
     "bg": "transparent",
     "isActor": false,
-    "tags": ["door", "solid", "opaque"],
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
     "lock": {
       "difficulty": 10,
       "locked": false,
@@ -182,7 +202,14 @@
     "fg": "#e67e22",
     "bg": "transparent",
     "isActor": false,
-    "tags": ["chest", "solid"],
+    "tags": [
+      "chest",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 3,
     "inventoryConfig": {
       "baseCapacity": 5
     },
@@ -193,6 +220,26 @@
       "breakable": true
     }
   },
+  "bones_pile": {
+    "id": "bones_pile",
+    "name": "Pile of Bones",
+    "glyph": "%",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "remains",
+      "bones",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 2,
+    "inventoryConfig": {
+      "baseCapacity": 3
+    }
+  },
   "fountain": {
     "id": "fountain",
     "name": "Fountain",
@@ -200,7 +247,12 @@
     "fg": "#3498db",
     "bg": "transparent",
     "isActor": false,
-    "tags": ["fountain", "liquid", "terrain", "water_source"],
+    "tags": [
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source"
+    ],
     "renderable": true
   },
   "altar": {
@@ -210,7 +262,11 @@
     "fg": "#f1c40f",
     "bg": "transparent",
     "isActor": false,
-    "tags": ["altar", "divine", "terrain"],
+    "tags": [
+      "altar",
+      "divine",
+      "terrain"
+    ],
     "renderable": true
   }
 }

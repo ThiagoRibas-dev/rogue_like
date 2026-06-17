@@ -1,13 +1,19 @@
+import * as ROT from 'rot-js';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { GameEventType } from '../types/events.types.ts';
-import { ComponentType, type DeathComponent } from '../types/components.types.ts';
-import { getComponent, removeEntity, addComponent } from '../core/ecs.ts';
+import {
+  ComponentType,
+  type DeathComponent,
+  type PositionComponent,
+  type TagsComponent,
+  type TemplateComponent
+} from '../types/components.types.ts';
+import { getComponent, removeEntity, addComponent, spawnItem } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
-import type { TagsComponent, TemplateComponent } from '../types/components.types.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -117,6 +123,21 @@ export function processDeathSystem(state: GameState): GameState {
 
       // Let the Trigger system handle clue drops and narrative consequences.
       // E.g., `EntityDiedEvent` is evaluated by `processGlobalTriggers`.
+
+      // Contextual loot drop: roll on the global loot table at configured chance
+      const lootTable = nextState.campaign.rules.spawning.lootTable;
+      const lootDropChance = nextState.campaign.rules.spawning.lootDropChance;
+      if (Object.keys(lootTable).length > 0 && ROT.RNG.getUniform() < lootDropChance) {
+        const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
+        if (pos) {
+          const itemId = ROT.RNG.getWeightedValue(lootTable as Record<string, number>);
+          if (itemId && nextState.campaign.items[itemId]) {
+            const itemDef = nextState.campaign.items[itemId]!;
+            [nextState] = spawnItem(nextState, itemId, pos.x, pos.y);
+            nextState = addMessage(nextState, `${name} drops ${itemDef.name}.`, MessageLogCategory.CombatDeath);
+          }
+        }
+      }
 
       // Strip the dead entity from the world
       nextState = removeEntity(nextState, entityId);

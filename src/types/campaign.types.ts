@@ -58,6 +58,7 @@ export const RulesConfigSchema = z.object({
     minCorridorLength: z.number().int().positive(),
     maxCorridorLength: z.number().int().positive(),
     dugPercentage: z.number().positive().max(1),
+    waterScatterChance: z.number().nonnegative().max(1).default(0),
     startingAreaId: z.string(),
     fovRadius: z.number().int().positive()
   }),
@@ -74,7 +75,8 @@ export const RulesConfigSchema = z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),
     maxItemsPerRoom: z.number().int().nonnegative(),
     spawnWeights: z.record(z.string(), z.number().int().nonnegative()),
-    lootTable: z.record(z.string(), z.number().int().nonnegative())
+    lootTable: z.record(z.string(), z.number().int().nonnegative()),
+    lootDropChance: z.number().nonnegative().max(1).default(0)
   })
 });
 export type RulesConfig = z.infer<typeof RulesConfigSchema>;
@@ -379,7 +381,11 @@ export const AreaDefinitionSchema = z.object({
   crBudget: z.number().int().nonnegative().optional(),
   encounterProfileId: z.string().optional(),
   directorTags: z.array(z.string()).optional(),
-  budgetScaling: z.object({ baseBudget: z.number(), scalingFactor: z.number() }).optional()
+  budgetScaling: z.object({ baseBudget: z.number(), scalingFactor: z.number() }).optional(),
+  subBiomes: z
+    .record(z.string(), z.number().positive().max(1))
+    .optional()
+    .describe('Map of sub-biome tag to probability (0-1) for room assignment')
 });
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 

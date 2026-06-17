@@ -206,7 +206,7 @@ export async function startNewGame(
       if (state.campaign.items[ent.templateId]) {
         [state] = spawnItem(state, ent.templateId, ent.x, ent.y);
       } else if (state.campaign.entities[ent.templateId]) {
-        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y);
+        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
       } else {
         console.warn(`Placed entity template ${ent.templateId} not found in registries.`);
       }

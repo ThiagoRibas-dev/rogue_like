@@ -9,6 +9,7 @@
     "minCorridorLength": 3,
     "maxCorridorLength": 10,
     "dugPercentage": 0.25,
+    "waterScatterChance": 0.05,
     "startingAreaId": "safe_hub",
     "fovRadius": 8
   },
@@ -44,6 +45,7 @@
       "venom_dagger": 5,
       "leather_armor": 10,
       "backpack": 5
-    }
+    },
+    "lootDropChance": 0.30
   }
 }

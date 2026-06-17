@@ -23,7 +23,12 @@ export interface DirectorReceipt {
 }
 
 export interface DirectorResult {
-  readonly newEntities: ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>;
+  readonly newEntities: ReadonlyArray<{
+    readonly templateId: string;
+    readonly x: number;
+    readonly y: number;
+    readonly dynamicTraits?: ReadonlyArray<string>;
+  }>;
   readonly traitOverrides: ReadonlyArray<{ readonly templateId: string; readonly traits: ReadonlyArray<string> }>;
   readonly receipt: DirectorReceipt;
 }
@@ -36,6 +41,7 @@ export interface RoomBounds {
   readonly centerX: number;
   readonly centerY: number;
   readonly isSafe?: boolean;
+  readonly tags?: ReadonlyArray<string>;
 }
 
 export interface DirectorContext {
@@ -81,16 +87,16 @@ function getRandomFloorTileInRoom(
  */
 function runForEncounterZone(
   campaign: CampaignData,
+  areaDef: AreaDefinition,
   baseEffectiveBudget: number,
   profile: NonNullable<CampaignData['encounterProfiles'][string]>,
   map: GameMap,
   room: RoomBounds,
   existingPlacedEntities: ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>,
-  context: DirectorContext | undefined,
-  occupiedCoordinates: Set<string>
+  _context: DirectorContext | undefined,
+  occupiedCoordinates: Set<string>,
+  localTokenPool: Set<string>
 ): DirectorResult {
-  const tokenPool = context?.tokenPool ?? new Set<string>();
-
   // 1. Initialize budget tracking
   let preAllocatedCost = 0;
   const axisBudget: Record<BudgetAxis, number> = {
@@ -127,13 +133,18 @@ function runForEncounterZone(
   };
 
   for (const pool of Object.values(campaign.spawnPools)) {
-    // In a full implementation, we'd check pool.conditions.areaTags against areaDef.tags here.
+    if (pool.conditions) {
+      if (pool.conditions.areaTags && !pool.conditions.areaTags.every((t) => (areaDef.tags ?? []).includes(t)))
+        continue;
+      if (pool.conditions.biomeTags && !pool.conditions.biomeTags.every((t) => (room.tags ?? []).includes(t))) continue;
+    }
+
     for (const [templateId, weight] of Object.entries(pool.entities)) {
       const template = campaign.entities[templateId];
       if (!template || template.crCost === undefined) continue;
 
-      // Exclude tokens that have already been spawned globally
-      if (template.persistent && tokenPool.has(templateId)) {
+      // Exclude tokens that have already been spawned globally or in this map generation
+      if (template.persistent && localTokenPool.has(templateId)) {
         continue;
       }
 
@@ -143,7 +154,7 @@ function runForEncounterZone(
   }
 
   // 4. Spend Budget
-  const newEntities: Array<{ templateId: string; x: number; y: number }> = [];
+  const newEntities: Array<{ templateId: string; x: number; y: number; dynamicTraits?: string[] }> = [];
   const axes: BudgetAxis[] = ['protein', 'side', 'appetizer', 'dessert'];
 
   for (const axis of axes) {
@@ -179,11 +190,40 @@ function runForEncounterZone(
       // relying on the fact that random placement usually doesn't create perfect soft-locks.
       // If we implement AStar, increment pathingFailures if it fails and `continue` to try another pos/entity.
 
-      newEntities.push({ templateId: selectedId, x: pos.x, y: pos.y });
+      if (campaign.entities[selectedId]?.persistent) {
+        localTokenPool.add(selectedId);
+      }
+
+      newEntities.push({ templateId: selectedId, x: pos.x, y: pos.y, dynamicTraits: [] });
       occupiedCoordinates.add(`${pos.x},${pos.y}`);
       axisSpawned[axis].push(selectedId);
       axisSpent[axis] += cost;
       budget -= cost;
+    }
+  }
+
+  // 4.5 Budget Padding with Dynamic Traits
+  const remainingBudget = axes.reduce((sum, axis) => sum + (axisBudget[axis] - axisSpent[axis]), 0);
+  const traitUpgrades: string[] = [];
+
+  if (remainingBudget > 0 && newEntities.length > 0) {
+    const affordableTraits = Object.values(campaign.traitRegistry).filter(
+      (t) => t.crCostModifier !== undefined && t.crCostModifier > 0 && t.crCostModifier <= remainingBudget
+    );
+
+    if (affordableTraits.length > 0) {
+      // Pick a random affordable trait
+      const selectedTrait = affordableTraits[Math.floor(ROT.RNG.getUniform() * affordableTraits.length)]!;
+
+      // Prefer applying it to the protein, else the first entity
+      const proteinEntity =
+        newEntities.find((e) => campaign.entities[e.templateId]?.roleTags?.includes('protein')) ?? newEntities[0];
+
+      if (proteinEntity) {
+        (proteinEntity.dynamicTraits as string[]).push(selectedTrait.id);
+        traitUpgrades.push(`${proteinEntity.templateId} +${selectedTrait.id}`);
+        // Deduct from some axis conceptually, or just leave it. We'll add it to the receipt.
+      }
     }
   }
 
@@ -213,7 +253,7 @@ function runForEncounterZone(
         rejected: axisRejected.dessert
       }
     },
-    traitUpgrades: [],
+    traitUpgrades,
     pathingFailures
   };
 
@@ -268,10 +308,11 @@ export function runEncounterDirector(
     return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
   }
 
+  const localTokenPool = new Set(context?.tokenPool ?? []);
   const occupiedCoordinates = new Set<string>();
   existingPlacedEntities.forEach((e) => occupiedCoordinates.add(`${e.x},${e.y}`));
 
-  const allNewEntities: Array<{ templateId: string; x: number; y: number }> = [];
+  const allNewEntities: Array<{ templateId: string; x: number; y: number; dynamicTraits?: ReadonlyArray<string> }> = [];
   let totalPreAllocated = 0;
   const mergedAxisResults: Record<
     BudgetAxis,
@@ -283,18 +324,23 @@ export function runEncounterDirector(
     dessert: { budget: 0, spent: 0, spawned: [], rejected: [] }
   };
 
+  const mergedTraitUpgrades: string[] = [];
+
   for (const zone of zones) {
     const zoneResult = runForEncounterZone(
       campaign,
+      areaDef,
       baseBudget,
       profile,
       map,
       zone,
       existingPlacedEntities,
       context,
-      occupiedCoordinates
+      occupiedCoordinates,
+      localTokenPool
     );
     allNewEntities.push(...zoneResult.newEntities);
+    mergedTraitUpgrades.push(...zoneResult.receipt.traitUpgrades);
 
     totalPreAllocated += zoneResult.receipt.preAllocated;
     for (const axis of ['protein', 'appetizer', 'side', 'dessert'] as BudgetAxis[]) {
@@ -307,10 +353,10 @@ export function runEncounterDirector(
 
   const mergedReceipt: DirectorReceipt = {
     areaId: areaDef.id,
-    effectiveBudget: baseBudget * zones.length, // Total budget for the area
+    effectiveBudget: baseBudget * zones.length,
     preAllocated: totalPreAllocated,
     axisResults: mergedAxisResults,
-    traitUpgrades: [],
+    traitUpgrades: mergedTraitUpgrades,
     pathingFailures: 0
   };
 

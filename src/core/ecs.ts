@@ -164,9 +164,16 @@ export function queryEntities<T extends ComponentType>(
  * @param templateId The ID of the template from ENTITY_TEMPLATES.
  * @param x The map X coordinate.
  * @param y The map Y coordinate.
+ * @param dynamicTraits Optional additional traits to apply to the entity at spawn.
  * @returns A tuple of the updated state and the new EntityId.
  */
-export function spawnEntity(state: GameState, templateId: string, x: number, y: number): [GameState, EntityId] {
+export function spawnEntity(
+  state: GameState,
+  templateId: string,
+  x: number,
+  y: number,
+  dynamicTraits?: ReadonlyArray<string>
+): [GameState, EntityId] {
   const template = state.campaign.entities[templateId];
   if (!template) throw new Error(`Unknown entity template: ${templateId}`);
 
@@ -239,10 +246,11 @@ export function spawnEntity(state: GameState, templateId: string, x: number, y: 
     });
   }
 
-  if (template.traits && template.traits.length > 0) {
+  const combinedTraits = [...(template.traits ?? []), ...(dynamicTraits ?? [])];
+  if (combinedTraits.length > 0) {
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Traits,
-      traits: template.traits
+      traits: combinedTraits
     });
   }
 
