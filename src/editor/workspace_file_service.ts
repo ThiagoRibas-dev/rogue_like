@@ -121,6 +121,7 @@ export function createBlankSlateCampaign(): CampaignData {
         minCorridorLength: 2,
         maxCorridorLength: 6,
         dugPercentage: 0.2,
+        waterScatterChance: 0,
         startingAreaId: 'starting_area',
         fovRadius: 8
       },
@@ -141,7 +142,8 @@ export function createBlankSlateCampaign(): CampaignData {
         },
         lootTable: {
           health_potion: 1
-        }
+        },
+        lootDropChance: 0
       }
     },
     theme: {
