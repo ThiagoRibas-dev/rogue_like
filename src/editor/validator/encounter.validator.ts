@@ -201,7 +201,7 @@ export function validateEncounters(data: CampaignData): ReadonlyArray<Validation
       const poolAreaTags = pool.conditions?.areaTags;
 
       if (poolAreaTags && poolAreaTags.length > 0) {
-        const matchesAnyArea = areaTagSets.some((a) => poolAreaTags!.every((t) => a.tags.includes(t)));
+        const matchesAnyArea = areaTagSets.some((a) => poolAreaTags!.some((t) => a.tags.includes(t)));
         if (!matchesAnyArea) {
           errors.push({
             path: `spawnPools.${poolId}`,
@@ -223,7 +223,7 @@ export function validateEncounters(data: CampaignData): ReadonlyArray<Validation
         if (!pool) continue;
 
         // Check if pool conditions match area tags
-        if (pool.conditions?.areaTags && !pool.conditions.areaTags.every((t) => area.areaTags.includes(t))) {
+        if (pool.conditions?.areaTags && !pool.conditions.areaTags.some((t) => area.areaTags.includes(t))) {
           continue;
         }
 

@@ -150,8 +150,7 @@ function runForEncounterZone(
 
   for (const pool of Object.values(campaign.spawnPools)) {
     if (pool.conditions) {
-      if (pool.conditions.areaTags && !pool.conditions.areaTags.every((t) => (areaDef.tags ?? []).includes(t)))
-        continue;
+      if (pool.conditions.areaTags && !pool.conditions.areaTags.some((t) => (areaDef.tags ?? []).includes(t))) continue;
       if (pool.conditions.biomeTags && !pool.conditions.biomeTags.every((t) => (room.tags ?? []).includes(t))) continue;
     }
 

@@ -448,12 +448,50 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
       statusEl.textContent = '✅ OK';
       statusEl.className = 'validation-status ok';
       statusEl.title = 'No validation errors found.';
+      // Remove any existing error popup
+      const existingPopup = document.getElementById('editor-validation-popup');
+      if (existingPopup) existingPopup.remove();
     } else {
       const errorCount = errors.filter((e) => e.severity === 'error').length;
       const warnCount = errors.filter((e) => e.severity === 'warning').length;
       statusEl.textContent = `❌ ${errorCount} Err, ${warnCount} Warn`;
       statusEl.className = 'validation-status error';
-      statusEl.title = errors.map((e) => `[${e.severity.toUpperCase()}] ${e.path}: ${e.message}`).join('\n');
+
+      // Build a floating error popup panel
+      let popup = document.getElementById('editor-validation-popup');
+      if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'editor-validation-popup';
+        popup.style.cssText =
+          'display:none;position:absolute;top:100%;right:0;z-index:1000;background:#1a1a2e;border:1px solid #e74c3c;border-radius:6px;padding:0.75rem;max-width:480px;max-height:400px;overflow-y:auto;font-size:0.75rem;box-shadow:0 8px 24px rgba(0,0,0,0.5);white-space:pre-wrap;';
+        document.body.appendChild(popup);
+      }
+
+      popup.innerHTML =
+        `<div style="font-weight:bold;margin-bottom:0.5rem;color:#e74c3c;">⚠ Validation Errors (${errors.length})</div>` +
+        errors
+          .map(
+            (e) =>
+              `<div style="margin-bottom:0.35rem;padding:0.25rem 0.5rem;border-left:3px solid ${e.severity === 'error' ? '#e74c3c' : '#f39c12'};background:rgba(255,255,255,0.03);border-radius:2px;">` +
+              `<span style="font-weight:bold;color:${e.severity === 'error' ? '#e74c3c' : '#f39c12'};">[${e.severity.toUpperCase()}]</span>&nbsp;` +
+              `<span style="color:#3498db;">${e.path}</span><br/>` +
+              `<span style="color:#ccc;">${e.message}</span>` +
+              `</div>`
+          )
+          .join('');
+
+      // Show/hide on hover
+      statusEl.onmouseenter = () => {
+        if (popup) {
+          const rect = statusEl.getBoundingClientRect();
+          popup.style.left = Math.max(10, rect.left - 200) + 'px';
+          popup.style.top = rect.bottom + 4 + 'px';
+          popup.style.display = 'block';
+        }
+      };
+      statusEl.onmouseleave = () => {
+        if (popup) popup.style.display = 'none';
+      };
     }
   }
 }
