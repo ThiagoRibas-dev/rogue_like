@@ -103,5 +103,45 @@
     "category": "trait",
     "color": "#2ecc71",
     "description": "Slowly recovers health over time."
+  },
+  "hub": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "A safe hub area where the player begins."
+  },
+  "safe": {
+    "category": "area",
+    "color": "#27ae60",
+    "description": "An area with no hostile encounters."
+  },
+  "early_game": {
+    "category": "area",
+    "color": "#3498db",
+    "description": "Early game areas with easier content."
+  },
+  "mid_game": {
+    "category": "area",
+    "color": "#f39c12",
+    "description": "Mid game areas with moderate difficulty."
+  },
+  "dungeon": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "Underground dungeon areas."
+  },
+  "cave": {
+    "category": "area",
+    "color": "#8e44ad",
+    "description": "Natural cave areas."
+  },
+  "camp": {
+    "category": "area",
+    "color": "#d35400",
+    "description": "An outdoor camp or encampment."
+  },
+  "boss": {
+    "category": "area",
+    "color": "#c0392b",
+    "description": "A boss encounter area."
   }
 }
