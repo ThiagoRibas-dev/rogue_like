@@ -355,7 +355,7 @@ export function runEncounterArena(
   const avgPlayerHpRemaining =
     nonDraws.length > 0
       ? nonDraws.filter((r) => r.telemetry.winner === 'a').reduce((s, r) => s + r.telemetry.finalHpA, 0) /
-      nonDraws.length
+        nonDraws.length
       : 0;
 
   return {
