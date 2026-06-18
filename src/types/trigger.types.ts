@@ -27,6 +27,11 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
     target: z.string(),
     operator: z.enum(['>=', '<=', '==']),
     value: z.number()
+  }),
+  z.object({
+    type: z.literal('has_item'),
+    itemId: z.string(),
+    amount: z.number().int().positive().default(1)
   })
 ]);
 
@@ -118,6 +123,15 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     charges: z.number().int().positive(),
     duration: z.number().int().positive().default(10),
     targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('set_fact'),
+    target: z.string()
+  }),
+  z.object({
+    type: z.literal('change_faction'),
+    targetId: z.string().optional(),
+    factionId: z.string()
   })
 ]);
 

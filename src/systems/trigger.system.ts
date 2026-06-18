@@ -136,6 +136,24 @@ export function evaluateCondition(
       return numStatus === value;
     }
 
+    case 'has_item': {
+      const entityId = condition._playerEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+
+      const inventory = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+      if (!inventory || inventory.items.length === 0) return false;
+
+      let count = 0;
+      for (const itemEntityId of inventory.items) {
+        const item = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+        if (item?.itemId === condition.itemId) {
+          count++;
+          if (count >= (condition.amount ?? 1)) return true;
+        }
+      }
+      return false;
+    }
+
     default:
       return true;
   }
@@ -147,6 +165,7 @@ import type {
   ClueComponent,
   DamageComponent,
   DamageInstance,
+  FactionComponent,
   MemoryComponent,
   PositionComponent,
   QuestLogComponent,
@@ -632,6 +651,45 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
 
       const itemName = getComponent(nextState, eId, ComponentType.Renderable)?.glyph ?? 'The item';
       nextState = addMessage(nextState, `${itemName} is now coated!`, MessageLogCategory.System);
+      break;
+    }
+
+    case 'set_fact': {
+      const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
+      if (memOwnerId === undefined) break;
+
+      const memory = getComponent(nextState, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (memory && !memory.facts.includes(consequence.target)) {
+        nextState = addComponent(nextState, memOwnerId, {
+          ...memory,
+          facts: [...memory.facts, consequence.target]
+        });
+      }
+      break;
+    }
+
+    case 'change_faction': {
+      let eId: EntityId | undefined;
+      if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else if (event.type === GameEventType.ReactionResolved) {
+        const targetPayload = (
+          event as unknown as { target: { type: string; entityId?: EntityId } }
+        ).target;
+        if (targetPayload.type === 'entity') {
+          eId = targetPayload.entityId;
+        }
+      }
+
+      if (eId === undefined) break;
+
+      const faction = getComponent(nextState, eId, ComponentType.Faction) as FactionComponent | undefined;
+      if (faction) {
+        nextState = addComponent(nextState, eId, {
+          ...faction,
+          factionId: consequence.factionId
+        });
+      }
       break;
     }
   }

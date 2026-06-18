@@ -1,6 +1,6 @@
 # 📖 MASTER CAMPAIGN SPECIFICATION: The Shroudgarde Borderlands
 
-> **Status:** Active Master Specification File (Version 1.5)  
+> **Status:** Active Master Specification File (Version 2.0)  
 > **Master Purpose:** This document serves as the authoritative blueprint, state ledger, and engineering roadmap for the entire campaign. It details the structural design of our open-world sandbox, and guides incremental development as we iteratively enhance each module track.
 >
 > ⚠️ **Development Context:** All five parallel tracks—**Keep on the Borderlands (B2)**, **Against the Cult of the Reptile God (N1)**, **The Ghost Tower of Inverness (C2)**, **The Water Temple (Zelda / ADOM)**, and **The Temple of Elemental Evil (ToEE)**—are fully implemented, integrated, and validated in the campaign database! The Shroudgarde Borderlands is now complete.
@@ -257,7 +257,7 @@ The following development tickets define the exact TypeScript and Zod schema ext
     ```
 *   **Engine Update**: Implement `ShopIntent` processing. Query the player's bag for `tags: ["currency:gold"]` to deduct funds.
 
-### 🎫 Ticket #2: Direct Inventory Predicates
+### 🎫 Ticket #2: Direct Inventory Predicates — [RESOLVED]
 *   **Trigger Condition Extension**:
     ```typescript
     z.object({ type: z.literal('has_item'), itemId: z.string(), amount: z.number().default(1) })
@@ -285,11 +285,11 @@ The following development tickets define the exact TypeScript and Zod schema ext
     ```
 *   **Engine Update**: If `logicalOperator` is `'OR'`, evaluate the quest as completed as soon as *any single* objective in the array is fulfilled.
 
-### 🎫 Ticket #5: Tile Step Coordinate Event & triggers
+### 🎫 Ticket #5: Tile Step Coordinate Event & triggers — [RESOLVED]
 *   **Event Pattern Extension**: Add `TileEntered` to `GameEventType`.
 *   **Engine Update**: When the player steps on a grid coordinate, fire a `TileEntered` trigger. If the coordinates match a registered trap trigger in `triggers.json`, run the associated consequence (such as setting adjacent door locks to true).
 
-### 🎫 Ticket #6: Hidden NPC States & "Faction Swapping" Consequence
+### 🎫 Ticket #6: Hidden NPC States & "Faction Swapping" Consequence — [RESOLVED]
 *   **Consequence Action Extension**:
     ```typescript
     z.object({
@@ -300,7 +300,7 @@ The following development tickets define the exact TypeScript and Zod schema ext
     ```
 *   **Engine Update**: Implement `change_faction` to instantly swap an entity's `faction` string (e.g. swapping Constable Derek from `"citizens"` to `"cultists"` in real-time, instantly making him hostile to the player).
 
-### 🎫 Ticket #7: Dialogue Option Fact-Injectors
+### 🎫 Ticket #7: Dialogue Option Fact-Injectors — [RESOLVED]
 *   **Consequence Action Extension**:
     ```typescript
     z.object({
@@ -309,3 +309,8 @@ The following development tickets define the exact TypeScript and Zod schema ext
     })
     ```
 *   **Engine Update**: Avoids needing a custom `run_script` code string like `state.addFact('took_mead')` by making fact-setting a first-class, declarative consequence in the schema.
+
+
+### 🎫 Ticket #8: Decoupled Quest Loot & Static Chest Inventories
+*   **The Issue**: The engine's `wooden_chest` templates spawn randomized loot, but do not support a static `placedInventory` array inside `areas.json` to lock a specific quest item (like the `soul_gem`) inside a specific coordinates chest.
+*   **Engine Update**: Update the chest spawner in `map.system.ts`. If an entity has an `inventory` block in `placedEntities` within `areas.json`, load those specific item IDs directly into its container instead of rolling on the global loot table.

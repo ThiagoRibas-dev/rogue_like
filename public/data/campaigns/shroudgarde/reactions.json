@@ -400,8 +400,8 @@
         "glyph": "|"
       },
       {
-        "type": "run_script",
-        "scriptCode": "state.addFact('temple_drained')"
+        "type": "set_fact",
+        "target": "temple_drained"
       }
     ],
     "message": "You turn the massive valve. A hollow roar echoes through the stone walls as millions of gallons of water drain into the depths! The water levels are receding!"

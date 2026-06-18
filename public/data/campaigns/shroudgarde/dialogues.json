@@ -116,8 +116,8 @@
                 "targetId": "trance_quest"
               },
               {
-                "type": "run_script",
-                "scriptCode": "state.addFact('accepted_trance')"
+                "type": "set_fact",
+                "target": "accepted_trance"
               }
             ]
           }
@@ -282,8 +282,8 @@
                 "targetId": "chalice_quest"
               },
               {
-                "type": "run_script",
-                "scriptCode": "state.addFact('accepted_chalice')"
+                "type": "set_fact",
+                "target": "accepted_chalice"
               }
             ]
           }
@@ -388,8 +388,8 @@
                 "targetId": "tribal_war_quest"
               },
               {
-                "type": "run_script",
-                "scriptCode": "state.addFact('accepted_warfare')"
+                "type": "set_fact",
+                "target": "accepted_warfare"
               }
             ]
           }
@@ -452,8 +452,8 @@
             "nextNodeId": "confronted",
             "conditions": [
               {
-                "type": "has_fact",
-                "target": "accepted_trance"
+                "type": "has_item",
+                "itemId": "cultist_journal"
               }
             ]
           },
@@ -472,11 +472,13 @@
             "text": "To arms! You're under the snake's control!",
             "consequences": [
               {
-                "type": "remove_entity"
+                "type": "change_faction",
+                "targetId": "constable_derek",
+                "factionId": "cultists"
               },
               {
-                "type": "spawn_entity",
-                "entityTemplateId": "umbragen_zealot"
+                "type": "set_fact",
+                "target": "derek_betrayed"
               }
             ]
           }
@@ -529,8 +531,8 @@
             "text": "I'll do that. Thanks.",
             "consequences": [
               {
-                "type": "run_script",
-                "scriptCode": "state.addFact('took_mead')"
+                "type": "set_fact",
+                "target": "took_mead"
               }
             ]
           }
