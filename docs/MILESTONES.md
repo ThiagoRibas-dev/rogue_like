@@ -444,15 +444,15 @@ Make procedural generation adaptive without losing designer control.
 - [x] Add optional "bones-like" persistent remains/content hooks for future dead-adventurer or previous-run artifacts.
 - [x] Add regression tests proving unique actors/items cannot be duplicated by the Director.
 
-## 🟡 Milestone 39: Encounter Director Sandbox & Validation UI
+## 🟢 Milestone 39: Encounter Director Sandbox & Validation UI (Complete)
 Give designers a window into the Director before relying on it in real campaigns.
-- [ ] Add an Encounter Director preview panel to the editor’s Simulation Lab.
-- [ ] Let designers select an area, seed, budget, and encounter profile, then reroll deterministic previews.
-- [ ] Render the generated map, placed actors, hazards, fields, portals, loot, and objectives.
-- [ ] Show the Director Receipt with “why chosen” and “why rejected” explanations.
-- [ ] Integrate AI Arena simulations against generated encounters and summarize survival, damage, and turn-count telemetry.
-- [ ] Add validator checks for overspent budgets, empty candidate pools, unreachable objectives, unavoidable lethal hazards, and impossible exits.
-- [ ] Block export on fatal Director configuration errors.
+- [x] Add an Encounter Director preview panel to the editor's Simulation Lab.
+- [x] Let designers select an area, seed, budget, and encounter profile, then reroll deterministic previews.
+- [x] Render the generated map, placed actors, hazards, fields, portals, loot, and objectives.
+- [x] Show the Director Receipt with "why chosen" and "why rejected" explanations.
+- [x] Integrate AI Arena simulations against generated encounters and summarize survival, damage, and turn-count telemetry.
+- [x] Add validator checks for overspent budgets, empty candidate pools, unreachable objectives, unavoidable lethal hazards, and impossible exits.
+- [x] Block export on fatal Director configuration errors.
 
 ## 🟡 Milestone 40: Macro/Micro Integration — Schemes Mutate Encounters
 Let the existing Scheme Simulator influence future area generation and encounter composition.
@@ -470,6 +470,7 @@ Prove the Director with a compact but high-quality content set.
 - [ ] Add designer-authored examples showing static, parameterized, and fully dynamic encounter variants.
 - [ ] Balance initial CR budgets, rewards, hazard severity, and escape routes through Simulation Lab telemetry.
 - [ ] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
+- [ ] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
 
 ---
 

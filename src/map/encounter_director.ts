@@ -5,6 +5,15 @@ import { coordToIndex } from '../utils/grid.ts';
 
 export type BudgetAxis = 'protein' | 'appetizer' | 'side' | 'dessert';
 
+export type CandidateDisposition = 'spawned' | 'too_expensive' | 'token_exhausted' | 'no_space' | 'pool_filtered';
+
+export interface CandidateRecord {
+  readonly templateId: string;
+  readonly cost: number;
+  readonly disposition: CandidateDisposition;
+  readonly reasonDetail?: string;
+}
+
 export interface DirectorReceipt {
   readonly areaId: string;
   readonly effectiveBudget: number;
@@ -12,10 +21,11 @@ export interface DirectorReceipt {
   readonly axisResults: Record<
     BudgetAxis,
     {
-      budget: number;
-      spent: number;
-      spawned: string[];
-      rejected: string[];
+      readonly budget: number;
+      readonly spent: number;
+      readonly spawned: ReadonlyArray<string>;
+      readonly rejected: ReadonlyArray<string>;
+      readonly candidates: ReadonlyArray<CandidateRecord>;
     }
   >;
   readonly traitUpgrades: string[];
@@ -109,6 +119,12 @@ function runForEncounterZone(
   const axisSpent: Record<BudgetAxis, number> = { protein: 0, appetizer: 0, side: 0, dessert: 0 };
   const axisSpawned: Record<BudgetAxis, string[]> = { protein: [], appetizer: [], side: [], dessert: [] };
   const axisRejected: Record<BudgetAxis, string[]> = { protein: [], appetizer: [], side: [], dessert: [] };
+  const axisCandidates: Record<BudgetAxis, CandidateRecord[]> = {
+    protein: [],
+    appetizer: [],
+    side: [],
+    dessert: []
+  };
   const pathingFailures = 0;
 
   // 2. Pre-Allocate from existing entities inside THIS room
@@ -143,12 +159,19 @@ function runForEncounterZone(
       const template = campaign.entities[templateId];
       if (!template || template.crCost === undefined) continue;
 
+      const axis = resolveAxis(template.roleTags ?? []);
+
       // Exclude tokens that have already been spawned globally or in this map generation
       if (template.persistent && localTokenPool.has(templateId)) {
+        axisCandidates[axis].push({
+          templateId,
+          cost: template.crCost,
+          disposition: 'token_exhausted',
+          reasonDetail: `Persistent entity '${templateId}' already spawned in this generation cycle.`
+        });
         continue;
       }
 
-      const axis = resolveAxis(template.roleTags ?? []);
       candidatesByAxis[axis].push({ templateId, cost: template.crCost, weight });
     }
   }
@@ -159,6 +182,19 @@ function runForEncounterZone(
 
   for (const axis of axes) {
     let budget = axisBudget[axis];
+
+    // Mark all candidates that are too expensive from the start
+    for (const c of candidatesByAxis[axis]) {
+      if (c.cost > budget) {
+        axisCandidates[axis].push({
+          templateId: c.templateId,
+          cost: c.cost,
+          disposition: 'too_expensive',
+          reasonDetail: `Cost ${c.cost} exceeds remaining axis budget ${budget}.`
+        });
+      }
+    }
+
     while (budget > 0) {
       // Filter candidates that we can afford
       const affordable = candidatesByAxis[axis].filter((c) => c.cost <= budget && c.cost > 0);
@@ -182,6 +218,12 @@ function runForEncounterZone(
       if (!pos) {
         // Couldn't find room, reject
         axisRejected[axis].push(`${selectedId} (no space)`);
+        axisCandidates[axis].push({
+          templateId: selectedId,
+          cost,
+          disposition: 'no_space',
+          reasonDetail: `No available floor tile in room (${room.left},${room.top})-(${room.right},${room.bottom}).`
+        });
         break;
       }
 
@@ -193,6 +235,13 @@ function runForEncounterZone(
       if (campaign.entities[selectedId]?.persistent) {
         localTokenPool.add(selectedId);
       }
+
+      axisCandidates[axis].push({
+        templateId: selectedId,
+        cost,
+        disposition: 'spawned',
+        reasonDetail: `Selected via weighted RNG (weight: ${weightMap[selectedId] ?? 'unknown'}). Placed at (${pos.x},${pos.y}).`
+      });
 
       newEntities.push({ templateId: selectedId, x: pos.x, y: pos.y, dynamicTraits: [] });
       occupiedCoordinates.add(`${pos.x},${pos.y}`);
@@ -237,20 +286,29 @@ function runForEncounterZone(
         budget: axisBudget.protein,
         spent: axisSpent.protein,
         spawned: axisSpawned.protein,
-        rejected: axisRejected.protein
+        rejected: axisRejected.protein,
+        candidates: axisCandidates.protein
       },
       appetizer: {
         budget: axisBudget.appetizer,
         spent: axisSpent.appetizer,
         spawned: axisSpawned.appetizer,
-        rejected: axisRejected.appetizer
+        rejected: axisRejected.appetizer,
+        candidates: axisCandidates.appetizer
       },
-      side: { budget: axisBudget.side, spent: axisSpent.side, spawned: axisSpawned.side, rejected: axisRejected.side },
+      side: {
+        budget: axisBudget.side,
+        spent: axisSpent.side,
+        spawned: axisSpawned.side,
+        rejected: axisRejected.side,
+        candidates: axisCandidates.side
+      },
       dessert: {
         budget: axisBudget.dessert,
         spent: axisSpent.dessert,
         spawned: axisSpawned.dessert,
-        rejected: axisRejected.dessert
+        rejected: axisRejected.dessert,
+        candidates: axisCandidates.dessert
       }
     },
     traitUpgrades,
@@ -316,12 +374,12 @@ export function runEncounterDirector(
   let totalPreAllocated = 0;
   const mergedAxisResults: Record<
     BudgetAxis,
-    { budget: number; spent: number; spawned: string[]; rejected: string[] }
+    { budget: number; spent: number; spawned: string[]; rejected: string[]; candidates: CandidateRecord[] }
   > = {
-    protein: { budget: 0, spent: 0, spawned: [], rejected: [] },
-    appetizer: { budget: 0, spent: 0, spawned: [], rejected: [] },
-    side: { budget: 0, spent: 0, spawned: [], rejected: [] },
-    dessert: { budget: 0, spent: 0, spawned: [], rejected: [] }
+    protein: { budget: 0, spent: 0, spawned: [], rejected: [], candidates: [] },
+    appetizer: { budget: 0, spent: 0, spawned: [], rejected: [], candidates: [] },
+    side: { budget: 0, spent: 0, spawned: [], rejected: [], candidates: [] },
+    dessert: { budget: 0, spent: 0, spawned: [], rejected: [], candidates: [] }
   };
 
   const mergedTraitUpgrades: string[] = [];
@@ -348,6 +406,7 @@ export function runEncounterDirector(
       mergedAxisResults[axis].spent += zoneResult.receipt.axisResults[axis].spent;
       mergedAxisResults[axis].spawned.push(...zoneResult.receipt.axisResults[axis].spawned);
       mergedAxisResults[axis].rejected.push(...zoneResult.receipt.axisResults[axis].rejected);
+      mergedAxisResults[axis].candidates.push(...zoneResult.receipt.axisResults[axis].candidates);
     }
   }
 
@@ -368,7 +427,13 @@ export function runEncounterDirector(
 }
 
 function buildEmptyReceipt(areaId: string): DirectorReceipt {
-  const emptyAxis = { budget: 0, spent: 0, spawned: [], rejected: [] };
+  const emptyAxis = {
+    budget: 0,
+    spent: 0,
+    spawned: [] as string[],
+    rejected: [] as string[],
+    candidates: [] as CandidateRecord[]
+  };
   return {
     areaId,
     effectiveBudget: 0,

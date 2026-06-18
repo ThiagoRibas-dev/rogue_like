@@ -1,9 +1,11 @@
+import * as ROT from 'rot-js';
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
 import { type PatchOperation, applyPatch, generateInversePatch } from '../utils/json-patch.ts';
 import { readCampaignFromZip, writeCampaignToZip } from './workspace_file_service.ts';
 import { saveEditorWorkspace, loadEditorWorkspace } from '../core/campaign_store.ts';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 import { generateArea } from '../map/generator.ts';
+import { runEncounterDirector } from '../map/encounter_director.ts';
 
 import type { ValidationError } from './validator/validator.types.ts';
 
@@ -69,6 +71,60 @@ export class CampaignEditor {
    */
   public generateSandboxArea(areaId: string): ReturnType<typeof generateArea> {
     return generateArea(this.doc, areaId);
+  }
+
+  /**
+   * Generates a sandbox area with a specific seed and optional budget/profile overrides.
+   * Saves and restores the global RNG state to avoid polluting the editor's RNG stream.
+   *
+   * @param areaId   The area ID to generate.
+   * @param seed     The RNG seed to use for deterministic generation.
+   * @param overrides Optional crBudget and/or encounterProfileId overrides.
+   * @returns The generated area result.
+   */
+  public generateSandboxAreaWithSeed(
+    areaId: string,
+    seed: number,
+    overrides?: { crBudget?: number; encounterProfileId?: string }
+  ): ReturnType<typeof generateArea> {
+    const savedState = ROT.RNG.getState();
+    try {
+      ROT.RNG.setSeed(seed);
+
+      const areaDef = this.doc.areas[areaId];
+      if (!areaDef) {
+        throw new Error(`Area ${areaId} not found.`);
+      }
+
+      // If overrides provided, we need to re-run the encounter director with an
+      // overridden area definition after normal generation
+      if (overrides && (overrides.crBudget !== undefined || overrides.encounterProfileId !== undefined)) {
+        const result = generateArea(this.doc, areaId);
+        const effectiveAreaDef = {
+          ...areaDef,
+          ...(overrides.crBudget !== undefined ? { crBudget: overrides.crBudget } : {}),
+          ...(overrides.encounterProfileId !== undefined ? { encounterProfileId: overrides.encounterProfileId } : {})
+        };
+        const rooms = result.rooms.map((r) => ({
+          left: r.left,
+          right: r.right,
+          top: r.top,
+          bottom: r.bottom,
+          centerX: r.centerX,
+          centerY: r.centerY
+        }));
+        const directorResult = runEncounterDirector(this.doc, effectiveAreaDef, result.map, rooms, [], undefined);
+        return {
+          ...result,
+          placedEntities: directorResult.newEntities,
+          directorReceipt: directorResult.receipt
+        };
+      }
+
+      return generateArea(this.doc, areaId);
+    } finally {
+      ROT.RNG.setState(savedState);
+    }
   }
 
   /**

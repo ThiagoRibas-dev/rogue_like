@@ -11,6 +11,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import type { PatchOperation } from '../utils/json-patch.ts';
 import { renderSimulationLab } from './ui/ai_arena.ui.ts';
+import { renderDirectorSandbox } from './ui/director_sandbox.ui.ts';
 import { renderAreaEditor } from './ui/area_editor.ts';
 import { renderDialogueTreeEditor } from './ui/dialogue_editor.ts';
 import { renderFactionMatrixEditor } from './ui/faction_matrix_editor.ts';
@@ -36,6 +37,11 @@ export interface EditorController {
   hasUnsavedChanges(): boolean;
   onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void): void;
   generateSandboxArea(areaId: string): GeneratedArea;
+  generateSandboxAreaWithSeed(
+    areaId: string,
+    seed: number,
+    overrides?: { crBudget?: number; encounterProfileId?: string }
+  ): GeneratedArea;
 }
 
 // Local UI State for the Editor
@@ -452,6 +458,28 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
   }
 }
 
+function activateSimTab(
+  tab: 'arena' | 'director',
+  controller: EditorController,
+  tabContent: HTMLElement,
+  arenaTab: HTMLElement,
+  directorTab: HTMLElement
+): void {
+  // Update tab styles
+  arenaTab.style.color = tab === 'arena' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
+  arenaTab.style.borderBottomColor = tab === 'arena' ? 'var(--accent-color, #3498db)' : 'transparent';
+  directorTab.style.color = tab === 'director' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
+  directorTab.style.borderBottomColor = tab === 'director' ? 'var(--accent-color, #3498db)' : 'transparent';
+
+  // Clear and render
+  tabContent.innerHTML = '';
+  if (tab === 'arena') {
+    renderSimulationLab(controller, tabContent);
+  } else {
+    renderDirectorSandbox(controller, tabContent);
+  }
+}
+
 function refreshActiveViews(controller: EditorController, report?: ValidationReport) {
   const doc = controller.getDocument();
   const middlePane = document.getElementById('editor-middle-pane');
@@ -555,7 +583,46 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
       header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
 
       if (currentCategory === 'simulation') {
-        renderSimulationLab(controller, formContainer);
+        // Tabbed Simulation Lab layout
+        const tabBar = document.createElement('div');
+        tabBar.className = 'sim-tabs';
+        tabBar.style.cssText = 'display:flex;gap:0;border-bottom:2px solid var(--border-color);margin-bottom:0.5rem;';
+
+        const arenaTab = document.createElement('button');
+        arenaTab.className = 'sim-tab';
+        arenaTab.dataset.tab = 'arena';
+        arenaTab.textContent = '⚔ AI Arena';
+        arenaTab.style.cssText =
+          'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
+
+        const directorTab = document.createElement('button');
+        directorTab.className = 'sim-tab';
+        directorTab.dataset.tab = 'director';
+        directorTab.textContent = '🎲 Encounter Director';
+        directorTab.style.cssText =
+          'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
+
+        tabBar.appendChild(arenaTab);
+        tabBar.appendChild(directorTab);
+        formContainer.appendChild(tabBar);
+
+        const tabContent = document.createElement('div');
+        tabContent.id = 'sim-tab-content';
+        formContainer.appendChild(tabContent);
+
+        // Activate first tab by default
+        let activeTab: 'arena' | 'director' = 'arena';
+        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+
+        // Tab switching
+        arenaTab.addEventListener('click', () => {
+          activeTab = 'arena';
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+        });
+        directorTab.addEventListener('click', () => {
+          activeTab = 'director';
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+        });
       } else {
         workspacePane.appendChild(header);
         // Render singleton form
