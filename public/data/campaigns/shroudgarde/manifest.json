@@ -1,0 +1,14 @@
+{
+  "id": "shroudgarde",
+  "name": "The Shroudgarde Borderlands",
+  "description": "A dark frontier sandbox. Investigate the sleeping plague of Shroudgarde, brave La For\u00eat Hant\u00e9e and the Mirrored Marsh, and descend into le Gouffre Maudit.",
+  "version": "1.0.0",
+  "author": "Heroic AI Designer",
+  "tags": [
+    "gothic",
+    "frontier",
+    "sandbox",
+    "multidungeon"
+  ],
+  "schemaVersion": 1
+}

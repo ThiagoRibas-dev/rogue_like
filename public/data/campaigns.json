@@ -9,6 +9,16 @@
       "startingAreaId": "dungeon_1",
       "source": "builtin",
       "author": "Core Team"
+    },
+    {
+      "id": "shroudgarde",
+      "name": "The Shroudgarde Borderlands",
+      "description": "A dark frontier sandbox centering on the town of Shroudgarde. Solve the trance plague, venture into La For\u00eat Hant\u00e9e and the Mirrored Marsh, and crawl le Gouffre Maudit.",
+      "version": "1.0.0",
+      "mapSize": "80x50",
+      "startingAreaId": "shroudgarde_courtyard",
+      "source": "builtin",
+      "author": "Heroic AI Designer"
     }
   ]
 }

@@ -1,0 +1,52 @@
+{
+  "poison": {
+    "id": "poison",
+    "name": "Poisoned",
+    "description": "Takes 2 damage at the start of each turn.",
+    "color": "#00d2d3",
+    "perTurnDamage": 2
+  },
+  "haste": {
+    "id": "haste",
+    "name": "Hasted",
+    "description": "Movement and action speed is significantly increased.",
+    "color": "#feca57",
+    "statModifiers": {
+      "speed": 50
+    }
+  },
+  "weakness": {
+    "id": "weakness",
+    "name": "Weakened",
+    "description": "Physical attacks deal 5 less damage.",
+    "color": "#ff9f43",
+    "statModifiers": {
+      "attack": -5
+    }
+  },
+  "stun": {
+    "id": "stun",
+    "name": "Stunned",
+    "description": "Cannot take any actions.",
+    "color": "#c8d6e5",
+    "flags": {
+      "skipTurn": true
+    }
+  },
+  "confusion": {
+    "id": "confusion",
+    "name": "Confused",
+    "description": "Movement is completely randomized.",
+    "color": "#f368e0",
+    "flags": {
+      "confused": true
+    }
+  },
+  "regeneration": {
+    "id": "regeneration",
+    "name": "Regenerating",
+    "description": "Heals 1 HP at the start of each turn.",
+    "color": "#2ecc71",
+    "perTurnHeal": 1
+  }
+}

@@ -1,0 +1,243 @@
+{
+  "forest_beasts": {
+    "id": "forest_beasts",
+    "name": "Beasts of La For\u00eat Hant\u00e9e",
+    "conditions": {
+      "areaTags": [
+        "forest"
+      ]
+    },
+    "entities": {
+      "worghest": 100,
+      "grippli_hunter": 40
+    }
+  },
+  "swamp_beasts": {
+    "id": "swamp_beasts",
+    "name": "Beasts of the Mirrored Marsh",
+    "conditions": {
+      "areaTags": [
+        "swamp"
+      ]
+    },
+    "entities": {
+      "swamp_saurian": 100,
+      "grippli_hunter": 50
+    }
+  },
+  "goblin_horde": {
+    "id": "goblin_horde",
+    "name": "Norker Tribes of Gouffre Maudit",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "early_game"
+      ]
+    },
+    "entities": {
+      "norker_scout": 100,
+      "norker_archer": 50
+    }
+  },
+  "orc_horde": {
+    "id": "orc_horde",
+    "name": "Scro Armies of Gouffre Maudit",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "scro_raider": 100,
+      "scro_warmage": 30
+    }
+  },
+  "spire_undead_hazards": {
+    "id": "spire_undead_hazards",
+    "name": "Constructs of the Sunken Spire",
+    "conditions": {
+      "areaTags": [
+        "dungeon"
+      ]
+    },
+    "entities": {
+      "exiled_modron": 80,
+      "hidden_trap": 40
+    }
+  },
+  "cultist_pool": {
+    "id": "cultist_pool",
+    "name": "Umbragen Zealots of the Serpent God",
+    "conditions": {
+      "areaTags": [
+        "boss"
+      ]
+    },
+    "entities": {
+      "umbragen_zealot": 100
+    }
+  },
+  "borderland_loot_containers": {
+    "id": "borderland_loot_containers",
+    "name": "Loot Containers of the Borderlands",
+    "conditions": {
+      "areaTags": [
+        "forest",
+        "swamp",
+        "cave",
+        "dungeon"
+      ]
+    },
+    "entities": {
+      "wooden_chest": 80,
+      "bones_pile": 20
+    }
+  },
+  "kobold_pool": {
+    "id": "kobold_pool",
+    "name": "Kobold Tribes",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "early_game"
+      ]
+    },
+    "entities": {
+      "kobold_shifter": 100,
+      "norker_scout": 30
+    }
+  },
+  "bugbear_pool": {
+    "id": "bugbear_pool",
+    "name": "Bugbear Warbands",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "bugbear_thug": 100,
+      "scro_raider": 20
+    }
+  },
+  "ogre_pool": {
+    "id": "ogre_pool",
+    "name": "Ogre Denizens",
+    "conditions": {
+      "areaTags": [
+        "cave",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "ogre_brute": 100
+    }
+  },
+  "orlane_east_residents": {
+    "id": "orlane_east_residents",
+    "name": "Procedural Residents of Orlane Farms",
+    "conditions": {
+      "areaTags": [
+        "farms"
+      ]
+    },
+    "entities": {
+      "villager_scared": 100,
+      "villager_subverted": 100,
+      "wooden_chest": 40
+    }
+  },
+  "pool_level_air": {
+    "id": "pool_level_air",
+    "name": "Air Elementals",
+    "conditions": {
+      "areaTags": [
+        "air"
+      ]
+    },
+    "entities": {
+      "gargoyle_air": 100,
+      "grippli_hunter": 20
+    }
+  },
+  "pool_level_earth": {
+    "id": "pool_level_earth",
+    "name": "Earth Elementals",
+    "conditions": {
+      "areaTags": [
+        "earth"
+      ]
+    },
+    "entities": {
+      "earth_golem": 100,
+      "exiled_modron": 30
+    }
+  },
+  "pool_level_fire": {
+    "id": "pool_level_fire",
+    "name": "Fire Elementals",
+    "conditions": {
+      "areaTags": [
+        "fire_level"
+      ]
+    },
+    "entities": {
+      "fire_salamander": 100,
+      "umbragen_zealot": 20
+    }
+  },
+  "vodyanoi_pool": {
+    "id": "vodyanoi_pool",
+    "name": "Vodyanoi Amphibians",
+    "conditions": {
+      "areaTags": [
+        "vodyanoi_domain"
+      ]
+    },
+    "entities": {
+      "vodyanoi_warrior": 100,
+      "swamp_saurian": 40
+    }
+  },
+  "pool_moathouse": {
+    "id": "pool_moathouse",
+    "name": "Moathouse Raiders",
+    "conditions": {
+      "areaTags": [
+        "moathouse"
+      ]
+    },
+    "entities": {
+      "giant_frog": 100,
+      "umbragen_zealot": 50
+    }
+  },
+  "pool_toee_earth": {
+    "id": "pool_toee_earth",
+    "name": "ToEE Earth Cult",
+    "conditions": {
+      "areaTags": [
+        "toee_earth"
+      ]
+    },
+    "entities": {
+      "earth_golem": 100,
+      "umbragen_zealot": 30
+    }
+  },
+  "pool_toee_fire": {
+    "id": "pool_toee_fire",
+    "name": "ToEE Fire Cult",
+    "conditions": {
+      "areaTags": [
+        "toee_fire"
+      ]
+    },
+    "entities": {
+      "fire_salamander": 100,
+      "scro_raider": 30
+    }
+  }
+}

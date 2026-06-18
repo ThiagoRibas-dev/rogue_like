@@ -1,0 +1,67 @@
+{
+  "stone_floor": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#1a1d24",
+    "bg": "#000000"
+  },
+  "stone_wall": {
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#4a4d53",
+    "bg": "#000000"
+  },
+  "stairs_up": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": "<",
+    "fg": "#ffffff",
+    "bg": "#000000"
+  },
+  "stairs_down": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ">",
+    "fg": "#ffffff",
+    "bg": "#000000"
+  },
+  "empty_space": {
+    "walkable": false,
+    "transparent": false,
+    "glyph": " ",
+    "fg": "#000000",
+    "bg": "#000000"
+  },
+  "shallow_water": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": "~",
+    "fg": "#3498db",
+    "bg": "#000000",
+    "movementCost": 200
+  },
+  "grass_floor": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#2d5a27",
+    "bg": "#000000"
+  },
+  "dense_trees": {
+    "walkable": false,
+    "transparent": false,
+    "glyph": "T",
+    "fg": "#1b4d3e",
+    "bg": "#000000"
+  },
+  "swamp_floor": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ";",
+    "fg": "#4a5d4e",
+    "bg": "#000000",
+    "movementCost": 150
+  }
+}

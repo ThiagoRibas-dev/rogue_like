@@ -1,0 +1,65 @@
+{
+  "player": {
+    "player": "friendly",
+    "citizens": "friendly",
+    "beasts": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "cultists": "hostile",
+    "bugbears": "hostile"
+  },
+  "citizens": {
+    "player": "friendly",
+    "citizens": "friendly",
+    "beasts": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "cultists": "hostile",
+    "bugbears": "hostile"
+  },
+  "beasts": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "beasts": "friendly",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "cultists": "hostile",
+    "bugbears": "hostile"
+  },
+  "goblins": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "beasts": "hostile",
+    "goblins": "friendly",
+    "orcs": "hostile",
+    "cultists": "hostile",
+    "bugbears": "hostile"
+  },
+  "orcs": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "beasts": "hostile",
+    "goblins": "hostile",
+    "orcs": "friendly",
+    "cultists": "hostile",
+    "bugbears": "hostile"
+  },
+  "cultists": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "beasts": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "cultists": "friendly",
+    "bugbears": "hostile"
+  },
+  "bugbears": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "beasts": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "cultists": "hostile",
+    "bugbears": "friendly"
+  }
+}

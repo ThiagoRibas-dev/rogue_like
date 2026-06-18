@@ -1,0 +1,357 @@
+{
+  "health_potion": {
+    "id": "health_potion",
+    "name": "Health Potion",
+    "unidentifiedName": "Potion",
+    "description": "A vial of glowing crimson liquid that heals wounds.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    }
+  },
+  "potion_haste": {
+    "id": "potion_haste",
+    "name": "Potion of Haste",
+    "unidentifiedName": "Potion",
+    "description": "A draft that makes time feel like it has slowed down.",
+    "glyph": "!",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "potion_haste",
+      "charges": 1
+    }
+  },
+  "scroll_identify": {
+    "id": "scroll_identify",
+    "name": "Scroll of Identify",
+    "unidentifiedName": "Scroll",
+    "description": "Reveals the magical properties of all items in your inventory.",
+    "glyph": "?",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_identify",
+      "charges": 1
+    }
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "name": "Smoked Venison Ration",
+    "unidentifiedName": "Ration",
+    "description": "Durable frontier trail rations. Filling and nutritious.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "food_ration",
+      "charges": 1
+    }
+  },
+  "apple": {
+    "id": "apple",
+    "name": "Crisp Apple",
+    "unidentifiedName": "Fruit",
+    "description": "Sweet, red, and fresh from the orchards.",
+    "glyph": "%",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "apple",
+      "charges": 1
+    }
+  },
+  "rusty_sword": {
+    "id": "rusty_sword",
+    "name": "Rusty Iron Sword",
+    "unidentifiedName": "Rusty Blade",
+    "description": "A pitted and nicked iron shortsword. Still dangerous.",
+    "glyph": "/",
+    "fg": "#a5b1c2",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "iron_shield": {
+    "id": "iron_shield",
+    "name": "Frontier Iron Shield",
+    "unidentifiedName": "Shield",
+    "description": "A heavy round shield bearing the crest of Shroudgarde.",
+    "glyph": "[",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 6,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "iron_key": {
+    "id": "iron_key",
+    "name": "Sturdy Iron Key",
+    "unidentifiedName": "Key",
+    "description": "A heavy, cold-iron key. Fits standard chests and gates.",
+    "glyph": "[",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "key:iron"
+    ]
+  },
+  "gold_key": {
+    "id": "gold_key",
+    "name": "Gilded Key",
+    "unidentifiedName": "Shiny Key",
+    "description": "An ornate brass key decorated with serpent engravings.",
+    "glyph": "[",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "key:gold"
+    ]
+  },
+  "torch": {
+    "id": "torch",
+    "name": "Pine Torch",
+    "unidentifiedName": "Wooden Stick",
+    "description": "A thick wooden torch wrapped in pitch-soaked cloth.",
+    "glyph": "/",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "tags": [
+      "torch"
+    ]
+  },
+  "wand_of_lightning": {
+    "id": "wand_of_lightning",
+    "name": "Wand of Lightning",
+    "unidentifiedName": "Copper Rod",
+    "description": "A copper wand that unleashes arcs of lightning piercing enemies.",
+    "glyph": "/",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "beam",
+      "range": 6,
+      "charges": 5,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "sacred_chalice": {
+    "id": "sacred_chalice",
+    "name": "Sacred Chalice of Shroudgarde",
+    "unidentifiedName": "Gilded Cup",
+    "description": "An ancient vessel of power, stolen by the serpent cult. Warm to the touch.",
+    "glyph": "u",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "tags": [
+      "relic"
+    ]
+  },
+  "cultist_journal": {
+    "id": "cultist_journal",
+    "name": "Serpent Cult Journal",
+    "unidentifiedName": "Leather Book",
+    "description": "A notebook filled with hypnotic sigils and names of subverted villagers.",
+    "glyph": "?",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "clue"
+    ]
+  },
+  "frontier_mead": {
+    "id": "frontier_mead",
+    "name": "Frontier Spiced Mead",
+    "unidentifiedName": "Spiced Mead",
+    "description": "Bertram's signature spiced mead. Smells sweet, with a trace of almonds.",
+    "glyph": "!",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "tags": [
+      "toxic_mead"
+    ],
+    "consumable": {
+      "effectId": "poisoned_mead",
+      "charges": 1
+    }
+  },
+  "serpent_medallion": {
+    "id": "serpent_medallion",
+    "name": "Serpent Medallion",
+    "unidentifiedName": "Engraved Medallion",
+    "description": "A heavy copper medallion depicting a coiled snake eating its own tail. Crucial to open the swamp gate.",
+    "glyph": "[",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "key:serpent"
+    ]
+  },
+  "soul_gem": {
+    "id": "soul_gem",
+    "name": "The Soul Gem of Inverness",
+    "unidentifiedName": "Glowing Blue Jewel",
+    "description": "A legendary jewel of pure force that absorbs light and life. Radiates high-intensity magic.",
+    "glyph": "*",
+    "fg": "#0984e3",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "tags": [
+      "relic:gem"
+    ],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 2,
+      "maxHpBonus": 15,
+      "carryBonus": 0
+    }
+  },
+  "wand_of_fire": {
+    "id": "wand_of_fire",
+    "name": "Wand of Fire",
+    "unidentifiedName": "Ruby Wand",
+    "description": "A magic wand that shoots a bolt of fire, stopping at the first enemy hit and igniting doors.",
+    "glyph": "/",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "bolt",
+      "range": 5,
+      "charges": 5,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "trident_of_tides": {
+    "id": "trident_of_tides",
+    "name": "Trident of the Tides",
+    "unidentifiedName": "Ornate Polearm",
+    "description": "An ancient, pearl-inlaid trident. Radiates raw elemental power over water and tides.",
+    "glyph": "Y",
+    "fg": "#18dcff",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 5,
+    "tags": [
+      "relic:trident"
+    ],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 1,
+      "maxHpBonus": 10,
+      "carryBonus": 0,
+      "onHit": {
+        "statusId": "poison",
+        "duration": 4
+      }
+    }
+  },
+  "sluice_key": {
+    "id": "sluice_key",
+    "name": "Hydrology Sluice Key",
+    "unidentifiedName": "Heavy Iron Key",
+    "description": "A massive, rust-covered iron key bearing water drop engravings. Fits the drainage valve.",
+    "glyph": "[",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "key:iron"
+    ]
+  },
+  "lareth_staff": {
+    "id": "lareth_staff",
+    "name": "Staff of Lareth the Beautiful",
+    "unidentifiedName": "Ornate Staff",
+    "description": "A beautiful, platinum-headed mace-staff carried by the dark cleric Lareth. Radiates healing and shielding forces.",
+    "glyph": "!",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "tags": [
+      "relic:staff"
+    ],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 2,
+      "maxHpBonus": 5,
+      "carryBonus": 0,
+      "onHit": {
+        "statusId": "haste",
+        "duration": 3
+      }
+    }
+  },
+  "fungal_potion": {
+    "id": "fungal_potion",
+    "name": "Fungal Spore Potion",
+    "unidentifiedName": "Green Flask",
+    "description": "A vial containing the volatile spores of Zuggtmoy. Throwing it releases a choking cloud of poison gas.",
+    "glyph": "!",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "tags": [
+      "explosive",
+      "flask"
+    ],
+    "throwable": {
+      "range": 5,
+      "destroyOnImpact": true
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "mind_control_pact": {
+    "id": "mind_control_pact",
+    "task": "subvert_mind",
+    "incriminatingWeight": 15,
+    "clueTemplates": [
+      "hypnotic_sigil",
+      "confession"
+    ]
+  },
+  "will_drain_ritual": {
+    "id": "will_drain_ritual",
+    "task": "drain_will",
+    "incriminatingWeight": 25,
+    "clueTemplates": [
+      "draining_urn",
+      "cultist_journal"
+    ]
+  },
+  "chalice_theft": {
+    "id": "chalice_theft",
+    "task": "steal_sacred_chalice",
+    "incriminatingWeight": 20,
+    "clueTemplates": [
+      "priestess_clue",
+      "chalice_sketch"
+    ]
+  }
+}

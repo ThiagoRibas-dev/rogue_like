@@ -1,0 +1,660 @@
+{
+  "mayor_dialogue": {
+    "id": "mayor_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Greetings, adventurer. I am Mayor Laurent, of the Shroudgarde Gold Dwarves. My town is slowly slipping away... Several Elan villagers wander like empty shells, whispering of a Serpent Priest in the swamp. Can you help us?",
+        "options": [
+          {
+            "id": "opt_accept_trance",
+            "text": "I will find the source of this trance and end it.",
+            "nextNodeId": "trance_accepted",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_trance"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_trance",
+            "text": "I have slain the Duthka'gith High Priest and ended the psychic ritual!",
+            "nextNodeId": "trance_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "trance_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "trance_quest"
+              }
+            ]
+          },
+          {
+            "id": "opt_leave",
+            "text": "Stay strong, Mayor. I must be going."
+          },
+          {
+            "id": "opt_accept_inverness",
+            "text": "Tell me about the legendary Ghost Tower of Inverness.",
+            "nextNodeId": "inverness_dialogue",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_inverness"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_inverness",
+            "text": "I have recovered the Soul Gem of Inverness!",
+            "nextNodeId": "inverness_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "soul_gem_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "soul_gem_quest"
+              }
+            ]
+          },
+          {
+            "id": "opt_accept_moathouse",
+            "text": "Have you heard of bandit raids from the Ruined Moathouse?",
+            "nextNodeId": "moathouse_dialogue",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_moathouse"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_moathouse",
+            "text": "I have cleared the Moathouse and put an end to their raiding!",
+            "nextNodeId": "moathouse_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tribal_war_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "moathouse_quest"
+              }
+            ]
+          }
+        ]
+      },
+      "trance_accepted": {
+        "id": "trance_accepted",
+        "text": "Thank the Heavens. Talk to Priestess Isabelle or Luc\u2014they might know more. The Mirrored Marsh lies to our southeast, but it is highly treacherous.",
+        "options": [
+          {
+            "id": "opt_bye_mayor",
+            "text": "I will return soon.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "trance_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_trance')"
+              }
+            ]
+          }
+        ]
+      },
+      "trance_complete": {
+        "id": "trance_complete",
+        "text": "Incredible! The clouds have lifted and the Elans are snapping out of their daze. Shroudgarde is eternally in your debt. Take this gilded serpent key, it was left behind by their cultists.",
+        "options": [
+          {
+            "id": "opt_bye_mayor2",
+            "text": "Thank you, Mayor. Shroudgarde is safe now."
+          }
+        ]
+      },
+      "inverness_dialogue": {
+        "id": "inverness_dialogue",
+        "text": "Ah, the Ghost Tower! A dark wizard named Imues sank it deep into the marsh. It has four elemental wards\u2014Air, Earth, Fire, and Water. At its heart lies the Soul Gem. Bring it to me to secure its magical force!",
+        "options": [
+          {
+            "id": "opt_accept_inv_quest",
+            "text": "I will brave the elemental levels and retrieve the Soul Gem.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "soul_gem_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_inverness')"
+              }
+            ]
+          }
+        ]
+      },
+      "inverness_complete": {
+        "id": "inverness_complete",
+        "text": "By Durin's beard! The Soul Gem! You've actually breached the elemental wards and retrieved it. Take this Wand of Fire as a token of my grand appreciation!",
+        "options": [
+          {
+            "id": "opt_bye_inv",
+            "text": "A fine trade, Mayor. Keep Shroudgarde safe."
+          }
+        ]
+      },
+      "moathouse_dialogue": {
+        "id": "moathouse_dialogue",
+        "text": "Yes! Bandits and cultists have established an outpost at the ruined Moathouse along the Road to Nulb. They are led by a dark, beautiful priest named Lareth. Ride out, slay Lareth, and return with his Staff to secure our borders!",
+        "options": [
+          {
+            "id": "opt_accept_moathouse_quest",
+            "text": "I will ride out to the Moathouse and defeat Lareth.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "moathouse_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_moathouse')"
+              }
+            ]
+          }
+        ]
+      },
+      "moathouse_complete": {
+        "id": "moathouse_complete",
+        "text": "Stellar work! Lareth's staff is secure, and the moathouse has been cleared. The roads are safe once more!",
+        "options": [
+          {
+            "id": "opt_bye_moathouse",
+            "text": "Thank you, Mayor Laurent."
+          }
+        ]
+      }
+    }
+  },
+  "priestess_dialogue": {
+    "id": "priestess_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Welcome to our sanctuary, traveler. I am Isabelle, of Aasimar blood. I weep for our chapel... serpent cultists sneaked in and stole our Sacred Chalice, carrying it into the flooded depths of the Sunken Spire.",
+        "options": [
+          {
+            "id": "opt_accept_chalice",
+            "text": "I will retrieve your chalice from the Sunken Spire.",
+            "nextNodeId": "chalice_accepted",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_chalice"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_chalice",
+            "text": "I have recovered the Sacred Chalice of Shroudgarde!",
+            "nextNodeId": "chalice_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "chalice_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "chalice_quest"
+              }
+            ]
+          },
+          {
+            "id": "opt_leave_priestess",
+            "text": "May your prayers be answered."
+          },
+          {
+            "id": "opt_accept_water",
+            "text": "The swamp's waters are rising. Do you know of the Water Temple?",
+            "nextNodeId": "water_dialogue",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_water_temple"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_water",
+            "text": "I have slain the Lurker and drained the temple of its corruption!",
+            "nextNodeId": "water_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "water_temple_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "water_temple_quest"
+              }
+            ]
+          }
+        ]
+      },
+      "chalice_accepted": {
+        "id": "chalice_accepted",
+        "text": "The Sunken Spire is in the southeast swamp. Be careful\u2014it is heavily flooded and guarded by exiled modrons. Look for a heavy chest inside.",
+        "options": [
+          {
+            "id": "opt_bye_priestess",
+            "text": "I will find it.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "chalice_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_chalice')"
+              }
+            ]
+          }
+        ]
+      },
+      "chalice_complete": {
+        "id": "chalice_complete",
+        "text": "Oh, praise the light! The Chalice has been returned. May this Wand of Lightning protect you in your battles against the darkness.",
+        "options": [
+          {
+            "id": "opt_bye_priestess2",
+            "text": "Thank you, Isabelle."
+          }
+        ]
+      },
+      "water_dialogue": {
+        "id": "water_dialogue",
+        "text": "Yes! The fey Vodyanoi temple was once a clean flood sluice. Now, a giant beast\u2014the Vodyanoi Lurker\u2014has mutated inside, blocking the drainage valve and flooding the swamp. Go to the Mirrored Marsh and open the valve to save our valleys!",
+        "options": [
+          {
+            "id": "opt_accept_water_quest",
+            "text": "I will open the sluice and reclaim the Trident of the Tides.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "water_temple_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_water_temple')"
+              }
+            ]
+          }
+        ]
+      },
+      "water_complete": {
+        "id": "water_complete",
+        "text": "May the light bless your path! The waters are receding, and the Vodyanoi have retreated. Take this Sluice Key\u2014it was forged in the same fires as the temple locks and might be useful elsewhere.",
+        "options": [
+          {
+            "id": "opt_bye_water",
+            "text": "Thank you, Priestess Isabelle."
+          }
+        ]
+      }
+    }
+  },
+  "hermit_dialogue": {
+    "id": "hermit_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Hmph. What do you want, city-slicker? I am Luc, a humble Wood Elf. There's trouble in the hills... Norkers and advanced Scro inside le Gouffre Maudit are in a violent turf war, threatening our borders.",
+        "options": [
+          {
+            "id": "opt_accept_warfare",
+            "text": "I will thin out their ranks and secure the hills.",
+            "nextNodeId": "warfare_accepted",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "accepted_warfare"
+              }
+            ]
+          },
+          {
+            "id": "opt_turn_in_warfare",
+            "text": "I have slain their scouts and warriors inside the Gouffre Maudit.",
+            "nextNodeId": "warfare_complete",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tribal_war_quest",
+                "operator": "==",
+                "value": 0
+              }
+            ],
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "targetId": "tribal_war_quest"
+              }
+            ]
+          },
+          {
+            "id": "opt_leave_hermit",
+            "text": "Just checking. Good day."
+          }
+        ]
+      },
+      "warfare_accepted": {
+        "id": "warfare_accepted",
+        "text": "Good. Go northeast into La For\u00eat Hant\u00e9e. You'll find the caves of le Gouffre Maudit deep within. Slay their scouts and raiders, or they will swallow Shroudgarde whole.",
+        "options": [
+          {
+            "id": "opt_bye_hermit",
+            "text": "It will be done.",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "targetId": "tribal_war_quest"
+              },
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('accepted_warfare')"
+              }
+            ]
+          }
+        ]
+      },
+      "warfare_complete": {
+        "id": "warfare_complete",
+        "text": "Well, color me impressed. You actually did it. Take this iron key\u2014I found it on a Scro warmage. It might open some heavily locked doors or iron gates in their depths.",
+        "options": [
+          {
+            "id": "opt_bye_hermit2",
+            "text": "Thank you, Luc."
+          }
+        ]
+      }
+    }
+  },
+  "villager_dialogue": {
+    "id": "villager_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "My mind... feels connected to the swamp. The High Priest calls... the great psionic Duthka'gith is humming inside my skull... We must surrender to the deep...",
+        "options": [
+          {
+            "id": "opt_shake_villager",
+            "text": "Fight the control! What are you talking about?",
+            "nextNodeId": "mumble"
+          },
+          {
+            "id": "opt_leave_villager",
+            "text": "I'll leave you to your thoughts."
+          }
+        ]
+      },
+      "mumble": {
+        "id": "mumble",
+        "text": "No... no noise... only the psionic ripples... we must obey the temple in the Mirrored Marsh...",
+        "options": [
+          {
+            "id": "opt_bye_mumble",
+            "text": "This is worse than I thought. (Leave)"
+          }
+        ]
+      }
+    }
+  },
+  "constable_dialogue": {
+    "id": "constable_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Move along, traveler. The Shroudgarde Guard has everything under control. No swamp terrors here, just simple mud and wild snakes. Move along.",
+        "options": [
+          {
+            "id": "opt_confront_derek",
+            "text": "Derek, you are gaslighting us! Explain this Serpent Cult Journal I found on their scouts!",
+            "nextNodeId": "confronted",
+            "conditions": [
+              {
+                "type": "has_fact",
+                "target": "accepted_trance"
+              }
+            ]
+          },
+          {
+            "id": "opt_bye_derek",
+            "text": "Understood, Constable. (Leave)"
+          }
+        ]
+      },
+      "confronted": {
+        "id": "confronted",
+        "text": "Sssssilence, fool! You should have minded your own business! The Great Serpent will consume Shroudgarde, starting with you!",
+        "options": [
+          {
+            "id": "opt_fight_derek",
+            "text": "To arms! You're under the snake's control!",
+            "consequences": [
+              {
+                "type": "remove_entity"
+              },
+              {
+                "type": "spawn_entity",
+                "entityTemplateId": "umbragen_zealot"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "barkeep_dialogue": {
+    "id": "barkeep_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Welcome to the Golden Grain Inn, friend! Traveling the frontier is thirsty work. Here, have a free mug of our spiced mead to celebrate your arrival!",
+        "options": [
+          {
+            "id": "opt_take_mead",
+            "text": "Thank you, Bertram. (Take spiced mead)",
+            "nextNodeId": "gave_mead",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "took_mead"
+              }
+            ],
+            "consequences": [
+              {
+                "type": "spawn_entity",
+                "entityTemplateId": "frontier_mead"
+              }
+            ]
+          },
+          {
+            "id": "opt_ask_swamp",
+            "text": "Do you know anything about the Mirrored Marsh?",
+            "nextNodeId": "about_swamp"
+          },
+          {
+            "id": "opt_leave_barkeep",
+            "text": "Just looking around. (Leave)"
+          }
+        ]
+      },
+      "gave_mead": {
+        "id": "gave_mead",
+        "text": "Drink up! It has a sweet flavor, with a trace of fine almond. Let me know when you want another.",
+        "options": [
+          {
+            "id": "opt_bye_barkeep1",
+            "text": "I'll do that. Thanks.",
+            "consequences": [
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('took_mead')"
+              }
+            ]
+          }
+        ]
+      },
+      "about_swamp": {
+        "id": "about_swamp",
+        "text": "The marsh? A beautiful place... calm, serene... You should walk in its waters. Let the reflection swallow your mind... it's so peaceful...",
+        "options": [
+          {
+            "id": "opt_bye_barkeep2",
+            "text": "That sounds rather eerie. (Leave)"
+          }
+        ]
+      }
+    }
+  },
+  "scared_villager_dialogue": {
+    "id": "scared_villager_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Please, traveler! Don't let them take me! Several of my neighbors went into the swamp and returned... changed. They don't sleep, they just stare into the water. Here, take this ration and stay safe!",
+        "options": [
+          {
+            "id": "opt_take_ration",
+            "text": "Thank you, stay hidden inside. (Accept Ration)",
+            "nextNodeId": "gave_ration",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "took_peasant_ration"
+              }
+            ],
+            "consequences": [
+              {
+                "type": "spawn_entity",
+                "entityTemplateId": "food_ration"
+              }
+            ]
+          },
+          {
+            "id": "opt_bye_scared",
+            "text": "Keep your doors locked. Good day."
+          }
+        ]
+      },
+      "gave_ration": {
+        "id": "gave_ration",
+        "text": "Bless you, adventurer. Find the priestess Isabelle, she might have a ward against this evil.",
+        "options": [
+          {
+            "id": "opt_bye_scared2",
+            "text": "I will. (Leave)",
+            "consequences": [
+              {
+                "type": "run_script",
+                "scriptCode": "state.addFact('took_peasant_ration')"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "subverted_villager_dialogue": {
+    "id": "subverted_villager_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "The... the golden grain under the water is reflecting so beautifully. Bertram's spiced draft makes the humming go away... We must sleep... we must drown...",
+        "options": [
+          {
+            "id": "opt_wake_subverted",
+            "text": "Wake up! Bertram's draft is drugged!",
+            "nextNodeId": "mumble_subverted"
+          },
+          {
+            "id": "opt_leave_subverted",
+            "text": "You are far gone. (Leave)"
+          }
+        ]
+      },
+      "mumble_subverted": {
+        "id": "mumble_subverted",
+        "text": "No... no noise... Bertram is our friend... he gives us the sweet almonds... the Great Serpent is calling from the Mirrored Marsh...",
+        "options": [
+          {
+            "id": "opt_bye_mumble_sub",
+            "text": "Almonds? Cyanide is derived from wild almonds... It's poison! (Leave)"
+          }
+        ]
+      }
+    }
+  },
+  "lareth_dialogue": {
+    "id": "lareth_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Ah, an intruder... You stand before Lareth, the Beautiful, champion of the elemental cults. Do you truly think you can challenge my authority?",
+        "options": [
+          {
+            "id": "opt_challenge_lareth",
+            "text": "Your reign of terror ends here, Lareth! Draw your blade!",
+            "consequences": [
+              {
+                "type": "remove_entity"
+              },
+              {
+                "type": "spawn_entity",
+                "entityTemplateId": "lareth_beautiful"
+              }
+            ]
+          },
+          {
+            "id": "opt_flee_lareth",
+            "text": "I... I must be going. (Flee)"
+          }
+        ]
+      }
+    }
+  }
+}

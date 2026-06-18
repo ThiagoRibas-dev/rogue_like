@@ -1,0 +1,16 @@
+{
+  "bounty_kill": {
+    "id": "bounty_kill",
+    "titleTemplate": "Bounty: {targetName}",
+    "descriptionTemplate": "The town has issued a bounty. Slay {amount} {targetName} and return for a reward.",
+    "objectiveType": "kill",
+    "targetTags": [
+      "monster"
+    ],
+    "amountRange": [
+      2,
+      5
+    ],
+    "rewardXpMultiplier": 50
+  }
+}

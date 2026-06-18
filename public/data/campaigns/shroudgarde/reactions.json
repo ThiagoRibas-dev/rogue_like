@@ -1,0 +1,409 @@
+[
+  {
+    "id": "use_consumable",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "actor"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "categories": [
+        "consumable"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "apply_item_effect"
+      },
+      {
+        "type": "consume_item"
+      }
+    ]
+  },
+  {
+    "id": "use_portal",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "actor"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "portal"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "change_area"
+      }
+    ]
+  },
+  {
+    "id": "open_door",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "door",
+        "solid"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "modify_tags",
+        "remove": [
+          "solid",
+          "opaque"
+        ]
+      },
+      {
+        "type": "change_glyph",
+        "glyph": "/"
+      },
+      {
+        "type": "change_intents",
+        "intents": [
+          "close"
+        ]
+      }
+    ],
+    "message": "The door opens."
+  },
+  {
+    "id": "close_door",
+    "verb": "close",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "door"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "modify_tags",
+        "add": [
+          "solid",
+          "opaque"
+        ]
+      },
+      {
+        "type": "change_glyph",
+        "glyph": "+"
+      },
+      {
+        "type": "change_intents",
+        "intents": [
+          "open"
+        ]
+      }
+    ],
+    "message": "The door closes."
+  },
+  {
+    "id": "unlock_gate_iron",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "key:iron"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "door"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "set_lock_state",
+        "locked": false
+      }
+    ],
+    "message": "You insert the heavy iron key and turn it. The iron gate unlocks."
+  },
+  {
+    "id": "unlock_chest_iron",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "key:iron"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "chest"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "set_lock_state",
+        "locked": false
+      }
+    ],
+    "message": "You unlock the chest using the iron key."
+  },
+  {
+    "id": "unlock_chest_gold",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "key:gold"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "chest"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "set_lock_state",
+        "locked": false
+      }
+    ],
+    "message": "You unlock the gilded chest using the gold key."
+  },
+  {
+    "id": "open_chest",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "chest"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "spill_inventory"
+      },
+      {
+        "type": "change_glyph",
+        "glyph": "C"
+      },
+      {
+        "type": "change_intents",
+        "intents": []
+      }
+    ],
+    "message": "You open the chest and its contents spill out onto the ground."
+  },
+  {
+    "id": "kick_door",
+    "verb": "kick",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "door"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "modify_tags",
+        "remove": [
+          "solid",
+          "opaque"
+        ]
+      },
+      {
+        "type": "change_glyph",
+        "glyph": "_"
+      },
+      {
+        "type": "change_intents",
+        "intents": []
+      }
+    ],
+    "message": "You kick the door! It splinters into pieces."
+  },
+  {
+    "id": "dip_weapon_fountain",
+    "verb": "dip",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "fountain"
+      ]
+    },
+    "toolMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "weapon"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "apply_coating",
+        "statusId": "poison",
+        "charges": 5,
+        "duration": 10
+      }
+    ],
+    "message": "You dip your weapon into the bubbling fountain, coating the blade in a venomous green sheen!"
+  },
+  {
+    "id": "drink_fountain",
+    "verb": "drink",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "water_source"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "apply_status",
+        "statusId": "regeneration",
+        "duration": 30
+      }
+    ],
+    "message": "You drink the cool, refreshing water. Your wounds begin to slowly knit together."
+  },
+  {
+    "id": "drink_toxic_mead",
+    "verb": "apply",
+    "priority": 150,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "actor"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "toxic_mead"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "apply_item_effect"
+      },
+      {
+        "type": "consume_item"
+      },
+      {
+        "type": "set_lock_state",
+        "locked": true,
+        "targetId": "wooden_door"
+      },
+      {
+        "type": "spawn_entity",
+        "entityTemplateId": "umbragen_zealot"
+      }
+    ],
+    "message": "Bertram grins wickedly as you collapse into a stupor! The doors slam shut behind you, and dark figures materialize!"
+  },
+  {
+    "id": "unlock_serpent_gate",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "key:serpent"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "door"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "set_lock_state",
+        "locked": false
+      }
+    ],
+    "message": "You slide the heavy copper Serpent Medallion into the stone gate's socket. It unlocks with a hollow click."
+  },
+  {
+    "id": "unlock_drainage_valve",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "key:iron"
+      ]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "valve"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "set_lock_state",
+        "locked": false
+      }
+    ],
+    "message": "You insert the heavy iron key and turn it with a loud metallic clank. The drainage valve's locking teeth release."
+  },
+  {
+    "id": "open_drainage_valve",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity"
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": [
+        "valve"
+      ]
+    },
+    "consequences": [
+      {
+        "type": "change_glyph",
+        "glyph": "|"
+      },
+      {
+        "type": "run_script",
+        "scriptCode": "state.addFact('temple_drained')"
+      }
+    ],
+    "message": "You turn the massive valve. A hollow roar echoes through the stone walls as millions of gallons of water drain into the depths! The water levels are receding!"
+  }
+]

@@ -184,6 +184,31 @@ function extractTypeDefinitions(source: string): Map<string, string> {
 }
 
 /**
+ * Extract named Zod enum definitions and their values.
+ * Matches patterns like:
+ *   export const NameEnum = z.enum(['a', 'b', 'c']);
+ * Returns Map<enumName, values[]>
+ */
+function extractNamedEnumValues(source: string): Map<string, string[]> {
+    const enums = new Map<string, string[]>();
+    const pattern = /export\s+const\s+(\w+Enum)\s*=\s*z\.enum\(\[([^\]]+)\]\)/g;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source)) !== null) {
+        const enumName = match[1]!;
+        const body = match[2]!;
+        const values: string[] = [];
+        const items = body.match(/['"`]([^'"`]+)['"`]/g);
+        if (items) {
+            for (const item of items) {
+                values.push(item.replace(/['"`]/g, ''));
+            }
+        }
+        enums.set(enumName, values);
+    }
+    return enums;
+}
+
+/**
  * Extract enum members from a zod enum definition like:
  *   z.enum(['a', 'b', 'c'])
  */
@@ -380,23 +405,64 @@ function main() {
         ? verbTypeMatch.map(m => m.replace(/['"`]/g, ''))
         : [];
 
-    // ─── 4. Build valid-values.json ───
+    // ─── 4. Extract per-schema enum values ───
+    const namedEnums = extractNamedEnumValues(campaignTypes);
+
+    const itemCategoryValues = namedEnums.get('ItemCategoryEnum') ?? ['consumable', 'weapon', 'armor', 'tool'];
+    const equipmentSlotValues = namedEnums.get('EquipmentSlotEnum') ?? ['head', 'neck', 'torso', 'back', 'arm', 'hand', 'finger', 'leg', 'foot'];
+    const factionRelationValues = namedEnums.get('FactionRelationEnum') ?? ['hostile', 'neutral', 'friendly'];
+    const itemEffectTypeValues = namedEnums.get('ItemEffectTypeEnum') ?? ['heal', 'damage', 'damage_nearest', 'damage_area', 'apply_status', 'identify', 'satiate'];
+    const areaGeneratorTypeValues = namedEnums.get('AreaGeneratorTypeEnum') ?? ['digger', 'cellular', 'static'];
+    const leverageTypeValues = namedEnums.get('LeverageTypeEnum') ?? ['money', 'ideology', 'coercion', 'ego'];
+
+    // Prune Verb duplicates from the regex extraction
+    const uniqueVerbStrings = [...new Set(verbStrings)];
+    const verbFallback = ['apply', 'throw', 'kick', 'open', 'close', 'lock', 'unlock', 'dip', 'zap', 'ignite', 'read', 'eat', 'drink', 'impact'];
+
+    // AI behavior IDs are from discriminatedUnion literals
+    const aiBehaviorValues = (() => {
+        const raw = extractLiteralValues(campaignTypes);
+        const valid = ['hunt', 'flee', 'ranged', 'wander'];
+        return raw.filter(v => valid.includes(v)).length > 0
+            ? raw.filter(v => valid.includes(v))
+            : valid;
+    })();
+
+    // Quest objective types come from questTypes
+    const questObjectiveValues = (() => {
+        const raw = extractEnumValues(questTypes);
+        const valid = ['kill', 'gather', 'explore', 'interact', 'talk'];
+        return raw.filter(v => valid.includes(v)).length > 0
+            ? raw.filter(v => valid.includes(v))
+            : valid;
+    })();
+
+    // ─── 5. Build valid-values.json ───
     const validValues: Record<string, string[]> = {
         GameEventType: gameEventEnum,
-        Verbs: verbStrings.length > 0 ? verbStrings : ['apply', 'throw', 'kick', 'open', 'close', 'lock', 'unlock', 'dip', 'zap', 'ignite', 'read', 'eat', 'drink', 'impact'],
-        ItemCategory: extractEnumValues(campaignTypes),
-        EquipmentSlot: extractEnumValues(campaignTypes),
-        FactionRelation: extractEnumValues(campaignTypes),
-        ItemEffectType: extractEnumValues(campaignTypes),
-        AreaGeneratorType: extractEnumValues(campaignTypes),
-        LeverageType: extractEnumValues(campaignTypes),
-        QuestObjectiveType: extractEnumValues(questTypes),
+        Verbs: uniqueVerbStrings.length > 0 ? uniqueVerbStrings : verbFallback,
+        ItemCategory: itemCategoryValues,
+        EquipmentSlot: equipmentSlotValues,
+        FactionRelation: factionRelationValues,
+        ItemEffectType: itemEffectTypeValues,
+        AreaGeneratorType: areaGeneratorTypeValues,
+        LeverageType: leverageTypeValues,
+        QuestObjectiveType: questObjectiveValues,
         QuestRewardType: extractLiteralValues(questTypes),
-        ConditionPredicateType: extractLiteralValues(triggerTypes),
-        ConsequenceActionType: extractLiteralValues(triggerTypes),
-        ZapPattern: extractEnumValues(campaignTypes).filter(v => ['beam', 'bolt', 'cone'].includes(v)),
-        AIBehaviorId: extractLiteralValues(campaignTypes),
+        ConditionPredicateType: extractLiteralValues(triggerTypes).filter(v =>
+            ['is_player', 'has_agreement', 'faction_standing', 'has_fact', 'not_has_fact', 'quest_status'].includes(v)
+        ),
+        ConsequenceActionType: extractLiteralValues(triggerTypes).filter(v =>
+            !['is_player', 'has_agreement', 'faction_standing', 'has_fact', 'not_has_fact', 'quest_status'].includes(v)
+        ),
+        ZapPattern: ['beam', 'bolt', 'cone'],
+        AIBehaviorId: aiBehaviorValues,
+        AreaConnectionDirection: areaGeneratorTypeValues.includes('up') ? ['up', 'down', 'edge', 'portal'] : undefined,
     };
+    // Remove undefined entries
+    for (const key of Object.keys(validValues)) {
+        if (validValues[key] === undefined) delete validValues[key];
+    }
 
     writeFileSync(
         join(OUT_DIR, 'valid-values.json'),

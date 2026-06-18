@@ -5,11 +5,11 @@ import { assertNever } from '../../utils/assert.ts';
 export async function validateQuests(campaign: Readonly<CampaignData>): Promise<ReadonlyArray<ValidationError>> {
   const errors: ValidationError[] = [];
 
-  // Collect all possible item spawns from the loot table
-  const possibleItems = new Set<string>();
+  // Collect all item IDs present in the loot table (including weight=0 for hand-placed items)
+  const lootTableItems = new Set<string>();
   const lootTable = campaign.rules.spawning.lootTable;
-  for (const [itemId, weight] of Object.entries(lootTable)) {
-    if (weight > 0) possibleItems.add(itemId);
+  for (const itemId of Object.keys(lootTable)) {
+    lootTableItems.add(itemId);
   }
 
   // Check quests
@@ -27,10 +27,10 @@ export async function validateQuests(campaign: Readonly<CampaignData>): Promise<
               message: `Quest requires gathering unknown item '${targetId}'.`,
               severity: 'error'
             });
-          } else if (!possibleItems.has(targetId)) {
+          } else if (!lootTableItems.has(targetId)) {
             errors.push({
               path: `/quests/${questId}/objectives/${i}/targetId`,
-              message: `Quest requires gathering '${targetId}', but it does not appear in the global loot table.`,
+              message: `Quest requires gathering '${targetId}', but it does not appear in the loot table (add it with weight 0 if hand-placed, or a positive weight for random drops).`,
               severity: 'warning'
             });
           }

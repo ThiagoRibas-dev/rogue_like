@@ -1,0 +1,22 @@
+{
+  "elite": {
+    "id": "elite",
+    "name": "Elite",
+    "crCostMultiplier": 1.5,
+    "statModifiers": {
+      "maxHp": 10,
+      "attack": 2
+    },
+    "tagsAdded": [
+      "elite"
+    ]
+  },
+  "regenerating": {
+    "id": "regenerating",
+    "name": "Regenerating",
+    "crCostModifier": 5,
+    "tagsAdded": [
+      "regenerating"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "trigger_drop_clue_on_death": {
+    "id": "trigger_drop_clue_on_death",
+    "eventType": "EntityDied",
+    "conditions": [
+      {
+        "type": "has_agreement"
+      }
+    ],
+    "consequences": [
+      {
+        "type": "spawn_clue",
+        "message": "dropped a secret cult agreement!"
+      }
+    ]
+  }
+}

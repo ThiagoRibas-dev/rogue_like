@@ -1,0 +1,212 @@
+{
+  "trance_quest": {
+    "id": "trance_quest",
+    "title": "The Trance of Shroudgarde",
+    "description": "Uncover the source of the hypnotic daze and slay the Duthka'gith High Priest inside the temple deep within the Mirrored Marsh.",
+    "objectives": [
+      {
+        "id": "talk_to_mayor",
+        "description": "Speak with Gold Dwarf Laurent",
+        "type": "talk",
+        "targetId": "gold_dwarf_laurent",
+        "requiredAmount": 1
+      },
+      {
+        "id": "slay_relic_priest",
+        "description": "Slay the Duthka'gith High Priest [Duthka'gith High Priest](entity:duthkagith_priest) in the Temple",
+        "type": "kill",
+        "targetId": "duthkagith_priest",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 500
+      },
+      {
+        "type": "item",
+        "itemId": "gold_key",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "chalice_quest": {
+    "id": "chalice_quest",
+    "title": "The Sacred Chalice",
+    "description": "Retrieve the stolen Sacred Chalice of Shroudgarde from the depths of the Sunken Spire in the Mirrored Marsh.",
+    "objectives": [
+      {
+        "id": "gather_chalice",
+        "description": "Retrieve the [Sacred Chalice](item:sacred_chalice)",
+        "type": "gather",
+        "targetId": "sacred_chalice",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 300
+      },
+      {
+        "type": "item",
+        "itemId": "wand_of_lightning",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "tribal_war_quest": {
+    "id": "tribal_war_quest",
+    "title": "Tribal Warfare",
+    "description": "Thin the monstrous factions inside le Gouffre Maudit to protect Shroudgarde's borders.",
+    "objectives": [
+      {
+        "id": "slay_goblins",
+        "description": "Slay Norker Scouts [Norker Scout](entity:norker_scout) in the Upper Caves",
+        "type": "kill",
+        "targetId": "norker_scout",
+        "requiredAmount": 3
+      },
+      {
+        "id": "slay_orcs",
+        "description": "Slay Scro Raiders [Scro Raider](entity:scro_raider) in the Orcish Depths",
+        "type": "kill",
+        "targetId": "scro_raider",
+        "requiredAmount": 2
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 250
+      },
+      {
+        "type": "item",
+        "itemId": "iron_key",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "soul_gem_quest": {
+    "id": "soul_gem_quest",
+    "title": "The Ghost Tower of Inverness",
+    "description": "Venture into the sunken Ghost Tower of Inverness in the southeast marsh. Descend through the levels of Air, Earth, Fire, and Water to retrieve the legendary Soul Gem.",
+    "objectives": [
+      {
+        "id": "gather_soul_gem",
+        "description": "Retrieve the [Soul Gem](item:soul_gem) of Inverness",
+        "type": "gather",
+        "targetId": "soul_gem",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 600
+      },
+      {
+        "type": "item",
+        "itemId": "wand_of_fire",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "water_temple_quest": {
+    "id": "water_temple_quest",
+    "title": "The Sluice of the Tides",
+    "description": "Brave the submerged halls of the Water Temple inside the Mirrored Marsh. Slay the mutated Vodyanoi Lurker, turn the Drainage Valve to drain the temple, and reclaim the Trident of the Tides.",
+    "objectives": [
+      {
+        "id": "slay_vodyanoi_boss",
+        "description": "Slay the [Vodyanoi Lurker](entity:vodyanoi_boss) in the Hydro-Core",
+        "type": "kill",
+        "targetId": "vodyanoi_boss",
+        "requiredAmount": 1
+      },
+      {
+        "id": "gather_trident",
+        "description": "Retrieve the [Trident of the Tides](item:trident_of_tides) from the Valve Room",
+        "type": "gather",
+        "targetId": "trident_of_tides",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 500
+      },
+      {
+        "type": "item",
+        "itemId": "sluice_key",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "moathouse_quest": {
+    "id": "moathouse_quest",
+    "title": "The Ruined Moathouse",
+    "description": "Travel along the road to Nulb, locate the ruined Moathouse, and defeat the dark cleric Lareth the Beautiful to retrieve his platinum-headed staff.",
+    "objectives": [
+      {
+        "id": "slay_lareth",
+        "description": "Defeat [Lareth the Beautiful](entity:lareth_beautiful) in the dungeons",
+        "type": "kill",
+        "targetId": "lareth_beautiful",
+        "requiredAmount": 1
+      },
+      {
+        "id": "gather_staff",
+        "description": "Reclaim the [Staff of Lareth](item:lareth_staff)",
+        "type": "gather",
+        "targetId": "lareth_staff",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 400
+      },
+      {
+        "type": "item",
+        "itemId": "iron_key",
+        "amount": 1
+      }
+    ],
+    "autoComplete": false
+  },
+  "toee_quest": {
+    "id": "toee_quest",
+    "title": "The Temple of Elemental Evil",
+    "description": "Descend into the heart of the Temple of Elemental Evil. Defeat the four elemental cults and banish the Demon Queen of Fungi, Zuggtmoy, back to the Abyss.",
+    "objectives": [
+      {
+        "id": "slay_zuggtmoy",
+        "description": "Defeat [Zuggtmoy, Demon Queen](entity:zuggtmoy_boss) in her Fane",
+        "type": "kill",
+        "targetId": "zuggtmoy_boss",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1000
+      },
+      {
+        "type": "item",
+        "itemId": "gold_key",
+        "amount": 2
+      }
+    ],
+    "autoComplete": false
+  }
+}

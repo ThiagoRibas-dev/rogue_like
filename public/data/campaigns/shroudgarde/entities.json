@@ -1,0 +1,937 @@
+{
+  "player": {
+    "id": "player",
+    "name": "Player",
+    "glyph": "@",
+    "fg": "#00ffff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 6,
+      "defense": 2
+    },
+    "inventoryConfig": {
+      "baseCapacity": 12
+    },
+    "equipmentSlots": [
+      "head",
+      "neck",
+      "torso",
+      "back",
+      "arm",
+      "arm",
+      "hand",
+      "hand",
+      "finger",
+      "finger",
+      "leg",
+      "foot"
+    ],
+    "tags": [
+      "actor"
+    ],
+    "faction": "player"
+  },
+  "worghest": {
+    "id": "worghest",
+    "name": "Worghest",
+    "glyph": "w",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 10,
+      "attack": 3,
+      "defense": 0,
+      "xpGiven": 45
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "traits": [
+      "elite"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "swamp_saurian": {
+    "id": "swamp_saurian",
+    "name": "Saurian Shifter",
+    "glyph": "s",
+    "fg": "#26de81",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 50
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 4,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 7,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "grippli_hunter": {
+    "id": "grippli_hunter",
+    "name": "Grippli Hunter",
+    "glyph": "f",
+    "fg": "#4cd137",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 6,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 30
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 6,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "norker_scout": {
+    "id": "norker_scout",
+    "name": "Norker Scout",
+    "glyph": "n",
+    "fg": "#9c88ff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 2,
+      "xpGiven": 25
+    },
+    "ai": {
+      "profileId": "melee_coward",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "crCost": 6,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "norker_archer": {
+    "id": "norker_archer",
+    "name": "Norker Slinger",
+    "glyph": "n",
+    "fg": "#f5cd79",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 1,
+      "xpGiven": 40
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "crCost": 8,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "scro_raider": {
+    "id": "scro_raider",
+    "name": "Scro Raider",
+    "glyph": "S",
+    "fg": "#44bd32",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 14,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 80
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "crCost": 11,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "scro_warmage": {
+    "id": "scro_warmage",
+    "name": "Scro Warmage",
+    "glyph": "W",
+    "fg": "#9c27b0",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "fighter": {
+      "maxHp": 15,
+      "attack": 2,
+      "defense": 1,
+      "xpGiven": 120
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "crCost": 16,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "exiled_modron": {
+    "id": "exiled_modron",
+    "name": "Exiled Modron",
+    "glyph": "m",
+    "fg": "#e1b12c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 2,
+      "defense": 2,
+      "xpGiven": 60
+    },
+    "ai": {
+      "profileId": "melee_coward",
+      "aggroRadius": 4,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "side"
+    ]
+  },
+  "umbragen_zealot": {
+    "id": "umbragen_zealot",
+    "name": "Umbragen Zealot",
+    "glyph": "z",
+    "fg": "#487eb0",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 105,
+    "fighter": {
+      "maxHp": 16,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 90
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "cultists",
+    "crCost": 11,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "duthkagith_priest": {
+    "id": "duthkagith_priest",
+    "name": "Duthka'gith High Priest",
+    "glyph": "D",
+    "fg": "#e84118",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 6,
+      "defense": 3,
+      "xpGiven": 600
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": false
+    },
+    "faction": "cultists",
+    "persistent": true,
+    "dialogueId": "priest_dialogue",
+    "crCost": 40,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "gold_dwarf_laurent": {
+    "id": "gold_dwarf_laurent",
+    "name": "Gold Dwarf Laurent",
+    "glyph": "L",
+    "fg": "#f5cd79",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "mayor_dialogue"
+  },
+  "aasimar_isabelle": {
+    "id": "aasimar_isabelle",
+    "name": "Aasimar Isabelle",
+    "glyph": "I",
+    "fg": "#70a1ff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "priestess_dialogue"
+  },
+  "wood_elf_luc": {
+    "id": "wood_elf_luc",
+    "name": "Wood Elf Luc",
+    "glyph": "E",
+    "fg": "#78e08f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "hermit_dialogue"
+  },
+  "elan_villager": {
+    "id": "elan_villager",
+    "name": "Dazed Elan Villager",
+    "glyph": "v",
+    "fg": "#bdc581",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 85,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "villager_dialogue"
+  },
+  "hidden_trap": {
+    "id": "hidden_trap",
+    "name": "Hidden Trap",
+    "glyph": "^",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": false,
+    "renderable": false,
+    "trap": {
+      "triggerId": "hidden_trap_trigger"
+    },
+    "crCost": 5,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "wooden_door": {
+    "id": "wooden_door",
+    "name": "Wooden Door",
+    "glyph": "+",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 10,
+      "locked": false,
+      "breakable": true
+    }
+  },
+  "iron_gate": {
+    "id": "iron_gate",
+    "name": "Iron Gate",
+    "glyph": "G",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 30,
+      "keyTag": "key:iron",
+      "locked": true,
+      "breakable": false
+    }
+  },
+  "wooden_chest": {
+    "id": "wooden_chest",
+    "name": "Wooden Chest",
+    "glyph": "c",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "chest",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 3,
+    "inventoryConfig": {
+      "baseCapacity": 5
+    },
+    "lock": {
+      "difficulty": 15,
+      "keyTag": "key:iron",
+      "locked": true,
+      "breakable": true
+    }
+  },
+  "golden_chest": {
+    "id": "golden_chest",
+    "name": "Golden Chest",
+    "glyph": "C",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "chest",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 6,
+    "inventoryConfig": {
+      "baseCapacity": 8
+    },
+    "lock": {
+      "difficulty": 40,
+      "keyTag": "key:gold",
+      "locked": true,
+      "breakable": false
+    }
+  },
+  "bones_pile": {
+    "id": "bones_pile",
+    "name": "Pile of Bones",
+    "glyph": "%",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "remains",
+      "bones",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 2,
+    "inventoryConfig": {
+      "baseCapacity": 3
+    }
+  },
+  "fountain": {
+    "id": "fountain",
+    "name": "Fountain",
+    "glyph": "{",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source"
+    ],
+    "renderable": true
+  },
+  "altar": {
+    "id": "altar",
+    "name": "Altar",
+    "glyph": "_",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "altar",
+      "divine",
+      "terrain"
+    ],
+    "renderable": true
+  },
+  "kobold_shifter": {
+    "id": "kobold_shifter",
+    "name": "Kobold Trap-Shifter",
+    "glyph": "k",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 5,
+      "attack": 1,
+      "defense": 0,
+      "xpGiven": 15
+    },
+    "ai": {
+      "profileId": "melee_coward",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "crCost": 4,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "bugbear_thug": {
+    "id": "bugbear_thug",
+    "name": "Bugbear Thug",
+    "glyph": "b",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 18,
+      "attack": 5,
+      "defense": 1,
+      "xpGiven": 110
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "bugbears",
+    "crCost": 14,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "ogre_brute": {
+    "id": "ogre_brute",
+    "name": "Ogre Brute",
+    "glyph": "O",
+    "fg": "#ff793f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 85,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 6,
+      "defense": 1,
+      "xpGiven": 200
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 4,
+      "wanders": false
+    },
+    "faction": "beasts",
+    "crCost": 22,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "owlbear": {
+    "id": "owlbear",
+    "name": "The Owlbear",
+    "glyph": "B",
+    "fg": "#e15f41",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 105,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 7,
+      "defense": 2,
+      "xpGiven": 350
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": false
+    },
+    "faction": "beasts",
+    "persistent": true,
+    "crCost": 30,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "constable_derek": {
+    "id": "constable_derek",
+    "name": "Constable Derek",
+    "glyph": "C",
+    "fg": "#e1b12c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "constable_dialogue"
+  },
+  "barkeep_bertram": {
+    "id": "barkeep_bertram",
+    "name": "Barkeep Bertram",
+    "glyph": "B",
+    "fg": "#f5cd79",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "barkeep_dialogue"
+  },
+  "serpent_gate": {
+    "id": "serpent_gate",
+    "name": "Serpent Gate",
+    "glyph": "X",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 999,
+      "keyTag": "key:serpent",
+      "locked": true,
+      "breakable": false
+    }
+  },
+  "villager_scared": {
+    "id": "villager_scared",
+    "name": "Terrified Peasant",
+    "glyph": "v",
+    "fg": "#a5b1c2",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "scared_villager_dialogue",
+    "roleTags": [
+      "side"
+    ],
+    "crCost": 1
+  },
+  "villager_subverted": {
+    "id": "villager_subverted",
+    "name": "Dazed Farmhand",
+    "glyph": "v",
+    "fg": "#bdc581",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 85,
+    "faction": "citizens",
+    "persistent": true,
+    "dialogueId": "subverted_villager_dialogue",
+    "roleTags": [
+      "side"
+    ],
+    "crCost": 1
+  },
+  "gargoyle_air": {
+    "id": "gargoyle_air",
+    "name": "Gargoyle of Air",
+    "glyph": "y",
+    "fg": "#74b9ff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 115,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 80
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 10,
+    "roleTags": [
+      "protein"
+    ],
+    "tags": [
+      "elemental"
+    ]
+  },
+  "earth_golem": {
+    "id": "earth_golem",
+    "name": "Clay Earth Golem",
+    "glyph": "x",
+    "fg": "#ffeaa7",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 80,
+    "fighter": {
+      "maxHp": 22,
+      "attack": 5,
+      "defense": 3,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 4,
+      "wanders": false
+    },
+    "faction": "beasts",
+    "crCost": 16,
+    "roleTags": [
+      "protein"
+    ],
+    "tags": [
+      "elemental",
+      "solid"
+    ]
+  },
+  "fire_salamander": {
+    "id": "fire_salamander",
+    "name": "Fire Salamander",
+    "glyph": "y",
+    "fg": "#d63031",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 14,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 100
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 12,
+    "roleTags": [
+      "protein"
+    ],
+    "tags": [
+      "elemental"
+    ]
+  },
+  "sentinel_imues": {
+    "id": "sentinel_imues",
+    "name": "Sentinel of Imues",
+    "glyph": "S",
+    "fg": "#0984e3",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 60,
+      "attack": 7,
+      "defense": 3,
+      "xpGiven": 800
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": false
+    },
+    "faction": "beasts",
+    "persistent": true,
+    "crCost": 45,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "vodyanoi_warrior": {
+    "id": "vodyanoi_warrior",
+    "name": "Vodyanoi Raider",
+    "glyph": "f",
+    "fg": "#3b3b98",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 15,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 90
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 11,
+    "roleTags": [
+      "protein"
+    ],
+    "tags": [
+      "vodyanoi"
+    ]
+  },
+  "vodyanoi_boss": {
+    "id": "vodyanoi_boss",
+    "name": "Vodyanoi Lurker",
+    "glyph": "F",
+    "fg": "#18dcff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 5,
+      "defense": 2,
+      "xpGiven": 500
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "beasts",
+    "persistent": true,
+    "crCost": 35,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "drainage_valve": {
+    "id": "drainage_valve",
+    "name": "Leaking Drainage Valve",
+    "glyph": "}",
+    "fg": "#18dcff",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "valve",
+      "solid"
+    ],
+    "lock": {
+      "difficulty": 25,
+      "keyTag": "key:iron",
+      "locked": true,
+      "breakable": false
+    }
+  },
+  "giant_frog": {
+    "id": "giant_frog",
+    "name": "Giant Frog",
+    "glyph": "r",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 105,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 25
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "crCost": 5,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "lareth_beautiful": {
+    "id": "lareth_beautiful",
+    "name": "Lareth the Beautiful",
+    "glyph": "L",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 5,
+      "defense": 2,
+      "xpGiven": 400
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "cultists",
+    "persistent": true,
+    "dialogueId": "lareth_dialogue",
+    "crCost": 30,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "zuggtmoy_boss": {
+    "id": "zuggtmoy_boss",
+    "name": "Zuggtmoy, Demon Queen",
+    "glyph": "Z",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 80,
+      "attack": 8,
+      "defense": 4,
+      "xpGiven": 1200
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": false
+    },
+    "faction": "cultists",
+    "persistent": true,
+    "crCost": 60,
+    "roleTags": [
+      "protein"
+    ],
+    "tags": [
+      "fungus",
+      "demon"
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "map": {
+    "width": 80,
+    "height": 50,
+    "minRoomWidth": 4,
+    "maxRoomWidth": 10,
+    "minRoomHeight": 4,
+    "maxRoomHeight": 8,
+    "minCorridorLength": 3,
+    "maxCorridorLength": 10,
+    "dugPercentage": 0.25,
+    "waterScatterChance": 0.05,
+    "startingAreaId": "shroudgarde_courtyard",
+    "fovRadius": 8
+  },
+  "hunger": {
+    "maxSatiation": 2000,
+    "thresholds": {
+      "satiated": 1500,
+      "normal": 1000,
+      "hungry": 300,
+      "starving": 0
+    }
+  },
+  "spawning": {
+    "maxMonstersPerRoom": 2,
+    "maxItemsPerRoom": 2,
+    "spawnWeights": {
+      "worghest": 80,
+      "swamp_saurian": 60,
+      "norker_scout": 50,
+      "scro_raider": 40,
+      "umbragen_zealot": 20,
+      "grippli_hunter": 30,
+      "exiled_modron": 15,
+      "kobold_shifter": 80,
+      "bugbear_thug": 40,
+      "ogre_brute": 15,
+      "villager_scared": 50,
+      "villager_subverted": 50,
+      "gargoyle_air": 60,
+      "earth_golem": 40,
+      "fire_salamander": 40,
+      "vodyanoi_warrior": 40,
+      "giant_frog": 60
+    },
+    "lootTable": {
+      "health_potion": 50,
+      "potion_haste": 10,
+      "scroll_identify": 15,
+      "food_ration": 25,
+      "apple": 15,
+      "rusty_sword": 15,
+      "iron_shield": 10,
+      "torch": 15,
+      "sacred_chalice": 0,
+      "soul_gem": 0,
+      "trident_of_tides": 0,
+      "lareth_staff": 0
+    },
+    "lootDropChance": 0.3
+  }
+}

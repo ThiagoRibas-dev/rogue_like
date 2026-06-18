@@ -1,0 +1,1298 @@
+{
+  "shroudgarde_gate": {
+    "id": "shroudgarde_gate",
+    "name": "Shroudgarde Gatehouse",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": [
+      "hub",
+      "safe"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_courtyard",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 1
+      },
+      {
+        "targetAreaId": "forest_haunted",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 8
+      },
+      {
+        "targetAreaId": "marsh_mirrored",
+        "direction": "portal",
+        "placementX": 18,
+        "placementY": 5
+      },
+      {
+        "targetAreaId": "road_to_nulb",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 8
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.........+.........#",
+        "#.........#.........#",
+        "####+###########+####",
+        "#...................#",
+        "#...................#",
+        "#...................#",
+        "#.........#.........#",
+        "#.........+.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "+": "stone_floor"
+      }
+    }
+  },
+  "shroudgarde_courtyard": {
+    "id": "shroudgarde_courtyard",
+    "name": "Shroudgarde Outer Bailey",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": [
+      "hub",
+      "safe"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_gate",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 9
+      },
+      {
+        "targetAreaId": "shroudgarde_inner_keep",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 1
+      },
+      {
+        "targetAreaId": "orlane_east",
+        "direction": "portal",
+        "placementX": 1,
+        "placementY": 5
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.........+.........#",
+        "#..[Smithy]..[Chapel]#",
+        "#...E...........I...#",
+        "#.......+..._.......#",
+        "#...................#",
+        "#.........{.........#",
+        "#...............v...#",
+        "#...................#",
+        "#.........+.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "grass_floor",
+        "+": "grass_floor",
+        "[": "stone_floor",
+        "]": "stone_floor",
+        "S": "stone_floor",
+        "m": "stone_floor",
+        "i": "stone_floor",
+        "t": "stone_floor",
+        "h": "stone_floor",
+        "y": "stone_floor",
+        "C": "stone_floor",
+        "a": "stone_floor",
+        "p": "stone_floor",
+        "e": "stone_floor",
+        "l": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "wood_elf_luc",
+        "x": 4,
+        "y": 3
+      },
+      {
+        "templateId": "aasimar_isabelle",
+        "x": 16,
+        "y": 3
+      },
+      {
+        "templateId": "elan_villager",
+        "x": 16,
+        "y": 7
+      },
+      {
+        "templateId": "fountain",
+        "x": 10,
+        "y": 6
+      },
+      {
+        "templateId": "constable_derek",
+        "x": 10,
+        "y": 3
+      }
+    ]
+  },
+  "shroudgarde_inner_keep": {
+    "id": "shroudgarde_inner_keep",
+    "name": "Shroudgarde Governor Keep",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": [
+      "hub",
+      "safe"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_courtyard",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 7
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#.........M.........#",
+        "#...................#",
+        "#...................#",
+        "#...................#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "gold_dwarf_laurent",
+        "x": 10,
+        "y": 2
+      }
+    ]
+  },
+  "forest_haunted": {
+    "id": "forest_haunted",
+    "name": "La For\u00eat Hant\u00e9e",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 20,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "forest",
+      "early_game"
+    ],
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_gate",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "down"
+      }
+    ]
+  },
+  "ravine_chaos": {
+    "id": "ravine_chaos",
+    "name": "The Ravine of Chaos",
+    "generatorType": "static",
+    "dangerRating": 1,
+    "tags": [
+      "canyon",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "forest_haunted",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 1
+      },
+      {
+        "targetAreaId": "cave_kobolds",
+        "direction": "portal",
+        "placementX": 3,
+        "placementY": 3
+      },
+      {
+        "targetAreaId": "cave_norkers",
+        "direction": "portal",
+        "placementX": 3,
+        "placementY": 7
+      },
+      {
+        "targetAreaId": "cave_bugbears",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 4
+      },
+      {
+        "targetAreaId": "cave_scro",
+        "direction": "portal",
+        "placementX": 17,
+        "placementY": 3
+      },
+      {
+        "targetAreaId": "cave_ogre",
+        "direction": "portal",
+        "placementX": 17,
+        "placementY": 7
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.........<.........#",
+        "#...................#",
+        "#..[1]...........[4]#",
+        "#........[3]........#",
+        "#...................#",
+        "#..[2]...........[5]#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "dense_trees",
+        ".": "grass_floor",
+        "<": "grass_floor",
+        "1": "stone_floor",
+        "2": "stone_floor",
+        "3": "stone_floor",
+        "4": "stone_floor",
+        "5": "stone_floor"
+      }
+    }
+  },
+  "cave_kobolds": {
+    "id": "cave_kobolds",
+    "name": "The Kobold Warrens",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 15,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "up"
+      }
+    ]
+  },
+  "cave_norkers": {
+    "id": "cave_norkers",
+    "name": "The Norker Lair",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "up"
+      }
+    ]
+  },
+  "cave_bugbears": {
+    "id": "cave_bugbears",
+    "name": "The Bugbear Stronghold",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "up"
+      }
+    ]
+  },
+  "cave_scro": {
+    "id": "cave_scro",
+    "name": "The Scro Outpost",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 35,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "spire_level_earth",
+        "direction": "portal"
+      }
+    ]
+  },
+  "cave_ogre": {
+    "id": "cave_ogre",
+    "name": "The Ogre's Den",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "ravine_chaos",
+        "direction": "portal"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#.........O.........#",
+        "#...................#",
+        "#.........c.........#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "ogre_brute",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "wooden_chest",
+        "x": 10,
+        "y": 4
+      }
+    ]
+  },
+  "marsh_mirrored": {
+    "id": "marsh_mirrored",
+    "name": "The Mirrored Marsh",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "swamp",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.4
+    },
+    "proceduralPalette": {
+      "floor": "swamp_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_gate",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "golden_grain_inn",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "spire_level_air",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "water_temple_upper",
+        "direction": "portal"
+      }
+    ]
+  },
+  "golden_grain_inn": {
+    "id": "golden_grain_inn",
+    "name": "The Golden Grain Inn",
+    "generatorType": "static",
+    "dangerRating": 2,
+    "tags": [
+      "swamp",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "marsh_mirrored",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "wet_caverns",
+        "direction": "down"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#....[..........]...#",
+        "#...................#",
+        "#.........+.........#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "[": "stone_floor",
+        "]": "stone_floor",
+        "+": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "barkeep_bertram",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "wooden_door",
+        "x": 10,
+        "y": 5
+      }
+    ]
+  },
+  "wet_caverns": {
+    "id": "wet_caverns",
+    "name": "The Wet Caverns",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.5
+    },
+    "proceduralPalette": {
+      "floor": "swamp_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_inn_cellar",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "reptile_temple",
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 8
+      }
+    ],
+    "placedEntities": [
+      {
+        "templateId": "serpent_gate",
+        "x": 10,
+        "y": 8
+      }
+    ]
+  },
+  "reptile_temple": {
+    "id": "reptile_temple",
+    "name": "Temple of the Reptile God",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "boss"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "wet_caverns",
+        "direction": "portal"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#........._.........#",
+        "#...................#",
+        "#.......g...g.......#",
+        "#.........P.........#",
+        "#...................#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "altar",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "duthkagith_priest",
+        "x": 10,
+        "y": 5
+      },
+      {
+        "templateId": "umbragen_zealot",
+        "x": 8,
+        "y": 4
+      },
+      {
+        "templateId": "umbragen_zealot",
+        "x": 12,
+        "y": 4
+      }
+    ]
+  },
+  "shroudgarde_inn_cellar": {
+    "id": "shroudgarde_inn_cellar",
+    "name": "The Inn Cellar",
+    "generatorType": "static",
+    "dangerRating": 2,
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "golden_grain_inn",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "wet_caverns",
+        "direction": "down"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#..c................#",
+        "#...................#",
+        "#...................#",
+        "#.........<.........#",
+        "#.........>.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        ">": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "wooden_chest",
+        "x": 3,
+        "y": 2
+      }
+    ]
+  },
+  "orlane_east": {
+    "id": "orlane_east",
+    "name": "Orlane East Farms",
+    "generatorType": "digger",
+    "dangerRating": 0,
+    "crBudget": 12,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "farms",
+      "safe"
+    ],
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_courtyard",
+        "direction": "portal"
+      }
+    ]
+  },
+  "spire_level_air": {
+    "id": "spire_level_air",
+    "name": "Ghost Tower: Level of Air",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "air",
+      "dungeon",
+      "early_game"
+    ],
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "marsh_mirrored",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "spire_level_earth",
+        "direction": "down"
+      }
+    ]
+  },
+  "spire_level_earth": {
+    "id": "spire_level_earth",
+    "name": "Ghost Tower: Level of Earth",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 35,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "earth",
+      "dungeon",
+      "mid_game"
+    ],
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "spire_level_air",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "spire_level_fire",
+        "direction": "down"
+      },
+      {
+        "targetAreaId": "cave_scro",
+        "direction": "portal"
+      }
+    ]
+  },
+  "spire_level_fire": {
+    "id": "spire_level_fire",
+    "name": "Ghost Tower: Level of Fire",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": [
+      "fire_level",
+      "dungeon",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "spire_level_earth",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "spire_level_water",
+        "direction": "down"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#....~....~....~....#",
+        "#....~....~....~....#",
+        "#...................#",
+        "#....~....~....~....#",
+        "#....~....~....~....#",
+        "#...................#",
+        "#.........<.........#",
+        "#.........>.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "~": "stone_floor",
+        "<": "stone_floor",
+        ">": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "fire_salamander",
+        "x": 5,
+        "y": 4
+      },
+      {
+        "templateId": "fire_salamander",
+        "x": 15,
+        "y": 4
+      }
+    ]
+  },
+  "spire_level_water": {
+    "id": "spire_level_water",
+    "name": "Ghost Tower: Level of Water",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.6
+    },
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "spire_level_fire",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "spire_gem_chamber",
+        "direction": "down"
+      }
+    ]
+  },
+  "spire_gem_chamber": {
+    "id": "spire_gem_chamber",
+    "name": "The Soul Gem Chamber",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "dungeon",
+      "boss"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "spire_level_water",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#........._.........#",
+        "#.........*.........#",
+        "#...................#",
+        "#.........S.........#",
+        "#...................#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        "_": "stone_floor",
+        "*": "stone_floor",
+        "S": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "altar",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "sentinel_imues",
+        "x": 10,
+        "y": 5
+      },
+      {
+        "templateId": "golden_chest",
+        "x": 10,
+        "y": 3
+      }
+    ]
+  },
+  "water_temple_upper": {
+    "id": "water_temple_upper",
+    "name": "Water Temple: Sluice Halls",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "vodyanoi_domain",
+      "dungeon",
+      "early_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.5
+    },
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "marsh_mirrored",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "water_temple_lower",
+        "direction": "down"
+      }
+    ]
+  },
+  "water_temple_lower": {
+    "id": "water_temple_lower",
+    "name": "Water Temple: Submerged Caverns",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 35,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "vodyanoi_domain",
+      "dungeon",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.8
+    },
+    "proceduralPalette": {
+      "floor": "swamp_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "water_temple_upper",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "water_temple_core",
+        "direction": "portal"
+      }
+    ]
+  },
+  "water_temple_core": {
+    "id": "water_temple_core",
+    "name": "Water Temple: Hydro-Core",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": [
+      "vodyanoi_domain",
+      "dungeon",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "water_temple_lower",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "water_temple_valve_room",
+        "direction": "portal"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#.........~.........#",
+        "#.........~.........#",
+        "#.........F.........#",
+        "#.........~.........#",
+        "#.........~.........#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "~": "shallow_water",
+        "F": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "vodyanoi_boss",
+        "x": 10,
+        "y": 4
+      }
+    ]
+  },
+  "water_temple_valve_room": {
+    "id": "water_temple_valve_room",
+    "name": "Water Temple: Sluice Valve",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": [
+      "vodyanoi_domain",
+      "dungeon",
+      "mid_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "water_temple_core",
+        "direction": "portal"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#.........v.........#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "v": "stone_floor",
+        "<": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "drainage_valve",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "golden_chest",
+        "x": 10,
+        "y": 1
+      }
+    ]
+  },
+  "road_to_nulb": {
+    "id": "road_to_nulb",
+    "name": "The Road to Nulb",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 20,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "forest",
+      "early_game"
+    ],
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "shroudgarde_gate",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "moathouse_surface",
+        "direction": "portal"
+      }
+    ]
+  },
+  "moathouse_surface": {
+    "id": "moathouse_surface",
+    "name": "The Ruined Moathouse",
+    "generatorType": "static",
+    "dangerRating": 1,
+    "tags": [
+      "moathouse",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "road_to_nulb",
+        "direction": "portal"
+      },
+      {
+        "targetAreaId": "moathouse_dungeons",
+        "direction": "down"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#....#.........#....#",
+        "#....#....+....#....#",
+        "#...................#",
+        "#...................#",
+        "#.........>.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "+": "stone_floor"
+      }
+    }
+  },
+  "moathouse_dungeons": {
+    "id": "moathouse_dungeons",
+    "name": "The Moathouse Dungeons",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "moathouse",
+      "early_game"
+    ],
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "moathouse_surface",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "toee_level_1",
+        "direction": "down"
+      }
+    ],
+    "placedEntities": [
+      {
+        "templateId": "lareth_beautiful",
+        "x": 10,
+        "y": 5
+      }
+    ]
+  },
+  "toee_level_1": {
+    "id": "toee_level_1",
+    "name": "ToEE: The Earth Temple",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 30,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "toee_earth",
+      "toee",
+      "mid_game"
+    ],
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "moathouse_dungeons",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "toee_level_2",
+        "direction": "down"
+      }
+    ]
+  },
+  "toee_level_2": {
+    "id": "toee_level_2",
+    "name": "ToEE: The Air Temple",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 35,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "air",
+      "toee",
+      "mid_game"
+    ],
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "toee_level_1",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "toee_level_3",
+        "direction": "down"
+      }
+    ]
+  },
+  "toee_level_3": {
+    "id": "toee_level_3",
+    "name": "ToEE: The Fire Temple",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "toee_fire",
+      "toee",
+      "mid_game"
+    ],
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "toee_level_2",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "toee_level_4",
+        "direction": "down"
+      }
+    ]
+  },
+  "toee_level_4": {
+    "id": "toee_level_4",
+    "name": "ToEE: The Water Temple",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 45,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "vodyanoi_domain",
+      "toee",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "flooded": 0.5
+    },
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "connections": [
+      {
+        "targetAreaId": "toee_level_3",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "toee_zuggtmoy_fane",
+        "direction": "down"
+      }
+    ]
+  },
+  "toee_zuggtmoy_fane": {
+    "id": "toee_zuggtmoy_fane",
+    "name": "ToEE: Fane of Zuggtmoy",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "toee",
+      "boss"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "toee_level_4",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#...................#",
+        "#........._.........#",
+        "#...................#",
+        "#.........Z.........#",
+        "#...................#",
+        "#...................#",
+        "#.........<.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        "_": "stone_floor",
+        "Z": "stone_floor"
+      }
+    },
+    "placedEntities": [
+      {
+        "templateId": "altar",
+        "x": 10,
+        "y": 2
+      },
+      {
+        "templateId": "zuggtmoy_boss",
+        "x": 10,
+        "y": 4
+      },
+      {
+        "templateId": "golden_chest",
+        "x": 10,
+        "y": 1
+      }
+    ]
+  }
+}

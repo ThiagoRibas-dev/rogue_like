@@ -1,0 +1,20 @@
+{
+  "colors": {
+    "background": "#000000",
+    "floorDimFg": "#223322",
+    "playerFg": "#ffffff",
+    "stairsFg": "#f1c40f",
+    "transparent": "#00000000",
+    "wallDimFg": "#333344"
+  },
+  "glyphs": {
+    "stairsDown": ">",
+    "stairsUp": "<"
+  },
+  "ui": {
+    "displayWidth": 80,
+    "displayHeight": 45,
+    "fontSize": 16,
+    "fontFamily": "monospace"
+  }
+}

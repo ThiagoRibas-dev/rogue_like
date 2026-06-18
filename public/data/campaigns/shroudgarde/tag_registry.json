@@ -1,0 +1,277 @@
+{
+  "explosive": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Highly volatile. Will explode on impact."
+  },
+  "flask": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "A fragile glass container."
+  },
+  "key:iron": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "A sturdy iron key."
+  },
+  "key:gold": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "A shiny golden key."
+  },
+  "tool:lockpick": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Used to bypass mechanical locks."
+  },
+  "actor": {
+    "category": "entity",
+    "color": "#ffffff",
+    "description": "An entity capable of taking actions."
+  },
+  "consumable": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "An item that is destroyed upon use."
+  },
+  "portal": {
+    "category": "terrain",
+    "color": "#9b59b6",
+    "description": "A gateway to another area."
+  },
+  "door": {
+    "category": "terrain",
+    "color": "#d35400",
+    "description": "A door that can be opened or closed."
+  },
+  "solid": {
+    "category": "physical",
+    "color": "#7f8c8d",
+    "description": "A physical object that blocks movement."
+  },
+  "chest": {
+    "category": "terrain",
+    "color": "#f39c12",
+    "description": "A container for holding items."
+  },
+  "water": {
+    "category": "elemental",
+    "color": "#3498db",
+    "description": "Water-based substance or entity."
+  },
+  "field:fire": {
+    "category": "field",
+    "color": "#e67e22",
+    "description": "A burning area of effect."
+  },
+  "fountain": {
+    "category": "terrain",
+    "color": "#00cec9",
+    "description": "A decorative source of liquid."
+  },
+  "altar": {
+    "category": "terrain",
+    "color": "#dfe6e9",
+    "description": "A religious or magical focal point."
+  },
+  "water_source": {
+    "category": "terrain",
+    "color": "#0984e3",
+    "description": "Provides drinkable water."
+  },
+  "spider_nest": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Infested with spiders and webbing."
+  },
+  "flooded": {
+    "category": "biome",
+    "color": "#3498db",
+    "description": "Partially submerged in water."
+  },
+  "bones": {
+    "category": "terrain",
+    "color": "#bdc3c7",
+    "description": "The skeletal remains of a fallen creature."
+  },
+  "remains": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "Leftover remains or debris."
+  },
+  "elite": {
+    "category": "trait",
+    "color": "#f1c40f",
+    "description": "A superior variant with enhanced stats."
+  },
+  "regenerating": {
+    "category": "trait",
+    "color": "#2ecc71",
+    "description": "Slowly recovers health over time."
+  },
+  "hub": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "A safe hub area where the player begins."
+  },
+  "safe": {
+    "category": "area",
+    "color": "#27ae60",
+    "description": "An area with no hostile encounters."
+  },
+  "forest": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "Dense woodland area."
+  },
+  "swamp": {
+    "category": "area",
+    "color": "#16a085",
+    "description": "Mist-shrouded wetland."
+  },
+  "dungeon": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "Underground dungeon areas."
+  },
+  "cave": {
+    "category": "area",
+    "color": "#8e44ad",
+    "description": "Natural cave areas."
+  },
+  "boss": {
+    "category": "area",
+    "color": "#c0392b",
+    "description": "A boss encounter area."
+  },
+  "torch": {
+    "category": "item",
+    "color": "#d35400",
+    "description": "A blazing light source."
+  },
+  "kobold": {
+    "category": "entity",
+    "color": "#e67e22",
+    "description": "Lesser reptilian cave dwellers."
+  },
+  "bugbear": {
+    "category": "entity",
+    "color": "#d35400",
+    "description": "Giant, aggressive goblinoids."
+  },
+  "toxic_mead": {
+    "category": "item",
+    "color": "#1abc9c",
+    "description": " Bertram's drugged mead."
+  },
+  "key:serpent": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "The serpent-engraved medallion of the cult."
+  },
+  "farms": {
+    "category": "area",
+    "color": "#27ae60",
+    "description": "Procedural farming cottages scattered in the woods."
+  },
+  "relic:gem": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "The legendary Soul Gem of Inverness."
+  },
+  "elemental": {
+    "category": "entity",
+    "color": "#9b59b6",
+    "description": "Creatures born of pure elemental energy."
+  },
+  "vodyanoi": {
+    "category": "entity",
+    "color": "#0984e3",
+    "description": "Amphibious frog-demons of the deep waters."
+  },
+  "relic:trident": {
+    "category": "item",
+    "color": "#17c0eb",
+    "description": "The legendary Trident of the Tides."
+  },
+  "valve": {
+    "category": "terrain",
+    "color": "#7f8c8d",
+    "description": "A mechanical hydrology sluice control."
+  },
+  "toee": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "The massive Temple of Elemental Evil complex."
+  },
+  "moathouse": {
+    "category": "area",
+    "color": "#78e08f",
+    "description": "The ruined moathouse outpost."
+  },
+  "fungus": {
+    "category": "entity",
+    "color": "#2ecc71",
+    "description": "Fungal spore and decay creatures of Zuggtmoy."
+  },
+  "demon": {
+    "category": "entity",
+    "color": "#c0392b",
+    "description": "Demonic horrors of the Abyss."
+  },
+  "relic:staff": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "The platinum-headed staff of Lareth."
+  },
+  "relic": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "A rare magical or historical artifact."
+  },
+  "clue": {
+    "category": "item",
+    "color": "#8e44ad",
+    "description": "An incriminating piece of evidence."
+  },
+  "early_game": {
+    "category": "area",
+    "color": "#3498db",
+    "description": "Early-game areas."
+  },
+  "mid_game": {
+    "category": "area",
+    "color": "#f39c12",
+    "description": "Mid-game areas."
+  },
+  "air": {
+    "category": "area",
+    "color": "#74b9ff",
+    "description": "Air-themed chambers."
+  },
+  "earth": {
+    "category": "area",
+    "color": "#ffeaa7",
+    "description": "Earth-themed chambers."
+  },
+  "fire_level": {
+    "category": "area",
+    "color": "#ff7675",
+    "description": "Fire-themed chambers."
+  },
+  "vodyanoi_domain": {
+    "category": "area",
+    "color": "#0984e3",
+    "description": "Amphibious Vodyanoi territory."
+  },
+  "toee_earth": {
+    "category": "area",
+    "color": "#e17055",
+    "description": "ToEE Earth Temple."
+  },
+  "toee_fire": {
+    "category": "area",
+    "color": "#d63031",
+    "description": "ToEE Fire Temple."
+  }
+}

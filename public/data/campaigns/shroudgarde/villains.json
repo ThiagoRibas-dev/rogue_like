@@ -1,0 +1,22 @@
+{
+  "cult_leader": {
+    "id": "cult_leader",
+    "name": "The Great Serpent Priest",
+    "goals": [
+      "mind_control_shroudgarde",
+      "sacrifice_souls"
+    ],
+    "recruitmentPreferences": {
+      "targetTags": [
+        "cultist",
+        "villager"
+      ],
+      "leverageWeight": {
+        "money": 1,
+        "ideology": 5,
+        "coercion": 4,
+        "ego": 2
+      }
+    }
+  }
+}
