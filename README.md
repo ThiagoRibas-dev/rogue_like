@@ -4,18 +4,80 @@ A modern, highly-extensible, browser-based traditional roguelike engine featurin
 
 ## ✨ Current Features
 
-- **Dual-Mode Gameplay**: Play as a traditional turn-based roguelike or toggle into Real-Time with Pause (RTwP) mode.
-- **Systemic Narrative**: NPCs remember interactions. Engage in branching dialogues, accept data-driven quests, and track progress in the journal.
-- **Adversarial Schemes & Investigation**: Villains pursue goals in the background. Discover clues, track plots on the Conspiracy Board, and intercept minions.
-- **Tactical Combat**: Melee bumps, thrown projectiles, and area-of-effect wands. Utilize environmental traps, doors, and status effects.
-- **Combinatorial Reactions**: A tag-based interaction system. Dip weapons in poison, zap fire wands at oil barrels, or sacrifice corpses at altars without hardcoded rules.
-- **Dynamic Environments**: Spreadable environmental fields (fire, smoke, poison gas) that interact with entities and terrain.
-- **AI & Factions**: Entities have unique behaviors (hunting, fleeing, spell-casting) and belong to factions that dictate interactions and infighting.
-- **Survival Mechanics**: Manage hunger and satiation, identify unknown items, and manage inventory loadouts.
-- **Interconnected Worlds**: Explore procedurally generated biomes and hand-crafted static hubs connected by transition portals.
-- **Built-in Campaign Editor**: A powerful developer workspace with visual map painters, node-based dialogue editors, Zod-driven JSON forms, and a campaign validator.
-- **UX & Accessibility**: 3-column UI featuring floating combat text, nested tooltips, dynamic 2.5D camera tilt, scaleable UI, and full key rebinding.
-- **Data-Driven Architecture**: The game uses JSON registries. Install, select, and switch between modded campaigns from the main menu.
+### 🎮 Core Gameplay
+- **Dual-Mode Engine** — Play as a traditional **turn-based** roguelike or toggle into **Real-Time with Pause (RTwP)** mode with speed controls (1×, 2×, 4×) and command queuing
+- **Seeded Determinism** — Every run is reproducible with the same seed via a shared RNG wrapper
+- **Save/Load** — Auto-saves to `localStorage`; manual export/import of save files
+- **Permadeath** — Game Over screen with contextual death message and cause
+- **Full Input Rebinding** — Customize every keyboard control
+- **Accessibility** — UI/font scaling, high-contrast mode, animation reduction
+
+### 🗺️ Exploration & Map
+- **Procedural Generation** — `ROT.Map.Digger` room-and-corridor dungeons, plus cellular automata (caves) and BSP (urban/village) biome generators
+- **Field of View & Fog of War** — Precise shadowcasting; explored-but-not-visible tiles are dimmed; player-centered camera with viewport scrolling
+- **Interconnected World** — Multi-level dungeons, lateral transitions (walk off map edges, enter buildings), and hand-crafted static hubs (taverns, camps)
+- **Interactive Terrain** — Open/close doors (block FOV), hidden traps (damage, poison, teleport), shallow water (2× movement cost), fountains, altars/shrines, and locked containers
+
+### 🧟 Combat & AI
+- **Bump-to-Attack** — Walk into enemies to melee; full stat system (HP, attack, defense, speed)
+- **Unified Damage Pipeline** — Melee, traps, spells, and fields all produce damage instances with semantic tags processed by a centralized damage system
+- **Death System** — XP rewards, item drops, death messages, and player permadeath
+- **Floating Combat Text** — Damage numbers, blocks, and effects animate over entities on the map
+- **Composable AI** — Entities use data-driven profiles mixing hunt, wander, flee, ranged, and spell-casting behaviors
+- **Faction System** — Hostility matrix determines who attacks whom; view faction standings in the UI
+- **Status Effects** — Poison (DoT), Haste (speed+), Weakness (atk-), Stun (skip turn), Confusion (random move), Regeneration; all displayed in the HUD with remaining duration
+
+### 🎒 Items & Inventory
+- **Full Inventory System** — Pick up (`G`), drop, equip/unequip items; weight-based capacity
+- **Equipment Slots** — Paper-doll panel supporting arbitrary limb configurations (head, torso, hands, fingers, etc.) with dynamic stat calculation
+- **Consumables** — Health potions, scrolls of confusion, scrolls of identify, food items
+- **Identification** — Unidentified items show randomized placeholder names; identify via Scroll of Identify or identify-on-use
+- **Throwing** — Throw items at targets (rocks, knives, potions, bombs) with projectile resolution
+- **Item Coatings** — Dip weapons in poison/fire for finite on-hit charges
+- **Wands & Zapping** — Fire wands with beam, bolt, or cone AoE patterns
+- **Containers** — Open chests and containers with dedicated UI panel; traps and locks on containers
+
+### 🔥 Environmental Fields
+- **Spreadable Fields** — Fire, smoke, and poison gas persist on tiles, tick each turn, decay, and spread
+- **Field Interactions** — Smoke blocks FOV, poison gas applies poison, fire ignites flammable tags, water extinguishes fire — all resolved through the reaction system
+- **Data-Driven Definitions** — Fields are defined in JSON with configurable intensity, duration, damage, status effects, and sight-blocking
+
+### 💬 Dialogue & Quests
+- **Branching Dialogue** — Tree-based conversation modal with gated options
+- **Memory-Driven NPCs** — NPCs remember past interactions, grudges, and faction standing; dialogue changes based on history
+- **Declarative Quests** — JSON-defined objectives (kill, gather, talk) with quest journal UI
+- **Procedural Quests** — Randomized bounties generated at runtime from JSON templates
+- **In-Context Wiki** — Clickable highlighted keywords in dialogue/quests for encyclopedia-style tooltips
+
+### 🦹 Villains & Investigation
+- **Background Schemes** — Villain masterminds tick on the scheduler independently, pursuing goals without player input
+- **Minion Recruitment** — Villains dispatch agreements and agents across areas
+- **Clue Generation** — Defeating minions drops randomized clues tied to active schemes
+- **Investigation Board** — `V` key opens a conspiracy board showing known suspects and discovered clues
+- **Token Pools** — Bag pattern ensures unique villains and items cannot be duplicated
+
+### 🔐 Interaction Verbs & Reactions
+- **12 Canonical Verbs** — `apply`, `throw`, `kick`, `open`, `close`, `lock`, `unlock`, `dip`, `zap`, `ignite`, `read`, `eat`
+- **Combinatorial Reaction System** — All interactions are resolved by matching verb + source tags + target tags against declarative JSON reactions. New mechanics (dipping, sacrificing, alchemy) can be authored entirely in data without writing code
+
+### 📦 Campaign System
+- **Campaign Selection** — Choose from multiple campaigns on New Game
+- **Mod Loading** — Install `.zip` campaigns from the Main Menu; validated against Zod schemas
+- **Themes & Tilesets** — Per-campaign ASCII glyphs, color palettes, and message log templates
+- **Hybrid Loader** — Merges built-in (`public/`) and installed (IndexedDB) campaigns into a single list
+
+### 🛠️ Built-in Campaign Editor
+- **Workspace** — Toggle from Main Menu with editor state preserved across playtest round-trips
+- **Zod-Driven Forms** — Auto-generated JSON editors with reference dropdowns and live validation
+- **Undo/Redo** — `Ctrl+Z`/`Ctrl+Shift+Z` using JSON Patch (RFC 6902) deltas
+- **Drag-and-Drop** — Reorder arrays, drag items from sidebar to link IDs
+- **Visual Tools** — World area graph (node-link), faction matrix (2D data-grid), dialogue tree editor, tile grid painter, live map previews
+- **Encounter Director Sandbox** — Preview procedural encounter generation with budget breakdowns
+- **AI Arena** — Headless simulation of entity combat with telemetry
+- **Scheme Accelerator** — Fast-forward villain schemes to test investigation flow
+- **Campaign Validator** — Full integrity audit (reachability, cross-references, trigger loops); blocks export on fatal errors
+- **Playtest Mode** — One-click playtest serializes the campaign and launches the game; editor restores exact state on return
+- **IndexedDB Storage** — Workspaces saved to browser database; ZIP export/import for sharing
 
 ## 🚀 Quick Start
 
