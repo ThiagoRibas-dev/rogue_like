@@ -1,12 +1,12 @@
-import { EngineMode, UIMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
-import type { CampaignData } from '../../types/campaign.types.ts';
-import { ComponentType } from '../../types/components.types.ts';
-import { spawnEntity, getComponent, addComponent } from '../../core/ecs.ts';
+import { dispatchAction } from '../../actions/action.registry.ts';
+import { addComponent, getComponent, spawnEntity } from '../../core/ecs.ts';
 import { processAITurn } from '../../systems/ai.system.ts';
-import { processStatusEffectsTick } from '../../systems/status-effect.system.ts';
 import { processDamageSystem } from '../../systems/damage.system.ts';
 import { processDeathSystem } from '../../systems/death.system.ts';
-import { dispatchAction } from '../../actions/action.registry.ts';
+import { processStatusEffectsTick } from '../../systems/status-effect.system.ts';
+import type { CampaignData } from '../../types/campaign.types.ts';
+import { ComponentType } from '../../types/components.types.ts';
+import { EngineMode, UIMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 
 export interface ArenaTelemetry {
   readonly winner: 'a' | 'b' | 'draw';
@@ -355,7 +355,7 @@ export function runEncounterArena(
   const avgPlayerHpRemaining =
     nonDraws.length > 0
       ? nonDraws.filter((r) => r.telemetry.winner === 'a').reduce((s, r) => s + r.telemetry.finalHpA, 0) /
-        nonDraws.length
+      nonDraws.length
       : 0;
 
   return {

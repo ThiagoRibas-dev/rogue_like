@@ -1,17 +1,16 @@
 import * as ROT from 'rot-js';
-import { addComponent, getComponent } from '../core/ecs.ts';
+import type { Verb } from '../constants/verbs.constants.ts';
+import { addComponent, getComponent, removeEntity } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
 import type { GameEvent } from '../types/events.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
+import type { Intent } from '../types/intents/intent.union.ts';
+import { applyItemEffect } from './effects.system.ts';
+import { processChangeAreaIntent } from './map.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { completeQuest, grantQuest } from './quest.system.ts';
-import { processChangeAreaIntent } from './map.system.ts';
-import { IntentType } from '../types/intents/intent.enum.ts';
-import { applyItemEffect } from './effects.system.ts';
-import { removeEntity } from '../core/ecs.ts';
-import type { Verb } from '../constants/verbs.constants.ts';
-import type { Intent } from '../types/intents/intent.union.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -163,21 +162,21 @@ import { createEntity } from '../core/ecs.ts';
 import type {
   AgreementComponent,
   ClueComponent,
+  CoatingComponent,
   DamageComponent,
   DamageInstance,
   FactionComponent,
+  InteractableComponent,
+  InventoryComponent,
+  ItemComponent,
+  LockComponent,
   MemoryComponent,
+  PortalComponent,
   PositionComponent,
   QuestLogComponent,
-  TrapComponent,
-  ItemComponent,
-  InventoryComponent,
-  PortalComponent,
-  TagsComponent,
   RenderableComponent,
-  LockComponent,
-  InteractableComponent,
-  CoatingComponent
+  TagsComponent,
+  TrapComponent
 } from '../types/components.types.ts';
 import { toItemInstanceId } from '../types/components.types.ts';
 import type { DebugTriggerTraceEvent, EntityDiedEvent, TrapTriggeredEvent } from '../types/events.types.ts';
@@ -673,9 +672,7 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       if (consequence.targetId) {
         eId = parseInt(consequence.targetId) as EntityId;
       } else if (event.type === GameEventType.ReactionResolved) {
-        const targetPayload = (
-          event as unknown as { target: { type: string; entityId?: EntityId } }
-        ).target;
+        const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
         if (targetPayload.type === 'entity') {
           eId = targetPayload.entityId;
         }
