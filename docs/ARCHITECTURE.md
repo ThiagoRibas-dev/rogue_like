@@ -130,6 +130,7 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **UI & HUD**: Draws HTML overlays (health bars, logs, status) surrounding the main canvas. This layer is fully modularized (`src/rendering/ui/`) and acts purely as a "dump" pattern View layer, decoupled from ECS update logic.
 - **Styling**: CSS is modularized by domain in `src/styles/` (layout, HUD, modals, etc.) and aggregated via `@import` in `index.css`.
 - **View Controls**: Implements dynamic CSS 3D transforms (Rotate 45° and 3D Tilt) on the canvas wrapper to achieve a flexible 2.5D visual style without complicating the underlying 2D ROT.js renderer.
+- **Aspect Ratio & Zooming**: Controlled programmatically by syncing the `ROT.Display` grid columns, rows, and font size. Aspect ratio constants (`GAME_ASPECT_RATIO_WIDTH` and `GAME_ASPECT_RATIO_HEIGHT`) are defined in TypeScript and injected as a CSS custom property `--game-aspect-ratio`. Resizing is done programmatically to expand the display grid to perfectly fit the viewport constraints, avoiding letterboxing and keeping the player centered at all zoom levels.
 
 ### Items & Inventory
 - **Registries**: Items and Effects are defined declaratively in JSON registries and loaded into the `GameState`. They are pure data objects keyed by string IDs.
