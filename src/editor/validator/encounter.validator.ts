@@ -52,10 +52,10 @@ export function validateEncounters(data: CampaignData): ReadonlyArray<Validation
           continue;
         }
 
-        if (entityTemplate.crCost === undefined) {
+        if (entityTemplate.crCost === undefined || entityTemplate.crCost < 0) {
           errors.push({
             path: `spawnPools.${poolId}.entities.${entityId}`,
-            message: `Entity template '${entityId}' in spawn pool '${poolId}' is missing a 'crCost'.`,
+            message: `Entity template '${entityId}' in spawn pool '${poolId}' is missing a 'crCost' or has a negative cost.`,
             severity: 'error'
           });
         }
@@ -156,38 +156,6 @@ export function validateEncounters(data: CampaignData): ReadonlyArray<Validation
             severity: 'error'
           });
         }
-      }
-
-      // Check 10: Static map exit validity
-      if (area.generatorType === 'static' && area.staticMap && area.connections) {
-        const layout = area.staticMap.layout;
-        const legend = area.staticMap.legend;
-        area.connections.forEach((conn, ci) => {
-          if (!conn) return;
-          if (conn.placementX !== undefined && conn.placementY !== undefined) {
-            const px = conn.placementX;
-            const py = conn.placementY;
-            // Check if placement falls within layout bounds
-            if (py < layout.length && px < layout[py]!.length) {
-              const tileChar = layout[py]![px]!;
-              const tileId = legend[tileChar];
-              // If the tile at the placement resolves to a wall-like tile, flag it
-              if (tileId && (tileId.includes('wall') || tileId === 'empty_space')) {
-                errors.push({
-                  path: `areas.${areaId}.connections.${ci}.placementX`,
-                  message: `Area '${area.name}' connection ${ci} places portal at (${px},${py}) which maps to '${tileId}', making the exit inaccessible.`,
-                  severity: 'error'
-                });
-              }
-            } else {
-              errors.push({
-                path: `areas.${areaId}.connections.${ci}`,
-                message: `Area '${area.name}' connection ${ci} placement (${px},${py}) is outside the static layout bounds.`,
-                severity: 'error'
-              });
-            }
-          }
-        });
       }
     }
   }

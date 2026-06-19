@@ -1,6 +1,6 @@
 # 📖 MASTER CAMPAIGN SPECIFICATION: The Shroudgarde Borderlands
 
-> **Status:** Active Master Specification File (Version 2.0)  
+> **Status:** Active Master Specification File (Version 2.2)  
 > **Master Purpose:** This document serves as the authoritative blueprint, state ledger, and engineering roadmap for the entire campaign. It details the structural design of our open-world sandbox, and guides incremental development as we iteratively enhance each module track.
 >
 > ⚠️ **Development Context:** All five parallel tracks—**Keep on the Borderlands (B2)**, **Against the Cult of the Reptile God (N1)**, **The Ghost Tower of Inverness (C2)**, **The Water Temple (Zelda / ADOM)**, and **The Temple of Elemental Evil (ToEE)**—are fully implemented, integrated, and validated in the campaign database! The Shroudgarde Borderlands is now complete.
@@ -100,7 +100,7 @@ We expanded the Caves of Chaos into **five discrete subterranean biomes** branch
 
 ### 🟢 SPRINT 2: Against the Cult of the Reptile God (N1) — [COMPLETED]
 We implemented the psychological horror and subversion mystery of Orlane, adding a unique procedural spin to make the investigation highly replayable:
-*   **Procedural Cottage Generators**: Set **Orlane East Farms** (`orlane_east`) to use your engine's `digger` generator. By setting the tiles to `grass_floor` and `dense_trees`, the dungeon generator procedurally compiles a different village layout on every run—scattering random cottage "rooms" connected by grass pathways in the woods!
+*   **Procedural Cottage Generators**: Set **Orlane East Farms** (`orlane_east`) to use your engine's `digger` generator with `grass_floor` and `dense_trees` palettes. It procedurally compiles a different village layout on every run—scattering random cottages connected by grassy pathways in the woods!
 *   **The \"Who is the Cultist?\" Roulette**: Programmed the farms to dynamically spawn a mix of **Terrified Peasants** (who give you food/potions) and **Dazed Farmhands** (subverted spies). Their locations, numbers, and house contents are fully randomized on every playthrough!
 *   **The Gaslighting Authority**: Placed **Constable Derek** in Shroudgarde's Outer Bailey. He lies about the swamp, but confronting him with evidence breaks his trance and transforms him into an aggressive **Umbragen Zealot**!
 *   **The Spiced Mead Ambush**: Placed **Barkeep Bertram** in the Golden Grain Inn. Taking his free "Frontier Spiced Mead" and drinking it applies a custom `stun` status, slams the front doors locked (`set_lock_state`), and spawns an **Umbragen Zealot** ambush!
@@ -314,3 +314,10 @@ The following development tickets define the exact TypeScript and Zod schema ext
 ### 🎫 Ticket #8: Decoupled Quest Loot & Static Chest Inventories
 *   **The Issue**: The engine's `wooden_chest` templates spawn randomized loot, but do not support a static `placedInventory` array inside `areas.json` to lock a specific quest item (like the `soul_gem`) inside a specific coordinates chest.
 *   **Engine Update**: Update the chest spawner in `map.system.ts`. If an entity has an `inventory` block in `placedEntities` within `areas.json`, load those specific item IDs directly into its container instead of rolling on the global loot table.
+
+### 🎫 Ticket #9: Procedural Portal & Glyph Auto-Placement (Flat-Level Transitions) — [RESOLVED]
+*   **The Issue**: Currently, procedural generators only support auto-placing transitions for `"direction": "up"` (spawns stairs up `<`) and `"direction": "down"` (spawns stairs down `>`). If a procedural area is on the same flat level as its connection (e.g. Orlane East Farms), spawning stair glyphs breaks immersion. The engine does not support auto-placing lateral `"portal"` connections in procedural rooms.
+*   **Engine Update**: Update `AreaConnectionSchema` and the generator in `builder.ts` to support auto-placing portals in procedural maps. 
+    1.  Allow `"direction": "portal"` inside procedural connections.
+    2.  Add an optional `portalTemplateId` (e.g., `"wooden_door"` or `"gate"`) to `AreaConnectionSchema`.
+    3.  During map generation, if a connection uses `"direction": "portal"`, the builder selects a random edge or room wall tile, spawns the entity specified by `portalTemplateId`, and attaches a `PortalComponent` pointing to the target area.

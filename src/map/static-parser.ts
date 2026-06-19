@@ -20,7 +20,7 @@ export interface ParsedStaticMap {
  */
 export function parseStaticMap(staticMap: NonNullable<AreaDefinition['staticMap']>): ParsedStaticMap {
   const height = staticMap.layout.length;
-  const width = staticMap.layout[0]?.length ?? 0;
+  const width = staticMap.layout.reduce((max, row) => Math.max(max, row.length), 0);
   const tiles: Tile[] = [];
   const parsedEntities: { templateId: string; x: number; y: number }[] = [];
 

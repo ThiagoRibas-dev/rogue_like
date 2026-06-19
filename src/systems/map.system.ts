@@ -154,18 +154,7 @@ export function processChangeAreaIntent(
 
     for (const portal of generated.portals) {
       let stairId: EntityId;
-      [tempState, stairId] = createEntity(tempState);
 
-      const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
-      const render: RenderableComponent = {
-        type: ComponentType.Renderable,
-        glyph:
-          portal.connection.direction === 'up'
-            ? (state.campaign.theme.glyphs.stairsUp ?? '<')
-            : (state.campaign.theme.glyphs.stairsDown ?? '>'),
-        fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
-        bg: state.campaign.theme.colors.transparent ?? 'transparent'
-      };
       const portalComp: PortalComponent = {
         type: ComponentType.Portal,
         targetAreaId: portal.connection.targetAreaId,
@@ -173,16 +162,49 @@ export function processChangeAreaIntent(
         targetY: portal.connection.targetY
       };
 
-      const tags: TagsComponent = {
-        type: ComponentType.Tags,
-        tags: ['portal']
-      };
+      if (
+        (portal.connection.direction === 'portal' || portal.connection.direction === 'edge') &&
+        portal.connection.portalTemplateId
+      ) {
+        if (state.campaign.entities[portal.connection.portalTemplateId]) {
+          [tempState, stairId] = spawnEntity(tempState, portal.connection.portalTemplateId, portal.x, portal.y);
+          tempState = addComponent(tempState, stairId, portalComp);
+        } else if (state.campaign.items[portal.connection.portalTemplateId]) {
+          [tempState, stairId] = spawnItem(tempState, portal.connection.portalTemplateId, portal.x, portal.y);
+          tempState = addComponent(tempState, stairId, portalComp);
+        } else {
+          console.warn(`Portal template ${portal.connection.portalTemplateId} not found.`);
+          [tempState, stairId] = createEntity(tempState);
+          const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
+          tempState = addComponent(addComponent(tempState, stairId, pos), stairId, portalComp);
+        }
+      } else {
+        [tempState, stairId] = createEntity(tempState);
 
-      tempState = addComponent(
-        addComponent(addComponent(addComponent(tempState, stairId, pos), stairId, render), stairId, portalComp),
-        stairId,
-        tags
-      );
+        const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
+        const render: RenderableComponent = {
+          type: ComponentType.Renderable,
+          glyph:
+            portal.connection.direction === 'portal' || portal.connection.direction === 'edge'
+              ? 'O'
+              : portal.connection.direction === 'up'
+                ? (state.campaign.theme.glyphs.stairsUp ?? '<')
+                : (state.campaign.theme.glyphs.stairsDown ?? '>'),
+          fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
+          bg: state.campaign.theme.colors.transparent ?? 'transparent'
+        };
+
+        const tags: TagsComponent = {
+          type: ComponentType.Tags,
+          tags: ['portal']
+        };
+
+        tempState = addComponent(
+          addComponent(addComponent(addComponent(tempState, stairId, pos), stairId, render), stairId, portalComp),
+          stairId,
+          tags
+        );
+      }
     }
 
     // Spawn monsters and items in all rooms except the first one (where the player spawns)

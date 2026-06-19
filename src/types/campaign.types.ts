@@ -342,7 +342,9 @@ export const AreaConnectionSchema = z.object({
   targetY: z.number().int().nonnegative().optional(),
   placementX: z.number().int().nonnegative().optional(),
   placementY: z.number().int().nonnegative().optional(),
-  direction: z.enum(['up', 'down', 'edge', 'portal'])
+  direction: z.enum(['up', 'down', 'edge', 'portal']),
+  portalTemplateId: z.string().optional(),
+  placementSide: z.enum(['top', 'bottom', 'left', 'right', 'any']).optional()
 });
 export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
 

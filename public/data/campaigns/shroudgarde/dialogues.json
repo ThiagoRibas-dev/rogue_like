@@ -506,8 +506,8 @@
             ],
             "consequences": [
               {
-                "type": "spawn_entity",
-                "entityTemplateId": "frontier_mead"
+                "type": "grant_quest",
+                "targetId": "welcome_mead_quest"
               }
             ]
           },
@@ -570,8 +570,8 @@
             ],
             "consequences": [
               {
-                "type": "spawn_entity",
-                "entityTemplateId": "food_ration"
+                "type": "grant_quest",
+                "targetId": "peasant_gift_quest"
               }
             ]
           },
@@ -654,6 +654,33 @@
           {
             "id": "opt_flee_lareth",
             "text": "I... I must be going. (Flee)"
+          }
+        ]
+      }
+    }
+  },
+  "priest_dialogue": {
+    "id": "priest_dialogue",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Ah, an intruder... You stand before the Sentinel of the Great Serpent! Your fragile mind will be devoured by our psionic light. Prepare to join our eternal sleep!",
+        "options": [
+          {
+            "id": "opt_fight_priest",
+            "text": "Draw your weapon! Your mind-control ends today! (Attack)",
+            "consequences": [
+              {
+                "type": "change_faction",
+                "targetId": "duthkagith_priest",
+                "factionId": "cultists"
+              },
+              {
+                "type": "set_fact",
+                "target": "fight_boss"
+              }
+            ]
           }
         ]
       }

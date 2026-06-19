@@ -122,16 +122,90 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
 
   if (areaDef.connections) {
     areaDef.connections.forEach((conn, index) => {
-      const roomIndex = index % rooms.length;
+      let roomIndex = index % rooms.length;
+
+      if (conn.direction === 'portal' || conn.direction === 'edge') {
+        const side = conn.placementSide || 'any';
+        if (side !== 'any') {
+          let bestIndex = roomIndex;
+          let bestScore = -Infinity;
+          rooms.forEach((r, idx) => {
+            const score =
+              side === 'top'
+                ? -r.getTop()
+                : side === 'bottom'
+                  ? r.getBottom()
+                  : side === 'left'
+                    ? -r.getLeft()
+                    : side === 'right'
+                      ? r.getRight()
+                      : 0;
+            const noisyScore = score + ROT.RNG.getUniform();
+            if (noisyScore > bestScore) {
+              bestScore = noisyScore;
+              bestIndex = idx;
+            }
+          });
+          roomIndex = bestIndex;
+        }
+      }
+
       portalRoomIndices.add(roomIndex);
       const room = rooms[roomIndex];
       if (room) {
-        const [px, py] = room.getCenter();
-        const pIndex = coordToIndex(px!, py!, width);
+        let px: number, py: number;
+
+        if (conn.direction === 'portal' || conn.direction === 'edge') {
+          const side = conn.placementSide || 'any';
+          const candidates: Array<{ x: number; y: number }> = [];
+          const rLeft = room.getLeft();
+          const rRight = room.getRight();
+          const rTop = room.getTop();
+          const rBottom = room.getBottom();
+
+          for (let wx = rLeft - 1; wx <= rRight + 1; wx++) {
+            for (let wy = rTop - 1; wy <= rBottom + 1; wy++) {
+              // Ensure we do not place portal on the absolute edge of the map to prevent index errors
+              if (wx > 0 && wx < width - 1 && wy > 0 && wy < height - 1) {
+                const isTopWall = wy === rTop - 1 && wx >= rLeft && wx <= rRight;
+                const isBottomWall = wy === rBottom + 1 && wx >= rLeft && wx <= rRight;
+                const isLeftWall = wx === rLeft - 1 && wy >= rTop && wy <= rBottom;
+                const isRightWall = wx === rRight + 1 && wy >= rTop && wy <= rBottom;
+
+                let validWall = false;
+                if (side === 'top' && isTopWall) validWall = true;
+                else if (side === 'bottom' && isBottomWall) validWall = true;
+                else if (side === 'left' && isLeftWall) validWall = true;
+                else if (side === 'right' && isRightWall) validWall = true;
+                else if (side === 'any' && (isTopWall || isBottomWall || isLeftWall || isRightWall)) validWall = true;
+
+                if (validWall) {
+                  candidates.push({ x: wx, y: wy });
+                }
+              }
+            }
+          }
+
+          if (candidates.length > 0) {
+            const chosen = ROT.RNG.getItem(candidates)!;
+            px = chosen.x;
+            py = chosen.y;
+          } else {
+            const center = room.getCenter();
+            px = center[0]!;
+            py = center[1]!;
+          }
+        } else {
+          const center = room.getCenter();
+          px = center[0]!;
+          py = center[1]!;
+        }
+
+        const pIndex = coordToIndex(px, py, width);
         const tile = tiles[pIndex];
         if (tile) {
           tiles[pIndex] = { ...tile, tileId: palette.floor };
-          portals.push({ x: px!, y: py!, connection: conn });
+          portals.push({ x: px, y: py, connection: conn });
         }
       }
     });

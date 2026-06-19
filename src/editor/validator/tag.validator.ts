@@ -7,6 +7,45 @@ export async function validateTags(campaign: Readonly<CampaignData>): Promise<Va
   const registeredTags = Object.keys(campaign.tagRegistry || {});
   const tagSet = new Set(registeredTags);
 
+  // Validate Entities
+  if (campaign.entities) {
+    for (const [entityId, entity] of Object.entries(campaign.entities)) {
+      if (entity.tags) {
+        for (const tag of entity.tags) {
+          if (!tagSet.has(tag)) {
+            errors.push({
+              severity: 'error',
+              path: `/entities/${entityId}/tags`,
+              message: `Entity references unregistered tag: "${tag}"`
+            });
+          }
+        }
+      }
+      if (entity.roleTags) {
+        for (const tag of entity.roleTags) {
+          if (!tagSet.has(tag)) {
+            errors.push({
+              severity: 'error',
+              path: `/entities/${entityId}/roleTags`,
+              message: `Entity references unregistered role tag: "${tag}"`
+            });
+          }
+        }
+      }
+      if (entity.encounterTags) {
+        for (const tag of entity.encounterTags) {
+          if (!tagSet.has(tag)) {
+            errors.push({
+              severity: 'error',
+              path: `/entities/${entityId}/encounterTags`,
+              message: `Entity references unregistered encounter tag: "${tag}"`
+            });
+          }
+        }
+      }
+    }
+  }
+
   // Validate Items
   if (campaign.items) {
     for (const [itemId, item] of Object.entries(campaign.items)) {

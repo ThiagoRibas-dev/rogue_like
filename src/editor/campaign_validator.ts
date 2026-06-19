@@ -7,6 +7,8 @@ import { validateTags } from './validator/tag.validator.ts';
 import { validateReactions } from './validator/reaction.validator.ts';
 import { validateItems } from './validator/item.validator.ts';
 import { validateEncounters } from './validator/encounter.validator.ts';
+import { validateAreas } from './validator/area.validator.ts';
+import { validateDialogues } from './validator/dialogue.validator.ts';
 import { loadCampaign } from '../core/loader.ts';
 
 /**
@@ -49,6 +51,8 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const reactionErrs = await validateReactions(campaign);
   const itemErrs = await validateItems(campaign);
   const encounterErrs = validateEncounters(campaign);
+  const areaErrs = await validateAreas(campaign);
+  const dialogueErrs = await validateDialogues(campaign);
 
   const allErrs = [
     ...reachabilityErrs,
@@ -57,7 +61,9 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...tagErrs,
     ...reactionErrs,
     ...itemErrs,
-    ...encounterErrs
+    ...encounterErrs,
+    ...areaErrs,
+    ...dialogueErrs
   ];
 
   for (const e of allErrs) {

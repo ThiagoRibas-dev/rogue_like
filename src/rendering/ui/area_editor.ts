@@ -253,7 +253,7 @@ export function renderAreaEditor(
   // Setup ROT Display
   const layout = area.staticMap.layout;
   const legend = area.staticMap.legend;
-  const width = layout[0]?.length || doc.rules.map.width || 40;
+  const width = layout.reduce((max, row) => Math.max(max, row.length), 0) || doc.rules.map.width || 40;
   const height = layout.length || doc.rules.map.height || 20;
 
   const display = new ROT.Display({

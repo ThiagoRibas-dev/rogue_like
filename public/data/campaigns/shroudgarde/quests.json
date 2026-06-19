@@ -208,5 +208,33 @@
       }
     ],
     "autoComplete": false
+  },
+  "welcome_mead_quest": {
+    "id": "welcome_mead_quest",
+    "title": "A Welcoming Draft",
+    "description": "Bertram offers you a spiced draft at the Inn.",
+    "objectives": [],
+    "rewards": [
+      {
+        "type": "item",
+        "itemId": "frontier_mead",
+        "amount": 1
+      }
+    ],
+    "autoComplete": true
+  },
+  "peasant_gift_quest": {
+    "id": "peasant_gift_quest",
+    "title": "A Peasant's Generosity",
+    "description": "A terrified peasant hands you some trail food.",
+    "objectives": [],
+    "rewards": [
+      {
+        "type": "item",
+        "itemId": "food_ration",
+        "amount": 1
+      }
+    ],
+    "autoComplete": true
   }
 }

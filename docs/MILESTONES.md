@@ -443,6 +443,10 @@ Make procedural generation adaptive without losing designer control.
 - [x] Support contextual loot generation based on encounter tags and defeated actors (death system drops + appetizer axis).
 - [x] Add optional "bones-like" persistent remains/content hooks for future dead-adventurer or previous-run artifacts.
 - [x] Add regression tests proving unique actors/items cannot be duplicated by the Director.
+- [x] Procedural Portal & Glyph Auto-Placement (Flat-Level Transitions)
+  - Allow `"direction": "portal"` inside procedural connections.
+  - Add optional `portalTemplateId` and `placementSide` (`"top"`, `"bottom"`, `"left"`, `"right"`, `"any"`) to `AreaConnectionSchema`.
+  - During map generation, dynamically select a wall tile matching `placementSide`, spawn `portalTemplateId`, and attach a `PortalComponent`.
 
 ## 🟢 Milestone 39: Encounter Director Sandbox & Validation UI (Complete)
 Give designers a window into the Director before relying on it in real campaigns.

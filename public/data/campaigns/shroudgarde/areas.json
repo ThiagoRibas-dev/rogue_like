@@ -86,11 +86,11 @@
     "staticMap": {
       "layout": [
         "#####################",
-        "#.........+.........#",
-        "#..[Smithy]..[Chapel]#",
-        "#...E...........I...#",
-        "#.......+..._.......#",
         "#...................#",
+        "#.###.......#####...#",
+        "#.E.#.......#...I...#",
+        "#.+.#.......#...+...#",
+        "#...........#####...#",
         "#.........{.........#",
         "#...............v...#",
         "#...................#",
@@ -101,25 +101,19 @@
         "#": "stone_wall",
         ".": "grass_floor",
         "+": "grass_floor",
-        "[": "stone_floor",
-        "]": "stone_floor",
-        "S": "stone_floor",
-        "m": "stone_floor",
-        "i": "stone_floor",
-        "t": "stone_floor",
-        "h": "stone_floor",
-        "y": "stone_floor",
-        "C": "stone_floor",
-        "a": "stone_floor",
-        "p": "stone_floor",
-        "e": "stone_floor",
-        "l": "stone_floor"
+        "E": "stone_floor",
+        "I": "stone_floor",
+        "{": "grass_floor",
+        "v": "grass_floor"
+      },
+      "entityLegend": {
+        "+": "wooden_door"
       }
     },
     "placedEntities": [
       {
         "templateId": "wood_elf_luc",
-        "x": 4,
+        "x": 2,
         "y": 3
       },
       {
@@ -136,11 +130,6 @@
         "templateId": "fountain",
         "x": 10,
         "y": 6
-      },
-      {
-        "templateId": "constable_derek",
-        "x": 10,
-        "y": 3
       }
     ]
   },
@@ -176,6 +165,7 @@
       "legend": {
         "#": "stone_wall",
         ".": "stone_floor",
+        "M": "stone_floor",
         "<": "stone_floor"
       }
     },
@@ -277,11 +267,13 @@
         "#": "dense_trees",
         ".": "grass_floor",
         "<": "grass_floor",
-        "1": "stone_floor",
-        "2": "stone_floor",
-        "3": "stone_floor",
-        "4": "stone_floor",
-        "5": "stone_floor"
+        "1": "grass_floor",
+        "2": "grass_floor",
+        "3": "grass_floor",
+        "4": "grass_floor",
+        "5": "grass_floor",
+        "[": "grass_floor",
+        "]": "grass_floor"
       }
     }
   },
@@ -390,7 +382,9 @@
       "legend": {
         "#": "stone_wall",
         ".": "stone_floor",
-        "<": "stone_floor"
+        "<": "stone_floor",
+        "O": "stone_floor",
+        "c": "stone_floor"
       }
     },
     "placedEntities": [
@@ -433,7 +427,7 @@
       },
       {
         "targetAreaId": "golden_grain_inn",
-        "direction": "portal"
+        "direction": "down"
       },
       {
         "targetAreaId": "spire_level_air",
@@ -441,7 +435,7 @@
       },
       {
         "targetAreaId": "water_temple_upper",
-        "direction": "portal"
+        "direction": "down"
       }
     ]
   },
@@ -500,27 +494,18 @@
   "wet_caverns": {
     "id": "wet_caverns",
     "name": "The Wet Caverns",
-    "generatorType": "cellular",
+    "generatorType": "static",
     "dangerRating": 3,
-    "crBudget": 30,
-    "encounterProfileId": "standard_dungeon",
     "tags": [
       "cave",
       "mid_game"
     ],
-    "subBiomes": {
-      "flooded": 0.5
-    },
-    "proceduralPalette": {
-      "floor": "swamp_floor",
-      "wall": "stone_wall",
-      "door": "wooden_door",
-      "water": "shallow_water"
-    },
     "connections": [
       {
         "targetAreaId": "shroudgarde_inn_cellar",
-        "direction": "up"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 1
       },
       {
         "targetAreaId": "reptile_temple",
@@ -529,6 +514,27 @@
         "placementY": 8
       }
     ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.........<.........#",
+        "#..~~~~.......~~~~..#",
+        "#..~~~~.......~~~~..#",
+        "#...................#",
+        "#..~~~~.......~~~~..#",
+        "#..~~~~.......~~~~..#",
+        "#...................#",
+        "#.........+.........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "swamp_floor",
+        "~": "shallow_water",
+        "<": "swamp_floor",
+        "+": "swamp_floor"
+      }
+    },
     "placedEntities": [
       {
         "templateId": "serpent_gate",
@@ -567,7 +573,10 @@
       "legend": {
         "#": "stone_wall",
         ".": "stone_floor",
-        "<": "stone_floor"
+        "<": "stone_floor",
+        "_": "stone_floor",
+        "P": "stone_floor",
+        "g": "stone_floor"
       }
     },
     "placedEntities": [
@@ -627,7 +636,8 @@
         "#": "stone_wall",
         ".": "stone_floor",
         "<": "stone_floor",
-        ">": "stone_floor"
+        ">": "stone_floor",
+        "c": "stone_floor"
       }
     },
     "placedEntities": [
@@ -658,7 +668,9 @@
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
-        "direction": "portal"
+        "direction": "portal",
+        "portalTemplateId": "wooden_door",
+        "placementSide": "any"
       }
     ]
   },
@@ -1084,7 +1096,8 @@
       "legend": {
         "#": "stone_wall",
         ".": "stone_floor",
-        "+": "stone_floor"
+        "+": "stone_floor",
+        ">": "stone_floor"
       }
     }
   },

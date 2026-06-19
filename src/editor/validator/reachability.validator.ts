@@ -72,7 +72,7 @@ async function validateStaticMapPortals(
 
   const layout = area.staticMap.layout;
   const legend = area.staticMap.legend;
-  const width = layout[0]?.length || 0;
+  const width = layout.reduce((max, row) => Math.max(max, row.length), 0);
   const height = layout.length;
 
   const walkableTiles: Array<{ readonly x: number; readonly y: number }> = [];
