@@ -16,6 +16,7 @@ import { loadCampaign } from './loader.ts';
 import { deleteSave, loadGame } from './save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 import { syncDisplayLayout } from '../rendering/display.ts';
+import { rng } from './rng.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -30,6 +31,23 @@ const POTION_DESCRIPTORS = [
   'Thick'
 ];
 const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing', 'Crumbling', 'Blood-Stained', 'Dusty'];
+
+/**
+ * Deterministically shuffles an array using Fisher-Yates and the global RNG.
+ * 
+ * @param array The array to shuffle.
+ * @returns A new shuffled array.
+ */
+function shuffle<T>(array: ReadonlyArray<T>): T[] {
+  const result = [...array];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(rng.getUniform() * (i + 1));
+    const temp = result[i]!;
+    result[i] = result[j]!;
+    result[j] = temp;
+  }
+  return result;
+}
 
 export async function startNewGame(
   campaignId: string,
@@ -56,8 +74,8 @@ export async function startNewGame(
   initEngine();
 
   const itemUnidentifiedNames = new Map<string, string>();
-  const potionDesc = [...POTION_DESCRIPTORS].sort(() => ROT.RNG.getUniform() - 0.5);
-  const scrollDesc = [...SCROLL_DESCRIPTORS].sort(() => ROT.RNG.getUniform() - 0.5);
+  const potionDesc = shuffle(POTION_DESCRIPTORS);
+  const scrollDesc = shuffle(SCROLL_DESCRIPTORS);
 
   let pIdx = 0;
   let sIdx = 0;
