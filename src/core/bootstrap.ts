@@ -34,7 +34,7 @@ const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing',
 
 /**
  * Deterministically shuffles an array using Fisher-Yates and the global RNG.
- * 
+ *
  * @param array The array to shuffle.
  * @returns A new shuffled array.
  */
