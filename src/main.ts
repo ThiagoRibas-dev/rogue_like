@@ -45,9 +45,14 @@ import { CampaignEditor } from './editor/campaign_editor.ts';
 import { clearScheduler } from './core/scheduler.ts';
 import { installCampaign, getInstalledCampaign, uninstallCampaign } from './core/campaign_store.ts';
 import { readCampaignFromZip } from './editor/workspace_file_service.ts';
+import { GAME_ASPECT_RATIO_STRING, DEFAULT_ZOOM_LEVEL } from './constants/display.constants.ts';
+import { syncDisplayLayout } from './rendering/display.ts';
 
 // 0. Initialize RNG
 initRNG();
+
+// Inject CSS Aspect Ratio variable
+document.documentElement.style.setProperty('--game-aspect-ratio', GAME_ASPECT_RATIO_STRING);
 
 // Await the default campaign data and settings to bootstrap the engine
 const defaultCampaign = await loadCampaign('default');
@@ -107,7 +112,7 @@ let state: GameState = {
   rtwpState: { paused: false, speedMultiplier: 1 },
   isRotated: false,
   is3D: false,
-  zoomLevel: 1.4,
+  zoomLevel: DEFAULT_ZOOM_LEVEL,
   fovNeedsUpdate: true,
   cachedFov: new Set(),
   playerCommandQueue: [],
@@ -224,6 +229,7 @@ document.getElementById('btn-campaign-start')?.addEventListener('click', (e) => 
 document.getElementById('btn-continue')?.addEventListener('click', () => {
   continueGame((newState) => {
     state = newState;
+    syncDisplayLayout(display, newState);
     setGameState(newState);
   });
 });
@@ -439,6 +445,11 @@ onStateChange((newState: GameState) => {
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
 
+  if (newState.zoomLevel !== state.zoomLevel) {
+    syncDisplayLayout(display, newState);
+  }
+  state = newState;
+
   if (newState.uiMode === UIMode.Editor) {
     if (gameLayout) gameLayout.classList.add('hidden');
     if (editorLayout) editorLayout.classList.remove('hidden');
@@ -467,6 +478,7 @@ onStateChange((newState: GameState) => {
 
 // Initialize HUD display values and pass the initial state
 setGameState(state);
+syncDisplayLayout(display, state);
 
 // Initialize global UI hover tooltips
 initUITooltips(getGameState);

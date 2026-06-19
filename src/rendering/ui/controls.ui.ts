@@ -58,8 +58,6 @@ export function renderViewControls(state: GameState): void {
       transformStr += ` rotateZ(45deg)`;
     }
 
-    transformStr += ` scale(${state.zoomLevel})`;
-
     canvasWrapper.style.transform = transformStr;
 
     // Remove shadow if 3D tilted because it looks weird

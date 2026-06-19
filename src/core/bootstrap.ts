@@ -15,6 +15,7 @@ import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from
 import { loadCampaign } from './loader.ts';
 import { deleteSave, loadGame } from './save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
+import { syncDisplayLayout } from '../rendering/display.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -45,13 +46,10 @@ export async function startNewGame(
   };
 
   display.setOptions({
-    width: newCampaign.theme.ui.displayWidth,
-    height: newCampaign.theme.ui.displayHeight,
-    fontSize: newCampaign.theme.ui.fontSize,
-    fontFamily: newCampaign.theme.ui.fontFamily,
     bg: newCampaign.theme.colors.background ?? '#000000',
     fg: newCampaign.theme.colors.playerFg ?? '#ffffff'
   });
+  syncDisplayLayout(display, state);
 
   deleteSave();
   clearScheduler();

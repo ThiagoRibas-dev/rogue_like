@@ -7,6 +7,7 @@ import { processStatusEffectsTick } from '../../systems/status-effect.system.ts'
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { EngineMode, UIMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
+import { DEFAULT_ZOOM_LEVEL } from '../../constants/display.constants.ts';
 
 export interface ArenaTelemetry {
   readonly winner: 'a' | 'b' | 'draw';
@@ -100,7 +101,7 @@ export function runAIArena(
     rtwpState: { paused: false, speedMultiplier: 1 },
     isRotated: false,
     is3D: false,
-    zoomLevel: 1.4,
+    zoomLevel: DEFAULT_ZOOM_LEVEL,
     fovNeedsUpdate: true,
     cachedFov: new Set(),
     playerCommandQueue: [],

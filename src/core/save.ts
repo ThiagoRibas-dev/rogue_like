@@ -10,6 +10,7 @@ import {
 import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
+import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
 
 const SAVE_KEY = 'roguelike_save';
 
@@ -165,7 +166,7 @@ export async function loadGame(): Promise<GameState | null> {
       visualEffects: sState.visualEffects || [],
       isRotated: sState.isRotated || false,
       is3D: sState.is3D || false,
-      zoomLevel: sState.zoomLevel ?? 1.4,
+      zoomLevel: sState.zoomLevel ?? DEFAULT_ZOOM_LEVEL,
       playerCommandQueue: [],
       investigation: sState.investigation ?? {
         knownActors: [],
