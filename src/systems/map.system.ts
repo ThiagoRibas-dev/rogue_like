@@ -1,28 +1,28 @@
 import * as ROT from 'rot-js';
 import {
-  ComponentType,
-  type PositionComponent,
-  type Component,
-  type PortalComponent,
-  type RenderableComponent,
-  type TagsComponent
-} from '../types/components.types.ts';
-import { type GameState, type AreaData, type EntityId, type GameMap } from '../types/game-state.types.ts';
-import {
+  addComponent,
+  createEntity,
   getComponent,
   queryEntities,
-  updateSpatialIndex,
-  createEntity,
-  addComponent,
   spawnEntity,
-  spawnItem
+  spawnItem,
+  updateSpatialIndex
 } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
+import {
+  ComponentType,
+  type Component,
+  type PortalComponent,
+  type PositionComponent,
+  type RenderableComponent,
+  type TagsComponent
+} from '../types/components.types.ts';
+import { type AreaData, type EntityId, type GameMap, type GameState } from '../types/game-state.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
-import { clearScheduler, addActor } from '../core/scheduler.ts';
 import type { ChangeAreaIntent } from '@/types/intents/movement.intents.ts';
+import { addActor, clearScheduler } from '../core/scheduler.ts';
 
 export function updateExploredTiles(state: GameState): GameState {
   if (!state.fovNeedsUpdate) return state;
@@ -237,7 +237,7 @@ export function processChangeAreaIntent(
         if (state.campaign.items[ent.templateId]) {
           [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
         } else if (state.campaign.entities[ent.templateId]) {
-          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
+          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
         } else {
           console.warn(`Placed entity template ${ent.templateId} not found in items or entities registries.`);
         }

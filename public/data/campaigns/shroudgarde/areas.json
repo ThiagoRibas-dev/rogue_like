@@ -648,7 +648,10 @@
       {
         "templateId": "wooden_chest",
         "x": 3,
-        "y": 2
+        "y": 2,
+        "inventory": [
+          "serpent_medallion"
+        ]
       }
     ]
   },
@@ -877,7 +880,10 @@
       {
         "templateId": "golden_chest",
         "x": 10,
-        "y": 3
+        "y": 3,
+        "inventory": [
+          "soul_gem"
+        ]
       }
     ]
   },
@@ -1035,7 +1041,10 @@
       {
         "templateId": "golden_chest",
         "x": 10,
-        "y": 1
+        "y": 1,
+        "inventory": [
+          "trident_of_tides"
+        ]
       }
     ]
   },
@@ -1310,7 +1319,10 @@
       {
         "templateId": "golden_chest",
         "x": 10,
-        "y": 1
+        "y": 1,
+        "inventory": [
+          "fungal_potion"
+        ]
       }
     ]
   }

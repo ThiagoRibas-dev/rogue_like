@@ -370,7 +370,8 @@ export const AreaDefinitionSchema = z.object({
       z.object({
         templateId: z.string(),
         x: z.number().int().nonnegative(),
-        y: z.number().int().nonnegative()
+        y: z.number().int().nonnegative(),
+        inventory: z.array(z.string()).optional()
       })
     )
     .optional(),

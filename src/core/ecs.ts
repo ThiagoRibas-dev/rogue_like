@@ -172,7 +172,8 @@ export function spawnEntity(
   templateId: string,
   x: number,
   y: number,
-  dynamicTraits?: ReadonlyArray<string>
+  dynamicTraits?: ReadonlyArray<string>,
+  staticInventory?: ReadonlyArray<string>
 ): [GameState, EntityId] {
   const template = state.campaign.entities[templateId];
   if (!template) throw new Error(`Unknown entity template: ${templateId}`);
@@ -386,6 +387,32 @@ export function spawnEntity(
       quests: {}
     };
     nextState = addComponent(nextState, entityId, questLog);
+  }
+
+  if (staticInventory && staticInventory.length > 0) {
+    const inventory = getComponent(nextState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+    if (!inventory) {
+      console.warn(`Entity template ${templateId} does not have an InventoryComponent, ignoring static inventory.`);
+    } else {
+      const itemEntityIds: EntityId[] = [];
+      for (const itemId of staticInventory) {
+        if (state.campaign.items[itemId]) {
+          let itemEntityId: EntityId;
+          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y);
+          nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
+          itemEntityIds.push(itemEntityId);
+        } else {
+          console.warn(`Static inventory item ${itemId} not found in items registry.`);
+        }
+      }
+      if (itemEntityIds.length > 0) {
+        const updatedInventory: InventoryComponent = {
+          ...inventory,
+          items: [...inventory.items, ...itemEntityIds]
+        };
+        nextState = addComponent(nextState, entityId, updatedInventory);
+      }
+    }
   }
 
   return [nextState, entityId];

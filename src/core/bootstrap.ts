@@ -1,5 +1,6 @@
 import * as ROT from 'rot-js';
 import { generateArea } from '../map/generator.ts';
+import { syncDisplayLayout } from '../rendering/display.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import type { ActorComponent, SchemeComponent } from '../types/components.types.ts';
@@ -13,10 +14,9 @@ import {
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
+import { rng } from './rng.ts';
 import { deleteSave, loadGame } from './save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
-import { syncDisplayLayout } from '../rendering/display.ts';
-import { rng } from './rng.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -222,7 +222,7 @@ export async function startNewGame(
       if (state.campaign.items[ent.templateId]) {
         [state] = spawnItem(state, ent.templateId, ent.x, ent.y);
       } else if (state.campaign.entities[ent.templateId]) {
-        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
+        [state] = spawnEntity(state, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
       } else {
         console.warn(`Placed entity template ${ent.templateId} not found in registries.`);
       }

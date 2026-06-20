@@ -386,7 +386,7 @@ Turn doors, chests, and storage objects into procedural tactical/loot/access cha
 - [x] Build a container UI panel in `src/rendering/ui/container.ui.ts` for viewing/taking items from opened containers.
 - [x] Add editor support in `src/rendering/editor_ui.ts` for container inventory, lock difficulty, key tags, and trap-trigger references.
 - [x] Extend the Campaign Validator (`src/editor/campaign_validator.ts`) to flag critical quest items placed behind inaccessible locks.
-- [ ] **Static Chest Inventories:** Update `map.system.ts` to allow the `placedEntities` array in `areas.json` to define an optional `inventory` array, overriding random loot generation for specific quest/boss chests.
+- [x] **Static Chest Inventories:** Update `map.system.ts` to allow the `placedEntities` array in `areas.json` to define an optional `inventory` array, overriding random loot generation for specific quest/boss chests.
 
 ## 🟢 Milestone 33: Fields & Lightweight Substance Simulation (Complete)
 Represent persistent environmental effects as entities rather than building a full fluid simulation.

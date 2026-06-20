@@ -98,6 +98,17 @@
       "camp",
       "boss"
     ],
+    "placedEntities": [
+      {
+        "templateId": "wooden_chest",
+        "x": 10,
+        "y": 3,
+        "inventory": [
+          "health_potion",
+          "bronze_key"
+        ]
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "dungeon_2",
@@ -129,8 +140,7 @@
         " ": "empty_space"
       },
       "entityLegend": {
-        "+": "wooden_door",
-        "c": "wooden_chest"
+        "+": "wooden_door"
       }
     }
   }

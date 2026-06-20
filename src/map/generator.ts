@@ -22,7 +22,8 @@ export interface GeneratedArea {
         readonly templateId: string;
         readonly x: number;
         readonly y: number;
-        readonly dynamicTraits?: ReadonlyArray<string>;
+        readonly dynamicTraits?: ReadonlyArray<string> | undefined;
+        readonly inventory?: ReadonlyArray<string> | undefined;
       }>
     | undefined;
   readonly directorReceipt?: DirectorReceipt | undefined;
@@ -252,7 +253,15 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     tiles
   };
 
-  const finalPlacedEntities = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
+  type PlacedEntityDef = {
+    templateId: string;
+    x: number;
+    y: number;
+    dynamicTraits?: ReadonlyArray<string> | undefined;
+    inventory?: ReadonlyArray<string> | undefined;
+  };
+
+  const finalPlacedEntities: PlacedEntityDef[] = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
 
   // Resolve sub-biome tags for rooms based on area definition probabilities
   const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
