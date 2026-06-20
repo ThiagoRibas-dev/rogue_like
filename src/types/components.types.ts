@@ -32,7 +32,9 @@ export const enum ComponentType {
   Agreement = 'Agreement',
   Clue = 'Clue',
   Lock = 'Lock',
-  Field = 'Field'
+  Field = 'Field',
+  Dialogue = 'Dialogue',
+  Attitude = 'Attitude'
 }
 
 /**
@@ -376,6 +378,16 @@ export interface FieldComponent {
   readonly spreadRuleId?: string | undefined;
 }
 
+export interface DialogueComponent {
+  readonly type: ComponentType.Dialogue;
+  readonly dialogueId: string;
+}
+
+export interface AttitudeComponent {
+  readonly type: ComponentType.Attitude;
+  readonly attitude: 'hostile' | 'neutral' | 'friendly';
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -410,4 +422,6 @@ export type Component =
   | ClueComponent
   | LockComponent
   | FieldComponent
-  | CoatingComponent;
+  | CoatingComponent
+  | DialogueComponent
+  | AttitudeComponent;

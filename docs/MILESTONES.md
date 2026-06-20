@@ -190,6 +190,10 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **Quest Journal UI**: Build a dedicated interface panel for the player to track active, failed, and completed quests.
 - [x] **In-Context Wiki / Encyclopedia**: Implement nested hover-to-explain tooltips for highlighted keywords (Entities, Items, Status Effects) directly within the dialogue and quest UIs.
 - [x] **Procedural Quests**: Implement a dynamic quest generator that builds randomized missions at runtime from JSON templates (e.g., bounties), storing them in the GameState.
+- [x] **Quest OR-Gates:** Extend `QuestSchema` with `logicalOperator: 'AND' | 'OR'` to allow quests to be completed by fulfilling any single objective in an array.
+- [x] **Dialogue Data Router:** Extend the Zod schemas in `campaign.types.ts` to support `DialogueCondition` and `DialogueEffect` discriminated unions.
+- [x] **Dynamic Intent Pipeline:** Update `intent.system.ts` to catch a new `InteractIntent`, read the target's `DialogueComponent`, evaluate conditions against the `GameState`, and trigger standard UI routing or effects.
+- [x] **Dynamic Hostility (Attitudes):** Replace hardcoded hostility checks in `ai.system.ts` with an `AttitudeComponent` that can change dynamically based on actions, enabling foes to become neutral or friendly.
 
 ## 🟢 Milestone 20: The Adversarial Layer (Schemes & Investigation) (Complete)
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
@@ -359,6 +363,7 @@ Upgrade the existing tag-based reaction system into the primary combinatorial in
 - [x] Add a Reaction Trace panel to `src/rendering/ui/debug.ui.ts` and the Simulation Lab so designers can see exactly why a reaction did or did not fire.
 - [x] Migrate existing legacy reactions in `public/campaigns/default/data/` to the new schema.
 - [x] **Migrate legacy `UseItemIntent` and `InteractIntent` entirely over to the `ApplyIntent` pipeline, removing the old wrappers from `action.registry.ts`.**
+- [ ] **Environmental Tile-Based Reactions:** Extend `ReactionTargetMatcherSchema` to accept `targetType: 'tile'` and update `reaction.system.ts` to fetch and react against tile definition tags from `tiles.json`.
 
 ## 🟢 Milestone 31: Throwing, Projectiles & On-Impact Consequences
 Implement the highest-ROI roguelike verb: throwing items and resolving their impact through the targeting/reaction pipeline.
@@ -370,7 +375,7 @@ Implement the highest-ROI roguelike verb: throwing items and resolving their imp
 - [x] Render projectile travel and impact with floating text / transient visual effects in `src/rendering/renderer.ts`.
 - [x] Add validator tests in `src/editor/campaign_validator.ts` ensuring thrown unique/key items cannot be silently destroyed unless explicitly allowed.
 
-## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Complete)
+## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Active)
 Turn doors, chests, and storage objects into procedural tactical/loot/access challenges.
 - [x] Add `ContainerComponent` or extend `InventoryComponent` semantics in `src/types/components.types.ts` so chest entities can hold item entity IDs safely.
 - [x] Add `LockComponent { difficulty, keyTag?, locked, jammed?, breakable? }` to `src/types/components.types.ts` for doors, chests, cages, and special containers.
@@ -381,6 +386,7 @@ Turn doors, chests, and storage objects into procedural tactical/loot/access cha
 - [x] Build a container UI panel in `src/rendering/ui/container.ui.ts` for viewing/taking items from opened containers.
 - [x] Add editor support in `src/rendering/editor_ui.ts` for container inventory, lock difficulty, key tags, and trap-trigger references.
 - [x] Extend the Campaign Validator (`src/editor/campaign_validator.ts`) to flag critical quest items placed behind inaccessible locks.
+- [ ] **Static Chest Inventories:** Update `map.system.ts` to allow the `placedEntities` array in `areas.json` to define an optional `inventory` array, overriding random loot generation for specific quest/boss chests.
 
 ## 🟢 Milestone 33: Fields & Lightweight Substance Simulation (Complete)
 Represent persistent environmental effects as entities rather than building a full fluid simulation.
@@ -543,8 +549,10 @@ Give NPCs the ability to buy, sell, and barter items with the player. Prices res
 - [ ] Add `intimidate` and `persuade` as social Apply verbs using personality-weighted contest resolution (player's faction standing + traits vs. NPC's courage/valor facets from M43) to temporarily modify `markupMultiplier` for the current trade session.
 - [ ] Allow NPC shops to issue procedural fetch-quests when specific inventory tags are depleted: "I'm low on iron ore — bring me 3 ingots and I'll pay double." Uses the procedural quest template system (M19).
 - [ ] Shop inventories persist across area transitions via the Sleep/Wake + PersistentEntity pipeline (M17). A merchant's stock doesn't reset when you leave and return.
+- [ ] **Dialogue Integration (Barter UI & Services)**: Instead of the initially planned hotkeys or hardcoded interactions, implement `open_barter` and `trigger_service` as `DialogueEffect`s. The Barter UI will be summoned seamlessly if the player selects a dialogue option to trade with an entity holding a `ShopComponent`.
+- [ ] **Service Spells Component**: Introduce `ServicesComponentSchema` to allow NPCs to cast spells on the player for a fee, driven by the Dialogue Router.
 
-**Testable in game:** Walk up to the `safe_hub` merchant, open trade panel (new hotkey), see items with prices. Buy a health potion. Gold decreases, potion appears in inventory. Talk to a different merchant — notice prices differ. Intimidate the merchant — prices drop 20% for this session. Barter a goblin sword to cover part of the cost.
+**Testable in game:** Walk up to the `safe_hub` merchant, talk to them to open branching dialogue, select the trade option to open the trade panel, see items with prices. Buy a health potion. Gold decreases, potion appears in inventory. Talk to a different merchant — notice prices differ. Intimidate the merchant — prices drop 20% for this session. Barter a goblin sword to cover part of the cost.
 
 ## 🟡 Milestone 48: Gossip & Rumors — Social Information Propagation
 Turn the Event Ledger into a social rumor mill. Major world events generate gossip that spreads organically through the NPC social graph. Players can ask for gossip and hear different things from different people.
@@ -713,3 +721,23 @@ Prepare for public builds and long-term iteration.
 - [ ] Add graceful error boundaries for campaign loading, runtime simulation errors, editor validation crashes, and corrupt saves.
 - [ ] Optimize production bundle size and loading time.
 - [ ] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
+
+---
+
+# 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
+**Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
+
+## 🟡 Milestone 64: Asynchronous Cooperative Scheduler (Time-Slicing)
+Prevent browser lock-ups during computationally expensive operations.
+- [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
+- [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
+- [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
+- [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
+
+## 🟡 Milestone 65: Absolute Presentational Decoupling (Web Worker)
+Enforce a strict model-view separation by moving the core engine off the main thread entirely.
+- [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
+- [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.
+- [ ] **Presentational Snapshots**: Build a serializer in the Web Worker that, at the end of a tick/frame, packages a minimal renderable snapshot (e.g., a flat array of `{char, fg, bg, x, y}` for the current viewport and active HUD state) and `postMessage`s it to the main thread.
+- [ ] **Dumb Renderer Upgrade**: Refactor `src/rendering/renderer.ts` and the DOM controllers to purely consume these incoming snapshots, stripping them of any remaining direct `GameState` inspection logic.
+- [ ] **Serialization Audit**: Ensure all UI cross-thread communication strictly adheres to cloneable data payloads to avoid Structured Clone Algorithm errors.

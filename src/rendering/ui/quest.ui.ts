@@ -74,7 +74,7 @@ export function renderQuestJournal(state: GameState): void {
     const objTitle = document.createElement('div');
     objTitle.style.cssText =
       'color: var(--text-dim); font-size: 0.75rem; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px;';
-    objTitle.textContent = 'Objectives:';
+    objTitle.textContent = questDef.logicalOperator === 'OR' ? 'Objectives (Complete Any):' : 'Objectives:';
     questContainer.appendChild(objTitle);
 
     for (const obj of questDef.objectives) {

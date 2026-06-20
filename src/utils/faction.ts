@@ -1,5 +1,5 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type FactionComponent } from '../types/components.types.ts';
+import { ComponentType, type FactionComponent, type AttitudeComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 
 /**
@@ -15,6 +15,17 @@ export function getFactionRelation(
   subject: EntityId,
   target: EntityId
 ): 'hostile' | 'neutral' | 'friendly' {
+  const isSubjectPlayer = getComponent(state, subject, ComponentType.Player) !== undefined;
+  const isTargetPlayer = getComponent(state, target, ComponentType.Player) !== undefined;
+
+  if (isSubjectPlayer && !isTargetPlayer) {
+    const attitudeCmp = getComponent(state, target, ComponentType.Attitude) as AttitudeComponent | undefined;
+    if (attitudeCmp) return attitudeCmp.attitude;
+  } else if (isTargetPlayer && !isSubjectPlayer) {
+    const attitudeCmp = getComponent(state, subject, ComponentType.Attitude) as AttitudeComponent | undefined;
+    if (attitudeCmp) return attitudeCmp.attitude;
+  }
+
   const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;
   const targetFactionCmp = getComponent(state, target, ComponentType.Faction) as FactionComponent | undefined;
 

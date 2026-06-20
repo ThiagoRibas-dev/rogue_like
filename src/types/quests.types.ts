@@ -24,6 +24,7 @@ export const QuestSchema = z.object({
   title: z.string(),
   description: z.string(),
   objectives: z.array(QuestObjectiveSchema),
+  logicalOperator: z.enum(['AND', 'OR']).default('AND').optional(),
   rewards: z.array(QuestRewardSchema).optional(),
   isHidden: z.boolean().optional(), // If true, doesn't show in the main journal initially
   autoComplete: z.boolean().optional() // If true, finishes instantly when objectives are met

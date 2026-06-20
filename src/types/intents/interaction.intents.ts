@@ -35,3 +35,8 @@ export interface ApplyIntent extends BaseIntent {
   readonly target: ApplyIntentTarget;
   readonly toolEntityId?: EntityId | undefined;
 }
+
+export interface InteractIntent extends BaseIntent {
+  readonly type: IntentType.Interact;
+  readonly targetId: EntityId;
+}

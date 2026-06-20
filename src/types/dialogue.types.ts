@@ -1,12 +1,19 @@
 import { z } from 'zod';
 import { ConditionPredicateSchema, ConsequenceActionSchema } from './trigger.types.ts';
 
+export const DialogueConditionSchema = ConditionPredicateSchema;
+export type DialogueCondition = z.infer<typeof DialogueConditionSchema>;
+
+export const DialogueEffectSchema = ConsequenceActionSchema;
+
+export type DialogueEffect = z.infer<typeof DialogueEffectSchema>;
+
 export const DialogueOptionSchema = z.object({
   id: z.string(),
   text: z.string(),
   nextNodeId: z.string().optional(), // If undefined, selecting this ends the conversation
-  conditions: z.array(ConditionPredicateSchema).optional(),
-  consequences: z.array(ConsequenceActionSchema).optional()
+  conditions: z.array(DialogueConditionSchema).optional(),
+  consequences: z.array(DialogueEffectSchema).optional()
 });
 
 export type DialogueOption = z.infer<typeof DialogueOptionSchema>;

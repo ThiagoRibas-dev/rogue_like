@@ -167,10 +167,12 @@ export function processQuestEvent(
       nextQuests[questId] = { ...qState, objectiveProgress: nextProgress };
 
       // Check for completion
-      const isComplete = questDef.objectives.every((obj) => (nextProgress[obj.id] ?? 0) >= obj.requiredAmount);
+      const isComplete =
+        questDef.logicalOperator === 'OR'
+          ? questDef.objectives.some((obj) => (nextProgress[obj.id] ?? 0) >= obj.requiredAmount)
+          : questDef.objectives.every((obj) => (nextProgress[obj.id] ?? 0) >= obj.requiredAmount);
       // For now, auto-complete quests if they are done, or require speaking to NPC.
       // If autoComplete is false, we wait for a dialogue action 'complete_quest' which we can add later.
-      // For simplicity in Phase B, let's just auto-complete it if there's no explicitly false flag.
       if (isComplete && questDef.autoComplete !== false) {
         // We defer to completeQuest, but we need the intermediate state updates to persist first.
         nextQuests[questId] = { ...nextQuests[questId], status: 'completed' };

@@ -5,7 +5,7 @@ import type { WaitIntent, ToggleEngineModeIntent, TogglePauseIntent, SetRTwPSpee
 
 import type { MoveIntent, ChangeAreaIntent } from './movement.intents.ts';
 
-import type { ApplyIntent } from './interaction.intents.ts';
+import type { ApplyIntent, InteractIntent } from './interaction.intents.ts';
 
 import type {
   MeleeAttackIntent,
@@ -74,7 +74,8 @@ export type Intent =
   | ToggleQuestsIntent
   | ToggleInvestigationIntent
   | ToggleDebugIntent
-  | ApplyIntent;
+  | ApplyIntent
+  | InteractIntent;
 
 export interface ActionResult {
   readonly state: GameState;

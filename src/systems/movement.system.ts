@@ -11,6 +11,7 @@ import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { processApplyIntent } from './apply.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { processInteractIntent } from './intent.system.ts';
 
 /**
  * Processes a MoveIntent.
@@ -110,6 +111,15 @@ export function processMoveIntent(
 
     if (isBlocked) {
       if (defenderId === undefined && blockedByEntityId !== undefined) {
+        const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
+        if (dialogueComp) {
+          return processInteractIntent(state, {
+            type: IntentType.Interact,
+            entityId,
+            targetId: blockedByEntityId
+          });
+        }
+
         const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
         if (interactable && interactable.type === ComponentType.Interactable && interactable.intents.length > 0) {
           const firstIntent = interactable.intents[0];

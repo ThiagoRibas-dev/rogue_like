@@ -1,6 +1,6 @@
 import type { EntityId } from '../types/game-state.types.ts';
 import type { Verb } from '../constants/verbs.constants.ts';
-import type { ApplyIntent, ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
+import type { ApplyIntent, ApplyIntentTarget, InteractIntent } from '../types/intents/interaction.intents.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 
 /**
@@ -24,5 +24,13 @@ export function createApplyAction(
     verb,
     target,
     toolEntityId
+  };
+}
+
+export function createInteractAction(entityId: EntityId, targetId: EntityId): InteractIntent {
+  return {
+    type: IntentType.Interact,
+    entityId,
+    targetId
   };
 }

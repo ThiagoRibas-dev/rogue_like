@@ -32,6 +32,7 @@ import {
   processSelectDialogueOptionIntent,
   processStartDialogueIntent
 } from './dialogue.actions.ts';
+import { processInteractIntent } from '../systems/intent.system.ts';
 import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
 import { GameEventType, type ClueDiscoveredEvent, type GameEvent } from '../types/events.types.ts';
@@ -315,6 +316,8 @@ export function dispatchAction(
       };
     }
 
+    case IntentType.Interact:
+      return processInteractIntent(state, intent);
     case IntentType.StartDialogue:
       return processStartDialogueIntent(state, intent);
     case IntentType.SelectDialogueOption:

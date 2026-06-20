@@ -290,6 +290,20 @@ export function spawnEntity(
     });
   }
 
+  if (template.dialogueId) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Dialogue,
+      dialogueId: template.dialogueId
+    });
+  }
+
+  if (template.attitude) {
+    nextState = addComponent(nextState, entityId, {
+      type: ComponentType.Attitude,
+      attitude: template.attitude
+    });
+  }
+
   if (template.lock) {
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Lock,

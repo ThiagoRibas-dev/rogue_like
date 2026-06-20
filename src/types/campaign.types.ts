@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { DialogueTreeSchema } from './dialogue.types.ts';
+import { DialogueTreeSchema, DialogueConditionSchema, DialogueEffectSchema } from './dialogue.types.ts';
+export { DialogueConditionSchema, DialogueEffectSchema };
+export type { DialogueCondition, DialogueEffect } from './dialogue.types.ts';
 
 import { QuestSchema } from './quests.types.ts';
 import { TriggerDefinitionSchema, ConsequenceActionSchema } from './trigger.types.ts';
@@ -242,6 +244,7 @@ export const EntityTemplateSchema = z.object({
     })
     .optional(),
   dialogueId: z.string().optional(),
+  attitude: z.enum(['hostile', 'neutral', 'friendly']).optional(),
   trap: z
     .object({
       triggerId: z.string()

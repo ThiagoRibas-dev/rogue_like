@@ -314,7 +314,7 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
     }
 
     case 'grant_quest': {
-      const questId = consequence.targetId;
+      const questId = consequence.questId ?? consequence.targetId;
       const playerId =
         consequence._playerEntityId ??
         consequence.entityId ??
@@ -327,7 +327,7 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
     }
 
     case 'complete_quest': {
-      const questId = consequence.targetId;
+      const questId = consequence.questId ?? consequence.targetId;
       const playerId =
         consequence._playerEntityId ??
         consequence.entityId ??
@@ -339,9 +339,21 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       break;
     }
 
-    case 'change_standing': {
+    case 'open_barter': {
+      // TODO(Milestone 47): Integrate actual trade.ui.ts and ShopComponent logic
+      nextState = addMessage(nextState, '[Barter Menu Placeholder]', MessageLogCategory.System);
+      break;
+    }
+
+    case 'trigger_service': {
+      // TODO(Milestone 47): Integrate spell services and ServiceComponent logic
+      nextState = addMessage(nextState, `[Service: ${consequence.serviceId} Placeholder]`, MessageLogCategory.System);
+      break;
+    }
+
+    case 'modify_standing': {
       const amount = consequence.amount;
-      const factionId = consequence.targetId;
+      const factionId = consequence.factionId;
       const memoryOwnerId = consequence._npcEntityId ?? consequence.entityId;
 
       if (memoryOwnerId === undefined || !factionId || !amount) break;
