@@ -4,35 +4,40 @@
     "transparent": true,
     "glyph": ".",
     "fg": "#1a1d24",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain"]
   },
   "stone_wall": {
     "walkable": false,
     "transparent": false,
     "glyph": "#",
     "fg": "#4a4d53",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain", "solid"]
   },
   "stairs_up": {
     "walkable": true,
     "transparent": true,
     "glyph": "<",
     "fg": "#ffffff",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain"]
   },
   "stairs_down": {
     "walkable": true,
     "transparent": true,
     "glyph": ">",
     "fg": "#ffffff",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain"]
   },
   "empty_space": {
     "walkable": false,
     "transparent": false,
     "glyph": " ",
     "fg": "#000000",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain"]
   },
   "shallow_water": {
     "walkable": true,
@@ -40,21 +45,24 @@
     "glyph": "~",
     "fg": "#3498db",
     "bg": "#000000",
-    "movementCost": 200
+    "movementCost": 200,
+    "tags": ["terrain", "liquid", "water"]
   },
   "grass_floor": {
     "walkable": true,
     "transparent": true,
     "glyph": ".",
     "fg": "#2d5a27",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain", "flammable", "organic"]
   },
   "dense_trees": {
     "walkable": false,
     "transparent": false,
     "glyph": "T",
     "fg": "#1b4d3e",
-    "bg": "#000000"
+    "bg": "#000000",
+    "tags": ["terrain", "solid", "flammable", "wood"]
   },
   "swamp_floor": {
     "walkable": true,
@@ -62,6 +70,7 @@
     "glyph": ";",
     "fg": "#4a5d4e",
     "bg": "#000000",
-    "movementCost": 150
+    "movementCost": 150,
+    "tags": ["terrain", "liquid", "wet"]
   }
 }

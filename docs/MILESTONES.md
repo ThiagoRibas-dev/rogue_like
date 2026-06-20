@@ -363,7 +363,7 @@ Upgrade the existing tag-based reaction system into the primary combinatorial in
 - [x] Add a Reaction Trace panel to `src/rendering/ui/debug.ui.ts` and the Simulation Lab so designers can see exactly why a reaction did or did not fire.
 - [x] Migrate existing legacy reactions in `public/campaigns/default/data/` to the new schema.
 - [x] **Migrate legacy `UseItemIntent` and `InteractIntent` entirely over to the `ApplyIntent` pipeline, removing the old wrappers from `action.registry.ts`.**
-- [ ] **Environmental Tile-Based Reactions:** Extend `ReactionTargetMatcherSchema` to accept `targetType: 'tile'` and update `reaction.system.ts` to fetch and react against tile definition tags from `tiles.json`.
+- [x] **Environmental Tile-Based Reactions:** Extend `ReactionTargetMatcherSchema` to accept `targetType: 'tile'` and update `reaction.system.ts` to fetch and react against tile definition tags from `tiles.json`.
 
 ## 🟢 Milestone 31: Throwing, Projectiles & On-Impact Consequences
 Implement the highest-ROI roguelike verb: throwing items and resolving their impact through the targeting/reaction pipeline.

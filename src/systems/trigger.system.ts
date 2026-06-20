@@ -7,10 +7,13 @@ import { GameEventType } from '../types/events.types.ts';
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
+import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
 import { applyItemEffect } from './effects.system.ts';
 import { processChangeAreaIntent } from './map.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { completeQuest, grantQuest } from './quest.system.ts';
+import { applyStatusEffect } from './status-effect.system.ts';
+import { assertNever } from '../utils/assert.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -158,7 +161,7 @@ export function evaluateCondition(
   }
 }
 
-import { createEntity } from '../core/ecs.ts';
+import { createEntity, spawnEntity, spawnItem } from '../core/ecs.ts';
 import type {
   AgreementComponent,
   ClueComponent,
@@ -701,6 +704,138 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       }
       break;
     }
+
+    case 'spawn_entity': {
+      const templateId = consequence.entityTemplateId;
+      if (!templateId) break;
+
+      let pos: PositionComponent | undefined;
+      let targetId: EntityId | undefined;
+
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        targetId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        targetId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        if (event.type === GameEventType.ReactionResolved) {
+          const rxEvent = event as unknown as { target: ApplyIntentTarget };
+          if (rxEvent.target.type === 'entity') {
+            targetId = rxEvent.target.entityId;
+          } else if (rxEvent.target.type === 'item') {
+            targetId = rxEvent.target.itemEntityId;
+          } else if (rxEvent.target.type === 'tile') {
+            pos = { type: ComponentType.Position, x: rxEvent.target.x, y: rxEvent.target.y };
+          }
+        }
+      }
+
+      if (targetId !== undefined && !pos) {
+        pos = getComponent(nextState, targetId, ComponentType.Position) as PositionComponent | undefined;
+      }
+
+      if (pos) {
+        if (nextState.campaign.items[templateId]) {
+          const [stateAfterSpawn] = spawnItem(nextState, templateId, pos.x, pos.y);
+          nextState = stateAfterSpawn;
+        } else if (nextState.campaign.entities[templateId]) {
+          const [stateAfterSpawn] = spawnEntity(nextState, templateId, pos.x, pos.y);
+          nextState = stateAfterSpawn;
+        } else {
+          console.warn(`Template ${templateId} not found in campaign items/entities during spawn_entity consequence.`);
+        }
+      }
+      break;
+    }
+
+    case 'damage_area': {
+      const radius = consequence.radius ?? 1;
+      const amount = consequence.amount ?? 0;
+      if (amount <= 0) break;
+
+      let centerPos: PositionComponent | undefined;
+      let targetId: EntityId | undefined;
+
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        targetId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        targetId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        if (event.type === GameEventType.ReactionResolved) {
+          const rxEvent = event as unknown as { target: ApplyIntentTarget };
+          if (rxEvent.target.type === 'entity') {
+            targetId = rxEvent.target.entityId;
+          } else if (rxEvent.target.type === 'item') {
+            targetId = rxEvent.target.itemEntityId;
+          } else if (rxEvent.target.type === 'tile') {
+            centerPos = { type: ComponentType.Position, x: rxEvent.target.x, y: rxEvent.target.y };
+          }
+        }
+      }
+
+      if (targetId !== undefined && !centerPos) {
+        centerPos = getComponent(nextState, targetId, ComponentType.Position) as PositionComponent | undefined;
+      }
+
+      if (!centerPos) break;
+
+      for (const id of nextState.entities) {
+        const fighter = getComponent(nextState, id, ComponentType.Fighter);
+        const pos = getComponent(nextState, id, ComponentType.Position);
+        if (!fighter || !pos) continue;
+
+        const dist = Math.sqrt(Math.pow(pos.x - centerPos.x, 2) + Math.pow(pos.y - centerPos.y, 2));
+        if (dist <= radius) {
+          const existingDamageComp = getComponent(nextState, id, ComponentType.Damage) as DamageComponent | undefined;
+          const damageInstance: DamageInstance = {
+            amount,
+            tags: consequence.tags ?? ['trigger', 'area']
+          };
+
+          if (existingDamageComp) {
+            const newDamageComp = {
+              ...existingDamageComp,
+              instances: [...existingDamageComp.instances, damageInstance]
+            };
+            nextState = addComponent(nextState, id, newDamageComp);
+          } else {
+            const newDamageComp: DamageComponent = {
+              type: ComponentType.Damage,
+              instances: [damageInstance]
+            };
+            nextState = addComponent(nextState, id, newDamageComp);
+          }
+        }
+      }
+      break;
+    }
+
+    case 'apply_status': {
+      if (!consequence.statusId) break;
+
+      let eId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        if (event.type === GameEventType.ReactionResolved) {
+          const rxEvent = event as unknown as { target: ApplyIntentTarget };
+          if (rxEvent.target.type === 'entity') {
+            eId = rxEvent.target.entityId;
+          } else if (rxEvent.target.type === 'item') {
+            eId = rxEvent.target.itemEntityId;
+          }
+        }
+      }
+
+      if (eId !== undefined) {
+        nextState = applyStatusEffect(nextState, eId, consequence.statusId, consequence.duration ?? 10);
+      }
+      break;
+    }
+
+    default:
+      return assertNever(consequence);
   }
 
   return nextState;

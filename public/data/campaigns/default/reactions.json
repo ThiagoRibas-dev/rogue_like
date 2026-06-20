@@ -192,7 +192,7 @@
     "targetMatcher": { "targetType": "entity", "tags": ["door", "solid"] },
     "consequences": [
       { "type": "remove_entity", "targetId": "event.entityId" },
-      { "type": "spawn_entity", "entityTemplateId": "fire_surface" }
+      { "type": "spawn_entity", "entityTemplateId": "fire" }
     ],
     "message": "The wooden door goes up in flames and burns to ashes!"
   },
@@ -206,5 +206,22 @@
       { "type": "apply_status", "statusId": "regeneration", "duration": 50 }
     ],
     "message": "You take a refreshing drink from the water source. You feel revitalized!"
+  },
+  {
+    "id": "ignite_flammable_tile",
+    "verb": "ignite",
+    "priority": 10,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": {
+      "targetType": "tile",
+      "tags": ["flammable"]
+    },
+    "consequences": [
+      {
+        "type": "spawn_entity",
+        "entityTemplateId": "fire"
+      }
+    ],
+    "message": "The terrain catches fire!"
   }
 ]

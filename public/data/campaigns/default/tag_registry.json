@@ -179,6 +179,11 @@
     "color": "#95a5a6",
     "description": "A base environmental feature."
   },
+  "flammable": {
+    "category": "physical",
+    "color": "#e67e22",
+    "description": "Easily ignitable substance or environment."
+  },
   "divine": {
     "category": "magic",
     "color": "#f1c40f",

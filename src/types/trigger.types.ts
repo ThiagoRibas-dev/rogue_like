@@ -50,7 +50,8 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('damage_area'),
     radius: z.number().int().nonnegative().optional(),
     amount: z.number().int().optional(),
-    tags: z.array(z.string()).optional()
+    tags: z.array(z.string()).optional(),
+    targetId: z.string().optional()
   }),
   z.object({
     type: z.literal('spawn_entity'),

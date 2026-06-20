@@ -273,5 +273,10 @@
     "category": "area",
     "color": "#d63031",
     "description": "ToEE Fire Temple."
+  },
+  "flammable": {
+    "category": "physical",
+    "color": "#e67e22",
+    "description": "Easily ignitable substance or environment."
   }
 }
