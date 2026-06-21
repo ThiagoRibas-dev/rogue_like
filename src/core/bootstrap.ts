@@ -124,7 +124,8 @@ export async function startNewGame(
       discoveredClues: [],
       exposedAgreements: []
     },
-    areaMutations: {}
+    areaMutations: {},
+    pendingKnowledge: []
   };
 
   // Spawn the player entity
@@ -346,7 +347,8 @@ export async function startSandboxEncounter(
       discoveredClues: [],
       exposedAgreements: []
     },
-    areaMutations: {}
+    areaMutations: {},
+    pendingKnowledge: []
   };
 
   // Spawn the player entity

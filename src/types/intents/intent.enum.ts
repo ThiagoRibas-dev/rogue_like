@@ -39,5 +39,6 @@ export const enum IntentType {
   DebugPromote = 'DebugPromote',
   Apply = 'Apply',
   Interact = 'Interact',
-  Say = 'Say'
+  Say = 'Say',
+  AskAbout = 'AskAbout'
 }

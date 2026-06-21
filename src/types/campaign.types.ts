@@ -208,6 +208,23 @@ export const KnowledgeItemSchema = z.object({
 });
 export type KnowledgeItemType = z.infer<typeof KnowledgeItemSchema>;
 
+export const KnowledgePropagationRuleSchema = z.object({
+  id: z.string(),
+  /** The GameEventType string this rule listens to. */
+  eventType: z.string(),
+  /** Tags an NPC entity must have (on TagsComponent) to receive this knowledge. Empty = all NPCs with Memory. */
+  eligibleTags: z.array(z.string()).default([]),
+  /** Faction IDs that make an NPC eligible. Empty = any faction. */
+  eligibleFactions: z.array(z.string()).default([]),
+  /** If true, only NPCs in the same area or a connected area receive the knowledge. */
+  requireAreaProximity: z.boolean().default(true),
+  /** Delay in game ticks before the knowledge becomes available. */
+  delay: z.number().int().nonnegative().default(50),
+  /** The knowledge item template to create. The `id` can use `{eventId}` or other placeholders. */
+  knowledgeTemplate: KnowledgeItemSchema
+});
+export type KnowledgePropagationRule = z.infer<typeof KnowledgePropagationRuleSchema>;
+
 // ==========================================
 // 6. ENTITIES
 // ==========================================
@@ -270,7 +287,8 @@ export const EntityTemplateSchema = z.object({
       timesBetrayed: z.number().int().nonnegative().optional(),
       patienceThreshold: z.number().int().nonnegative().optional(),
       annoyedDuration: z.number().int().nonnegative().optional(),
-      gratefulDuration: z.number().int().nonnegative().optional()
+      gratefulDuration: z.number().int().nonnegative().optional(),
+      deflectionLines: z.array(z.string()).optional()
     })
     .optional(),
   dialogueId: z.string().optional(),
@@ -654,7 +672,8 @@ export const CampaignDataSchema = z.object({
   encounterProfiles: z.record(z.string(), EncounterProfileSchema).default({}),
   traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({}),
   identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({}),
-  personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({})
+  personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({}),
+  knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([])
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -687,5 +706,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   encounterProfiles: EncounterProfileSchema,
   traitRegistry: TraitDefinitionSchema,
   identityGeneration: IdentityGenerationTableSchema,
-  personalityGeneration: PersonalityGenerationTableSchema
+  personalityGeneration: PersonalityGenerationTableSchema,
+  knowledgePropagation: KnowledgePropagationRuleSchema.array()
 };

@@ -305,6 +305,7 @@ export function createBlankSlateCampaign(): CampaignData {
     encounterProfiles: {},
     traitRegistry: {},
     identityGeneration: {},
-    personalityGeneration: {}
+    personalityGeneration: {},
+    knowledgePropagation: []
   };
 }

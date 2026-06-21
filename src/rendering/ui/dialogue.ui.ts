@@ -1,8 +1,8 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
-import { ComponentType } from '../../types/components.types.ts';
+import { ComponentType, type MemoryComponent } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
-import { type SelectDialogueOptionIntent } from '../../types/intents/ui.intents.ts';
+import { type SelectDialogueOptionIntent, type AskAboutIntent } from '../../types/intents/ui.intents.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
@@ -78,7 +78,7 @@ export function renderDialoguePanel(state: GameState): void {
   textP.style.fontSize = '1.1rem';
   textP.style.lineHeight = '1.5';
   textP.style.marginBottom = '20px';
-  appendWikiSegments(textP, node.text);
+  appendWikiSegments(textP, state.activeDialogue.textOverride ?? node.text);
   content.appendChild(textP);
 
   // Render options
@@ -88,6 +88,32 @@ export function renderDialoguePanel(state: GameState): void {
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
 
   if (!playerEntityId) return;
+
+  if (node.dynamicType === 'ask_about') {
+    const playerMemory = getComponent(state, playerEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+    const playerKnowledge = playerMemory?.knowledge ?? {};
+
+    for (const [topicId, item] of Object.entries(playerKnowledge)) {
+      const btn = document.createElement('button');
+      btn.className = 'modal-btn dialogue-option-btn';
+      btn.style.textAlign = 'left';
+      btn.style.width = '100%';
+      btn.style.marginTop = '8px';
+      btn.style.whiteSpace = 'normal';
+      btn.appendChild(document.createTextNode(`> Ask about: ${item.description}`));
+
+      btn.addEventListener('click', () => {
+        queuePlayerIntent({
+          type: IntentType.AskAbout,
+          entityId: playerEntityId,
+          topicId,
+          isImmediate: true
+        } as AskAboutIntent);
+      });
+
+      optionsContainer.appendChild(btn);
+    }
+  }
 
   for (const option of node.options) {
     // Condition check

@@ -53,3 +53,10 @@ export interface ToggleDossierIntent extends BaseIntent {
   readonly type: IntentType.ToggleDossier;
   readonly isImmediate: true;
 }
+
+export interface AskAboutIntent extends BaseIntent {
+  readonly type: IntentType.AskAbout;
+  readonly entityId: EntityId;
+  readonly topicId: string;
+  readonly isImmediate: true;
+}

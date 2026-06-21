@@ -27,6 +27,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 
 import type { ChangeAreaIntent } from '@/types/intents/movement.intents.ts';
 import { addActor, clearScheduler } from '../core/scheduler.ts';
+import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 
 export function updateExploredTiles(state: GameState): GameState {
   if (!state.fovNeedsUpdate) return state;
@@ -424,6 +425,7 @@ export function processChangeAreaIntent(
   };
 
   nextState = updateSpatialIndex(nextState);
+  nextState = deliverPendingKnowledgeToArea(nextState, targetAreaId);
 
   // 4. Update Scheduler
   clearScheduler();

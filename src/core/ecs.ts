@@ -334,7 +334,8 @@ export function spawnEntity(
       timesBetrayed: template.memory.timesBetrayed ?? 0,
       patienceThreshold: template.memory.patienceThreshold ?? derivedThreshold,
       annoyedDuration: template.memory.annoyedDuration ?? 0,
-      gratefulDuration: template.memory.gratefulDuration ?? 0
+      gratefulDuration: template.memory.gratefulDuration ?? 0,
+      deflectionLines: template.memory.deflectionLines
     });
   }
 

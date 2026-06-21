@@ -22,6 +22,18 @@
         "placementY": 7
       }
     ],
+    "placedEntities": [
+      {
+        "templateId": "barkeeper",
+        "x": 3,
+        "y": 3
+      },
+      {
+        "templateId": "scout",
+        "x": 5,
+        "y": 6
+      }
+    ],
     "staticMap": {
       "layout": [
         "#####################",

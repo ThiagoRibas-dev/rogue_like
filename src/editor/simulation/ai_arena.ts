@@ -106,6 +106,7 @@ export function runAIArena(
     cachedFov: new Set(),
     playerCommandQueue: [],
     areaMutations: {},
+    pendingKnowledge: [],
     investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] }
   };
 

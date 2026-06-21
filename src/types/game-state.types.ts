@@ -5,6 +5,7 @@ import type { Intent } from './intents/intent.union.ts';
 import type { GameEvent } from './events.types.ts';
 import type { ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Verb } from '../constants/verbs.constants.ts';
+import type { PendingKnowledgePropagation } from './knowledge.types.ts';
 
 /**
  * Enum defining the engine mode.
@@ -176,6 +177,7 @@ export interface GameState {
         readonly treeId: string;
         readonly currentNodeId: string;
         readonly npcEntityId: EntityId;
+        readonly textOverride?: string;
       }
     | undefined;
   readonly identifiedItems: ReadonlySet<string>;
@@ -194,6 +196,7 @@ export interface GameState {
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
   readonly areaMutations: Readonly<Record<string, AreaMutation>>;
+  readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly verbMenu?:
     | {
         readonly target: ApplyIntentTarget;
@@ -243,6 +246,7 @@ export interface SerializedGameState {
         readonly treeId: string;
         readonly currentNodeId: string;
         readonly npcEntityId: number;
+        readonly textOverride?: string;
       }
     | undefined;
   readonly identifiedItems: ReadonlyArray<string>;
@@ -258,4 +262,5 @@ export interface SerializedGameState {
   readonly zoomLevel: number;
   readonly investigation: InvestigationKnowledge;
   readonly areaMutations: ReadonlyArray<[string, AreaMutation]>;
+  readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
 }

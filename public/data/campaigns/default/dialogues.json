@@ -110,5 +110,119 @@
         ]
       }
     }
+  },
+  "barkeeper_tree": {
+    "id": "barkeeper_tree",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Welcome to my stand, traveler. What can I do for you?",
+        "options": [
+          {
+            "id": "opt_ask_about",
+            "text": "I want to ask about recent rumors... (Ask about)",
+            "nextNodeId": "ask_about_node"
+          },
+          {
+            "id": "opt_leave",
+            "text": "Just looking around. (Leave)"
+          }
+        ]
+      },
+      "ask_about_node": {
+        "id": "ask_about_node",
+        "text": "Alright, what do you want to ask about?",
+        "dynamicType": "ask_about",
+        "onKnownNodeId": "known_node",
+        "onUnknownNodeId": "unknown_node",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Nevermind. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "known_node": {
+        "id": "known_node",
+        "text": "Ah, yes! I've heard about {topic}. {description}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "I see. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "unknown_node": {
+        "id": "unknown_node",
+        "text": "{deflection}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Alright. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      }
+    }
+  },
+  "scout_tree": {
+    "id": "scout_tree",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Hail. Keep your distance, I am watching the dungeons.",
+        "options": [
+          {
+            "id": "opt_ask_about",
+            "text": "Have you seen or heard anything? (Ask about)",
+            "nextNodeId": "ask_about_node"
+          },
+          {
+            "id": "opt_leave",
+            "text": "Safe hunting. (Leave)"
+          }
+        ]
+      },
+      "ask_about_node": {
+        "id": "ask_about_node",
+        "text": "Make it quick.",
+        "dynamicType": "ask_about",
+        "onKnownNodeId": "known_node",
+        "onUnknownNodeId": "unknown_node",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Nevermind. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "known_node": {
+        "id": "known_node",
+        "text": "I saw that. {description}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Good to know. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "unknown_node": {
+        "id": "unknown_node",
+        "text": "{deflection}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Okay. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      }
+    }
   }
 }

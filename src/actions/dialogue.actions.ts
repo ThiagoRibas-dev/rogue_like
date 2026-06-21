@@ -1,13 +1,16 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { ComponentType, type MemoryComponent } from '../types/components.types.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../types/events.types.ts';
-import type { GameState } from '../types/game-state.types.ts';
+import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import type {
   CloseDialogueIntent,
   SelectDialogueOptionIntent,
-  StartDialogueIntent
+  StartDialogueIntent,
+  AskAboutIntent
 } from '../types/intents/ui.intents.ts';
+import { rng } from '../core/rng.ts';
+import { DEFAULT_DEFLECTION_LINES } from '../constants/knowledge.constants.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processQuestEvent } from '../systems/quest.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';
@@ -141,4 +144,118 @@ export function processCloseDialogueIntent(
     },
     success: false
   };
+}
+
+/**
+ * Transfers a knowledge item from one entity's memory to another.
+ * @param state The current GameState.
+ * @param fromEntityId The source NPC entity ID.
+ * @param toEntityId The target recipient entity ID.
+ * @param knowledgeId The ID of the knowledge item to transfer.
+ * @returns Updated GameState.
+ */
+export function transferKnowledge(
+  state: GameState,
+  fromEntityId: EntityId,
+  toEntityId: EntityId,
+  knowledgeId: string
+): GameState {
+  const fromMemory = getComponent(state, fromEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  const toMemory = getComponent(state, toEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  if (!fromMemory || !toMemory) return state;
+
+  const item = fromMemory.knowledge[knowledgeId];
+  if (!item) return state;
+
+  const nextKnowledge = {
+    ...toMemory.knowledge,
+    [knowledgeId]: item
+  };
+
+  let nextState = addComponent(state, toEntityId, {
+    ...toMemory,
+    knowledge: nextKnowledge
+  });
+
+  nextState = addMessage(nextState, `You learned: ${item.description}`, MessageLogCategory.System);
+
+  return nextState;
+}
+
+/**
+ * Validates and routes dialog after checking if the NPC possesses the queried topic.
+ * @param state The current GameState.
+ * @param intent The AskAboutIntent.
+ * @returns State with updated activeDialogue.
+ */
+export function processAskAboutIntent(
+  state: GameState,
+  intent: AskAboutIntent
+): { state: GameState; success: boolean } {
+  if (!state.activeDialogue) return { state, success: false };
+
+  const { npcEntityId, treeId, currentNodeId } = state.activeDialogue;
+  const tree = state.campaign.dialogues[treeId];
+  if (!tree) return { state, success: false };
+
+  const currentNode = tree.nodes[currentNodeId];
+  if (!currentNode || currentNode.dynamicType !== 'ask_about') return { state, success: false };
+
+  const npcMemory = getComponent(state, npcEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  const npcKnowledge = npcMemory?.knowledge ?? {};
+
+  let nextState = state;
+  let textOverride: string | undefined = undefined;
+
+  if (npcKnowledge[intent.topicId]) {
+    nextState = transferKnowledge(nextState, npcEntityId, intent.entityId, intent.topicId);
+
+    const targetNodeId = currentNode.onKnownNodeId ?? currentNodeId;
+    const targetNode = tree.nodes[targetNodeId];
+    if (targetNode) {
+      const item = npcKnowledge[intent.topicId]!;
+      textOverride = targetNode.text.replace(/{topic}/g, item.id).replace(/{description}/g, item.description);
+    }
+
+    return {
+      state: {
+        ...nextState,
+        activeDialogue: {
+          treeId,
+          npcEntityId,
+          currentNodeId: targetNodeId,
+          ...(textOverride !== undefined ? { textOverride } : {})
+        }
+      },
+      success: false
+    };
+  } else {
+    const targetNodeId = currentNode.onUnknownNodeId ?? currentNodeId;
+    const targetNode = tree.nodes[targetNodeId];
+
+    const lines = npcMemory?.deflectionLines ?? DEFAULT_DEFLECTION_LINES;
+    const index = rng.getUniformInt(0, lines.length - 1);
+    const deflectionLine = lines[index] ?? DEFAULT_DEFLECTION_LINES[0]!;
+
+    if (targetNode) {
+      textOverride = targetNode.text.includes('{deflection}')
+        ? targetNode.text.replace(/{deflection}/g, deflectionLine)
+        : deflectionLine;
+    } else {
+      textOverride = deflectionLine;
+    }
+
+    return {
+      state: {
+        ...nextState,
+        activeDialogue: {
+          treeId,
+          npcEntityId,
+          currentNodeId: targetNodeId,
+          textOverride
+        }
+      },
+      success: false
+    };
+  }
 }

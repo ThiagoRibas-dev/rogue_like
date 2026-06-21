@@ -81,7 +81,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       spawnPoolsRes,
       encounterProfilesRes,
       traitRegistryRes,
-      identityGenerationRes
+      identityGenerationRes,
+      knowledgePropagationRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -108,7 +109,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/spawn_pools.json`),
       fetch(`${basePath}/encounter_profiles.json`),
       fetch(`${basePath}/trait_registry.json`),
-      fetch(`${basePath}/identity_generation.json`)
+      fetch(`${basePath}/identity_generation.json`),
+      fetch(`${basePath}/knowledge_propagation.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -203,6 +205,15 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       identityGenerationRes.json()
     ]);
 
+    let knowledgePropagation = [];
+    if (knowledgePropagationRes.ok) {
+      try {
+        knowledgePropagation = await knowledgePropagationRes.json();
+      } catch (err) {
+        console.warn('Failed to parse knowledge_propagation.json', err);
+      }
+    }
+
     const data = {
       manifest,
       rules,
@@ -230,6 +241,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       encounterProfiles,
       traitRegistry,
       identityGeneration,
+      knowledgePropagation,
       triggerBuckets: {}
     };
 

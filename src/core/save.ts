@@ -87,6 +87,16 @@ export function saveGame(state: GameState): void {
     persistentEntities: serializedPersistentEntities,
     isGameOver: state.isGameOver,
     uiMode: state.uiMode,
+    activeDialogue: state.activeDialogue
+      ? {
+          treeId: state.activeDialogue.treeId,
+          currentNodeId: state.activeDialogue.currentNodeId,
+          npcEntityId: state.activeDialogue.npcEntityId,
+          ...(state.activeDialogue.textOverride !== undefined
+            ? { textOverride: state.activeDialogue.textOverride }
+            : {})
+        }
+      : undefined,
     identifiedItems: Array.from(state.identifiedItems),
     itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries()),
     engineMode: state.engineMode,
@@ -96,7 +106,8 @@ export function saveGame(state: GameState): void {
     is3D: state.is3D,
     zoomLevel: state.zoomLevel,
     investigation: state.investigation,
-    areaMutations: Object.entries(state.areaMutations)
+    areaMutations: Object.entries(state.areaMutations),
+    pendingKnowledge: state.pendingKnowledge
   };
 
   try {
@@ -162,6 +173,16 @@ export async function loadGame(): Promise<GameState | null> {
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
       uiMode: sState.uiMode === UIMode.VerbMenu ? UIMode.Game : sState.uiMode,
+      activeDialogue: sState.activeDialogue
+        ? {
+            treeId: sState.activeDialogue.treeId,
+            currentNodeId: sState.activeDialogue.currentNodeId,
+            npcEntityId: sState.activeDialogue.npcEntityId as EntityId,
+            ...(sState.activeDialogue.textOverride !== undefined
+              ? { textOverride: sState.activeDialogue.textOverride }
+              : {})
+          }
+        : undefined,
       identifiedItems: new Set(sState.identifiedItems || []),
       itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
       engineMode: sState.engineMode || EngineMode.TurnBased,
@@ -176,7 +197,8 @@ export async function loadGame(): Promise<GameState | null> {
         discoveredClues: [],
         exposedAgreements: []
       },
-      areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {}
+      areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {},
+      pendingKnowledge: sState.pendingKnowledge ?? []
     };
 
     // Rebuild the spatial index for the active floor

@@ -515,5 +515,51 @@
     "roleTags": [
       "side"
     ]
+  },
+  "barkeeper": {
+    "id": "barkeeper",
+    "name": "Barkeeper",
+    "glyph": "B",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "I just pour the drinks, friend. Try asking the scout.",
+        "Rumors? Hah! Ask someone else, I'm busy.",
+        "You want stories? Go to the dungeons, they'll give you plenty."
+      ]
+    },
+    "dialogueId": "barkeeper_tree"
+  },
+  "scout": {
+    "id": "scout",
+    "name": "Scout",
+    "glyph": "S",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "I'm keeping my eyes on the horizon, not gossip.",
+        "Nothing new to report.",
+        "Ask the barkeeper, he hears everything."
+      ]
+    },
+    "dialogueId": "scout_tree"
   }
 }

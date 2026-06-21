@@ -31,7 +31,8 @@ import { processApplyIntent } from '../systems/apply.system.ts';
 import {
   processCloseDialogueIntent,
   processSelectDialogueOptionIntent,
-  processStartDialogueIntent
+  processStartDialogueIntent,
+  processAskAboutIntent
 } from './dialogue.actions.ts';
 import { processInteractIntent } from '../systems/intent.system.ts';
 import { processSayIntent } from './say.action.ts';
@@ -386,6 +387,8 @@ export function dispatchAction(
       return processSelectDialogueOptionIntent(state, intent);
     case IntentType.CloseDialogue:
       return processCloseDialogueIntent(state, intent);
+    case IntentType.AskAbout:
+      return processAskAboutIntent(state, intent);
     case IntentType.Say:
       return processSayIntent(state, intent);
     default:

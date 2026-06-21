@@ -71,6 +71,18 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
     };
     nextState = addComponent(nextState, mastermindId, updatedScheme);
 
+    nextState = {
+      ...nextState,
+      events: [
+        ...nextState.events,
+        {
+          type: GameEventType.SchemeAdvanced,
+          schemeId: schemeComponent.schemeId,
+          newPhase: updatedScheme.currentPhase
+        }
+      ]
+    };
+
     // Announce to debug log that phase advanced
     nextState = addMessage(
       nextState,

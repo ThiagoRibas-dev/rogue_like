@@ -25,7 +25,8 @@ export enum GameEventType {
   ReactionResolved = 'ReactionResolved',
   SchemeMutatedArea = 'SchemeMutatedArea',
   SayResolved = 'SayResolved',
-  CoreValueViolated = 'CoreValueViolated'
+  CoreValueViolated = 'CoreValueViolated',
+  SchemeAdvanced = 'SchemeAdvanced'
 }
 
 export interface BaseGameEvent {
@@ -179,6 +180,12 @@ export interface CoreValueViolatedEvent extends BaseGameEvent {
   readonly eventSummary: string;
 }
 
+export interface SchemeAdvancedEvent extends BaseGameEvent {
+  readonly type: GameEventType.SchemeAdvanced;
+  readonly schemeId: string;
+  readonly newPhase: number;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -204,4 +211,5 @@ export type GameEvent =
   | ReactionResolvedEvent
   | SchemeMutatedAreaEvent
   | SayResolvedEvent
-  | CoreValueViolatedEvent;
+  | CoreValueViolatedEvent
+  | SchemeAdvancedEvent;

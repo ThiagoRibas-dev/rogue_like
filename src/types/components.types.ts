@@ -330,6 +330,7 @@ export interface MemoryComponent {
   readonly patienceThreshold?: number | undefined;
   readonly annoyedDuration?: number | undefined;
   readonly gratefulDuration?: number | undefined;
+  readonly deflectionLines?: ReadonlyArray<string> | undefined;
 }
 
 /**

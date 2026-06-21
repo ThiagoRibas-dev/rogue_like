@@ -118,6 +118,7 @@ let state: GameState = {
   cachedFov: new Set(),
   playerCommandQueue: [],
   areaMutations: {},
+  pendingKnowledge: [],
   investigation: {
     knownActors: [],
     discoveredClues: [],

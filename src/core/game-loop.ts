@@ -20,6 +20,7 @@ import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
 import { processPersonalitySystem } from '../systems/personality.system.ts';
+import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -290,6 +291,10 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 
   // Investigation system consumes events
   nextState = processInvestigationEvents(nextState);
+
+  // Knowledge propagation processes events and ticks delay timers
+  nextState = processKnowledgePropagationEvents(nextState);
+  nextState = tickPendingKnowledge(nextState);
 
   // Personality System (Thoughts, Stress, Core Memories)
   nextState = processPersonalitySystem(nextState);

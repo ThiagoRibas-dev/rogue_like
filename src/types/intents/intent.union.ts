@@ -27,7 +27,8 @@ import type {
   ToggleQuestsIntent,
   ToggleInvestigationIntent,
   ToggleDebugIntent,
-  ToggleDossierIntent
+  ToggleDossierIntent,
+  AskAboutIntent
 } from './ui.intents.ts';
 
 import type { ToggleRotatedIntent, Toggle3DIntent, SetZoomLevelIntent } from './camera.intents.ts';
@@ -78,6 +79,7 @@ export type Intent =
   | ToggleInvestigationIntent
   | ToggleDebugIntent
   | ToggleDossierIntent
+  | AskAboutIntent
   | ApplyIntent
   | InteractIntent
   | SayIntent;

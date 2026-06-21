@@ -205,6 +205,11 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('set_social_state'),
     state: z.enum(['annoyed', 'grateful']),
     duration: z.number().int().nonnegative()
+  }),
+  z.object({
+    type: z.literal('transfer_knowledge'),
+    knowledgeId: z.string(),
+    addToInvestigationBoard: z.boolean().default(false)
   })
 ]);
 

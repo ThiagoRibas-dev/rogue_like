@@ -15,6 +15,7 @@ import { completeQuest, grantQuest } from './quest.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 import { processSayIntent } from '../actions/say.action.ts';
 import { assertNever } from '../utils/assert.ts';
+import { transferKnowledge } from '../actions/dialogue.actions.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -1032,6 +1033,34 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
           gratefulDuration: consequence.state === 'grateful' ? consequence.duration : memory.gratefulDuration
         };
         nextState = addComponent(nextState, memOwnerId, nextMemory);
+      }
+      break;
+    }
+
+    case 'transfer_knowledge': {
+      const npcId = consequence._npcEntityId ?? consequence.entityId;
+      const playerId = consequence._playerEntityId;
+      if (npcId === undefined || playerId === undefined) break;
+
+      const npcMemory = getComponent(nextState, npcId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (!npcMemory) break;
+
+      const item = npcMemory.knowledge?.[consequence.knowledgeId];
+      if (!item) break;
+
+      nextState = transferKnowledge(nextState, npcId, playerId, consequence.knowledgeId);
+
+      if (consequence.addToInvestigationBoard) {
+        const clueText = `${item.type}: ${item.description}`;
+        if (!nextState.investigation.discoveredClues.includes(clueText)) {
+          nextState = {
+            ...nextState,
+            investigation: {
+              ...nextState.investigation,
+              discoveredClues: [...nextState.investigation.discoveredClues, clueText]
+            }
+          };
+        }
       }
       break;
     }

@@ -528,14 +528,14 @@ Build the data layer for NPCs as persistent social agents. Extend `MemoryCompone
 
 **Testable in game:** Use `/debug` to inspect an NPC before and after talking to them. Interaction counters increment. Use a trigger to set `annoyed` state — verify the debug tooltip shows the change. Set `patienceThreshold` to 1, ask the same question twice, verify the NPC refuses the second time.
 
-## 🟡 Milestone 46: Knowledge Brokering — NPCs as Information Sources
+## 🟢 Milestone 46: Knowledge Brokering — NPCs as Information Sources (Complete)
 Make NPCs into walking repositories of world knowledge. The player can ask about topics they've heard of, NPCs respond based on what they actually know, and knowledge flows organically from world events into the NPC social graph.
 
-- [ ] Implement knowledge propagation: when the Event Ledger (M15) records a major event (EntityDied, QuestCompleted, SchemeAdvanced, boss spawned), eligible NPCs in connected or faction-aligned areas add corresponding `knowledge` entries deterministically, with a configurable propagation delay.
-- [ ] Add `ask_about` as a dialogue verb: the player selects a topic from their own knowledge pool (things they've learned from other NPCs, clues, or direct experience) and the NPC responds based on what they know. Gating: faction standing (M9) + personality facets (M43) + `annoyed`/`grateful` state (M45).
-- [ ] Add a `talk` dialogue consequence type that writes structured knowledge from the NPC's `MemoryComponent.knowledge` into the player's Investigation Board (M20) or Quest Journal (M19), creating persistent records the player can reference later.
-- [ ] Support knowledge-as-currency: NPCs can trade information for gold, favors, items, or reciprocal information. "I'll tell you where the key is if you clear the rats from my cellar." Resolved through the Trigger System (M22) by gating knowledge access behind a `grant_quest` or `change_standing` consequence.
-- [ ] NPCs refuse to answer if they don't know the topic, with personality-appropriate deflection lines ("Never heard of it." / "Ask someone who cares." / "That information will cost you.").
+- [x] Implement knowledge propagation: when the Event Ledger (M15) records a major event (EntityDied, QuestCompleted, SchemeAdvanced, boss spawned), eligible NPCs in connected or faction-aligned areas add corresponding `knowledge` entries deterministically, with a configurable propagation delay.
+- [x] Add `ask_about` as a dialogue verb: the player selects a topic from their own knowledge pool (things they've learned from other NPCs, clues, or direct experience) and the NPC responds based on what they know. Gating: faction standing (M9) + personality facets (M43) + `annoyed`/`grateful` state (M45).
+- [x] Add a `transfer_knowledge` dialogue consequence type that writes structured knowledge from the NPC's `MemoryComponent.knowledge` into the player's investigation/knowledge records.
+- [x] Support knowledge-as-currency: NPCs can trade information for gold, favors, items, or reciprocal information, resolved through the Trigger System (M22) by gating knowledge access behind a `grant_quest` or `change_standing` consequence.
+- [x] NPCs refuse to answer if they don't know the topic, with personality-appropriate deflection lines ("Never heard of it." / "Ask someone who cares." / "That information will cost you.").
 
 **Testable in game:** Kill a boss in `dungeon_1`. Return to the `safe_hub` barkeep. Use `ask_about` → select the boss's name. The barkeep says "Word is someone killed the troll in the upper dungeons." This works because the `EntityDied` event propagated knowledge. Now talk to the scout NPC — they don't know about the boss (not in their knowledge pool), so they deflect.
 
@@ -636,6 +636,7 @@ Turn the event ledger into a durable, queryable narrative substrate without stor
 - [ ] Add deterministic decay/boost rules so recent and repeated interactions matter more.
 - [ ] Store references from chronicle entries to ledger summaries rather than duplicating full event payloads.
 - [ ] Add query helpers for “most interesting enemy,” “recently harmed faction,” “area with escalating danger,” etc.
+- [ ] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
 - [ ] Add debug timeline visualization and exportable simulation logs.
 
 ## 🟡 Milestone 55: Drama Trigger Composer — Runtime Trigger Generation

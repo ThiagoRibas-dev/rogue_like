@@ -21,6 +21,9 @@ export type DialogueOption = z.infer<typeof DialogueOptionSchema>;
 export const DialogueNodeSchema = z.object({
   id: z.string(),
   text: z.string(),
+  dynamicType: z.enum(['ask_about']).optional(),
+  onKnownNodeId: z.string().optional(),
+  onUnknownNodeId: z.string().optional(),
   options: z.array(DialogueOptionSchema)
 });
 

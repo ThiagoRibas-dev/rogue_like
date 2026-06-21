@@ -203,5 +203,10 @@
     "category": "biome",
     "color": "#f1c40f",
     "description": "An ancient, protected sanctuary."
+  },
+  "town": {
+    "category": "biome",
+    "color": "#e67e22",
+    "description": "A populated settlement."
   }
 }
