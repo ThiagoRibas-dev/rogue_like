@@ -1,5 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
+import { dispatchAction } from '../actions/action.registry.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
@@ -25,12 +26,12 @@ const BEHAVIOR_REGISTRY: Record<string, AIBehaviorFn> = {
  * @param entityId The AI entity taking its turn.
  * @returns The Intent the AI wants to execute, or null if waiting.
  */
-export function processAITurn(state: GameState, entityId: EntityId): Intent | null {
+export function processAITurn(state: GameState, entityId: EntityId): { intent: Intent | null; state: GameState } {
   const ai = getComponent(state, entityId, ComponentType.AI);
   const pos = getComponent(state, entityId, ComponentType.Position);
 
   // If dead or missing components, do nothing
-  if (!ai || !pos) return null;
+  if (!ai || !pos) return { intent: null, state };
 
   const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
   const isConfused = statuses?.activeEffects.some((e) => state.campaign.status[e.effectId]?.flags?.confused);
@@ -49,21 +50,48 @@ export function processAITurn(state: GameState, entityId: EntityId): Intent | nu
     const randomDir = ROT.RNG.getItem(directions);
     if (randomDir) {
       return {
-        type: IntentType.Move,
-        entityId,
-        dx: randomDir.dx,
-        dy: randomDir.dy
+        intent: {
+          type: IntentType.Move,
+          entityId,
+          dx: randomDir.dx,
+          dy: randomDir.dy
+        },
+        state
       };
     }
-    return null;
+    return { intent: null, state };
   }
 
   const profileId = ai.profileId;
   const profile = state.campaign.ai[profileId];
-  if (!profile) return null;
+  if (!profile) return { intent: null, state };
 
-  // Run behavior pipeline in priority order
-  for (const entry of profile.behaviors) {
+  const memory = getComponent(state, entityId, ComponentType.Memory);
+  const facets = memory?.facets || {};
+
+  // Map behaviors to evaluated scores
+  const evaluatedBehaviors = profile.behaviors.map((entry, index) => {
+    // Base priority: preserve array order (higher index = lower priority)
+    let score = (profile.behaviors.length - index) * 1000;
+
+    // Apply facet weight modifiers
+    if (entry.weightModifiers) {
+      for (const [facetName, multiplier] of Object.entries(entry.weightModifiers)) {
+        if (facets[facetName] !== undefined) {
+          score += facets[facetName]! * multiplier;
+        }
+      }
+    }
+    return { entry, score };
+  });
+
+  // Sort descending by score
+  evaluatedBehaviors.sort((a, b) => b.score - a.score);
+
+  let nextState = state;
+
+  // Run behavior pipeline in prioritized order
+  for (const { entry } of evaluatedBehaviors) {
     const behaviorFn = BEHAVIOR_REGISTRY[entry.behaviorId];
     if (behaviorFn) {
       // Merge component overrides with profile params
@@ -73,13 +101,33 @@ export function processAITurn(state: GameState, entityId: EntityId): Intent | nu
         ...(ai.wanders !== undefined ? { wanders: ai.wanders } : {})
       };
 
-      const intent = behaviorFn(state, entityId, params);
+      const intent = behaviorFn(nextState, entityId, params);
       if (intent !== null) {
-        return intent;
+        // AI decided to do this. Check if they should bark.
+        if (profile.barks && profile.barks[entry.behaviorId]) {
+          const barkList = profile.barks[entry.behaviorId]!;
+          // 25% chance to bark if they have barks for this behavior
+          if (barkList.length > 0 && ROT.RNG.getUniform() < 0.25) {
+            const barkMsg = ROT.RNG.getItem(barkList);
+            if (barkMsg) {
+              const sayResult = dispatchAction(nextState, {
+                type: IntentType.Say,
+                entityId,
+                message: barkMsg
+              });
+              nextState = sayResult.state;
+              if (sayResult.events && sayResult.events.length > 0) {
+                nextState = { ...nextState, events: [...nextState.events, ...sayResult.events] };
+              }
+            }
+          }
+        }
+
+        return { intent, state: nextState };
       }
     }
   }
 
   // Otherwise, wait
-  return null;
+  return { intent: null, state: nextState };
 }

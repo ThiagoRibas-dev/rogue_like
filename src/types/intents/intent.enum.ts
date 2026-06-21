@@ -38,5 +38,6 @@ export const enum IntentType {
   DebugFastForwardSchemes = 'DebugFastForwardSchemes',
   DebugPromote = 'DebugPromote',
   Apply = 'Apply',
-  Interact = 'Interact'
+  Interact = 'Interact',
+  Say = 'Say'
 }

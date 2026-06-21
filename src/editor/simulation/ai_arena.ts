@@ -218,7 +218,9 @@ export function runAIArena(
       }
 
       // 2. Evaluate AI Turn
-      const intent = processAITurn(state, actor);
+      const aiTurnResult = processAITurn(state, actor);
+      state = aiTurnResult.state;
+      const intent = aiTurnResult.intent;
 
       if (intent) {
         // 3. Execute Intent

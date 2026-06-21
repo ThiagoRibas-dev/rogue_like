@@ -204,7 +204,10 @@ export function processTurn(entityId: EntityId): void {
     }
 
     try {
-      const intent = processAITurn(aiTurnState, entityId);
+      const aiResult = processAITurn(aiTurnState, entityId);
+      aiTurnState = aiResult.state;
+      const intent = aiResult.intent;
+
       if (intent !== null) {
         const result = applyIntentWithCost(aiTurnState, intent);
         let nextState = result.state;

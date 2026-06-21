@@ -7,7 +7,8 @@ export const enum MessageLogCategory {
   System = 'system',
   CombatHit = 'combat-hit',
   CombatDeath = 'combat-death',
-  CombatMiss = 'combat-miss'
+  CombatMiss = 'combat-miss',
+  Flavor = 'flavor'
 }
 
 /**

@@ -506,14 +506,14 @@ Add Dwarf-Fortress-inspired internal causality without making a separate AI stac
 - [ ] Add editor tools for inspecting and manually seeding personalities, values, and core memories.
 - [ ] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
 
-## 🟡 Milestone 44: Personality-Weighted AI & Social Gating
+## 🟢 Milestone 44: Personality-Weighted AI & Social Gating (Complete)
 Make personality mechanically visible through behavior and dialogue.
-- [ ] Refactor AI behavior evaluation to support numeric weights where needed, allowing personality facets to multiply existing hunt/flee/ranged/spell/wander preferences.
-- [ ] Connect values/core memories to faction standing changes and hostility shifts where appropriate.
-- [ ] Add Trigger/Dialogue condition predicates for facets, values, stress thresholds, memories, grudges, and PIS.
-- [ ] Gate dialogue options based on personality: cruel NPCs reject comfort, honorable NPCs respond to mercy, fearful NPCs are more intimidatable, etc.
-- [ ] Add behavior surfacing barks: cowardly retreat lines, vengeful charge lines, grateful ally lines, suspicious merchant lines.
-- [ ] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
+- [x] Refactor AI behavior evaluation to support numeric weights where needed, allowing personality facets to multiply existing hunt/flee/ranged/spell/wander preferences.
+- [x] Connect values/core memories to faction standing changes and hostility shifts where appropriate.
+- [x] Add Trigger/Dialogue condition predicates for facets, values, stress thresholds, memories, grudges, and PIS.
+- [x] Gate dialogue options based on personality: cruel NPCs reject comfort, honorable NPCs respond to mercy, fearful NPCs are more intimidatable, etc.
+- [x] Add behavior surfacing barks: cowardly retreat lines, vengeful charge lines, grateful ally lines, suspicious merchant lines.
+- [x] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
 
 ## 🟡 Milestone 45: Social Memory & Interaction Tracking ⭐ KEYSTONE
 Build the data layer for NPCs as persistent social agents. Extend `MemoryComponent` so NPCs remember what they know, count how often they've interacted with the player, and accumulate temporary social states that influence future dialogue and trade.

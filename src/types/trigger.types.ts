@@ -32,6 +32,30 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
     type: z.literal('has_item'),
     itemId: z.string(),
     amount: z.number().int().positive().default(1)
+  }),
+  z.object({
+    type: z.literal('personality_facet'),
+    facet: z.string(),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number()
+  }),
+  z.object({
+    type: z.literal('stress_threshold'),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number()
+  }),
+  z.object({
+    type: z.literal('has_memory'),
+    target: z.string()
+  }),
+  z.object({
+    type: z.literal('has_grudge'),
+    targetId: z.string()
+  }),
+  z.object({
+    type: z.literal('pis'),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number()
   })
 ]);
 
@@ -135,6 +159,11 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('change_faction'),
     targetId: z.string().optional(),
     factionId: z.string()
+  }),
+  z.object({
+    type: z.literal('force_say'),
+    message: z.string(),
+    targetId: z.string().optional()
   })
 ]);
 

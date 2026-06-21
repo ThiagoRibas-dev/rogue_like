@@ -323,15 +323,28 @@ export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 // 10. AI PROFILES
 // ==========================================
 export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
-  z.object({ behaviorId: z.literal('hunt'), aggroRadius: z.number().int().positive().optional() }),
-  z.object({ behaviorId: z.literal('flee'), hpThreshold: z.number().optional() }),
-  z.object({ behaviorId: z.literal('ranged'), spellId: z.string() }),
-  z.object({ behaviorId: z.literal('wander') })
+  z.object({
+    behaviorId: z.literal('hunt'),
+    aggroRadius: z.number().int().positive().optional(),
+    weightModifiers: z.record(z.string(), z.number()).optional()
+  }),
+  z.object({
+    behaviorId: z.literal('flee'),
+    hpThreshold: z.number().optional(),
+    weightModifiers: z.record(z.string(), z.number()).optional()
+  }),
+  z.object({
+    behaviorId: z.literal('ranged'),
+    spellId: z.string(),
+    weightModifiers: z.record(z.string(), z.number()).optional()
+  }),
+  z.object({ behaviorId: z.literal('wander'), weightModifiers: z.record(z.string(), z.number()).optional() })
 ]);
 
 export const AIProfileSchema = z.object({
   id: z.string(),
-  behaviors: z.array(AIBehaviorEntrySchema)
+  behaviors: z.array(AIBehaviorEntrySchema),
+  barks: z.record(z.string(), z.array(z.string())).optional()
 });
 export type AIProfile = z.infer<typeof AIProfileSchema>;
 

@@ -23,7 +23,9 @@ export enum GameEventType {
   ApplyResolved = 'ApplyResolved',
   ApplyFailed = 'ApplyFailed',
   ReactionResolved = 'ReactionResolved',
-  SchemeMutatedArea = 'SchemeMutatedArea'
+  SchemeMutatedArea = 'SchemeMutatedArea',
+  SayResolved = 'SayResolved',
+  CoreValueViolated = 'CoreValueViolated'
 }
 
 export interface BaseGameEvent {
@@ -165,6 +167,18 @@ export interface SchemeMutatedAreaEvent extends BaseGameEvent {
   readonly budgetModifier: number;
 }
 
+export interface SayResolvedEvent extends BaseGameEvent {
+  readonly type: GameEventType.SayResolved;
+  readonly entityId: EntityId;
+  readonly message: string;
+}
+
+export interface CoreValueViolatedEvent extends BaseGameEvent {
+  readonly type: GameEventType.CoreValueViolated;
+  readonly entityId: EntityId;
+  readonly eventSummary: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -188,4 +202,6 @@ export type GameEvent =
   | ApplyResolvedEvent
   | ApplyFailedEvent
   | ReactionResolvedEvent
-  | SchemeMutatedAreaEvent;
+  | SchemeMutatedAreaEvent
+  | SayResolvedEvent
+  | CoreValueViolatedEvent;

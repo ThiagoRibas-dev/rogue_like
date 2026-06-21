@@ -40,3 +40,10 @@ export interface InteractIntent extends BaseIntent {
   readonly type: IntentType.Interact;
   readonly targetId: EntityId;
 }
+
+export interface SayIntent extends BaseIntent {
+  readonly type: IntentType.Say;
+  readonly entityId: EntityId;
+  readonly message: string;
+  readonly volume?: number | undefined;
+}

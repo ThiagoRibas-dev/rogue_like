@@ -34,6 +34,7 @@ import {
   processStartDialogueIntent
 } from './dialogue.actions.ts';
 import { processInteractIntent } from '../systems/intent.system.ts';
+import { processSayIntent } from './say.action.ts';
 import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
 import {
@@ -385,6 +386,8 @@ export function dispatchAction(
       return processSelectDialogueOptionIntent(state, intent);
     case IntentType.CloseDialogue:
       return processCloseDialogueIntent(state, intent);
+    case IntentType.Say:
+      return processSayIntent(state, intent);
     default:
       return assertNever(intent);
   }

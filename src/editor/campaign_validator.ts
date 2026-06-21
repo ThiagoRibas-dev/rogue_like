@@ -43,6 +43,34 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const errors: ValidationError[] = [];
   const warnings: ValidationError[] = [];
 
+  function validateAIPersonalityModifiers(campaign: Readonly<CampaignData>): ValidationError[] {
+    const errors: ValidationError[] = [];
+
+    // If personality generation is missing or has no facets, we can't strictly validate.
+    const definedFacets = Object.values(campaign.personalityGeneration || {}).flatMap((t) => t.facets || []);
+    const validFacets = new Set(definedFacets);
+
+    if (validFacets.size === 0) return errors;
+
+    for (const [profileId, profile] of Object.entries(campaign.ai)) {
+      for (let i = 0; i < profile.behaviors.length; i++) {
+        const behavior = profile.behaviors[i];
+        if (behavior && behavior.weightModifiers) {
+          for (const facet of Object.keys(behavior.weightModifiers)) {
+            if (!validFacets.has(facet)) {
+              errors.push({
+                path: `ai.${profileId}.behaviors[${i}].weightModifiers`,
+                message: `AI profile references unknown personality facet: ${facet}`,
+                severity: 'warning'
+              });
+            }
+          }
+        }
+      }
+    }
+    return errors;
+  }
+
   // Run validators sequentially to keep CPU yielding predictable
   const reachabilityErrs = await validateReachability(campaign);
   const questErrs = await validateQuests(campaign);
@@ -53,6 +81,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const encounterErrs = validateEncounters(campaign);
   const areaErrs = await validateAreas(campaign);
   const dialogueErrs = await validateDialogues(campaign);
+  const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
 
   const allErrs = [
     ...reachabilityErrs,
@@ -63,7 +92,8 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...itemErrs,
     ...encounterErrs,
     ...areaErrs,
-    ...dialogueErrs
+    ...dialogueErrs,
+    ...aiPersonalityErrs
   ];
 
   for (const e of allErrs) {

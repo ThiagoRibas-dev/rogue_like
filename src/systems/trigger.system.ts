@@ -13,6 +13,7 @@ import { processChangeAreaIntent } from './map.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { completeQuest, grantQuest } from './quest.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
+import { processSayIntent } from '../actions/say.action.ts';
 import { assertNever } from '../utils/assert.ts';
 
 /**
@@ -154,6 +155,51 @@ export function evaluateCondition(
         }
       }
       return false;
+    }
+
+    case 'personality_facet': {
+      const entityId = condition._npcEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+      const memory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+      const facetVal = memory?.facets?.[condition.facet] ?? 0;
+      if (condition.operator === '>=') return facetVal >= condition.value;
+      if (condition.operator === '<=') return facetVal <= condition.value;
+      return facetVal === condition.value;
+    }
+
+    case 'stress_threshold': {
+      const entityId = condition._npcEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+      const memory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+      const stress = memory?.stress ?? 0;
+      if (condition.operator === '>=') return stress >= condition.value;
+      if (condition.operator === '<=') return stress <= condition.value;
+      return stress === condition.value;
+    }
+
+    case 'has_memory': {
+      const entityId = condition._npcEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+      const chronicle = getComponent(state, entityId, ComponentType.Chronicle);
+      if (!chronicle) return false;
+      return chronicle.coreMemories.some((m) => m.includes(condition.target));
+    }
+
+    case 'has_grudge': {
+      const entityId = condition._npcEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+      const memory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+      return memory?.grudges?.includes(condition.targetId) ?? false;
+    }
+
+    case 'pis': {
+      const entityId = condition._npcEntityId ?? condition.entityId;
+      if (entityId === undefined) return false;
+      const chronicle = getComponent(state, entityId, ComponentType.Chronicle);
+      const pisVal = chronicle?.pis ?? 0;
+      if (condition.operator === '>=') return pisVal >= condition.value;
+      if (condition.operator === '<=') return pisVal <= condition.value;
+      return pisVal === condition.value;
     }
 
     default:
@@ -830,6 +876,35 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
 
       if (eId !== undefined) {
         nextState = applyStatusEffect(nextState, eId, consequence.statusId, consequence.duration ?? 10);
+      }
+      break;
+    }
+
+    case 'force_say': {
+      let eId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        eId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        eId = parseInt(consequence.targetId) as EntityId;
+      } else {
+        if (event.type === GameEventType.ReactionResolved) {
+          const rxEvent = event as unknown as { target: ApplyIntentTarget };
+          if (rxEvent.target.type === 'entity') {
+            eId = rxEvent.target.entityId;
+          }
+        }
+      }
+
+      if (eId !== undefined) {
+        const sayResult = processSayIntent(nextState, {
+          type: IntentType.Say,
+          entityId: eId,
+          message: consequence.message
+        });
+        nextState = sayResult.state;
+        if (sayResult.events && sayResult.events.length > 0) {
+          nextState = { ...nextState, events: [...nextState.events, ...sayResult.events] };
+        }
       }
       break;
     }

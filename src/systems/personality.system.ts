@@ -5,6 +5,7 @@ import {
   type Thought
 } from '../types/components.types.ts';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
+import { GameEventType, type CoreValueViolatedEvent } from '../types/events.types.ts';
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { promoteEntity } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -100,7 +101,28 @@ export function recordThought(
     stress: nextStress
   };
 
-  return addComponent(state, entityId, nextMemory);
+  let nextState = state;
+
+  if (memory.values) {
+    for (const valueName of Object.keys(memory.values)) {
+      if (eventSummary.toLowerCase().includes(valueName.toLowerCase()) && Math.abs(stressDelta) > 5) {
+        nextState = {
+          ...nextState,
+          events: [
+            ...nextState.events,
+            {
+              type: GameEventType.CoreValueViolated,
+              entityId,
+              eventSummary
+            } as CoreValueViolatedEvent
+          ]
+        };
+        break;
+      }
+    }
+  }
+
+  return addComponent(nextState, entityId, nextMemory);
 }
 
 function promoteToCoreMemory(state: GameState, entityId: EntityId): GameState {
