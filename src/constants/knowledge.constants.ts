@@ -5,9 +5,10 @@ export const DEFAULT_KNOWLEDGE_PROPAGATION_DELAY = 50 as const;
 export const MAX_PENDING_KNOWLEDGE_QUEUE = 100 as const;
 
 /** Default deflection lines used when an NPC has none configured. */
-export const DEFAULT_DEFLECTION_LINES: ReadonlyArray<string> = [
-  "I don't know anything about that.",
-  'Never heard of it.',
-  "You're asking the wrong person.",
-  "Can't help you there."
-] as const;
+export const DEFAULT_DEFLECTION_LINES = [
+  'I have nothing more to say about that.',
+  'That is none of my concern.',
+  "I don't know what you're talking about."
+];
+
+export const RUMOR_STALE_THRESHOLD = 500;

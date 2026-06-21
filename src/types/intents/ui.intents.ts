@@ -60,3 +60,9 @@ export interface AskAboutIntent extends BaseIntent {
   readonly topicId: string;
   readonly isImmediate: true;
 }
+
+export interface GossipIntent extends BaseIntent {
+  readonly type: IntentType.Gossip;
+  readonly entityId: EntityId;
+  readonly isImmediate: true;
+}

@@ -7,7 +7,8 @@ import type {
   CloseDialogueIntent,
   SelectDialogueOptionIntent,
   StartDialogueIntent,
-  AskAboutIntent
+  AskAboutIntent,
+  GossipIntent
 } from '../types/intents/ui.intents.ts';
 import { rng } from '../core/rng.ts';
 import { DEFAULT_DEFLECTION_LINES } from '../constants/knowledge.constants.ts';
@@ -258,4 +259,60 @@ export function processAskAboutIntent(
       success: false
     };
   }
+}
+
+/**
+ * Handles the Gossip intent, dispensing a rumor to the player.
+ */
+export function processGossipIntent(state: GameState, intent: GossipIntent): { state: GameState; success: boolean } {
+  if (!state.activeDialogue) return { state, success: false };
+
+  const { npcEntityId, treeId, currentNodeId } = state.activeDialogue;
+  const tree = state.campaign.dialogues[treeId];
+  if (!tree) return { state, success: false };
+
+  const currentNode = tree.nodes[currentNodeId];
+  if (!currentNode || currentNode.dynamicType !== 'gossip') return { state, success: false };
+
+  const npcMemory = getComponent(state, npcEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  if (!npcMemory || !npcMemory.rumorPool || npcMemory.rumorPool.length === 0) {
+    return { state, success: false };
+  }
+
+  const index = rng.getUniformInt(0, npcMemory.rumorPool.length - 1);
+  const rumor = npcMemory.rumorPool[index]!;
+
+  const playerMemory = getComponent(state, intent.entityId, ComponentType.Memory) as MemoryComponent | undefined;
+  let nextState = state;
+
+  if (playerMemory) {
+    const nextKnowledge = {
+      ...playerMemory.knowledge,
+      [rumor.id]: {
+        id: rumor.id,
+        type: 'rumor' as const,
+        description: rumor.text,
+        tags: []
+      }
+    };
+    nextState = addComponent(nextState, intent.entityId, {
+      ...playerMemory,
+      knowledge: nextKnowledge
+    });
+  }
+
+  nextState = addMessage(nextState, `You heard a rumor.`, MessageLogCategory.System);
+
+  return {
+    state: {
+      ...nextState,
+      activeDialogue: {
+        treeId,
+        npcEntityId,
+        currentNodeId: currentNode.onKnownNodeId ?? currentNodeId,
+        textOverride: `They lean in closely. "${rumor.text}"`
+      }
+    },
+    success: false
+  };
 }

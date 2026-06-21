@@ -311,6 +311,14 @@ export interface KnowledgeItem {
   readonly tags: ReadonlyArray<string>;
 }
 
+export interface RumorItem {
+  readonly id: string;
+  readonly text: string;
+  readonly sourceEventId?: string | undefined;
+  readonly turnCreated: number;
+  readonly persistent?: boolean | undefined;
+}
+
 /**
  * Component tracking an entity's memories, grudges, and faction reputations.
  */
@@ -334,6 +342,7 @@ export interface MemoryComponent {
   readonly gratefulDuration?: number | undefined;
   readonly deflectionLines?: ReadonlyArray<string> | undefined;
   readonly sessionMarkupModifier?: number | undefined;
+  readonly rumorPool?: ReadonlyArray<RumorItem> | undefined;
 }
 
 /**

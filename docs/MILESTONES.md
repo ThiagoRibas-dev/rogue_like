@@ -539,31 +539,31 @@ Make NPCs into walking repositories of world knowledge. The player can ask about
 
 **Testable in game:** Kill a boss in `dungeon_1`. Return to the `safe_hub` barkeep. Use `ask_about` → select the boss's name. The barkeep says "Word is someone killed the troll in the upper dungeons." This works because the `EntityDied` event propagated knowledge. Now talk to the scout NPC — they don't know about the boss (not in their knowledge pool), so they deflect.
 
-## 🟡 Milestone 47: Trade & Barter Economy
+## 🟢 Milestone 47: Trade & Barter Economy (Complete)
 Give NPCs the ability to buy, sell, and barter items with the player. Prices respond to faction standing, personality, and social history — the same item costs different amounts from different merchants.
 
-- [ ] Add a `ShopComponent { inventory: EntityId[], markupMultiplier: number, buyTags: string[], sellTags: string[] }` to NPC entities in the ECS, making any NPC capable of being a merchant.
-- [ ] Build a `trade.ui.ts` panel with buy/sell grid, per-item pricing, haggling feedback, and gold display. Reuses the existing container UI architecture from M32 (Containers).
-- [ ] Implement `getEffectivePrice(baseValue, shop, buyerEntity, sellerEntity)` utility that dynamically queries: base item value × NPC markup × faction standing modifier (M9, M17) × personality facet modifier (M43: greedy overcharges, generous undercharges) × social state (M45: `annoyed` markup, `grateful` discount).
-- [ ] Implement `barter` reaction verb: the player offers items from inventory to offset gold costs, resolved through the Reaction System (M30) matching item `tags` against the shop's `buyTags`. "I'll give you this goblin sword plus 10 gold for the health potion."
-- [ ] Add `intimidate` and `persuade` as social Apply verbs using personality-weighted contest resolution (player's faction standing + traits vs. NPC's courage/valor facets from M43) to temporarily modify `markupMultiplier` for the current trade session.
-- [ ] Allow NPC shops to issue procedural fetch-quests when specific inventory tags are depleted: "I'm low on iron ore — bring me 3 ingots and I'll pay double." Uses the procedural quest template system (M19).
-- [ ] Shop inventories persist across area transitions via the Sleep/Wake + PersistentEntity pipeline (M17). A merchant's stock doesn't reset when you leave and return.
-- [ ] **Dialogue Integration (Barter UI & Services)**: Instead of the initially planned hotkeys or hardcoded interactions, implement `open_barter` and `trigger_service` as `DialogueEffect`s. The Barter UI will be summoned seamlessly if the player selects a dialogue option to trade with an entity holding a `ShopComponent`.
-- [ ] **Service Spells Component**: Introduce `ServicesComponentSchema` to allow NPCs to cast spells on the player for a fee, driven by the Dialogue Router.
+- [x] Add a `ShopComponent { inventory: EntityId[], markupMultiplier: number, buyTags: string[], sellTags: string[] }` to NPC entities in the ECS, making any NPC capable of being a merchant.
+- [x] Build a `trade.ui.ts` panel with buy/sell grid, per-item pricing, haggling feedback, and gold display. Reuses the existing container UI architecture from M32 (Containers).
+- [x] Implement `getEffectivePrice(baseValue, shop, buyerEntity, sellerEntity)` utility that dynamically queries: base item value × NPC markup × faction standing modifier (M9, M17) × personality facet modifier (M43: greedy overcharges, generous undercharges) × social state (M45: `annoyed` markup, `grateful` discount).
+- [x] Implement `barter` reaction verb: the player offers items from inventory to offset gold costs, resolved through the Reaction System (M30) matching item `tags` against the shop's `buyTags`. "I'll give you this goblin sword plus 10 gold for the health potion."
+- [x] Add `intimidate` and `persuade` as social Apply verbs using personality-weighted contest resolution (player's faction standing + traits vs. NPC's courage/valor facets from M43) to temporarily modify `markupMultiplier` for the current trade session.
+- [x] Allow NPC shops to issue procedural fetch-quests when specific inventory tags are depleted: "I'm low on iron ore — bring me 3 ingots and I'll pay double." Uses the procedural quest template system (M19).
+- [x] Shop inventories persist across area transitions via the Sleep/Wake + PersistentEntity pipeline (M17). A merchant's stock doesn't reset when you leave and return.
+- [x] **Dialogue Integration (Barter UI & Services)**: Instead of the initially planned hotkeys or hardcoded interactions, implement `open_barter` and `trigger_service` as `DialogueEffect`s. The Barter UI will be summoned seamlessly if the player selects a dialogue option to trade with an entity holding a `ShopComponent`.
+- [x] **Service Spells Component**: Introduce `ServicesComponentSchema` to allow NPCs to cast spells on the player for a fee, driven by the Dialogue Router.
 
 **Testable in game:** Walk up to the `safe_hub` merchant, talk to them to open branching dialogue, select the trade option to open the trade panel, see items with prices. Buy a health potion. Gold decreases, potion appears in inventory. Talk to a different merchant — notice prices differ. Intimidate the merchant — prices drop 20% for this session. Barter a goblin sword to cover part of the cost.
 
-## 🟡 Milestone 48: Gossip & Rumors — Social Information Propagation
+## 🟢 Milestone 48: Gossip & Rumors — Social Information Propagation (Complete)
 Turn the Event Ledger into a social rumor mill. Major world events generate gossip that spreads organically through the NPC social graph. Players can ask for gossip and hear different things from different people.
 
-- [ ] Add a `rumorPool` to `MemoryComponent`: a capped array of structured rumor fragments (text + source event reference + freshness timestamp). Each NPC has their own pool representing what they've heard.
-- [ ] Implement rumor propagation algorithm: when the Event Ledger records a `major` event, the system selects eligible NPCs (in connected areas, same faction, or gossip-tagged) and adds contextual rumors after a configurable delay. Rumors spread to adjacent areas on subsequent propagation ticks.
-- [ ] Add `gossip` as a dialogue verb: the player asks "What's the word around here?" and the NPC shares a rumor from their `rumorPool`, highest freshness first. Sharing consumes the rumor (NPC won't repeat it) unless it's marked as `persistent`.
-- [ ] NPCs share rumors unprompted as flavor barks before the dialogue option list: "You hear the barkeep muttering about strange lights in the old caves..."
-- [ ] Implement rumor freshness decay: rumors older than a configurable threshold become "stale" and are replaced by newer ones. Rumors that are confirmed true (the player witnesses the event) are removed from NPC pools.
-- [ ] NPCs who hear a rumor they already know react appropriately: "You already told me that." (annoyed increment) or "Yes, I heard about the troll too — terrible business." (social bonding).
-- [ ] Connect rumors to the Investigation Board (M20): scheme-related clues can propagate as rumors, giving players an organic way to discover villain activities without finding physical clues.
+- [x] Add a `rumorPool` to `MemoryComponent`: a capped array of structured rumor fragments (text + source event reference + freshness timestamp). Each NPC has their own pool representing what they've heard.
+- [x] Implement rumor propagation algorithm: when the Event Ledger records a `major` event, the system selects eligible NPCs (in connected areas, same faction, or gossip-tagged) and adds contextual rumors after a configurable delay. Rumors spread to adjacent areas on subsequent propagation ticks.
+- [x] Add `gossip` as a dialogue verb: the player asks "What's the word around here?" and the NPC shares a rumor from their `rumorPool`, highest freshness first. Sharing consumes the rumor (NPC won't repeat it) unless it's marked as `persistent`.
+- [x] NPCs share rumors unprompted as flavor barks before the dialogue option list: "You hear the barkeep muttering about strange lights in the old caves..."
+- [x] Implement rumor freshness decay: rumors older than a configurable threshold become "stale" and are replaced by newer ones. Rumors that are confirmed true (the player witnesses the event) are removed from NPC pools.
+- [x] NPCs who hear a rumor they already know react appropriately: "You already told me that." (annoyed increment) or "Yes, I heard about the troll too — terrible business." (social bonding).
+- [x] Connect rumors to the Investigation Board (M20): scheme-related clues can propagate as rumors, giving players an organic way to discover villain activities without finding physical clues.
 
 **Testable in game:** Advance a scheme via `/debug fast-forward-schemes`. Talk to the `safe_hub` barkeep → use `gossip` → hear "Strange figures have been seen near the goblin camp." Talk to another NPC — they haven't heard yet (propagation delay). Wait N turns → now they know too. Return to the first NPC — they won't repeat the same rumor (consumed).
 

@@ -32,7 +32,8 @@ import {
   processCloseDialogueIntent,
   processSelectDialogueOptionIntent,
   processStartDialogueIntent,
-  processAskAboutIntent
+  processAskAboutIntent,
+  processGossipIntent
 } from './dialogue.actions.ts';
 import { processInteractIntent } from '../systems/intent.system.ts';
 import { processSayIntent } from './say.action.ts';
@@ -389,6 +390,8 @@ export function dispatchAction(
       return processCloseDialogueIntent(state, intent);
     case IntentType.AskAbout:
       return processAskAboutIntent(state, intent);
+    case IntentType.Gossip:
+      return processGossipIntent(state, intent);
     case IntentType.Say:
       return processSayIntent(state, intent);
     default:

@@ -21,6 +21,11 @@ import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
 import { processPersonalitySystem } from '../systems/personality.system.ts';
 import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
+import {
+  processRumorPropagationEvents,
+  tickPendingRumors,
+  cullStaleAndConfirmedRumors
+} from '../systems/gossip.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -295,6 +300,11 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   // Knowledge propagation processes events and ticks delay timers
   nextState = processKnowledgePropagationEvents(nextState);
   nextState = tickPendingKnowledge(nextState);
+
+  // Rumor propagation processes events and ticks delay timers
+  nextState = processRumorPropagationEvents(nextState);
+  nextState = tickPendingRumors(nextState);
+  nextState = cullStaleAndConfirmedRumors(nextState);
 
   // Personality System (Thoughts, Stress, Core Memories)
   nextState = processPersonalitySystem(nextState);

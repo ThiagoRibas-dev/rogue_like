@@ -17,3 +17,16 @@ export interface PendingKnowledgePropagation {
   /** The areas that have already received this knowledge. */
   readonly deliveredAreas: ReadonlyArray<string>;
 }
+
+export interface PendingRumorPropagation {
+  readonly ruleId: string;
+  readonly rumorItem: {
+    readonly id: string;
+    readonly text: string;
+    readonly persistent?: boolean | undefined;
+    readonly sourceEventId?: string | undefined;
+  };
+  readonly sourceAreaId: string;
+  readonly remainingDelay: number;
+  readonly deliveredAreas: ReadonlyArray<string>;
+}

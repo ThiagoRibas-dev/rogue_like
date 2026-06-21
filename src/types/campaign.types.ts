@@ -226,6 +226,30 @@ export const KnowledgePropagationRuleSchema = z.object({
 });
 export type KnowledgePropagationRule = z.infer<typeof KnowledgePropagationRuleSchema>;
 
+export const RumorItemSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  sourceEventId: z.string().optional(),
+  turnCreated: z.number().int().nonnegative(),
+  persistent: z.boolean().optional()
+});
+export type RumorItemData = z.infer<typeof RumorItemSchema>;
+
+export const RumorPropagationRuleSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  eligibleTags: z.array(z.string()).default([]),
+  eligibleFactions: z.array(z.string()).default([]),
+  requireAreaProximity: z.boolean().default(true),
+  delay: z.number().int().nonnegative().default(100),
+  rumorTemplate: z.object({
+    id: z.string(),
+    text: z.string(),
+    persistent: z.boolean().optional()
+  })
+});
+export type RumorPropagationRule = z.infer<typeof RumorPropagationRuleSchema>;
+
 // ==========================================
 // 6. ENTITIES
 // ==========================================
@@ -289,7 +313,8 @@ export const EntityTemplateSchema = z.object({
       patienceThreshold: z.number().int().nonnegative().optional(),
       annoyedDuration: z.number().int().nonnegative().optional(),
       gratefulDuration: z.number().int().nonnegative().optional(),
-      deflectionLines: z.array(z.string()).optional()
+      deflectionLines: z.array(z.string()).optional(),
+      rumorPool: z.array(RumorItemSchema).optional()
     })
     .optional(),
   dialogueId: z.string().optional(),
@@ -692,7 +717,8 @@ export const CampaignDataSchema = z.object({
   traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({}),
   identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({}),
   personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({}),
-  knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([])
+  knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([]),
+  rumorPropagation: z.array(RumorPropagationRuleSchema).default([])
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -726,5 +752,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   traitRegistry: TraitDefinitionSchema,
   identityGeneration: IdentityGenerationTableSchema,
   personalityGeneration: PersonalityGenerationTableSchema,
-  knowledgePropagation: KnowledgePropagationRuleSchema.array()
+  knowledgePropagation: KnowledgePropagationRuleSchema.array(),
+  rumorPropagation: RumorPropagationRuleSchema.array()
 };

@@ -118,6 +118,11 @@ We use a low-overhead, framework-free ECS:
 - **FOV Computation**: FOV shadowcasting is computationally expensive. It is calculated via `computeFOV` in `map.system.ts` but *only* when the `GameState.fovNeedsUpdate` flag is set (e.g. when the player moves or when terrain visibility changes). The results are stored in `GameState.cachedFov`.
 - **Spatial Rendering**: The renderer uses an `O(1)` spatial index (`GameState.spatialIndex`) combined with `GameState.cachedFov` to draw only entities actively inside the camera bounds and in line-of-sight, eliminating the need to globally query and sort thousands of entities every frame.
 
+### Encounter Director & Tactical Procedural Generation
+- **Algorithmic Population**: The Encounter Director hooks into map generation to spend "CR budgets" (Challenge Rating) deterministically across tactical axes: objectives (proteins), advantages (appetizers), hazards (sides), and chaos (desserts).
+- **Dynamic Content**: Enemy templates and map features are dynamically scaled using trait costs and sub-biome tags, ensuring procedurally generated rooms feel authored.
+- **Scheme Mutability**: Villain schemes can mutate Director parameters (e.g., adding encounters, shifting budget) before map generation happens, providing macro-level consequences to the player's world.
+
 ### Turn Scheduler
 Turn management is wrapped in `src/core/scheduler.ts` using `ROT.Scheduler.Speed`. This speed/energy-based scheduler handles entities with varying speeds (e.g., fast monsters moving twice as often as the player).
 
@@ -154,12 +159,23 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Memory Separation of Concerns**: AI combat tracking data (like `grudges` tracking attacker IDs) is kept strictly separated from narrative state tracking (like boolean `facts` for dialogues). Mixing them creates brittle code that can falsely trigger AI hostility.
 - **Line of Sight & Cooldowns**: AI modules utilize the FOV system (`computeFOV`) to ensure they only attack visible targets, and the `AIComponent` statefully tracks ability cooldowns to prevent spell spam.
 
+### Identity, Personality & Knowledge
+- **Chronicle & Memory**: Important NPCs have a `ChronicleComponent` tracking their player interactions, scars, relationships, and history (instead of raw event logs). The `MemoryComponent` stores both `knowledge` (e.g., rumors, location data) and `interaction counters` (e.g., times traded, intimidated).
+- **Identity Generation**: When a generic NPC is promoted to a named, persistent entity (e.g., in the Nemesis system), they receive a generated `IdentityComponent` via data-driven tables. The lookup key is dynamically mapped using the strict convention `{templateId}_identity` (e.g., an `"orc"` template automatically looks up the `"orc_identity"` table in `identity_generation.json`).
+- **Personality Facets**: NPCs possess values, goals, and personality facets (e.g., cowardice, generosity). Extreme memories can mutate these facets permanently as "core memories".
+- **Knowledge Brokering**: NPCs learn about major world events as they happen through delayed propagation in the social graph. The player can use dialogue verbs (`ask_about`, `gossip`) to acquire this knowledge dynamically based on what the NPC specifically knows and their personality.
+
 ### Dialogue Engine & The Social Layer
 - **Data-Driven Dialogues**: Dialogues are defined as JSON trees (`DialogueTreeSchema`), mapping nodes and branching options. This decouples conversation logic from code, allowing rich interactions via simple configuration files.
 - **Conditional Gating**: Dialogue options dynamically evaluate conditions against the NPC's `MemoryComponent` (e.g., faction standing, grudges) or global state to determine availability.
 - **Event Emission**: Selecting dialogue options dispatches configurable effects or generic `emit_event` actions, fully integrating conversations into the event-driven ECS without tight coupling.
 - **Declarative Quests**: Quests are data-driven structures with multiple observable objectives (e.g., kill X monsters, talk to Y NPC). Progress is tracked via a `QuestLogComponent`.
 - **Event Hook Integration**: Subsystems (like combat/death) emit generic events that the `quest.system.ts` listens to, ensuring that objectives are updated without tightly coupling combat to quest logic.
+
+### Trade & Barter Economy
+- **Data-Driven Economics**: Any entity equipped with a `ShopComponent` acts as a merchant. Prices are resolved via a `getEffectivePrice` utility, creating dynamic pricing that evaluates NPC base markup, faction standing modifiers, personality facets (greedy vs generous), and temporary social states (`annoyed`, `grateful`).
+- **Social Contest Resolution**: Social verbs like `intimidate` and `persuade` bypass generic dialogue trees and use personality-weighted trait contests, temporarily writing markup modifiers back into the NPC's `MemoryComponent`.
+- **Procedural Logistics**: Depleted merchant inventories programmatically construct localized "fetch quests", injecting them seamlessly into `GameState.dynamicQuests` to simulate active supply chains without complex simulation.
 
 ### The Adversarial Layer (Scheme Simulator)
 - **Background Execution**: The `scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue objectives and dispatch minions without requiring player input or proximity.

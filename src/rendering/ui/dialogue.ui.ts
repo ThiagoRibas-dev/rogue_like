@@ -2,7 +2,11 @@ import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { ComponentType, type MemoryComponent } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
-import { type SelectDialogueOptionIntent, type AskAboutIntent } from '../../types/intents/ui.intents.ts';
+import {
+  type SelectDialogueOptionIntent,
+  type AskAboutIntent,
+  type GossipIntent
+} from '../../types/intents/ui.intents.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
@@ -71,6 +75,17 @@ export function renderDialoguePanel(state: GameState): void {
   const titleEl = overlay.querySelector('.modal-title');
   if (titleEl) titleEl.textContent = npcName;
 
+  // Find NPC memory for flavor bark and gossip
+  const npcMemory = getComponent(state, npcEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+
+  let textToRender = state.activeDialogue.textOverride ?? node.text;
+
+  // Inject flavor bark if they have a rumor and no text override is active
+  if (!state.activeDialogue.textOverride && npcMemory?.rumorPool && npcMemory.rumorPool.length > 0) {
+    const rumor = npcMemory.rumorPool[0]!;
+    textToRender = `"${rumor.text}"\n\n${textToRender}`;
+  }
+
   // Render text
   content.innerHTML = '';
   const textP = document.createElement('p');
@@ -78,7 +93,7 @@ export function renderDialoguePanel(state: GameState): void {
   textP.style.fontSize = '1.1rem';
   textP.style.lineHeight = '1.5';
   textP.style.marginBottom = '20px';
-  appendWikiSegments(textP, state.activeDialogue.textOverride ?? node.text);
+  appendWikiSegments(textP, textToRender);
   content.appendChild(textP);
 
   // Render options
@@ -109,6 +124,26 @@ export function renderDialoguePanel(state: GameState): void {
           topicId,
           isImmediate: true
         } as AskAboutIntent);
+      });
+
+      optionsContainer.appendChild(btn);
+    }
+  } else if (node.dynamicType === 'gossip') {
+    if (npcMemory && npcMemory.rumorPool && npcMemory.rumorPool.length > 0) {
+      const btn = document.createElement('button');
+      btn.className = 'modal-btn dialogue-option-btn';
+      btn.style.textAlign = 'left';
+      btn.style.width = '100%';
+      btn.style.marginTop = '8px';
+      btn.style.whiteSpace = 'normal';
+      btn.appendChild(document.createTextNode(`> Gossip`));
+
+      btn.addEventListener('click', () => {
+        queuePlayerIntent({
+          type: IntentType.Gossip,
+          entityId: playerEntityId,
+          isImmediate: true
+        } as GossipIntent);
       });
 
       optionsContainer.appendChild(btn);

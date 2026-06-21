@@ -107,6 +107,7 @@ export function runAIArena(
     playerCommandQueue: [],
     areaMutations: {},
     pendingKnowledge: [],
+    pendingRumors: [],
     investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] }
   };
 

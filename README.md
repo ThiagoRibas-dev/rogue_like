@@ -16,6 +16,7 @@ A modern, highly-extensible, browser-based traditional roguelike engine featurin
 - **Procedural Generation** — `ROT.Map.Digger` room-and-corridor dungeons, plus cellular automata (caves) and BSP (urban/village) biome generators
 - **Field of View & Fog of War** — Precise shadowcasting; explored-but-not-visible tiles are dimmed; player-centered camera with viewport scrolling
 - **Interconnected World** — Multi-level dungeons, lateral transitions (walk off map edges, enter buildings), and hand-crafted static hubs (taverns, camps)
+- **Encounter Director** — Procedurally generates tactical combat rooms by spending Challenge Rating (CR) budgets across objectives, advantages, hazards, and chaos
 - **Interactive Terrain** — Open/close doors (block FOV), hidden traps (damage, poison, teleport), shallow water (2× movement cost), fountains, altars/shrines, and locked containers
 
 ### 🧟 Combat & AI
@@ -42,12 +43,18 @@ A modern, highly-extensible, browser-based traditional roguelike engine featurin
 - **Field Interactions** — Smoke blocks FOV, poison gas applies poison, fire ignites flammable tags, water extinguishes fire — all resolved through the reaction system
 - **Data-Driven Definitions** — Fields are defined in JSON with configurable intensity, duration, damage, status effects, and sight-blocking
 
-### 💬 Dialogue & Quests
+### 💬 Dialogue, Personality & Social
 - **Branching Dialogue** — Tree-based conversation modal with gated options
-- **Memory-Driven NPCs** — NPCs remember past interactions, grudges, and faction standing; dialogue changes based on history
+- **Personality & Memory** — NPCs possess personality facets and core memories, remembering past interactions, grudges, and faction standing to drive reactions
+- **Knowledge Brokering** — NPCs dynamically learn rumors and facts about world events, which can be acquired via `gossip` and `ask_about`
 - **Declarative Quests** — JSON-defined objectives (kill, gather, talk) with quest journal UI
 - **Procedural Quests** — Randomized bounties generated at runtime from JSON templates
 - **In-Context Wiki** — Clickable highlighted keywords in dialogue/quests for encyclopedia-style tooltips
+
+### 💰 Trade & Economics
+- **Dynamic Pricing** — Item prices scale with faction standing, NPC personality (greedy vs generous), and temporary social states
+- **Barter System** — Trade items directly with NPCs to offset gold costs
+- **Procedural Restocking** — Merchants dynamically generate fetch quests when their supply of requested goods is depleted
 
 ### 🦹 Villains & Investigation
 - **Background Schemes** — Villain masterminds tick on the scheduler independently, pursuing goals without player input

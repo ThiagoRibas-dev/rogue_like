@@ -125,7 +125,8 @@ export async function startNewGame(
       exposedAgreements: []
     },
     areaMutations: {},
-    pendingKnowledge: []
+    pendingKnowledge: [],
+    pendingRumors: []
   };
 
   // Spawn the player entity
@@ -348,7 +349,8 @@ export async function startSandboxEncounter(
       exposedAgreements: []
     },
     areaMutations: {},
-    pendingKnowledge: []
+    pendingKnowledge: [],
+    pendingRumors: []
   };
 
   // Spawn the player entity

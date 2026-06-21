@@ -11,6 +11,9 @@ import { rng } from '../core/rng.ts';
 /**
  * Promotes a generic entity to a named, persistent entity.
  * Generates an identity, creates a chronicle, and marks them persistent.
+ *
+ * Note: The generation table is looked up in `state.campaign.identityGeneration`
+ * using the strict naming convention `{templateId}_identity`.
  */
 export function promoteEntity(state: GameState, entityId: EntityId, reason: string): GameState {
   if (getComponent(state, entityId, ComponentType.Chronicle)) {

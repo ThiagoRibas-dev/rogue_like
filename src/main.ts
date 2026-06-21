@@ -119,6 +119,7 @@ let state: GameState = {
   playerCommandQueue: [],
   areaMutations: {},
   pendingKnowledge: [],
+  pendingRumors: [],
   investigation: {
     knownActors: [],
     discoveredClues: [],

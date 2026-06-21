@@ -121,8 +121,13 @@
         "options": [
           {
             "id": "opt_ask_about",
-            "text": "I want to ask about recent rumors... (Ask about)",
+            "text": "I want to ask about recent events... (Ask about)",
             "nextNodeId": "ask_about_node"
+          },
+          {
+            "id": "opt_gossip",
+            "text": "Heard any good rumors lately? (Gossip)",
+            "nextNodeId": "gossip_node"
           },
           {
             "id": "opt_leave",
@@ -136,6 +141,19 @@
         "dynamicType": "ask_about",
         "onKnownNodeId": "known_node",
         "onUnknownNodeId": "unknown_node",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Nevermind. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "gossip_node": {
+        "id": "gossip_node",
+        "text": "Let me think...",
+        "dynamicType": "gossip",
+        "onKnownNodeId": "start",
         "options": [
           {
             "id": "opt_back",
@@ -182,6 +200,11 @@
             "nextNodeId": "ask_about_node"
           },
           {
+            "id": "opt_gossip",
+            "text": "What are the latest rumors? (Gossip)",
+            "nextNodeId": "gossip_node"
+          },
+          {
             "id": "opt_leave",
             "text": "Safe hunting. (Leave)"
           }
@@ -193,6 +216,19 @@
         "dynamicType": "ask_about",
         "onKnownNodeId": "known_node",
         "onUnknownNodeId": "unknown_node",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Nevermind. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "gossip_node": {
+        "id": "gossip_node",
+        "text": "Let me think...",
+        "dynamicType": "gossip",
+        "onKnownNodeId": "start",
         "options": [
           {
             "id": "opt_back",
