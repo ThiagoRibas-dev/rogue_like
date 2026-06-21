@@ -27,7 +27,7 @@ import {
 import { renderEditorUI } from './rendering/editor_ui.ts';
 import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
-import { startNewGame, continueGame } from './core/bootstrap.ts';
+import { startNewGame, continueGame, startSandboxEncounter } from './core/bootstrap.ts';
 import { handleKeyDown } from './core/input_handler.ts';
 import {
   createToggleEngineModeAction,
@@ -165,6 +165,21 @@ if (sessionStorage.getItem('editor_playtest') === 'true') {
     }).catch(console.error);
   }, 50);
 }
+
+// Sandbox playtest event from Editor
+window.addEventListener('PlaySandboxEncounter', (e: Event) => {
+  const customEvent = e as CustomEvent;
+  const generatedArea = customEvent.detail.generatedArea;
+  if (!generatedArea) return;
+
+  // Clear any running game loops
+  clearScheduler();
+
+  startSandboxEncounter('default', getGameState(), display, generatedArea, (newState) => {
+    state = newState;
+    setGameState(newState);
+  }).catch(console.error);
+});
 
 // DOM Event Bindings
 document.getElementById('btn-new-game')?.addEventListener('click', () => {

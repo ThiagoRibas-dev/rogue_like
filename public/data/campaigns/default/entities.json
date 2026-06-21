@@ -267,6 +267,253 @@
       "divine",
       "terrain"
     ],
+    "crCost": 5,
+    "roleTags": [
+      "side"
+    ],
     "renderable": true
+  },
+  "orc_bomber": {
+    "id": "orc_bomber",
+    "name": "Orc Bomber",
+    "glyph": "o",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 75
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 12,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ],
+    "inventoryConfig": {
+      "baseCapacity": 5
+    }
+  },
+  "caged_beast": {
+    "id": "caged_beast",
+    "name": "Caged Beast",
+    "glyph": "B",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 120,
+    "fighter": {
+      "maxHp": 25,
+      "attack": 6,
+      "defense": 2,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "neutral",
+    "crCost": 20,
+    "roleTags": [
+      "appetizer"
+    ],
+    "tags": [
+      "actor"
+    ],
+    "lock": {
+      "difficulty": 15,
+      "locked": true,
+      "breakable": true
+    }
+  },
+  "fire_barrel": {
+    "id": "fire_barrel",
+    "name": "Fire Barrel",
+    "glyph": "0",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "solid",
+      "flammable",
+      "explosive"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "dessert"
+    ]
+  },
+  "corrupted_treant": {
+    "id": "corrupted_treant",
+    "name": "Corrupted Treant",
+    "glyph": "T",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 70,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 5,
+      "defense": 3,
+      "xpGiven": 200
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": false
+    },
+    "faction": "monster",
+    "crCost": 30,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "poison_vent": {
+    "id": "poison_vent",
+    "name": "Poison Vent",
+    "glyph": "^",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "terrain"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "corrupted_pool": {
+    "id": "corrupted_pool",
+    "name": "Corrupted Pool",
+    "glyph": "{",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source",
+      "corrupted"
+    ],
+    "crCost": 6,
+    "roleTags": [
+      "appetizer"
+    ],
+    "renderable": true
+  },
+  "spider_broodmother": {
+    "id": "spider_broodmother",
+    "name": "Spider Broodmother",
+    "glyph": "S",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 6,
+      "defense": 4,
+      "xpGiven": 250
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 8,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 35,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "egg_sac": {
+    "id": "egg_sac",
+    "name": "Egg Sac",
+    "glyph": "0",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "solid",
+      "flammable"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "dessert"
+    ]
+  },
+  "web_trap": {
+    "id": "web_trap",
+    "name": "Web Trap",
+    "glyph": "*",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "terrain",
+      "flammable"
+    ],
+    "crCost": 4,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "vault_guardian": {
+    "id": "vault_guardian",
+    "name": "Vault Guardian",
+    "glyph": "G",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 80,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 8,
+      "defense": 6,
+      "xpGiven": 300
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": false
+    },
+    "faction": "neutral",
+    "crCost": 40,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "heavy_vault_door": {
+    "id": "heavy_vault_door",
+    "name": "Heavy Vault Door",
+    "glyph": "+",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 50,
+      "locked": true,
+      "breakable": false
+    },
+    "crCost": 10,
+    "roleTags": [
+      "side"
+    ]
   }
 }

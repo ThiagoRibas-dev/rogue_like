@@ -47,6 +47,8 @@ export function setSaveData(data: string): void {
  * Converts Map objects to arrays of tuples for JSON compatibility.
  */
 export function saveGame(state: GameState): void {
+  if (state.isSandbox) return;
+
   const serializedAreas: Array<[string, SerializedAreaData]> = Array.from(state.areas.entries()).map(
     ([areaId, areaData]) => {
       const sAreaData: SerializedAreaData = {

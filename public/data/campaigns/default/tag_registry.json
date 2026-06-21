@@ -188,5 +188,20 @@
     "category": "magic",
     "color": "#f1c40f",
     "description": "Of holy or divine origin."
+  },
+  "orc_camp": {
+    "category": "biome",
+    "color": "#c0392b",
+    "description": "A savage encampment."
+  },
+  "corrupted": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Tainted by dark magic."
+  },
+  "shrine_vault": {
+    "category": "biome",
+    "color": "#f1c40f",
+    "description": "An ancient, protected sanctuary."
   }
 }

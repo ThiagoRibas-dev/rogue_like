@@ -188,6 +188,8 @@ export interface GameState {
   readonly isRotated: boolean;
   readonly is3D: boolean;
   readonly zoomLevel: number;
+  /** Indicates if this is a temporary sandbox run, which should skip saving. */
+  readonly isSandbox?: boolean;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
   readonly areaMutations: Readonly<Record<string, AreaMutation>>;

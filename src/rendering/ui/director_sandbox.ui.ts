@@ -101,6 +101,7 @@ export function renderDirectorSandbox(controller: EditorController, container: H
         <div style="margin-top: 0.25rem;">
           <button id="ds-generate-btn" class="editor-btn playtest-btn">⚙ Generate</button>
           <button id="ds-auto-sim-btn" class="editor-btn" style="margin-left: 4px;" disabled>🤖 Auto-Simulate</button>
+          <button id="ds-play-btn" class="editor-btn playtest-btn" style="margin-left: 4px;" disabled>🎮 Play Encounter</button>
         </div>
       </div>
 
@@ -165,6 +166,14 @@ export function renderDirectorSandbox(controller: EditorController, container: H
   const simBtn = container.querySelector('#ds-auto-sim-btn');
   simBtn?.addEventListener('click', () => {
     runAutoSimulation(controller, container);
+  });
+
+  // Play Encounter button
+  const playBtn = container.querySelector('#ds-play-btn');
+  playBtn?.addEventListener('click', () => {
+    if (lastGenerated) {
+      window.dispatchEvent(new CustomEvent('PlaySandboxEncounter', { detail: { generatedArea: lastGenerated } }));
+    }
   });
 }
 
@@ -285,11 +294,14 @@ function runGeneration(controller: EditorController, container: HTMLElement): vo
     renderReceipt(container, controller.getDocument(), lastGenerated.directorReceipt);
   }
 
-  // Enable simulate button
+  // Enable simulate and play buttons
+  const playBtn = document.getElementById('ds-play-btn') as HTMLButtonElement;
   if (simBtn && lastGenerated.placedEntities && lastGenerated.placedEntities.length > 0) {
     simBtn.disabled = false;
-  } else if (simBtn) {
-    simBtn.disabled = true;
+    if (playBtn) playBtn.disabled = false;
+  } else {
+    if (simBtn) simBtn.disabled = true;
+    if (playBtn) playBtn.disabled = true;
   }
 
   // Show containers

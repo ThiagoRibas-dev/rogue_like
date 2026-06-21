@@ -14,6 +14,12 @@
         "direction": "down",
         "placementX": 4,
         "placementY": 5
+      },
+      {
+        "targetAreaId": "shrine_vault_hub",
+        "direction": "down",
+        "placementX": 4,
+        "placementY": 7
       }
     ],
     "staticMap": {
@@ -25,7 +31,7 @@
         "#.......#...........#",
         "#...>...#...........#",
         "#.......#...........#",
-        "#.......#...........#",
+        "#...>...#...........#",
         "#.......+...........#",
         "#.......#...........#",
         "#####################"
@@ -76,6 +82,8 @@
     ],
     "subBiomes": {
       "spider_nest": 0.3,
+      "orc_camp": 0.3,
+      "corrupted": 0.2,
       "flooded": 0.2
     },
     "connections": [
@@ -141,6 +149,73 @@
       },
       "entityLegend": {
         "+": "wooden_door"
+      }
+    }
+  },
+  "shrine_vault_hub": {
+    "id": "shrine_vault_hub",
+    "name": "The Ancient Shrine Vault",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "hub",
+      "shrine_vault"
+    ],
+    "placedEntities": [
+      {
+        "templateId": "wooden_chest",
+        "x": 10,
+        "y": 5,
+        "inventory": [
+          "health_potion",
+          "health_potion",
+          "bronze_key"
+        ]
+      },
+      {
+        "templateId": "altar",
+        "x": 10,
+        "y": 3
+      },
+      {
+        "templateId": "vault_guardian",
+        "x": 10,
+        "y": 4
+      }
+    ],
+    "connections": [
+      {
+        "targetAreaId": "safe_hub",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "####################",
+        "#..................#",
+        "#.G......_.......G.#",
+        "#........G.........#",
+        "#.G......c.......G.#",
+        "#..................#",
+        "###+############+###",
+        "  #.#          #.#  ",
+        "  #.#          #.#  ",
+        "  #<#          #>#  ",
+        "  ###          ###  "
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        ">": "stone_floor",
+        "G": "stone_floor",
+        "_": "stone_floor",
+        "c": "stone_floor",
+        "+": "stone_floor",
+        " ": "empty_space"
+      },
+      "entityLegend": {
+        "+": "heavy_vault_door"
       }
     }
   }

@@ -275,3 +275,122 @@ export async function continueGame(setGlobalState: (s: GameState) => void): Prom
     startEngine();
   }
 }
+
+export async function startSandboxEncounter(
+  campaignId: string,
+  currentState: GameState,
+  display: ROT.Display,
+  generatedArea: import('../map/generator.ts').GeneratedArea,
+  setGlobalState: (s: GameState) => void
+): Promise<void> {
+  const newCampaign = await loadCampaign(campaignId);
+
+  let state: GameState = {
+    ...currentState,
+    campaignId,
+    campaign: newCampaign,
+    isSandbox: true
+  };
+
+  display.setOptions({
+    bg: newCampaign.theme.colors.background ?? '#000000',
+    fg: newCampaign.theme.colors.playerFg ?? '#ffffff'
+  });
+  syncDisplayLayout(display, state);
+
+  clearScheduler();
+  initEngine();
+
+  const itemUnidentifiedNames = new Map<string, string>();
+  const potionDesc = shuffle(POTION_DESCRIPTORS);
+  const scrollDesc = shuffle(SCROLL_DESCRIPTORS);
+
+  let pIdx = 0;
+  let sIdx = 0;
+
+  for (const [id, def] of Object.entries(state.campaign.items)) {
+    if (def.category === 'consumable') {
+      if (def.id.includes('potion')) {
+        itemUnidentifiedNames.set(id, `${potionDesc[pIdx++ % potionDesc.length]} Potion`);
+      } else if (def.id.includes('scroll')) {
+        itemUnidentifiedNames.set(id, `${scrollDesc[sIdx++ % scrollDesc.length]} Scroll`);
+      }
+    }
+  }
+
+  const { map, startPos, placedEntities } = generatedArea;
+
+  state = {
+    ...state,
+    map,
+    uiMode: UIMode.Game,
+    isGameOver: false,
+    entities: [],
+    components: new Map(),
+    spatialIndex: new Map(),
+    messages: [],
+    currentAreaId: state.campaign.rules.map.startingAreaId,
+    areas: new Map(),
+    persistentEntities: new Map(),
+    identifiedItems: new Set(),
+    itemUnidentifiedNames,
+    visualEffects: [],
+    isRotated: state.isRotated,
+    is3D: state.is3D,
+    zoomLevel: state.zoomLevel,
+    fovNeedsUpdate: true,
+    cachedFov: new Set(),
+    playerCommandQueue: [],
+    investigation: {
+      knownActors: [],
+      discoveredClues: [],
+      exposedAgreements: []
+    },
+    areaMutations: {}
+  };
+
+  // Spawn the player entity
+  const playerTemplateId =
+    Object.entries(newCampaign.entities).find(
+      ([, e]) => e.tags?.includes('actor') && e.roleTags?.includes('protein')
+    )?.[0] ?? 'player';
+  const [stateAfterPlayerSpawn] = spawnEntity(
+    state,
+    newCampaign.entities[playerTemplateId] ? playerTemplateId : 'player',
+    startPos.x,
+    startPos.y
+  );
+  state = stateAfterPlayerSpawn;
+
+  if (placedEntities) {
+    for (const ent of placedEntities) {
+      if (state.campaign.items[ent.templateId]) {
+        [state] = spawnItem(state, ent.templateId, ent.x, ent.y);
+      } else if (state.campaign.entities[ent.templateId]) {
+        [state] = spawnEntity(
+          state,
+          ent.templateId,
+          ent.x,
+          ent.y,
+          ent.dynamicTraits,
+          ent.preExistingEntityId ? undefined : undefined
+        ); // Ignoring inventory for now or we can pass it if we add it to GeneratedArea
+      } else {
+        console.warn(`Placed entity template ${ent.templateId} not found in registries.`);
+      }
+    }
+  }
+
+  state = updateExploredTiles(state);
+  state = addMessage(state, 'Entering Encounter Sandbox...', MessageLogCategory.System);
+
+  for (const id of state.entities) {
+    const actor = getComponent(state, id, ComponentType.Actor);
+    if (actor) {
+      addActor(id);
+    }
+  }
+
+  setGlobalState(state);
+  startEngine();
+}
