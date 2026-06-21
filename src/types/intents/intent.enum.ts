@@ -34,7 +34,9 @@ export const enum IntentType {
   ToggleQuests = 'ToggleQuests',
   ToggleInvestigation = 'ToggleInvestigation',
   ToggleDebug = 'ToggleDebug',
+  ToggleDossier = 'ToggleDossier',
   DebugFastForwardSchemes = 'DebugFastForwardSchemes',
+  DebugPromote = 'DebugPromote',
   Apply = 'Apply',
   Interact = 'Interact'
 }

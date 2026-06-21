@@ -21,3 +21,8 @@ export interface DebugFastForwardSchemesIntent extends BaseIntent {
   readonly isImmediate: true;
   readonly iterations: number;
 }
+
+export interface DebugPromoteIntent extends BaseIntent {
+  readonly type: IntentType.DebugPromote;
+  readonly isImmediate: true;
+}

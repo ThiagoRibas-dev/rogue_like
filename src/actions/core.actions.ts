@@ -17,7 +17,8 @@ import {
   type ToggleInvestigationIntent,
   type ToggleQuestsIntent,
   type ToggleSettingsIntent,
-  type ToggleDebugIntent
+  type ToggleDebugIntent,
+  type ToggleDossierIntent
 } from '../types/intents/ui.intents.ts';
 
 /**
@@ -166,6 +167,17 @@ export function createToggleInvestigationAction(entityId: EntityId): ToggleInves
 export function createToggleDebugAction(entityId: EntityId): ToggleDebugIntent {
   return {
     type: IntentType.ToggleDebug,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle dossier intent.
+ */
+export function createToggleDossierAction(entityId: EntityId): ToggleDossierIntent {
+  return {
+    type: IntentType.ToggleDossier,
     entityId,
     isImmediate: true
   };

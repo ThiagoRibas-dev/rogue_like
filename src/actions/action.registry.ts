@@ -26,6 +26,7 @@ import {
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
+import { promoteEntity } from '../systems/chronicle.system.ts';
 import { processApplyIntent } from '../systems/apply.system.ts';
 import {
   processCloseDialogueIntent,
@@ -142,6 +143,14 @@ export function dispatchAction(
       const debugPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
       return {
         state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: debugPaused } },
+        success: false
+      };
+    }
+    case IntentType.ToggleDossier: {
+      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Dossier : UIMode.Game;
+      const dossierPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: dossierPaused } },
         success: false
       };
     }
@@ -293,6 +302,39 @@ export function dispatchAction(
       );
 
       return { state: nextState, success: false };
+    }
+
+    case IntentType.DebugPromote: {
+      const pos = getComponent(state, intent.entityId, ComponentType.Position);
+      if (!pos) return { state, success: false };
+
+      let targetEntityId: EntityId | undefined;
+      for (const eId of state.entities) {
+        if (eId === intent.entityId) continue;
+        const eActor = getComponent(state, eId, ComponentType.Actor);
+        const ePos = getComponent(state, eId, ComponentType.Position);
+        if (eActor && ePos) {
+          targetEntityId = eId;
+          break;
+        }
+      }
+
+      if (targetEntityId) {
+        const nextState = promoteEntity(state, targetEntityId, 'Promoted via debug command.');
+        return {
+          state: addMessage(
+            nextState,
+            `[DEBUG] Promoted entity ${targetEntityId} to a notable character.`,
+            MessageLogCategory.System
+          ),
+          success: false
+        };
+      }
+
+      return {
+        state: addMessage(state, `[DEBUG] No actors available to promote.`, MessageLogCategory.System),
+        success: false
+      };
     }
 
     case IntentType.ToggleEngineMode: {

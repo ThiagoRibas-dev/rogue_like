@@ -4,7 +4,8 @@ import {
   type DebugRevealMapIntent,
   type DebugGodModeIntent,
   type DebugSpawnEntityIntent,
-  type DebugFastForwardSchemesIntent
+  type DebugFastForwardSchemesIntent,
+  type DebugPromoteIntent
 } from '../types/intents/debug.intents.ts';
 
 /**
@@ -61,5 +62,18 @@ export function createDebugFastForwardSchemesAction(
     entityId,
     isImmediate: true,
     iterations
+  };
+}
+
+/**
+ * Creates a debug intent to promote an entity.
+ * @param entityId The entity invoking the debug tool.
+ * @returns The generated DebugPromoteIntent.
+ */
+export function createDebugPromoteAction(entityId: EntityId): DebugPromoteIntent {
+  return {
+    type: IntentType.DebugPromote,
+    entityId,
+    isImmediate: true
   };
 }

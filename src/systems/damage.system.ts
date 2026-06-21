@@ -11,6 +11,7 @@ import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { getSettings } from '../core/settings.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
+import { promoteEntity } from './chronicle.system.ts';
 
 /**
  * Helper to add floating text above an entity.
@@ -93,6 +94,14 @@ export function processDamageSystem(state: GameState): GameState {
         // Entity died, attach DeathComponent
         const deathComp: DeathComponent = { type: ComponentType.Death, killerId: lastKillerId, causeOfDeath };
         nextState = addComponent(nextState, entityId, deathComp);
+      } else {
+        // Organic Promotion check: survived damage, hp < 20%, source was player
+        if (newHp / fighter.maxHp < 0.2 && lastKillerId !== undefined) {
+          const isPlayerSource = getComponent(nextState, lastKillerId, ComponentType.Player) !== undefined;
+          if (isPlayerSource) {
+            nextState = promoteEntity(nextState, entityId, 'Survived a vicious attack by the player');
+          }
+        }
       }
 
       if (getSettings().visualFeedback.showDamageNumbers) {

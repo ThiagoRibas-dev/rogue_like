@@ -16,7 +16,8 @@ export type ActionType =
   | 'factions'
   | 'quests'
   | 'investigation'
-  | 'verb_menu';
+  | 'verb_menu'
+  | 'dossier';
 
 export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
@@ -55,7 +56,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     factions: ['c'],
     quests: ['q'],
     investigation: ['v'],
-    verb_menu: ['m', 'enter']
+    verb_menu: ['m', 'enter'],
+    dossier: ['n']
   },
   visualFeedback: {
     showDamageNumbers: true,

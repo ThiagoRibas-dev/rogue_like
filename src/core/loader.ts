@@ -80,7 +80,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fieldsRes,
       spawnPoolsRes,
       encounterProfilesRes,
-      traitRegistryRes
+      traitRegistryRes,
+      identityGenerationRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -106,7 +107,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/fields.json`),
       fetch(`${basePath}/spawn_pools.json`),
       fetch(`${basePath}/encounter_profiles.json`),
-      fetch(`${basePath}/trait_registry.json`)
+      fetch(`${basePath}/trait_registry.json`),
+      fetch(`${basePath}/identity_generation.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -135,7 +137,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fieldsRes,
       spawnPoolsRes,
       encounterProfilesRes,
-      traitRegistryRes
+      traitRegistryRes,
+      identityGenerationRes
     ];
 
     for (const res of responses) {
@@ -169,7 +172,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fields,
       spawnPools,
       encounterProfiles,
-      traitRegistry
+      traitRegistry,
+      identityGeneration
     ] = await Promise.all([
       manifestRes.json(),
       rulesRes.json(),
@@ -195,7 +199,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fieldsRes.json(),
       spawnPoolsRes.json(),
       encounterProfilesRes.json(),
-      traitRegistryRes.json()
+      traitRegistryRes.json(),
+      identityGenerationRes.json()
     ]);
 
     const data = {
@@ -224,6 +229,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       spawnPools,
       encounterProfiles,
       traitRegistry,
+      identityGeneration,
       triggerBuckets: {}
     };
 

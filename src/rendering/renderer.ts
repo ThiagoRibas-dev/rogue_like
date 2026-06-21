@@ -1,6 +1,6 @@
 import type { Display } from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
-import { ComponentType } from '../types/components.types.ts';
+import { ComponentType, type IdentityComponent } from '../types/components.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 
 import { coordToIndex } from '../utils/grid.ts';
@@ -83,7 +83,9 @@ export function render(display: Display, state: GameState): void {
           for (const entityId of sortedEntitiesAtTile) {
             const renderable = getComponent(state, entityId, ComponentType.Renderable);
             if (renderable) {
-              display.draw(vx, vy, renderable.glyph, renderable.fg, renderable.bg);
+              const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
+              const fg = identity?.colorOverride ?? renderable.fg;
+              display.draw(vx, vy, renderable.glyph, fg, renderable.bg);
             }
           }
         }
@@ -263,7 +265,9 @@ function renderInspectTooltip(
 
     if (fighter) {
       // It's an actor
-      titleEl.textContent += `Actor`; // Could look up names if we had a NameComponent
+      const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
+      const nameStr = identity ? `${identity.name} ${identity.title ?? ''}`.trim() : 'Actor';
+      titleEl.textContent += nameStr;
       fragment.appendChild(titleEl);
 
       const stats = getEffectiveStats(state, entityId);

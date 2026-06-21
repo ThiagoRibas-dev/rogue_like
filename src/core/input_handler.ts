@@ -23,7 +23,8 @@ import {
   createToggleQuestsAction,
   createToggleInvestigationAction,
   createTogglePauseAction,
-  createToggleDebugAction
+  createToggleDebugAction,
+  createToggleDossierAction
 } from '../actions/core.actions.ts';
 import { createApplyAction } from '../actions/interaction.actions.ts';
 import {
@@ -161,6 +162,7 @@ export function handleKeyDown(
   const isQuestsOpen = currentState.uiMode === UIMode.Quests;
   const isInvestigationOpen = currentState.uiMode === UIMode.Investigation;
   const isDebugOpen = currentState.uiMode === UIMode.Debug;
+  const isDossierOpen = currentState.uiMode === UIMode.Dossier;
 
   if (event.key === '`') {
     event.preventDefault();
@@ -204,6 +206,14 @@ export function handleKeyDown(
     if (event.key === 'Escape' || isAction(event, 'investigation')) {
       event.preventDefault();
       queuePlayerIntent(createToggleInvestigationAction(playerEntityId));
+    }
+    return;
+  }
+
+  if (isDossierOpen) {
+    if (event.key === 'Escape' || isAction(event, 'dossier')) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleDossierAction(playerEntityId));
     }
     return;
   }
@@ -319,6 +329,12 @@ export function handleKeyDown(
   if (isAction(event, 'investigation')) {
     event.preventDefault();
     queuePlayerIntent(createToggleInvestigationAction(playerEntityId));
+    return;
+  }
+
+  if (isAction(event, 'dossier')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleDossierAction(playerEntityId));
     return;
   }
 

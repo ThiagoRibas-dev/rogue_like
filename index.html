@@ -378,6 +378,26 @@
       </div>
     </div>
 
+    <!-- Dossier Board Overlay -->
+    <div id="dossier-overlay" class="modal-overlay hidden">
+      <div class="modal-content" style="max-width: 800px; display: flex; flex-direction: column; height: 80vh;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px;">
+          <h1 class="modal-title" style="margin: 0; color: #9b59b6;">Nemesis Dossier</h1>
+          <span style="color: var(--text-dim); font-size: 0.8rem;">Press N or Esc to close.</span>
+        </div>
+
+        <div style="flex: 1; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
+          <div
+            style="background: rgba(0,0,0,0.5); padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: bold; color: var(--text-color);">
+            Notable Entities</div>
+          <div id="dossier-entities"
+            style="padding: 8px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; text-align: left;">
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Debug Overlay -->
     <div id="debug-overlay" class="modal-overlay hidden" style="pointer-events: none; background: transparent;">
       <div class="modal-content"

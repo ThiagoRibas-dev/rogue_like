@@ -48,3 +48,8 @@ export interface ToggleDebugIntent extends BaseIntent {
   readonly type: IntentType.ToggleDebug;
   readonly isImmediate: true;
 }
+
+export interface ToggleDossierIntent extends BaseIntent {
+  readonly type: IntentType.ToggleDossier;
+  readonly isImmediate: true;
+}

@@ -34,7 +34,9 @@ export const enum ComponentType {
   Lock = 'Lock',
   Field = 'Field',
   Dialogue = 'Dialogue',
-  Attitude = 'Attitude'
+  Attitude = 'Attitude',
+  Identity = 'Identity',
+  Chronicle = 'Chronicle'
 }
 
 /**
@@ -390,6 +392,29 @@ export interface AttitudeComponent {
   readonly attitude: 'hostile' | 'neutral' | 'friendly';
 }
 
+export interface IdentityComponent {
+  readonly type: ComponentType.Identity;
+  readonly name: string;
+  readonly title?: string | undefined;
+  readonly mannerisms: ReadonlyArray<string>;
+  readonly colorOverride?: string | undefined;
+}
+
+export interface ChronicleEvent {
+  readonly turn: number;
+  readonly type: string; // e.g., "Promotion", "Humiliation"
+  readonly summary: string;
+  readonly relatedEntityIds?: ReadonlyArray<EntityId> | undefined;
+}
+
+export interface ChronicleComponent {
+  readonly type: ComponentType.Chronicle;
+  readonly pis: number; // Player Interaction Score
+  readonly scars: ReadonlyArray<string>;
+  readonly coreMemories: ReadonlyArray<string>; // For M43 internal mutation
+  readonly eventExcerpts: ReadonlyArray<ChronicleEvent>;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -426,4 +451,6 @@ export type Component =
   | FieldComponent
   | CoatingComponent
   | DialogueComponent
-  | AttitudeComponent;
+  | AttitudeComponent
+  | IdentityComponent
+  | ChronicleComponent;

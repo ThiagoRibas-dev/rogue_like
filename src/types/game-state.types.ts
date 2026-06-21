@@ -32,7 +32,8 @@ export const enum UIMode {
   Investigation = 'investigation',
   Editor = 'editor',
   Debug = 'debug',
-  VerbMenu = 'verb_menu'
+  VerbMenu = 'verb_menu',
+  Dossier = 'dossier'
 }
 
 /**

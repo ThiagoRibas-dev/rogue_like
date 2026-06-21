@@ -26,7 +26,8 @@ import type {
   CloseDialogueIntent,
   ToggleQuestsIntent,
   ToggleInvestigationIntent,
-  ToggleDebugIntent
+  ToggleDebugIntent,
+  ToggleDossierIntent
 } from './ui.intents.ts';
 
 import type { ToggleRotatedIntent, Toggle3DIntent, SetZoomLevelIntent } from './camera.intents.ts';
@@ -35,7 +36,8 @@ import type {
   DebugRevealMapIntent,
   DebugGodModeIntent,
   DebugSpawnEntityIntent,
-  DebugFastForwardSchemesIntent
+  DebugFastForwardSchemesIntent,
+  DebugPromoteIntent
 } from './debug.intents.ts';
 
 import type { ToggleInspectIntent, MoveInspectIntent } from './inspect.intents.ts';
@@ -48,6 +50,7 @@ export type Intent =
   | DebugGodModeIntent
   | DebugSpawnEntityIntent
   | DebugFastForwardSchemesIntent
+  | DebugPromoteIntent
   | ToggleTargetingIntent
   | MoveTargetIntent
   | FireAimedIntent
@@ -74,6 +77,7 @@ export type Intent =
   | ToggleQuestsIntent
   | ToggleInvestigationIntent
   | ToggleDebugIntent
+  | ToggleDossierIntent
   | ApplyIntent
   | InteractIntent;
 

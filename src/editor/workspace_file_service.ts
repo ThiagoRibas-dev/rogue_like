@@ -303,6 +303,7 @@ export function createBlankSlateCampaign(): CampaignData {
     fields: {},
     spawnPools: {},
     encounterProfiles: {},
-    traitRegistry: {}
+    traitRegistry: {},
+    identityGeneration: {}
   };
 }

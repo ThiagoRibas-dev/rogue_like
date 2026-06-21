@@ -565,6 +565,18 @@ export const TraitDefinitionSchema = z.object({
 });
 export type TraitDefinition = z.infer<typeof TraitDefinitionSchema>;
 
+// ==========================================
+// 15. IDENTITY & CHRONICLE
+// ==========================================
+export const IdentityGenerationTableSchema = z.object({
+  firstNames: z.array(z.string()),
+  lastNames: z.array(z.string()).optional(),
+  titles: z.array(z.string()),
+  mannerisms: z.array(z.string()),
+  colors: z.array(z.string()).optional()
+});
+export type IdentityGenerationTable = z.infer<typeof IdentityGenerationTableSchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -591,7 +603,8 @@ export const CampaignDataSchema = z.object({
   fields: z.record(z.string(), FieldDefinitionSchema).default({}),
   spawnPools: z.record(z.string(), SpawnPoolDefinitionSchema).default({}),
   encounterProfiles: z.record(z.string(), EncounterProfileSchema).default({}),
-  traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({})
+  traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({}),
+  identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({})
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -622,5 +635,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   fields: FieldDefinitionSchema,
   spawnPools: SpawnPoolDefinitionSchema,
   encounterProfiles: EncounterProfileSchema,
-  traitRegistry: TraitDefinitionSchema
+  traitRegistry: TraitDefinitionSchema,
+  identityGeneration: IdentityGenerationTableSchema
 };

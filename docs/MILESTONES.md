@@ -473,28 +473,28 @@ Let the existing Scheme Simulator influence future area generation and encounter
 - [x] Extend the Scheme Acceleration Simulator to display how schemes change encounter generation over time.
 - [x] Add fail-graceful behavior when a scheme references an exhausted token pool or an unavailable area.
 
-## 🟡 Milestone 41: Tactical Content Pass — First Directed Biomes
+## 🟢 Milestone 41: Tactical Content Pass — First Directed Biomes
 Prove the Director with a compact but high-quality content set.
-- [ ] Build at least four directed encounter families: orc camp, corrupted forest, spider nest, and shrine vault.
-- [ ] Ensure each family uses at least three Phase 5 interaction ingredients: locks, fields, throwing, altars/fountains, or dip/zap reactions.
-- [ ] Add designer-authored examples showing static, parameterized, and fully dynamic encounter variants.
-- [ ] Balance initial CR budgets, rewards, hazard severity, and escape routes through Simulation Lab telemetry.
-- [ ] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
-- [ ] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
+- [x] Build at least four directed encounter families: orc camp, corrupted forest, spider nest, and shrine vault.
+- [x] Ensure each family uses at least three Phase 5 interaction ingredients: locks, fields, throwing, altars/fountains, or dip/zap reactions.
+- [x] Add designer-authored examples showing static, parameterized, and fully dynamic encounter variants.
+- [x] Balance initial CR budgets, rewards, hazard severity, and escape routes through Simulation Lab telemetry.
+- [x] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
+- [x] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
 
 ---
 
 # 🚀 Phase 7: Chronicle, Personality & Nemesis
 **Goal:** Give important entities identity, memory, growth, autonomy, and surfacing. This phase turns repeated interactions into personal stories while reusing the existing Memory, AI, Faction, Trigger, Scheme, and Investigation infrastructure.
 
-## 🟡 Milestone 42: Chronicle & Identity Layer ⭐ KEYSTONE
+## 🟢 Milestone 42: Chronicle & Identity Layer ⭐ KEYSTONE
 Create a generalized memory/identity wrapper for entities the player may care about.
-- [ ] Add a `ChronicleComponent` or expand `MemoryComponent` with identity hooks, player interaction score, scars, relationships, and important event references.
-- [ ] Generate salient names, titles, mannerisms, and visual identity cues from data-driven tables.
-- [ ] Support promotion of eligible generic entities into persistent named entities when they become narratively important.
-- [ ] Store chronicle-bearing entities safely in `persistentEntities` across area transitions.
-- [ ] Record compact event excerpts rather than unbounded raw logs to avoid save bloat.
-- [ ] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
+- [x] Add a `ChronicleComponent` or expand `MemoryComponent` with identity hooks, player interaction score, scars, relationships, and important event references.
+- [x] Generate salient names, titles, mannerisms, and visual identity cues from data-driven tables.
+- [x] Support promotion of eligible generic entities into persistent named entities when they become narratively important.
+- [x] Store chronicle-bearing entities safely in `persistentEntities` across area transitions.
+- [x] Record compact event excerpts rather than unbounded raw logs to avoid save bloat.
+- [x] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
 
 ## 🟡 Milestone 43: Personality Facets, Values, Stress & Core Memories
 Add Dwarf-Fortress-inspired internal causality without making a separate AI stack.
