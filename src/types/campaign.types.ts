@@ -242,7 +242,18 @@ export const EntityTemplateSchema = z.object({
       facts: z.array(z.string()).optional(),
       grudges: z.array(z.string()).optional(),
       facets: z.record(z.string(), z.number().int().min(0).max(100)).optional(),
-      values: z.record(z.string(), z.number().int().min(-50).max(50)).optional()
+      values: z.record(z.string(), z.number().int().min(-50).max(50)).optional(),
+      stress: z.number().int().min(0).max(100).optional(),
+      thoughts: z
+        .array(
+          z.object({
+            turn: z.number().int().nonnegative(),
+            eventSummary: z.string(),
+            stressDelta: z.number().int(),
+            relatedEntityId: z.number().int().optional()
+          })
+        )
+        .optional()
     })
     .optional(),
   dialogueId: z.string().optional(),

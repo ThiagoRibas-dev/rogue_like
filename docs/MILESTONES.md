@@ -496,15 +496,15 @@ Create a generalized memory/identity wrapper for entities the player may care ab
 - [x] Record compact event excerpts rather than unbounded raw logs to avoid save bloat.
 - [x] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
 
-## 🟡 Milestone 43: Personality Facets, Values, Stress & Core Memories
+## 🟢 Milestone 43: Personality Facets, Values, Stress & Core Memories (Complete)
 Add Dwarf-Fortress-inspired internal causality without making a separate AI stack.
-- [ ] Define data schemas for personality facets, values, needs/goals, stress, thoughts, and core memories.
-- [ ] Generate facet/value distributions deterministically, with extreme traits rare and therefore memorable.
-- [ ] Implement event-to-memory filters: defeat, mercy, humiliation, betrayal, gift, rescue, faction harm, and repeated combat style.
-- [ ] Accumulate stress from negative memories and promote extreme/repeated memories into core memories.
-- [ ] Let core memories mutate facets and values permanently.
-- [ ] Add editor tools for inspecting and manually seeding personalities, values, and core memories.
-- [ ] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
+- [x] Define data schemas for personality facets, values, needs/goals, stress, thoughts, and core memories.
+- [x] Generate facet/value distributions deterministically, with extreme traits rare and therefore memorable.
+- [x] Implement event-to-memory filters: defeat, mercy, humiliation, betrayal, gift, rescue, faction harm, and repeated combat style.
+- [x] Accumulate stress from negative memories and promote extreme/repeated memories into core memories.
+- [x] Let core memories mutate facets and values permanently.
+- [x] Add editor tools for inspecting and manually seeding personalities, values, and core memories.
+- [x] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
 
 ## 🟢 Milestone 44: Personality-Weighted AI & Social Gating (Complete)
 Make personality mechanically visible through behavior and dialogue.

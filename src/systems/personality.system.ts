@@ -5,7 +5,7 @@ import {
   type Thought
 } from '../types/components.types.ts';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { GameEventType, type CoreValueViolatedEvent } from '../types/events.types.ts';
+import { GameEventType, type CoreValueViolatedEvent, type EntityDamagedEvent, type EntityDiedEvent, type ApplyResolvedEvent } from '../types/events.types.ts';
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { promoteEntity } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -24,11 +24,52 @@ import {
 export function processPersonalitySystem(state: GameState): GameState {
   let nextState = state;
 
+  // 1. Process events into thoughts
+  for (const event of nextState.events) {
+    if (event.type === GameEventType.EntityDamaged) {
+      const e = event as EntityDamagedEvent;
+      if (e.sourceEntityId !== undefined && e.amount >= 5) {
+        nextState = recordThought(
+          nextState,
+          e.entityId,
+          `Harmed by Entity #${e.sourceEntityId}`,
+          e.amount,
+          e.sourceEntityId
+        );
+      }
+    } else if (event.type === GameEventType.EntityDied) {
+      const e = event as EntityDiedEvent;
+      if (e.killerId !== undefined) {
+        nextState = recordThought(
+          nextState,
+          e.killerId,
+          `Defeated Entity #${e.victimId}`,
+          -5,
+          e.victimId
+        );
+      }
+    } else if (event.type === GameEventType.ApplyResolved) {
+      const e = event as ApplyResolvedEvent;
+      if (e.verb === 'kick' && e.target && typeof e.target === 'object') {
+        const targetObj = e.target as { type: string; entityId?: number };
+        if (targetObj.type === 'entity' && typeof targetObj.entityId === 'number') {
+          nextState = recordThought(
+            nextState,
+            targetObj.entityId as EntityId,
+            `Kicked by Entity #${e.entityId}`,
+            15,
+            e.entityId
+          );
+        }
+      }
+    }
+  }
+
   for (const entityId of nextState.entities) {
     const memory = getComponent(nextState, entityId, ComponentType.Memory);
     if (!memory) continue;
 
-    // 1. Check for Auto-Promotions (Entities with extreme facets, but no identity)
+    // 2. Check for Auto-Promotions (Entities with extreme facets, but no identity)
     const identity = getComponent(nextState, entityId, ComponentType.Identity);
     if (!identity && memory.facets) {
       let hasExtreme = false;
@@ -52,7 +93,7 @@ export function processPersonalitySystem(state: GameState): GameState {
       }
     }
 
-    // 2. Core Memory Promotion
+    // 3. Core Memory Promotion
     // We re-fetch memory in case promoteEntity updated the state, though promoteEntity doesn't change MemoryComponent.
     const currentMemory = getComponent(nextState, entityId, ComponentType.Memory);
     if (currentMemory && currentMemory.stress !== undefined && currentMemory.stress >= STRESS_CORE_MEMORY_THRESHOLD) {
@@ -93,7 +134,7 @@ export function recordThought(
     currentThoughts.length = MAX_TRANSIENT_THOUGHTS;
   }
 
-  const nextStress = (memory.stress || 0) + Math.abs(stressDelta);
+  const nextStress = Math.max(0, (memory.stress || 0) + stressDelta);
 
   const nextMemory: MemoryComponent = {
     ...memory,

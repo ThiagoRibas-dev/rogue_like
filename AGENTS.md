@@ -34,7 +34,7 @@ When starting a new milestone or major feature, you MUST execute the following f
 2. **Research:** Read the relevant source files, reference documents, and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
 3. **Compile:** Before proposing a plan, summarize your findings into a concrete research document. Explicitly map each task to the specific architectural rules and design documents that govern it.
 4. **Plan:** Draft a step-by-step implementation plan based strictly on the compiled research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
-5. **Enhance:** Once the high-level plan is formed, enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
+5. **Enhance:** Once the high-level plan is formed, do a second pass to enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
 
 Wait for the User's confirmation before writing or modifying any actual codebase files.
 

@@ -1,4 +1,4 @@
-import type { ApplyFailedEvent, GameEvent } from '../types/events.types.ts';
+import type { ApplyFailedEvent, ApplyResolvedEvent, GameEvent } from '../types/events.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
@@ -34,9 +34,17 @@ export function processApplyIntent(
   const result = processReactions(state, intent.verb, intent.entityId, intent.target, intent.toolEntityId);
 
   if (result.success) {
+    const resolvedEvent: ApplyResolvedEvent = {
+      type: GameEventType.ApplyResolved,
+      entityId: intent.entityId,
+      verb: intent.verb,
+      target: intent.target,
+      toolEntityId: intent.toolEntityId
+    };
     return {
       state: result.state,
-      success: true
+      success: true,
+      events: [resolvedEvent]
     };
   }
 

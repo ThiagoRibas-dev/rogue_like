@@ -316,8 +316,13 @@ export function spawnEntity(
       facts: template.memory.facts ?? [],
       facets,
       values,
-      stress: 0,
-      thoughts: []
+      stress: template.memory.stress ?? 0,
+      thoughts: template.memory.thoughts
+        ? template.memory.thoughts.map((t) => ({
+            ...t,
+            relatedEntityId: t.relatedEntityId !== undefined ? toEntityId(t.relatedEntityId) : undefined
+          }))
+        : []
     });
   }
 
