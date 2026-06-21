@@ -19,6 +19,7 @@ import { type EntityId, type GameState, toEntityId } from '../types/game-state.t
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../types/intents/ui.intents.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
+import { rollFacetValue, rollPersonalityValue } from './rng.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -283,11 +284,40 @@ export function spawnEntity(
   }
 
   if (template.memory) {
+    let facets: Record<string, number> | undefined;
+    let values: Record<string, number> | undefined;
+
+    if (template.memory.facets) {
+      facets = { ...template.memory.facets };
+    }
+    if (template.memory.values) {
+      values = { ...template.memory.values };
+    }
+
+    if (!facets || !values) {
+      const keys = Object.keys(state.campaign.personalityGeneration);
+      if (keys.length > 0) {
+        const table = state.campaign.personalityGeneration[keys[0]!];
+        if (!facets && table && table.facets.length > 0) {
+          facets = {};
+          for (const f of table.facets) facets[f] = rollFacetValue();
+        }
+        if (!values && table && table.values.length > 0) {
+          values = {};
+          for (const v of table.values) values[v] = rollPersonalityValue();
+        }
+      }
+    }
+
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Memory,
       factionStandings: template.memory.factionStandings ?? {},
       grudges: template.memory.grudges ?? [],
-      facts: template.memory.facts ?? []
+      facts: template.memory.facts ?? [],
+      facets,
+      values,
+      stress: 0,
+      thoughts: []
     });
   }
 

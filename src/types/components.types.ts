@@ -295,6 +295,13 @@ export interface LockComponent {
   readonly breakable?: boolean | undefined; // True if it can be kicked down or destroyed
 }
 
+export interface Thought {
+  readonly turn: number;
+  readonly eventSummary: string;
+  readonly stressDelta: number;
+  readonly relatedEntityId?: EntityId | undefined;
+}
+
 /**
  * Component tracking an entity's memories, grudges, and faction reputations.
  */
@@ -303,6 +310,10 @@ export interface MemoryComponent {
   readonly grudges: ReadonlyArray<string>;
   readonly factionStandings: Record<string, number>;
   readonly facts: ReadonlyArray<string>;
+  readonly facets?: Readonly<Record<string, number>> | undefined;
+  readonly values?: Readonly<Record<string, number>> | undefined;
+  readonly stress?: number | undefined;
+  readonly thoughts?: ReadonlyArray<Thought> | undefined;
 }
 
 /**

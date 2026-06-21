@@ -19,6 +19,7 @@ import { processDeathSystem } from '../systems/death.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
+import { processPersonalitySystem } from '../systems/personality.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -286,6 +287,9 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
 
   // Investigation system consumes events
   nextState = processInvestigationEvents(nextState);
+
+  // Personality System (Thoughts, Stress, Core Memories)
+  nextState = processPersonalitySystem(nextState);
 
   // Clear events at the end of the intent tick so they don't persist
   const eventsToReturn = [...nextState.events];

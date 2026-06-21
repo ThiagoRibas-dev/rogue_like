@@ -6,6 +6,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getCameraOffset } from './camera.ts';
+import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 
 /**
  * Renders the visible and explored map tiles and all visible renderable entities
@@ -286,6 +287,28 @@ function renderInspectTooltip(
       defEl.className = 'inspect-stat';
       defEl.innerHTML = `<span>DEF</span><span>${stats.defense}</span>`;
       fragment.appendChild(defEl);
+
+      const memory = getComponent(state, entityId, ComponentType.Memory);
+      if (memory) {
+        if (memory.stress !== undefined && memory.stress > 0) {
+          const stressEl = document.createElement('div');
+          stressEl.className = 'inspect-stat';
+          stressEl.innerHTML = `<span>Stress</span><span style="color: #ffaa00">${Math.floor(memory.stress)}</span>`;
+          fragment.appendChild(stressEl);
+        }
+        if (memory.facets) {
+          const dominant = Object.entries(memory.facets).filter(
+            ([_, v]) => v >= FACET_DOMINANT_HIGH_THRESHOLD || v <= FACET_DOMINANT_LOW_THRESHOLD
+          );
+          if (dominant.length > 0) {
+            const facetsEl = document.createElement('div');
+            facetsEl.className = 'inspect-desc';
+            facetsEl.style.color = '#ff6666';
+            facetsEl.textContent = 'Traits: ' + dominant.map(([k, v]) => `${k} (${v})`).join(', ');
+            fragment.appendChild(facetsEl);
+          }
+        }
+      }
 
       hasContent = true;
     } else if (item) {

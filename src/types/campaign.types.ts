@@ -240,7 +240,9 @@ export const EntityTemplateSchema = z.object({
     .object({
       factionStandings: z.record(z.string(), z.number().int()).optional(),
       facts: z.array(z.string()).optional(),
-      grudges: z.array(z.string()).optional()
+      grudges: z.array(z.string()).optional(),
+      facets: z.record(z.string(), z.number().int().min(0).max(100)).optional(),
+      values: z.record(z.string(), z.number().int().min(-50).max(50)).optional()
     })
     .optional(),
   dialogueId: z.string().optional(),
@@ -577,6 +579,12 @@ export const IdentityGenerationTableSchema = z.object({
 });
 export type IdentityGenerationTable = z.infer<typeof IdentityGenerationTableSchema>;
 
+export const PersonalityGenerationTableSchema = z.object({
+  facets: z.array(z.string()).describe('List of personality facets to generate (e.g., cowardice, cruelty)'),
+  values: z.array(z.string()).describe('List of personality values to generate (e.g., power, peace)')
+});
+export type PersonalityGenerationTable = z.infer<typeof PersonalityGenerationTableSchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -604,7 +612,8 @@ export const CampaignDataSchema = z.object({
   spawnPools: z.record(z.string(), SpawnPoolDefinitionSchema).default({}),
   encounterProfiles: z.record(z.string(), EncounterProfileSchema).default({}),
   traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({}),
-  identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({})
+  identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({}),
+  personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({})
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -636,5 +645,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   spawnPools: SpawnPoolDefinitionSchema,
   encounterProfiles: EncounterProfileSchema,
   traitRegistry: TraitDefinitionSchema,
-  identityGeneration: IdentityGenerationTableSchema
+  identityGeneration: IdentityGenerationTableSchema,
+  personalityGeneration: PersonalityGenerationTableSchema
 };

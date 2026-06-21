@@ -1,0 +1,155 @@
+import {
+  ComponentType,
+  type MemoryComponent,
+  type ChronicleComponent,
+  type Thought
+} from '../types/components.types.ts';
+import type { GameState, EntityId } from '../types/game-state.types.ts';
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { promoteEntity } from './chronicle.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
+import {
+  STRESS_CORE_MEMORY_THRESHOLD,
+  MAX_TRANSIENT_THOUGHTS,
+  FACET_EXTREME_HIGH_THRESHOLD,
+  FACET_EXTREME_LOW_THRESHOLD,
+  CORE_MEMORY_MUTATION_AMOUNT
+} from '../constants/personality.constants.ts';
+
+/**
+ * Processes personality shifts, stress accumulation, and core memory promotion.
+ * Run at the end of the global pipeline in game-loop.ts.
+ */
+export function processPersonalitySystem(state: GameState): GameState {
+  let nextState = state;
+
+  for (const entityId of nextState.entities) {
+    const memory = getComponent(nextState, entityId, ComponentType.Memory);
+    if (!memory) continue;
+
+    // 1. Check for Auto-Promotions (Entities with extreme facets, but no identity)
+    const identity = getComponent(nextState, entityId, ComponentType.Identity);
+    if (!identity && memory.facets) {
+      let hasExtreme = false;
+      for (const val of Object.values(memory.facets)) {
+        if (val >= FACET_EXTREME_HIGH_THRESHOLD || val <= FACET_EXTREME_LOW_THRESHOLD) {
+          hasExtreme = true;
+          break;
+        }
+      }
+
+      if (hasExtreme) {
+        nextState = promoteEntity(nextState, entityId, 'Emerged from the masses with an extreme personality.');
+        const newIdentity = getComponent(nextState, entityId, ComponentType.Identity);
+        if (newIdentity) {
+          nextState = addMessage(
+            nextState,
+            `${newIdentity.name} makes themselves known through extreme personality traits.`,
+            MessageLogCategory.System
+          );
+        }
+      }
+    }
+
+    // 2. Core Memory Promotion
+    // We re-fetch memory in case promoteEntity updated the state, though promoteEntity doesn't change MemoryComponent.
+    const currentMemory = getComponent(nextState, entityId, ComponentType.Memory);
+    if (currentMemory && currentMemory.stress !== undefined && currentMemory.stress >= STRESS_CORE_MEMORY_THRESHOLD) {
+      nextState = promoteToCoreMemory(nextState, entityId);
+    }
+  }
+
+  return nextState;
+}
+
+/**
+ * Public API to record a thought and accumulate stress on an entity.
+ */
+export function recordThought(
+  state: GameState,
+  entityId: EntityId,
+  eventSummary: string,
+  stressDelta: number,
+  relatedEntityId?: EntityId
+): GameState {
+  const memory = getComponent(state, entityId, ComponentType.Memory);
+  if (!memory) return state;
+
+  const currentThoughts = memory.thoughts ? [...memory.thoughts] : [];
+
+  const newThought: Thought = {
+    turn: 0, // global turn
+    eventSummary,
+    stressDelta,
+    relatedEntityId
+  };
+
+  currentThoughts.push(newThought);
+
+  // TODO: Implement a ranking system for Thoughts to decide which ones are kept vs discarded when approaching the cap, prioritizing thoughts with the highest stressDelta.
+  if (currentThoughts.length > MAX_TRANSIENT_THOUGHTS) {
+    currentThoughts.sort((a, b) => Math.abs(b.stressDelta) - Math.abs(a.stressDelta));
+    currentThoughts.length = MAX_TRANSIENT_THOUGHTS;
+  }
+
+  const nextStress = (memory.stress || 0) + Math.abs(stressDelta);
+
+  const nextMemory: MemoryComponent = {
+    ...memory,
+    thoughts: currentThoughts,
+    stress: nextStress
+  };
+
+  return addComponent(state, entityId, nextMemory);
+}
+
+function promoteToCoreMemory(state: GameState, entityId: EntityId): GameState {
+  let nextState = state;
+  const memory = getComponent(nextState, entityId, ComponentType.Memory);
+  if (!memory || !memory.thoughts || memory.thoughts.length === 0) return nextState;
+
+  // Find the thought with highest stress impact
+  const coreThought = [...memory.thoughts].sort((a, b) => Math.abs(b.stressDelta) - Math.abs(a.stressDelta))[0];
+  if (!coreThought) return nextState;
+
+  // If entity not promoted, promote them now since they formed a core memory
+  const identity = getComponent(nextState, entityId, ComponentType.Identity);
+  if (!identity) {
+    nextState = promoteEntity(nextState, entityId, 'A traumatic or defining event forced them to forge an identity.');
+  }
+
+  const chronicle = getComponent(nextState, entityId, ComponentType.Chronicle);
+  if (chronicle) {
+    const nextChronicle: ChronicleComponent = {
+      ...chronicle,
+      coreMemories: [...chronicle.coreMemories, coreThought.eventSummary]
+    };
+    nextState = addComponent(nextState, entityId, nextChronicle);
+
+    const identityStr = identity ? identity.name : 'An entity';
+    nextState = addMessage(nextState, `${identityStr} internalizes a core memory.`, MessageLogCategory.System);
+  }
+
+  // Mutate a facet permanently based on the core memory
+  const nextFacets = memory.facets ? { ...memory.facets } : undefined;
+  if (nextFacets) {
+    const facetKeys = Object.keys(nextFacets);
+    if (facetKeys.length > 0) {
+      // Pick the first facet for now to mutate. We can expand this logic later.
+      const facetToMutate = facetKeys[0]!;
+      const mutationAmount = coreThought.stressDelta > 0 ? CORE_MEMORY_MUTATION_AMOUNT : -CORE_MEMORY_MUTATION_AMOUNT;
+      nextFacets[facetToMutate] = Math.max(0, Math.min(100, nextFacets[facetToMutate]! + mutationAmount));
+    }
+  }
+
+  // Reset stress and clear the promoted thought
+  const remainingThoughts = memory.thoughts.filter((t) => t !== coreThought);
+  const nextMemory: MemoryComponent = {
+    ...memory,
+    stress: 0, // Relieve stress after core memory
+    thoughts: remainingThoughts,
+    facets: nextFacets
+  };
+
+  return addComponent(nextState, entityId, nextMemory);
+}
