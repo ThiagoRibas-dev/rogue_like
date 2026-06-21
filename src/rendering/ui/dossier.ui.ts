@@ -103,21 +103,23 @@ export function renderDossierUI(state: GameState): void {
     }
 
     // Recent Thoughts
-    const thoughtsHtml = data.memory?.thoughts && data.memory.thoughts.length > 0
-      ? data.memory.thoughts
-          .map(
-            (t) =>
-              `<li style="margin-bottom: 4px; color: var(--text-dim);"><span style="color: var(--text-dim);">[Turn ${t.turn}]</span> ${t.eventSummary} <span style="color: ${t.stressDelta >= 0 ? '#e74c3c' : '#2ecc71'}; font-weight: 500;">(${t.stressDelta >= 0 ? '+' : ''}${t.stressDelta} Stress)</span></li>`
-          )
-          .join('')
-      : '<li style="color: var(--text-dim); font-style: italic;">No transient thoughts.</li>';
+    const thoughtsHtml =
+      data.memory?.thoughts && data.memory.thoughts.length > 0
+        ? data.memory.thoughts
+            .map(
+              (t) =>
+                `<li style="margin-bottom: 4px; color: var(--text-dim);"><span style="color: var(--text-dim);">[Turn ${t.turn}]</span> ${t.eventSummary} <span style="color: ${t.stressDelta >= 0 ? '#e74c3c' : '#2ecc71'}; font-weight: 500;">(${t.stressDelta >= 0 ? '+' : ''}${t.stressDelta} Stress)</span></li>`
+            )
+            .join('')
+        : '<li style="color: var(--text-dim); font-style: italic;">No transient thoughts.</li>';
 
     // Core Memories
-    const coreMemoriesHtml = data.chronicle.coreMemories && data.chronicle.coreMemories.length > 0
-      ? data.chronicle.coreMemories
-          .map((m) => `<li style="margin-bottom: 4px; color: #f1c40f; font-style: italic;">"${m}"</li>`)
-          .join('')
-      : '';
+    const coreMemoriesHtml =
+      data.chronicle.coreMemories && data.chronicle.coreMemories.length > 0
+        ? data.chronicle.coreMemories
+            .map((m) => `<li style="margin-bottom: 4px; color: #f1c40f; font-style: italic;">"${m}"</li>`)
+            .join('')
+        : '';
 
     el.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;">

@@ -56,6 +56,26 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
     type: z.literal('pis'),
     operator: z.enum(['>=', '<=', '==']),
     value: z.number()
+  }),
+  z.object({
+    type: z.literal('has_knowledge'),
+    knowledgeId: z.string()
+  }),
+  z.object({
+    type: z.literal('interaction_count'),
+    interactionType: z.enum(['talk', 'trade', 'intimidate', 'help', 'betray']),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number()
+  }),
+  z.object({
+    type: z.literal('patience_below'),
+    value: z.number()
+  }),
+  z.object({
+    type: z.literal('is_annoyed')
+  }),
+  z.object({
+    type: z.literal('is_grateful')
   })
 ]);
 
@@ -164,6 +184,27 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('force_say'),
     message: z.string(),
     targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('record_interaction'),
+    interactionType: z.enum(['talk', 'trade', 'intimidate', 'help', 'betray'])
+  }),
+  z.object({
+    type: z.literal('set_patience'),
+    value: z.number().int().nonnegative()
+  }),
+  z.object({
+    type: z.literal('modify_knowledge'),
+    action: z.enum(['add', 'remove']),
+    knowledgeId: z.string(),
+    knowledgeType: z.enum(['rumor', 'location', 'weakness', 'secret']).optional(),
+    description: z.string().optional(),
+    tags: z.array(z.string()).optional()
+  }),
+  z.object({
+    type: z.literal('set_social_state'),
+    state: z.enum(['annoyed', 'grateful']),
+    duration: z.number().int().nonnegative()
   })
 ]);
 

@@ -200,6 +200,14 @@ export const ItemEffectDefinitionSchema = z.object({
 });
 export type ItemEffectDefinition = z.infer<typeof ItemEffectDefinitionSchema>;
 
+export const KnowledgeItemSchema = z.object({
+  id: z.string(),
+  type: z.enum(['rumor', 'location', 'weakness', 'secret']),
+  description: z.string(),
+  tags: z.array(z.string()).default([])
+});
+export type KnowledgeItemType = z.infer<typeof KnowledgeItemSchema>;
+
 // ==========================================
 // 6. ENTITIES
 // ==========================================
@@ -253,7 +261,16 @@ export const EntityTemplateSchema = z.object({
             relatedEntityId: z.number().int().optional()
           })
         )
-        .optional()
+        .optional(),
+      knowledge: z.record(z.string(), KnowledgeItemSchema).optional(),
+      timesTalked: z.number().int().nonnegative().optional(),
+      timesTraded: z.number().int().nonnegative().optional(),
+      timesIntimidated: z.number().int().nonnegative().optional(),
+      timesHelped: z.number().int().nonnegative().optional(),
+      timesBetrayed: z.number().int().nonnegative().optional(),
+      patienceThreshold: z.number().int().nonnegative().optional(),
+      annoyedDuration: z.number().int().nonnegative().optional(),
+      gratefulDuration: z.number().int().nonnegative().optional()
     })
     .optional(),
   dialogueId: z.string().optional(),

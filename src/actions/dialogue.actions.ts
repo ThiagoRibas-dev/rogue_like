@@ -1,5 +1,5 @@
-import { getComponent } from '../core/ecs.ts';
-import { ComponentType } from '../types/components.types.ts';
+import { addComponent, getComponent } from '../core/ecs.ts';
+import { ComponentType, type MemoryComponent } from '../types/components.types.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../types/events.types.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
@@ -36,9 +36,19 @@ export function processStartDialogueIntent(
   // Trigger any "talk" quest objectives
   const nextState = processQuestEvent(state, 'talk', targetTemplateId, 1);
 
+  let stateWithTimesTalked = nextState;
+  const memory = getComponent(nextState, targetId, ComponentType.Memory) as MemoryComponent | undefined;
+  if (memory) {
+    const nextMemory = {
+      ...memory,
+      timesTalked: (memory.timesTalked ?? 0) + 1
+    };
+    stateWithTimesTalked = addComponent(nextState, targetId, nextMemory);
+  }
+
   return {
     state: {
-      ...nextState,
+      ...stateWithTimesTalked,
       uiMode: UIMode.Dialogue,
       activeDialogue: {
         treeId: dialogueId,

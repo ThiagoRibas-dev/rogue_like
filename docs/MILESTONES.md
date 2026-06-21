@@ -515,16 +515,16 @@ Make personality mechanically visible through behavior and dialogue.
 - [x] Add behavior surfacing barks: cowardly retreat lines, vengeful charge lines, grateful ally lines, suspicious merchant lines.
 - [x] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
 
-## 🟡 Milestone 45: Social Memory & Interaction Tracking ⭐ KEYSTONE
+## 🟢 Milestone 45: Social Memory & Interaction Tracking ⭐ KEYSTONE (Complete)
 Build the data layer for NPCs as persistent social agents. Extend `MemoryComponent` so NPCs remember what they know, count how often they've interacted with the player, and accumulate temporary social states that influence future dialogue and trade.
 
-- [ ] Extend `MemoryComponent` with a `knowledge` record: structured facts the NPC knows about schemes, areas, hazards, other NPC locations, and hidden loot. Knowledge items are typed (`rumor`, `location`, `weakness`, `secret`) and tagged for query filtering.
-- [ ] Add interaction counters to `MemoryComponent`: `timesTalked`, `timesTraded`, `timesIntimidated`, `timesHelped`, `timesBetrayed`. Each increments deterministically when the player engages in the corresponding social action.
-- [ ] Add a `patienceThreshold` to NPCs derived from personality facets (M43): determines how many times they'll repeat information before refusing or demanding payment.
-- [ ] Implement `annoyed` and `grateful` as temporary NPC states stored on `MemoryComponent`. These modify dialogue options, trade prices, and rumor sharing for a configurable duration after specific player actions (e.g., intimidating an NPC sets `annoyed` for 50 turns).
-- [ ] Extend `ConditionPredicateSchema` (M22) with dialogue conditions: `has_knowledge`, `interaction_count`, `patience_below`, `is_annoyed`, `is_grateful` — all queryable from dialogue trees and triggers.
-- [ ] Extend `ConsequenceActionSchema` (M22) with social consequence types: `record_interaction`, `set_patience`, `modify_knowledge` — so dialogues and reactions can write back to NPC memory.
-- [ ] Surface interaction history and social state in the `/debug` inspect tooltip: "Talked to 3 times" / "Currently: annoyed" / "Patience: 2/5" / "Knows: spider_nest location".
+- [x] Extend `MemoryComponent` with a `knowledge` record: structured facts the NPC knows about schemes, areas, hazards, other NPC locations, and hidden loot. Knowledge items are typed (`rumor`, `location`, `weakness`, `secret`) and tagged for query filtering.
+- [x] Add interaction counters to `MemoryComponent`: `timesTalked`, `timesTraded`, `timesIntimidated`, `timesHelped`, `timesBetrayed`. Each increments deterministically when the player engages in the corresponding social action.
+- [x] Add a `patienceThreshold` to NPCs derived from personality facets (M43): determines how many times they'll repeat information before refusing or demanding payment.
+- [x] Implement `annoyed` and `grateful` as temporary NPC states stored on `MemoryComponent`. These modify dialogue options, trade prices, and rumor sharing for a configurable duration after specific player actions (e.g., intimidating an NPC sets `annoyed` for 50 turns).
+- [x] Extend `ConditionPredicateSchema` (M22) with dialogue conditions: `has_knowledge`, `interaction_count`, `patience_below`, `is_annoyed`, `is_grateful` — all queryable from dialogue trees and triggers.
+- [x] Extend `ConsequenceActionSchema` (M22) with social consequence types: `record_interaction`, `set_patience`, `modify_knowledge` — so dialogues and reactions can write back to NPC memory.
+- [x] Surface interaction history and social state in the `/debug` inspect tooltip: "Talked to 3 times" / "Currently: annoyed" / "Patience: 2/5" / "Knows: spider_nest location".
 
 **Testable in game:** Use `/debug` to inspect an NPC before and after talking to them. Interaction counters increment. Use a trigger to set `annoyed` state — verify the debug tooltip shows the change. Set `patienceThreshold` to 1, ask the same question twice, verify the NPC refuses the second time.
 

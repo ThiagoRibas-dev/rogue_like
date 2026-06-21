@@ -302,6 +302,13 @@ export interface Thought {
   readonly relatedEntityId?: EntityId | undefined;
 }
 
+export interface KnowledgeItem {
+  readonly id: string;
+  readonly type: 'rumor' | 'location' | 'weakness' | 'secret';
+  readonly description: string;
+  readonly tags: ReadonlyArray<string>;
+}
+
 /**
  * Component tracking an entity's memories, grudges, and faction reputations.
  */
@@ -314,6 +321,15 @@ export interface MemoryComponent {
   readonly values?: Readonly<Record<string, number>> | undefined;
   readonly stress?: number | undefined;
   readonly thoughts?: ReadonlyArray<Thought> | undefined;
+  readonly knowledge: Readonly<Record<string, KnowledgeItem>>;
+  readonly timesTalked?: number | undefined;
+  readonly timesTraded?: number | undefined;
+  readonly timesIntimidated?: number | undefined;
+  readonly timesHelped?: number | undefined;
+  readonly timesBetrayed?: number | undefined;
+  readonly patienceThreshold?: number | undefined;
+  readonly annoyedDuration?: number | undefined;
+  readonly gratefulDuration?: number | undefined;
 }
 
 /**

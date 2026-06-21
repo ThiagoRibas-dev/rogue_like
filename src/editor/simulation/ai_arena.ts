@@ -152,7 +152,8 @@ export function runAIArena(
           type: ComponentType.Memory,
           grudges: [entA.toString(), entB.toString()],
           factionStandings: {},
-          facts: []
+          facts: [],
+          knowledge: {}
         });
       }
     }
@@ -170,7 +171,8 @@ export function runAIArena(
       type: ComponentType.Memory,
       grudges: allGrudgesA,
       factionStandings: {},
-      facts: []
+      facts: [],
+      knowledge: {}
     });
   }
 
@@ -182,7 +184,8 @@ export function runAIArena(
       type: ComponentType.Memory,
       grudges: allGrudgesB,
       factionStandings: {},
-      facts: []
+      facts: [],
+      knowledge: {}
     });
   }
 

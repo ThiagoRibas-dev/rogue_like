@@ -18,3 +18,12 @@ export const FACET_DOMINANT_LOW_THRESHOLD = 20;
 
 /** Base facet mutation applied during a core memory event. */
 export const CORE_MEMORY_MUTATION_AMOUNT = 20;
+
+/** Default number of talk interactions an NPC can handle before refusing options. */
+export const DEFAULT_PATIENCE_THRESHOLD = 5;
+
+/** Default turn duration for the annoyed social state. */
+export const DEFAULT_ANNOYED_DURATION = 50;
+
+/** Default turn duration for the grateful social state. */
+export const DEFAULT_GRATEFUL_DURATION = 50;

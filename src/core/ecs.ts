@@ -309,6 +309,9 @@ export function spawnEntity(
       }
     }
 
+    const patienceFacet = facets ? (facets['patience'] ?? 50) : 50;
+    const derivedThreshold = Math.floor(patienceFacet / 20) + 2;
+
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Memory,
       factionStandings: template.memory.factionStandings ?? {},
@@ -322,7 +325,16 @@ export function spawnEntity(
             ...t,
             relatedEntityId: t.relatedEntityId !== undefined ? toEntityId(t.relatedEntityId) : undefined
           }))
-        : []
+        : [],
+      knowledge: template.memory.knowledge ?? {},
+      timesTalked: template.memory.timesTalked ?? 0,
+      timesTraded: template.memory.timesTraded ?? 0,
+      timesIntimidated: template.memory.timesIntimidated ?? 0,
+      timesHelped: template.memory.timesHelped ?? 0,
+      timesBetrayed: template.memory.timesBetrayed ?? 0,
+      patienceThreshold: template.memory.patienceThreshold ?? derivedThreshold,
+      annoyedDuration: template.memory.annoyedDuration ?? 0,
+      gratefulDuration: template.memory.gratefulDuration ?? 0
     });
   }
 
@@ -412,7 +424,8 @@ export function spawnEntity(
         type: ComponentType.Memory,
         factionStandings: {},
         grudges: [],
-        facts: []
+        facts: [],
+        knowledge: {}
       });
     }
 

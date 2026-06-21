@@ -5,7 +5,13 @@ import {
   type Thought
 } from '../types/components.types.ts';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { GameEventType, type CoreValueViolatedEvent, type EntityDamagedEvent, type EntityDiedEvent, type ApplyResolvedEvent } from '../types/events.types.ts';
+import {
+  GameEventType,
+  type CoreValueViolatedEvent,
+  type EntityDamagedEvent,
+  type EntityDiedEvent,
+  type ApplyResolvedEvent
+} from '../types/events.types.ts';
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { promoteEntity } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -40,13 +46,7 @@ export function processPersonalitySystem(state: GameState): GameState {
     } else if (event.type === GameEventType.EntityDied) {
       const e = event as EntityDiedEvent;
       if (e.killerId !== undefined) {
-        nextState = recordThought(
-          nextState,
-          e.killerId,
-          `Defeated Entity #${e.victimId}`,
-          -5,
-          e.victimId
-        );
+        nextState = recordThought(nextState, e.killerId, `Defeated Entity #${e.victimId}`, -5, e.victimId);
       }
     } else if (event.type === GameEventType.ApplyResolved) {
       const e = event as ApplyResolvedEvent;
@@ -93,11 +93,36 @@ export function processPersonalitySystem(state: GameState): GameState {
       }
     }
 
-    // 3. Core Memory Promotion
-    // We re-fetch memory in case promoteEntity updated the state, though promoteEntity doesn't change MemoryComponent.
-    const currentMemory = getComponent(nextState, entityId, ComponentType.Memory);
-    if (currentMemory && currentMemory.stress !== undefined && currentMemory.stress >= STRESS_CORE_MEMORY_THRESHOLD) {
-      nextState = promoteToCoreMemory(nextState, entityId);
+    // 3. Temporary Social State Decay
+    const currentMemory = getComponent(nextState, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+    if (currentMemory) {
+      let annoyedDuration = currentMemory.annoyedDuration ?? 0;
+      let gratefulDuration = currentMemory.gratefulDuration ?? 0;
+      let changed = false;
+
+      if (annoyedDuration > 0) {
+        annoyedDuration--;
+        changed = true;
+      }
+      if (gratefulDuration > 0) {
+        gratefulDuration--;
+        changed = true;
+      }
+
+      let updatedMemory = currentMemory;
+      if (changed) {
+        updatedMemory = {
+          ...currentMemory,
+          annoyedDuration,
+          gratefulDuration
+        };
+        nextState = addComponent(nextState, entityId, updatedMemory);
+      }
+
+      // 4. Core Memory Promotion
+      if (updatedMemory.stress !== undefined && updatedMemory.stress >= STRESS_CORE_MEMORY_THRESHOLD) {
+        nextState = promoteToCoreMemory(nextState, entityId);
+      }
     }
   }
 

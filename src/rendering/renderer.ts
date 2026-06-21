@@ -1,7 +1,7 @@
 import type { Display } from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
-import { ComponentType, type IdentityComponent } from '../types/components.types.ts';
-import type { GameState } from '../types/game-state.types.ts';
+import { ComponentType, type IdentityComponent, type MemoryComponent } from '../types/components.types.ts';
+import { type GameState, UIMode } from '../types/game-state.types.ts';
 
 import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
@@ -288,7 +288,7 @@ function renderInspectTooltip(
       defEl.innerHTML = `<span>DEF</span><span>${stats.defense}</span>`;
       fragment.appendChild(defEl);
 
-      const memory = getComponent(state, entityId, ComponentType.Memory);
+      const memory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
       if (memory) {
         if (memory.stress !== undefined && memory.stress > 0) {
           const stressEl = document.createElement('div');
@@ -307,6 +307,46 @@ function renderInspectTooltip(
             facetsEl.textContent = 'Traits: ' + dominant.map(([k, v]) => `${k} (${v})`).join(', ');
             fragment.appendChild(facetsEl);
           }
+        }
+
+        // Social Metrics
+        if (state.uiMode === UIMode.Debug) {
+          const countsEl = document.createElement('div');
+          countsEl.className = 'inspect-stat';
+          countsEl.style.fontSize = '11px';
+          countsEl.style.color = '#8888ff';
+          countsEl.innerHTML = `<span>Talk/Trd/Intm/Hlp/Btr</span><span>${memory.timesTalked ?? 0}/${memory.timesTraded ?? 0}/${memory.timesIntimidated ?? 0}/${memory.timesHelped ?? 0}/${memory.timesBetrayed ?? 0}</span>`;
+          fragment.appendChild(countsEl);
+        }
+
+        const remainingPatience = (memory.patienceThreshold ?? 5) - (memory.timesTalked ?? 0);
+        const patienceEl = document.createElement('div');
+        patienceEl.className = 'inspect-stat';
+        patienceEl.innerHTML = `<span>Patience</span><span>${remainingPatience}/${memory.patienceThreshold ?? 5}</span>`;
+        fragment.appendChild(patienceEl);
+
+        if ((memory.annoyedDuration ?? 0) > 0) {
+          const stateEl = document.createElement('div');
+          stateEl.className = 'inspect-desc';
+          stateEl.style.color = '#ffaa00';
+          stateEl.textContent = `Annoyed (${memory.annoyedDuration} turns remaining)`;
+          fragment.appendChild(stateEl);
+        }
+        if ((memory.gratefulDuration ?? 0) > 0) {
+          const stateEl = document.createElement('div');
+          stateEl.className = 'inspect-desc';
+          stateEl.style.color = '#00ffaa';
+          stateEl.textContent = `Grateful (${memory.gratefulDuration} turns remaining)`;
+          fragment.appendChild(stateEl);
+        }
+
+        const knowledgeKeys = Object.keys(memory.knowledge ?? {});
+        if (knowledgeKeys.length > 0) {
+          const knowledgeEl = document.createElement('div');
+          knowledgeEl.className = 'inspect-desc';
+          knowledgeEl.style.color = '#55ff55';
+          knowledgeEl.textContent = 'Knowledge: ' + knowledgeKeys.join(', ');
+          fragment.appendChild(knowledgeEl);
         }
       }
 

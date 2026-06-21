@@ -202,8 +202,69 @@ export function evaluateCondition(
       return pisVal === condition.value;
     }
 
+    case 'has_knowledge': {
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
+      if (memoryOwnerId === undefined) return false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      return memory?.knowledge?.[condition.knowledgeId] !== undefined;
+    }
+
+    case 'interaction_count': {
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
+      if (memoryOwnerId === undefined) return false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (!memory) return false;
+      let count = 0;
+      switch (condition.interactionType) {
+        case 'talk':
+          count = memory.timesTalked ?? 0;
+          break;
+        case 'trade':
+          count = memory.timesTraded ?? 0;
+          break;
+        case 'intimidate':
+          count = memory.timesIntimidated ?? 0;
+          break;
+        case 'help':
+          count = memory.timesHelped ?? 0;
+          break;
+        case 'betray':
+          count = memory.timesBetrayed ?? 0;
+          break;
+        default:
+          return assertNever(condition.interactionType);
+      }
+      if (condition.operator === '>=') return count >= condition.value;
+      if (condition.operator === '<=') return count <= condition.value;
+      return count === condition.value;
+    }
+
+    case 'patience_below': {
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
+      if (memoryOwnerId === undefined) return false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (!memory) return false;
+      const threshold = memory.patienceThreshold ?? 5;
+      const remaining = threshold - (memory.timesTalked ?? 0);
+      return remaining < condition.value;
+    }
+
+    case 'is_annoyed': {
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
+      if (memoryOwnerId === undefined) return false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      return (memory?.annoyedDuration ?? 0) > 0;
+    }
+
+    case 'is_grateful': {
+      const memoryOwnerId = condition._npcEntityId ?? condition.entityId;
+      if (memoryOwnerId === undefined) return false;
+      const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      return (memory?.gratefulDuration ?? 0) > 0;
+    }
+
     default:
-      return true;
+      return assertNever(condition);
   }
 }
 
@@ -905,6 +966,72 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
         if (sayResult.events && sayResult.events.length > 0) {
           nextState = { ...nextState, events: [...nextState.events, ...sayResult.events] };
         }
+      }
+      break;
+    }
+
+    case 'record_interaction': {
+      const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
+      if (memOwnerId === undefined) break;
+      const memory = getComponent(nextState, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (memory) {
+        const nextMemory: MemoryComponent = {
+          ...memory,
+          timesTalked: consequence.interactionType === 'talk' ? (memory.timesTalked ?? 0) + 1 : memory.timesTalked,
+          timesTraded: consequence.interactionType === 'trade' ? (memory.timesTraded ?? 0) + 1 : memory.timesTraded,
+          timesIntimidated:
+            consequence.interactionType === 'intimidate' ? (memory.timesIntimidated ?? 0) + 1 : memory.timesIntimidated,
+          timesHelped: consequence.interactionType === 'help' ? (memory.timesHelped ?? 0) + 1 : memory.timesHelped,
+          timesBetrayed:
+            consequence.interactionType === 'betray' ? (memory.timesBetrayed ?? 0) + 1 : memory.timesBetrayed
+        };
+        nextState = addComponent(nextState, memOwnerId, nextMemory);
+      }
+      break;
+    }
+
+    case 'set_patience': {
+      const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
+      if (memOwnerId === undefined) break;
+      const memory = getComponent(nextState, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (memory) {
+        nextState = addComponent(nextState, memOwnerId, { ...memory, patienceThreshold: consequence.value });
+      }
+      break;
+    }
+
+    case 'modify_knowledge': {
+      const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
+      if (memOwnerId === undefined) break;
+      const memory = getComponent(nextState, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (memory) {
+        const nextKnowledge = { ...(memory.knowledge ?? {}) };
+        if (consequence.action === 'add' && consequence.knowledgeType && consequence.description) {
+          nextKnowledge[consequence.knowledgeId] = {
+            id: consequence.knowledgeId,
+            type: consequence.knowledgeType,
+            description: consequence.description,
+            tags: consequence.tags ?? []
+          };
+        } else if (consequence.action === 'remove') {
+          delete nextKnowledge[consequence.knowledgeId];
+        }
+        nextState = addComponent(nextState, memOwnerId, { ...memory, knowledge: nextKnowledge });
+      }
+      break;
+    }
+
+    case 'set_social_state': {
+      const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
+      if (memOwnerId === undefined) break;
+      const memory = getComponent(nextState, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (memory) {
+        const nextMemory: MemoryComponent = {
+          ...memory,
+          annoyedDuration: consequence.state === 'annoyed' ? consequence.duration : memory.annoyedDuration,
+          gratefulDuration: consequence.state === 'grateful' ? consequence.duration : memory.gratefulDuration
+        };
+        nextState = addComponent(nextState, memOwnerId, nextMemory);
       }
       break;
     }
