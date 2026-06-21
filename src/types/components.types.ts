@@ -361,6 +361,8 @@ export interface AgreementComponent {
   readonly mastermindId: EntityId;
   readonly agreementId: string;
   readonly leverageUsed: 'money' | 'ideology' | 'coercion' | 'ego';
+  readonly targetAreaId?: string | undefined;
+  readonly isFulfilled?: boolean | undefined;
 }
 
 export interface ClueComponent {

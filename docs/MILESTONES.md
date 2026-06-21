@@ -464,14 +464,14 @@ Give designers a window into the Director before relying on it in real campaigns
 - [x] Add validator checks for overspent budgets, empty candidate pools, unreachable objectives, unavoidable lethal hazards, and impossible exits.
 - [x] Block export on fatal Director configuration errors.
 
-## 🟡 Milestone 40: Macro/Micro Integration — Schemes Mutate Encounters
+## 🟢 Milestone 40: Macro/Micro Integration — Schemes Mutate Encounters (Complete)
 Let the existing Scheme Simulator influence future area generation and encounter composition.
-- [ ] Allow schemes to mutate area tags, sub-biome probabilities, encounter profiles, or budget modifiers.
-- [ ] Let villain agreements reserve encounter slots/tokens for minions, lieutenants, clues, or ritual objectives.
-- [ ] Surface scheme-driven area changes through investigation clues, rumors, map annotations, or faction dialogue.
-- [ ] Ensure inactive/generated areas reconcile scheme mutations safely during sleep/wake and reload.
-- [ ] Extend the Scheme Acceleration Simulator to display how schemes change encounter generation over time.
-- [ ] Add fail-graceful behavior when a scheme references an exhausted token pool or an unavailable area.
+- [x] Allow schemes to mutate area tags, sub-biome probabilities, encounter profiles, or budget modifiers.
+- [x] Let villain agreements reserve encounter slots/tokens for minions, lieutenants, clues, or ritual objectives.
+- [x] Surface scheme-driven area changes through investigation clues, rumors, map annotations, or faction dialogue.
+- [x] Ensure inactive/generated areas reconcile scheme mutations safely during sleep/wake and reload.
+- [x] Extend the Scheme Acceleration Simulator to display how schemes change encounter generation over time.
+- [x] Add fail-graceful behavior when a scheme references an exhausted token pool or an unavailable area.
 
 ## 🟡 Milestone 41: Tactical Content Pass — First Directed Biomes
 Prove the Director with a compact but high-quality content set.

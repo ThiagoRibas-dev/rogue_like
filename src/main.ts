@@ -116,6 +116,7 @@ let state: GameState = {
   fovNeedsUpdate: true,
   cachedFov: new Set(),
   playerCommandQueue: [],
+  areaMutations: {},
   investigation: {
     knownActors: [],
     discoveredClues: [],

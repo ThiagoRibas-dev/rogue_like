@@ -420,13 +420,23 @@ export const VillainArchetypeSchema = z.object({
 });
 export type VillainArchetype = z.infer<typeof VillainArchetypeSchema>;
 
+export const SchemePhaseMutationSchema = z.object({
+  targetAreaId: z.string(),
+  addedTags: z.array(z.string()).optional(),
+  budgetModifier: z.number().int().optional(),
+  encounterProfileId: z.string().optional(),
+  subBiomes: z.record(z.string(), z.number().positive().max(1)).optional()
+});
+export type SchemePhaseMutation = z.infer<typeof SchemePhaseMutationSchema>;
+
 export const SchemeTemplateSchema = z.object({
   id: z.string(),
   villainArchetypeId: z.string(),
   phases: z.array(
     z.object({
       requiredAgreements: z.number().int().nonnegative(),
-      missionIntents: z.array(z.string())
+      missionIntents: z.array(z.string()),
+      mutations: z.array(SchemePhaseMutationSchema).optional()
     })
   )
 });

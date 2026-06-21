@@ -7,6 +7,13 @@
         "requiredAgreements": 1,
         "missionIntents": [
           "scout_area"
+        ],
+        "mutations": [
+          {
+            "targetAreaId": "dungeon_1",
+            "addedTags": ["corrupted"],
+            "budgetModifier": 10
+          }
         ]
       },
       {
@@ -14,6 +21,13 @@
         "missionIntents": [
           "raid_caravan",
           "assassinate_guard"
+        ],
+        "mutations": [
+          {
+            "targetAreaId": "dungeon_2",
+            "addedTags": ["fortified"],
+            "budgetModifier": 25
+          }
         ]
       }
     ]

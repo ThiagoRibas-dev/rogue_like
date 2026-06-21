@@ -16,9 +16,13 @@ import {
   type PortalComponent,
   type PositionComponent,
   type RenderableComponent,
-  type TagsComponent
+  type TagsComponent,
+  type AgreementComponent,
+  type FighterComponent,
+  type TemplateComponent
 } from '../types/components.types.ts';
 import { type AreaData, type EntityId, type GameMap, type GameState } from '../types/game-state.types.ts';
+import { coordToIndex } from '../utils/grid.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 import type { ChangeAreaIntent } from '@/types/intents/movement.intents.ts';
@@ -122,6 +126,77 @@ export function processChangeAreaIntent(
     nextEntities = [...savedTargetArea.entities];
     nextComponents = new Map(savedTargetArea.components);
 
+    // Reinforcement Pass for wake phase:
+    // Find unfulfilled reservations (Agreements) targeting targetAreaId
+    const reservedTokens: Array<{ templateId: string; minionId: EntityId }> = [];
+    for (const [entityId, comps] of state.components.entries()) {
+      const agreement = comps[ComponentType.Agreement] as AgreementComponent | undefined;
+      if (agreement && agreement.targetAreaId === targetAreaId && !agreement.isFulfilled) {
+        const template = comps[ComponentType.Template] as TemplateComponent | undefined;
+        if (template) {
+          reservedTokens.push({ templateId: template.templateId, minionId: entityId });
+        }
+      }
+    }
+    for (const [entityId, record] of state.persistentEntities.entries()) {
+      const agreement = record.components[ComponentType.Agreement] as AgreementComponent | undefined;
+      if (agreement && agreement.targetAreaId === targetAreaId && !agreement.isFulfilled) {
+        const template = record.components[ComponentType.Template] as TemplateComponent | undefined;
+        if (template) {
+          reservedTokens.push({ templateId: template.templateId, minionId: entityId });
+        }
+      }
+    }
+
+    if (reservedTokens.length > 0) {
+      const occupiedCoords = new Set<string>();
+      for (const id of nextEntities) {
+        const pos = nextComponents.get(id)?.[ComponentType.Position] as PositionComponent;
+        if (pos) {
+          occupiedCoords.add(`${pos.x},${pos.y}`);
+        }
+      }
+
+      for (const token of reservedTokens) {
+        for (let attempt = 0; attempt < 100; attempt++) {
+          const rx = Math.floor(ROT.RNG.getUniform() * targetMap.width);
+          const ry = Math.floor(ROT.RNG.getUniform() * targetMap.height);
+          const idx = coordToIndex(rx, ry, targetMap.width);
+          const tile = targetMap.tiles[idx];
+          if (
+            tile &&
+            !tile.tileId.includes('wall') &&
+            !tile.tileId.includes('water') &&
+            !occupiedCoords.has(`${rx},${ry}`)
+          ) {
+            const minionComps =
+              state.components.get(token.minionId) || state.persistentEntities.get(token.minionId)?.components;
+            if (minionComps) {
+              const updatedAgreement: AgreementComponent = {
+                ...(minionComps[ComponentType.Agreement] as AgreementComponent),
+                isFulfilled: true
+              };
+
+              const finalComps = {
+                ...minionComps,
+                [ComponentType.Position]: { type: ComponentType.Position, x: rx, y: ry } as PositionComponent,
+                [ComponentType.Agreement]: updatedAgreement
+              };
+
+              if (!nextEntities.includes(token.minionId)) {
+                nextEntities = [...nextEntities, token.minionId];
+              }
+              nextComponents.set(token.minionId, finalComps);
+              occupiedCoords.add(`${rx},${ry}`);
+
+              nextPersistentEntities.delete(token.minionId);
+              break;
+            }
+          }
+        }
+      }
+    }
+
     // Find the corresponding stairs
     let foundStairs = false;
     for (const id of nextEntities) {
@@ -142,8 +217,46 @@ export function processChangeAreaIntent(
       spawnY = Math.floor(targetMap.height / 2);
     }
   } else {
+    // Fetch player level (we can query the player entity's FighterComponent)
+    const players = queryEntities(state, [ComponentType.Player, ComponentType.Fighter]);
+    const playerLevel =
+      players[0] !== undefined
+        ? (getComponent(state, players[0], ComponentType.Fighter) as FighterComponent | undefined)?.level || 1
+        : 1;
+
+    // Get mutations for this area
+    const areaMutation = state.areaMutations[targetAreaId];
+
+    // Find unfulfilled reservations (Agreements) targeting targetAreaId
+    const reservedTokens: Array<{ templateId: string; minionId: EntityId }> = [];
+    for (const [entityId, comps] of state.components.entries()) {
+      const agreement = comps[ComponentType.Agreement] as AgreementComponent | undefined;
+      if (agreement && agreement.targetAreaId === targetAreaId && !agreement.isFulfilled) {
+        const template = comps[ComponentType.Template] as TemplateComponent | undefined;
+        if (template) {
+          reservedTokens.push({ templateId: template.templateId, minionId: entityId });
+        }
+      }
+    }
+    for (const [entityId, record] of state.persistentEntities.entries()) {
+      const agreement = record.components[ComponentType.Agreement] as AgreementComponent | undefined;
+      if (agreement && agreement.targetAreaId === targetAreaId && !agreement.isFulfilled) {
+        const template = record.components[ComponentType.Template] as TemplateComponent | undefined;
+        if (template) {
+          reservedTokens.push({ templateId: template.templateId, minionId: entityId });
+        }
+      }
+    }
+
+    const directorContext = {
+      playerLevel,
+      tokenPool: new Set<string>(),
+      areaMutation,
+      reservedTokens
+    };
+
     // Generate new floor
-    const generated = generateArea(state.campaign, targetAreaId);
+    const generated = generateArea(state.campaign, targetAreaId, directorContext);
     targetMap = generated.map;
     spawnX = generated.startPos.x;
     spawnY = generated.startPos.y;
@@ -237,7 +350,29 @@ export function processChangeAreaIntent(
         if (state.campaign.items[ent.templateId]) {
           [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
         } else if (state.campaign.entities[ent.templateId]) {
-          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
+          if (ent.preExistingEntityId !== undefined) {
+            const minionId = ent.preExistingEntityId;
+            const minionComps = state.components.get(minionId) || state.persistentEntities.get(minionId)?.components;
+            if (minionComps) {
+              const updatedAgreement: AgreementComponent = {
+                ...(minionComps[ComponentType.Agreement] as AgreementComponent),
+                isFulfilled: true
+              };
+              const finalComps = {
+                ...minionComps,
+                [ComponentType.Position]: { type: ComponentType.Position, x: ent.x, y: ent.y } as PositionComponent,
+                [ComponentType.Agreement]: updatedAgreement
+              };
+              tempState = {
+                ...tempState,
+                entities: [...tempState.entities, minionId],
+                components: new Map([...tempState.components.entries(), [minionId, finalComps]])
+              };
+              nextPersistentEntities.delete(minionId);
+            }
+          } else {
+            [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
+          }
         } else {
           console.warn(`Placed entity template ${ent.templateId} not found in items or entities registries.`);
         }

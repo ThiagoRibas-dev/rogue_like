@@ -22,7 +22,8 @@ export enum GameEventType {
   DebugTriggerTrace = 'DebugTriggerTrace',
   ApplyResolved = 'ApplyResolved',
   ApplyFailed = 'ApplyFailed',
-  ReactionResolved = 'ReactionResolved'
+  ReactionResolved = 'ReactionResolved',
+  SchemeMutatedArea = 'SchemeMutatedArea'
 }
 
 export interface BaseGameEvent {
@@ -157,6 +158,13 @@ export interface ReactionResolvedEvent extends BaseGameEvent {
   readonly whyMatched: string;
 }
 
+export interface SchemeMutatedAreaEvent extends BaseGameEvent {
+  readonly type: GameEventType.SchemeMutatedArea;
+  readonly areaId: string;
+  readonly tagsAdded: ReadonlyArray<string>;
+  readonly budgetModifier: number;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -179,4 +187,5 @@ export type GameEvent =
   | DebugTriggerTraceEvent
   | ApplyResolvedEvent
   | ApplyFailedEvent
-  | ReactionResolvedEvent;
+  | ReactionResolvedEvent
+  | SchemeMutatedAreaEvent;

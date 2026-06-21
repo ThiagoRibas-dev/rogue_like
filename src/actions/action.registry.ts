@@ -35,7 +35,12 @@ import {
 import { processInteractIntent } from '../systems/intent.system.ts';
 import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
 import { EngineMode, UIMode } from '../types/game-state.types.ts';
-import { GameEventType, type ClueDiscoveredEvent, type GameEvent } from '../types/events.types.ts';
+import {
+  GameEventType,
+  type ClueDiscoveredEvent,
+  type GameEvent,
+  type SchemeMutatedAreaEvent
+} from '../types/events.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
 export type ActionHandler<T extends Intent> = (
@@ -242,10 +247,24 @@ export function dispatchAction(
       }
 
       // Fast-forward loop
+      const startEventCount = nextState.events.length;
       for (let i = 0; i < intentFF.iterations; i++) {
         for (const mastermindId of masterminds) {
           nextState = processSchemeTurn(nextState, mastermindId);
         }
+      }
+
+      // Output receipts for area mutations that occurred during this fast-forward
+      const newEvents = nextState.events.slice(startEventCount);
+      const schemeMutations = newEvents.filter(
+        (e) => e.type === GameEventType.SchemeMutatedArea
+      ) as SchemeMutatedAreaEvent[];
+      for (const mut of schemeMutations) {
+        nextState = addMessage(
+          nextState,
+          `[SIM-RECEIPT] Area mutated: ${mut.areaId} -> tags added: [${mut.tagsAdded.join(', ')}], budget mod: +${mut.budgetModifier}`,
+          MessageLogCategory.System
+        );
       }
 
       // Artificially inject clues for recently recruited minions

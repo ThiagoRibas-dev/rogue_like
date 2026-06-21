@@ -1,14 +1,10 @@
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
-import {
-  ComponentType,
-  type SchemeComponent,
-  type AgreementComponent,
-  type TagsComponent
-} from '../types/components.types.ts';
-import { getComponent, addComponent } from '../core/ecs.ts';
+import { ComponentType, type SchemeComponent, type AgreementComponent } from '../types/components.types.ts';
+import { getComponent, addComponent, createEntity } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import * as ROT from 'rot-js';
 import type { VillainArchetype } from '../types/campaign.types.ts';
+import { GameEventType } from '../types/events.types.ts';
 
 /**
  * Executes a mastermind's background scheme plot.
@@ -24,7 +20,6 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
   const currentPhaseDef = schemeTemplate.phases[schemeComponent.currentPhase];
   if (!currentPhaseDef) {
     // Scheme has completed all phases!
-    // We could add an event here, or transition to a "victory" state for the mastermind.
     return state;
   }
 
@@ -42,9 +37,34 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
     }
   } else {
     // EXECUTION PHASE
-    // All minions are recruited, queue their mission intents (stubbed for now, as we need AI behavior integration)
-    // For MVP, we will advance the phase when they execute.
-    // Let's just advance the phase if we have enough minions.
+    // Apply phase mutations
+    if (currentPhaseDef.mutations) {
+      const nextMutations = { ...nextState.areaMutations };
+      for (const mut of currentPhaseDef.mutations) {
+        const areaId = mut.targetAreaId;
+        const currentMutation = nextMutations[areaId] || { addedTags: [], budgetModifier: 0 };
+        nextMutations[areaId] = {
+          addedTags: Array.from(new Set([...currentMutation.addedTags, ...(mut.addedTags || [])])),
+          budgetModifier: currentMutation.budgetModifier + (mut.budgetModifier || 0)
+        };
+
+        // Emit Event (for investigation board / ledger)
+        nextState = {
+          ...nextState,
+          events: [
+            ...nextState.events,
+            {
+              type: GameEventType.SchemeMutatedArea,
+              areaId,
+              tagsAdded: mut.addedTags || [],
+              budgetModifier: mut.budgetModifier || 0
+            }
+          ]
+        };
+      }
+      nextState = { ...nextState, areaMutations: nextMutations };
+    }
+
     const updatedScheme: SchemeComponent = {
       ...schemeComponent,
       currentPhase: schemeComponent.currentPhase + 1
@@ -63,7 +83,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
 }
 
 /**
- * Attempts to find a target NPC and convince them to join the scheme.
+ * Attempts to find a target NPC or create a background token minion to join the scheme.
  */
 function recruitMinion(
   state: GameState,
@@ -71,58 +91,55 @@ function recruitMinion(
   schemeComponent: SchemeComponent,
   archetype: VillainArchetype
 ): GameState {
-  // Find all active and persistent entities that are Actors but not the Player and not already minions
-  const potentialTargets: EntityId[] = [];
+  const schemeTemplate = state.campaign.schemes[schemeComponent.schemeId];
+  const currentPhaseDef = schemeTemplate ? schemeTemplate.phases[schemeComponent.currentPhase] : undefined;
 
-  // Search active area
-  for (const id of state.entities) {
-    if (id === mastermindId || schemeComponent.activeMinions.includes(id)) continue;
-    if (getComponent(state, id, ComponentType.Actor) && !getComponent(state, id, ComponentType.Player)) {
-      potentialTargets.push(id);
+  // Determine target area
+  let targetAreaId = 'dungeon_1'; // Fallback
+  if (currentPhaseDef?.mutations && currentPhaseDef.mutations.length > 0) {
+    targetAreaId = currentPhaseDef.mutations[0]!.targetAreaId;
+  } else {
+    const areas = Object.keys(state.campaign.areas).filter((id) => id !== 'safe_hub');
+    if (areas.length > 0) {
+      targetAreaId = ROT.RNG.getItem(areas) || 'dungeon_1';
     }
   }
 
-  // Search persistent entities
-  for (const [id, record] of state.persistentEntities.entries()) {
-    if (id === mastermindId || schemeComponent.activeMinions.includes(id)) continue;
-    if (record.components[ComponentType.Actor]) {
-      potentialTargets.push(id);
-    }
+  // Determine minion template
+  const preferredTags = archetype.recruitmentPreferences.targetTags;
+  const eligibleTemplates = Object.entries(state.campaign.entities)
+    .filter(([id, ent]) => {
+      if (id === 'player') return false;
+      return preferredTags.some((tag) => ent.tags?.includes(tag));
+    })
+    .map(([id]) => id);
+
+  let templateId: string;
+  if (eligibleTemplates.length > 0) {
+    templateId = ROT.RNG.getItem(eligibleTemplates) || 'orc';
+  } else {
+    // Fail-graceful: pool exhausted or empty. Write debug log, fallback to generic 'orc'
+    templateId = 'orc';
+    console.warn(`[DEBUG] Scheme recruitment pool exhausted for archetype ${archetype.id}, falling back to 'orc'`);
   }
 
-  // Filter by target tags
-  const validTargets = potentialTargets.filter((id) => {
-    // Active area
-    const tagsComp = getComponent(state, id, ComponentType.Tags) as TagsComponent | undefined;
-    // Persistent area
-    const persistentRecord = state.persistentEntities.get(id);
-    let tags: string[] = [];
+  // Create the placeholder entity in ECS (no PositionComponent!)
+  let nextState = state;
+  const [tempState, minionId] = createEntity(nextState);
+  nextState = tempState;
 
-    if (tagsComp) {
-      tags = [...tagsComp.tags];
-    } else if (persistentRecord) {
-      const pTagsComp = persistentRecord.components[ComponentType.Tags] as TagsComponent | undefined;
-      if (pTagsComp) tags = [...pTagsComp.tags];
-    }
-
-    return archetype.recruitmentPreferences.targetTags.some((tag) => tags.includes(tag));
+  // Attach Template component so we know what template it is
+  nextState = addComponent(nextState, minionId, {
+    type: ComponentType.Template,
+    templateId
   });
 
-  if (validTargets.length === 0) {
-    // No one to recruit right now
-    return state;
-  }
-
-  // Pick a random valid target
-  const targetId = ROT.RNG.getItem(validTargets);
-  if (targetId === null) return state;
-
-  // Pick a leverage based on weights (Simplified MVP: pick highest weight, or random)
+  // Pick a leverage based on weights
   const leverageEntries = Object.entries(archetype.recruitmentPreferences.leverageWeight);
-  if (leverageEntries.length === 0) return state;
-
-  // Just pick 'money' or whatever has the highest weight for the MVP to ensure it works
-  const leverageUsed = leverageEntries.sort((a, b) => b[1] - a[1])[0]![0] as 'money' | 'ideology' | 'coercion' | 'ego';
+  const leverageUsed =
+    leverageEntries.length > 0
+      ? (leverageEntries.sort((a, b) => b[1] - a[1])[0]![0] as 'money' | 'ideology' | 'coercion' | 'ego')
+      : 'money';
 
   // Pick a random agreement template
   const agreementIds = Object.keys(state.campaign.agreements);
@@ -133,22 +150,22 @@ function recruitMinion(
     type: ComponentType.Agreement,
     mastermindId,
     agreementId,
-    leverageUsed
+    leverageUsed,
+    targetAreaId,
+    isFulfilled: false
   };
-
-  let nextState = addComponent(state, targetId, agreement);
+  nextState = addComponent(nextState, minionId, agreement);
 
   // Update SchemeComponent
   const updatedScheme: SchemeComponent = {
     ...schemeComponent,
-    activeMinions: [...schemeComponent.activeMinions, targetId]
+    activeMinions: [...schemeComponent.activeMinions, minionId]
   };
-
   nextState = addComponent(nextState, mastermindId, updatedScheme);
 
   nextState = addMessage(
     nextState,
-    `[DEBUG] Mastermind recruited minion ${targetId} using ${leverageUsed}!`,
+    `[DEBUG] Mastermind recruited minion ${minionId} (template: ${templateId}) using ${leverageUsed} for area ${targetAreaId}!`,
     MessageLogCategory.System
   );
 

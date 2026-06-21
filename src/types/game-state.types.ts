@@ -109,6 +109,11 @@ export interface PersistentEntityRecord {
   readonly components: Readonly<Record<string, Component>>;
 }
 
+export interface AreaMutation {
+  readonly addedTags: ReadonlyArray<string>;
+  readonly budgetModifier: number;
+}
+
 export interface InvestigationKnowledge {
   readonly knownActors: ReadonlyArray<EntityId>;
   readonly discoveredClues: ReadonlyArray<string>;
@@ -185,6 +190,7 @@ export interface GameState {
   readonly zoomLevel: number;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
+  readonly areaMutations: Readonly<Record<string, AreaMutation>>;
   readonly verbMenu?:
     | {
         readonly target: ApplyIntentTarget;
@@ -248,4 +254,5 @@ export interface SerializedGameState {
   readonly is3D: boolean;
   readonly zoomLevel: number;
   readonly investigation: InvestigationKnowledge;
+  readonly areaMutations: ReadonlyArray<[string, AreaMutation]>;
 }

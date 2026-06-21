@@ -93,7 +93,8 @@ export function saveGame(state: GameState): void {
     isRotated: state.isRotated,
     is3D: state.is3D,
     zoomLevel: state.zoomLevel,
-    investigation: state.investigation
+    investigation: state.investigation,
+    areaMutations: Object.entries(state.areaMutations)
   };
 
   try {
@@ -172,7 +173,8 @@ export async function loadGame(): Promise<GameState | null> {
         knownActors: [],
         discoveredClues: [],
         exposedAgreements: []
-      }
+      },
+      areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {}
     };
 
     // Rebuild the spatial index for the active floor

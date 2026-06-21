@@ -123,7 +123,8 @@ export async function startNewGame(
       knownActors: [],
       discoveredClues: [],
       exposedAgreements: []
-    }
+    },
+    areaMutations: {}
   };
 
   // Spawn the player entity

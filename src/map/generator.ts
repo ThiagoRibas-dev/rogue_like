@@ -1,9 +1,9 @@
 import * as ROT from 'rot-js';
-import { type GameMap, type Tile } from '../types/game-state.types.ts';
+import { type AreaConnection, type CampaignData } from '../types/campaign.types.ts';
+import { type EntityId, type GameMap, type Tile } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { type CampaignData, type AreaConnection } from '../types/campaign.types.ts';
-import { parseStaticMap } from './static-parser.ts';
 import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
+import { parseStaticMap } from './static-parser.ts';
 
 export interface GeneratedArea {
   readonly map: GameMap;
@@ -24,6 +24,7 @@ export interface GeneratedArea {
         readonly y: number;
         readonly dynamicTraits?: ReadonlyArray<string> | undefined;
         readonly inventory?: ReadonlyArray<string> | undefined;
+        readonly preExistingEntityId?: EntityId | undefined;
       }>
     | undefined;
   readonly directorReceipt?: DirectorReceipt | undefined;

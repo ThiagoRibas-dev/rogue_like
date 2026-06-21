@@ -105,6 +105,7 @@ export function runAIArena(
     fovNeedsUpdate: true,
     cachedFov: new Set(),
     playerCommandQueue: [],
+    areaMutations: {},
     investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] }
   };
 

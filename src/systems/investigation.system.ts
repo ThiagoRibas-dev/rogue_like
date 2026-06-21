@@ -1,5 +1,5 @@
 import { type GameState } from '../types/game-state.types.ts';
-import { GameEventType, type ClueDiscoveredEvent } from '../types/events.types.ts';
+import { GameEventType, type ClueDiscoveredEvent, type SchemeMutatedAreaEvent } from '../types/events.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
@@ -37,11 +37,23 @@ export function processInvestigationEvents(state: GameState): GameState {
 
       // If we have both the minion and the mastermind, link them
       if (clueEvent.implicatesEntityId) {
-        // Technically, sourceEntityId here is the Item that was dropped.
+        // TODO: Technically, sourceEntityId here is the Item that was dropped.
         // But the item doesn't know who dropped it right now unless we added that to ClueComponent.
         // Since we did not add the minionId to the ClueComponent (only implicatesEntityId),
         // we can't fully draw the edge yet. We'd need to update ClueComponent to hold `minionId`.
         // For MVP, we will just track the exposed Agreements via implicates.
+      }
+    } else if (event.type === GameEventType.SchemeMutatedArea) {
+      const mutateEvent = event as SchemeMutatedAreaEvent;
+      const clueText = `Rumor: ${mutateEvent.areaId} is now ${mutateEvent.tagsAdded.join(', ')} (Fortification rating +${mutateEvent.budgetModifier})`;
+      if (!newDiscoveredClues.has(clueText)) {
+        newDiscoveredClues.add(clueText);
+        investigationUpdated = true;
+        nextState = addMessage(
+          nextState,
+          `Rumor added to board: ${mutateEvent.areaId} has changed!`,
+          MessageLogCategory.System
+        );
       }
     }
   }

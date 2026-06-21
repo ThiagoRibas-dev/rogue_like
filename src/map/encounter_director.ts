@@ -1,6 +1,6 @@
 import * as ROT from 'rot-js';
 import type { AreaDefinition, CampaignData } from '../types/campaign.types.ts';
-import type { GameMap } from '../types/game-state.types.ts';
+import type { GameMap, EntityId } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
 export type BudgetAxis = 'protein' | 'appetizer' | 'side' | 'dessert';
@@ -38,6 +38,7 @@ export interface DirectorResult {
     readonly x: number;
     readonly y: number;
     readonly dynamicTraits?: ReadonlyArray<string>;
+    readonly preExistingEntityId?: EntityId;
   }>;
   readonly traitOverrides: ReadonlyArray<{ readonly templateId: string; readonly traits: ReadonlyArray<string> }>;
   readonly receipt: DirectorReceipt;
@@ -57,6 +58,8 @@ export interface RoomBounds {
 export interface DirectorContext {
   readonly playerLevel: number;
   readonly tokenPool: ReadonlySet<string>;
+  readonly areaMutation?: { readonly addedTags: ReadonlyArray<string>; readonly budgetModifier: number } | undefined;
+  readonly reservedTokens?: ReadonlyArray<{ readonly templateId: string; readonly minionId: EntityId }> | undefined;
 }
 
 function resolveAxis(roleTags: ReadonlyArray<string>): BudgetAxis {
@@ -148,9 +151,11 @@ function runForEncounterZone(
     dessert: []
   };
 
+  const effectiveAreaTags = [...(areaDef.tags || []), ...(_context?.areaMutation?.addedTags || [])];
+
   for (const pool of Object.values(campaign.spawnPools)) {
     if (pool.conditions) {
-      if (pool.conditions.areaTags && !pool.conditions.areaTags.some((t) => (areaDef.tags ?? []).includes(t))) continue;
+      if (pool.conditions.areaTags && !pool.conditions.areaTags.some((t) => effectiveAreaTags.includes(t))) continue;
       if (pool.conditions.biomeTags && !pool.conditions.biomeTags.every((t) => (room.tags ?? []).includes(t))) continue;
     }
 
@@ -340,6 +345,9 @@ export function runEncounterDirector(
   if (areaDef.budgetScaling) {
     baseBudget = areaDef.budgetScaling.baseBudget + areaDef.budgetScaling.scalingFactor * (context?.playerLevel ?? 1);
   }
+  if (context?.areaMutation) {
+    baseBudget += context.areaMutation.budgetModifier;
+  }
 
   if (baseBudget <= 0) return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
 
@@ -369,7 +377,42 @@ export function runEncounterDirector(
   const occupiedCoordinates = new Set<string>();
   existingPlacedEntities.forEach((e) => occupiedCoordinates.add(`${e.x},${e.y}`));
 
-  const allNewEntities: Array<{ templateId: string; x: number; y: number; dynamicTraits?: ReadonlyArray<string> }> = [];
+  const allNewEntities: Array<{
+    readonly templateId: string;
+    readonly x: number;
+    readonly y: number;
+    readonly dynamicTraits?: ReadonlyArray<string>;
+    readonly preExistingEntityId?: EntityId;
+  }> = [];
+
+  // 1. Force-spawn reserved tokens first
+  if (context?.reservedTokens) {
+    for (const token of context.reservedTokens) {
+      const zone = ROT.RNG.getItem(zones);
+      if (!zone) continue;
+
+      const pos = getRandomFloorTileInRoom(zone, map, occupiedCoordinates);
+      if (pos) {
+        allNewEntities.push({
+          templateId: token.templateId,
+          x: pos.x,
+          y: pos.y,
+          preExistingEntityId: token.minionId,
+          dynamicTraits: []
+        });
+        occupiedCoordinates.add(`${pos.x},${pos.y}`);
+
+        // Deduct CR cost from the budget
+        const template = campaign.entities[token.templateId];
+        if (template?.crCost) {
+          baseBudget = Math.max(0, baseBudget - template.crCost / zones.length);
+        }
+      }
+    }
+  }
+
+  const activePlaced = [...existingPlacedEntities, ...allNewEntities];
+
   let totalPreAllocated = 0;
   const mergedAxisResults: Record<
     BudgetAxis,
@@ -391,7 +434,7 @@ export function runEncounterDirector(
       profile,
       map,
       zone,
-      existingPlacedEntities,
+      activePlaced,
       context,
       occupiedCoordinates,
       localTokenPool
