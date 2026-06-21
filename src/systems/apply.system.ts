@@ -5,6 +5,7 @@ import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processProjectileThrow } from './projectile.system.ts';
 import { processWandZap } from './zap.system.ts';
+import { processSocialIntent } from './social.system.ts';
 import { processReactions, getValidReactionsForTarget } from './reaction.system.ts';
 import { VERBS, type Verb } from '../constants/verbs.constants.ts';
 import { ComponentType, type ItemComponent } from '../types/components.types.ts';
@@ -29,6 +30,10 @@ export function processApplyIntent(
 
   if (intent.verb === 'zap' && intent.toolEntityId) {
     return processWandZap(state, intent);
+  }
+
+  if (intent.verb === 'intimidate' || intent.verb === 'persuade') {
+    return processSocialIntent(state, intent);
   }
 
   const result = processReactions(state, intent.verb, intent.entityId, intent.target, intent.toolEntityId);

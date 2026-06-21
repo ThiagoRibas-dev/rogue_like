@@ -126,6 +126,7 @@ export const ItemDefinitionSchema = z.object({
   category: ItemCategoryEnum,
   tags: z.array(z.string()).default([]),
   weight: z.number().int().nonnegative(),
+  baseValue: z.number().int().nonnegative().default(0),
   consumable: z
     .object({
       effectId: z.string(),
@@ -311,7 +312,25 @@ export const EntityTemplateSchema = z.object({
   crCost: z.number().int().nonnegative().optional(),
   roleTags: z.array(z.string()).optional(),
   encounterTags: z.array(z.string()).optional(),
-  directorHints: z.record(z.string(), z.unknown()).optional()
+  directorHints: z.record(z.string(), z.unknown()).optional(),
+  shop: z
+    .object({
+      inventory: z.array(z.string()).optional(),
+      markupMultiplier: z.number().nonnegative(),
+      buyTags: z.array(z.string()).default([]),
+      sellTags: z.array(z.string()).default([])
+    })
+    .optional(),
+  services: z
+    .array(
+      z.object({
+        serviceId: z.string(),
+        name: z.string(),
+        cost: z.number().int().nonnegative(),
+        effectId: z.string()
+      })
+    )
+    .optional()
 });
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 

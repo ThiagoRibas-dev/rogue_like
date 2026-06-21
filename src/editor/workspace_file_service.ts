@@ -203,6 +203,7 @@ export function createBlankSlateCampaign(): CampaignData {
         category: 'consumable',
         tags: ['potion', 'healing'],
         weight: 1,
+        baseValue: 10,
         consumable: {
           effectId: 'heal_light',
           charges: 1

@@ -63,7 +63,7 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('interaction_count'),
-    interactionType: z.enum(['talk', 'trade', 'intimidate', 'help', 'betray']),
+    interactionType: z.enum(['talk', 'trade', 'barter', 'intimidate', 'persuade', 'help', 'betray']),
     operator: z.enum(['>=', '<=', '==']),
     value: z.number()
   }),
@@ -118,8 +118,8 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('grant_quest'), targetId: z.string().optional(), questId: z.string().optional() }),
   z.object({ type: z.literal('complete_quest'), targetId: z.string().optional(), questId: z.string().optional() }),
   z.object({ type: z.literal('modify_standing'), factionId: z.string(), amount: z.number() }),
-  z.object({ type: z.literal('open_barter') }),
-  z.object({ type: z.literal('trigger_service'), serviceId: z.string() }),
+  z.object({ type: z.literal('open_barter'), targetId: z.string().optional() }),
+  z.object({ type: z.literal('trigger_service'), serviceId: z.string(), targetId: z.string().optional() }),
   z.object({
     type: z.literal('emit_event'),
     eventType: z.string(),
@@ -187,7 +187,7 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('record_interaction'),
-    interactionType: z.enum(['talk', 'trade', 'intimidate', 'help', 'betray'])
+    interactionType: z.enum(['talk', 'trade', 'barter', 'intimidate', 'persuade', 'help', 'betray'])
   }),
   z.object({
     type: z.literal('set_patience'),

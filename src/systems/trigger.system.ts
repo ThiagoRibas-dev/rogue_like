@@ -4,7 +4,7 @@ import { addComponent, getComponent, removeEntity } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
 import type { GameEvent } from '../types/events.types.ts';
 import { GameEventType } from '../types/events.types.ts';
-import { type EntityId, type GameState } from '../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
@@ -232,6 +232,14 @@ export function evaluateCondition(
         case 'betray':
           count = memory.timesBetrayed ?? 0;
           break;
+        case 'barter':
+          // Defaulting to 0 since we don't have timesBartered in MemoryComponent yet
+          count = 0;
+          break;
+        case 'persuade':
+          // Defaulting to 0 since we don't have timesPersuaded in MemoryComponent yet
+          count = 0;
+          break;
         default:
           return assertNever(condition.interactionType);
       }
@@ -451,14 +459,42 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
     }
 
     case 'open_barter': {
-      // TODO(Milestone 47): Integrate actual trade.ui.ts and ShopComponent logic
-      nextState = addMessage(nextState, '[Barter Menu Placeholder]', MessageLogCategory.System);
+      let npcId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        npcId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        npcId = parseInt(consequence.targetId) as EntityId;
+      } else if ('targetId' in event) {
+        npcId = (event as unknown as { targetId: EntityId }).targetId;
+      }
+
+      if (npcId !== undefined) {
+        nextState = {
+          ...nextState,
+          uiMode: UIMode.Trade,
+          activeTrade: { npcEntityId: npcId }
+        };
+      }
       break;
     }
 
     case 'trigger_service': {
-      // TODO(Milestone 47): Integrate spell services and ServiceComponent logic
-      nextState = addMessage(nextState, `[Service: ${consequence.serviceId} Placeholder]`, MessageLogCategory.System);
+      let npcId: EntityId | undefined;
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        npcId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        npcId = parseInt(consequence.targetId) as EntityId;
+      } else if ('targetId' in event) {
+        npcId = (event as unknown as { targetId: EntityId }).targetId;
+      }
+
+      if (npcId !== undefined) {
+        nextState = {
+          ...nextState,
+          uiMode: UIMode.Services,
+          activeService: { npcEntityId: npcId }
+        };
+      }
       break;
     }
 

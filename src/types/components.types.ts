@@ -36,7 +36,9 @@ export const enum ComponentType {
   Dialogue = 'Dialogue',
   Attitude = 'Attitude',
   Identity = 'Identity',
-  Chronicle = 'Chronicle'
+  Chronicle = 'Chronicle',
+  Shop = 'Shop',
+  Services = 'Services'
 }
 
 /**
@@ -331,6 +333,7 @@ export interface MemoryComponent {
   readonly annoyedDuration?: number | undefined;
   readonly gratefulDuration?: number | undefined;
   readonly deflectionLines?: ReadonlyArray<string> | undefined;
+  readonly sessionMarkupModifier?: number | undefined;
 }
 
 /**
@@ -443,6 +446,26 @@ export interface ChronicleComponent {
   readonly eventExcerpts: ReadonlyArray<ChronicleEvent>;
 }
 
+export interface ShopComponent {
+  readonly type: ComponentType.Shop;
+  readonly inventory: ReadonlyArray<EntityId>;
+  readonly markupMultiplier: number;
+  readonly buyTags: ReadonlyArray<string>;
+  readonly sellTags: ReadonlyArray<string>;
+}
+
+export interface ServiceDefinition {
+  readonly serviceId: string;
+  readonly name: string;
+  readonly cost: number;
+  readonly effectId: string;
+}
+
+export interface ServicesComponent {
+  readonly type: ComponentType.Services;
+  readonly services: ReadonlyArray<ServiceDefinition>;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -481,4 +504,6 @@ export type Component =
   | DialogueComponent
   | AttitudeComponent
   | IdentityComponent
-  | ChronicleComponent;
+  | ChronicleComponent
+  | ShopComponent
+  | ServicesComponent;

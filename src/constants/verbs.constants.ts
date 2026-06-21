@@ -15,7 +15,10 @@ export type Verb =
   | 'read'
   | 'eat'
   | 'drink'
-  | 'impact';
+  | 'impact'
+  | 'barter'
+  | 'intimidate'
+  | 'persuade';
 
 export const VERBS: ReadonlyArray<Verb> = [
   'apply',
@@ -31,5 +34,8 @@ export const VERBS: ReadonlyArray<Verb> = [
   'read',
   'eat',
   'drink',
-  'impact'
+  'impact',
+  'barter',
+  'intimidate',
+  'persuade'
 ];

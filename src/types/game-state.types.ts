@@ -34,7 +34,9 @@ export const enum UIMode {
   Editor = 'editor',
   Debug = 'debug',
   VerbMenu = 'verb_menu',
-  Dossier = 'dossier'
+  Dossier = 'dossier',
+  Trade = 'trade',
+  Services = 'services'
 }
 
 /**
@@ -180,6 +182,16 @@ export interface GameState {
         readonly textOverride?: string;
       }
     | undefined;
+  readonly activeTrade?:
+    | {
+        readonly npcEntityId: EntityId;
+      }
+    | undefined;
+  readonly activeService?:
+    | {
+        readonly npcEntityId: EntityId;
+      }
+    | undefined;
   readonly identifiedItems: ReadonlySet<string>;
   readonly itemUnidentifiedNames: ReadonlyMap<string, string>;
   readonly engineMode: EngineMode;
@@ -247,6 +259,16 @@ export interface SerializedGameState {
         readonly currentNodeId: string;
         readonly npcEntityId: number;
         readonly textOverride?: string;
+      }
+    | undefined;
+  readonly activeTrade?:
+    | {
+        readonly npcEntityId: number;
+      }
+    | undefined;
+  readonly activeService?:
+    | {
+        readonly npcEntityId: number;
       }
     | undefined;
   readonly identifiedItems: ReadonlyArray<string>;
