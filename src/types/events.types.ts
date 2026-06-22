@@ -26,7 +26,12 @@ export enum GameEventType {
   SchemeMutatedArea = 'SchemeMutatedArea',
   SayResolved = 'SayResolved',
   CoreValueViolated = 'CoreValueViolated',
-  SchemeAdvanced = 'SchemeAdvanced'
+  SchemeAdvanced = 'SchemeAdvanced',
+  NemesisPromoted = 'NemesisPromoted',
+  NemesisVacancy = 'NemesisVacancy',
+  NemesisCheatedDeath = 'NemesisCheatedDeath',
+  NemesisReturned = 'NemesisReturned',
+  NemesisScarred = 'NemesisScarred'
 }
 
 export interface BaseGameEvent {
@@ -186,6 +191,40 @@ export interface SchemeAdvancedEvent extends BaseGameEvent {
   readonly newPhase: number;
 }
 
+export interface NemesisPromotedEvent extends BaseGameEvent {
+  readonly type: GameEventType.NemesisPromoted;
+  readonly entityId: EntityId;
+  readonly hierarchyId: string;
+  readonly newRankId: string;
+  readonly previousRankId?: string | undefined;
+}
+
+export interface NemesisVacancyEvent extends BaseGameEvent {
+  readonly type: GameEventType.NemesisVacancy;
+  readonly hierarchyId: string;
+  readonly rankId: string;
+  readonly vacatedByEntityId: EntityId;
+}
+
+export interface NemesisCheatedDeathEvent extends BaseGameEvent {
+  readonly type: GameEventType.NemesisCheatedDeath;
+  readonly entityId: EntityId;
+  readonly killerId?: EntityId | undefined;
+  readonly scarId?: string | undefined;
+}
+
+export interface NemesisReturnedEvent extends BaseGameEvent {
+  readonly type: GameEventType.NemesisReturned;
+  readonly entityId: EntityId;
+  readonly areaId: string;
+}
+
+export interface NemesisScarredEvent extends BaseGameEvent {
+  readonly type: GameEventType.NemesisScarred;
+  readonly entityId: EntityId;
+  readonly scarId: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -212,4 +251,9 @@ export type GameEvent =
   | SchemeMutatedAreaEvent
   | SayResolvedEvent
   | CoreValueViolatedEvent
-  | SchemeAdvancedEvent;
+  | SchemeAdvancedEvent
+  | NemesisPromotedEvent
+  | NemesisVacancyEvent
+  | NemesisCheatedDeathEvent
+  | NemesisReturnedEvent
+  | NemesisScarredEvent;

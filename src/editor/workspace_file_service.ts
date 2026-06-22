@@ -3,8 +3,12 @@ import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.t
 import { loadCampaign } from '../core/loader.ts';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 
-// List of the 18 JSON files making up the campaign data package
-const CAMPAIGN_FILES: ReadonlyArray<{ readonly key: keyof CampaignData; readonly filename: string }> = [
+// List of the JSON files making up the campaign data package
+const CAMPAIGN_FILES: ReadonlyArray<{
+  readonly key: keyof CampaignData;
+  readonly filename: string;
+  readonly optional?: boolean;
+}> = [
   { key: 'manifest', filename: 'manifest.json' },
   { key: 'rules', filename: 'rules.json' },
   { key: 'theme', filename: 'theme.json' },
@@ -24,7 +28,16 @@ const CAMPAIGN_FILES: ReadonlyArray<{ readonly key: keyof CampaignData; readonly
   { key: 'schemes', filename: 'schemes.json' },
   { key: 'agreements', filename: 'agreements.json' },
   { key: 'tagRegistry', filename: 'tag_registry.json' },
-  { key: 'reactions', filename: 'reactions.json' }
+  { key: 'reactions', filename: 'reactions.json' },
+  { key: 'fields', filename: 'fields.json', optional: true },
+  { key: 'spawnPools', filename: 'spawn_pools.json', optional: true },
+  { key: 'encounterProfiles', filename: 'encounter_profiles.json', optional: true },
+  { key: 'traitRegistry', filename: 'trait_registry.json', optional: true },
+  { key: 'identityGeneration', filename: 'identity_generation.json', optional: true },
+  { key: 'personalityGeneration', filename: 'personality_generation.json', optional: true },
+  { key: 'knowledgePropagation', filename: 'knowledge_propagation.json', optional: true },
+  { key: 'rumorPropagation', filename: 'rumor_propagation.json', optional: true },
+  { key: 'nemesisHierarchies', filename: 'nemesis_hierarchies.json', optional: true }
 ];
 
 /**
@@ -46,6 +59,18 @@ export async function readCampaignFromZip(file: File | Blob): Promise<CampaignDa
   for (const fileItem of CAMPAIGN_FILES) {
     const zipEntry = loadedZip.file(fileItem.filename);
     if (!zipEntry) {
+      if (fileItem.optional) {
+        if (
+          fileItem.key === 'knowledgePropagation' ||
+          fileItem.key === 'rumorPropagation' ||
+          fileItem.key === 'reactions'
+        ) {
+          data[fileItem.key] = [] as never;
+        } else {
+          data[fileItem.key] = {} as never;
+        }
+        continue;
+      }
       throw new Error(`Missing required file ${fileItem.filename} in ZIP package.`);
     }
     const text = await zipEntry.async('string');
@@ -307,6 +332,7 @@ export function createBlankSlateCampaign(): CampaignData {
     traitRegistry: {},
     identityGeneration: {},
     personalityGeneration: {},
+    nemesisHierarchies: {},
     knowledgePropagation: [],
     rumorPropagation: []
   };

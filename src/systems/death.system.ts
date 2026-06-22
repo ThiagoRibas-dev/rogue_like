@@ -14,6 +14,7 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
+import { evaluateCheatDeath } from './nemesis.system.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -106,6 +107,13 @@ export function processDeathSystem(state: GameState): GameState {
       nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
       deleteSave(); // Enforce permadeath
     } else {
+      // Check for cheat death before removing entity
+      const cheatResult = evaluateCheatDeath(nextState, entityId, deathComp.killerId);
+      if (cheatResult.shouldCheatDeath) {
+        nextState = cheatResult.state;
+        continue; // Entity moves to limbo; do not remove completely or drop loot yet
+      }
+
       // Grant XP to killer if applicable
       if (deathComp.killerId !== undefined && fighter && fighter.xpGiven > 0) {
         nextState = grantXp(nextState, deathComp.killerId, fighter.xpGiven);

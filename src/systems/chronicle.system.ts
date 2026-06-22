@@ -51,7 +51,7 @@ export function promoteEntity(state: GameState, entityId: EntityId, reason: stri
   nextState = addComponent(nextState, entityId, identity);
 
   const initialEvent: ChronicleEvent = {
-    turn: 0, // TODO: Implement global turn counter in GameState
+    turn: state.globalTurn || 0,
     type: 'Promotion',
     summary: reason
   };
@@ -86,7 +86,7 @@ export function recordChronicleEvent(
   if (!chronicle) return state;
 
   const newEvent: ChronicleEvent = {
-    turn: 0, // TODO: Implement global turn counter in GameState
+    turn: state.globalTurn || 0,
     type: eventType,
     summary,
     relatedEntityIds

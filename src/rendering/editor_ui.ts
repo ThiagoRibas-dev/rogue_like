@@ -127,6 +127,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         <li><button class="sidebar-item-btn" data-target="spawnPools">Spawn Pools</button></li>
         <li><button class="sidebar-item-btn" data-target="encounterProfiles">Encounter Profiles</button></li>
         <li><button class="sidebar-item-btn" data-target="traitRegistry">Trait Registry</button></li>
+        <li><button class="sidebar-item-btn" data-target="nemesisHierarchies">Nemesis Hierarchies</button></li>
         <li><button class="sidebar-item-btn" data-target="advancement">Advancement Levels</button></li>
         <li><button class="sidebar-item-btn" data-target="simulation">Simulation Lab</button></li>
       </ul>
@@ -553,7 +554,8 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     'fields',
     'spawnPools',
     'encounterProfiles',
-    'traitRegistry'
+    'traitRegistry',
+    'nemesisHierarchies'
   ];
 
   if (dictCategories.includes(currentCategory)) {

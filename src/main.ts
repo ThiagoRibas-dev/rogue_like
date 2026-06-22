@@ -124,7 +124,11 @@ let state: GameState = {
     knownActors: [],
     discoveredClues: [],
     exposedAgreements: []
-  }
+  },
+  nemesisSlots: {},
+  vacancyTurns: {},
+  globalTurn: 0,
+  lastCheatDeathTurn: -9999
 };
 
 let selectedCampaignId: string | null = null;

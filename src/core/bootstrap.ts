@@ -124,6 +124,10 @@ export async function startNewGame(
       discoveredClues: [],
       exposedAgreements: []
     },
+    nemesisSlots: {},
+    vacancyTurns: {},
+    globalTurn: 0,
+    lastCheatDeathTurn: -9999,
     areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: []
@@ -348,6 +352,10 @@ export async function startSandboxEncounter(
       discoveredClues: [],
       exposedAgreements: []
     },
+    nemesisSlots: {},
+    vacancyTurns: {},
+    globalTurn: 0,
+    lastCheatDeathTurn: -9999,
     areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: []

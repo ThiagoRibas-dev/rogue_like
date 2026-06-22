@@ -108,7 +108,11 @@ export function runAIArena(
     areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: [],
-    investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] }
+    investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] },
+    nemesisSlots: {},
+    vacancyTurns: {},
+    globalTurn: 0,
+    lastCheatDeathTurn: -9999
   };
 
   // Setup the map tiles: use provided tiles or fall back to a flat arena

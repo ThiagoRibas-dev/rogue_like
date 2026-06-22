@@ -38,7 +38,8 @@ export const enum ComponentType {
   Identity = 'Identity',
   Chronicle = 'Chronicle',
   Shop = 'Shop',
-  Services = 'Services'
+  Services = 'Services',
+  Nemesis = 'Nemesis'
 }
 
 /**
@@ -475,6 +476,17 @@ export interface ServicesComponent {
   readonly services: ReadonlyArray<ServiceDefinition>;
 }
 
+export interface NemesisComponent {
+  readonly type: ComponentType.Nemesis;
+  readonly hierarchyId: string;
+  readonly rankId: string;
+  readonly tier: number;
+  readonly cheatedDeathCount: number;
+  readonly lastDeathTurn: number;
+  readonly returnDelay?: number | undefined;
+  readonly targetAreaId?: string | undefined;
+}
+
 /**
  * Discriminated union of all component types in the game.
  */
@@ -515,4 +527,5 @@ export type Component =
   | IdentityComponent
   | ChronicleComponent
   | ShopComponent
-  | ServicesComponent;
+  | ServicesComponent
+  | NemesisComponent;

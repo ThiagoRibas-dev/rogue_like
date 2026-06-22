@@ -145,7 +145,7 @@ export function recordThought(
   const currentThoughts = memory.thoughts ? [...memory.thoughts] : [];
 
   const newThought: Thought = {
-    turn: 0, // global turn
+    turn: state.globalTurn || 0,
     eventSummary,
     stressDelta,
     relatedEntityId

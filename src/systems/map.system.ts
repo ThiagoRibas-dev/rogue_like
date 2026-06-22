@@ -19,7 +19,8 @@ import {
   type TagsComponent,
   type AgreementComponent,
   type FighterComponent,
-  type TemplateComponent
+  type TemplateComponent,
+  type NemesisComponent
 } from '../types/components.types.ts';
 import { type AreaData, type EntityId, type GameMap, type GameState } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
@@ -388,6 +389,10 @@ export function processChangeAreaIntent(
   const nextEntitiesArray = [...nextEntities];
   for (const [id, record] of nextPersistentEntities.entries()) {
     if (record.areaId === targetAreaId) {
+      const nemesis = record.components[ComponentType.Nemesis] as NemesisComponent | undefined;
+      if (nemesis && nemesis.returnDelay !== undefined && nemesis.returnDelay > 0) {
+        continue;
+      }
       nextEntitiesArray.push(id);
       nextComponents.set(id, record.components);
       nextPersistentEntities.delete(id); // Remove from global cold storage, it's now in active ECS

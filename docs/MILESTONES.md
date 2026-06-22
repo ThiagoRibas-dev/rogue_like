@@ -583,14 +583,14 @@ Wire the M45–M48 systems into the Campaign Editor and ship a default campaign 
 
 **Testable in game:** Open the editor. Design a merchant with inventory using the new Trade panel. Open the Knowledge Simulator — see which NPCs would know about the troll boss after it spawns. Playtest the campaign: talk to the barkeep (gossip), ask the scout (ask_about spider_nest), trade with the merchant (buy health potion), notice the scholar has a clue about the villain. All four M45–M48 systems work together in one coherent hub area.
 
-## 🟡 Milestone 50: Nemesis Hierarchy, Promotion & Cheating Death
+## 🟢 Milestone 50: Nemesis Hierarchy, Promotion & Cheating Death (Complete)
 Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and replacement.
-- [ ] Define hierarchy data: grunts, champions/captains, lieutenants, chiefs/bosses, faction-specific titles, and vacancies.
-- [ ] Promote entities based on PIS, victories, surviving defeat, killing allies, humiliating the player, or completing off-screen goals.
-- [ ] Implement controlled “cheat death” events with scars, changed stats/traits, changed dialogue, and strict pacing cooldowns.
-- [ ] Fill hierarchy vacancies deterministically via candidates from the faction/area pool.
-- [ ] Display known hierarchy information in a Nemesis/Dossier UI, with unknown slots and clue-gated reveals.
-- [ ] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
+- [x] Define hierarchy data: grunts, champions/captains, lieutenants, chiefs/bosses, faction-specific titles, and vacancies.
+- [x] Promote entities based on PIS, victories, surviving defeat, killing allies, humiliating the player, or completing off-screen goals.
+- [x] Implement controlled “cheat death” events with scars, changed stats/traits, changed dialogue, and strict pacing cooldowns.
+- [x] Fill hierarchy vacancies deterministically via candidates from the faction/area pool.
+- [x] Display known hierarchy information in a Nemesis/Dossier UI, with unknown slots and clue-gated reveals.
+- [x] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
 
 ## 🟡 Milestone 51: Background Rivalries & Power Struggles
 Let important NPCs act autonomously even when the player is elsewhere. This milestone connects to M46 (Knowledge: NPCs learn about rivalries) and M48 (Gossip: rumors about power struggles spread through the social graph).

@@ -34,6 +34,12 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
     const itms = Object.keys(doc.items || {}).map((k) => ({ value: k, label: `Item: ${doc.items[k]?.name || k}` }));
     return [...ents, ...itms];
   }
+  if (key === 'promotionSources' || key === 'promotionSource') {
+    return Object.keys(doc.entities || {}).map((k) => ({
+      value: k,
+      label: `Entity: ${doc.entities[k]?.name || k}`
+    }));
+  }
   if (key === 'eventType') {
     return Object.values(GameEventType).map((val) => {
       // Split PascalCase into Words for the label

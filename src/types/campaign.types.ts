@@ -688,6 +688,52 @@ export const PersonalityGenerationTableSchema = z.object({
 });
 export type PersonalityGenerationTable = z.infer<typeof PersonalityGenerationTableSchema>;
 
+// ==========================================
+// 16. NEMESIS HIERARCHIES
+// ==========================================
+export const HierarchyRankSchema = z.object({
+  rankId: z.string(),
+  displayName: z.string(),
+  tier: z.number().int().min(0),
+  maxSlots: z.number().int().positive(),
+  statMultipliers: z
+    .object({
+      maxHp: z.number().default(1.0),
+      attack: z.number().default(1.0),
+      defense: z.number().default(1.0),
+      xpGiven: z.number().default(1.0)
+    })
+    .optional(),
+  titlePool: z.array(z.string()).optional()
+});
+export type HierarchyRank = z.infer<typeof HierarchyRankSchema>;
+
+export const ScarDefinitionSchema = z.object({
+  id: z.string(),
+  description: z.string(),
+  statModifiers: z
+    .object({
+      maxHp: z.number().int().optional(),
+      attack: z.number().int().optional(),
+      defense: z.number().int().optional(),
+      speed: z.number().int().optional()
+    })
+    .optional(),
+  traitsAdded: z.array(z.string()).optional(),
+  traitsRemoved: z.array(z.string()).optional(),
+  dialogueModifier: z.string().optional()
+});
+export type ScarDefinition = z.infer<typeof ScarDefinitionSchema>;
+
+export const NemesisHierarchySchema = z.object({
+  id: z.string(),
+  factionId: z.string(),
+  ranks: z.array(HierarchyRankSchema),
+  promotionSources: z.array(z.string()).default([]),
+  scarPool: z.array(ScarDefinitionSchema).default([])
+});
+export type NemesisHierarchy = z.infer<typeof NemesisHierarchySchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -717,6 +763,7 @@ export const CampaignDataSchema = z.object({
   traitRegistry: z.record(z.string(), TraitDefinitionSchema).default({}),
   identityGeneration: z.record(z.string(), IdentityGenerationTableSchema).default({}),
   personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({}),
+  nemesisHierarchies: z.record(z.string(), NemesisHierarchySchema).default({}),
   knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([]),
   rumorPropagation: z.array(RumorPropagationRuleSchema).default([])
 });
@@ -752,6 +799,7 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   traitRegistry: TraitDefinitionSchema,
   identityGeneration: IdentityGenerationTableSchema,
   personalityGeneration: PersonalityGenerationTableSchema,
+  nemesisHierarchies: NemesisHierarchySchema,
   knowledgePropagation: KnowledgePropagationRuleSchema.array(),
   rumorPropagation: RumorPropagationRuleSchema.array()
 };

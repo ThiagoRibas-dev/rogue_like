@@ -87,6 +87,10 @@ export function saveGame(state: GameState): void {
     persistentEntities: serializedPersistentEntities,
     isGameOver: state.isGameOver,
     uiMode: state.uiMode,
+    nemesisSlots: state.nemesisSlots || {},
+    vacancyTurns: state.vacancyTurns || {},
+    globalTurn: state.globalTurn || 0,
+    lastCheatDeathTurn: state.lastCheatDeathTurn || -9999,
     activeDialogue: state.activeDialogue
       ? {
           treeId: state.activeDialogue.treeId,
@@ -174,6 +178,10 @@ export async function loadGame(): Promise<GameState | null> {
       spatialIndex: new Map(), // Will be rebuilt below
       isGameOver: sState.isGameOver,
       uiMode: sState.uiMode === UIMode.VerbMenu ? UIMode.Game : sState.uiMode,
+      nemesisSlots: sState.nemesisSlots || {},
+      vacancyTurns: sState.vacancyTurns || {},
+      globalTurn: sState.globalTurn || 0,
+      lastCheatDeathTurn: sState.lastCheatDeathTurn || -9999,
       activeDialogue: sState.activeDialogue
         ? {
             treeId: sState.activeDialogue.treeId,

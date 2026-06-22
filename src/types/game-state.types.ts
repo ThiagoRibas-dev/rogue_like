@@ -148,6 +148,14 @@ export interface GameState {
   readonly persistentEntities: ReadonlyMap<EntityId, PersistentEntityRecord>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
   readonly isGameOver: boolean;
+  /** Tracks faction hierarchy slot occupancy. Key = hierarchyId:rankId, Value = array of EntityIds filling those slots. */
+  readonly nemesisSlots: Readonly<Record<string, ReadonlyArray<EntityId>>>;
+  /** Tracks turn at which each hierarchy slot vacancy was created. */
+  readonly vacancyTurns?: Readonly<Record<string, number>> | undefined;
+  /** Global turn counter for cooldown tracking. */
+  readonly globalTurn: number;
+  /** Cooldown tracker: turn number of the last cheat-death event globally. */
+  readonly lastCheatDeathTurn: number;
   /**
    * Current UI mode. Controls how keyboard input is interpreted.
    * 'game' = normal play; 'inventory' = inventory panel open.
@@ -253,6 +261,10 @@ export interface SerializedGameState {
   readonly areas: ReadonlyArray<[string, SerializedAreaData]>;
   readonly persistentEntities: ReadonlyArray<[EntityId, SerializedPersistentEntityRecord]>;
   readonly isGameOver: boolean;
+  readonly nemesisSlots: Readonly<Record<string, ReadonlyArray<EntityId>>>;
+  readonly vacancyTurns?: Readonly<Record<string, number>> | undefined;
+  readonly globalTurn: number;
+  readonly lastCheatDeathTurn: number;
   readonly uiMode: UIMode;
   readonly activeDialogue?:
     | {

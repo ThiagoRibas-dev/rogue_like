@@ -83,7 +83,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       traitRegistryRes,
       identityGenerationRes,
       knowledgePropagationRes,
-      rumorPropagationRes
+      rumorPropagationRes,
+      nemesisHierarchiesRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -112,7 +113,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/trait_registry.json`),
       fetch(`${basePath}/identity_generation.json`),
       fetch(`${basePath}/knowledge_propagation.json`),
-      fetch(`${basePath}/rumor_propagation.json`)
+      fetch(`${basePath}/rumor_propagation.json`),
+      fetch(`${basePath}/nemesis_hierarchies.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -225,6 +227,15 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       }
     }
 
+    let nemesisHierarchies = {};
+    if (nemesisHierarchiesRes.ok) {
+      try {
+        nemesisHierarchies = await nemesisHierarchiesRes.json();
+      } catch (err) {
+        console.warn('Failed to parse nemesis_hierarchies.json', err);
+      }
+    }
+
     const data = {
       manifest,
       rules,
@@ -254,6 +265,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       identityGeneration,
       knowledgePropagation,
       rumorPropagation,
+      nemesisHierarchies,
       triggerBuckets: {}
     };
 
