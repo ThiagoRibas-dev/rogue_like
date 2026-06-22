@@ -344,6 +344,7 @@ export interface MemoryComponent {
   readonly deflectionLines?: ReadonlyArray<string> | undefined;
   readonly sessionMarkupModifier?: number | undefined;
   readonly rumorPool?: ReadonlyArray<RumorItem> | undefined;
+  readonly compromiseScore?: number | undefined;
 }
 
 /**
@@ -397,6 +398,8 @@ export interface SchemeComponent {
   readonly currentPhase: number;
   readonly activeMinions: ReadonlyArray<EntityId>;
   readonly schemeTargetId?: EntityId | undefined;
+  readonly isLeaderless?: boolean | undefined;
+  readonly conspiracyAwareness?: number | undefined;
 }
 
 export interface AgreementComponent {

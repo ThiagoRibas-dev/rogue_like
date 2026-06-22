@@ -28,10 +28,53 @@
 
 ## 1. Agent Workflow & Process
 
+### Workflow Visual Map
+
+```mermaid
+flowchart TD
+    subgraph Before ["Phase 1: Before Writing Code (Kickoff Flow)"]
+        direction TB
+        S1["1. Reiterate Rules & Standards (Review AGENTS.md & ARCHITECTURE.md)"]
+        S2["2. Research (Read source files, design notes, cross-reference tasks)"]
+        S3["3. Compile (Create research document, map tasks to architecture)"]
+        S4["4. Plan (Draft step-by-step plan, check for existing utilities)"]
+        S5["5. Enhance (Add precise code snippets/diffs to plan artifact)"]
+        
+        S1 --> S2
+        S2 --> S3
+        S3 --> S4
+        S4 --> S5
+    end
+
+    Gate{"User Confirmation? (Explicit Approval)"}
+    
+    subgraph While ["Phase 2: While Writing Code"]
+        direction TB
+        S6["6. Write Code & Run Mental Check (No 'any', no magic values, explicit returns)"]
+    end
+
+    subgraph After ["Phase 3: After Writing Code"]
+        direction TB
+        S7["7. Identify Downstream Effects (Present updates to dependent files)"]
+        S8["8. Audit Architecture Compliance (Audit against ARCHITECTURE.md & AGENTS.md)"]
+        S9["9. Suggest Test Scenario (Describe manual play-test action)"]
+        S10["10. Update Documentation (Update ARCHITECTURE.md & MILESTONES.md)"]
+        
+        S7 --> S8
+        S8 --> S9
+        S9 --> S10
+    end
+
+    S5 --> Gate
+    Gate -- Approved --> S6
+    Gate -- Needs Revision --> S4
+    S6 --> S7
+```
+
 ### Before Writing Code (The 5-Step Kickoff Flow)
 When starting a new milestone or major feature, you MUST execute the following flow strictly in order:
-1. **Reiterate rules and standards:** Acknowledge the core constraints (e.g., ECS purity, Data-Driven JSON, TypeScript strictness). Review `AGENTS.md` and `docs/ARCHITECTURE.md` first.
-2. **Research:** Read the relevant source files, reference documents, and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
+1. **Reiterate rules and standards:** Acknowledge the core constraints (e.g., ECS purity, Data-Driven JSON, TypeScript strictness, no deep nesting, etc). Review `AGENTS.md` and `docs/ARCHITECTURE.md` first.
+2. **Research:** Read the relevant source files, reference documents (archtecture, past and future milestones, specific spec or ideas docs, etc), and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
 3. **Compile:** Before proposing a plan, summarize your findings into a concrete research document. Explicitly map each task to the specific architectural rules and design documents that govern it, calling out where existing code and systems interact with the new systems or functionality, if any.
 4. **Plan:** Draft a initial step-by-step implementation plan based strictly on the compiled research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
 5. **Enhance:** Once the high-level initial plan is formed, do a second pass to enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.

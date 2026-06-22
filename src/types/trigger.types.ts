@@ -210,6 +210,11 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('transfer_knowledge'),
     knowledgeId: z.string(),
     addToInvestigationBoard: z.boolean().default(false)
+  }),
+  z.object({
+    type: z.literal('random_choice'),
+    choices: z.array(z.array(z.any())),
+    weights: z.array(z.number()).optional()
   })
 ]);
 

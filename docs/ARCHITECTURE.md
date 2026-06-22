@@ -210,7 +210,7 @@ Entities with a `ShopComponent` act as merchants. `getEffectivePrice` dynamicall
 
 ### 7.5 Scheme Simulator & Investigation
 
-`scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue JSON-defined `SchemeDefinition`s containing sequential phases and `AgreementDefinition`s to recruit minions. As the player defeats minions, combat drops randomized clues; `investigation.system.ts` updates the `investigation` object on `GameState`, exposed via the Investigation Board UI.
+`scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue JSON-defined `SchemeDefinition`s containing sequential phases and `AgreementDefinition`s to recruit minions. As the player defeats minions, combat drops randomized clues; `investigation.system.ts` updates the `investigation` object on `GameState`, exposed via the Investigation Board UI. Schemes feature dynamic resilience: recruitment utilizes MICE-based profiling mapped to NPC personality facets, node disruption triggers local repair and confession logic based on `compromiseScore`, and escalating countermeasures trigger via `conspiracyAwareness`. Schemes survive mastermind deaths by transferring ownership and continuing in a leaderless momentum state.
 
 ### 7.6 Rivalry & Power Struggles
 

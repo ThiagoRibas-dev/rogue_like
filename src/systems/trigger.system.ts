@@ -1101,6 +1101,32 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       break;
     }
 
+    case 'random_choice': {
+      const choices = consequence.choices as unknown as ReadonlyArray<ReadonlyArray<ConsequenceAction>>;
+      if (!choices || choices.length === 0) break;
+
+      let chosenIndex = 0;
+      const weights = consequence.weights;
+      if (weights && weights.length === choices.length) {
+        const weightMap: Record<string, number> = {};
+        for (let i = 0; i < weights.length; i++) {
+          weightMap[i.toString()] = weights[i]!;
+        }
+        const chosenStr = ROT.RNG.getWeightedValue(weightMap);
+        chosenIndex = chosenStr !== undefined ? parseInt(chosenStr, 10) : 0;
+      } else {
+        chosenIndex = ROT.RNG.getUniformInt(0, choices.length - 1);
+      }
+
+      const chosenConsequences = choices[chosenIndex];
+      if (chosenConsequences) {
+        for (const childCons of chosenConsequences) {
+          nextState = applyConsequence(nextState, event, childCons);
+        }
+      }
+      break;
+    }
+
     default:
       return assertNever(consequence);
   }

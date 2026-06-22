@@ -603,13 +603,13 @@ Let important NPCs act autonomously even when the player is elsewhere. This mile
 - [x] Add fast-forward simulation and debug receipts for rivalry outcomes.
 - [x] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M47 — a merchant whose supplier was killed in a rivalry may have depleted stock).
 
-## 🟡 Milestone 52: Adversarial Resilience & Escalation
+## 🟢 Milestone 52: Adversarial Resilience & Escalation (Complete)
 Give the conspiracy teeth, memory, and adaptability. Builds on M43 (Personality) and M45 (Social Memory) to make schemes react to player interference.
-- [ ] **MICE Recruitment:** Cross-reference villain leverage preferences with target NPC personality facets to select the most effective leverage and record it in the `AgreementComponent`.
-- [ ] **Compromise Tracking:** Add `compromiseScore` to `MemoryComponent` that increments as NPCs commit crimes, powering blackmail, confessions, and repair decisions.
-- [ ] **Local Repair Logic:** When a scheme node dies, have remaining nodes evaluate their compromise and personality to independently abandon, continue, reroute, or confess.
-- [ ] **Scheme Momentum:** Allow schemes to enter a `leaderless` state when the mastermind dies, where existing minions continue executing their phase mutations independently.
-- [ ] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
+- [x] **MICE Recruitment:** Cross-reference villain leverage preferences with target NPC personality facets to select the most effective leverage and record it in the `AgreementComponent`.
+- [x] **Compromise Tracking:** Add `compromiseScore` to `MemoryComponent` that increments as NPCs commit crimes, powering blackmail, confessions, and repair decisions.
+- [x] **Local Repair Logic:** When a scheme node dies, have remaining nodes evaluate their compromise and personality to independently abandon, continue, reroute, or confess.
+- [x] **Scheme Momentum:** Allow schemes to enter a `leaderless` state when the mastermind dies, where existing minions continue executing their phase mutations independently.
+- [x] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
 
 ## 🟡 Milestone 53: Player Manipulation & Relationship Levers
 Give players ways to intentionally shape the emerging cast. This milestone builds on the M45–M48 social commerce foundation: social memory (M45) tracks what the player has done, knowledge brokering (M46) determines what NPCs know about the player's reputation, trade (M47) uses relationship axes as pricing modifiers, and gossip (M48) spreads stories about the player's actions.

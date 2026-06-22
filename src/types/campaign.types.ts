@@ -685,7 +685,11 @@ export type IdentityGenerationTable = z.infer<typeof IdentityGenerationTableSche
 
 export const PersonalityGenerationTableSchema = z.object({
   facets: z.array(z.string()).describe('List of personality facets to generate (e.g., cowardice, cruelty)'),
-  values: z.array(z.string()).describe('List of personality values to generate (e.g., power, peace)')
+  values: z.array(z.string()).describe('List of personality values to generate (e.g., power, peace)'),
+  leverageMappings: z
+    .record(LeverageTypeEnum, z.array(z.string()))
+    .optional()
+    .describe('Maps MICE leverages to the facets that multiply their effectiveness.')
 });
 export type PersonalityGenerationTable = z.infer<typeof PersonalityGenerationTableSchema>;
 

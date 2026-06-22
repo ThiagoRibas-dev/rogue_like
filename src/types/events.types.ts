@@ -34,7 +34,9 @@ export enum GameEventType {
   NemesisScarred = 'NemesisScarred',
   RivalryScheduled = 'RivalryScheduled',
   RivalryResolved = 'RivalryResolved',
-  RivalryFailed = 'RivalryFailed'
+  RivalryFailed = 'RivalryFailed',
+  SchemeNodeDisrupted = 'SchemeNodeDisrupted',
+  SchemeEscalated = 'SchemeEscalated'
 }
 
 export interface BaseGameEvent {
@@ -254,6 +256,19 @@ export interface RivalryFailedEvent extends BaseGameEvent {
   readonly reason: string;
 }
 
+export interface SchemeNodeDisruptedEvent extends BaseGameEvent {
+  readonly type: GameEventType.SchemeNodeDisrupted;
+  readonly schemeId: string;
+  readonly mastermindId: EntityId;
+  readonly minionId: EntityId;
+}
+
+export interface SchemeEscalatedEvent extends BaseGameEvent {
+  readonly type: GameEventType.SchemeEscalated;
+  readonly schemeId: string;
+  readonly mastermindId: EntityId;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -288,4 +303,6 @@ export type GameEvent =
   | NemesisScarredEvent
   | RivalryScheduledEvent
   | RivalryResolvedEvent
-  | RivalryFailedEvent;
+  | RivalryFailedEvent
+  | SchemeNodeDisruptedEvent
+  | SchemeEscalatedEvent;

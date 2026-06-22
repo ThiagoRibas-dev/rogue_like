@@ -1,18 +1,20 @@
 import * as ROT from 'rot-js';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
-import { GameEventType } from '../types/events.types.ts';
+import { GameEventType, type GameEvent } from '../types/events.types.ts';
 import {
   ComponentType,
   type DeathComponent,
   type PositionComponent,
   type TagsComponent,
   type TemplateComponent,
-  type NemesisComponent
+  type NemesisComponent,
+  type SchemeComponent,
+  type AgreementComponent
 } from '../types/components.types.ts';
 import { getComponent, removeEntity, addComponent, spawnItem } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { removeActor } from '../core/scheduler.ts';
+import { removeActor, addActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
 import { evaluateCheatDeath } from './nemesis.system.ts';
@@ -169,6 +171,48 @@ export function processDeathSystem(state: GameState): GameState {
             nextState = addMessage(nextState, `${name} drops ${itemDef.name}.`, MessageLogCategory.CombatDeath);
           }
         }
+      }
+
+      // Emit SchemeNodeDisrupted if the dead entity was a minion
+      const agreement = getComponent(nextState, entityId, ComponentType.Agreement) as AgreementComponent | undefined;
+      if (agreement) {
+        const mastermindId = agreement.mastermindId;
+        const mastermindScheme = getComponent(nextState, mastermindId, ComponentType.Scheme) as
+          | SchemeComponent
+          | undefined;
+        const schemeId = mastermindScheme ? mastermindScheme.schemeId : '';
+        nextState = {
+          ...nextState,
+          events: [
+            ...nextState.events,
+            {
+              type: GameEventType.SchemeNodeDisrupted,
+              schemeId,
+              mastermindId,
+              minionId: entityId
+            } as GameEvent
+          ]
+        };
+      }
+
+      // Intercept mastermind death to transfer Scheme to a minion (leaderless state)
+      const schemeComp = getComponent(nextState, entityId, ComponentType.Scheme) as SchemeComponent | undefined;
+      if (schemeComp && schemeComp.activeMinions.length > 0) {
+        const newLeaderId = schemeComp.activeMinions[0]!;
+        const updatedScheme: SchemeComponent = {
+          ...schemeComp,
+          isLeaderless: true,
+          activeMinions: schemeComp.activeMinions.filter((id) => id !== newLeaderId)
+        };
+        nextState = addComponent(nextState, newLeaderId, updatedScheme);
+        nextState = addComponent(nextState, newLeaderId, { type: ComponentType.Actor, speed: 100 });
+        addActor(newLeaderId);
+
+        nextState = addMessage(
+          nextState,
+          `[DEBUG] Mastermind ${entityId} died! Transferring scheme ${schemeComp.schemeId} to minion ${newLeaderId} (leaderless state).`,
+          MessageLogCategory.System
+        );
       }
 
       // Strip the dead entity from the world
