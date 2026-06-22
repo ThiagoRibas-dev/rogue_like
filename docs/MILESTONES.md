@@ -603,7 +603,15 @@ Let important NPCs act autonomously even when the player is elsewhere. This mile
 - [ ] Add fast-forward simulation and debug receipts for rivalry outcomes.
 - [ ] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M47 — a merchant whose supplier was killed in a rivalry may have depleted stock).
 
-## 🟡 Milestone 52: Player Manipulation & Relationship Levers
+## 🟡 Milestone 52: Adversarial Resilience & Escalation
+Give the conspiracy teeth, memory, and adaptability. Builds on M43 (Personality) and M45 (Social Memory) to make schemes react to player interference.
+- [ ] **MICE Recruitment:** Cross-reference villain leverage preferences with target NPC personality facets to select the most effective leverage and record it in the `AgreementComponent`.
+- [ ] **Compromise Tracking:** Add `compromiseScore` to `MemoryComponent` that increments as NPCs commit crimes, powering blackmail, confessions, and repair decisions.
+- [ ] **Local Repair Logic:** When a scheme node dies, have remaining nodes evaluate their compromise and personality to independently abandon, continue, reroute, or confess.
+- [ ] **Scheme Momentum:** Allow schemes to enter a `leaderless` state when the mastermind dies, where existing minions continue executing their phase mutations independently.
+- [ ] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
+
+## 🟡 Milestone 53: Player Manipulation & Relationship Levers
 Give players ways to intentionally shape the emerging cast. This milestone builds on the M45–M48 social commerce foundation: social memory (M45) tracks what the player has done, knowledge brokering (M46) determines what NPCs know about the player's reputation, trade (M47) uses relationship axes as pricing modifiers, and gossip (M48) spreads stories about the player's actions.
 - [ ] Add relationship axes to `MemoryComponent` (M45): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
 - [ ] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M47): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
@@ -615,7 +623,7 @@ Give players ways to intentionally shape the emerging cast. This milestone build
 - [ ] Add Trigger consequences for relationship mutation and hierarchy manipulation.
 - [ ] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M45's interaction history tooltip and M49's Knowledge Simulator.
 
-## 🟡 Milestone 53: Nemesis Surfacing & Narrative UX
+## 🟡 Milestone 54: Nemesis Surfacing & Narrative UX
 Make the system legible, dramatic, and emotionally sticky.
 - [ ] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
 - [ ] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
@@ -629,7 +637,7 @@ Make the system legible, dramatic, and emotionally sticky.
 # 🚀 Phase 8: Drama Director & Dynamic Composition
 **Goal:** Use the Event Ledger + Trigger System as a pacing-aware Drama Director that dynamically composes narrative triggers for characters, factions, areas, dungeons, and artifacts.
 
-## 🟡 Milestone 54: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
+## 🟡 Milestone 55: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
 Turn the event ledger into a durable, queryable narrative substrate without storing infinite noise.
 - [ ] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
 - [ ] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
@@ -639,7 +647,7 @@ Turn the event ledger into a durable, queryable narrative substrate without stor
 - [ ] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
 - [ ] Add debug timeline visualization and exportable simulation logs.
 
-## 🟡 Milestone 55: Drama Trigger Composer — Runtime Trigger Generation
+## 🟡 Milestone 56: Drama Trigger Composer — Runtime Trigger Generation
 Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.
 - [ ] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
 - [ ] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
@@ -648,7 +656,7 @@ Generate specific narrative triggers from reusable primitives instead of hand-au
 - [ ] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
 - [ ] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
 
-## 🟡 Milestone 56: Pacing Governor & Surprise Budget
+## 🟡 Milestone 57: Pacing Governor & Surprise Budget
 Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
 - [ ] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
 - [ ] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
@@ -657,7 +665,14 @@ Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
 - [ ] Add fallback events for invalidated setups, such as participant death or inaccessible area.
 - [ ] Surface Drama Director decisions in debug receipts.
 
-## 🟡 Milestone 57: Narrative Simulation Lab & Fuzzer
+## 🟡 Milestone 58: Scheme Compiler & Contextual Investigation
+Move from fully hand-authored schemes to dynamically assembled conspiracies driven by world events.
+- [ ] **Phase Blocks & Recipes:** Split monolithic `SchemeTemplate`s into reusable `PhaseBlock`s (ingredients) and `SchemeRecipe`s (constraints).
+- [ ] **Scheme Compiler:** Build a pure function that assembles a runtime `SchemeComponent` from a recipe + world state, ensuring identical execution to hand-authored schemes.
+- [ ] **History-Derived Triggers:** Use `ChronicleComponent` events (e.g., exile, territory loss, humiliation) to trigger the Scheme Compiler, generating schemes out of emergent gameplay.
+- [ ] **Contextual Clues:** Add `narrativeVerb` and `evidenceTags` to Phase Blocks, allowing the Investigation system to generate context-aware clues (e.g., "alchemical residue" for disruption phases).
+
+## 🟡 Milestone 59: Narrative Simulation Lab & Fuzzer
 Stress-test emergent narrative systems across many seeds before they reach players.
 - [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
 - [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
@@ -666,7 +681,7 @@ Stress-test emergent narrative systems across many seeds before they reach playe
 - [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
 - [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
 
-## 🟡 Milestone 58: Generalized Chronicles for Regions, Dungeons & Artifacts
+## 🟡 Milestone 60: Generalized Chronicles for Regions, Dungeons & Artifacts
 Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/surfacing makes sense.
 - [ ] Add chronicle support for regions/areas: stability, corruption, prosperity, scars, faction control, and remembered player actions.
 - [ ] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
@@ -675,7 +690,7 @@ Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/s
 - [ ] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
 - [ ] Keep all chronicle data compact and serializable.
 
-## 🟡 Milestone 59: Authoring Continuum Tools — Static, Blueprint, Dynamic
+## 🟡 Milestone 61: Authoring Continuum Tools — Static, Blueprint, Dynamic
 Make the three authoring levels explicit in the Campaign Editor.
 - [ ] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
 - [ ] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
@@ -689,7 +704,7 @@ Make the three authoring levels explicit in the Campaign Editor.
 # 🚀 Phase 9: Default Campaign Vertical Slice, Balance & Release Hardening
 **Goal:** Convert the systemic engine into a coherent playable campaign and robust creator platform. This phase is less about new architecture and more about proving the full stack through content, balance, polish, and documentation.
 
-## 🟡 Milestone 60: Default Campaign Vertical Slice
+## 🟡 Milestone 62: Default Campaign Vertical Slice
 Ship a compact campaign that exercises every major system in a coherent arc.
 - [ ] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
 - [ ] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
@@ -697,7 +712,7 @@ Ship a compact campaign that exercises every major system in a coherent arc.
 - [ ] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
 - [ ] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
 
-## 🟡 Milestone 61: Balance, Telemetry & Deterministic Replay QA
+## 🟡 Milestone 63: Balance, Telemetry & Deterministic Replay QA
 Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [ ] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
 - [ ] Add seed-based replay capture for bug reports and deterministic regression tests.
@@ -706,7 +721,7 @@ Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [ ] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
 - [ ] Establish target performance budgets for browser play and editor simulations.
 
-## 🟡 Milestone 62: Modding Documentation, Examples & Creator Onboarding
+## 🟡 Milestone 64: Modding Documentation, Examples & Creator Onboarding
 Make the system understandable to campaign authors.
 - [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
 - [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
@@ -714,7 +729,7 @@ Make the system understandable to campaign authors.
 - [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
 - [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
 
-## 🟡 Milestone 63: Release Robustness & Distribution Polish
+## 🟡 Milestone 65: Release Robustness & Distribution Polish
 Prepare for public builds and long-term iteration.
 - [ ] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
 - [ ] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
@@ -728,14 +743,14 @@ Prepare for public builds and long-term iteration.
 # 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
 **Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
 
-## 🟡 Milestone 64: Asynchronous Cooperative Scheduler (Time-Slicing)
+## 🟡 Milestone 66: Asynchronous Cooperative Scheduler (Time-Slicing)
 Prevent browser lock-ups during computationally expensive operations.
 - [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
 - [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
 - [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
 - [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
 
-## 🟡 Milestone 65: Absolute Presentational Decoupling (Web Worker)
+## 🟡 Milestone 67: Absolute Presentational Decoupling (Web Worker)
 Enforce a strict model-view separation by moving the core engine off the main thread entirely.
 - [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
 - [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.

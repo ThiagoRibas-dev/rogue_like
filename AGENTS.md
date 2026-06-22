@@ -167,6 +167,12 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 
 ## 10. Reference Docs
 
+### Internal
+- **Architecture:** `docs/ARCHITECTURE.md` — subsystem descriptions and how the engine fits together.
+- **Decision Log:** `docs/DECISIONS.md` — non-obvious architectural tradeoffs and their rationale.
+- **Milestones:** `docs/MILESTONES.md` — roadmap, completed features, and upcoming work.
+
+### External
 - **ROT.js:** https://ondras.github.io/rot.js/hp/ and the GitHub wiki
 - **TypeScript Handbook:** https://www.typescriptlang.org/docs/handbook/
 - **Vite:** https://vitejs.dev/guide/
