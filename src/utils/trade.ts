@@ -4,6 +4,74 @@ import { ComponentType } from '../types/components.types.ts';
 import type { ShopComponent, MemoryComponent, FactionComponent } from '../types/components.types.ts';
 
 /**
+ * Economic penalty markup applied when a merchant's supplier hierarchy has a top-tier vacancy.
+ */
+export const HIERARCHY_VACANCY_MARKUP_PENALTY = 0.5;
+
+/**
+ * Price markup modifier applied when a merchant is annoyed.
+ */
+export const ANNOYED_MARKUP_MODIFIER = 0.25;
+
+/**
+ * Price discount modifier applied when a merchant is grateful.
+ */
+export const GRATEFUL_DISCOUNT_MODIFIER = 0.25;
+
+/**
+ * Faction standing divisor used to convert numeric standing into a price modifier.
+ * e.g., +500 standing results in a 1.0 (100%) discount change factor.
+ */
+export const FACTION_STANDING_PRICE_DIVISOR = 500;
+
+/**
+ * Personality facet divisor used to scale the 0-100 greedy/generous facets.
+ * e.g., 50 point deviation from neutral divided by 250 = 20% modifier.
+ */
+export const PERSONALITY_FACET_PRICE_DIVISOR = 250;
+
+/**
+ * The default baseline value at which personality facets are considered neutral.
+ */
+export const PERSONALITY_FACET_NEUTRAL_VAL = 50;
+
+/**
+ * Minimum multiplier threshold allowed for final trade price calculations to prevent prices dropping to zero.
+ */
+export const MIN_TRADE_MULTIPLIER = 0.1;
+
+/**
+ * Base percentage of item value offered to the player when selling items to a merchant.
+ */
+export const BASE_SELL_TO_SHOP_MULTIPLIER = 0.25;
+
+/**
+ * Minimum sell-to-shop multiplier allowed to prevent items being sold for 0 gold.
+ */
+export const MIN_SELL_TO_SHOP_MULTIPLIER = 0.05;
+
+/**
+ * Checks if there is a vacancy in any of the top-tier ranks of the specified hierarchy.
+ */
+export function hasTopTierVacancy(state: GameState, hierarchyId: string): boolean {
+  const hierarchy = state.campaign.nemesisHierarchies[hierarchyId];
+  if (!hierarchy || hierarchy.ranks.length === 0) return false;
+
+  const maxTier = Math.max(...hierarchy.ranks.map((r) => r.tier));
+  const topRanks = hierarchy.ranks.filter((r) => r.tier === maxTier);
+
+  for (const rank of topRanks) {
+    const key = `${hierarchyId}:${rank.rankId}`;
+    const occupants = state.nemesisSlots[key] ?? [];
+    if (occupants.length < rank.maxSlots) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Calculates the effective price of an item given its base value,
  * applying the merchant's markup, social modifiers, and faction standing.
  *
@@ -28,6 +96,11 @@ export function getEffectivePrice(
 
   let multiplier = shop.markupMultiplier;
 
+  // Apply economic hierarchy penalty if supplier has top-tier vacancies
+  if (shop.supplierHierarchyId && hasTopTierVacancy(state, shop.supplierHierarchyId)) {
+    multiplier += HIERARCHY_VACANCY_MARKUP_PENALTY;
+  }
+
   // Apply temporary session modifier (from intimidate/persuade)
   const memory = getComponent(state, shopEntityId, ComponentType.Memory) as MemoryComponent | undefined;
   if (memory) {
@@ -37,9 +110,9 @@ export function getEffectivePrice(
 
     // Apply social state modifiers (M45)
     if (memory.annoyedDuration && memory.annoyedDuration > 0) {
-      multiplier += 0.25; // 25% markup for being annoyed
+      multiplier += ANNOYED_MARKUP_MODIFIER;
     } else if (memory.gratefulDuration && memory.gratefulDuration > 0) {
-      multiplier -= 0.25; // 25% discount for being grateful
+      multiplier -= GRATEFUL_DISCOUNT_MODIFIER;
     }
 
     // Apply faction standing
@@ -47,33 +120,33 @@ export function getEffectivePrice(
     if (buyerFaction) {
       const standing = memory.factionStandings[buyerFaction.factionId] ?? 0;
       // Convert standing to a modifier. e.g. +100 standing = -20% discount.
-      const standingModifier = -(standing / 500);
+      const standingModifier = -(standing / FACTION_STANDING_PRICE_DIVISOR);
       multiplier += standingModifier;
     }
 
     // Apply personality modifiers (M43)
     if (memory.facets) {
-      const greedy = memory.facets['greedy'] ?? 50;
-      const generous = memory.facets['generous'] ?? 50;
+      const greedy = memory.facets['greedy'] ?? PERSONALITY_FACET_NEUTRAL_VAL;
+      const generous = memory.facets['generous'] ?? PERSONALITY_FACET_NEUTRAL_VAL;
 
       // facets are 0-100. 50 is neutral.
       // 100 greedy = +20% markup.
-      const greedyModifier = (greedy - 50) / 250;
+      const greedyModifier = (greedy - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
       // 100 generous = -20% markup.
-      const generousModifier = -(generous - 50) / 250;
+      const generousModifier = -(generous - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
 
       multiplier += greedyModifier + generousModifier;
     }
   }
 
   // Ensure multiplier doesn't drop below a minimum threshold
-  const finalMultiplier = Math.max(0.1, multiplier);
+  const finalMultiplier = Math.max(MIN_TRADE_MULTIPLIER, multiplier);
 
   if (isSellingToShop) {
     // When the player sells to the shop, the base offer is 25% of the value.
     // If the merchant has a high markup (greedy, annoyed), they offer less.
     // If they have a low markup (generous, grateful), they offer more.
-    const sellMultiplier = Math.max(0.05, 0.25 * (1 / finalMultiplier));
+    const sellMultiplier = Math.max(MIN_SELL_TO_SHOP_MULTIPLIER, BASE_SELL_TO_SHOP_MULTIPLIER * (1 / finalMultiplier));
     return Math.max(1, Math.floor(baseValue * sellMultiplier));
   }
 

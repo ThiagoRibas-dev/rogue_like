@@ -124,6 +124,16 @@ export interface InvestigationKnowledge {
   readonly exposedAgreements: ReadonlyArray<{ readonly minionId: EntityId; readonly mastermindId: EntityId }>;
 }
 
+export interface PendingRivalry {
+  readonly id: string;
+  readonly type: 'duel' | 'betrayal' | 'recruitment' | 'training' | 'territory_shift';
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId?: EntityId;
+  readonly targetAreaId?: string;
+  readonly turnCreated: number;
+  readonly resolutionTurn: number;
+}
+
 /**
  * Immutable shape of the global game state.
  */
@@ -218,6 +228,7 @@ export interface GameState {
   readonly areaMutations: Readonly<Record<string, AreaMutation>>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
+  readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
   readonly verbMenu?:
     | {
         readonly target: ApplyIntentTarget;
@@ -299,4 +310,5 @@ export interface SerializedGameState {
   readonly areaMutations: ReadonlyArray<[string, AreaMutation]>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
+  readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
 }

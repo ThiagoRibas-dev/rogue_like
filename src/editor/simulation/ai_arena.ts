@@ -112,7 +112,8 @@ export function runAIArena(
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,
-    lastCheatDeathTurn: -9999
+    lastCheatDeathTurn: -9999,
+    pendingRivalries: []
   };
 
   // Setup the map tiles: use provided tiles or fall back to a flat arena

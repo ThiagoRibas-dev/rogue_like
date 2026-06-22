@@ -343,7 +343,8 @@ export const EntityTemplateSchema = z.object({
       inventory: z.array(z.string()).optional(),
       markupMultiplier: z.number().nonnegative(),
       buyTags: z.array(z.string()).default([]),
-      sellTags: z.array(z.string()).default([])
+      sellTags: z.array(z.string()).default([]),
+      supplierHierarchyId: z.string().optional()
     })
     .optional(),
   services: z

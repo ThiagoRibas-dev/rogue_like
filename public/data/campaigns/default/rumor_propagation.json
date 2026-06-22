@@ -11,5 +11,31 @@
       "text": "They say the goblins have set up a large encampment deep in the caverns. Watch your step!",
       "persistent": true
     }
+  },
+  {
+    "id": "rivalry_scheduled_rumor",
+    "eventType": "RivalryScheduled",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": false,
+    "delay": 5,
+    "rumorTemplate": {
+      "id": "rivalry_{eventId}",
+      "text": "Rumors are swirling of a power struggle in the ranks. An off-screen rivalry is brewing!",
+      "persistent": false
+    }
+  },
+  {
+    "id": "rivalry_resolved_rumor",
+    "eventType": "RivalryResolved",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": false,
+    "delay": 5,
+    "rumorTemplate": {
+      "id": "rivalry_res_{eventId}",
+      "text": "Word from the depths says the recent duel or struggle among the bosses has resolved, shifting the leadership hierarchy.",
+      "persistent": false
+    }
   }
 ]

@@ -128,7 +128,8 @@ let state: GameState = {
   nemesisSlots: {},
   vacancyTurns: {},
   globalTurn: 0,
-  lastCheatDeathTurn: -9999
+  lastCheatDeathTurn: -9999,
+  pendingRivalries: []
 };
 
 let selectedCampaignId: string | null = null;

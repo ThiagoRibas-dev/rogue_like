@@ -21,6 +21,7 @@ import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
 import { processPersonalitySystem } from '../systems/personality.system.ts';
 import { processNemesisSystem } from '../systems/nemesis.system.ts';
+import { processRivalries } from '../systems/rivalry.system.ts';
 import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
 import {
   processRumorPropagationEvents,
@@ -317,6 +318,7 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
       globalTurn: (nextState.globalTurn || 0) + 1
     };
     nextState = processNemesisSystem(nextState);
+    nextState = processRivalries(nextState);
   }
 
   // Clear events at the end of the intent tick so they don't persist

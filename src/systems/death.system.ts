@@ -7,7 +7,8 @@ import {
   type DeathComponent,
   type PositionComponent,
   type TagsComponent,
-  type TemplateComponent
+  type TemplateComponent,
+  type NemesisComponent
 } from '../types/components.types.ts';
 import { getComponent, removeEntity, addComponent, spawnItem } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -112,6 +113,29 @@ export function processDeathSystem(state: GameState): GameState {
       if (cheatResult.shouldCheatDeath) {
         nextState = cheatResult.state;
         continue; // Entity moves to limbo; do not remove completely or drop loot yet
+      }
+
+      // If this entity was a nemesis and died permanently, clean up its hierarchy slot and record the vacancy
+      const nemesis = getComponent(nextState, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;
+      if (nemesis) {
+        const slotKey = `${nemesis.hierarchyId}:${nemesis.rankId}`;
+        const nextSlots = { ...nextState.nemesisSlots };
+        if (nextSlots[slotKey]) {
+          nextSlots[slotKey] = nextSlots[slotKey]!.filter((id) => id !== entityId);
+        }
+        nextState = {
+          ...nextState,
+          nemesisSlots: nextSlots,
+          events: [
+            ...nextState.events,
+            {
+              type: GameEventType.NemesisVacancy,
+              hierarchyId: nemesis.hierarchyId,
+              rankId: nemesis.rankId,
+              vacatedByEntityId: entityId
+            }
+          ]
+        };
       }
 
       // Grant XP to killer if applicable

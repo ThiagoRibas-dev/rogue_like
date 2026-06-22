@@ -592,16 +592,16 @@ Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and repla
 - [x] Display known hierarchy information in a Nemesis/Dossier UI, with unknown slots and clue-gated reveals.
 - [x] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
 
-## 🟡 Milestone 51: Background Rivalries & Power Struggles
+## 🟢 Milestone 51: Background Rivalries & Power Struggles (Complete)
 Let important NPCs act autonomously even when the player is elsewhere. This milestone connects to M46 (Knowledge: NPCs learn about rivalries) and M48 (Gossip: rumors about power struggles spread through the social graph).
-- [ ] Build a `nemesis.system.ts` or extend the scheme scheduler to tick power struggles, duels, betrayals, recruitment, territory shifts, and training.
-- [ ] Resolve off-screen conflicts using deterministic combat/contest summaries rather than full map simulation.
-- [ ] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives — surfaced via M46's `ask_about` and M48's `gossip` verbs so players learn about rivalry opportunities through NPC dialogue.
-- [ ] Rivalry outcomes propagate as structured knowledge (M46): defeated champions, demoted captains, and new hierarchy vacancies are added to eligible NPCs' `MemoryComponent.knowledge` in connected areas.
-- [ ] Major rivalry events (betrayals, assassinations, promotions) generate gossip fragments (M48) that spread through the NPC social graph, giving players organic awareness of off-screen power shifts.
-- [ ] Handle dead/missing/intercepted participants defensively by cancelling, replacing, or transforming events into visible failures.
-- [ ] Add fast-forward simulation and debug receipts for rivalry outcomes.
-- [ ] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M47 — a merchant whose supplier was killed in a rivalry may have depleted stock).
+- [x] Build a `nemesis.system.ts` or extend the scheme scheduler to tick power struggles, duels, betrayals, recruitment, territory shifts, and training.
+- [x] Resolve off-screen conflicts using deterministic combat/contest summaries rather than full map simulation.
+- [x] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives — surfaced via M46's `ask_about` and M48's `gossip` verbs so players learn about rivalry opportunities through NPC dialogue.
+- [x] Rivalry outcomes propagate as structured knowledge (M46): defeated champions, demoted captains, and new hierarchy vacancies are added to eligible NPCs' `MemoryComponent.knowledge` in connected areas.
+- [x] Major rivalry events (betrayals, assassinations, promotions) generate gossip fragments (M48) that spread through the NPC social graph, giving players organic awareness of off-screen power shifts.
+- [x] Handle dead/missing/intercepted participants defensively by cancelling, replacing, or transforming events into visible failures.
+- [x] Add fast-forward simulation and debug receipts for rivalry outcomes.
+- [x] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M47 — a merchant whose supplier was killed in a rivalry may have depleted stock).
 
 ## 🟡 Milestone 52: Adversarial Resilience & Escalation
 Give the conspiracy teeth, memory, and adaptability. Builds on M43 (Personality) and M45 (Social Memory) to make schemes react to player interference.

@@ -31,7 +31,10 @@ export enum GameEventType {
   NemesisVacancy = 'NemesisVacancy',
   NemesisCheatedDeath = 'NemesisCheatedDeath',
   NemesisReturned = 'NemesisReturned',
-  NemesisScarred = 'NemesisScarred'
+  NemesisScarred = 'NemesisScarred',
+  RivalryScheduled = 'RivalryScheduled',
+  RivalryResolved = 'RivalryResolved',
+  RivalryFailed = 'RivalryFailed'
 }
 
 export interface BaseGameEvent {
@@ -225,6 +228,32 @@ export interface NemesisScarredEvent extends BaseGameEvent {
   readonly scarId: string;
 }
 
+export interface RivalryScheduledEvent extends BaseGameEvent {
+  readonly type: GameEventType.RivalryScheduled;
+  readonly rivalryId: string;
+  readonly rivalryType: string;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId?: EntityId;
+  readonly resolutionTurn: number;
+}
+
+export interface RivalryResolvedEvent extends BaseGameEvent {
+  readonly type: GameEventType.RivalryResolved;
+  readonly rivalryId: string;
+  readonly rivalryType: string;
+  readonly sourceEntityId: EntityId;
+  readonly targetEntityId?: EntityId;
+  readonly winnerId?: EntityId;
+  readonly loserId?: EntityId;
+  readonly consequences: ReadonlyArray<string>;
+}
+
+export interface RivalryFailedEvent extends BaseGameEvent {
+  readonly type: GameEventType.RivalryFailed;
+  readonly rivalryId: string;
+  readonly reason: string;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -256,4 +285,7 @@ export type GameEvent =
   | NemesisVacancyEvent
   | NemesisCheatedDeathEvent
   | NemesisReturnedEvent
-  | NemesisScarredEvent;
+  | NemesisScarredEvent
+  | RivalryScheduledEvent
+  | RivalryResolvedEvent
+  | RivalryFailedEvent;

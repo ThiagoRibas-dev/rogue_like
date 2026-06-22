@@ -130,7 +130,8 @@ export async function startNewGame(
     lastCheatDeathTurn: -9999,
     areaMutations: {},
     pendingKnowledge: [],
-    pendingRumors: []
+    pendingRumors: [],
+    pendingRivalries: []
   };
 
   // Spawn the player entity
@@ -358,7 +359,8 @@ export async function startSandboxEncounter(
     lastCheatDeathTurn: -9999,
     areaMutations: {},
     pendingKnowledge: [],
-    pendingRumors: []
+    pendingRumors: [],
+    pendingRivalries: []
   };
 
   // Spawn the player entity

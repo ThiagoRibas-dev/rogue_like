@@ -112,7 +112,8 @@ export function saveGame(state: GameState): void {
     investigation: state.investigation,
     areaMutations: Object.entries(state.areaMutations),
     pendingKnowledge: state.pendingKnowledge,
-    pendingRumors: state.pendingRumors
+    pendingRumors: state.pendingRumors,
+    pendingRivalries: state.pendingRivalries
   };
 
   try {
@@ -208,7 +209,8 @@ export async function loadGame(): Promise<GameState | null> {
       },
       areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {},
       pendingKnowledge: sState.pendingKnowledge ?? [],
-      pendingRumors: sState.pendingRumors ?? []
+      pendingRumors: sState.pendingRumors ?? [],
+      pendingRivalries: sState.pendingRivalries ?? []
     };
 
     // Rebuild the spatial index for the active floor

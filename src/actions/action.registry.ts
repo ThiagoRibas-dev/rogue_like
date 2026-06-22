@@ -26,6 +26,7 @@ import {
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
+import { processRivalries } from '../systems/rivalry.system.ts';
 import { promoteEntity } from '../systems/chronicle.system.ts';
 import { processApplyIntent } from '../systems/apply.system.ts';
 import {
@@ -261,9 +262,11 @@ export function dispatchAction(
       // Fast-forward loop
       const startEventCount = nextState.events.length;
       for (let i = 0; i < intentFF.iterations; i++) {
+        nextState = { ...nextState, globalTurn: nextState.globalTurn + 1 };
         for (const mastermindId of masterminds) {
           nextState = processSchemeTurn(nextState, mastermindId);
         }
+        nextState = processRivalries(nextState);
       }
 
       // Output receipts for area mutations that occurred during this fast-forward

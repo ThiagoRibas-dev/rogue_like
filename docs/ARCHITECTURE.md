@@ -212,6 +212,11 @@ Entities with a `ShopComponent` act as merchants. `getEffectivePrice` dynamicall
 
 `scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue JSON-defined `SchemeDefinition`s containing sequential phases and `AgreementDefinition`s to recruit minions. As the player defeats minions, combat drops randomized clues; `investigation.system.ts` updates the `investigation` object on `GameState`, exposed via the Investigation Board UI.
 
+### 7.6 Rivalry & Power Struggles
+
+`rivalry.system.ts` provides autonomous background conflicts for persistent entities. The system allows entities to form rivalries, scheduling resolutions (like duels or betrayals) after a delay. Outcomes of rivalries (such as death, promotion, or status effect changes) deterministically resolve off-screen and propagate as `RivalryResolved` events.
+This connects to the knowledge and gossip systems: major power shifts result in rumor propagation (`gossip.system.ts`) and add verifiable knowledge (`knowledge.system.ts`) to NPCs. Trade mechanics (`trade.ts`) also reflect rivalry impacts by imposing markup penalties on merchants whose suppliers suffer vacancies in the top-tier hierarchy.
+
 ---
 
 ## 8. Rendering & UI

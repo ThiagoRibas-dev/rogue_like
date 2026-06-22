@@ -13,6 +13,7 @@ import {
   type QuestLogComponent,
   type LockComponent,
   type InteractableComponent,
+  type ShopComponent,
   toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
@@ -407,6 +408,29 @@ export function spawnEntity(
         } as StartDialogueIntent
       ]
     });
+  }
+
+  if (template.shop) {
+    const shopInventoryIds: EntityId[] = [];
+    if (template.shop.inventory) {
+      for (const itemId of template.shop.inventory) {
+        if (state.campaign.items[itemId]) {
+          let itemEntityId: EntityId;
+          [nextState, itemEntityId] = spawnItem(nextState, itemId, x, y);
+          nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
+          shopInventoryIds.push(itemEntityId);
+        }
+      }
+    }
+    const shopCmp: ShopComponent = {
+      type: ComponentType.Shop,
+      inventory: shopInventoryIds,
+      markupMultiplier: template.shop.markupMultiplier,
+      buyTags: template.shop.buyTags,
+      sellTags: template.shop.sellTags,
+      supplierHierarchyId: template.shop.supplierHierarchyId
+    };
+    nextState = addComponent(nextState, entityId, shopCmp);
   }
 
   if (templateId === 'player') {

@@ -29,6 +29,7 @@ import { type EntityId, type GameState } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { promoteEntity, recordChronicleEvent } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { generateEventDrivenRivalry } from './rivalry.system.ts';
 
 /**
  * Main per-tick entry point for processing all nemesis-related mechanics:
@@ -358,18 +359,19 @@ export function evaluateCheatDeath(
   };
 
   nextState = addMessage(nextState, `${name} refuses to die!`, MessageLogCategory.System);
+  const cheatEvent = {
+    type: GameEventType.NemesisCheatedDeath as const,
+    entityId,
+    killerId,
+    scarId: chosenScar?.id
+  };
+
   nextState = {
     ...nextState,
-    events: [
-      ...nextState.events,
-      {
-        type: GameEventType.NemesisCheatedDeath,
-        entityId,
-        killerId,
-        scarId: chosenScar?.id
-      }
-    ]
+    events: [...nextState.events, cheatEvent]
   };
+
+  nextState = generateEventDrivenRivalry(nextState, cheatEvent);
 
   nextState = updateSpatialIndex(nextState);
 
@@ -467,19 +469,20 @@ export function promoteNemesis(
   nextState = recordChronicleEvent(nextState, entityId, 'Promotion', summary);
   nextState = addMessage(nextState, `${name} has been promoted to ${rankDisplayName}!`, MessageLogCategory.System);
 
+  const promoteEvent = {
+    type: GameEventType.NemesisPromoted as const,
+    entityId,
+    hierarchyId,
+    newRankId,
+    previousRankId: oldNemesis?.rankId
+  };
+
   nextState = {
     ...nextState,
-    events: [
-      ...nextState.events,
-      {
-        type: GameEventType.NemesisPromoted,
-        entityId,
-        hierarchyId,
-        newRankId,
-        previousRankId: oldNemesis?.rankId
-      }
-    ]
+    events: [...nextState.events, promoteEvent]
   };
+
+  nextState = generateEventDrivenRivalry(nextState, promoteEvent);
 
   return nextState;
 }

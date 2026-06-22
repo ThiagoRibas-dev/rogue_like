@@ -462,6 +462,7 @@ export interface ShopComponent {
   readonly markupMultiplier: number;
   readonly buyTags: ReadonlyArray<string>;
   readonly sellTags: ReadonlyArray<string>;
+  readonly supplierHierarchyId?: string | undefined;
 }
 
 export interface ServiceDefinition {

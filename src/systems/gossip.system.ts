@@ -12,9 +12,11 @@ import {
 } from '../types/components.types.ts';
 import {
   GameEventType,
-  type EntityDiedEvent,
   type GameEvent,
-  type SchemeAdvancedEvent
+  type EntityDiedEvent,
+  type SchemeAdvancedEvent,
+  type RivalryScheduledEvent,
+  type RivalryResolvedEvent
 } from '../types/events.types.ts';
 import { type GameState } from '../types/game-state.types.ts';
 import type { PendingRumorPropagation } from '../types/knowledge.types.ts';
@@ -50,6 +52,14 @@ function getEventIdPlaceholder(event: GameEvent, state: GameState): string {
     case GameEventType.SchemeAdvanced: {
       const advEvent = event as SchemeAdvancedEvent;
       return `${advEvent.schemeId}_${advEvent.newPhase}`;
+    }
+    case GameEventType.RivalryScheduled: {
+      const scheduledEvent = event as RivalryScheduledEvent;
+      return scheduledEvent.rivalryId;
+    }
+    case GameEventType.RivalryResolved: {
+      const resolvedEvent = event as RivalryResolvedEvent;
+      return resolvedEvent.rivalryId;
     }
     default:
       return 'generic_event';
