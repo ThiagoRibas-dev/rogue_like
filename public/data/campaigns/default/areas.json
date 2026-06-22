@@ -32,6 +32,16 @@
         "templateId": "scout",
         "x": 5,
         "y": 6
+      },
+      {
+        "templateId": "merchant",
+        "x": 12,
+        "y": 3
+      },
+      {
+        "templateId": "scholar",
+        "x": 15,
+        "y": 6
       }
     ],
     "staticMap": {

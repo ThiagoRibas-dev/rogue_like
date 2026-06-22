@@ -26,11 +26,17 @@ interface GraphEdge {
 export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSelectNode: (id: string) => void): void {
   container.innerHTML = `
     <div style="display: flex; flex-direction: column; width: 100%; height: 100%;">
-      <div class="workspace-header">
-        <h2 class="workspace-title">Overworld Topology</h2>
-        <p style="color: var(--text-dim); font-size: 0.9rem;">
-          Nodes represent areas. Lines represent portal connections. Red nodes are unreachable from the starting area.
-        </p>
+      <div class="workspace-header" style="display: flex; justify-content: space-between; align-items: center; padding-right: 15px;">
+        <div>
+          <h2 class="workspace-title">Overworld Topology</h2>
+          <p style="color: var(--text-dim); font-size: 0.9rem; margin: 0;">
+            Nodes represent areas. Lines represent portal connections. Red nodes are unreachable from the starting area.
+          </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="toggle-social-graph" style="cursor: pointer;" />
+          <label for="toggle-social-graph" style="font-size: 0.85rem; color: #fff; cursor: pointer; user-select: none;">Show Social Overlay</label>
+        </div>
       </div>
       <div style="flex-grow: 1; position: relative; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; overflow: hidden;" id="world-graph-wrapper">
         <canvas id="world-graph-canvas" style="display: block; width: 100%; height: 100%;"></canvas>
@@ -115,6 +121,12 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   let draggedNode: GraphNode | null = null;
   let mouseX = 0;
   let mouseY = 0;
+  let showSocialGraph = false;
+
+  const toggleCheckbox = container.querySelector('#toggle-social-graph') as HTMLInputElement | null;
+  toggleCheckbox?.addEventListener('change', (e) => {
+    showSocialGraph = (e.target as HTMLInputElement).checked;
+  });
 
   const k = 0.1; // Spring constant
   const idealLength = 150;
@@ -208,6 +220,93 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
       ctx.lineTo(targetX - 8 * Math.cos(angle + Math.PI / 6), targetY - 8 * Math.sin(angle + Math.PI / 6));
       ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
       ctx.fill();
+    }
+
+    // Draw Social Graph Overlay
+    if (showSocialGraph) {
+      ctx.save();
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = 'rgba(155, 89, 182, 0.75)'; // Purple for trade/rumors
+      ctx.lineWidth = 2;
+
+      const nodeArray = Object.values(nodes);
+      for (let i = 0; i < nodeArray.length; i++) {
+        for (let j = i + 1; j < nodeArray.length; j++) {
+          const n1 = nodeArray[i]!;
+          const n2 = nodeArray[j]!;
+          const area1 = doc.areas[n1.id];
+          const area2 = doc.areas[n2.id];
+          if (!area1 || !area2) continue;
+
+          const hasMerchant1 = area1.placedEntities?.some((pe) => doc.entities[pe.templateId]?.shop) ?? false;
+          const hasMerchant2 = area2.placedEntities?.some((pe) => doc.entities[pe.templateId]?.shop) ?? false;
+          const hasNpc1 = area1.placedEntities?.some((pe) => doc.entities[pe.templateId]?.memory) ?? false;
+          const hasNpc2 = area2.placedEntities?.some((pe) => doc.entities[pe.templateId]?.memory) ?? false;
+
+          let shouldDraw = false;
+          if ((hasMerchant1 && hasNpc2) || (hasMerchant2 && hasNpc1)) {
+            const connected =
+              area1.connections?.some((c) => c.targetAreaId === n2.id) ||
+              area2.connections?.some((c) => c.targetAreaId === n1.id);
+            if (connected) shouldDraw = true;
+          }
+
+          const rules = doc.rumorPropagation || [];
+          for (const rule of rules) {
+            const p1Matches =
+              area1.placedEntities?.some((pe) => {
+                const ent = doc.entities[pe.templateId];
+                if (!ent || !ent.memory) return false;
+                if (rule.eligibleFactions?.length > 0 && !rule.eligibleFactions.includes(ent.faction || ''))
+                  return false;
+                if (rule.eligibleTags?.length > 0 && !rule.eligibleTags.some((t) => ent.tags?.includes(t)))
+                  return false;
+                return true;
+              }) ?? false;
+
+            const p2Matches =
+              area2.placedEntities?.some((pe) => {
+                const ent = doc.entities[pe.templateId];
+                if (!ent || !ent.memory) return false;
+                if (rule.eligibleFactions?.length > 0 && !rule.eligibleFactions.includes(ent.faction || ''))
+                  return false;
+                if (rule.eligibleTags?.length > 0 && !rule.eligibleTags.some((t) => ent.tags?.includes(t)))
+                  return false;
+                return true;
+              }) ?? false;
+
+            if (p1Matches && p2Matches) {
+              if (!rule.requireAreaProximity) {
+                shouldDraw = true;
+                break;
+              } else {
+                const connected =
+                  area1.connections?.some((c) => c.targetAreaId === n2.id) ||
+                  area2.connections?.some((c) => c.targetAreaId === n1.id);
+                if (connected) {
+                  shouldDraw = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (shouldDraw) {
+            ctx.beginPath();
+            const midX = (n1.x + n2.x) / 2;
+            const midY = (n1.y + n2.y) / 2;
+            const dx = n2.x - n1.x;
+            const dy = n2.y - n1.y;
+            const len = Math.sqrt(dx * dx + dy * dy || 1);
+            const offsetX = (-dy / len) * 25;
+            const offsetY = (dx / len) * 25;
+            ctx.moveTo(n1.x, n1.y);
+            ctx.quadraticCurveTo(midX + offsetX, midY + offsetY, n2.x, n2.y);
+            ctx.stroke();
+          }
+        }
+      }
+      ctx.restore();
     }
 
     // Draw Nodes

@@ -9,6 +9,7 @@ import { validateItems } from './validator/item.validator.ts';
 import { validateEncounters } from './validator/encounter.validator.ts';
 import { validateAreas } from './validator/area.validator.ts';
 import { validateDialogues } from './validator/dialogue.validator.ts';
+import { validateEntities } from './validator/entity.validator.ts';
 import { loadCampaign } from '../core/loader.ts';
 
 /**
@@ -81,6 +82,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const encounterErrs = validateEncounters(campaign);
   const areaErrs = await validateAreas(campaign);
   const dialogueErrs = await validateDialogues(campaign);
+  const entityErrs = await validateEntities(campaign);
   const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
 
   const allErrs = [
@@ -93,6 +95,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...encounterErrs,
     ...areaErrs,
     ...dialogueErrs,
+    ...entityErrs,
     ...aiPersonalityErrs
   ];
 

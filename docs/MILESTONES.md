@@ -567,19 +567,19 @@ Turn the Event Ledger into a social rumor mill. Major world events generate goss
 
 **Testable in game:** Advance a scheme via `/debug fast-forward-schemes`. Talk to the `safe_hub` barkeep → use `gossip` → hear "Strange figures have been seen near the goblin camp." Talk to another NPC — they haven't heard yet (propagation delay). Wait N turns → now they know too. Return to the first NPC — they won't repeat the same rumor (consumed).
 
-## 🟡 Milestone 49: Social Commerce Authoring & Campaign Content Pass
+## 🟢 Milestone 49: Social Commerce Authoring & Campaign Content Pass (Complete)
 Wire the M45–M48 systems into the Campaign Editor and ship a default campaign content pass that proves every system works together in a coherent player experience.
 
-- [ ] Extend the Dialogue Tree editor in `src/rendering/ui/dialogue_editor.ts` (M23) with knowledge-gating nodes (condition: `has_knowledge`), trade-node types (opens `trade.ui.ts` directly), rumor-injection slots (injects a rumor into the dialogue flow), and social state preview (shows which branches are gated by `annoyed`/`grateful`/`patience_below`).
-- [ ] Add a Trade Inventory editor panel for NPC entities: configure `ShopComponent` fields (markup, buy/sell tags, initial stock) with the existing Zod-driven form renderer, using item autocomplete for inventory slots.
-- [ ] Add a Knowledge Simulator to the editor's Simulation Lab: given a campaign state snapshot (or a seed + event timeline), renders a node graph showing which NPCs hold which knowledge, what rumors are circulating in each area, and how information propagates across area connections. Designers can step forward in time to see rumor spread.
-- [ ] Add a Social Graph overlay to the Area Graph Editor (M24): colored edges showing trade routes (NPCs to shop-eligible NPCs), rumor propagation paths, and knowledge dependencies between NPCs across areas.
-- [ ] **Default campaign content:**
+- [x] Extend the Dialogue Tree editor in `src/rendering/ui/dialogue_editor.ts` (M23) with knowledge-gating nodes (condition: `has_knowledge`), trade-node types (opens `trade.ui.ts` directly), rumor-injection slots (injects a rumor into the dialogue flow), and social state preview (shows which branches are gated by `annoyed`/`grateful`/`patience_below`).
+- [x] Add a Trade Inventory editor panel for NPC entities: configure `ShopComponent` fields (markup, buy/sell tags, initial stock) with the existing Zod-driven form renderer, using item autocomplete for inventory slots.
+- [x] Add a Knowledge Simulator to the editor's Simulation Lab: given a campaign state snapshot (or a seed + event timeline), renders a node graph showing which NPCs hold which knowledge, what rumors are circulating in each area, and how information propagates across area connections. Designers can step forward in time to see rumor spread.
+- [x] Add a Social Graph overlay to the Area Graph Editor (M24): colored edges showing trade routes (NPCs to shop-eligible NPCs), rumor propagation paths, and knowledge dependencies between NPCs across areas.
+- [x] **Default campaign content:**
   - Add a merchant NPC to `safe_hub` with a curated shop inventory (health potion, rations, bronze key), buy/sell tags, and personality facets that influence pricing.
   - Author three knowledge-bearing NPCs: a barkeep (rumors about schemes), a scout (area hazard info — "watch out for the spider nest"), a scholar (scheme clues — "the villain's sigil was seen near the old altar").
   - Create a rumor propagation chain: Scheme Simulator villain activities (M20) generate rumors that cascade from `dungeon_2` through to `safe_hub` via gossip-eligible NPCs, giving players organic breadcrumbs.
   - Add a trade tutorial moment: in `safe_hub`, an NPC offers a free item in exchange for information about the first dungeon, demonstrating both `ask_about` and `barter` in a single interaction.
-- [ ] Validate all new schemas (`ShopComponent`, knowledge/rumor shapes, social consequence types) through the Campaign Validator (M25), blocking export on broken knowledge chains or unreachable merchant stock.
+- [x] Validate all new schemas (`ShopComponent`, knowledge/rumor shapes, social consequence types) through the Campaign Validator (M25), blocking export on broken knowledge chains or unreachable merchant stock.
 
 **Testable in game:** Open the editor. Design a merchant with inventory using the new Trade panel. Open the Knowledge Simulator — see which NPCs would know about the troll boss after it spawns. Playtest the campaign: talk to the barkeep (gossip), ask the scout (ask_about spider_nest), trade with the merchant (buy health potion), notice the scholar has a clue about the villain. All four M45–M48 systems work together in one coherent hub area.
 

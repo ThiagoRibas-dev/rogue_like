@@ -260,5 +260,113 @@
         ]
       }
     }
+  },
+  "merchant_tree": {
+    "id": "merchant_tree",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Greetings, traveler! I've got the finest goods in Camp. Looking to trade?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "Show me your wares. (Trade)",
+            "nextNodeId": "trade_node"
+          },
+          {
+            "id": "opt_leave",
+            "text": "Just browsing. (Leave)"
+          }
+        ]
+      },
+      "trade_node": {
+        "id": "trade_node",
+        "text": "Trade window opening...",
+        "dynamicType": "trade",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Go back.",
+            "nextNodeId": "start"
+          }
+        ]
+      }
+    }
+  },
+  "scholar_tree": {
+    "id": "scholar_tree",
+    "startNodeId": "start",
+    "nodes": {
+      "start": {
+        "id": "start",
+        "text": "Hello, seeker of truths. I study the lore of this region. What would you like to discuss?",
+        "options": [
+          {
+            "id": "opt_tell_rumor",
+            "text": "Share news of the Goblin Encampment. (Tell rumor)",
+            "nextNodeId": "inject_node"
+          },
+          {
+            "id": "opt_ask_about",
+            "text": "I want to ask about recent findings... (Ask about)",
+            "nextNodeId": "ask_about_node"
+          },
+          {
+            "id": "opt_leave",
+            "text": "Farewell. (Leave)"
+          }
+        ]
+      },
+      "inject_node": {
+        "id": "inject_node",
+        "text": "Fascinating! I shall record this news of the Goblin Camp in my archives.",
+        "dynamicType": "inject_rumor",
+        "injectRumorId": "rumor_chain_goblin_camp",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "You are welcome. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "ask_about_node": {
+        "id": "ask_about_node",
+        "text": "Let us consult the scrolls. What topic is on your mind?",
+        "dynamicType": "ask_about",
+        "onKnownNodeId": "known_node",
+        "onUnknownNodeId": "unknown_node",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Nevermind. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "known_node": {
+        "id": "known_node",
+        "text": "Ah, yes! My logs say: {topic}. {description}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Interesting. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
+      "unknown_node": {
+        "id": "unknown_node",
+        "text": "{deflection}",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "I see. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      }
+    }
   }
 }

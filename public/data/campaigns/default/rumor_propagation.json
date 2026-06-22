@@ -1,0 +1,15 @@
+[
+  {
+    "id": "rumor_chain_goblin_camp",
+    "eventType": "Talk",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": true,
+    "delay": 10,
+    "rumorTemplate": {
+      "id": "rumor_chain_goblin_camp",
+      "text": "They say the goblins have set up a large encampment deep in the caverns. Watch your step!",
+      "persistent": true
+    }
+  }
+]

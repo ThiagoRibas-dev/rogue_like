@@ -8,6 +8,7 @@ import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { showPromptModal } from './modal.ui.ts';
 import { renderFormForZodSchema } from './zod_form_renderer.ts';
+import { getReferenceOptions } from './ui_utils.ts';
 
 /**
  * Renders a specialized tree-first editor for Dialogue Trees.
@@ -67,6 +68,102 @@ export function renderDialogueTreeEditor(
       ]);
     });
     nodeEl.appendChild(textInput);
+
+    // Dynamic Type Selector
+    const typeLabel = document.createElement('label');
+    typeLabel.textContent = 'Dynamic Type:';
+    typeLabel.style.fontSize = '0.75rem';
+    typeLabel.style.color = '#aaa';
+    typeLabel.style.marginTop = '8px';
+    typeLabel.style.display = 'block';
+
+    const typeSelect = document.createElement('select');
+    typeSelect.style.width = '100%';
+    typeSelect.style.marginTop = '4px';
+    typeSelect.style.backgroundColor = '#1e1e1e';
+    typeSelect.style.color = '#fff';
+    typeSelect.style.border = '1px solid #555';
+    typeSelect.style.padding = '4px';
+
+    const opts = ['none', 'ask_about', 'gossip', 'trade', 'inject_rumor'];
+    opts.forEach((opt) => {
+      const option = document.createElement('option');
+      option.value = opt;
+      option.textContent = opt === 'none' ? 'None (Static)' : `Type: ${opt}`;
+      if (node.dynamicType === opt || (opt === 'none' && !node.dynamicType)) {
+        option.selected = true;
+      }
+      typeSelect.appendChild(option);
+    });
+
+    typeSelect.addEventListener('change', (e) => {
+      const val = (e.target as HTMLSelectElement).value;
+      const ops: Array<{ op: 'add' | 'remove' | 'replace'; path: string; value?: unknown }> = [];
+      if (val === 'none') {
+        if (node.dynamicType !== undefined) {
+          ops.push({ op: 'remove', path: `${basePath}/nodes/${nodeId}/dynamicType` });
+        }
+        if (node.injectRumorId !== undefined) {
+          ops.push({ op: 'remove', path: `${basePath}/nodes/${nodeId}/injectRumorId` });
+        }
+      } else {
+        ops.push({ op: 'add', path: `${basePath}/nodes/${nodeId}/dynamicType`, value: val });
+        if (val !== 'inject_rumor' && node.injectRumorId !== undefined) {
+          ops.push({ op: 'remove', path: `${basePath}/nodes/${nodeId}/injectRumorId` });
+        }
+      }
+      if (ops.length > 0) {
+        controller.applyOperations(ops);
+      }
+    });
+
+    nodeEl.appendChild(typeLabel);
+    nodeEl.appendChild(typeSelect);
+
+    // Inject Rumor Selector
+    if (node.dynamicType === 'inject_rumor') {
+      const rumorLabel = document.createElement('label');
+      rumorLabel.textContent = 'Inject Rumor ID:';
+      rumorLabel.style.fontSize = '0.75rem';
+      rumorLabel.style.color = '#aaa';
+      rumorLabel.style.marginTop = '8px';
+      rumorLabel.style.display = 'block';
+
+      const rumorSelect = document.createElement('select');
+      rumorSelect.style.width = '100%';
+      rumorSelect.style.marginTop = '4px';
+      rumorSelect.style.backgroundColor = '#1e1e1e';
+      rumorSelect.style.color = '#fff';
+      rumorSelect.style.border = '1px solid #555';
+      rumorSelect.style.padding = '4px';
+
+      const rumorOpts = getReferenceOptions('injectRumorId', controller.getDocument()) || [];
+      const emptyOpt = document.createElement('option');
+      emptyOpt.value = '';
+      emptyOpt.textContent = '-- Select a Rumor --';
+      if (!node.injectRumorId) emptyOpt.selected = true;
+      rumorSelect.appendChild(emptyOpt);
+
+      rumorOpts.forEach((opt) => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.label;
+        if (node.injectRumorId === opt.value) option.selected = true;
+        rumorSelect.appendChild(option);
+      });
+
+      rumorSelect.addEventListener('change', (e) => {
+        const val = (e.target as HTMLSelectElement).value;
+        controller.applyOperations([
+          val
+            ? { op: 'add', path: `${basePath}/nodes/${nodeId}/injectRumorId`, value: val }
+            : { op: 'remove', path: `${basePath}/nodes/${nodeId}/injectRumorId` }
+        ]);
+      });
+
+      nodeEl.appendChild(rumorLabel);
+      nodeEl.appendChild(rumorSelect);
+    }
 
     // Options
     const optionsContainer = document.createElement('div');
@@ -184,6 +281,10 @@ export function renderDialogueTreeEditor(
        <input type="text" id="sim-facts" value="" style="width:100%; background:#111; color:#fff; border:1px solid #333; padding:4px;" />
     </div>
     <div style="margin-top:10px;">
+       <label style="font-size:0.8rem; color:#888;">Knowledge IDs (comma separated):</label><br/>
+       <input type="text" id="sim-knowledge" value="" style="width:100%; background:#111; color:#fff; border:1px solid #333; padding:4px;" />
+    </div>
+    <div style="margin-top:10px;">
        <label style="font-size:0.8rem; color:#888;">Faction Standing (JSON):</label><br/>
        <textarea id="sim-factions" style="width:100%; height:60px; background:#111; color:#fff; border:1px solid #333; padding:4px;">{"goblins": 0}</textarea>
     </div>
@@ -198,6 +299,7 @@ export function renderDialogueTreeEditor(
 
     const factsInput = (simContainer.querySelector('#sim-facts') as HTMLInputElement).value;
     const factionsInput = (simContainer.querySelector('#sim-factions') as HTMLTextAreaElement).value;
+    const knowledgeInput = (simContainer.querySelector('#sim-knowledge') as HTMLInputElement).value;
 
     let factionsObj: Record<string, number> = {};
     try {
@@ -213,6 +315,15 @@ export function renderDialogueTreeEditor(
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const knowledgeArr = knowledgeInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const knowledgeDict: Record<string, { id: string; type: 'secret'; description: string; tags: string[] }> = {};
+    knowledgeArr.forEach((k) => {
+      knowledgeDict[k] = { id: k, type: 'secret', description: '', tags: [] };
+    });
+
     // Build a mock state
     const mockState = {
       campaign: { ...controller.getDocument() },
@@ -224,8 +335,9 @@ export function renderDialogueTreeEditor(
             {
               type: ComponentType.Memory,
               facts: factsArr,
-              factionStanding: factionsObj,
-              grudges: []
+              factionStandings: factionsObj,
+              grudges: [],
+              knowledge: knowledgeDict
             }
           ]
         ]

@@ -18,6 +18,7 @@ import { renderFactionMatrixEditor } from './ui/faction_matrix_editor.ts';
 import { showPromptModal } from './ui/modal.ui.ts';
 import { renderWorldGraph } from './ui/world_graph.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
+import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 
@@ -497,24 +498,29 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
 }
 
 function activateSimTab(
-  tab: 'arena' | 'director',
+  tab: 'arena' | 'director' | 'knowledge',
   controller: EditorController,
   tabContent: HTMLElement,
   arenaTab: HTMLElement,
-  directorTab: HTMLElement
+  directorTab: HTMLElement,
+  knowledgeTab: HTMLElement
 ): void {
   // Update tab styles
   arenaTab.style.color = tab === 'arena' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
   arenaTab.style.borderBottomColor = tab === 'arena' ? 'var(--accent-color, #3498db)' : 'transparent';
   directorTab.style.color = tab === 'director' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
   directorTab.style.borderBottomColor = tab === 'director' ? 'var(--accent-color, #3498db)' : 'transparent';
+  knowledgeTab.style.color = tab === 'knowledge' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
+  knowledgeTab.style.borderBottomColor = tab === 'knowledge' ? 'var(--accent-color, #3498db)' : 'transparent';
 
   // Clear and render
   tabContent.innerHTML = '';
   if (tab === 'arena') {
     renderSimulationLab(controller, tabContent);
-  } else {
+  } else if (tab === 'director') {
     renderDirectorSandbox(controller, tabContent);
+  } else {
+    renderKnowledgeSimulator(controller, tabContent);
   }
 }
 
@@ -640,8 +646,16 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         directorTab.style.cssText =
           'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
 
+        const knowledgeTab = document.createElement('button');
+        knowledgeTab.className = 'sim-tab';
+        knowledgeTab.dataset.tab = 'knowledge';
+        knowledgeTab.textContent = '🧠 Knowledge Sim';
+        knowledgeTab.style.cssText =
+          'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
+
         tabBar.appendChild(arenaTab);
         tabBar.appendChild(directorTab);
+        tabBar.appendChild(knowledgeTab);
         formContainer.appendChild(tabBar);
 
         const tabContent = document.createElement('div');
@@ -649,17 +663,21 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         formContainer.appendChild(tabContent);
 
         // Activate first tab by default
-        let activeTab: 'arena' | 'director' = 'arena';
-        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+        let activeTab: 'arena' | 'director' | 'knowledge' = 'arena';
+        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
 
         // Tab switching
         arenaTab.addEventListener('click', () => {
           activeTab = 'arena';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
         });
         directorTab.addEventListener('click', () => {
           activeTab = 'director';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
+        });
+        knowledgeTab.addEventListener('click', () => {
+          activeTab = 'knowledge';
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
         });
       } else {
         workspacePane.appendChild(header);

@@ -21,7 +21,8 @@ export type DialogueOption = z.infer<typeof DialogueOptionSchema>;
 export const DialogueNodeSchema = z.object({
   id: z.string(),
   text: z.string(),
-  dynamicType: z.enum(['ask_about', 'gossip']).optional(),
+  dynamicType: z.enum(['ask_about', 'gossip', 'trade', 'inject_rumor']).optional(),
+  injectRumorId: z.string().optional(),
   onKnownNodeId: z.string().optional(),
   onUnknownNodeId: z.string().optional(),
   options: z.array(DialogueOptionSchema)

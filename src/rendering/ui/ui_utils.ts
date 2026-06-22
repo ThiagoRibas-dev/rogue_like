@@ -47,5 +47,11 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
       label: `${doc.tagRegistry[k]?.category || 'Tag'}: ${k}`
     }));
   }
+  if (key === 'inventory') {
+    return Object.keys(doc.items || {}).map((k) => ({ value: k, label: `Item: ${doc.items[k]?.name || k}` }));
+  }
+  if (key === 'injectRumorId') {
+    return (doc.rumorPropagation || []).map((r) => ({ value: r.id, label: `Rumor: ${r.id}` }));
+  }
   return null;
 }

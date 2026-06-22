@@ -561,5 +561,57 @@
       ]
     },
     "dialogueId": "scout_tree"
+  },
+  "merchant": {
+    "id": "merchant",
+    "name": "Merchant",
+    "glyph": "M",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "Gold talks, friend.",
+        "Buy something or move along.",
+        "A deal is a deal."
+      ]
+    },
+    "shop": {
+      "inventory": ["health_potion", "short_sword", "leather_armor", "food_ration", "lockpick"],
+      "markupMultiplier": 1.2,
+      "buyTags": ["potion", "weapon", "armor"],
+      "sellTags": ["potion", "weapon", "armor", "valuable"]
+    },
+    "dialogueId": "merchant_tree"
+  },
+  "scholar": {
+    "id": "scholar",
+    "name": "Scholar",
+    "glyph": "K",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "Knowledge is the greatest treasure, but it requires patience.",
+        "The ancient archives hold secrets, yet many remain buried.",
+        "Seek and you shall find."
+      ]
+    },
+    "dialogueId": "scholar_tree"
   }
 }

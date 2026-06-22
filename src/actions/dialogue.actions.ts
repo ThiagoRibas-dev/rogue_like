@@ -120,6 +120,48 @@ export function processSelectDialogueOptionIntent(
     };
   }
 
+  const nextNodeId = option.nextNodeId;
+  const nextNode = tree.nodes[nextNodeId];
+  if (nextNode) {
+    if (nextNode.dynamicType === 'trade') {
+      return {
+        state: {
+          ...nextState,
+          uiMode: UIMode.Trade,
+          activeTrade: { npcEntityId },
+          activeDialogue: undefined
+        },
+        success: false
+      };
+    }
+    if (nextNode.dynamicType === 'inject_rumor' && nextNode.injectRumorId) {
+      const rule = state.campaign.rumorPropagation?.find((r) => r.id === nextNode.injectRumorId);
+      if (rule) {
+        const npcMemory = getComponent(nextState, npcEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+        if (npcMemory) {
+          const rumorPool = npcMemory.rumorPool || [];
+          const alreadyHas = rumorPool.some((r) => r.id === rule.rumorTemplate.id);
+          if (!alreadyHas) {
+            const nextRumorPool = [
+              ...rumorPool,
+              {
+                id: rule.rumorTemplate.id,
+                text: rule.rumorTemplate.text,
+                turnCreated: 0,
+                persistent: rule.rumorTemplate.persistent
+              }
+            ];
+            nextState = addComponent(nextState, npcEntityId, {
+              ...npcMemory,
+              rumorPool: nextRumorPool
+            });
+            nextState = addMessage(nextState, `They learned a new rumor.`, MessageLogCategory.System);
+          }
+        }
+      }
+    }
+  }
+
   return {
     state: {
       ...nextState,
