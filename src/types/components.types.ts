@@ -490,6 +490,7 @@ export interface NemesisComponent {
   readonly lastDeathTurn: number;
   readonly returnDelay?: number | undefined;
   readonly targetAreaId?: string | undefined;
+  readonly lastEncounterTurn?: number | undefined;
 }
 
 /**

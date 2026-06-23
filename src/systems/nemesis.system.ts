@@ -6,11 +6,13 @@ import {
   CHEAT_DEATH_RETURN_DELAY_MIN,
   MAX_SCARS_PER_ENTITY,
   PIS_CHEAT_DEATH_THRESHOLD,
-  VACANCY_FILL_DELAY
+  VACANCY_FILL_DELAY,
+  DRAMATIC_PAUSE_DURATION_MS
 } from '../constants/nemesis.constants.ts';
 import { addComponent, getComponent, spawnEntity, updateSpatialIndex } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
-import { addActor, removeActor } from '../core/scheduler.ts';
+import { addActor, removeActor, setTurnDuration } from '../core/scheduler.ts';
+import { getSettings } from '../core/settings.ts';
 import { type ScarDefinition } from '../types/campaign.types.ts';
 import {
   ComponentType,
@@ -21,6 +23,7 @@ import {
   type IdentityComponent,
   type NemesisComponent,
   type PositionComponent,
+  type TagsComponent,
   type TemplateComponent,
   type TraitsComponent
 } from '../types/components.types.ts';
@@ -30,6 +33,40 @@ import { coordToIndex } from '../utils/grid.ts';
 import { promoteEntity, recordChronicleEvent } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { generateEventDrivenRivalry } from './rivalry.system.ts';
+
+/**
+ *Centralized helper to pool and resolve barks from an entity's active tags and traits.
+ *
+ * @param state The current global game state.
+ * @param entityId The EntityId of the entity to retrieve barks for.
+ * @param barkType The category of bark (e.g., 'encounter_nemesis', 'cheat_death', 'victory_taunt').
+ * @returns An array of matching bark strings.
+ */
+export function getEntityBarks(state: GameState, entityId: EntityId, barkType: string): string[] {
+  const barks: string[] = [];
+
+  const tagsComp = getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined;
+  if (tagsComp) {
+    for (const tag of tagsComp.tags) {
+      const tagDef = state.campaign.tagRegistry[tag];
+      if (tagDef && tagDef.barks && tagDef.barks[barkType]) {
+        barks.push(...tagDef.barks[barkType]);
+      }
+    }
+  }
+
+  const traitsComp = getComponent(state, entityId, ComponentType.Traits) as TraitsComponent | undefined;
+  if (traitsComp) {
+    for (const trait of traitsComp.traits) {
+      const traitDef = state.campaign.traitRegistry[trait];
+      if (traitDef && traitDef.barks && traitDef.barks[barkType]) {
+        barks.push(...traitDef.barks[barkType]);
+      }
+    }
+  }
+
+  return barks;
+}
 
 /**
  * Main per-tick entry point for processing all nemesis-related mechanics:
@@ -292,6 +329,9 @@ export function evaluateCheatDeath(
   const identity = getComponent(nextState, entityId, ComponentType.Identity) as IdentityComponent | undefined;
   const name = identity ? identity.name : 'A nemesis';
 
+  const barks = getEntityBarks(nextState, entityId, 'cheat_death');
+  const cheatDeathBark = barks.length > 0 ? rng.getItem(barks) : undefined;
+
   const hierarchy = nextState.campaign.nemesisHierarchies[nemesis.hierarchyId];
   let chosenScar: ScarDefinition | undefined;
   if (hierarchy && hierarchy.scarPool && hierarchy.scarPool.length > 0) {
@@ -358,6 +398,12 @@ export function evaluateCheatDeath(
     lastCheatDeathTurn: globalTurn
   };
 
+  if (cheatDeathBark) {
+    nextState = addMessage(nextState, `${name} shouts: "${cheatDeathBark}"`, MessageLogCategory.Flavor);
+  }
+  if (!getSettings().visualFeedback.reduceDramaticDelays) {
+    setTurnDuration(DRAMATIC_PAUSE_DURATION_MS); // dramatic pause
+  }
   nextState = addMessage(nextState, `${name} refuses to die!`, MessageLogCategory.System);
   const cheatEvent = {
     type: GameEventType.NemesisCheatedDeath as const,

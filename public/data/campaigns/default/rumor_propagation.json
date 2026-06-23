@@ -37,5 +37,29 @@
       "text": "Word from the depths says the recent duel or struggle among the bosses has resolved, shifting the leadership hierarchy.",
       "persistent": false
     }
+  },
+  {
+    "id": "rumor_nemesis_cheated_death",
+    "eventType": "NemesisCheatedDeath",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": false,
+    "delay": 20,
+    "rumorTemplate": {
+      "id": "nemesis_survived",
+      "text": "Someone survived a fatal blow... they say they came back stronger and hold a deep grudge."
+    }
+  },
+  {
+    "id": "rumor_nemesis_promoted",
+    "eventType": "NemesisPromoted",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": false,
+    "delay": 30,
+    "rumorTemplate": {
+      "id": "nemesis_promoted",
+      "text": "There is a new captain in charge now. Best keep your head down."
+    }
   }
 ]

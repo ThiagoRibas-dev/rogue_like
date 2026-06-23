@@ -1,10 +1,12 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
+import { NEMESIS_ENCOUNTER_COOLDOWN_TURNS } from '../constants/nemesis.constants.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../types/intents/combat.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
 import { removeComponent } from '../core/ecs.ts';
+import { getEntityBarks } from './nemesis.system.ts';
 
 import { getSettings } from '../core/settings.ts';
 import {
@@ -14,7 +16,8 @@ import {
   type FactionComponent,
   type MemoryComponent,
   type EquipmentComponent,
-  type CoatingComponent
+  type CoatingComponent,
+  type NemesisComponent
 } from '../types/components.types.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 
@@ -50,6 +53,24 @@ export function processMeleeAttackIntent(
   const damage = Math.max(1, attackerStats.attack - defenderStats.defense);
 
   let nextState = state;
+
+  const attackerNemesis = getComponent(state, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;
+  if (attackerNemesis && getComponent(state, defenderId, ComponentType.Player)) {
+    const lastTurn = attackerNemesis.lastEncounterTurn ?? 0;
+    if ((state.globalTurn ?? 0) - lastTurn > NEMESIS_ENCOUNTER_COOLDOWN_TURNS) {
+      const barks = getEntityBarks(state, entityId, 'encounter_nemesis');
+      if (barks.length > 0) {
+        const bark = rng.getItem(barks);
+        if (bark) {
+          nextState = addMessage(nextState, `${attackerName} shouts: "${bark}"`, MessageLogCategory.Flavor);
+          nextState = addComponent(nextState, entityId, {
+            ...attackerNemesis,
+            lastEncounterTurn: state.globalTurn ?? 0
+          });
+        }
+      }
+    }
+  }
 
   const attackerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
   const defenderFaction = getComponent(state, defenderId, ComponentType.Faction) as FactionComponent | undefined;

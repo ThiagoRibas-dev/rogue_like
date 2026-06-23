@@ -37,6 +37,9 @@ export function renderDossierUI(state: GameState): void {
 
   // Active entities
   for (const entityId of state.entities) {
+    if (getComponent(state, entityId, ComponentType.Player) !== undefined) {
+      continue;
+    }
     const chronicle = getComponent(state, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
     if (chronicle) {
       const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
@@ -197,6 +200,60 @@ export function renderDossierUI(state: GameState): void {
         hierarchyContainer.appendChild(rankRow);
       }
       entityList.appendChild(hierarchyContainer);
+    }
+  }
+
+  // Render Player's Chronicle Timeline
+  const playerEntityId = state.entities.find((e) => getComponent(state, e, ComponentType.Player) !== undefined);
+  if (playerEntityId !== undefined) {
+    const playerChronicle = getComponent(state, playerEntityId, ComponentType.Chronicle) as
+      | ChronicleComponent
+      | undefined;
+    if (playerChronicle && playerChronicle.eventExcerpts.length > 0) {
+      const playerHeader = document.createElement('h2');
+      playerHeader.style.color = '#fff';
+      playerHeader.style.fontSize = '1.3rem';
+      playerHeader.style.borderBottom = '2px solid #555';
+      playerHeader.style.paddingBottom = '6px';
+      playerHeader.style.marginTop = '32px';
+      playerHeader.style.marginBottom = '16px';
+      playerHeader.textContent = 'Your Chronicle (Timeline)';
+      entityList.appendChild(playerHeader);
+
+      const timelineContainer = document.createElement('div');
+      timelineContainer.style.display = 'flex';
+      timelineContainer.style.flexDirection = 'column';
+      timelineContainer.style.gap = '8px';
+      timelineContainer.style.background = 'rgba(0, 0, 0, 0.2)';
+      timelineContainer.style.border = '1px solid #333';
+      timelineContainer.style.borderRadius = '6px';
+      timelineContainer.style.padding = '12px';
+      timelineContainer.style.marginBottom = '24px';
+
+      for (const event of playerChronicle.eventExcerpts) {
+        const itemEl = document.createElement('div');
+        itemEl.style.display = 'flex';
+        itemEl.style.gap = '12px';
+        itemEl.style.fontSize = '0.9rem';
+        itemEl.style.borderLeft = '2px solid #3498db';
+        itemEl.style.paddingLeft = '8px';
+        itemEl.style.marginLeft = '4px';
+
+        const turnEl = document.createElement('span');
+        turnEl.style.color = '#3498db';
+        turnEl.style.fontWeight = 'bold';
+        turnEl.style.minWidth = '60px';
+        turnEl.textContent = `Turn ${event.turn}`;
+
+        const summaryEl = document.createElement('span');
+        summaryEl.style.color = '#ddd';
+        summaryEl.textContent = event.summary;
+
+        itemEl.appendChild(turnEl);
+        itemEl.appendChild(summaryEl);
+        timelineContainer.appendChild(itemEl);
+      }
+      entityList.appendChild(timelineContainer);
     }
   }
 

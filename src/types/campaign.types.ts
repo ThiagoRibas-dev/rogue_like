@@ -573,7 +573,8 @@ export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
 export const TagDefinitionSchema = z.object({
   category: z.string(),
   color: z.string(),
-  description: z.string()
+  description: z.string(),
+  barks: z.record(z.string(), z.array(z.string())).optional()
 });
 export type TagDefinition = z.infer<typeof TagDefinitionSchema>;
 
@@ -668,7 +669,8 @@ export const TraitDefinitionSchema = z.object({
   crCostModifier: z.number().optional(),
   crCostMultiplier: z.number().optional(),
   statModifiers: z.record(z.string(), z.number()).optional(),
-  tagsAdded: z.array(z.string()).optional()
+  tagsAdded: z.array(z.string()).optional(),
+  barks: z.record(z.string(), z.array(z.string())).optional()
 });
 export type TraitDefinition = z.infer<typeof TraitDefinitionSchema>;
 

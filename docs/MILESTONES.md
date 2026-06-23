@@ -623,14 +623,14 @@ Give players ways to intentionally shape the emerging cast. This milestone build
 - [x] Add Trigger consequences for relationship mutation and hierarchy manipulation.
 - [x] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M45's interaction history tooltip and M49's Knowledge Simulator.
 
-## 🟡 Milestone 54: Nemesis Surfacing & Narrative UX
+## 🟢 Milestone 54: Nemesis Surfacing & Narrative UX
 Make the system legible, dramatic, and emotionally sticky.
-- [ ] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
-- [ ] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
-- [ ] Connect rumors, witnesses, clues, and investigation board entries to nemesis changes.
-- [ ] Add a chronicle timeline for the player, factions, and notable NPCs.
-- [ ] Add accessibility options to shorten/collapse repeated dramatic presentations.
-- [ ] Ensure every major off-screen narrative event has at least one player-facing surface: message, rumor, clue, board entry, quest, or map change.
+- [x] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
+- [x] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
+- [x] Connect rumors, witnesses, clues, and investigation board entries to nemesis changes.
+- [x] Add a chronicle timeline for the player, factions, and notable NPCs.
+- [x] Add accessibility options to shorten/collapse repeated dramatic presentations.
+- [x] Ensure every major off-screen narrative event has at least one player-facing surface: message, rumor, clue, board entry, quest, or map change.
 
 ---
 

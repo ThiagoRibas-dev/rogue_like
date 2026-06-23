@@ -18,6 +18,8 @@ import { removeActor, addActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
 import { processQuestEvent } from './quest.system.ts';
 import { evaluateCheatDeath } from './nemesis.system.ts';
+import { rng } from '../core/rng.ts';
+import { getEntityBarks } from './nemesis.system.ts';
 
 /**
  * Helper to grant XP to an entity and handle level ups.
@@ -107,6 +109,24 @@ export function processDeathSystem(state: GameState): GameState {
         causeText = `killed by a ${deathComp.causeOfDeath}`;
       }
       nextState = addMessage(nextState, `Game Over! You have been ${causeText}.`, MessageLogCategory.CombatDeath);
+
+      if (deathComp.killerId !== undefined) {
+        const killerNemesis = getComponent(nextState, deathComp.killerId, ComponentType.Nemesis) as
+          | NemesisComponent
+          | undefined;
+        if (killerNemesis) {
+          const barks = getEntityBarks(nextState, deathComp.killerId, 'victory_taunt');
+          if (barks.length > 0) {
+            const bark = rng.getItem(barks);
+            if (bark) {
+              const killerRenderable = getComponent(nextState, deathComp.killerId, ComponentType.Renderable);
+              const killerName = killerRenderable ? killerRenderable.glyph : 'Someone';
+              nextState = addMessage(nextState, `${killerName} taunts: "${bark}"`, MessageLogCategory.Flavor);
+            }
+          }
+        }
+      }
+
       nextState = { ...nextState, isGameOver: true, uiMode: UIMode.GameOver };
       deleteSave(); // Enforce permadeath
     } else {

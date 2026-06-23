@@ -23,6 +23,7 @@ export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
   showStatusText: boolean;
   showDangerTelegraphs: boolean;
+  reduceDramaticDelays: boolean;
 }
 
 export interface AccessibilitySettings {
@@ -62,7 +63,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
   visualFeedback: {
     showDamageNumbers: true,
     showStatusText: true,
-    showDangerTelegraphs: true
+    showDangerTelegraphs: true,
+    reduceDramaticDelays: false
   },
   accessibility: {
     uiScale: 'large',

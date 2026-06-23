@@ -1,6 +1,12 @@
 import type { Display } from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
-import { ComponentType, type IdentityComponent, type MemoryComponent } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type IdentityComponent,
+  type MemoryComponent,
+  type NemesisComponent,
+  type ChronicleComponent
+} from '../types/components.types.ts';
 import { type GameState, UIMode } from '../types/game-state.types.ts';
 
 import { coordToIndex } from '../utils/grid.ts';
@@ -359,6 +365,39 @@ function renderInspectTooltip(
           knowledgeEl.style.color = '#55ff55';
           knowledgeEl.textContent = 'Knowledge: ' + knowledgeKeys.join(', ');
           fragment.appendChild(knowledgeEl);
+        }
+      }
+
+      const nemesis = getComponent(state, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;
+      if (nemesis) {
+        const rankDef = state.campaign.nemesisHierarchies[nemesis.hierarchyId]?.ranks.find(
+          (r) => r.rankId === nemesis.rankId
+        );
+        if (rankDef) {
+          const nemesisEl = document.createElement('div');
+          nemesisEl.className = 'inspect-desc';
+          nemesisEl.style.color = '#f1c40f';
+          nemesisEl.innerHTML = `<strong>${rankDef.displayName}</strong> (Tier ${nemesis.tier})`;
+          fragment.appendChild(nemesisEl);
+        }
+      }
+
+      const chronicle = getComponent(state, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
+      if (chronicle && chronicle.scars.length > 0) {
+        const scarsEl = document.createElement('div');
+        scarsEl.className = 'inspect-desc';
+        scarsEl.style.color = '#e74c3c';
+        scarsEl.innerHTML = `<em>Scars:</em> ${chronicle.scars.join(', ')}`;
+        fragment.appendChild(scarsEl);
+      }
+      if (chronicle && chronicle.eventExcerpts.length > 0) {
+        const latestEvent = chronicle.eventExcerpts[chronicle.eventExcerpts.length - 1];
+        if (latestEvent) {
+          const histEl = document.createElement('div');
+          histEl.className = 'inspect-desc';
+          histEl.style.color = '#bdc3c7';
+          histEl.innerHTML = `<em>Latest:</em> ${latestEvent.summary}`;
+          fragment.appendChild(histEl);
         }
       }
 

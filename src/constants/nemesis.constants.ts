@@ -43,3 +43,13 @@ export const MAX_SCARS_PER_ENTITY = 5;
  * Turns before a vacancy in the hierarchy is automatically filled by a subordinate.
  */
 export const VACANCY_FILL_DELAY = 30;
+
+/**
+ * Turn duration delay (in ms) to pause the game loop after a dramatic narrative event.
+ */
+export const DRAMATIC_PAUSE_DURATION_MS = 500;
+
+/**
+ * Cooldown (in turns) before a nemesis can bark again upon encountering the player.
+ */
+export const NEMESIS_ENCOUNTER_COOLDOWN_TURNS = 500;
