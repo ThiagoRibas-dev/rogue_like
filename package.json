@@ -10,7 +10,8 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" --cache",
     "lint:scripts": "tsc -p tsconfig.scripts.json --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" --cache",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache"
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache",
+    "validate:campaigns": "bun scripts/run-validator.ts"
   },
   "dependencies": {
     "jszip": "^3.10.1",

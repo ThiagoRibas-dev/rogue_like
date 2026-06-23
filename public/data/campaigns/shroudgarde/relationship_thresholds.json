@@ -1,32 +1,32 @@
-{
-  "thresholds": [
-    {
-      "id": "rival",
-      "name": "Rival",
-      "minVal": -100,
-      "maxVal": -50,
-      "color": "#e74c3c"
-    },
-    {
-      "id": "suspicious",
-      "name": "Suspicious",
-      "minVal": -49,
-      "maxVal": -10,
-      "color": "#e67e22"
-    },
-    {
-      "id": "neutral",
-      "name": "Neutral",
-      "minVal": -9,
-      "maxVal": 10,
-      "color": "#95a5a6"
-    },
-    {
-      "id": "friendly",
-      "name": "Friendly",
-      "minVal": 11,
-      "maxVal": 100,
-      "color": "#2ecc71"
+[
+  {
+    "axis": "loyalty",
+    "operator": "<=",
+    "value": -50,
+    "consequence": {
+      "type": "change_faction",
+      "targetId": "subject",
+      "factionId": "hostile"
     }
-  ]
-}
+  },
+  {
+    "axis": "loyalty",
+    "operator": ">=",
+    "value": 50,
+    "consequence": {
+      "type": "set_social_state",
+      "state": "grateful",
+      "duration": 200
+    }
+  },
+  {
+    "axis": "fear",
+    "operator": ">=",
+    "value": 50,
+    "consequence": {
+      "type": "modify_standing",
+      "factionId": "player",
+      "amount": 5
+    }
+  }
+]

@@ -15,7 +15,20 @@
       "Stinker",
       "Bonecruncher"
     ],
-    "colorOverride": "#9c88ff"
+    "titles": [
+      "the Sneak",
+      "the Vermin",
+      "Cave-Crawler",
+      "Bonegnawer"
+    ],
+    "mannerisms": [
+      "Sniffs the air constantly",
+      "Cackles with a high-pitched voice",
+      "Picks at teeth with a rusty knife"
+    ],
+    "colors": [
+      "#9c88ff"
+    ]
   },
   "scro_raider_identity": {
     "firstNames": [
@@ -33,7 +46,20 @@
       "Starraider",
       "Warborn"
     ],
-    "colorOverride": "#44bd32"
+    "titles": [
+      "the Marauder",
+      "the Pillager",
+      "Star-Smasher",
+      "Horde-Breaker"
+    ],
+    "mannerisms": [
+      "Grinds teeth audibly",
+      "Spits after every sentence",
+      "Taps weapon rhythmically"
+    ],
+    "colors": [
+      "#44bd32"
+    ]
   },
   "umbragen_zealot_identity": {
     "firstNames": [
@@ -51,6 +77,19 @@
       "Darkcrest",
       "Voidrender"
     ],
-    "colorOverride": "#487eb0"
+    "titles": [
+      "the Zealot",
+      "the Dark Devoted",
+      "Shadow-Praised",
+      "the Umbral One"
+    ],
+    "mannerisms": [
+      "Whispers prayers under breath",
+      "Twitches when light hits them",
+      "Trembles with fervor"
+    ],
+    "colors": [
+      "#487eb0"
+    ]
   }
 }

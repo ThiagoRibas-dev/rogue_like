@@ -273,5 +273,45 @@
     "category": "area",
     "color": "#d63031",
     "description": "ToEE Fire Temple."
+  },
+  "protein": {
+    "category": "encounter_role",
+    "color": "#e74c3c",
+    "description": "Primary combat units in encounter budget allocation."
+  },
+  "dessert": {
+    "category": "encounter_role",
+    "color": "#9b59b6",
+    "description": "Specialist or caster units in encounter budget allocation."
+  },
+  "appetizer": {
+    "category": "encounter_role",
+    "color": "#f39c12",
+    "description": "Minor loot or low-threat filler in encounter budget allocation."
+  },
+  "side": {
+    "category": "encounter_role",
+    "color": "#3498db",
+    "description": "Environmental or non-combat entities in encounter budget allocation."
+  },
+  "opaque": {
+    "category": "physical",
+    "color": "#636e72",
+    "description": "Blocks line of sight; cannot be seen through."
+  },
+  "liquid": {
+    "category": "elemental",
+    "color": "#0984e3",
+    "description": "Flowing or standing liquid substance."
+  },
+  "terrain": {
+    "category": "terrain",
+    "color": "#b2bec3",
+    "description": "Natural or constructed terrain feature."
+  },
+  "divine": {
+    "category": "terrain",
+    "color": "#dfe6e9",
+    "description": "Consecrated or religiously significant object or area."
   }
 }

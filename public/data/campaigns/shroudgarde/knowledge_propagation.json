@@ -1,33 +1,59 @@
-{
-  "topics": {
-    "serpent_god": {
+[
+  {
+    "id": "serpent_god_knowledge",
+    "eventType": "EntityDied",
+    "eligibleTags": [],
+    "eligibleFactions": [
+      "citizens"
+    ],
+    "requireAreaProximity": true,
+    "delay": 50,
+    "knowledgeTemplate": {
       "id": "serpent_god",
-      "name": "The Great Serpent God",
-      "description": "An ancient, slithering deity worshiped by the subverted cultists."
-    },
-    "lareth_secret": {
-      "id": "lareth_secret",
-      "name": "Lareth's Secret Ambition",
-      "description": "Lareth has secret ties to the main Temple of Elemental Evil."
-    },
-    "soul_gem_secret": {
-      "id": "soul_gem_secret",
-      "name": "The Soul Gem Wards",
-      "description": "The Soul Gem in the Ghost Tower is defended by Imues' elemental constructs."
+      "type": "secret",
+      "description": "An ancient, slithering deity worshiped by the subverted cultists.",
+      "tags": [
+        "religion",
+        "cult"
+      ]
     }
   },
-  "deflections": {
-    "default": [
-      "The swamp? Shroudgarde is all I care for.",
-      "Leave me be, traveler. The daze makes it hard to think."
+  {
+    "id": "lareth_secret_knowledge",
+    "eventType": "EntityDied",
+    "eligibleTags": [],
+    "eligibleFactions": [
+      "citizens"
     ],
-    "wood_elf_luc": [
-      "Hmph. Ask someone else, I only care about my forge and my arrows.",
-      "I'm a simple elf. I don't follow swamp legends."
+    "requireAreaProximity": true,
+    "delay": 50,
+    "knowledgeTemplate": {
+      "id": "lareth_secret",
+      "type": "secret",
+      "description": "Lareth has secret ties to the main Temple of Elemental Evil.",
+      "tags": [
+        "cult",
+        "temple_of_elemental_evil"
+      ]
+    }
+  },
+  {
+    "id": "soul_gem_secret_knowledge",
+    "eventType": "EntityDied",
+    "eligibleTags": [],
+    "eligibleFactions": [
+      "citizens"
     ],
-    "aasimar_isabelle": [
-      "May the light guide us, but I have no knowledge of this matter.",
-      "We must pray for answers, for I cannot help you here."
-    ]
+    "requireAreaProximity": true,
+    "delay": 50,
+    "knowledgeTemplate": {
+      "id": "soul_gem_secret",
+      "type": "secret",
+      "description": "The Soul Gem in the Ghost Tower is defended by Imues' elemental constructs.",
+      "tags": [
+        "ghost_tower",
+        "soul_gem"
+      ]
+    }
   }
-}
+]

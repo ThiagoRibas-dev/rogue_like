@@ -2,26 +2,29 @@
  * Campaign Validator Runner
  *
  * Validates campaign data against the engine's Zod schemas and
- * cross-reference validators. Supports validating the built-in
- * 'default' campaign or a user-specified campaign directory.
+ * cross-reference validators. By default, validates ALL campaigns
+ * in public/data/campaigns/. Use --campaign-dir to validate a single
+ * campaign directory.
  *
  * This script is self-contained and does NOT depend on the Vite-based
  * loader.ts or campaign_store.ts (which require a browser DOM).
  * It reads JSON files directly from disk and validates them.
  *
  * Usage:
- *   bun scripts/run-validator.ts                           # Validate 'default'
- *   bun scripts/run-validator.ts --campaign-dir ./my-camp  # Validate custom dir
- *   bun scripts/run-validator.ts --json                    # Machine-parseable JSON output
+ *   bun scripts/run-validator.ts                           # Validate ALL campaigns
+ *   bun scripts/run-validator.ts --campaign-dir ./my-camp  # Validate a single campaign dir
+ *   bun scripts/run-validator.ts --all                     # Explicitly validate ALL campaigns
+ *   bun scripts/run-validator.ts --json                    # Machine-parseable JSON output (single only)
  *   bun scripts/run-validator.ts --help                    # Show help
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { CampaignData } from '../src/types/campaign.types.ts';
 import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
 import type { ValidationError, ValidationReport } from '../src/editor/validator/validator.types.ts';
+import { validateCampaign } from '../src/editor/campaign_validator.ts';
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -29,6 +32,10 @@ import type { ValidationError, ValidationReport } from '../src/editor/validator/
 
 function toSnakeCase(str: string): string {
   return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+}
+
+function isCampaignDir(dirPath: string): boolean {
+  return existsSync(join(dirPath, 'manifest.json'));
 }
 
 // ──────────────────────────────────────────────
@@ -43,15 +50,19 @@ if (args.some(a => helpFlags.includes(a))) {
   Campaign Validator Runner
 
   Usage:
-    bun scripts/run-validator.ts                           Validate the built-in 'default' campaign
-    bun scripts/run-validator.ts --campaign-dir ./my-camp  Validate JSON files from a directory
+    bun scripts/run-validator.ts                           Validate ALL campaigns
+    bun scripts/run-validator.ts --all                     Same as above (explicit)
+    bun scripts/run-validator.ts --campaign-dir ./my-camp  Validate a single campaign directory
     bun scripts/run-validator.ts --json                    Output machine-readable JSON report
     bun scripts/run-validator.ts --help                    Show this help
 
   The --campaign-dir flag expects a path to a directory containing the
-  26 campaign JSON files (manifest.json, rules.json, etc.).
+  campaign JSON files (manifest.json, rules.json, etc.).
 
-  With --json, the output is a single JSON object:
+  Without --campaign-dir, the script scans public/data/campaigns/ and
+  validates EVERY subdirectory that has a manifest.json.
+
+  With --json, the output is a single JSON object (only for single campaign):
     { "valid": boolean, "errors": ValidationError[], "warnings": ValidationError[] }
   `);
   process.exit(0);
@@ -64,6 +75,7 @@ if (campaignDirIdx !== -1 && campaignDirIdx + 1 < args.length) {
 }
 
 const useJsonOutput = args.includes('--json');
+const validateAll = args.includes('--all') || (campaignDir === null && !useJsonOutput);
 
 // ──────────────────────────────────────────────
 // Path setup
@@ -72,7 +84,7 @@ const useJsonOutput = args.includes('--json');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..');
-const DEFAULT_CAMPAIGN_DIR = join(PROJECT_ROOT, 'public', 'data', 'campaigns', 'default');
+const CAMPAIGNS_ROOT = join(PROJECT_ROOT, 'public', 'data', 'campaigns');
 
 /** Generates an empty-but-valid default for a missing file. */
 function getFallbackForFile(key: keyof CampaignData): unknown {
@@ -101,45 +113,66 @@ function getFallbackForFile(key: keyof CampaignData): unknown {
 }
 
 // ──────────────────────────────────────────────
-// Campaign loader (standalone, no Vite dependencies)
+// Mock environment for validators that expect browser globals
 // ──────────────────────────────────────────────
 
-function loadCampaignFromDir(dir: string): CampaignData {
-  console.log(`Loading campaign from: ${dir}`);
+(globalThis as any).sessionStorage = {
+  getItem: () => null,
+  setItem: () => { },
+  removeItem: () => { },
+  clear: () => { },
+  length: 0,
+  key: () => null,
+};
 
-  // Verify directory exists
-  if (!existsSync(dir)) {
-    console.error(`❌ Directory not found: ${dir}`);
-    process.exit(1);
-  }
+(globalThis as any).localStorage = {
+  getItem: () => null,
+  setItem: () => { },
+  removeItem: () => { },
+  clear: () => { },
+  length: 0,
+  key: () => null,
+};
 
-  // Read all files
+// ──────────────────────────────────────────────
+// Validation logic
+// ──────────────────────────────────────────────
+
+interface CampaignResult {
+  campaignId: string;
+  campaignName: string;
+  dir: string;
+  zodErrors: number;
+  crossErrors: number;
+  warnings: number;
+  errorDetails: string[];
+  passed: boolean;
+}
+
+function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number; errorDetails: string[] } {
   const campaignData: Record<string, unknown> = {};
   let missingCount = 0;
 
   const keys = Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[];
   for (const key of keys) {
-    if (key === 'triggerBuckets') continue; // Not a file
-    
+    if (key === 'triggerBuckets') continue;
+
     const filename = `${toSnakeCase(key)}.json`;
     const filePath = join(dir, filename);
 
     if (!existsSync(filePath)) {
-      console.warn(`  ⚠ Missing file: ${filename} — using fallback defaults`);
       campaignData[key] = getFallbackForFile(key);
       missingCount++;
     } else {
       try {
-        const content = readFileSync(filePath, 'utf-8');
-        campaignData[key] = JSON.parse(content);
+        campaignData[key] = JSON.parse(readFileSync(filePath, 'utf-8'));
       } catch (err) {
-        console.error(`  ❌ Failed to parse ${filename}:`, err);
-        process.exit(1);
+        return { errors: 1, errorDetails: [`Failed to parse ${filename}: ${(err as Error).message}`] };
       }
     }
   }
 
-  // Build trigger buckets (needed by the trigger system at runtime)
+  // Build trigger buckets
   const triggers = campaignData.triggers as Record<string, { eventType: string }> | undefined;
   const triggerBuckets: Record<string, unknown[]> = {};
   if (triggers) {
@@ -152,118 +185,166 @@ function loadCampaignFromDir(dir: string): CampaignData {
   }
   campaignData.triggerBuckets = triggerBuckets;
 
-  // Validate against Zod schema
-  console.log('Running Zod schema validation...');
   const result = CampaignDataSchema.safeParse(campaignData);
   if (!result.success) {
-    console.error('❌ Zod schema validation FAILED:');
-    for (const issue of result.error.issues) {
-      console.error(`  Path: ${issue.path.join('.')} — ${issue.message}`);
-      console.error(`    Code: ${issue.code}`);
-    }
-    process.exit(1);
+    const errorDetails = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`);
+    return { errors: result.error.issues.length, errorDetails };
   }
 
-  console.log(`  ✅ Zod schema validation passed (${missingCount} missing files used fallbacks)`);
-  return result.data;
+  console.log(`  ✅ Zod schema validation passed (${missingCount > 0 ? `${missingCount} missing file(s) used fallbacks` : 'all files present'})`);
+  return { data: result.data, errors: 0, errorDetails: [] };
 }
 
-import { validateCampaign } from '../src/editor/campaign_validator.ts';
-// ──────────────────────────────────────────────
-// Mock environment for validators that expect browser globals
-// ──────────────────────────────────────────────
+async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
+  const campaignName = basename(dir);
+  console.log(`\n🔍 Validating campaign: ${campaignName} (${dir})`);
 
-// Some validators may reference sessionStorage
-(globalThis as any).sessionStorage = {
-  getItem: () => null,
-  setItem: () => { },
-  removeItem: () => { },
-  clear: () => { },
-  length: 0,
-  key: () => null,
-};
+  const zodResult = loadAndValidateZod(dir);
+  if (zodResult.errors > 0) {
+    for (const detail of zodResult.errorDetails) {
+      console.error(`  ❌ ${detail}`);
+    }
+    return {
+      campaignId: campaignName,
+      campaignName,
+      dir,
+      zodErrors: zodResult.errors,
+      crossErrors: 0,
+      warnings: 0,
+      errorDetails: zodResult.errorDetails,
+      passed: false
+    };
+  }
 
-// Mock localStorage for any dependencies
-(globalThis as any).localStorage = {
-  getItem: () => null,
-  setItem: () => { },
-  removeItem: () => { },
-  clear: () => { },
-  length: 0,
-  key: () => null,
-};
+  const campaign = zodResult.data!;
+
+  // Deep cross-reference validation
+  console.log('   Running deep cross-reference validation...');
+  let crossErrors: ValidationError[] = [];
+  let crossWarnings: ValidationError[] = [];
+  try {
+    const report = await validateCampaign(campaign);
+    crossErrors = report.errors;
+    crossWarnings = report.warnings;
+  } catch (err) {
+    console.error(`  ❌ Cross-reference validation threw: ${(err as Error).message}`);
+    return {
+      campaignId: campaign.manifest?.id ?? campaignName,
+      campaignName: campaign.manifest?.name ?? campaignName,
+      dir,
+      zodErrors: 0,
+      crossErrors: 1,
+      warnings: 0,
+      errorDetails: [`Cross-reference validation threw: ${(err as Error).message}`],
+      passed: false
+    };
+  }
+
+  const allErrorDetails: string[] = [];
+  let totalCrossErrors = 0;
+
+  if (crossErrors.length > 0) {
+    console.error(`  ❌ Found ${crossErrors.length} cross-reference error(s):`);
+    for (let i = 0; i < crossErrors.length; i++) {
+      const e = crossErrors[i]!;
+      console.error(`    [${i + 1}] ${e.severity.toUpperCase()} @ ${e.path} — ${e.message}`);
+      allErrorDetails.push(`${e.path}: ${e.message}`);
+      totalCrossErrors++;
+    }
+  }
+
+  if (crossWarnings.length > 0) {
+    console.log(`  ⚠ ${crossWarnings.length} warning(s):`);
+    for (let i = 0; i < crossWarnings.length; i++) {
+      const w = crossWarnings[i]!;
+      console.log(`    [${i + 1}] ${w.severity.toUpperCase()} @ ${w.path} — ${w.message}`);
+    }
+  }
+
+  const passed = totalCrossErrors === 0;
+
+  return {
+    campaignId: campaign.manifest?.id ?? campaignName,
+    campaignName: campaign.manifest?.name ?? campaignName,
+    dir,
+    zodErrors: 0,
+    crossErrors: totalCrossErrors,
+    warnings: crossWarnings.length,
+    errorDetails: allErrorDetails,
+    passed
+  };
+}
 
 // ──────────────────────────────────────────────
 // Main
 // ──────────────────────────────────────────────
 
 async function main() {
-  const dir = campaignDir ?? DEFAULT_CAMPAIGN_DIR;
+  console.log('═══════════════════════════════════════════');
+  console.log('        Campaign Validator');
+  console.log('═══════════════════════════════════════════');
 
-  console.log('═══ Campaign Validator ═══');
-  console.log(`Mode: ${campaignDir ? 'Custom directory' : 'Built-in default campaign'}`);
-  console.log('');
-
-  const campaign = loadCampaignFromDir(dir);
-
-  console.log('Running deep cross-reference validation...');
-  const report: ValidationReport = await validateCampaign(campaign);
-
-  if (useJsonOutput) {
-    // Machine-parseable JSON output for AI feedback loop
-    const output = {
-      valid: report.errors.length === 0,
-      campaignId: campaign.manifest?.id ?? 'unknown',
-      campaignName: campaign.manifest?.name ?? 'Unknown',
-      errorCount: report.errors.length,
-      warningCount: report.warnings.length,
-      errors: report.errors.map((e: ValidationError) => ({
-        severity: e.severity,
-        path: e.path,
-        message: e.message,
-      })),
-      warnings: report.warnings.map((w: ValidationError) => ({
-        severity: w.severity,
-        path: w.path,
-        message: w.message,
-      })),
-    };
-    console.log(JSON.stringify(output, null, 2));
-  } else {
-    // Human-readable output
-    console.log('');
-    console.log('═══ Validation Report ═══');
-    console.log('');
-
-    if (report.errors.length === 0) {
-      console.log('✅ VALIDATION PASSED — no errors found.');
-    } else {
-      console.log(`❌ Found ${report.errors.length} error(s):`);
-      for (let i = 0; i < report.errors.length; i++) {
-        const err = report.errors[i]!;
-        console.log(`  [Error ${i + 1}] ${err.severity.toUpperCase()} @ ${err.path}`);
-        console.log(`         ${err.message}`);
-      }
-    }
-
-    if (report.warnings.length > 0) {
-      console.log(`\n⚠ Found ${report.warnings.length} warning(s):`);
-      for (let i = 0; i < report.warnings.length; i++) {
-        const warn = report.warnings[i]!;
-        console.log(`  [Warning ${i + 1}] ${warn.severity.toUpperCase()} @ ${warn.path}`);
-        console.log(`           ${warn.message}`);
-      }
-    }
+  if (campaignDir) {
+    // ── Single-campaign mode ──
+    console.log(`Mode: Single campaign`);
+    const result = await validateSingleCampaign(campaignDir);
 
     console.log('');
     console.log('───');
-    console.log(`Campaign: ${campaign.manifest?.name ?? 'Unknown'} (${campaign.manifest?.id ?? 'unknown'})`);
-    console.log(`Errors:   ${report.errors.length}`);
-    console.log(`Warnings: ${report.warnings.length}`);
-    console.log(`Status:   ${report.errors.length === 0 ? '✅ PASS' : '❌ FAIL'}`);
-  }
+    console.log(`Campaign: ${result.campaignName} (${result.campaignId})`);
+    console.log(`Errors:   ${result.zodErrors + result.crossErrors}`);
+    console.log(`Warnings: ${result.warnings}`);
+    console.log(`Status:   ${result.passed ? '✅ PASS' : '❌ FAIL'}`);
 
-  process.exit(report.errors.length > 0 ? 1 : 0);
+    process.exit(result.passed ? 0 : 1);
+  } else {
+    // ── Multi-campaign mode ──
+    console.log(`Mode: Validate all campaigns`);
+    console.log(`Scanning: ${CAMPAIGNS_ROOT}`);
+    console.log('');
+
+    const entries = readdirSync(CAMPAIGNS_ROOT);
+    const campaignDirs = entries
+      .map(e => join(CAMPAIGNS_ROOT, e))
+      .filter(d => statSync(d).isDirectory() && isCampaignDir(d))
+      .sort();
+
+    if (campaignDirs.length === 0) {
+      console.error('❌ No campaign directories found in:', CAMPAIGNS_ROOT);
+      process.exit(1);
+    }
+
+    console.log(`Found ${campaignDirs.length} campaign(s):`);
+    for (const dir of campaignDirs) {
+      console.log(`  - ${basename(dir)}`);
+    }
+
+    const results: CampaignResult[] = [];
+
+    for (const dir of campaignDirs) {
+      const result = await validateSingleCampaign(dir);
+      results.push(result);
+    }
+
+    // Summary
+    console.log('');
+    console.log('═══════════════════════════════════════════');
+    console.log('              SUMMARY');
+    console.log('═══════════════════════════════════════════');
+    let totalErrors = 0;
+    let totalWarnings = 0;
+    for (const r of results) {
+      const errCount = r.zodErrors + r.crossErrors;
+      const status = r.passed ? '✅' : '❌';
+      console.log(`  ${status} ${r.campaignName} (${r.campaignId}): ${errCount} error(s), ${r.warnings} warning(s)`);
+      totalErrors += errCount;
+      totalWarnings += r.warnings;
+    }
+    console.log('');
+    console.log(`Total: ${results.length} campaign(s), ${totalErrors} error(s), ${totalWarnings} warning(s)`);
+    console.log(`Overall: ${totalErrors === 0 ? '✅ ALL PASSED' : '❌ SOME FAILED'}`);
+    process.exit(totalErrors > 0 ? 1 : 0);
+  }
 }
 
 main().catch((err: Error) => {

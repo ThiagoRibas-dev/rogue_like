@@ -327,11 +327,26 @@
     "faction": "citizens",
     "persistent": true,
     "dialogueId": "priestess_dialogue",
-    "services": {
-      "heal_5": 20,
-      "heal_15": 50,
-      "potion_haste": 100
-    },
+    "services": [
+      {
+        "serviceId": "heal_5",
+        "name": "Heal (5 HP)",
+        "cost": 20,
+        "effectId": "heal_5"
+      },
+      {
+        "serviceId": "heal_15",
+        "name": "Heal (15 HP)",
+        "cost": 50,
+        "effectId": "heal_15"
+      },
+      {
+        "serviceId": "potion_haste",
+        "name": "Potion of Haste",
+        "cost": 100,
+        "effectId": "haste"
+      }
+    ],
     "memory": {
       "stress": 5,
       "facets": {
@@ -341,7 +356,7 @@
       },
       "values": {
         "benevolence": 50,
-        "spirituality": 60
+        "spirituality": 50
       }
     }
   },
@@ -357,15 +372,16 @@
     "persistent": true,
     "dialogueId": "hermit_dialogue",
     "shop": {
-      "buyMultiplier": 1.3,
-      "sellMultiplier": 0.6,
-      "itemInventory": [
+      "markupMultiplier": 1.3,
+      "inventory": [
         "rusty_sword",
         "iron_shield",
         "iron_key",
         "torch",
         "wand_of_lightning"
-      ]
+      ],
+      "buyTags": [],
+      "sellTags": []
     },
     "memory": {
       "stress": 15,
@@ -665,7 +681,7 @@
         "cooperation": 30
       },
       "values": {
-        "subversion": 60
+        "subversion": 50
       }
     }
   },
