@@ -405,26 +405,5 @@
       }
     ],
     "message": "You turn the massive valve. A hollow roar echoes through the stone walls as millions of gallons of water drain into the depths! The water levels are receding!"
-  },
-  {
-    "id": "ignite_flammable_tile",
-    "verb": "ignite",
-    "priority": 10,
-    "sourceMatcher": {
-      "targetType": "entity"
-    },
-    "targetMatcher": {
-      "targetType": "tile",
-      "tags": [
-        "flammable"
-      ]
-    },
-    "consequences": [
-      {
-        "type": "spawn_entity",
-        "entityTemplateId": "fire"
-      }
-    ],
-    "message": "The terrain catches fire!"
   }
 ]

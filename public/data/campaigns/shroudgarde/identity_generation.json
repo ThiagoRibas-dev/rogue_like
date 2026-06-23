@@ -1,0 +1,56 @@
+{
+  "norker_scout_identity": {
+    "firstNames": [
+      "Grimnak",
+      "Skabb",
+      "Grog",
+      "Kurg",
+      "Rax",
+      "Zib"
+    ],
+    "lastNames": [
+      "Fleshmangler",
+      "Mirecrawler",
+      "Skullbreaker",
+      "Stinker",
+      "Bonecruncher"
+    ],
+    "colorOverride": "#9c88ff"
+  },
+  "scro_raider_identity": {
+    "firstNames": [
+      "Vorg",
+      "Karrg",
+      "Throm",
+      "Mok",
+      "Zul",
+      "Gar"
+    ],
+    "lastNames": [
+      "The Conqueror",
+      "Ironhide",
+      "Bloodletter",
+      "Starraider",
+      "Warborn"
+    ],
+    "colorOverride": "#44bd32"
+  },
+  "umbragen_zealot_identity": {
+    "firstNames": [
+      "Silas",
+      "Vael",
+      "Malakor",
+      "Xul",
+      "Kaelen",
+      "Kaelis"
+    ],
+    "lastNames": [
+      "The Shadowweaver",
+      "Umbrallord",
+      "Nightsoul",
+      "Darkcrest",
+      "Voidrender"
+    ],
+    "colorOverride": "#487eb0"
+  }
+}

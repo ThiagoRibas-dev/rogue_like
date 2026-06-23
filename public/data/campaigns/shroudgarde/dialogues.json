@@ -100,6 +100,18 @@
                 "targetId": "moathouse_quest"
               }
             ]
+          },
+          {
+            "id": "opt_laurent_gossip",
+            "text": "Hear any rumors lately, Mayor? (Gossip)",
+            "nextNodeId": "gossip_node",
+            "dynamicType": "gossip"
+          },
+          {
+            "id": "opt_laurent_ask_about",
+            "text": "Can I ask you about a specific topic? (Ask About)",
+            "nextNodeId": "ask_about_node",
+            "dynamicType": "ask_about"
           }
         ]
       },
@@ -190,6 +202,26 @@
           {
             "id": "opt_bye_moathouse",
             "text": "Thank you, Mayor Laurent."
+          }
+        ]
+      },
+      "gossip_node": {
+        "id": "gossip_node",
+        "text": "Let me see... some travelers whisper of dark elements aligning deep in the north caves.",
+        "options": [
+          {
+            "id": "opt_laurent_gossip_bye",
+            "text": "Interesting. Thank you."
+          }
+        ]
+      },
+      "ask_about_node": {
+        "id": "ask_about_node",
+        "text": "What topic is on your mind, traveler?",
+        "options": [
+          {
+            "id": "opt_laurent_ask_bye",
+            "text": "Nevermind. (Go back)"
           }
         ]
       }
@@ -519,6 +551,12 @@
           {
             "id": "opt_leave_barkeep",
             "text": "Just looking around. (Leave)"
+          },
+          {
+            "id": "opt_barkeep_trade",
+            "text": "Show me what food and drink you have. (Trade)",
+            "nextNodeId": "barkeep_trade_node",
+            "dynamicType": "trade"
           }
         ]
       },
@@ -545,6 +583,16 @@
           {
             "id": "opt_bye_barkeep2",
             "text": "That sounds rather eerie. (Leave)"
+          }
+        ]
+      },
+      "barkeep_trade_node": {
+        "id": "barkeep_trade_node",
+        "text": "We have the finest trail rations and spiced meads in Shroudgarde. Have a look!",
+        "options": [
+          {
+            "id": "opt_barkeep_trade_bye",
+            "text": "Thanks. (Exit trade)"
           }
         ]
       }

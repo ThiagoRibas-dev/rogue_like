@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "triggerEvent": "EntityDied",
+      "targetTemplateId": "duthkagith_priest",
+      "rumorId": "priest_death_rumor",
+      "text": "The great psionic priest in the marsh has been slain! The trance is fading!",
+      "delayTurns": 5,
+      "factionRadius": [
+        "citizens",
+        "player"
+      ]
+    },
+    {
+      "triggerEvent": "EntityDied",
+      "targetTemplateId": "lareth_beautiful",
+      "rumorId": "lareth_death_rumor",
+      "text": "Lareth the Beautiful has been struck down! The Moathouse has fallen!",
+      "delayTurns": 3,
+      "factionRadius": [
+        "citizens"
+      ]
+    },
+    {
+      "triggerEvent": "QuestCompleted",
+      "targetTemplateId": "moathouse_quest",
+      "rumorId": "moathouse_clear_rumor",
+      "text": "The bandit raiders from the Moathouse are gone! The north roads are open!",
+      "delayTurns": 2,
+      "factionRadius": [
+        "citizens"
+      ]
+    }
+  ]
+}

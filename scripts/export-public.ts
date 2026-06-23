@@ -9,7 +9,7 @@
  *   bun scripts/export-public.ts --out ./my-export.txt
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 // ──────────────────────────────────────────────

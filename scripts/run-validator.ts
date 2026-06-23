@@ -20,9 +20,16 @@ import { readFileSync, existsSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { CampaignData } from '../src/types/campaign.types.ts';
-import { CampaignDataSchema } from '../src/types/campaign.types.ts';
-import { validateCampaign } from '../src/editor/campaign_validator.ts';
+import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
 import type { ValidationError, ValidationReport } from '../src/editor/validator/validator.types.ts';
+
+// ──────────────────────────────────────────────
+// Helpers
+// ──────────────────────────────────────────────
+
+function toSnakeCase(str: string): string {
+  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+}
 
 // ──────────────────────────────────────────────
 // Parse CLI arguments
@@ -67,51 +74,30 @@ const __dirname = dirname(__filename);
 const PROJECT_ROOT = join(__dirname, '..');
 const DEFAULT_CAMPAIGN_DIR = join(PROJECT_ROOT, 'public', 'data', 'campaigns', 'default');
 
-// ──────────────────────────────────────────────
-// Required files and their fallback defaults
-// ──────────────────────────────────────────────
-
-const REQUIRED_JSON_FILES: string[] = [
-  'manifest.json', 'rules.json', 'theme.json', 'advancement.json',
-  'items.json', 'effects.json', 'entities.json', 'status.json',
-  'tiles.json', 'factions.json', 'ai.json', 'areas.json',
-  'dialogues.json', 'quests.json', 'quest_templates.json',
-  'villains.json', 'schemes.json', 'agreements.json',
-  'triggers.json', 'tag_registry.json', 'reactions.json',
-  'fields.json', 'spawn_pools.json', 'encounter_profiles.json',
-  'trait_registry.json'
-];
-
 /** Generates an empty-but-valid default for a missing file. */
-function getFallbackForFile(filename: string): unknown {
-  const name = filename.replace('.json', '');
-  switch (name) {
-    case 'manifest':
-      return { id: 'custom', name: 'Custom Campaign', description: '', version: '1.0.0', author: 'Unknown', tags: [], schemaVersion: 0 };
-    case 'rules':
-      return {
-        map: { width: 80, height: 30, minRoomWidth: 3, maxRoomWidth: 8, minRoomHeight: 3, maxRoomHeight: 6, minCorridorLength: 2, maxCorridorLength: 8, dugPercentage: 0.15, startingAreaId: 'start', fovRadius: 8 },
-        hunger: { maxSatiation: 1000, thresholds: { satiated: 800, normal: 500, hungry: 200, starving: 0 } },
-        spawning: { maxMonstersPerRoom: 3, maxItemsPerRoom: 2, spawnWeights: {}, lootTable: {} }
-      };
-    case 'theme':
-      return { colors: { background: '#000', floorDimFg: '#333', playerFg: '#fff', stairsFg: '#fff', transparent: '#fff', wallDimFg: '#222' }, glyphs: { stairsDown: '>', stairsUp: '<' }, ui: { displayWidth: 80, displayHeight: 30, fontSize: 16, fontFamily: 'monospace' } };
-    case 'advancement':
-      return [{ level: 1, requiredXp: 0, hpGain: 5, attackGain: 1, defenseGain: 1 }];
-    case 'factions':
-      return { player: { player: 'friendly' } };
-    case 'tag_registry':
-    case 'fields':
-    case 'trait_registry':
-    case 'encounter_profiles':
-    case 'quest_templates':
-    case 'spawn_pools':
-      return {};
-    case 'reactions':
-      return [];
-    default:
-      return {};
+function getFallbackForFile(key: keyof CampaignData): unknown {
+  const schema = CampaignCategorySchemas[key];
+  if (schema && (schema as any)._def?.typeName === 'ZodArray') {
+    if (key === 'advancement') return [{ level: 1, requiredXp: 0, hpGain: 5, attackGain: 1, defenseGain: 1 }];
+    return [];
   }
+  if (key === 'manifest') {
+    return { id: 'custom', name: 'Custom Campaign', description: '', version: '1.0.0', author: 'Unknown', tags: [], schemaVersion: 0 };
+  }
+  if (key === 'rules') {
+    return {
+      map: { width: 80, height: 30, minRoomWidth: 3, maxRoomWidth: 8, minRoomHeight: 3, maxRoomHeight: 6, minCorridorLength: 2, maxCorridorLength: 8, dugPercentage: 0.15, startingAreaId: 'start', fovRadius: 8 },
+      hunger: { maxSatiation: 1000, thresholds: { satiated: 800, normal: 500, hungry: 200, starving: 0 } },
+      spawning: { maxMonstersPerRoom: 3, maxItemsPerRoom: 2, spawnWeights: {}, lootTable: {} }
+    };
+  }
+  if (key === 'theme') {
+    return { colors: { background: '#000', floorDimFg: '#333', playerFg: '#fff', stairsFg: '#fff', transparent: '#fff', wallDimFg: '#222' }, glyphs: { stairsDown: '>', stairsUp: '<' }, ui: { displayWidth: 80, displayHeight: 30, fontSize: 16, fontFamily: 'monospace' } };
+  }
+  if (key === 'factions') {
+    return { player: { player: 'friendly' } };
+  }
+  return {};
 }
 
 // ──────────────────────────────────────────────
@@ -128,56 +114,30 @@ function loadCampaignFromDir(dir: string): CampaignData {
   }
 
   // Read all files
-  const rawData: Record<string, unknown> = {};
+  const campaignData: Record<string, unknown> = {};
   let missingCount = 0;
 
-  for (const filename of REQUIRED_JSON_FILES) {
+  const keys = Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[];
+  for (const key of keys) {
+    if (key === 'triggerBuckets') continue; // Not a file
+    
+    const filename = `${toSnakeCase(key)}.json`;
     const filePath = join(dir, filename);
-    const key = filename.replace('.json', '');
 
     if (!existsSync(filePath)) {
       console.warn(`  ⚠ Missing file: ${filename} — using fallback defaults`);
-      rawData[key] = getFallbackForFile(filename);
+      campaignData[key] = getFallbackForFile(key);
       missingCount++;
     } else {
       try {
         const content = readFileSync(filePath, 'utf-8');
-        rawData[key] = JSON.parse(content);
+        campaignData[key] = JSON.parse(content);
       } catch (err) {
         console.error(`  ❌ Failed to parse ${filename}:`, err);
         process.exit(1);
       }
     }
   }
-
-  // Map file names to CampaignData property names
-  const campaignData: Record<string, unknown> = {
-    manifest: rawData['manifest'],
-    rules: rawData['rules'],
-    theme: rawData['theme'],
-    advancement: rawData['advancement'],
-    areas: rawData['areas'],
-    items: rawData['items'],
-    effects: rawData['effects'],
-    entities: rawData['entities'],
-    status: rawData['status'],
-    tiles: rawData['tiles'],
-    factions: rawData['factions'],
-    ai: rawData['ai'],
-    dialogues: rawData['dialogues'],
-    quests: rawData['quests'],
-    questTemplates: rawData['quest_templates'],
-    villains: rawData['villains'],
-    schemes: rawData['schemes'],
-    agreements: rawData['agreements'],
-    triggers: rawData['triggers'],
-    tagRegistry: rawData['tag_registry'],
-    reactions: rawData['reactions'],
-    fields: rawData['fields'],
-    spawnPools: rawData['spawn_pools'],
-    encounterProfiles: rawData['encounter_profiles'],
-    traitRegistry: rawData['trait_registry'],
-  };
 
   // Build trigger buckets (needed by the trigger system at runtime)
   const triggers = campaignData.triggers as Record<string, { eventType: string }> | undefined;
@@ -208,6 +168,7 @@ function loadCampaignFromDir(dir: string): CampaignData {
   return result.data;
 }
 
+import { validateCampaign } from '../src/editor/campaign_validator.ts';
 // ──────────────────────────────────────────────
 // Mock environment for validators that expect browser globals
 // ──────────────────────────────────────────────

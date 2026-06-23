@@ -51,8 +51,8 @@ function extractExports(content: string): Array<{ name: string, type: string, su
     }
 
     exports.push({
-      name: exportName,
-      type: exportType,
+      name: exportName!,
+      type: exportType!,
       summary: summary || 'No description provided.'
     });
   }

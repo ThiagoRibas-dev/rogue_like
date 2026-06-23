@@ -8,7 +8,7 @@
  *   across rooms.
  */
 
-import { loadCampaign } from './src/core/loader.ts';
+import { loadCampaign } from '../src/core/loader.ts';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -110,7 +110,7 @@ async function main() {
     // We need to dynamically import runEncounterDirector because it's not
     // exposed from the loader path; we'll use a dynamic ESM import.
     // For scripts executed with tsx, we can use a relative import from src/.
-    const { runEncounterDirector } = await import('./src/map/encounter_director.ts');
+    const { runEncounterDirector } = await import('../src/map/encounter_director.ts');
 
     const directorContext = {
         playerLevel: 1,
@@ -137,7 +137,7 @@ async function main() {
     console.log(`  Total entities spawned: ${result.newEntities.length}`);
 
     // Assertion: troll should appear at most once
-    const trollSpawns = result.newEntities.filter((e) => e.templateId === 'troll');
+    const trollSpawns = result.newEntities.filter((e: any) => e.templateId === 'troll');
     const trollCount = trollSpawns.length;
 
     console.log(`\n  Troll spawns: ${trollCount}`);
@@ -159,7 +159,7 @@ async function main() {
     const allSpawnedTrolls = (
         ['protein', 'appetizer', 'side', 'dessert'] as const
     ).flatMap((axis) =>
-        result.receipt.axisResults[axis].spawned.filter((id) => id === 'troll')
+        result.receipt.axisResults[axis].spawned.filter((id: string) => id === 'troll')
     );
     if (allSpawnedTrolls.length > 1) {
         console.error(`FAIL: Troll appears in axisSpawned ${allSpawnedTrolls.length} times!`);
@@ -169,7 +169,7 @@ async function main() {
 
     // Verify dynamic traits are present on entities when budget padding applies
     const entitiesWithTraits = result.newEntities.filter(
-        (e) => e.dynamicTraits && e.dynamicTraits.length > 0
+        (e: any) => e.dynamicTraits && e.dynamicTraits.length > 0
     );
     if (entitiesWithTraits.length > 0) {
         console.log(`  ✓ ${entitiesWithTraits.length} entities received dynamic traits via budget padding.`);

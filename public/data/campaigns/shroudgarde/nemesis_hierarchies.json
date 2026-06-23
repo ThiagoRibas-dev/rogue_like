@@ -1,0 +1,98 @@
+{
+  "monsters": {
+    "id": "monsters",
+    "name": "The Borderland Horde",
+    "promotionSources": [
+      "norker_scout",
+      "scro_raider",
+      "umbragen_zealot"
+    ],
+    "tiers": [
+      {
+        "rank": "grunt",
+        "name": "Grunt",
+        "hpMultiplier": 1.0,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "xpMultiplier": 1.0
+      },
+      {
+        "rank": "champion",
+        "name": "Champion",
+        "hpMultiplier": 1.3,
+        "attackBonus": 1,
+        "defenseBonus": 1,
+        "xpMultiplier": 1.5,
+        "titles": [
+          "The Ruthless",
+          "Fleshmangler",
+          "The Scarred",
+          "The Bold"
+        ]
+      },
+      {
+        "rank": "lieutenant",
+        "name": "Lieutenant",
+        "hpMultiplier": 1.6,
+        "attackBonus": 2,
+        "defenseBonus": 1,
+        "xpMultiplier": 2.0,
+        "titles": [
+          "The Executioner",
+          "Ironflesh",
+          "The Undying",
+          "Bone-Crusher"
+        ]
+      },
+      {
+        "rank": "war_chief",
+        "name": "War Chief",
+        "hpMultiplier": 2.0,
+        "attackBonus": 4,
+        "defenseBonus": 2,
+        "xpMultiplier": 3.0,
+        "titles": [
+          "The Great Warlord",
+          "The Terror",
+          "The Unbreakable",
+          "The Conqueror"
+        ]
+      }
+    ],
+    "scarPool": [
+      {
+        "id": "slash_scar",
+        "name": "Slashed Face",
+        "statModifiers": {
+          "defense": 1,
+          "speed": -5
+        },
+        "traitsAdded": [
+          "tough"
+        ]
+      },
+      {
+        "id": "fire_scar",
+        "name": "Fire Burned",
+        "statModifiers": {
+          "attack": 1
+        },
+        "traitsAdded": [
+          "fire_resistant",
+          "fearsome"
+        ]
+      },
+      {
+        "id": "blind_eye",
+        "name": "Milky Blind Eye",
+        "statModifiers": {
+          "defense": 2,
+          "speed": -10
+        },
+        "traitsAdded": [
+          "tough"
+        ]
+      }
+    ]
+  }
+}

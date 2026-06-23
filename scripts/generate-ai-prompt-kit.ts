@@ -16,7 +16,7 @@
  *   default-campaign/         — Copy of default campaign for reference
  */
 
-import { writeFileSync, mkdirSync, existsSync, readFileSync, cpSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -302,48 +302,6 @@ function extractCampaignCategoryKeys(source: string): string[] {
     return keys;
 }
 
-/**
- * Extract all describe() annotations from Zod schema source code.
- * Returns map of field path → description text.
- */
-function extractFieldDescriptions(source: string): Map<string, string> {
-    const descriptions = new Map<string, string>();
-    // Match: .describe('text')
-    const matches = source.matchAll(/\.describe\(['"`]([^'"`]+)['"`]\)/g);
-    let idx = 0;
-    for (const m of matches) {
-        descriptions.set(`field_${idx++}`, m[1]!);
-    }
-    return descriptions;
-}
-
-/**
- * Read a JSON file as formatted string.
- */
-function readJSON(filePath: string): string {
-    try {
-        const content = readFileSync(filePath, 'utf-8');
-        // Pretty-print it
-        return JSON.stringify(JSON.parse(content), null, 2);
-    } catch {
-        return '';
-    }
-}
-
-/**
- * List JSON files in a directory.
- */
-function listJSONFiles(dir: string): string[] {
-    try {
-        const entries = readFileSync(dir, 'utf-8') ? [] : [];
-        // Use a simpler approach
-        const fs = require('node:fs');
-        return fs.readdirSync(dir).filter((f: string) => f.endsWith('.json'));
-    } catch {
-        return [];
-    }
-}
-
 // ──────────────────────────────────────────────
 // Main Generator
 // ──────────────────────────────────────────────
@@ -378,7 +336,7 @@ function main() {
     const allJSDocs = new Map<string, string>();
     const allTSEnums = new Map<string, string[]>();
 
-    for (const [filename, source] of allSource) {
+    for (const [, source] of allSource) {
         const schemas = extractZodSchemas(source);
         for (const [k, v] of schemas) allSchemas.set(k, v);
 
@@ -393,12 +351,9 @@ function main() {
     }
 
     // ─── 3. Extract all valid values ───
-    const enumValues = extractEnumValues(campaignTypes + triggerTypes + questTypes);
-    const literalValues = extractLiteralValues(campaignTypes + triggerTypes + questTypes);
 
     // TS enums
     const gameEventEnum = allTSEnums.get('GameEventType') ?? [];
-    const verbValues = allTSEnums.get('Verb') ?? [];
     // If Verb is a type alias, extract from the constants file
     const verbTypeMatch = verbsConstants.match(/(['"`]\w+['"`])/g);
     const verbStrings = verbTypeMatch
@@ -457,7 +412,7 @@ function main() {
         ),
         ZapPattern: ['beam', 'bolt', 'cone'],
         AIBehaviorId: aiBehaviorValues,
-        AreaConnectionDirection: areaGeneratorTypeValues.includes('up') ? ['up', 'down', 'edge', 'portal'] : undefined,
+        AreaConnectionDirection: areaGeneratorTypeValues.includes('up') ? ['up', 'down', 'edge', 'portal'] : [],
     };
     // Remove undefined entries
     for (const key of Object.keys(validValues)) {
@@ -740,7 +695,10 @@ function main() {
     rulesMd += '  dialogues.json (depends on conditions/consequences, quests, factions, entities)\n';
     rulesMd += '  quests.json (depends on entities, items, areas)\n';
     rulesMd += '  triggers.json (depends on conditions/consequences, entities, areas, quests)\n';
-    rulesMd += '  reactions.json (depends on entities, items, tiles, tag_registry, trait_registry, fields)\n';
+    rulesMd += '  reactions.json (depends on entities, items, tiles, tag_registry, trait_registry, fields)\n\n';
+    rulesMd += 'Phase 4 (depends on everything above):\n';
+    rulesMd += '  identity_generation.json, personality_generation.json, nemesis_hierarchies.json\n';
+    rulesMd += '  knowledge_propagation.json, rumor_propagation.json, relationship_thresholds.json\n';
     rulesMd += '```\n\n';
 
     rulesMd += '## Critical Constraints\n\n';
@@ -772,16 +730,10 @@ function main() {
     const defaultOut = join(OUT_DIR, 'default-campaign');
     try {
         // Read and write each file individually (more portable than cpSync -r)
-        const defaultFiles = [
-            'manifest.json', 'rules.json', 'theme.json', 'advancement.json',
-            'items.json', 'effects.json', 'entities.json', 'status.json',
-            'tiles.json', 'factions.json', 'ai.json', 'areas.json',
-            'dialogues.json', 'quests.json', 'quest_templates.json',
-            'villains.json', 'schemes.json', 'agreements.json',
-            'triggers.json', 'tag_registry.json', 'reactions.json',
-            'fields.json', 'spawn_pools.json', 'encounter_profiles.json',
-            'trait_registry.json', 'keybinds.json'
-        ];
+        const defaultFiles = categoryKeys
+            .filter(k => k !== 'triggerBuckets')
+            .map(k => k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`) + '.json');
+        defaultFiles.push('keybinds.json'); // Editor specific
 
         mkdirSync(defaultOut, { recursive: true });
         for (const file of defaultFiles) {

@@ -284,7 +284,7 @@
       "aggroRadius": 8,
       "wanders": false
     },
-    "faction": "cultists",
+    "faction": "citizens",
     "persistent": true,
     "dialogueId": "priest_dialogue",
     "crCost": 40,
@@ -302,7 +302,19 @@
     "speed": 100,
     "faction": "citizens",
     "persistent": true,
-    "dialogueId": "mayor_dialogue"
+    "dialogueId": "mayor_dialogue",
+    "memory": {
+      "stress": 10,
+      "facets": {
+        "bravery": 75,
+        "greed": 20,
+        "cooperation": 80
+      },
+      "values": {
+        "benevolence": 40,
+        "tradition": 50
+      }
+    }
   },
   "aasimar_isabelle": {
     "id": "aasimar_isabelle",
@@ -314,7 +326,24 @@
     "speed": 100,
     "faction": "citizens",
     "persistent": true,
-    "dialogueId": "priestess_dialogue"
+    "dialogueId": "priestess_dialogue",
+    "services": {
+      "heal_5": 20,
+      "heal_15": 50,
+      "potion_haste": 100
+    },
+    "memory": {
+      "stress": 5,
+      "facets": {
+        "bravery": 60,
+        "greed": 10,
+        "cooperation": 90
+      },
+      "values": {
+        "benevolence": 50,
+        "spirituality": 60
+      }
+    }
   },
   "wood_elf_luc": {
     "id": "wood_elf_luc",
@@ -326,7 +355,30 @@
     "speed": 100,
     "faction": "citizens",
     "persistent": true,
-    "dialogueId": "hermit_dialogue"
+    "dialogueId": "hermit_dialogue",
+    "shop": {
+      "buyMultiplier": 1.3,
+      "sellMultiplier": 0.6,
+      "itemInventory": [
+        "rusty_sword",
+        "iron_shield",
+        "iron_key",
+        "torch",
+        "wand_of_lightning"
+      ]
+    },
+    "memory": {
+      "stress": 15,
+      "facets": {
+        "bravery": 80,
+        "greed": 30,
+        "cooperation": 40
+      },
+      "values": {
+        "benevolence": 20,
+        "independence": 50
+      }
+    }
   },
   "elan_villager": {
     "id": "elan_villager",
@@ -604,7 +656,18 @@
     "speed": 100,
     "faction": "citizens",
     "persistent": true,
-    "dialogueId": "constable_dialogue"
+    "dialogueId": "constable_dialogue",
+    "memory": {
+      "stress": 40,
+      "facets": {
+        "bravery": 40,
+        "greed": 50,
+        "cooperation": 30
+      },
+      "values": {
+        "subversion": 60
+      }
+    }
   },
   "barkeep_bertram": {
     "id": "barkeep_bertram",
@@ -616,7 +679,18 @@
     "speed": 100,
     "faction": "citizens",
     "persistent": true,
-    "dialogueId": "barkeep_dialogue"
+    "dialogueId": "barkeep_dialogue",
+    "memory": {
+      "stress": 20,
+      "facets": {
+        "bravery": 50,
+        "greed": 60,
+        "cooperation": 50
+      },
+      "values": {
+        "subversion": 40
+      }
+    }
   },
   "serpent_gate": {
     "id": "serpent_gate",

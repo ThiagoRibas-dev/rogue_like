@@ -12,7 +12,8 @@
     "consumable": {
       "effectId": "heal_5",
       "charges": 1
-    }
+    },
+    "baseValue": 20
   },
   "potion_haste": {
     "id": "potion_haste",
@@ -27,7 +28,8 @@
     "consumable": {
       "effectId": "potion_haste",
       "charges": 1
-    }
+    },
+    "baseValue": 40
   },
   "scroll_identify": {
     "id": "scroll_identify",
@@ -42,7 +44,8 @@
     "consumable": {
       "effectId": "scroll_identify",
       "charges": 1
-    }
+    },
+    "baseValue": 15
   },
   "food_ration": {
     "id": "food_ration",
@@ -57,7 +60,8 @@
     "consumable": {
       "effectId": "food_ration",
       "charges": 1
-    }
+    },
+    "baseValue": 10
   },
   "apple": {
     "id": "apple",
@@ -72,7 +76,8 @@
     "consumable": {
       "effectId": "apple",
       "charges": 1
-    }
+    },
+    "baseValue": 5
   },
   "rusty_sword": {
     "id": "rusty_sword",
@@ -90,7 +95,8 @@
       "defenseBonus": 0,
       "maxHpBonus": 0,
       "carryBonus": 0
-    }
+    },
+    "baseValue": 30
   },
   "iron_shield": {
     "id": "iron_shield",
@@ -108,7 +114,8 @@
       "defenseBonus": 2,
       "maxHpBonus": 0,
       "carryBonus": 0
-    }
+    },
+    "baseValue": 40
   },
   "iron_key": {
     "id": "iron_key",
@@ -122,7 +129,8 @@
     "weight": 1,
     "tags": [
       "key:iron"
-    ]
+    ],
+    "baseValue": 25
   },
   "gold_key": {
     "id": "gold_key",
@@ -136,7 +144,8 @@
     "weight": 1,
     "tags": [
       "key:gold"
-    ]
+    ],
+    "baseValue": 100
   },
   "torch": {
     "id": "torch",
@@ -150,7 +159,8 @@
     "weight": 2,
     "tags": [
       "torch"
-    ]
+    ],
+    "baseValue": 5
   },
   "wand_of_lightning": {
     "id": "wand_of_lightning",
@@ -169,7 +179,8 @@
       "charges": 5,
       "maxCharges": 5,
       "currentCharges": 5
-    }
+    },
+    "baseValue": 150
   },
   "sacred_chalice": {
     "id": "sacred_chalice",
@@ -183,7 +194,8 @@
     "weight": 2,
     "tags": [
       "relic"
-    ]
+    ],
+    "baseValue": 500
   },
   "cultist_journal": {
     "id": "cultist_journal",
@@ -215,7 +227,8 @@
     "consumable": {
       "effectId": "poisoned_mead",
       "charges": 1
-    }
+    },
+    "baseValue": 15
   },
   "serpent_medallion": {
     "id": "serpent_medallion",
@@ -229,7 +242,8 @@
     "weight": 1,
     "tags": [
       "key:serpent"
-    ]
+    ],
+    "baseValue": 150
   },
   "soul_gem": {
     "id": "soul_gem",
@@ -250,7 +264,8 @@
       "defenseBonus": 2,
       "maxHpBonus": 15,
       "carryBonus": 0
-    }
+    },
+    "baseValue": 1000
   },
   "wand_of_fire": {
     "id": "wand_of_fire",
@@ -269,7 +284,8 @@
       "charges": 5,
       "maxCharges": 5,
       "currentCharges": 5
-    }
+    },
+    "baseValue": 150
   },
   "trident_of_tides": {
     "id": "trident_of_tides",
@@ -294,7 +310,8 @@
         "statusId": "poison",
         "duration": 4
       }
-    }
+    },
+    "baseValue": 800
   },
   "sluice_key": {
     "id": "sluice_key",
@@ -308,7 +325,8 @@
     "weight": 1,
     "tags": [
       "key:iron"
-    ]
+    ],
+    "baseValue": 50
   },
   "lareth_staff": {
     "id": "lareth_staff",
@@ -333,7 +351,8 @@
         "statusId": "haste",
         "duration": 3
       }
-    }
+    },
+    "baseValue": 600
   },
   "fungal_potion": {
     "id": "fungal_potion",
@@ -352,6 +371,7 @@
     "throwable": {
       "range": 5,
       "destroyOnImpact": true
-    }
+    },
+    "baseValue": 45
   }
 }

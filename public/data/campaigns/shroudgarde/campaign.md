@@ -1,6 +1,6 @@
 # 📖 MASTER CAMPAIGN SPECIFICATION: The Shroudgarde Borderlands
 
-> **Status:** Active Master Specification File (Version 2.2)  
+> **Status:** Active Master Specification File (Version 3.0)  
 > **Master Purpose:** This document serves as the authoritative blueprint, state ledger, and engineering roadmap for the entire campaign. It details the structural design of our open-world sandbox, and guides incremental development as we iteratively enhance each module track.
 >
 > ⚠️ **Development Context:** All five parallel tracks—**Keep on the Borderlands (B2)**, **Against the Cult of the Reptile God (N1)**, **The Ghost Tower of Inverness (C2)**, **The Water Temple (Zelda / ADOM)**, and **The Temple of Elemental Evil (ToEE)**—are fully implemented, integrated, and validated in the campaign database! The Shroudgarde Borderlands is now complete.
@@ -321,3 +321,25 @@ The following development tickets define the exact TypeScript and Zod schema ext
     1.  Allow `"direction": "portal"` inside procedural connections.
     2.  Add an optional `portalTemplateId` (e.g., `"wooden_door"` or `"gate"`) to `AreaConnectionSchema`.
     3.  During map generation, if a connection uses `"direction": "portal"`, the builder selects a random edge or room wall tile, spawns the entity specified by `portalTemplateId`, and attaches a `PortalComponent` pointing to the target area.
+
+
+---
+
+## 🔮 Part 6: Systemic Next-Gen Simulation (Milestones 43–54)
+
+The campaign is now fully upgraded to support your engine's **Social Commerce, Gossip, Faction Memories, and Nemesis Hierarchy** engines:
+
+### 1. ⚔️ The Nemesis Command Hierarchy (`nemesis_hierarchies.json`)
+We have compiled the **Borderland Horde** command hierarchy consisting of 4 ranks (Grunt, Champion, Lieutenant, and War Chief) for Goblins, Orcs, and Cultists. 
+*   Ordinary grunts (like Norker Scouts or Scro Raiders) who slay the player are promoted to Champions, Lieutenant, or War Chief slots.
+*   Promoted bosses acquire randomized names (from `identity_generation.json`), permanent combat scars (like `slash_scar`), and massive stat multipliers!
+
+### 🕵️ 2. Gossip Propagation & Knowledge Brokering (`rumor_propagation.json`)
+Your actions actively reverberate through Shroudgarde:
+*   Slaying bosses (like the Duthka'gith Priest or Lareth) triggers **Rumor events**. Over a period of several turns, the news propagates through townspeople, modifying their dialogues.
+*   Players can ask townspeople specific topics using the **`ask_about`** dialogue engine, or gossip dynamically to uncover local secrets.
+
+### 💰 3. Active Trade & Barter (`entities.json` & `items.json`)
+*   **Gold Dwarf Luc** is now configured with an active **`ShopComponent`**, letting players barter and purchase standard gear.
+*   **Aasimar Isabelle** runs the chapel, offering healing drafts and restorative status blessings via a **`ServicesComponent`** in exchange for gold.
+*   All items in `items.json` carry custom **`baseValue`** property weights to govern their trade pricing.

@@ -109,12 +109,17 @@ bun scripts/run-validator.ts --campaign-dir ./my-campaign --json
 ### 2.3 Campaign Bootstrap Generator
 **Script:** [`scripts/bootstrap-campaign.ts`](scripts/bootstrap-campaign.ts)
 
-Generates a minimal, structurally-valid campaign skeleton. Passes all validators cleanly.
+Generates a minimal, structurally-valid campaign skeleton dynamically reading from `CampaignDataSchema`. Passes all validators cleanly.
 
 ```bash
 bun scripts/bootstrap-campaign.ts --out-dir ./my-campaign
 bun scripts/bootstrap-campaign.ts --out-dir ./my-campaign --name "My Campaign" --id "my-campaign"
 ```
+
+### 2.4 Tooling Linter
+**Command:** `bun run lint:scripts`
+
+Validates the TypeScript code for the generator scripts themselves against a dedicated strict configuration. Run this if you modify any scripts to ensure they remain error-free.
 
 ---
 
@@ -137,7 +142,7 @@ Include the entire prompt kit in your AI prompt. A good structure:
 1. **Role assignment**: "You are generating a campaign for a TypeScript roguelike..."
 2. **Include all files from `ai-prompt-kit/`**
 3. **Specify theme**: "Generate a campaign with theme: [your idea]"
-4. **Specify output**: "Create all 26 JSON files in `./my-campaign/`"
+4. **Specify output**: "Create all 32 JSON files in `./my-campaign/`"
 5. **Constraint**: "After generating, I will validate with `run-validator.ts` and feed errors back for fixing."
 
 ---
@@ -240,6 +245,17 @@ These reference Phase 0 IDs.
 | `triggers.json` | Everything (conditions/consequences reference entities, areas, quests, effects) |
 | `reactions.json` | Everything (tags, traits, entities, items, tiles, fields) |
 
+### Phase 4: Social & Nemesis (Depend on Everything Above)
+
+| File | Dependencies |
+|------|-------------|
+| `identity_generation.json` | — (stands alone) |
+| `personality_generation.json` | — (stands alone) |
+| `nemesis_hierarchies.json` | `factions.json` (faction bindings) |
+| `knowledge_propagation.json` | `factions.json`, `tag_registry.json` |
+| `rumor_propagation.json` | `factions.json`, `tag_registry.json` |
+| `relationship_thresholds.json` | `triggers.json` (consequences) |
+
 ---
 
 ## 6. Critical Constraints
@@ -308,7 +324,7 @@ Every `nextNodeId` in a dialogue option must point to a node that exists in the 
 You are a campaign generator for a TypeScript roguelike engine.
 The engine validates all data through Zod schemas and a multi-pass validator.
 
-Your task: Generate a complete campaign with 26 JSON files.
+Your task: Generate a complete campaign with 32 JSON files.
 
 === REFERENCE MATERIALS ===
 
@@ -343,7 +359,7 @@ Required features: [e.g., "at least 3 areas, 5 monster types, 2 quests"]
 4. Faction matrix must be complete (symmetric entries).
 5. Encounter profile budgets must sum to 1.0.
 6. Areas must form a connected graph.
-7. Output all 26 files to the ./[campaign-id]/ directory.
+7. Output all 32 files to the ./[campaign-id]/ directory.
 
 === OUTPUT FORMAT ===
 
@@ -411,4 +427,4 @@ bun scripts/run-validator.ts --campaign-dir ./my-campaign --json
 
 ---
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-06-22*
