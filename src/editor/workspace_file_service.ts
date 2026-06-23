@@ -37,7 +37,8 @@ const CAMPAIGN_FILES: ReadonlyArray<{
   { key: 'personalityGeneration', filename: 'personality_generation.json', optional: true },
   { key: 'knowledgePropagation', filename: 'knowledge_propagation.json', optional: true },
   { key: 'rumorPropagation', filename: 'rumor_propagation.json', optional: true },
-  { key: 'nemesisHierarchies', filename: 'nemesis_hierarchies.json', optional: true }
+  { key: 'nemesisHierarchies', filename: 'nemesis_hierarchies.json', optional: true },
+  { key: 'relationshipThresholds', filename: 'relationship_thresholds.json', optional: true }
 ];
 
 /**
@@ -334,6 +335,7 @@ export function createBlankSlateCampaign(): CampaignData {
     personalityGeneration: {},
     nemesisHierarchies: {},
     knowledgePropagation: [],
-    rumorPropagation: []
+    rumorPropagation: [],
+    relationshipThresholds: []
   };
 }

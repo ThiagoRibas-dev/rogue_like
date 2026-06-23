@@ -75,9 +75,9 @@ flowchart TD
 When starting a new milestone or major feature, you MUST execute the following flow strictly in order:
 1. **Reiterate rules and standards:** Acknowledge the core constraints (e.g., ECS purity, Data-Driven JSON, TypeScript strictness, no deep nesting, etc). Review `AGENTS.md` and `docs/ARCHITECTURE.md` first.
 2. **Research:** Read the relevant source files, reference documents (archtecture, past and future milestones, specific spec or ideas docs, etc), and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
-3. **Compile:** Before proposing a plan, summarize your findings into a concrete research document. Explicitly map each task to the specific architectural rules and design documents that govern it, calling out where existing code and systems interact with the new systems or functionality, if any.
-4. **Plan:** Draft a initial step-by-step implementation plan based strictly on the compiled research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
-5. **Enhance:** Once the high-level initial plan is formed, do a second pass to enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
+3. **Compile Research Document:** Before proposing a plan, summarize your findings into a concrete research document. Explicitly map each task to the specific architectural rules and design documents that govern it, calling out where existing code and systems interact with the new systems or functionality, if any.
+4. **Implementation Plan Draft:** Draft a initial step-by-step implementation plan based strictly on the compiled research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
+5. **Enhance Implementation Plan:** Once the high-level initial plan is formed, do a second pass to enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
 
 Wait for the User's confirmation before writing or modifying any actual codebase files.
 
@@ -93,7 +93,7 @@ Wait for the User's confirmation before writing or modifying any actual codebase
 7. **Identify downstream effects.** If you changed an interface or enum, list every file that will need to be updated and present those changes too.
 8. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.
 9. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
-10. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
+10. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md` and any other relevant document. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
 
 ---
 

@@ -611,17 +611,17 @@ Give the conspiracy teeth, memory, and adaptability. Builds on M43 (Personality)
 - [x] **Scheme Momentum:** Allow schemes to enter a `leaderless` state when the mastermind dies, where existing minions continue executing their phase mutations independently.
 - [x] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
 
-## 🟡 Milestone 53: Player Manipulation & Relationship Levers
+## 🟢 Milestone 53: Player Manipulation & Relationship Levers (Complete)
 Give players ways to intentionally shape the emerging cast. This milestone builds on the M45–M48 social commerce foundation: social memory (M45) tracks what the player has done, knowledge brokering (M46) determines what NPCs know about the player's reputation, trade (M47) uses relationship axes as pricing modifiers, and gossip (M48) spreads stories about the player's actions.
-- [ ] Add relationship axes to `MemoryComponent` (M45): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
-- [ ] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M47): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
-- [ ] Relationship axes gate knowledge sharing (M46): NPCs with low `loyalty` or high `fear` are more likely to share sensitive information under pressure; NPCs with high `resentment` refuse to share anything positive about the player.
-- [ ] Relationship axes feed into `intimidate`/`persuade` contest resolution (M47): high `fear` makes intimidation easier; high `respect` makes persuasion easier.
-- [ ] Add interaction/dialogue consequences for spare, humiliate, recruit, brand/convert, ransom, gift, intimidate, apologize, or argue values — all of which set M45's `annoyed`/`grateful` states and modify relationship axes.
-- [ ] Let companions/allies become nemeses if betrayed, abandoned, or ideologically opposed (relationship axes drop below threshold → faction change).
-- [ ] Support value mutation through arguments/dialogue and facet mutation through experiences (M42, M43).
-- [ ] Add Trigger consequences for relationship mutation and hierarchy manipulation.
-- [ ] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M45's interaction history tooltip and M49's Knowledge Simulator.
+- [x] Add relationship axes to `MemoryComponent` (M45): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
+- [x] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M47): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
+- [x] Relationship axes gate knowledge sharing (M46): NPCs with low `loyalty` or high `fear` are more likely to share sensitive information under pressure; NPCs with high `resentment` refuse to share anything positive about the player.
+- [x] Relationship axes feed into `intimidate`/`persuade` contest resolution (M47): high `fear` makes intimidation easier; high `respect` makes persuasion easier.
+- [x] Add interaction/dialogue consequences for spare, humiliate, recruit, brand/convert, ransom, gift, intimidate, apologize, or argue values — all of which set M45's `annoyed`/`grateful` states and modify relationship axes.
+- [x] Let companions/allies become nemeses if betrayed, abandoned, or ideologically opposed (relationship axes drop below threshold → faction change).
+- [x] Support value mutation through arguments/dialogue and facet mutation through experiences (M42, M43).
+- [x] Add Trigger consequences for relationship mutation and hierarchy manipulation.
+- [x] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M45's interaction history tooltip and M49's Knowledge Simulator.
 
 ## 🟡 Milestone 54: Nemesis Surfacing & Narrative UX
 Make the system legible, dramatic, and emotionally sticky.

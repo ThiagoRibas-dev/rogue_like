@@ -76,6 +76,13 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('is_grateful')
+  }),
+  z.object({
+    type: z.literal('relationship_axis'),
+    target: z.string().optional(),
+    axis: z.string(),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number().int()
   })
 ]);
 
@@ -215,6 +222,12 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('random_choice'),
     choices: z.array(z.array(z.any())),
     weights: z.array(z.number()).optional()
+  }),
+  z.object({
+    type: z.literal('modify_relationship_axis'),
+    axis: z.string(),
+    amount: z.number().int(),
+    targetId: z.string().optional()
   })
 ]);
 

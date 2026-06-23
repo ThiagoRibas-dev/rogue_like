@@ -47,6 +47,16 @@ export function processSocialIntent(
     if (intent.verb === 'persuade' && playerTraits.traits.includes('charismatic')) playerPower += 20;
   }
 
+  // Apply relationship axes
+  const axes = npcMemory.relationshipAxes ?? {};
+  if (intent.verb === 'intimidate') {
+    const fear = axes['fear'] ?? 0;
+    if (fear > 0) playerPower += fear * 0.5; // High fear boosts intimidation
+  } else if (intent.verb === 'persuade') {
+    const respect = axes['respect'] ?? 0;
+    if (respect > 0) playerPower += respect * 0.5; // High respect boosts persuasion
+  }
+
   // Calculate NPC resistance
   const facets = npcMemory.facets ?? {};
   let npcResistance = 50; // Base neutral facet
@@ -105,4 +115,27 @@ export function processSocialIntent(
   });
 
   return { state: nextState, success: true, events: [dummyEvent as unknown as GameEvent] };
+}
+
+/**
+ * Calculates the willingness of an NPC to share rumors/secrets.
+ * Under pressure/intimidation or out of loyalty, they share more. Resentment stops them.
+ *
+ * @param npcMemory The NPC's MemoryComponent.
+ * @returns A score representing the willingness to share.
+ */
+export function getWillingnessToShare(npcMemory: MemoryComponent | undefined): number {
+  if (!npcMemory) return 0;
+  let score = 50; // Neutral baseline
+
+  if (npcMemory.relationshipAxes) {
+    const loyalty = npcMemory.relationshipAxes['loyalty'] ?? 0;
+    const fear = npcMemory.relationshipAxes['fear'] ?? 0;
+    const resentment = npcMemory.relationshipAxes['resentment'] ?? 0;
+
+    score += loyalty * 0.5;
+    score += fear * 0.25; // Fear slightly encourages spilling secrets under pressure
+    score -= resentment; // Resentment heavily penalizes willingness to talk
+  }
+  return score;
 }

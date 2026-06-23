@@ -345,6 +345,7 @@ export interface MemoryComponent {
   readonly sessionMarkupModifier?: number | undefined;
   readonly rumorPool?: ReadonlyArray<RumorItem> | undefined;
   readonly compromiseScore?: number | undefined;
+  readonly relationshipAxes?: Readonly<Record<string, number>> | undefined;
 }
 
 /**

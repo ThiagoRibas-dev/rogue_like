@@ -18,7 +18,15 @@ export type Verb =
   | 'impact'
   | 'barter'
   | 'intimidate'
-  | 'persuade';
+  | 'persuade'
+  | 'spare'
+  | 'humiliate'
+  | 'recruit'
+  | 'brand'
+  | 'ransom'
+  | 'gift'
+  | 'apologize'
+  | 'argue';
 
 export const VERBS: ReadonlyArray<Verb> = [
   'apply',
@@ -37,5 +45,13 @@ export const VERBS: ReadonlyArray<Verb> = [
   'impact',
   'barter',
   'intimidate',
-  'persuade'
+  'persuade',
+  'spare',
+  'humiliate',
+  'recruit',
+  'brand',
+  'ransom',
+  'gift',
+  'apologize',
+  'argue'
 ];

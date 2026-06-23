@@ -576,6 +576,13 @@
       "factionStandings": {},
       "grudges": [],
       "facts": [],
+      "relationshipAxes": {
+        "loyalty": 0,
+        "fear": 0,
+        "resentment": 0,
+        "respect": 0,
+        "debt": 0
+      },
       "knowledge": {},
       "deflectionLines": [
         "Gold talks, friend.",

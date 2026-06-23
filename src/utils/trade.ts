@@ -36,6 +36,12 @@ export const PERSONALITY_FACET_PRICE_DIVISOR = 250;
 export const PERSONALITY_FACET_NEUTRAL_VAL = 50;
 
 /**
+ * Relationship axis divisor used to convert numeric relationship axis value into a price modifier.
+ * e.g., +100 loyalty results in a 20% discount (100 / 500 = 0.2).
+ */
+export const RELATIONSHIP_AXIS_PRICE_DIVISOR = 500;
+
+/**
  * Minimum multiplier threshold allowed for final trade price calculations to prevent prices dropping to zero.
  */
 export const MIN_TRADE_MULTIPLIER = 0.1;
@@ -136,6 +142,19 @@ export function getEffectivePrice(
       const generousModifier = -(generous - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
 
       multiplier += greedyModifier + generousModifier;
+    }
+
+    // Apply relationship axes
+    if (memory.relationshipAxes) {
+      const loyalty = memory.relationshipAxes['loyalty'] ?? 0;
+      const fear = memory.relationshipAxes['fear'] ?? 0;
+      const debt = memory.relationshipAxes['debt'] ?? 0;
+      const resentment = memory.relationshipAxes['resentment'] ?? 0;
+
+      if (loyalty > 0) multiplier -= loyalty / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (fear > 0) multiplier -= fear / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (debt > 0) multiplier -= debt / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (resentment > 0) multiplier += resentment / RELATIONSHIP_AXIS_PRICE_DIVISOR;
     }
   }
 

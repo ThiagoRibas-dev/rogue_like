@@ -223,5 +223,20 @@
       }
     ],
     "message": "The terrain catches fire!"
+  },
+  {
+    "id": "gift_merchant",
+    "verb": "gift",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["town"] },
+    "consequences": [
+      {
+        "type": "modify_relationship_axis",
+        "axis": "loyalty",
+        "amount": 10
+      }
+    ],
+    "message": "You present a gift. They seem more loyal."
   }
 ]

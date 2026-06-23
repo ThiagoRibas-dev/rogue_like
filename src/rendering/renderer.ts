@@ -340,6 +340,18 @@ function renderInspectTooltip(
           fragment.appendChild(stateEl);
         }
 
+        if (memory.relationshipAxes) {
+          for (const [axis, value] of Object.entries(memory.relationshipAxes)) {
+            if (value !== 0) {
+              const axisEl = document.createElement('div');
+              axisEl.className = 'inspect-stat';
+              const formattedAxis = axis.charAt(0).toUpperCase() + axis.slice(1);
+              axisEl.innerHTML = `<span>${formattedAxis}</span><span style="color: ${value > 0 ? '#00ffaa' : '#ff4444'}">${value > 0 ? '+' : ''}${value}</span>`;
+              fragment.appendChild(axisEl);
+            }
+          }
+        }
+
         const knowledgeKeys = Object.keys(memory.knowledge ?? {});
         if (knowledgeKeys.length > 0) {
           const knowledgeEl = document.createElement('div');

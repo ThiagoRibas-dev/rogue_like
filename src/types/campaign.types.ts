@@ -293,6 +293,7 @@ export const EntityTemplateSchema = z.object({
       grudges: z.array(z.string()).optional(),
       facets: z.record(z.string(), z.number().int().min(0).max(100)).optional(),
       values: z.record(z.string(), z.number().int().min(-50).max(50)).optional(),
+      relationshipAxes: z.record(z.string(), z.number().int().min(-100).max(100)).optional(),
       stress: z.number().int().min(0).max(100).optional(),
       thoughts: z
         .array(
@@ -739,6 +740,14 @@ export const NemesisHierarchySchema = z.object({
 });
 export type NemesisHierarchy = z.infer<typeof NemesisHierarchySchema>;
 
+export const RelationshipThresholdSchema = z.object({
+  axis: z.string(),
+  operator: z.enum(['>=', '<=', '==']),
+  value: z.number().int(),
+  consequence: ConsequenceActionSchema
+});
+export type RelationshipThreshold = z.infer<typeof RelationshipThresholdSchema>;
+
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -770,7 +779,8 @@ export const CampaignDataSchema = z.object({
   personalityGeneration: z.record(z.string(), PersonalityGenerationTableSchema).default({}),
   nemesisHierarchies: z.record(z.string(), NemesisHierarchySchema).default({}),
   knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([]),
-  rumorPropagation: z.array(RumorPropagationRuleSchema).default([])
+  rumorPropagation: z.array(RumorPropagationRuleSchema).default([]),
+  relationshipThresholds: z.array(RelationshipThresholdSchema).default([])
 });
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
@@ -806,5 +816,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   personalityGeneration: PersonalityGenerationTableSchema,
   nemesisHierarchies: NemesisHierarchySchema,
   knowledgePropagation: KnowledgePropagationRuleSchema.array(),
-  rumorPropagation: RumorPropagationRuleSchema.array()
+  rumorPropagation: RumorPropagationRuleSchema.array(),
+  relationshipThresholds: RelationshipThresholdSchema.array()
 };

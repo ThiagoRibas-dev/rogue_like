@@ -272,6 +272,23 @@ export function evaluateCondition(
       return (memory?.gratefulDuration ?? 0) > 0;
     }
 
+    case 'relationship_axis': {
+      let eId = condition._npcEntityId ?? condition.entityId;
+      if (condition.target) {
+        if (condition.target === 'event.entityId' && 'entityId' in event) {
+          eId = (event as unknown as { entityId: EntityId }).entityId;
+        } else {
+          eId = parseInt(condition.target) as EntityId;
+        }
+      }
+      if (eId === undefined) return false;
+      const memory = getComponent(state, eId, ComponentType.Memory) as MemoryComponent | undefined;
+      const axisVal = memory?.relationshipAxes?.[condition.axis] ?? 0;
+      if (condition.operator === '>=') return axisVal >= condition.value;
+      if (condition.operator === '<=') return axisVal <= condition.value;
+      return axisVal === condition.value;
+    }
+
     default:
       return assertNever(condition);
   }
@@ -1122,6 +1139,57 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
       if (chosenConsequences) {
         for (const childCons of chosenConsequences) {
           nextState = applyConsequence(nextState, event, childCons);
+        }
+      }
+      break;
+    }
+
+    case 'modify_relationship_axis': {
+      let eId = consequence._npcEntityId;
+      if (eId === undefined) {
+        if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+          eId = (event as unknown as { entityId: EntityId }).entityId;
+        } else if (consequence.targetId) {
+          eId = parseInt(consequence.targetId) as EntityId;
+        } else if (event.type === GameEventType.ReactionResolved) {
+          const targetPayload = (event as unknown as { target?: { type: string; entityId?: EntityId } }).target;
+          if (targetPayload && targetPayload.type === 'entity') {
+            eId = targetPayload.entityId;
+          }
+        }
+      }
+
+      if (eId === undefined) break;
+
+      const memory = getComponent(nextState, eId, ComponentType.Memory) as MemoryComponent | undefined;
+      if (!memory) break;
+
+      const currentAxes = memory.relationshipAxes ?? {};
+      const newValue = Math.max(-100, Math.min(100, (currentAxes[consequence.axis] ?? 0) + consequence.amount));
+
+      const newMemory = {
+        ...memory,
+        relationshipAxes: { ...currentAxes, [consequence.axis]: newValue }
+      };
+
+      nextState = addComponent(nextState, eId, newMemory);
+
+      // Evaluate declarative relationship thresholds
+      for (const threshold of nextState.campaign.relationshipThresholds ?? []) {
+        if (threshold.axis === consequence.axis) {
+          let conditionMet = false;
+          if (threshold.operator === '>=') conditionMet = newValue >= threshold.value;
+          else if (threshold.operator === '<=') conditionMet = newValue <= threshold.value;
+          else if (threshold.operator === '==') conditionMet = newValue === threshold.value;
+
+          if (conditionMet) {
+            // Apply consequence injected with this entity's ID context
+            nextState = applyConsequence(nextState, event, {
+              ...threshold.consequence,
+              _npcEntityId: eId,
+              targetId: eId.toString()
+            } as ConsequenceAction);
+          }
         }
       }
       break;
