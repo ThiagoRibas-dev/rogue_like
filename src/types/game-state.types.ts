@@ -6,6 +6,7 @@ import type { GameEvent } from './events.types.ts';
 import type { ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
+import type { RoomBounds } from '../map/encounter_director.ts';
 
 /**
  * Enum defining the engine mode.
@@ -103,6 +104,8 @@ export interface AreaData {
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyMap<EntityId, Readonly<Record<string, Component>>>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
+  readonly rooms: ReadonlyArray<RoomBounds>;
+  readonly lastSpawnTurn: number;
 }
 
 /**
@@ -154,6 +157,8 @@ export interface GameState {
   readonly messages: ReadonlyArray<LogMessage>;
   readonly events: ReadonlyArray<GameEvent>;
   readonly currentAreaId: string;
+  readonly activeRooms: ReadonlyArray<RoomBounds>;
+  readonly lastSpawnTurn: number;
   readonly areas: ReadonlyMap<string, AreaData>;
   readonly persistentEntities: ReadonlyMap<EntityId, PersistentEntityRecord>;
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
@@ -245,6 +250,8 @@ export interface SerializedAreaData {
   readonly map: GameMap;
   readonly entities: ReadonlyArray<EntityId>;
   readonly components: ReadonlyArray<[EntityId, Readonly<Record<string, Component>>]>;
+  readonly rooms?: ReadonlyArray<RoomBounds>;
+  readonly lastSpawnTurn?: number;
 }
 
 /**
@@ -269,6 +276,8 @@ export interface SerializedGameState {
   readonly nextQuestId: number;
   readonly messages: ReadonlyArray<LogMessage>;
   readonly currentAreaId: string;
+  readonly activeRooms?: ReadonlyArray<RoomBounds>;
+  readonly lastSpawnTurn?: number;
   readonly areas: ReadonlyArray<[string, SerializedAreaData]>;
   readonly persistentEntities: ReadonlyArray<[EntityId, SerializedPersistentEntityRecord]>;
   readonly isGameOver: boolean;

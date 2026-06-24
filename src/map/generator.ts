@@ -79,137 +79,226 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     }
   }
 
-  // 2. Create the digger generator
-  // ROT.Map.Digger internally queries the global ROT.RNG instance (which we configured in core/rng.ts)
-  const digger = new ROT.Map.Digger(width, height, {
-    roomWidth: [rules.minRoomWidth, rules.maxRoomWidth],
-    roomHeight: [rules.minRoomHeight, rules.maxRoomHeight],
-    corridorLength: [rules.minCorridorLength, rules.maxCorridorLength],
-    dugPercentage: rules.dugPercentage
-  });
-
-  // 3. Dig the dungeon!
-  digger.create((x: number, y: number, value: number) => {
-    // value === 0 means empty space (floor/corridor)
-    if (value === 0) {
-      const index = coordToIndex(x, y, width);
-      const tile = tiles[index];
-      if (tile !== undefined) {
-        tiles[index] = {
-          ...tile,
-          tileId: palette.floor
-        };
-      }
-    }
-  });
-
-  // 4. Get generated rooms to place stairs and find start position
-  const rooms = digger.getRooms();
-  if (rooms.length === 0) {
-    throw new Error('Dungeon generation failed: No rooms were created.');
-  }
-
-  // First room is the player's entry point
-  const firstRoom = rooms[0];
-  if (firstRoom === undefined) {
-    throw new Error('Dungeon generation failed: First room is undefined.');
-  }
-  const [startX, startY] = firstRoom.getCenter();
-  if (startX === undefined || startY === undefined) {
-    throw new Error('Dungeon generation failed: Start position coordinates are undefined.');
-  }
-
+  let startX = -1;
+  let startY = -1;
   const portals: Array<{ x: number; y: number; connection: AreaConnection }> = [];
-  const portalRoomIndices = new Set<number>();
 
-  if (areaDef.connections) {
-    areaDef.connections.forEach((conn, index) => {
-      let roomIndex = index % rooms.length;
+  type PlacedEntityDef = {
+    templateId: string;
+    x: number;
+    y: number;
+    dynamicTraits?: ReadonlyArray<string> | undefined;
+    inventory?: ReadonlyArray<string> | undefined;
+  };
+  const finalPlacedEntities: PlacedEntityDef[] = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
 
-      if (conn.direction === 'portal' || conn.direction === 'edge') {
-        const side = conn.placementSide || 'any';
-        if (side !== 'any') {
-          let bestIndex = roomIndex;
-          let bestScore = -Infinity;
-          rooms.forEach((r, idx) => {
-            const score =
-              side === 'top'
-                ? -r.getTop()
-                : side === 'bottom'
-                  ? r.getBottom()
-                  : side === 'left'
-                    ? -r.getLeft()
-                    : side === 'right'
-                      ? r.getRight()
-                      : 0;
-            const noisyScore = score + ROT.RNG.getUniform();
-            if (noisyScore > bestScore) {
-              bestScore = noisyScore;
-              bestIndex = idx;
-            }
-          });
-          roomIndex = bestIndex;
+  let parsedRooms: Array<{
+    readonly left: number;
+    readonly right: number;
+    readonly top: number;
+    readonly bottom: number;
+    readonly centerX: number;
+    readonly centerY: number;
+    readonly isSafe?: boolean;
+    readonly tags?: string[];
+  }> = [];
+
+  if (areaDef.generatorType === 'cellular') {
+    // 2a. Cellular Generator
+    const cellular = new ROT.Map.Cellular(width, height);
+    cellular.randomize(0.5);
+    for (let i = 0; i < 4; i++) {
+      cellular.create();
+    }
+
+    cellular.connect((x: number, y: number, value: number) => {
+      if (value === 0) {
+        // 0 is empty space in ROT.js cellular topological connections
+        const index = coordToIndex(x, y, width);
+        const tile = tiles[index];
+        if (tile !== undefined) {
+          tiles[index] = { ...tile, tileId: palette.floor };
         }
       }
+    }, 0);
 
-      portalRoomIndices.add(roomIndex);
-      const room = rooms[roomIndex];
-      if (room) {
-        let px: number, py: number;
+    // 3a. Collect floor tiles to pick start position and portals
+    const floorCoords: Array<{ x: number; y: number }> = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = coordToIndex(x, y, width);
+        if (tiles[idx] && tiles[idx].tileId === palette.floor) {
+          floorCoords.push({ x, y });
+        }
+      }
+    }
+
+    if (floorCoords.length === 0) {
+      throw new Error('Cellular generation failed: No floor tiles were created.');
+    }
+
+    const startTile = ROT.RNG.getItem(floorCoords)!;
+    startX = startTile.x;
+    startY = startTile.y;
+
+    if (areaDef.connections) {
+      areaDef.connections.forEach((conn) => {
+        const pt = ROT.RNG.getItem(floorCoords)!;
+        portals.push({ x: pt.x, y: pt.y, connection: conn });
+      });
+    }
+  } else {
+    // 2b. Digger Generator
+    const digger = new ROT.Map.Digger(width, height, {
+      roomWidth: [rules.minRoomWidth, rules.maxRoomWidth],
+      roomHeight: [rules.minRoomHeight, rules.maxRoomHeight],
+      corridorLength: [rules.minCorridorLength, rules.maxCorridorLength],
+      dugPercentage: rules.dugPercentage
+    });
+
+    digger.create((x: number, y: number, value: number) => {
+      if (value === 0) {
+        const index = coordToIndex(x, y, width);
+        const tile = tiles[index];
+        if (tile !== undefined) {
+          tiles[index] = { ...tile, tileId: palette.floor };
+        }
+      }
+    });
+
+    const rooms = digger.getRooms();
+    if (rooms.length === 0) throw new Error('Dungeon generation failed: No rooms were created.');
+
+    const firstRoom = rooms[0];
+    if (firstRoom === undefined) throw new Error('Dungeon generation failed: First room is undefined.');
+
+    const center = firstRoom.getCenter();
+    startX = center[0]!;
+    startY = center[1]!;
+
+    const portalRoomIndices = new Set<number>();
+    if (areaDef.connections) {
+      areaDef.connections.forEach((conn, index) => {
+        let roomIndex = index % rooms.length;
 
         if (conn.direction === 'portal' || conn.direction === 'edge') {
           const side = conn.placementSide || 'any';
-          const candidates: Array<{ x: number; y: number }> = [];
-          const rLeft = room.getLeft();
-          const rRight = room.getRight();
-          const rTop = room.getTop();
-          const rBottom = room.getBottom();
+          if (side !== 'any') {
+            let bestIndex = roomIndex;
+            let bestScore = -Infinity;
+            rooms.forEach((r, idx) => {
+              const score =
+                side === 'top'
+                  ? -r.getTop()
+                  : side === 'bottom'
+                    ? r.getBottom()
+                    : side === 'left'
+                      ? -r.getLeft()
+                      : side === 'right'
+                        ? r.getRight()
+                        : 0;
+              const noisyScore = score + ROT.RNG.getUniform();
+              if (noisyScore > bestScore) {
+                bestScore = noisyScore;
+                bestIndex = idx;
+              }
+            });
+            roomIndex = bestIndex;
+          }
+        }
 
-          for (let wx = rLeft - 1; wx <= rRight + 1; wx++) {
-            for (let wy = rTop - 1; wy <= rBottom + 1; wy++) {
-              // Ensure we do not place portal on the absolute edge of the map to prevent index errors
-              if (wx > 0 && wx < width - 1 && wy > 0 && wy < height - 1) {
-                const isTopWall = wy === rTop - 1 && wx >= rLeft && wx <= rRight;
-                const isBottomWall = wy === rBottom + 1 && wx >= rLeft && wx <= rRight;
-                const isLeftWall = wx === rLeft - 1 && wy >= rTop && wy <= rBottom;
-                const isRightWall = wx === rRight + 1 && wy >= rTop && wy <= rBottom;
+        portalRoomIndices.add(roomIndex);
+        const room = rooms[roomIndex];
+        if (room) {
+          let px: number, py: number;
 
-                let validWall = false;
-                if (side === 'top' && isTopWall) validWall = true;
-                else if (side === 'bottom' && isBottomWall) validWall = true;
-                else if (side === 'left' && isLeftWall) validWall = true;
-                else if (side === 'right' && isRightWall) validWall = true;
-                else if (side === 'any' && (isTopWall || isBottomWall || isLeftWall || isRightWall)) validWall = true;
+          if (conn.direction === 'portal' || conn.direction === 'edge') {
+            const side = conn.placementSide || 'any';
+            const candidates: Array<{ x: number; y: number }> = [];
+            const rLeft = room.getLeft();
+            const rRight = room.getRight();
+            const rTop = room.getTop();
+            const rBottom = room.getBottom();
 
-                if (validWall) {
-                  candidates.push({ x: wx, y: wy });
+            for (let wx = rLeft - 1; wx <= rRight + 1; wx++) {
+              for (let wy = rTop - 1; wy <= rBottom + 1; wy++) {
+                // Ensure we do not place portal on the absolute edge of the map to prevent index errors
+                if (wx > 0 && wx < width - 1 && wy > 0 && wy < height - 1) {
+                  const isTopWall = wy === rTop - 1 && wx >= rLeft && wx <= rRight;
+                  const isBottomWall = wy === rBottom + 1 && wx >= rLeft && wx <= rRight;
+                  const isLeftWall = wx === rLeft - 1 && wy >= rTop && wy <= rBottom;
+                  const isRightWall = wx === rRight + 1 && wy >= rTop && wy <= rBottom;
+
+                  let validWall = false;
+                  if (side === 'top' && isTopWall) validWall = true;
+                  else if (side === 'bottom' && isBottomWall) validWall = true;
+                  else if (side === 'left' && isLeftWall) validWall = true;
+                  else if (side === 'right' && isRightWall) validWall = true;
+                  else if (side === 'any' && (isTopWall || isBottomWall || isLeftWall || isRightWall)) validWall = true;
+
+                  if (validWall) {
+                    candidates.push({ x: wx, y: wy });
+                  }
                 }
               }
             }
-          }
 
-          if (candidates.length > 0) {
-            const chosen = ROT.RNG.getItem(candidates)!;
-            px = chosen.x;
-            py = chosen.y;
+            if (candidates.length > 0) {
+              const chosen = ROT.RNG.getItem(candidates)!;
+              px = chosen.x;
+              py = chosen.y;
+            } else {
+              const center = room.getCenter();
+              px = center[0]!;
+              py = center[1]!;
+            }
           } else {
             const center = room.getCenter();
             px = center[0]!;
             py = center[1]!;
           }
-        } else {
-          const center = room.getCenter();
-          px = center[0]!;
-          py = center[1]!;
-        }
 
-        const pIndex = coordToIndex(px, py, width);
-        const tile = tiles[pIndex];
+          const pIndex = coordToIndex(px, py, width);
+          const tile = tiles[pIndex];
+          if (tile) {
+            tiles[pIndex] = { ...tile, tileId: palette.floor };
+            portals.push({ x: px, y: py, connection: conn });
+          }
+        }
+      });
+    }
+
+    const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
+    parsedRooms = rooms.map((r, index) => {
+      const isSafe = index === 0 || portalRoomIndices.has(index);
+
+      r.getDoors((dx: number, dy: number) => {
+        const idx = coordToIndex(dx, dy, width);
+        const tile = tiles[idx];
         if (tile) {
-          tiles[pIndex] = { ...tile, tileId: palette.floor };
-          portals.push({ x: px, y: py, connection: conn });
+          tiles[idx] = { ...tile, tileId: palette.floor };
+          finalPlacedEntities.push({ templateId: palette.door, x: dx, y: dy });
+        }
+      });
+
+      const roomTags: string[] = [];
+      if (!isSafe && subBiomeEntries.length > 0) {
+        for (const [tag, probability] of subBiomeEntries) {
+          if (ROT.RNG.getUniform() < probability) roomTags.push(tag);
         }
       }
+
+      const roomCenter = r.getCenter();
+      const baseRoom = {
+        left: r.getLeft(),
+        right: r.getRight(),
+        top: r.getTop(),
+        bottom: r.getBottom(),
+        centerX: roomCenter[0]!,
+        centerY: roomCenter[1]!,
+        isSafe
+      };
+      return roomTags.length > 0 ? { ...baseRoom, tags: roomTags } : baseRoom;
     });
   }
 
@@ -253,58 +342,6 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     height,
     tiles
   };
-
-  type PlacedEntityDef = {
-    templateId: string;
-    x: number;
-    y: number;
-    dynamicTraits?: ReadonlyArray<string> | undefined;
-    inventory?: ReadonlyArray<string> | undefined;
-  };
-
-  const finalPlacedEntities: PlacedEntityDef[] = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
-
-  // Resolve sub-biome tags for rooms based on area definition probabilities
-  const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
-
-  const parsedRooms = rooms.map((r, index) => {
-    // Mark room 0 (start pos) and any room with a portal as a "safe" room
-    // to prevent the Encounter Director from dropping hazards or bosses directly on the player
-    const isSafe = index === 0 || portalRoomIndices.has(index);
-
-    r.getDoors((x: number, y: number) => {
-      const idx = coordToIndex(x, y, width);
-      const tile = tiles[idx];
-      if (tile) {
-        // Place floor underneath
-        tiles[idx] = { ...tile, tileId: palette.floor };
-        // Place door entity
-        finalPlacedEntities.push({ templateId: palette.door, x, y });
-      }
-    });
-
-    // Assign sub-biome tags probabilistically for non-safe rooms
-    const roomTags: string[] = [];
-    if (!isSafe && subBiomeEntries.length > 0) {
-      for (const [tag, probability] of subBiomeEntries) {
-        if (ROT.RNG.getUniform() < probability) {
-          roomTags.push(tag);
-        }
-      }
-    }
-
-    const center = r.getCenter();
-    const baseRoom = {
-      left: r.getLeft(),
-      right: r.getRight(),
-      top: r.getTop(),
-      bottom: r.getBottom(),
-      centerX: center[0]!,
-      centerY: center[1]!,
-      isSafe
-    };
-    return roomTags.length > 0 ? { ...baseRoom, tags: roomTags } : baseRoom;
-  });
 
   const directorResult = runEncounterDirector(campaign, areaDef, map, parsedRooms, finalPlacedEntities, context);
 

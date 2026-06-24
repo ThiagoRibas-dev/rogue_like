@@ -61,5 +61,18 @@
       "id": "nemesis_promoted",
       "text": "There is a new captain in charge now. Best keep your head down."
     }
+  },
+  {
+    "id": "rumor_area_respawned",
+    "eventType": "AreaRespawned",
+    "eligibleTags": ["town"],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": false,
+    "delay": 5,
+    "rumorTemplate": {
+      "id": "area_respawned_{eventId}",
+      "text": "Travelers report that monsters have repopulated the area '{eventId}'. Be careful if you go back!",
+      "persistent": false
+    }
   }
 ]

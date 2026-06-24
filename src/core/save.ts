@@ -54,7 +54,9 @@ export function saveGame(state: GameState): void {
       const sAreaData: SerializedAreaData = {
         map: areaData.map,
         entities: areaData.entities,
-        components: Array.from(areaData.components.entries())
+        components: Array.from(areaData.components.entries()),
+        rooms: areaData.rooms,
+        lastSpawnTurn: areaData.lastSpawnTurn
       };
       return [areaId, sAreaData];
     }
@@ -83,6 +85,8 @@ export function saveGame(state: GameState): void {
     dynamicQuests: state.dynamicQuests,
     messages: state.messages,
     currentAreaId: state.currentAreaId,
+    activeRooms: state.activeRooms,
+    lastSpawnTurn: state.lastSpawnTurn,
     areas: serializedAreas,
     persistentEntities: serializedPersistentEntities,
     isGameOver: state.isGameOver,
@@ -145,7 +149,9 @@ export async function loadGame(): Promise<GameState | null> {
         map: sAreaData.map,
         entities: sAreaData.entities,
         components: new Map(sAreaData.components),
-        spatialIndex: new Map()
+        spatialIndex: new Map(),
+        rooms: sAreaData.rooms ?? [],
+        lastSpawnTurn: sAreaData.lastSpawnTurn ?? 0
       });
     }
 
@@ -174,6 +180,8 @@ export async function loadGame(): Promise<GameState | null> {
       messages: sState.messages,
       events: [], // Events are transient per-turn, so we start with empty on load
       currentAreaId: sState.currentAreaId,
+      activeRooms: sState.activeRooms ?? [],
+      lastSpawnTurn: sState.lastSpawnTurn ?? 0,
       areas: rehydratedAreas,
       persistentEntities: rehydratedPersistentEntities,
       spatialIndex: new Map(), // Will be rebuilt below

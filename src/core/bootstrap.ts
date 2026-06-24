@@ -108,6 +108,8 @@ export async function startNewGame(
     spatialIndex: new Map(),
     messages: [],
     currentAreaId: state.campaign.rules.map.startingAreaId,
+    activeRooms: rooms,
+    lastSpawnTurn: 0,
     areas: new Map(),
     persistentEntities: new Map(),
     identifiedItems: new Set(),
@@ -325,7 +327,7 @@ export async function startSandboxEncounter(
     }
   }
 
-  const { map, startPos, placedEntities } = generatedArea;
+  const { map, startPos, rooms, placedEntities } = generatedArea;
 
   state = {
     ...state,
@@ -337,6 +339,8 @@ export async function startSandboxEncounter(
     spatialIndex: new Map(),
     messages: [],
     currentAreaId: state.campaign.rules.map.startingAreaId,
+    activeRooms: rooms ?? [],
+    lastSpawnTurn: 0,
     areas: new Map(),
     persistentEntities: new Map(),
     identifiedItems: new Set(),

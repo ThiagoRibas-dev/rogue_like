@@ -118,6 +118,8 @@ let state: GameState = {
   cachedFov: new Set(),
   playerCommandQueue: [],
   areaMutations: {},
+  activeRooms: [],
+  lastSpawnTurn: 0,
   pendingKnowledge: [],
   pendingRumors: [],
   investigation: {

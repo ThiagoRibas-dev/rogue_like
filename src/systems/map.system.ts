@@ -10,6 +10,8 @@ import {
 } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
+import { runEncounterDirector, type RoomBounds } from '../map/encounter_director.ts';
+import { GameEventType } from '../types/events.types.ts';
 import {
   ComponentType,
   type Component,
@@ -108,7 +110,9 @@ export function processChangeAreaIntent(
     entities: regularSavedEntityIds,
     components: currentLevelComponents,
     spatialIndex: updateSpatialIndex({ ...state, entities: regularSavedEntityIds, components: currentLevelComponents })
-      .spatialIndex
+      .spatialIndex,
+    rooms: state.activeRooms ?? [],
+    lastSpawnTurn: state.lastSpawnTurn ?? 0
   };
 
   const nextAreas = new Map(state.areas);
@@ -120,6 +124,8 @@ export function processChangeAreaIntent(
   let nextComponents = new Map<EntityId, Readonly<Record<string, Component>>>();
   let spawnX: number = targetX ?? -1;
   let spawnY: number = targetY ?? -1;
+  let targetRooms: ReadonlyArray<RoomBounds> = [];
+  let targetLastSpawnTurn: number = 0;
 
   const savedTargetArea = nextAreas.get(targetAreaId);
 
@@ -127,6 +133,8 @@ export function processChangeAreaIntent(
     targetMap = savedTargetArea.map;
     nextEntities = [...savedTargetArea.entities];
     nextComponents = new Map(savedTargetArea.components);
+    targetRooms = savedTargetArea.rooms ?? [];
+    targetLastSpawnTurn = savedTargetArea.lastSpawnTurn ?? 0;
 
     // Reinforcement Pass for wake phase:
     // Find unfulfilled reservations (Agreements) targeting targetAreaId
@@ -218,6 +226,84 @@ export function processChangeAreaIntent(
       spawnX = Math.floor(targetMap.width / 2);
       spawnY = Math.floor(targetMap.height / 2);
     }
+
+    // Check Respawn Timer
+    const areaDef = state.campaign.areas[targetAreaId];
+    if (areaDef?.respawnTimerTurns && state.globalTurn - targetLastSpawnTurn >= areaDef.respawnTimerTurns) {
+      // Calculate pre-allocated entities
+      const existingEntities = Array.from(nextComponents.entries())
+        .map(([_id, comps]) => {
+          const template = comps[ComponentType.Template] as TemplateComponent | undefined;
+          const pos = comps[ComponentType.Position] as PositionComponent | undefined;
+          return template && pos ? { templateId: template.templateId, x: pos.x, y: pos.y } : null;
+        })
+        .filter((e) => e !== null) as Array<{ templateId: string; x: number; y: number }>;
+
+      // Fetch player level
+      const players = queryEntities(state, [ComponentType.Player, ComponentType.Fighter]);
+      const playerLevel =
+        players[0] !== undefined
+          ? (getComponent(state, players[0], ComponentType.Fighter) as FighterComponent | undefined)?.level || 1
+          : 1;
+
+      // Get mutations for this area
+      const areaMutation = state.areaMutations[targetAreaId];
+
+      const directorContext = {
+        playerLevel,
+        tokenPool: new Set<string>(),
+        areaMutation,
+        reservedTokens: []
+      };
+
+      // Run the Director
+      const directorResult = runEncounterDirector(
+        state.campaign,
+        areaDef,
+        targetMap,
+        targetRooms,
+        existingEntities,
+        directorContext
+      );
+
+      if (directorResult.newEntities.length > 0) {
+        // Create a temporary state using targetMap, current nextEntities and nextComponents
+        let tempState: GameState = {
+          ...state,
+          entities: nextEntities,
+          components: nextComponents,
+          map: targetMap
+        };
+
+        for (const ent of directorResult.newEntities) {
+          if (state.campaign.items[ent.templateId]) {
+            [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
+          } else if (state.campaign.entities[ent.templateId]) {
+            [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
+          } else {
+            console.warn(`Director placed template ${ent.templateId} not found in registries.`);
+          }
+        }
+
+        nextEntities = tempState.entities;
+        nextComponents = tempState.components as Map<EntityId, Readonly<Record<string, Component>>>;
+
+        // Push event
+        state = {
+          ...state,
+          events: [
+            ...state.events,
+            {
+              type: GameEventType.AreaRespawned,
+              areaId: targetAreaId,
+              newEntitiesSpawned: directorResult.newEntities.length
+            }
+          ]
+        };
+      }
+
+      targetLastSpawnTurn = state.globalTurn;
+    }
   } else {
     // Fetch player level (we can query the player entity's FighterComponent)
     const players = queryEntities(state, [ComponentType.Player, ComponentType.Fighter]);
@@ -260,6 +346,8 @@ export function processChangeAreaIntent(
     // Generate new floor
     const generated = generateArea(state.campaign, targetAreaId, directorContext);
     targetMap = generated.map;
+    targetRooms = generated.rooms ?? [];
+    targetLastSpawnTurn = state.globalTurn;
 
     let foundStairs = false;
     for (const portal of generated.portals) {
@@ -332,31 +420,6 @@ export function processChangeAreaIntent(
           stairId,
           tags
         );
-      }
-    }
-
-    // Spawn monsters and items in all rooms except the first one (where the player spawns)
-    for (let i = 1; i < generated.rooms.length; i++) {
-      const room = generated.rooms[i];
-      if (!room) continue;
-
-      const numMonsters = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxMonstersPerRoom);
-      for (let m = 0; m < numMonsters; m++) {
-        const mx = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
-        const my = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-        const template =
-          ROT.RNG.getWeightedValue(state.campaign.rules.spawning.spawnWeights as Record<string, number>) || 'orc';
-        [tempState] = spawnEntity(tempState, template, mx, my);
-      }
-
-      const numItems = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxItemsPerRoom);
-      for (let n = 0; n < numItems; n++) {
-        const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
-        const iy = ROT.RNG.getUniformInt(room.top + 1, room.bottom - 1);
-        const itemId =
-          ROT.RNG.getWeightedValue(state.campaign.rules.spawning.lootTable as Record<string, number>) ||
-          'health_potion';
-        [tempState] = spawnItem(tempState, itemId, ix, iy);
       }
     }
 
@@ -436,6 +499,8 @@ export function processChangeAreaIntent(
     components: nextComponents,
     map: targetMap,
     currentAreaId: targetAreaId,
+    activeRooms: targetRooms,
+    lastSpawnTurn: targetLastSpawnTurn,
     areas: nextAreas,
     persistentEntities: nextPersistentEntities,
     fovNeedsUpdate: true,

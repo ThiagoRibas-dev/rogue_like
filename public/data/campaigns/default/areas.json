@@ -76,6 +76,7 @@
     "dangerRating": 1,
     "crBudget": 15,
     "encounterProfileId": "standard_dungeon",
+    "respawnTimerTurns": 10,
     "tags": [
       "dungeon",
       "early_game"

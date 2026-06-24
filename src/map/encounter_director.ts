@@ -71,6 +71,7 @@ function resolveAxis(roleTags: ReadonlyArray<string>): BudgetAxis {
 }
 
 function getRandomFloorTileInRoom(
+  campaign: CampaignData,
   room: RoomBounds,
   map: GameMap,
   occupiedCoordinates: Set<string>
@@ -81,13 +82,10 @@ function getRandomFloorTileInRoom(
     const y = Math.floor(ROT.RNG.getUniform() * (room.bottom - room.top + 1)) + room.top;
     const idx = coordToIndex(x, y, map.width);
 
-    // Quick check if it's within bounds and walkable based on standard floor naming
+    // Quick check if it's within bounds and walkable based on the campaign tiles registry
     if (map.tiles[idx] && !occupiedCoordinates.has(`${x},${y}`)) {
       const tileId = map.tiles[idx]!.tileId;
-      // In a real scenario we'd check campaign.tiles[tileId].walkable, but for procedural areas
-      // we know walls and doors are usually not 'floor'.
-      // For simplicity, we just avoid anything that isn't explicitly open or check for substrings.
-      if (!tileId.includes('wall') && !tileId.includes('water')) {
+      if (campaign.tiles[tileId]?.walkable) {
         return { x, y };
       }
     }
@@ -218,7 +216,7 @@ function runForEncounterZone(
       const cost = campaign.entities[selectedId]!.crCost!;
 
       // Find coordinate
-      const pos = getRandomFloorTileInRoom(room, map, occupiedCoordinates);
+      const pos = getRandomFloorTileInRoom(campaign, room, map, occupiedCoordinates);
       if (!pos) {
         // Couldn't find room, reject
         axisRejected[axis].push(`${selectedId} (no space)`);
@@ -391,7 +389,7 @@ export function runEncounterDirector(
       const zone = ROT.RNG.getItem(zones);
       if (!zone) continue;
 
-      const pos = getRandomFloorTileInRoom(zone, map, occupiedCoordinates);
+      const pos = getRandomFloorTileInRoom(campaign, zone, map, occupiedCoordinates);
       if (pos) {
         allNewEntities.push({
           templateId: token.templateId,

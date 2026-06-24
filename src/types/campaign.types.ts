@@ -498,7 +498,8 @@ export const AreaDefinitionSchema = z.object({
   subBiomes: z
     .record(z.string(), z.number().positive().max(1))
     .optional()
-    .describe('Map of sub-biome tag to probability (0-1) for room assignment')
+    .describe('Map of sub-biome tag to probability (0-1) for room assignment'),
+  respawnTimerTurns: z.number().int().positive().optional()
 });
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 

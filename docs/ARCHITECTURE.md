@@ -142,7 +142,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 
 ### 5.1 Map Generation & FOV
 
-- **Generator**: Uses `ROT.Map.Digger` wrapped in `src/map/generator.ts`. The tile grid is stored as a flat array (`Tile[]`) with index math (`y * width + x`) for faster JS engine performance and trivial serialization. Tiles reference string IDs (e.g., `"stone_wall"`) resolved from a shared `TILE_REGISTRY`, decoupling rendering and mechanical properties from map structure.
+- **Generators**: Supports both structured dungeons (`ROT.Map.Digger`) and organic cave networks (`ROT.Map.Cellular`) wrapped in `src/map/generator.ts`. The tile grid is stored as a flat array (`Tile[]`) with index math (`y * width + x`) for faster JS engine performance and trivial serialization. Tiles reference string IDs (e.g., `"stone_wall"`) resolved from a shared `TILE_REGISTRY`, decoupling rendering and mechanical properties from map structure.
+- **Entity & Portal Placement**: The generator guarantees topologically safe spawn logic by picking open floor tiles instead of hardcoded room centers, enabling seamless entity and portal placement even in wall-less cellular cave systems.
 - **FOV**: Shadowcasting is computed via `computeFOV` in `map.system.ts` only when `GameState.fovNeedsUpdate` is set (e.g., player moves, door opens). Results are cached in `GameState.cachedFov`.
 - **Spatial Rendering**: The renderer uses an `O(1)` spatial index (`GameState.spatialIndex`) combined with `cachedFov` to draw only entities within camera bounds and line-of-sight.
 
@@ -151,6 +152,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 The game world is divided into distinct "Areas" — procedural dungeons or static hand-crafted hubs. `GameState` tracks `currentAreaId`; inactive areas are serialized into an `areas` map. Transitions use generic `PortalComponent`s and a `ChangeAreaIntent`, packing the current ECS into cold storage and unpacking (or generating) the target area.
 
 **Persistent Entities (Sleep/Wake):** Entities with a `PersistentComponent` are saved into a global `persistentEntities` pool (rather than area-local storage) when unloading, and re-injected into the active ECS when their target area loads. This ensures named NPCs maintain state across transitions and can migrate between areas.
+
+**Area Respawn Timers:** Areas can define a `respawnTimerTurns` threshold. When transitioning back into an area, the map system compares the delta between the current `globalTurn` and the area's `lastSpawnTurn`. If the threshold is exceeded, the `EncounterDirector` re-runs, repopulating the area's active rooms with new non-persistent entities while emitting an `AreaRespawned` event to hook into the social simulation (e.g., generating rumors).
 
 ### 5.3 Encounter Director
 

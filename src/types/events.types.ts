@@ -36,7 +36,8 @@ export enum GameEventType {
   RivalryResolved = 'RivalryResolved',
   RivalryFailed = 'RivalryFailed',
   SchemeNodeDisrupted = 'SchemeNodeDisrupted',
-  SchemeEscalated = 'SchemeEscalated'
+  SchemeEscalated = 'SchemeEscalated',
+  AreaRespawned = 'AreaRespawned'
 }
 
 export interface BaseGameEvent {
@@ -269,6 +270,12 @@ export interface SchemeEscalatedEvent extends BaseGameEvent {
   readonly mastermindId: EntityId;
 }
 
+export interface AreaRespawnedEvent extends BaseGameEvent {
+  readonly type: GameEventType.AreaRespawned;
+  readonly areaId: string;
+  readonly newEntitiesSpawned: number;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -305,4 +312,5 @@ export type GameEvent =
   | RivalryResolvedEvent
   | RivalryFailedEvent
   | SchemeNodeDisruptedEvent
-  | SchemeEscalatedEvent;
+  | SchemeEscalatedEvent
+  | AreaRespawnedEvent;

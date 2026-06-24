@@ -16,7 +16,8 @@ import {
   type EntityDiedEvent,
   type SchemeAdvancedEvent,
   type RivalryScheduledEvent,
-  type RivalryResolvedEvent
+  type RivalryResolvedEvent,
+  type AreaRespawnedEvent
 } from '../types/events.types.ts';
 import { type GameState } from '../types/game-state.types.ts';
 import type { PendingRumorPropagation } from '../types/knowledge.types.ts';
@@ -61,6 +62,10 @@ function getEventIdPlaceholder(event: GameEvent, state: GameState): string {
       const resolvedEvent = event as RivalryResolvedEvent;
       return resolvedEvent.rivalryId;
     }
+    case GameEventType.AreaRespawned: {
+      const respawnEvent = event as AreaRespawnedEvent;
+      return respawnEvent.areaId;
+    }
     default:
       return 'generic_event';
   }
@@ -74,6 +79,10 @@ function getEventSourceArea(event: GameEvent, state: GameState): string {
       const advEvent = event as SchemeAdvancedEvent;
       const schemeTemplate = state.campaign.schemes[advEvent.schemeId];
       return schemeTemplate?.phases[advEvent.newPhase - 1]?.mutations?.[0]?.targetAreaId ?? state.currentAreaId;
+    }
+    case GameEventType.AreaRespawned: {
+      const respawnEvent = event as AreaRespawnedEvent;
+      return respawnEvent.areaId;
     }
     default:
       return state.currentAreaId;
