@@ -18,8 +18,8 @@
       {
         "targetAreaId": "forest_haunted",
         "direction": "portal",
-        "placementX": 10,
-        "placementY": 8
+        "placementX": 4,
+        "placementY": 3
       },
       {
         "targetAreaId": "marsh_mirrored",
@@ -200,11 +200,11 @@
     "connections": [
       {
         "targetAreaId": "shroudgarde_gate",
-        "direction": "up"
+        "direction": "portal"
       },
       {
         "targetAreaId": "ravine_chaos",
-        "direction": "down"
+        "direction": "portal"
       }
     ]
   },
@@ -226,25 +226,25 @@
       },
       {
         "targetAreaId": "cave_kobolds",
-        "direction": "portal",
+        "direction": "down",
         "placementX": 3,
         "placementY": 3
       },
       {
         "targetAreaId": "cave_norkers",
-        "direction": "portal",
+        "direction": "down",
         "placementX": 3,
         "placementY": 6
       },
       {
         "targetAreaId": "cave_bugbears",
-        "direction": "portal",
+        "direction": "down",
         "placementX": 10,
         "placementY": 4
       },
       {
         "targetAreaId": "cave_scro",
-        "direction": "portal",
+        "direction": "down",
         "placementX": 17,
         "placementY": 3
       },
@@ -368,7 +368,9 @@
     "connections": [
       {
         "targetAreaId": "ravine_chaos",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 6
       }
     ],
     "staticMap": {
@@ -430,7 +432,7 @@
       },
       {
         "targetAreaId": "golden_grain_inn",
-        "direction": "down"
+        "direction": "portal"
       },
       {
         "targetAreaId": "spire_level_air",
@@ -438,7 +440,7 @@
       },
       {
         "targetAreaId": "water_temple_upper",
-        "direction": "down"
+        "direction": "portal"
       }
     ]
   },
@@ -454,11 +456,21 @@
     "connections": [
       {
         "targetAreaId": "marsh_mirrored",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 6
       },
       {
         "targetAreaId": "wet_caverns",
-        "direction": "down"
+        "direction": "down",
+        "placementX": 16,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "shroudgarde_inn_cellar",
+        "direction": "down",
+        "placementX": 4,
+        "placementY": 2
       }
     ],
     "staticMap": {
@@ -506,7 +518,7 @@
     "connections": [
       {
         "targetAreaId": "shroudgarde_inn_cellar",
-        "direction": "portal",
+        "direction": "up",
         "placementX": 10,
         "placementY": 1
       },
@@ -555,7 +567,9 @@
     "connections": [
       {
         "targetAreaId": "wet_caverns",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 8
       }
     ],
     "staticMap": {
@@ -618,11 +632,15 @@
     "connections": [
       {
         "targetAreaId": "golden_grain_inn",
-        "direction": "up"
+        "direction": "up",
+        "placementX": 10,
+        "placementY": 5
       },
       {
         "targetAreaId": "wet_caverns",
-        "direction": "down"
+        "direction": "down",
+        "placementX": 10,
+        "placementY": 6
       }
     ],
     "staticMap": {
@@ -753,11 +771,15 @@
     "connections": [
       {
         "targetAreaId": "spire_level_earth",
-        "direction": "up"
+        "direction": "up",
+        "placementX": 10,
+        "placementY": 8
       },
       {
         "targetAreaId": "spire_level_water",
-        "direction": "down"
+        "direction": "down",
+        "placementX": 10,
+        "placementY": 9
       }
     ],
     "staticMap": {
@@ -838,7 +860,9 @@
     "connections": [
       {
         "targetAreaId": "spire_level_water",
-        "direction": "up"
+        "direction": "up",
+        "placementX": 10,
+        "placementY": 8
       }
     ],
     "staticMap": {
@@ -958,11 +982,15 @@
     "connections": [
       {
         "targetAreaId": "water_temple_lower",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 8
       },
       {
         "targetAreaId": "water_temple_valve_room",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 4
       }
     ],
     "staticMap": {
@@ -1007,7 +1035,9 @@
     "connections": [
       {
         "targetAreaId": "water_temple_core",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 4
       }
     ],
     "staticMap": {
@@ -1079,11 +1109,15 @@
     "connections": [
       {
         "targetAreaId": "road_to_nulb",
-        "direction": "portal"
+        "direction": "portal",
+        "placementX": 10,
+        "placementY": 6
       },
       {
         "targetAreaId": "moathouse_dungeons",
-        "direction": "down"
+        "direction": "down",
+        "placementX": 10,
+        "placementY": 3
       }
     ],
     "staticMap": {
@@ -1273,7 +1307,9 @@
     "connections": [
       {
         "targetAreaId": "toee_level_4",
-        "direction": "up"
+        "direction": "up",
+        "placementX": 10,
+        "placementY": 7
       }
     ],
     "staticMap": {

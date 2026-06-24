@@ -260,8 +260,21 @@ export function processChangeAreaIntent(
     // Generate new floor
     const generated = generateArea(state.campaign, targetAreaId, directorContext);
     targetMap = generated.map;
-    spawnX = generated.startPos.x;
-    spawnY = generated.startPos.y;
+
+    let foundStairs = false;
+    for (const portal of generated.portals) {
+      if (portal.connection.targetAreaId === state.currentAreaId) {
+        spawnX = portal.x;
+        spawnY = portal.y;
+        foundStairs = true;
+        break;
+      }
+    }
+
+    if (!foundStairs) {
+      spawnX = generated.startPos.x;
+      spawnY = generated.startPos.y;
+    }
 
     // We can't use createEntity easily without a state object.
     // Let's create a temporary state to use ECS functions.
