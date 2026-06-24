@@ -1,6 +1,9 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type HungerComponent, type FighterComponent } from '../types/components.types.ts';
 import { getComponent, addComponent } from '../core/ecs.ts';
+/**
+ * Represents the status levels of nutritional satiation for the player.
+ */
 export enum HungerState {
   Satiated = 'Satiated',
   Normal = 'Normal',

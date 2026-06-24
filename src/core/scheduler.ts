@@ -18,6 +18,9 @@ let accumulatedTime = 0;
 let lastFrameTime = 0;
 let rtwpLoopId = 0;
 
+/**
+ * Initializes the ROT.js scheduler and resets engine run states.
+ */
 export function initEngine(): void {
   scheduler.clear();
   actors.clear();
@@ -26,6 +29,9 @@ export function initEngine(): void {
   cancelAnimationFrame(rtwpLoopId);
 }
 
+/**
+ * Starts execution of the scheduling engine in turn-based or real-time loop.
+ */
 export function startEngine(): void {
   isEngineLocked = false;
   const state = getGameState();
@@ -37,10 +43,16 @@ export function startEngine(): void {
   }
 }
 
+/**
+ * Halts scheduling loops until unlocked.
+ */
 export function lockEngine(): void {
   isEngineLocked = true;
 }
 
+/**
+ * Resumes turn scheduling (turn-based only).
+ */
 export function unlockEngine(): void {
   if (!isEngineLocked) return;
   isEngineLocked = false;
@@ -50,6 +62,9 @@ export function unlockEngine(): void {
   }
 }
 
+/**
+ * Seamlessly transitions scheduling loops between turn-based and real-time execution modes.
+ */
 export function switchEngineMode(mode: EngineMode): void {
   if (mode === EngineMode.RTwP) {
     isEngineLocked = false;
@@ -113,6 +128,9 @@ function rtwpLoop(time: number): void {
   }
 }
 
+/**
+ * Enrolls an entity actor into scheduling queue with action parameters.
+ */
 export function addActor(id: EntityId, repeat: boolean = true, initialDuration: number = 0): void {
   if (actors.has(id)) return;
   const actor = new SchedulerActor(id);
@@ -120,6 +138,9 @@ export function addActor(id: EntityId, repeat: boolean = true, initialDuration: 
   scheduler.add(actor, repeat, initialDuration);
 }
 
+/**
+ * Evicts an entity from the scheduler queue.
+ */
 export function removeActor(id: EntityId): void {
   const actor = actors.get(id);
   if (actor) {
@@ -128,10 +149,16 @@ export function removeActor(id: EntityId): void {
   }
 }
 
+/**
+ * Injects step duration weights back into scheduling actions.
+ */
 export function setTurnDuration(duration: number): void {
   scheduler.setDuration(duration);
 }
 
+/**
+ * Destroys all scheduling states and cancels animation timers.
+ */
 export function clearScheduler(): void {
   scheduler.clear();
   actors.clear();

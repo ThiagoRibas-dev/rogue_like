@@ -2,6 +2,9 @@ import { rng } from '../core/rng.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 
+/**
+ * Procedurally generates a quest from templates, assigning random targets and objectives.
+ */
 export function generateProceduralQuest(
   state: GameState,
   templateId: string

@@ -11,4 +11,5 @@ export const DEFAULT_DEFLECTION_LINES = [
   "I don't know what you're talking about."
 ];
 
+/** The turn threshold after which non-persistent rumors become stale and get culled. */
 export const RUMOR_STALE_THRESHOLD = 500;

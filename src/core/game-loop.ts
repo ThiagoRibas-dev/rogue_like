@@ -32,15 +32,24 @@ import {
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
 
+/**
+ * Sets/updates the global GameState and triggers state change listeners.
+ */
 export function setGameState(state: GameState): void {
   updateState(state);
 }
 
+/**
+ * Retrieves the current global GameState. Throws if not initialized.
+ */
 export function getGameState(): GameState {
   if (!currentState) throw new Error('Game state not initialized');
   return currentState;
 }
 
+/**
+ * Registers a listener callback to run whenever the global GameState updates.
+ */
 export function onStateChange(callback: (state: GameState) => void): void {
   stateChangeCallback = callback;
 }

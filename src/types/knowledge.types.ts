@@ -18,6 +18,7 @@ export interface PendingKnowledgePropagation {
   readonly deliveredAreas: ReadonlyArray<string>;
 }
 
+/** Represents a rumor that is currently in propagation delay, waiting to be delivered to other areas/NPCs. */
 export interface PendingRumorPropagation {
   readonly ruleId: string;
   readonly rumorItem: {

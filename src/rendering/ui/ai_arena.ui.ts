@@ -1,6 +1,9 @@
 import type { EditorController } from '../editor_ui.ts';
 import { runAIArena } from '../../editor/simulation/ai_arena.ts';
 
+/**
+ * Renders the AI Arena simulation workspace where the user can pit two templates against each other.
+ */
 export function renderSimulationLab(controller: EditorController, container: HTMLElement): void {
   const doc = controller.getDocument();
   const actors = Object.values(doc.entities).filter((e) => e.isActor);

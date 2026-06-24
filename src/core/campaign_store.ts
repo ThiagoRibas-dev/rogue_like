@@ -132,6 +132,9 @@ export async function listInstalledCampaigns(): Promise<CampaignRegistryEntry[]>
 // EDITOR WORKSPACES (Author Facing)
 // =========================================================
 
+/**
+ * A database record representing a Campaign Creator workspace stored in IndexedDB.
+ */
 export interface WorkspaceRecord {
   readonly id: string;
   readonly name: string;

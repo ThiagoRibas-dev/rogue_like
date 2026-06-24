@@ -3,6 +3,7 @@ import type { GameState } from './game-state.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type * as ROT from 'rot-js';
 
+/** Zod schema for declarative condition predicates evaluated by the trigger system. */
 export const ConditionPredicateSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('is_player') }),
   z.object({
@@ -94,8 +95,10 @@ type InjectedContext = {
   entityId?: EntityId | undefined;
 };
 
+/** Inferred type representing an evaluated condition predicate with potential runtime contexts. */
 export type ConditionPredicate = z.infer<typeof ConditionPredicateSchema> & InjectedContext;
 
+/** Zod schema for consequence actions executed when triggers resolve successfully. */
 export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('damage_area'),
@@ -231,8 +234,10 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   })
 ]);
 
+/** Inferred type representing an executable consequence action with potential runtime contexts. */
 export type ConsequenceAction = z.infer<typeof ConsequenceActionSchema> & InjectedContext;
 
+/** Zod schema defining when-if-then event trigger rules. */
 export const TriggerDefinitionSchema = z.object({
   id: z.string(),
   eventType: z.string(),
@@ -240,6 +245,7 @@ export const TriggerDefinitionSchema = z.object({
   consequences: z.array(ConsequenceActionSchema)
 });
 
+/** Inferred type for a trigger rule definition. */
 export type TriggerDefinition = z.infer<typeof TriggerDefinitionSchema>;
 
 /**

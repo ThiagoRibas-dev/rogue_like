@@ -22,6 +22,9 @@ import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 
+/**
+ * Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation.
+ */
 export interface EditorController {
   getDocument(): CampaignData;
   resetDocument(newDoc: CampaignData): void;

@@ -9,6 +9,7 @@ import { TriggerDefinitionSchema, ConsequenceActionSchema } from './trigger.type
 // ==========================================
 // 1. MANIFEST & REGISTRY
 // ==========================================
+/** Zod schema for the campaign manifest. */
 export const CampaignManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
@@ -18,8 +19,10 @@ export const CampaignManifestSchema = z.object({
   tags: z.array(z.string()).default([]),
   schemaVersion: z.number().int().nonnegative().default(0)
 });
+/** Inferred type for the campaign manifest. */
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
 
+/** Zod schema for campaign registry entry metadata. */
 export const CampaignRegistryEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -30,16 +33,20 @@ export const CampaignRegistryEntrySchema = z.object({
   source: z.enum(['builtin', 'installed', 'editor']).default('builtin'),
   author: z.string().default('Unknown')
 });
+/** Inferred type for a campaign registry entry. */
 export type CampaignRegistryEntry = z.infer<typeof CampaignRegistryEntrySchema>;
 
+/** Zod schema for the campaign registry. */
 export const CampaignRegistrySchema = z.object({
   campaigns: z.array(CampaignRegistryEntrySchema)
 });
+/** Inferred type for the campaign registry. */
 export type CampaignRegistry = z.infer<typeof CampaignRegistrySchema>;
 
 // ==========================================
 // 2. RULES
 // ==========================================
+/** Zod schema for level advancement thresholds and stat upgrades. */
 export const AdvancementLevelSchema = z.object({
   level: z.number().int().positive(),
   requiredXp: z.number().int().nonnegative(),
@@ -47,8 +54,10 @@ export const AdvancementLevelSchema = z.object({
   attackGain: z.number().int().nonnegative(),
   defenseGain: z.number().int().nonnegative()
 });
+/** Inferred type for level advancement requirements. */
 export type AdvancementLevel = z.infer<typeof AdvancementLevelSchema>;
 
+/** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
     width: z.number().int().positive(),
@@ -81,11 +90,13 @@ export const RulesConfigSchema = z.object({
     lootDropChance: z.number().nonnegative().max(1).default(0)
   })
 });
+/** Inferred type for rules configuration parameters. */
 export type RulesConfig = z.infer<typeof RulesConfigSchema>;
 
 // ==========================================
 // 3. THEME
 // ==========================================
+/** Zod schema for theme and display graphics configuration. */
 export const ThemeConfigSchema = z.object({
   colors: z.object({
     background: z.string().describe('Canvas Background Color'),
@@ -106,15 +117,20 @@ export const ThemeConfigSchema = z.object({
     fontFamily: z.string().describe('Font Family')
   })
 });
+/** Inferred type for theme configuration properties. */
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;
 
 // ==========================================
 // 4. ITEMS
 // ==========================================
+/** Zod enum for categories of items. */
 export const ItemCategoryEnum = z.enum(['consumable', 'weapon', 'armor', 'tool']);
+/** Zod enum for available equipment slots. */
 export const EquipmentSlotEnum = z.enum(['head', 'neck', 'torso', 'back', 'arm', 'hand', 'finger', 'leg', 'foot']);
+/** Inferred type representing an equipment slot. */
 export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 
+/** Zod schema defining an item registry template. */
 export const ItemDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -164,13 +180,16 @@ export const ItemDefinitionSchema = z.object({
     })
     .optional()
 });
+/** Inferred type for an item definition. */
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;
 
 // ==========================================
 // 5. EFFECTS (Item Effects)
 // ==========================================
+/** Zod enum for faction stances. */
 export const FactionRelationEnum = z.enum(['hostile', 'neutral', 'friendly']);
 
+/** Zod enum for item usability side effects. */
 export const ItemEffectTypeEnum = z.enum([
   'heal',
   'damage',
@@ -181,6 +200,7 @@ export const ItemEffectTypeEnum = z.enum([
   'satiate'
 ]);
 
+/** Zod schema describing an item effect template. */
 export const ItemEffectDefinitionSchema = z.object({
   id: z.string(),
   type: ItemEffectTypeEnum,
@@ -199,16 +219,20 @@ export const ItemEffectDefinitionSchema = z.object({
     })
     .optional()
 });
+/** Inferred type for an item effect definition. */
 export type ItemEffectDefinition = z.infer<typeof ItemEffectDefinitionSchema>;
 
+/** Zod schema for static knowledge templates. */
 export const KnowledgeItemSchema = z.object({
   id: z.string(),
   type: z.enum(['rumor', 'location', 'weakness', 'secret']),
   description: z.string(),
   tags: z.array(z.string()).default([])
 });
+/** Inferred type for a knowledge item template. */
 export type KnowledgeItemType = z.infer<typeof KnowledgeItemSchema>;
 
+/** Zod schema for knowledge propagation parameters. */
 export const KnowledgePropagationRuleSchema = z.object({
   id: z.string(),
   /** The GameEventType string this rule listens to. */
@@ -224,8 +248,10 @@ export const KnowledgePropagationRuleSchema = z.object({
   /** The knowledge item template to create. The `id` can use `{eventId}` or other placeholders. */
   knowledgeTemplate: KnowledgeItemSchema
 });
+/** Inferred type for knowledge propagation rules. */
 export type KnowledgePropagationRule = z.infer<typeof KnowledgePropagationRuleSchema>;
 
+/** Zod schema for rumor items. */
 export const RumorItemSchema = z.object({
   id: z.string(),
   text: z.string(),
@@ -233,8 +259,10 @@ export const RumorItemSchema = z.object({
   turnCreated: z.number().int().nonnegative(),
   persistent: z.boolean().optional()
 });
+/** Inferred type for a rumor item template. */
 export type RumorItemData = z.infer<typeof RumorItemSchema>;
 
+/** Zod schema for rumor propagation rules. */
 export const RumorPropagationRuleSchema = z.object({
   id: z.string(),
   eventType: z.string(),
@@ -248,11 +276,13 @@ export const RumorPropagationRuleSchema = z.object({
     persistent: z.boolean().optional()
   })
 });
+/** Inferred type for rumor propagation rules. */
 export type RumorPropagationRule = z.infer<typeof RumorPropagationRuleSchema>;
 
 // ==========================================
 // 6. ENTITIES
 // ==========================================
+/** Zod schema describing entity template configs. */
 export const EntityTemplateSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -359,11 +389,13 @@ export const EntityTemplateSchema = z.object({
     )
     .optional()
 });
+/** Inferred type for an entity template definition. */
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;
 
 // ==========================================
 // 7. STATUS EFFECTS
 // ==========================================
+/** Zod schema defining static status effect templates. */
 export const StatusEffectDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -386,11 +418,13 @@ export const StatusEffectDefinitionSchema = z.object({
     })
     .optional()
 });
+/** Inferred type for a status effect definition. */
 export type StatusEffectDefinition = z.infer<typeof StatusEffectDefinitionSchema>;
 
 // ==========================================
 // 8. TILES
 // ==========================================
+/** Zod schema defining structural map tiles. */
 export const TileDefinitionSchema = z.object({
   walkable: z.boolean(),
   transparent: z.boolean(),
@@ -403,17 +437,21 @@ export const TileDefinitionSchema = z.object({
   interactMessage: z.string().optional(),
   tags: z.array(z.string()).optional()
 });
+/** Inferred type for a tile definition. */
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;
 
 // ==========================================
 // 9. FACTIONS
 // ==========================================
+/** Zod schema representing relations between factions. */
 export const FactionMatrixSchema = z.record(z.string(), z.record(z.string(), FactionRelationEnum));
+/** Inferred type for the faction matrix registry. */
 export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 
 // ==========================================
 // 10. AI PROFILES
 // ==========================================
+/** Zod schema defining individual behavior entries for entities. */
 export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
   z.object({
     behaviorId: z.literal('hunt'),
@@ -433,19 +471,24 @@ export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
   z.object({ behaviorId: z.literal('wander'), weightModifiers: z.record(z.string(), z.number()).optional() })
 ]);
 
+/** Zod schema for entity AI profiles. */
 export const AIProfileSchema = z.object({
   id: z.string(),
   behaviors: z.array(AIBehaviorEntrySchema),
   barks: z.record(z.string(), z.array(z.string())).optional()
 });
+/** Inferred type for an AI profile. */
 export type AIProfile = z.infer<typeof AIProfileSchema>;
 
 // ==========================================
 // 11. AREAS & WORLD MAP
 // ==========================================
+/** Zod enum for generation strategies. */
 export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static']);
+/** Inferred type representing an area generator type. */
 export type AreaGeneratorType = z.infer<typeof AreaGeneratorTypeEnum>;
 
+/** Zod schema representing connections between different area maps. */
 export const AreaConnectionSchema = z.object({
   targetAreaId: z.string(),
   targetX: z.number().int().nonnegative().optional(),
@@ -456,14 +499,17 @@ export const AreaConnectionSchema = z.object({
   portalTemplateId: z.string().optional(),
   placementSide: z.enum(['top', 'bottom', 'left', 'right', 'any']).optional()
 });
+/** Inferred type for an area connection definition. */
 export type AreaConnection = z.infer<typeof AreaConnectionSchema>;
 
+/** Zod schema outlining the layout, legend, and entities of a static map. */
 export const StaticMapLayoutSchema = z.object({
   layout: z.array(z.string()),
   legend: z.record(z.string(), z.string()),
   entityLegend: z.record(z.string(), z.string()).optional()
 });
 
+/** Zod schema outlining an area definition config. */
 export const AreaDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -501,22 +547,28 @@ export const AreaDefinitionSchema = z.object({
     .describe('Map of sub-biome tag to probability (0-1) for room assignment'),
   respawnTimerTurns: z.number().int().positive().optional()
 });
+/** Inferred type for an area definition. */
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;
 
 // ==========================================
 // 12. ADVERSARIAL LAYER (SCHEMES)
 // ==========================================
+/** Zod enum for villain leverages in MICE. */
 export const LeverageTypeEnum = z.enum(['money', 'ideology', 'coercion', 'ego']);
+/** Inferred type for leverage category identifiers. */
 export type LeverageType = z.infer<typeof LeverageTypeEnum>;
 
+/** Zod schema defining villain-minion agreements. */
 export const AgreementDefinitionSchema = z.object({
   id: z.string(),
   task: z.string(),
   incriminatingWeight: z.number().int().positive(),
   clueTemplates: z.array(z.string())
 });
+/** Inferred type for agreement definitions. */
 export type AgreementDefinition = z.infer<typeof AgreementDefinitionSchema>;
 
+/** Zod schema defining mastermind villain archetypes. */
 export const VillainArchetypeSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -526,8 +578,10 @@ export const VillainArchetypeSchema = z.object({
     leverageWeight: z.record(LeverageTypeEnum, z.number())
   })
 });
+/** Inferred type for villain archetypes. */
 export type VillainArchetype = z.infer<typeof VillainArchetypeSchema>;
 
+/** Zod schema defining scheme mutation changes applied to areas. */
 export const SchemePhaseMutationSchema = z.object({
   targetAreaId: z.string(),
   addedTags: z.array(z.string()).optional(),
@@ -535,8 +589,10 @@ export const SchemePhaseMutationSchema = z.object({
   encounterProfileId: z.string().optional(),
   subBiomes: z.record(z.string(), z.number().positive().max(1)).optional()
 });
+/** Inferred type for scheme phase mutations. */
 export type SchemePhaseMutation = z.infer<typeof SchemePhaseMutationSchema>;
 
+/** Zod schema defining threat schemes and phases. */
 export const SchemeTemplateSchema = z.object({
   id: z.string(),
   villainArchetypeId: z.string(),
@@ -548,11 +604,13 @@ export const SchemeTemplateSchema = z.object({
     })
   )
 });
+/** Inferred type for scheme templates. */
 export type SchemeTemplate = z.infer<typeof SchemeTemplateSchema>;
 
 // ==========================================
 // 13. FIELDS
 // ==========================================
+/** Zod schema for persistent area field definitions. */
 export const FieldDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -563,6 +621,7 @@ export const FieldDefinitionSchema = z.object({
   damagePerTurn: z.number().int().nonnegative().optional(),
   statusEffectId: z.string().optional()
 });
+/** Inferred type for an area field definition. */
 export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
 
 // ==========================================
@@ -571,14 +630,17 @@ export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
 // ==========================================
 // TAGS & REACTIONS (Phase 2)
 // ==========================================
+/** Zod schema defining tag configuration metadata. */
 export const TagDefinitionSchema = z.object({
   category: z.string(),
   color: z.string(),
   description: z.string(),
   barks: z.record(z.string(), z.array(z.string())).optional()
 });
+/** Inferred type for a tag definition. */
 export type TagDefinition = z.infer<typeof TagDefinitionSchema>;
 
+/** Zod schema for matching entity targets in reactions. */
 export const ReactionEntityMatcherSchema = z.object({
   targetType: z.literal('entity'),
   tags: z.array(z.string()).optional(),
@@ -587,6 +649,7 @@ export const ReactionEntityMatcherSchema = z.object({
   entityId: z.string().optional()
 });
 
+/** Zod schema for matching tile targets in reactions. */
 export const ReactionTileMatcherSchema = z.object({
   targetType: z.literal('tile'),
   tags: z.array(z.string()).optional(),
@@ -594,11 +657,13 @@ export const ReactionTileMatcherSchema = z.object({
   fieldTypes: z.array(z.string()).optional()
 });
 
+/** Zod schema for matching generic target types (entities or tiles) in reactions. */
 export const ReactionTargetMatcherSchema = z.discriminatedUnion('targetType', [
   ReactionEntityMatcherSchema,
   ReactionTileMatcherSchema
 ]);
 
+/** Zod schema for matching target context (like faction standings) in reactions. */
 export const ReactionContextMatcherSchema = z.object({
   factionStanding: z
     .object({
@@ -609,6 +674,7 @@ export const ReactionContextMatcherSchema = z.object({
     .optional()
 });
 
+/** Zod schema for tag-driven reactions. */
 export const ReactionDefinitionSchema = z.object({
   id: z.string(),
   verb: z.string(),
@@ -619,8 +685,10 @@ export const ReactionDefinitionSchema = z.object({
   consequences: z.array(ConsequenceActionSchema),
   message: z.string().optional()
 });
+/** Inferred type for a reaction definition. */
 export type ReactionDefinition = z.infer<typeof ReactionDefinitionSchema>;
 
+/** Zod schema defining templates for procedural quests. */
 export const ProceduralQuestTemplateSchema = z.object({
   id: z.string(),
   titleTemplate: z.string(),
@@ -631,12 +699,13 @@ export const ProceduralQuestTemplateSchema = z.object({
   amountRange: z.tuple([z.number(), z.number()]),
   rewardXpMultiplier: z.number()
 });
-
+/** Inferred type for procedural quest templates. */
 export type ProceduralQuestTemplate = z.infer<typeof ProceduralQuestTemplateSchema>;
 
 // ==========================================
 // ENCOUNTER DIRECTOR (Phase 3)
 // ==========================================
+/** Zod schema defining encounter director spawn pools. */
 export const SpawnPoolDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -650,8 +719,10 @@ export const SpawnPoolDefinitionSchema = z.object({
     .optional(),
   entities: z.record(z.string(), z.number().int().positive())
 });
+/** Inferred type for spawn pool definitions. */
 export type SpawnPoolDefinition = z.infer<typeof SpawnPoolDefinitionSchema>;
 
+/** Zod schema defining encounter allocation profiles. */
 export const EncounterProfileSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -662,8 +733,10 @@ export const EncounterProfileSchema = z.object({
     dessert: z.number()
   })
 });
+/** Inferred type for encounter profiles. */
 export type EncounterProfile = z.infer<typeof EncounterProfileSchema>;
 
+/** Zod schema for scaling traits assigned to entities. */
 export const TraitDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -673,11 +746,13 @@ export const TraitDefinitionSchema = z.object({
   tagsAdded: z.array(z.string()).optional(),
   barks: z.record(z.string(), z.array(z.string())).optional()
 });
+/** Inferred type for a scaling trait definition. */
 export type TraitDefinition = z.infer<typeof TraitDefinitionSchema>;
 
 // ==========================================
 // 15. IDENTITY & CHRONICLE
 // ==========================================
+/** Zod schema for identity generator tables. */
 export const IdentityGenerationTableSchema = z.object({
   firstNames: z.array(z.string()),
   lastNames: z.array(z.string()).optional(),
@@ -685,8 +760,10 @@ export const IdentityGenerationTableSchema = z.object({
   mannerisms: z.array(z.string()),
   colors: z.array(z.string()).optional()
 });
+/** Inferred type for identity generator tables. */
 export type IdentityGenerationTable = z.infer<typeof IdentityGenerationTableSchema>;
 
+/** Zod schema for personality generation configurations. */
 export const PersonalityGenerationTableSchema = z.object({
   facets: z.array(z.string()).describe('List of personality facets to generate (e.g., cowardice, cruelty)'),
   values: z.array(z.string()).describe('List of personality values to generate (e.g., power, peace)'),
@@ -695,11 +772,13 @@ export const PersonalityGenerationTableSchema = z.object({
     .optional()
     .describe('Maps MICE leverages to the facets that multiply their effectiveness.')
 });
+/** Inferred type for personality generation tables. */
 export type PersonalityGenerationTable = z.infer<typeof PersonalityGenerationTableSchema>;
 
 // ==========================================
 // 16. NEMESIS HIERARCHIES
 // ==========================================
+/** Zod schema representing individual ranks in a nemesis hierarchy. */
 export const HierarchyRankSchema = z.object({
   rankId: z.string(),
   displayName: z.string(),
@@ -715,8 +794,10 @@ export const HierarchyRankSchema = z.object({
     .optional(),
   titlePool: z.array(z.string()).optional()
 });
+/** Inferred type for hierarchy ranks. */
 export type HierarchyRank = z.infer<typeof HierarchyRankSchema>;
 
+/** Zod schema for permanent scars resulting from defeats. */
 export const ScarDefinitionSchema = z.object({
   id: z.string(),
   description: z.string(),
@@ -732,8 +813,10 @@ export const ScarDefinitionSchema = z.object({
   traitsRemoved: z.array(z.string()).optional(),
   dialogueModifier: z.string().optional()
 });
+/** Inferred type for a scar definition. */
 export type ScarDefinition = z.infer<typeof ScarDefinitionSchema>;
 
+/** Zod schema for the nemesis faction hierarchy. */
 export const NemesisHierarchySchema = z.object({
   id: z.string(),
   factionId: z.string(),
@@ -741,16 +824,20 @@ export const NemesisHierarchySchema = z.object({
   promotionSources: z.array(z.string()).default([]),
   scarPool: z.array(ScarDefinitionSchema).default([])
 });
+/** Inferred type for nemesis hierarchies. */
 export type NemesisHierarchy = z.infer<typeof NemesisHierarchySchema>;
 
+/** Zod schema defining dynamic relationship milestone triggers. */
 export const RelationshipThresholdSchema = z.object({
   axis: z.string(),
   operator: z.enum(['>=', '<=', '==']),
   value: z.number().int(),
   consequence: ConsequenceActionSchema
 });
+/** Inferred type for a relationship threshold definition. */
 export type RelationshipThreshold = z.infer<typeof RelationshipThresholdSchema>;
 
+/** The root Zod schema for a full campaign JSON document. */
 export const CampaignDataSchema = z.object({
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,
@@ -785,9 +872,11 @@ export const CampaignDataSchema = z.object({
   rumorPropagation: z.array(RumorPropagationRuleSchema).default([]),
   relationshipThresholds: z.array(RelationshipThresholdSchema).default([])
 });
+/** The inferred type for a complete campaign data structure. */
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
 
 // Helper registry for editor to resolve specific schemas by category key
+/** Helper registry mapping each campaign JSON database category to its respective Zod schema for editor validation. */
 export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> = {
   manifest: CampaignManifestSchema,
   rules: RulesConfigSchema,

@@ -147,6 +147,9 @@ function isItemFullyDelivered(state: GameState, item: PendingRumorPropagation): 
   });
 }
 
+/**
+ * Processes queued events to generate matching rumors for delayed propagation.
+ */
 export function processRumorPropagationEvents(state: GameState): GameState {
   const rules = state.campaign.rumorPropagation;
   if (!rules || rules.length === 0) return state;
@@ -195,6 +198,9 @@ export function processRumorPropagationEvents(state: GameState): GameState {
   };
 }
 
+/**
+ * Moves pending rumors to the rumor pools of eligible NPCs in the target area.
+ */
 export function deliverPendingRumorsToArea(state: GameState, areaId: string): GameState {
   let nextState = state;
   const expiredItems = nextState.pendingRumors.filter((item) => item.remainingDelay <= 0);
@@ -255,6 +261,9 @@ export function deliverPendingRumorsToArea(state: GameState, areaId: string): Ga
   };
 }
 
+/**
+ * Ticks the turn timers of pending rumors and executes propagation deliveries.
+ */
 export function tickPendingRumors(state: GameState): GameState {
   if (state.pendingRumors.length === 0) return state;
 
@@ -273,6 +282,9 @@ export function tickPendingRumors(state: GameState): GameState {
   return deliverPendingRumorsToArea(nextState, nextState.currentAreaId);
 }
 
+/**
+ * Sweeps active rumor lists on NPCs to discard stale or resolved rumor events.
+ */
 export function cullStaleAndConfirmedRumors(state: GameState): GameState {
   // Find the player's knowledge
   let playerKnowledge: Record<string, KnowledgeItem> = {};

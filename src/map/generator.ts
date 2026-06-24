@@ -5,6 +5,9 @@ import { coordToIndex } from '../utils/grid.ts';
 import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
 import { parseStaticMap } from './static-parser.ts';
 
+/**
+ * Output data resulting from map generation, containing tiles, portals, rooms, and entities.
+ */
 export interface GeneratedArea {
   readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };

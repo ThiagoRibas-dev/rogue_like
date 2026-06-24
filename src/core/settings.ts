@@ -1,3 +1,6 @@
+/**
+ * Type union representing all configurable keyboard command actions in the game.
+ */
 export type ActionType =
   | 'move_north'
   | 'move_south'
@@ -19,6 +22,9 @@ export type ActionType =
   | 'verb_menu'
   | 'dossier';
 
+/**
+ * Settings configuration controlling combat and visual telemetry effects.
+ */
 export interface VisualFeedbackSettings {
   showDamageNumbers: boolean;
   showStatusText: boolean;
@@ -26,12 +32,18 @@ export interface VisualFeedbackSettings {
   reduceDramaticDelays: boolean;
 }
 
+/**
+ * Layout and accessibility preferences in UI containers.
+ */
 export interface AccessibilitySettings {
   uiScale: 'small' | 'normal' | 'large';
   highContrast: boolean;
   disableAnimations: boolean;
 }
 
+/**
+ * Combined player configuration container representing binds and user choices.
+ */
 export interface PlayerSettings {
   keybinds: Record<ActionType, string[]>;
   visualFeedback: VisualFeedbackSettings;

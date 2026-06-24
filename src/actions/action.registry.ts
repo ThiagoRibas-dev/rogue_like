@@ -48,6 +48,9 @@ import {
 } from '../types/events.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
+/**
+ * Processes an intent of a specific type against the current GameState, returning the updated state.
+ */
 export type ActionHandler<T extends Intent> = (
   state: GameState,
   intent: T

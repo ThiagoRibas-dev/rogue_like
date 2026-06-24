@@ -27,6 +27,9 @@ export function createApplyAction(
   };
 }
 
+/**
+ * Creates an InteractIntent to interact with an entity.
+ */
 export function createInteractAction(entityId: EntityId, targetId: EntityId): InteractIntent {
   return {
     type: IntentType.Interact,

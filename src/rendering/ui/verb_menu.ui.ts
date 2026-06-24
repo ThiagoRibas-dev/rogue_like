@@ -1,6 +1,9 @@
 import type { GameState } from '../../types/game-state.types.ts';
 import { UIMode } from '../../types/game-state.types.ts';
 
+/**
+ * Renders the context interaction verb overlay when multiple options are present.
+ */
 export function renderVerbMenu(state: GameState): void {
   const container = document.getElementById('verb-menu');
   if (!container) return;

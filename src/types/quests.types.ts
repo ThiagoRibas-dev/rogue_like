@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+/** Zod schema for quest objective parameters. */
 export const QuestObjectiveSchema = z.object({
   id: z.string(),
   description: z.string(),
@@ -8,8 +9,10 @@ export const QuestObjectiveSchema = z.object({
   requiredAmount: z.number().int().default(1)
 });
 
+/** Inferred type representing a single objective of a quest. */
 export type QuestObjective = z.infer<typeof QuestObjectiveSchema>;
 
+/** Zod schema representing rewards granted upon quest completion. */
 export const QuestRewardSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('item'), itemId: z.string(), amount: z.number().int().optional() }),
   z.object({ type: z.literal('xp'), amount: z.number().int().optional() }),
@@ -17,8 +20,10 @@ export const QuestRewardSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('event'), eventType: z.string() })
 ]);
 
+/** Inferred type for a quest reward. */
 export type QuestReward = z.infer<typeof QuestRewardSchema>;
 
+/** Zod schema outlining the complete structure of a quest definition. */
 export const QuestSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -30,4 +35,5 @@ export const QuestSchema = z.object({
   autoComplete: z.boolean().optional() // If true, finishes instantly when objectives are met
 });
 
+/** Inferred type for a quest definition. */
 export type Quest = z.infer<typeof QuestSchema>;

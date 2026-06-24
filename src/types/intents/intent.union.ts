@@ -44,6 +44,7 @@ import type {
 
 import type { ToggleInspectIntent, MoveInspectIntent } from './inspect.intents.ts';
 
+/** Discriminated union of all gameplay and interface command intents in the engine. */
 export type Intent =
   | MoveIntent
   | WaitIntent
@@ -86,6 +87,7 @@ export type Intent =
   | InteractIntent
   | SayIntent;
 
+/** Structure representing the result of executing an action handler. */
 export interface ActionResult {
   readonly state: GameState;
   readonly success: boolean;

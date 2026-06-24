@@ -8,6 +8,9 @@ import {
 import { getComponent } from '../../core/ecs.ts';
 import { ComponentType, type FieldComponent } from '../../types/components.types.ts';
 
+/**
+ * Renders the developer debug panel presenting triggered events and active field statuses on-screen.
+ */
 export function renderDebugOverlay(state: GameState): void {
   const overlay = document.getElementById('debug-overlay');
   if (!overlay) return;

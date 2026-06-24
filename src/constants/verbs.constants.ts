@@ -28,6 +28,9 @@ export type Verb =
   | 'apologize'
   | 'argue';
 
+/**
+ * Read-only array of all valid interaction verbs in the game engine.
+ */
 export const VERBS: ReadonlyArray<Verb> = [
   'apply',
   'throw',

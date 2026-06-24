@@ -1,6 +1,9 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 
+/**
+ * Resolves drop-down choices from a key identifier matching campaign reference databases.
+ */
 export function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
   if (key === 'faction' || key.toLowerCase().includes('factionid')) {
     return Object.keys(doc.factions).map((k) => ({ value: k, label: k }));

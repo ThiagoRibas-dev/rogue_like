@@ -9,6 +9,9 @@ import { ComponentType } from '../../types/components.types.ts';
 import { EngineMode, UIMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../../constants/display.constants.ts';
 
+/**
+ * Telemetry record tracking HP levels, turns, and damage metrics during a simulation.
+ */
 export interface ArenaTelemetry {
   readonly winner: 'a' | 'b' | 'draw';
   readonly turnsElapsed: number;
@@ -18,11 +21,17 @@ export interface ArenaTelemetry {
   readonly finalHpB: number;
 }
 
+/**
+ * Combat simulation output logs paired with telemetry summaries.
+ */
 export interface ArenaResult {
   readonly logs: ReadonlyArray<string>;
   readonly telemetry: ArenaTelemetry;
 }
 
+/**
+ * Configuration overrides for custom simulator arenas.
+ */
 export interface ArenaOptions {
   readonly mapWidth?: number;
   readonly mapHeight?: number;

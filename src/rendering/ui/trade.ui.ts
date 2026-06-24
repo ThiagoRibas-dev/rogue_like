@@ -7,6 +7,9 @@ import { getEffectivePrice } from '../../utils/trade.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 
+/**
+ * Renders the trading interface for bartering items and service transactions.
+ */
 export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) => void): HTMLElement | null {
   if (state.uiMode !== UIMode.Trade || !state.activeTrade) return null;
 

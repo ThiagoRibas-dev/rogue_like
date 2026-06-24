@@ -11,6 +11,9 @@ export interface FieldOptions<T> {
   placeholder?: string;
 }
 
+/**
+ * Creates a text input form field element bound to a string property.
+ */
 export function createStringField(opts: FieldOptions<string>): HTMLElement {
   const group = document.createElement('div');
   group.className = 'form-group';
@@ -56,6 +59,9 @@ export function createStringField(opts: FieldOptions<string>): HTMLElement {
   return group;
 }
 
+/**
+ * Creates a numeric input form field element bound to a number property.
+ */
 export function createNumberField(opts: FieldOptions<number>): HTMLElement {
   const group = document.createElement('div');
   group.className = 'form-group';
@@ -104,6 +110,9 @@ export function createNumberField(opts: FieldOptions<number>): HTMLElement {
   return group;
 }
 
+/**
+ * Creates a checkbox input form field element bound to a boolean property.
+ */
 export function createBooleanField(opts: FieldOptions<boolean>): HTMLElement {
   const group = document.createElement('div');
   group.className = 'form-group';
@@ -130,6 +139,9 @@ export function createBooleanField(opts: FieldOptions<boolean>): HTMLElement {
   return group;
 }
 
+/**
+ * Creates a color picker input form field element bound to a hexadecimal color string.
+ */
 export function createColorPickerField(opts: FieldOptions<string>): HTMLElement {
   const group = document.createElement('div');
   group.className = 'form-group';
@@ -182,6 +194,9 @@ export function createColorPickerField(opts: FieldOptions<string>): HTMLElement 
   return group;
 }
 
+/**
+ * Creates a dropdown select form field element bound to a selected key value.
+ */
 export function createSelectField(
   opts: FieldOptions<string> & { options: { value: string; label: string }[] }
 ): HTMLElement {
@@ -253,6 +268,9 @@ export function createSelectField(
   return group;
 }
 
+/**
+ * Creates a multi-select list checkbox wrapper bound to a string array.
+ */
 export function createMultiSelectField(
   opts: FieldOptions<string[]> & { options: { value: string; label: string }[] }
 ): HTMLElement {

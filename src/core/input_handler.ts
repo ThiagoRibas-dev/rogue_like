@@ -80,6 +80,9 @@ function handleSmartInteraction(
   });
 }
 
+/**
+ * Entry point for keyboard input processing in the game, routing keystrokes based on the active UI mode.
+ */
 export function handleKeyDown(
   event: KeyboardEvent,
   currentState: GameState,

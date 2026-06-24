@@ -116,17 +116,20 @@ export interface PersistentEntityRecord {
   readonly components: Readonly<Record<string, Component>>;
 }
 
+/** Represents adjustments to an area's budget and tags applied by schemes or mastermind actions. */
 export interface AreaMutation {
   readonly addedTags: ReadonlyArray<string>;
   readonly budgetModifier: number;
 }
 
+/** Holds the collection of suspects, discovered clues, and exposed mastermind agreements in active campaigns. */
 export interface InvestigationKnowledge {
   readonly knownActors: ReadonlyArray<EntityId>;
   readonly discoveredClues: ReadonlyArray<string>;
   readonly exposedAgreements: ReadonlyArray<{ readonly minionId: EntityId; readonly mastermindId: EntityId }>;
 }
 
+/** Tracks a scheduled background conflict/rivalry between persistent NPCs awaiting resolution. */
 export interface PendingRivalry {
   readonly id: string;
   readonly type: 'duel' | 'betrayal' | 'recruitment' | 'training' | 'territory_shift';

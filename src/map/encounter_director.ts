@@ -3,10 +3,19 @@ import type { AreaDefinition, CampaignData } from '../types/campaign.types.ts';
 import type { GameMap, EntityId } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 
+/**
+ * Spend allocation categories used by the Encounter Director.
+ */
 export type BudgetAxis = 'protein' | 'appetizer' | 'side' | 'dessert';
 
+/**
+ * Indicates the outcome of evaluating a candidate entity for spawning.
+ */
 export type CandidateDisposition = 'spawned' | 'too_expensive' | 'token_exhausted' | 'no_space' | 'pool_filtered';
 
+/**
+ * Evaluation record tracking a candidate template ID and why it was spawned or rejected.
+ */
 export interface CandidateRecord {
   readonly templateId: string;
   readonly cost: number;
@@ -14,6 +23,9 @@ export interface CandidateRecord {
   readonly reasonDetail?: string;
 }
 
+/**
+ * Detailed breakdown of allocated budgets, spent points, and spawned candidates per axis.
+ */
 export interface DirectorReceipt {
   readonly areaId: string;
   readonly effectiveBudget: number;
@@ -32,6 +44,9 @@ export interface DirectorReceipt {
   readonly pathingFailures: number;
 }
 
+/**
+ * Complete generation result of running the Encounter Director.
+ */
 export interface DirectorResult {
   readonly newEntities: ReadonlyArray<{
     readonly templateId: string;
@@ -44,6 +59,9 @@ export interface DirectorResult {
   readonly receipt: DirectorReceipt;
 }
 
+/**
+ * Defines rectangular area grid limits for generated dungeon chambers.
+ */
 export interface RoomBounds {
   readonly left: number;
   readonly right: number;
@@ -55,6 +73,9 @@ export interface RoomBounds {
   readonly tags?: ReadonlyArray<string>;
 }
 
+/**
+ * External context variables driving encounter scaling rules.
+ */
 export interface DirectorContext {
   readonly playerLevel: number;
   readonly tokenPool: ReadonlySet<string>;
@@ -324,6 +345,9 @@ function runForEncounterZone(
   };
 }
 
+/**
+ * Distributes dynamic encounter elements across active zones within an area map based on CR budgets.
+ */
 export function runEncounterDirector(
   campaign: CampaignData,
   areaDef: AreaDefinition,

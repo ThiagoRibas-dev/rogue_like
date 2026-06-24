@@ -3,6 +3,9 @@ import { type GameState } from '../types/game-state.types.ts';
 /** The maximum number of messages to keep in the GameState history. */
 export const MAX_MESSAGE_LOG_LENGTH = 100;
 
+/**
+ * Enum classifications for message logs defining their semantic intent and styling.
+ */
 export const enum MessageLogCategory {
   System = 'system',
   CombatHit = 'combat-hit',

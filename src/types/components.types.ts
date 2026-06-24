@@ -99,6 +99,9 @@ export function toItemInstanceId(id: string): ItemInstanceId {
   return id as ItemInstanceId;
 }
 
+/**
+ * Component that makes an entity interactable, holding the list of supported intents.
+ */
 export interface InteractableComponent {
   readonly type: ComponentType.Interactable;
   readonly intents: ReadonlyArray<Intent>;
@@ -190,6 +193,9 @@ export interface EquipmentSlotInstance {
   readonly equippedItem: EntityId | null;
 }
 
+/**
+ * Component tracking the equipment slots and equipped items of an entity.
+ */
 export interface EquipmentComponent {
   readonly type: ComponentType.Equipment;
   readonly slots: EquipmentSlotInstance[];
@@ -298,6 +304,9 @@ export interface LockComponent {
   readonly breakable?: boolean | undefined; // True if it can be kicked down or destroyed
 }
 
+/**
+ * Represents a transient emotional reaction or thought of an entity.
+ */
 export interface Thought {
   readonly turn: number;
   readonly eventSummary: string;
@@ -305,6 +314,9 @@ export interface Thought {
   readonly relatedEntityId?: EntityId | undefined;
 }
 
+/**
+ * Represents an item of knowledge (such as secrets or rumors) stored by an entity.
+ */
 export interface KnowledgeItem {
   readonly id: string;
   readonly type: 'rumor' | 'location' | 'weakness' | 'secret';
@@ -312,6 +324,9 @@ export interface KnowledgeItem {
   readonly tags: ReadonlyArray<string>;
 }
 
+/**
+ * Represents a rumor item template or instance within an entity's rumor pool.
+ */
 export interface RumorItem {
   readonly id: string;
   readonly text: string;
@@ -366,6 +381,9 @@ export interface QuestLogComponent {
   readonly activeTriggers?: Readonly<Record<string, ReadonlyArray<string>>>;
 }
 
+/**
+ * Represents a single instance of damage, containing amounts, source, and tags.
+ */
 export interface DamageInstance {
   readonly amount: number;
   readonly sourceEntityId?: EntityId | undefined;
@@ -393,6 +411,9 @@ export interface DeathComponent {
 // ADVERSARIAL LAYER COMPONENTS
 // ==========================================
 
+/**
+ * Component tracking villainous mastermind schemes and their phases.
+ */
 export interface SchemeComponent {
   readonly type: ComponentType.Scheme;
   readonly schemeId: string;
@@ -403,6 +424,9 @@ export interface SchemeComponent {
   readonly conspiracyAwareness?: number | undefined;
 }
 
+/**
+ * Component representing an agreement/contract between masterminds and minions.
+ */
 export interface AgreementComponent {
   readonly type: ComponentType.Agreement;
   readonly mastermindId: EntityId;
@@ -412,6 +436,9 @@ export interface AgreementComponent {
   readonly isFulfilled?: boolean | undefined;
 }
 
+/**
+ * Component marking an item or entity as a discoverable clue.
+ */
 export interface ClueComponent {
   readonly type: ComponentType.Clue;
   readonly clueId: string;
@@ -419,6 +446,9 @@ export interface ClueComponent {
   readonly implicatesEntityId: EntityId;
 }
 
+/**
+ * Component representing a hazard field tile (like fire or poison gas).
+ */
 export interface FieldComponent {
   readonly type: ComponentType.Field;
   readonly fieldType: string;
@@ -427,16 +457,25 @@ export interface FieldComponent {
   readonly spreadRuleId?: string | undefined;
 }
 
+/**
+ * Component identifying that an NPC supports dialogue conversations.
+ */
 export interface DialogueComponent {
   readonly type: ComponentType.Dialogue;
   readonly dialogueId: string;
 }
 
+/**
+ * Component defining an NPC's general attitude towards the player (hostile, neutral, friendly).
+ */
 export interface AttitudeComponent {
   readonly type: ComponentType.Attitude;
   readonly attitude: 'hostile' | 'neutral' | 'friendly';
 }
 
+/**
+ * Component storing the generated identity details of a promoted entity (such as name, title, mannerisms).
+ */
 export interface IdentityComponent {
   readonly type: ComponentType.Identity;
   readonly name: string;
@@ -445,6 +484,9 @@ export interface IdentityComponent {
   readonly colorOverride?: string | undefined;
 }
 
+/**
+ * Represents a recorded event in a promoted entity's timeline/history.
+ */
 export interface ChronicleEvent {
   readonly turn: number;
   readonly type: string; // e.g., "Promotion", "Humiliation"
@@ -452,6 +494,9 @@ export interface ChronicleEvent {
   readonly relatedEntityIds?: ReadonlyArray<EntityId> | undefined;
 }
 
+/**
+ * Component tracking player interaction scores, scars, and history of a promoted entity.
+ */
 export interface ChronicleComponent {
   readonly type: ComponentType.Chronicle;
   readonly pis: number; // Player Interaction Score
@@ -460,6 +505,9 @@ export interface ChronicleComponent {
   readonly eventExcerpts: ReadonlyArray<ChronicleEvent>;
 }
 
+/**
+ * Component defining merchant data including inventory, markup, and trade rules.
+ */
 export interface ShopComponent {
   readonly type: ComponentType.Shop;
   readonly inventory: ReadonlyArray<EntityId>;
@@ -469,6 +517,9 @@ export interface ShopComponent {
   readonly supplierHierarchyId?: string | undefined;
 }
 
+/**
+ * Defines a service that can be purchased from an NPC.
+ */
 export interface ServiceDefinition {
   readonly serviceId: string;
   readonly name: string;
@@ -476,11 +527,17 @@ export interface ServiceDefinition {
   readonly effectId: string;
 }
 
+/**
+ * Component representing services offered by an NPC.
+ */
 export interface ServicesComponent {
   readonly type: ComponentType.Services;
   readonly services: ReadonlyArray<ServiceDefinition>;
 }
 
+/**
+ * Component tracking hierarchy rank, cheat death count, and nemesis status.
+ */
 export interface NemesisComponent {
   readonly type: ComponentType.Nemesis;
   readonly hierarchyId: string;

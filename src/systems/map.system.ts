@@ -32,6 +32,9 @@ import type { ChangeAreaIntent } from '@/types/intents/movement.intents.ts';
 import { addActor, clearScheduler } from '../core/scheduler.ts';
 import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 
+/**
+ * Evaluates the player's line of sight and marks newly visible tiles as explored.
+ */
 export function updateExploredTiles(state: GameState): GameState {
   if (!state.fovNeedsUpdate) return state;
 
@@ -61,6 +64,9 @@ export function updateExploredTiles(state: GameState): GameState {
   };
 }
 
+/**
+ * Transition handling to move entities between area instances, saving the current area state and unpacking the destination map.
+ */
 export function processChangeAreaIntent(
   state: GameState,
   intent: ChangeAreaIntent

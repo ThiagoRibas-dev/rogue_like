@@ -1,3 +1,6 @@
+/**
+ * Properties governing custom dialog overlays for string prompt inputs.
+ */
 export interface PromptModalOptions {
   title: string;
   defaultValue?: string;

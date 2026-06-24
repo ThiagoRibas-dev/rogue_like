@@ -17,6 +17,9 @@ import { processQuestEvent } from '../systems/quest.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';
 import type { TemplateComponent } from '../types/components.types.ts';
 
+/**
+ * Processes the intent to begin a dialogue interaction with an NPC.
+ */
 export function processStartDialogueIntent(
   state: GameState,
   intent: StartDialogueIntent
@@ -64,6 +67,9 @@ export function processStartDialogueIntent(
   };
 }
 
+/**
+ * Processes the intent when a player selects an option in the active dialogue.
+ */
 export function processSelectDialogueOptionIntent(
   state: GameState,
   intent: SelectDialogueOptionIntent
@@ -175,6 +181,9 @@ export function processSelectDialogueOptionIntent(
   };
 }
 
+/**
+ * Processes the intent to close/end the active dialogue.
+ */
 export function processCloseDialogueIntent(
   state: GameState,
   _intent: CloseDialogueIntent
