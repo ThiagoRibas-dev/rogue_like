@@ -183,6 +183,7 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 ### Rules for File Organization
 - **One concern per file.** Split files if they handle multiple responsibilities or exceed ~250 lines.
 - **No circular imports.** The dependency graph flows DOWN: `main → core → systems → map/rendering → types/constants/utils`.
+- **Extract Static Definitions:** Do not colocate static definitions (Enums, Types, Zod Schemas) inside logic files (like systems). Extract them into their own domain files under `src/types/` or `src/constants/` to prevent lateral dependencies and enforce the downward dependency graph.
 - **Barrel files (`index.ts`) are BANNED.** Use direct imports.
 - **No Inline Imports in State Definitions:** Avoid `import('./file.ts').Type` inside core state interfaces. Explicitly import at the top of the file.
 

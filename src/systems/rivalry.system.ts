@@ -1,13 +1,9 @@
-import type { GameState, EntityId, PendingRivalry } from '../types/game-state.types.ts';
+import type { GameState, PendingRivalry } from '../types/game-state.types.ts';
 import {
   ComponentType,
-  type Component,
-  type NemesisComponent,
-  type FighterComponent,
   type IdentityComponent,
-  type ChronicleComponent,
-  type PositionComponent,
-  type TraitsComponent
+  type NemesisComponent,
+  type FighterComponent
 } from '../types/components.types.ts';
 import {
   GameEventType,
@@ -15,441 +11,29 @@ import {
   type NemesisCheatedDeathEvent,
   type NemesisPromotedEvent
 } from '../types/events.types.ts';
-import { getComponent, updateSpatialIndex } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import type { ScarDefinition } from '../types/campaign.types.ts';
+import {
+  findNemesisComponents,
+  updateNemesisComponents,
+  removeNemesisEntity,
+  findAllNemeses
+} from './rivalry/query.ts';
+import { resolvePromoteNemesis, resolveApplyScar } from './rivalry/resolve.ts';
 
-interface NemesisInfo {
-  readonly entityId: EntityId;
-  readonly hierarchyId: string;
-  readonly rankId: string;
-  readonly tier: number;
-}
-
-/**
- * Searches active entities, persistent limbo, and inactive area data to locate the components of a given entity.
- */
-export function findNemesisComponents(
-  state: GameState,
-  entityId: EntityId
-):
-  | {
-      readonly location: 'active' | 'persistent' | 'area';
-      readonly areaId?: string;
-      readonly components: Record<string, Component>;
-    }
-  | undefined {
-  // 1. Check active entities
-  const activeComps = state.components.get(entityId);
-  if (activeComps) {
-    return { location: 'active', components: activeComps };
-  }
-
-  // 2. Check persistent entities
-  const persistentRecord = state.persistentEntities.get(entityId);
-  if (persistentRecord) {
-    return { location: 'persistent', components: persistentRecord.components };
-  }
-
-  // 3. Check areas
-  for (const [areaId, areaData] of state.areas.entries()) {
-    const areaComps = areaData.components.get(entityId);
-    if (areaComps) {
-      return { location: 'area', areaId, components: areaComps };
-    }
-  }
-
-  return undefined;
-}
-
-/**
- * Updates the components of an entity wherever it resides in the game state.
- */
-export function updateNemesisComponents(
-  state: GameState,
-  entityId: EntityId,
-  updater: (components: Record<string, Component>) => Record<string, Component>
-): GameState {
-  // 1. Check active entities
-  if (state.components.has(entityId)) {
-    const activeComps = state.components.get(entityId) ?? {};
-    const nextComps = new Map(state.components);
-    nextComps.set(entityId, updater(activeComps));
-    return {
-      ...state,
-      components: nextComps
-    };
-  }
-
-  // 2. Check persistent entities
-  if (state.persistentEntities.has(entityId)) {
-    const record = state.persistentEntities.get(entityId)!;
-    const nextPersistent = new Map(state.persistentEntities);
-    nextPersistent.set(entityId, {
-      ...record,
-      components: updater(record.components)
-    });
-    return {
-      ...state,
-      persistentEntities: nextPersistent
-    };
-  }
-
-  // 3. Check areas
-  for (const [areaId, areaData] of state.areas.entries()) {
-    if (areaData.components.has(entityId)) {
-      const areaComps = areaData.components.get(entityId) ?? {};
-      const nextAreaComponents = new Map(areaData.components);
-      nextAreaComponents.set(entityId, updater(areaComps));
-
-      const nextAreas = new Map(state.areas);
-      nextAreas.set(areaId, {
-        ...areaData,
-        components: nextAreaComponents
-      });
-      return {
-        ...state,
-        areas: nextAreas
-      };
-    }
-  }
-
-  return state;
-}
-
-/**
- * Removes an entity completely from the game state (active entities, persistent registry, or inactive floors).
- */
-export function removeNemesisEntity(state: GameState, entityId: EntityId): GameState {
-  let nextState = state;
-
-  // 1. Remove from active entities
-  if (nextState.entities.includes(entityId)) {
-    nextState = {
-      ...nextState,
-      entities: nextState.entities.filter((id) => id !== entityId)
-    };
-    const nextComponents = new Map(nextState.components);
-    nextComponents.delete(entityId);
-    nextState = {
-      ...nextState,
-      components: nextComponents
-    };
-    nextState = updateSpatialIndex(nextState);
-  }
-
-  // 2. Remove from persistent entities
-  if (nextState.persistentEntities.has(entityId)) {
-    const nextPersistent = new Map(nextState.persistentEntities);
-    nextPersistent.delete(entityId);
-    nextState = {
-      ...nextState,
-      persistentEntities: nextPersistent
-    };
-  }
-
-  // 3. Remove from other areas
-  let modifiedArea = false;
-  const nextAreas = new Map(nextState.areas);
-  for (const [areaId, areaData] of nextState.areas.entries()) {
-    if (areaData.entities.includes(entityId)) {
-      const nextAreaEntities = areaData.entities.filter((id) => id !== entityId);
-      const nextAreaComponents = new Map(areaData.components);
-      nextAreaComponents.delete(entityId);
-
-      const nextSpatialIndex = new Map<string, EntityId[]>();
-      for (const id of nextAreaEntities) {
-        const pos = nextAreaComponents.get(id)?.[ComponentType.Position] as PositionComponent | undefined;
-        if (pos) {
-          const key = `${pos.x},${pos.y}`;
-          let arr = nextSpatialIndex.get(key);
-          if (!arr) {
-            arr = [];
-            nextSpatialIndex.set(key, arr);
-          }
-          arr.push(id);
-        }
-      }
-
-      nextAreas.set(areaId, {
-        ...areaData,
-        entities: nextAreaEntities,
-        components: nextAreaComponents,
-        spatialIndex: nextSpatialIndex
-      });
-      modifiedArea = true;
-    }
-  }
-
-  if (modifiedArea) {
-    nextState = {
-      ...nextState,
-      areas: nextAreas
-    };
-  }
-
-  return nextState;
-}
-
-/**
- * Finds all nemeses registered in the global game state across active, persistent, and inactive areas.
- */
-export function findAllNemeses(state: GameState): ReadonlyArray<NemesisInfo> {
-  const result: NemesisInfo[] = [];
-
-  // 1. Check active entities
-  for (const entityId of state.entities) {
-    const nemesis = getComponent(state, entityId, ComponentType.Nemesis);
-    if (nemesis) {
-      result.push({
-        entityId,
-        hierarchyId: nemesis.hierarchyId,
-        rankId: nemesis.rankId,
-        tier: nemesis.tier
-      });
-    }
-  }
-
-  // 2. Check persistent entities
-  for (const [entityId, record] of state.persistentEntities.entries()) {
-    const nemesis = record.components[ComponentType.Nemesis] as NemesisComponent | undefined;
-    if (nemesis) {
-      result.push({
-        entityId,
-        hierarchyId: nemesis.hierarchyId,
-        rankId: nemesis.rankId,
-        tier: nemesis.tier
-      });
-    }
-  }
-
-  // 3. Check saved areas
-  for (const areaData of state.areas.values()) {
-    for (const entityId of areaData.entities) {
-      const comps = areaData.components.get(entityId);
-      const nemesis = comps?.[ComponentType.Nemesis] as NemesisComponent | undefined;
-      if (nemesis) {
-        result.push({
-          entityId,
-          hierarchyId: nemesis.hierarchyId,
-          rankId: nemesis.rankId,
-          tier: nemesis.tier
-        });
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
- * Promotes a nemesis in the hierarchy rank offscreen, adjusting its stats and updating the slot registry.
- */
-export function resolvePromoteNemesis(
-  state: GameState,
-  entityId: EntityId,
-  hierarchyId: string,
-  newRankId: string
-): GameState {
-  const nemesisComps = findNemesisComponents(state, entityId);
-  if (!nemesisComps) return state;
-
-  let nextState = state;
-  const hierarchy = state.campaign.nemesisHierarchies[hierarchyId];
-  if (!hierarchy) return state;
-
-  const rank = hierarchy.ranks.find((r) => r.rankId === newRankId);
-  if (!rank) return state;
-
-  const oldNemesis = nemesisComps.components[ComponentType.Nemesis] as NemesisComponent | undefined;
-
-  const nemesisCmp: NemesisComponent = {
-    type: ComponentType.Nemesis,
-    hierarchyId,
-    rankId: newRankId,
-    tier: rank.tier,
-    cheatedDeathCount: oldNemesis ? oldNemesis.cheatedDeathCount : 0,
-    lastDeathTurn: oldNemesis ? oldNemesis.lastDeathTurn : 0,
-    returnDelay: oldNemesis?.returnDelay,
-    targetAreaId: oldNemesis?.targetAreaId
-  };
-
-  const fighter = nemesisComps.components[ComponentType.Fighter] as FighterComponent | undefined;
-  let nextFighter: FighterComponent | undefined;
-  if (fighter && rank.statMultipliers) {
-    nextFighter = {
-      ...fighter,
-      maxHp: Math.round(fighter.maxHp * (rank.statMultipliers.maxHp ?? 1.0)),
-      hp: Math.round(fighter.hp * (rank.statMultipliers.maxHp ?? 1.0)),
-      attack: Math.round(fighter.attack * (rank.statMultipliers.attack ?? 1.0)),
-      defense: Math.round(fighter.defense * (rank.statMultipliers.defense ?? 1.0)),
-      xpGiven: Math.round(fighter.xpGiven * (rank.statMultipliers.xpGiven ?? 1.0))
-    };
-  }
-
-  const identity = nemesisComps.components[ComponentType.Identity] as IdentityComponent | undefined;
-  let nextIdentity = identity;
-  let chosenTitle = identity?.title;
-  if (identity && rank.titlePool && rank.titlePool.length > 0) {
-    chosenTitle = rng.getItem(rank.titlePool) ?? identity.title;
-    nextIdentity = {
-      ...identity,
-      title: chosenTitle
-    };
-  }
-
-  const chronicle = nemesisComps.components[ComponentType.Chronicle] as ChronicleComponent | undefined;
-  let nextChronicle = chronicle;
-  const name = identity ? identity.name : 'Someone';
-  const rankDisplayName = rank.displayName;
-  const summary = `Promoted to ${rankDisplayName}${chosenTitle ? ` (${chosenTitle})` : ''}.`;
-  const promotionEvent = {
-    turn: state.globalTurn || 0,
-    type: 'Promotion',
-    summary
-  };
-
-  if (chronicle) {
-    nextChronicle = {
-      ...chronicle,
-      eventExcerpts: [...chronicle.eventExcerpts, promotionEvent]
-    };
-  } else {
-    nextChronicle = {
-      type: ComponentType.Chronicle,
-      pis: 1,
-      scars: [],
-      coreMemories: [],
-      eventExcerpts: [promotionEvent]
-    };
-  }
-
-  nextState = updateNemesisComponents(nextState, entityId, (comps) => {
-    const nextComps: Record<string, Component> = {
-      ...comps,
-      [ComponentType.Nemesis]: nemesisCmp,
-      [ComponentType.Chronicle]: nextChronicle,
-      [ComponentType.Persistent]: { type: ComponentType.Persistent }
-    };
-    if (nextFighter) nextComps[ComponentType.Fighter] = nextFighter;
-    if (nextIdentity) nextComps[ComponentType.Identity] = nextIdentity;
-    return nextComps;
-  });
-
-  let oldRankKey: string | undefined;
-  if (oldNemesis) {
-    oldRankKey = `${oldNemesis.hierarchyId}:${oldNemesis.rankId}`;
-  }
-
-  const nextSlots = { ...nextState.nemesisSlots };
-  if (oldRankKey && nextSlots[oldRankKey]) {
-    nextSlots[oldRankKey] = nextSlots[oldRankKey]!.filter((id) => id !== entityId);
-  }
-
-  const rankKey = `${hierarchyId}:${newRankId}`;
-  nextSlots[rankKey] = [...(nextSlots[rankKey] || []), entityId];
-
-  nextState = {
-    ...nextState,
-    nemesisSlots: nextSlots
-  };
-
-  nextState = addMessage(nextState, `${name} has been promoted to ${rankDisplayName}!`, MessageLogCategory.System);
-  nextState = {
-    ...nextState,
-    events: [
-      ...nextState.events,
-      {
-        type: GameEventType.NemesisPromoted,
-        entityId,
-        hierarchyId,
-        newRankId,
-        previousRankId: oldNemesis?.rankId
-      }
-    ]
-  };
-
-  return nextState;
-}
-
-/**
- * Applies a scar to an entity wherever it resides in the game state.
- */
-export function resolveApplyScar(state: GameState, entityId: EntityId, scarDef: ScarDefinition): GameState {
-  let nextState = state;
-
-  nextState = updateNemesisComponents(nextState, entityId, (comps) => {
-    const nextComps = { ...comps };
-
-    const chronicle = comps[ComponentType.Chronicle] as ChronicleComponent | undefined;
-    if (chronicle) {
-      const nextScars = [...chronicle.scars];
-      if (nextScars.length < 5) {
-        nextScars.push(scarDef.description);
-      }
-      const scarEvent = {
-        turn: state.globalTurn || 0,
-        type: 'Scarred',
-        summary: `Gained scar: ${scarDef.description}`
-      };
-      nextComps[ComponentType.Chronicle] = {
-        ...chronicle,
-        scars: nextScars,
-        eventExcerpts: [...chronicle.eventExcerpts, scarEvent]
-      };
-    }
-
-    const fighter = comps[ComponentType.Fighter] as FighterComponent | undefined;
-    if (fighter && scarDef.statModifiers) {
-      nextComps[ComponentType.Fighter] = {
-        ...fighter,
-        maxHp: Math.max(1, fighter.maxHp + (scarDef.statModifiers.maxHp ?? 0)),
-        hp: Math.max(1, fighter.hp + (scarDef.statModifiers.maxHp ?? 0)),
-        attack: Math.max(1, fighter.attack + (scarDef.statModifiers.attack ?? 0)),
-        defense: Math.max(0, fighter.defense + (scarDef.statModifiers.defense ?? 0))
-      };
-    }
-
-    const traitsCmp = comps[ComponentType.Traits] as TraitsComponent | undefined;
-    if (traitsCmp) {
-      let nextTraits = [...traitsCmp.traits];
-      if (scarDef.traitsRemoved) {
-        nextTraits = nextTraits.filter((t) => !scarDef.traitsRemoved!.includes(t));
-      }
-      if (scarDef.traitsAdded) {
-        for (const t of scarDef.traitsAdded) {
-          if (!nextTraits.includes(t)) {
-            nextTraits.push(t);
-          }
-        }
-      }
-      nextComps[ComponentType.Traits] = {
-        ...traitsCmp,
-        traits: nextTraits
-      };
-    }
-
-    return nextComps;
-  });
-
-  nextState = {
-    ...nextState,
-    events: [
-      ...nextState.events,
-      {
-        type: GameEventType.NemesisScarred,
-        entityId,
-        scarId: scarDef.id
-      }
-    ]
-  };
-
-  return nextState;
-}
+export {
+  findNemesisComponents,
+  updateNemesisComponents,
+  removeNemesisEntity,
+  findAllNemeses,
+  resolvePromoteNemesis,
+  resolveApplyScar
+};
 
 /**
  * Periodically generates background rivalries based on proximity and hierarchies.
+ * @param state The current global game state.
+ * @returns The updated global game state.
  */
 export function processRivalryGeneration(state: GameState): GameState {
   if (state.pendingRivalries.length >= 3) return state;
@@ -533,6 +117,9 @@ export function processRivalryGeneration(state: GameState): GameState {
 
 /**
  * Generates dynamic, reactive rivalries triggered by events like promotional disputes or death cheating.
+ * @param state The current global game state.
+ * @param event The event context triggering dynamic schedules.
+ * @returns The updated global game state.
  */
 export function generateEventDrivenRivalry(state: GameState, event: GameEvent): GameState {
   let nextState = state;
@@ -654,6 +241,9 @@ export function generateEventDrivenRivalry(state: GameState, event: GameEvent): 
 
 /**
  * Resolves a single pending rivalry, applying various results depending on the rivalry type.
+ * @param state The current global game state.
+ * @param rivalry The pending rivalry context descriptor.
+ * @returns The updated global game state.
  */
 function resolveRivalry(state: GameState, rivalry: PendingRivalry): GameState {
   let nextState = state;
@@ -890,6 +480,8 @@ function resolveRivalry(state: GameState, rivalry: PendingRivalry): GameState {
 
 /**
  * Processes all background rivalries, advancing tick counts and resolving matured struggles.
+ * @param state The current global game state.
+ * @returns The updated global game state.
  */
 export function processRivalries(state: GameState): GameState {
   let nextState = state;
