@@ -624,105 +624,112 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
         const nextPersistentEntities = new Map(state.persistentEntities);
         nextPersistentEntities.delete(bestCandidateId);
 
-        let spawnX = 0;
-        let spawnY = 0;
-        let spawned = false;
-        const occupiedCoords = new Set<string>();
-        for (const activeId of state.entities) {
-          const pos = getComponent(state, activeId, ComponentType.Position) as PositionComponent | undefined;
-          if (pos) {
-            occupiedCoords.add(`${pos.x},${pos.y}`);
-          }
-        }
-
-        for (let attempt = 0; attempt < 100; attempt++) {
-          const rx = Math.floor(rng.getUniform() * state.map.width);
-          const ry = Math.floor(rng.getUniform() * state.map.height);
-          const idx = coordToIndex(rx, ry, state.map.width);
-          const tile = state.map.tiles[idx];
-          if (
-            tile &&
-            !tile.tileId.includes('wall') &&
-            !tile.tileId.includes('water') &&
-            !occupiedCoords.has(`${rx},${ry}`)
-          ) {
-            spawnX = rx;
-            spawnY = ry;
-            spawned = true;
-            break;
-          }
-        }
-
-        if (!spawned) {
-          spawnX = Math.floor(state.map.width / 2);
-          spawnY = Math.floor(state.map.height / 2);
-        }
-
-        const positionCmp: PositionComponent = {
-          type: ComponentType.Position,
-          x: spawnX,
-          y: spawnY
-        };
-
-        const finalComps: Record<string, Component> = {
-          ...record.components,
-          [ComponentType.Position]: positionCmp
-        };
-
-        if (finalComps[ComponentType.Actor]) {
-          addActor(bestCandidateId);
-        }
-
         let nextState: GameState = {
           ...state,
           entities: [...state.entities, bestCandidateId],
-          components: new Map([...state.components.entries(), [bestCandidateId, finalComps]]),
+          components: new Map([...state.components.entries(), [bestCandidateId, record.components]]),
           persistentEntities: nextPersistentEntities
         };
-        nextState = updateSpatialIndex(nextState);
 
-        return promoteNemesis(nextState, bestCandidateId, hierarchyId, rankId);
+        // Temporarily promote in the active state
+        nextState = promoteNemesis(nextState, bestCandidateId, hierarchyId, rankId);
+
+        // Put them back into persistent entities with their original areaId
+        const finalComps = nextState.components.get(bestCandidateId)!;
+        const finalActiveEntities = nextState.entities.filter((id) => id !== bestCandidateId);
+        const finalActiveComponents = new Map(nextState.components);
+        finalActiveComponents.delete(bestCandidateId);
+
+        const finalPersistentEntities = new Map(nextState.persistentEntities);
+        finalPersistentEntities.set(bestCandidateId, {
+          areaId: record.areaId,
+          components: finalComps
+        });
+
+        return {
+          ...nextState,
+          entities: finalActiveEntities,
+          components: finalActiveComponents,
+          persistentEntities: finalPersistentEntities
+        };
       }
     }
 
     // Recruits fallback: spawn a new recruit and promote immediately
     const templateId = rng.getItem(promotionSources) ?? 'orc';
-    let spawnX = 0;
-    let spawnY = 0;
-    let spawned = false;
-    const occupiedCoords = new Set<string>();
-    for (const activeId of state.entities) {
-      const pos = getComponent(state, activeId, ComponentType.Position) as PositionComponent | undefined;
-      if (pos) {
-        occupiedCoords.add(`${pos.x},${pos.y}`);
+    const currentAreaDef = state.campaign.areas[state.currentAreaId];
+    const isSafeArea = currentAreaDef?.tags?.includes('safe') || false;
+
+    if (isSafeArea) {
+      // If the current area is safe, do not spawn them on the map.
+      // Spawn them temporarily at 0,0, promote them, and push to persistent entities
+      const [stateAfterSpawn, newEntityId] = spawnEntity(state, templateId, 0, 0);
+      const nextState = promoteNemesis(stateAfterSpawn, newEntityId, hierarchyId, rankId);
+
+      // Find an unsafe area to place them in
+      const unsafeAreas = Object.keys(state.campaign.areas).filter(
+        (id) => !state.campaign.areas[id]?.tags?.includes('safe')
+      );
+      const targetAreaId = unsafeAreas.length > 0 ? (rng.getItem(unsafeAreas) ?? 'dungeon_1') : 'dungeon_1';
+
+      const finalComps = { ...nextState.components.get(newEntityId)! };
+      delete finalComps[ComponentType.Position];
+      delete finalComps[ComponentType.Actor];
+
+      const finalActiveEntities = nextState.entities.filter((id) => id !== newEntityId);
+      const finalActiveComponents = new Map(nextState.components);
+      finalActiveComponents.delete(newEntityId);
+
+      const finalPersistentEntities = new Map(nextState.persistentEntities);
+      finalPersistentEntities.set(newEntityId, {
+        areaId: targetAreaId,
+        components: finalComps
+      });
+
+      return {
+        ...nextState,
+        entities: finalActiveEntities,
+        components: finalActiveComponents,
+        persistentEntities: finalPersistentEntities
+      };
+    } else {
+      let spawnX = 0;
+      let spawnY = 0;
+      let spawned = false;
+      const occupiedCoords = new Set<string>();
+      for (const activeId of state.entities) {
+        const pos = getComponent(state, activeId, ComponentType.Position) as PositionComponent | undefined;
+        if (pos) {
+          occupiedCoords.add(`${pos.x},${pos.y}`);
+        }
       }
-    }
 
-    for (let attempt = 0; attempt < 100; attempt++) {
-      const rx = Math.floor(rng.getUniform() * state.map.width);
-      const ry = Math.floor(rng.getUniform() * state.map.height);
-      const idx = coordToIndex(rx, ry, state.map.width);
-      const tile = state.map.tiles[idx];
-      if (
-        tile &&
-        !tile.tileId.includes('wall') &&
-        !tile.tileId.includes('water') &&
-        !occupiedCoords.has(`${rx},${ry}`)
-      ) {
-        spawnX = rx;
-        spawnY = ry;
-        spawned = true;
-        break;
+      for (let attempt = 0; attempt < 100; attempt++) {
+        const rx = Math.floor(rng.getUniform() * state.map.width);
+        const ry = Math.floor(rng.getUniform() * state.map.height);
+        const idx = coordToIndex(rx, ry, state.map.width);
+        const tile = state.map.tiles[idx];
+        if (
+          tile &&
+          !tile.tileId.includes('wall') &&
+          !tile.tileId.includes('water') &&
+          !occupiedCoords.has(`${rx},${ry}`)
+        ) {
+          spawnX = rx;
+          spawnY = ry;
+          spawned = true;
+          break;
+        }
       }
-    }
 
-    if (!spawned) {
-      spawnX = Math.floor(state.map.width / 2);
-      spawnY = Math.floor(state.map.height / 2);
-    }
+      if (!spawned) {
+        spawnX = Math.floor(state.map.width / 2);
+        spawnY = Math.floor(state.map.height / 2);
+      }
 
-    const [stateAfterSpawn, newEntityId] = spawnEntity(state, templateId, spawnX, spawnY);
-    return promoteNemesis(stateAfterSpawn, newEntityId, hierarchyId, rankId);
+      const [stateAfterSpawn, newEntityId] = spawnEntity(state, templateId, spawnX, spawnY);
+      return promoteNemesis(stateAfterSpawn, newEntityId, hierarchyId, rankId);
+    }
   }
 
   return state;

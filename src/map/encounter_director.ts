@@ -380,14 +380,17 @@ export function runEncounterDirector(
     zones.push(...rooms.filter((r) => !r.isSafe));
   } else if (areaDef.generatorType !== 'digger') {
     // For Cellular or global maps, treat the whole area as one giant zone
-    zones.push({
-      left: 1,
-      right: map.width - 2,
-      top: 1,
-      bottom: map.height - 2,
-      centerX: Math.floor(map.width / 2),
-      centerY: Math.floor(map.height / 2)
-    });
+    // Only if the area is not explicitly marked as safe
+    if (!areaDef.tags?.includes('safe')) {
+      zones.push({
+        left: 1,
+        right: map.width - 2,
+        top: 1,
+        bottom: map.height - 2,
+        centerX: Math.floor(map.width / 2),
+        centerY: Math.floor(map.height / 2)
+      });
+    }
   }
 
   // If all zones were filtered out (e.g., a tiny 1-room map that is a safe starting room)
