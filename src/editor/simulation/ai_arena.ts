@@ -119,7 +119,7 @@ export function runAIArena(
     lastSpawnTurn: 0,
     pendingKnowledge: [],
     pendingRumors: [],
-    investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [] },
+    investigation: { knownActors: [], discoveredClues: [], exposedAgreements: [], lastClueTurn: 0 },
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,

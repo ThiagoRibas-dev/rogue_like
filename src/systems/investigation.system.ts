@@ -1,6 +1,7 @@
 import { type GameState } from '../types/game-state.types.ts';
 import { GameEventType, type ClueDiscoveredEvent, type SchemeMutatedAreaEvent } from '../types/events.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { INVESTIGATION_STALL_THRESHOLD } from '../constants/investigation.constants.ts';
 
 /**
  * Processes investigation-related events.
@@ -14,6 +15,9 @@ export function processInvestigationEvents(state: GameState): GameState {
   const newDiscoveredClues = new Set(nextState.investigation.discoveredClues);
   const newExposedAgreements = [...nextState.investigation.exposedAgreements];
 
+  let newLastClueTurn = nextState.investigation.lastClueTurn ?? state.globalTurn;
+  let newLastStallTriggerTurn = nextState.investigation.lastStallTriggerTurn;
+
   for (const event of state.events) {
     if (event.type === GameEventType.ClueDiscovered) {
       const clueEvent = event as ClueDiscoveredEvent;
@@ -21,6 +25,7 @@ export function processInvestigationEvents(state: GameState): GameState {
       if (!newDiscoveredClues.has(clueEvent.clueId)) {
         newDiscoveredClues.add(clueEvent.clueId);
         investigationUpdated = true;
+        newLastClueTurn = state.globalTurn;
 
         nextState = addMessage(nextState, `Clue added to your investigation board!`, MessageLogCategory.System);
       }
@@ -49,6 +54,7 @@ export function processInvestigationEvents(state: GameState): GameState {
       if (!newDiscoveredClues.has(clueText)) {
         newDiscoveredClues.add(clueText);
         investigationUpdated = true;
+        newLastClueTurn = state.globalTurn;
         nextState = addMessage(
           nextState,
           `Rumor added to board: ${mutateEvent.areaId} has changed!`,
@@ -58,13 +64,39 @@ export function processInvestigationEvents(state: GameState): GameState {
     }
   }
 
+  // Stall Detector Logic
+  const turnsSinceLastClue = state.globalTurn - newLastClueTurn;
+  const turnsSinceLastStallEvent =
+    newLastStallTriggerTurn !== undefined ? state.globalTurn - newLastStallTriggerTurn : Infinity;
+
+  // If stalled, and we haven't recently triggered a stall event (to prevent spamming it every turn)
+  if (
+    turnsSinceLastClue >= INVESTIGATION_STALL_THRESHOLD &&
+    turnsSinceLastStallEvent >= INVESTIGATION_STALL_THRESHOLD
+  ) {
+    nextState = {
+      ...nextState,
+      events: [
+        ...nextState.events,
+        {
+          type: GameEventType.InvestigationStalled,
+          turnsStalled: turnsSinceLastClue
+        }
+      ]
+    };
+    newLastStallTriggerTurn = state.globalTurn;
+    investigationUpdated = true;
+  }
+
   if (investigationUpdated) {
     nextState = {
       ...nextState,
       investigation: {
         knownActors: Array.from(newKnownActors),
         discoveredClues: Array.from(newDiscoveredClues),
-        exposedAgreements: newExposedAgreements
+        exposedAgreements: newExposedAgreements,
+        lastClueTurn: newLastClueTurn,
+        lastStallTriggerTurn: newLastStallTriggerTurn
       }
     };
   }

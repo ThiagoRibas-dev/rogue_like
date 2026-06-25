@@ -127,6 +127,8 @@ export interface InvestigationKnowledge {
   readonly knownActors: ReadonlyArray<EntityId>;
   readonly discoveredClues: ReadonlyArray<string>;
   readonly exposedAgreements: ReadonlyArray<{ readonly minionId: EntityId; readonly mastermindId: EntityId }>;
+  readonly lastClueTurn: number;
+  readonly lastStallTriggerTurn?: number | undefined;
 }
 
 /** Tracks a scheduled background conflict/rivalry between persistent NPCs awaiting resolution. */

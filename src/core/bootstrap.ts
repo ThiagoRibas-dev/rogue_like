@@ -124,7 +124,8 @@ export async function startNewGame(
     investigation: {
       knownActors: [],
       discoveredClues: [],
-      exposedAgreements: []
+      exposedAgreements: [],
+      lastClueTurn: 0
     },
     nemesisSlots: {},
     vacancyTurns: {},
@@ -355,7 +356,8 @@ export async function startSandboxEncounter(
     investigation: {
       knownActors: [],
       discoveredClues: [],
-      exposedAgreements: []
+      exposedAgreements: [],
+      lastClueTurn: 0
     },
     nemesisSlots: {},
     vacancyTurns: {},

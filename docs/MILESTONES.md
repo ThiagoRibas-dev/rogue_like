@@ -415,6 +415,9 @@ Make the expanded interaction vocabulary discoverable instead of requiring playe
 - [x] Add tooltip explanations in `src/rendering/ui/tooltip.ui.ts` for tool tags, target tags, reaction previews, lock difficulty, and field hazards.
 - [x] Extend key rebinding in `src/constants/keybinds.constants.ts` for new verbs and preserve accessibility settings.
 - [x] Add a tutorial/example campaign segment demonstrating throw, unlock, kick, dip, zap, and field reactions.
+- [x] Add tracking of the player's overall investigation progress directly to `InvestigationKnowledge`.
+- [x] Create an `InvestigationStalledEvent` that emits when the player hasn't uncovered any scheme clue for `500` turns.
+- [x] Ensure the existing Trigger System can intercept this event and author a fallback consequence (like spawning a frightened witness).
 
 ---
 
@@ -482,12 +485,27 @@ Prove the Director with a compact but high-quality content set.
 - [x] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
 - [x] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
 
+
+## 🟢 Milestone 42: "Hot Path" Dijkstra Mapping & Spawning
+Use distance maps to guarantee procedural pacing and solvability.
+- [ ] **Dijkstra Utility:** Build a pure-function `dijkstraMap(startX, startY, map)` utility in `src/utils/grid.ts` that calculates the path distance to every walkable tile.
+- [ ] **Hot Path Scoring:** During `src/map/generator.ts`, generate a distance map starting from the entrance portal. Identify the tiles with the highest distance scores as "Objective Zones".
+- [ ] **Objective Placement:** Force the Encounter Director to spend its main objective budget (bosses, scheme ritual sites, rare loot) exclusively within these high-distance zones to guarantee traversing danger.
+- [ ] **Distance-Weighted Budgets:** Update `AreaDefinitionSchema` to allow budget multipliers based on distance from spawn, creating escalating difficulty curves within a single area.
+
+## 🟢 Milestone 43: Advanced Biome Algorithms (DLA/Voronoi)
+Expand the world generator with algorithms that produce more organic, sprawling terrain.
+- [ ] **DLA Generator:** Implement a Diffusion Limited Aggregation (DLA) walker in `src/map/generator.ts` to carve out highly organic, sprawling cave networks (creating a distinct feel from ROT.js Cellular).
+- [ ] **Voronoi Sub-Biomes:** Implement a Voronoi partitioning utility. Use it after primary map generation to overlay localized thematic zones (e.g., drawing a distinct "fungal patch" or "bandit camp" inside a larger map).
+- [ ] **Zod Schema Updates:** Add `dla` to the allowed map generator types in `CampaignData`. Add `subBiomeRules` arrays allowing designers to configure Voronoi overlays in the editor.
+- [ ] **Encounter Integration:** Make the Encounter Director aware of Voronoi boundaries so it can spawn themed clusters (e.g., restricting spider spawns strictly to the "spider nest" Voronoi cell).
+
 ---
 
 # 🚀 Phase 7: Chronicle, Personality & Nemesis
 **Goal:** Give important entities identity, memory, growth, autonomy, and surfacing. This phase turns repeated interactions into personal stories while reusing the existing Memory, AI, Faction, Trigger, Scheme, and Investigation infrastructure.
 
-## 🟢 Milestone 42: Chronicle & Identity Layer ⭐ KEYSTONE
+## 🟢 Milestone 44: Chronicle & Identity Layer ⭐ KEYSTONE
 Create a generalized memory/identity wrapper for entities the player may care about.
 - [x] Add a `ChronicleComponent` or expand `MemoryComponent` with identity hooks, player interaction score, scars, relationships, and important event references.
 - [x] Generate salient names, titles, mannerisms, and visual identity cues from data-driven tables.
@@ -496,7 +514,7 @@ Create a generalized memory/identity wrapper for entities the player may care ab
 - [x] Record compact event excerpts rather than unbounded raw logs to avoid save bloat.
 - [x] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
 
-## 🟢 Milestone 43: Personality Facets, Values, Stress & Core Memories (Complete)
+## 🟢 Milestone 45: Personality Facets, Values, Stress & Core Memories (Complete)
 Add Dwarf-Fortress-inspired internal causality without making a separate AI stack.
 - [x] Define data schemas for personality facets, values, needs/goals, stress, thoughts, and core memories.
 - [x] Generate facet/value distributions deterministically, with extreme traits rare and therefore memorable.
@@ -506,7 +524,7 @@ Add Dwarf-Fortress-inspired internal causality without making a separate AI stac
 - [x] Add editor tools for inspecting and manually seeding personalities, values, and core memories.
 - [x] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
 
-## 🟢 Milestone 44: Personality-Weighted AI & Social Gating (Complete)
+## 🟢 Milestone 46: Personality-Weighted AI & Social Gating (Complete)
 Make personality mechanically visible through behavior and dialogue.
 - [x] Refactor AI behavior evaluation to support numeric weights where needed, allowing personality facets to multiply existing hunt/flee/ranged/spell/wander preferences.
 - [x] Connect values/core memories to faction standing changes and hostility shifts where appropriate.
@@ -515,12 +533,12 @@ Make personality mechanically visible through behavior and dialogue.
 - [x] Add behavior surfacing barks: cowardly retreat lines, vengeful charge lines, grateful ally lines, suspicious merchant lines.
 - [x] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
 
-## 🟢 Milestone 45: Social Memory & Interaction Tracking ⭐ KEYSTONE (Complete)
+## 🟢 Milestone 47: Social Memory & Interaction Tracking ⭐ KEYSTONE (Complete)
 Build the data layer for NPCs as persistent social agents. Extend `MemoryComponent` so NPCs remember what they know, count how often they've interacted with the player, and accumulate temporary social states that influence future dialogue and trade.
 
 - [x] Extend `MemoryComponent` with a `knowledge` record: structured facts the NPC knows about schemes, areas, hazards, other NPC locations, and hidden loot. Knowledge items are typed (`rumor`, `location`, `weakness`, `secret`) and tagged for query filtering.
 - [x] Add interaction counters to `MemoryComponent`: `timesTalked`, `timesTraded`, `timesIntimidated`, `timesHelped`, `timesBetrayed`. Each increments deterministically when the player engages in the corresponding social action.
-- [x] Add a `patienceThreshold` to NPCs derived from personality facets (M43): determines how many times they'll repeat information before refusing or demanding payment.
+- [x] Add a `patienceThreshold` to NPCs derived from personality facets (M45): determines how many times they'll repeat information before refusing or demanding payment.
 - [x] Implement `annoyed` and `grateful` as temporary NPC states stored on `MemoryComponent`. These modify dialogue options, trade prices, and rumor sharing for a configurable duration after specific player actions (e.g., intimidating an NPC sets `annoyed` for 50 turns).
 - [x] Extend `ConditionPredicateSchema` (M22) with dialogue conditions: `has_knowledge`, `interaction_count`, `patience_below`, `is_annoyed`, `is_grateful` — all queryable from dialogue trees and triggers.
 - [x] Extend `ConsequenceActionSchema` (M22) with social consequence types: `record_interaction`, `set_patience`, `modify_knowledge` — so dialogues and reactions can write back to NPC memory.
@@ -528,25 +546,25 @@ Build the data layer for NPCs as persistent social agents. Extend `MemoryCompone
 
 **Testable in game:** Use `/debug` to inspect an NPC before and after talking to them. Interaction counters increment. Use a trigger to set `annoyed` state — verify the debug tooltip shows the change. Set `patienceThreshold` to 1, ask the same question twice, verify the NPC refuses the second time.
 
-## 🟢 Milestone 46: Knowledge Brokering — NPCs as Information Sources (Complete)
+## 🟢 Milestone 48: Knowledge Brokering — NPCs as Information Sources (Complete)
 Make NPCs into walking repositories of world knowledge. The player can ask about topics they've heard of, NPCs respond based on what they actually know, and knowledge flows organically from world events into the NPC social graph.
 
 - [x] Implement knowledge propagation: when the Event Ledger (M15) records a major event (EntityDied, QuestCompleted, SchemeAdvanced, boss spawned), eligible NPCs in connected or faction-aligned areas add corresponding `knowledge` entries deterministically, with a configurable propagation delay.
-- [x] Add `ask_about` as a dialogue verb: the player selects a topic from their own knowledge pool (things they've learned from other NPCs, clues, or direct experience) and the NPC responds based on what they know. Gating: faction standing (M9) + personality facets (M43) + `annoyed`/`grateful` state (M45).
+- [x] Add `ask_about` as a dialogue verb: the player selects a topic from their own knowledge pool (things they've learned from other NPCs, clues, or direct experience) and the NPC responds based on what they know. Gating: faction standing (M9) + personality facets (M45) + `annoyed`/`grateful` state (M47).
 - [x] Add a `transfer_knowledge` dialogue consequence type that writes structured knowledge from the NPC's `MemoryComponent.knowledge` into the player's investigation/knowledge records.
 - [x] Support knowledge-as-currency: NPCs can trade information for gold, favors, items, or reciprocal information, resolved through the Trigger System (M22) by gating knowledge access behind a `grant_quest` or `change_standing` consequence.
 - [x] NPCs refuse to answer if they don't know the topic, with personality-appropriate deflection lines ("Never heard of it." / "Ask someone who cares." / "That information will cost you.").
 
 **Testable in game:** Kill a boss in `dungeon_1`. Return to the `safe_hub` barkeep. Use `ask_about` → select the boss's name. The barkeep says "Word is someone killed the troll in the upper dungeons." This works because the `EntityDied` event propagated knowledge. Now talk to the scout NPC — they don't know about the boss (not in their knowledge pool), so they deflect.
 
-## 🟢 Milestone 47: Trade & Barter Economy (Complete)
+## 🟢 Milestone 49: Trade & Barter Economy (Complete)
 Give NPCs the ability to buy, sell, and barter items with the player. Prices respond to faction standing, personality, and social history — the same item costs different amounts from different merchants.
 
 - [x] Add a `ShopComponent { inventory: EntityId[], markupMultiplier: number, buyTags: string[], sellTags: string[] }` to NPC entities in the ECS, making any NPC capable of being a merchant.
 - [x] Build a `trade.ui.ts` panel with buy/sell grid, per-item pricing, haggling feedback, and gold display. Reuses the existing container UI architecture from M32 (Containers).
-- [x] Implement `getEffectivePrice(baseValue, shop, buyerEntity, sellerEntity)` utility that dynamically queries: base item value × NPC markup × faction standing modifier (M9, M17) × personality facet modifier (M43: greedy overcharges, generous undercharges) × social state (M45: `annoyed` markup, `grateful` discount).
+- [x] Implement `getEffectivePrice(baseValue, shop, buyerEntity, sellerEntity)` utility that dynamically queries: base item value × NPC markup × faction standing modifier (M9, M17) × personality facet modifier (M45: greedy overcharges, generous undercharges) × social state (M47: `annoyed` markup, `grateful` discount).
 - [x] Implement `barter` reaction verb: the player offers items from inventory to offset gold costs, resolved through the Reaction System (M30) matching item `tags` against the shop's `buyTags`. "I'll give you this goblin sword plus 10 gold for the health potion."
-- [x] Add `intimidate` and `persuade` as social Apply verbs using personality-weighted contest resolution (player's faction standing + traits vs. NPC's courage/valor facets from M43) to temporarily modify `markupMultiplier` for the current trade session.
+- [x] Add `intimidate` and `persuade` as social Apply verbs using personality-weighted contest resolution (player's faction standing + traits vs. NPC's courage/valor facets from M45) to temporarily modify `markupMultiplier` for the current trade session.
 - [x] Allow NPC shops to issue procedural fetch-quests when specific inventory tags are depleted: "I'm low on iron ore — bring me 3 ingots and I'll pay double." Uses the procedural quest template system (M19).
 - [x] Shop inventories persist across area transitions via the Sleep/Wake + PersistentEntity pipeline (M17). A merchant's stock doesn't reset when you leave and return.
 - [x] **Dialogue Integration (Barter UI & Services)**: Instead of the initially planned hotkeys or hardcoded interactions, implement `open_barter` and `trigger_service` as `DialogueEffect`s. The Barter UI will be summoned seamlessly if the player selects a dialogue option to trade with an entity holding a `ShopComponent`.
@@ -554,7 +572,7 @@ Give NPCs the ability to buy, sell, and barter items with the player. Prices res
 
 **Testable in game:** Walk up to the `safe_hub` merchant, talk to them to open branching dialogue, select the trade option to open the trade panel, see items with prices. Buy a health potion. Gold decreases, potion appears in inventory. Talk to a different merchant — notice prices differ. Intimidate the merchant — prices drop 20% for this session. Barter a goblin sword to cover part of the cost.
 
-## 🟢 Milestone 48: Gossip & Rumors — Social Information Propagation (Complete)
+## 🟢 Milestone 50: Gossip & Rumors — Social Information Propagation (Complete)
 Turn the Event Ledger into a social rumor mill. Major world events generate gossip that spreads organically through the NPC social graph. Players can ask for gossip and hear different things from different people.
 
 - [x] Add a `rumorPool` to `MemoryComponent`: a capped array of structured rumor fragments (text + source event reference + freshness timestamp). Each NPC has their own pool representing what they've heard.
@@ -567,8 +585,8 @@ Turn the Event Ledger into a social rumor mill. Major world events generate goss
 
 **Testable in game:** Advance a scheme via `/debug fast-forward-schemes`. Talk to the `safe_hub` barkeep → use `gossip` → hear "Strange figures have been seen near the goblin camp." Talk to another NPC — they haven't heard yet (propagation delay). Wait N turns → now they know too. Return to the first NPC — they won't repeat the same rumor (consumed).
 
-## 🟢 Milestone 49: Social Commerce Authoring & Campaign Content Pass (Complete)
-Wire the M45–M48 systems into the Campaign Editor and ship a default campaign content pass that proves every system works together in a coherent player experience.
+## 🟢 Milestone 51: Social Commerce Authoring & Campaign Content Pass (Complete)
+Wire the M47–M50 systems into the Campaign Editor and ship a default campaign content pass that proves every system works together in a coherent player experience.
 
 - [x] Extend the Dialogue Tree editor in `src/rendering/ui/dialogue_editor.ts` (M23) with knowledge-gating nodes (condition: `has_knowledge`), trade-node types (opens `trade.ui.ts` directly), rumor-injection slots (injects a rumor into the dialogue flow), and social state preview (shows which branches are gated by `annoyed`/`grateful`/`patience_below`).
 - [x] Add a Trade Inventory editor panel for NPC entities: configure `ShopComponent` fields (markup, buy/sell tags, initial stock) with the existing Zod-driven form renderer, using item autocomplete for inventory slots.
@@ -581,9 +599,9 @@ Wire the M45–M48 systems into the Campaign Editor and ship a default campaign 
   - Add a trade tutorial moment: in `safe_hub`, an NPC offers a free item in exchange for information about the first dungeon, demonstrating both `ask_about` and `barter` in a single interaction.
 - [x] Validate all new schemas (`ShopComponent`, knowledge/rumor shapes, social consequence types) through the Campaign Validator (M25), blocking export on broken knowledge chains or unreachable merchant stock.
 
-**Testable in game:** Open the editor. Design a merchant with inventory using the new Trade panel. Open the Knowledge Simulator — see which NPCs would know about the troll boss after it spawns. Playtest the campaign: talk to the barkeep (gossip), ask the scout (ask_about spider_nest), trade with the merchant (buy health potion), notice the scholar has a clue about the villain. All four M45–M48 systems work together in one coherent hub area.
+**Testable in game:** Open the editor. Design a merchant with inventory using the new Trade panel. Open the Knowledge Simulator — see which NPCs would know about the troll boss after it spawns. Playtest the campaign: talk to the barkeep (gossip), ask the scout (ask_about spider_nest), trade with the merchant (buy health potion), notice the scholar has a clue about the villain. All four M47–M50 systems work together in one coherent hub area.
 
-## 🟢 Milestone 50: Nemesis Hierarchy, Promotion & Cheating Death (Complete)
+## 🟢 Milestone 52: Nemesis Hierarchy, Promotion & Cheating Death (Complete)
 Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and replacement.
 - [x] Define hierarchy data: grunts, champions/captains, lieutenants, chiefs/bosses, faction-specific titles, and vacancies.
 - [x] Promote entities based on PIS, victories, surviving defeat, killing allies, humiliating the player, or completing off-screen goals.
@@ -592,38 +610,38 @@ Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and repla
 - [x] Display known hierarchy information in a Nemesis/Dossier UI, with unknown slots and clue-gated reveals.
 - [x] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
 
-## 🟢 Milestone 51: Background Rivalries & Power Struggles (Complete)
-Let important NPCs act autonomously even when the player is elsewhere. This milestone connects to M46 (Knowledge: NPCs learn about rivalries) and M48 (Gossip: rumors about power struggles spread through the social graph).
+## 🟢 Milestone 53: Background Rivalries & Power Struggles (Complete)
+Let important NPCs act autonomously even when the player is elsewhere. This milestone connects to M48 (Knowledge: NPCs learn about rivalries) and M50 (Gossip: rumors about power struggles spread through the social graph).
 - [x] Build a `nemesis.system.ts` or extend the scheme scheduler to tick power struggles, duels, betrayals, recruitment, territory shifts, and training.
 - [x] Resolve off-screen conflicts using deterministic combat/contest summaries rather than full map simulation.
-- [x] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives — surfaced via M46's `ask_about` and M48's `gossip` verbs so players learn about rivalry opportunities through NPC dialogue.
-- [x] Rivalry outcomes propagate as structured knowledge (M46): defeated champions, demoted captains, and new hierarchy vacancies are added to eligible NPCs' `MemoryComponent.knowledge` in connected areas.
-- [x] Major rivalry events (betrayals, assassinations, promotions) generate gossip fragments (M48) that spread through the NPC social graph, giving players organic awareness of off-screen power shifts.
+- [x] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives — surfaced via M48's `ask_about` and M50's `gossip` verbs so players learn about rivalry opportunities through NPC dialogue.
+- [x] Rivalry outcomes propagate as structured knowledge (M48): defeated champions, demoted captains, and new hierarchy vacancies are added to eligible NPCs' `MemoryComponent.knowledge` in connected areas.
+- [x] Major rivalry events (betrayals, assassinations, promotions) generate gossip fragments (M50) that spread through the NPC social graph, giving players organic awareness of off-screen power shifts.
 - [x] Handle dead/missing/intercepted participants defensively by cancelling, replacing, or transforming events into visible failures.
 - [x] Add fast-forward simulation and debug receipts for rivalry outcomes.
-- [x] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M47 — a merchant whose supplier was killed in a rivalry may have depleted stock).
+- [x] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M49 — a merchant whose supplier was killed in a rivalry may have depleted stock).
 
-## 🟢 Milestone 52: Adversarial Resilience & Escalation (Complete)
-Give the conspiracy teeth, memory, and adaptability. Builds on M43 (Personality) and M45 (Social Memory) to make schemes react to player interference.
+## 🟢 Milestone 54: Adversarial Resilience & Escalation (Complete)
+Give the conspiracy teeth, memory, and adaptability. Builds on M45 (Personality) and M47 (Social Memory) to make schemes react to player interference.
 - [x] **MICE Recruitment:** Cross-reference villain leverage preferences with target NPC personality facets to select the most effective leverage and record it in the `AgreementComponent`.
 - [x] **Compromise Tracking:** Add `compromiseScore` to `MemoryComponent` that increments as NPCs commit crimes, powering blackmail, confessions, and repair decisions.
 - [x] **Local Repair Logic:** When a scheme node dies, have remaining nodes evaluate their compromise and personality to independently abandon, continue, reroute, or confess.
 - [x] **Scheme Momentum:** Allow schemes to enter a `leaderless` state when the mastermind dies, where existing minions continue executing their phase mutations independently.
 - [x] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
 
-## 🟢 Milestone 53: Player Manipulation & Relationship Levers (Complete)
-Give players ways to intentionally shape the emerging cast. This milestone builds on the M45–M48 social commerce foundation: social memory (M45) tracks what the player has done, knowledge brokering (M46) determines what NPCs know about the player's reputation, trade (M47) uses relationship axes as pricing modifiers, and gossip (M48) spreads stories about the player's actions.
-- [x] Add relationship axes to `MemoryComponent` (M45): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
-- [x] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M47): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
-- [x] Relationship axes gate knowledge sharing (M46): NPCs with low `loyalty` or high `fear` are more likely to share sensitive information under pressure; NPCs with high `resentment` refuse to share anything positive about the player.
-- [x] Relationship axes feed into `intimidate`/`persuade` contest resolution (M47): high `fear` makes intimidation easier; high `respect` makes persuasion easier.
-- [x] Add interaction/dialogue consequences for spare, humiliate, recruit, brand/convert, ransom, gift, intimidate, apologize, or argue values — all of which set M45's `annoyed`/`grateful` states and modify relationship axes.
+## 🟢 Milestone 55: Player Manipulation & Relationship Levers (Complete)
+Give players ways to intentionally shape the emerging cast. This milestone builds on the M47–M50 social commerce foundation: social memory (M47) tracks what the player has done, knowledge brokering (M48) determines what NPCs know about the player's reputation, trade (M49) uses relationship axes as pricing modifiers, and gossip (M50) spreads stories about the player's actions.
+- [x] Add relationship axes to `MemoryComponent` (M47): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
+- [x] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M49): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
+- [x] Relationship axes gate knowledge sharing (M48): NPCs with low `loyalty` or high `fear` are more likely to share sensitive information under pressure; NPCs with high `resentment` refuse to share anything positive about the player.
+- [x] Relationship axes feed into `intimidate`/`persuade` contest resolution (M49): high `fear` makes intimidation easier; high `respect` makes persuasion easier.
+- [x] Add interaction/dialogue consequences for spare, humiliate, recruit, brand/convert, ransom, gift, intimidate, apologize, or argue values — all of which set M47's `annoyed`/`grateful` states and modify relationship axes.
 - [x] Let companions/allies become nemeses if betrayed, abandoned, or ideologically opposed (relationship axes drop below threshold → faction change).
-- [x] Support value mutation through arguments/dialogue and facet mutation through experiences (M42, M43).
+- [x] Support value mutation through arguments/dialogue and facet mutation through experiences (M44, M45).
 - [x] Add Trigger consequences for relationship mutation and hierarchy manipulation.
-- [x] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M45's interaction history tooltip and M49's Knowledge Simulator.
+- [x] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M47's interaction history tooltip and M51's Knowledge Simulator.
 
-## 🟢 Milestone 54: Nemesis Surfacing & Narrative UX
+## 🟢 Milestone 56: Nemesis Surfacing & Narrative UX
 Make the system legible, dramatic, and emotionally sticky.
 - [x] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
 - [x] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
@@ -637,7 +655,7 @@ Make the system legible, dramatic, and emotionally sticky.
 # 🚀 Phase 8: Drama Director & Dynamic Composition
 **Goal:** Use the Event Ledger + Trigger System as a pacing-aware Drama Director that dynamically composes narrative triggers for characters, factions, areas, dungeons, and artifacts.
 
-## 🟡 Milestone 55: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
+## 🟡 Milestone 57: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
 Turn the event ledger into a durable, queryable narrative substrate without storing infinite noise.
 - [ ] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
 - [ ] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
@@ -647,7 +665,7 @@ Turn the event ledger into a durable, queryable narrative substrate without stor
 - [ ] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
 - [ ] Add debug timeline visualization and exportable simulation logs.
 
-## 🟡 Milestone 56: Drama Trigger Composer — Runtime Trigger Generation
+## 🟡 Milestone 58: Drama Trigger Composer — Runtime Trigger Generation
 Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.
 - [ ] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
 - [ ] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
@@ -656,7 +674,7 @@ Generate specific narrative triggers from reusable primitives instead of hand-au
 - [ ] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
 - [ ] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
 
-## 🟡 Milestone 57: Pacing Governor & Surprise Budget
+## 🟡 Milestone 59: Pacing Governor & Surprise Budget
 Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
 - [ ] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
 - [ ] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
@@ -665,14 +683,14 @@ Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
 - [ ] Add fallback events for invalidated setups, such as participant death or inaccessible area.
 - [ ] Surface Drama Director decisions in debug receipts.
 
-## 🟡 Milestone 58: Scheme Compiler & Contextual Investigation
+## 🟡 Milestone 60: Scheme Compiler & Contextual Investigation
 Move from fully hand-authored schemes to dynamically assembled conspiracies driven by world events.
 - [ ] **Phase Blocks & Recipes:** Split monolithic `SchemeTemplate`s into reusable `PhaseBlock`s (ingredients) and `SchemeRecipe`s (constraints).
 - [ ] **Scheme Compiler:** Build a pure function that assembles a runtime `SchemeComponent` from a recipe + world state, ensuring identical execution to hand-authored schemes.
 - [ ] **History-Derived Triggers:** Use `ChronicleComponent` events (e.g., exile, territory loss, humiliation) to trigger the Scheme Compiler, generating schemes out of emergent gameplay.
 - [ ] **Contextual Clues:** Add `narrativeVerb` and `evidenceTags` to Phase Blocks, allowing the Investigation system to generate context-aware clues (e.g., "alchemical residue" for disruption phases).
 
-## 🟡 Milestone 59: Narrative Simulation Lab & Fuzzer
+## 🟡 Milestone 61: Narrative Simulation Lab & Fuzzer
 Stress-test emergent narrative systems across many seeds before they reach players.
 - [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
 - [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
@@ -681,7 +699,7 @@ Stress-test emergent narrative systems across many seeds before they reach playe
 - [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
 - [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
 
-## 🟡 Milestone 60: Generalized Chronicles for Regions, Dungeons & Artifacts
+## 🟡 Milestone 62: Generalized Chronicles for Regions, Dungeons & Artifacts
 Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/surfacing makes sense.
 - [ ] Add chronicle support for regions/areas: stability, corruption, prosperity, scars, faction control, and remembered player actions.
 - [ ] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
@@ -690,7 +708,7 @@ Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/s
 - [ ] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
 - [ ] Keep all chronicle data compact and serializable.
 
-## 🟡 Milestone 61: Authoring Continuum Tools — Static, Blueprint, Dynamic
+## 🟡 Milestone 63: Authoring Continuum Tools — Static, Blueprint, Dynamic
 Make the three authoring levels explicit in the Campaign Editor.
 - [ ] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
 - [ ] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
@@ -704,7 +722,7 @@ Make the three authoring levels explicit in the Campaign Editor.
 # 🚀 Phase 9: Default Campaign Vertical Slice, Balance & Release Hardening
 **Goal:** Convert the systemic engine into a coherent playable campaign and robust creator platform. This phase is less about new architecture and more about proving the full stack through content, balance, polish, and documentation.
 
-## 🟡 Milestone 62: Default Campaign Vertical Slice
+## 🟡 Milestone 64: Default Campaign Vertical Slice
 Ship a compact campaign that exercises every major system in a coherent arc.
 - [ ] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
 - [ ] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
@@ -712,7 +730,7 @@ Ship a compact campaign that exercises every major system in a coherent arc.
 - [ ] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
 - [ ] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
 
-## 🟡 Milestone 63: Balance, Telemetry & Deterministic Replay QA
+## 🟡 Milestone 65: Balance, Telemetry & Deterministic Replay QA
 Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [ ] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
 - [ ] Add seed-based replay capture for bug reports and deterministic regression tests.
@@ -721,7 +739,7 @@ Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [ ] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
 - [ ] Establish target performance budgets for browser play and editor simulations.
 
-## 🟡 Milestone 64: Modding Documentation, Examples & Creator Onboarding
+## 🟡 Milestone 66: Modding Documentation, Examples & Creator Onboarding
 Make the system understandable to campaign authors.
 - [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
 - [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
@@ -729,7 +747,7 @@ Make the system understandable to campaign authors.
 - [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
 - [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
 
-## 🟡 Milestone 65: Release Robustness & Distribution Polish
+## 🟡 Milestone 67: Release Robustness & Distribution Polish
 Prepare for public builds and long-term iteration.
 - [ ] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
 - [ ] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
@@ -743,14 +761,14 @@ Prepare for public builds and long-term iteration.
 # 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
 **Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
 
-## 🟡 Milestone 66: Asynchronous Cooperative Scheduler (Time-Slicing)
+## 🟡 Milestone 68: Asynchronous Cooperative Scheduler (Time-Slicing)
 Prevent browser lock-ups during computationally expensive operations.
 - [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
 - [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
 - [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
 - [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
 
-## 🟡 Milestone 67: Absolute Presentational Decoupling (Web Worker)
+## 🟡 Milestone 69: Absolute Presentational Decoupling (Web Worker)
 Enforce a strict model-view separation by moving the core engine off the main thread entirely.
 - [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
 - [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.

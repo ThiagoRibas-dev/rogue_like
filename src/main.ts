@@ -125,7 +125,8 @@ let state: GameState = {
   investigation: {
     knownActors: [],
     discoveredClues: [],
-    exposedAgreements: []
+    exposedAgreements: [],
+    lastClueTurn: 0
   },
   nemesisSlots: {},
   vacancyTurns: {},

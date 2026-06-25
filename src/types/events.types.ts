@@ -37,7 +37,8 @@ export enum GameEventType {
   RivalryFailed = 'RivalryFailed',
   SchemeNodeDisrupted = 'SchemeNodeDisrupted',
   SchemeEscalated = 'SchemeEscalated',
-  AreaRespawned = 'AreaRespawned'
+  AreaRespawned = 'AreaRespawned',
+  InvestigationStalled = 'InvestigationStalled'
 }
 
 /** Base interface for all ledger events. */
@@ -311,6 +312,12 @@ export interface AreaRespawnedEvent extends BaseGameEvent {
   readonly newEntitiesSpawned: number;
 }
 
+/** Fired when the player goes too many turns without discovering a plot clue. */
+export interface InvestigationStalledEvent extends BaseGameEvent {
+  readonly type: GameEventType.InvestigationStalled;
+  readonly turnsStalled: number;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -348,4 +355,5 @@ export type GameEvent =
   | RivalryFailedEvent
   | SchemeNodeDisruptedEvent
   | SchemeEscalatedEvent
-  | AreaRespawnedEvent;
+  | AreaRespawnedEvent
+  | InvestigationStalledEvent;
