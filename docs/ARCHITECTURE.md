@@ -142,8 +142,8 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 
 ### 5.1 Map Generation & FOV
 
-- **Generators**: Supports both structured dungeons (`ROT.Map.Digger`) and organic cave networks (`ROT.Map.Cellular`) wrapped in `src/map/generator.ts`. The tile grid is stored as a flat array (`Tile[]`) with index math (`y * width + x`) for faster JS engine performance and trivial serialization. Tiles reference string IDs (e.g., `"stone_wall"`) resolved from a shared `TILE_REGISTRY`, decoupling rendering and mechanical properties from map structure.
-- **Entity & Portal Placement**: The generator guarantees topologically safe spawn logic by picking open floor tiles instead of hardcoded room centers, enabling seamless entity and portal placement even in wall-less cellular cave systems.
+- **Generators**: Supports structured dungeons (`ROT.Map.Digger`), organic cave networks (`ROT.Map.Cellular`), and Diffusion-Limited Aggregation (`dla`) wrapped in `src/map/generator.ts`. The tile grid is stored as a flat array (`Tile[]`) with index math (`y * width + x`) for faster JS engine performance and trivial serialization. Tiles reference string IDs (e.g., `"stone_wall"`) resolved from a shared `TILE_REGISTRY`, decoupling rendering and mechanical properties from map structure. The generator also supports Voronoi partitioning (`voronoiSubBiomes`) to overlay organic sub-biome zones onto generated maps, which are converted to RoomBounds with exact coordinate sets (`exactTiles`) for the Encounter Director.
+- **Entity & Portal Placement**: The generator guarantees topologically safe spawn logic by picking open floor tiles instead of hardcoded room centers, enabling seamless entity and portal placement even in wall-less cellular/DLA cave systems.
 - **FOV**: Shadowcasting is computed via `computeFOV` in `map.system.ts` only when `GameState.fovNeedsUpdate` is set (e.g., player moves, door opens). Results are cached in `GameState.cachedFov`.
 - **Spatial Rendering**: The renderer uses an `O(1)` spatial index (`GameState.spatialIndex`) combined with `cachedFov` to draw only entities within camera bounds and line-of-sight.
 

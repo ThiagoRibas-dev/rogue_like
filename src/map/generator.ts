@@ -4,6 +4,8 @@ import { type EntityId, type GameMap, type Tile } from '../types/game-state.type
 import { coordToIndex } from '../utils/grid.ts';
 import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
 import { parseStaticMap } from './static-parser.ts';
+import { runDLA } from './dla.ts';
+import { applyVoronoiBiomes } from './voronoi.ts';
 import {
   DIJKSTRA_TOPOLOGY,
   DEFAULT_HOT_PATH_RADIUS,
@@ -25,6 +27,9 @@ export interface GeneratedArea {
     readonly bottom: number;
     readonly centerX: number;
     readonly centerY: number;
+    readonly isSafe?: boolean;
+    readonly tags?: ReadonlyArray<string>;
+    readonly exactTiles?: ReadonlySet<string>;
   }>;
   readonly placedEntities?:
     | ReadonlyArray<{
@@ -109,7 +114,8 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     readonly centerX: number;
     readonly centerY: number;
     readonly isSafe?: boolean;
-    readonly tags?: string[];
+    readonly tags?: ReadonlyArray<string>;
+    readonly exactTiles?: ReadonlySet<string>;
   }> = [];
 
   if (areaDef.generatorType === 'cellular') {
@@ -144,6 +150,47 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
 
     if (floorCoords.length === 0) {
       throw new Error('Cellular generation failed: No floor tiles were created.');
+    }
+
+    const startTile = ROT.RNG.getItem(floorCoords)!;
+    startX = startTile.x;
+    startY = startTile.y;
+
+    if (areaDef.connections) {
+      areaDef.connections.forEach((conn) => {
+        const pt = ROT.RNG.getItem(floorCoords)!;
+        portals.push({ x: pt.x, y: pt.y, connection: conn });
+      });
+    }
+  } else if (areaDef.generatorType === 'dla') {
+    // 2c. DLA Generator
+    const percentage = areaDef.dlaTargetFloorPercentage ?? 0.3;
+    const targetFloorCount = Math.floor(width * height * percentage);
+    const dlaFloors = runDLA(width, height, targetFloorCount);
+
+    dlaFloors.forEach((coordStr) => {
+      const [xStr, yStr] = coordStr.split(',');
+      const x = Number(xStr);
+      const y = Number(yStr);
+      const index = coordToIndex(x, y, width);
+      const tile = tiles[index];
+      if (tile !== undefined) {
+        tiles[index] = { ...tile, tileId: palette.floor };
+      }
+    });
+
+    const floorCoords: Array<{ x: number; y: number }> = [];
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = coordToIndex(x, y, width);
+        if (tiles[idx] && tiles[idx].tileId === palette.floor) {
+          floorCoords.push({ x, y });
+        }
+      }
+    }
+
+    if (floorCoords.length === 0) {
+      throw new Error('DLA generation failed: No floor tiles were created.');
     }
 
     const startTile = ROT.RNG.getItem(floorCoords)!;
@@ -309,6 +356,53 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
       };
       return roomTags.length > 0 ? { ...baseRoom, tags: roomTags } : baseRoom;
     });
+  }
+
+  // Collect all floor coordinates for Voronoi partitioning
+  const allFloorCoords: Array<{ x: number; y: number }> = [];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = coordToIndex(x, y, width);
+      if (tiles[idx] && tiles[idx].tileId === palette.floor) {
+        allFloorCoords.push({ x, y });
+      }
+    }
+  }
+
+  // Apply Voronoi partitioning if configured
+  if (areaDef.voronoiSubBiomes && areaDef.voronoiSubBiomes.length > 0 && allFloorCoords.length > 0) {
+    const voronoiZones = applyVoronoiBiomes(allFloorCoords, areaDef.voronoiSubBiomes);
+
+    for (const [tag, coordSet] of Object.entries(voronoiZones)) {
+      if (coordSet.size === 0) continue;
+
+      let left = width;
+      let right = 0;
+      let top = height;
+      let bottom = 0;
+
+      coordSet.forEach((c) => {
+        const [xStr, yStr] = c.split(',');
+        const x = Number(xStr);
+        const y = Number(yStr);
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      });
+
+      parsedRooms.push({
+        left,
+        right,
+        top,
+        bottom,
+        centerX: Math.floor((left + right) / 2),
+        centerY: Math.floor((top + bottom) / 2),
+        isSafe: false,
+        tags: [tag],
+        exactTiles: coordSet
+      });
+    }
   }
 
   // 5. Cull deep walls (replace walls that don't border a floor with empty_space)

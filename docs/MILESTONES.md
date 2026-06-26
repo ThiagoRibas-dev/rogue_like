@@ -494,10 +494,10 @@ Use Dijkstra shortest-path calculations to identify critical player-to-portal ro
 
 ## 🟢 Milestone 43: Advanced Biome Algorithms (DLA/Voronoi)
 Expand the world generator with algorithms that produce more organic, sprawling terrain.
-- [ ] **DLA Generator:** Implement a Diffusion Limited Aggregation (DLA) walker in `src/map/generator.ts` to carve out highly organic, sprawling cave networks (creating a distinct feel from ROT.js Cellular).
-- [ ] **Voronoi Sub-Biomes:** Implement a Voronoi partitioning utility. Use it after primary map generation to overlay localized thematic zones (e.g., drawing a distinct "fungal patch" or "bandit camp" inside a larger map).
-- [ ] **Zod Schema Updates:** Add `dla` to the allowed map generator types in `CampaignData`. Add `subBiomeRules` arrays allowing designers to configure Voronoi overlays in the editor.
-- [ ] **Encounter Integration:** Make the Encounter Director aware of Voronoi boundaries so it can spawn themed clusters (e.g., restricting spider spawns strictly to the "spider nest" Voronoi cell).
+- [x] **DLA Generator:** Implement a Diffusion Limited Aggregation (DLA) walker in `src/map/generator.ts` to carve out highly organic, sprawling cave networks (creating a distinct feel from ROT.js Cellular).
+- [x] **Voronoi Sub-Biomes:** Implement a Voronoi partitioning utility. Use it after primary map generation to overlay localized thematic zones (e.g., drawing a distinct "fungal patch" or "bandit camp" inside a larger map).
+- [x] **Zod Schema Updates:** Add `dla` to the allowed map generator types in `CampaignData`. Add `subBiomeRules` arrays allowing designers to configure Voronoi overlays in the editor.
+- [x] **Encounter Integration:** Make the Encounter Director aware of Voronoi boundaries so it can spawn themed clusters (e.g., restricting spider spawns strictly to the "spider nest" Voronoi cell).
 
 ---
 

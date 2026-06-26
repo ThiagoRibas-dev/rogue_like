@@ -72,6 +72,7 @@ export interface RoomBounds {
   readonly centerY: number;
   readonly isSafe?: boolean;
   readonly tags?: ReadonlyArray<string>;
+  readonly exactTiles?: ReadonlySet<string>;
 }
 
 /**
@@ -105,6 +106,31 @@ function getRandomFloorTileInRoom(
   preferHotPath?: boolean | undefined
 ): { x: number; y: number } | null {
   let fallbackPos: { x: number; y: number } | null = null;
+
+  if (room.exactTiles) {
+    const tileList = Array.from(room.exactTiles);
+    for (let i = 0; i < MAX_TILE_SPAWN_ATTEMPTS; i++) {
+      const coordStr = ROT.RNG.getItem(tileList);
+      if (!coordStr) break;
+      const [xStr, yStr] = coordStr.split(',');
+      const x = Number(xStr);
+      const y = Number(yStr);
+      const idx = coordToIndex(x, y, map.width);
+
+      if (map.tiles[idx] && !occupiedCoordinates.has(`${x},${y}`)) {
+        const tileId = map.tiles[idx]!.tileId;
+        if (campaign.tiles[tileId]?.walkable) {
+          if (preferHotPath && hotPathCoords && hotPathCoords.has(`${x},${y}`)) {
+            return { x, y };
+          }
+          if (!fallbackPos) {
+            fallbackPos = { x, y };
+          }
+        }
+      }
+    }
+    return fallbackPos;
+  }
 
   // Attempt to find a random open tile within a limited number of tries to prevent infinite loops
   for (let i = 0; i < MAX_TILE_SPAWN_ATTEMPTS; i++) {

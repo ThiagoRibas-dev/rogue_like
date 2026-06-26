@@ -27,9 +27,17 @@ export const FactionMatrixSchema = z.record(z.string(), z.record(z.string(), Fac
 export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 
 /** Zod enum for generation strategies. */
-export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static']);
+export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static', 'dla']);
 /** Inferred type representing an area generator type. */
 export type AreaGeneratorType = z.infer<typeof AreaGeneratorTypeEnum>;
+
+/** Zod schema defining a Voronoi sub-biome rule. */
+export const VoronoiSubBiomeRuleSchema = z.object({
+  tag: z.string(),
+  seedPoints: z.number().int().positive().default(1)
+});
+/** Inferred type representing a Voronoi sub-biome rule. */
+export type VoronoiSubBiomeRule = z.infer<typeof VoronoiSubBiomeRuleSchema>;
 
 /** Zod schema representing connections between different area maps. */
 export const AreaConnectionSchema = z.object({
@@ -90,6 +98,13 @@ export const AreaDefinitionSchema = z.object({
     .record(z.string(), z.number().positive().max(1))
     .optional()
     .describe('Map of sub-biome tag to probability (0-1) for room assignment'),
+  voronoiSubBiomes: z.array(VoronoiSubBiomeRuleSchema).optional(),
+  dlaTargetFloorPercentage: z
+    .number()
+    .positive()
+    .max(1)
+    .optional()
+    .describe('Percentage (0-1) of map tiles to carve as floor for DLA.'),
   respawnTimerTurns: z.number().int().positive().optional(),
   hotPathRadius: z.number().int().nonnegative().optional().describe('Overrides the auto-calculated hot path thickness.')
 });
