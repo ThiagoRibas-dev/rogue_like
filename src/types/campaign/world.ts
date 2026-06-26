@@ -90,7 +90,8 @@ export const AreaDefinitionSchema = z.object({
     .record(z.string(), z.number().positive().max(1))
     .optional()
     .describe('Map of sub-biome tag to probability (0-1) for room assignment'),
-  respawnTimerTurns: z.number().int().positive().optional()
+  respawnTimerTurns: z.number().int().positive().optional(),
+  hotPathRadius: z.number().int().nonnegative().optional().describe('Overrides the auto-calculated hot path thickness.')
 });
 /** Inferred type for an area definition. */
 export type AreaDefinition = z.infer<typeof AreaDefinitionSchema>;

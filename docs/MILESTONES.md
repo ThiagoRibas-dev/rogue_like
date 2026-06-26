@@ -485,13 +485,12 @@ Prove the Director with a compact but high-quality content set.
 - [x] Update the default campaign so generated rooms start feeling like tactical puzzles rather than random monster piles.
 - [x] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
 
-
-## 🟢 Milestone 42: "Hot Path" Dijkstra Mapping & Spawning
-Use distance maps to guarantee procedural pacing and solvability.
-- [ ] **Dijkstra Utility:** Build a pure-function `dijkstraMap(startX, startY, map)` utility in `src/utils/grid.ts` that calculates the path distance to every walkable tile.
-- [ ] **Hot Path Scoring:** During `src/map/generator.ts`, generate a distance map starting from the entrance portal. Identify the tiles with the highest distance scores as "Objective Zones".
-- [ ] **Objective Placement:** Force the Encounter Director to spend its main objective budget (bosses, scheme ritual sites, rare loot) exclusively within these high-distance zones to guarantee traversing danger.
-- [ ] **Distance-Weighted Budgets:** Update `AreaDefinitionSchema` to allow budget multipliers based on distance from spawn, creating escalating difficulty curves within a single area.
+## 🟢 Milestone 42: "Hot Path" Dijkstra Mapping & Spawning (Complete)
+Use Dijkstra shortest-path calculations to identify critical player-to-portal routes and focus major encounters along them.
+- [x] **Dijkstra Hot Path Mapping:** Use `ROT.Path.Dijkstra` to map the critical route from the player's spawn point to area portals/exits in `src/map/generator.ts`.
+- [x] **Radius Expansion (Approach 3):** Expand the Dijkstra path by a radius thickness (defaults to `1` for digger maps and scales dynamically with cellular map sizes) to define the hot path coordinates.
+- [x] **Spawning Preference:** Weight the Encounter Director so major monsters (`protein`) and hazards/traps (`side`) prefer spawning on or near the hot path.
+- [x] **Modding Schema Overrides:** Add optional `hotPathRadius` override support to `AreaDefinitionSchema` for custom campaign design.
 
 ## 🟢 Milestone 43: Advanced Biome Algorithms (DLA/Voronoi)
 Expand the world generator with algorithms that produce more organic, sprawling terrain.

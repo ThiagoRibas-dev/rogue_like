@@ -4,6 +4,12 @@ import { type EntityId, type GameMap, type Tile } from '../types/game-state.type
 import { coordToIndex } from '../utils/grid.ts';
 import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
 import { parseStaticMap } from './static-parser.ts';
+import {
+  DIJKSTRA_TOPOLOGY,
+  DEFAULT_HOT_PATH_RADIUS,
+  CELLULAR_HOT_PATH_RADIUS_DENOMINATOR,
+  MIN_CELLULAR_HOT_PATH_RADIUS
+} from '../constants/spawning.constants.ts';
 
 /**
  * Output data resulting from map generation, containing tiles, portals, rooms, and entities.
@@ -346,7 +352,59 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     tiles
   };
 
-  const directorResult = runEncounterDirector(campaign, areaDef, map, parsedRooms, finalPlacedEntities, context);
+  // Compute Hot Path from starting position to all portals
+  const hotPathCoords = new Set<string>();
+
+  if (portals.length > 0) {
+    const passableCallback = (x: number, y: number) => {
+      const idx = coordToIndex(x, y, width);
+      const tile = tiles[idx];
+      return tile !== undefined && (tile.tileId === palette.floor || tile.tileId === palette.water);
+    };
+
+    // Determine thickness radius based on data override or biome/generator heuristic fallback
+    const radius =
+      areaDef.hotPathRadius ??
+      (areaDef.generatorType === 'cellular'
+        ? Math.max(
+            MIN_CELLULAR_HOT_PATH_RADIUS,
+            Math.floor(Math.min(width, height) / CELLULAR_HOT_PATH_RADIUS_DENOMINATOR)
+          )
+        : DEFAULT_HOT_PATH_RADIUS);
+
+    for (const portal of portals) {
+      const dijkstra = new ROT.Path.Dijkstra(portal.x, portal.y, passableCallback, { topology: DIJKSTRA_TOPOLOGY });
+      dijkstra.compute(startX, startY, (x, y) => {
+        // Expand coordinates within the calculated radius/thickness
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const nx = x + dx;
+            const ny = y + dy;
+            if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+              hotPathCoords.add(`${nx},${ny}`);
+            }
+          }
+        }
+      });
+    }
+  }
+
+  const effectiveContext: DirectorContext = {
+    playerLevel: context?.playerLevel ?? 1,
+    tokenPool: context?.tokenPool ?? new Set<string>(),
+    areaMutation: context?.areaMutation,
+    reservedTokens: context?.reservedTokens,
+    hotPathCoords
+  };
+
+  const directorResult = runEncounterDirector(
+    campaign,
+    areaDef,
+    map,
+    parsedRooms,
+    finalPlacedEntities,
+    effectiveContext
+  );
 
   if (directorResult.newEntities.length > 0) {
     finalPlacedEntities.push(...directorResult.newEntities);

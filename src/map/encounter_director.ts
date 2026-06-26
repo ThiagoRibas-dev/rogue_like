@@ -2,6 +2,7 @@ import * as ROT from 'rot-js';
 import type { AreaDefinition, CampaignData } from '../types/campaign.types.ts';
 import type { GameMap, EntityId } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
+import { MAX_TILE_SPAWN_ATTEMPTS } from '../constants/spawning.constants.ts';
 
 /**
  * Spend allocation categories used by the Encounter Director.
@@ -81,6 +82,7 @@ export interface DirectorContext {
   readonly tokenPool: ReadonlySet<string>;
   readonly areaMutation?: { readonly addedTags: ReadonlyArray<string>; readonly budgetModifier: number } | undefined;
   readonly reservedTokens?: ReadonlyArray<{ readonly templateId: string; readonly minionId: EntityId }> | undefined;
+  readonly hotPathCoords?: ReadonlySet<string> | undefined;
 }
 
 function resolveAxis(roleTags: ReadonlyArray<string>): BudgetAxis {
@@ -91,14 +93,21 @@ function resolveAxis(roleTags: ReadonlyArray<string>): BudgetAxis {
   return 'protein'; // Fallback
 }
 
+/**
+ * Finds a random floor tile within room bounds, optionally biasing placement towards Dijkstra hot path coordinates.
+ */
 function getRandomFloorTileInRoom(
   campaign: CampaignData,
   room: RoomBounds,
   map: GameMap,
-  occupiedCoordinates: Set<string>
+  occupiedCoordinates: Set<string>,
+  hotPathCoords?: ReadonlySet<string> | undefined,
+  preferHotPath?: boolean | undefined
 ): { x: number; y: number } | null {
+  let fallbackPos: { x: number; y: number } | null = null;
+
   // Attempt to find a random open tile within a limited number of tries to prevent infinite loops
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < MAX_TILE_SPAWN_ATTEMPTS; i++) {
     const x = Math.floor(ROT.RNG.getUniform() * (room.right - room.left + 1)) + room.left;
     const y = Math.floor(ROT.RNG.getUniform() * (room.bottom - room.top + 1)) + room.top;
     const idx = coordToIndex(x, y, map.width);
@@ -107,11 +116,18 @@ function getRandomFloorTileInRoom(
     if (map.tiles[idx] && !occupiedCoordinates.has(`${x},${y}`)) {
       const tileId = map.tiles[idx]!.tileId;
       if (campaign.tiles[tileId]?.walkable) {
-        return { x, y };
+        // If this entity prefers the hot path, return immediately if we hit it
+        if (preferHotPath && hotPathCoords && hotPathCoords.has(`${x},${y}`)) {
+          return { x, y };
+        }
+        // Otherwise, save the first valid tile we found as a fallback
+        if (!fallbackPos) {
+          fallbackPos = { x, y };
+        }
       }
     }
   }
-  return null;
+  return fallbackPos;
 }
 
 /**
@@ -205,6 +221,7 @@ function runForEncounterZone(
 
   for (const axis of axes) {
     let budget = axisBudget[axis];
+    const preferHotPath = axis === 'protein' || axis === 'side';
 
     // Mark all candidates that are too expensive from the start
     for (const c of candidatesByAxis[axis]) {
@@ -237,7 +254,14 @@ function runForEncounterZone(
       const cost = campaign.entities[selectedId]!.crCost!;
 
       // Find coordinate
-      const pos = getRandomFloorTileInRoom(campaign, room, map, occupiedCoordinates);
+      const pos = getRandomFloorTileInRoom(
+        campaign,
+        room,
+        map,
+        occupiedCoordinates,
+        _context?.hotPathCoords,
+        preferHotPath
+      );
       if (!pos) {
         // Couldn't find room, reject
         axisRejected[axis].push(`${selectedId} (no space)`);
@@ -416,7 +440,7 @@ export function runEncounterDirector(
       const zone = ROT.RNG.getItem(zones);
       if (!zone) continue;
 
-      const pos = getRandomFloorTileInRoom(campaign, zone, map, occupiedCoordinates);
+      const pos = getRandomFloorTileInRoom(campaign, zone, map, occupiedCoordinates, context?.hotPathCoords, false);
       if (pos) {
         allNewEntities.push({
           templateId: token.templateId,
