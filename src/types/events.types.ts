@@ -43,7 +43,10 @@ export enum GameEventType {
 
 /** Base interface for all ledger events. */
 export interface BaseGameEvent {
+  readonly id?: string; // Unique ID for referencing in chronicles
   readonly type: GameEventType;
+  readonly importance?: 'low' | 'normal' | 'high';
+  readonly summary?: string;
 }
 
 /** Fired when an entity moves to new grid coordinates. */

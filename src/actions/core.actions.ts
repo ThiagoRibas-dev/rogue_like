@@ -18,7 +18,8 @@ import {
   type ToggleQuestsIntent,
   type ToggleSettingsIntent,
   type ToggleDebugIntent,
-  type ToggleDossierIntent
+  type ToggleDossierIntent,
+  type ToggleLedgerIntent
 } from '../types/intents/ui.intents.ts';
 
 /**
@@ -178,6 +179,17 @@ export function createToggleDebugAction(entityId: EntityId): ToggleDebugIntent {
 export function createToggleDossierAction(entityId: EntityId): ToggleDossierIntent {
   return {
     type: IntentType.ToggleDossier,
+    entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates a toggle ledger intent.
+ */
+export function createToggleLedgerAction(entityId: EntityId): ToggleLedgerIntent {
+  return {
+    type: IntentType.ToggleLedger,
     entityId,
     isImmediate: true
   };

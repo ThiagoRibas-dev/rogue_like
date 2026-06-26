@@ -391,8 +391,9 @@ function renderInspectTooltip(
         fragment.appendChild(scarsEl);
       }
       if (chronicle && chronicle.eventExcerpts.length > 0) {
-        const latestEvent = chronicle.eventExcerpts[chronicle.eventExcerpts.length - 1];
-        if (latestEvent) {
+        const latestEventId = chronicle.eventExcerpts[chronicle.eventExcerpts.length - 1];
+        const latestEvent = state.historicalLedger.find((e) => e.id === latestEventId);
+        if (latestEvent && latestEvent.summary) {
           const histEl = document.createElement('div');
           histEl.className = 'inspect-desc';
           histEl.style.color = '#bdc3c7';

@@ -80,16 +80,12 @@ export function resolvePromoteNemesis(
   const name = identity ? identity.name : 'Someone';
   const rankDisplayName = rank.displayName;
   const summary = `Promoted to ${rankDisplayName}${chosenTitle ? ` (${chosenTitle})` : ''}.`;
-  const promotionEvent = {
-    turn: state.globalTurn || 0,
-    type: 'Promotion',
-    summary
-  };
+  const eventId = `evt_${state.globalTurn}_promo_${Math.floor(rng.getUniform() * 10000)}`;
 
   if (chronicle) {
     nextChronicle = {
       ...chronicle,
-      eventExcerpts: [...chronicle.eventExcerpts, promotionEvent]
+      eventExcerpts: [...chronicle.eventExcerpts, eventId]
     };
   } else {
     nextChronicle = {
@@ -97,7 +93,7 @@ export function resolvePromoteNemesis(
       pis: 1,
       scars: [],
       coreMemories: [],
-      eventExcerpts: [promotionEvent]
+      eventExcerpts: [eventId]
     };
   }
 
@@ -137,6 +133,9 @@ export function resolvePromoteNemesis(
     events: [
       ...nextState.events,
       {
+        id: eventId,
+        importance: 'high',
+        summary,
         type: GameEventType.NemesisPromoted,
         entityId,
         hierarchyId,
@@ -159,6 +158,8 @@ export function resolvePromoteNemesis(
 export function resolveApplyScar(state: GameState, entityId: EntityId, scarDef: ScarDefinition): GameState {
   let nextState = state;
 
+  const eventId = `evt_${state.globalTurn}_scar_${Math.floor(rng.getUniform() * 10000)}`;
+
   nextState = updateNemesisComponents(nextState, entityId, (comps) => {
     const nextComps = { ...comps };
 
@@ -168,15 +169,10 @@ export function resolveApplyScar(state: GameState, entityId: EntityId, scarDef: 
       if (nextScars.length < 5) {
         nextScars.push(scarDef.description);
       }
-      const scarEvent = {
-        turn: state.globalTurn || 0,
-        type: 'Scarred',
-        summary: `Gained scar: ${scarDef.description}`
-      };
       nextComps[ComponentType.Chronicle] = {
         ...chronicle,
         scars: nextScars,
-        eventExcerpts: [...chronicle.eventExcerpts, scarEvent]
+        eventExcerpts: [...chronicle.eventExcerpts, eventId]
       };
     }
 
@@ -218,6 +214,9 @@ export function resolveApplyScar(state: GameState, entityId: EntityId, scarDef: 
     events: [
       ...nextState.events,
       {
+        id: eventId,
+        importance: 'high',
+        summary: `Gained scar: ${scarDef.description}`,
         type: GameEventType.NemesisScarred,
         entityId,
         scarId: scarDef.id

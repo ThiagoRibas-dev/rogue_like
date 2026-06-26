@@ -161,6 +161,14 @@ export function dispatchAction(
         success: false
       };
     }
+    case IntentType.ToggleLedger: {
+      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Ledger : UIMode.Game;
+      const ledgerPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
+      return {
+        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: ledgerPaused } },
+        success: false
+      };
+    }
 
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {
@@ -329,7 +337,7 @@ export function dispatchAction(
       }
 
       if (targetEntityId) {
-        const nextState = promoteEntity(state, targetEntityId, 'Promoted via debug command.');
+        const nextState = promoteEntity(state, targetEntityId);
         return {
           state: addMessage(
             nextState,

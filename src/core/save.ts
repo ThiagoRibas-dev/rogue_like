@@ -114,6 +114,9 @@ export function saveGame(state: GameState): void {
     is3D: state.is3D,
     zoomLevel: state.zoomLevel,
     investigation: state.investigation,
+    historicalLedger: state.historicalLedger,
+    factionPis: state.factionPis,
+    areaPis: state.areaPis,
     areaMutations: Object.entries(state.areaMutations),
     pendingKnowledge: state.pendingKnowledge,
     pendingRumors: state.pendingRumors,
@@ -210,11 +213,21 @@ export async function loadGame(): Promise<GameState | null> {
       is3D: sState.is3D || false,
       zoomLevel: sState.zoomLevel ?? DEFAULT_ZOOM_LEVEL,
       playerCommandQueue: [],
-      investigation: sState.investigation ?? {
-        knownActors: [],
-        discoveredClues: [],
-        exposedAgreements: []
-      },
+      investigation: sState.investigation
+        ? {
+            knownActors: sState.investigation.knownActors || [],
+            exposedAgreements: sState.investigation.exposedAgreements || [],
+            lastClueTurn: sState.investigation.lastClueTurn || 0,
+            lastStallTriggerTurn: sState.investigation.lastStallTriggerTurn
+          }
+        : {
+            knownActors: [],
+            exposedAgreements: [],
+            lastClueTurn: 0
+          },
+      historicalLedger: sState.historicalLedger || [],
+      factionPis: sState.factionPis || {},
+      areaPis: sState.areaPis || {},
       areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {},
       pendingKnowledge: sState.pendingKnowledge ?? [],
       pendingRumors: sState.pendingRumors ?? [],

@@ -81,7 +81,7 @@ export function processPersonalitySystem(state: GameState): GameState {
       }
 
       if (hasExtreme) {
-        nextState = promoteEntity(nextState, entityId, 'Emerged from the masses with an extreme personality.');
+        nextState = promoteEntity(nextState, entityId);
         const newIdentity = getComponent(nextState, entityId, ComponentType.Identity);
         if (newIdentity) {
           nextState = addMessage(
@@ -203,7 +203,7 @@ function promoteToCoreMemory(state: GameState, entityId: EntityId): GameState {
   // If entity not promoted, promote them now since they formed a core memory
   const identity = getComponent(nextState, entityId, ComponentType.Identity);
   if (!identity) {
-    nextState = promoteEntity(nextState, entityId, 'A traumatic or defining event forced them to forge an identity.');
+    nextState = promoteEntity(nextState, entityId);
   }
 
   const chronicle = getComponent(nextState, entityId, ComponentType.Chronicle);

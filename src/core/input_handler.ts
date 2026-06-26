@@ -24,7 +24,8 @@ import {
   createToggleInvestigationAction,
   createTogglePauseAction,
   createToggleDebugAction,
-  createToggleDossierAction
+  createToggleDossierAction,
+  createToggleLedgerAction
 } from '../actions/core.actions.ts';
 import { createApplyAction } from '../actions/interaction.actions.ts';
 import {
@@ -166,6 +167,7 @@ export function handleKeyDown(
   const isInvestigationOpen = currentState.uiMode === UIMode.Investigation;
   const isDebugOpen = currentState.uiMode === UIMode.Debug;
   const isDossierOpen = currentState.uiMode === UIMode.Dossier;
+  const isLedgerOpen = currentState.uiMode === UIMode.Ledger;
 
   if (event.key === '`') {
     event.preventDefault();
@@ -217,6 +219,14 @@ export function handleKeyDown(
     if (event.key === 'Escape' || isAction(event, 'dossier')) {
       event.preventDefault();
       queuePlayerIntent(createToggleDossierAction(playerEntityId));
+    }
+    return;
+  }
+
+  if (isLedgerOpen) {
+    if (event.key === 'Escape' || isAction(event, 'ledger')) {
+      event.preventDefault();
+      queuePlayerIntent(createToggleLedgerAction(playerEntityId));
     }
     return;
   }
@@ -338,6 +348,12 @@ export function handleKeyDown(
   if (isAction(event, 'dossier')) {
     event.preventDefault();
     queuePlayerIntent(createToggleDossierAction(playerEntityId));
+    return;
+  }
+
+  if (isAction(event, 'ledger')) {
+    event.preventDefault();
+    queuePlayerIntent(createToggleLedgerAction(playerEntityId));
     return;
   }
 

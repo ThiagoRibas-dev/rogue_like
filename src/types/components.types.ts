@@ -502,7 +502,7 @@ export interface ChronicleComponent {
   readonly pis: number; // Player Interaction Score
   readonly scars: ReadonlyArray<string>;
   readonly coreMemories: ReadonlyArray<string>; // For M43 internal mutation
-  readonly eventExcerpts: ReadonlyArray<ChronicleEvent>;
+  readonly eventExcerpts: ReadonlyArray<string>; // Array of GameEvent IDs
 }
 
 /**

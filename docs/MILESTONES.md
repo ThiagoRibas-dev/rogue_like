@@ -654,15 +654,15 @@ Make the system legible, dramatic, and emotionally sticky.
 # 🚀 Phase 8: Drama Director & Dynamic Composition
 **Goal:** Use the Event Ledger + Trigger System as a pacing-aware Drama Director that dynamically composes narrative triggers for characters, factions, areas, dungeons, and artifacts.
 
-## 🟡 Milestone 57: Event Ledger 2.0 & Player Interest Scoring ⭐ KEYSTONE
+## 🟢 Milestone 57: Event Ledger 2.0 & Player Interest Scoring (Complete) ⭐ KEYSTONE
 Turn the event ledger into a durable, queryable narrative substrate without storing infinite noise.
-- [ ] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
-- [ ] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
-- [ ] Add deterministic decay/boost rules so recent and repeated interactions matter more.
-- [ ] Store references from chronicle entries to ledger summaries rather than duplicating full event payloads.
-- [ ] Add query helpers for “most interesting enemy,” “recently harmed faction,” “area with escalating danger,” etc.
-- [ ] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
-- [ ] Add debug timeline visualization and exportable simulation logs.
+- [x] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
+- [x] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
+- [x] Add deterministic decay/boost rules so recent and repeated interactions matter more.
+- [x] Store references from chronicle entries to ledger summaries rather than duplicating full event payloads.
+- [x] Add query helpers for “most interesting enemy,” “recently harmed faction,” “area with escalating danger,” etc.
+- [x] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
+- [x] Add debug timeline visualization and exportable simulation logs.
 
 ## 🟡 Milestone 58: Drama Trigger Composer — Runtime Trigger Generation
 Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.

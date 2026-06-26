@@ -41,5 +41,6 @@ export const enum IntentType {
   Interact = 'Interact',
   Say = 'Say',
   AskAbout = 'AskAbout',
-  Gossip = 'Gossip'
+  Gossip = 'Gossip',
+  ToggleLedger = 'ToggleLedger'
 }

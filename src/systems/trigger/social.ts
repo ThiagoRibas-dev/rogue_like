@@ -405,14 +405,20 @@ export const socialConsequences = {
 
     if (consequence.addToInvestigationBoard) {
       const clueText = `${item.type}: ${item.description}`;
-      if (!nextState.investigation.discoveredClues.includes(clueText)) {
-        nextState = {
-          ...nextState,
-          investigation: {
-            ...nextState.investigation,
-            discoveredClues: [...nextState.investigation.discoveredClues, clueText]
-          }
+      const playerMemory = getComponent(nextState, playerId, ComponentType.Memory) as MemoryComponent | undefined;
+
+      if (playerMemory && !playerMemory.knowledge?.[clueText]) {
+        const nextKnowledge = { ...(playerMemory.knowledge ?? {}) };
+        nextKnowledge[clueText] = {
+          id: item.id,
+          type: item.type,
+          description: item.description,
+          tags: item.tags
         };
+        nextState = addComponent(nextState, playerId, {
+          ...playerMemory,
+          knowledge: nextKnowledge
+        });
       }
     }
     return nextState;

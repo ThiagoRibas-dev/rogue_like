@@ -1,7 +1,7 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
-import type { RenderableComponent, FighterComponent } from '../../types/components.types.ts';
+import type { RenderableComponent, FighterComponent, MemoryComponent } from '../../types/components.types.ts';
 
 /**
  * Renders the Investigation Board UI panel.
@@ -23,9 +23,19 @@ export function renderInvestigationBoard(state: GameState): void {
   suspectsList.innerHTML = '';
   cluesList.innerHTML = '';
 
-  const { investigation } = state;
+  const investigation = state.investigation;
 
-  // Render Suspects
+  // Find player's memory to get discovered clues
+  let playerMemory: MemoryComponent | undefined;
+  for (const entityId of state.entities) {
+    if (getComponent(state, entityId, ComponentType.Player)) {
+      playerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+      break;
+    }
+  }
+  const discoveredClues = playerMemory?.knowledge ? Object.keys(playerMemory.knowledge) : [];
+
+  // Render Known Suspects
   if (investigation.knownActors.length === 0) {
     suspectsList.innerHTML = '<div class="investigation-empty">No suspects identified yet.</div>';
   } else {
@@ -33,19 +43,20 @@ export function renderInvestigationBoard(state: GameState): void {
       const el = document.createElement('div');
       el.className = 'investigation-item suspect-item';
 
-      // Try to resolve name from components
-      let name = `Unknown Entity #${actorId}`;
+      let name = `Unknown Actor #${actorId}`;
       let isAlive = false;
 
-      // Check active entities
-      const activeRender = getComponent(state, actorId, ComponentType.Renderable) as RenderableComponent | undefined;
-      const activeFighter = getComponent(state, actorId, ComponentType.Fighter) as FighterComponent | undefined;
-
-      if (activeRender) {
-        name = activeRender.glyph === '@' ? 'The Mastermind' : `Suspect (${activeRender.glyph})`;
-        if (activeFighter && activeFighter.hp > 0) isAlive = true;
+      const activeComps = state.components.get(actorId);
+      if (activeComps) {
+        const renderable = activeComps[ComponentType.Renderable] as RenderableComponent | undefined;
+        const fighter = activeComps[ComponentType.Fighter] as FighterComponent | undefined;
+        if (renderable) {
+          name = renderable.glyph === '@' ? 'The Mastermind' : `Suspect (${renderable.glyph})`;
+        } else {
+          name = 'A Shadowy Figure';
+        }
+        if (fighter && fighter.hp > 0) isAlive = true;
       } else {
-        // Check persistent entities
         const pRecord = state.persistentEntities.get(actorId);
         if (pRecord) {
           const pRender = pRecord.components[ComponentType.Renderable] as RenderableComponent | undefined;
@@ -70,10 +81,10 @@ export function renderInvestigationBoard(state: GameState): void {
   }
 
   // Render Clues
-  if (investigation.discoveredClues.length === 0) {
+  if (discoveredClues.length === 0) {
     cluesList.innerHTML = '<div class="investigation-empty">No clues found yet.</div>';
   } else {
-    for (const clueId of investigation.discoveredClues) {
+    for (const clueId of discoveredClues) {
       const el = document.createElement('div');
       el.className = 'investigation-item clue-item';
 

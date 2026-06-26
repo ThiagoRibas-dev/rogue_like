@@ -28,6 +28,7 @@ import {
   tickPendingRumors,
   cullStaleAndConfirmedRumors
 } from '../systems/gossip.system.ts';
+import { processLedgerSystem } from '../systems/ledger.system.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -321,7 +322,9 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   nextState = processPersonalitySystem(nextState);
 
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  if (isPlayerAction && energyCost > 0) {
+  const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
+
+  if (didGlobalTurnAdvance) {
     nextState = {
       ...nextState,
       globalTurn: (nextState.globalTurn || 0) + 1
@@ -329,6 +332,9 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
     nextState = processNemesisSystem(nextState);
     nextState = processRivalries(nextState);
   }
+
+  // Filter high/normal events into historicalLedger and decay PIS
+  nextState = processLedgerSystem(nextState, didGlobalTurnAdvance);
 
   // Clear events at the end of the intent tick so they don't persist
   const eventsToReturn = [...nextState.events];

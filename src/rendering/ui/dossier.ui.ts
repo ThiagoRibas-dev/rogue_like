@@ -230,7 +230,11 @@ export function renderDossierUI(state: GameState): void {
       timelineContainer.style.padding = '12px';
       timelineContainer.style.marginBottom = '24px';
 
-      for (const event of playerChronicle.eventExcerpts) {
+      for (const eventId of playerChronicle.eventExcerpts) {
+        const event = state.historicalLedger.find((le) => le.id === eventId);
+        if (!event) continue;
+        const turn = event.id ? event.id.split('_')[1] : '?';
+
         const itemEl = document.createElement('div');
         itemEl.style.display = 'flex';
         itemEl.style.gap = '12px';
@@ -243,11 +247,11 @@ export function renderDossierUI(state: GameState): void {
         turnEl.style.color = '#3498db';
         turnEl.style.fontWeight = 'bold';
         turnEl.style.minWidth = '60px';
-        turnEl.textContent = `Turn ${event.turn}`;
+        turnEl.textContent = `Turn ${turn}`;
 
         const summaryEl = document.createElement('span');
         summaryEl.style.color = '#ddd';
-        summaryEl.textContent = event.summary;
+        summaryEl.textContent = event.summary ?? 'Unknown event.';
 
         itemEl.appendChild(turnEl);
         itemEl.appendChild(summaryEl);
@@ -288,10 +292,12 @@ export function renderDossierUI(state: GameState): void {
       : `Unknown Entity #${data.id}`;
 
     const excerptsHtml = data.chronicle.eventExcerpts
-      .map(
-        (e) =>
-          `<li style="margin-bottom: 4px;"><span style="color: var(--text-dim);">[Turn ${e.turn}]</span> ${e.summary}</li>`
-      )
+      .map((eventId) => {
+        const e = state.historicalLedger.find((le) => le.id === eventId);
+        if (!e) return '';
+        const turn = e.id ? e.id.split('_')[1] : '?';
+        return `<li style="margin-bottom: 4px;"><span style="color: var(--text-dim);">[Turn ${turn}]</span> ${e.summary}</li>`;
+      })
       .join('');
 
     const stress = data.memory?.stress ?? 0;

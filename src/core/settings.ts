@@ -20,7 +20,8 @@ export type ActionType =
   | 'quests'
   | 'investigation'
   | 'verb_menu'
-  | 'dossier';
+  | 'dossier'
+  | 'ledger';
 
 /**
  * Settings configuration controlling combat and visual telemetry effects.
@@ -70,7 +71,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     quests: ['q'],
     investigation: ['v'],
     verb_menu: ['m', 'enter'],
-    dossier: ['n']
+    dossier: ['n'],
+    ledger: ['l']
   },
   visualFeedback: {
     showDamageNumbers: true,

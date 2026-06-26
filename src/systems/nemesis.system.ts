@@ -113,6 +113,10 @@ export function processNemesisSystem(state: GameState): GameState {
       }
     }
 
+    const nextFactionPis = { ...nextState.factionPis };
+    const nextAreaPis = { ...nextState.areaPis };
+    let pisModified = false;
+
     for (const [entityId, increment] of affectedEntities.entries()) {
       const chronicle = getComponent(nextState, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
       if (chronicle) {
@@ -121,6 +125,25 @@ export function processNemesisSystem(state: GameState): GameState {
           pis: chronicle.pis + increment
         });
       }
+
+      const faction = getComponent(nextState, entityId, ComponentType.Faction) as
+        | import('../types/components.types.ts').FactionComponent
+        | undefined;
+      if (faction) {
+        nextFactionPis[faction.factionId] = (nextFactionPis[faction.factionId] || 0) + increment;
+        pisModified = true;
+      }
+
+      nextAreaPis[nextState.currentAreaId] = (nextAreaPis[nextState.currentAreaId] || 0) + increment;
+      pisModified = true;
+    }
+
+    if (pisModified) {
+      nextState = {
+        ...nextState,
+        factionPis: nextFactionPis,
+        areaPis: nextAreaPis
+      };
     }
   }
 
@@ -189,11 +212,15 @@ export function processNemesisSystem(state: GameState): GameState {
                 components: new Map([...nextState.components.entries(), [entityId, finalComps]])
               };
 
+              const eventId = `evt_${nextState.globalTurn}_return_${Math.floor(rng.getUniform() * 10000)}`;
               nextState = {
                 ...nextState,
                 events: [
                   ...nextState.events,
                   {
+                    id: eventId,
+                    importance: 'high',
+                    summary: `Returned to ${targetAreaId} to seek vengeance.`,
                     type: GameEventType.NemesisReturned,
                     entityId,
                     areaId: targetAreaId
@@ -204,12 +231,7 @@ export function processNemesisSystem(state: GameState): GameState {
               const identity = finalComps[ComponentType.Identity] as IdentityComponent | undefined;
               const name = identity ? identity.name : 'A nemesis';
               nextState = addMessage(nextState, `${name} has returned to seek vengeance!`, MessageLogCategory.System);
-              nextState = recordChronicleEvent(
-                nextState,
-                entityId,
-                'Return',
-                `Returned to ${targetAreaId} to seek vengeance.`
-              );
+              nextState = recordChronicleEvent(nextState, entityId, eventId);
 
               spawned = true;
               break;
@@ -366,14 +388,23 @@ export function evaluateCheatDeath(
 
   const nextChronicle = cleanComps[ComponentType.Chronicle] as ChronicleComponent | undefined;
   if (nextChronicle) {
-    const cheatEvent = {
-      turn: globalTurn,
-      type: 'CheatDeath',
-      summary: `Cheated death! Survived being struck down by the player.`
+    const eventId = `evt_${globalTurn}_cheat_${Math.floor(rng.getUniform() * 10000)}`;
+    nextState = {
+      ...nextState,
+      events: [
+        ...nextState.events,
+        {
+          id: eventId,
+          importance: 'high',
+          summary: `Cheated death! Survived being struck down by the player.`,
+          type: GameEventType.NemesisCheatedDeath,
+          entityId
+        }
+      ]
     };
     cleanComps[ComponentType.Chronicle] = {
       ...nextChronicle,
-      eventExcerpts: [...nextChronicle.eventExcerpts, cheatEvent]
+      eventExcerpts: [...nextChronicle.eventExcerpts, eventId]
     };
   }
 
@@ -442,7 +473,7 @@ export function promoteNemesis(
   let nextState = state;
 
   if (!getComponent(nextState, entityId, ComponentType.Chronicle)) {
-    nextState = promoteEntity(nextState, entityId, 'Elevated to Nemesis Hierarchy');
+    nextState = promoteEntity(nextState, entityId);
   }
 
   const hierarchy = nextState.campaign.nemesisHierarchies[hierarchyId];
@@ -512,10 +543,12 @@ export function promoteNemesis(
   const rankDisplayName = rank.displayName;
   const summary = `Promoted to ${rankDisplayName}${chosenTitle ? ` (${chosenTitle})` : ''}.`;
 
-  nextState = recordChronicleEvent(nextState, entityId, 'Promotion', summary);
-  nextState = addMessage(nextState, `${name} has been promoted to ${rankDisplayName}!`, MessageLogCategory.System);
+  const eventId = `evt_${nextState.globalTurn}_promo_${Math.floor(rng.getUniform() * 10000)}`;
 
   const promoteEvent = {
+    id: eventId,
+    importance: 'high' as const,
+    summary,
     type: GameEventType.NemesisPromoted as const,
     entityId,
     hierarchyId,
@@ -527,6 +560,9 @@ export function promoteNemesis(
     ...nextState,
     events: [...nextState.events, promoteEvent]
   };
+
+  nextState = recordChronicleEvent(nextState, entityId, eventId);
+  nextState = addMessage(nextState, `${name} has been promoted to ${rankDisplayName}!`, MessageLogCategory.System);
 
   nextState = generateEventDrivenRivalry(nextState, promoteEvent);
 
@@ -789,11 +825,15 @@ export function applyScar(state: GameState, entityId: EntityId, scarDef: ScarDef
     });
   }
 
+  const eventId = `evt_${nextState.globalTurn}_scar_${Math.floor(rng.getUniform() * 10000)}`;
   nextState = {
     ...nextState,
     events: [
       ...nextState.events,
       {
+        id: eventId,
+        importance: 'high',
+        summary: `Gained scar: ${scarDef.description}`,
         type: GameEventType.NemesisScarred,
         entityId,
         scarId: scarDef.id
@@ -801,7 +841,7 @@ export function applyScar(state: GameState, entityId: EntityId, scarDef: ScarDef
     ]
   };
 
-  nextState = recordChronicleEvent(nextState, entityId, 'Scarred', `Gained scar: ${scarDef.description}`);
+  nextState = recordChronicleEvent(nextState, entityId, eventId);
 
   return nextState;
 }

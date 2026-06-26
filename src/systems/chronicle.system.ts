@@ -1,9 +1,4 @@
-import {
-  ComponentType,
-  type ChronicleComponent,
-  type IdentityComponent,
-  type ChronicleEvent
-} from '../types/components.types.ts';
+import { ComponentType, type ChronicleComponent, type IdentityComponent } from '../types/components.types.ts';
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
@@ -15,7 +10,7 @@ import { rng } from '../core/rng.ts';
  * Note: The generation table is looked up in `state.campaign.identityGeneration`
  * using the strict naming convention `{templateId}_identity`.
  */
-export function promoteEntity(state: GameState, entityId: EntityId, reason: string): GameState {
+export function promoteEntity(state: GameState, entityId: EntityId): GameState {
   if (getComponent(state, entityId, ComponentType.Chronicle)) {
     return state; // Already promoted
   }
@@ -50,18 +45,12 @@ export function promoteEntity(state: GameState, entityId: EntityId, reason: stri
 
   nextState = addComponent(nextState, entityId, identity);
 
-  const initialEvent: ChronicleEvent = {
-    turn: state.globalTurn || 0,
-    type: 'Promotion',
-    summary: reason
-  };
-
   const chronicle: ChronicleComponent = {
     type: ComponentType.Chronicle,
     pis: 1, // Start with some player interaction score
     scars: [],
     coreMemories: [],
-    eventExcerpts: [initialEvent]
+    eventExcerpts: []
   };
 
   nextState = addComponent(nextState, entityId, chronicle);
@@ -73,28 +62,15 @@ export function promoteEntity(state: GameState, entityId: EntityId, reason: stri
 }
 
 /**
- * Records a new event in an entity's chronicle.
+ * Records a reference to an important ledger event in an entity's chronicle.
  */
-export function recordChronicleEvent(
-  state: GameState,
-  entityId: EntityId,
-  eventType: string,
-  summary: string,
-  relatedEntityIds?: EntityId[]
-): GameState {
+export function recordChronicleEvent(state: GameState, entityId: EntityId, eventId: string): GameState {
   const chronicle = getComponent(state, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
   if (!chronicle) return state;
 
-  const newEvent: ChronicleEvent = {
-    turn: state.globalTurn || 0,
-    type: eventType,
-    summary,
-    relatedEntityIds
-  };
-
   const nextChronicle: ChronicleComponent = {
     ...chronicle,
-    eventExcerpts: [...chronicle.eventExcerpts, newEvent]
+    eventExcerpts: [...chronicle.eventExcerpts, eventId]
   };
 
   return addComponent(state, entityId, nextChronicle);

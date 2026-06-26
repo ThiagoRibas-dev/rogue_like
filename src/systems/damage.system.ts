@@ -99,7 +99,7 @@ export function processDamageSystem(state: GameState): GameState {
         if (newHp / fighter.maxHp < 0.2 && lastKillerId !== undefined) {
           const isPlayerSource = getComponent(nextState, lastKillerId, ComponentType.Player) !== undefined;
           if (isPlayerSource) {
-            nextState = promoteEntity(nextState, entityId, 'Survived a vicious attack by the player');
+            nextState = promoteEntity(nextState, entityId);
           }
         }
       }

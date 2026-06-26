@@ -78,3 +78,9 @@ export interface GossipIntent extends BaseIntent {
   readonly entityId: EntityId;
   readonly isImmediate: true;
 }
+
+/** Intent to toggle the historical ledger overlay. */
+export interface ToggleLedgerIntent extends BaseIntent {
+  readonly type: IntentType.ToggleLedger;
+  readonly isImmediate: true;
+}

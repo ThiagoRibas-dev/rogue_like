@@ -1,29 +1,50 @@
-import { type GameState } from '../types/game-state.types.ts';
+import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import { GameEventType, type ClueDiscoveredEvent, type SchemeMutatedAreaEvent } from '../types/events.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { INVESTIGATION_STALL_THRESHOLD } from '../constants/investigation.constants.ts';
+import { ComponentType, type MemoryComponent } from '../types/components.types.ts';
+import { getComponent, addComponent } from '../core/ecs.ts';
 
 /**
  * Processes investigation-related events.
- * Currently listens for ClueDiscoveredEvent to update the player's InvestigationKnowledge.
+ * Currently listens for ClueDiscoveredEvent to update the player's MemoryComponent knowledge.
  */
 export function processInvestigationEvents(state: GameState): GameState {
   let nextState = state;
   let investigationUpdated = false;
 
   const newKnownActors = new Set(nextState.investigation.knownActors);
-  const newDiscoveredClues = new Set(nextState.investigation.discoveredClues);
   const newExposedAgreements = [...nextState.investigation.exposedAgreements];
 
   let newLastClueTurn = nextState.investigation.lastClueTurn ?? state.globalTurn;
   let newLastStallTriggerTurn = nextState.investigation.lastStallTriggerTurn;
 
+  // Find player to update their MemoryComponent
+  let playerId: EntityId | undefined;
+  let playerMemory: MemoryComponent | undefined;
+  for (const entityId of state.entities) {
+    if (getComponent(state, entityId, ComponentType.Player)) {
+      playerId = entityId;
+      playerMemory = getComponent(state, entityId, ComponentType.Memory) as MemoryComponent | undefined;
+      break;
+    }
+  }
+
+  const nextKnowledge = playerMemory?.knowledge ? { ...playerMemory.knowledge } : {};
+  let knowledgeUpdated = false;
+
   for (const event of state.events) {
     if (event.type === GameEventType.ClueDiscovered) {
       const clueEvent = event as ClueDiscoveredEvent;
 
-      if (!newDiscoveredClues.has(clueEvent.clueId)) {
-        newDiscoveredClues.add(clueEvent.clueId);
+      if (!nextKnowledge[clueEvent.clueId]) {
+        nextKnowledge[clueEvent.clueId] = {
+          id: clueEvent.clueId,
+          type: 'secret',
+          description: `Clue: ${clueEvent.clueId}`,
+          tags: []
+        };
+        knowledgeUpdated = true;
         investigationUpdated = true;
         newLastClueTurn = state.globalTurn;
 
@@ -42,17 +63,19 @@ export function processInvestigationEvents(state: GameState): GameState {
 
       // If we have both the minion and the mastermind, link them
       if (clueEvent.implicatesEntityId) {
-        // TODO: Technically, sourceEntityId here is the Item that was dropped.
-        // But the item doesn't know who dropped it right now unless we added that to ClueComponent.
-        // Since we did not add the minionId to the ClueComponent (only implicatesEntityId),
-        // we can't fully draw the edge yet. We'd need to update ClueComponent to hold `minionId`.
-        // For MVP, we will just track the exposed Agreements via implicates.
+        // ...
       }
     } else if (event.type === GameEventType.SchemeMutatedArea) {
       const mutateEvent = event as SchemeMutatedAreaEvent;
       const clueText = `Rumor: ${mutateEvent.areaId} is now ${mutateEvent.tagsAdded.join(', ')} (Fortification rating +${mutateEvent.budgetModifier})`;
-      if (!newDiscoveredClues.has(clueText)) {
-        newDiscoveredClues.add(clueText);
+      if (!nextKnowledge[clueText]) {
+        nextKnowledge[clueText] = {
+          id: mutateEvent.areaId,
+          type: 'rumor',
+          description: clueText,
+          tags: mutateEvent.tagsAdded
+        };
+        knowledgeUpdated = true;
         investigationUpdated = true;
         newLastClueTurn = state.globalTurn;
         nextState = addMessage(
@@ -62,6 +85,13 @@ export function processInvestigationEvents(state: GameState): GameState {
         );
       }
     }
+  }
+
+  if (knowledgeUpdated && playerId !== undefined && playerMemory) {
+    nextState = addComponent(nextState, playerId, {
+      ...playerMemory,
+      knowledge: nextKnowledge
+    });
   }
 
   // Stall Detector Logic
@@ -93,7 +123,6 @@ export function processInvestigationEvents(state: GameState): GameState {
       ...nextState,
       investigation: {
         knownActors: Array.from(newKnownActors),
-        discoveredClues: Array.from(newDiscoveredClues),
         exposedAgreements: newExposedAgreements,
         lastClueTurn: newLastClueTurn,
         lastStallTriggerTurn: newLastStallTriggerTurn

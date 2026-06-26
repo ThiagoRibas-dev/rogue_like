@@ -123,10 +123,12 @@ export async function startNewGame(
     playerCommandQueue: [],
     investigation: {
       knownActors: [],
-      discoveredClues: [],
       exposedAgreements: [],
       lastClueTurn: 0
     },
+    historicalLedger: [],
+    factionPis: {},
+    areaPis: {},
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,
@@ -355,10 +357,12 @@ export async function startSandboxEncounter(
     playerCommandQueue: [],
     investigation: {
       knownActors: [],
-      discoveredClues: [],
       exposedAgreements: [],
       lastClueTurn: 0
     },
+    historicalLedger: [],
+    factionPis: {},
+    areaPis: {},
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,

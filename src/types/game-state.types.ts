@@ -37,7 +37,8 @@ export const enum UIMode {
   VerbMenu = 'verb_menu',
   Dossier = 'dossier',
   Trade = 'trade',
-  Services = 'services'
+  Services = 'services',
+  Ledger = 'ledger'
 }
 
 /**
@@ -125,7 +126,6 @@ export interface AreaMutation {
 /** Holds the collection of suspects, discovered clues, and exposed mastermind agreements in active campaigns. */
 export interface InvestigationKnowledge {
   readonly knownActors: ReadonlyArray<EntityId>;
-  readonly discoveredClues: ReadonlyArray<string>;
   readonly exposedAgreements: ReadonlyArray<{ readonly minionId: EntityId; readonly mastermindId: EntityId }>;
   readonly lastClueTurn: number;
   readonly lastStallTriggerTurn?: number | undefined;
@@ -235,6 +235,9 @@ export interface GameState {
   readonly isSandbox?: boolean;
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
+  readonly historicalLedger: ReadonlyArray<GameEvent>;
+  readonly factionPis: Readonly<Record<string, number>>;
+  readonly areaPis: Readonly<Record<string, number>>;
   readonly areaMutations: Readonly<Record<string, AreaMutation>>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
@@ -322,6 +325,9 @@ export interface SerializedGameState {
   readonly zoomLevel: number;
   readonly investigation: InvestigationKnowledge;
   readonly areaMutations: ReadonlyArray<[string, AreaMutation]>;
+  readonly historicalLedger: ReadonlyArray<GameEvent>;
+  readonly factionPis: Readonly<Record<string, number>>;
+  readonly areaPis: Readonly<Record<string, number>>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;

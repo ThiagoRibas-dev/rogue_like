@@ -13,3 +13,4 @@ export { renderInvestigationBoard } from './ui/investigation.ui.ts';
 export { renderDebugOverlay } from './ui/debug.ui.ts';
 export { renderVerbMenu } from './ui/verb_menu.ui.ts';
 export { renderDossierUI } from './ui/dossier.ui.ts';
+export { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';

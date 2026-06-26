@@ -29,7 +29,8 @@ import type {
   ToggleDebugIntent,
   ToggleDossierIntent,
   AskAboutIntent,
-  GossipIntent
+  GossipIntent,
+  ToggleLedgerIntent
 } from './ui.intents.ts';
 
 import type { ToggleRotatedIntent, Toggle3DIntent, SetZoomLevelIntent } from './camera.intents.ts';
@@ -85,7 +86,8 @@ export type Intent =
   | GossipIntent
   | ApplyIntent
   | InteractIntent
-  | SayIntent;
+  | SayIntent
+  | ToggleLedgerIntent;
 
 /** Structure representing the result of executing an action handler. */
 export interface ActionResult {

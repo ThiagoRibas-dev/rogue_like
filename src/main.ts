@@ -23,7 +23,8 @@ import {
   renderInvestigationBoard,
   renderDebugOverlay,
   renderVerbMenu,
-  renderDossierUI
+  renderDossierUI,
+  renderDebugLedgerUI
 } from './rendering/ui.ts';
 import { renderEditorUI } from './rendering/editor_ui.ts';
 import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
@@ -124,10 +125,12 @@ let state: GameState = {
   pendingRumors: [],
   investigation: {
     knownActors: [],
-    discoveredClues: [],
     exposedAgreements: [],
     lastClueTurn: 0
   },
+  historicalLedger: [],
+  factionPis: {},
+  areaPis: {},
   nemesisSlots: {},
   vacancyTurns: {},
   globalTurn: 0,
@@ -506,6 +509,8 @@ onStateChange((newState: GameState) => {
     renderDebugOverlay(newState);
     renderVerbMenu(newState);
     renderDossierUI(newState);
+    renderDebugLedgerUI(newState);
+    renderEditorUI(newState, globalCampaignEditor);
   }
 });
 
