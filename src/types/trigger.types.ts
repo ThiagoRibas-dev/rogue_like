@@ -256,3 +256,15 @@ export type RunScriptConsequenceFn = (
   scriptCode: string,
   context: { event: GameEvent; state: Readonly<GameState>; rng: typeof ROT.RNG }
 ) => ConsequenceAction[];
+
+/** Zod schema for dynamic trigger templates */
+export const TriggerTemplateSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  conditions: z.array(z.any()), // Allows strings (placeholders) + objects
+  consequences: z.array(z.any()), // Allows strings (placeholders) + objects
+  expectedVariables: z.array(z.string()).optional()
+});
+
+/** Inferred type for a trigger template definition */
+export type TriggerTemplate = z.infer<typeof TriggerTemplateSchema>;

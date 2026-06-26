@@ -19,6 +19,7 @@ import { showPromptModal } from './ui/modal.ui.ts';
 import { renderWorldGraph } from './ui/world_graph.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
+import { renderTriggerComposer } from './ui/trigger_composer.ui.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 
@@ -49,7 +50,7 @@ export interface EditorController {
 }
 
 // Local UI State for the Editor
-let currentCategory: keyof CampaignData | 'simulation' | null = null;
+let currentCategory: keyof CampaignData | 'simulation' | 'triggerComposer' | null = null;
 let currentItemId: string | null = null;
 let searchFilter = '';
 let isInitialized = false;
@@ -123,6 +124,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         <li><button class="sidebar-item-btn" data-target="quests">Quests</button></li>
         <li><button class="sidebar-item-btn" data-target="questTemplates">Quest Templates</button></li>
         <li><button class="sidebar-item-btn" data-target="triggers">Triggers</button></li>
+        <li><button class="sidebar-item-btn" data-target="triggerComposer">⚡ Trigger Composer</button></li>
         <li><button class="sidebar-item-btn" data-target="villains">Villains</button></li>
         <li><button class="sidebar-item-btn" data-target="schemes">Schemes</button></li>
         <li><button class="sidebar-item-btn" data-target="agreements">Agreements</button></li>
@@ -405,7 +407,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     const savedCat = sessionStorage.getItem('editor_active_category');
     const savedItem = sessionStorage.getItem('editor_active_item');
     if (savedCat) {
-      currentCategory = savedCat as keyof CampaignData | 'simulation';
+      currentCategory = savedCat as keyof CampaignData | 'simulation' | 'triggerComposer';
       if (savedItem) currentItemId = savedItem;
       const btn = navMenu?.querySelector(`[data-target="${savedCat}"]`);
       if (btn) {
@@ -420,7 +422,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       const btn = (e.target as HTMLElement).closest('.sidebar-item-btn') as HTMLButtonElement | null;
       if (!btn) return;
 
-      const target = btn.dataset.target as keyof CampaignData | 'simulation';
+      const target = btn.dataset.target as keyof CampaignData | 'simulation' | 'triggerComposer';
       if (target && target !== currentCategory) {
         currentCategory = target;
         currentItemId = null;
@@ -684,6 +686,8 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
           activeTab = 'knowledge';
           activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
         });
+      } else if (currentCategory === 'triggerComposer') {
+        renderTriggerComposer(controller, formContainer);
       } else {
         workspacePane.appendChild(header);
         // Render singleton form

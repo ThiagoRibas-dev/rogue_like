@@ -4,7 +4,7 @@ export { DialogueConditionSchema, DialogueEffectSchema };
 export type { DialogueCondition, DialogueEffect } from './dialogue.types.ts';
 
 import { QuestSchema } from './quests.types.ts';
-import { TriggerDefinitionSchema } from './trigger.types.ts';
+import { TriggerDefinitionSchema, TriggerTemplateSchema } from './trigger.types.ts';
 
 // Import sub-domain types to assemble the main schemas
 import {
@@ -72,6 +72,7 @@ export const CampaignDataSchema = z.object({
   quests: z.record(z.string(), QuestSchema),
   questTemplates: z.record(z.string(), ProceduralQuestTemplateSchema),
   triggers: z.record(z.string(), TriggerDefinitionSchema),
+  triggerTemplates: z.record(z.string(), TriggerTemplateSchema).default({}),
   triggerBuckets: z.record(z.string(), z.array(TriggerDefinitionSchema)).optional(),
   villains: z.record(z.string(), VillainArchetypeSchema),
   schemes: z.record(z.string(), SchemeTemplateSchema),
@@ -111,6 +112,7 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   quests: QuestSchema,
   questTemplates: ProceduralQuestTemplateSchema,
   triggers: TriggerDefinitionSchema,
+  triggerTemplates: TriggerTemplateSchema,
   triggerBuckets: z.array(TriggerDefinitionSchema),
   villains: VillainArchetypeSchema,
   schemes: SchemeTemplateSchema,

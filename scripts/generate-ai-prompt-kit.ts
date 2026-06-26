@@ -320,6 +320,7 @@ function main() {
     const questTypes = readSource(join(SRC_TYPES, 'quests.types.ts'));
     const eventsTypes = readSource(join(SRC_TYPES, 'events.types.ts'));
     const verbsConstants = readSource(join(SRC_CONSTANTS, 'verbs.constants.ts'));
+    const triggerConstants = readSource(join(SRC_CONSTANTS, 'trigger.constants.ts'));
 
     const allSource = [
         ['campaign.types.ts', campaignTypes],
@@ -327,7 +328,8 @@ function main() {
         ['dialogue.types.ts', dialogueTypes],
         ['quests.types.ts', questTypes],
         ['events.types.ts', eventsTypes],
-        ['verbs.constants.ts', verbsConstants]
+        ['verbs.constants.ts', verbsConstants],
+        ['trigger.constants.ts', triggerConstants]
     ] as const;
 
     // ─── 2. Extract all schemas, types, enums ───
@@ -392,6 +394,14 @@ function main() {
             : valid;
     })();
 
+    const triggerPlaceholders: string[] = [];
+    const phMatch = triggerConstants.match(/['"`]\$[A-Z_]+['"`]/g);
+    if (phMatch) {
+        for (const m of phMatch) {
+            triggerPlaceholders.push(m.replace(/['"`]/g, ''));
+        }
+    }
+
     // ─── 5. Build valid-values.json ───
     const validValues: Record<string, string[]> = {
         GameEventType: gameEventEnum,
@@ -413,6 +423,7 @@ function main() {
         ZapPattern: ['beam', 'bolt', 'cone'],
         AIBehaviorId: aiBehaviorValues,
         AreaConnectionDirection: areaGeneratorTypeValues.includes('up') ? ['up', 'down', 'edge', 'portal'] : [],
+        TriggerComposerPlaceholders: triggerPlaceholders,
     };
     // Remove undefined entries
     for (const key of Object.keys(validValues)) {
@@ -613,12 +624,15 @@ function main() {
     xrefMd += '| `options[].nextNodeId` | Must be a key in the same dialogue tree\'s `nodes` |\n\n';
 
     // Triggers
-    xrefMd += '## 10. Triggers (`triggers.json`)\n\n';
+    xrefMd += '## 10. Triggers (`triggers.json` and `trigger_templates.json`)\n\n';
     xrefMd += '| Field | Cross-References | Valid Values |\n';
     xrefMd += '|-------|-----------------|--------------|\n';
     xrefMd += '| `eventType` | Enum `GameEventType` | ' + (validValues.GameEventType?.join(', ') || 'see valid-values.json') + ' |\n';
     xrefMd += '| `conditions[]` | Same as `ConditionPredicate` | |\n';
-    xrefMd += '| `consequences[]` | Same as `ConsequenceAction` | |\n\n';
+    xrefMd += '| `consequences[]` | Same as `ConsequenceAction` | |\n';
+    xrefMd += '\n**Trigger Templates / Composer**:\n';
+    xrefMd += 'When generating `trigger_templates.json`, you can use the following placeholders in conditions and consequences for late-binding:\n';
+    xrefMd += '`' + triggerPlaceholders.join('`, `') + '`\n\n';
 
     // Quests
     xrefMd += '## 11. Quests (`quests.json`)\n\n';
@@ -669,6 +683,81 @@ function main() {
     xrefMd += 'The central namespace. **Every tag used in any other file MUST be registered here.**\n';
     xrefMd += 'Categories: `item`, `entity`, `terrain`, `physical`, `elemental`, `field`, `biome`, `trait`, etc.\n\n';
 
+    // 17. Fields
+    xrefMd += '## 17. Fields (`fields.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `statusEffectId` | Must be a key in `status.json` |\n\n';
+
+    // 18. Villain Archetypes
+    xrefMd += '## 18. Villain Archetypes (`villains.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `factionId` | Must be a key in `factions.json` |\n';
+    xrefMd += '| `identityGenerationTable` | Must be a key in `identity_generation.json` |\n';
+    xrefMd += '| `personalityGenerationTable` | Must be a key in `personality_generation.json` |\n\n';
+
+    // 19. Schemes
+    xrefMd += '## 19. Schemes (`schemes.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `phases[].villainLevelRequirement` | Integer |\n\n';
+
+    // 20. Agreements
+    xrefMd += '## 20. Agreements (`agreements.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `targetArchetype` | Must be a key in `entities.json` or role tags |\n\n';
+
+    // 21. Quest Templates
+    xrefMd += '## 21. Quest Templates (`quest_templates.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `baseTemplate` | Same as `QuestSchema` structure |\n\n';
+
+    // 22. Identity Generation
+    xrefMd += '## 22. Identity Generation (`identity_generation.json`)\n\n';
+    xrefMd += 'Standalone generation tables for names and titles.\n\n';
+
+    // 23. Personality Generation
+    xrefMd += '## 23. Personality Generation (`personality_generation.json`)\n\n';
+    xrefMd += 'Standalone generation tables for MICE leverage and facets.\n\n';
+
+    // 24. Nemesis Hierarchies
+    xrefMd += '## 24. Nemesis Hierarchies (`nemesis_hierarchies.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `factionId` | Must be a key in `factions.json` |\n\n';
+
+    // 25. Knowledge Propagation
+    xrefMd += '## 25. Knowledge Propagation (`knowledge_propagation.json`)\n\n';
+    xrefMd += 'Standalone rules array for knowledge spreading.\n\n';
+
+    // 26. Rumor Propagation
+    xrefMd += '## 26. Rumor Propagation (`rumor_propagation.json`)\n\n';
+    xrefMd += 'Standalone rules array for rumors.\n\n';
+
+    // 27. Relationship Thresholds
+    xrefMd += '## 27. Relationship Thresholds (`relationship_thresholds.json`)\n\n';
+    xrefMd += 'Standalone thresholds for axes like fear, loyalty, etc.\n\n';
+
+    // --- Heuristic Synchronization Check ---
+    const expectedXrefFiles = categoryKeys
+        .filter(k => k !== 'triggerBuckets') // Runtime generated
+        .map(k => k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`) + '.json');
+        
+    const missingDocs = expectedXrefFiles.filter(file => !xrefMd.includes(`\`${file}\``));
+    
+    // Ignore meta files that don't need cross references
+    const ignorableDocs = ['manifest.json', 'rules.json', 'theme.json', 'advancement.json'];
+    const trulyMissing = missingDocs.filter(f => !ignorableDocs.includes(f));
+
+    if (trulyMissing.length > 0) {
+        console.error(`\n❌ SYNCHRONIZATION ERROR: The following CampaignData files are undocumented in the AI Prompt Kit cross-reference map:\n  ${trulyMissing.join(', ')}`);
+        console.error('Please update scripts/generate-ai-prompt-kit.ts to include them as headers in the xrefMd generator.');
+        process.exit(1);
+    }
+
     writeFileSync(join(OUT_DIR, 'cross-reference-map.md'), xrefMd);
     console.log('  ✅ cross-reference-map.md');
 
@@ -695,7 +784,8 @@ function main() {
     rulesMd += '  dialogues.json (depends on conditions/consequences, quests, factions, entities)\n';
     rulesMd += '  quests.json (depends on entities, items, areas)\n';
     rulesMd += '  triggers.json (depends on conditions/consequences, entities, areas, quests)\n';
-    rulesMd += '  reactions.json (depends on entities, items, tiles, tag_registry, trait_registry, fields)\n\n';
+    rulesMd += '  reactions.json (depends on entities, items, tiles, tag_registry, trait_registry, fields)\n';
+    rulesMd += '  trigger_templates.json (depends on triggers)\n\n';
     rulesMd += 'Phase 4 (depends on everything above):\n';
     rulesMd += '  identity_generation.json, personality_generation.json, nemesis_hierarchies.json\n';
     rulesMd += '  knowledge_propagation.json, rumor_propagation.json, relationship_thresholds.json\n';
@@ -710,6 +800,7 @@ function main() {
     rulesMd += '6. **Every cross-reference must resolve**: If an entity references `faction: "goblins"`, then `"goblins"` must exist as a key in `factions.json`.\n\n';
     rulesMd += '7. **Dialogue tree nodes must be internally consistent**: `nextNodeId` values must point to existing node IDs within the same tree.\n\n';
     rulesMd += '8. **Quest objective targetId must match type**: `kill` → entity ID, `gather` → item ID, `explore` → area ID.\n\n';
+    rulesMd += '9. **Trigger Templates**: `trigger_templates.json` files can use placeholder strings. These are valid strings during generation, even for numeric properties (which will be automatically unquoted by the engine at runtime): `' + triggerPlaceholders.join('`, `') + '`.\n\n';
 
     rulesMd += '## Common Pitfalls\n\n';
     rulesMd += '| Pitfall | Example | Resolution |\n';

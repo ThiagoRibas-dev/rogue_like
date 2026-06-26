@@ -664,14 +664,14 @@ Turn the event ledger into a durable, queryable narrative substrate without stor
 - [x] **Unified Knowledge Migration:** Refactor the Investigation Board UI to read dynamically from the player's `MemoryComponent.knowledge` (filtered by tags) instead of storing a parallel array of string `discoveredClues`, fully unifying the game's knowledge architecture.
 - [x] Add debug timeline visualization and exportable simulation logs.
 
-## 🟡 Milestone 58: Drama Trigger Composer — Runtime Trigger Generation
+## 🟢 Milestone 58: Drama Trigger Composer — Runtime Trigger Generation (Complete)
 Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.
-- [ ] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
-- [ ] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
-- [ ] Compose full `TriggerDefinition` objects at runtime and inject them into active campaign data.
-- [ ] Rebuild trigger buckets safely after dynamic trigger injection/removal.
-- [ ] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
-- [ ] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
+- [x] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
+- [x] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
+- [x] Compose full `TriggerDefinition` objects at runtime and inject them into active campaign data.
+- [x] Rebuild trigger buckets safely after dynamic trigger injection/removal.
+- [x] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
+- [x] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
 
 ## 🟡 Milestone 59: Pacing Governor & Surprise Budget
 Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.

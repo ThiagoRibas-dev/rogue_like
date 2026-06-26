@@ -85,7 +85,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       knowledgePropagationRes,
       rumorPropagationRes,
       nemesisHierarchiesRes,
-      relationshipThresholdsRes
+      relationshipThresholdsRes,
+      triggerTemplatesRes
     ] = await Promise.all([
       fetch(`${basePath}/manifest.json`),
       fetch(`${basePath}/rules.json`),
@@ -116,7 +117,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       fetch(`${basePath}/knowledge_propagation.json`),
       fetch(`${basePath}/rumor_propagation.json`),
       fetch(`${basePath}/nemesis_hierarchies.json`),
-      fetch(`${basePath}/relationship_thresholds.json`)
+      fetch(`${basePath}/relationship_thresholds.json`),
+      fetch(`${basePath}/trigger_templates.json`)
     ]);
 
     // Check if any requests failed (e.g., 404)
@@ -247,6 +249,15 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       }
     }
 
+    let triggerTemplates = {};
+    if (triggerTemplatesRes.ok) {
+      try {
+        triggerTemplates = await triggerTemplatesRes.json();
+      } catch (err) {
+        console.warn('Failed to parse trigger_templates.json', err);
+      }
+    }
+
     const data = {
       manifest,
       rules,
@@ -278,6 +289,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       rumorPropagation,
       nemesisHierarchies,
       relationshipThresholds,
+      triggerTemplates,
       triggerBuckets: {}
     };
 
