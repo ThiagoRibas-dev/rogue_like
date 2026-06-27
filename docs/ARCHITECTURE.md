@@ -112,6 +112,7 @@ graph TD
 We use a low-overhead, framework-free ECS:
 - **Entities** are simple numeric IDs (`EntityId` branded type), not class instances.
 - **Components** are pure data objects (TS interfaces) with no methods, stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>` within the global `GameState` for `O(1)` access. The `GameState` is strictly immutable; systems clone the outer map when adding/removing entities, but only clone and replace the specific dictionary for the modified entity during updates.
+- **Component Heuristic**: When deciding if data warrants a new component, evaluate **Reusability** (does it apply to multiple entity types like Actors, Areas, Factions?), **System Querying** (does a system need to iterate over all entities with this specific property?), and **Lifecycle** (is the data conceptually distinct, e.g. a temporary status effect vs intrinsic tags).
 - **Systems** are pure functions that query components using `getComponent`, process game state changes, and return new state via `addComponent` / `removeComponent`.
 - **Entity Ownership**: Components (like `InventoryComponent`) do not "contain" other entities; they store `EntityId`s as foreign keys. When migrating entities between state boundaries, the engine must traverse and package these owned "child" entities to prevent orphaned references.
 
@@ -149,9 +150,9 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 
 ### 5.2 Areas, Transitions & Sleep/Wake
 
-The game world is divided into distinct "Areas" — procedural dungeons or static hand-crafted hubs. `GameState` tracks `currentAreaId`; inactive areas are serialized into an `areas` map. Transitions use generic `PortalComponent`s and a `ChangeAreaIntent`, packing the current ECS into cold storage and unpacking (or generating) the target area.
+The game world is divided into distinct "Areas" — procedural dungeons or static hand-crafted hubs. Areas themselves are modeled as standard ECS Global Entities with a `TagsComponent` and `ChronicleComponent` to record world events. `GameState` tracks `currentAreaId`; inactive areas are serialized into an `areas` map. Transitions use generic `PortalComponent`s and a `ChangeAreaIntent`, packing the current ECS into cold storage and unpacking (or generating) the target area.
 
-**Persistent Entities (Sleep/Wake):** Entities with a `PersistentComponent` are saved into a global `persistentEntities` pool (rather than area-local storage) when unloading, and re-injected into the active ECS when their target area loads. This ensures named NPCs maintain state across transitions and can migrate between areas.
+**Persistent Entities & Limbo (Sleep/Wake):** Entities with a `PersistentComponent` are saved into a global `persistentEntities` pool (rather than area-local storage) when unloading. To prevent orphaned references (e.g., leaving a sword on the floor when its owner teleports out), the `moveToLimbo` utility recursively packages the entity and all of its foreign key children (inventory, equipped items) together into Limbo. They are then re-injected into the active ECS when their target area loads. This ensures named NPCs maintain state and belongings across transitions and off-screen scheme missions.
 
 **Area Respawn Timers:** Areas can define a `respawnTimerTurns` threshold. When transitioning back into an area, the map system compares the delta between the current `globalTurn` and the area's `lastSpawnTurn`. If the threshold is exceeded, the `EncounterDirector` re-runs, repopulating the area's active rooms with new non-persistent entities while emitting an `AreaRespawned` event to hook into the social simulation (e.g., generating rumors).
 
@@ -194,7 +195,9 @@ A declarative `StatusEffectDefinition` registry describes effects (duration, sta
 
 ### 7.1 Composable AI Pipeline & Factions
 
-AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`) composed into data-driven AI Profiles. During an entity's turn, behaviors are evaluated in priority order until one returns an executable `Intent` — replacing monolithic `if/else` blocks and allowing complex types (e.g., cowardly mage) to be built by mixing behaviors in data. Hostility is resolved via a `HOSTILITY_MATRIX` lookup between `FactionId`s, replacing hardcoded "player vs monster" logic and enabling infighting, neutral NPCs, and allied summons. AI modules utilize FOV for line-of-sight checks, and `AIComponent` tracks ability cooldowns.
+AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`) composed into data-driven AI Profiles. During an entity's turn, behaviors are evaluated in priority order until one returns an executable `Intent` — replacing monolithic `if/else` blocks and allowing complex types (e.g., cowardly mage) to be built by mixing behaviors in data.
+
+**Factions as Global Entities:** Factions are modeled as standard ECS Global Entities rather than hardcoded lookup tables. This allows them to naturally possess a `ChronicleComponent` (tracking their historical world events like schisms and alliances), `TagsComponent`, and `MemoryComponent`. Hostility is resolved via a `HOSTILITY_MATRIX` lookup between `FactionId`s, replacing hardcoded "player vs monster" logic and enabling infighting, neutral NPCs, and allied summons. AI modules utilize FOV for line-of-sight checks, and `AIComponent` tracks ability cooldowns.
 
 **Memory Separation of Concerns**: AI combat tracking data (like `grudges`) is kept strictly separated from narrative state tracking (like boolean `facts` for dialogues). Mixing them creates brittle code that can falsely trigger AI hostility.
 

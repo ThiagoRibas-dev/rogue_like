@@ -22,6 +22,7 @@ import { processFieldsTick } from '../systems/field.system.ts';
 import { processPersonalitySystem } from '../systems/personality.system.ts';
 import { processNemesisSystem } from '../systems/nemesis.system.ts';
 import { processRivalries } from '../systems/rivalry.system.ts';
+import { processWorldEvents } from '../systems/world_events.system.ts';
 import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
 import {
   processRumorPropagationEvents,
@@ -338,6 +339,7 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
     };
     nextState = processNemesisSystem(nextState);
     nextState = processRivalries(nextState);
+    nextState = processWorldEvents(nextState);
   }
 
   // Filter high/normal events into historicalLedger and decay PIS

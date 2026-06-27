@@ -747,6 +747,10 @@ function main() {
     xrefMd += '## 27. Relationship Thresholds (`relationship_thresholds.json`)\n\n';
     xrefMd += 'Standalone thresholds for axes like fear, loyalty, etc.\n\n';
 
+    // 28. World Events
+    xrefMd += '## 28. World Events (`world_events.json`)\n\n';
+    xrefMd += 'Standalone string pools for area and faction narrative chronicles.\n\n';
+
     // --- Heuristic Synchronization Check ---
     const expectedXrefFiles = categoryKeys
         .filter(k => k !== 'triggerBuckets') // Runtime generated
@@ -795,6 +799,7 @@ function main() {
     rulesMd += 'Phase 4 (depends on everything above):\n';
     rulesMd += '  identity_generation.json, personality_generation.json, nemesis_hierarchies.json\n';
     rulesMd += '  knowledge_propagation.json, rumor_propagation.json, relationship_thresholds.json\n';
+    rulesMd += '  world_events.json\n';
     rulesMd += '```\n\n';
 
     rulesMd += '## Critical Constraints\n\n';

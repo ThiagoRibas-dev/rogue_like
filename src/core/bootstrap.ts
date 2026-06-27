@@ -9,9 +9,14 @@ import {
   type PortalComponent,
   type PositionComponent,
   type RenderableComponent,
-  type TagsComponent
+  type TagsComponent,
+  type IdentityComponent,
+  type InteractionScoreComponent,
+  type DirectorBudgetComponent,
+  type ChronicleComponent,
+  type MemoryComponent
 } from '../types/components.types.ts';
-import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode, type PersistentEntityRecord } from '../types/game-state.types.ts';
 import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import { compilePhases } from '../systems/scheme_compiler.ts';
@@ -92,6 +97,83 @@ export async function startNewGame(
     }
   }
 
+  let nextEntityId = state.nextEntityId || 1;
+  const factionEntityIds: Record<string, EntityId> = {};
+  const areaEntityIds: Record<string, EntityId> = {};
+  const initialPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
+
+  for (const factionId of Object.keys(newCampaign.factions)) {
+    const id = nextEntityId++ as EntityId;
+    factionEntityIds[factionId] = id;
+    initialPersistentEntities.set(id, {
+      areaId: 'world',
+      components: {
+        [ComponentType.Identity]: {
+          type: ComponentType.Identity,
+          name: factionId,
+          mannerisms: []
+        } as IdentityComponent,
+        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['faction'] } as TagsComponent,
+        [ComponentType.InteractionScore]: {
+          type: ComponentType.InteractionScore,
+          score: 0
+        } as InteractionScoreComponent,
+        [ComponentType.Chronicle]: {
+          type: ComponentType.Chronicle,
+          pis: 0,
+          scars: [],
+          coreMemories: [],
+          eventExcerpts: []
+        } as ChronicleComponent,
+        [ComponentType.Memory]: {
+          type: ComponentType.Memory,
+          grudges: [],
+          factionStandings: {},
+          facts: [],
+          knowledge: {}
+        } as MemoryComponent
+      }
+    });
+  }
+
+  for (const [areaId, def] of Object.entries(newCampaign.areas)) {
+    const id = nextEntityId++ as EntityId;
+    areaEntityIds[areaId] = id;
+    initialPersistentEntities.set(id, {
+      areaId: 'world',
+      components: {
+        [ComponentType.Identity]: {
+          type: ComponentType.Identity,
+          name: def.name || areaId,
+          mannerisms: []
+        } as IdentityComponent,
+        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['area', ...(def.tags || [])] } as TagsComponent,
+        [ComponentType.InteractionScore]: {
+          type: ComponentType.InteractionScore,
+          score: 0
+        } as InteractionScoreComponent,
+        [ComponentType.DirectorBudget]: {
+          type: ComponentType.DirectorBudget,
+          budgetModifier: 0
+        } as DirectorBudgetComponent,
+        [ComponentType.Chronicle]: {
+          type: ComponentType.Chronicle,
+          pis: 0,
+          scars: [],
+          coreMemories: [],
+          eventExcerpts: []
+        } as ChronicleComponent,
+        [ComponentType.Memory]: {
+          type: ComponentType.Memory,
+          grudges: [],
+          factionStandings: {},
+          facts: [],
+          knowledge: {}
+        } as MemoryComponent
+      }
+    });
+  }
+
   const {
     map: initialMap,
     startPos,
@@ -113,7 +195,8 @@ export async function startNewGame(
     activeRooms: rooms,
     lastSpawnTurn: 0,
     areas: new Map(),
-    persistentEntities: new Map(),
+    persistentEntities: initialPersistentEntities,
+    nextEntityId,
     identifiedItems: new Set(),
     itemUnidentifiedNames,
     visualEffects: [],
@@ -129,13 +212,12 @@ export async function startNewGame(
       lastClueTurn: 0
     },
     historicalLedger: [],
-    factionPis: {},
-    areaPis: {},
+    factionEntityIds,
+    areaEntityIds,
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,
     lastCheatDeathTurn: -9999,
-    areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: [],
     pendingRivalries: [],
@@ -340,6 +422,83 @@ export async function startSandboxEncounter(
     }
   }
 
+  let nextEntityId = state.nextEntityId || 1;
+  const factionEntityIds: Record<string, EntityId> = {};
+  const areaEntityIds: Record<string, EntityId> = {};
+  const initialPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
+
+  for (const factionId of Object.keys(newCampaign.factions)) {
+    const id = nextEntityId++ as EntityId;
+    factionEntityIds[factionId] = id;
+    initialPersistentEntities.set(id, {
+      areaId: 'world',
+      components: {
+        [ComponentType.Identity]: {
+          type: ComponentType.Identity,
+          name: factionId,
+          mannerisms: []
+        } as IdentityComponent,
+        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['faction'] } as TagsComponent,
+        [ComponentType.InteractionScore]: {
+          type: ComponentType.InteractionScore,
+          score: 0
+        } as InteractionScoreComponent,
+        [ComponentType.Chronicle]: {
+          type: ComponentType.Chronicle,
+          pis: 0,
+          scars: [],
+          coreMemories: [],
+          eventExcerpts: []
+        } as ChronicleComponent,
+        [ComponentType.Memory]: {
+          type: ComponentType.Memory,
+          grudges: [],
+          factionStandings: {},
+          facts: [],
+          knowledge: {}
+        } as MemoryComponent
+      }
+    });
+  }
+
+  for (const [areaId, def] of Object.entries(newCampaign.areas)) {
+    const id = nextEntityId++ as EntityId;
+    areaEntityIds[areaId] = id;
+    initialPersistentEntities.set(id, {
+      areaId: 'world',
+      components: {
+        [ComponentType.Identity]: {
+          type: ComponentType.Identity,
+          name: def.name || areaId,
+          mannerisms: []
+        } as IdentityComponent,
+        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['area', ...(def.tags || [])] } as TagsComponent,
+        [ComponentType.InteractionScore]: {
+          type: ComponentType.InteractionScore,
+          score: 0
+        } as InteractionScoreComponent,
+        [ComponentType.DirectorBudget]: {
+          type: ComponentType.DirectorBudget,
+          budgetModifier: 0
+        } as DirectorBudgetComponent,
+        [ComponentType.Chronicle]: {
+          type: ComponentType.Chronicle,
+          pis: 0,
+          scars: [],
+          coreMemories: [],
+          eventExcerpts: []
+        } as ChronicleComponent,
+        [ComponentType.Memory]: {
+          type: ComponentType.Memory,
+          grudges: [],
+          factionStandings: {},
+          facts: [],
+          knowledge: {}
+        } as MemoryComponent
+      }
+    });
+  }
+
   const { map, startPos, rooms, placedEntities } = generatedArea;
 
   state = {
@@ -355,7 +514,8 @@ export async function startSandboxEncounter(
     activeRooms: rooms ?? [],
     lastSpawnTurn: 0,
     areas: new Map(),
-    persistentEntities: new Map(),
+    persistentEntities: initialPersistentEntities,
+    nextEntityId,
     identifiedItems: new Set(),
     itemUnidentifiedNames,
     visualEffects: [],
@@ -371,13 +531,12 @@ export async function startSandboxEncounter(
       lastClueTurn: 0
     },
     historicalLedger: [],
-    factionPis: {},
-    areaPis: {},
+    factionEntityIds,
+    areaEntityIds,
     nemesisSlots: {},
     vacancyTurns: {},
     globalTurn: 0,
     lastCheatDeathTurn: -9999,
-    areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: [],
     pendingRivalries: [],

@@ -24,6 +24,7 @@ export const ItemDefinitionSchema = z.object({
   tags: z.array(z.string()).default([]),
   weight: z.number().int().nonnegative(),
   baseValue: z.number().int().nonnegative().default(0),
+  isArtifact: z.boolean().optional(),
   consumable: z
     .object({
       effectId: z.string(),

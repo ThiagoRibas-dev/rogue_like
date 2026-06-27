@@ -246,9 +246,8 @@ export interface GameState {
   readonly playerCommandQueue: ReadonlyArray<Intent>;
   readonly investigation: InvestigationKnowledge;
   readonly historicalLedger: ReadonlyArray<GameEvent>;
-  readonly factionPis: Readonly<Record<string, number>>;
-  readonly areaPis: Readonly<Record<string, number>>;
-  readonly areaMutations: Readonly<Record<string, AreaMutation>>;
+  readonly factionEntityIds: Readonly<Record<string, EntityId>>;
+  readonly areaEntityIds: Readonly<Record<string, EntityId>>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
@@ -335,10 +334,9 @@ export interface SerializedGameState {
   readonly is3D: boolean;
   readonly zoomLevel: number;
   readonly investigation: InvestigationKnowledge;
-  readonly areaMutations: ReadonlyArray<[string, AreaMutation]>;
   readonly historicalLedger: ReadonlyArray<GameEvent>;
-  readonly factionPis: Readonly<Record<string, number>>;
-  readonly areaPis: Readonly<Record<string, number>>;
+  readonly factionEntityIds: Readonly<Record<string, EntityId>>;
+  readonly areaEntityIds: Readonly<Record<string, EntityId>>;
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;

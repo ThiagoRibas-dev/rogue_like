@@ -124,3 +124,11 @@ export const FieldDefinitionSchema = z.object({
 });
 /** Inferred type for an area field definition. */
 export type FieldDefinition = z.infer<typeof FieldDefinitionSchema>;
+
+/** Zod schema for global narrative world events pools. */
+export const WorldEventsConfigSchema = z.object({
+  areaEvents: z.array(z.string()).default([]),
+  factionEvents: z.array(z.string()).default([])
+});
+/** Inferred type for world events configuration. */
+export type WorldEventsConfig = z.infer<typeof WorldEventsConfigSchema>;

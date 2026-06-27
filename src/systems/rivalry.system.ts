@@ -1,4 +1,5 @@
 import type { GameState, PendingRivalry } from '../types/game-state.types.ts';
+import { getComponent, addComponent } from '../core/ecs.ts';
 import {
   ComponentType,
   type IdentityComponent,
@@ -405,20 +406,23 @@ function resolveRivalry(state: GameState, rivalry: PendingRivalry): GameState {
     return addMessage(nextState, `[SIM-RECEIPT] Rivalry Resolved: ${consequence}`, MessageLogCategory.System);
   } else if (rivalry.type === 'territory_shift') {
     const targetAreaId = rivalry.targetAreaId ?? state.currentAreaId;
-    const currentMutation = nextState.areaMutations[targetAreaId] || { addedTags: [], budgetModifier: 0 };
     const roll = rng.getUniform() > 0.5 ? 15 : -15;
 
-    const nextMutations = {
-      ...nextState.areaMutations,
-      [targetAreaId]: {
-        ...currentMutation,
-        budgetModifier: currentMutation.budgetModifier + roll
+    const areaEntId = nextState.areaEntityIds[targetAreaId];
+    if (areaEntId) {
+      const budgetComp = getComponent(nextState, areaEntId, ComponentType.DirectorBudget) as
+        | import('../types/components.types.ts').DirectorBudgetComponent
+        | undefined;
+      if (budgetComp) {
+        nextState = addComponent(nextState, areaEntId, {
+          ...budgetComp,
+          budgetModifier: budgetComp.budgetModifier + roll
+        });
       }
-    };
+    }
 
     nextState = {
       ...nextState,
-      areaMutations: nextMutations,
       events: [
         ...nextState.events,
         {

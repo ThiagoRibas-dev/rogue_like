@@ -14,6 +14,11 @@ This document records architectural decisions whose rationale is **non-obvious o
 - **Decision**: For state alterations affecting an entire collection identically (e.g., revealing the full map, global buffs), we add a boolean flag to the parent object (e.g., `GameMap.isFullyExplored`) rather than iterating and mutating every child.
 - **Rationale**: Rebuilding large immutable arrays (4,000+ tiles) is cheap but causes massive memory allocation spikes triggering GC pauses. Global flags avoid allocation entirely and scale to massive maps.
 
+### Limbo Packaging for Hierarchical Data
+
+- **Decision**: When moving an entity off-map (to `persistentEntities` / Limbo), we use a recursive `moveToLimbo` utility instead of just moving the parent actor.
+- **Rationale**: ECS strictly enforces flat data structures; an actor's `InventoryComponent` stores foreign keys (`EntityId`s) rather than nested item objects. If we moved the actor to Limbo but left the item entities in the active state, those items would be garbage collected when the area resets, creating orphaned keys and crashing the game when the actor returns. Recursive packaging forces the engine to respect logical ownership despite the flat ECS architecture.
+
 ### Player Knowledge vs Physical Properties (ECS Domain Modeling)
 
 - **Decision**: Player memory (e.g., whether an item type is "Identified") is stored as a global set on `GameState`, not as an `identified: boolean` on individual `ItemComponent` instances.

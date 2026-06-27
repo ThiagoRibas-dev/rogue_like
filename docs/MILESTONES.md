@@ -689,25 +689,16 @@ Move from fully hand-authored schemes to dynamically assembled conspiracies driv
 - [x] **History-Derived Triggers:** Use `ChronicleComponent` events (e.g., exile, territory loss, humiliation) to trigger the Scheme Compiler, generating schemes out of emergent gameplay.
 - [x] **Contextual Clues:** Add `narrativeVerb` and `evidenceTags` to Phase Blocks, allowing the Investigation system to generate context-aware clues (e.g., "alchemical residue" for disruption phases).
 
-## 🟡 Milestone 61: Narrative Simulation Lab & Fuzzer
-Stress-test emergent narrative systems across many seeds before they reach players.
-- [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
-- [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
-- [ ] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
-- [ ] Add deterministic replay support for a failing simulation seed and input/event sequence.
-- [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
-- [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
-
-## 🟡 Milestone 62: Generalized Chronicles for Regions, Dungeons & Artifacts
+## 🟢 Milestone 61: Generalized Chronicles for Regions, Dungeons & Artifacts (Complete)
 Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/surfacing makes sense.
-- [ ] Add chronicle support for regions/areas: stability, corruption, prosperity, scars, faction control, and remembered player actions.
-- [ ] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
-- [ ] Add chronicle support for factions: internal schisms, vendettas, debts, leadership changes, and goals.
-- [ ] Let the Encounter Director and Scheme Simulator read chronicle state when generating future content.
-- [ ] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
-- [ ] Keep all chronicle data compact and serializable.
+- [x] **Architectural Refactor:** Convert Areas and Factions into standard ECS Global Entities, attaching `TagsComponent` and `MemoryComponent` to replace hardcoded `GameState` arrays (`factionPis`, `areaMutations`, etc.), establishing the foundation for robust narrative tracking.
+- [x] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
+- [x] Add chronicle support for factions: internal schisms, vendettas, debts, leadership changes, and goals.
+- [x] Let the Encounter Director and Scheme Simulator read chronicle state when generating future content.
+- [x] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
+- [x] Keep all chronicle data compact and serializable.
 
-## 🟡 Milestone 63: Authoring Continuum Tools — Static, Blueprint, Dynamic
+## 🟡 Milestone 62: Authoring Continuum Tools — Static, Blueprint, Dynamic
 Make the three authoring levels explicit in the Campaign Editor.
 - [ ] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
 - [ ] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
@@ -715,6 +706,15 @@ Make the three authoring levels explicit in the Campaign Editor.
 - [ ] Add primitive libraries for encounters, reactions, personality memories, drama triggers, and scheme consequences.
 - [ ] Teach validators to evaluate both authored source data and representative generated outputs.
 - [ ] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
+
+## 🟡 Milestone 63: Narrative Simulation Lab & Fuzzer
+Stress-test emergent narrative systems across many seeds before they reach players.
+- [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
+- [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
+- [ ] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
+- [ ] Add deterministic replay support for a failing simulation seed and input/event sequence.
+- [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
+- [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
 
 ---
 

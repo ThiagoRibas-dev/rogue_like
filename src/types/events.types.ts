@@ -13,6 +13,7 @@ export enum GameEventType {
   ItemUsed = 'ItemUsed',
   ItemEquipped = 'ItemEquipped',
   ItemUnequipped = 'ItemUnequipped',
+  ItemKill = 'ItemKill',
   ClueDiscovered = 'ClueDiscovered',
   TileEntered = 'TileEntered',
   DialogueSelected = 'DialogueSelected',
@@ -38,7 +39,8 @@ export enum GameEventType {
   SchemeNodeDisrupted = 'SchemeNodeDisrupted',
   SchemeEscalated = 'SchemeEscalated',
   AreaRespawned = 'AreaRespawned',
-  InvestigationStalled = 'InvestigationStalled'
+  InvestigationStalled = 'InvestigationStalled',
+  WorldEventFired = 'WorldEventFired'
 }
 
 /** Base interface for all ledger events. */
@@ -113,6 +115,12 @@ export interface ItemUnequippedEvent extends BaseGameEvent {
   readonly type: GameEventType.ItemUnequipped;
   readonly entityId: EntityId;
   readonly itemId: EntityId;
+}
+
+/** Fired when a weapon is used to kill an entity (for artifact tracking). */
+export interface ItemKillEvent extends BaseGameEvent {
+  readonly type: GameEventType.ItemKill;
+  readonly entityId: EntityId; // The weapon
 }
 
 /** Fired when the player discovers a plot clue. */
@@ -323,6 +331,12 @@ export interface InvestigationStalledEvent extends BaseGameEvent {
   readonly turnsStalled: number;
 }
 
+/** Fired when a background world event occurs for an Area or Faction. */
+export interface WorldEventFiredEvent extends BaseGameEvent {
+  readonly type: GameEventType.WorldEventFired;
+  readonly entityId?: EntityId;
+}
+
 /**
  * Discriminated union of all possible GameEvents.
  */
@@ -336,6 +350,7 @@ export type GameEvent =
   | ItemUsedEvent
   | ItemEquippedEvent
   | ItemUnequippedEvent
+  | ItemKillEvent
   | ClueDiscoveredEvent
   | TileEnteredEvent
   | DialogueSelectedEvent
@@ -361,4 +376,5 @@ export type GameEvent =
   | SchemeNodeDisruptedEvent
   | SchemeEscalatedEvent
   | AreaRespawnedEvent
-  | InvestigationStalledEvent;
+  | InvestigationStalledEvent
+  | WorldEventFiredEvent;

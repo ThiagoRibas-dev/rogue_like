@@ -5,13 +5,17 @@ import {
   type DamageComponent,
   type DeathComponent,
   type EquipmentComponent,
-  type ItemComponent
+  type ItemComponent,
+  type ChronicleComponent,
+  type IdentityComponent
 } from '../types/components.types.ts';
+import { GameEventType } from '../types/events.types.ts';
 import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { getSettings } from '../core/settings.ts';
 import { applyStatusEffect } from './status-effect.system.ts';
-import { promoteEntity } from './chronicle.system.ts';
+import { promoteEntity, recordChronicleEvent } from './chronicle.system.ts';
+import { ARTIFACT_PROMOTION_CHANCE } from '../constants/pacing.constants.ts';
 
 /**
  * Helper to add floating text above an entity.
@@ -94,6 +98,53 @@ export function processDamageSystem(state: GameState): GameState {
         // Entity died, attach DeathComponent
         const deathComp: DeathComponent = { type: ComponentType.Death, killerId: lastKillerId, causeOfDeath };
         nextState = addComponent(nextState, entityId, deathComp);
+
+        if (lastKillerId !== undefined) {
+          const attackerEquipment = getComponent(nextState, lastKillerId, ComponentType.Equipment) as
+            | EquipmentComponent
+            | undefined;
+          if (attackerEquipment) {
+            const weaponId = attackerEquipment.slots.find(
+              (s) => s.slotType === 'hand' && s.equippedItem !== null
+            )?.equippedItem;
+            if (weaponId) {
+              let chronicle = getComponent(nextState, weaponId, ComponentType.Chronicle) as
+                | ChronicleComponent
+                | undefined;
+              if (!chronicle && rng.getUniform() < ARTIFACT_PROMOTION_CHANCE) {
+                nextState = promoteEntity(nextState, weaponId);
+                chronicle = getComponent(nextState, weaponId, ComponentType.Chronicle) as
+                  | ChronicleComponent
+                  | undefined;
+                if (chronicle) {
+                  nextState = addFloatingText(nextState, lastKillerId, `Weapon Awakened!`, '#ffd700');
+                }
+              }
+
+              if (chronicle) {
+                const victimIdentity = getComponent(nextState, entityId, ComponentType.Identity) as
+                  | IdentityComponent
+                  | undefined;
+                const victimName = victimIdentity ? victimIdentity.name : 'an enemy';
+                const eventId = `evt_${nextState.globalTurn}_kill_${Math.floor(rng.getUniform() * 10000)}`;
+                nextState = {
+                  ...nextState,
+                  events: [
+                    ...nextState.events,
+                    {
+                      id: eventId,
+                      importance: 'low',
+                      summary: `Slew ${victimName} in combat.`,
+                      type: GameEventType.ItemKill,
+                      entityId: weaponId
+                    }
+                  ]
+                };
+                nextState = recordChronicleEvent(nextState, weaponId, eventId);
+              }
+            }
+          }
+        }
       } else {
         // Organic Promotion check: survived damage, hp < 20%, source was player
         if (newHp / fighter.maxHp < 0.2 && lastKillerId !== undefined) {

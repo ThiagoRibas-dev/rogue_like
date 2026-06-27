@@ -18,7 +18,8 @@ import {
   FactionMatrixSchema,
   AreaDefinitionSchema,
   FieldDefinitionSchema,
-  TileDefinitionSchema
+  TileDefinitionSchema,
+  WorldEventsConfigSchema
 } from './campaign/world.ts';
 
 import { ItemDefinitionSchema, ItemEffectDefinitionSchema } from './campaign/item.ts';
@@ -90,7 +91,8 @@ export const CampaignDataSchema = z.object({
   nemesisHierarchies: z.record(z.string(), NemesisHierarchySchema).default({}),
   knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([]),
   rumorPropagation: z.array(RumorPropagationRuleSchema).default([]),
-  relationshipThresholds: z.array(RelationshipThresholdSchema).default([])
+  relationshipThresholds: z.array(RelationshipThresholdSchema).default([]),
+  worldEvents: WorldEventsConfigSchema.default({ areaEvents: [], factionEvents: [] })
 });
 /** The inferred type for a complete campaign data structure. */
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
@@ -131,5 +133,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   nemesisHierarchies: NemesisHierarchySchema,
   knowledgePropagation: KnowledgePropagationRuleSchema.array(),
   rumorPropagation: RumorPropagationRuleSchema.array(),
-  relationshipThresholds: RelationshipThresholdSchema.array()
+  relationshipThresholds: RelationshipThresholdSchema.array(),
+  worldEvents: WorldEventsConfigSchema
 };

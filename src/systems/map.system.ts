@@ -253,7 +253,22 @@ export function processChangeAreaIntent(
           : 1;
 
       // Get mutations for this area
-      const areaMutation = state.areaMutations[targetAreaId];
+      let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
+      const areaEntId1 = state.areaEntityIds[targetAreaId];
+      if (areaEntId1) {
+        const tagsComp = getComponent(state, areaEntId1, ComponentType.Tags) as
+          | import('../types/components.types.ts').TagsComponent
+          | undefined;
+        const budgetComp = getComponent(state, areaEntId1, ComponentType.DirectorBudget) as
+          | import('../types/components.types.ts').DirectorBudgetComponent
+          | undefined;
+        if (tagsComp || budgetComp) {
+          areaMutation = {
+            addedTags: tagsComp ? tagsComp.tags : [],
+            budgetModifier: budgetComp ? budgetComp.budgetModifier : 0
+          };
+        }
+      }
 
       const directorContext = {
         playerLevel,
@@ -319,7 +334,22 @@ export function processChangeAreaIntent(
         : 1;
 
     // Get mutations for this area
-    const areaMutation = state.areaMutations[targetAreaId];
+    let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
+    const areaEntId2 = state.areaEntityIds[targetAreaId];
+    if (areaEntId2) {
+      const tagsComp = getComponent(state, areaEntId2, ComponentType.Tags) as
+        | import('../types/components.types.ts').TagsComponent
+        | undefined;
+      const budgetComp = getComponent(state, areaEntId2, ComponentType.DirectorBudget) as
+        | import('../types/components.types.ts').DirectorBudgetComponent
+        | undefined;
+      if (tagsComp || budgetComp) {
+        areaMutation = {
+          addedTags: tagsComp ? tagsComp.tags : [],
+          budgetModifier: budgetComp ? budgetComp.budgetModifier : 0
+        };
+      }
+    }
 
     // Find unfulfilled reservations (Agreements) targeting targetAreaId
     const reservedTokens: Array<{ templateId: string; minionId: EntityId }> = [];

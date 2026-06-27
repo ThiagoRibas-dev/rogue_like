@@ -21,6 +21,7 @@ import { IntentType } from '../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../types/intents/ui.intents.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { rollFacetValue, rollPersonalityValue } from './rng.ts';
+import { promoteEntity } from '../systems/chronicle.system.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -527,6 +528,10 @@ export function spawnItem(state: GameState, itemId: string, x: number, y: number
   nextState = addComponent(nextState, entityId, item);
   nextState = { ...nextState, nextItemInstanceId: nextState.nextItemInstanceId + 1 };
 
+  if (def.isArtifact) {
+    nextState = promoteEntity(nextState, entityId);
+  }
+
   return [nextState, entityId];
 }
 
@@ -545,5 +550,53 @@ export function removeEntity(state: GameState, entityId: EntityId): GameState {
     ...state,
     entities: nextEntities,
     components: nextComponents
+  });
+}
+
+/**
+ * Recursively moves an entity and all entities it owns (inventory, equipment) into persistent storage (Limbo).
+ * @param state The current game state.
+ * @param rootEntityId The ID of the root entity to move.
+ * @param targetAreaId The area ID to associate with the persistent records.
+ * @returns The updated game state.
+ */
+export function moveToLimbo(state: GameState, rootEntityId: EntityId, targetAreaId: string): GameState {
+  const nextState = state;
+  const toMove = new Set<EntityId>([rootEntityId]);
+
+  // Discover all foreign keys
+  const inventory = getComponent(state, rootEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (inventory) {
+    for (const itemId of inventory.items) toMove.add(itemId);
+  }
+
+  const equipment = getComponent(state, rootEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (equipment) {
+    for (const slot of equipment.slots) {
+      if (slot.equippedItem !== null) toMove.add(slot.equippedItem);
+    }
+  }
+
+  // Also catch agreements if needed, though they don't strictly own entities, they just reference them.
+  // Actually, agreements reference minion IDs but the minion is its own entity.
+  // Inventory and equipment are the primary "owned" entities.
+
+  const nextActiveEntities = nextState.entities.filter((id) => !toMove.has(id));
+  const nextActiveComponents = new Map(nextState.components);
+  const nextPersistent = new Map(nextState.persistentEntities);
+
+  for (const id of toMove) {
+    const comps = nextActiveComponents.get(id);
+    if (comps) {
+      nextPersistent.set(id, { areaId: targetAreaId, components: comps });
+      nextActiveComponents.delete(id);
+    }
+  }
+
+  return updateSpatialIndex({
+    ...nextState,
+    entities: nextActiveEntities,
+    components: nextActiveComponents,
+    persistentEntities: nextPersistent
   });
 }

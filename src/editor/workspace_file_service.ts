@@ -41,7 +41,8 @@ const CAMPAIGN_FILES: ReadonlyArray<{
   { key: 'knowledgePropagation', filename: 'knowledge_propagation.json', optional: true },
   { key: 'rumorPropagation', filename: 'rumor_propagation.json', optional: true },
   { key: 'nemesisHierarchies', filename: 'nemesis_hierarchies.json', optional: true },
-  { key: 'relationshipThresholds', filename: 'relationship_thresholds.json', optional: true }
+  { key: 'relationshipThresholds', filename: 'relationship_thresholds.json', optional: true },
+  { key: 'worldEvents', filename: 'world_events.json', optional: true }
 ];
 
 /**
@@ -70,6 +71,8 @@ export async function readCampaignFromZip(file: File | Blob): Promise<CampaignDa
           fileItem.key === 'reactions'
         ) {
           data[fileItem.key] = [] as never;
+        } else if (fileItem.key === 'worldEvents') {
+          data[fileItem.key] = { areaEvents: [], factionEvents: [] } as never;
         } else {
           data[fileItem.key] = {} as never;
         }
@@ -341,6 +344,7 @@ export function createBlankSlateCampaign(): CampaignData {
     nemesisHierarchies: {},
     knowledgePropagation: [],
     rumorPropagation: [],
-    relationshipThresholds: []
+    relationshipThresholds: [],
+    worldEvents: { areaEvents: [], factionEvents: [] }
   };
 }

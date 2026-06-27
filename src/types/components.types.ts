@@ -39,7 +39,9 @@ export const enum ComponentType {
   Chronicle = 'Chronicle',
   Shop = 'Shop',
   Services = 'Services',
-  Nemesis = 'Nemesis'
+  Nemesis = 'Nemesis',
+  InteractionScore = 'InteractionScore',
+  DirectorBudget = 'DirectorBudget'
 }
 
 /**
@@ -553,6 +555,22 @@ export interface NemesisComponent {
 }
 
 /**
+ * Component tracking player interaction scores that decay over time.
+ */
+export interface InteractionScoreComponent {
+  readonly type: ComponentType.InteractionScore;
+  readonly score: number;
+}
+
+/**
+ * Component defining the Director's budget modifier and scaling for an area or mastermind.
+ */
+export interface DirectorBudgetComponent {
+  readonly type: ComponentType.DirectorBudget;
+  readonly budgetModifier: number;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -593,4 +611,6 @@ export type Component =
   | ChronicleComponent
   | ShopComponent
   | ServicesComponent
-  | NemesisComponent;
+  | NemesisComponent
+  | InteractionScoreComponent
+  | DirectorBudgetComponent;

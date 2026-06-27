@@ -1,5 +1,5 @@
 import { type GameState, type EntityId } from '../../types/game-state.types.ts';
-import { ComponentType } from '../../types/components.types.ts';
+import { ComponentType, type ChronicleComponent, type IdentityComponent } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
@@ -40,9 +40,28 @@ export function initUITooltips(getState: () => GameState | undefined): void {
           ? itemDef?.name
           : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? itemDef?.unidentifiedName ?? itemComp.itemId);
 
-        contentHTML += `<div class="ui-tooltip-header">${name}</div>`;
+        const chronicle = getComponent(state, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
+        const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
+
+        const displayName = identity ? identity.name : name;
+        const displayColor = chronicle ? '#ffd700' : 'inherit';
+
+        contentHTML += `<div class="ui-tooltip-header" style="color: ${displayColor}">${displayName}</div>`;
         if (itemDef?.description && isIdentified) {
           contentHTML += `<div class="ui-tooltip-desc">${itemDef.description}</div>`;
+        }
+
+        if (chronicle && chronicle.eventExcerpts.length > 0) {
+          contentHTML += `<div class="ui-tooltip-stat" style="color: #ffd700; margin-top: 6px;"><span>Artifact History</span></div>`;
+          const maxExcerpts = 3;
+          const recentExcerpts = chronicle.eventExcerpts.slice(-maxExcerpts);
+          for (const eventId of recentExcerpts) {
+            const event =
+              state.events.find((e) => e.id === eventId) || state.historicalLedger.find((e) => e.id === eventId);
+            if (event && event.summary) {
+              contentHTML += `<div class="ui-tooltip-desc" style="font-style: italic; color: #aaa; padding-left: 8px; border-left: 1px solid #555;">${event.summary}</div>`;
+            }
+          }
         }
       }
     } else if (type === UITooltipType.Status && id) {

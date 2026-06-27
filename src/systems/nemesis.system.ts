@@ -9,7 +9,7 @@ import {
   VACANCY_FILL_DELAY,
   DRAMATIC_PAUSE_DURATION_MS
 } from '../constants/nemesis.constants.ts';
-import { addComponent, getComponent, spawnEntity, updateSpatialIndex } from '../core/ecs.ts';
+import { addComponent, getComponent, moveToLimbo, spawnEntity, updateSpatialIndex } from '../core/ecs.ts';
 import { rng } from '../core/rng.ts';
 import { addActor, removeActor, setTurnDuration } from '../core/scheduler.ts';
 import { getSettings } from '../core/settings.ts';
@@ -113,10 +113,6 @@ export function processNemesisSystem(state: GameState): GameState {
       }
     }
 
-    const nextFactionPis = { ...nextState.factionPis };
-    const nextAreaPis = { ...nextState.areaPis };
-    let pisModified = false;
-
     for (const [entityId, increment] of affectedEntities.entries()) {
       const chronicle = getComponent(nextState, entityId, ComponentType.Chronicle) as ChronicleComponent | undefined;
       if (chronicle) {
@@ -130,20 +126,26 @@ export function processNemesisSystem(state: GameState): GameState {
         | import('../types/components.types.ts').FactionComponent
         | undefined;
       if (faction) {
-        nextFactionPis[faction.factionId] = (nextFactionPis[faction.factionId] || 0) + increment;
-        pisModified = true;
+        const factionEntId = nextState.factionEntityIds[faction.factionId];
+        if (factionEntId) {
+          const piComp = getComponent(nextState, factionEntId, ComponentType.InteractionScore) as
+            | import('../types/components.types.ts').InteractionScoreComponent
+            | undefined;
+          if (piComp) {
+            nextState = addComponent(nextState, factionEntId, { ...piComp, score: piComp.score + increment });
+          }
+        }
       }
 
-      nextAreaPis[nextState.currentAreaId] = (nextAreaPis[nextState.currentAreaId] || 0) + increment;
-      pisModified = true;
-    }
-
-    if (pisModified) {
-      nextState = {
-        ...nextState,
-        factionPis: nextFactionPis,
-        areaPis: nextAreaPis
-      };
+      const currentAreaEntId = nextState.areaEntityIds[nextState.currentAreaId];
+      if (currentAreaEntId) {
+        const areaPiComp = getComponent(nextState, currentAreaEntId, ComponentType.InteractionScore) as
+          | import('../types/components.types.ts').InteractionScoreComponent
+          | undefined;
+        if (areaPiComp) {
+          nextState = addComponent(nextState, currentAreaEntId, { ...areaPiComp, score: areaPiComp.score + increment });
+        }
+      }
     }
   }
 
@@ -408,24 +410,16 @@ export function evaluateCheatDeath(
     };
   }
 
-  const persistentRecord = {
-    areaId: targetAreaId,
-    components: cleanComps
-  };
+  // Set the modified components back into nextState temporarily before calling moveToLimbo
+  const tempComponents = new Map(nextState.components);
+  tempComponents.set(entityId, cleanComps);
+  nextState = { ...nextState, components: tempComponents };
 
-  const nextPersistentEntities = new Map(nextState.persistentEntities);
-  nextPersistentEntities.set(entityId, persistentRecord);
-
-  const nextActiveEntities = nextState.entities.filter((id) => id !== entityId);
-  const nextActiveComponents = new Map(nextState.components);
-  nextActiveComponents.delete(entityId);
+  nextState = moveToLimbo(nextState, entityId, targetAreaId);
   removeActor(entityId);
 
   nextState = {
     ...nextState,
-    entities: nextActiveEntities,
-    components: nextActiveComponents,
-    persistentEntities: nextPersistentEntities,
     lastCheatDeathTurn: globalTurn
   };
 
