@@ -1,6 +1,6 @@
 # 📖 MASTER CAMPAIGN SPECIFICATION: The Shroudgarde Borderlands
 
-> **Status:** Active Master Specification File (Version 3.0)  
+> **Status:** Active Master Specification File (Version 3.2)  
 > **Master Purpose:** This document serves as the authoritative blueprint, state ledger, and engineering roadmap for the entire campaign. It details the structural design of our open-world sandbox, and guides incremental development as we iteratively enhance each module track.
 >
 > ⚠️ **Development Context:** All five parallel tracks—**Keep on the Borderlands (B2)**, **Against the Cult of the Reptile God (N1)**, **The Ghost Tower of Inverness (C2)**, **The Water Temple (Zelda / ADOM)**, and **The Temple of Elemental Evil (ToEE)**—are fully implemented, integrated, and validated in the campaign database! The Shroudgarde Borderlands is now complete.
@@ -234,11 +234,11 @@ We translated Orlane’s creeping horror and subversion mystery into reactive, t
 ## 🔍 Part 4: Representational Limits & Gaps
 
 We encountered several hard operational limits inside the core engine:
-1.  **No-Economy Town**: The hub has no functioning trade or barter. Gear must be given away via dialogues rather than commercial merchant screens.
+1.  **No-Economy Town**: **[RESOLVED]** (Milestone 47) Wood Elf Luc now has a native `ShopComponent` and Isabelle has a `ServicesComponent`, enabling fully-fledged commerce and bartering using base gold values!
 2.  **No Direct Inventory Dialogue Gating**: Dialogues cannot directly scan player inventory IDs, requiring quests to act as intermediate verifiers.
 3.  **No Static Coordinate Step Triggers**: We cannot easily execute a script simply by stepping on a coordinate; we had to link these events to the item-use reaction of the spiced mead.
 4.  **No Floor Tile Reactions**: Basic floor tiles do not support standard reaction verbs like `dip` or `ignite`.
-5.  **Sequential Quest Chains**: Quests are strictly linear with no option for branching or OR-gate resolutions.
+5.  **Sequential Quest Chains**: **[RESOLVED]** (Milestone 19 Part 2) Quests now natively support the `logicalOperator: 'OR'` schema field to allow branching, alternative quest resolutions!
 
 ---
 
@@ -246,7 +246,7 @@ We encountered several hard operational limits inside the core engine:
 
 The following development tickets define the exact TypeScript and Zod schema extensions needed to upgrade the engine in future iterations:
 
-### 🎫 Ticket #1: Merchant Barter & Currency System
+### 🎫 Ticket #1: Merchant Barter & Currency System — [RESOLVED]
 *   **Zod Schema Extension**:
     ```typescript
     export const ShopComponentSchema = z.object({
@@ -274,7 +274,7 @@ The following development tickets define the exact TypeScript and Zod schema ext
     ```
 *   **Engine Update**: Resolve actions targeting coordinates, fetch the tile definition from `tiles.json`, and run reactions against tile tags (e.g., throwing a torch on an `'oil'` tile spawns a fire field).
 
-### 🎫 Ticket #4: Quest Objective Logical Gates (OR-Gates)
+### 🎫 Ticket #4: Quest Objective Logical Gates (OR-Gates) — [RESOLVED]
 *   **Quest Structure Extension**:
     ```typescript
     export const QuestSchema = z.object({
@@ -311,7 +311,7 @@ The following development tickets define the exact TypeScript and Zod schema ext
 *   **Engine Update**: Avoids needing a custom `run_script` code string like `state.addFact('took_mead')` by making fact-setting a first-class, declarative consequence in the schema.
 
 
-### 🎫 Ticket #8: Decoupled Quest Loot & Static Chest Inventories
+### 🎫 Ticket #8: Decoupled Quest Loot & Static Chest Inventories — [RESOLVED]
 *   **The Issue**: The engine's `wooden_chest` templates spawn randomized loot, but do not support a static `placedInventory` array inside `areas.json` to lock a specific quest item (like the `soul_gem`) inside a specific coordinates chest.
 *   **Engine Update**: Update the chest spawner in `map.system.ts`. If an entity has an `inventory` block in `placedEntities` within `areas.json`, load those specific item IDs directly into its container instead of rolling on the global loot table.
 
@@ -343,3 +343,15 @@ Your actions actively reverberate through Shroudgarde:
 *   **Gold Dwarf Luc** is now configured with an active **`ShopComponent`**, letting players barter and purchase standard gear.
 *   **Aasimar Isabelle** runs the chapel, offering healing drafts and restorative status blessings via a **`ServicesComponent`** in exchange for gold.
 *   All items in `items.json` carry custom **`baseValue`** property weights to govern their trade pricing.
+
+
+### 4. 🪨 Diffusion-Limited Aggregation (DLA) & Dijkstra Spawning (Milestone 42, 43)
+*   **DLA Caverns**: We upgraded **The Scro Outpost (`cave_scro`)** to use the new `"generatorType": "dla"` with `dlaTargetFloorPercentage: 0.28`. This will compile highly organic, winding, and sprawling cave networks that feel distinct from cellular automata!
+*   **Dijkstra Spawning Preference**: Set `"hotPathRadius": 2` inside the Scro Outpost and Kobold Warrens. Your engine's Dijkstra pathing now dynamically biases major monsters (`protein`) and hazards/traps (`side`) along the critical path to the exits, while letting food and loot (`appetizer` and `dessert`) distribute uniformly in deep, off-path corners, rewarding players for thorough exploration!
+
+### 🎭 5. Mastermind Scheme Compiler (Milestone 60)
+*   We completely refactored the old monolithic `schemes.json` file into separate **`scheme_recipes.json`** and **`phase_blocks.json`** databases!
+*   **The Slices**: The `"grand_slumber"` scheme recipe defines the length and tags, while `phase_blocks.json` holds the physical execution mutations and contextual evidence parameters (`narrativeVerb: "whisper hypnotic chants"`, `evidenceTags: ["cultist", "journal"]`) to feed your new contextual investigation boards!
+
+### 🎫 6. Drama Trigger Composer (Milestone 58)
+*   We authored **`trigger_templates.json`** for Shroudgarde, compiling template rules (like `nemesis_died_clue` and `faction_bounty_reward`) using your newly-supported named COMPOSER placeholders (`$NEMESIS_NAME`, `$FACTION_ID`, `$STANDING_GAIN`) to dynamically generate events without hardcoded scripts!

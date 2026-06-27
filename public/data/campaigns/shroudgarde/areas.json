@@ -296,7 +296,8 @@
         "targetAreaId": "ravine_chaos",
         "direction": "up"
       }
-    ]
+    ],
+    "hotPathRadius": 2
   },
   "cave_norkers": {
     "id": "cave_norkers",
@@ -337,7 +338,7 @@
   "cave_scro": {
     "id": "cave_scro",
     "name": "The Scro Outpost",
-    "generatorType": "cellular",
+    "generatorType": "dla",
     "dangerRating": 3,
     "crBudget": 35,
     "encounterProfileId": "standard_dungeon",
@@ -354,7 +355,9 @@
         "targetAreaId": "spire_level_earth",
         "direction": "portal"
       }
-    ]
+    ],
+    "dlaTargetFloorPercentage": 0.28,
+    "hotPathRadius": 2
   },
   "cave_ogre": {
     "id": "cave_ogre",

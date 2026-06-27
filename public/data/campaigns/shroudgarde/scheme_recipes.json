@@ -1,0 +1,10 @@
+{
+  "grand_slumber": {
+    "id": "grand_slumber",
+    "villainArchetypeId": "cult_leader",
+    "phaseLength": 2,
+    "phaseTags": [
+      "cultist"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "cultist_subversion": {
+    "id": "cultist_subversion",
+    "requiredAgreements": 1,
+    "missionIntents": [
+      "subvert_mind"
+    ],
+    "mutations": [
+      {
+        "targetAreaId": "shroudgarde_courtyard",
+        "addedTags": [
+          "corrupted"
+        ],
+        "budgetModifier": 5
+      }
+    ],
+    "narrativeVerb": "whisper hypnotic chants",
+    "evidenceTags": [
+      "cultist",
+      "journal"
+    ]
+  },
+  "cultist_drain": {
+    "id": "cultist_drain",
+    "requiredAgreements": 2,
+    "missionIntents": [
+      "drain_will",
+      "steal_sacred_chalice"
+    ],
+    "mutations": [
+      {
+        "targetAreaId": "shroudgarde_courtyard",
+        "addedTags": [
+          "corrupted"
+        ],
+        "budgetModifier": 10
+      }
+    ],
+    "narrativeVerb": "gather dazed victims",
+    "evidenceTags": [
+      "medallion",
+      "altar"
+    ]
+  }
+}

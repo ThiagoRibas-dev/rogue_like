@@ -1,0 +1,36 @@
+{
+  "nemesis_died_clue": {
+    "id": "nemesis_died_clue",
+    "eventType": "EntityDied",
+    "expectedVariables": [
+      "$NEMESIS_NAME"
+    ],
+    "conditions": [
+      {
+        "type": "has_agreement"
+      }
+    ],
+    "consequences": [
+      {
+        "type": "spawn_clue",
+        "message": "$NEMESIS_NAME has been defeated, leaving behind a mysterious clue!"
+      }
+    ]
+  },
+  "faction_bounty_reward": {
+    "id": "faction_bounty_reward",
+    "eventType": "QuestCompleted",
+    "expectedVariables": [
+      "$FACTION_ID",
+      "$STANDING_GAIN"
+    ],
+    "conditions": [],
+    "consequences": [
+      {
+        "type": "change_standing",
+        "targetId": "$FACTION_ID",
+        "amount": "$STANDING_GAIN"
+      }
+    ]
+  }
+}
