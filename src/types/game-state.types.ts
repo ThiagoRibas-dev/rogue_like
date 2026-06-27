@@ -143,6 +143,16 @@ export interface PendingRivalry {
 }
 
 /**
+ * Tracks the state of the drama pacing engine including budget, cooldowns, and domains.
+ */
+export interface DramaTracker {
+  readonly globalBudget: number;
+  readonly domainBudgets: Readonly<Record<string, number>>;
+  readonly activeCooldowns: Readonly<Record<string, number>>;
+  readonly lastMajorEventTurn: number;
+}
+
+/**
  * Immutable shape of the global game state.
  */
 export interface GameState {
@@ -242,6 +252,7 @@ export interface GameState {
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
+  readonly dramaTracker: DramaTracker;
   readonly verbMenu?:
     | {
         readonly target: ApplyIntentTarget;
@@ -331,4 +342,5 @@ export interface SerializedGameState {
   readonly pendingKnowledge: ReadonlyArray<PendingKnowledgePropagation>;
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
+  readonly dramaTracker: DramaTracker;
 }

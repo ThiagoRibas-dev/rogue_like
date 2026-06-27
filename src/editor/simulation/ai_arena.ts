@@ -8,6 +8,7 @@ import type { CampaignData } from '../../types/campaign.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { EngineMode, UIMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../../constants/display.constants.ts';
+import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../../constants/pacing.constants.ts';
 
 /**
  * Telemetry record tracking HP levels, turns, and damage metrics during a simulation.
@@ -127,7 +128,13 @@ export function runAIArena(
     vacancyTurns: {},
     globalTurn: 0,
     lastCheatDeathTurn: -9999,
-    pendingRivalries: []
+    pendingRivalries: [],
+    dramaTracker: {
+      globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+      domainBudgets: {},
+      activeCooldowns: {},
+      lastMajorEventTurn: 0
+    }
   };
 
   // Setup the map tiles: use provided tiles or fall back to a flat arena

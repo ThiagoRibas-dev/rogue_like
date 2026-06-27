@@ -165,6 +165,7 @@ export interface DebugTriggerTraceEvent extends BaseGameEvent {
   readonly triggerId: string;
   readonly triggeringEvent: Readonly<GameEvent>;
   readonly executedConsequences: ReadonlyArray<string>;
+  readonly rejectionReason?: string | undefined;
 }
 
 /** Fired when a verb application is successfully resolved. */

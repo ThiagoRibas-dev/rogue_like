@@ -3,6 +3,7 @@ import type { GameEvent } from '../types/events.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import type { ConditionPredicate, ConsequenceAction } from '../types/trigger.types.ts';
 import type { TrapTriggeredEvent, DebugTriggerTraceEvent } from '../types/events.types.ts';
+import { evaluatePacing, applyPacingCosts } from './pacing.system.ts';
 
 // Import sub-domain modules
 import { playerConditions, playerConsequences } from './trigger/player.ts';
@@ -126,19 +127,41 @@ export function processGlobalTriggers(state: GameState): GameState {
 
       const conditionsMet = trigger.conditions.every((c) => evaluateCondition(nextState, event, c));
       if (conditionsMet) {
-        for (const consequence of trigger.consequences) {
-          nextState = applyConsequence(nextState, event, consequence);
+        const pacingResult = evaluatePacing(nextState, trigger);
+        if (pacingResult.allowed) {
+          if (trigger.pacing) {
+            nextState = applyPacingCosts(nextState, trigger);
+          }
+          for (const consequence of trigger.consequences) {
+            nextState = applyConsequence(nextState, event, consequence);
+          }
+          const traceEvent: DebugTriggerTraceEvent = {
+            type: GameEventType.DebugTriggerTrace,
+            triggerId: trigger.id,
+            triggeringEvent: event,
+            executedConsequences: trigger.consequences.map((c) => c.type)
+          };
+          nextState = {
+            ...nextState,
+            events: [...nextState.events, traceEvent as unknown as GameEvent]
+          };
+        } else {
+          const fallbacks = trigger.fallbackConsequences || [];
+          for (const consequence of fallbacks) {
+            nextState = applyConsequence(nextState, event, consequence);
+          }
+          const traceEvent: DebugTriggerTraceEvent = {
+            type: GameEventType.DebugTriggerTrace,
+            triggerId: trigger.id,
+            triggeringEvent: event,
+            executedConsequences: fallbacks.map((c) => c.type),
+            rejectionReason: pacingResult.reason
+          };
+          nextState = {
+            ...nextState,
+            events: [...nextState.events, traceEvent as unknown as GameEvent]
+          };
         }
-        const traceEvent: DebugTriggerTraceEvent = {
-          type: GameEventType.DebugTriggerTrace,
-          triggerId: trigger.id,
-          triggeringEvent: event,
-          executedConsequences: trigger.consequences.map((c) => c.type)
-        };
-        nextState = {
-          ...nextState,
-          events: [...nextState.events, traceEvent as unknown as GameEvent]
-        };
       }
     }
   }

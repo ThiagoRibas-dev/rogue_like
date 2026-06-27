@@ -17,6 +17,7 @@ import { loadCampaign } from './loader.ts';
 import { rng } from './rng.ts';
 import { deleteSave, loadGame } from './save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
+import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -136,7 +137,13 @@ export async function startNewGame(
     areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: [],
-    pendingRivalries: []
+    pendingRivalries: [],
+    dramaTracker: {
+      globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+      domainBudgets: {},
+      activeCooldowns: {},
+      lastMajorEventTurn: 0
+    }
   };
 
   // Spawn the player entity
@@ -370,7 +377,13 @@ export async function startSandboxEncounter(
     areaMutations: {},
     pendingKnowledge: [],
     pendingRumors: [],
-    pendingRivalries: []
+    pendingRivalries: [],
+    dramaTracker: {
+      globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+      domainBudgets: {},
+      activeCooldowns: {},
+      lastMajorEventTurn: 0
+    }
   };
 
   // Spawn the player entity

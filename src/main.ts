@@ -48,6 +48,7 @@ import { clearScheduler } from './core/scheduler.ts';
 import { installCampaign, getInstalledCampaign, uninstallCampaign } from './core/campaign_store.ts';
 import { readCampaignFromZip } from './editor/workspace_file_service.ts';
 import { GAME_ASPECT_RATIO_STRING, DEFAULT_ZOOM_LEVEL } from './constants/display.constants.ts';
+import { DEFAULT_GLOBAL_DRAMA_BUDGET } from './constants/pacing.constants.ts';
 import { syncDisplayLayout } from './rendering/display.ts';
 
 // 0. Initialize RNG
@@ -135,7 +136,13 @@ let state: GameState = {
   vacancyTurns: {},
   globalTurn: 0,
   lastCheatDeathTurn: -9999,
-  pendingRivalries: []
+  pendingRivalries: [],
+  dramaTracker: {
+    globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+    domainBudgets: {},
+    activeCooldowns: {},
+    lastMajorEventTurn: 0
+  }
 };
 
 let selectedCampaignId: string | null = null;

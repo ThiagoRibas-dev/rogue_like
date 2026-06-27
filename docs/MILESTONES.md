@@ -673,14 +673,14 @@ Generate specific narrative triggers from reusable primitives instead of hand-au
 - [x] Validate generated triggers using the same Zod and Campaign Validator paths as authored triggers.
 - [x] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
 
-## 🟡 Milestone 59: Pacing Governor & Surprise Budget
+## 🟢 Milestone 59: Pacing Governor & Surprise Budget (Complete)
 Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
-- [ ] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
-- [ ] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
-- [ ] Add cooldowns per character, faction, area, and event type.
-- [ ] Support foreshadowing requirements for high-impact events: rumor, clue, omen, visible preparation, or investigation board entry.
-- [ ] Add fallback events for invalidated setups, such as participant death or inaccessible area.
-- [ ] Surface Drama Director decisions in debug receipts.
+- [x] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
+- [x] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
+- [x] Add cooldowns per character, faction, area, and event type.
+- [x] Support foreshadowing requirements for high-impact events: rumor, clue, omen, visible preparation, or investigation board entry.
+- [x] Add fallback events for invalidated setups, such as participant death or inaccessible area.
+- [x] Surface Drama Director decisions in debug receipts.
 
 ## 🟡 Milestone 60: Scheme Compiler & Contextual Investigation
 Move from fully hand-authored schemes to dynamically assembled conspiracies driven by world events.

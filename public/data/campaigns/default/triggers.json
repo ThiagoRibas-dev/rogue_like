@@ -13,5 +13,33 @@
         "message": "dropped something suspicious!"
       }
     ]
+  },
+  "trigger_ambush_pacing_test": {
+    "id": "trigger_ambush_pacing_test",
+    "eventType": "AreaEntered",
+    "pacing": {
+      "dramaCost": 1000,
+      "globalCooldownTurns": 50,
+      "categoryCooldownTurns": {
+        "combat": 100
+      }
+    },
+    "foreshadowing": {
+      "requiredTags": ["foreshadowed_ambush"],
+      "clearTagsOnExecution": true
+    },
+    "conditions": [],
+    "consequences": [
+      {
+        "type": "spawn_entity",
+        "templateId": "orc_berserker"
+      }
+    ],
+    "fallbackConsequences": [
+      {
+        "type": "spawn_entity",
+        "templateId": "rat"
+      }
+    ]
   }
 }

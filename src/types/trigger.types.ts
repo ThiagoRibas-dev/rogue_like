@@ -237,12 +237,35 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
 /** Inferred type representing an executable consequence action with potential runtime contexts. */
 export type ConsequenceAction = z.infer<typeof ConsequenceActionSchema> & InjectedContext;
 
+/** Zod schema for pacing rules on narrative events. */
+export const PacingSchema = z.object({
+  dramaCost: z.number().int().nonnegative().optional(),
+  domain: z.string().optional(),
+  cooldownId: z.string().optional(),
+  cooldownTurns: z.number().int().positive().optional(),
+  requiresSafeContext: z.boolean().default(false)
+});
+
+/** Inferred type for trigger pacing settings. */
+export type PacingSettings = z.infer<typeof PacingSchema>;
+
+/** Zod schema for foreshadowing prerequisite rules. */
+export const ForeshadowingSchema = z.object({
+  requiredKnowledgeTags: z.array(z.string()).optional()
+});
+
+/** Inferred type for trigger foreshadowing settings. */
+export type ForeshadowingSettings = z.infer<typeof ForeshadowingSchema>;
+
 /** Zod schema defining when-if-then event trigger rules. */
 export const TriggerDefinitionSchema = z.object({
   id: z.string(),
   eventType: z.string(),
   conditions: z.array(ConditionPredicateSchema),
-  consequences: z.array(ConsequenceActionSchema)
+  consequences: z.array(ConsequenceActionSchema),
+  pacing: PacingSchema.optional(),
+  foreshadowing: ForeshadowingSchema.optional(),
+  fallbackConsequences: z.array(ConsequenceActionSchema).optional()
 });
 
 /** Inferred type for a trigger rule definition. */
@@ -263,7 +286,10 @@ export const TriggerTemplateSchema = z.object({
   eventType: z.string(),
   conditions: z.array(z.any()), // Allows strings (placeholders) + objects
   consequences: z.array(z.any()), // Allows strings (placeholders) + objects
-  expectedVariables: z.array(z.string()).optional()
+  expectedVariables: z.array(z.string()).optional(),
+  pacing: PacingSchema.optional(),
+  foreshadowing: ForeshadowingSchema.optional(),
+  fallbackConsequences: z.array(z.any()).optional()
 });
 
 /** Inferred type for a trigger template definition */

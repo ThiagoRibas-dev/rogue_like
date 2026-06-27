@@ -29,6 +29,7 @@ import {
   cullStaleAndConfirmedRumors
 } from '../systems/gossip.system.ts';
 import { processLedgerSystem } from '../systems/ledger.system.ts';
+import { MAX_GLOBAL_DRAMA_BUDGET, DRAMA_BUDGET_REGEN_PER_TURN } from '../constants/pacing.constants.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -325,9 +326,15 @@ function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
 
   if (didGlobalTurnAdvance) {
+    const prevBudget = nextState.dramaTracker.globalBudget;
+    const nextBudget = Math.min(MAX_GLOBAL_DRAMA_BUDGET, prevBudget + DRAMA_BUDGET_REGEN_PER_TURN);
     nextState = {
       ...nextState,
-      globalTurn: (nextState.globalTurn || 0) + 1
+      globalTurn: (nextState.globalTurn || 0) + 1,
+      dramaTracker: {
+        ...nextState.dramaTracker,
+        globalBudget: nextBudget
+      }
     };
     nextState = processNemesisSystem(nextState);
     nextState = processRivalries(nextState);

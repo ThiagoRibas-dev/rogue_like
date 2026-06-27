@@ -11,6 +11,7 @@ import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
+import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
 const SAVE_KEY = 'roguelike_save';
 
@@ -120,7 +121,8 @@ export function saveGame(state: GameState): void {
     areaMutations: Object.entries(state.areaMutations),
     pendingKnowledge: state.pendingKnowledge,
     pendingRumors: state.pendingRumors,
-    pendingRivalries: state.pendingRivalries
+    pendingRivalries: state.pendingRivalries,
+    dramaTracker: state.dramaTracker
   };
 
   try {
@@ -231,7 +233,13 @@ export async function loadGame(): Promise<GameState | null> {
       areaMutations: sState.areaMutations ? Object.fromEntries(sState.areaMutations) : {},
       pendingKnowledge: sState.pendingKnowledge ?? [],
       pendingRumors: sState.pendingRumors ?? [],
-      pendingRivalries: sState.pendingRivalries ?? []
+      pendingRivalries: sState.pendingRivalries ?? [],
+      dramaTracker: sState.dramaTracker || {
+        globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+        domainBudgets: {},
+        activeCooldowns: {},
+        lastMajorEventTurn: 0
+      }
     };
 
     // Rebuild the spatial index for the active floor
