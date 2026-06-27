@@ -51,14 +51,16 @@ flowchart TD
     subgraph While ["Phase 2: While Writing Code"]
         direction TB
         S6["6. Write Code & Run Mental Check (No 'any', no magic values, explicit returns)"]
+        S6_5["7. Plan Audit (Audit written code against implementation_plan.md before verify.bat)"]
+        S6 --> S6_5
     end
 
     subgraph After ["Phase 3: After Writing Code"]
         direction TB
-        S7["7. Identify Downstream Effects (Present updates to dependent files)"]
-        S8["8. Audit Architecture Compliance (Audit against ARCHITECTURE.md & AGENTS.md)"]
-        S9["9. Suggest Test Scenario (Describe manual play-test action)"]
-        S10["10. Update Documentation (Update ARCHITECTURE.md & MILESTONES.md)"]
+        S7["8. Identify Downstream Effects (Present updates to dependent files)"]
+        S8["9. Audit Architecture Compliance (Audit against ARCHITECTURE.md & AGENTS.md)"]
+        S9["10. Suggest Test Scenario (Describe manual play-test action)"]
+        S10["11. Update Documentation (Update ARCHITECTURE.md & MILESTONES.md)"]
         
         S7 --> S8
         S8 --> S9
@@ -68,7 +70,7 @@ flowchart TD
     S5 --> Gate
     Gate -- Approved --> S6
     Gate -- Needs Revision --> S4
-    S6 --> S7
+    S6_5 --> S7
 ```
 
 ### Before Writing Code (The 5-Step Kickoff Flow)
@@ -88,12 +90,13 @@ Wait for the User's confirmation before writing or modifying any actual codebase
    - All functions have explicit return types.
    - All switch statements are exhaustive.
    - No unused imports or variables.
+7. **Review against Plan:** Explicitly audit the newly written code against the approved `implementation_plan.md` to ensure no steps were missed or partially implemented before invoking `.\verify.bat`.
 
 ### After Writing Code
-7. **Identify downstream effects.** If you changed an interface or enum, list every file that will need to be updated and present those changes too.
-8. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.
-9. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
-10. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md` and any other relevant document. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
+8. **Identify downstream effects.** If you changed an interface or enum, list every file that will need to be updated and present those changes too.
+9. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.
+10. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
+11. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and any other relevant document. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.
 
 ---
 

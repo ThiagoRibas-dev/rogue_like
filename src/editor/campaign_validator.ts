@@ -11,6 +11,8 @@ import { validateAreas } from './validator/area.validator.ts';
 import { validateDialogues } from './validator/dialogue.validator.ts';
 import { validateEntities } from './validator/entity.validator.ts';
 import { loadCampaign } from '../core/loader.ts';
+import { compileTrigger } from '../systems/trigger-composer.system.ts';
+import type { GameState } from '../types/game-state.types.ts';
 
 /**
  * Headless state-diffing runner to validate that a campaign's triggers
@@ -72,6 +74,121 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     return errors;
   }
 
+  function validateTriggerTemplates(campaign: Readonly<CampaignData>): ValidationError[] {
+    const errors: ValidationError[] = [];
+    const templates = campaign.triggerTemplates || {};
+
+    for (const [templateId, template] of Object.entries(templates)) {
+      try {
+        const vars = new Set<string>();
+        const serialized = JSON.stringify(template);
+        const regex = /\$[A-Z0-9_]+/g;
+        let match;
+        while ((match = regex.exec(serialized)) !== null) {
+          vars.add(match[0]);
+        }
+
+        const bindings: Record<string, string | number | boolean> = {};
+        vars.forEach((v) => {
+          const upper = v.toUpperCase();
+          if (
+            upper.includes('BUDGET') ||
+            upper.includes('COUNT') ||
+            upper.includes('AMOUNT') ||
+            upper.includes('XP') ||
+            upper.includes('LEVEL') ||
+            upper.includes('TURNS') ||
+            upper.includes('HP') ||
+            upper.includes('ATTACK') ||
+            upper.includes('DEFENSE') ||
+            upper.includes('X') ||
+            upper.includes('Y') ||
+            upper.includes('GAIN') ||
+            upper.includes('VALUE') ||
+            upper.includes('COST') ||
+            upper.includes('DAMAGE') ||
+            upper.includes('HEAL')
+          ) {
+            bindings[v] = 1;
+          } else if (
+            upper.includes('IS_') ||
+            upper.includes('HAS_') ||
+            upper.includes('ENABLED') ||
+            upper.includes('ACTIVE') ||
+            upper.includes('SUCCESS')
+          ) {
+            bindings[v] = true;
+          } else if (upper.includes('ITEM') && Object.keys(campaign.items).length > 0) {
+            bindings[v] = Object.keys(campaign.items)[0]!;
+          } else if (
+            (upper.includes('ENTITY') || upper.includes('ACTOR') || upper.includes('NEMESIS')) &&
+            Object.keys(campaign.entities).length > 0
+          ) {
+            bindings[v] = Object.keys(campaign.entities)[0]!;
+          } else if (upper.includes('AREA') && Object.keys(campaign.areas).length > 0) {
+            bindings[v] = Object.keys(campaign.areas)[0]!;
+          } else if (upper.includes('FACTION') && Object.keys(campaign.factions).length > 0) {
+            bindings[v] = Object.keys(campaign.factions)[0]!;
+          } else if (upper.includes('EFFECT') && Object.keys(campaign.effects).length > 0) {
+            bindings[v] = Object.keys(campaign.effects)[0]!;
+          } else if (upper.includes('STATUS') && Object.keys(campaign.status).length > 0) {
+            bindings[v] = Object.keys(campaign.status)[0]!;
+          } else if (upper.includes('DIALOGUE') && Object.keys(campaign.dialogues).length > 0) {
+            bindings[v] = Object.keys(campaign.dialogues)[0]!;
+          } else {
+            bindings[v] = 'mock_value';
+          }
+        });
+
+        const dummyState = {
+          campaign: {
+            triggerTemplates: templates
+          }
+        } as unknown as GameState;
+
+        const compiled = compileTrigger(templateId, bindings, dummyState, `${templateId}_mock_test`);
+
+        for (const consequence of compiled.consequences) {
+          if (consequence.type === 'apply_status' && consequence.statusId && !campaign.status[consequence.statusId]) {
+            errors.push({
+              path: `triggerTemplates.${templateId}`,
+              message: `Template compiles to invalid 'apply_status' referencing non-existent status ID: '${consequence.statusId}'`,
+              severity: 'error'
+            });
+          }
+          if (consequence.type === 'apply_coating' && consequence.statusId && !campaign.status[consequence.statusId]) {
+            errors.push({
+              path: `triggerTemplates.${templateId}`,
+              message: `Template compiles to invalid 'apply_coating' referencing non-existent status ID: '${consequence.statusId}'`,
+              severity: 'error'
+            });
+          }
+          if (
+            consequence.type === 'spawn_entity' &&
+            consequence.entityTemplateId &&
+            !campaign.entities[consequence.entityTemplateId] &&
+            !campaign.items[consequence.entityTemplateId]
+          ) {
+            errors.push({
+              path: `triggerTemplates.${templateId}`,
+              message: `Template compiles to invalid 'spawn_entity' referencing non-existent entity/item ID: '${consequence.entityTemplateId}'`,
+              severity: 'error'
+            });
+          }
+        }
+      } catch (err: unknown) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        errors.push({
+          path: `triggerTemplates.${templateId}`,
+          message: `Trigger Template failed compilation validation: ${errMsg}`,
+          severity: 'error'
+        });
+      }
+    }
+
+    return errors;
+  }
+
   // Run validators sequentially to keep CPU yielding predictable
   const reachabilityErrs = await validateReachability(campaign);
   const questErrs = await validateQuests(campaign);
@@ -84,6 +201,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const dialogueErrs = await validateDialogues(campaign);
   const entityErrs = await validateEntities(campaign);
   const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
+  const triggerTemplateErrs = validateTriggerTemplates(campaign);
 
   const allErrs = [
     ...reachabilityErrs,
@@ -96,7 +214,8 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...areaErrs,
     ...dialogueErrs,
     ...entityErrs,
-    ...aiPersonalityErrs
+    ...aiPersonalityErrs,
+    ...triggerTemplateErrs
   ];
 
   for (const e of allErrs) {

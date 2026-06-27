@@ -12,3 +12,42 @@ export const INSTALLED_CAMPAIGNS_STORE = 'installed_campaigns' as const;
 
 /** Object store name for editor workspace drafts. */
 export const EDITOR_WORKSPACES_STORE = 'editor_workspaces' as const;
+
+/** Mapping of campaign category keys to their default authoring level. */
+export const AUTHORING_LEVELS: Record<string, 'Static' | 'Blueprint' | 'Dynamic'> = {
+  manifest: 'Static',
+  rules: 'Static',
+  theme: 'Static',
+  advancement: 'Static',
+  areas: 'Static',
+  items: 'Static',
+  effects: 'Static',
+  entities: 'Static',
+  status: 'Static',
+  tiles: 'Static',
+  factions: 'Static',
+  ai: 'Blueprint',
+  dialogues: 'Static',
+  quests: 'Static',
+  questTemplates: 'Blueprint',
+  triggers: 'Static',
+  triggerTemplates: 'Blueprint',
+  triggerBuckets: 'Dynamic',
+  villains: 'Static',
+  schemeRecipes: 'Blueprint',
+  phaseBlocks: 'Dynamic',
+  agreements: 'Static',
+  tagRegistry: 'Dynamic',
+  reactions: 'Dynamic',
+  fields: 'Static',
+  spawnPools: 'Blueprint',
+  encounterProfiles: 'Blueprint',
+  traitRegistry: 'Dynamic',
+  identityGeneration: 'Blueprint',
+  personalityGeneration: 'Blueprint',
+  nemesisHierarchies: 'Blueprint',
+  knowledgePropagation: 'Blueprint',
+  rumorPropagation: 'Blueprint',
+  relationshipThresholds: 'Dynamic',
+  worldEvents: 'Blueprint'
+};

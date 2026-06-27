@@ -98,17 +98,18 @@ export function renderDirectorSandbox(controller: EditorController, container: H
           <label style="display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.2rem;">Player Level</label>
           <input type="number" id="ds-player-level" class="editor-input" style="width: 70px;" value="1" min="1" max="20" />
         </div>
-        <div style="margin-top: 0.25rem;">
+        <div style="margin-top: 0.25rem; display: flex; gap: 4px; align-items: center;">
           <button id="ds-generate-btn" class="editor-btn playtest-btn">⚙ Generate</button>
-          <button id="ds-auto-sim-btn" class="editor-btn" style="margin-left: 4px;" disabled>🤖 Auto-Simulate</button>
-          <button id="ds-play-btn" class="editor-btn playtest-btn" style="margin-left: 4px;" disabled>🎮 Play Encounter</button>
+          <button id="ds-bake-btn" class="editor-btn playtest-btn" disabled>💾 Bake Static Area</button>
+          <button id="ds-auto-sim-btn" class="editor-btn" disabled>🤖 Auto-Simulate</button>
+          <button id="ds-play-btn" class="editor-btn playtest-btn" disabled>🎮 Play Encounter</button>
         </div>
       </div>
 
       <!-- Area info bar (shown after area is selected) -->
       <div id="ds-area-info" style="font-size: 0.8rem; color: var(--text-dim); display: none;"></div>
 
-      <!-- Main Content: Map + Receipt -->
+      <!-- Main Content: Map + Tabbed Receipt/JSON -->
       <div style="display: flex; gap: 1rem; min-height: 400px;">
         <!-- Map Preview (Left) -->
         <div id="ds-map-container" style="flex: 1; background: var(--bg-darker); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; overflow: auto; display: none;">
@@ -119,12 +120,22 @@ export function renderDirectorSandbox(controller: EditorController, container: H
           <div id="ds-map-grid" style="display: grid; gap: 0; line-height: 1;"></div>
         </div>
 
-        <!-- Receipt Panel (Right) -->
-        <div id="ds-receipt-container" style="width: 360px; min-width: 320px; background: var(--bg-darker); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; overflow-y: auto; display: none;">
-          <div style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 0.25rem;">
-            <strong>📋 Director Receipt</strong>
+        <!-- Tabbed Panel (Right) -->
+        <div id="ds-right-panel" style="width: 360px; min-width: 320px; display: flex; flex-direction: column; gap: 0.5rem; display: none;">
+          <div style="display: flex; gap: 4px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">
+            <button id="ds-tab-receipt" class="editor-btn" style="padding: 4px 8px; font-size: 0.75rem; border-color: #6c5ce7;">📋 Receipt</button>
+            <button id="ds-tab-json" class="editor-btn" style="padding: 4px 8px; font-size: 0.75rem;">📝 View JSON</button>
           </div>
-          <div id="ds-receipt-content" style="font-size: 0.75rem;"></div>
+          
+          <!-- Receipt Panel -->
+          <div id="ds-receipt-container" style="flex: 1; background: var(--bg-darker); border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; overflow-y: auto;">
+            <div id="ds-receipt-content" style="font-size: 0.75rem;"></div>
+          </div>
+
+          <!-- JSON Inspector Panel -->
+          <div id="ds-json-container" style="flex: 1; background: #0c0c16; border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; overflow-y: auto; display: none;">
+            <pre id="ds-json-content" style="font-family: monospace; font-size: 0.7rem; color: #a6e22e; margin: 0; white-space: pre-wrap; word-break: break-all;"></pre>
+          </div>
         </div>
       </div>
 
@@ -140,6 +151,26 @@ export function renderDirectorSandbox(controller: EditorController, container: H
   `;
 
   // ─── Wire up event handlers ──────────────────────────────────────────────
+
+  // Tab switching
+  const tabReceipt = container.querySelector('#ds-tab-receipt') as HTMLButtonElement;
+  const tabJson = container.querySelector('#ds-tab-json') as HTMLButtonElement;
+  const receiptPanel = container.querySelector('#ds-receipt-container') as HTMLElement;
+  const jsonPanel = container.querySelector('#ds-json-container') as HTMLElement;
+
+  tabReceipt?.addEventListener('click', () => {
+    receiptPanel.style.display = 'block';
+    jsonPanel.style.display = 'none';
+    if (tabReceipt) tabReceipt.style.borderColor = '#6c5ce7';
+    if (tabJson) tabJson.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+  });
+
+  tabJson?.addEventListener('click', () => {
+    receiptPanel.style.display = 'none';
+    jsonPanel.style.display = 'block';
+    if (tabJson) tabJson.style.borderColor = '#6c5ce7';
+    if (tabReceipt) tabReceipt.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+  });
 
   // Randomize seed button
   const randomSeedBtn = container.querySelector('#ds-random-seed-btn');
@@ -160,6 +191,111 @@ export function renderDirectorSandbox(controller: EditorController, container: H
   const genBtn = container.querySelector('#ds-generate-btn');
   genBtn?.addEventListener('click', () => {
     runGeneration(controller, container);
+  });
+
+  // Bake button
+  const bakeBtn = container.querySelector('#ds-bake-btn') as HTMLButtonElement;
+  bakeBtn?.addEventListener('click', () => {
+    const areaId = areaSelect.value;
+    if (!lastGenerated || !areaId) return;
+
+    const newId = prompt('Enter a unique ID for the baked static area:', `${areaId}_baked`);
+    if (!newId) return;
+    if (!/^[a-z0-9_-]+$/.test(newId)) {
+      alert('ID must be lowercase alphanumeric, dashes, or underscores.');
+      return;
+    }
+    if (doc.areas[newId] && !confirm(`An area with ID '${newId}' already exists. Overwrite?`)) {
+      return;
+    }
+
+    const areaDef = doc.areas[areaId];
+    if (!areaDef) return;
+
+    const width = lastGenerated.map.width;
+    const height = lastGenerated.map.height;
+
+    // Map tile definitions dynamically to build legend
+    const legend: Record<string, string> = {};
+    const legendInverse: Record<string, string> = {};
+
+    // Standard defaults
+    legend['.'] = 'empty_space';
+    legendInverse['empty_space'] = '.';
+    legend['#'] = 'stone_wall';
+    legendInverse['stone_wall'] = '#';
+    legend['~'] = 'water';
+    legendInverse['water'] = '~';
+
+    const layoutRows: string[] = [];
+    for (let y = 0; y < height; y++) {
+      let rowStr = '';
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        const tile = lastGenerated.map.tiles[idx];
+        const tileId = tile?.tileId || 'empty_space';
+
+        let char = legendInverse[tileId];
+        if (!char) {
+          // Find next unused single char
+          const candidate = tileId.slice(0, 1).toLowerCase() || '?';
+          char = legend[candidate] ? '?' : candidate;
+          if (char === '?') {
+            const unused = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+'
+              .split('')
+              .find((c) => !legend[c]);
+            char = unused || '?';
+          }
+          legend[char] = tileId;
+          legendInverse[tileId] = char;
+        }
+        rowStr += char;
+      }
+      layoutRows.push(rowStr);
+    }
+
+    const staticArea = {
+      id: newId,
+      name: `${areaDef.name} (Baked)`,
+      generatorType: 'static' as const,
+      dangerRating: areaDef.dangerRating,
+      tags: areaDef.tags || [],
+      connections: lastGenerated.portals.map((p) => ({
+        targetAreaId: p.connection.targetAreaId,
+        placementSide: p.connection.placementSide || 'any',
+        direction: p.connection.direction,
+        placementX: p.x,
+        placementY: p.y
+      })),
+      placedEntities:
+        lastGenerated.placedEntities?.map((e) => ({
+          templateId: e.templateId,
+          x: e.x,
+          y: e.y
+        })) || [],
+      staticMap: {
+        layout: layoutRows,
+        legend
+      }
+    };
+
+    controller.applyOperations([
+      {
+        op: 'add',
+        path: `/areas/${newId}`,
+        value: staticArea
+      }
+    ]);
+
+    alert(`Area '${newId}' successfully baked into the campaign as a static map!`);
+
+    // Navigate to the new area in the editor
+    const areasBtn = document.querySelector('[data-target="areas"]') as HTMLButtonElement | null;
+    if (areasBtn) {
+      sessionStorage.setItem('editor_active_category', 'areas');
+      sessionStorage.setItem('editor_active_item', newId);
+      areasBtn.click();
+    }
   });
 
   // Auto-Simulate button
@@ -294,21 +430,89 @@ function runGeneration(controller: EditorController, container: HTMLElement): vo
     renderReceipt(container, controller.getDocument(), lastGenerated.directorReceipt);
   }
 
-  // Enable simulate and play buttons
+  // Enable simulate, play, and bake buttons
   const playBtn = document.getElementById('ds-play-btn') as HTMLButtonElement;
-  if (simBtn && lastGenerated.placedEntities && lastGenerated.placedEntities.length > 0) {
-    simBtn.disabled = false;
-    if (playBtn) playBtn.disabled = false;
-  } else {
-    if (simBtn) simBtn.disabled = true;
-    if (playBtn) playBtn.disabled = true;
+  const bakeBtn = document.getElementById('ds-bake-btn') as HTMLButtonElement;
+  if (lastGenerated) {
+    if (bakeBtn) bakeBtn.disabled = false;
+    if (simBtn && lastGenerated.placedEntities && lastGenerated.placedEntities.length > 0) {
+      simBtn.disabled = false;
+      if (playBtn) playBtn.disabled = false;
+    }
+  }
+
+  // Populate JSON Content
+  const jsonContent = container.querySelector('#ds-json-content');
+  if (jsonContent && lastGenerated) {
+    // Generate staticMap layout representation for preview
+    const width = lastGenerated.map.width;
+    const height = lastGenerated.map.height;
+    const legend: Record<string, string> = {};
+    const legendInverse: Record<string, string> = {};
+    legend['.'] = 'empty_space';
+    legendInverse['empty_space'] = '.';
+    legend['#'] = 'stone_wall';
+    legendInverse['stone_wall'] = '#';
+    legend['~'] = 'water';
+    legendInverse['water'] = '~';
+
+    const layoutRows: string[] = [];
+    for (let y = 0; y < height; y++) {
+      let rowStr = '';
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        const tile = lastGenerated.map.tiles[idx];
+        const tileId = tile?.tileId || 'empty_space';
+        let char = legendInverse[tileId];
+        if (!char) {
+          const candidate = tileId.slice(0, 1).toLowerCase() || '?';
+          char = legend[candidate] ? '?' : candidate;
+          if (char === '?') {
+            const unused = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+'
+              .split('')
+              .find((c) => !legend[c]);
+            char = unused || '?';
+          }
+          legend[char] = tileId;
+          legendInverse[tileId] = char;
+        }
+        rowStr += char;
+      }
+      layoutRows.push(rowStr);
+    }
+
+    const previewArea = {
+      id: `${areaId}_baked`,
+      name: `${areaDef.name} (Baked)`,
+      generatorType: 'static',
+      dangerRating: areaDef.dangerRating,
+      tags: areaDef.tags || [],
+      connections: lastGenerated.portals.map((p) => ({
+        targetAreaId: p.connection.targetAreaId,
+        placementSide: p.connection.placementSide || 'any',
+        direction: p.connection.direction,
+        placementX: p.x,
+        placementY: p.y
+      })),
+      placedEntities:
+        lastGenerated.placedEntities?.map((e) => ({
+          templateId: e.templateId,
+          x: e.x,
+          y: e.y
+        })) || [],
+      staticMap: {
+        layout: layoutRows,
+        legend
+      }
+    };
+    jsonContent.textContent = JSON.stringify(previewArea, null, 2);
   }
 
   // Show containers
   const mapContainer = document.getElementById('ds-map-container');
-  const receiptContainer = document.getElementById('ds-receipt-container');
+  const rightPanel = document.getElementById('ds-right-panel');
   if (mapContainer) mapContainer.style.display = 'block';
-  if (receiptContainer) receiptContainer.style.display = 'block';
+  if (rightPanel) rightPanel.style.display = 'flex';
 
   // Hide previous sim results
   const simResults = document.getElementById('ds-sim-results');

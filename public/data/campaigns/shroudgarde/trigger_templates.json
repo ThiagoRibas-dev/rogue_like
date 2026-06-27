@@ -27,8 +27,8 @@
     "conditions": [],
     "consequences": [
       {
-        "type": "change_standing",
-        "targetId": "$FACTION_ID",
+        "type": "modify_standing",
+        "factionId": "$FACTION_ID",
         "amount": "$STANDING_GAIN"
       }
     ]

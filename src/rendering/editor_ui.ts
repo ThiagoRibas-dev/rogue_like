@@ -20,6 +20,7 @@ import { renderWorldGraph } from './ui/world_graph.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
 import { renderTriggerComposer } from './ui/trigger_composer.ui.ts';
+import { AUTHORING_LEVELS } from '../constants/campaign.constants.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 
@@ -587,7 +588,17 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
       if (currentItemId) {
         const h2 = document.createElement('h2');
         h2.className = 'workspace-title';
-        h2.textContent = `Editing: ${currentItemId}`;
+        const itemObj = (doc[currentCategory as keyof CampaignData] as Record<string, unknown> | undefined)?.[
+          currentItemId
+        ] as Record<string, unknown> | undefined;
+        let level: 'Static' | 'Blueprint' | 'Dynamic' =
+          AUTHORING_LEVELS[currentCategory as keyof CampaignData] || 'Static';
+        if (currentCategory === 'areas' && itemObj?.generatorType && itemObj.generatorType !== 'static') {
+          level = 'Blueprint';
+        }
+        const badgeClass =
+          level === 'Static' ? 'badge-static' : level === 'Blueprint' ? 'badge-blueprint' : 'badge-dynamic';
+        h2.innerHTML = `Editing: ${currentItemId} <span class="badge ${badgeClass}">${level}</span>`;
         header.appendChild(h2);
         workspacePane.appendChild(header);
 
@@ -616,7 +627,10 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
             refreshActiveViews(controller);
           });
         } else {
-          header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
+          const level = AUTHORING_LEVELS[currentCategory as keyof CampaignData] || 'Static';
+          const badgeClass =
+            level === 'Static' ? 'badge-static' : level === 'Blueprint' ? 'badge-blueprint' : 'badge-dynamic';
+          header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()} <span class="badge ${badgeClass}">${level}</span></h2>`;
           workspacePane.appendChild(header);
           formContainer.innerHTML = `<div class="workspace-placeholder"><h2>Select an item from the list to edit.</h2></div>`;
         }
@@ -624,14 +638,21 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
     } else if (currentCategory === 'factions') {
       const header = document.createElement('div');
       header.className = 'workspace-header';
-      header.innerHTML = `<h2 class="workspace-title">FACTIONS</h2>`;
+      const level = AUTHORING_LEVELS['factions'] || 'Static';
+      const badgeClass =
+        level === 'Static' ? 'badge-static' : level === 'Blueprint' ? 'badge-blueprint' : 'badge-dynamic';
+      header.innerHTML = `<h2 class="workspace-title">FACTIONS <span class="badge ${badgeClass}">${level}</span></h2>`;
       workspacePane.appendChild(header);
 
       renderFactionMatrixEditor(controller, '/factions', formContainer);
     } else {
       const header = document.createElement('div');
       header.className = 'workspace-header';
-      header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()}</h2>`;
+
+      const level = AUTHORING_LEVELS[currentCategory as keyof CampaignData] || 'Static';
+      const badgeClass =
+        level === 'Static' ? 'badge-static' : level === 'Blueprint' ? 'badge-blueprint' : 'badge-dynamic';
+      header.innerHTML = `<h2 class="workspace-title">${currentCategory.toUpperCase()} <span class="badge ${badgeClass}">${level}</span></h2>`;
 
       if (currentCategory === 'simulation') {
         // Tabbed Simulation Lab layout

@@ -698,14 +698,14 @@ Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/s
 - [x] Surface region/artifact/faction history in map UI, item inspect, investigation board, and dialogue.
 - [x] Keep all chronicle data compact and serializable.
 
-## 🟡 Milestone 62: Authoring Continuum Tools — Static, Blueprint, Dynamic
+## 🟢 Milestone 62: Authoring Continuum Tools — Static, Blueprint, Dynamic (Complete)
 Make the three authoring levels explicit in the Campaign Editor.
-- [ ] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
-- [ ] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
-- [ ] Allow designers to bake a generated result into static data for hand-polishing.
-- [ ] Add primitive libraries for encounters, reactions, personality memories, drama triggers, and scheme consequences.
-- [ ] Teach validators to evaluate both authored source data and representative generated outputs.
-- [ ] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
+- [x] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
+- [x] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
+- [x] Allow designers to bake a generated result into static data for hand-polishing.
+- [x] Add primitive libraries for encounters, reactions, personality memories, drama triggers, and scheme consequences.
+- [x] Teach validators to evaluate both authored source data and representative generated outputs.
+- [x] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
 
 ## 🟡 Milestone 63: Narrative Simulation Lab & Fuzzer
 Stress-test emergent narrative systems across many seeds before they reach players.
