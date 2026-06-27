@@ -1,0 +1,35 @@
+{
+  "bandit_scout": {
+    "id": "bandit_scout",
+    "requiredAgreements": 1,
+    "missionIntents": [
+      "scout_area"
+    ],
+    "mutations": [
+      {
+        "targetAreaId": "dungeon_1",
+        "addedTags": ["corrupted"],
+        "budgetModifier": 10
+      }
+    ],
+    "narrativeVerb": "scout the territory",
+    "evidenceTags": ["bandit", "map"]
+  },
+  "bandit_raid": {
+    "id": "bandit_raid",
+    "requiredAgreements": 2,
+    "missionIntents": [
+      "raid_caravan",
+      "assassinate_guard"
+    ],
+    "mutations": [
+      {
+        "targetAreaId": "dungeon_2",
+        "addedTags": ["fortified"],
+        "budgetModifier": 25
+      }
+    ],
+    "narrativeVerb": "raid the caravan",
+    "evidenceTags": ["bandit", "blood", "stolen_goods"]
+  }
+}

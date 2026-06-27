@@ -24,6 +24,7 @@ import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { Verb } from '../../constants/verbs.constants.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
+import { compileScheme } from '../scheme_compiler.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -580,6 +581,27 @@ export const systemicConsequences = {
       }
     }
     return nextState;
+  },
+
+  compile_scheme: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'compile_scheme' }>
+  ): GameState => {
+    let targetId: EntityId | undefined;
+    if (consequence.targetRef === 'event.entityId' && 'entityId' in event) {
+      targetId = (event as unknown as { entityId: EntityId }).entityId;
+    } else if (consequence.targetRef) {
+      const parsed = parseInt(consequence.targetRef, 10);
+      if (!isNaN(parsed)) {
+        targetId = parsed as EntityId;
+      }
+    }
+
+    if (targetId !== undefined) {
+      return compileScheme(state, consequence.recipeId, targetId);
+    }
+    return state;
   }
 } satisfies Partial<
   Record<

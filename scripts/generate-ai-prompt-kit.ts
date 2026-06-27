@@ -698,10 +698,16 @@ function main() {
     xrefMd += '| `personalityGenerationTable` | Must be a key in `personality_generation.json` |\n\n';
 
     // 19. Schemes
-    xrefMd += '## 19. Schemes (`schemes.json`)\n\n';
+    xrefMd += '## 19. Schemes (`scheme_recipes.json` / `schemes.json`)\n\n';
     xrefMd += '| Field | Cross-References |\n';
     xrefMd += '|-------|-----------------|\n';
-    xrefMd += '| `phases[].villainLevelRequirement` | Integer |\n\n';
+    xrefMd += '| `villainArchetypeId` | Must be a key in `villains.json` |\n\n';
+
+    // 19b. Phase Blocks
+    xrefMd += '## 19b. Phase Blocks (`phase_blocks.json`)\n\n';
+    xrefMd += '| Field | Cross-References |\n';
+    xrefMd += '|-------|-----------------|\n';
+    xrefMd += '| `mutations[].targetAreaId` | Must be a key in `areas.json` |\n\n';
 
     // 20. Agreements
     xrefMd += '## 20. Agreements (`agreements.json`)\n\n';
@@ -778,7 +784,7 @@ function main() {
     rulesMd += 'Phase 2 (depends on Phase 0+1):\n';
     rulesMd += '  items.json (depends on effects, status, tag_registry)\n';
     rulesMd += '  areas.json (depends on tiles, entities, encounter_profiles, tag_registry)\n';
-    rulesMd += '  schemes.json, villains.json, agreements.json (depends on entities, factions)\n';
+    rulesMd += '  scheme_recipes.json, phase_blocks.json, villains.json, agreements.json (depends on entities, factions)\n';
     rulesMd += '  spawn_pools.json (depends on entities, tag_registry, factions)\n\n';
     rulesMd += 'Phase 3 (depends on everything above):\n';
     rulesMd += '  dialogues.json (depends on conditions/consequences, quests, factions, entities)\n';

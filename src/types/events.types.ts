@@ -224,6 +224,7 @@ export interface SchemeAdvancedEvent extends BaseGameEvent {
   readonly type: GameEventType.SchemeAdvanced;
   readonly schemeId: string;
   readonly newPhase: number;
+  readonly targetAreaId?: string | undefined;
 }
 
 /** Fired when an NPC rises/promotes in faction ranks. */

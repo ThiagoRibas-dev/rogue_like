@@ -200,14 +200,14 @@ export function processDeathSystem(state: GameState): GameState {
         const mastermindScheme = getComponent(nextState, mastermindId, ComponentType.Scheme) as
           | SchemeComponent
           | undefined;
-        const schemeId = mastermindScheme ? mastermindScheme.schemeId : '';
+        const recipeId = mastermindScheme ? mastermindScheme.recipeId : '';
         nextState = {
           ...nextState,
           events: [
             ...nextState.events,
             {
               type: GameEventType.SchemeNodeDisrupted,
-              schemeId,
+              schemeId: recipeId,
               mastermindId,
               minionId: entityId
             } as GameEvent
@@ -230,7 +230,7 @@ export function processDeathSystem(state: GameState): GameState {
 
         nextState = addMessage(
           nextState,
-          `[DEBUG] Mastermind ${entityId} died! Transferring scheme ${schemeComp.schemeId} to minion ${newLeaderId} (leaderless state).`,
+          `[DEBUG] Mastermind ${entityId} died! Transferring scheme ${schemeComp.recipeId} to minion ${newLeaderId} (leaderless state).`,
           MessageLogCategory.System
         );
       }

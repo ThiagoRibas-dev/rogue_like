@@ -82,6 +82,7 @@ export interface ActorComponent {
 import type { Intent } from './intents/intent.union.ts';
 import type { EntityId } from './game-state.types.ts';
 import type { EquipmentSlot } from './campaign.types.ts';
+import type { PhaseBlock } from './campaign/social.ts';
 
 /**
  * A branded string type uniquely identifying a single item instance.
@@ -416,9 +417,10 @@ export interface DeathComponent {
  */
 export interface SchemeComponent {
   readonly type: ComponentType.Scheme;
-  readonly schemeId: string;
+  readonly recipeId: string;
   readonly currentPhase: number;
   readonly activeMinions: ReadonlyArray<EntityId>;
+  readonly phases: ReadonlyArray<PhaseBlock>;
   readonly schemeTargetId?: EntityId | undefined;
   readonly isLeaderless?: boolean | undefined;
   readonly conspiracyAwareness?: number | undefined;

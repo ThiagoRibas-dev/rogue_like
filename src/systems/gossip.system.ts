@@ -77,8 +77,7 @@ function getEventSourceArea(event: GameEvent, state: GameState): string {
       return state.currentAreaId;
     case GameEventType.SchemeAdvanced: {
       const advEvent = event as SchemeAdvancedEvent;
-      const schemeTemplate = state.campaign.schemes[advEvent.schemeId];
-      return schemeTemplate?.phases[advEvent.newPhase - 1]?.mutations?.[0]?.targetAreaId ?? state.currentAreaId;
+      return advEvent.targetAreaId ?? state.currentAreaId;
     }
     case GameEventType.AreaRespawned: {
       const respawnEvent = event as AreaRespawnedEvent;

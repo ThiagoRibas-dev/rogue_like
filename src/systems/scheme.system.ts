@@ -22,10 +22,10 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
   const schemeComponent = getComponent(state, mastermindId, ComponentType.Scheme) as SchemeComponent | undefined;
   if (!schemeComponent) return state;
 
-  const schemeTemplate = state.campaign.schemes[schemeComponent.schemeId];
-  if (!schemeTemplate) return state;
+  const recipe = state.campaign.schemeRecipes[schemeComponent.recipeId];
+  if (!recipe) return state;
 
-  const currentPhaseDef = schemeTemplate.phases[schemeComponent.currentPhase];
+  const currentPhaseDef = schemeComponent.phases[schemeComponent.currentPhase];
   if (!currentPhaseDef) {
     // Scheme has completed all phases!
     return state;
@@ -52,12 +52,12 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
       if (ROT.RNG.getUniform() < 0.5) {
         // Abandon & Confess
         // 1. Add secret knowledge to minion's memory
-        const knowledgeId = `confession_${schemeComponent.schemeId}_${minionId}`;
+        const knowledgeId = `confession_${schemeComponent.recipeId}_${minionId}`;
         const knowledgeItem = {
           id: knowledgeId,
           type: 'secret' as const,
-          description: `Confession: Scheme ${schemeComponent.schemeId} is operating in this area.`,
-          tags: ['confession', schemeComponent.schemeId]
+          description: `Confession: Scheme ${schemeComponent.recipeId} is operating in this area.`,
+          tags: ['confession', schemeComponent.recipeId]
         };
         const nextKnowledge = { ...(mem.knowledge || {}) };
         nextKnowledge[knowledgeId] = knowledgeItem;
@@ -95,10 +95,18 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
                 itemId: 'clue_item',
                 instanceId
               });
+
+              const narrativeVerb = currentPhaseDef.narrativeVerb || 'operate';
+              const tagsStr =
+                currentPhaseDef.evidenceTags && currentPhaseDef.evidenceTags.length > 0
+                  ? currentPhaseDef.evidenceTags.join(', ')
+                  : 'suspicious';
+              const clueText = `Incriminating ${tagsStr} evidence regarding a plan to ${narrativeVerb}...`;
+
               nextState = addComponent(nextState, clueEntity, {
                 type: ComponentType.Clue,
                 clueId: clueTemplateId,
-                text: `Incriminating evidence regarding a ${agreementDef.task}...`,
+                text: clueText,
                 implicatesEntityId: agreement.mastermindId
               } as ClueComponent);
 
@@ -144,7 +152,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
           ...nextState.events,
           {
             type: GameEventType.SchemeEscalated,
-            schemeId: schemeComponent.schemeId
+            schemeId: schemeComponent.recipeId
           } as GameEvent
         ]
       };
@@ -158,7 +166,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
 
       nextState = addMessage(
         nextState,
-        `[DEBUG] Scheme ${schemeComponent.schemeId} conspiracy awareness escalated to maximum! Emitting escalation countermeasures.`,
+        `[DEBUG] Scheme ${schemeComponent.recipeId} conspiracy awareness escalated to maximum! Emitting escalation countermeasures.`,
         MessageLogCategory.System
       );
     }
@@ -171,7 +179,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
   // RECRUITMENT PHASE
   if (currentAgreements < requiredAgreements) {
     // We need to recruit a new minion
-    const archetype = state.campaign.villains[schemeTemplate.villainArchetypeId];
+    const archetype = state.campaign.villains[recipe.villainArchetypeId];
     if (archetype) {
       nextState = recruitMinion(nextState, mastermindId, schemeComponentForPhase, archetype);
     }
@@ -222,22 +230,25 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
     };
     nextState = addComponent(nextState, mastermindId, updatedScheme);
 
+    const justCompletedPhase = schemeComponentForPhase.phases[schemeComponentForPhase.currentPhase];
+    const targetAreaId = justCompletedPhase?.mutations?.[0]?.targetAreaId;
+
     nextState = {
       ...nextState,
       events: [
         ...nextState.events,
         {
           type: GameEventType.SchemeAdvanced,
-          schemeId: schemeComponentForPhase.schemeId,
-          newPhase: updatedScheme.currentPhase
+          schemeId: schemeComponentForPhase.recipeId,
+          newPhase: updatedScheme.currentPhase,
+          targetAreaId
         }
       ]
     };
 
-    // Announce to debug log that phase advanced
     nextState = addMessage(
       nextState,
-      `[DEBUG] Scheme ${schemeComponentForPhase.schemeId} advanced to phase ${updatedScheme.currentPhase}!`,
+      `[DEBUG] Scheme ${schemeComponentForPhase.recipeId} advanced to phase ${updatedScheme.currentPhase}!`,
       MessageLogCategory.System
     );
   }
@@ -254,8 +265,7 @@ function recruitMinion(
   schemeComponent: SchemeComponent,
   archetype: VillainArchetype
 ): GameState {
-  const schemeTemplate = state.campaign.schemes[schemeComponent.schemeId];
-  const currentPhaseDef = schemeTemplate ? schemeTemplate.phases[schemeComponent.currentPhase] : undefined;
+  const currentPhaseDef = schemeComponent.phases[schemeComponent.currentPhase];
 
   // Determine target area
   let targetAreaId = 'dungeon_1'; // Fallback

@@ -32,13 +32,13 @@
     "consequences": [
       {
         "type": "spawn_entity",
-        "templateId": "orc_berserker"
+        "entityTemplateId": "orc_berserker"
       }
     ],
     "fallbackConsequences": [
       {
         "type": "spawn_entity",
-        "templateId": "rat"
+        "entityTemplateId": "rat"
       }
     ]
   }

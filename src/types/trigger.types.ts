@@ -231,6 +231,11 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     axis: z.string(),
     amount: z.number().int(),
     targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('compile_scheme'),
+    recipeId: z.string(),
+    targetRef: z.string()
   })
 ]);
 

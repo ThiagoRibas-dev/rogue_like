@@ -91,20 +91,27 @@ export const SchemePhaseMutationSchema = z.object({
 /** Inferred type for scheme phase mutations. */
 export type SchemePhaseMutation = z.infer<typeof SchemePhaseMutationSchema>;
 
-/** Zod schema defining threat schemes and phases. */
-export const SchemeTemplateSchema = z.object({
+/** Zod schema for reusable phase blocks (ingredients). */
+export const PhaseBlockSchema = z.object({
+  id: z.string(),
+  requiredAgreements: z.number().int().nonnegative(),
+  missionIntents: z.array(z.string()),
+  mutations: z.array(SchemePhaseMutationSchema).optional(),
+  narrativeVerb: z.string().default('operate'),
+  evidenceTags: z.array(z.string()).default([])
+});
+/** Inferred type for phase blocks. */
+export type PhaseBlock = z.infer<typeof PhaseBlockSchema>;
+
+/** Zod schema for scheme recipes (constraints/blueprints). */
+export const SchemeRecipeSchema = z.object({
   id: z.string(),
   villainArchetypeId: z.string(),
-  phases: z.array(
-    z.object({
-      requiredAgreements: z.number().int().nonnegative(),
-      missionIntents: z.array(z.string()),
-      mutations: z.array(SchemePhaseMutationSchema).optional()
-    })
-  )
+  phaseLength: z.number().int().positive().default(3),
+  phaseTags: z.array(z.string()).optional()
 });
-/** Inferred type for scheme templates. */
-export type SchemeTemplate = z.infer<typeof SchemeTemplateSchema>;
+/** Inferred type for scheme recipes. */
+export type SchemeRecipe = z.infer<typeof SchemeRecipeSchema>;
 
 /** Zod schema defining tag configuration metadata. */
 export const TagDefinitionSchema = z.object({

@@ -14,6 +14,7 @@ import {
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
+import { compilePhases } from '../systems/scheme_compiler.ts';
 import { rng } from './rng.ts';
 import { deleteSave, loadGame } from './save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
@@ -155,9 +156,11 @@ export async function startNewGame(
   state = { ...state, nextEntityId: state.nextEntityId + 1 };
   const schemeComp: SchemeComponent = {
     type: ComponentType.Scheme,
-    schemeId: 'bandit_uprising',
+    recipeId: 'bandit_uprising',
     currentPhase: 0,
-    activeMinions: []
+    activeMinions: [],
+    phases: compilePhases(state.campaign, 'bandit_uprising'),
+    conspiracyAwareness: 0
   };
   const mastermindActor: ActorComponent = {
     type: ComponentType.Actor,
