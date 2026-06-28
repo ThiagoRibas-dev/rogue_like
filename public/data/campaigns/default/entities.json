@@ -620,5 +620,61 @@
       ]
     },
     "dialogueId": "scholar_tree"
+  },
+  "bandit": {
+    "id": "bandit",
+    "name": "Bandit",
+    "glyph": "b",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 30
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "tags": ["actor", "bandit"],
+    "faction": "bandits",
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "bandit_king": {
+    "id": "bandit_king",
+    "name": "Bandit King",
+    "glyph": "W",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 8,
+      "defense": 3,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "tags": ["actor", "bandit", "boss", "warlord"],
+    "faction": "bandits",
+    "attitude": "hostile",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    }
   }
 }

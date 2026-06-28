@@ -208,5 +208,35 @@
     "category": "biome",
     "color": "#e67e22",
     "description": "A populated settlement."
+  },
+  "bandit": {
+    "category": "entity",
+    "color": "#e74c3c",
+    "description": "A rogue or outlaw."
+  },
+  "warlord": {
+    "category": "entity",
+    "color": "#c0392b",
+    "description": "A powerful leader of outlaws."
+  },
+  "sigil": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "A symbolic mark or token."
+  },
+  "quest_item": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "An important item for a quest."
+  },
+  "note": {
+    "category": "item",
+    "color": "#ecf0f1",
+    "description": "A written message."
+  },
+  "journal": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "A book of records."
   }
 }

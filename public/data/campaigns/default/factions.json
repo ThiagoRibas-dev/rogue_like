@@ -2,16 +2,36 @@
   "player": {
     "player": "friendly",
     "monster": "hostile",
-    "neutral": "neutral"
+    "neutral": "neutral",
+    "town": "friendly",
+    "bandits": "hostile"
   },
   "monster": {
     "player": "hostile",
     "monster": "neutral",
-    "neutral": "neutral"
+    "neutral": "neutral",
+    "town": "hostile",
+    "bandits": "hostile"
   },
   "neutral": {
     "player": "neutral",
     "monster": "neutral",
-    "neutral": "friendly"
+    "neutral": "friendly",
+    "town": "friendly",
+    "bandits": "neutral"
+  },
+  "town": {
+    "player": "friendly",
+    "monster": "hostile",
+    "neutral": "friendly",
+    "town": "friendly",
+    "bandits": "hostile"
+  },
+  "bandits": {
+    "player": "hostile",
+    "monster": "hostile",
+    "neutral": "neutral",
+    "town": "hostile",
+    "bandits": "friendly"
   }
 }

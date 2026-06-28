@@ -120,6 +120,37 @@
         "text": "Welcome to my stand, traveler. What can I do for you?",
         "options": [
           {
+            "id": "opt_grant_main_quest",
+            "text": "I hear you need help dealing with the bandit leader. (Accept Quest)",
+            "nextNodeId": "grant_main_quest_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "main_quest_bandit_king",
+                "operator": "==",
+                "value": -1
+              }
+            ]
+          },
+          {
+            "id": "opt_complete_main_quest",
+            "text": "I have recovered the Camp Sigil! (Turn in Quest)",
+            "nextNodeId": "complete_main_quest_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "main_quest_bandit_king",
+                "operator": "==",
+                "value": 0
+              },
+              {
+                "type": "has_item",
+                "itemId": "camp_sigil",
+                "amount": 1
+              }
+            ]
+          },
+          {
             "id": "opt_ask_about",
             "text": "I want to ask about recent events... (Ask about)",
             "nextNodeId": "ask_about_node"
@@ -132,6 +163,40 @@
           {
             "id": "opt_leave",
             "text": "Just looking around. (Leave)"
+          }
+        ]
+      },
+      "grant_main_quest_node": {
+        "id": "grant_main_quest_node",
+        "text": "Ah, yes. The Bandit King stole our Camp Sigil! Defeat him in his stronghold and bring it back, please.",
+        "options": [
+          {
+            "id": "opt_accept_main",
+            "text": "I will get it back. (Accept)",
+            "nextNodeId": "start",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "main_quest_bandit_king"
+              }
+            ]
+          }
+        ]
+      },
+      "complete_main_quest_node": {
+        "id": "complete_main_quest_node",
+        "text": "By the gods, you found it! Thank you so much, hero! You have saved our outpost!",
+        "options": [
+          {
+            "id": "opt_complete_main",
+            "text": "You're welcome.",
+            "nextNodeId": "start",
+            "consequences": [
+              {
+                "type": "complete_quest",
+                "questId": "main_quest_bandit_king"
+              }
+            ]
           }
         ]
       },
@@ -195,6 +260,32 @@
         "text": "Hail. Keep your distance, I am watching the dungeons.",
         "options": [
           {
+            "id": "opt_scout_challenge",
+            "text": "Do you have any advice for exploring the dungeons? (Accept tutorial)",
+            "nextNodeId": "grant_throwing_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tutorial_throwing",
+                "operator": "==",
+                "value": -1
+              }
+            ]
+          },
+          {
+            "id": "opt_scout_thanks",
+            "text": "I cleared the web barrier in Dungeon 1!",
+            "nextNodeId": "complete_throwing_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tutorial_throwing",
+                "operator": "==",
+                "value": 1
+              }
+            ]
+          },
+          {
             "id": "opt_ask_about",
             "text": "Have you seen or heard anything? (Ask about)",
             "nextNodeId": "ask_about_node"
@@ -207,6 +298,34 @@
           {
             "id": "opt_leave",
             "text": "Safe hunting. (Leave)"
+          }
+        ]
+      },
+      "grant_throwing_node": {
+        "id": "grant_throwing_node",
+        "text": "The Upper Dungeons are blocked by sticky, flammable spider webs. Take these fire potions and throw them at the webs to clear the path.",
+        "options": [
+          {
+            "id": "opt_accept_throwing",
+            "text": "Got it. I'll clear the blockade. (Accept)",
+            "nextNodeId": "start",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "tutorial_throwing"
+              }
+            ]
+          }
+        ]
+      },
+      "complete_throwing_node": {
+        "id": "complete_throwing_node",
+        "text": "Superb work. Throwing items is a vital skill. Those fire fields burn anything that walks into them.",
+        "options": [
+          {
+            "id": "opt_bye_throwing",
+            "text": "Thanks for the tip. (Go back)",
+            "nextNodeId": "start"
           }
         ]
       },
@@ -303,8 +422,34 @@
         "text": "Hello, seeker of truths. I study the lore of this region. What would you like to discuss?",
         "options": [
           {
+            "id": "opt_scholar_altar",
+            "text": "Can you teach me about the ancient ruins? (Accept tutorial)",
+            "nextNodeId": "grant_altar_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tutorial_altar",
+                "operator": "==",
+                "value": -1
+              }
+            ]
+          },
+          {
+            "id": "opt_scholar_thanks",
+            "text": "I made a sacrifice at the ancient altar!",
+            "nextNodeId": "complete_altar_node",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "tutorial_altar",
+                "operator": "==",
+                "value": 1
+              }
+            ]
+          },
+          {
             "id": "opt_tell_rumor",
-            "text": "Share news of the Goblin Encampment. (Tell rumor)",
+            "text": "Share news of the Bandit Stronghold. (Tell rumor)",
             "nextNodeId": "inject_node"
           },
           {
@@ -318,11 +463,39 @@
           }
         ]
       },
+      "grant_altar_node": {
+        "id": "grant_altar_node",
+        "text": "Deep in the Shrine Vault, there is an ancient altar. If you place monster bones upon it, the gods will bestow a powerful wand or vault key. Try it yourself.",
+        "options": [
+          {
+            "id": "opt_accept_altar",
+            "text": "I will examine the altar. (Accept)",
+            "nextNodeId": "start",
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "tutorial_altar"
+              }
+            ]
+          }
+        ]
+      },
+      "complete_altar_node": {
+        "id": "complete_altar_node",
+        "text": "Outstanding! The gods have blessed you. Altars are powerful tools for translating feral monster remains into divine aid.",
+        "options": [
+          {
+            "id": "opt_bye_altar",
+            "text": "Fascinating. (Go back)",
+            "nextNodeId": "start"
+          }
+        ]
+      },
       "inject_node": {
         "id": "inject_node",
-        "text": "Fascinating! I shall record this news of the Goblin Camp in my archives.",
+        "text": "Fascinating! I shall record this news of the Bandit Stronghold in my archives.",
         "dynamicType": "inject_rumor",
-        "injectRumorId": "rumor_chain_goblin_camp",
+        "injectRumorId": "rumor_chain_bandit_stronghold",
         "options": [
           {
             "id": "opt_back",

@@ -1,14 +1,14 @@
 [
   {
-    "id": "rumor_chain_goblin_camp",
+    "id": "rumor_chain_bandit_stronghold",
     "eventType": "Talk",
     "eligibleTags": ["town"],
     "eligibleFactions": ["town"],
     "requireAreaProximity": true,
     "delay": 10,
     "rumorTemplate": {
-      "id": "rumor_chain_goblin_camp",
-      "text": "They say the goblins have set up a large encampment deep in the caverns. Watch your step!",
+      "id": "rumor_chain_bandit_stronghold",
+      "text": "They say the bandits have set up a fortified stronghold deep in the caverns. Watch your step!",
       "persistent": true
     }
   },

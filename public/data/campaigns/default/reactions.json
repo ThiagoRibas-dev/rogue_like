@@ -238,5 +238,58 @@
       }
     ],
     "message": "You present a gift. They seem more loyal."
+  },
+  {
+    "id": "ignite_web",
+    "verb": "impact",
+    "priority": 110,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["flammable", "terrain"]
+    },
+    "message": "The flask explodes! The web burns away in a flash of heat.",
+    "consequences": [
+      {
+        "type": "remove_entity"
+      },
+      {
+        "type": "damage_area",
+        "radius": 1,
+        "amount": 5,
+        "tags": ["fire"]
+      },
+      {
+        "type": "complete_quest",
+        "questId": "tutorial_throwing"
+      }
+    ]
+  },
+  {
+    "id": "altar_sacrifice",
+    "verb": "apply",
+    "priority": 110,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["bones"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["altar"]
+    },
+    "message": "You place the remains on the altar. A divine flash erupts, blessing your weapon and spawning a Wand of Lightning!",
+    "consequences": [
+      {
+        "type": "spawn_entity",
+        "entityTemplateId": "wand_of_lightning"
+      },
+      {
+        "type": "complete_quest",
+        "questId": "tutorial_altar"
+      }
+    ]
   }
 ]

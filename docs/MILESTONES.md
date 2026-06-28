@@ -722,13 +722,13 @@ Stress-test emergent narrative systems across many seeds before they reach playe
 # 🚀 Phase 9: Default Campaign Vertical Slice, Balance & Release Hardening
 **Goal:** Convert the systemic engine into a coherent playable campaign and robust creator platform. This phase is less about new architecture and more about proving the full stack through content, balance, polish, and documentation.
 
-## 🟡 Milestone 64: Default Campaign Vertical Slice
+## 🟢 Milestone 64: Default Campaign Vertical Slice (Complete)
 Ship a compact campaign that exercises every major system in a coherent arc.
-- [ ] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
-- [ ] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
-- [ ] Add a clear campaign objective and finale that can be won, failed, or transformed by systemic outcomes.
-- [ ] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
-- [ ] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
+- [x] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
+- [x] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
+- [x] Add a clear campaign objective and finale that can be won, failed, or transformed by systemic outcomes.
+- [x] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
+- [x] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
 
 ## 🟡 Milestone 65: Balance, Telemetry & Deterministic Replay QA
 Create repeatable ways to tune and debug the game as a game, not just an engine.
@@ -764,7 +764,45 @@ Make the system understandable to campaign authors.
 
 ---
 
-# 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
+# 🚀 Phase 10: Deep Interaction & Emergent Narrative (V2 Architecture)
+**Goal:** Implement the future-proof design mechanics to bridge the gap between our current baseline and the deep, emergent interactions of classic roguelikes (Nethack, Caves of Qud, Dwarf Fortress).
+
+## 🟡 Milestone 71: The Unified `ApplyIntent`
+Consolidate disparate item/interaction verbs into a single, highly combinatorial intent. Reference: `references\full games\NetHack\src\apply.c` (unifying myriad actions into use_* callbacks).
+- [ ] Refactor `UseItem`, `EquipItem`, and `Interact` intents into a single `ApplyIntent`.
+- [ ] Add the `verb` property (`apply`, `dip`, `throw`, `kick`, `zap`) to intents and the `reaction.system.ts` matchers.
+- [ ] Implement projectile logic for `throw` verbs, reusing the `targeting.system.ts` line-trace.
+- [ ] Add `ContainerComponent` and `LockComponent` for doors and chests to enable procedural access puzzles.
+
+## 🟡 Milestone 72: Lightweight Field & Substance Simulation
+Introduce environment simulation without full cellular automata overhead.
+- [ ] Create `FieldComponent` (type, intensity, duration, spreadRule).
+- [ ] Implement `field.system.ts` to tick field durations and spread deterministically.
+- [ ] Wire reactions for cross-substance interactions (e.g. water + fire = smoke, acid + metal = corrosion).
+- [ ] Ensure fields properly apply status effects (burning, poisoned, wet) to occupying entities.
+
+## 🟡 Milestone 73: The Encounter Director (Tactical Budgeting)
+Upgrade the room population logic to procedurally assemble tactical puzzles. Reference: `references\full games\incursion-roguelike\src\Encounter.cpp` (XCR calculation and scaling).
+- [ ] Expand `AreaDefinition` parsing to utilize `crBudget` across four tactical axes: Proteins (Bosses), Appetizers (Advantages), Sides (Hazards), and Dessert (Chaos).
+- [ ] Implement algorithms to spend the budget mathematically, guaranteeing rooms match the difficulty curve.
+- [ ] Inject dynamic templates (e.g., "Elite", "Volatile") to pad out CR budgets and add chaos.
+
+## 🟡 Milestone 74: Nemesis Inner Life (Personality Loop)
+Give entities deep, history-driven inner lives that produce visible drama.
+- [ ] Expand `MemoryComponent` with Dwarf Fortress-style 0-100 `facets` (e.g., cruelty, cowardice).
+- [ ] Implement "Core Memory" mutations that permanently alter facets based on high-stress events.
+- [ ] Hook `facets` into `src/ai/` module weights so personality mathematically drives combat behaviors.
+- [ ] Trigger dynamic `FactionId` reassignment when core values radically change, simulating betrayals.
+
+## 🟡 Milestone 75: Drama Director (Dynamic Composition)
+Automate the narrative pacing so the combat loop remains pure.
+- [ ] Upgrade the `scheme_compiler.ts` to dynamically author and inject `TriggerDefinition` JSON blobs into `CampaignData` at runtime.
+- [ ] Create the Drama Director meta-layer to track global PIS (Player Interaction Score).
+- [ ] Bias generated triggers (ambushes, sudden alliances) towards entities with the highest PIS to maximize narrative impact.
+
+---
+
+# 🚀 Phase 11: Multi-Threading & Asynchronous Architecture
 **Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
 
 ## 🟡 Milestone 69: Asynchronous Cooperative Scheduler (Time-Slicing)

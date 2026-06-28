@@ -309,5 +309,53 @@
       "maxCharges": 3,
       "currentCharges": 3
     }
+  },
+  "camp_sigil": {
+    "id": "camp_sigil",
+    "name": "Camp Sigil",
+    "unidentifiedName": "Golden Medallion",
+    "description": "The stolen crest of the Safe Hub. Bringing it back will secure the camp.",
+    "glyph": "*",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["sigil", "quest_item"]
+  },
+  "barkeeper_note": {
+    "id": "barkeeper_note",
+    "name": "Barkeeper's Bloody Note",
+    "unidentifiedName": "Torn Paper",
+    "description": "A bloody note written by the barkeeper before his death. It says: 'The Bandit King has the Camp Sigil in his chest. Defeat him and take the sigil!'",
+    "glyph": "?",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["note", "quest_item"]
+  },
+  "scholar_journal": {
+    "id": "scholar_journal",
+    "name": "Scholar's Lost Journal",
+    "unidentifiedName": "Dusty Journal",
+    "description": "The scholar's journal. It contains notes about the Shrine Vault: 'Sacrifice monster remains (bones) at the altar to receive the gods' blessing!'",
+    "glyph": "?",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["journal", "quest_item"]
+  },
+  "bones": {
+    "id": "bones",
+    "name": "Monster Remains",
+    "unidentifiedName": "Bones",
+    "description": "Remains of a defeated feral monster. Can be placed on the altar.",
+    "glyph": "~",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["bones", "quest_item"]
   }
 }

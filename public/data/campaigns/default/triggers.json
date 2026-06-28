@@ -41,5 +41,27 @@
         "entityTemplateId": "rat"
       }
     ]
+  },
+  "fail_safe_barkeeper_death": {
+    "id": "fail_safe_barkeeper_death",
+    "eventType": "EntityDied",
+    "conditions": [],
+    "consequences": [
+      {
+        "type": "run_script",
+        "scriptCode": "const ctx = arguments[1]; const event = ctx.event; const state = ctx.state; if (event.type === 'EntityDied') { const victimId = event.victimId; const comps = state.components.get(victimId); const templateId = comps && comps.Template && comps.Template.templateId; if (templateId === 'barkeeper') { return [{ type: 'spawn_entity', entityTemplateId: 'barkeeper_note', targetId: victimId.toString() }]; } } return [];"
+      }
+    ]
+  },
+  "fail_safe_scholar_death": {
+    "id": "fail_safe_scholar_death",
+    "eventType": "EntityDied",
+    "conditions": [],
+    "consequences": [
+      {
+        "type": "run_script",
+        "scriptCode": "const ctx = arguments[1]; const event = ctx.event; const state = ctx.state; if (event.type === 'EntityDied') { const victimId = event.victimId; const comps = state.components.get(victimId); const templateId = comps && comps.Template && comps.Template.templateId; if (templateId === 'scholar') { return [{ type: 'spawn_entity', entityTemplateId: 'scholar_journal', targetId: victimId.toString() }]; } } return [];"
+      }
+    ]
   }
 }

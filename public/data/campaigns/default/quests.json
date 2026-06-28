@@ -24,5 +24,63 @@
       }
     ],
     "autoComplete": false
+  },
+  "main_quest_bandit_king": {
+    "id": "main_quest_bandit_king",
+    "title": "The Warlord's Threat",
+    "description": "Defeat the Bandit King and recover the stolen Camp Sigil.",
+    "objectives": [
+      {
+        "id": "kill_warlord",
+        "description": "Defeat the [Bandit King](entity:bandit_king) in his stronghold.",
+        "type": "kill",
+        "targetId": "bandit_king",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 250
+      }
+    ],
+    "autoComplete": false
+  },
+  "tutorial_throwing": {
+    "id": "tutorial_throwing",
+    "title": "Scout's Throwing Challenge",
+    "description": "Clear the flammable webs in Dungeon 1 using a thrown flask.",
+    "objectives": [
+      {
+        "id": "talk_scout",
+        "description": "Speak to the Scout in Safe Hub.",
+        "type": "talk",
+        "targetId": "scout",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "item",
+        "itemId": "potion_of_fire",
+        "amount": 2
+      }
+    ],
+    "autoComplete": false
+  },
+  "tutorial_altar": {
+    "id": "tutorial_altar",
+    "title": "Secrets of the Vault",
+    "description": "Sacrifice monster remains at the shrine altar to earn a blessing.",
+    "objectives": [
+      {
+        "id": "talk_scholar",
+        "description": "Speak to the Scholar in Safe Hub.",
+        "type": "talk",
+        "targetId": "scholar",
+        "requiredAmount": 1
+      }
+    ],
+    "autoComplete": true
   }
 }

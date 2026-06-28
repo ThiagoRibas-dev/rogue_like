@@ -115,28 +115,34 @@
         "direction": "up"
       },
       {
-        "targetAreaId": "goblin_camp",
+        "targetAreaId": "bandit_stronghold",
         "direction": "down"
       }
     ]
   },
-  "goblin_camp": {
-    "id": "goblin_camp",
-    "name": "Goblin Encampment",
+  "bandit_stronghold": {
+    "id": "bandit_stronghold",
+    "name": "Bandit Stronghold",
     "generatorType": "static",
     "dangerRating": 3,
     "tags": [
       "camp",
-      "boss"
+      "boss",
+      "stronghold"
     ],
     "placedEntities": [
       {
+        "templateId": "bandit_king",
+        "x": 9,
+        "y": 4
+      },
+      {
         "templateId": "wooden_chest",
-        "x": 10,
+        "x": 9,
         "y": 3,
         "inventory": [
           "health_potion",
-          "bronze_key"
+          "camp_sigil"
         ]
       }
     ],
@@ -150,8 +156,9 @@
       "layout": [
         "####################",
         "#..................#",
-        "#.o..o........o..o.#",
-        "#...G.....c....G...#",
+        "#...o..........o...#",
+        "#........c.........#",
+        "#........W.........#",
         "#..................#",
         "###+############+###",
         "  #.#          #.#  ",
@@ -164,14 +171,15 @@
         ".": "stone_floor",
         "<": "stone_floor",
         ">": "stone_floor",
-        "G": "stone_floor",
+        "W": "stone_floor",
         "o": "stone_floor",
         "c": "stone_floor",
         "+": "stone_floor",
         " ": "empty_space"
       },
       "entityLegend": {
-        "+": "wooden_door"
+        "+": "wooden_door",
+        "o": "bandit"
       }
     }
   },

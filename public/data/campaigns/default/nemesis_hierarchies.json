@@ -88,5 +88,78 @@
         "traitsAdded": ["unpredictable"]
       }
     ]
+  },
+  "bandit_hierarchy": {
+    "id": "bandit_hierarchy",
+    "factionId": "bandits",
+    "ranks": [
+      {
+        "rankId": "grunt",
+        "displayName": "Grunt",
+        "tier": 0,
+        "maxSlots": 4,
+        "titlePool": ["the Cutthroat", "the Thug", "the Rookie"]
+      },
+      {
+        "rankId": "champion",
+        "displayName": "Champion",
+        "tier": 1,
+        "maxSlots": 2,
+        "statMultipliers": {
+          "maxHp": 1.5,
+          "attack": 1.25,
+          "defense": 1.25,
+          "xpGiven": 1.5
+        },
+        "titlePool": ["the Blade", "the Bruiser", "the Red-Handed"]
+      },
+      {
+        "rankId": "lieutenant",
+        "displayName": "Lieutenant",
+        "tier": 2,
+        "maxSlots": 1,
+        "statMultipliers": {
+          "maxHp": 2.0,
+          "attack": 1.5,
+          "defense": 1.5,
+          "xpGiven": 2.0
+        },
+        "titlePool": ["the Enforcer", "the Executioner", "the Cruel"]
+      },
+      {
+        "rankId": "chief",
+        "displayName": "Bandit King",
+        "tier": 3,
+        "maxSlots": 1,
+        "statMultipliers": {
+          "maxHp": 3.0,
+          "attack": 2.0,
+          "defense": 2.0,
+          "xpGiven": 3.0
+        },
+        "titlePool": ["the Warlord", "the Conqueror", "the Tyrant"]
+      }
+    ],
+    "promotionSources": ["bandit"],
+    "scarPool": [
+      {
+        "id": "lost_eye",
+        "description": "a leather patch over a lost eye",
+        "statModifiers": {
+          "attack": 2,
+          "defense": -1
+        },
+        "traitsAdded": ["fearsome"]
+      },
+      {
+        "id": "slashed_face",
+        "description": "a deep slash running across their cheek",
+        "statModifiers": {
+          "defense": 1,
+          "maxHp": 5
+        },
+        "traitsAdded": ["tough"]
+      }
+    ]
   }
 }
