@@ -17,3 +17,8 @@ export const COMPOSER_PLACEHOLDERS = {
  * A ReadonlyArray of all default/expected placeholder strings for validation checks or editor suggestions.
  */
 export const ALL_COMPOSER_PLACEHOLDERS: ReadonlyArray<string> = Object.values(COMPOSER_PLACEHOLDERS);
+
+/**
+ * Maximum recursive loops allowed in processGlobalTriggers before throwing runaway error.
+ */
+export const MAX_TRIGGER_LOOPS = 500;

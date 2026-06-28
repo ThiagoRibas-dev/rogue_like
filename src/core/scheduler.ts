@@ -26,7 +26,9 @@ export function initEngine(): void {
   actors.clear();
   isEngineLocked = true;
   accumulatedTime = 0;
-  cancelAnimationFrame(rtwpLoopId);
+  if (typeof cancelAnimationFrame !== 'undefined') {
+    cancelAnimationFrame(rtwpLoopId);
+  }
 }
 
 /**
@@ -39,7 +41,9 @@ export function startEngine(): void {
     runTurnBasedLoop();
   } else {
     lastFrameTime = performance.now();
-    rtwpLoopId = requestAnimationFrame(rtwpLoop);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      rtwpLoopId = requestAnimationFrame(rtwpLoop);
+    }
   }
 }
 
@@ -69,9 +73,13 @@ export function switchEngineMode(mode: EngineMode): void {
   if (mode === EngineMode.RTwP) {
     isEngineLocked = false;
     lastFrameTime = performance.now();
-    rtwpLoopId = requestAnimationFrame(rtwpLoop);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      rtwpLoopId = requestAnimationFrame(rtwpLoop);
+    }
   } else {
-    cancelAnimationFrame(rtwpLoopId);
+    if (typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(rtwpLoopId);
+    }
     isEngineLocked = true;
     unlockEngine(); // Resume turn-based execution
   }
@@ -163,5 +171,7 @@ export function clearScheduler(): void {
   scheduler.clear();
   actors.clear();
   isEngineLocked = true;
-  cancelAnimationFrame(rtwpLoopId);
+  if (typeof cancelAnimationFrame !== 'undefined') {
+    cancelAnimationFrame(rtwpLoopId);
+  }
 }

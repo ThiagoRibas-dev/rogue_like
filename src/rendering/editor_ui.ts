@@ -20,6 +20,7 @@ import { renderWorldGraph } from './ui/world_graph.ts';
 import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
 import { renderTriggerComposer } from './ui/trigger_composer.ui.ts';
+import { renderNarrativeFuzzer } from './ui/narrative_fuzzer.ui.ts';
 import { AUTHORING_LEVELS } from '../constants/campaign.constants.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
@@ -109,34 +110,69 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     const navPane = document.createElement('aside');
     navPane.className = 'editor-sidebar';
     navPane.innerHTML = `
-      <ul class="sidebar-menu" id="editor-nav-menu">
-        <li><button class="sidebar-item-btn" data-target="manifest">Manifest</button></li>
-        <li><button class="sidebar-item-btn" data-target="rules">Rules & Config</button></li>
-        <li><button class="sidebar-item-btn" data-target="theme">Theme & UI</button></li>
-        <li><button class="sidebar-item-btn" data-target="areas">Areas (Maps)</button></li>
-        <li><button class="sidebar-item-btn" data-target="entities">Entities</button></li>
-        <li><button class="sidebar-item-btn" data-target="items">Items & Equip</button></li>
-        <li><button class="sidebar-item-btn" data-target="tiles">Tiles</button></li>
-        <li><button class="sidebar-item-btn" data-target="factions">Factions</button></li>
-        <li><button class="sidebar-item-btn" data-target="status">Status Effects</button></li>
-        <li><button class="sidebar-item-btn" data-target="effects">Item Effects</button></li>
-        <li><button class="sidebar-item-btn" data-target="ai">AI Profiles</button></li>
-        <li><button class="sidebar-item-btn" data-target="dialogues">Dialogues</button></li>
-        <li><button class="sidebar-item-btn" data-target="quests">Quests</button></li>
-        <li><button class="sidebar-item-btn" data-target="questTemplates">Quest Templates</button></li>
-        <li><button class="sidebar-item-btn" data-target="triggers">Triggers</button></li>
-        <li><button class="sidebar-item-btn" data-target="triggerComposer">⚡ Trigger Composer</button></li>
-        <li><button class="sidebar-item-btn" data-target="villains">Villains</button></li>
-        <li><button class="sidebar-item-btn" data-target="schemes">Schemes</button></li>
-        <li><button class="sidebar-item-btn" data-target="agreements">Agreements</button></li>
-        <li><button class="sidebar-item-btn" data-target="fields">Fields</button></li>
-        <li><button class="sidebar-item-btn" data-target="spawnPools">Spawn Pools</button></li>
-        <li><button class="sidebar-item-btn" data-target="encounterProfiles">Encounter Profiles</button></li>
-        <li><button class="sidebar-item-btn" data-target="traitRegistry">Trait Registry</button></li>
-        <li><button class="sidebar-item-btn" data-target="nemesisHierarchies">Nemesis Hierarchies</button></li>
-        <li><button class="sidebar-item-btn" data-target="advancement">Advancement Levels</button></li>
-        <li><button class="sidebar-item-btn" data-target="simulation">Simulation Lab</button></li>
-      </ul>
+      <div id="editor-nav-menu" style="display: flex; flex-direction: column; gap: 4px; padding: 0.5rem;">
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">⚙️ Core Config</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="manifest">Manifest</button></li>
+            <li><button class="sidebar-item-btn" data-target="rules">Rules & Config</button></li>
+            <li><button class="sidebar-item-btn" data-target="theme">Theme & UI</button></li>
+            <li><button class="sidebar-item-btn" data-target="advancement">Advancement Levels</button></li>
+          </ul>
+        </details>
+        
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">🗺️ World & Encounters</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="areas">Areas (Maps)</button></li>
+            <li><button class="sidebar-item-btn" data-target="tiles">Tiles</button></li>
+            <li><button class="sidebar-item-btn" data-target="fields">Fields</button></li>
+            <li><button class="sidebar-item-btn" data-target="spawnPools">Spawn Pools</button></li>
+            <li><button class="sidebar-item-btn" data-target="encounterProfiles">Encounter Profiles</button></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">🎭 Actors & Inventory</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="entities">Entities</button></li>
+            <li><button class="sidebar-item-btn" data-target="factions">Factions</button></li>
+            <li><button class="sidebar-item-btn" data-target="items">Items & Equip</button></li>
+            <li><button class="sidebar-item-btn" data-target="status">Status Effects</button></li>
+            <li><button class="sidebar-item-btn" data-target="effects">Item Effects</button></li>
+            <li><button class="sidebar-item-btn" data-target="traitRegistry">Trait Registry</button></li>
+            <li><button class="sidebar-item-btn" data-target="ai">AI Profiles</button></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">📖 Narrative Engine</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="dialogues">Dialogues</button></li>
+            <li><button class="sidebar-item-btn" data-target="quests">Quests</button></li>
+            <li><button class="sidebar-item-btn" data-target="questTemplates">Quest Templates</button></li>
+            <li><button class="sidebar-item-btn" data-target="triggers">Triggers</button></li>
+            <li><button class="sidebar-item-btn" data-target="triggerComposer">⚡ Trigger Composer</button></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">♟️ Adversary Director</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="villains">Villains</button></li>
+            <li><button class="sidebar-item-btn" data-target="schemes">Schemes</button></li>
+            <li><button class="sidebar-item-btn" data-target="agreements">Agreements</button></li>
+            <li><button class="sidebar-item-btn" data-target="nemesisHierarchies">Nemesis Hierarchies</button></li>
+          </ul>
+        </details>
+
+        <details class="sidebar-category" open>
+          <summary style="cursor: pointer; color: var(--text-bright); font-weight: bold; margin-bottom: 4px; user-select: none;">🧪 Tools</summary>
+          <ul class="sidebar-menu" style="margin-left: 12px; margin-bottom: 8px;">
+            <li><button class="sidebar-item-btn" data-target="simulation">Simulation Lab</button></li>
+          </ul>
+        </details>
+      </div>
     `;
 
     // Middle List Pane
@@ -505,12 +541,13 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
 }
 
 function activateSimTab(
-  tab: 'arena' | 'director' | 'knowledge',
+  tab: 'arena' | 'director' | 'knowledge' | 'fuzzer',
   controller: EditorController,
   tabContent: HTMLElement,
   arenaTab: HTMLElement,
   directorTab: HTMLElement,
-  knowledgeTab: HTMLElement
+  knowledgeTab: HTMLElement,
+  fuzzerTab: HTMLElement
 ): void {
   // Update tab styles
   arenaTab.style.color = tab === 'arena' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
@@ -519,6 +556,8 @@ function activateSimTab(
   directorTab.style.borderBottomColor = tab === 'director' ? 'var(--accent-color, #3498db)' : 'transparent';
   knowledgeTab.style.color = tab === 'knowledge' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
   knowledgeTab.style.borderBottomColor = tab === 'knowledge' ? 'var(--accent-color, #3498db)' : 'transparent';
+  fuzzerTab.style.color = tab === 'fuzzer' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
+  fuzzerTab.style.borderBottomColor = tab === 'fuzzer' ? 'var(--accent-color, #3498db)' : 'transparent';
 
   // Clear and render
   tabContent.innerHTML = '';
@@ -526,8 +565,10 @@ function activateSimTab(
     renderSimulationLab(controller, tabContent);
   } else if (tab === 'director') {
     renderDirectorSandbox(controller, tabContent);
-  } else {
+  } else if (tab === 'knowledge') {
     renderKnowledgeSimulator(controller, tabContent);
+  } else {
+    renderNarrativeFuzzer(controller, tabContent);
   }
 }
 
@@ -681,9 +722,17 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         knowledgeTab.style.cssText =
           'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
 
+        const fuzzerTab = document.createElement('button');
+        fuzzerTab.className = 'sim-tab';
+        fuzzerTab.dataset.tab = 'fuzzer';
+        fuzzerTab.textContent = '🤖 Narrative Fuzzer';
+        fuzzerTab.style.cssText =
+          'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
+
         tabBar.appendChild(arenaTab);
         tabBar.appendChild(directorTab);
         tabBar.appendChild(knowledgeTab);
+        tabBar.appendChild(fuzzerTab);
         formContainer.appendChild(tabBar);
 
         const tabContent = document.createElement('div');
@@ -691,21 +740,25 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         formContainer.appendChild(tabContent);
 
         // Activate first tab by default
-        let activeTab: 'arena' | 'director' | 'knowledge' = 'arena';
-        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
+        let activeTab: 'arena' | 'director' | 'knowledge' | 'fuzzer' = 'arena';
+        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
 
         // Tab switching
         arenaTab.addEventListener('click', () => {
           activeTab = 'arena';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
         });
         directorTab.addEventListener('click', () => {
           activeTab = 'director';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
         });
         knowledgeTab.addEventListener('click', () => {
           activeTab = 'knowledge';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+        });
+        fuzzerTab.addEventListener('click', () => {
+          activeTab = 'fuzzer';
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
         });
       } else if (currentCategory === 'triggerComposer') {
         renderTriggerComposer(controller, formContainer);

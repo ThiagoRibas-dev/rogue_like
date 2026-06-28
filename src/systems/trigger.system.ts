@@ -4,6 +4,7 @@ import { GameEventType } from '../types/events.types.ts';
 import type { ConditionPredicate, ConsequenceAction } from '../types/trigger.types.ts';
 import type { TrapTriggeredEvent, DebugTriggerTraceEvent } from '../types/events.types.ts';
 import { evaluatePacing, applyPacingCosts } from './pacing.system.ts';
+import { MAX_TRIGGER_LOOPS } from '../constants/trigger.constants.ts';
 
 // Import sub-domain modules
 import { playerConditions, playerConsequences } from './trigger/player.ts';
@@ -106,10 +107,15 @@ export function processGlobalTriggers(state: GameState): GameState {
   if (state.events.length === 0) return state;
 
   let nextState = state;
-
   let eventIndex = 0;
+  let loopCount = 0;
+
   // Using while loop to process newly pushed events from consequences recursively.
   while (eventIndex < nextState.events.length) {
+    loopCount++;
+    if (loopCount > MAX_TRIGGER_LOOPS) {
+      throw new Error('TriggerRunawayError: Infinite loop detected in global triggers.');
+    }
     const event = nextState.events[eventIndex]!;
     eventIndex++;
 

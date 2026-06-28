@@ -178,6 +178,11 @@ refreshCampaignList();
 
 if (sessionStorage.getItem('editor_playtest') === 'true') {
   sessionStorage.removeItem('editor_playtest');
+  const playtestSeed = sessionStorage.getItem('editor_playtest_seed');
+  if (playtestSeed) {
+    sessionStorage.removeItem('editor_playtest_seed');
+    initRNG(Number(playtestSeed));
+  }
   setTimeout(() => {
     startNewGame('default', getGameState(), display, (newState) => {
       state = newState;

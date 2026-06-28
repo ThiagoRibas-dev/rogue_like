@@ -709,12 +709,13 @@ Make the three authoring levels explicit in the Campaign Editor.
 
 ## 🟡 Milestone 63: Narrative Simulation Lab & Fuzzer
 Stress-test emergent narrative systems across many seeds before they reach players.
-- [ ] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
-- [ ] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
-- [ ] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
-- [ ] Add deterministic replay support for a failing simulation seed and input/event sequence.
-- [ ] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
-- [ ] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
+- [x] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
+- [x] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
+- [x] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
+- [x] Add deterministic replay support for a failing simulation seed and input/event sequence.
+- [x] Add aggregate metrics: average drama events per hour, repeated event frequency, clue-to-event ratio, and unresolved scheme count.
+- [x] Block export on fatal narrative simulation failures when campaigns opt into advanced systems.
+- [x] Group and reorganize the Campaign Editor sidebar menus into collapsible categories to reduce viewport overflow.
 
 ---
 
@@ -738,13 +739,11 @@ Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [ ] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
 - [ ] Establish target performance budgets for browser play and editor simulations.
 
-## 🟡 Milestone 66: Modding Documentation, Examples & Creator Onboarding
-Make the system understandable to campaign authors.
-- [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
-- [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
-- [ ] Add in-editor help text, warning explanations, and “fix-it” suggestions for common validation errors.
-- [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
-- [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
+## 🟡 Milestone 66: Campaign Editor UX Refactor & Consolidation
+Transform the editor workspace into a scalable, multi-pane application.
+- [ ] Implement a professional IDE-style layout (Slim Icons -> Category List -> Workspace) to maximize horizontal real estate for forms and node editors.
+- [ ] Consolidate related data into single views using workspace tabs (e.g., an "Adversary Director" view that tabs between Villains, Schemes, Agreements, and Hierarchies).
+- [ ] Add searchable and resizable panels, allowing users to collapse or focus on specific parts of the workspace.
 
 ## 🟡 Milestone 67: Release Robustness & Distribution Polish
 Prepare for public builds and long-term iteration.
@@ -755,19 +754,27 @@ Prepare for public builds and long-term iteration.
 - [ ] Optimize production bundle size and loading time.
 - [ ] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
 
+## 🟡 Milestone 68: Modding Documentation, Examples & Creator Onboarding
+Make the system understandable to campaign authors.
+- [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
+- [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
+- [ ] Add in-editor help text, warning explanations, and “fix-it” suggestions for common validation errors.
+- [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
+- [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
+
 ---
 
 # 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
 **Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
 
-## 🟡 Milestone 68: Asynchronous Cooperative Scheduler (Time-Slicing)
+## 🟡 Milestone 69: Asynchronous Cooperative Scheduler (Time-Slicing)
 Prevent browser lock-ups during computationally expensive operations.
 - [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
 - [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
 - [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
 - [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
 
-## 🟡 Milestone 69: Absolute Presentational Decoupling (Web Worker)
+## 🟡 Milestone 70: Absolute Presentational Decoupling (Web Worker)
 Enforce a strict model-view separation by moving the core engine off the main thread entirely.
 - [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
 - [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.

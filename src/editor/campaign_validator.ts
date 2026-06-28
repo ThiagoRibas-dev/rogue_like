@@ -1,5 +1,6 @@
 import type { CampaignData } from '../types/campaign.types.ts';
 import type { ValidationReport, ValidationError } from './validator/validator.types.ts';
+import { runFuzzerBatch } from './simulation/narrative_fuzzer.ts';
 import { validateReachability } from './validator/reachability.validator.ts';
 import { validateQuests } from './validator/quest.validator.ts';
 import { validateTriggers } from './validator/trigger.validator.ts';
@@ -203,6 +204,35 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
   const triggerTemplateErrs = validateTriggerTemplates(campaign);
 
+  function validateWithFuzzer(campaign: Readonly<CampaignData>): ValidationError[] {
+    const fuzzerErrors: ValidationError[] = [];
+    try {
+      const report = runFuzzerBatch(campaign, {
+        runs: 5,
+        maxTurns: 100,
+        stopOnFirstError: true
+      });
+      for (const res of report.results) {
+        if (res.error) {
+          fuzzerErrors.push({
+            path: `fuzzer.${res.error.type}`,
+            message: `Fuzzer Seed ${res.seed} failed at Turn ${res.error.turn}: ${res.error.message}`,
+            severity: 'error'
+          });
+        }
+      }
+    } catch (err) {
+      fuzzerErrors.push({
+        path: 'fuzzer.crash',
+        message: `Fuzzer crashed during smoke test: ${err instanceof Error ? err.message : String(err)}`,
+        severity: 'error'
+      });
+    }
+    return fuzzerErrors;
+  }
+
+  const fuzzerErrs = validateWithFuzzer(campaign);
+
   const allErrs = [
     ...reachabilityErrs,
     ...questErrs,
@@ -215,7 +245,8 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...dialogueErrs,
     ...entityErrs,
     ...aiPersonalityErrs,
-    ...triggerTemplateErrs
+    ...triggerTemplateErrs,
+    ...fuzzerErrs
   ];
 
   for (const e of allErrs) {

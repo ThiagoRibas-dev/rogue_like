@@ -258,9 +258,13 @@ export function processTurn(entityId: EntityId): void {
 }
 
 /**
- * Executes an intent and computes its energy cost based on success.
+ * Executes an intent and computes its energy cost based on success, ticking systemic narrative side effects.
+ *
+ * @param state The current game state.
+ * @param intent The intent to execute.
+ * @returns The updated state, success status, and calculated energy cost.
  */
-function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
+export function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   const result = applyIntent(state, intent);
   let nextState = result.state;
 
