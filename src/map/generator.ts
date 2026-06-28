@@ -326,7 +326,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
 
     const subBiomeEntries = areaDef.subBiomes ? Object.entries(areaDef.subBiomes) : [];
     parsedRooms = rooms.map((r, index) => {
-      const isSafe = index === 0 || portalRoomIndices.has(index);
+      const isSafe = index === 0;
 
       r.getDoors((dx: number, dy: number) => {
         const idx = coordToIndex(dx, dy, width);
@@ -491,13 +491,21 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
     hotPathCoords
   };
 
+  // Protect the start position and portals from getting enemies spawned on them
+  const extraOccupiedCoordinates = new Set<string>();
+  if (startX >= 0 && startY >= 0) extraOccupiedCoordinates.add(`${startX},${startY}`);
+  for (const p of portals) {
+    extraOccupiedCoordinates.add(`${p.x},${p.y}`);
+  }
+
   const directorResult = runEncounterDirector(
     campaign,
     areaDef,
     map,
     parsedRooms,
     finalPlacedEntities,
-    effectiveContext
+    effectiveContext,
+    extraOccupiedCoordinates
   );
 
   if (directorResult.newEntities.length > 0) {

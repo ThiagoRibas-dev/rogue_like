@@ -404,7 +404,8 @@ export function runEncounterDirector(
   map: GameMap,
   rooms: ReadonlyArray<RoomBounds>,
   existingPlacedEntities: ReadonlyArray<{ readonly templateId: string; readonly x: number; readonly y: number }>,
-  context?: DirectorContext
+  context?: DirectorContext,
+  extraOccupiedCoordinates?: ReadonlySet<string>
 ): DirectorResult {
   const profileId = areaDef.encounterProfileId;
   if (!profileId) return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
@@ -421,7 +422,9 @@ export function runEncounterDirector(
     baseBudget += context.areaMutation.budgetModifier;
   }
 
-  if (baseBudget <= 0) return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
+  if (baseBudget <= 0 || areaDef.tags?.includes('safe')) {
+    return { newEntities: [], traitOverrides: [], receipt: buildEmptyReceipt(areaDef.id) };
+  }
 
   // Determine Encounter Zones (Rooms vs Global)
   const zones: RoomBounds[] = [];
@@ -450,6 +453,9 @@ export function runEncounterDirector(
 
   const localTokenPool = new Set(context?.tokenPool ?? []);
   const occupiedCoordinates = new Set<string>();
+  if (extraOccupiedCoordinates) {
+    extraOccupiedCoordinates.forEach((coord) => occupiedCoordinates.add(coord));
+  }
   existingPlacedEntities.forEach((e) => occupiedCoordinates.add(`${e.x},${e.y}`));
 
   const allNewEntities: Array<{
