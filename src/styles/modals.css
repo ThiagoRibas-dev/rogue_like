@@ -377,3 +377,54 @@ body[data-no-animations='true'] * {
   color: #718096;
   line-height: 1.4;
 }
+
+/* Crash Overlay & Modal */
+#crash-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.95);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  font-family: var(--font-mono);
+}
+
+.crash-modal {
+  background-color: #220b0b;
+  border: 2px solid var(--color-health);
+  padding: 2rem;
+  max-width: 800px;
+  width: 100%;
+  color: #ffcccc;
+  border-radius: 8px;
+  box-shadow: 0 0 40px rgba(255, 71, 87, 0.3);
+}
+
+.crash-modal h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1rem;
+  color: #ff4757;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.crash-stacktrace {
+  background-color: #0c0202;
+  padding: 1rem;
+  overflow-x: auto;
+  border: 1px solid rgba(255, 71, 87, 0.3);
+  margin: 1.5rem 0;
+  white-space: pre-wrap;
+  font-size: 0.85rem;
+  max-height: 300px;
+  overflow-y: auto;
+  border-radius: 4px;
+}
+
+.crash-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}

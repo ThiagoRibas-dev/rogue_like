@@ -1,5 +1,65 @@
 import * as ROT from 'rot-js';
 import './index.css';
+
+// Global error boundary overlay setup
+window.addEventListener('error', (e) => showCrashModal(e.error));
+window.addEventListener('unhandledrejection', (e) => showCrashModal(e.reason));
+
+function showCrashModal(err: unknown) {
+  try {
+    clearScheduler(); // Stop game loop immediately
+  } catch (e) {
+    // Ignore if scheduler was not running or not initialized
+  }
+
+  let overlay = document.getElementById('crash-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'crash-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  const stackTrace = err instanceof Error ? err.stack : String(err);
+  const errorMessage = err instanceof Error ? err.message : String(err);
+
+  overlay.innerHTML = `
+    <div class="crash-modal">
+      <h2>Fatal Engine Error</h2>
+      <p>The game encountered an unrecoverable error and had to stop.</p>
+      <pre class="crash-stacktrace">${errorMessage}\n\n${stackTrace}</pre>
+      <div class="crash-actions">
+        <button id="btn-crash-menu" class="modal-btn">Return to Main Menu</button>
+        <button id="btn-crash-export" class="modal-btn">Download Crash Report</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('btn-crash-menu')?.addEventListener('click', () => {
+    overlay!.remove();
+    // Return to main menu
+    const current = getGameState();
+    const state = { ...current, uiMode: UIMode.MainMenu };
+    setGameState(state);
+  });
+
+  document.getElementById('btn-crash-export')?.addEventListener('click', () => {
+    const report = {
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      error: errorMessage,
+      stack: stackTrace,
+      gameState: getGameState()
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roguelike_crash_report_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
 import { loadCampaign, loadCampaignRegistry } from './core/loader.ts';
 import { type GameState } from './types/game-state.types.ts';
 import { UIMode, EngineMode } from './types/game-state.types.ts';
@@ -27,11 +87,13 @@ import {
   renderDebugLedgerUI
 } from './rendering/ui.ts';
 import { renderEditorUI } from './rendering/editor_ui.ts';
-import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
+import { hasSaveGame, getSaveData, setSaveData, CampaignNotFoundError } from './core/save.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { startNewGame, continueGame, startSandboxEncounter } from './core/bootstrap.ts';
 import { handleKeyDown } from './core/input_handler.ts';
 import { perfTracker } from './core/performance.ts';
+import { trapFocus } from './utils/a11y.ts';
+
 import {
   createToggleEngineModeAction,
   createTogglePauseAction,
@@ -273,12 +335,17 @@ document.getElementById('btn-campaign-start')?.addEventListener('click', (e) => 
     }, 50);
   }
 });
-
 document.getElementById('btn-continue')?.addEventListener('click', () => {
   continueGame((newState) => {
     state = newState;
     syncDisplayLayout(display, newState);
     setGameState(newState);
+  }).catch((err) => {
+    if (err instanceof CampaignNotFoundError) {
+      alert(`Failed to load save game: ${err.message}\n\nPlease reinstall the missing campaign or start a new game.`);
+    } else {
+      throw err;
+    }
   });
 });
 
@@ -472,16 +539,32 @@ fileInput?.addEventListener('change', (e: Event) => {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = async (event) => {
     try {
       const content = event.target?.result as string;
-      JSON.parse(content);
+      const parsed = JSON.parse(content);
+
+      // Save validation
+      if (!parsed.campaignId) {
+        throw new Error('Save file is missing required campaign information.');
+      }
+
+      const registry = await loadCampaignRegistry();
+      const exists = registry.campaigns.some((c) => c.id === parsed.campaignId);
+      if (!exists) {
+        throw new Error(
+          `This save requires campaign "${parsed.campaignId}", which is not installed. Please install it first.`
+        );
+      }
+
       setSaveData(content);
       renderMenus(getGameState(), hasSaveGame());
+      alert('Save game imported successfully!');
       target.value = '';
     } catch (err) {
-      alert('Invalid save file format!');
+      alert(`Failed to import save: ${(err as Error).message}`);
       console.error(err);
+      target.value = '';
     }
   };
   reader.readAsText(file);
@@ -514,6 +597,9 @@ function updateHUD(s: GameState): void {
   }
 }
 
+let activeFocusCleanup: (() => void) | null = null;
+let currentFocusMode: UIMode | null = null;
+
 // Subscribe to state changes to update the UI
 onStateChange((newState: GameState) => {
   const renderTime0 = performance.now();
@@ -524,6 +610,33 @@ onStateChange((newState: GameState) => {
     syncDisplayLayout(display, newState);
   }
   state = newState;
+
+  if (newState.uiMode !== currentFocusMode) {
+    if (activeFocusCleanup) {
+      activeFocusCleanup();
+      activeFocusCleanup = null;
+    }
+    currentFocusMode = newState.uiMode;
+
+    let targetEl: HTMLElement | null = null;
+    if (newState.uiMode === UIMode.Settings) {
+      targetEl = document.getElementById('settings-overlay');
+    } else if (newState.uiMode === UIMode.Dialogue) {
+      targetEl = document.getElementById('dialogue-overlay');
+    } else if (newState.uiMode === UIMode.CampaignSelect) {
+      targetEl = document.getElementById('campaign-selection-overlay');
+    } else if (newState.uiMode === UIMode.GameOver) {
+      targetEl = document.getElementById('game-over-screen');
+    }
+
+    if (targetEl) {
+      setTimeout(() => {
+        if (targetEl && currentFocusMode === newState.uiMode) {
+          activeFocusCleanup = trapFocus(targetEl);
+        }
+      }, 50);
+    }
+  }
 
   if (newState.uiMode === UIMode.Editor) {
     if (gameLayout) gameLayout.classList.add('hidden');

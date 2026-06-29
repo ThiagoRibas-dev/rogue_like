@@ -104,10 +104,24 @@ A modern, highly-extensible, browser-based traditional roguelike engine featurin
 4. Open the local URL (usually `http://localhost:5173`) in your browser to play.
 
 ### Building for Production
-To compile the strict TypeScript and build the optimized Vite bundle for deployment (e.g., to itch.io or GitHub Pages):
-```bash
-bun run build
-```
+
+To build the project for deployment:
+
+#### GitHub Pages
+1. Set the environment variable `GITHUB_PAGES=true` (this ensures the asset paths resolve correctly with the base path `/rogue_like/`).
+2. Run:
+   ```bash
+   bun run build
+   ```
+3. Deploy the generated `dist/` directory.
+
+#### itch.io
+1. Build the production package with a relative base path (suitable for itch.io's offline/embedded browser format):
+   ```bash
+   bun run build:itch
+   ```
+2. Zip the contents of the `dist/` directory.
+3. Upload the ZIP file to itch.io and select **"This file will be played in the browser"**.
 
 ## 🏗️ Architecture Highlights
 

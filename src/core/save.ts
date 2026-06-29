@@ -14,6 +14,13 @@ import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '.
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
+export class CampaignNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CampaignNotFoundError';
+  }
+}
+
 const SAVE_KEY = 'roguelike_save';
 
 /**
@@ -147,7 +154,14 @@ export async function loadGame(): Promise<GameState | null> {
 
     // Default to 'default' if an old save is loaded
     const campaignId = sState.campaignId || 'default';
-    const campaign = await loadCampaign(campaignId);
+    let campaign;
+    try {
+      campaign = await loadCampaign(campaignId);
+    } catch (err) {
+      throw new CampaignNotFoundError(
+        `Campaign "${campaignId}" could not be loaded. It may have been uninstalled or contains errors.`
+      );
+    }
 
     const rehydratedAreas = new Map<string, AreaData>();
     for (const [areaId, sAreaData] of sState.areas) {

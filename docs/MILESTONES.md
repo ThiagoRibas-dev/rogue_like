@@ -745,14 +745,14 @@ Transform the editor workspace into a scalable, multi-pane application.
 - [x] Consolidate related data into single views using workspace tabs (e.g., an "Adversary Director" view that tabs between Villains, Schemes, Agreements, and Hierarchies).
 - [x] Add searchable and resizable panels, allowing users to collapse or focus on specific parts of the workspace.
 
-## 🟡 Milestone 67: Release Robustness & Distribution Polish
+## 🟢 Milestone 67: Release Robustness & Distribution Polish
 Prepare for public builds and long-term iteration.
-- [ ] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
-- [ ] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
-- [ ] Test browser compatibility across Chromium, Firefox, Safari, and mobile/tablet where feasible.
-- [ ] Add graceful error boundaries for campaign loading, runtime simulation errors, editor validation crashes, and corrupt saves.
-- [ ] Optimize production bundle size and loading time.
-- [ ] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
+- [x] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
+- [x] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
+- [x] Test browser compatibility across Chromium, Firefox, Safari, and mobile/tablet where feasible.
+- [x] Add graceful error boundaries for campaign loading, runtime simulation errors, editor validation crashes, and corrupt saves.
+- [x] Optimize production bundle size and loading time.
+- [x] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
 
 ## 🟡 Milestone 68: Modding Documentation, Examples & Creator Onboarding
 Make the system understandable to campaign authors.
