@@ -5,6 +5,7 @@ export interface ValidationError {
   readonly path: string;
   readonly message: string;
   readonly severity: 'error' | 'warning';
+  readonly fixSuggestion?: string;
 }
 
 /**

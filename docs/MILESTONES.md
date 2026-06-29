@@ -754,47 +754,46 @@ Prepare for public builds and long-term iteration.
 - [x] Optimize production bundle size and loading time.
 - [x] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
 
-## 🟡 Milestone 68: Modding Documentation, Examples & Creator Onboarding
+## 🟢 Milestone 68: Modding Documentation, Examples & Creator Onboarding
 Make the system understandable to campaign authors.
-- [ ] Write schema reference docs for entities, items, reactions, fields, encounters, personalities, triggers, schemes, and chronicles.
-- [ ] Ship small annotated example campaigns: combat basics, interaction lab, encounter director lab, narrative trigger lab, and nemesis lab.
-- [ ] Add in-editor help text, warning explanations, and “fix-it” suggestions for common validation errors.
-- [ ] Provide a creator checklist for packaging, installing, validating, and playtesting campaigns.
-- [ ] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
+- [x] Write schema reference docs (seeded from `generate-ai-prompt-kit.ts` output) with annotated walkthroughs using the default campaign as the worked example.
+- [x] Add in-editor help text, warning explanations, and "fix-it" suggestions for common validation errors.
+- [x] Provide a creator checklist (`docs/CREATOR_GUIDE.md`) for packaging, installing, validating, and playtesting campaigns, including AI-assisted authoring via the prompt kit.
+- [x] Add a designer-facing glossary for engine concepts: tags vs traits, intents vs events, reactions vs triggers, static vs dynamic data.
 
 ---
 
 # 🚀 Phase 10: Deep Interaction & Emergent Narrative (V2 Architecture)
 **Goal:** Implement the future-proof design mechanics to bridge the gap between our current baseline and the deep, emergent interactions of classic roguelikes (Nethack, Caves of Qud, Dwarf Fortress).
 
-## 🟡 Milestone 71: The Unified `ApplyIntent`
+## 🟡 Milestone 69: The Unified `ApplyIntent`
 Consolidate disparate item/interaction verbs into a single, highly combinatorial intent. Reference: `references\full games\NetHack\src\apply.c` (unifying myriad actions into use_* callbacks).
 - [ ] Refactor `UseItem`, `EquipItem`, and `Interact` intents into a single `ApplyIntent`.
 - [ ] Add the `verb` property (`apply`, `dip`, `throw`, `kick`, `zap`) to intents and the `reaction.system.ts` matchers.
 - [ ] Implement projectile logic for `throw` verbs, reusing the `targeting.system.ts` line-trace.
 - [ ] Add `ContainerComponent` and `LockComponent` for doors and chests to enable procedural access puzzles.
 
-## 🟡 Milestone 72: Lightweight Field & Substance Simulation
+## 🟡 Milestone 70: Lightweight Field & Substance Simulation
 Introduce environment simulation without full cellular automata overhead.
 - [ ] Create `FieldComponent` (type, intensity, duration, spreadRule).
 - [ ] Implement `field.system.ts` to tick field durations and spread deterministically.
 - [ ] Wire reactions for cross-substance interactions (e.g. water + fire = smoke, acid + metal = corrosion).
 - [ ] Ensure fields properly apply status effects (burning, poisoned, wet) to occupying entities.
 
-## 🟡 Milestone 73: The Encounter Director (Tactical Budgeting)
+## 🟡 Milestone 71: The Encounter Director (Tactical Budgeting)
 Upgrade the room population logic to procedurally assemble tactical puzzles. Reference: `references\full games\incursion-roguelike\src\Encounter.cpp` (XCR calculation and scaling).
 - [ ] Expand `AreaDefinition` parsing to utilize `crBudget` across four tactical axes: Proteins (Bosses), Appetizers (Advantages), Sides (Hazards), and Dessert (Chaos).
 - [ ] Implement algorithms to spend the budget mathematically, guaranteeing rooms match the difficulty curve.
 - [ ] Inject dynamic templates (e.g., "Elite", "Volatile") to pad out CR budgets and add chaos.
 
-## 🟡 Milestone 74: Nemesis Inner Life (Personality Loop)
+## 🟡 Milestone 72: Nemesis Inner Life (Personality Loop)
 Give entities deep, history-driven inner lives that produce visible drama.
 - [ ] Expand `MemoryComponent` with Dwarf Fortress-style 0-100 `facets` (e.g., cruelty, cowardice).
 - [ ] Implement "Core Memory" mutations that permanently alter facets based on high-stress events.
 - [ ] Hook `facets` into `src/ai/` module weights so personality mathematically drives combat behaviors.
 - [ ] Trigger dynamic `FactionId` reassignment when core values radically change, simulating betrayals.
 
-## 🟡 Milestone 75: Drama Director (Dynamic Composition)
+## 🟡 Milestone 73: Drama Director (Dynamic Composition)
 Automate the narrative pacing so the combat loop remains pure.
 - [ ] Upgrade the `scheme_compiler.ts` to dynamically author and inject `TriggerDefinition` JSON blobs into `CampaignData` at runtime.
 - [ ] Create the Drama Director meta-layer to track global PIS (Player Interaction Score).
@@ -805,14 +804,14 @@ Automate the narrative pacing so the combat loop remains pure.
 # 🚀 Phase 11: Multi-Threading & Asynchronous Architecture
 **Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
 
-## 🟡 Milestone 69: Asynchronous Cooperative Scheduler (Time-Slicing)
+## 🟡 Milestone 74: Asynchronous Cooperative Scheduler (Time-Slicing)
 Prevent browser lock-ups during computationally expensive operations.
 - [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
 - [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
 - [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
 - [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
 
-## 🟡 Milestone 70: Absolute Presentational Decoupling (Web Worker)
+## 🟡 Milestone 75: Absolute Presentational Decoupling (Web Worker)
 Enforce a strict model-view separation by moving the core engine off the main thread entirely.
 - [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
 - [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.

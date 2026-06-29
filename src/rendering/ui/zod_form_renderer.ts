@@ -151,9 +151,21 @@ export function renderFormForZodSchema(
       errEl.style.color = err.severity === 'error' ? '#f38ba8' : '#f9e2af';
       errEl.style.fontSize = '0.8rem';
       errEl.style.marginTop = '4px';
-      errEl.style.marginBottom = '8px';
+      errEl.style.marginBottom = err.fixSuggestion ? '2px' : '8px';
       errEl.style.marginLeft = '4px';
       container.appendChild(errEl);
+
+      if (err.fixSuggestion) {
+        const fixEl = document.createElement('div');
+        fixEl.textContent = `💡 Fix: ${err.fixSuggestion}`;
+        fixEl.className = 'validation-fix-inline';
+        fixEl.style.color = '#a6e3a1';
+        fixEl.style.fontSize = '0.8rem';
+        fixEl.style.marginTop = '2px';
+        fixEl.style.marginBottom = '8px';
+        fixEl.style.marginLeft = '4px';
+        container.appendChild(fixEl);
+      }
     }
   }
 }

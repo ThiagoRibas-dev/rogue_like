@@ -17,7 +17,8 @@ export async function validateEntities(campaign: Readonly<CampaignData>): Promis
             errors.push({
               severity: 'error',
               message: `Entity template "${entityId}" has shop inventory referencing unknown item: "${itemId}"`,
-              path: `entities.${entityId}.shop.inventory[${idx}]`
+              path: `entities.${entityId}.shop.inventory[${idx}]`,
+              fixSuggestion: `Add "${itemId}" to items.json or select a valid item from the dropdown.`
             });
           }
         });
@@ -27,7 +28,8 @@ export async function validateEntities(campaign: Readonly<CampaignData>): Promis
         errors.push({
           severity: 'error',
           message: `Entity template "${entityId}" has shop markupMultiplier < 0: ${shop.markupMultiplier}`,
-          path: `entities.${entityId}.shop.markupMultiplier`
+          path: `entities.${entityId}.shop.markupMultiplier`,
+          fixSuggestion: 'Change markupMultiplier to a positive number (e.g., 1.5 for a 50% markup).'
         });
       }
     }

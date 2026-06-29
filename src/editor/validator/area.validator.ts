@@ -28,7 +28,8 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
               errors.push({
                 severity: 'error',
                 path: `/areas/${areaId}/connections/${cIdx}/portalTemplateId`,
-                message: `Portal template ID '${conn.portalTemplateId}' not found in entities or items registry.`
+                message: `Portal template ID '${conn.portalTemplateId}' not found in entities or items registry.`,
+                fixSuggestion: `Create an entity or item with ID "${conn.portalTemplateId}", or select an existing one.`
               });
             }
           }
@@ -52,7 +53,8 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
           errors.push({
             severity: 'warning',
             path: `/areas/${areaId}/staticMap/layout/${y}`,
-            message: `Row length mismatch. Row ${y} has length ${row.length} (max ${rowLength}). This is supported but might be a typo.`
+            message: `Row length mismatch. Row ${y} has length ${row.length} (max ${rowLength}). This is supported but might be a typo.`,
+            fixSuggestion: 'Pad this row with spaces or characters so it matches the length of other rows.'
           });
         }
 
@@ -68,7 +70,8 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
             errors.push({
               severity: 'error',
               path: `/areas/${areaId}/staticMap/layout/${y}/${x}`,
-              message: `Layout character '${char}' at (${x}, ${y}) is not defined in legend or entityLegend.`
+              message: `Layout character '${char}' at (${x}, ${y}) is not defined in legend or entityLegend.`,
+              fixSuggestion: `Add '${char}' to the staticMap legend (for tiles) or entityLegend (for entities).`
             });
           }
 
@@ -88,7 +91,8 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
               errors.push({
                 severity: 'error',
                 path: `/areas/${areaId}/placedEntities`,
-                message: `Placed entity at (${x}, ${y}) stands on an unmapped or solid wall character '${char}'.`
+                message: `Placed entity at (${x}, ${y}) stands on an unmapped or solid wall character '${char}'.`,
+                fixSuggestion: `Move the entity, or change the tile mapping of '${char}' to reference a walkable tile.`
               });
             }
           }
@@ -116,14 +120,16 @@ export async function validateAreas(campaign: Readonly<CampaignData>): Promise<V
                 errors.push({
                   severity: 'error',
                   path: `/areas/${areaId}/connections/${cIdx}`,
-                  message: `Portal connection exit at (${conn.placementX}, ${conn.placementY}) is placed on a solid wall or unmapped character '${charAtCoord}'.`
+                  message: `Portal connection exit at (${conn.placementX}, ${conn.placementY}) is placed on a solid wall or unmapped character '${charAtCoord}'.`,
+                  fixSuggestion: `Change placementX/placementY to walkable coordinates, or change '${charAtCoord}' to be walkable.`
                 });
               }
             } else {
               errors.push({
                 severity: 'error',
                 path: `/areas/${areaId}/connections/${cIdx}`,
-                message: `Portal connection exit at (${conn.placementX}, ${conn.placementY}) is outside the layout bounds.`
+                message: `Portal connection exit at (${conn.placementX}, ${conn.placementY}) is outside the layout bounds.`,
+                fixSuggestion: `Make sure placementX/placementY coordinates are within the static map dimensions (width/height).`
               });
             }
           }

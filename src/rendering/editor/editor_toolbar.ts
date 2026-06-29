@@ -244,6 +244,9 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
               `<span style="font-weight:bold;color:${e.severity === 'error' ? '#e74c3c' : '#f39c12'};">[${e.severity.toUpperCase()}]</span>&nbsp;` +
               `<span style="color:#3498db;">${e.path}</span><br/>` +
               `<span style="color:#ccc;">${e.message}</span>` +
+              (e.fixSuggestion
+                ? `<br/><span style="color:#a6e3a1;font-weight:bold;">💡 Fix: ${e.fixSuggestion}</span>`
+                : '') +
               `</div>`
           )
           .join('');

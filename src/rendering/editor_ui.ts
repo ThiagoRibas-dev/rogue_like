@@ -204,7 +204,7 @@ function renderActivityBar(container: HTMLElement): void {
     const btn = document.createElement('button');
     btn.className = `editor-activity-btn ${editorState.activeGroupId === group.id ? 'active' : ''}`;
     btn.dataset.group = group.id;
-    btn.title = group.label;
+    btn.title = group.description ? `${group.label}\n\n${group.description}` : group.label;
     btn.innerHTML = `
       <span class="activity-icon" style="font-size:1.5rem;display:block;">${group.icon}</span>
       <span class="activity-label" style="font-size:0.6rem;display:block;opacity:0.7;margin-top:2px;">${group.label.split(' ')[0]}</span>

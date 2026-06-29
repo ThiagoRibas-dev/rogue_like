@@ -19,7 +19,8 @@ export async function validateReactions(campaign: Readonly<CampaignData>): Promi
           errors.push({
             severity: 'error',
             message: `Reaction "${reaction.id}" references unknown tag "${tag}" in ${matcherName}.`,
-            path: `reactions.${reaction.id}.${matcherName}.tags`
+            path: `reactions.${reaction.id}.${matcherName}.tags`,
+            fixSuggestion: `Add "${tag}" to the tagRegistry configuration or correct the spelling.`
           });
         }
       }
@@ -67,7 +68,8 @@ export async function validateReactions(campaign: Readonly<CampaignData>): Promi
           errors.push({
             severity: 'warning',
             message: `Ambiguous reactions detected. The following reactions have identical matchers and priority (${priority}), meaning the tie-break will fall back to arbitrary ID sorting: ${rxIds.join(', ')}.`,
-            path: `reactions`
+            path: `reactions`,
+            fixSuggestion: `Change the "priority" property on one of these reactions (e.g. increase it to make it fire first).`
           });
         }
       }

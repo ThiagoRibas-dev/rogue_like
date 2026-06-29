@@ -12,6 +12,7 @@ export interface ViewGroup {
   id: string;
   icon: string;
   label: string;
+  description?: string;
   tabs: TabDefinition[];
 }
 
@@ -20,6 +21,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'core',
     icon: '⚙️',
     label: 'Core Config',
+    description: "Start here. Define your campaign's identity, game rules, XP progression, and visual theme.",
     tabs: [
       { id: 'manifest', label: 'Manifest', panelType: 'singleton' },
       { id: 'rules', label: 'Rules', panelType: 'singleton' },
@@ -31,6 +33,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'actors',
     icon: '🎭',
     label: 'Actors & Inventory',
+    description: 'Define status effects, items, entities, AI profiles, and the faction relationship matrix.',
     tabs: [
       { id: 'status', label: 'Status Effects', panelType: 'dictionary' },
       { id: 'effects', label: 'Item Effects', panelType: 'dictionary' },
@@ -45,6 +48,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'narrative',
     icon: '📖',
     label: 'Narrative Engine',
+    description: 'Create interactive dialogues, quests, templates, and event-driven trigger scripts.',
     tabs: [
       { id: 'dialogues', label: 'Dialogues', panelType: 'dictionary' },
       { id: 'quests', label: 'Quests', panelType: 'dictionary' },
@@ -57,6 +61,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'world',
     icon: '🗺️',
     label: 'World & Encounters',
+    description: 'Design tiles, environmental fields, spawn pools, encounter profiles, and procedural map areas.',
     tabs: [
       { id: 'tiles', label: 'Tiles', panelType: 'dictionary' },
       { id: 'fields', label: 'Fields', panelType: 'dictionary' },
@@ -69,6 +74,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'adversary',
     icon: '♟️',
     label: 'Adversary Director',
+    description: 'Setup villains, scheme recipes, agreements, and nemesis hierarchies.',
     tabs: [
       { id: 'villains', label: 'Villains', panelType: 'dictionary' },
       { id: 'schemeRecipes', label: 'Schemes', panelType: 'dictionary' },
@@ -80,6 +86,7 @@ export const VIEW_GROUPS: ViewGroup[] = [
     id: 'tools',
     icon: '🧪',
     label: 'Tools & Lab',
+    description: 'Test, balance, and debug your campaign with simulation sandboxes.',
     tabs: [{ id: 'simulation', label: 'Simulation Lab', panelType: 'custom' }]
   }
 ];

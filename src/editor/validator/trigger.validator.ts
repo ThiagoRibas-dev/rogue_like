@@ -89,7 +89,8 @@ function reportCycle(
     errors.push({
       path: `/triggers`,
       message: `Unconditional trigger recursion loop detected: ${cycleNodes.join(' -> ')} -> ${node}`,
-      severity: 'error'
+      severity: 'error',
+      fixSuggestion: `Add a condition to at least one trigger in the loop (e.g. check a fact set during execution) so it doesn't fire infinitely.`
     });
   }
 }
