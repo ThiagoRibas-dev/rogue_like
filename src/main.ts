@@ -31,6 +31,7 @@ import { hasSaveGame, getSaveData, setSaveData } from './core/save.ts';
 import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './core/game-loop.ts';
 import { startNewGame, continueGame, startSandboxEncounter } from './core/bootstrap.ts';
 import { handleKeyDown } from './core/input_handler.ts';
+import { perfTracker } from './core/performance.ts';
 import {
   createToggleEngineModeAction,
   createTogglePauseAction,
@@ -141,6 +142,12 @@ let state: GameState = {
     domainBudgets: {},
     activeCooldowns: {},
     lastMajorEventTurn: 0
+  },
+  telemetry: {
+    playerDeaths: 0,
+    damageTaken: 0,
+    resourcesConsumed: 0,
+    questsCompleted: 0
   }
 };
 
@@ -418,6 +425,8 @@ document.getElementById('btn-reset-keybinds')?.addEventListener('click', () => {
   renderSettingsMenu();
 });
 
+import { getActiveReplay } from './core/replay.ts';
+
 // Export Save
 document.getElementById('btn-export-save')?.addEventListener('click', () => {
   const data = getSaveData();
@@ -431,6 +440,25 @@ document.getElementById('btn-export-save')?.addEventListener('click', () => {
     URL.revokeObjectURL(url);
   }
 });
+
+// Download Replay
+const triggerReplayDownload = () => {
+  const replay = getActiveReplay();
+  if (replay) {
+    const blob = new Blob([JSON.stringify(replay, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `roguelike_replay_${replay.campaignId}_${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } else {
+    alert('No active replay found!');
+  }
+};
+
+document.getElementById('btn-download-replay-settings')?.addEventListener('click', triggerReplayDownload);
+document.getElementById('btn-download-replay-gameover')?.addEventListener('click', triggerReplayDownload);
 
 // Import Save
 const fileInput = document.getElementById('file-import-save') as HTMLInputElement | null;
@@ -488,6 +516,7 @@ function updateHUD(s: GameState): void {
 
 // Subscribe to state changes to update the UI
 onStateChange((newState: GameState) => {
+  const renderTime0 = performance.now();
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
 
@@ -523,6 +552,7 @@ onStateChange((newState: GameState) => {
     renderDebugLedgerUI(newState);
     renderEditorUI(newState, globalCampaignEditor);
   }
+  perfTracker.lastRenderTimeMs = performance.now() - renderTime0;
 });
 
 // Initialize HUD display values and pass the initial state

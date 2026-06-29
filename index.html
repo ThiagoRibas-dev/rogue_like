@@ -275,7 +275,8 @@
           </label>
         </div>
 
-        <div class="modal-buttons" style="margin-top: 24px;">
+        <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 8px;">
+          <button id="btn-download-replay-settings" class="modal-btn" style="background: #2980b9; display: none;">Download Replay</button>
           <button id="btn-close-settings" class="modal-btn">Close</button>
         </div>
       </div>
@@ -323,8 +324,9 @@
           style="margin: 16px 0; background: rgba(0,0,0,0.5); padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto; text-align: left; font-size: 0.9rem;">
           <!-- death logs go here -->
         </div>
-        <div class="modal-buttons">
+        <div class="modal-buttons" style="display: flex; flex-direction: column; gap: 8px;">
           <button id="btn-return-menu" class="modal-btn">Return to Menu</button>
+          <button id="btn-download-replay-gameover" class="modal-btn" style="background: #2980b9;">Download Replay</button>
         </div>
       </div>
     </div>

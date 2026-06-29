@@ -7,6 +7,7 @@ import {
 } from '../../types/events.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { ComponentType, type FieldComponent } from '../../types/components.types.ts';
+import { perfTracker } from '../../core/performance.ts';
 
 /**
  * Renders the developer debug panel presenting triggered events and active field statuses on-screen.
@@ -21,6 +22,34 @@ export function renderDebugOverlay(state: GameState): void {
   }
 
   overlay.classList.remove('hidden');
+
+  // Render performance metrics
+  let perfInfo = document.getElementById('debug-perf-info');
+  if (!perfInfo) {
+    perfInfo = document.createElement('div');
+    perfInfo.id = 'debug-perf-info';
+    perfInfo.style.marginBottom = '12px';
+    perfInfo.style.padding = '8px';
+    perfInfo.style.border = '1px solid #333';
+    perfInfo.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    perfInfo.style.fontFamily = "'JetBrains Mono', monospace";
+    perfInfo.style.fontSize = '0.8rem';
+    perfInfo.style.color = '#2ecc71';
+    overlay.insertBefore(perfInfo, overlay.firstChild);
+  }
+
+  const activeFields = state.entities.filter((id) => {
+    const comp = state.components.get(id);
+    return comp && comp[ComponentType.Field] !== undefined;
+  }).length;
+
+  perfInfo.innerHTML = `
+    <div style="font-weight: bold; color: #00ff00; border-bottom: 1px solid #333; margin-bottom: 4px; padding-bottom: 2px;">⚡ PERF telemetry</div>
+    Turn Process: ${perfTracker.lastTurnTimeMs.toFixed(1)} ms<br/>
+    UI Render: ${perfTracker.lastRenderTimeMs.toFixed(1)} ms<br/>
+    AI Process: ${perfTracker.lastAITimeMs.toFixed(1)} ms<br/>
+    Entities: ${state.entities.length} | Fields: ${activeFields}
+  `;
 
   const ledgerContainer = document.getElementById('debug-event-ledger');
   if (!ledgerContainer) return;

@@ -8,6 +8,7 @@ import {
 import { getComponent } from './ecs.ts';
 import { isAction, type ActionType, rebindAction } from './settings.ts';
 import { queuePlayerIntent, setGameState } from './game-loop.ts';
+import { getIsPlayingReplay } from './replay.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { getDirectionDelta } from '../utils/direction.ts';
 import { Direction } from '../utils/direction.ts';
@@ -90,6 +91,11 @@ export function handleKeyDown(
   rebindingAction: ActionType | null,
   setRebindingAction: (action: ActionType | null) => void
 ): void {
+  if (getIsPlayingReplay()) {
+    event.preventDefault();
+    return;
+  }
+
   const rebindingOverlay = document.getElementById('rebinding-overlay');
 
   if (rebindingAction) {

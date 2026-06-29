@@ -133,6 +133,12 @@ export function runAIArena(
       domainBudgets: {},
       activeCooldowns: {},
       lastMajorEventTurn: 0
+    },
+    telemetry: {
+      playerDeaths: 0,
+      damageTaken: 0,
+      resourcesConsumed: 0,
+      questsCompleted: 0
     }
   };
 

@@ -20,8 +20,10 @@ import { type EntityId, type GameState, UIMode, type PersistentEntityRecord } fr
 import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import { compilePhases } from '../systems/scheme_compiler.ts';
-import { rng } from './rng.ts';
+import { rng, initRNG } from './rng.ts';
+import { startRecording } from './replay.ts';
 import { deleteSave, loadGame } from './save.ts';
+import { setTelemetryStore } from './telemetry.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
@@ -48,7 +50,7 @@ const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing',
 function shuffle<T>(array: ReadonlyArray<T>): T[] {
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.getUniform() * (i + 1));
+    const j = Math.floor(rng.getUniform() * (i + 1)) as number;
     const temp = result[i]!;
     result[i] = result[j]!;
     result[j] = temp;
@@ -60,8 +62,12 @@ export async function startNewGame(
   campaignId: string,
   currentState: GameState,
   display: ROT.Display,
-  setGlobalState: (s: GameState) => void
+  setGlobalState: (s: GameState) => void,
+  seed?: number
 ): Promise<void> {
+  const finalSeed = initRNG(seed);
+  startRecording(campaignId, finalSeed);
+
   const newCampaign = await loadCampaign(campaignId);
 
   let state = {
@@ -226,6 +232,12 @@ export async function startNewGame(
       domainBudgets: {},
       activeCooldowns: {},
       lastMajorEventTurn: 0
+    },
+    telemetry: {
+      playerDeaths: 0,
+      damageTaken: 0,
+      resourcesConsumed: 0,
+      questsCompleted: 0
     }
   };
 
@@ -350,6 +362,7 @@ export async function startNewGame(
     }
   }
 
+  setTelemetryStore(state.telemetry);
   setGlobalState(state);
   startEngine();
 }
@@ -545,6 +558,12 @@ export async function startSandboxEncounter(
       domainBudgets: {},
       activeCooldowns: {},
       lastMajorEventTurn: 0
+    },
+    telemetry: {
+      playerDeaths: 0,
+      damageTaken: 0,
+      resourcesConsumed: 0,
+      questsCompleted: 0
     }
   };
 
@@ -590,6 +609,7 @@ export async function startSandboxEncounter(
     }
   }
 
+  setTelemetryStore(state.telemetry);
   setGlobalState(state);
   startEngine();
 }

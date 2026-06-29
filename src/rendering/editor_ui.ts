@@ -21,6 +21,7 @@ import { renderFormForZodSchema } from './ui/zod_form_renderer.ts';
 import { renderKnowledgeSimulator } from './ui/knowledge_simulator.ui.ts';
 import { renderTriggerComposer } from './ui/trigger_composer.ui.ts';
 import { renderNarrativeFuzzer } from './ui/narrative_fuzzer.ui.ts';
+import { renderBalanceLab } from './ui/balance_lab.ui.ts';
 import { AUTHORING_LEVELS } from '../constants/campaign.constants.ts';
 
 import type { ValidationError } from '../editor/validator/validator.types.ts';
@@ -541,13 +542,14 @@ function updateToolbar(controller: EditorController, errors: ReadonlyArray<Valid
 }
 
 function activateSimTab(
-  tab: 'arena' | 'director' | 'knowledge' | 'fuzzer',
+  tab: 'arena' | 'director' | 'knowledge' | 'fuzzer' | 'balance',
   controller: EditorController,
   tabContent: HTMLElement,
   arenaTab: HTMLElement,
   directorTab: HTMLElement,
   knowledgeTab: HTMLElement,
-  fuzzerTab: HTMLElement
+  fuzzerTab: HTMLElement,
+  balanceTab: HTMLElement
 ): void {
   // Update tab styles
   arenaTab.style.color = tab === 'arena' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
@@ -558,6 +560,8 @@ function activateSimTab(
   knowledgeTab.style.borderBottomColor = tab === 'knowledge' ? 'var(--accent-color, #3498db)' : 'transparent';
   fuzzerTab.style.color = tab === 'fuzzer' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
   fuzzerTab.style.borderBottomColor = tab === 'fuzzer' ? 'var(--accent-color, #3498db)' : 'transparent';
+  balanceTab.style.color = tab === 'balance' ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
+  balanceTab.style.borderBottomColor = tab === 'balance' ? 'var(--accent-color, #3498db)' : 'transparent';
 
   // Clear and render
   tabContent.innerHTML = '';
@@ -567,8 +571,10 @@ function activateSimTab(
     renderDirectorSandbox(controller, tabContent);
   } else if (tab === 'knowledge') {
     renderKnowledgeSimulator(controller, tabContent);
-  } else {
+  } else if (tab === 'fuzzer') {
     renderNarrativeFuzzer(controller, tabContent);
+  } else {
+    renderBalanceLab(controller, tabContent);
   }
 }
 
@@ -729,10 +735,18 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         fuzzerTab.style.cssText =
           'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
 
+        const balanceTab = document.createElement('button');
+        balanceTab.className = 'sim-tab';
+        balanceTab.dataset.tab = 'balance';
+        balanceTab.textContent = '⚖ Balance Lab';
+        balanceTab.style.cssText =
+          'padding:0.5rem 1rem;cursor:pointer;background:transparent;color:var(--text-dim);border:none;border-bottom:2px solid transparent;margin-bottom:-2px;font-size:0.85rem;';
+
         tabBar.appendChild(arenaTab);
         tabBar.appendChild(directorTab);
         tabBar.appendChild(knowledgeTab);
         tabBar.appendChild(fuzzerTab);
+        tabBar.appendChild(balanceTab);
         formContainer.appendChild(tabBar);
 
         const tabContent = document.createElement('div');
@@ -740,25 +754,29 @@ function refreshActiveViews(controller: EditorController, report?: ValidationRep
         formContainer.appendChild(tabContent);
 
         // Activate first tab by default
-        let activeTab: 'arena' | 'director' | 'knowledge' | 'fuzzer' = 'arena';
-        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+        let activeTab: 'arena' | 'director' | 'knowledge' | 'fuzzer' | 'balance' = 'arena';
+        activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
 
         // Tab switching
         arenaTab.addEventListener('click', () => {
           activeTab = 'arena';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
         });
         directorTab.addEventListener('click', () => {
           activeTab = 'director';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
         });
         knowledgeTab.addEventListener('click', () => {
           activeTab = 'knowledge';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
         });
         fuzzerTab.addEventListener('click', () => {
           activeTab = 'fuzzer';
-          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab);
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
+        });
+        balanceTab.addEventListener('click', () => {
+          activeTab = 'balance';
+          activateSimTab(activeTab, controller, tabContent, arenaTab, directorTab, knowledgeTab, fuzzerTab, balanceTab);
         });
       } else if (currentCategory === 'triggerComposer') {
         renderTriggerComposer(controller, formContainer);

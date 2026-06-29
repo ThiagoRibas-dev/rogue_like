@@ -153,6 +153,16 @@ export interface DramaTracker {
 }
 
 /**
+ * Metrics tracked for balance tuning and analytics.
+ */
+export interface TelemetryMetrics {
+  readonly playerDeaths: number;
+  readonly damageTaken: number;
+  readonly resourcesConsumed: number;
+  readonly questsCompleted: number;
+}
+
+/**
  * Immutable shape of the global game state.
  */
 export interface GameState {
@@ -259,6 +269,7 @@ export interface GameState {
         readonly availableVerbs: ReadonlyArray<Verb>;
       }
     | undefined;
+  readonly telemetry: TelemetryMetrics;
 }
 
 /**
@@ -341,4 +352,5 @@ export interface SerializedGameState {
   readonly pendingRumors: ReadonlyArray<PendingRumorPropagation>;
   readonly pendingRivalries: ReadonlyArray<PendingRivalry>;
   readonly dramaTracker: DramaTracker;
+  readonly telemetry?: TelemetryMetrics;
 }

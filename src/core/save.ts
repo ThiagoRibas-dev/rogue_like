@@ -9,6 +9,7 @@ import {
 } from '../types/game-state.types.ts';
 import { updateSpatialIndex } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
+import { getTelemetryStore, setTelemetryStore } from './telemetry.ts';
 import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
@@ -121,7 +122,8 @@ export function saveGame(state: GameState): void {
     pendingKnowledge: state.pendingKnowledge,
     pendingRumors: state.pendingRumors,
     pendingRivalries: state.pendingRivalries,
-    dramaTracker: state.dramaTracker
+    dramaTracker: state.dramaTracker,
+    telemetry: getTelemetryStore()
   };
 
   try {
@@ -237,8 +239,17 @@ export async function loadGame(): Promise<GameState | null> {
         domainBudgets: {},
         activeCooldowns: {},
         lastMajorEventTurn: 0
+      },
+      telemetry: sState.telemetry || {
+        playerDeaths: 0,
+        damageTaken: 0,
+        resourcesConsumed: 0,
+        questsCompleted: 0
       }
     };
+
+    // Initialize the background telemetry store
+    setTelemetryStore(stateWithoutIndex.telemetry);
 
     // Rebuild the spatial index for the active floor
     return updateSpatialIndex(stateWithoutIndex);

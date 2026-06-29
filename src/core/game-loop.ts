@@ -5,6 +5,9 @@ import { IntentType } from '../types/intents/intent.enum.ts';
 import { type ActionResult, type Intent } from '../types/intents/intent.union.ts';
 import { addComponent, getComponent } from './ecs.ts';
 import { saveGame } from './save.ts';
+import { pushTelemetryEvents } from './telemetry.ts';
+import { recordIntent, saveCurrentReplay } from './replay.ts';
+import { perfTracker } from './performance.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
 
 import { processHungerTick } from '../systems/hunger.system.ts';
@@ -58,9 +61,13 @@ export function onStateChange(callback: (state: GameState) => void): void {
 }
 
 function updateState(newState: GameState): void {
+  const prevState = currentState;
   currentState = newState;
   if (newState.uiMode === UIMode.Game) {
     saveGame(newState);
+  }
+  if (newState.isGameOver && prevState && !prevState.isGameOver) {
+    saveCurrentReplay();
   }
   if (stateChangeCallback) {
     stateChangeCallback(newState);
@@ -73,6 +80,9 @@ function updateState(newState: GameState): void {
 export function queuePlayerIntent(intent: Intent): void {
   const state = getGameState();
   if (state.isGameOver) return;
+
+  // Record this player action for deterministic replays
+  recordIntent(intent);
 
   const isImmediate = 'isImmediate' in intent && intent.isImmediate;
 
@@ -224,7 +234,10 @@ export function processTurn(entityId: EntityId): void {
     }
 
     try {
+      const aiTime0 = performance.now();
       const aiResult = processAITurn(aiTurnState, entityId);
+      perfTracker.lastAITimeMs = performance.now() - aiTime0;
+
       aiTurnState = aiResult.state;
       const intent = aiResult.intent;
 
@@ -265,6 +278,7 @@ export function processTurn(entityId: EntityId): void {
  * @returns The updated state, success status, and calculated energy cost.
  */
 export function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
+  const turnTime0 = performance.now();
   const result = applyIntent(state, intent);
   let nextState = result.state;
 
@@ -351,7 +365,10 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   // Clear events at the end of the intent tick so they don't persist
   const eventsToReturn = [...nextState.events];
+  pushTelemetryEvents(eventsToReturn);
   nextState = { ...nextState, events: [] };
+
+  perfTracker.lastTurnTimeMs = performance.now() - turnTime0;
 
   return {
     ...finalResult,

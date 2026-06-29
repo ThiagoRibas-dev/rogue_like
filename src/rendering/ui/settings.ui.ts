@@ -35,6 +35,14 @@ export function renderSettingsMenu(state?: GameState): void {
   if (state && overlay) {
     if (state.uiMode === UIMode.Settings) {
       overlay.classList.remove('hidden');
+      const downloadReplayBtn = document.getElementById('btn-download-replay-settings');
+      if (downloadReplayBtn) {
+        if (state.entities.length > 0) {
+          downloadReplayBtn.style.display = 'block';
+        } else {
+          downloadReplayBtn.style.display = 'none';
+        }
+      }
     } else {
       overlay.classList.add('hidden');
       return; // Skip rendering if hidden

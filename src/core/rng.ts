@@ -7,6 +7,8 @@ import * as ROT from 'rot-js';
  */
 export const rng = ROT.RNG;
 
+let currentSeed: number = 0;
+
 /**
  * Initializes the RNG with a specific seed, or a random one if not provided.
  * @param seed Optional seed to initialize the RNG with.
@@ -15,8 +17,16 @@ export const rng = ROT.RNG;
 export function initRNG(seed?: number): number {
   const finalSeed = seed !== undefined ? seed : Date.now();
   rng.setSeed(finalSeed);
+  currentSeed = finalSeed;
   console.log(`[RNG] Initialized with seed: ${finalSeed}`);
   return finalSeed;
+}
+
+/**
+ * Gets the current active RNG seed.
+ */
+export function getCurrentSeed(): number {
+  return currentSeed;
 }
 
 /**
