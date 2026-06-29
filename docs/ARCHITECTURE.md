@@ -138,6 +138,101 @@ A single seeded `ROT.RNG` instance is exported from `src/core/rng.ts`. All gamep
 - **Authoring Continuum (Static, Blueprint, Dynamic Primitives)**: Campaign data structures are categorized into three levels: **Static** data (directly painted tiles, hand-authored dialogues, factions), **Parameterized Blueprints** (spawn pools, quest templates, procedurally generated areas), and **Dynamic Primitives** (trigger templates, reactions, traits). The Campaign Editor provides visual headers, reference suffixes, and a **Bake** controller to resolve procedural blueprints (like generated maps and tokens) into hand-editable static data. The Campaign Validator mock-compiles dynamic templates using context-aware variable bindings (mapping names to type-appropriate dummy variables or existing entity/item IDs) to run strict schema and integrity checks.
 - **JSON Patch Caveat**: JSON Patches (RFC 6902) work for editor change tracking, but gameplay turn-rewinding requires checkpointing `src/core/rng.ts` state alongside delta patches, otherwise future random results desync.
 
+### 4.6 Campaign Data Dependency Tree
+
+To guide campaign authors and prevent reference errors, the Campaign Editor UI follows a strict left-to-right/top-to-bottom layout order derived from data dependencies. A campaign record must exist in the database (downstream node) before other records (upstream nodes) can select or reference its string ID.
+
+The following graph maps these structural dependencies:
+
+```mermaid
+graph TD
+    classDef singleton fill:#1e1e2e,stroke:#89b4fa,stroke-width:1px,color:#cdd6f4;
+    classDef dict fill:#11111b,stroke:#a6e3a1,stroke-width:1px,color:#cdd6f4;
+    classDef registry fill:#313244,stroke:#f9e2af,stroke-width:1px,color:#cdd6f4;
+
+    subgraph Core Configuration
+        Rules[rules.json]:::singleton
+        Theme[theme.json]:::singleton
+        Manifest[manifest.json]:::singleton
+    end
+
+    subgraph World & Encounters
+        Areas[areas.json]:::dict
+        EncounterProfiles[encounter_profiles.json]:::dict
+        SpawnPools[spawn_pools.json]:::dict
+        Tiles[tiles.json]:::dict
+        Fields[fields.json]:::dict
+    end
+
+    subgraph Actors & Inventory
+        Entities[entities.json]:::dict
+        Factions[factions.json]:::singleton
+        Items[items.json]:::dict
+        ItemEffects[effects.json]:::dict
+        StatusEffects[status.json]:::dict
+        AI[ai.json]:::dict
+        Traits[trait_registry.json]:::registry
+    end
+
+    subgraph Narrative & Social
+        Dialogues[dialogues.json]:::dict
+        Quests[quests.json]:::dict
+        Triggers[triggers.json]:::dict
+    end
+
+    subgraph Adversaries & Schemes
+        Villains[villains.json]:::dict
+        Schemes[schemes.json]:::dict
+        Agreements[agreements.json]:::dict
+        Hierarchies[nemesis_hierarchies.json]:::dict
+    end
+
+    %% Dependency Arrows
+    Rules -->|startingAreaId| Areas
+    Rules -->|spawnWeights| Entities
+    Rules -->|lootTable| Items
+
+    Areas -->|connections.targetAreaId| Areas
+    Areas -->|placedEntities.templateId| Entities
+    Areas -->|encounterProfileId| EncounterProfiles
+    Areas -->|subBiomes / tags| Traits
+
+    EncounterProfiles -->|references| SpawnPools
+    SpawnPools -->|references| Entities
+
+    Entities -->|faction| Factions
+    Entities -->|dialogueId| Dialogues
+    Entities -->|ai.profileId| AI
+
+    Items -->|consumable.effectId| ItemEffects
+    Items -->|equippable.onHit.statusId| StatusEffects
+
+    ItemEffects -->|statusId| StatusEffects
+
+    Dialogues -->|conditions/actions| Items
+    Dialogues -->|conditions/actions| Factions
+    Dialogues -->|conditions/actions| StatusEffects
+
+    Villains -->|mastermind entityId| Entities
+    Villains -->|factionId| Factions
+
+    Schemes -->|villainId| Villains
+    Schemes -->|phaseBlocks| Areas
+
+    Agreements -->|participants| Factions
+
+    Hierarchies -->|promotionSources| Entities
+```
+
+#### Core Data Ordering Constraints:
+1. **Low-level Building Blocks (Factions, Status Effects, AI, Dialogues)**: Must be created first. They are the target of references for items and entities.
+2. **Game Objects (Entities, Items)**: Require valid faction IDs, dialogue IDs, AI profiles, and effect IDs. These must exist before they can be placed on maps.
+3. **World Generators (Spawn Pools, Encounter Profiles, Areas)**: Spend "CR budgets" by referencing entity templates and placed items.
+4. **Adversary Layer (Villains, Schemes, Agreements)**: Masterminds are bound to entities, which are mapped to factions. Phase blocks transition between areas. Thus, adversaries sit at the top tier of campaign dependencies.
+
+This tree is directly mapped in `editor_config.ts`'s `VIEW_GROUPS` layout, guiding the designer from left to right along the Activity Bar.
+
+
 ---
 
 ## 5. World & Map Systems

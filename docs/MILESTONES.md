@@ -730,20 +730,20 @@ Ship a compact campaign that exercises every major system in a coherent arc.
 - [x] Ensure all mainline quests have fail-graceful states if NPCs die, areas mutate, or key items are lost.
 - [x] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
 
-## 🟡 Milestone 65: Balance, Telemetry & Deterministic Replay QA
+## 🟢 Milestone 65: Balance, Telemetry & Deterministic Replay QA
 Create repeatable ways to tune and debug the game as a game, not just an engine.
-- [ ] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
-- [ ] Add seed-based replay capture for bug reports and deterministic regression tests.
-- [ ] Track difficulty metrics: player deaths, damage taken, resources consumed, flee frequency, average encounter duration, and quest completion rate.
-- [ ] Use AI Arena and Encounter Director simulations to tune CR costs and dynamic templates.
-- [ ] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
-- [ ] Establish target performance budgets for browser play and editor simulations.
+- [x] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
+- [x] Add seed-based replay capture for bug reports and deterministic regression tests.
+- [x] Track difficulty metrics: player deaths, damage taken, resources consumed, flee frequency, average encounter duration, and quest completion rate.
+- [x] Use AI Arena and Encounter Director simulations to tune CR costs and dynamic templates.
+- [x] Add performance benchmarks for large maps, many entities, many fields, and many triggers.
+- [x] Establish target performance budgets for browser play and editor simulations.
 
-## 🟡 Milestone 66: Campaign Editor UX Refactor & Consolidation
+## 🟢 Milestone 66: Campaign Editor UX Refactor & Consolidation (Complete)
 Transform the editor workspace into a scalable, multi-pane application.
-- [ ] Implement a professional IDE-style layout (Slim Icons -> Category List -> Workspace) to maximize horizontal real estate for forms and node editors.
-- [ ] Consolidate related data into single views using workspace tabs (e.g., an "Adversary Director" view that tabs between Villains, Schemes, Agreements, and Hierarchies).
-- [ ] Add searchable and resizable panels, allowing users to collapse or focus on specific parts of the workspace.
+- [x] Implement a professional IDE-style layout (Slim Icons -> Category List -> Workspace) to maximize horizontal real estate for forms and node editors.
+- [x] Consolidate related data into single views using workspace tabs (e.g., an "Adversary Director" view that tabs between Villains, Schemes, Agreements, and Hierarchies).
+- [x] Add searchable and resizable panels, allowing users to collapse or focus on specific parts of the workspace.
 
 ## 🟡 Milestone 67: Release Robustness & Distribution Polish
 Prepare for public builds and long-term iteration.

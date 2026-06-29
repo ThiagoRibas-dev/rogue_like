@@ -38,3 +38,8 @@ This document records architectural decisions whose rationale is **non-obvious o
 
 - **Decision**: During procedural generation, the Encounter Director skips `ROT.Path.AStar` verification for randomly placed entities blocking paths.
 - **Rationale**: Running AStar on every candidate spawn creates immense computational overhead and latency spikes during area transitions. We rely on statistical improbability of random placement creating perfect soft-locks. Will revisit if this becomes a persistent gameplay issue.
+
+### Campaign Editor Modularity via Reactive State
+
+- **Decision**: The Campaign Editor UI (`src/rendering/editor_ui.ts`) was split into domain-specific view controllers (`editor_sidebar`, `editor_toolbar`, `editor_workspace`), all coordinated by a reactive, UI-only singleton `editorState`.
+- **Rationale**: Passing `GameState` down through deeply nested UI components while tracking transient UI state (like active tabs or sidebar width) created massive prop-drilling and circular dependencies. A reactive singleton handles the UI state cleanly while allowing independent view modules to subscribe and re-render without complex messaging.
