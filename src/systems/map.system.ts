@@ -181,8 +181,7 @@ export function processChangeAreaIntent(
           const tile = targetMap.tiles[idx];
           if (
             tile &&
-            !tile.tileId.includes('wall') &&
-            !tile.tileId.includes('water') &&
+            state.campaign.tiles[tile.tileId]?.walkable &&
             !occupiedCoords.has(`${rx},${ry}`)
           ) {
             const minionComps =

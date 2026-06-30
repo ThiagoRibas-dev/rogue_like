@@ -189,8 +189,7 @@ export function processNemesisSystem(state: GameState): GameState {
             const tile = nextState.map.tiles[idx];
             if (
               tile &&
-              !tile.tileId.includes('wall') &&
-              !tile.tileId.includes('water') &&
+              nextState.campaign.tiles[tile.tileId]?.walkable &&
               !occupiedCoords.has(`${rx},${ry}`)
             ) {
               const positionCmp: PositionComponent = {
@@ -384,7 +383,6 @@ export function evaluateCheatDeath(
   const cleanComps: Record<string, Component> = { ...entityComps };
   delete cleanComps[ComponentType.Position];
   delete cleanComps[ComponentType.Death];
-  delete cleanComps[ComponentType.Actor];
 
   cleanComps[ComponentType.Nemesis] = nextNemesis;
 
@@ -704,7 +702,6 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
 
       const finalComps = { ...nextState.components.get(newEntityId)! };
       delete finalComps[ComponentType.Position];
-      delete finalComps[ComponentType.Actor];
 
       const finalActiveEntities = nextState.entities.filter((id) => id !== newEntityId);
       const finalActiveComponents = new Map(nextState.components);
@@ -741,8 +738,7 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
         const tile = state.map.tiles[idx];
         if (
           tile &&
-          !tile.tileId.includes('wall') &&
-          !tile.tileId.includes('water') &&
+          state.campaign.tiles[tile.tileId]?.walkable &&
           !occupiedCoords.has(`${rx},${ry}`)
         ) {
           spawnX = rx;
@@ -758,7 +754,11 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
       }
 
       const [stateAfterSpawn, newEntityId] = spawnEntity(state, templateId, spawnX, spawnY);
-      return promoteNemesis(stateAfterSpawn, newEntityId, hierarchyId, rankId);
+      const promotedState = promoteNemesis(stateAfterSpawn, newEntityId, hierarchyId, rankId);
+      if (getComponent(promotedState, newEntityId, ComponentType.Actor)) {
+        addActor(newEntityId);
+      }
+      return promotedState;
     }
   }
 

@@ -17,6 +17,7 @@ import type {
   PositionComponent
 } from '../../types/components.types.ts';
 import { getComponent, addComponent, removeEntity, spawnItem, spawnEntity } from '../../core/ecs.ts';
+import { addActor } from '../../core/scheduler.ts';
 import { applyStatusEffect } from '../status-effect.system.ts';
 import { processChangeAreaIntent } from '../map.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
@@ -445,7 +446,10 @@ export const systemicConsequences = {
         const [stateAfterSpawn] = spawnItem(state, templateId, pos.x, pos.y);
         nextState = stateAfterSpawn;
       } else if (state.campaign.entities[templateId]) {
-        const [stateAfterSpawn] = spawnEntity(state, templateId, pos.x, pos.y);
+        const [stateAfterSpawn, entityId] = spawnEntity(state, templateId, pos.x, pos.y);
+        if (getComponent(stateAfterSpawn, entityId, ComponentType.Actor)) {
+          addActor(entityId);
+        }
         nextState = stateAfterSpawn;
       } else {
         console.warn(`Template ${templateId} not found in campaign items/entities during spawn_entity consequence.`);
