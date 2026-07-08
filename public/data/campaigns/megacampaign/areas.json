@@ -1,0 +1,1238 @@
+{
+  "megadungeon_hub": {
+    "id": "megadungeon_hub",
+    "name": "Megadungeon Hub",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": [
+      "hub",
+      "safe"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_1",
+        "direction": "down",
+        "placementX": 2,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_goblin_1",
+        "direction": "down",
+        "placementX": 12,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_place_of_sanctuary",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_lesser_vault_1",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_parthenion",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_lesser_vault_2",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_unholy_sepulchre",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_hellish_rift",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_floating_rock_1",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_entry_chamber_hells",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_entry_chamber",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_the_goblin_encampment",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      },
+      {
+        "targetAreaId": "incursion_arena_chamber",
+        "direction": "down",
+        "placementX": 7,
+        "placementY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "###############",
+        "#.............#",
+        "#.>.........>.#",
+        "#.............#",
+        "###############"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        ">": "stone_floor"
+      }
+    }
+  },
+  "nethack_doom_1": {
+    "id": "nethack_doom_1",
+    "name": "Dungeons of Doom 1",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 2,
+        "targetY": 2
+      },
+      {
+        "targetAreaId": "nethack_doom_2",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_2": {
+    "id": "nethack_doom_2",
+    "name": "Dungeons of Doom 2",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_1",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_3",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_3": {
+    "id": "nethack_doom_3",
+    "name": "Dungeons of Doom 3",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_2",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_4",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_4": {
+    "id": "nethack_doom_4",
+    "name": "Dungeons of Doom 4",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_3",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_5",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_5": {
+    "id": "nethack_doom_5",
+    "name": "Dungeons of Doom 5",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_4",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_6",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_6": {
+    "id": "nethack_doom_6",
+    "name": "Dungeons of Doom 6",
+    "generatorType": "digger",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_5",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_7",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_7": {
+    "id": "nethack_doom_7",
+    "name": "Dungeons of Doom 7",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_6",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_8",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_8": {
+    "id": "nethack_doom_8",
+    "name": "Dungeons of Doom 8",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_7",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_9",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_9": {
+    "id": "nethack_doom_9",
+    "name": "Dungeons of Doom 9",
+    "generatorType": "digger",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_8",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "nethack_doom_10",
+        "direction": "down"
+      }
+    ]
+  },
+  "nethack_doom_10": {
+    "id": "nethack_doom_10",
+    "name": "Dungeons of Doom 10",
+    "generatorType": "digger",
+    "dangerRating": 4,
+    "crBudget": 70,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "dungeon",
+      "nethack"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "nethack_doom_9",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "down",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ]
+  },
+  "incursion_goblin_1": {
+    "id": "incursion_goblin_1",
+    "name": "Goblin Caves 1",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 12,
+        "targetY": 2
+      },
+      {
+        "targetAreaId": "incursion_goblin_2",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_2": {
+    "id": "incursion_goblin_2",
+    "name": "Goblin Caves 2",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_1",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_3",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_3": {
+    "id": "incursion_goblin_3",
+    "name": "Goblin Caves 3",
+    "generatorType": "cellular",
+    "dangerRating": 1,
+    "crBudget": 25,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_2",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_4",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_4": {
+    "id": "incursion_goblin_4",
+    "name": "Goblin Caves 4",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_3",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_5",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_5": {
+    "id": "incursion_goblin_5",
+    "name": "Goblin Caves 5",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_4",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_6",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_6": {
+    "id": "incursion_goblin_6",
+    "name": "Goblin Caves 6",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "crBudget": 40,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_5",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_7",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_7": {
+    "id": "incursion_goblin_7",
+    "name": "Goblin Caves 7",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_6",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_8",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_8": {
+    "id": "incursion_goblin_8",
+    "name": "Goblin Caves 8",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_7",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_9",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_9": {
+    "id": "incursion_goblin_9",
+    "name": "Goblin Caves 9",
+    "generatorType": "cellular",
+    "dangerRating": 3,
+    "crBudget": 55,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_8",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "incursion_goblin_10",
+        "direction": "down"
+      }
+    ]
+  },
+  "incursion_goblin_10": {
+    "id": "incursion_goblin_10",
+    "name": "Goblin Caves 10",
+    "generatorType": "cellular",
+    "dangerRating": 4,
+    "crBudget": 70,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "incursion_goblin_9",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "down",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ]
+  },
+  "incursion_place_of_sanctuary": {
+    "id": "incursion_place_of_sanctuary",
+    "name": "Place of Sanctuary",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%",
+        "%%.....%%",
+        "%.......%",
+        "%.......%",
+        "%.......%",
+        "%.......%",
+        "%.......%",
+        "%%.....%%",
+        "%%%%%%%%%"
+      ],
+      "legend": {
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space"
+      },
+      "entityLegend": {}
+    }
+  },
+  "incursion_lesser_vault_1": {
+    "id": "incursion_lesser_vault_1",
+    "name": "Lesser Vault;1",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%",
+        "%.....................%",
+        "%.#########+#########.%",
+        "%.#.1.....1....1.+..#.%",
+        "%.#....1.....1...#..#.%",
+        "%.################1.#.%",
+        "%.#..#3.#.2.....2#..#.%",
+        "%.#..#..+....2...#..#.%",
+        "%.#.3#..#######+##.1#.%",
+        "%.#..#.3##.G.##..#..#.%",
+        "%.#..+..#.....#..#..#.%",
+        "%.#..#..#G.G.G#2.#1.#.%",
+        "%.#..#.3#.5.5.#..#..#.%",
+        "%.#.3#..##.G.##.2#..#.%",
+        "%.#..######+###..#.1#.%",
+        "%.#..+..4.....#.2#..#.%",
+        "%.#..#.4....4.#..#..#.%",
+        "%.#3.##########+##+##.%",
+        "%.#..#.....1.....1..#.%",
+        "%.#..#........1.....#.%",
+        "%.###################.%",
+        "%.....................%",
+        "%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "2": "stone_floor",
+        "3": "stone_floor",
+        "4": "stone_floor",
+        "5": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "#": "stone_floor",
+        "+": "stone_floor",
+        "G": "stone_floor"
+      },
+      "entityLegend": {
+        "G": "gnomish_wizard"
+      }
+    }
+  },
+  "incursion_parthenion": {
+    "id": "incursion_parthenion",
+    "name": "Parthenion",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%%%%%",
+        "%.........................%",
+        "%.#######################.%",
+        "%.########.N...O.########.%",
+        "%.######.....M.....######.%",
+        "%.####...............####.%",
+        "%.#H.+...............+.L#.%",
+        "%.####.&&&&&&&&&&&&&.####.%",
+        "%.####...............####.%",
+        "%.#G.+.&&&&&&&&&&&&&.+.K#.%",
+        "%.####...............####.%",
+        "%.####.&&&&&&&&&&&&&.####.%",
+        "%.#F.+...............+.J#.%",
+        "%.####.&&&&&&&&&&&&&.####.%",
+        "%.####...............####.%",
+        "%.#E.+...............+.I#.%",
+        "%.#####+##+##.##+##+#####.%",
+        "%.#####.##.##.##.##.#####.%",
+        "%.#####C##D##.##A##B#####.%",
+        "%.###########+###########.%",
+        "%.........................%",
+        "%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "A": "stone_floor",
+        "B": "stone_floor",
+        "C": "stone_floor",
+        "D": "stone_floor",
+        "E": "stone_floor",
+        "F": "stone_floor",
+        "G": "stone_floor",
+        "H": "stone_floor",
+        "I": "stone_floor",
+        "J": "stone_floor",
+        "K": "stone_floor",
+        "L": "stone_floor",
+        "M": "stone_floor",
+        "N": "stone_floor",
+        "O": "stone_floor",
+        "&": "stone_floor",
+        "#": "stone_floor",
+        "+": "stone_floor"
+      },
+      "entityLegend": {}
+    }
+  },
+  "incursion_lesser_vault_2": {
+    "id": "incursion_lesser_vault_2",
+    "name": "Lesser Vault;2",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%",
+        "%.....................%",
+        "%..########+########..%",
+        "%.###..1.1...1.1..###.%",
+        "%.####...........####.%",
+        "%.#.###..2.2.2..###.#.%",
+        "%.#..###.......###..#.%",
+        "%.#1..###.3.3.###..1#.%",
+        "%.#....###...###....#.%",
+        "%.#1.2..###4###..2.1#.%",
+        "%.#....3.##G##.3....#.%",
+        "%.+..2...4GGG4...2..+.%",
+        "%.#....3.##G##.3....#.%",
+        "%.#1.2..###4###..2.1#.%",
+        "%.#....###...###....#.%",
+        "%.#1..###.3.3.###..1#.%",
+        "%.#..###.......###..#.%",
+        "%.#.###..2.2.2..###.#.%",
+        "%.####...........####.%",
+        "%.###..1.1...1.1..###.%",
+        "%..########+########..%",
+        "%.....................%",
+        "%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "2": "stone_floor",
+        "3": "stone_floor",
+        "4": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "#": "stone_floor",
+        "+": "stone_floor",
+        "G": "stone_floor"
+      },
+      "entityLegend": {
+        "G": "gnomish_wizard"
+      }
+    }
+  },
+  "incursion_unholy_sepulchre": {
+    "id": "incursion_unholy_sepulchre",
+    "name": "Unholy Sepulchre",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%",
+        "%.....................%",
+        "%.###################.%",
+        "%.#0...............0#.%",
+        "%.#.0....##.##....0.#.%",
+        "%.#..0..##0.0##..0..#.%",
+        "%.#...0..#0.0#..0...#.%",
+        "%.#....0.##.##.0....#.%",
+        "%.#...0.0.#.#.0.0...#.%",
+        "%.#.#0...0#.#0...0#.#.%",
+        "%.#.#######.#######.#.%",
+        "%.#.#0.G.0#.#0.G.0#.#.%",
+        "%.#...0.0.#.#.0.0...#.%",
+        "%.#....3..#.#..3....#.%",
+        "%.#.......#.#.......#.%",
+        "%.#.......#.#.......#.%",
+        "%.#...3...#.#...3...#.%",
+        "%.#..0.0..#.#..0.0..#.%",
+        "%.#.0...0.#.#.0...0.#.%",
+        "%.#0..G..0#.#0..G..0#.%",
+        "%.#########+#########.%",
+        "%.....................%",
+        "%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "0": "stone_floor",
+        "3": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "#": "stone_floor",
+        "G": "stone_floor",
+        "+": "stone_floor"
+      },
+      "entityLegend": {
+        "G": "gnomish_wizard"
+      }
+    }
+  },
+  "incursion_hellish_rift": {
+    "id": "incursion_hellish_rift",
+    "name": "Hellish Rift",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%",
+        "%...............%",
+        "%..d...SS.....d.%",
+        "%.....BBBBBBB...%",
+        "%.d..dBBBBBBB...%",
+        "%.....BBBSBBBBB.%",
+        "%..S..SBBBBBBBB.%",
+        "%.SBBBBBBBBBBBBS%",
+        "%..BBBBBBBSSBBBS%",
+        "%..BBPBBBB..BBB.%",
+        "%..BBBBBS..BBBB.%",
+        "%.SBBBBBS.SBBB..%",
+        "%..S.......BBBB.%",
+        "%.....d.S.S.BBB.%",
+        "%.d.d....BBBBBB.%",
+        "%......BBBBBBBB.%",
+        "%..d.dBBBBSBBBB.%",
+        "%....BBBBBBBBBB.%",
+        "%.d...BBBBBBBBB.%",
+        "%...........BBB.%",
+        "%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "d": "stone_floor",
+        "S": "stone_floor",
+        "B": "stone_floor",
+        "P": "stone_floor"
+      },
+      "entityLegend": {}
+    }
+  },
+  "incursion_floating_rock_1": {
+    "id": "incursion_floating_rock_1",
+    "name": "Floating Rock;1",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%",
+        "%..........%",
+        "%..XXXXXX..%",
+        "%.XXXXXXXX.%",
+        "%.XXX1.XXX.%",
+        "%.XX.G.1XX.%",
+        "%.XX1.G.XX.%",
+        "%.XXX.1XXX.%",
+        "%.XXXXXXXX.%",
+        "%..XXXXXX..%",
+        "%..........%",
+        "%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "X": "stone_floor",
+        "G": "stone_floor"
+      },
+      "entityLegend": {
+        "G": "gnomish_wizard"
+      }
+    }
+  },
+  "incursion_entry_chamber_hells": {
+    "id": "incursion_entry_chamber_hells",
+    "name": "Entry Chamber;hells",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%",
+        "%11111%",
+        "%11111%",
+        "%11>11%",
+        "%11111%",
+        "%11111%",
+        "%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        ">": "stone_floor"
+      },
+      "entityLegend": {}
+    }
+  },
+  "incursion_entry_chamber": {
+    "id": "incursion_entry_chamber",
+    "name": "Entry Chamber",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%",
+        "%pb........d..2......p%",
+        "%.o......1..b....o..o.%",
+        "%.....................%",
+        "%....6...b....b...3...%",
+        "%..b................o.%",
+        "%...5................i%",
+        "%.......b..4.b........%",
+        "%..3..4...5...........%",
+        "%.........6...7.b..7..%",
+        "%..2...1..............%",
+        "%p.........>.........d%",
+        "%............3...4....%",
+        "%...b...........b.....%",
+        "%.........2...........%",
+        "%.................b..b%",
+        "%.............b.b1.b.b%",
+        "%.o..b....b...b..b.bbb%",
+        "%............b.b...b5b%",
+        "%.............bbb.b.bb%",
+        "%.o..o7....bb.b6bb.bob%",
+        "%d.........pbbbb..bb.p%",
+        "%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "2": "stone_floor",
+        "3": "stone_floor",
+        "4": "stone_floor",
+        "5": "stone_floor",
+        "6": "stone_floor",
+        "7": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "o": "stone_floor",
+        "b": "stone_floor",
+        "T": "stone_floor",
+        "p": "stone_floor",
+        "d": "stone_floor",
+        "i": "stone_floor",
+        ">": "stone_floor"
+      },
+      "entityLegend": {}
+    }
+  },
+  "incursion_the_goblin_encampment": {
+    "id": "incursion_the_goblin_encampment",
+    "name": "The Goblin Encampment",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%",
+        "%%%%%%..........%%%%%%%%%.................%%%%%%%%%%%%%%%%%%%%%%%%%%%%",
+        "%%%%..............%%%%%.......................%%%%%%%%%%%%%%%%%%%%%%.%",
+        "%%.....................................................%%%%%%%%%%%%..%",
+        "%%%..============================o,o============================.%..%%",
+        "%%%..=............................,............................=...%%%",
+        "%%%..=.*--*-*--*..*--*-*--*.......,...*---*--*-*--*..*--*-*--*.=....%%",
+        "%%%..=.|g.+.+.g|..|1.+.+.g|.11111.,.1.|&.1|g.+1+.g|..|g.+1+.g|.=....%%",
+        "%%%..=.|..|.|&.|..|..|.|..|1111...,.1.|111|1.|1|.&|..|..|1|..|.=....%%",
+        "%%%..=.*--*.*--*..*--*.*--*---*...,.1.|..F*--*.*--*..*--*.*--*.=....%%",
+        "%%%..=.|g.+.+.1|..|g.+.+.g|HOH|.5.,...|111|g.+.+.g|..|1.+.+.g|.=...%%%",
+        "%%%..=.|.&|.|..|..|.&|.|&.|EHb|...,,,,+111|.&|.|..|..|..|.|&.|.=...%%%",
+        "%%...=.*--*.*--*..*--*.*--*Dbb|.1.,...|11F*--*.*--*..*--*.*--*.=...%%%",
+        "%%...=.|1.+.+.g|..|1.+.+.1|b7b|111,...|111|1.+.+.g|..|g.+.+.#|.=...%%%",
+        "%%...=.|..|.|..|..|.&|.|..|b..+,,,,...|.1.|..|.|..|..|&.|.|..|.=...%%%",
+        "%%...=.*--*.*--*..*--*.*--*..m|...,...*---*--*.*--*..*--*.*--*.=...%%%",
+        "%%%..=.|1.+.+.3|..|g.+.+.g|7mm|...,.......|g.+.+.g|..|g.+.+.g|.=...%%%",
+        "%%%..=.|.&|.|..|..|..|.|..|mmm|...,.1.5.1.|..|.|&.|..|..|.|..|.=....%%",
+        "%.%..=.*--*+*--*..*--*+*--*---*...,.......*--*+*--*..*--*+*--*.=....%%",
+        "%.%..=.....,..........,...........,.....11....,..........,.....=....%%",
+        "%.%..=.....,.221.5.11.,11111111221,.;;;.......,.11111.5..,.11..=....%%",
+        "%.%..=.....,..........,14112321111,.;$;1114131,..........,..2..=....%%",
+        "%.%..=.....,,,,,,,,,,,,11111411221,.;;;11221..,,,,,,,,,,,,.....=....%%",
+        "%.%..=.*--*+*--*......,11211232311,....11212.5,..........,.141.=....%%",
+        "%....=.|g.+.+.3|...,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.1.....,.....=.....%",
+        "%....=.|..|.|..|...,`~~~~~~~~~~~~`B`~~~~~~~~~~~~`,.2.*--*+*--*.=.....%",
+        "%....=.*--*.*--*...,~XXXXXXX~~~~~~B~~~~~~XXXXXXX~,.1.|1.+.+.1|.=.....%",
+        "%....=.|g.+.+.1|...,~X..T.CX`~~~~!B!~~~~`XC.T..X~,.3.|..|.|&.|.=.....%",
+        "%....=.|&.|.|&.|...,~X.CX..T.............T..XC.X~,2..*--*.*--*.=.....%",
+        "%...%=.*--*.*--*...,~XTXXXXXXXXXXXXXXXXXXXXXXXTX~,.1.|1.+.+.1|.=.....%",
+        "%%..%=.|1.+.+.g|...,~X.CXXXXXXXXXXXXXXXXXXXXXC.X~,1.3|..|.|..|.=.....%",
+        "%%..%=.|..|.|..|...,~X..T.......;;;;;.......T..X~,.1.*--*.*--*.=....%%",
+        "%%..%=.*--*.*--*...,~XXX=========;;;=========XXX~,..2|g.+.+.1|.=....%%",
+        "%%.%%=.|1.+.+.g|...,~~XXX^;^;^;;@@@@@;;^;^;^XXX~~,...|..|.|&.|.=...%%%",
+        "%%.%%=.|.&|.|&.|...,~~~XX;^;^;;;;;^;;;;;^;^;XX~~~,...*--*.*--*.=...%%%",
+        "%%.%%=.*--*-*--*...,~~~XX^;^;;;;;^;^;;;;;^;^XX~~~,...|g.+.+.1|.=..%%%%",
+        "%%.%%=.............,~~~XX;^;;;;;^;^;^;;;;;^;XX~~~,...|.&|.|..|.=..%%%%",
+        "%%..%=..111214321..,~~~XX^;;;;;^S^;^S^;;;;;^XX~~~,...*--*-*--*.=..%%%%",
+        "%%..%o.............,~~~XX;;;;;^;^;^;^;^;;;;;XX~~~,.............o..%%%%",
+        "%....,,,,,,,,,,,,,,,~~~XXI;;;;;^;^M^;^;;;;;IXX~~~,,,,,,,,,,,,,,,..%%%%",
+        "%....o.............,~~~XX;;;;;;;^;^;^;;;;;;;XX~~~,.............o.%%%%%",
+        "%%%%%=.....1112121.,~~~XX;;;;;^;;^;^;;^;;;;;XX~~~,.11111311111.=.%%%%%",
+        "%%%%%=.H.E..311411.,~~~XX^;;;^S^;;^;;^S^;;;^XX~~~,.12211314111.=.%%%%%",
+        "%%%%%=HHDHOE.21112.,~~~XX;^;;;^;;;;;;;^;;;^;XX~~~,.1113123111..=.%%%%%",
+        "%%%%%=.DEW.7H.3731.,~~~XX^;^;;;;;;I;;;;;;^;^XX~~~,.121211311.&.=.%%%%%",
+        "%%%%%=EEHDWHH..222.,~~XXX;^;^;;;;;;;;;;;^;^;XXX~~,.13121111.&.&=.%%%%%",
+        "%%%%%=HHHEDWWW.111.,~XXXXXXX;^;;;;;;;;;^;XXXXXXX~,.4411111.&7&.=.%%%%%",
+        "%%%%%=.WWDENN..111.,~XXX$..X^;^;;;;;;;^;^X_._XXX~,.11111...&...=.%%%%%",
+        "%%%%.=H7DHEDEO.121.,~XX....+;^;^;;;;;^;^;+..._XX~,.1111.....&&&=..%%%%",
+        "%%%%.=.ONOHDO..131.,~XX....XXXXXXXXXXXXXXX....XX~,.111....&.&..=..%%%%",
+        "%%%%.=DHNHW.EE.141.,~XX_..XXXXXXXXXXXXXXXXX.._XX~,.43...&..&.&.=..%%%%",
+        "%%%..=DHDOWEH..111.,~XXXXXXXX~~~~~~~~~~~XXXXXXXX~,.11...&7&..&.=..%%%%",
+        "%%%..=.OOH7OWW.111.,~XXXXXXX~~~~~~~~~~~~~XXXXXXX~,.11..7...&&.&=..%%%%",
+        "%%%..=.WHHHDO...21.,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~,.11...&&&.&&.=..%%%%",
+        "%%...=DHW.OE.HE..2.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,......&..&&&.=..%%%%",
+        "%%...=.DHONHDH...2................,................5...&...&7&.=..%%%%",
+        "%..%.=NEHHHDO.7O..111331112111411.,5.2211221231111....&..&&..&.=..%%%%",
+        "%..%.=.W.NWWHNE.7.................,................&7&.&..&.&&&=..%%%%",
+        "%%...============================o,o============================..%%%%",
+        "%%................................................................%%%%",
+        "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+      ],
+      "legend": {
+        "1": "stone_floor",
+        "2": "stone_floor",
+        "3": "stone_floor",
+        "4": "stone_floor",
+        "5": "stone_floor",
+        "7": "stone_floor",
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "=": "stone_floor",
+        "o": "stone_floor",
+        "$": "stone_floor",
+        "*": "stone_floor",
+        "-": "stone_floor",
+        "|": "stone_floor",
+        "F": "stone_floor",
+        "b": "stone_floor",
+        "m": "stone_floor",
+        "g": "stone_floor",
+        "_": "stone_floor",
+        "&": "stone_floor",
+        "D": "stone_floor",
+        ",": "stone_floor",
+        "+": "stone_floor",
+        "H": "stone_floor",
+        "O": "stone_floor",
+        "E": "stone_floor",
+        "#": "stone_floor",
+        ";": "stone_floor",
+        "`": "stone_floor",
+        "~": "stone_floor",
+        "B": "stone_floor",
+        "X": "stone_floor",
+        "T": "stone_floor",
+        "C": "stone_floor",
+        "!": "stone_floor",
+        "^": "stone_floor",
+        "@": "stone_floor",
+        "S": "stone_floor",
+        "I": "stone_floor",
+        "M": "stone_floor",
+        "W": "stone_floor",
+        "N": "stone_floor"
+      },
+      "entityLegend": {
+        "H": "stone_giant",
+        "O": "ethereal_filcher",
+        "E": "stalker",
+        "B": "giant_bat",
+        "X": "ixitxachitl",
+        "T": "troll",
+        "C": "plains_centaur",
+        "@": "werejackal",
+        "S": "garter_snake",
+        "I": "mind_flayer",
+        "M": "gnome_mummy",
+        "W": "wraith",
+        "N": "red_naga_hatchling"
+      }
+    }
+  },
+  "incursion_arena_chamber": {
+    "id": "incursion_arena_chamber",
+    "name": "Arena Chamber",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "static",
+      "incursion"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "megadungeon_hub",
+        "direction": "up",
+        "targetX": 7,
+        "targetY": 2
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRR.....RRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRm...........mRRRRRRRRRRR",
+        "RRRRRRRRRR.......m.......RRRRRRRRRR",
+        "RRRRRRRRRR......mmm......RRRRRRRRRR",
+        "RRRRRRRRRwwwwwwwwwwwwwwwwwRRRRRRRRR",
+        "RRRRRRRRRw.w.w.w.w.w.www.wRRRRRRRRR",
+        "RRRRRRRRRwwwwwwww>wwwwwwwwRRRRRRRRR",
+        "RRRRRRRRRw.www.w.w.w.w.w.wRRRRRRRRR",
+        "RRRRRRRRRwwwwwwwwwwwwwwwwwRRRRRRRRR",
+        "RRRRRRRRRR......mmm......RRRRRRRRRR",
+        "RRRRRRRRRR.......m.......RRRRRRRRRR",
+        "RRRRRRRRRRRm...........mRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRR.....RRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+        "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+      ],
+      "legend": {
+        "%": "stone_wall",
+        ".": "stone_floor",
+        " ": "empty_space",
+        "p": "stone_floor",
+        "d": "stone_floor",
+        "R": "stone_floor",
+        "w": "stone_floor",
+        "m": "stone_floor",
+        ">": "stone_floor"
+      },
+      "entityLegend": {}
+    }
+  }
+}

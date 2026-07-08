@@ -1,0 +1,14 @@
+{
+  "id": "megacampaign",
+  "name": "The Megadungeon",
+  "description": "A massive campaign merging content from NetHack and Incursion. Hundreds of monsters, items, and dungeon levels.",
+  "version": "0.1.0",
+  "author": "Data Pipeline",
+  "tags": [
+    "mega",
+    "stress-test",
+    "traditional",
+    "dungeon-crawler"
+  ],
+  "schemaVersion": 1
+}

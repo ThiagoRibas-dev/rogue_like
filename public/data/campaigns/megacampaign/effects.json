@@ -1,0 +1,393 @@
+{
+  "heal_5": {
+    "id": "heal_5",
+    "type": "heal",
+    "value": 5,
+    "message": "{target} recovered {value} HP."
+  },
+  "damage_nearest_10": {
+    "id": "damage_nearest_10",
+    "type": "damage_nearest",
+    "value": 10,
+    "range": 8,
+    "message": "A bolt of lightning strikes {target} for {value} damage!",
+    "tags": [
+      "spell",
+      "magic"
+    ]
+  },
+  "scroll_fireball": {
+    "id": "scroll_fireball",
+    "type": "damage_area",
+    "value": 15,
+    "radius": 3,
+    "message": "A fireball erupts! {target} takes {value} damage.",
+    "tags": [
+      "scroll",
+      "magic",
+      "fire"
+    ]
+  },
+  "scroll_confusion": {
+    "id": "scroll_confusion",
+    "type": "apply_status",
+    "value": 0,
+    "range": 8,
+    "statusId": "confusion",
+    "duration": 10,
+    "message": "{target} looked confused!",
+    "tags": [
+      "scroll",
+      "magic"
+    ]
+  },
+  "spell_confusion": {
+    "id": "spell_confusion",
+    "type": "apply_status",
+    "value": 0,
+    "range": 8,
+    "statusId": "confusion",
+    "duration": 10,
+    "message": "{target} looked confused!",
+    "tags": [
+      "spell",
+      "magic"
+    ]
+  },
+  "spell_lightning": {
+    "id": "spell_lightning",
+    "type": "damage_nearest",
+    "value": 10,
+    "range": 8,
+    "message": "A bolt of lightning strikes {target} for {value} damage!",
+    "tags": [
+      "spell",
+      "magic",
+      "lightning"
+    ]
+  },
+  "potion_haste": {
+    "id": "potion_haste",
+    "type": "apply_status",
+    "value": 0,
+    "statusId": "haste",
+    "duration": 15,
+    "message": "{target} felt incredibly fast!",
+    "tags": [
+      "potion",
+      "magic"
+    ]
+  },
+  "scroll_identify": {
+    "id": "scroll_identify",
+    "type": "identify",
+    "value": 0,
+    "message": "All items in the inventory are identified!"
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "type": "satiate",
+    "value": 500,
+    "message": "It is filling. Hunger decreases."
+  },
+  "apple": {
+    "id": "apple",
+    "type": "satiate",
+    "value": 200,
+    "message": "It is sweet and refreshing."
+  },
+  "damage_10": {
+    "id": "damage_10",
+    "type": "damage",
+    "value": 10,
+    "message": "{target} takes {value} damage!"
+  },
+  "damage_5_cold": {
+    "id": "damage_5_cold",
+    "type": "damage",
+    "value": 5,
+    "message": "{target} is frozen for {value} damage!"
+  },
+  "potion_of_gain_ability_effect": {
+    "id": "potion_of_gain_ability_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of gain ability."
+  },
+  "potion_of_restore_ability_effect": {
+    "id": "potion_of_restore_ability_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of restore ability."
+  },
+  "potion_of_confusion_effect": {
+    "id": "potion_of_confusion_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of confusion."
+  },
+  "potion_of_blindness_effect": {
+    "id": "potion_of_blindness_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of blindness."
+  },
+  "potion_of_paralysis_effect": {
+    "id": "potion_of_paralysis_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of paralysis."
+  },
+  "potion_of_speed_effect": {
+    "id": "potion_of_speed_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of speed."
+  },
+  "potion_of_levitation_effect": {
+    "id": "potion_of_levitation_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of levitation."
+  },
+  "potion_of_hallucination_effect": {
+    "id": "potion_of_hallucination_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of hallucination."
+  },
+  "potion_of_invisibility_effect": {
+    "id": "potion_of_invisibility_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of invisibility."
+  },
+  "potion_of_see_invisible_effect": {
+    "id": "potion_of_see_invisible_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of see invisible."
+  },
+  "potion_of_healing_effect": {
+    "id": "potion_of_healing_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of healing."
+  },
+  "potion_of_extra_healing_effect": {
+    "id": "potion_of_extra_healing_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of extra healing."
+  },
+  "potion_of_gain_level_effect": {
+    "id": "potion_of_gain_level_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of gain level."
+  },
+  "potion_of_enlightenment_effect": {
+    "id": "potion_of_enlightenment_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of enlightenment."
+  },
+  "potion_of_monster_detection_effect": {
+    "id": "potion_of_monster_detection_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of monster detection."
+  },
+  "potion_of_object_detection_effect": {
+    "id": "potion_of_object_detection_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of object detection."
+  },
+  "potion_of_gain_energy_effect": {
+    "id": "potion_of_gain_energy_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of gain energy."
+  },
+  "potion_of_sleeping_effect": {
+    "id": "potion_of_sleeping_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of sleeping."
+  },
+  "potion_of_full_healing_effect": {
+    "id": "potion_of_full_healing_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of full healing."
+  },
+  "potion_of_polymorph_effect": {
+    "id": "potion_of_polymorph_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of polymorph."
+  },
+  "potion_of_booze_effect": {
+    "id": "potion_of_booze_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of booze."
+  },
+  "potion_of_sickness_effect": {
+    "id": "potion_of_sickness_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of sickness."
+  },
+  "potion_of_fruit_juice_effect": {
+    "id": "potion_of_fruit_juice_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of fruit juice."
+  },
+  "potion_of_acid_effect": {
+    "id": "potion_of_acid_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of acid."
+  },
+  "potion_of_oil_effect": {
+    "id": "potion_of_oil_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of oil."
+  },
+  "potion_of_water_effect": {
+    "id": "potion_of_water_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Potion of water."
+  },
+  "scroll_of_enchant_armor_effect": {
+    "id": "scroll_of_enchant_armor_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of enchant armor."
+  },
+  "scroll_of_destroy_armor_effect": {
+    "id": "scroll_of_destroy_armor_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of destroy armor."
+  },
+  "scroll_of_confuse_monster_effect": {
+    "id": "scroll_of_confuse_monster_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of confuse monster."
+  },
+  "scroll_of_scare_monster_effect": {
+    "id": "scroll_of_scare_monster_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of scare monster."
+  },
+  "scroll_of_remove_curse_effect": {
+    "id": "scroll_of_remove_curse_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of remove curse."
+  },
+  "scroll_of_enchant_weapon_effect": {
+    "id": "scroll_of_enchant_weapon_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of enchant weapon."
+  },
+  "scroll_of_create_monster_effect": {
+    "id": "scroll_of_create_monster_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of create monster."
+  },
+  "scroll_of_taming_effect": {
+    "id": "scroll_of_taming_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of taming."
+  },
+  "scroll_of_genocide_effect": {
+    "id": "scroll_of_genocide_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of genocide."
+  },
+  "scroll_of_light_effect": {
+    "id": "scroll_of_light_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of light."
+  },
+  "scroll_of_teleportation_effect": {
+    "id": "scroll_of_teleportation_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of teleportation."
+  },
+  "scroll_of_gold_detection_effect": {
+    "id": "scroll_of_gold_detection_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of gold detection."
+  },
+  "scroll_of_food_detection_effect": {
+    "id": "scroll_of_food_detection_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of food detection."
+  },
+  "scroll_of_identify_effect": {
+    "id": "scroll_of_identify_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of identify."
+  },
+  "scroll_of_magic_mapping_effect": {
+    "id": "scroll_of_magic_mapping_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of magic mapping."
+  },
+  "scroll_of_amnesia_effect": {
+    "id": "scroll_of_amnesia_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of amnesia."
+  },
+  "scroll_of_fire_effect": {
+    "id": "scroll_of_fire_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of fire."
+  },
+  "scroll_of_earth_effect": {
+    "id": "scroll_of_earth_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of earth."
+  },
+  "scroll_of_punishment_effect": {
+    "id": "scroll_of_punishment_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of punishment."
+  },
+  "scroll_of_charging_effect": {
+    "id": "scroll_of_charging_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of charging."
+  },
+  "scroll_of_stinking_cloud_effect": {
+    "id": "scroll_of_stinking_cloud_effect",
+    "type": "heal",
+    "value": 10,
+    "message": "You use the Scroll of stinking cloud."
+  }
+}

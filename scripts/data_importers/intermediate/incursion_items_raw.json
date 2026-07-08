@@ -1,0 +1,1668 @@
+[
+  {
+    "source": "incursion",
+    "rawId": "dire_flail",
+    "name": "dire flail",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 200,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_BLUNT",
+      "WT_FUMBLE2",
+      "WT_REACH",
+      "WT_STRIKE_NEAR",
+      "WT_TWO_HANDED",
+      "WT_DOUBLE",
+      "WT_STUNNING",
+      "WT_STR1"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "heavy_flail",
+    "name": "heavy flail",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 200,
+    "cost": 10,
+    "smallDamage": 7,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "light_flail",
+    "name": "light flail",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 50,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "handaxe",
+    "name": "handaxe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_PENETRATING",
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "greataxe",
+    "name": "greataxe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 200,
+    "cost": 10,
+    "smallDamage": 9,
+    "flags": [
+      "WT_PENETRATING",
+      "WT_SLASHING",
+      "WT_STR2",
+      "WT_STR1"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "orc_double_axe",
+    "name": "orc double axe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 250,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_PENETRATING",
+      "WT_SLASHING",
+      "WT_DOUBLE",
+      "WT_TWO_HANDED",
+      "IT_RARE",
+      "WT_RACIAL"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "battleaxe",
+    "name": "battleaxe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 70,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_PENETRATING",
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "dwarven_waraxe",
+    "name": "dwarven waraxe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 7,
+    "flags": [
+      "WT_PENETRATING",
+      "WT_SLASHING",
+      "WT_RACIAL"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "halfspear",
+    "name": "halfspear",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_CHARGE",
+      "WT_PIERCING",
+      "WT_WOOD_PARTS",
+      "IT_THROWABLE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "shortspear",
+    "name": "shortspear",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 50,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_CHARGE",
+      "WT_PIERCING",
+      "WT_WOOD_PARTS",
+      "IT_THROWABLE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "trident",
+    "name": "trident",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 60,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_PIERCING",
+      "WT_CHARGE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "longspear",
+    "name": "longspear",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 90,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_CHARGE",
+      "WT_PIERCING",
+      "WT_WOOD_PARTS",
+      "WT_REACH",
+      "IT_THROWABLE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "light_lance",
+    "name": "light lance",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 50,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_CHARGE",
+      "WT_PIERCING",
+      "WT_KNOCKDOWN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "heavy_lance",
+    "name": "heavy lance",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 100,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_CHARGE",
+      "WT_PIERCING",
+      "WT_KNOCKDOWN",
+      "WT_MOUNTED_ONLY"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "great_lance",
+    "name": "great lance",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_ADAMANT",
+    "weight": 500,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_REACH",
+      "WT_CHARGE",
+      "WT_KNOCKDOWN",
+      "WT_STR1",
+      "WT_STR2",
+      "WT_MOUNTED_ONLY"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "halberd",
+    "name": "halberd",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_CHARGE",
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_CHARGE",
+      "WT_SUPER_TRIP",
+      "WT_STR2",
+      "WT_WOOD_PARTS"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "ranseur",
+    "name": "ranseur",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SUPER_DISARM",
+      "WT_REACH",
+      "WT_WOOD_PARTS",
+      "WT_CHARGE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "lucern_hammer",
+    "name": "lucern hammer",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_PIERCING",
+      "WT_BLUNT",
+      "WT_CHARGE",
+      "WT_WOOD_PARTS",
+      "WT_REACH",
+      "WT_PENETRATING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "two-bladed_halberd",
+    "name": "two-bladed halberd",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 300,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_CHARGE",
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_SUPER_TRIP",
+      "WT_DOUBLE",
+      "WT_STR3",
+      "WT_STR1",
+      "WT_WOOD_PARTS"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "glaive",
+    "name": "glaive",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_CHARGE",
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_REACH",
+      "WT_WOOD_PARTS"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "guisarme",
+    "name": "guisarme",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING",
+      "WT_REACH",
+      "WT_STR1",
+      "WT_SUPER_TRIP",
+      "WT_WOOD_PARTS",
+      "WT_TWO_HANDED"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "voulge",
+    "name": "voulge",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 7,
+    "flags": [
+      "WT_SLASHING",
+      "WT_PENETRATING",
+      "WT_WOOD_PARTS"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "saw-toothed_glaive",
+    "name": "saw-toothed glaive",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 9,
+    "flags": [
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_REACH",
+      "WT_CHARGE",
+      "WT_WOOD_PARTS",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "club",
+    "name": "club",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STUNNING",
+      "WT_SUBDUAL"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "large_club",
+    "name": "large club",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_SUBDUAL",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "huge_club",
+    "name": "huge club",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 500,
+    "cost": 10,
+    "smallDamage": 9,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_STR1",
+      "WT_SUBDUAL",
+      "IT_NOGEN",
+      "WT_STUNNING",
+      "WT_REACH",
+      "WT_STRIKE_NEAR"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "quarterstaff",
+    "name": "quarterstaff",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 7,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SUPER_TRIP",
+      "WT_BLUNT",
+      "WT_TWO_HANDED",
+      "WT_NO_STRENGTH"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "force_construct_staff",
+    "name": "force construct staff",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_FORCE",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_SUPER_TRIP",
+      "WT_BLUNT",
+      "WT_TWO_HANDED",
+      "IT_NOGEN",
+      "WT_NO_STRENGTH"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "maul",
+    "name": "maul",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 700,
+    "cost": 10,
+    "smallDamage": 9,
+    "flags": [
+      "WT_FUMBLE1",
+      "WT_BLUNT",
+      "WT_STUNNING",
+      "WT_KNOCKDOWN",
+      "WT_WOOD_PARTS",
+      "WT_STR3"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "great_maul",
+    "name": "great maul",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 700,
+    "cost": 10,
+    "smallDamage": 13,
+    "flags": [
+      "WT_FUMBLE1",
+      "WT_BLUNT",
+      "WT_STUNNING",
+      "WT_KNOCKDOWN",
+      "WT_WOOD_PARTS",
+      "WT_STR3",
+      "WT_STR2",
+      "WT_STR1"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "light_mace",
+    "name": "light mace",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 60,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "heavy_mace",
+    "name": "heavy mace",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "morningstar",
+    "name": "morningstar",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_PIERCING",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "huge_morningstar",
+    "name": "huge morningstar",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 14,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_PIERCING",
+      "WT_STUNNING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "warhammer",
+    "name": "warhammer",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STR2",
+      "WT_STUNNING",
+      "WT_PENETRATING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "short_sword",
+    "name": "short sword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_SUPER_SNEAK",
+      "WT_SLASHING",
+      "WT_PIERCING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "scimitar",
+    "name": "scimitar",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING",
+      "WT_PIERCING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "falchion",
+    "name": "falchion",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 160,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "broadsword",
+    "name": "broadsword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 70,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING",
+      "WT_STR2"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "flame_blade;weapon",
+    "name": "flame blade;weapon",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_FORCE",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 14,
+    "flags": [
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_NO_STRENGTH",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "long_sword",
+    "name": "long sword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "small_long_sword",
+    "name": "small long sword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 20,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "two-bladed_sword",
+    "name": "two-bladed sword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 300,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SLASHING",
+      "WT_PIERCING",
+      "WT_DOUBLE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "bastard_sword",
+    "name": "bastard sword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 100,
+    "cost": 10,
+    "smallDamage": 6,
+    "flags": [
+      "WT_EXOTIC_1H",
+      "WT_SLASHING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "greatsword",
+    "name": "greatsword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 150,
+    "cost": 10,
+    "smallDamage": 8,
+    "flags": [
+      "WT_SLASHING",
+      "WT_STR2",
+      "WT_STR1"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "fullblade",
+    "name": "fullblade",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 250,
+    "cost": 10,
+    "smallDamage": 11,
+    "flags": [
+      "WT_SLASHING",
+      "WT_STR1",
+      "WT_STR2"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "rapier",
+    "name": "rapier",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 15,
+    "cost": 10,
+    "smallDamage": 7,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SUPER_DISARM",
+      "WT_SUPER_SNEAK",
+      "WT_NO_STRENGTH"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "elven_thinblade",
+    "name": "elven thinblade",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_MITHRIL",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 7,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SUPER_DISARM",
+      "WT_PENETRATING",
+      "WT_RACIAL",
+      "WT_NO_STRENGTH"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "mercurial_broadsword",
+    "name": "mercurial broadsword",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 120,
+    "cost": 10,
+    "smallDamage": 8,
+    "flags": [
+      "WT_SLASHING",
+      "WT_BLUNT",
+      "WT_STUNNING",
+      "WT_STR1",
+      "WT_STR3",
+      "WT_TWO_HANDED"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "dagger",
+    "name": "dagger",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 3,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SLASHING",
+      "WT_SUPER_SNEAK",
+      "IT_GROUP"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "stiletto",
+    "name": "stiletto",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SUPER_SNEAK",
+      "WT_PENETRATING",
+      "WT_NO_STRENGTH"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "main_gauche",
+    "name": "main gauche",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 15,
+    "cost": 10,
+    "smallDamage": 3,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SLASHING",
+      "WT_SUPER_SNEAK",
+      "WT_SUPER_DISARM"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "knife",
+    "name": "knife",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 2,
+    "flags": [
+      "WT_SLASHING",
+      "WT_SUPER_SNEAK"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "punching_dagger",
+    "name": "punching dagger",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 12,
+    "cost": 10,
+    "smallDamage": 4,
+    "flags": [
+      "WT_PIERCING",
+      "WT_SUPER_SNEAK"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "kukri",
+    "name": "kukri",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 2,
+    "flags": [
+      "WT_SLASHING",
+      "WT_SUPER_SNEAK"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "wand",
+    "name": "wand",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 1,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "lenses",
+    "name": "lenses",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GLASS",
+    "weight": 1,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "potion",
+    "name": "potion",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GLASS",
+    "weight": 2,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_THROWABLE",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "tablet",
+    "name": "tablet",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_VEGGY",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN",
+      "IT_EDIBLE"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "tome",
+    "name": "tome",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_PAPER",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "ring",
+    "name": "ring",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GEMSTONE",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "bracers",
+    "name": "bracers",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 20,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "scroll",
+    "name": "scroll",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_PAPER",
+    "weight": 1,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "boots",
+    "name": "boots",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_LEATHER",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "headband",
+    "name": "headband",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 2,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "hat",
+    "name": "hat",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 2,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "helm",
+    "name": "helm",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "girdle",
+    "name": "girdle",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_LEATHER",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "amulet",
+    "name": "amulet",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GEMSTONE",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "stone",
+    "name": "stone",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GRANITE",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "stone;light",
+    "name": "stone;light",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GRANITE",
+    "weight": 2,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "cloak",
+    "name": "cloak",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "gauntlets",
+    "name": "gauntlets",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "gloves",
+    "name": "gloves",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_LEATHER",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "rod",
+    "name": "rod",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_BLUNT",
+      "WT_STUNNING",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "staff",
+    "name": "staff",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 7,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_SUPER_TRIP",
+      "WT_BLUNT",
+      "WT_TWO_HANDED",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "climbing_rig",
+    "name": "climbing rig",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_LEATHER",
+    "weight": 30,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "alchemy_set",
+    "name": "alchemy set",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 60,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "viewing_lens",
+    "name": "viewing lens",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GLASS",
+    "weight": 3,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "craftsman's_tools",
+    "name": "craftsman's tools",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "mechanical_tools",
+    "name": "mechanical tools",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "disguise_kit",
+    "name": "disguise kit",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 20,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "healing_kit",
+    "name": "healing kit",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 40,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "pickaxe",
+    "name": "pickaxe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 100,
+    "cost": 10,
+    "smallDamage": 5,
+    "flags": [
+      "WT_PIERCING",
+      "WT_WOOD_PARTS",
+      "WT_FUMBLE1",
+      "WT_DIGGER",
+      "WT_PENETRATING"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "hemp_rope",
+    "name": "hemp rope",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_ROPE",
+      "IT_GROUP"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "silk_rope",
+    "name": "silk rope",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_ROPE",
+      "IT_GROUP"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "giant's-hair_rope",
+    "name": "giant's-hair rope",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_LEATHER",
+    "weight": 6,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_ROPE",
+      "IT_GROUP"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "lute",
+    "name": "lute",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 15,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "mandolin",
+    "name": "mandolin",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_WOOD",
+    "weight": 15,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "flute",
+    "name": "flute",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_BONE",
+    "weight": 5,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "horn",
+    "name": "horn",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_BONE",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "corpse",
+    "name": "corpse",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_FLESH",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "statue",
+    "name": "statue",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GRANITE",
+    "weight": 10,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "figure",
+    "name": "figure",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_GEMSTONE",
+    "weight": 3,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "robes",
+    "name": "robes",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_PLURAL",
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "white_robe",
+    "name": "white robe",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": [
+      "IT_NOGEN"
+    ]
+  },
+  {
+    "source": "incursion",
+    "rawId": "loincloth",
+    "name": "loincloth",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "clerical_vestment",
+    "name": "clerical vestment",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "peasant_garb",
+    "name": "peasant garb",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "noble_attire",
+    "name": "noble attire",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_CLOTH",
+    "weight": 0,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  },
+  {
+    "source": "incursion",
+    "rawId": "holy_symbol",
+    "name": "holy symbol",
+    "category": "weapon",
+    "glyph": ")",
+    "color": "gray",
+    "material": "MAT_IRON",
+    "weight": 3,
+    "cost": 10,
+    "smallDamage": 0,
+    "flags": []
+  }
+]

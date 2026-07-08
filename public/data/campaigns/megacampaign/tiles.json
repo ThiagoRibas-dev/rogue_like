@@ -1,0 +1,51 @@
+{
+  "stone_floor": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#1a1d24",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "stone_wall": {
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#4a4d53",
+    "bg": "#000000",
+    "tags": ["terrain", "solid"]
+  },
+  "stairs_up": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": "<",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "stairs_down": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": ">",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "empty_space": {
+    "walkable": false,
+    "transparent": false,
+    "glyph": " ",
+    "fg": "#000000",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "shallow_water": {
+    "walkable": true,
+    "transparent": true,
+    "glyph": "~",
+    "fg": "#3498db",
+    "bg": "#000000",
+    "movementCost": 200,
+    "tags": ["terrain", "liquid", "water"]
+  }
+}

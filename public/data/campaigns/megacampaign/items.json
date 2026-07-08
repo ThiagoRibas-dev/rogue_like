@@ -1,0 +1,4652 @@
+{
+  "dart": {
+    "id": "dart",
+    "name": "dart",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 1,
+    "baseValue": 2,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "shuriken": {
+    "id": "shuriken",
+    "name": "shuriken",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 1,
+    "baseValue": 5,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "boomerang": {
+    "id": "boomerang",
+    "name": "boomerang",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "wood"
+    ],
+    "weight": 5,
+    "baseValue": 20,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 9,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "spear": {
+    "id": "spear",
+    "name": "spear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "elven_spear": {
+    "id": "elven_spear",
+    "name": "elven spear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "wood"
+    ],
+    "weight": 30,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "orcish_spear": {
+    "id": "orcish_spear",
+    "name": "orcish spear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "dwarvish_spear": {
+    "id": "dwarvish_spear",
+    "name": "dwarvish spear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 35,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "silver_spear": {
+    "id": "silver_spear",
+    "name": "silver spear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "silver",
+      "metal"
+    ],
+    "weight": 36,
+    "baseValue": 40,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "javelin": {
+    "id": "javelin",
+    "name": "javelin",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 20,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "trident": {
+    "id": "trident",
+    "name": "trident",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 60,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "dagger": {
+    "id": "dagger",
+    "name": "dagger",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "elven_dagger": {
+    "id": "elven_dagger",
+    "name": "elven dagger",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "wood"
+    ],
+    "weight": 10,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "orcish_dagger": {
+    "id": "orcish_dagger",
+    "name": "orcish dagger",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 10,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "silver_dagger": {
+    "id": "silver_dagger",
+    "name": "silver dagger",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "silver",
+      "metal"
+    ],
+    "weight": 12,
+    "baseValue": 40,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "athame": {
+    "id": "athame",
+    "name": "athame",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 10,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "scalpel": {
+    "id": "scalpel",
+    "name": "scalpel",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 6,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "knife": {
+    "id": "knife",
+    "name": "knife",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "stiletto": {
+    "id": "stiletto",
+    "name": "stiletto",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "worm_tooth": {
+    "id": "worm_tooth",
+    "name": "worm tooth",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "bone"
+    ],
+    "weight": 20,
+    "baseValue": 2,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "crysknife": {
+    "id": "crysknife",
+    "name": "crysknife",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "bone"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 10,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "axe": {
+    "id": "axe",
+    "name": "axe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 60,
+    "baseValue": 8,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "short_sword": {
+    "id": "short_sword",
+    "name": "short sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "elven_short_sword": {
+    "id": "elven_short_sword",
+    "name": "elven short sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "wood"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "orcish_short_sword": {
+    "id": "orcish_short_sword",
+    "name": "orcish short sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "dwarvish_short_sword": {
+    "id": "dwarvish_short_sword",
+    "name": "dwarvish short sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "scimitar": {
+    "id": "scimitar",
+    "name": "scimitar",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "silver_saber": {
+    "id": "silver_saber",
+    "name": "silver saber",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "silver",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 75,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "broadsword": {
+    "id": "broadsword",
+    "name": "broadsword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 70,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "elven_broadsword": {
+    "id": "elven_broadsword",
+    "name": "elven broadsword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "wood"
+    ],
+    "weight": 70,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "long_sword": {
+    "id": "long_sword",
+    "name": "long sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "two-handed_sword": {
+    "id": "two-handed_sword",
+    "name": "two-handed sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 50,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 12,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "katana": {
+    "id": "katana",
+    "name": "katana",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 80,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 10,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "tsurugi": {
+    "id": "tsurugi",
+    "name": "tsurugi",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 60,
+    "baseValue": 500,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 16,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "runesword": {
+    "id": "runesword",
+    "name": "runesword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 300,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "partisan": {
+    "id": "partisan",
+    "name": "partisan",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 80,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "ranseur": {
+    "id": "ranseur",
+    "name": "ranseur",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "spetum": {
+    "id": "spetum",
+    "name": "spetum",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 50,
+    "baseValue": 5,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "glaive": {
+    "id": "glaive",
+    "name": "glaive",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "halberd": {
+    "id": "halberd",
+    "name": "halberd",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bardiche": {
+    "id": "bardiche",
+    "name": "bardiche",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 7,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "voulge": {
+    "id": "voulge",
+    "name": "voulge",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "fauchard": {
+    "id": "fauchard",
+    "name": "fauchard",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 60,
+    "baseValue": 5,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "guisarme": {
+    "id": "guisarme",
+    "name": "guisarme",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bill-guisarme": {
+    "id": "bill-guisarme",
+    "name": "bill-guisarme",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 7,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "lucern_hammer": {
+    "id": "lucern_hammer",
+    "name": "lucern hammer",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bec_de_corbin": {
+    "id": "bec_de_corbin",
+    "name": "bec de corbin",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 8,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "dwarvish_mattock": {
+    "id": "dwarvish_mattock",
+    "name": "dwarvish mattock",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 50,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 12,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "lance": {
+    "id": "lance",
+    "name": "lance",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "mace": {
+    "id": "mace",
+    "name": "mace",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 5,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "silver_mace": {
+    "id": "silver_mace",
+    "name": "silver mace",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "silver",
+      "metal"
+    ],
+    "weight": 36,
+    "baseValue": 60,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "morning_star": {
+    "id": "morning_star",
+    "name": "morning star",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "war_hammer": {
+    "id": "war_hammer",
+    "name": "war hammer",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 50,
+    "baseValue": 5,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "club": {
+    "id": "club",
+    "name": "club",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "rubber_hose": {
+    "id": "rubber_hose",
+    "name": "rubber hose",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "plastic"
+    ],
+    "weight": 20,
+    "baseValue": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "quarterstaff": {
+    "id": "quarterstaff",
+    "name": "quarterstaff",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 7,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "aklys": {
+    "id": "aklys",
+    "name": "aklys",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 15,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "flail": {
+    "id": "flail",
+    "name": "flail",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#C0C0C0",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "iron",
+      "metal"
+    ],
+    "weight": 15,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bullwhip": {
+    "id": "bullwhip",
+    "name": "bullwhip",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from nethack.",
+    "glyph": ")",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "nethack",
+      "leather"
+    ],
+    "weight": 20,
+    "baseValue": 4,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "potion_of_gain_ability": {
+    "id": "potion_of_gain_ability",
+    "name": "Potion of gain ability",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FF0000",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "potion_of_gain_ability_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_restore_ability": {
+    "id": "potion_of_restore_ability",
+    "name": "Potion of restore ability",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#EE82EE",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_restore_ability_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_confusion": {
+    "id": "potion_of_confusion",
+    "name": "Potion of confusion",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFA500",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_confusion_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_blindness": {
+    "id": "potion_of_blindness",
+    "name": "Potion of blindness",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFF00",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 150,
+    "consumable": {
+      "effectId": "potion_of_blindness_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_paralysis": {
+    "id": "potion_of_paralysis",
+    "name": "Potion of paralysis",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00FF00",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "potion_of_paralysis_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_speed": {
+    "id": "potion_of_speed",
+    "name": "Potion of speed",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#008000",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "potion_of_speed_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_levitation": {
+    "id": "potion_of_levitation",
+    "name": "Potion of levitation",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00FFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "potion_of_levitation_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_hallucination": {
+    "id": "potion_of_hallucination",
+    "name": "Potion of hallucination",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00FFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_hallucination_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_invisibility": {
+    "id": "potion_of_invisibility",
+    "name": "Potion of invisibility",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00BFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 150,
+    "consumable": {
+      "effectId": "potion_of_invisibility_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_see_invisible": {
+    "id": "potion_of_see_invisible",
+    "name": "Potion of see invisible",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FF00FF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 50,
+    "consumable": {
+      "effectId": "potion_of_see_invisible_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_healing": {
+    "id": "potion_of_healing",
+    "name": "Potion of healing",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FF00FF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 20,
+    "consumable": {
+      "effectId": "potion_of_healing_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_extra_healing": {
+    "id": "potion_of_extra_healing",
+    "name": "Potion of extra healing",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FF0000",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_extra_healing_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_gain_level": {
+    "id": "potion_of_gain_level",
+    "name": "Potion of gain level",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "potion_of_gain_level_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_enlightenment": {
+    "id": "potion_of_enlightenment",
+    "name": "Potion of enlightenment",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "potion_of_enlightenment_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_monster_detection": {
+    "id": "potion_of_monster_detection",
+    "name": "Potion of monster detection",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 150,
+    "consumable": {
+      "effectId": "potion_of_monster_detection_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_object_detection": {
+    "id": "potion_of_object_detection",
+    "name": "Potion of object detection",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 150,
+    "consumable": {
+      "effectId": "potion_of_object_detection_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_gain_energy": {
+    "id": "potion_of_gain_energy",
+    "name": "Potion of gain energy",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 150,
+    "consumable": {
+      "effectId": "potion_of_gain_energy_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_sleeping": {
+    "id": "potion_of_sleeping",
+    "name": "Potion of sleeping",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_sleeping_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_full_healing": {
+    "id": "potion_of_full_healing",
+    "name": "Potion of full healing",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "potion_of_full_healing_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_polymorph": {
+    "id": "potion_of_polymorph",
+    "name": "Potion of polymorph",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFF00",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "potion_of_polymorph_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_booze": {
+    "id": "potion_of_booze",
+    "name": "Potion of booze",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 50,
+    "consumable": {
+      "effectId": "potion_of_booze_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_sickness": {
+    "id": "potion_of_sickness",
+    "name": "Potion of sickness",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00FFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 50,
+    "consumable": {
+      "effectId": "potion_of_sickness_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_fruit_juice": {
+    "id": "potion_of_fruit_juice",
+    "name": "Potion of fruit juice",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#000000",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 50,
+    "consumable": {
+      "effectId": "potion_of_fruit_juice_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_acid": {
+    "id": "potion_of_acid",
+    "name": "Potion of acid",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 250,
+    "consumable": {
+      "effectId": "potion_of_acid_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_oil": {
+    "id": "potion_of_oil",
+    "name": "Potion of oil",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 250,
+    "consumable": {
+      "effectId": "potion_of_oil_effect",
+      "charges": 1
+    }
+  },
+  "potion_of_water": {
+    "id": "potion_of_water",
+    "name": "Potion of water",
+    "unidentifiedName": "Potion",
+    "description": "A potion from nethack.",
+    "glyph": "!",
+    "fg": "#00FFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack",
+      "glass"
+    ],
+    "weight": 20,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "potion_of_water_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_enchant_armor": {
+    "id": "scroll_of_enchant_armor",
+    "name": "Scroll of enchant armor",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 80,
+    "consumable": {
+      "effectId": "scroll_of_enchant_armor_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_destroy_armor": {
+    "id": "scroll_of_destroy_armor",
+    "name": "Scroll of destroy armor",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_destroy_armor_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_confuse_monster": {
+    "id": "scroll_of_confuse_monster",
+    "name": "Scroll of confuse monster",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_confuse_monster_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_scare_monster": {
+    "id": "scroll_of_scare_monster",
+    "name": "Scroll of scare monster",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_scare_monster_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_remove_curse": {
+    "id": "scroll_of_remove_curse",
+    "name": "Scroll of remove curse",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 80,
+    "consumable": {
+      "effectId": "scroll_of_remove_curse_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_enchant_weapon": {
+    "id": "scroll_of_enchant_weapon",
+    "name": "Scroll of enchant weapon",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 60,
+    "consumable": {
+      "effectId": "scroll_of_enchant_weapon_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_create_monster": {
+    "id": "scroll_of_create_monster",
+    "name": "Scroll of create monster",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "scroll_of_create_monster_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_taming": {
+    "id": "scroll_of_taming",
+    "name": "Scroll of taming",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "scroll_of_taming_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_genocide": {
+    "id": "scroll_of_genocide",
+    "name": "Scroll of genocide",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "scroll_of_genocide_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_light": {
+    "id": "scroll_of_light",
+    "name": "Scroll of light",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 50,
+    "consumable": {
+      "effectId": "scroll_of_light_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_teleportation": {
+    "id": "scroll_of_teleportation",
+    "name": "Scroll of teleportation",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_teleportation_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_gold_detection": {
+    "id": "scroll_of_gold_detection",
+    "name": "Scroll of gold detection",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_gold_detection_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_food_detection": {
+    "id": "scroll_of_food_detection",
+    "name": "Scroll of food detection",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_food_detection_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_identify": {
+    "id": "scroll_of_identify",
+    "name": "Scroll of identify",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 20,
+    "consumable": {
+      "effectId": "scroll_of_identify_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_magic_mapping": {
+    "id": "scroll_of_magic_mapping",
+    "name": "Scroll of magic mapping",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_magic_mapping_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_amnesia": {
+    "id": "scroll_of_amnesia",
+    "name": "Scroll of amnesia",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "scroll_of_amnesia_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_fire": {
+    "id": "scroll_of_fire",
+    "name": "Scroll of fire",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 100,
+    "consumable": {
+      "effectId": "scroll_of_fire_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_earth": {
+    "id": "scroll_of_earth",
+    "name": "Scroll of earth",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 200,
+    "consumable": {
+      "effectId": "scroll_of_earth_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_punishment": {
+    "id": "scroll_of_punishment",
+    "name": "Scroll of punishment",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "scroll_of_punishment_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_charging": {
+    "id": "scroll_of_charging",
+    "name": "Scroll of charging",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "scroll_of_charging_effect",
+      "charges": 1
+    }
+  },
+  "scroll_of_stinking_cloud": {
+    "id": "scroll_of_stinking_cloud",
+    "name": "Scroll of stinking cloud",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll from nethack.",
+    "glyph": "?",
+    "fg": "#FFFFFF",
+    "bg": "transparent",
+    "category": "consumable",
+    "tags": [
+      "nethack"
+    ],
+    "weight": 5,
+    "baseValue": 300,
+    "consumable": {
+      "effectId": "scroll_of_stinking_cloud_effect",
+      "charges": 1
+    }
+  },
+  "dire_flail": {
+    "id": "dire_flail",
+    "name": "dire flail",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "heavy_flail": {
+    "id": "heavy_flail",
+    "name": "heavy flail",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "light_flail": {
+    "id": "light_flail",
+    "name": "light flail",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 50,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "handaxe": {
+    "id": "handaxe",
+    "name": "handaxe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "greataxe": {
+    "id": "greataxe",
+    "name": "greataxe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 9,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "orc_double_axe": {
+    "id": "orc_double_axe",
+    "name": "orc double axe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "battleaxe": {
+    "id": "battleaxe",
+    "name": "battleaxe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 70,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "dwarven_waraxe": {
+    "id": "dwarven_waraxe",
+    "name": "dwarven waraxe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "halfspear": {
+    "id": "halfspear",
+    "name": "halfspear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "shortspear": {
+    "id": "shortspear",
+    "name": "shortspear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 50,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "longspear": {
+    "id": "longspear",
+    "name": "longspear",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 90,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "light_lance": {
+    "id": "light_lance",
+    "name": "light lance",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 50,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "heavy_lance": {
+    "id": "heavy_lance",
+    "name": "heavy lance",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "great_lance": {
+    "id": "great_lance",
+    "name": "great lance",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "adamantium",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "two-bladed_halberd": {
+    "id": "two-bladed_halberd",
+    "name": "two-bladed halberd",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "saw-toothed_glaive": {
+    "id": "saw-toothed_glaive",
+    "name": "saw-toothed glaive",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 9,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "large_club": {
+    "id": "large_club",
+    "name": "large club",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "huge_club": {
+    "id": "huge_club",
+    "name": "huge club",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 9,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "force_construct_staff": {
+    "id": "force_construct_staff",
+    "name": "force construct staff",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "maul": {
+    "id": "maul",
+    "name": "maul",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 9,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "great_maul": {
+    "id": "great_maul",
+    "name": "great maul",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 13,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "light_mace": {
+    "id": "light_mace",
+    "name": "light mace",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 60,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "heavy_mace": {
+    "id": "heavy_mace",
+    "name": "heavy mace",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "morningstar": {
+    "id": "morningstar",
+    "name": "morningstar",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "huge_morningstar": {
+    "id": "huge_morningstar",
+    "name": "huge morningstar",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 14,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "warhammer": {
+    "id": "warhammer",
+    "name": "warhammer",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "falchion": {
+    "id": "falchion",
+    "name": "falchion",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "flame_blade;weapon": {
+    "id": "flame_blade;weapon",
+    "name": "flame blade;weapon",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 14,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "small_long_sword": {
+    "id": "small_long_sword",
+    "name": "small long sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 20,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "two-bladed_sword": {
+    "id": "two-bladed_sword",
+    "name": "two-bladed sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bastard_sword": {
+    "id": "bastard_sword",
+    "name": "bastard sword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 6,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "greatsword": {
+    "id": "greatsword",
+    "name": "greatsword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "fullblade": {
+    "id": "fullblade",
+    "name": "fullblade",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 11,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "rapier": {
+    "id": "rapier",
+    "name": "rapier",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 15,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "elven_thinblade": {
+    "id": "elven_thinblade",
+    "name": "elven thinblade",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "mithril",
+      "metal"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 7,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "mercurial_broadsword": {
+    "id": "mercurial_broadsword",
+    "name": "mercurial broadsword",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 8,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "main_gauche": {
+    "id": "main_gauche",
+    "name": "main gauche",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 15,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "punching_dagger": {
+    "id": "punching_dagger",
+    "name": "punching dagger",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 12,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 4,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "kukri": {
+    "id": "kukri",
+    "name": "kukri",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "wand": {
+    "id": "wand",
+    "name": "wand",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 1,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "lenses": {
+    "id": "lenses",
+    "name": "lenses",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "glass"
+    ],
+    "weight": 1,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "potion": {
+    "id": "potion",
+    "name": "potion",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "glass"
+    ],
+    "weight": 2,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "tablet": {
+    "id": "tablet",
+    "name": "tablet",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "tome": {
+    "id": "tome",
+    "name": "tome",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "ring": {
+    "id": "ring",
+    "name": "ring",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "bracers": {
+    "id": "bracers",
+    "name": "bracers",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 20,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "scroll": {
+    "id": "scroll",
+    "name": "scroll",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 1,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "boots": {
+    "id": "boots",
+    "name": "boots",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "leather"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "headband": {
+    "id": "headband",
+    "name": "headband",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 2,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "hat": {
+    "id": "hat",
+    "name": "hat",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 2,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "helm": {
+    "id": "helm",
+    "name": "helm",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "girdle": {
+    "id": "girdle",
+    "name": "girdle",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "leather"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "amulet": {
+    "id": "amulet",
+    "name": "amulet",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "stone": {
+    "id": "stone",
+    "name": "stone",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "stone;light": {
+    "id": "stone;light",
+    "name": "stone;light",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 2,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "cloak": {
+    "id": "cloak",
+    "name": "cloak",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "gauntlets": {
+    "id": "gauntlets",
+    "name": "gauntlets",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "gloves": {
+    "id": "gloves",
+    "name": "gloves",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "leather"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "rod": {
+    "id": "rod",
+    "name": "rod",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "staff": {
+    "id": "staff",
+    "name": "staff",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 7,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "climbing_rig": {
+    "id": "climbing_rig",
+    "name": "climbing rig",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "leather"
+    ],
+    "weight": 30,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "alchemy_set": {
+    "id": "alchemy_set",
+    "name": "alchemy set",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 60,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "viewing_lens": {
+    "id": "viewing_lens",
+    "name": "viewing lens",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "glass"
+    ],
+    "weight": 3,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "craftsman's_tools": {
+    "id": "craftsman's_tools",
+    "name": "craftsman's tools",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "mechanical_tools": {
+    "id": "mechanical_tools",
+    "name": "mechanical tools",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "disguise_kit": {
+    "id": "disguise_kit",
+    "name": "disguise kit",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 20,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "healing_kit": {
+    "id": "healing_kit",
+    "name": "healing kit",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 40,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "pickaxe": {
+    "id": "pickaxe",
+    "name": "pickaxe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 100,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "hemp_rope": {
+    "id": "hemp_rope",
+    "name": "hemp rope",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "silk_rope": {
+    "id": "silk_rope",
+    "name": "silk rope",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "giant's-hair_rope": {
+    "id": "giant's-hair_rope",
+    "name": "giant's-hair rope",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "leather"
+    ],
+    "weight": 6,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "lute": {
+    "id": "lute",
+    "name": "lute",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 15,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "mandolin": {
+    "id": "mandolin",
+    "name": "mandolin",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "wood"
+    ],
+    "weight": 15,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "flute": {
+    "id": "flute",
+    "name": "flute",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "bone"
+    ],
+    "weight": 5,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "horn": {
+    "id": "horn",
+    "name": "horn",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "bone"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "corpse": {
+    "id": "corpse",
+    "name": "corpse",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "statue": {
+    "id": "statue",
+    "name": "statue",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 10,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "figure": {
+    "id": "figure",
+    "name": "figure",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion"
+    ],
+    "weight": 3,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "robes": {
+    "id": "robes",
+    "name": "robes",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "white_robe": {
+    "id": "white_robe",
+    "name": "white robe",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "loincloth": {
+    "id": "loincloth",
+    "name": "loincloth",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "clerical_vestment": {
+    "id": "clerical_vestment",
+    "name": "clerical vestment",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "peasant_garb": {
+    "id": "peasant_garb",
+    "name": "peasant garb",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "noble_attire": {
+    "id": "noble_attire",
+    "name": "noble attire",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "cloth"
+    ],
+    "weight": 0,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "holy_symbol": {
+    "id": "holy_symbol",
+    "name": "holy symbol",
+    "unidentifiedName": "Weapon",
+    "description": "A weapon from incursion.",
+    "glyph": ")",
+    "fg": "#808080",
+    "bg": "transparent",
+    "category": "weapon",
+    "tags": [
+      "incursion",
+      "iron",
+      "metal"
+    ],
+    "weight": 3,
+    "baseValue": 10,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "health_potion": {
+    "id": "health_potion",
+    "name": "Health Potion",
+    "unidentifiedName": "Potion",
+    "description": "A vial of crimson liquid that restores vitality when consumed.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    }
+  },
+  "scroll_of_lightning": {
+    "id": "scroll_of_lightning",
+    "name": "Scroll of Lightning",
+    "unidentifiedName": "Scroll",
+    "description": "A crackling scroll that strikes the nearest enemy with a bolt of lightning.",
+    "glyph": "?",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "damage_nearest_10",
+      "charges": 1
+    }
+  },
+  "potion_haste": {
+    "id": "potion_haste",
+    "name": "Potion of Haste",
+    "unidentifiedName": "Potion",
+    "description": "A potion that greatly increases your speed for a short duration.",
+    "glyph": "!",
+    "fg": "#feca57",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "potion_haste",
+      "charges": 1
+    }
+  },
+  "scroll_confusion": {
+    "id": "scroll_confusion",
+    "name": "Scroll of Confusion",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll covered in erratic runes. Confuses the nearest enemy.",
+    "glyph": "?",
+    "fg": "#f368e0",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_confusion",
+      "charges": 1
+    }
+  },
+  "scroll_fireball": {
+    "id": "scroll_fireball",
+    "name": "Scroll of Fireball",
+    "unidentifiedName": "Scroll",
+    "description": "Unleashes a massive fireball that damages all enemies in a wide radius.",
+    "glyph": "?",
+    "fg": "#ee5253",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_fireball",
+      "charges": 1
+    }
+  },
+  "scroll_identify": {
+    "id": "scroll_identify",
+    "name": "Scroll of Identify",
+    "unidentifiedName": "Scroll",
+    "description": "Magical script that reveals the true nature of all items in your inventory.",
+    "glyph": "?",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_identify",
+      "charges": 1
+    }
+  },
+  "food_ration": {
+    "id": "food_ration",
+    "name": "Food Ration",
+    "unidentifiedName": "Ration",
+    "description": "A wrapped bundle of dried meats and bread. Highly nutritious.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "food_ration",
+      "charges": 1
+    }
+  },
+  "apple": {
+    "id": "apple",
+    "name": "Apple",
+    "unidentifiedName": "Fruit",
+    "description": "A crisp, red apple. Good for a quick snack.",
+    "glyph": "%",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "apple",
+      "charges": 1
+    }
+  },
+  "leather_armor": {
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "unidentifiedName": "Leather Armor",
+    "description": "Tanned hide stitched into a vest. Provides modest protection.",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 2,
+      "carryBonus": 0
+    }
+  },
+  "backpack": {
+    "id": "backpack",
+    "name": "Backpack",
+    "unidentifiedName": "Backpack",
+    "description": "A sturdy pack that increases the amount of items you can carry.",
+    "glyph": "b",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 5
+    }
+  },
+  "venom_dagger": {
+    "id": "venom_dagger",
+    "name": "Venom Dagger",
+    "unidentifiedName": "Green-Tinged Dagger",
+    "description": "A wicked blade dripping with corrosive poison.",
+    "glyph": "/",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0,
+      "onHit": {
+        "statusId": "poison",
+        "duration": 5
+      }
+    }
+  },
+  "rock": {
+    "id": "rock",
+    "name": "Heavy Rock",
+    "unidentifiedName": "Rock",
+    "description": "A heavy, jagged rock. Good for throwing.",
+    "glyph": "*",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 5,
+    "throwable": {
+      "range": 4,
+      "damage": 2
+    }
+  },
+  "throwing_knife": {
+    "id": "throwing_knife",
+    "name": "Throwing Knife",
+    "unidentifiedName": "Small Blade",
+    "description": "A perfectly balanced throwing knife.",
+    "glyph": "-",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 1,
+    "throwable": {
+      "range": 6,
+      "damage": 3
+    }
+  },
+  "potion_of_fire": {
+    "id": "potion_of_fire",
+    "name": "Flask of Alchemist's Fire",
+    "unidentifiedName": "Orange Flask",
+    "description": "A volatile mixture that explodes on impact.",
+    "glyph": "!",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "tags": [
+      "explosive",
+      "flask"
+    ],
+    "throwable": {
+      "range": 5,
+      "destroyOnImpact": true
+    }
+  },
+  "bronze_key": {
+    "id": "bronze_key",
+    "name": "Bronze Key",
+    "unidentifiedName": "Key",
+    "description": "A heavy bronze key.",
+    "glyph": "[",
+    "fg": "#cd7f32",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "key:bronze"
+    ]
+  },
+  "lockpick": {
+    "id": "lockpick",
+    "name": "Lockpick",
+    "unidentifiedName": "Tool",
+    "description": "A set of tools for picking locks.",
+    "glyph": "~",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "tool:lockpick"
+    ]
+  },
+  "wand_of_lightning": {
+    "id": "wand_of_lightning",
+    "name": "Wand of Lightning",
+    "unidentifiedName": "Glass Wand",
+    "description": "A wand that shoots a beam of lightning, piercing through enemies.",
+    "glyph": "/",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "beam",
+      "range": 6,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_fire": {
+    "id": "wand_of_fire",
+    "name": "Wand of Fire",
+    "unidentifiedName": "Ruby Wand",
+    "description": "A wand that shoots a bolt of fire, stopping at the first enemy hit.",
+    "glyph": "/",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "bolt",
+      "range": 5,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_cold": {
+    "id": "wand_of_cold",
+    "name": "Wand of Cold",
+    "unidentifiedName": "Frosty Wand",
+    "description": "A wand that emits a cone of freezing cold air.",
+    "glyph": "/",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_5_cold",
+      "pattern": "cone",
+      "range": 3,
+      "maxCharges": 3,
+      "currentCharges": 3
+    }
+  },
+  "camp_sigil": {
+    "id": "camp_sigil",
+    "name": "Camp Sigil",
+    "unidentifiedName": "Golden Medallion",
+    "description": "The stolen crest of the Safe Hub. Bringing it back will secure the camp.",
+    "glyph": "*",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "sigil",
+      "quest_item"
+    ]
+  },
+  "barkeeper_note": {
+    "id": "barkeeper_note",
+    "name": "Barkeeper's Bloody Note",
+    "unidentifiedName": "Torn Paper",
+    "description": "A bloody note written by the barkeeper before his death. It says: 'The Bandit King has the Camp Sigil in his chest. Defeat him and take the sigil!'",
+    "glyph": "?",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "note",
+      "quest_item"
+    ]
+  },
+  "scholar_journal": {
+    "id": "scholar_journal",
+    "name": "Scholar's Lost Journal",
+    "unidentifiedName": "Dusty Journal",
+    "description": "The scholar's journal. It contains notes about the Shrine Vault: 'Sacrifice monster remains (bones) at the altar to receive the gods' blessing!'",
+    "glyph": "?",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "journal",
+      "quest_item"
+    ]
+  },
+  "bones": {
+    "id": "bones",
+    "name": "Monster Remains",
+    "unidentifiedName": "Bones",
+    "description": "Remains of a defeated feral monster. Can be placed on the altar.",
+    "glyph": "~",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": [
+      "bones",
+      "quest_item"
+    ]
+  }
+}

@@ -19,6 +19,16 @@
       "startingAreaId": "shroudgarde_courtyard",
       "source": "builtin",
       "author": "Heroic AI Designer"
+    },
+    {
+      "id": "megacampaign",
+      "name": "The Megadungeon",
+      "description": "A massive campaign merging content from NetHack and Incursion.",
+      "version": "0.1.0",
+      "mapSize": "huge",
+      "startingAreaId": "megadungeon_hub",
+      "source": "builtin",
+      "author": "Data Pipeline"
     }
   ]
 }

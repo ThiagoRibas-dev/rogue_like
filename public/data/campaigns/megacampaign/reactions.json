@@ -1,0 +1,295 @@
+[
+  {
+    "id": "use_consumable",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["actor"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "categories": ["consumable"]
+    },
+    "consequences": [
+      {
+        "type": "apply_item_effect"
+      },
+      {
+        "type": "consume_item"
+      }
+    ]
+  },
+  {
+    "id": "use_portal",
+    "verb": "apply",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["actor"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["portal"]
+    },
+    "consequences": [
+      {
+        "type": "change_area"
+      }
+    ]
+  },
+  {
+    "id": "explode_fire_flask_tile",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive", "flask"]
+    },
+    "targetMatcher": {
+      "targetType": "tile"
+    },
+    "consequences": [
+      { "type": "damage_area", "radius": 1, "amount": 10, "tags": ["fire"] }
+    ],
+    "message": "The flask shatters in a burst of flames!"
+  },
+  {
+    "id": "explode_fire_flask_entity",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive", "flask"]
+    },
+    "targetMatcher": {
+      "targetType": "entity"
+    },
+    "consequences": [
+      { "type": "damage_area", "radius": 1, "amount": 10, "tags": ["fire"] }
+    ],
+    "message": "The flask shatters in a burst of flames!"
+  },
+  {
+    "id": "open_door",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door", "solid"] },
+    "consequences": [
+      { "type": "modify_tags", "remove": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "/" },
+      { "type": "change_intents", "intents": ["close"] }
+    ],
+    "message": "The door opens."
+  },
+  {
+    "id": "close_door",
+    "verb": "close",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "modify_tags", "add": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "+" },
+      { "type": "change_intents", "intents": ["open"] }
+    ],
+    "message": "The door closes."
+  },
+  {
+    "id": "unlock_door_bronze",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity", "tags": ["key:bronze"] },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "set_lock_state", "locked": false }
+    ],
+    "message": "You unlock the door."
+  },
+  {
+    "id": "unlock_chest_bronze",
+    "verb": "unlock",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity", "tags": ["key:bronze"] },
+    "targetMatcher": { "targetType": "entity", "tags": ["chest"] },
+    "consequences": [
+      { "type": "set_lock_state", "locked": false }
+    ],
+    "message": "You unlock the chest."
+  },
+  {
+    "id": "open_chest",
+    "verb": "open",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["chest"] },
+    "consequences": [
+      { "type": "spill_inventory" },
+      { "type": "change_glyph", "glyph": "C" },
+      { "type": "change_intents", "intents": [] }
+    ],
+    "message": "You open the chest and its contents spill out."
+  },
+  {
+    "id": "kick_door",
+    "verb": "kick",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door"] },
+    "consequences": [
+      { "type": "modify_tags", "remove": ["solid", "opaque"] },
+      { "type": "change_glyph", "glyph": "_" },
+      { "type": "change_intents", "intents": [] }
+    ],
+    "message": "You kick the door open! It shatters into pieces."
+  },
+  {
+    "id": "extinguish_fire",
+    "verb": "impact",
+    "priority": 100,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["water"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["field:fire"]
+    },
+    "consequences": [
+      { "type": "remove_entity" }
+    ],
+    "message": "The water extinguishes the fire!"
+  },
+  {
+    "id": "dip_weapon_fountain",
+    "verb": "dip",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["fountain"] },
+    "toolMatcher": { "targetType": "entity", "tags": ["weapon"] },
+    "consequences": [
+      { "type": "apply_coating", "statusId": "poison", "charges": 5, "duration": 10 }
+    ],
+    "message": "You dip the weapon into the fountain. It is now coated!"
+  },
+  {
+    "id": "zap_altar",
+    "verb": "zap",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["altar"] },
+    "consequences": [
+      { "type": "spawn_clue", "clueId": "divine_secret" }
+    ],
+    "message": "The altar absorbs the magical energy and glows brightly!"
+  },
+  {
+    "id": "ignite_door",
+    "verb": "ignite",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["door", "solid"] },
+    "consequences": [
+      { "type": "remove_entity", "targetId": "event.entityId" },
+      { "type": "spawn_entity", "entityTemplateId": "fire" }
+    ],
+    "message": "The wooden door goes up in flames and burns to ashes!"
+  },
+  {
+    "id": "drink_fountain",
+    "verb": "drink",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["water_source"] },
+    "consequences": [
+      { "type": "apply_status", "statusId": "regeneration", "duration": 50 }
+    ],
+    "message": "You take a refreshing drink from the water source. You feel revitalized!"
+  },
+  {
+    "id": "ignite_flammable_tile",
+    "verb": "ignite",
+    "priority": 10,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": {
+      "targetType": "tile",
+      "tags": ["flammable"]
+    },
+    "consequences": [
+      {
+        "type": "spawn_entity",
+        "entityTemplateId": "fire"
+      }
+    ],
+    "message": "The terrain catches fire!"
+  },
+  {
+    "id": "gift_merchant",
+    "verb": "gift",
+    "priority": 100,
+    "sourceMatcher": { "targetType": "entity" },
+    "targetMatcher": { "targetType": "entity", "tags": ["town"] },
+    "consequences": [
+      {
+        "type": "modify_relationship_axis",
+        "axis": "loyalty",
+        "amount": 10
+      }
+    ],
+    "message": "You present a gift. They seem more loyal."
+  },
+  {
+    "id": "ignite_web",
+    "verb": "impact",
+    "priority": 110,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["explosive"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["flammable", "terrain"]
+    },
+    "message": "The flask explodes! The web burns away in a flash of heat.",
+    "consequences": [
+      {
+        "type": "remove_entity"
+      },
+      {
+        "type": "damage_area",
+        "radius": 1,
+        "amount": 5,
+        "tags": ["fire"]
+      },
+      {
+        "type": "complete_quest",
+        "questId": "tutorial_throwing"
+      }
+    ]
+  },
+  {
+    "id": "altar_sacrifice",
+    "verb": "apply",
+    "priority": 110,
+    "sourceMatcher": {
+      "targetType": "entity",
+      "tags": ["bones"]
+    },
+    "targetMatcher": {
+      "targetType": "entity",
+      "tags": ["altar"]
+    },
+    "message": "You place the remains on the altar. A divine flash erupts, blessing your weapon and spawning a Wand of Lightning!",
+    "consequences": [
+      {
+        "type": "spawn_entity",
+        "entityTemplateId": "wand_of_lightning"
+      },
+      {
+        "type": "complete_quest",
+        "questId": "tutorial_altar"
+      }
+    ]
+  }
+]

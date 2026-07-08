@@ -1,0 +1,392 @@
+{
+  "explosive": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Highly volatile. Will explode on impact."
+  },
+  "flask": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "A fragile glass container."
+  },
+  "key:bronze": {
+    "category": "item",
+    "color": "#cd7f32",
+    "description": "A simple bronze key."
+  },
+  "tool:lockpick": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Used to bypass mechanical locks."
+  },
+  "actor": {
+    "category": "entity",
+    "color": "#ffffff",
+    "description": "An entity capable of taking actions."
+  },
+  "consumable": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "An item that is destroyed upon use."
+  },
+  "portal": {
+    "category": "terrain",
+    "color": "#9b59b6",
+    "description": "A gateway to another area."
+  },
+  "door": {
+    "category": "terrain",
+    "color": "#d35400",
+    "description": "A door that can be opened or closed."
+  },
+  "solid": {
+    "category": "physical",
+    "color": "#7f8c8d",
+    "description": "A physical object that blocks movement."
+  },
+  "chest": {
+    "category": "terrain",
+    "color": "#f39c12",
+    "description": "A container for holding items."
+  },
+  "water": {
+    "category": "elemental",
+    "color": "#3498db",
+    "description": "Water-based substance or entity."
+  },
+  "field:fire": {
+    "category": "field",
+    "color": "#e67e22",
+    "description": "A burning area of effect."
+  },
+  "fountain": {
+    "category": "terrain",
+    "color": "#00cec9",
+    "description": "A decorative source of liquid."
+  },
+  "altar": {
+    "category": "terrain",
+    "color": "#dfe6e9",
+    "description": "A religious or magical focal point."
+  },
+  "water_source": {
+    "category": "terrain",
+    "color": "#0984e3",
+    "description": "Provides drinkable water."
+  },
+  "spider_nest": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Infested with spiders and webbing."
+  },
+  "flooded": {
+    "category": "biome",
+    "color": "#3498db",
+    "description": "Partially submerged in water."
+  },
+  "bones": {
+    "category": "terrain",
+    "color": "#bdc3c7",
+    "description": "The skeletal remains of a fallen creature."
+  },
+  "remains": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "Leftover remains or debris."
+  },
+  "elite": {
+    "category": "trait",
+    "color": "#f1c40f",
+    "description": "A superior variant with enhanced stats."
+  },
+  "regenerating": {
+    "category": "trait",
+    "color": "#2ecc71",
+    "description": "Slowly recovers health over time."
+  },
+  "hub": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "A safe hub area where the player begins."
+  },
+  "safe": {
+    "category": "area",
+    "color": "#27ae60",
+    "description": "An area with no hostile encounters."
+  },
+  "early_game": {
+    "category": "area",
+    "color": "#3498db",
+    "description": "Early game areas with easier content."
+  },
+  "mid_game": {
+    "category": "area",
+    "color": "#f39c12",
+    "description": "Mid game areas with moderate difficulty."
+  },
+  "dungeon": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "Underground dungeon areas."
+  },
+  "cave": {
+    "category": "area",
+    "color": "#8e44ad",
+    "description": "Natural cave areas."
+  },
+  "camp": {
+    "category": "area",
+    "color": "#d35400",
+    "description": "An outdoor camp or encampment."
+  },
+  "boss": {
+    "category": "area",
+    "color": "#c0392b",
+    "description": "A boss encounter area."
+  },
+  "protein": {
+    "category": "role",
+    "color": "#c0392b",
+    "description": "Primary combat threat."
+  },
+  "dessert": {
+    "category": "role",
+    "color": "#8e44ad",
+    "description": "Chaotic disruptor or wild card."
+  },
+  "side": {
+    "category": "role",
+    "color": "#f39c12",
+    "description": "Hazard, obstacle, or support."
+  },
+  "appetizer": {
+    "category": "role",
+    "color": "#2ecc71",
+    "description": "Loot, advantage, or optimizer."
+  },
+  "opaque": {
+    "category": "physical",
+    "color": "#2c3e50",
+    "description": "Blocks line of sight."
+  },
+  "liquid": {
+    "category": "physical",
+    "color": "#2980b9",
+    "description": "A fluid substance."
+  },
+  "terrain": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "A base environmental feature."
+  },
+  "flammable": {
+    "category": "physical",
+    "color": "#e67e22",
+    "description": "Easily ignitable substance or environment."
+  },
+  "divine": {
+    "category": "magic",
+    "color": "#f1c40f",
+    "description": "Of holy or divine origin."
+  },
+  "orc_camp": {
+    "category": "biome",
+    "color": "#c0392b",
+    "description": "A savage encampment."
+  },
+  "corrupted": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Tainted by dark magic."
+  },
+  "shrine_vault": {
+    "category": "biome",
+    "color": "#f1c40f",
+    "description": "An ancient, protected sanctuary."
+  },
+  "town": {
+    "category": "biome",
+    "color": "#e67e22",
+    "description": "A populated settlement."
+  },
+  "bandit": {
+    "category": "entity",
+    "color": "#e74c3c",
+    "description": "A rogue or outlaw."
+  },
+  "warlord": {
+    "category": "entity",
+    "color": "#c0392b",
+    "description": "A powerful leader of outlaws."
+  },
+  "sigil": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "A symbolic mark or token."
+  },
+  "quest_item": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "An important item for a quest."
+  },
+  "note": {
+    "category": "item",
+    "color": "#ecf0f1",
+    "description": "A written message."
+  },
+  "journal": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "A book of records."
+  },
+  "nethack": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: nethack"
+  },
+  "animal": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: animal"
+  },
+  "carnivore": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: carnivore"
+  },
+  "flyer": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: flyer"
+  },
+  "herbivore": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: herbivore"
+  },
+  "incursion": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: incursion"
+  },
+  "lycanthrope": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: lycanthrope"
+  },
+  "human": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: human"
+  },
+  "evil": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: evil"
+  },
+  "chaotic": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: chaotic"
+  },
+  "lawful": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: lawful"
+  },
+  "good": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: good"
+  },
+  "orc": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: orc"
+  },
+  "amphibious": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: amphibious"
+  },
+  "undead": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: undead"
+  },
+  "gnome": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: gnome"
+  },
+  "dwarf": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: dwarf"
+  },
+  "elf": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: elf"
+  },
+  "demon": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: demon"
+  },
+  "iron": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: iron"
+  },
+  "metal": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: metal"
+  },
+  "wood": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: wood"
+  },
+  "silver": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: silver"
+  },
+  "bone": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: bone"
+  },
+  "plastic": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: plastic"
+  },
+  "leather": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: leather"
+  },
+  "glass": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: glass"
+  },
+  "adamantium": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: adamantium"
+  },
+  "mithril": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: mithril"
+  },
+  "cloth": {
+    "category": "misc",
+    "color": "#ffffff",
+    "description": "Imported tag: cloth"
+  }
+}

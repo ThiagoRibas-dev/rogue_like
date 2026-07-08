@@ -1,0 +1,20 @@
+{
+  "colors": {
+    "background": "#000000",
+    "floorDimFg": "#0b0c0e",
+    "playerFg": "#00ffff",
+    "stairsFg": "#ffffff",
+    "transparent": "transparent",
+    "wallDimFg": "#202225"
+  },
+  "glyphs": {
+    "stairsDown": ">",
+    "stairsUp": "<"
+  },
+  "ui": {
+    "displayWidth": 50,
+    "displayHeight": 25,
+    "fontSize": 18,
+    "fontFamily": "JetBrains Mono, Courier New, monospace"
+  }
+}
