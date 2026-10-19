@@ -9,6 +9,7 @@ export const EntityTemplateSchema = z.object({
   glyph: z.string().length(1),
   fg: z.string(),
   bg: z.string(),
+  spriteId: z.string().optional(),
   isActor: z.boolean(),
   speed: z.number().int().positive().optional(),
   fighter: z

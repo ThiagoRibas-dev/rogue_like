@@ -61,6 +61,7 @@ export interface RenderableComponent {
   readonly glyph: string;
   readonly fg: string;
   readonly bg: string;
+  readonly spriteId?: string;
 }
 
 /**

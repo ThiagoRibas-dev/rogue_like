@@ -258,7 +258,8 @@ function createMockFuzzerState(campaignConfig: Readonly<CampaignData>): GameStat
       type: ComponentType.Renderable,
       glyph: portal.connection.direction === 'up' ? '<' : '>',
       fg: '#fff',
-      bg: 'transparent'
+      bg: 'transparent',
+      spriteId: portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down'
     });
     state = addComponent(state, stairId, {
       type: ComponentType.Portal,

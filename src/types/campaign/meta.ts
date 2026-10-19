@@ -81,6 +81,28 @@ export const RulesConfigSchema = z.object({
 /** Inferred type for rules configuration parameters. */
 export type RulesConfig = z.infer<typeof RulesConfigSchema>;
 
+/** Zod schema for a single spritesheet source definition. */
+export const SpriteSheetSourceSchema = z.object({
+  src: z.string().describe('Relative path to the spritesheet image'),
+  tileWidth: z.number().int().positive().describe('Width of each sprite cell in pixels'),
+  tileHeight: z.number().int().positive().describe('Height of each sprite cell in pixels'),
+  tileMap: z
+    .record(
+      z.string(),
+      z.union([
+        z.tuple([z.number(), z.number()]),
+        z.object({
+          default: z.tuple([z.number(), z.number()]),
+          commonAlts: z.array(z.tuple([z.number(), z.number()])).optional(),
+          rareAlts: z.array(z.tuple([z.number(), z.number()])).optional()
+        })
+      ])
+    )
+    .describe('Maps spriteId strings to pixel offsets or variant objects')
+});
+/** Inferred type for a spritesheet source configuration. */
+export type SpriteSheetSource = z.infer<typeof SpriteSheetSourceSchema>;
+
 /** Zod schema for theme and display graphics configuration. */
 export const ThemeConfigSchema = z.object({
   colors: z.object({
@@ -100,7 +122,8 @@ export const ThemeConfigSchema = z.object({
     displayHeight: z.number().int().positive().describe('Display Height (Tiles)'),
     fontSize: z.number().int().positive().describe('Font Size (px)'),
     fontFamily: z.string().describe('Font Family')
-  })
+  }),
+  spriteSheets: z.record(z.string(), SpriteSheetSourceSchema).optional()
 });
 /** Inferred type for theme configuration properties. */
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;

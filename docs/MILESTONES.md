@@ -419,6 +419,15 @@ Make the expanded interaction vocabulary discoverable instead of requiring playe
 - [x] Create an `InvestigationStalledEvent` that emits when the player hasn't uncovered any scheme clue for `500` turns.
 - [x] Ensure the existing Trigger System can intercept this event and author a fallback consequence (like spawning a frightened witness).
 
+## 🟢 Milestone 35.5: Sprite Rendering Engine (Complete)
+Introduce graphical tile support as a drop-in alternative to the traditional ASCII rendering.
+- [x] **Tile-based Layout Backend**: Refactor the display factory (`src/rendering/display.ts`) to initialize `ROT.Display` with a `layout: 'tile'` backend when a campaign theme includes `spriteSheets`.
+- [x] **Dynamic Atlas Composition**: Build an async sprite loader that combines multiple spritesheets into a single `<canvas>` atlas at runtime, calculating offset coordinates for seamless multi-spritesheet support.
+- [x] **Multi-Tile Stacking**: Implement `drawCell` logic to layer multiple sprites per tile (e.g., drawing a monster over an item over a floor tile) to preserve ECS spatial integrity visually.
+- [x] **Fog-of-War Visuals**: Add a dedicated overlay `<canvas>` for rendering transparent shadows over out-of-sight tiles in sprite mode, ensuring lighting works cleanly on graphical tiles.
+- [x] **Editor Integration**: Update the Campaign Editor's static Map Painter and dynamic Generator Sandbox to seamlessly preview sprite layouts when the campaign is configured for it.
+- [x] **Strict Typings & Fallbacks**: Provide full fallback to ASCII mode if sprites fail to load, and ensure strict `undefined` object/array checking across rendering methods.
+
 ---
 
 # 🚀 Phase 6: Encounter Director & Tactical Procedural Generation

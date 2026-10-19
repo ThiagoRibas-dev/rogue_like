@@ -12,6 +12,7 @@ export const TileDefinitionSchema = z.object({
   glyph: z.string().length(1),
   fg: z.string(),
   bg: z.string(),
+  spriteId: z.string().optional(),
   movementCost: z.number().int().positive().optional(),
   bumpTransition: z.string().optional(),
   interactTransition: z.string().optional(),
@@ -118,6 +119,7 @@ export const FieldDefinitionSchema = z.object({
   glyph: z.string().length(1),
   fg: z.string(),
   bg: z.string(),
+  spriteId: z.string().optional(),
   blocksSight: z.boolean().default(false),
   damagePerTurn: z.number().int().nonnegative().optional(),
   statusEffectId: z.string().optional()

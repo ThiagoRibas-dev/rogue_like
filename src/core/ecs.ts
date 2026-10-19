@@ -189,7 +189,8 @@ export function spawnEntity(
     type: ComponentType.Renderable,
     glyph: template.glyph,
     fg: template.fg,
-    bg: template.bg
+    bg: template.bg,
+    ...(template.spriteId !== undefined ? { spriteId: template.spriteId } : {})
   };
 
   nextState = addComponent(nextState, entityId, pos);
@@ -513,7 +514,8 @@ export function spawnItem(state: GameState, itemId: string, x: number, y: number
     type: ComponentType.Renderable,
     glyph: def.glyph,
     fg: def.fg,
-    bg: def.bg
+    bg: def.bg,
+    ...(def.spriteId !== undefined ? { spriteId: def.spriteId } : {})
   };
   const instanceId = toItemInstanceId(`${itemId}_${nextState.nextItemInstanceId}`);
   const item: ItemComponent = {

@@ -20,6 +20,7 @@ export const ItemDefinitionSchema = z.object({
   glyph: z.string().length(1),
   fg: z.string(),
   bg: z.string(),
+  spriteId: z.string().optional(),
   category: ItemCategoryEnum,
   tags: z.array(z.string()).default([]),
   weight: z.number().int().nonnegative(),

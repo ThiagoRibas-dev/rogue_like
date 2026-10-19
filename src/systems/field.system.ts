@@ -36,7 +36,8 @@ export function spawnField(
     type: ComponentType.Renderable,
     glyph: def.glyph,
     fg: def.fg,
-    bg: def.bg
+    bg: def.bg,
+    ...(def.spriteId !== undefined ? { spriteId: def.spriteId } : {})
   };
   const field: FieldComponent = {
     type: ComponentType.Field,

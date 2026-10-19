@@ -334,7 +334,8 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 
 ## 8. Rendering & UI
 
-- **Renderer**: Translates tiles and entities into characters/colors on `ROT.Display`.
+- **Renderer**: Translates tiles and entities into characters/colors on `ROT.Display`. It natively supports dynamic toggling between pure ASCII and Spritesheet tile rendering, including z-indexed multi-tile stacking (drawing actors over items over floor) in sprite mode.
+- **Fog of War**: Uses a transparent overlay `<canvas>` in sprite mode to dim out-of-sight tiles, while in ASCII mode it falls back to native foreground color dimming.
 - **Camera**: Handles viewport offsets, keeping the player centered on maps larger than the screen.
 - **UI & HUD**: HTML overlays (health, logs, status) in modularized `src/rendering/ui/`, acting as a pure "dump" View layer decoupled from ECS logic.
 - **Styling**: CSS modularized by domain in `src/styles/`, aggregated via `@import` in `index.css`.

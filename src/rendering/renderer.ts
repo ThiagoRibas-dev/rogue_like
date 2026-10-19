@@ -1,5 +1,6 @@
 import type { Display } from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
+import { drawCell } from './display.ts';
 import {
   ComponentType,
   type IdentityComponent,
@@ -51,6 +52,10 @@ export function render(display: Display, state: GameState): void {
       const isTileExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
       const isVisible = state.map.isFullyExplored || visibleIndices.has(tileIndex);
 
+      const isSpriteMode = state.campaign.theme.spriteSheets !== undefined;
+      let baseTileDef: { glyph: string; fg: string; bg: string; spriteId?: string } | undefined;
+      const entitiesAtTile: Array<{ glyph: string; fg: string; bg: string; spriteId?: string }> = [];
+
       if (isTileExplored) {
         const tileDef = state.campaign.tiles[tile.tileId];
         if (tileDef !== undefined) {
@@ -63,17 +68,21 @@ export function render(display: Display, state: GameState): void {
               fgColor = state.campaign.theme.colors.floorDimFg ?? fgColor;
             }
           }
-
-          display.draw(vx, vy, tileDef.glyph, fgColor, tileDef.bg);
+          baseTileDef = {
+            glyph: tileDef.glyph,
+            fg: fgColor,
+            bg: tileDef.bg,
+            ...(tileDef.spriteId !== undefined ? { spriteId: tileDef.spriteId } : {})
+          };
         }
       }
 
-      // 5. Draw entities at this exact tile if it is currently visible
+      // Draw entities at this exact tile if it is currently visible
       if (isVisible) {
-        const entitiesAtTile = state.spatialIndex.get(`${mapX},${mapY}`);
-        if (entitiesAtTile && entitiesAtTile.length > 0) {
+        const entitiesAtTileIds = state.spatialIndex.get(`${mapX},${mapY}`);
+        if (entitiesAtTileIds && entitiesAtTileIds.length > 0) {
           // Sort entities so actors draw over items, and fields draw below everything
-          const sortedEntitiesAtTile = [...entitiesAtTile].sort((a, b) => {
+          const sortedEntitiesAtTile = [...entitiesAtTileIds].sort((a, b) => {
             const aPlayer = getComponent(state, a, ComponentType.Player) ? 1 : 0;
             const bPlayer = getComponent(state, b, ComponentType.Player) ? 1 : 0;
             if (aPlayer !== bPlayer) return aPlayer - bPlayer; // Player draws last
@@ -92,10 +101,20 @@ export function render(display: Display, state: GameState): void {
             if (renderable) {
               const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
               const fg = identity?.colorOverride ?? renderable.fg;
-              display.draw(vx, vy, renderable.glyph, fg, renderable.bg);
+              entitiesAtTile.push({
+                glyph: renderable.glyph,
+                fg,
+                bg: renderable.bg,
+                ...(renderable.spriteId !== undefined ? { spriteId: renderable.spriteId } : {})
+              });
             }
           }
         }
+      }
+
+      if (baseTileDef || entitiesAtTile.length > 0) {
+        const defaultBase = { glyph: ' ', fg: '#000', bg: '#000' };
+        drawCell(display, vx, vy, isSpriteMode, baseTileDef ?? defaultBase, entitiesAtTile);
       }
     }
   }
@@ -122,6 +141,39 @@ export function render(display: Display, state: GameState): void {
 
   // 8. Sync Inspect Tooltip
   renderInspectTooltip(state, display, cameraX, cameraY, viewportW, viewportH);
+
+  // 9. Sync Fog of War Canvas Overlay (Sprite Mode only)
+  const isSpriteMode = state.campaign.theme.spriteSheets !== undefined;
+  const overlayCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
+  if (overlayCanvas && isSpriteMode) {
+    const canvas = display.getContainer() as HTMLCanvasElement | null;
+    if (canvas) {
+      if (overlayCanvas.width !== canvas.clientWidth || overlayCanvas.height !== canvas.clientHeight) {
+        overlayCanvas.width = canvas.clientWidth;
+        overlayCanvas.height = canvas.clientHeight;
+      }
+      const ctx = overlayCanvas.getContext('2d');
+      if (ctx) {
+        const { tileWidthPx, tileHeightPx, offsetX, offsetY } = getTilePixelMetrics(canvas, viewportW, viewportH);
+        renderFogOverlay(
+          ctx,
+          state,
+          cameraX,
+          cameraY,
+          viewportW,
+          viewportH,
+          tileWidthPx,
+          tileHeightPx,
+          offsetX,
+          offsetY
+        );
+      }
+    }
+  } else if (overlayCanvas) {
+    // Clear overlay if ASCII mode
+    const ctx = overlayCanvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+  }
 }
 
 /**
@@ -476,4 +528,46 @@ function getTilePixelMetrics(canvas: HTMLCanvasElement, viewportW: number, viewp
     offsetX: canvas.offsetLeft,
     offsetY: canvas.offsetTop
   };
+}
+
+function renderFogOverlay(
+  ctx: CanvasRenderingContext2D,
+  state: GameState,
+  cameraX: number,
+  cameraY: number,
+  viewportW: number,
+  viewportH: number,
+  tileW: number,
+  tileH: number,
+  offsetX: number,
+  offsetY: number
+): void {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  for (let vy = 0; vy < viewportH; vy++) {
+    for (let vx = 0; vx < viewportW; vx++) {
+      const mapX = vx + cameraX;
+      const mapY = vy + cameraY;
+
+      if (mapX < 0 || mapX >= state.map.width || mapY < 0 || mapY >= state.map.height) {
+        continue;
+      }
+
+      const tileIndex = coordToIndex(mapX, mapY, state.map.width);
+      const tile = state.map.tiles[tileIndex];
+      const isTileExplored = tile !== undefined && (state.map.isFullyExplored || tile.explored);
+      const isVisible = state.map.isFullyExplored || state.cachedFov.has(tileIndex);
+
+      const pxX = offsetX + vx * tileW;
+      const pxY = offsetY + vy * tileH;
+
+      if (!isTileExplored) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
+        ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileW), Math.ceil(tileH));
+      } else if (!isVisible) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileW), Math.ceil(tileH));
+      }
+    }
+  }
 }

@@ -70,7 +70,7 @@ A modern, highly-extensible, browser-based traditional roguelike engine featurin
 ### 📦 Campaign System
 - **Campaign Selection** — Choose from multiple campaigns on New Game
 - **Mod Loading** — Install `.zip` campaigns from the Main Menu; validated against Zod schemas
-- **Themes & Tilesets** — Per-campaign ASCII glyphs, color palettes, and message log templates
+- **Themes & Spritesheets** — Per-campaign ASCII glyphs, multi-layered tiled sprite rendering support, color palettes, and message log templates
 - **Hybrid Loader** — Merges built-in (`public/`) and installed (IndexedDB) campaigns into a single list
 
 ### 🛠️ Built-in Campaign Editor

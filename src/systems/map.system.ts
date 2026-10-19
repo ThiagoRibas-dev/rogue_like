@@ -179,11 +179,7 @@ export function processChangeAreaIntent(
           const ry = Math.floor(ROT.RNG.getUniform() * targetMap.height);
           const idx = coordToIndex(rx, ry, targetMap.width);
           const tile = targetMap.tiles[idx];
-          if (
-            tile &&
-            state.campaign.tiles[tile.tileId]?.walkable &&
-            !occupiedCoords.has(`${rx},${ry}`)
-          ) {
+          if (tile && state.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
             const minionComps =
               state.components.get(token.minionId) || state.persistentEntities.get(token.minionId)?.components;
             if (minionComps) {
@@ -442,7 +438,8 @@ export function processChangeAreaIntent(
                 ? (state.campaign.theme.glyphs.stairsUp ?? '<')
                 : (state.campaign.theme.glyphs.stairsDown ?? '>'),
           fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
-          bg: state.campaign.theme.colors.transparent ?? 'transparent'
+          bg: state.campaign.theme.colors.transparent ?? 'transparent',
+          spriteId: portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down'
         };
 
         const tags: TagsComponent = {

@@ -83,5 +83,20 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
       label: `Rumor: ${r.id} [BP]`
     }));
   }
+  if (key === 'spriteId') {
+    if (doc.theme && (doc.theme as any).spriteSheets) {
+      const sheets = (doc.theme as any).spriteSheets as Record<string, any>;
+      const options = [{ value: '', label: 'None [ASCII]' }];
+      for (const sheet of Object.values(sheets)) {
+        if (sheet.tileMap) {
+          for (const spriteKey of Object.keys(sheet.tileMap)) {
+            options.push({ value: spriteKey, label: `${spriteKey} [SPRITE]` });
+          }
+        }
+      }
+      return options;
+    }
+    return [{ value: '', label: 'None [ASCII]' }];
+  }
   return null;
 }

@@ -85,7 +85,8 @@ export const questConsequences = {
       type: ComponentType.Renderable,
       glyph: '?',
       fg: '#ffff00',
-      bg: 'transparent'
+      bg: 'transparent',
+      spriteId: 'scroll'
     });
 
     const instanceId = toItemInstanceId(`clue_item_${nextState.nextItemInstanceId}`);

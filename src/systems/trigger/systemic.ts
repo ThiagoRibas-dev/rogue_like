@@ -59,7 +59,8 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
           type: ComponentType.Renderable,
           glyph: '^',
           fg: '#e74c3c',
-          bg: 'transparent'
+          bg: 'transparent',
+          spriteId: 'trap'
         });
       }
 

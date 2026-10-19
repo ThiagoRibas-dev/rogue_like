@@ -1,6 +1,6 @@
 import * as ROT from 'rot-js';
 import { generateArea } from '../map/generator.ts';
-import { syncDisplayLayout } from '../rendering/display.ts';
+import { syncDisplayLayout, configureDisplayForCampaign } from '../rendering/display.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import type { ActorComponent, SchemeComponent } from '../types/components.types.ts';
@@ -75,6 +75,9 @@ export async function startNewGame(
     campaignId,
     campaign: newCampaign
   };
+
+  const basePath = `${import.meta.env.BASE_URL}data/campaigns/${campaignId}`;
+  await configureDisplayForCampaign(display, newCampaign, basePath);
 
   display.setOptions({
     bg: newCampaign.theme.colors.background ?? '#000000',
@@ -315,7 +318,8 @@ export async function startNewGame(
           ? (state.campaign.theme.glyphs.stairsUp ?? '<')
           : (state.campaign.theme.glyphs.stairsDown ?? '>'),
       fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
-      bg: state.campaign.theme.colors.transparent ?? 'transparent'
+      bg: state.campaign.theme.colors.transparent ?? 'transparent',
+      spriteId: portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down'
     };
     const portalComp: PortalComponent = {
       type: ComponentType.Portal,
@@ -408,6 +412,9 @@ export async function startSandboxEncounter(
     campaign: newCampaign,
     isSandbox: true
   };
+
+  const basePath = `${import.meta.env.BASE_URL}data/campaigns/${campaignId}`;
+  await configureDisplayForCampaign(display, newCampaign, basePath);
 
   display.setOptions({
     bg: newCampaign.theme.colors.background ?? '#000000',

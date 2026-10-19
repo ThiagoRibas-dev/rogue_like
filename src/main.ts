@@ -112,7 +112,7 @@ import { installCampaign, getInstalledCampaign, uninstallCampaign } from './core
 import { readCampaignFromZip } from './editor/workspace_file_service.ts';
 import { GAME_ASPECT_RATIO_STRING, DEFAULT_ZOOM_LEVEL } from './constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from './constants/pacing.constants.ts';
-import { syncDisplayLayout } from './rendering/display.ts';
+import { syncDisplayLayout, createDisplay, configureDisplayForCampaign } from './rendering/display.ts';
 
 // 0. Initialize RNG
 initRNG();
@@ -128,25 +128,39 @@ applySettingsToDOM();
 // Initialize the global Editor Controller
 const globalCampaignEditor = new CampaignEditor(defaultCampaign);
 
-// 1. Initialize Display Options
-const displayOptions = {
+// 1. Create the Display dynamically (async to support spritesheets)
+const defaultCampaignBasePath = `${import.meta.env.BASE_URL}data/campaigns/default`;
+const display: ROT.Display = await createDisplay(defaultCampaign, defaultCampaignBasePath, {
   width: defaultCampaign.theme.ui.displayWidth,
   height: defaultCampaign.theme.ui.displayHeight,
-  fontSize: defaultCampaign.theme.ui.fontSize,
-  fontFamily: defaultCampaign.theme.ui.fontFamily,
   bg: defaultCampaign.theme.colors.background ?? '#000000',
   fg: defaultCampaign.theme.colors.playerFg ?? '#ffffff'
-};
+});
 
-// 2. Create the Display
-const display: ROT.Display = new ROT.Display(displayOptions);
-
-// 3. Mount the Display to the DOM wrapper
+// 2. Mount the Display and potentially the fog overlay to the DOM wrapper
 const container: HTMLElement | null = document.getElementById('game-canvas-wrapper');
 if (container) {
   const canvasElement: HTMLCanvasElement | null = display.getContainer() as HTMLCanvasElement | null;
   if (canvasElement) {
     container.appendChild(canvasElement);
+
+    const hasSpriteSheets =
+      defaultCampaign.theme.spriteSheets && Object.keys(defaultCampaign.theme.spriteSheets).length > 0;
+    if (hasSpriteSheets) {
+      let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
+      if (!fogCanvas) {
+        fogCanvas = document.createElement('canvas');
+        fogCanvas.id = 'fog-overlay';
+        fogCanvas.style.position = 'absolute';
+        fogCanvas.style.top = '0';
+        fogCanvas.style.left = '0';
+        fogCanvas.style.width = '100%';
+        fogCanvas.style.height = '100%';
+        fogCanvas.style.pointerEvents = 'none';
+        container.style.position = 'relative';
+        container.appendChild(fogCanvas);
+      }
+    }
   }
 } else {
   console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
@@ -605,6 +619,40 @@ onStateChange((newState: GameState) => {
   const renderTime0 = performance.now();
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
+
+  if (newState.campaignId !== state.campaignId) {
+    const basePath = `${import.meta.env.BASE_URL}data/campaigns/${newState.campaignId}`;
+    configureDisplayForCampaign(display, newState.campaign, basePath)
+      .then(() => {
+        const container = document.getElementById('game-canvas-wrapper');
+        if (container) {
+          let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
+          const hasSpriteSheets =
+            newState.campaign.theme.spriteSheets && Object.keys(newState.campaign.theme.spriteSheets).length > 0;
+          if (hasSpriteSheets) {
+            if (!fogCanvas) {
+              fogCanvas = document.createElement('canvas');
+              fogCanvas.id = 'fog-overlay';
+              fogCanvas.style.position = 'absolute';
+              fogCanvas.style.top = '0';
+              fogCanvas.style.left = '0';
+              fogCanvas.style.width = '100%';
+              fogCanvas.style.height = '100%';
+              fogCanvas.style.pointerEvents = 'none';
+              container.style.position = 'relative';
+              container.appendChild(fogCanvas);
+            }
+          } else {
+            if (fogCanvas) {
+              fogCanvas.remove();
+            }
+          }
+        }
+        syncDisplayLayout(display, newState);
+        render(display, newState);
+      })
+      .catch(console.error);
+  }
 
   if (newState.zoomLevel !== state.zoomLevel) {
     syncDisplayLayout(display, newState);

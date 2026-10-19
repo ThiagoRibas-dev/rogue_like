@@ -84,7 +84,8 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
                 type: ComponentType.Renderable,
                 glyph: '?',
                 fg: '#ffff00',
-                bg: 'transparent'
+                bg: 'transparent',
+                spriteId: 'scroll'
               });
 
               const instanceId = toItemInstanceId(`clue_item_${nextState.nextItemInstanceId}`);

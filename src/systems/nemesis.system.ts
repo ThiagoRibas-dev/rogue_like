@@ -187,11 +187,7 @@ export function processNemesisSystem(state: GameState): GameState {
             const ry = Math.floor(rng.getUniform() * nextState.map.height);
             const idx = coordToIndex(rx, ry, nextState.map.width);
             const tile = nextState.map.tiles[idx];
-            if (
-              tile &&
-              nextState.campaign.tiles[tile.tileId]?.walkable &&
-              !occupiedCoords.has(`${rx},${ry}`)
-            ) {
+            if (tile && nextState.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
               const positionCmp: PositionComponent = {
                 type: ComponentType.Position,
                 x: rx,
@@ -736,11 +732,7 @@ export function fillVacancy(state: GameState, hierarchyId: string, rankId: strin
         const ry = Math.floor(rng.getUniform() * state.map.height);
         const idx = coordToIndex(rx, ry, state.map.width);
         const tile = state.map.tiles[idx];
-        if (
-          tile &&
-          state.campaign.tiles[tile.tileId]?.walkable &&
-          !occupiedCoords.has(`${rx},${ry}`)
-        ) {
+        if (tile && state.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
           spawnX = rx;
           spawnY = ry;
           spawned = true;

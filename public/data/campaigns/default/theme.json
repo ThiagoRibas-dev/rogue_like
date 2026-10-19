@@ -16,5 +16,1575 @@
     "displayHeight": 25,
     "fontSize": 18,
     "fontFamily": "JetBrains Mono, Courier New, monospace"
+  },
+  "spriteSheets": {
+    "tiles": {
+      "src": "tiles.png",
+      "tileWidth": 32,
+      "tileHeight": 32,
+      "tileMap": {
+        "tile_dirt_wall_top": [
+          0,
+          0
+        ],
+        "tile_dirt_wall_side": [
+          32,
+          0
+        ],
+        "tile_inner_wall": [
+          64,
+          0
+        ],
+        "tile_rough_stone_wall_top": [
+          0,
+          32
+        ],
+        "tile_rough_stone_wall_side": [
+          32,
+          32
+        ],
+        "tile_stone_brick_wall_top": [
+          0,
+          64
+        ],
+        "tile_stone_brick_wall_side_1": [
+          32,
+          64
+        ],
+        "tile_stone_brick_wall_side_2": [
+          64,
+          64
+        ],
+        "tile_igneous_wall_top": [
+          0,
+          96
+        ],
+        "tile_igneous_wall_side": [
+          32,
+          96
+        ],
+        "tile_large_stone_wall_top": [
+          0,
+          128
+        ],
+        "tile_large_stone_wall_side": [
+          32,
+          128
+        ],
+        "tile_catacombs_skull_wall_top": [
+          0,
+          160
+        ],
+        "tile_catacombs_skull_walls_side": [
+          32,
+          160
+        ],
+        "tile_blank_floor_dark_grey": [
+          0,
+          192
+        ],
+        "tile_floor_stone_1": [
+          32,
+          192
+        ],
+        "tile_floor_stone_2": [
+          64,
+          192
+        ],
+        "tile_floor_stone_3": [
+          96,
+          192
+        ],
+        "tile_floor_stone_1_no_bg": [
+          128,
+          192
+        ],
+        "tile_floor_stone_2_no_bg": [
+          160,
+          192
+        ],
+        "tile_floor_stone_3_no_bg": [
+          192,
+          192
+        ],
+        "tile_blank_floor_dark_purple": [
+          0,
+          224
+        ],
+        "tile_grass_1": [
+          32,
+          224
+        ],
+        "tile_grass_2": [
+          64,
+          224
+        ],
+        "tile_grass_3": [
+          96,
+          224
+        ],
+        "tile_grass_1_no_bg": [
+          128,
+          224
+        ],
+        "tile_grass_2_no_bg": [
+          160,
+          224
+        ],
+        "tile_grass_3_no_bg": [
+          192,
+          224
+        ],
+        "tile_empty": [
+          0,
+          256
+        ],
+        "tile_dirt_1": [
+          32,
+          256
+        ],
+        "tile_dirt_2": [
+          64,
+          256
+        ],
+        "tile_dirt_3": [
+          96,
+          256
+        ],
+        "tile_dirt_1_no_bg": [
+          128,
+          256
+        ],
+        "tile_dirt_2_no_bg": [
+          160,
+          256
+        ],
+        "tile_dirt_3_no_bg": [
+          192,
+          256
+        ],
+        "tile_empty_1": [
+          0,
+          288
+        ],
+        "tile_stone_floor_1": [
+          32,
+          288
+        ],
+        "tile_stone_floor_2": [
+          64,
+          288
+        ],
+        "tile_stone_floor_3": [
+          96,
+          288
+        ],
+        "tile_stone_floor_1_no_bg": [
+          128,
+          288
+        ],
+        "tile_stone_floor_2_no_bg": [
+          160,
+          288
+        ],
+        "tile_stone_floor_3_no_bg": [
+          192,
+          288
+        ],
+        "tile_empty_2": [
+          0,
+          320
+        ],
+        "tile_bone_1": [
+          32,
+          320
+        ],
+        "tile_bone_2": [
+          64,
+          320
+        ],
+        "tile_bone_3": [
+          96,
+          320
+        ],
+        "tile_bone_1_no_bg": [
+          128,
+          320
+        ],
+        "tile_bone_2_no_bg": [
+          160,
+          320
+        ],
+        "tile_bone_3_no_bg": [
+          192,
+          320
+        ],
+        "tile_blank_red_floor": [
+          0,
+          352
+        ],
+        "tile_red_stone_floor_1_red_bg": [
+          32,
+          352
+        ],
+        "tile_red_stone_floor_2_red_bg": [
+          64,
+          352
+        ],
+        "tile_red_stone_floor_3_red_bg": [
+          96,
+          352
+        ],
+        "tile_red_stone_floor_1_no_bg": [
+          128,
+          352
+        ],
+        "tile_red_stone_floor_2_no_bg": [
+          160,
+          352
+        ],
+        "tile_red_stone_floor_3_no_bg": [
+          192,
+          352
+        ],
+        "tile_blank_blue_floor": [
+          0,
+          384
+        ],
+        "tile_blue_stone_floor_1_blue_bg": [
+          32,
+          384
+        ],
+        "tile_blue_stone_floor_2_blue_bg": [
+          64,
+          384
+        ],
+        "tile_blue_stone_floor_3_blue_bg": [
+          96,
+          384
+        ],
+        "tile_blank_green_floor": [
+          0,
+          416
+        ],
+        "tile_dirt_1_green_bg": [
+          32,
+          416
+        ],
+        "tile_dirt_2_green_bg": [
+          64,
+          416
+        ],
+        "tile_dirt_3_green_bg": [
+          96,
+          416
+        ],
+        "tile_empty_3": [
+          0,
+          448
+        ],
+        "tile_grass_1_green_bg": [
+          32,
+          448
+        ],
+        "tile_grass_2_green_bg": [
+          64,
+          448
+        ],
+        "tile_grass_3_green_bg": [
+          96,
+          448
+        ],
+        "tile_dark_brown_bg": [
+          0,
+          480
+        ],
+        "tile_bones_1_dark_brown_bg": [
+          32,
+          480
+        ],
+        "tile_bones_2_dark_brown_bg": [
+          64,
+          480
+        ],
+        "tile_bones_3_dark_brown_bg": [
+          96,
+          480
+        ],
+        "tile_door_1": [
+          0,
+          512
+        ],
+        "tile_door_2": [
+          32,
+          512
+        ],
+        "tile_framed_door_1_shut": [
+          64,
+          512
+        ],
+        "tile_framed_door_1_open": [
+          96,
+          512
+        ],
+        "tile_framed_door_2_shut": [
+          128,
+          512
+        ],
+        "tile_framed_door_2_open": [
+          160,
+          512
+        ],
+        "tile_grated_door": [
+          192,
+          512
+        ],
+        "tile_staircase_down": [
+          224,
+          512
+        ],
+        "tile_staircase_up": [
+          256,
+          512
+        ],
+        "tile_pressure_plate_up": [
+          288,
+          512
+        ],
+        "tile_pressure_plate_down": [
+          320,
+          512
+        ],
+        "tile_chute": [
+          352,
+          512
+        ],
+        "tile_pit": [
+          384,
+          512
+        ],
+        "tile_trap_door": [
+          416,
+          512
+        ],
+        "tile_pentagram": [
+          448,
+          512
+        ],
+        "tile_spikes_down": [
+          480,
+          512
+        ],
+        "tile_spites_up": [
+          512,
+          512
+        ],
+        "tile_chest_closed": [
+          0,
+          544
+        ],
+        "tile_chest_open": [
+          32,
+          544
+        ],
+        "tile_jar_closed": [
+          64,
+          544
+        ],
+        "tile_jar_open": [
+          96,
+          544
+        ],
+        "tile_barrel": [
+          128,
+          544
+        ],
+        "tile_ore_sack": [
+          160,
+          544
+        ],
+        "tile_log_pile": [
+          192,
+          544
+        ],
+        "tile_large_rock_1": [
+          0,
+          576
+        ],
+        "tile_large_rock_2": [
+          32,
+          576
+        ],
+        "tile_buckwheet": [
+          0,
+          608
+        ],
+        "tile_flax": [
+          32,
+          608
+        ],
+        "tile_papyrus_sedge": [
+          64,
+          608
+        ],
+        "tile_kenaf": [
+          96,
+          608
+        ],
+        "tile_ramie": [
+          128,
+          608
+        ],
+        "tile_jute": [
+          160,
+          608
+        ],
+        "tile_rice": [
+          192,
+          608
+        ],
+        "tile_wheat": [
+          224,
+          608
+        ],
+        "tile_maize_corn": [
+          256,
+          608
+        ],
+        "tile_amaranth": [
+          288,
+          608
+        ],
+        "tile_quinoa": [
+          320,
+          608
+        ],
+        "tile_bitter_vetch": [
+          352,
+          608
+        ],
+        "tile_sorghum": [
+          384,
+          608
+        ],
+        "tile_red_spinach": [
+          416,
+          608
+        ],
+        "tile_cotton": [
+          448,
+          608
+        ],
+        "tile_alfalfa": [
+          480,
+          608
+        ],
+        "tile_small_mushrooms": [
+          0,
+          640
+        ],
+        "tile_large_mushroom": [
+          32,
+          640
+        ],
+        "tile_corpse_bones_1": [
+          0,
+          672
+        ],
+        "tile_corpse_bones_2": [
+          32,
+          672
+        ],
+        "tile_blood_spatter_1": [
+          0,
+          704
+        ],
+        "tile_blood_spatter_2": [
+          32,
+          704
+        ],
+        "tile_slime_small": [
+          64,
+          704
+        ],
+        "tile_slime_large": [
+          96,
+          704
+        ],
+        "tile_coffin_closed": [
+          0,
+          736
+        ],
+        "tile_coffin_ajar": [
+          32,
+          736
+        ],
+        "tile_coffin_open": [
+          64,
+          736
+        ],
+        "tile_sarcophagus_closed": [
+          96,
+          736
+        ],
+        "tile_sarcophagus_ajar": [
+          128,
+          736
+        ],
+        "tile_sarcophagus_open": [
+          160,
+          736
+        ],
+        "tile_sapling": [
+          0,
+          800
+        ],
+        "tile_small_tree": [
+          32,
+          800
+        ],
+        "tile_tree": [
+          64,
+          800
+        ],
+        "tile_two_tile_tree": [
+          96,
+          800
+        ]
+      }
+    },
+    "rogues": {
+      "src": "rogues.png",
+      "tileWidth": 32,
+      "tileHeight": 32,
+      "tileMap": {
+        "actor_dwarf": [
+          0,
+          0
+        ],
+        "actor_elf": [
+          32,
+          0
+        ],
+        "actor_ranger": [
+          64,
+          0
+        ],
+        "actor_rogue": [
+          96,
+          0
+        ],
+        "actor_bandit": [
+          128,
+          0
+        ],
+        "actor_knight": [
+          0,
+          32
+        ],
+        "actor_male_fighter": [
+          32,
+          32
+        ],
+        "actor_female_knight": [
+          64,
+          32
+        ],
+        "actor_female_knight_helmetless": [
+          96,
+          32
+        ],
+        "actor_shield_knight": [
+          128,
+          32
+        ],
+        "actor_monk": [
+          0,
+          64
+        ],
+        "actor_priest": [
+          32,
+          64
+        ],
+        "actor_female_war_cleric": [
+          64,
+          64
+        ],
+        "actor_male_war_cleric": [
+          96,
+          64
+        ],
+        "actor_templar": [
+          128,
+          64
+        ],
+        "actor_schema_monk": [
+          160,
+          64
+        ],
+        "actor_elder_schema_monk": [
+          192,
+          64
+        ],
+        "actor_male_barbarian": [
+          0,
+          96
+        ],
+        "actor_male_winter_barbarian": [
+          32,
+          96
+        ],
+        "actor_female_winter_barbarian": [
+          64,
+          96
+        ],
+        "actor_swordsman": [
+          96,
+          96
+        ],
+        "actor_fencer": [
+          128,
+          96
+        ],
+        "actor_female_barbarian": [
+          160,
+          96
+        ],
+        "actor_female_wizard": [
+          0,
+          128
+        ],
+        "actor_male_wizard": [
+          32,
+          128
+        ],
+        "actor_druid": [
+          64,
+          128
+        ],
+        "actor_desert_sage": [
+          96,
+          128
+        ],
+        "actor_dwarf_mage": [
+          128,
+          128
+        ],
+        "actor_warlock": [
+          160,
+          160
+        ],
+        "actor_farmer_wheat_thresher": [
+          0,
+          192
+        ],
+        "actor_farmer_scythe": [
+          32,
+          192
+        ],
+        "actor_farmer_pitchfork": [
+          64,
+          192
+        ],
+        "actor_baker": [
+          96,
+          192
+        ],
+        "actor_blacksmith": [
+          128,
+          192
+        ],
+        "actor_scholar": [
+          160,
+          192
+        ],
+        "actor_peasant_coalburner": [
+          0,
+          224
+        ],
+        "actor_peasant": [
+          32,
+          224
+        ],
+        "actor_shopkeep": [
+          64,
+          224
+        ],
+        "actor_elderly_woman": [
+          96,
+          224
+        ],
+        "actor_elderly_man": [
+          128,
+          224
+        ]
+      }
+    },
+    "monsters": {
+      "src": "monsters.png",
+      "tileWidth": 32,
+      "tileHeight": 32,
+      "tileMap": {
+        "monster_orc": [
+          0,
+          0
+        ],
+        "monster_orc_wizard": [
+          32,
+          0
+        ],
+        "monster_goblin": [
+          64,
+          0
+        ],
+        "monster_orc_blademaster": [
+          96,
+          0
+        ],
+        "monster_orc_warchief": [
+          128,
+          0
+        ],
+        "monster_goblin_archer": [
+          160,
+          0
+        ],
+        "monster_goblin_mage": [
+          192,
+          0
+        ],
+        "monster_goblin_brute": [
+          224,
+          0
+        ],
+        "monster_ettin": [
+          0,
+          32
+        ],
+        "monster_two_headed_ettin": [
+          32,
+          32
+        ],
+        "monster_troll": [
+          64,
+          32
+        ],
+        "monster_small_slime": [
+          0,
+          64
+        ],
+        "monster_big_slime": [
+          32,
+          64
+        ],
+        "monster_slimebody": [
+          64,
+          64
+        ],
+        "monster_merged_slimebodies": [
+          96,
+          64
+        ],
+        "monster_faceless_monk": [
+          0,
+          96
+        ],
+        "monster_unholy_cardinal": [
+          32,
+          96
+        ],
+        "monster_skeleton": [
+          0,
+          128
+        ],
+        "monster_skeleton_archer": [
+          32,
+          128
+        ],
+        "monster_lich": [
+          64,
+          128
+        ],
+        "monster_death_knight": [
+          96,
+          128
+        ],
+        "monster_zombie": [
+          128,
+          128
+        ],
+        "monster_ghoul": [
+          160,
+          128
+        ],
+        "monster_banshee": [
+          0,
+          160
+        ],
+        "monster_reaper": [
+          32,
+          160
+        ],
+        "monster_wraith": [
+          64,
+          160
+        ],
+        "monster_cultist": [
+          96,
+          160
+        ],
+        "monster_hag_witch": [
+          128,
+          160
+        ],
+        "monster_giant_centipede": [
+          0,
+          192
+        ],
+        "monster_lampreymander": [
+          32,
+          192
+        ],
+        "monster_giant_earthworm": [
+          64,
+          192
+        ],
+        "monster_manticore": [
+          96,
+          192
+        ],
+        "monster_giant_ant": [
+          128,
+          192
+        ],
+        "monster_lycanthrope": [
+          160,
+          192
+        ],
+        "monster_giant_bata": [
+          192,
+          192
+        ],
+        "monster_lesser_giant_ant": [
+          224,
+          192
+        ],
+        "monster_giant_spider": [
+          256,
+          192
+        ],
+        "monster_lesser_giant_spider": [
+          288,
+          192
+        ],
+        "monster_warg_dire_wolf": [
+          320,
+          192
+        ],
+        "monster_giant_rat": [
+          352,
+          192
+        ],
+        "monster_dryad": [
+          0,
+          224
+        ],
+        "monster_wendigo": [
+          32,
+          224
+        ],
+        "monster_rock_golem": [
+          64,
+          224
+        ],
+        "monster_centaur": [
+          96,
+          224
+        ],
+        "monster_naga": [
+          128,
+          224
+        ],
+        "monster_forest_spirit": [
+          160,
+          224
+        ],
+        "monster_satyr": [
+          192,
+          224
+        ],
+        "monster_minotaur": [
+          224,
+          224
+        ],
+        "monster_harpy": [
+          256,
+          224
+        ],
+        "monster_gorgon_medusa": [
+          288,
+          224
+        ],
+        "monster_lizardfolk_kobold_reptile": [
+          0,
+          256
+        ],
+        "monster_drake_lesser_dragon": [
+          32,
+          256
+        ],
+        "monster_dragon": [
+          64,
+          256
+        ],
+        "monster_cockatrice": [
+          96,
+          256
+        ],
+        "monster_basilisk": [
+          128,
+          256
+        ],
+        "monster_small_kobold_canine": [
+          0,
+          288
+        ],
+        "monster_kobold_canine": [
+          32,
+          288
+        ],
+        "monster_small_myconid": [
+          0,
+          320
+        ],
+        "monster_large_myconid": [
+          32,
+          320
+        ],
+        "monster_angel_archangel": [
+          0,
+          352
+        ],
+        "monster_imp_devil": [
+          32,
+          352
+        ],
+        "monster_small_writhing_mass": [
+          0,
+          384
+        ],
+        "monster_large_writhing_mass": [
+          32,
+          384
+        ],
+        "monster_writhing_humanoid": [
+          64,
+          384
+        ]
+      }
+    },
+    "items": {
+      "src": "items.png",
+      "tileWidth": 32,
+      "tileHeight": 32,
+      "tileMap": {
+        "item_dagger": [
+          0,
+          0
+        ],
+        "item_short_sword": [
+          32,
+          0
+        ],
+        "item_short_sword_2": [
+          64,
+          0
+        ],
+        "item_long_sword": [
+          96,
+          0
+        ],
+        "item_bastard_sword": [
+          128,
+          0
+        ],
+        "item_zweihander": [
+          160,
+          0
+        ],
+        "item_sanguine_dagger": [
+          192,
+          0
+        ],
+        "item_magic_dagger": [
+          224,
+          0
+        ],
+        "item_crystal_sword": [
+          256,
+          0
+        ],
+        "item_evil_sword": [
+          288,
+          0
+        ],
+        "item_flame_sword": [
+          320,
+          0
+        ],
+        "item_wide_short_sword": [
+          0,
+          32
+        ],
+        "item_wide_long_sword": [
+          32,
+          32
+        ],
+        "item_rapier": [
+          64,
+          32
+        ],
+        "item_long_rapier": [
+          96,
+          32
+        ],
+        "item_flamberge": [
+          128,
+          32
+        ],
+        "item_large_flamberge": [
+          160,
+          32
+        ],
+        "item_great_sword": [
+          192,
+          32
+        ],
+        "item_shotel": [
+          0,
+          64
+        ],
+        "item_scimitar": [
+          32,
+          64
+        ],
+        "item_large_scimitar": [
+          64,
+          64
+        ],
+        "item_great_scimitar": [
+          96,
+          64
+        ],
+        "item_kukri": [
+          128,
+          64
+        ],
+        "item_hand_axe": [
+          0,
+          96
+        ],
+        "item_battle_axe": [
+          32,
+          96
+        ],
+        "item_halberd": [
+          64,
+          96
+        ],
+        "item_great_axe": [
+          96,
+          96
+        ],
+        "item_giant_axe": [
+          128,
+          96
+        ],
+        "item_hatchet": [
+          160,
+          96
+        ],
+        "item_woodcutter_s_axe": [
+          192,
+          96
+        ],
+        "item_blacksmiths_hammer": [
+          0,
+          128
+        ],
+        "item_short_warhammer": [
+          32,
+          128
+        ],
+        "item_long_warhammer": [
+          64,
+          128
+        ],
+        "item_hammer": [
+          96,
+          128
+        ],
+        "item_great_hammer": [
+          128,
+          128
+        ],
+        "item_mace_1": [
+          0,
+          160
+        ],
+        "item_mace_2": [
+          32,
+          160
+        ],
+        "item_great_mace": [
+          64,
+          160
+        ],
+        "item_spiked_bat": [
+          96,
+          160
+        ],
+        "item_spear": [
+          0,
+          192
+        ],
+        "item_short_spear": [
+          32,
+          192
+        ],
+        "item_pitchfork": [
+          64,
+          192
+        ],
+        "item_trident": [
+          96,
+          192
+        ],
+        "item_magic_spear": [
+          128,
+          192
+        ],
+        "item_flail_1": [
+          0,
+          224
+        ],
+        "item_flail_2": [
+          32,
+          224
+        ],
+        "item_flail_3": [
+          64,
+          224
+        ],
+        "item_club": [
+          0,
+          256
+        ],
+        "item_spiked_club": [
+          32,
+          256
+        ],
+        "item_great_club": [
+          64,
+          256
+        ],
+        "item_club_with_nails": [
+          96,
+          256
+        ],
+        "item_crossbow": [
+          0,
+          288
+        ],
+        "item_short_bow": [
+          32,
+          288
+        ],
+        "item_long_bow": [
+          64,
+          288
+        ],
+        "item_long_bow_2": [
+          96,
+          288
+        ],
+        "item_large_crossbow": [
+          128,
+          288
+        ],
+        "item_crystal_staff": [
+          0,
+          320
+        ],
+        "item_holy_staff": [
+          32,
+          320
+        ],
+        "item_druid_staff": [
+          64,
+          320
+        ],
+        "item_blue_staff": [
+          96,
+          320
+        ],
+        "item_golden_staff": [
+          128,
+          320
+        ],
+        "item_red_crystal_staff": [
+          160,
+          320
+        ],
+        "item_flame_staff": [
+          192,
+          320
+        ],
+        "item_blue_crystal_staff": [
+          224,
+          320
+        ],
+        "item_cross_staff": [
+          256,
+          320
+        ],
+        "item_saint_s_staff": [
+          288,
+          320
+        ],
+        "item_buckler": [
+          0,
+          352
+        ],
+        "item_kite_shield": [
+          32,
+          352
+        ],
+        "item_cross_shield": [
+          64,
+          352
+        ],
+        "item_dark_shield": [
+          96,
+          352
+        ],
+        "item_round_shield": [
+          128,
+          352
+        ],
+        "item_buckler_2": [
+          160,
+          352
+        ],
+        "item_large_shield": [
+          192,
+          352
+        ],
+        "item_cloth_armor": [
+          0,
+          384
+        ],
+        "item_leather_armor": [
+          32,
+          384
+        ],
+        "item_robe": [
+          64,
+          384
+        ],
+        "item_chain_mail": [
+          96,
+          384
+        ],
+        "item_scale_mail": [
+          128,
+          384
+        ],
+        "item_chest_plate": [
+          160,
+          384
+        ],
+        "item_cloth_gloves": [
+          0,
+          416
+        ],
+        "item_leather_gloves": [
+          32,
+          416
+        ],
+        "item_blue_cloth_gloves": [
+          64,
+          416
+        ],
+        "item_gauntlets": [
+          96,
+          416
+        ],
+        "item_shoes": [
+          0,
+          448
+        ],
+        "item_leather_boots": [
+          32,
+          448
+        ],
+        "item_high_blue_boots": [
+          64,
+          448
+        ],
+        "item_greaves": [
+          96,
+          448
+        ],
+        "item_cloth_hood": [
+          0,
+          480
+        ],
+        "item_leather_helm": [
+          32,
+          480
+        ],
+        "item_wide_brimmed_hat": [
+          64,
+          480
+        ],
+        "item_chain_mail_coif": [
+          96,
+          480
+        ],
+        "item_helm": [
+          128,
+          480
+        ],
+        "item_helm_with_chain_mail": [
+          160,
+          480
+        ],
+        "item_plate_helm_1": [
+          192,
+          480
+        ],
+        "item_plate_helm_2": [
+          224,
+          480
+        ],
+        "item_red_pendant": [
+          0,
+          512
+        ],
+        "item_metal_pendant": [
+          32,
+          512
+        ],
+        "item_crystal_pendant": [
+          64,
+          512
+        ],
+        "item_disc_pendant": [
+          96,
+          512
+        ],
+        "item_cross_pendant": [
+          128,
+          512
+        ],
+        "item_stone_pendant": [
+          160,
+          512
+        ],
+        "item_ankh": [
+          192,
+          512
+        ],
+        "item_gold_emerald_ring": [
+          0,
+          544
+        ],
+        "item_gold_band_ring": [
+          32,
+          544
+        ],
+        "item_green_signet_ring": [
+          64,
+          544
+        ],
+        "item_ruby_ring": [
+          96,
+          544
+        ],
+        "item_sapphire_ring": [
+          128,
+          544
+        ],
+        "item_onyx_ring": [
+          160,
+          544
+        ],
+        "item_gold_signet_ring": [
+          0,
+          576
+        ],
+        "item_silver_signet_ring": [
+          32,
+          576
+        ],
+        "item_jade_ring": [
+          64,
+          576
+        ],
+        "item_silver_signet_ring_1": [
+          96,
+          576
+        ],
+        "item_twisted_gold_ring": [
+          128,
+          576
+        ],
+        "item_twisted_metal_ring": [
+          160,
+          576
+        ],
+        "item_purple_potion": [
+          0,
+          608
+        ],
+        "item_red_potion": [
+          32,
+          608
+        ],
+        "item_brown_vial": [
+          64,
+          608
+        ],
+        "item_large_dark_potion": [
+          96,
+          608
+        ],
+        "item_green_potion": [
+          128,
+          608
+        ],
+        "item_black_potion": [
+          0,
+          640
+        ],
+        "item_bright_green_potion": [
+          32,
+          640
+        ],
+        "item_pink_vial": [
+          64,
+          640
+        ],
+        "item_blue_potion": [
+          96,
+          640
+        ],
+        "item_orange_potion": [
+          128,
+          640
+        ],
+        "item_scroll": [
+          0,
+          672
+        ],
+        "item_book": [
+          32,
+          672
+        ],
+        "item_red_book": [
+          64,
+          672
+        ],
+        "item_dark_tome": [
+          96,
+          672
+        ],
+        "item_tome": [
+          128,
+          672
+        ],
+        "item_tome_2": [
+          160,
+          672
+        ],
+        "item_scroll_2": [
+          192,
+          672
+        ],
+        "item_page": [
+          224,
+          672
+        ],
+        "item_gold_key": [
+          0,
+          704
+        ],
+        "item_ornate_key": [
+          32,
+          704
+        ],
+        "item_metal_key": [
+          64,
+          704
+        ],
+        "item_primitive_key": [
+          96,
+          704
+        ],
+        "item_arrow": [
+          0,
+          736
+        ],
+        "item_arrows": [
+          32,
+          736
+        ],
+        "item_bolt": [
+          64,
+          736
+        ],
+        "item_bolts": [
+          96,
+          736
+        ],
+        "item_coin": [
+          0,
+          768
+        ],
+        "item_small_stacks_of_coins": [
+          32,
+          768
+        ],
+        "item_large_stacks_of_coins": [
+          64,
+          768
+        ],
+        "item_coin_purse": [
+          96,
+          768
+        ],
+        "item_cheese": [
+          0,
+          800
+        ],
+        "item_bread": [
+          32,
+          800
+        ],
+        "item_apple": [
+          64,
+          800
+        ],
+        "item_bottle_of_beer": [
+          96,
+          800
+        ],
+        "item_bottle_of_water": [
+          128,
+          768
+        ]
+      }
+    }
   }
 }
