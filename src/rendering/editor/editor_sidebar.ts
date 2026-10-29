@@ -83,7 +83,7 @@ function rebuildSidebarList(controller: EditorController, container: HTMLElement
   const categoryKey = editorState.activeTabId as keyof CampaignData;
   const dict = doc[categoryKey] as Record<string, unknown> | undefined;
 
-  listContainer.innerHTML = '';
+  listContainer.replaceChildren();
   if (!dict) {
     return;
   }

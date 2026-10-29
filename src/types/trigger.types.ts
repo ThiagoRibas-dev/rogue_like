@@ -223,7 +223,7 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('random_choice'),
-    choices: z.array(z.array(z.any())),
+    choices: z.array(z.array(z.record(z.string(), z.unknown()))),
     weights: z.array(z.number()).optional()
   }),
   z.object({
@@ -289,12 +289,12 @@ export type RunScriptConsequenceFn = (
 export const TriggerTemplateSchema = z.object({
   id: z.string(),
   eventType: z.string(),
-  conditions: z.array(z.any()), // Allows strings (placeholders) + objects
-  consequences: z.array(z.any()), // Allows strings (placeholders) + objects
+  conditions: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])), // Allows strings (placeholders) + objects
+  consequences: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])), // Allows strings (placeholders) + objects
   expectedVariables: z.array(z.string()).optional(),
   pacing: PacingSchema.optional(),
   foreshadowing: ForeshadowingSchema.optional(),
-  fallbackConsequences: z.array(z.any()).optional()
+  fallbackConsequences: z.array(z.union([z.string(), z.record(z.string(), z.unknown())])).optional()
 });
 
 /** Inferred type for a trigger template definition */

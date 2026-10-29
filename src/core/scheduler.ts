@@ -1,6 +1,7 @@
 import * as ROT from 'rot-js';
 import { type EntityId, UIMode, EngineMode } from '../types/game-state.types.ts';
 import { processTurn, getGameState } from './game-loop.ts';
+import { saveCheckpoint } from './persistence_service.ts';
 
 class SchedulerActor {
   constructor(public readonly id: EntityId) {}
@@ -70,6 +71,7 @@ export function unlockEngine(): void {
  * Seamlessly transitions scheduling loops between turn-based and real-time execution modes.
  */
 export function switchEngineMode(mode: EngineMode): void {
+  saveCheckpoint(getGameState());
   if (mode === EngineMode.RTwP) {
     isEngineLocked = false;
     lastFrameTime = performance.now();

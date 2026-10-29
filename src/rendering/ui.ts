@@ -1,4 +1,4 @@
-export { renderMessageLog, renderPlayerStats } from './ui/hud.ui.ts';
+export { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
 export { renderInventoryPanel } from './ui/inventory.ui.ts';
 export { renderMenus, populateCampaignList } from './ui/menus.ui.ts';
 export { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';

@@ -2,10 +2,9 @@ import type { GameState } from '../types/game-state.types.ts';
 import type { InteractIntent } from '../types/intents/interaction.intents.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType, type DialogueComponent } from '../types/components.types.ts';
-import { processStartDialogueIntent } from '../actions/dialogue.actions.ts';
+import { startDialogue } from './dialogue.system.ts';
 import { isHostile } from '../utils/faction.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { IntentType } from '../types/intents/intent.enum.ts';
 
 /**
  * Handles processing of an InteractIntent.
@@ -40,10 +39,5 @@ export function processInteractIntent(
   }
 
   // Start dialogue tree
-  return processStartDialogueIntent(state, {
-    type: IntentType.StartDialogue,
-    entityId,
-    targetId,
-    dialogueId: dialogueComp.dialogueId
-  });
+  return startDialogue(state, targetId, dialogueComp.dialogueId);
 }

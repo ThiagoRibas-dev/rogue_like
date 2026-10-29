@@ -1,6 +1,6 @@
 import { MAX_REPLAY_HISTORY, REPLAY_STORAGE_KEY } from '../constants/replay.constants.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
-import { getGameState, setGameState } from './game-loop.ts';
+import { loadInputQueue } from './input_queue.ts';
 import { initRNG } from './rng.ts';
 import { unlockEngine } from './scheduler.ts';
 
@@ -111,13 +111,9 @@ export async function playReplay(
     await startNewGameCallback(replay.campaignId, replay.seed);
 
     // 3. Queue all recorded intents and unlock the engine
-    const state = getGameState();
-    setGameState({
-      ...state,
-      playerCommandQueue: replay.intents
-    });
+    loadInputQueue(replay.intents);
 
-    console.log(`[Replay] Injected ${replay.intents.length} intents into playerCommandQueue. Unlocking engine...`);
+    console.log(`[Replay] Injected ${replay.intents.length} intents into inputQueue. Unlocking engine...`);
     unlockEngine();
   } catch (e) {
     console.error('[Replay] Playback failed:', e);

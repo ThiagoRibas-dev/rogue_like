@@ -56,7 +56,7 @@ export function renderDebugOverlay(state: GameState): void {
 
   // We only want to render new events, but for simplicity we will re-render all of them
   // or the last N events if the list gets too long.
-  ledgerContainer.innerHTML = '';
+  ledgerContainer.replaceChildren();
 
   const maxEvents = 100;
   const eventsToRender = state.events.slice(-maxEvents);

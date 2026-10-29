@@ -9,10 +9,17 @@ import type { Verb } from '../constants/verbs.constants.ts';
 import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
 import type { ReactionDefinition } from '../types/campaign.types.ts';
 
+export interface EntityMatcherData {
+  tags: ReadonlyArray<string>;
+  traits: ReadonlyArray<string>;
+  category: string | undefined;
+  entityId: EntityId;
+}
+
 /**
  * Helper to extract tags, traits, and item category from an entity.
  */
-export function getEntityMatcherData(state: GameState, entityId: EntityId) {
+export function getEntityMatcherData(state: GameState, entityId: EntityId): EntityMatcherData {
   const tagsCmp = getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined;
   const traitsCmp = getComponent(state, entityId, ComponentType.Traits) as TraitsComponent | undefined;
   const itemCmp = getComponent(state, entityId, ComponentType.Item) as ItemComponent | undefined;

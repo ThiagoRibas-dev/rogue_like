@@ -48,23 +48,26 @@ Handcrafted campaigns require specific quest items to drop from specific chests.
 
 ---
 
-## 4. Phase 10: V2 Engine Optimization (Milestones 64 & 65)
-Phase 10 is designed to make Real-Time with Pause (RTwP) completely fluid by offloading the ECS out of the main browser thread.
+## 4. Phases 10 & 11: Pre-V2 Stabilization & V2 Engine Decoupling (Milestones 69–76)
+To guarantee 60 FPS fluidity in Real-Time with Pause (RTwP) and scale toward *Caves of Qud* / *Dwarf Fortress* living worlds without breaking the 17 DOM UI panels or PRNG determinism, Phases 10 and 11 are sequenced so structural refactoring precedes engine-loop decoupling:
 
-### Milestone 64: Cooperative Scheduler (Time-Slicing)
-- **Problem:** Heavy procedural generation and Mastermind Scheme background simulations freeze the browser.
-- **Solution:** Convert heavy functions to `function*` (generators). Build a wrapper around the `ROT.Scheduler` that checks `performance.now()`. If a frame budget (e.g., 4ms) is exceeded, `yield` back to the event loop.
+### Phase 10: Pre-V2 Refactoring & Core Stabilization (Milestones 69–71)
+1. **Milestone 69 (Rule Compliance & Determinism Hardening):** Eliminate `Math.random()` in fuzzer/telemetry tools, fix inverted type imports (`EncounterRole`), remove upward system action imports, and replace `.innerHTML = ''` with `.replaceChildren()`.
+2. **Milestone 70 (Monolith Decomposition & Session Controller):** Extract `src/core/session_controller.ts` from `src/main.ts` (745 LOC) so there is a single orchestration seam for queues, rendering, and persistence, alongside decomposing `nemesis.system.ts`, `director_sandbox.ui.ts`, and `narrative_fuzzer.ts`.
+3. **Milestone 71 (Core Engine & Turn Loop Stabilization):** Add bounded `resolveStateStabilization(state)` (`MAX_STABILIZATION_ITERATIONS = 16`), recursive limbo/orphan pruning in `ecs.ts` and `save.ts`, and isolated bootstrap setup modules.
 
-### Milestone 65: Absolute Presentational Decoupling (Web Workers)
-- **Architecture Shift:** The main thread becomes a "Dumb Renderer". The entire `GameState`, `ROT.Engine`, and all `src/systems/` move to a Web Worker.
-- **Communication Pipeline:** 
-  1. Main thread captures DOM/Canvas inputs and serializes them.
-  2. Main thread `postMessage`s the input to the Worker.
-  3. Worker processes the game tick.
-  4. Worker serializes a **Presentational Snapshot** (e.g., `{char, fg, bg, x, y}` for the visible viewport) and `postMessage`s it back.
-  5. Main thread updates the DOM/Canvas blindly based on the snapshot.
-
-*WARNING: The Structured Clone Algorithm will fail if the payload contains functions or DOM nodes. The `GameState` serialization must be audited to ensure it remains perfectly flat data.*
+### Phase 11: V2 Engine Decoupling, Dumb Canvas Renderer & UX Refinements (Milestones 72–76)
+1. **Milestone 72 (Decoupled Frame Loop, Message-Queue Glue & Debounced Persistence):**
+   - **Root Bottleneck Fix:** Previously, `updateState()` inside `processTurn()` synchronously invoked `saveGame()` (`JSON.stringify` + `localStorage.setItem`), `render()`, and all 17 DOM UI panels on *every individual NPC sub-step* inside `scheduler.ts`'s `while` loop.
+   - **Message-Queue Glue:** Decouple Input/UI, Simulation, Presentation, and Persistence via explicit queues (`InputCommandQueue` and `PresentationEventQueue` / dirty domain flags). Simulation mutates `currentState` in memory; a single 60Hz `requestAnimationFrame` pass presents dirty state once per display frame; `saveGame()` and `saveCurrentReplay()` are debounced/checkpointed to safe boundaries (player turn settle, pause, area transition).
+2. **Milestone 73 (Pure Dumb Canvas Renderer & `ViewportSnapshot`):**
+   - Inspired by **[slashman/jsrl](https://github.com/slashman/jsrl)**, split ECS view projection (`buildViewportSnapshot(state)` in `src/rendering/viewport_snapshot.ts`) from canvas drawing (`src/rendering/renderer.ts`).
+   - `renderer.ts` becomes a Pure Dumb Canvas Renderer with **zero imports from `ecs.ts` or `GameState`**, consuming a flat pre-sorted `ViewportSnapshot` (using integer coordinate indexing `y * width + x` and cell-level dirty diffing instead of full-frame `display.clear()`). This also keeps the display backend swappable for a future WebGL/PixiJS sprite batcher (**[FlameNeon/pixi.js](https://github.com/FlameNeon/pixi.js/)**).
+3. **Milestone 74 (Cooperative Frame-Budgeted Scheduler, Tiered World Simulation & Worker Offload):**
+   - Wrap `scheduler.ts` actor loops in a `FRAME_BUDGET_MS = 4` (`performance.now()`) cooperative budget.
+   - Adopt *Caves of Qud* / *Dwarf Fortress* **Tiered Simulation**: Tier 1 (Active Zone micro-simulation every turn) vs. Tier 2/3 (Off-screen frozen areas with delta catch-up + coarse macro-ticks for schemes, rivalries, rumors, and world events).
+   - Add stage-boundary `function*` generators (`generateAreaAsync`, `runEncounterDirectorAsync`, `runNarrativeFuzzerAsync`) with `ROT.RNG.getState()` snapshot/restore guards across yields (never inside third-party synchronous `ROT.Map` C-style callbacks), driving smooth loading overlays and enabling clean Web Worker offload for background chunk generation and headless multi-seed fuzzing.
+4. **Milestones 75 & 76 (RTwP HUD Controls & Creator Tooling UX):** Build RTwP auto-pause triggers, LIFO ESC-key modal management, contextual verb illumination, investigation filters, and Creator Suite UX diagnostics atop the decoupled architecture.
 
 ---
 

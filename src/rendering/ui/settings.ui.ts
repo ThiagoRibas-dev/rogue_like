@@ -54,7 +54,7 @@ export function renderSettingsMenu(state?: GameState): void {
   // Render Keybinds
   const keybindsContainer = document.getElementById('keybinds-container');
   if (keybindsContainer) {
-    keybindsContainer.innerHTML = '';
+    keybindsContainer.replaceChildren();
     const actions = Object.keys(settings.keybinds) as Array<keyof typeof settings.keybinds>;
     for (const action of actions) {
       const row = document.createElement('div');

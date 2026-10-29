@@ -1,5 +1,6 @@
 import type { RumorPropagationRule } from '../../types/campaign.types.ts';
 import type { EditorController } from '../editor_ui.ts';
+import { rng } from '../../core/rng.ts';
 
 interface SimNode {
   id: string; // areaId_templateId_index
@@ -124,8 +125,8 @@ export function renderKnowledgeSimulator(controller: EditorController, container
           tags: template.tags || [],
           faction: template.faction || '',
           hasRumor: false,
-          x: canvas.width / 2 + (Math.random() - 0.5) * 300,
-          y: canvas.height / 2 + (Math.random() - 0.5) * 300,
+          x: canvas.width / 2 + (rng.getUniform() - 0.5) * 300,
+          y: canvas.height / 2 + (rng.getUniform() - 0.5) * 300,
           vx: 0,
           vy: 0,
           radius: 20

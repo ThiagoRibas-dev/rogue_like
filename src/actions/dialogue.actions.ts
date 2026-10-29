@@ -1,7 +1,7 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
 import { ComponentType, type MemoryComponent } from '../types/components.types.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../types/events.types.ts';
-import type { GameState, EntityId } from '../types/game-state.types.ts';
+import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import type {
   CloseDialogueIntent,
@@ -13,9 +13,10 @@ import type {
 import { rng } from '../core/rng.ts';
 import { DEFAULT_DEFLECTION_LINES } from '../constants/knowledge.constants.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
-import { processQuestEvent } from '../systems/quest.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';
-import type { TemplateComponent } from '../types/components.types.ts';
+import { startDialogue } from '../systems/dialogue.system.ts';
+import { transferKnowledge } from '../systems/knowledge.system.ts';
+export { transferKnowledge };
 
 /**
  * Processes the intent to begin a dialogue interaction with an NPC.
@@ -24,47 +25,7 @@ export function processStartDialogueIntent(
   state: GameState,
   intent: StartDialogueIntent
 ): { state: GameState; success: boolean } {
-  const { targetId, dialogueId } = intent;
-  const tree = state.campaign.dialogues[dialogueId];
-
-  if (!tree) {
-    return {
-      state: addMessage(state, 'They have nothing to say.', MessageLogCategory.System),
-      success: false
-    };
-  }
-
-  let targetTemplateId = targetId.toString();
-  const templateComp = getComponent(state, targetId, ComponentType.Template) as TemplateComponent | undefined;
-  if (templateComp) {
-    targetTemplateId = templateComp.templateId;
-  }
-
-  // Trigger any "talk" quest objectives
-  const nextState = processQuestEvent(state, 'talk', targetTemplateId, 1);
-
-  let stateWithTimesTalked = nextState;
-  const memory = getComponent(nextState, targetId, ComponentType.Memory) as MemoryComponent | undefined;
-  if (memory) {
-    const nextMemory = {
-      ...memory,
-      timesTalked: (memory.timesTalked ?? 0) + 1
-    };
-    stateWithTimesTalked = addComponent(nextState, targetId, nextMemory);
-  }
-
-  return {
-    state: {
-      ...stateWithTimesTalked,
-      uiMode: UIMode.Dialogue,
-      activeDialogue: {
-        treeId: dialogueId,
-        currentNodeId: tree.startNodeId,
-        npcEntityId: targetId
-      }
-    },
-    success: false // Doesn't consume a turn to just open UI, or maybe it does? In RTwP it might pause.
-  };
+  return startDialogue(state, intent.targetId, intent.dialogueId);
 }
 
 /**
@@ -196,42 +157,6 @@ export function processCloseDialogueIntent(
     },
     success: false
   };
-}
-
-/**
- * Transfers a knowledge item from one entity's memory to another.
- * @param state The current GameState.
- * @param fromEntityId The source NPC entity ID.
- * @param toEntityId The target recipient entity ID.
- * @param knowledgeId The ID of the knowledge item to transfer.
- * @returns Updated GameState.
- */
-export function transferKnowledge(
-  state: GameState,
-  fromEntityId: EntityId,
-  toEntityId: EntityId,
-  knowledgeId: string
-): GameState {
-  const fromMemory = getComponent(state, fromEntityId, ComponentType.Memory) as MemoryComponent | undefined;
-  const toMemory = getComponent(state, toEntityId, ComponentType.Memory) as MemoryComponent | undefined;
-  if (!fromMemory || !toMemory) return state;
-
-  const item = fromMemory.knowledge[knowledgeId];
-  if (!item) return state;
-
-  const nextKnowledge = {
-    ...toMemory.knowledge,
-    [knowledgeId]: item
-  };
-
-  let nextState = addComponent(state, toEntityId, {
-    ...toMemory,
-    knowledge: nextKnowledge
-  });
-
-  nextState = addMessage(nextState, `You learned: ${item.description}`, MessageLogCategory.System);
-
-  return nextState;
 }
 
 /**

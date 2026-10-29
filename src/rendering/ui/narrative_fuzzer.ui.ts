@@ -140,7 +140,7 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
 
         // Render runs list
         if (runsList) {
-          runsList.innerHTML = '';
+          runsList.replaceChildren();
           report.results.forEach((run, idx) => {
             const runDiv = document.createElement('div');
             runDiv.style.cssText =

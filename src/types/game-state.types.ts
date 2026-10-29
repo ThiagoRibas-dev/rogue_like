@@ -6,7 +6,7 @@ import type { GameEvent } from './events.types.ts';
 import type { ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
-import type { RoomBounds } from '../map/encounter_director.ts';
+import type { RoomBounds } from './encounter.types.ts';
 
 /**
  * Enum defining the engine mode.

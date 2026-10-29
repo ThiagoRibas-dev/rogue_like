@@ -280,3 +280,54 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
     height: finalRows
   });
 }
+
+/**
+ * Mounts the ROT.Display container element and initializes the fog overlay canvas if required.
+ *
+ * @param display The ROT.js display instance to mount.
+ * @param campaign The campaign data determining whether sprite sheets and fog overlay are active.
+ */
+export function mountDisplayWithFogOverlay(display: ROT.Display, campaign: CampaignData): void {
+  const container = document.getElementById('game-canvas-wrapper');
+  if (!container) {
+    console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
+    return;
+  }
+  const canvasElement = display.getContainer() as HTMLCanvasElement | null;
+  if (canvasElement) {
+    container.appendChild(canvasElement);
+    syncFogOverlayCanvas(campaign);
+  }
+}
+
+/**
+ * Synchronizes the existence of the fog overlay canvas based on whether sprite sheets are enabled.
+ *
+ * @param campaign The active campaign data.
+ */
+export function syncFogOverlayCanvas(campaign: CampaignData): void {
+  const container = document.getElementById('game-canvas-wrapper');
+  if (!container) return;
+
+  let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
+  const hasSpriteSheets =
+    campaign.theme.spriteSheets && Object.keys(campaign.theme.spriteSheets).length > 0;
+
+  if (hasSpriteSheets) {
+    if (!fogCanvas) {
+      fogCanvas = document.createElement('canvas');
+      fogCanvas.id = 'fog-overlay';
+      fogCanvas.style.position = 'absolute';
+      fogCanvas.style.top = '0';
+      fogCanvas.style.left = '0';
+      fogCanvas.style.width = '100%';
+      fogCanvas.style.height = '100%';
+      fogCanvas.style.pointerEvents = 'none';
+      container.style.position = 'relative';
+      container.appendChild(fogCanvas);
+    }
+  } else if (fogCanvas) {
+    fogCanvas.remove();
+  }
+}
+

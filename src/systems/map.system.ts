@@ -1,6 +1,7 @@
 import * as ROT from 'rot-js';
 import {
   addComponent,
+  collectOwnedEntityIds,
   createEntity,
   getComponent,
   queryEntities,
@@ -10,7 +11,8 @@ import {
 } from '../core/ecs.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
-import { runEncounterDirector, type RoomBounds } from '../map/encounter_director.ts';
+import { runEncounterDirector } from '../map/encounter_director.ts';
+import type { RoomBounds } from '../types/encounter.types.ts';
 import { GameEventType } from '../types/events.types.ts';
 import {
   ComponentType,
@@ -73,19 +75,8 @@ export function processChangeAreaIntent(
 ): { state: GameState; success: boolean } {
   const { targetAreaId, targetX, targetY, entityId } = intent;
 
-  // 1. Determine which entities migrate with the player (inventory, equipment)
-  const inventory = getComponent(state, entityId, ComponentType.Inventory);
-  const equipment = getComponent(state, entityId, ComponentType.Equipment);
-
-  const migratingEntities = new Set<EntityId>([entityId]);
-  if (inventory) {
-    inventory.items.forEach((id) => migratingEntities.add(id));
-  }
-  if (equipment) {
-    equipment.slots.forEach((s) => {
-      if (s.equippedItem !== null) migratingEntities.add(s.equippedItem);
-    });
-  }
+  // 1. Determine which entities migrate with the player (inventory, equipment, shop)
+  const migratingEntities = new Set<EntityId>(collectOwnedEntityIds(state, entityId));
 
   // Pack and save the current floor (excluding migrating entities and persistent entities)
   const savedEntityIds = state.entities.filter((id) => !migratingEntities.has(id));

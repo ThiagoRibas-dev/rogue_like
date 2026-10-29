@@ -2,7 +2,8 @@ import * as ROT from 'rot-js';
 import { type AreaConnection, type CampaignData } from '../types/campaign.types.ts';
 import { type EntityId, type GameMap, type Tile } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { runEncounterDirector, type DirectorContext, type DirectorReceipt } from './encounter_director.ts';
+import { runEncounterDirector } from './encounter_director.ts';
+import type { DirectorContext, DirectorReceipt, RoomBounds } from '../types/encounter.types.ts';
 import { parseStaticMap } from './static-parser.ts';
 import { runDLA } from './dla.ts';
 import { applyVoronoiBiomes } from './voronoi.ts';
@@ -20,17 +21,7 @@ export interface GeneratedArea {
   readonly map: GameMap;
   readonly startPos: { readonly x: number; readonly y: number };
   readonly portals: ReadonlyArray<{ readonly x: number; readonly y: number; readonly connection: AreaConnection }>;
-  readonly rooms: ReadonlyArray<{
-    readonly left: number;
-    readonly right: number;
-    readonly top: number;
-    readonly bottom: number;
-    readonly centerX: number;
-    readonly centerY: number;
-    readonly isSafe?: boolean;
-    readonly tags?: ReadonlyArray<string>;
-    readonly exactTiles?: ReadonlySet<string>;
-  }>;
+  readonly rooms: ReadonlyArray<RoomBounds>;
   readonly placedEntities?:
     | ReadonlyArray<{
         readonly templateId: string;
@@ -106,17 +97,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
   };
   const finalPlacedEntities: PlacedEntityDef[] = areaDef.placedEntities ? [...areaDef.placedEntities] : [];
 
-  let parsedRooms: Array<{
-    readonly left: number;
-    readonly right: number;
-    readonly top: number;
-    readonly bottom: number;
-    readonly centerX: number;
-    readonly centerY: number;
-    readonly isSafe?: boolean;
-    readonly tags?: ReadonlyArray<string>;
-    readonly exactTiles?: ReadonlySet<string>;
-  }> = [];
+  let parsedRooms: Array<RoomBounds> = [];
 
   if (areaDef.generatorType === 'cellular') {
     // 2a. Cellular Generator
@@ -400,7 +381,7 @@ export function generateArea(campaign: CampaignData, areaId: string, context?: D
         centerY: Math.floor((top + bottom) / 2),
         isSafe: false,
         tags: [tag],
-        exactTiles: coordSet
+        exactTiles: Array.from(coordSet)
       });
     }
   }

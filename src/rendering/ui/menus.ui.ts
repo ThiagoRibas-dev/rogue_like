@@ -46,7 +46,7 @@ export function renderMenus(state: GameState, hasSave: boolean): void {
 
       const deathLog = document.getElementById('death-message-log');
       if (deathLog) {
-        deathLog.innerHTML = '';
+        deathLog.replaceChildren();
         // Show the last 5 messages so the player knows what killed them
         const lastMessages = state.messages.slice(-5);
         for (const msg of lastMessages) {
@@ -76,7 +76,7 @@ export function populateCampaignList(
 ): void {
   const list = document.getElementById('campaign-list');
   if (!list) return;
-  list.innerHTML = '';
+  list.replaceChildren();
 
   for (const campaign of campaigns) {
     const btn = document.createElement('button');
@@ -119,7 +119,7 @@ export function populateCampaignList(
       if (startBtn) startBtn.disabled = false;
 
       if (actions) {
-        actions.innerHTML = '';
+        actions.replaceChildren();
         if (campaign.source === 'installed' && onUninstall) {
           const btnUninstall = document.createElement('button');
           btnUninstall.className = 'modal-btn';

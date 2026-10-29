@@ -1,4 +1,4 @@
-import { type GameState } from '../types/game-state.types.ts';
+import { type EntityId, type GameState } from '../types/game-state.types.ts';
 import {
   ComponentType,
   type Component,
@@ -19,6 +19,7 @@ import {
 import type { PendingKnowledgePropagation } from '../types/knowledge.types.ts';
 import type { KnowledgePropagationRule } from '../types/campaign.types.ts';
 import { DEFAULT_KNOWLEDGE_PROPAGATION_DELAY, MAX_PENDING_KNOWLEDGE_QUEUE } from '../constants/knowledge.constants.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
  * Helper to check if two areas are connected in the campaign configuration.
@@ -321,4 +322,40 @@ export function tickPendingKnowledge(state: GameState): GameState {
   };
 
   return deliverPendingKnowledgeToArea(nextState, nextState.currentAreaId);
+}
+
+/**
+ * Transfers a knowledge item from one entity's memory to another.
+ * @param state The current GameState.
+ * @param fromEntityId The source NPC entity ID.
+ * @param toEntityId The target recipient entity ID.
+ * @param knowledgeId The ID of the knowledge item to transfer.
+ * @returns Updated GameState.
+ */
+export function transferKnowledge(
+  state: GameState,
+  fromEntityId: EntityId,
+  toEntityId: EntityId,
+  knowledgeId: string
+): GameState {
+  const fromMemory = getComponent(state, fromEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  const toMemory = getComponent(state, toEntityId, ComponentType.Memory) as MemoryComponent | undefined;
+  if (!fromMemory || !toMemory) return state;
+
+  const item = fromMemory.knowledge[knowledgeId];
+  if (!item) return state;
+
+  const nextKnowledge = {
+    ...toMemory.knowledge,
+    [knowledgeId]: item
+  };
+
+  let nextState = addComponent(state, toEntityId, {
+    ...toMemory,
+    knowledge: nextKnowledge
+  });
+
+  nextState = addMessage(nextState, `You learned: ${item.description}`, MessageLogCategory.System);
+
+  return nextState;
 }

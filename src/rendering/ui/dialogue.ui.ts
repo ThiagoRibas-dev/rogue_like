@@ -87,7 +87,7 @@ export function renderDialoguePanel(state: GameState): void {
   }
 
   // Render text
-  content.innerHTML = '';
+  content.replaceChildren();
   const textP = document.createElement('p');
   textP.style.color = 'var(--text-color)';
   textP.style.fontSize = '1.1rem';
@@ -97,7 +97,7 @@ export function renderDialoguePanel(state: GameState): void {
   content.appendChild(textP);
 
   // Render options
-  optionsContainer.innerHTML = '';
+  optionsContainer.replaceChildren();
 
   // We need player entity id for intents
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);

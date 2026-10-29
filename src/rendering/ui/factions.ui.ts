@@ -18,7 +18,7 @@ export function renderFactionsPanel(state: GameState): void {
 
   const listContainer = document.getElementById('factions-list');
   if (!listContainer) return;
-  listContainer.innerHTML = '';
+  listContainer.replaceChildren();
 
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player));
   if (!playerEntityId) return;

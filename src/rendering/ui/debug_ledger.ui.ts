@@ -17,7 +17,7 @@ export function renderDebugLedgerUI(state: GameState): void {
   }
 
   overlay.classList.remove('hidden');
-  eventsList.innerHTML = '';
+  eventsList.replaceChildren();
 
   const highEvents = getHighImportanceEvents(state);
 

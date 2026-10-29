@@ -556,7 +556,54 @@ export function removeEntity(state: GameState, entityId: EntityId): GameState {
 }
 
 /**
- * Recursively moves an entity and all entities it owns (inventory, equipment) into persistent storage (Limbo).
+ * Recursively collects a root entity ID and all owned child entity IDs
+ * referenced in Inventory, Equipment, and Shop components.
+ *
+ * @param state The current game state.
+ * @param rootEntityId The ID of the root entity to inspect.
+ * @returns An array containing the root entity ID and all recursively owned entity IDs.
+ */
+export function collectOwnedEntityIds(
+  state: GameState,
+  rootEntityId: EntityId
+): ReadonlyArray<EntityId> {
+  const visited = new Set<EntityId>();
+  const queue: EntityId[] = [rootEntityId];
+
+  while (queue.length > 0) {
+    const currentId = queue.shift();
+    if (currentId === undefined || visited.has(currentId)) continue;
+    visited.add(currentId);
+
+    const inv = getComponent(state, currentId, ComponentType.Inventory) as InventoryComponent | undefined;
+    if (inv) {
+      for (const itemId of inv.items) {
+        if (!visited.has(itemId)) queue.push(itemId);
+      }
+    }
+
+    const equip = getComponent(state, currentId, ComponentType.Equipment) as EquipmentComponent | undefined;
+    if (equip) {
+      for (const slot of equip.slots) {
+        if (slot.equippedItem !== null && !visited.has(slot.equippedItem)) {
+          queue.push(slot.equippedItem);
+        }
+      }
+    }
+
+    const shop = getComponent(state, currentId, ComponentType.Shop) as ShopComponent | undefined;
+    if (shop) {
+      for (const itemId of shop.inventory) {
+        if (!visited.has(itemId)) queue.push(itemId);
+      }
+    }
+  }
+
+  return Array.from(visited);
+}
+
+/**
+ * Recursively moves an entity and all entities it owns (inventory, equipment, shop) into persistent storage (Limbo).
  * @param state The current game state.
  * @param rootEntityId The ID of the root entity to move.
  * @param targetAreaId The area ID to associate with the persistent records.
@@ -564,24 +611,7 @@ export function removeEntity(state: GameState, entityId: EntityId): GameState {
  */
 export function moveToLimbo(state: GameState, rootEntityId: EntityId, targetAreaId: string): GameState {
   const nextState = state;
-  const toMove = new Set<EntityId>([rootEntityId]);
-
-  // Discover all foreign keys
-  const inventory = getComponent(state, rootEntityId, ComponentType.Inventory) as InventoryComponent | undefined;
-  if (inventory) {
-    for (const itemId of inventory.items) toMove.add(itemId);
-  }
-
-  const equipment = getComponent(state, rootEntityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  if (equipment) {
-    for (const slot of equipment.slots) {
-      if (slot.equippedItem !== null) toMove.add(slot.equippedItem);
-    }
-  }
-
-  // Also catch agreements if needed, though they don't strictly own entities, they just reference them.
-  // Actually, agreements reference minion IDs but the minion is its own entity.
-  // Inventory and equipment are the primary "owned" entities.
+  const toMove = new Set<EntityId>(collectOwnedEntityIds(state, rootEntityId));
 
   const nextActiveEntities = nextState.entities.filter((id) => !toMove.has(id));
   const nextActiveComponents = new Map(nextState.components);

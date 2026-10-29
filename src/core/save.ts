@@ -7,10 +7,16 @@ import {
   EngineMode,
   UIMode
 } from '../types/game-state.types.ts';
-import { updateSpatialIndex } from './ecs.ts';
+import { updateSpatialIndex, collectOwnedEntityIds } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import { getTelemetryStore, setTelemetryStore } from './telemetry.ts';
 import type { SerializedPersistentEntityRecord, PersistentEntityRecord } from '../types/game-state.types.ts';
+import {
+  ComponentType,
+  type InventoryComponent,
+  type EquipmentComponent,
+  type ShopComponent
+} from '../types/components.types.ts';
 import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 
@@ -52,36 +58,72 @@ export function setSaveData(data: string): void {
 }
 
 /**
+ * Prunes unreferenced entity components from state.components that are no longer
+ * reachable by the active floor, sleeping areas, factions, or persistent entities.
+ *
+ * @param state The current game state.
+ * @returns The sanitized game state with orphan components purged.
+ */
+export function pruneOrphanEntities(state: GameState): GameState {
+  const reachable = new Set<EntityId>();
+  const mark = (id: EntityId): void => {
+    for (const ownedId of collectOwnedEntityIds(state, id)) reachable.add(ownedId);
+  };
+
+  for (const id of state.entities) mark(id);
+  for (const area of state.areas.values()) {
+    for (const id of area.entities) mark(id);
+  }
+  for (const id of Object.values(state.factionEntityIds || {})) mark(id);
+  for (const id of Object.values(state.areaEntityIds || {})) mark(id);
+
+  for (const [id, record] of state.persistentEntities.entries()) {
+    mark(id);
+    const inv = record.components[ComponentType.Inventory] as InventoryComponent | undefined;
+    inv?.items.forEach(mark);
+    const equip = record.components[ComponentType.Equipment] as EquipmentComponent | undefined;
+    equip?.slots.forEach((s) => s.equippedItem !== null && mark(s.equippedItem));
+    const shop = record.components[ComponentType.Shop] as ShopComponent | undefined;
+    shop?.inventory.forEach(mark);
+  }
+
+  let modified = false;
+  const nextComponents = new Map(state.components);
+  for (const entityId of nextComponents.keys()) {
+    if (!reachable.has(entityId)) {
+      nextComponents.delete(entityId);
+      modified = true;
+    }
+  }
+
+  return modified ? updateSpatialIndex({ ...state, components: nextComponents }) : state;
+}
+
+/**
  * Serializes the GameState and saves it to localStorage.
  * Converts Map objects to arrays of tuples for JSON compatibility.
  */
 export function saveGame(state: GameState): void {
   if (state.isSandbox) return;
 
+  state = pruneOrphanEntities(state);
+
   const serializedAreas: Array<[string, SerializedAreaData]> = Array.from(state.areas.entries()).map(
-    ([areaId, areaData]) => {
-      const sAreaData: SerializedAreaData = {
+    ([areaId, areaData]) => [
+      areaId,
+      {
         map: areaData.map,
         entities: areaData.entities,
         components: Array.from(areaData.components.entries()),
         rooms: areaData.rooms,
         lastSpawnTurn: areaData.lastSpawnTurn
-      };
-      return [areaId, sAreaData];
-    }
+      }
+    ]
   );
 
   const serializedPersistentEntities: Array<[EntityId, SerializedPersistentEntityRecord]> = Array.from(
     state.persistentEntities.entries()
-  ).map(([id, record]) => {
-    return [
-      id,
-      {
-        areaId: record.areaId,
-        components: record.components
-      }
-    ];
-  });
+  ).map(([id, record]) => [id, { areaId: record.areaId, components: record.components }]);
 
   const serializedState: SerializedGameState = {
     campaignId: state.campaignId,

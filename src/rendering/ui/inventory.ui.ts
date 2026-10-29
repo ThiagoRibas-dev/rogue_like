@@ -18,14 +18,14 @@ export function renderInventoryPanel(state: GameState): void {
 
   if (state.uiMode !== UIMode.Inventory) {
     overlay.classList.add('hidden');
-    equipPanel.innerHTML = '';
-    packPanel.innerHTML = '';
+    equipPanel.replaceChildren();
+    packPanel.replaceChildren();
     return;
   }
 
   overlay.classList.remove('hidden');
-  equipPanel.innerHTML = '';
-  packPanel.innerHTML = '';
+  equipPanel.replaceChildren();
+  packPanel.replaceChildren();
 
   // Find player
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);

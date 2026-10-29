@@ -2,6 +2,19 @@ import type { CampaignData } from '../../types/campaign.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import { AUTHORING_LEVELS } from '../../constants/campaign.constants.ts';
 
+/**
+ * Type-safe generic wrapper for querying a DOM element within a parent node.
+ * @param parent The parent Element or Document to query within.
+ * @param selector The CSS selector string.
+ * @returns The matched element typed as T, or null if not found.
+ */
+export function querySelectorTyped<T extends HTMLElement = HTMLElement>(
+  parent: ParentNode,
+  selector: string
+): T | null {
+  return parent.querySelector<T>(selector);
+}
+
 function getBadge(category: string, id: string, doc: CampaignData): string {
   let level: 'Static' | 'Blueprint' | 'Dynamic' = AUTHORING_LEVELS[category] || 'Static';
   if (category === 'areas' && doc.areas[id]?.generatorType && doc.areas[id].generatorType !== 'static') {
@@ -84,11 +97,11 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
     }));
   }
   if (key === 'spriteId') {
-    if (doc.theme && (doc.theme as any).spriteSheets) {
-      const sheets = (doc.theme as any).spriteSheets as Record<string, any>;
+    const sheets = doc.theme?.spriteSheets;
+    if (sheets) {
       const options = [{ value: '', label: 'None [ASCII]' }];
       for (const sheet of Object.values(sheets)) {
-        if (sheet.tileMap) {
+        if (sheet && sheet.tileMap) {
           for (const spriteKey of Object.keys(sheet.tileMap)) {
             options.push({ value: spriteKey, label: `${spriteKey} [SPRITE]` });
           }

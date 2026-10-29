@@ -23,7 +23,7 @@ export function renderVerbMenu(state: GameState): void {
   else if (target.type === 'tile') targetName = 'Tile Options';
   else if (target.type === 'self') targetName = 'Self Options';
 
-  container.innerHTML = ''; // Clear old
+  container.replaceChildren(); // Clear old
 
   const header = document.createElement('div');
   header.className = 'verb-menu-header';

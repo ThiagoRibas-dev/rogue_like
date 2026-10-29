@@ -37,3 +37,8 @@ export const WORLD_EVENT_AREA_CHANCE = 0.05;
  * The probability (0.0 to 1.0) per Faction that a world event occurs during a tick.
  */
 export const WORLD_EVENT_FACTION_CHANCE = 0.05;
+
+/**
+ * Maximum stabilization iterations per turn step to resolve cascading damage, death reactions, and triggers.
+ */
+export const MAX_STABILIZATION_ITERATIONS = 16;

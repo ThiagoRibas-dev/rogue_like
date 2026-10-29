@@ -40,7 +40,7 @@ export function renderQuestJournal(state: GameState): void {
   const content = document.getElementById('quest-content');
   if (!content) return;
 
-  content.innerHTML = '';
+  content.replaceChildren();
 
   const playerEntities = state.entities.filter((id) => getComponent(state, id, ComponentType.Player) !== undefined);
   const playerId = playerEntities[0];

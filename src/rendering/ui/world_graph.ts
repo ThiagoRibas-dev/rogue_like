@@ -1,4 +1,5 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
+import { rng } from '../../core/rng.ts';
 
 interface GraphNode {
   id: string;
@@ -87,8 +88,8 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     nodes[id] = {
       id,
       name: areas[id]?.name || id,
-      x: canvas.width / 2 + (Math.random() - 0.5) * 200,
-      y: canvas.height / 2 + (Math.random() - 0.5) * 200,
+      x: canvas.width / 2 + (rng.getUniform() - 0.5) * 200,
+      y: canvas.height / 2 + (rng.getUniform() - 0.5) * 200,
       vx: 0,
       vy: 0,
       isStart: id === startId,

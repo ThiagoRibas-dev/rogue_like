@@ -1,45 +1,36 @@
-import * as ROT from 'rot-js';
+import { rng } from '../../core/rng.ts';
 import type { EditorController } from '../editor_ui.ts';
-import { runEncounterDirector, type DirectorReceipt } from '../../map/encounter_director.ts';
-import { generateArea, type GeneratedArea } from '../../map/generator.ts';
-import { runEncounterArena } from '../../editor/simulation/ai_arena.ts';
-import type { CampaignData } from '../../types/campaign.types.ts';
+import type { GeneratedArea } from '../../map/generator.ts';
+import {
+  updateAreaInfo,
+  runGeneration,
+  handleBakeArea,
+  runAutoSimulation
+} from './director/director_controls.ts';
 
-// ─── Constants ──────────────────────────────────────────────────────────────
-const MAP_CELL_SIZE = 6; // px per tile in the DOM mini-map
-const AXIS_COLORS: Record<string, string> = {
-  protein: '#e74c3c',
-  appetizer: '#2ecc71',
-  side: '#f39c12',
-  dessert: '#9b59b6'
-};
-const DEFAULT_MAX_SIM_TURNS = 100;
+export {
+  renderMiniMap,
+  renderReceipt,
+  updateJsonPreview,
+  buildBakedStaticArea,
+  getTileColor,
+  getEntityDisplay,
+  lightenColor,
+  getDispositionLabel,
+  MAP_CELL_SIZE,
+  AXIS_COLORS
+} from './director/director_telemetry_view.ts';
+
+export {
+  updateAreaInfo,
+  runGeneration,
+  handleBakeArea,
+  runAutoSimulation,
+  DEFAULT_MAX_SIM_TURNS
+} from './director/director_controls.ts';
 
 // ─── Local state for the sandbox ────────────────────────────────────────────
 let lastGenerated: GeneratedArea | null = null;
-
-/**
- * Resolves tile color from campaign data for mini-map rendering.
- */
-function getTileColor(campaign: CampaignData, tileId: string): string {
-  const tileDef = campaign.tiles[tileId];
-  if (tileDef?.bg) return tileDef.bg;
-  if (tileId.includes('wall') || tileId === 'empty_space') return '#333';
-  if (tileId.includes('water')) return '#2980b9';
-  return '#555'; // default floor
-}
-
-/**
- * Resolves entity glyph/color from campaign data.
- */
-function getEntityDisplay(campaign: CampaignData, templateId: string): { glyph: string; fg: string; bg: string } {
-  const def = campaign.entities[templateId];
-  return {
-    glyph: def?.glyph ?? '?',
-    fg: def?.fg ?? '#fff',
-    bg: def?.bg ?? 'transparent'
-  };
-}
 
 /**
  * Renders the Encounter Director Sandbox panel.
@@ -153,21 +144,21 @@ export function renderDirectorSandbox(controller: EditorController, container: H
   // ─── Wire up event handlers ──────────────────────────────────────────────
 
   // Tab switching
-  const tabReceipt = container.querySelector('#ds-tab-receipt') as HTMLButtonElement;
-  const tabJson = container.querySelector('#ds-tab-json') as HTMLButtonElement;
-  const receiptPanel = container.querySelector('#ds-receipt-container') as HTMLElement;
-  const jsonPanel = container.querySelector('#ds-json-container') as HTMLElement;
+  const tabReceipt = container.querySelector('#ds-tab-receipt') as HTMLButtonElement | null;
+  const tabJson = container.querySelector('#ds-tab-json') as HTMLButtonElement | null;
+  const receiptPanel = container.querySelector('#ds-receipt-container') as HTMLElement | null;
+  const jsonPanel = container.querySelector('#ds-json-container') as HTMLElement | null;
 
   tabReceipt?.addEventListener('click', () => {
-    receiptPanel.style.display = 'block';
-    jsonPanel.style.display = 'none';
+    if (receiptPanel) receiptPanel.style.display = 'block';
+    if (jsonPanel) jsonPanel.style.display = 'none';
     if (tabReceipt) tabReceipt.style.borderColor = '#6c5ce7';
     if (tabJson) tabJson.style.borderColor = 'rgba(255, 255, 255, 0.1)';
   });
 
   tabJson?.addEventListener('click', () => {
-    receiptPanel.style.display = 'none';
-    jsonPanel.style.display = 'block';
+    if (receiptPanel) receiptPanel.style.display = 'none';
+    if (jsonPanel) jsonPanel.style.display = 'block';
     if (tabJson) tabJson.style.borderColor = '#6c5ce7';
     if (tabReceipt) tabReceipt.style.borderColor = 'rgba(255, 255, 255, 0.1)';
   });
@@ -175,133 +166,42 @@ export function renderDirectorSandbox(controller: EditorController, container: H
   // Randomize seed button
   const randomSeedBtn = container.querySelector('#ds-random-seed-btn');
   randomSeedBtn?.addEventListener('click', () => {
-    const seedInput = container.querySelector('#ds-seed-input') as HTMLInputElement;
+    const seedInput = container.querySelector('#ds-seed-input') as HTMLInputElement | null;
     if (seedInput) {
-      seedInput.value = String(Math.floor(Math.random() * 2147483647));
+      seedInput.value = String(Math.floor(rng.getUniform() * 2147483647));
     }
   });
 
   // Area selection → update info
-  const areaSelect = container.querySelector('#ds-area-select') as HTMLSelectElement;
+  const areaSelect = container.querySelector('#ds-area-select') as HTMLSelectElement | null;
   areaSelect?.addEventListener('change', () => {
-    updateAreaInfo(controller, areaSelect.value);
+    if (areaSelect) {
+      updateAreaInfo(controller, areaSelect.value);
+    }
   });
 
   // Generate button
   const genBtn = container.querySelector('#ds-generate-btn');
   genBtn?.addEventListener('click', () => {
-    runGeneration(controller, container);
+    runGeneration(controller, container, (generated) => {
+      lastGenerated = generated;
+    });
   });
 
   // Bake button
-  const bakeBtn = container.querySelector('#ds-bake-btn') as HTMLButtonElement;
+  const bakeBtn = container.querySelector('#ds-bake-btn') as HTMLButtonElement | null;
   bakeBtn?.addEventListener('click', () => {
-    const areaId = areaSelect.value;
+    const areaId = areaSelect?.value;
     if (!lastGenerated || !areaId) return;
-
-    const newId = prompt('Enter a unique ID for the baked static area:', `${areaId}_baked`);
-    if (!newId) return;
-    if (!/^[a-z0-9_-]+$/.test(newId)) {
-      alert('ID must be lowercase alphanumeric, dashes, or underscores.');
-      return;
-    }
-    if (doc.areas[newId] && !confirm(`An area with ID '${newId}' already exists. Overwrite?`)) {
-      return;
-    }
-
-    const areaDef = doc.areas[areaId];
-    if (!areaDef) return;
-
-    const width = lastGenerated.map.width;
-    const height = lastGenerated.map.height;
-
-    // Map tile definitions dynamically to build legend
-    const legend: Record<string, string> = {};
-    const legendInverse: Record<string, string> = {};
-
-    // Standard defaults
-    legend['.'] = 'empty_space';
-    legendInverse['empty_space'] = '.';
-    legend['#'] = 'stone_wall';
-    legendInverse['stone_wall'] = '#';
-    legend['~'] = 'water';
-    legendInverse['water'] = '~';
-
-    const layoutRows: string[] = [];
-    for (let y = 0; y < height; y++) {
-      let rowStr = '';
-      for (let x = 0; x < width; x++) {
-        const idx = y * width + x;
-        const tile = lastGenerated.map.tiles[idx];
-        const tileId = tile?.tileId || 'empty_space';
-
-        let char = legendInverse[tileId];
-        if (!char) {
-          // Find next unused single char
-          const candidate = tileId.slice(0, 1).toLowerCase() || '?';
-          char = legend[candidate] ? '?' : candidate;
-          if (char === '?') {
-            const unused = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+'
-              .split('')
-              .find((c) => !legend[c]);
-            char = unused || '?';
-          }
-          legend[char] = tileId;
-          legendInverse[tileId] = char;
-        }
-        rowStr += char;
-      }
-      layoutRows.push(rowStr);
-    }
-
-    const staticArea = {
-      id: newId,
-      name: `${areaDef.name} (Baked)`,
-      generatorType: 'static' as const,
-      dangerRating: areaDef.dangerRating,
-      tags: areaDef.tags || [],
-      connections: lastGenerated.portals.map((p) => ({
-        targetAreaId: p.connection.targetAreaId,
-        placementSide: p.connection.placementSide || 'any',
-        direction: p.connection.direction,
-        placementX: p.x,
-        placementY: p.y
-      })),
-      placedEntities:
-        lastGenerated.placedEntities?.map((e) => ({
-          templateId: e.templateId,
-          x: e.x,
-          y: e.y
-        })) || [],
-      staticMap: {
-        layout: layoutRows,
-        legend
-      }
-    };
-
-    controller.applyOperations([
-      {
-        op: 'add',
-        path: `/areas/${newId}`,
-        value: staticArea
-      }
-    ]);
-
-    alert(`Area '${newId}' successfully baked into the campaign as a static map!`);
-
-    // Navigate to the new area in the editor
-    const areasBtn = document.querySelector('[data-target="areas"]') as HTMLButtonElement | null;
-    if (areasBtn) {
-      sessionStorage.setItem('editor_active_category', 'areas');
-      sessionStorage.setItem('editor_active_item', newId);
-      areasBtn.click();
-    }
+    handleBakeArea(controller, areaId, lastGenerated);
   });
 
   // Auto-Simulate button
   const simBtn = container.querySelector('#ds-auto-sim-btn');
   simBtn?.addEventListener('click', () => {
-    runAutoSimulation(controller, container);
+    if (lastGenerated) {
+      runAutoSimulation(controller, lastGenerated);
+    }
   });
 
   // Play Encounter button
@@ -311,516 +211,4 @@ export function renderDirectorSandbox(controller: EditorController, container: H
       window.dispatchEvent(new CustomEvent('PlaySandboxEncounter', { detail: { generatedArea: lastGenerated } }));
     }
   });
-}
-
-/**
- * Updates the area info bar when an area is selected.
- */
-function updateAreaInfo(controller: EditorController, areaId: string): void {
-  const infoBar = document.getElementById('ds-area-info');
-  const mapContainer = document.getElementById('ds-map-container');
-  const receiptContainer = document.getElementById('ds-receipt-container');
-  const generateBtn = document.getElementById('ds-generate-btn') as HTMLButtonElement;
-
-  if (!areaId) {
-    if (infoBar) infoBar.style.display = 'none';
-    if (mapContainer) mapContainer.style.display = 'none';
-    if (receiptContainer) receiptContainer.style.display = 'none';
-    if (generateBtn) generateBtn.disabled = true;
-    return;
-  }
-
-  const doc = controller.getDocument();
-  const area = doc.areas[areaId];
-  if (!area || !infoBar) return;
-
-  if (generateBtn) generateBtn.disabled = false;
-
-  const tags = (area.tags ?? []).join(', ') || 'none';
-  const subBiomes = area.subBiomes
-    ? Object.entries(area.subBiomes)
-        .map(([tag, prob]) => `${tag} (${(prob * 100).toFixed(0)}%)`)
-        .join(', ')
-    : 'none';
-  const budgetText = area.budgetScaling
-    ? `${area.budgetScaling.baseBudget} + ${area.budgetScaling.scalingFactor} × level`
-    : String(area.crBudget ?? 0);
-
-  infoBar.style.display = 'block';
-  infoBar.innerHTML = `
-    <strong>${area.name}</strong>
-    &nbsp;|&nbsp; Budget: <code>${budgetText}</code>
-    &nbsp;|&nbsp; Profile: <code>${area.encounterProfileId ?? '(none)'}</code>
-    &nbsp;|&nbsp; Tags: <code>${tags}</code>
-    &nbsp;|&nbsp; Sub-biomes: <code>${subBiomes}</code>
-    &nbsp;|&nbsp; Generator: <code>${area.generatorType}</code>
-  `;
-}
-
-/**
- * Runs the Encounter Director generation and renders the result.
- */
-function runGeneration(controller: EditorController, container: HTMLElement): void {
-  const areaSelect = container.querySelector('#ds-area-select') as HTMLSelectElement;
-  const seedInput = container.querySelector('#ds-seed-input') as HTMLInputElement;
-  const budgetInput = container.querySelector('#ds-budget-input') as HTMLInputElement;
-  const profileSelect = container.querySelector('#ds-profile-select') as HTMLSelectElement;
-  const playerLevelInput = container.querySelector('#ds-player-level') as HTMLInputElement;
-  const simBtn = container.querySelector('#ds-auto-sim-btn') as HTMLButtonElement;
-
-  const areaId = areaSelect.value;
-  if (!areaId) return;
-
-  const doc = controller.getDocument();
-  const areaDef = doc.areas[areaId];
-  if (!areaDef) return;
-
-  const seed = parseInt(seedInput.value, 10) || Math.floor(Math.random() * 2147483647);
-  const playerLevel = parseInt(playerLevelInput.value, 10) || 1;
-
-  // Build a mutated area definition copy if overrides provided
-  let effectiveAreaDef = areaDef;
-  const budgetOverride = budgetInput.value ? parseInt(budgetInput.value, 10) : null;
-  const profileOverride = profileSelect.value || null;
-
-  if (budgetOverride !== null || profileOverride !== null) {
-    effectiveAreaDef = {
-      ...areaDef,
-      ...(budgetOverride !== null ? { crBudget: budgetOverride } : {}),
-      ...(profileOverride !== null ? { encounterProfileId: profileOverride } : {})
-    };
-  }
-
-  // Save RNG state, set seed, generate, restore
-  const savedState = ROT.RNG.getState();
-  try {
-    ROT.RNG.setSeed(seed);
-
-    const context = { playerLevel, tokenPool: new Set<string>() };
-    lastGenerated = generateArea(doc, areaId, context);
-
-    // If overrides were used, re-run the encounter director with the overridden area def
-    // (generateArea will use the area def from doc, not our mutated copy)
-    if (budgetOverride !== null || profileOverride !== null) {
-      const generatedMap = lastGenerated.map;
-      const rooms = lastGenerated.rooms.map((r) => ({
-        left: r.left,
-        right: r.right,
-        top: r.top,
-        bottom: r.bottom,
-        centerX: r.centerX,
-        centerY: r.centerY
-      }));
-
-      const directorResult = runEncounterDirector(doc, effectiveAreaDef, generatedMap, rooms, [], context);
-      lastGenerated = {
-        ...lastGenerated,
-        placedEntities: directorResult.newEntities,
-        directorReceipt: directorResult.receipt
-      };
-    }
-  } finally {
-    ROT.RNG.setState(savedState);
-  }
-
-  // Render map
-  renderMiniMap(container, controller.getDocument(), lastGenerated);
-  // Render receipt
-  if (lastGenerated.directorReceipt) {
-    renderReceipt(container, controller.getDocument(), lastGenerated.directorReceipt);
-  }
-
-  // Enable simulate, play, and bake buttons
-  const playBtn = document.getElementById('ds-play-btn') as HTMLButtonElement;
-  const bakeBtn = document.getElementById('ds-bake-btn') as HTMLButtonElement;
-  if (lastGenerated) {
-    if (bakeBtn) bakeBtn.disabled = false;
-    if (simBtn && lastGenerated.placedEntities && lastGenerated.placedEntities.length > 0) {
-      simBtn.disabled = false;
-      if (playBtn) playBtn.disabled = false;
-    }
-  }
-
-  // Populate JSON Content
-  const jsonContent = container.querySelector('#ds-json-content');
-  if (jsonContent && lastGenerated) {
-    // Generate staticMap layout representation for preview
-    const width = lastGenerated.map.width;
-    const height = lastGenerated.map.height;
-    const legend: Record<string, string> = {};
-    const legendInverse: Record<string, string> = {};
-    legend['.'] = 'empty_space';
-    legendInverse['empty_space'] = '.';
-    legend['#'] = 'stone_wall';
-    legendInverse['stone_wall'] = '#';
-    legend['~'] = 'water';
-    legendInverse['water'] = '~';
-
-    const layoutRows: string[] = [];
-    for (let y = 0; y < height; y++) {
-      let rowStr = '';
-      for (let x = 0; x < width; x++) {
-        const idx = y * width + x;
-        const tile = lastGenerated.map.tiles[idx];
-        const tileId = tile?.tileId || 'empty_space';
-        let char = legendInverse[tileId];
-        if (!char) {
-          const candidate = tileId.slice(0, 1).toLowerCase() || '?';
-          char = legend[candidate] ? '?' : candidate;
-          if (char === '?') {
-            const unused = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+'
-              .split('')
-              .find((c) => !legend[c]);
-            char = unused || '?';
-          }
-          legend[char] = tileId;
-          legendInverse[tileId] = char;
-        }
-        rowStr += char;
-      }
-      layoutRows.push(rowStr);
-    }
-
-    const previewArea = {
-      id: `${areaId}_baked`,
-      name: `${areaDef.name} (Baked)`,
-      generatorType: 'static',
-      dangerRating: areaDef.dangerRating,
-      tags: areaDef.tags || [],
-      connections: lastGenerated.portals.map((p) => ({
-        targetAreaId: p.connection.targetAreaId,
-        placementSide: p.connection.placementSide || 'any',
-        direction: p.connection.direction,
-        placementX: p.x,
-        placementY: p.y
-      })),
-      placedEntities:
-        lastGenerated.placedEntities?.map((e) => ({
-          templateId: e.templateId,
-          x: e.x,
-          y: e.y
-        })) || [],
-      staticMap: {
-        layout: layoutRows,
-        legend
-      }
-    };
-    jsonContent.textContent = JSON.stringify(previewArea, null, 2);
-  }
-
-  // Show containers
-  const mapContainer = document.getElementById('ds-map-container');
-  const rightPanel = document.getElementById('ds-right-panel');
-  if (mapContainer) mapContainer.style.display = 'block';
-  if (rightPanel) rightPanel.style.display = 'flex';
-
-  // Hide previous sim results
-  const simResults = document.getElementById('ds-sim-results');
-  if (simResults) simResults.style.display = 'none';
-}
-
-/**
- * Renders the generated map as a DOM grid.
- */
-function renderMiniMap(container: HTMLElement, campaign: CampaignData, result: GeneratedArea): void {
-  const mapGrid = container.querySelector('#ds-map-grid') as HTMLElement;
-  const mapStats = container.querySelector('#ds-map-stats');
-  if (!mapGrid) return;
-
-  const { map, rooms, portals, placedEntities, startPos, directorReceipt } = result;
-  const entityPositions = new Map<string, string>(); // "x,y" → templateId
-  if (placedEntities) {
-    for (const e of placedEntities) {
-      entityPositions.set(`${e.x},${e.y}`, e.templateId);
-    }
-  }
-
-  // Mark start position
-  const startKey = `${startPos.x},${startPos.y}`;
-
-  // Portal positions
-  const portalKeys = new Set<string>();
-  for (const p of portals) {
-    portalKeys.add(`${p.x},${p.y}`);
-  }
-
-  // Room region tracking for highlighting
-  const roomKeys = new Set<string>();
-  for (const r of rooms) {
-    for (let y = r.top; y <= r.bottom; y++) {
-      for (let x = r.left; x <= r.right; x++) {
-        roomKeys.add(`${x},${y}`);
-      }
-    }
-  }
-
-  // Build grid
-  mapGrid.style.gridTemplateColumns = `repeat(${map.width}, ${MAP_CELL_SIZE}px)`;
-  mapGrid.innerHTML = '';
-
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      const idx = y * map.width + x;
-      const tile = map.tiles[idx];
-      const cell = document.createElement('div');
-      cell.style.width = `${MAP_CELL_SIZE}px`;
-      cell.style.height = `${MAP_CELL_SIZE}px`;
-      cell.style.fontSize = `${MAP_CELL_SIZE - 1}px`;
-      cell.style.lineHeight = `${MAP_CELL_SIZE}px`;
-      cell.style.textAlign = 'center';
-      cell.style.boxSizing = 'border-box';
-
-      // Tile background color
-      if (tile) {
-        cell.style.backgroundColor = getTileColor(campaign, tile.tileId);
-      } else {
-        cell.style.backgroundColor = '#111';
-      }
-
-      // Room highlight (subtle)
-      const key = `${x},${y}`;
-      if (roomKeys.has(key) && !tile?.tileId.includes('wall')) {
-        cell.style.backgroundColor = lightenColor(cell.style.backgroundColor, 10);
-      }
-
-      // Entity overlay
-      const entityId = entityPositions.get(key);
-      if (entityId) {
-        const display = getEntityDisplay(campaign, entityId);
-        cell.textContent = display.glyph;
-        cell.style.color = display.fg;
-        cell.style.fontWeight = 'bold';
-        cell.title = entityId;
-
-        // Check for dynamic traits
-        const placedEntity = placedEntities?.find((e) => e.x === x && e.y === y);
-        if (placedEntity?.dynamicTraits && placedEntity.dynamicTraits.length > 0) {
-          cell.style.outline = '1px solid #f1c40f';
-          cell.title += ` [${placedEntity.dynamicTraits.join(', ')}]`;
-        }
-      }
-
-      // Portal overlay (glyph takes precedence)
-      if (portalKeys.has(key)) {
-        cell.textContent = '🌀';
-        cell.title = 'Portal / Transition';
-      }
-
-      // Start position marker
-      if (key === startKey) {
-        if (!entityId) {
-          cell.textContent = '@';
-          cell.style.color = '#2ecc71';
-          cell.title = 'Player Start';
-        }
-        cell.style.outline = '1px solid #2ecc71';
-      }
-
-      mapGrid.appendChild(cell);
-    }
-  }
-
-  // Update stats
-  if (mapStats) {
-    const entityCount = placedEntities?.length ?? 0;
-    const totalBudget = directorReceipt?.effectiveBudget ?? 0;
-    const totalSpent = Object.values(directorReceipt?.axisResults ?? {}).reduce((s, a) => s + a.spent, 0);
-    const totalRooms = rooms.length;
-    mapStats.textContent = `🗺 ${map.width}×${map.height} | 🚪 ${totalRooms} rooms | 👾 ${entityCount} entities | 💰 ${totalSpent}/${totalBudget} CR spent`;
-  }
-}
-
-/**
- * Renders the Director Receipt panel with candidate explanations.
- */
-function renderReceipt(_container: HTMLElement, campaign: CampaignData, receipt: DirectorReceipt): void {
-  const content = document.getElementById('ds-receipt-content');
-  if (!content) return;
-
-  const { axisResults, effectiveBudget, preAllocated, traitUpgrades } = receipt;
-
-  // Build HTML
-  const parts: string[] = [];
-
-  // Budget summary
-  const totalSpent = Object.values(axisResults).reduce((s, a) => s + a.spent, 0);
-  parts.push(`
-    <div style="margin-bottom: 0.5rem; padding: 0.25rem 0.5rem; background: rgba(255,255,255,0.05); border-radius: 3px;">
-      <strong>Budget Summary</strong><br/>
-      Total: <code>${effectiveBudget}</code> CR
-      &nbsp;|&nbsp; Spent: <code>${totalSpent}</code> CR
-      &nbsp;|&nbsp; Pre-allocated: <code>${preAllocated}</code> CR
-      &nbsp;|&nbsp; Remaining: <code style="color: ${effectiveBudget - totalSpent > 0 ? '#f39c12' : '#888'}">${effectiveBudget - totalSpent}</code>
-    </div>
-  `);
-
-  // Per-axis breakdown
-  for (const axis of ['protein', 'appetizer', 'side', 'dessert'] as const) {
-    const result = axisResults[axis];
-    const color = AXIS_COLORS[axis] ?? '#888';
-    const pct = result.budget > 0 ? Math.round((result.spent / result.budget) * 100) : 0;
-
-    parts.push(`
-      <div style="margin-bottom: 0.5rem; border-left: 3px solid ${color}; padding-left: 0.5rem;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span style="text-transform: capitalize;">${axis}</span>
-          <span style="color: ${color};">${result.spent} / ${result.budget} CR (${pct}%)</span>
-        </div>
-        <div style="background: #333; height: 6px; border-radius: 3px; margin: 2px 0 4px 0;">
-          <div style="background: ${color}; width: ${Math.min(pct, 100)}%; height: 100%; border-radius: 3px;"></div>
-        </div>
-    `);
-
-    // Spawned entities
-    if (result.candidates.filter((c) => c.disposition === 'spawned').length > 0) {
-      parts.push(`<div style="font-size: 0.7rem; color: #2ecc71; margin-bottom: 2px;">✓ Spawned:</div>`);
-      for (const c of result.candidates) {
-        if (c.disposition !== 'spawned') continue;
-        const def = campaign.entities[c.templateId];
-        const name = def?.name ?? c.templateId;
-        parts.push(
-          `<div style="font-size: 0.65rem; padding-left: 0.5rem; color: #ccc;"> &bull; ${name} (${c.cost} CR) ${c.reasonDetail ?? ''}</div>`
-        );
-      }
-    }
-
-    // Rejected candidates
-    const rejected = result.candidates.filter((c) => c.disposition !== 'spawned');
-    if (rejected.length > 0) {
-      parts.push(
-        `<div style="font-size: 0.7rem; color: #e74c3c; margin-top: 2px; margin-bottom: 2px;">✗ Rejected (${rejected.length}):</div>`
-      );
-      for (const c of rejected) {
-        const def = campaign.entities[c.templateId];
-        const name = def?.name ?? c.templateId;
-        const reasonLabel = getDispositionLabel(c.disposition);
-        parts.push(
-          `<div style="font-size: 0.65rem; padding-left: 0.5rem; color: #999;"> &bull; ${name} (${c.cost} CR) &mdash; <span style="color: #e74c3c;">${reasonLabel}</span></div>`
-        );
-      }
-    }
-
-    parts.push(`</div>`);
-  }
-
-  // Trait upgrades
-  if (traitUpgrades.length > 0) {
-    parts.push(`
-      <div style="margin-bottom: 0.5rem; padding: 0.25rem 0.5rem; background: rgba(241, 196, 15, 0.1); border-radius: 3px;">
-        <strong style="color: #f1c40f;">✦ Budget Padding — Dynamic Traits</strong><br/>
-        ${traitUpgrades.map((t) => `<span style="font-size: 0.7rem;">• ${t}</span>`).join('<br/>')}
-      </div>
-    `);
-  }
-
-  content.innerHTML = parts.join('\n');
-}
-
-/**
- * Gets a human-readable label for a candidate disposition.
- */
-function getDispositionLabel(disposition: string): string {
-  switch (disposition) {
-    case 'too_expensive':
-      return 'Too expensive for remaining budget';
-    case 'token_exhausted':
-      return 'Unique/token limit reached';
-    case 'no_space':
-      return 'No available floor tile in room';
-    case 'pool_filtered':
-      return 'Pool conditions did not match';
-    default:
-      return disposition;
-  }
-}
-
-/**
- * Runs the auto-simulation of the generated encounter.
- */
-function runAutoSimulation(controller: EditorController, _container: HTMLElement): void {
-  if (!lastGenerated || !lastGenerated.placedEntities || lastGenerated.placedEntities.length === 0) {
-    return;
-  }
-
-  const simResults = document.getElementById('ds-sim-results');
-  const simContent = document.getElementById('ds-sim-content');
-  const simStatus = document.getElementById('ds-sim-status');
-  if (!simResults || !simContent || !simStatus) return;
-
-  simResults.style.display = 'block';
-  simStatus.textContent = '⏳ Running simulations...';
-  simContent.innerHTML = '';
-
-  const doc = controller.getDocument();
-  const map = lastGenerated.map;
-
-  // Find the player entity template (first actor without roleTags or with "player" tag)
-  const playerTemplateId =
-    Object.entries(doc.entities).find(([, e]) => e.tags?.includes('actor') && e.roleTags?.includes('protein'))?.[0] ??
-    'goblin'; // fallback
-
-  const startPos = lastGenerated.startPos;
-
-  // Defer to allow UI update
-  setTimeout(() => {
-    try {
-      const result = runEncounterArena(
-        playerTemplateId,
-        lastGenerated!.placedEntities!.map((e) => ({ templateId: e.templateId, x: e.x, y: e.y })),
-        doc,
-        { width: map.width, height: map.height, tiles: map.tiles },
-        startPos,
-        DEFAULT_MAX_SIM_TURNS
-      );
-
-      simStatus.textContent = '';
-      const agg = result.aggregate;
-
-      simContent.innerHTML = `
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-          <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 4px; min-width: 120px; text-align: center;">
-            <div style="font-size: 1.2rem; font-weight: bold; color: ${agg.playerWins > agg.enemyWins ? '#2ecc71' : '#e74c3c'};">${agg.playerWins}</div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">Player Wins</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 4px; min-width: 120px; text-align: center;">
-            <div style="font-size: 1.2rem; font-weight: bold; color: #e74c3c;">${agg.enemyWins}</div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">Enemy Wins</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 4px; min-width: 120px; text-align: center;">
-            <div style="font-size: 1.2rem; font-weight: bold;">${agg.draws}</div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">Draws</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 4px; min-width: 120px; text-align: center;">
-            <div style="font-size: 1.2rem; font-weight: bold;">${agg.avgTurns.toFixed(1)}</div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">Avg Turns</div>
-          </div>
-          <div style="background: rgba(255,255,255,0.05); padding: 0.75rem; border-radius: 4px; min-width: 120px; text-align: center;">
-            <div style="font-size: 1.2rem; font-weight: bold; color: #2ecc71;">${agg.avgPlayerHpRemaining.toFixed(1)}</div>
-            <div style="font-size: 0.7rem; color: var(--text-dim);">Avg Player HP Remaining</div>
-          </div>
-        </div>
-        <div style="margin-top: 0.75rem; font-size: 0.7rem; color: var(--text-dim);">
-          Simulated ${result.results.length} engagements vs. spawned entities (max ${DEFAULT_MAX_SIM_TURNS} turns each).
-        </div>
-      `;
-    } catch (err) {
-      console.error(err);
-      simContent.innerHTML = `<div style="color: #e74c3c;">Simulation Error: ${(err as Error).message}</div>`;
-    } finally {
-      simStatus.textContent = '';
-    }
-  }, 50);
-}
-
-/**
- * Lightens a CSS color string by a percentage.
- */
-function lightenColor(color: string, percent: number): string {
-  const hex = color.replace('#', '');
-  if (hex.length < 6) return color;
-  const num = parseInt(hex, 16);
-  const r = Math.min(255, ((num >> 16) & 0xff) + percent);
-  const g = Math.min(255, ((num >> 8) & 0xff) + percent);
-  const b = Math.min(255, (num & 0xff) + percent);
-  return `rgb(${r},${g},${b})`;
 }

@@ -20,8 +20,8 @@ export function renderInvestigationBoard(state: GameState): void {
   }
 
   overlay.classList.remove('hidden');
-  suspectsList.innerHTML = '';
-  cluesList.innerHTML = '';
+  suspectsList.replaceChildren();
+  cluesList.replaceChildren();
 
   const investigation = state.investigation;
 

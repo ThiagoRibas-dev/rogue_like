@@ -1,6 +1,6 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
-import { dispatchAction } from '../actions/action.registry.ts';
+import { executeSay } from './message.system.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
@@ -110,15 +110,11 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
           if (barkList.length > 0 && ROT.RNG.getUniform() < 0.25) {
             const barkMsg = ROT.RNG.getItem(barkList);
             if (barkMsg) {
-              const sayResult = dispatchAction(nextState, {
-                type: IntentType.Say,
-                entityId,
-                message: barkMsg
-              });
-              nextState = sayResult.state;
-              if (sayResult.events && sayResult.events.length > 0) {
-                nextState = { ...nextState, events: [...nextState.events, ...sayResult.events] };
-              }
+              const sayResult = executeSay(nextState, entityId, barkMsg);
+              nextState = {
+                ...sayResult.state,
+                events: [...sayResult.state.events, sayResult.event]
+              };
             }
           }
         }

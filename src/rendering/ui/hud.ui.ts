@@ -17,7 +17,7 @@ export function renderMessageLog(state: GameState): void {
   }
 
   // Clear existing messages
-  messageLog.innerHTML = '';
+  messageLog.replaceChildren();
 
   // Render messages from oldest to newest (top to bottom)
   for (const msg of state.messages) {
@@ -125,7 +125,7 @@ export function renderPlayerStats(state: GameState): void {
   const statusContainer = document.getElementById('status-effects-container');
   if (statusContainer) {
     const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects);
-    statusContainer.innerHTML = '';
+    statusContainer.replaceChildren();
 
     if (!statuses || statuses.activeEffects.length === 0) {
       const empty = document.createElement('div');
@@ -158,3 +158,32 @@ export function renderPlayerStats(state: GameState): void {
     }
   }
 }
+
+/**
+ * Updates the HUD elements (health bar, depth indicator) based on current GameState.
+ * @param s The current GameState.
+ */
+export function updateHUD(s: GameState): void {
+  const depthElement = document.getElementById('dungeon-depth');
+  if (depthElement !== null) {
+    depthElement.textContent = s.campaign.areas[s.currentAreaId]?.name ?? s.currentAreaId;
+  }
+
+  const hpBarFill = document.querySelector('.health-bar') as HTMLElement | null;
+  const hpBarText = document.querySelector('.health-bar + .bar-text') as HTMLElement | null;
+
+  const players = s.entities.filter((id) => getComponent(s, id, ComponentType.Player));
+  if (players.length > 0 && players[0] !== undefined) {
+    const fighter = getComponent(s, players[0], ComponentType.Fighter);
+    if (fighter) {
+      if (hpBarFill) {
+        const percent = Math.max(0, Math.min(100, Math.round((fighter.hp / fighter.maxHp) * 100)));
+        hpBarFill.style.width = `${percent}%`;
+      }
+      if (hpBarText) {
+        hpBarText.textContent = `${fighter.hp} / ${fighter.maxHp}`;
+      }
+    }
+  }
+}
+

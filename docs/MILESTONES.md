@@ -2,7 +2,7 @@
 
 This document outlines the high-level roadmap for the project, organizing our progression from a basic moving character to a fully modular, extensible roguelike with a robust engine.
 
-## 🟢 Milestone 1: The Foundation (Currently Active)
+## 🟢 Milestone 1: The Foundation
 Establish the strict structural and architectural patterns that the rest of the game will rely on.
 - [x] Initial Vite + ROT.js + TypeScript environment setup.
 - [x] Basic ECS (Entity-Component-System) structure (`createEntity`, `addComponent`, queries).
@@ -42,7 +42,7 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 - [x] Implement Monster Death.
 - [x] **Implement Player Death state flag (halt game processing).**
 
-### 🟢 Milestone 5: Items & Inventory (Complete)
+## 🟢 Milestone 5: Items & Inventory (Complete)
 - [x] Create a data-driven Item Registry (consumables, weapons, armor)
 - [x] Add ItemComponent, InventoryComponent, EquipmentComponent
 - [x] Add ground items and Pick Up / Drop mechanics
@@ -50,7 +50,7 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 - [x] Implement "Bonus at Query Time" stat calculation for Equipment slots
 - [x] Render inventory UI panel for interaction
 
-### 🟢 Milestone 6: XP & Leveling (Active)
+## 🟢 Milestone 6: XP & Leveling (Complete)
 Transform the mechanical systems into a cohesive game experience.
 - [x] XP and Leveling System for the Player.
 - [x] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
@@ -175,14 +175,14 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
 - [x] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
 
-### 🟢 Milestone 18: Component-Driven Combat Pipeline (Complete)
+## 🟢 Milestone 18: Component-Driven Combat Pipeline (Complete)
 **Goal:** Transition combat resolution from a monolithic intent handler to a true ECS pipeline, setting the stage for AoE, DoTs, and environmental hazards.
 - [x] **Damage Components:** Introduce `DamageComponent` to represent incoming damage events.
 - [x] **Damage System:** Build `damage.system.ts` to process `DamageComponents`, reducing HP, applying on-hit effects, and emitting floating text.
 - [x] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
 - [x] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
 
-### 🟢 Milestone 19: The Social Layer (Complete)
+## 🟢 Milestone 19: The Social Layer (Complete)
 **Goal:** Introduce dialogue, quests, and rich interaction menus.
 - [x] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
 - [x] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
@@ -208,100 +208,100 @@ Introduce systemic villains that act against the player, pairing the background 
 # 🚀 Phase 4: Campaign Creator & Modular Tooling (Refined)
 Features to allow building, testing, and sharing campaigns using structured JSON data and custom map configurations.
 
-### Milestone 21: Editor Foundation & Database Forms
+## 🟢 Milestone 21: Editor Foundation & Database Forms (Complete)
 **Goal:** Create the basic workspace shell, modular form templates, and simple string/number fields for JSON data editing, with direct local workspace interaction.
 - [x] **Developer Workspace Toggle & Routing**
   - Add a "Dev Tools" action button on the Main Menu screen.
-  - Setup screen switching between the main game state and the editor workspace state in [src/main.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/main.ts) and [src/core/game-loop.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/game-loop.ts).
+  - Setup screen switching between the main game state and the editor workspace state in [src/main.ts](src/main.ts) and [src/core/game-loop.ts](src/core/game-loop.ts).
   - Ensure entering the editor halts active schedulers, hides the main game canvas, and opens the editor layout.
 - [x] **Top-Level Editor Workspace & Dependency Graph Guard**
-  - Create a dedicated [src/editor/](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/) directory at the top of the dependency graph (peer to `main.ts`).
-  - Implement the controller logic in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) and loading service in [src/editor/workspace_file_service.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/workspace_file_service.ts) using the browser's `showDirectoryPicker()` API.
-  - Keep [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) as a pure rendering/view module that only imports downward (from `types`, `constants`, `utils`) and communicates with the editor controller via upward event/command dispatching.
+  - Create a dedicated [src/editor/](src/editor/) directory at the top of the dependency graph (peer to `main.ts`).
+  - Implement the controller logic in [src/editor/campaign_editor.ts](src/editor/campaign_editor.ts) and loading service in [src/editor/workspace_file_service.ts](src/editor/workspace_file_service.ts) using the browser's `showDirectoryPicker()` API.
+  - Keep [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) as a pure rendering/view module that only imports downward (from `types`, `constants`, `utils`) and communicates with the editor controller via upward event/command dispatching.
 - [x] **Dual Import/Export Fallback**
-  - Integrate a fallback drag-and-drop `.zip` reader/writer in [src/editor/workspace_file_service.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/workspace_file_service.ts) for browsers that do not support directory pickers.
+  - Integrate a fallback drag-and-drop `.zip` reader/writer in [src/editor/workspace_file_service.ts](src/editor/workspace_file_service.ts) for browsers that do not support directory pickers.
   - Allow compiling all edited registries into a single ZIP archive for distribution.
 - [x] **⭐ Undo/Redo + Change History (JSON Patch)**
-  - Implement an editor command stack in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) over the in-memory campaign document using **JSON Patch (RFC 6902) deltas** rather than full-state snapshots, so history is cheap and memory-stable.
+  - Implement an editor command stack in [src/editor/campaign_editor.ts](src/editor/campaign_editor.ts) over the in-memory campaign document using **JSON Patch (RFC 6902) deltas** rather than full-state snapshots, so history is cheap and memory-stable.
   - Bind `Ctrl+Z` / `Ctrl+Shift+Z` to undo/redo changes in forms.
-  - *RNG Note:* This stack tracks editor changes only. We document that gameplay turn-rewinds require RNG checkpointing due to state-counter dependencies in [src/core/rng.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/rng.ts).
+  - *RNG Note:* This stack tracks editor changes only. We document that gameplay turn-rewinds require RNG checkpointing due to state-counter dependencies in [src/core/rng.ts](src/core/rng.ts).
 - [x] **⭐ Fast Iteration & "Round-Trip" Goal**
-  - Establish a fast-path re-injection of the in-memory doc to the campaign loader [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) to avoid full page reload on playtest.
+  - Establish a fast-path re-injection of the in-memory doc to the campaign loader [src/core/loader.ts](src/core/loader.ts) to avoid full page reload on playtest.
   - Track iteration speeds in the developer toolbar.
 - [x] **Scaffolding Selector (New Campaign Wizard)**
-  - Create a startup editor wizard screen in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts).
+  - Create a startup editor wizard screen in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts).
   - **Clone Template Option:** Clone the existing `default` campaign templates as a starting point.
   - **Blank Slate Option:** Initialize empty arrays and raw baseline files for an adventure built from scratch.
   - **Example Campaign:** Ship a small, annotated reference campaign to teach designers how templates connect.
 - [x] **Modular DOM Database Editor Components**
-  - Design a modular CSS layout in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts): Left sidebar list and Right editing pane.
+  - Design a modular CSS layout in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts): Left sidebar list and Right editing pane.
   - Build granular, reusable DOM field elements in Vanilla TS: `StringField`, `NumberField`, `ColorPickerField`, `ListField`, and `NestedRecordField`.
   - **⭐ Zod-Driven Form Generation:** Refactor the editor renderer to recursively parse Zod schema definitions (`ZodObject`, `ZodOptional`, `ZodArray`, etc.) so that all possible fields are presented to the user, even on newly created empty objects.
-  - **⭐ `ReferenceField` / Autocomplete Pickers:** Fields referencing IDs (e.g. entities to factions, items to effects) render as searchable dropdowns rather than raw text to prevent link errors, reading live tables in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
+  - **⭐ `ReferenceField` / Autocomplete Pickers:** Fields referencing IDs (e.g. entities to factions, items to effects) render as searchable dropdowns rather than raw text to prevent link errors, reading live tables in [src/types/campaign.types.ts](src/types/campaign.types.ts).
 - [x] **Zod Schema Compiler & Link Auditor**
-  - Hook Zod's `safeParse` to validate fields on input change, showing validation errors inline based on Zod types in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
-  - Implement a **Campaign Auditor** utility in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) to audit cross-registry links.
+  - Hook Zod's `safeParse` to validate fields on input change, showing validation errors inline based on Zod types in [src/types/campaign.types.ts](src/types/campaign.types.ts).
+  - Implement a **Campaign Auditor** utility in [src/editor/campaign_editor.ts](src/editor/campaign_editor.ts) to audit cross-registry links.
   - Display error counts in the dev toolbar; block Playtest and Export when unresolved Zod errors exist.
 - [x] **Live Playtest Mode**
-  - Add a "Play Test" button that serializes the campaign, injects it into memory in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts), clears active save files in [src/core/save.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/save.ts), and runs the game.
-  - **⭐ "Return to Editor" Re-entry:** Preserve the editor document state across playtest detours in [src/main.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/main.ts) so authors return to the exact object they were editing.
+  - Add a "Play Test" button that serializes the campaign, injects it into memory in [src/core/loader.ts](src/core/loader.ts), clears active save files in [src/core/save.ts](src/core/save.ts), and runs the game.
+  - **⭐ "Return to Editor" Re-entry:** Preserve the editor document state across playtest detours in [src/main.ts](src/main.ts) so authors return to the exact object they were editing.
 
 ## 🟢 Milestone 22: The Trigger System (Events → Conditions → Consequences) ⭐ KEYSTONE
 Promote scattered condition/action primitives into a single, unified, event-reactive trigger engine.
 - [x] **Generalize the Event Surface**
-  - Audit and expand the existing `GameEventType` enum and event ledger in [src/types/events.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/events.types.ts); ensure all state changes publish uniformly in [src/core/game-loop.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/game-loop.ts).
+  - Audit and expand the existing `GameEventType` enum and event ledger in [src/types/events.types.ts](src/types/events.types.ts); ensure all state changes publish uniformly in [src/core/game-loop.ts](src/core/game-loop.ts).
 - [x] **Declarative Trigger Schema**
-  - Define Zod `TriggerDefinition` `{ id, event, conditions[], consequences[] }` serializable to JSON in [src/types/trigger.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/trigger.types.ts).
+  - Define Zod `TriggerDefinition` `{ id, event, conditions[], consequences[] }` serializable to JSON in [src/types/trigger.types.ts](src/types/trigger.types.ts).
   - **Conditions:** Composable predicates (e.g., `entityHasTag`, `factionStandingBetween`, `hasMemoryFact`).
   - **Consequences:** Extensible effect types (e.g., `modify_standing`, `complete_quest`, `spawn_entity`, `emit_clue`).
 - [x] **Trigger Routing via Buckets**
-  - Refactor [src/systems/trigger.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/trigger.system.ts) to index triggers by event type (`event → triggers`) on campaign load for fast O(1) matching during game ticks, replacing old local checks.
+  - Refactor [src/systems/trigger.system.ts](src/systems/trigger.system.ts) to index triggers by event type (`event → triggers`) on campaign load for fast O(1) matching during game ticks, replacing old local checks.
 - [x] **Authoring UI: The Trigger Card Builder**
-  - Create the trigger-card composer interface in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) of `WHEN [event] IF [conditions...] THEN [consequences...]` using reference dropdowns.
+  - Create the trigger-card composer interface in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) of `WHEN [event] IF [conditions...] THEN [consequences...]` using reference dropdowns.
 - [x] **⭐ Power-User Scripting Hatch**
   - **Phase A:** Ship declarative core triggers first.
-  - **Phase B:** Add a sandboxed `run_script` consequence in [src/systems/trigger.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/trigger.system.ts) that evaluates event/state context as a pure function and returns new declarative consequences (maintaining determinism and serialization).
+  - **Phase B:** Add a sandboxed `run_script` consequence in [src/systems/trigger.system.ts](src/systems/trigger.system.ts) that evaluates event/state context as a pure function and returns new declarative consequences (maintaining determinism and serialization).
 - [x] **⭐ De-risked Trigger Migration Loop**
-  - **Phase 1 Clue Migration:** Port clue drops inside [src/systems/investigation.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/investigation.system.ts) to triggers first to test the engine with low blast radius.
+  - **Phase 1 Clue Migration:** Port clue drops inside [src/systems/investigation.system.ts](src/systems/investigation.system.ts) to triggers first to test the engine with low blast radius.
   - **Phase 2 Validator Helper:** Implement a basic headless state-diffing runner in `src/editor/campaign_validator.ts` early to assert the default campaign generates identical gameplay logs before and after refactoring.
   - **Phase 3 Narrative Migrations:** Port heavy NPC dialogues and quest events to triggers once diff-testing passes.
 
 ## 🟢 Milestone 23: Narrative Architect (Dialogue, Quests & Flow)
 Construct narrative structures and test conditional triggers in-editor on top of the Trigger System.
 - [x] **Conversation Editor (Tree-First, Scope-Protected)**
-  - Build a folder-style nested branching list dialogue editor in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts), modifying dialogue schemas in [src/types/dialogue.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/dialogue.types.ts).
+  - Build a folder-style nested branching list dialogue editor in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts), modifying dialogue schemas in [src/types/dialogue.types.ts](src/types/dialogue.types.ts).
 - [x] **Dialogue Triggers**
-  - Refactor options in [src/rendering/ui/dialogue.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dialogue.ui.ts) to gate choices and trigger node consequences directly using the Milestone 22 condition/consequence pickers, removing legacy action structures.
+  - Refactor options in [src/rendering/ui/dialogue.ui.ts](src/rendering/ui/dialogue.ui.ts) to gate choices and trigger node consequences directly using the Milestone 22 condition/consequence pickers, removing legacy action structures.
 - [x] **Quest Sequence Designer**
-  - Drag-and-drop quest stages, configuring objective parameters and journal logs mapped to schemas in [src/types/quests.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/quests.types.ts).
+  - Drag-and-drop quest stages, configuring objective parameters and journal logs mapped to schemas in [src/types/quests.types.ts](src/types/quests.types.ts).
 - [x] **Quest-Trigger Integration**
-  - Update quest state tracking in [src/systems/quest.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/quest.system.ts) so quest stage changes publish events; triggers can easily hook into them (e.g. spawning a boss when quest stage reaches X).
+  - Update quest state tracking in [src/systems/quest.system.ts](src/systems/quest.system.ts) so quest stage changes publish events; triggers can easily hook into them (e.g. spawning a boss when quest stage reaches X).
 - [x] **Emergent Dialogue Gating Simulator (State Injector)**
-  - Integrate an editor sidebar panel in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) to mock player memory fact logs and standings from `MemoryComponent` in [src/types/components.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/components.types.ts), highlighting visible dialogue branches.
+  - Integrate an editor sidebar panel in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) to mock player memory fact logs and standings from `MemoryComponent` in [src/types/components.types.ts](src/types/components.types.ts), highlighting visible dialogue branches.
 
 ## 🟢 Milestone 24: World & Area Builder (Complete)
 Provide visual environment design and portal networking.
 - [x] **Visual Grid Painter**
-  - Setup a tile painter canvas in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) utilizing `ROT.Display` or custom Canvas elements, painting tiles mapped to [src/types/game-state.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/game-state.types.ts) (`Tile` and `GameMap`) and properties in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts) (`TileDefinitionSchema`).
+  - Setup a tile painter canvas in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) utilizing `ROT.Display` or custom Canvas elements, painting tiles mapped to [src/types/game-state.types.ts](src/types/game-state.types.ts) (`Tile` and `GameMap`) and properties in [src/types/campaign.types.ts](src/types/campaign.types.ts) (`TileDefinitionSchema`).
   - Integrate undo/redo command stack patches with paint brush actions.
 - [x] **Dynamic Spawner & Portal Markers**
-  - Paint procedural spawner nodes and configure portal connections in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts), mapping them to `PortalComponent` in [src/types/components.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/components.types.ts).
-  - Modify [src/systems/map.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/map.system.ts) to parse dynamic spawners on level load/wakeup.
+  - Paint procedural spawner nodes and configure portal connections in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts), mapping them to `PortalComponent` in [src/types/components.types.ts](src/types/components.types.ts).
+  - Modify [src/systems/map.system.ts](src/systems/map.system.ts) to parse dynamic spawners on level load/wakeup.
 - [x] **Area Graph Editor**
-  - A link node layout of `areas.json` in [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) showing overworld topology and transition connectivity based on `areas` structures in [src/types/campaign.types.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/types/campaign.types.ts).
+  - A link node layout of `areas.json` in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) showing overworld topology and transition connectivity based on `areas` structures in [src/types/campaign.types.ts](src/types/campaign.types.ts).
 - [x] **Live Generator Sandbox**
-  - Real-time preview of cellular/digger parameters inside [src/rendering/editor_ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/editor_ui.ts) by invoking [src/map/generator.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/map/generator.ts) with seed rerolling and exit pathfinding reachability checks.
+  - Real-time preview of cellular/digger parameters inside [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) by invoking [src/map/generator.ts](src/map/generator.ts) with seed rerolling and exit pathfinding reachability checks.
 
 ## 🟢 Milestone 25: Simulation Lab & Campaign Validator
 Real-time simulation testing and campaign-wide sanity check validations.
 - [x] **⭐ Campaign Smoke-Test / Validator**
-  - Build out the final automated asynchronous checker in [src/editor/campaign_validator.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_validator.ts): starting area reachability, complete path graph solvability, quest parameter sanity, and trigger loop/recursion traps. Block exports on major validation failures and show a loading state in the UI.
+  - Build out the final automated asynchronous checker in [src/editor/campaign_validator.ts](src/editor/campaign_validator.ts): starting area reachability, complete path graph solvability, quest parameter sanity, and trigger loop/recursion traps. Block exports on major validation failures and show a loading state in the UI.
 - [x] **Observability Overlays**
-  - Connect debug logs and trigger tracer panels in [src/rendering/ui/debug.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/debug.ui.ts) to visualize events and system state. Required to effectively debug upcoming simulations.
+  - Connect debug logs and trigger tracer panels in [src/rendering/ui/debug.ui.ts](src/rendering/ui/debug.ui.ts) to visualize events and system state. Required to effectively debug upcoming simulations.
 - [x] **Emergent AI Arena**
-  - Spawn selected actor templates in a headless sandbox environment. Extract and reuse existing engine logic by stepping through [src/systems/ai.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/ai.system.ts) and [src/systems/damage.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/damage.system.ts) to output clean text logs for debugging AI math and behaviors without duplicating game logic.
+  - Spawn selected actor templates in a headless sandbox environment. Extract and reuse existing engine logic by stepping through [src/systems/ai.system.ts](src/systems/ai.system.ts) and [src/systems/damage.system.ts](src/systems/damage.system.ts) to output clean text logs for debugging AI math and behaviors without duplicating game logic.
 - [x] **Scheme Acceleration Simulator**
-  - Run background mastermind villain schemes in [src/systems/scheme.system.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/systems/scheme.system.ts) in a fast-forward loop, verifying clue compilation on the Investigation Board UI in [src/rendering/ui/investigation.ui.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/investigation.ui.ts).
+  - Run background mastermind villain schemes in [src/systems/scheme.system.ts](src/systems/scheme.system.ts) in a fast-forward loop, verifying clue compilation on the Investigation Board UI in [src/rendering/ui/investigation.ui.ts](src/rendering/ui/investigation.ui.ts).
 
 ## 🟢 Milestone 26: Visual Editor Enhancements (Drag-and-Drop & Previews)
 Enhance the Developer Tools to feel like a modern visual game engine rather than just a smart forms editor.
@@ -326,16 +326,16 @@ Transition the ECS internal data structures from arrays to constant-time diction
 ## 🟢 Milestone 28: Campaign Packaging & Standalone Distribution
 Implement packaging structure and install operations for modular campaigns.
 - [x] **Campaign Manifest & Versioning**
-  - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts).
+  - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](src/core/loader.ts).
 - [x] **IndexedDB Workspace Storage**
   - Migrate the Campaign Editor's active workspaces to use IndexedDB, entirely replacing the experimental File System Access API (`showDirectoryPicker`). This ensures the editor works seamlessly on all modern browsers. Maintain "Export/Import ZIP" for sharing campaigns.
 - [x] **⭐ Standalone Baked Campaigns (No Load Order)**
-  - Implement package cloning in [src/editor/campaign_editor.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/editor/campaign_editor.ts) to duplicate all asset dependencies directly on campaign creation, making campaigns completely self-contained.
+  - Implement package cloning in [src/editor/campaign_editor.ts](src/editor/campaign_editor.ts) to duplicate all asset dependencies directly on campaign creation, making campaigns completely self-contained.
 - [x] **One-Click Install / Import**
   - Add an "Install Campaign" (.zip) drag-and-drop or file picker to the main menu.
   - Use `JSZip` to extract the uploaded JSON files in-memory, validate them against our Zod schemas, and persist the extracted campaign object directly into a new IndexedDB `installed_campaigns` store.
 - [x] **The Hybrid Campaign Loader**
-  - Refactor `loadCampaignRegistry()` in [src/core/loader.ts](file:///d:/Projects/Game%20Dev/rogue-like/src/core/loader.ts) to query both the hardcoded `public/` directory AND the IndexedDB `installed_campaigns` store, merging them into a single list for the Campaign Select UI.
+  - Refactor `loadCampaignRegistry()` in [src/core/loader.ts](src/core/loader.ts) to query both the hardcoded `public/` directory AND the IndexedDB `installed_campaigns` store, merging them into a single list for the Campaign Select UI.
   - Refactor `loadCampaign(id)` to attempt loading the requested ID from IndexedDB first. If not found, gracefully fall back to the `public/` folder `fetch()`. This completely removes the need for manual file transfers or backend servers.
 
 ---
@@ -375,7 +375,7 @@ Implement the highest-ROI roguelike verb: throwing items and resolving their imp
 - [x] Render projectile travel and impact with floating text / transient visual effects in `src/rendering/renderer.ts`.
 - [x] Add validator tests in `src/editor/campaign_validator.ts` ensuring thrown unique/key items cannot be silently destroyed unless explicitly allowed.
 
-## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Active)
+## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Complete)
 Turn doors, chests, and storage objects into procedural tactical/loot/access challenges.
 - [x] Add `ContainerComponent` or extend `InventoryComponent` semantics in `src/types/components.types.ts` so chest entities can hold item entity IDs safely.
 - [x] Add `LockComponent { difficulty, keyTag?, locked, jammed?, breakable? }` to `src/types/components.types.ts` for doors, chests, cages, and special containers.
@@ -716,7 +716,7 @@ Make the three authoring levels explicit in the Campaign Editor.
 - [x] Teach validators to evaluate both authored source data and representative generated outputs.
 - [x] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
 
-## 🟡 Milestone 63: Narrative Simulation Lab & Fuzzer
+## 🟢 Milestone 63: Narrative Simulation Lab & Fuzzer (Complete)
 Stress-test emergent narrative systems across many seeds before they reach players.
 - [x] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
 - [x] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
@@ -772,20 +772,65 @@ Make the system understandable to campaign authors.
 
 ---
 
-# 🚀 Phase 10: Multi-Threading & Asynchronous Architecture
-**Goal:** Guarantee butter-smooth framerates during Real-Time with Pause (RTwP) mode and complex background simulations by removing heavy computations from the main browser thread. This acts as a "V2 Engine" optimization pass following the Phase 9 vertical slice.
+# 🚀 Phase 10: Architectural Refactoring & Core Engine Stabilization
+**Goal:** Harden engine stability, enforce strict compliance with `AGENTS.md`, decompose monolithic modules (especially `src/main.ts` into a dedicated `session_controller.ts`), and stabilize turn-step and persistence boundaries before introducing V2 Engine loop/renderer decoupling.
 
-## 🟡 Milestone 69: Asynchronous Cooperative Scheduler (Time-Slicing)
-Prevent browser lock-ups during computationally expensive operations.
-- [ ] **Generator Refactoring**: Convert heavy procedural operations (like `ROT.Map` generation, Encounter Director spawning, and AI Arena telemetry) into generator functions (`function*`).
-- [ ] **Budgeted Execution**: Implement an asynchronous scheduler wrapper that monitors execution time (`performance.now()`) and `yield`s control back to the event loop if a task exceeds a frame budget (e.g., 4ms).
-- [ ] **Background Simulation Fluidity**: Update `scheme.system.ts` to utilize time-slicing, allowing the mastermind villain schemes to simulate in the background without dropping frames in the active game.
-- [ ] **Smooth UI Loading**: Implement continuous UI loading animations during level transitions, as the main thread will no longer be frozen by procedural generation.
+## 🟢 Milestone 69: Rule Compliance & Determinism Hardening (Completed)
+Eliminate rule deviations, upward dependency leaks, and non-deterministic logic that would corrupt time-sliced or worker-backed execution.
+- [x] Eliminate `any` casts in `src/rendering/ui/ui_utils.ts` by introducing generic element type parameters `<T extends HTMLElement>`.
+- [x] Enforce seeded PRNG determinism by replacing `Math.random()` with `rng` from `src/core/rng.ts` in visualizer and telemetry tools (`narrative_fuzzer.ts`, `director_sandbox.ui.ts`, `knowledge_simulator.ui.ts`, `world_graph.ts`).
+- [x] Migrate 100+ DOM clearing operations from `innerHTML = ''` to modern `element.replaceChildren()` across rendering modules.
+- [x] Extract `EncounterRole` from `src/map/encounter_director.ts` to `src/types/encounter.types.ts` to eliminate inverted imports into `src/types/game-state.types.ts`.
+- [x] Remove upward action imports in `src/systems/ai.system.ts` and `src/systems/trigger/social.ts`.
 
-## 🟡 Milestone 70: Absolute Presentational Decoupling (Web Worker)
-Enforce a strict model-view separation by moving the core engine off the main thread entirely.
-- [ ] **Worker Scaffold**: Create a dedicated Web Worker script to host the `GameState`, `ROT.Engine`, and all `src/systems/`.
-- [ ] **Input Message Passing**: Refactor `src/core/input_handler.ts` on the main thread to capture keystrokes and DOM events, serializing and transmitting them as raw messages to the Web Worker.
-- [ ] **Presentational Snapshots**: Build a serializer in the Web Worker that, at the end of a tick/frame, packages a minimal renderable snapshot (e.g., a flat array of `{char, fg, bg, x, y}` for the current viewport and active HUD state) and `postMessage`s it to the main thread.
-- [ ] **Dumb Renderer Upgrade**: Refactor `src/rendering/renderer.ts` and the DOM controllers to purely consume these incoming snapshots, stripping them of any remaining direct `GameState` inspection logic.
-- [ ] **Serialization Audit**: Ensure all UI cross-thread communication strictly adheres to cloneable data payloads to avoid Structured Clone Algorithm errors.
+## 🟢 Milestone 70: Architectural Monolith Decomposition & Session Orchestration (Completed)
+Split overgrown modules exceeding the ~250-line guideline into cohesive, single-responsibility files to establish clean seams for message queues and decoupled presentation.
+- [x] Extract session lifecycle, loop wiring, and presentation orchestration from `src/main.ts` (745 LOC -> 98 LOC bootstrap) into `src/core/session_controller.ts` (630 LOC) and fog overlay helpers in `src/rendering/display.ts`.
+- [x] Decompose `src/systems/nemesis.system.ts` (833 LOC -> 11 LOC facade) into `nemesis_tracker.ts` (253 LOC), `nemesis_hierarchy.ts` (332 LOC), `nemesis_adaptation.ts` (247 LOC), and `nemesis_presentation.ts` (37 LOC).
+- [x] Split `src/rendering/ui/director_sandbox.ui.ts` (828 LOC -> 214 LOC facade) into `director_telemetry_view.ts` (347 LOC) and `director_controls.ts` (279 LOC).
+- [x] Decompose `src/editor/simulation/narrative_fuzzer.ts` (664 LOC -> 215 LOC runner) into `fuzzer_invariants.ts` (166 LOC), `fuzzer_mock_state.ts` (284 LOC), and `fuzzer_telemetry.ts` (112 LOC).
+
+## 🟢 Milestone 71: Core Engine, Turn Loop & Persistence Stabilization (Completed)
+Formalize state transitions, turn step invariants, and entity cold storage boundaries so every simulation step produces a compact, leak-free state snapshot.
+- [x] Implement bounded `resolveStateStabilization(state: GameState): GameState` pipeline with a 16-iteration guard (`MAX_STABILIZATION_ITERATIONS = 16`) to safely process cascading damage, hazards, and reactive triggers (`src/core/state_stabilizer.ts`).
+- [x] Implement deep recursive entity packaging and orphan entity pruning sweeps in `src/core/ecs.ts` and `src/core/save.ts` (`pruneOrphanEntities`, `collectOwnedEntityIds`) for area sleep/wake transitions.
+- [x] Isolate sandbox and demo bootstrap routines from `src/core/bootstrap.ts` into dedicated setup modules (`src/core/bootstrap_sandbox.ts`, `initializeCampaignWorldEntities`).
+
+---
+
+# 🚀 Phase 11: V2 Engine — Decoupled Frame Loop, Message-Queue Glue & Pure Dumb Renderer
+**Goal:** Guarantee butter-smooth 60 FPS framerates during Real-Time with Pause (RTwP) mode and *Dwarf Fortress* / *Caves of Qud*-scale world simulations by decoupling simulation ticks from presentation frames via message queues, turning `renderer.ts` into a pure dumb canvas renderer, throttling persistence out of the hot loop, and time-slicing heavy generation/simulation work.
+
+## 🟢 Milestone 72: Decoupled Frame Loop, Message-Queue Glue & Debounced Persistence (Completed)
+Eliminate synchronous `render()`, 17-panel DOM rebuilds, and `localStorage` serialization inside individual actor sub-steps (`processTurn` / `updateState`).
+- [x] **Layer Decoupling via Message / Event Queues**: Introduce explicit typed queues (`InputCommandQueue` from UI/Input to Simulation, and `PresentationEventQueue` / dirty flags from Simulation to Renderer, DOM UI, and Persistence) in `src/core/session_controller.ts` and `src/core/game-loop.ts` so simulation, presentation, and storage never block or synchronously re-enter each other.
+- [x] **60Hz Frame-Synced Presenter Pass**: Decouple `updateState()` from direct rendering; mutate/advance `currentState` in memory during actor turns (`scheduler.ts`) and run a single `requestAnimationFrame` presenter pass at most once per display frame when state is marked dirty.
+- [x] **Debounced & Checkpointed Persistence**: Remove synchronous `saveGame()` (`JSON.stringify` + `localStorage.setItem`) and `saveCurrentReplay()` calls from `updateState()`. Trigger persistence asynchronously/debounced on safe checkpoints (player turn settle, RTwP pause, area transitions, modal close, or periodic cooldown).
+- [x] **Selective UI Dirty-Domain Tracking**: Track dirty UI domains (`hud`, `log`, `inventory`, `modal`, `camera`) in the presentation queue so passive NPC ticks do not rebuild unchanged DOM panels.
+
+## ⚪ Milestone 73: Pure Dumb Canvas Renderer & Presentational `ViewportSnapshot`
+Enforce strict model-view separation (inspired by `slashman/jsrl`) by splitting ECS view projection from canvas drawing.
+- [ ] **Presentational Viewport Projector (`src/rendering/viewport_snapshot.ts`)**: Build a pure `buildViewportSnapshot(state, viewportW, viewportH): ViewportSnapshot` projector that pre-computes visible/explored cells, z-sorted entity stacks, camera offsets, fog-of-war state, active visual effects, and inspect tooltip DTOs using flat pre-allocated buffers and integer coordinate indexing (`y * width + x` instead of per-tile `${x},${y}` string allocations).
+- [ ] **Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`)**: Refactor `renderer.ts` to accept only `(display, snapshot: ViewportSnapshot)` with zero imports from `ecs.ts`, `ComponentType`, or `GameState`.
+- [ ] **Dirty-Cell Canvas Diffing**: Replace full-frame `display.clear()` redraws in `renderer.ts` with cell-level diffing against the previous `ViewportSnapshot` so only changed viewport cells are redrawn each frame, keeping the display adapter swappable for future WebGL/PixiJS batch backends (`FlameNeon/pixi.js`).
+
+## ⚪ Milestone 74: Cooperative Frame-Budgeted Scheduler, Tiered World Simulation & Worker Offload
+Prevent browser lock-ups during turn storms, large-scale world ticks, and multi-stage procedural generation.
+- [ ] **Frame-Budgeted Cooperative Scheduler (`src/core/scheduler.ts`)**: Wrap `runTurnBasedLoop`, `rtwpLoop`, and fast-forward batching in a `FRAME_BUDGET_MS = 4` (`performance.now()`) time budget that yields back to the frame presenter when exceeded while keeping conflicting player inputs locked until the turn slice settles.
+- [ ] **Tiered World Simulation Cadence**: Separate active-zone micro-simulation (every turn: FOV, A*, combat, reactions) from off-screen macro-simulation (coarse global turn cadence for `scheme.system.ts`, `world_events.system.ts`, `rivalry.system.ts`, and `gossip.system.ts`) and delta catch-up on area wake.
+- [ ] **Stage-Sliced Generators & RNG Determinism Guard**: Add cooperative `function*` generator pipelines (`generateAreaAsync`, `runEncounterDirectorAsync`, `runNarrativeFuzzerAsync`) that yield `{ stage, progress }` checkpoints between heavy stages (`Base Carve → DLA/Voronoi → Dijkstra Hot-Path → Room Spawning → Fuzzer Turn Batches`) while snapshotting/restoring `ROT.RNG.getState()` across every yield boundary.
+- [ ] **Smooth Non-Blocking Loading & Background Worker Offload**: Drive a continuous UI progress overlay from yielded generation checkpoints during area transitions and Fuzzer runs, and provide a typed Web Worker bridge (`src/worker/`) over the new message-queue and `ViewportSnapshot` boundaries for background chunk generation and headless multi-seed fuzzing.
+
+## ⚪ Milestone 75: Gameplay HUD & RTwP Controls Refinements
+Enhance tactile responsiveness, situational awareness, and menu management atop the decoupled RTwP event loop.
+- [ ] Add configurable RTwP auto-pause triggers in `src/core/game-loop.ts` driven by the simulation event queue (hostile/nemesis spotted in FOV, player HP < 25%, hazards applied, narrative triggers).
+- [ ] Centralize modal ESC-key stack management (LIFO) and auto-pause synchronization across all overlays.
+- [ ] Add dynamic contextual verb illumination in `renderVerbMenu` indicating valid interactions on adjacent targets.
+- [ ] Add filter chips (Scheme, Faction, Nemesis, Area) to `src/rendering/ui/investigation.ui.ts`.
+
+## ⚪ Milestone 76: Campaign Creator & Developer Tooling UX
+Streamline authoring workflows, navigation, and validation diagnostics.
+- [ ] Implement interactive validation diagnostics in `src/editor/campaign_validator.ts` and `src/rendering/editor_ui.ts` that immediately focus offending form inputs on click.
+- [ ] Introduce `<details>` / `<summary>` accordion rendering in `src/rendering/ui/zod_form_renderer.ts` for deep schema navigation.
+- [ ] Build a reverse-reference ("Where Used") inspector in `src/rendering/ui/area_editor.ts` for actors, items, and dialogue nodes.
+- [ ] Implement "Playtest from Here" contextual tile spawning in the area editor.

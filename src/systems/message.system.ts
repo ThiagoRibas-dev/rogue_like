@@ -1,4 +1,7 @@
-import { type GameState } from '../types/game-state.types.ts';
+import { type EntityId, type GameState } from '../types/game-state.types.ts';
+import { getComponent } from '../core/ecs.ts';
+import { ComponentType } from '../types/components.types.ts';
+import { GameEventType, type SayResolvedEvent } from '../types/events.types.ts';
 
 /** The maximum number of messages to keep in the GameState history. */
 export const MAX_MESSAGE_LOG_LENGTH = 100;
@@ -48,3 +51,36 @@ export function addMessage(state: GameState, text: string, cssClass?: MessageLog
     messages: newMessages
   };
 }
+
+/**
+ * Resolves speech or barks for an entity by formatting the dialog line,
+ * logging it as a flavor message, and generating a SayResolvedEvent.
+ *
+ * @param state The current GameState.
+ * @param entityId The speaking entity ID.
+ * @param message The spoken text line.
+ * @returns State with updated message log and the generated SayResolvedEvent.
+ */
+export function executeSay(
+  state: GameState,
+  entityId: EntityId,
+  message: string
+): { state: GameState; event: SayResolvedEvent } {
+  const identity = getComponent(state, entityId, ComponentType.Identity);
+  const name = identity ? identity.name : 'Someone';
+
+  const logMessage = `"${message}" - ${name}`;
+  const nextState = addMessage(state, logMessage, MessageLogCategory.Flavor);
+
+  const event: SayResolvedEvent = {
+    type: GameEventType.SayResolved,
+    entityId,
+    message
+  };
+
+  return {
+    state: nextState,
+    event
+  };
+}
+

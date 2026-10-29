@@ -54,7 +54,7 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
           listEl.innerHTML = `<p style="color: var(--text-dim)">No saved workspaces found. Click 'New' to start.</p>`;
           return;
         }
-        listEl.innerHTML = '';
+        listEl.replaceChildren();
         workspaces.forEach((ws): void => {
           const btn = document.createElement('button');
           btn.className = 'modal-btn';
@@ -235,7 +235,7 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
         btn.style.color = isCurrent ? 'var(--text-bright, #fff)' : 'var(--text-dim)';
         btn.style.borderBottomColor = isCurrent ? 'var(--accent-color, #3498db)' : 'transparent';
       });
-      tabContent.innerHTML = '';
+      tabContent.replaceChildren();
       if (activeSimTab === 'arena') {
         renderSimulationLab(controller, tabContent);
       } else if (activeSimTab === 'director') {

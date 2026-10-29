@@ -508,12 +508,12 @@ function renderInspectTooltip(
   }
 
   if (tooltip && !state.is3D) {
-    tooltip.innerHTML = '';
+    tooltip.replaceChildren();
     tooltip.appendChild(fragment.cloneNode(true));
   }
 
   if (inspectContent) {
-    inspectContent.innerHTML = '';
+    inspectContent.replaceChildren();
     inspectContent.appendChild(fragment);
   }
 }

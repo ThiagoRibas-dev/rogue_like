@@ -4,11 +4,15 @@ import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { type ActionResult, type Intent } from '../types/intents/intent.union.ts';
 import { addComponent, getComponent } from './ecs.ts';
-import { saveGame } from './save.ts';
 import { pushTelemetryEvents } from './telemetry.ts';
-import { recordIntent, saveCurrentReplay } from './replay.ts';
+import { recordIntent } from './replay.ts';
 import { perfTracker } from './performance.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
+import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from './input_queue.ts';
+import { markDirtyFromStateDiff } from './presentation_queue.ts';
+import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
+import { getEffectiveStats } from '../utils/stats.ts';
+import type { GameEvent } from '../types/events.types.ts';
 
 import { processHungerTick } from '../systems/hunger.system.ts';
 import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
@@ -16,9 +20,8 @@ import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
 import { coordToIndex } from '../utils/grid.ts';
-import { processTraps, processGlobalTriggers } from '../systems/trigger.system.ts';
-import { processDamageSystem } from '../systems/damage.system.ts';
-import { processDeathSystem } from '../systems/death.system.ts';
+import { processTraps } from '../systems/trigger.system.ts';
+import { resolveStateStabilization } from './state_stabilizer.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
@@ -27,11 +30,7 @@ import { processNemesisSystem } from '../systems/nemesis.system.ts';
 import { processRivalries } from '../systems/rivalry.system.ts';
 import { processWorldEvents } from '../systems/world_events.system.ts';
 import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
-import {
-  processRumorPropagationEvents,
-  tickPendingRumors,
-  cullStaleAndConfirmedRumors
-} from '../systems/gossip.system.ts';
+import { processRumorPropagationEvents, tickPendingRumors, cullStaleAndConfirmedRumors } from '../systems/gossip.system.ts';
 import { processLedgerSystem } from '../systems/ledger.system.ts';
 import { MAX_GLOBAL_DRAMA_BUDGET, DRAMA_BUDGET_REGEN_PER_TURN } from '../constants/pacing.constants.ts';
 
@@ -63,12 +62,30 @@ export function onStateChange(callback: (state: GameState) => void): void {
 function updateState(newState: GameState): void {
   const prevState = currentState;
   currentState = newState;
-  if (newState.uiMode === UIMode.Game) {
-    saveGame(newState);
-  }
+
+  // Mark dirty domains for the 60Hz presenter pass
+  markDirtyFromStateDiff(prevState, newState);
+
+  // Checkpoint on Game Over or Area Transition
   if (newState.isGameOver && prevState && !prevState.isGameOver) {
-    saveCurrentReplay();
+    checkpointGameOver(newState);
+  } else if (prevState && prevState.currentAreaId !== newState.currentAreaId) {
+    saveCheckpoint(newState);
+  } else if (newState.uiMode === UIMode.Game) {
+    // Debounce save for continuous gameplay mutations, avoiding saves when only visual effects expire
+    const onlyVfxChanged =
+      prevState !== null &&
+      prevState.components === newState.components &&
+      prevState.entities === newState.entities &&
+      prevState.map === newState.map &&
+      prevState.globalTurn === newState.globalTurn &&
+      prevState.currentAreaId === newState.currentAreaId &&
+      prevState.visualEffects !== newState.visualEffects;
+    if (!onlyVfxChanged) {
+      scheduleDebouncedSave(newState);
+    }
   }
+
   if (stateChangeCallback) {
     stateChangeCallback(newState);
   }
@@ -94,20 +111,17 @@ export function queuePlayerIntent(intent: Intent): void {
 
   if (state.engineMode === EngineMode.RTwP && !state.rtwpState.paused) {
     // Unpaused override
-    updateState({ ...state, playerCommandQueue: [intent] });
+    clearInputQueue();
+    enqueueIntent(intent);
   } else {
     // Append to queue
-    const nextQueue = [...state.playerCommandQueue, intent];
-    updateState({ ...state, playerCommandQueue: nextQueue });
+    enqueueIntent(intent);
   }
 
   if (state.engineMode === EngineMode.TurnBased) {
     unlockEngine();
   }
 }
-
-import { getEffectiveStats } from '../utils/stats.ts';
-import type { GameEvent } from '../types/events.types.ts';
 
 /**
  * Called by ROT.Engine when it is an actor's turn.
@@ -120,8 +134,7 @@ export function processTurn(entityId: EntityId): void {
   }
 
   let stateAfterTick = processStatusEffectsTick(state, entityId);
-  stateAfterTick = processDamageSystem(stateAfterTick);
-  stateAfterTick = processDeathSystem(stateAfterTick);
+  stateAfterTick = resolveStateStabilization(stateAfterTick);
 
   if (stateAfterTick !== state) {
     updateState(stateAfterTick);
@@ -157,30 +170,30 @@ export function processTurn(entityId: EntityId): void {
   }
 
   if (isPlayer) {
-    if (state.playerCommandQueue.length > 0) {
-      const intent = state.playerCommandQueue[0];
-      const nextQueue = state.playerCommandQueue.slice(1);
+    if (hasPendingIntents()) {
+      const intent = dequeueIntent();
+      if (intent) {
+        try {
+          const result = applyIntentWithCost(state, intent);
+          let nextState = result.state;
 
-      const stateWithPoppedQueue = { ...state, playerCommandQueue: nextQueue };
-      updateState(stateWithPoppedQueue);
+          if (result.energyCost > 0) {
+            nextState = processHungerTick(nextState, entityId, result.energyCost);
+            setTurnDuration(result.energyCost);
+          } else {
+            setTurnDuration(0);
+          }
 
-      try {
-        const result = applyIntentWithCost(stateWithPoppedQueue, intent as Intent);
-        let nextState = result.state;
-
-        if (result.energyCost > 0) {
-          nextState = processHungerTick(nextState, entityId, result.energyCost);
-          setTurnDuration(result.energyCost);
-        } else {
+          if (nextState !== state) {
+            nextState = updateExploredTiles(nextState);
+            updateState(nextState);
+            // Checkpoint persistence at player turn settlement
+            saveCheckpoint(nextState);
+          }
+        } catch (e) {
+          console.error(`Error processing player intent:`, e);
           setTurnDuration(0);
         }
-
-        if (nextState !== stateWithPoppedQueue) {
-          updateState(updateExploredTiles(nextState));
-        }
-      } catch (e) {
-        console.error(`Error processing player intent:`, e);
-        setTurnDuration(0);
       }
       return;
     }
@@ -310,18 +323,14 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
     }
   }
 
-  // Run the combat damage & death pipeline
-  nextState = processDamageSystem(nextState);
-  nextState = processDeathSystem(nextState);
-
-  const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
-
   if (result.events && result.events.length > 0) {
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
   }
 
-  // Run the new global triggers
-  nextState = processGlobalTriggers(nextState);
+  // Run bounded stabilization pipeline (damage, death reactions, and reactive triggers)
+  nextState = resolveStateStabilization(nextState);
+
+  const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
 
   // Tick fields
   nextState = processFieldsTick(nextState);

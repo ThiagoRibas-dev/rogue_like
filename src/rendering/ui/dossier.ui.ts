@@ -25,7 +25,7 @@ export function renderDossierUI(state: GameState): void {
   }
 
   overlay.classList.remove('hidden');
-  entityList.innerHTML = '';
+  entityList.replaceChildren();
 
   const entitiesWithChronicle: {
     id: number;

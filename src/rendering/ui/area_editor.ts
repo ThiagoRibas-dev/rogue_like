@@ -208,7 +208,7 @@ export function renderAreaEditor(
   let activePaintDef: PaintDef | null = null;
 
   const buildPalette = (): void => {
-    paletteContainer.innerHTML = '';
+    paletteContainer.replaceChildren();
     const items = (
       activePaintMode === 'tiles' ? doc.tiles : activePaintMode === 'entities' ? doc.entities : doc.items
     ) as Record<string, PaintDef>;

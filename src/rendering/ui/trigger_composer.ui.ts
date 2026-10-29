@@ -157,7 +157,7 @@ export function renderTriggerComposer(controller: EditorController, container: H
     const template = templates[selectedTemplateId];
     const vars = getTemplateVariables(template);
 
-    variablesContainer.innerHTML = '';
+    variablesContainer.replaceChildren();
 
     if (vars.length === 0) {
       variablesContainer.innerHTML = `

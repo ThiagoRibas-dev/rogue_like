@@ -52,14 +52,14 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
   }
 
   if (state.uiMode !== UIMode.Editor) {
-    editorLayout.innerHTML = '';
+    editorLayout.replaceChildren();
     editorState.isInitialized = false;
     return;
   }
 
   // Initialize the DOM scaffold once
   if (!editorState.isInitialized) {
-    editorLayout.innerHTML = '';
+    editorLayout.replaceChildren();
 
     // 1. Scaffold HTML Layout
     const toolbarEl = document.createElement('header');
@@ -112,7 +112,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       });
 
       renderSidebar(controller, sidebarEl);
-      workspaceEl.innerHTML = '';
+      workspaceEl.replaceChildren();
       renderWorkspace(controller, workspaceEl);
     });
 
@@ -127,7 +127,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
         updateToolbarState(controller, report.errors);
 
         renderSidebar(controller, sidebarEl);
-        workspaceEl.innerHTML = '';
+        workspaceEl.replaceChildren();
         renderWorkspace(controller, workspaceEl, report);
       } catch (err) {
         console.error(err);
@@ -199,7 +199,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
  * Builds the Activity Bar buttons.
  */
 function renderActivityBar(container: HTMLElement): void {
-  container.innerHTML = '';
+  container.replaceChildren();
   VIEW_GROUPS.forEach((group): void => {
     const btn = document.createElement('button');
     btn.className = `editor-activity-btn ${editorState.activeGroupId === group.id ? 'active' : ''}`;

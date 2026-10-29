@@ -6,10 +6,9 @@ import { ComponentType } from '../../types/components.types.ts';
 import type { MemoryComponent, FactionComponent } from '../../types/components.types.ts';
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
 import { getComponent, addComponent } from '../../core/ecs.ts';
-import { processSayIntent } from '../../actions/say.action.ts';
-import { transferKnowledge } from '../../actions/dialogue.actions.ts';
+import { executeSay } from '../message.system.ts';
+import { transferKnowledge } from '../knowledge.system.ts';
 import { assertNever } from '../../utils/assert.ts';
-import { IntentType } from '../../types/intents/intent.enum.ts';
 
 /**
  * Condition evaluators specific to NPCs, social interactions, and memory.
@@ -501,16 +500,11 @@ export const socialConsequences = {
 
     if (eId === undefined) return state;
 
-    const sayResult = processSayIntent(state, {
-      type: IntentType.Say,
-      entityId: eId,
-      message: consequence.message
-    });
-    let nextState = sayResult.state;
-    if (sayResult.events && sayResult.events.length > 0) {
-      nextState = { ...nextState, events: [...nextState.events, ...sayResult.events] };
-    }
-    return nextState;
+    const sayResult = executeSay(state, eId, consequence.message);
+    return {
+      ...sayResult.state,
+      events: [...sayResult.state.events, sayResult.event]
+    };
   }
 } satisfies Partial<
   Record<
