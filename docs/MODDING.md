@@ -59,7 +59,7 @@ Campaign files must be authored or generated in a specific sequence because down
   ├── items.json (depends on effects, status, tag_registry)
   ├── areas.json (depends on tiles, entities, encounter_profiles, tag_registry)
   ├── spawn_pools.json (depends on entities, tag_registry, factions)
-  └── villains.json, agreements.json, scheme_recipes.json, phase_blocks.json (depends on entities, factions)
+  └── villains.json, agreements.json, schemes.json, phase_blocks.json (depends on entities, factions)
        │
 [Phase 3: Interactive Scripting]
   ├── dialogues.json (depends on conditions/consequences, quests, factions, entities)

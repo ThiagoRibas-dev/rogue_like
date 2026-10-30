@@ -350,7 +350,7 @@ Your actions actively reverberate through Shroudgarde:
 *   **Dijkstra Spawning Preference**: Set `"hotPathRadius": 2` inside the Scro Outpost and Kobold Warrens. Your engine's Dijkstra pathing now dynamically biases major monsters (`protein`) and hazards/traps (`side`) along the critical path to the exits, while letting food and loot (`appetizer` and `dessert`) distribute uniformly in deep, off-path corners, rewarding players for thorough exploration!
 
 ### 🎭 5. Mastermind Scheme Compiler (Milestone 60)
-*   We completely refactored the old monolithic `schemes.json` file into separate **`scheme_recipes.json`** and **`phase_blocks.json`** databases!
+*   The scheme is authored in **`schemes.json`** as a recipe (`phaseLength`, `phaseTags`); **`phase_blocks.json`** holds the separate physical execution mutations and contextual evidence parameters!
 *   **The Slices**: The `"grand_slumber"` scheme recipe defines the length and tags, while `phase_blocks.json` holds the physical execution mutations and contextual evidence parameters (`narrativeVerb: "whisper hypnotic chants"`, `evidenceTags: ["cultist", "journal"]`) to feed your new contextual investigation boards!
 
 ### 🎫 6. Drama Trigger Composer (Milestone 58)
