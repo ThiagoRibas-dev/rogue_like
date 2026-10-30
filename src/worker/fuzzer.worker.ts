@@ -4,7 +4,7 @@ import type {
   WorkerProgressMessage,
   WorkerSuccessMessage,
   WorkerErrorMessage
-} from '../types/worker.types.ts';
+} from './worker.types.ts';
 import type { FuzzerReport } from '../editor/simulation/fuzzer.types.ts';
 
 self.onmessage = (event: MessageEvent<FuzzerWorkerRequest>): void => {

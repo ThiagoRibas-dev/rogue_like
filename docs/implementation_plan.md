@@ -5,7 +5,7 @@
 **Phase:** 11 (V2 Engine Decoupling)
 **Milestone:** 76 (Campaign Creator & Developer Tooling UX)
 **Governance:** [AGENTS.md](AGENTS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/MILESTONES.md](docs/MILESTONES.md#L831-L836), [docs/DECISIONS.md](docs/DECISIONS.md), [docs/research_notes.md](docs/research_notes.md)
-**Status:** ✅ Gate 1 (Research) RESOLVED — Decisions D1-D6 locked by User (Oct 30). Gate 2 (Plan) PENDING user approval before code writes.
+**Status:** ✅ Gate 1 (Research) RESOLVED — D1-D6 locked. ✅ Gate 2 (Plan) COMPLETED — M76 shipped and verified (Oct 30).
 **Target Completion Date:** October 30, 2026
 
 ---
@@ -515,16 +515,16 @@ Before writing any code, every change above has been audited across all three ax
 
 ## 7. Post-Implementation Checklist (Before Gate 3 / After Code)
 
-- [ ] All 6 new modules created with ≤ ~250 LOC.
-- [ ] `zod_form_renderer.ts` accordion sections extracted; file size unchanged or reduced.
-- [ ] `expandedPaths` module-level `Set<string>` survives `renderWorkspace()` DOM replacements.
-- [ ] `data-field-path` attributes present on all form fields (dialogue nodes, area entities, items, status effects).
-- [ ] `reference_index.ts` cached with `WeakMap`; does not duplicate `getReferenceOptions()` logic.
-- [ ] `validation_panel.ui.ts` replaces hover popup; `editor_toolbar.ts` has zero `.innerHTML`.
-- [ ] `area_playtest_menu.ui.ts` handles static maps only; `sessionStorage['editor_playtest_spawn']` passed to `startNewGame()`.
-- [ ] `toFormPath()` handles all three dialects; `isPathPrefix()` and `splitPath()` tested.
-- [ ] All new functions have explicit `: Type` return annotations and JSDoc (`@param`, `@returns`).
-- [ ] `docs/DECISIONS.md` updated with M76 architectural rationale (already present at §10.8 / lines 125-132).
-- [ ] `docs/MILESTONES.md` checklist items marked completed.
-- [ ] `docs/scratchpad.md` §7.6 finalized with implementation record.
-- [ ] `docs/implementation_plan.md` archived to `docs/plans/` after verification.
+- [x] All 6 new modules created with ≤ ~250 LOC.
+`- [x] `zod_form_renderer.ts` accordion sections extracted; file size unchanged or reduced.
+`- [x] `expandedPaths` module-level `Set<string>` survives `renderWorkspace()` DOM replacements.
+`- [x] `data-field-path` attributes present on all form fields (dialogue nodes, area entities, items, status effects).
+`- [x] `reference_index.ts` cached with `WeakMap`; does not duplicate `getReferenceOptions()` logic.
+`- [x] `validation_panel.ui.ts` replaces hover popup; `editor_toolbar.ts` has zero `.innerHTML`.
+`- [x] `area_playtest_menu.ui.ts` handles static maps only; `sessionStorage['editor_playtest_spawn']` passed to `startNewGame()`.
+`- [x] `toFormPath()` handles all three dialects; `isPathPrefix()` and `splitPath()` tested.
+`- [x] All new functions have explicit `: Type` return annotations and JSDoc (`@param`, `@returns`).
+`- [x] `docs/DECISIONS.md` updated with M76 architectural rationale (already present at §10.8 / lines 125-132).
+`- [x] `docs/MILESTONES.md` checklist items marked completed.
+`- [x] `docs/scratchpad.md` §7.6 finalized with implementation record.
+`- [x] `docs/implementation_plan.md` archived to `docs/plans/` after verification.

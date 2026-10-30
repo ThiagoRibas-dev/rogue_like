@@ -401,8 +401,6 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 
 ---
 
----
-
 ### 8.5 Campaign Editor Developer Tooling (Milestone 76 — M76 Subsystems)
 
 - **Path Normalization (`src/editor/validation_path.ts`)** — `toFormPath()` unifies dot, bracket, and slash dialects from sub-validators into canonical `/section/index` paths. `isPathPrefix()` and `splitPath()` provide ancestor/descendant queries. No validator assertions were modified; the normalization is applied at ingestion time so existing test assertions remain intact.

@@ -4,7 +4,7 @@ import type {
   WorkerProgressMessage,
   WorkerSuccessMessage,
   WorkerErrorMessage
-} from '../types/worker.types.ts';
+} from './worker.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
 

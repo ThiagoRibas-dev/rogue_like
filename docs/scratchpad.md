@@ -597,3 +597,5 @@ Enhance tactile responsiveness, situational awareness, and menu management atop 
 
 **Deviations from approved plan:**
 None. All 6 decisions (D1-D6) implemented exactly as approved. Module sizes within budget. Zero `.innerHTML` in all new and directly modified components. Untouched legacy UI (`dialogue_editor.ts` existing `.innerHTML` blocks, `area_editor.ts` existing `.innerHTML` painter setup) left intact per strict touch scope (D6).
+
+- **Future milestone note (N-5 / post-fix audit):** Module-size budget exceeded by `generator_stages.ts` (402 LOC), `viewport_snapshot.ts` (425 LOC), `session_controller.ts` (592 LOC). Queueed for future decomposition milestone.

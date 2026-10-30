@@ -10,7 +10,7 @@ import type {
   FuzzerWorkerRequest,
   MapWorkerRequest,
   SerializableDirectorContext
-} from '../types/worker.types.ts';
+} from './worker.types.ts';
 
 let nextRequestId = 1;
 

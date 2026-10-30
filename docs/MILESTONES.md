@@ -786,8 +786,8 @@ Eliminate rule deviations, upward dependency leaks, and non-deterministic logic 
 ## 🟢 Milestone 70: Architectural Monolith Decomposition & Session Orchestration (Completed)
 Split overgrown modules exceeding the ~250-line guideline into cohesive, single-responsibility files to establish clean seams for message queues and decoupled presentation.
 - [x] Extract session lifecycle, loop wiring, and presentation orchestration from `src/main.ts` (745 LOC -> 98 LOC bootstrap) into `src/core/session_controller.ts` (630 LOC) and fog overlay helpers in `src/rendering/display.ts`.
-- [x] Decompose `src/systems/nemesis.system.ts` (833 LOC -> 11 LOC facade) into `nemesis_tracker.ts` (253 LOC), `nemesis_hierarchy.ts` (332 LOC), `nemesis_adaptation.ts` (247 LOC), and `nemesis_presentation.ts` (37 LOC).
-- [x] Split `src/rendering/ui/director_sandbox.ui.ts` (828 LOC -> 214 LOC facade) into `director_telemetry_view.ts` (347 LOC) and `director_controls.ts` (279 LOC).
+- [x] Decompose `src/systems/nemesis.system.ts` (833 LOC -> 11 LOC facade) into `nemesis_tracker.ts`, `nemesis_hierarchy.ts`, `nemesis_adaptation.ts`, and `nemesis_presentation.ts` (`src/systems/nemesis/`).
+- [x] Split `src/rendering/ui/director_sandbox.ui.ts` (828 LOC -> 214 LOC facade) into `director_telemetry_view.ts` and `director_controls.ts` (`src/rendering/ui/director/`).
 - [x] Decompose `src/editor/simulation/narrative_fuzzer.ts` (664 LOC -> 215 LOC runner) into `fuzzer_invariants.ts` (166 LOC), `fuzzer_mock_state.ts` (284 LOC), and `fuzzer_telemetry.ts` (112 LOC).
 
 ## 🟢 Milestone 71: Core Engine, Turn Loop & Persistence Stabilization (Completed)
