@@ -31,9 +31,9 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.5
+          bun-version: latest
 
-      - name: Install TypeScript 6 (fallback)
+      - name: Install TypeScript 6 (for ignoreDeprecations: "6.0")
         run: bun add -D typescript@6
 
       - name: Install dependencies
