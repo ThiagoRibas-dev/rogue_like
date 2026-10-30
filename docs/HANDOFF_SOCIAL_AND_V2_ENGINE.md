@@ -52,7 +52,7 @@ Handcrafted campaigns require specific quest items to drop from specific chests.
 To guarantee 60 FPS fluidity in Real-Time with Pause (RTwP) and scale toward *Caves of Qud* / *Dwarf Fortress* living worlds without breaking the 17 DOM UI panels or PRNG determinism, Phases 10 and 11 are sequenced so structural refactoring precedes engine-loop decoupling:
 
 ### Phase 10: Pre-V2 Refactoring & Core Stabilization (Milestones 69–71)
-1. **Milestone 69 (Rule Compliance & Determinism Hardening):** Eliminate `Math.random()` in fuzzer/telemetry tools, fix inverted type imports (`EncounterRole`), remove upward system action imports, and replace `.innerHTML = ''` with `.replaceChildren()`.
+1. **Milestone 69 (Rule Compliance & Determinism Hardening):** Eliminate `Math.random()` in fuzzer/telemetry tools, fix inverted type imports (`RoomBounds`), remove upward system action imports, and replace `.innerHTML = ''` with `.replaceChildren()`.
 2. **Milestone 70 (Monolith Decomposition & Session Controller):** Extract `src/core/session_controller.ts` from `src/main.ts` (745 LOC) so there is a single orchestration seam for queues, rendering, and persistence, alongside decomposing `nemesis.system.ts`, `director_sandbox.ui.ts`, and `narrative_fuzzer.ts`.
 3. **Milestone 71 (Core Engine & Turn Loop Stabilization):** Add bounded `resolveStateStabilization(state)` (`MAX_STABILIZATION_ITERATIONS = 16`), recursive limbo/orphan pruning in `ecs.ts` and `save.ts`, and isolated bootstrap setup modules.
 

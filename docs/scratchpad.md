@@ -1,6 +1,6 @@
 # Scratchpad: Phase 11 Engine Evolution & Milestone History
 
-**Current Status:** Phase 11 — Milestone 75: Gameplay HUD & RTwP Controls Refinements (COMPLETED & VERIFIED) | Milestone 76: Campaign Creator & Developer Tooling UX (NEXT)  
+**Current Status:** Phase 11 — Milestone 75: Gameplay HUD & RTwP Controls Refinements (COMPLETED & VERIFIED) | Milestone 76: Campaign Creator & Developer Tooling UX (COMPLETED & VERIFIED — Oct 30)  
 **Date:** October 2026  
 **Governance:** AGENTS.md, docs/ARCHITECTURE.md, docs/DECISIONS.md, docs/MILESTONES.md, docs/HANDOFF_SOCIAL_AND_V2_ENGINE.md  
 **User Directives:** "Let's gooooo. Implement it please." (Milestone 74 authorized & executed) / Verification clean & documentation complete.
@@ -24,7 +24,7 @@
 ## 2. Verification Suite Commands
 All steps must be validated against:
 1. `bun x tsc --noEmit --ignoreDeprecations 6.0` (must pass with 0 errors).
-2. `bun run validate:campaigns` (must validate `default`, `scifi`, `postapoc` with 0 errors/warnings).
+2. `bun run validate:campaigns` (must validate `default`, `megacampaign`, `shroudgarde` with 0 errors/warnings).
 
 ---
 
@@ -555,7 +555,7 @@ Enhance tactile responsiveness, situational awareness, and menu management atop 
 
 ---
 
-### 7.6 Milestone 76 Implementation Record (COMPLETED — Oct 30, 2026)
+### 7.7 Milestone 76 Implementation Record (COMPLETED — Oct 30, 2026)
 
 **Verification suite (all clean):**
 

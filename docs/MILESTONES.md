@@ -779,8 +779,8 @@ Make the system understandable to campaign authors.
 Eliminate rule deviations, upward dependency leaks, and non-deterministic logic that would corrupt time-sliced or worker-backed execution.
 - [x] Eliminate `any` casts in `src/rendering/ui/ui_utils.ts` by introducing generic element type parameters `<T extends HTMLElement>`.
 - [x] Enforce seeded PRNG determinism by replacing `Math.random()` with `rng` from `src/core/rng.ts` in visualizer and telemetry tools (`narrative_fuzzer.ts`, `director_sandbox.ui.ts`, `knowledge_simulator.ui.ts`, `world_graph.ts`).
-- [x] Migrate 100+ DOM clearing operations from `innerHTML = ''` to modern `element.replaceChildren()` across rendering modules.
-- [x] Extract `EncounterRole` from `src/map/encounter_director.ts` to `src/types/encounter.types.ts` to eliminate inverted imports into `src/types/game-state.types.ts`.
+- [x] Migrate 35 DOM clearing operations (`innerHTML = ''`) to `replaceChildren()` (109 total `.innerHTML` uses in pre-Phase-10 tree; 0 clearing sites remain today, 41 `replaceChildren()` call sites in current `src/`).
+- [x] Extract `RoomBounds` from `src/map/encounter_director.ts` to `src/types/encounter.types.ts` to eliminate inverted imports into `src/types/game-state.types.ts`.
 - [x] Remove upward action imports in `src/systems/ai.system.ts` and `src/systems/trigger/social.ts`.
 
 ## 🟢 Milestone 70: Architectural Monolith Decomposition & Session Orchestration (Completed)
@@ -828,7 +828,7 @@ Enhance tactile responsiveness, situational awareness, and menu management atop 
 - [x] Add dynamic contextual verb illumination in `renderVerbMenu` indicating valid interactions on adjacent targets (`getVerbOptionsForTarget` + all-verb rendering).
 - [x] Add filter chips (Scheme, Faction, Nemesis, Area) to `src/rendering/ui/investigation.ui.ts` (`src/constants/investigation_filter.constants.ts`).
 
-## ⚪ Milestone 76: Campaign Creator & Developer Tooling UX
+## 🟢 Milestone 76: Campaign Creator & Developer Tooling UX (Completed)
 Streamline authoring workflows, navigation, and validation diagnostics.
 - [x] Implement interactive validation diagnostics (canonical path normalizer `src/editor/validation_path.ts`, navigator `src/editor/validation_navigator.ts`, persistent bottom dock `src/rendering/ui/validation_panel.ui.ts`, `editor_toolbar.ts` cleanup).
 - [x] Introduce `<details>` / `<summary>` accordion rendering in `src/rendering/ui/zod_form_renderer.ts` (`expandedPaths` persistence, `data-field-path`, descendant error badges).
