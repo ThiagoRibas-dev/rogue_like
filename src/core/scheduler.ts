@@ -2,6 +2,13 @@ import * as ROT from 'rot-js';
 import { type EntityId, UIMode, EngineMode } from '../types/game-state.types.ts';
 import { processTurn, getGameState } from './game-loop.ts';
 import { saveCheckpoint } from './persistence_service.ts';
+import {
+  FRAME_BUDGET_MS,
+  MAX_RTWP_DRAIN_ITERATIONS,
+  RTWP_MS_PER_100_DURATION,
+  DEFAULT_ACTOR_TURN_DURATION,
+  MAX_ACCUMULATED_RTWP_TIME
+} from '../constants/scheduler.constants.ts';
 
 class SchedulerActor {
   constructor(public readonly id: EntityId) {}
@@ -15,9 +22,11 @@ const scheduler = new ROT.Scheduler.Action<SchedulerActor>();
 const actors = new Map<EntityId, SchedulerActor>();
 
 let isEngineLocked = true;
+let isTurnProcessing = false;
 let accumulatedTime = 0;
 let lastFrameTime = 0;
 let rtwpLoopId = 0;
+let sliceYieldTimerId: ReturnType<typeof setTimeout> | null = null;
 
 /**
  * Initializes the ROT.js scheduler and resets engine run states.
@@ -26,7 +35,12 @@ export function initEngine(): void {
   scheduler.clear();
   actors.clear();
   isEngineLocked = true;
+  isTurnProcessing = false;
   accumulatedTime = 0;
+  if (sliceYieldTimerId !== null) {
+    clearTimeout(sliceYieldTimerId);
+    sliceYieldTimerId = null;
+  }
   if (typeof cancelAnimationFrame !== 'undefined') {
     cancelAnimationFrame(rtwpLoopId);
   }
@@ -53,18 +67,32 @@ export function startEngine(): void {
  */
 export function lockEngine(): void {
   isEngineLocked = true;
+  isTurnProcessing = false;
+  if (sliceYieldTimerId !== null) {
+    clearTimeout(sliceYieldTimerId);
+    sliceYieldTimerId = null;
+  }
 }
 
 /**
  * Resumes turn scheduling (turn-based only).
  */
 export function unlockEngine(): void {
-  if (!isEngineLocked) return;
+  if (!isEngineLocked && isTurnProcessing) return;
   isEngineLocked = false;
   const state = getGameState();
   if (state.engineMode === EngineMode.TurnBased) {
-    runTurnBasedLoop();
+    if (!isTurnProcessing) {
+      runTurnBasedLoop();
+    }
   }
+}
+
+/**
+ * Returns whether a turn slicing operation is currently active.
+ */
+export function isTurnProcessingActive(): boolean {
+  return isTurnProcessing;
 }
 
 /**
@@ -73,6 +101,11 @@ export function unlockEngine(): void {
 export function switchEngineMode(mode: EngineMode): void {
   saveCheckpoint(getGameState());
   if (mode === EngineMode.RTwP) {
+    if (sliceYieldTimerId !== null) {
+      clearTimeout(sliceYieldTimerId);
+      sliceYieldTimerId = null;
+    }
+    isTurnProcessing = false;
     isEngineLocked = false;
     lastFrameTime = performance.now();
     if (typeof requestAnimationFrame !== 'undefined') {
@@ -87,8 +120,32 @@ export function switchEngineMode(mode: EngineMode): void {
   }
 }
 
+/**
+ * Cooperative frame-budgeted turn-based loop.
+ * Slices long AI cascades into 4ms chunks to preserve 60 FPS responsiveness.
+ */
 function runTurnBasedLoop(): void {
+  if (isEngineLocked) {
+    isTurnProcessing = false;
+    return;
+  }
+  isTurnProcessing = true;
+  const sliceStart = performance.now();
+
   while (!isEngineLocked) {
+    // Exceeded frame budget: yield cooperatively to browser
+    if (performance.now() - sliceStart >= FRAME_BUDGET_MS) {
+      sliceYieldTimerId = setTimeout(() => {
+        sliceYieldTimerId = null;
+        if (!isEngineLocked) {
+          runTurnBasedLoop();
+        } else {
+          isTurnProcessing = false;
+        }
+      }, 0);
+      return;
+    }
+
     const actor = scheduler.next();
     if (!actor) break;
     try {
@@ -98,8 +155,13 @@ function runTurnBasedLoop(): void {
       removeActor(actor.id);
     }
   }
+
+  isTurnProcessing = false;
 }
 
+/**
+ * Bounded RTwP loop with iteration and time-slice caps to prevent frame freezes.
+ */
 function rtwpLoop(time: number): void {
   const state = getGameState();
   if (state.engineMode !== EngineMode.RTwP) return;
@@ -116,12 +178,21 @@ function rtwpLoop(time: number): void {
   lastFrameTime = time;
 
   const speed = state.rtwpState.speedMultiplier;
-
-  // 500ms = 100 duration at 1x speed
-  const durationDelta = (deltaMs / 500) * 100 * speed;
+  const durationDelta = (deltaMs / RTWP_MS_PER_100_DURATION) * DEFAULT_ACTOR_TURN_DURATION * speed;
   accumulatedTime += durationDelta;
 
-  while (accumulatedTime >= 0 && !isEngineLocked) {
+  if (accumulatedTime > MAX_ACCUMULATED_RTWP_TIME) {
+    accumulatedTime = MAX_ACCUMULATED_RTWP_TIME;
+  }
+
+  let iterations = 0;
+  const sliceStart = performance.now();
+
+  while (accumulatedTime >= 0 && !isEngineLocked && iterations < MAX_RTWP_DRAIN_ITERATIONS) {
+    if (performance.now() - sliceStart >= FRAME_BUDGET_MS) {
+      break;
+    }
+
     const prevTime = scheduler.getTime();
     const actor = scheduler.next();
     if (!actor) break;
@@ -135,6 +206,7 @@ function rtwpLoop(time: number): void {
 
     const newTime = scheduler.getTime();
     accumulatedTime -= Math.max(0, newTime - prevTime);
+    iterations++;
   }
 }
 
@@ -173,6 +245,11 @@ export function clearScheduler(): void {
   scheduler.clear();
   actors.clear();
   isEngineLocked = true;
+  isTurnProcessing = false;
+  if (sliceYieldTimerId !== null) {
+    clearTimeout(sliceYieldTimerId);
+    sliceYieldTimerId = null;
+  }
   if (typeof cancelAnimationFrame !== 'undefined') {
     cancelAnimationFrame(rtwpLoopId);
   }

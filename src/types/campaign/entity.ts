@@ -119,6 +119,12 @@ export const StatusEffectDefinitionSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   color: z.string(),
+  /**
+   * True when the effect is hostile to the entity carrying it. Drives RTwP
+   * auto-pause and lets UIs distinguish buffs from debuffs without inferring
+   * intent from damage values (many detrimental effects deal no damage).
+   */
+  detrimental: z.boolean().default(false),
   statModifiers: z
     .object({
       attack: z.number().int().optional(),

@@ -2,6 +2,8 @@ import type { EditorController } from '../editor_ui.ts';
 import type { AreaDefinition } from '../../types/campaign.types.ts';
 import { AreaDefinitionSchema } from '../../types/campaign.types.ts';
 import { renderFormForZodSchema } from './zod_form_renderer.ts';
+import { renderPlaytestMenu } from './area_playtest_menu.ui';
+import { editorState } from '../editor/editor_state';
 
 import { createDisplay, drawCell } from '../display.ts';
 
@@ -12,7 +14,8 @@ export function renderAreaEditor(
   controller: EditorController,
   areaData: unknown,
   basePath: string,
-  container: HTMLElement
+  container: HTMLElement,
+  errors?: ReadonlyArray<{ path: string; message: string; severity?: string }>
 ): void {
   const area = areaData as AreaDefinition;
   const doc = controller.getDocument();
@@ -442,6 +445,86 @@ export function renderAreaEditor(
       canvas.addEventListener('mouseleave', () => {
         isPainting = false;
       });
+
+      // M76: Contextual "Playtest from Here" for static maps only (Decision D5)
+      canvas.addEventListener('contextmenu', (e: MouseEvent) => {
+        e.preventDefault();
+        const pos = display.eventToPosition(e);
+        if (!pos) return;
+        const [mapX, mapY] = pos;
+
+        // Only valid for static maps (this branch is only active when area.staticMap exists)
+        // For simplicity, check if a tile definition exists for the character in the layout
+        const row = layout[mapY] || '';
+        const char = row[mapX] || ' ';
+        const tileId = legend[char] || '';
+        const tileDefActual = doc.tiles[tileId] || null;
+        const isWalkable = tileDefActual ? tileDefActual.walkable !== false : false;
+
+        const activeDoc = controller.getDocument();
+        const menuContainer = document.createElement('div');
+        menuContainer.className = 'tile-context-menu';
+        menuContainer.style.position = 'fixed';
+        menuContainer.style.zIndex = '1000';
+        menuContainer.style.background = '#16162a';
+        menuContainer.style.border = '1px solid #444';
+        menuContainer.style.borderRadius = '6px';
+        menuContainer.style.padding = '4px';
+        menuContainer.style.boxShadow = '0 8px 24px rgba(0,0,0,0.5)';
+        menuContainer.style.minWidth = '160px';
+        // Position near mouse
+        menuContainer.style.left = e.clientX + 'px';
+        menuContainer.style.top = e.clientY + 'px';
+        document.body.appendChild(menuContainer);
+
+        renderPlaytestMenu(menuContainer, {
+          areaId: area.id || 'unknown',
+          x: mapX,
+          y: mapY,
+          walkable: isWalkable,
+          onSelectPlaytest: (spawnAreaId: string, spawnX: number, spawnY: number) => {
+            sessionStorage.setItem('editor_playtest_spawn', JSON.stringify({ areaId: spawnAreaId, x: spawnX, y: spawnY }));
+            sessionStorage.setItem('editor_active_document', JSON.stringify(activeDoc));
+            sessionStorage.setItem('editor_active_category', editorState.activeTabId || '');
+            sessionStorage.setItem('editor_active_item', editorState.activeItemId || '');
+            sessionStorage.setItem('editor_playtest', 'true');
+            window.location.reload();
+          },
+        });
+
+        const closeMenu = (): void => {
+          menuContainer.remove();
+          document.removeEventListener('click', closeMenu);
+        };
+        document.addEventListener('click', closeMenu, { once: true });
+      });
     })
     .catch(console.error);
+
+  // M76: Minimal validation error display for area editor
+  if (errors && errors.length > 0) {
+    const errBlock = document.createElement('div');
+    errBlock.style.marginTop = '12px';
+    errBlock.style.padding = '8px';
+    errBlock.style.background = 'rgba(231, 76, 60, 0.1)';
+    errBlock.style.border = '1px solid #e74c3c';
+    errBlock.style.borderRadius = '4px';
+    errBlock.style.fontSize = '0.8rem';
+
+    const title = document.createElement('strong');
+    title.textContent = `Area Validation Errors (${errors.length})`;
+    title.style.color = '#e74c3c';
+    errBlock.appendChild(title);
+
+    for (const err of errors) {
+      if (err.path && err.path.startsWith(basePath)) {
+        const row = document.createElement('div');
+        row.textContent = `${err.path}: ${err.message}`;
+        row.style.color = '#e74c3c';
+        row.style.marginTop = '2px';
+        errBlock.appendChild(row);
+      }
+    }
+    container.appendChild(errBlock);
+  }
 }

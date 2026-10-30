@@ -190,7 +190,7 @@ export function drawCell(
 ): void {
   if (isSpriteMode) {
     const tileMap = display.getOptions().tileMap as Record<string, [number, number]> | undefined;
-    
+
     const getSprite = (id: string | undefined, glyph: string) => {
       if (id && tileMap?.[id]) return id;
       if (tileMap?.[glyph]) return glyph; // In case the designer mapped the ASCII char directly
@@ -310,8 +310,7 @@ export function syncFogOverlayCanvas(campaign: CampaignData): void {
   if (!container) return;
 
   let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
-  const hasSpriteSheets =
-    campaign.theme.spriteSheets && Object.keys(campaign.theme.spriteSheets).length > 0;
+  const hasSpriteSheets = campaign.theme.spriteSheets && Object.keys(campaign.theme.spriteSheets).length > 0;
 
   if (hasSpriteSheets) {
     if (!fogCanvas) {
@@ -330,4 +329,3 @@ export function syncFogOverlayCanvas(campaign: CampaignData): void {
     fogCanvas.remove();
   }
 }
-

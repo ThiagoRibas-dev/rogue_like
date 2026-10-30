@@ -16,6 +16,7 @@ export enum GameEventType {
   ItemKill = 'ItemKill',
   ClueDiscovered = 'ClueDiscovered',
   TileEntered = 'TileEntered',
+  EntitySpotted = 'EntitySpotted',
   DialogueSelected = 'DialogueSelected',
   TrapTriggered = 'TrapTriggered',
   QuestStageChanged = 'QuestStageChanged',
@@ -138,6 +139,20 @@ export interface TileEnteredEvent extends BaseGameEvent {
   readonly x: number;
   readonly y: number;
   readonly tileTag: string;
+}
+
+/**
+ * Fired when a hostile or nemesis entity newly enters the player's field of view.
+ * Emitted at most once per entity per continuous sighting, so a hostile that
+ * remains visible does not generate repeated events.
+ */
+export interface EntitySpottedEvent extends BaseGameEvent {
+  readonly type: GameEventType.EntitySpotted;
+  readonly entityId: EntityId;
+  readonly x: number;
+  readonly y: number;
+  readonly isNemesis: boolean;
+  readonly tags: ReadonlyArray<string>;
 }
 
 /** Fired when the player selects an option inside dialogue. */
@@ -353,6 +368,7 @@ export type GameEvent =
   | ItemKillEvent
   | ClueDiscoveredEvent
   | TileEnteredEvent
+  | EntitySpottedEvent
   | DialogueSelectedEvent
   | TrapTriggeredEvent
   | QuestStageChangedEvent

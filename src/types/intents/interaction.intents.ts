@@ -31,6 +31,16 @@ export interface TileTarget {
 export type ApplyIntentTarget = SelfTarget | EntityTarget | ItemTarget | TileTarget;
 
 /**
+ * A verb paired with whether it currently applies to a target.
+ * Produced by `getVerbOptionsForTarget` so views can illuminate applicable verbs
+ * without re-implementing interaction resolution.
+ */
+export interface VerbOption {
+  readonly verb: Verb;
+  readonly valid: boolean;
+}
+
+/**
  * The canonical intent for applying a verb to a target.
  * M29 Unified Apply Intent plumbing.
  */

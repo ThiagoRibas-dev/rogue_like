@@ -132,15 +132,26 @@ The default campaign located in `public/data/campaigns/default/` serves as the f
 ### 5.1 Combat & Status Effects Walkthrough
 *   **Concept**: Modders define status effects in `status.json` and attach them to items in `items.json`.
 *   **Default Campaign Files**:
-    *   `status.json`: Defines the `"poisoned"` status effect:
+    *   `status.json`: Defines the `"poison"` status effect:
         ```json
-        "poisoned": {
-          "id": "poisoned",
+        "poison": {
+          "id": "poison",
           "name": "Poisoned",
-          "duration": 10,
-          "statModifiers": { "defense": -1 },
-          "damagePerTurn": 1,
-          "color": "#a6e3a1"
+          "description": "Takes 2 damage at the start of each turn.",
+          "color": "#00d2d3",
+          "detrimental": true,
+          "perTurnDamage": 2
+        }
+        ```
+    *   **`detrimental` (default `false`)**: Marks an effect as hostile to the entity carrying it. It is **not** inferred from `perTurnDamage` — debuffs like a weakening attack penalty or a skipped turn deal no damage but are still detrimental. The flag drives RTwP auto-pause and lets UI surfaces distinguish buffs from debuffs, so set it explicitly on every status you author.
+        ```json
+        "weakness": {
+          "id": "weakness",
+          "name": "Weakened",
+          "description": "Physical attacks deal 5 less damage.",
+          "color": "#ff9f43",
+          "detrimental": true,
+          "statModifiers": { "attack": -5 }
         }
         ```
     *   `items.json`: Defines a `"venom_dagger"` item. It features an `onHit` block applying the status:

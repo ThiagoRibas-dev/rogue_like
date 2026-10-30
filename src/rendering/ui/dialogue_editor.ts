@@ -22,7 +22,8 @@ export function renderDialogueTreeEditor(
   controller: EditorController,
   treeData: unknown,
   basePath: string,
-  container: HTMLElement
+  container: HTMLElement,
+  errors?: ReadonlyArray<{ path: string; message: string; severity?: string }>
 ): void {
   const tree = treeData as DialogueTree;
 
@@ -44,6 +45,7 @@ export function renderDialogueTreeEditor(
   const nodes = tree.nodes || {};
   Object.entries(nodes).forEach(([nodeId, node]) => {
     const nodeEl = document.createElement('div');
+    nodeEl.dataset.fieldPath = `${basePath}/nodes/${nodeId}`;
     nodeEl.className = 'editor-node-card';
     nodeEl.style.border = '1px solid #555';
     nodeEl.style.padding = '10px';
@@ -378,4 +380,30 @@ export function renderDialogueTreeEditor(
     results.innerHTML = outputHtml;
     results.style.color = '#fff';
   });
+
+  // M76: Minimal error display for dialogue editor (forwarded from workspace)
+  if (errors && errors.length > 0) {
+    const errBlock = document.createElement('div');
+    errBlock.className = 'dialogue-editor-errors';
+    errBlock.style.marginTop = '12px';
+    errBlock.style.padding = '8px';
+    errBlock.style.background = 'rgba(231, 76, 60, 0.1)';
+    errBlock.style.border = '1px solid #e74c3c';
+    errBlock.style.borderRadius = '4px';
+    const errTitle = document.createElement('strong');
+    errTitle.textContent = `Validation Errors (${errors.length})`;
+    errTitle.style.color = '#e74c3c';
+    errBlock.appendChild(errTitle);
+    for (const err of errors) {
+      if (err.path && err.path.startsWith(basePath)) {
+        const row = document.createElement('div');
+        row.textContent = `${err.path.split('/').pop() || err.path}: ${err.message}`;
+        row.style.color = '#e74c3c';
+        row.style.fontSize = '0.8rem';
+        row.style.marginTop = '2px';
+        errBlock.appendChild(row);
+      }
+    }
+    container.appendChild(errBlock);
+  }
 }

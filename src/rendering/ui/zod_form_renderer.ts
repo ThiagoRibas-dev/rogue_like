@@ -11,6 +11,10 @@ import {
   createMultiSelectField
 } from './editor_forms.ts';
 import { getReferenceOptions } from './ui_utils.ts';
+import {
+  isPathExpanded,
+  togglePath,
+} from '../../editor/validation_navigator';
 
 /**
  * Renders a form dynamically based on a Zod schema.
@@ -96,6 +100,7 @@ export function renderFormForZodSchema(
   wrapper.style.alignItems = 'center';
   wrapper.style.gap = '8px';
   wrapper.style.width = '100%';
+  wrapper.dataset.fieldPath = basePath;
 
   const fieldContainer = document.createElement('div');
   fieldContainer.style.flexGrow = '1';
@@ -312,18 +317,39 @@ function renderNestedObjectField(
   canBeRemoved: boolean,
   errors?: ReadonlyArray<ValidationError>
 ) {
-  const group = document.createElement('fieldset');
-  group.className = 'form-group';
-  group.style.border = '1px solid rgba(255,255,255,0.1)';
-  group.style.padding = '12px';
-  group.style.borderRadius = '6px';
-  group.style.position = 'relative';
+  // Accordion: nested objects use <details>/<summary> with module-level persistence.
+  // First-level nested sections are open by default; deeper sections follow expandedPaths.
+  const isFirstLevel = basePath.split('/').filter(s => s !== '').length <= 2;
+  const detailsOpen = isFirstLevel ? true : isPathExpanded(basePath);
 
-  const legend = document.createElement('legend');
-  legend.className = 'form-label';
+  const details = document.createElement('details');
+  details.className = 'form-group-accordion';
+  details.open = detailsOpen;
+  details.dataset.fieldPath = basePath;
+  details.style.border = '1px solid rgba(255,255,255,0.1)';
+  details.style.padding = '12px';
+  details.style.borderRadius = '6px';
+  details.style.position = 'relative';
+  details.style.marginBottom = '8px';
+
+  const summary = document.createElement('summary');
+  summary.className = 'form-label';
+  summary.style.cursor = 'pointer';
+  summary.style.fontWeight = 'bold';
+  summary.style.userSelect = 'none';
   const titleText = basePath.split('/').pop()?.toUpperCase() || 'OBJECT';
-  legend.textContent = titleText;
-  group.appendChild(legend);
+
+  // Descendant error badge for quick visibility
+  let descendantErrors = 0;
+  if (errors) {
+    descendantErrors = errors.filter(e => {
+      const ePath = e.path || '';
+      return ePath.startsWith(basePath + '/') && ePath !== basePath;
+    }).length;
+  }
+  const badgeText = descendantErrors > 0 ? ` (${descendantErrors})` : '';
+  summary.textContent = titleText + badgeText;
+  details.appendChild(summary);
 
   if (canBeRemoved) {
     const removeBtn = document.createElement('button');
@@ -337,8 +363,13 @@ function renderNestedObjectField(
     removeBtn.addEventListener('click', () => {
       controller.applyOperations([{ op: 'remove', path: basePath }]);
     });
-    group.appendChild(removeBtn);
+    details.appendChild(removeBtn);
   }
+
+  // Sync module-level expandedPaths when user toggles
+  details.addEventListener('toggle', () => {
+    togglePath(basePath);
+  });
 
   const safeObj = (obj as Record<string, unknown>) || {};
   const shape = schema.shape;
@@ -374,16 +405,16 @@ function renderNestedObjectField(
 
     previewRow.appendChild(swatch);
     previewRow.appendChild(nameLabel);
-    group.appendChild(previewRow);
+    details.appendChild(previewRow);
   }
 
   // Render all fields defined in the schema
   for (const [key, propSchema] of Object.entries(shape)) {
     const propPath = `${basePath}/${key}`;
-    renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, group, errors);
+    renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, details, errors);
   }
 
-  container.appendChild(group);
+  container.appendChild(details);
 }
 
 function renderArrayField(
@@ -397,6 +428,7 @@ function renderArrayField(
 ) {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
+  group.dataset.fieldPath = basePath;
   group.style.border = '1px dashed rgba(255,255,255,0.2)';
   group.style.padding = '12px';
   group.style.borderRadius = '6px';
@@ -429,6 +461,7 @@ function renderArrayField(
     const itemContainer = document.createElement('div');
     itemContainer.draggable = true;
     itemContainer.dataset.index = String(index);
+    itemContainer.dataset.fieldPath = `${basePath}/${index}`;
     itemContainer.style.display = 'flex';
     itemContainer.style.gap = '8px';
     itemContainer.style.alignItems = 'flex-start';

@@ -26,7 +26,10 @@ export function getTileColor(campaign: CampaignData, tileId: string): string {
 /**
  * Resolves entity glyph/color from campaign data.
  */
-export function getEntityDisplay(campaign: CampaignData, templateId: string): { glyph: string; fg: string; bg: string } {
+export function getEntityDisplay(
+  campaign: CampaignData,
+  templateId: string
+): { glyph: string; fg: string; bg: string } {
   const def = campaign.entities[templateId];
   return {
     glyph: def?.glyph ?? '?',
@@ -69,11 +72,7 @@ export function getDispositionLabel(disposition: string): string {
 /**
  * Builds a static area definition representation from a generated area.
  */
-export function buildBakedStaticArea(
-  newId: string,
-  areaDef: AreaDefinition,
-  generated: GeneratedArea
-): AreaDefinition {
+export function buildBakedStaticArea(newId: string, areaDef: AreaDefinition, generated: GeneratedArea): AreaDefinition {
   const width = generated.map.width;
   const height = generated.map.height;
 
@@ -339,7 +338,12 @@ export function renderReceipt(_container: HTMLElement, campaign: CampaignData, r
 /**
  * Updates the JSON inspector panel with the serialized preview of the baked area.
  */
-export function updateJsonPreview(container: HTMLElement, areaId: string, areaDef: AreaDefinition, generated: GeneratedArea): void {
+export function updateJsonPreview(
+  container: HTMLElement,
+  areaId: string,
+  areaDef: AreaDefinition,
+  generated: GeneratedArea
+): void {
   const jsonContent = container.querySelector('#ds-json-content');
   if (!jsonContent) return;
   const previewArea = buildBakedStaticArea(`${areaId}_baked`, areaDef, generated);

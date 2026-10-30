@@ -15,10 +15,7 @@ export interface ProcessLedgerResult {
 /**
  * Parses new ledger events from the historical ledger and updates metric counts.
  */
-export function processLedgerEvents(
-  events: ReadonlyArray<GameEvent>,
-  turns: number
-): ProcessLedgerResult {
+export function processLedgerEvents(events: ReadonlyArray<GameEvent>, turns: number): ProcessLedgerResult {
   let dramaCountDelta = 0;
   let clueCountDelta = 0;
   let schemeMutationsDelta = 0;

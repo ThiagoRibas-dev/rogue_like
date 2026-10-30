@@ -1,5 +1,5 @@
 import type { EditorController } from '../editor_ui.ts';
-import { runFuzzerBatch } from '../../editor/simulation/narrative_fuzzer.ts';
+import { runFuzzerOffload } from '../../worker/worker_bridge.ts';
 
 /**
  * Renders the Narrative Fuzzer simulation tab in the Simulation Lab.
@@ -90,7 +90,7 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
   const metricClueRatio = container.querySelector('#fuzzer-metric-clueratio') as HTMLElement | null;
   const metricSaveSize = container.querySelector('#fuzzer-metric-savesize') as HTMLElement | null;
 
-  btnRun?.addEventListener('click', () => {
+  btnRun?.addEventListener('click', async () => {
     if (!runsInp || !turnsInp || !seedInp) return;
 
     if (btnRun) {
@@ -100,23 +100,34 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
 
     if (placeholder) placeholder.style.display = 'none';
     if (outputContainer) outputContainer.style.display = 'flex';
-    if (runsList)
+    if (runsList) {
       runsList.innerHTML =
         '<div style="color: var(--text-dim); font-style: italic;">Running headless simulations...</div>';
+    }
 
-    setTimeout(() => {
-      try {
-        const runs = parseInt(runsInp.value, 10);
-        const maxTurns = parseInt(turnsInp.value, 10);
-        const seedOverride = seedInp.value.trim() || undefined;
-        const stopOnFirstError = stopChk ? stopChk.checked : false;
+    try {
+      const runs = parseInt(runsInp.value, 10);
+      const maxTurns = parseInt(turnsInp.value, 10);
+      const seedOverride = seedInp.value.trim() || undefined;
+      const stopOnFirstError = stopChk ? stopChk.checked : false;
 
-        const report = runFuzzerBatch(controller.getDocument(), {
+      const report = await runFuzzerOffload(
+        controller.getDocument(),
+        {
           runs,
           maxTurns,
           seedOverride,
           stopOnFirstError
-        });
+        },
+        (progress) => {
+          if (btnRun) {
+            btnRun.textContent = `⏳ Running (${Math.round(progress.progress * 100)}%)...`;
+          }
+          if (runsList) {
+            runsList.innerHTML = `<div style="color: var(--text-dim); font-style: italic;">${progress.message} (${Math.round(progress.progress * 100)}%)</div>`;
+          }
+        }
+      );
 
         // Set metrics
         if (metricPassFail) {
@@ -213,6 +224,5 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
           btnRun.textContent = '▶ Run Fuzzer';
         }
       }
-    }, 50);
-  });
+    });
 }

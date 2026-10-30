@@ -23,6 +23,11 @@
 12. **NEVER use magic values.** Every literal value affecting gameplay must be a named constant or enum member. No exceptions.
 13. **Prefer SMALL changes.** Each response should address one logical change. Do not refactor unrelated code while implementing a feature.
 14. **Avoid unnecessary nesting.** Keep code flat where possible. Use early returns to avoid deeply nested if/else blocks.
+15. **Map cascading effects in all three directions.** Before proposing an architecture — and again before writing code — enumerate the impact of every change across three axes:
+    - **Upstream:** who calls, imports, emits, produces, or constructs this (call sites, event emitters, data authors, mocks/fixtures, tests).
+    - **Downstream:** what consumes or derives from this (renderers, validators, serializers, ledger/telemetry consumers, save schemas).
+    - **Lateral:** what mirrors or shares the same data or registry (sibling campaign JSONs, editor forms, generator kits, docs, parallel records).
+    Trigger on **any** change to behaviour, ordering, or data shape — not only on interface or enum changes. Record the result as a Cascading Effects Matrix (`Change | Upstream | Downstream | Lateral`) in the research artifact and the implementation plan.
 
 ---
 
@@ -37,7 +42,7 @@ flowchart TD
         S1["1. Reiterate Rules & Standards (Review AGENTS.md & ARCHITECTURE.md)"]
         S2["2. Research (Read source files, design notes, cross-reference tasks)"]
         S3["3. Compile (Create research_notes.md artifact, map tasks to architecture)"]
-        S4["4. Plan (Draft step-by-step plan, check for existing utilities)"]
+        S4["4. Plan (Draft step-by-step plan + Cascading Effects Matrix, check for existing utilities)"]
         S5["5. Enhance (Add precise code snippets/diffs to plan artifact)"]
         
         S1 --> S2
@@ -59,7 +64,7 @@ flowchart TD
 
     subgraph After ["Phase 3: After Writing Code"]
         direction TB
-        S7["8. Identify Downstream Effects (Present updates to dependent files)"]
+        S7["8. Re-verify Cascading Effects (Upstream / Downstream / Lateral Matrix)"]
         S8["9. Audit Architecture Compliance (Audit against ARCHITECTURE.md & AGENTS.md)"]
         S9["10. Suggest Test Scenario (Describe manual play-test action)"]
         S10["11. Update Documentation (Update ARCHITECTURE.md & MILESTONES.md)"]
@@ -79,9 +84,9 @@ flowchart TD
 ### Before Writing Code (The 6-Step Kickoff Flow)
 When starting a new milestone or major feature, you MUST execute the following flow strictly in order:
 1. **Reiterate rules and standards:** Acknowledge the core constraints (e.g., ECS purity, Data-Driven JSON, TypeScript strictness, no deep nesting, etc). Review `AGENTS.md` and `docs/ARCHITECTURE.md` first.
-2. **Research:** Read the relevant source files, reference documents (architecture, past and future milestones, specific spec or ideas docs, etc), and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen.
+2. **Research:** Read the relevant source files, reference documents (architecture, past and future milestones, specific spec or ideas docs, etc), and design notes. Cross-reference the milestone tasks with the existing codebase to discover exactly where and how changes must happen. Explicitly map **upstream, downstream, and lateral** effects per Rule 15 — including call-site ordering and data-shape changes, not just type changes.
 3. **Compile Research Document:** Summarize your findings into a `research_notes.md` artifact. Explicitly map each task to the specific architectural rules and design documents that govern it, calling out where existing code and systems interact with the new systems or functionality. **STOP HERE and present the research document to the User. Do not proceed to Step 4 until the User explicitly confirms the research is correct and complete.**
-4. **Implementation Plan Draft:** Draft an initial step-by-step implementation plan based strictly on the confirmed research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication.
+4. **Implementation Plan Draft:** Draft an initial step-by-step implementation plan based strictly on the confirmed research. State open questions and request user feedback. Always check for existing utilities in `utils/`, `constants/`, and `types/` before proposing new ones to avoid duplication. The plan MUST contain a **Cascading Effects Matrix** (`Change | Upstream | Downstream | Lateral`) covering every task.
 5. **Enhance Implementation Plan:** Once the high-level initial plan is formed, do a second pass to enhance the plan artifact with precise code snippets (or diffs) demonstrating exactly how the logic will be integrated, *without* removing any of the underlying rules or justifications.
 
 **STOP HERE and wait for the User's explicit approval of the Implementation Plan before writing or modifying any actual codebase files.**
@@ -96,7 +101,7 @@ When starting a new milestone or major feature, you MUST execute the following f
 7. **Review against Plan:** Explicitly audit the newly written code against the approved `implementation_plan.md` to ensure no steps were missed or partially implemented before invoking `.\verify.bat`.
 
 ### After Writing Code
-8. **Identify downstream effects.** If you changed an interface or enum, list every file that will need to be updated and present those changes too.
+8. **Re-verify cascading effects.** Update the plan's Cascading Effects Matrix with anything discovered while implementing. Confirm no upstream caller (call sites, emitters, data authors, mocks), downstream consumer (renderers, validators, serializers, ledger/telemetry, save schemas), or lateral mirror (sibling campaign JSONs, editor forms, kits, docs) was missed, and present those changes too.
 9. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.
 10. **Suggest a test scenario.** Describe a manual play-test action the user can take to verify the change works.
 11. **Update Documentation.** If the change added or modified a system, update `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, and any other relevant document. If a milestone was completed, summarize it and update `docs/MILESTONES.md`.

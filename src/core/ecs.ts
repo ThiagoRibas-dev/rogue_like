@@ -563,10 +563,7 @@ export function removeEntity(state: GameState, entityId: EntityId): GameState {
  * @param rootEntityId The ID of the root entity to inspect.
  * @returns An array containing the root entity ID and all recursively owned entity IDs.
  */
-export function collectOwnedEntityIds(
-  state: GameState,
-  rootEntityId: EntityId
-): ReadonlyArray<EntityId> {
+export function collectOwnedEntityIds(state: GameState, rootEntityId: EntityId): ReadonlyArray<EntityId> {
   const visited = new Set<EntityId>();
   const queue: EntityId[] = [rootEntityId];
 

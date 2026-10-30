@@ -3,7 +3,7 @@ import type { CampaignData } from './campaign.types.ts';
 import type { Quest } from './quests.types.ts';
 import type { Intent } from './intents/intent.union.ts';
 import type { GameEvent } from './events.types.ts';
-import type { ApplyIntentTarget } from './intents/interaction.intents.ts';
+import type { ApplyIntentTarget, VerbOption } from './intents/interaction.intents.ts';
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { PendingKnowledgePropagation, PendingRumorPropagation } from './knowledge.types.ts';
 import type { RoomBounds } from './encounter.types.ts';
@@ -107,6 +107,7 @@ export interface AreaData {
   readonly spatialIndex: ReadonlyMap<string, ReadonlyArray<EntityId>>;
   readonly rooms: ReadonlyArray<RoomBounds>;
   readonly lastSpawnTurn: number;
+  readonly lastVisitedTurn?: number | undefined;
 }
 
 /**
@@ -267,6 +268,8 @@ export interface GameState {
         readonly target: ApplyIntentTarget;
         readonly toolEntityId?: EntityId;
         readonly availableVerbs: ReadonlyArray<Verb>;
+        /** Every engine verb flagged valid/invalid, used to illuminate the menu. */
+        readonly verbOptions: ReadonlyArray<VerbOption>;
       }
     | undefined;
   readonly telemetry: TelemetryMetrics;
@@ -281,6 +284,7 @@ export interface SerializedAreaData {
   readonly components: ReadonlyArray<[EntityId, Readonly<Record<string, Component>>]>;
   readonly rooms?: ReadonlyArray<RoomBounds>;
   readonly lastSpawnTurn?: number;
+  readonly lastVisitedTurn?: number | undefined;
 }
 
 /**

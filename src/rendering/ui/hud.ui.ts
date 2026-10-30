@@ -186,4 +186,3 @@ export function updateHUD(s: GameState): void {
     }
   }
 }
-

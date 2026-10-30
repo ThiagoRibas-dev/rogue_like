@@ -15,7 +15,7 @@ export function renderVerbMenu(state: GameState): void {
 
   container.classList.remove('hidden');
 
-  const { availableVerbs, target } = state.verbMenu;
+  const { availableVerbs, verbOptions, target } = state.verbMenu;
 
   let targetName = 'Target';
   if (target.type === 'entity') targetName = 'Select Action';
@@ -33,31 +33,37 @@ export function renderVerbMenu(state: GameState): void {
   const list = document.createElement('ul');
   list.className = 'verb-menu-list';
 
-  if (availableVerbs.length === 0) {
+  if (verbOptions.length === 0) {
     const li = document.createElement('li');
     li.className = 'verb-menu-item disabled';
     li.textContent = 'No actions available';
     list.appendChild(li);
   } else {
-    availableVerbs.forEach((verb, index) => {
+    // Every verb is listed; applicable ones are illuminated and numbered, the rest dimmed.
+    for (const option of verbOptions) {
       const li = document.createElement('li');
-      li.className = 'verb-menu-item';
-      li.dataset.verb = verb;
+      li.className = option.valid ? 'verb-menu-item valid' : 'verb-menu-item invalid';
+      li.dataset.verb = option.verb;
 
-      const keySpan = document.createElement('span');
-      keySpan.className = 'verb-key';
-      keySpan.textContent = `[${index + 1}] `;
+      if (option.valid) {
+        const rank = availableVerbs.indexOf(option.verb);
+        if (rank >= 0) {
+          const keySpan = document.createElement('span');
+          keySpan.className = 'verb-key';
+          keySpan.textContent = `[${rank + 1}] `;
+          li.appendChild(keySpan);
+        }
+      }
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'verb-name';
       nameSpan.dataset.tooltipType = 'reaction';
-      nameSpan.dataset.tooltipVerb = verb;
-      nameSpan.textContent = verb;
+      nameSpan.dataset.tooltipVerb = option.verb;
+      nameSpan.textContent = option.verb;
 
-      li.appendChild(keySpan);
       li.appendChild(nameSpan);
       list.appendChild(li);
-    });
+    }
   }
 
   container.appendChild(list);

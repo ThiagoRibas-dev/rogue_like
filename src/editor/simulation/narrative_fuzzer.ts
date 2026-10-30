@@ -11,20 +11,11 @@ import { processDamageSystem } from '../../systems/damage.system.ts';
 import { processDeathSystem } from '../../systems/death.system.ts';
 import { processSchemeTurn } from '../../systems/scheme.system.ts';
 import { processAITurn } from '../../systems/ai.system.ts';
-import {
-  createMockFuzzerState
-} from './fuzzer_mock_state.ts';
-import {
-  generatePlayerFuzzerIntent,
-  checkFuzzerSoftlock,
-  checkSaveBloat
-} from './fuzzer_invariants.ts';
+import { createMockFuzzerState } from './fuzzer_mock_state.ts';
+import { generatePlayerFuzzerIntent, checkFuzzerSoftlock, checkSaveBloat } from './fuzzer_invariants.ts';
 import { processLedgerEvents, compileFuzzerReport } from './fuzzer_telemetry.ts';
 
-export {
-  createEntity,
-  createMockFuzzerState
-} from './fuzzer_mock_state.ts';
+export { createEntity, createMockFuzzerState } from './fuzzer_mock_state.ts';
 
 export {
   TriggerRunawayError,
@@ -33,10 +24,7 @@ export {
   checkSaveBloat
 } from './fuzzer_invariants.ts';
 
-export {
-  processLedgerEvents,
-  compileFuzzerReport
-} from './fuzzer_telemetry.ts';
+export { processLedgerEvents, compileFuzzerReport } from './fuzzer_telemetry.ts';
 
 /**
  * Ticks a single actor's turn in a pure-functional headless state.

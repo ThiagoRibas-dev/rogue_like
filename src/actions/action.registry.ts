@@ -4,6 +4,7 @@ import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
 import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { assertNever } from '../utils/assert.ts';
+import { closeTopModal, getCurrentModal, openModal, toggleModal } from '../core/modal_manager.ts';
 
 // Handlers
 import { getComponent, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
@@ -101,74 +102,29 @@ export function dispatchAction(
       return processEquipItemIntent(state, intent.entityId, intent.itemIndex);
     case IntentType.UnequipItem:
       return processUnequipItemIntent(state, intent.entityId, intent.slotId);
-    case IntentType.ToggleInventory: {
-      const nextUiModeInv = state.uiMode === UIMode.Game ? UIMode.Inventory : UIMode.Game;
-      const invPaused = state.engineMode === EngineMode.RTwP ? nextUiModeInv !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiModeInv, rtwpState: { ...state.rtwpState, paused: invPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleFactions: {
-      const nextUiModeFactions = state.uiMode === UIMode.Game ? UIMode.Factions : UIMode.Game;
-      const factionsPaused =
-        state.engineMode === EngineMode.RTwP ? nextUiModeFactions !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiModeFactions, rtwpState: { ...state.rtwpState, paused: factionsPaused } },
-        success: false
-      };
-    }
+    case IntentType.ToggleInventory:
+      return { state: toggleModal(state, UIMode.Inventory), success: false };
+    case IntentType.ToggleFactions:
+      return { state: toggleModal(state, UIMode.Factions), success: false };
     case IntentType.ToggleSettings: {
+      const isOpen = state.uiMode === UIMode.Settings || getCurrentModal() === UIMode.Settings;
+      if (!isOpen) return { state: openModal(state, UIMode.Settings), success: false };
+
+      const closed = closeTopModal(state);
       const isGameStarted = state.entities.length > 0;
-      const defaultMode = isGameStarted ? UIMode.Game : UIMode.MainMenu;
-      const nextUiModeSettings = state.uiMode !== UIMode.Settings ? UIMode.Settings : defaultMode;
-      const settingsPaused =
-        state.engineMode === EngineMode.RTwP ? nextUiModeSettings !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiModeSettings, rtwpState: { ...state.rtwpState, paused: settingsPaused } },
-        success: false
-      };
+      // Settings opened before a run starts returns to the main menu, not gameplay.
+      return { state: isGameStarted ? closed : { ...closed, uiMode: UIMode.MainMenu }, success: false };
     }
-    case IntentType.ToggleQuests: {
-      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Quests : UIMode.Game;
-      const questsPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: questsPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleInvestigation: {
-      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Investigation : UIMode.Game;
-      const invPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: invPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleDebug: {
-      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Debug : UIMode.Game;
-      const debugPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: debugPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleDossier: {
-      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Dossier : UIMode.Game;
-      const dossierPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: dossierPaused } },
-        success: false
-      };
-    }
-    case IntentType.ToggleLedger: {
-      const nextUiMode = state.uiMode === UIMode.Game ? UIMode.Ledger : UIMode.Game;
-      const ledgerPaused = state.engineMode === EngineMode.RTwP ? nextUiMode !== UIMode.Game : state.rtwpState.paused;
-      return {
-        state: { ...state, uiMode: nextUiMode, rtwpState: { ...state.rtwpState, paused: ledgerPaused } },
-        success: false
-      };
-    }
+    case IntentType.ToggleQuests:
+      return { state: toggleModal(state, UIMode.Quests), success: false };
+    case IntentType.ToggleInvestigation:
+      return { state: toggleModal(state, UIMode.Investigation), success: false };
+    case IntentType.ToggleDebug:
+      return { state: toggleModal(state, UIMode.Debug), success: false };
+    case IntentType.ToggleDossier:
+      return { state: toggleModal(state, UIMode.Dossier), success: false };
+    case IntentType.ToggleLedger:
+      return { state: toggleModal(state, UIMode.Ledger), success: false };
 
     // --- DEBUG INTENTS ---
     case IntentType.DebugRevealMap: {

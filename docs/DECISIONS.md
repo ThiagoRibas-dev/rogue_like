@@ -65,3 +65,68 @@ This document records architectural decisions whose rationale is **non-obvious o
   4. ***Caves of Qud* & *Dwarf Fortress* Living-World Scaling**:
      - *What We Learned*: Large living worlds scale along two axes: (a) **60Hz Presentation Decoupling** (simulation mutates state and queues events; rendering runs at most once per `requestAnimationFrame`), and (b) **Tiered World Simulation** (full tile-level FOV/A*/ECS runs only in the active zone, while frozen zones use deterministic delta catch-up on wake and global schemes/factions/rumors tick on a coarse macro-clock).
      - *How We Apply It*: Combine a 4ms frame-budgeted cooperative scheduler (`scheduler.ts`), stage-sliced `function*` procedural generation with `ROT.RNG.getState()` guards across yields, tiered simulation cadences, and optional Worker offload over the clean `ViewportSnapshot` / message-queue seam.
+
+---
+
+### Milestone 73: Pure Dumb Canvas Renderer, ViewportSnapshot & Dirty-Cell Invariants
+
+- **Decision: Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`) and Snapshot Projector (`src/rendering/viewport_snapshot.ts`)**:
+  - Completely decoupled the ROT.js canvas renderer from ECS entities and `GameState`.
+  - `src/rendering/renderer.ts` now imports **zero** simulation or ECS types (`ecs.ts`, `components.types.ts`, `game-state.types.ts`). It accepts only `(display: ROT.Display, snapshot: ViewportSnapshot, prevSnapshot?: ViewportSnapshot)`.
+  - All projection logic (reading spatial indexes, resolving z-indices, entity stacking, camera clamping, FOV cache lookups, inspect formatting, and visual effects coordinates) is isolated in `buildViewportSnapshot(state, viewportW, viewportH): ViewportSnapshot`.
+- **Decision: Cell-Level Dirty Diffing over Full-Frame Clears**:
+  - Instead of executing `display.clear()` and re-drawing every cell (up to 2,500+ cells) on every map-dirty frame, `render()` performs a flat 1D diff (`cellEquals(snapshot.cells[i], prevSnapshot.cells[i])`) and draws only changed cells via `drawCell()`.
+  - **Ghosting Prevention & ROT.js Backend Invariant**: Verified in `rot-js` display backend (`Rect` and `Tile`) that `draw(data, clearBefore)` executes with `clearBefore: true`, clearing the cell bounding box with background color or `clearRect` prior to rendering glyphs or composite sprites. Differential dirty-cell updates therefore do not accumulate visual artifacts or ghosting.
+  - Full redraw sweeps via `invalidateViewportSnapshot()` are explicitly triggered only upon area transitions, campaign switches, and zoom level changes.
+- **Decision: View Layer Decomposition (<250 LOC rule)**:
+  - Decomposed DOM manipulation out of `renderer.ts`:
+    - `src/rendering/ui/inspect_view.ui.ts`: Manages `#inspect-tooltip`, `#inspect-panel`, and `#inspect-content` DOM elements.
+    - `src/rendering/ui/vfx_overlay.ui.ts`: Manages `#effects-overlay` floating combat text and `#fog-overlay` 2D canvas.
+  - `src/rendering/presenter.ts` coordinates dispatching the computed `ViewportSnapshot` to `render()`, `renderInspectView()`, and `renderVFXAndFogOverlay()`.
+
+---
+
+### Milestone 74: Cooperative Frame-Budgeted Scheduler, Tiered Simulation & Worker Offload
+
+- **Decision: Cooperative Frame-Budgeted Turn Loop (`FRAME_BUDGET_MS = 4`) & Bounded RTwP Drain**:
+  - Slices `runTurnBasedLoop()` execution when elapsed execution exceeds 4ms (`FRAME_BUDGET_MS`), scheduling resumption via `setTimeout(..., 0)` while holding `isTurnProcessing = true` and `engine.lock()`.
+  - *Rationale*: During turn storms (50+ active entities acting, chained triggers, or complex AI pathfinding), a synchronous turn loop monopolizes the JavaScript thread for 50–100ms, causing noticeable UI stutter and dropped input events. Yielding at 4ms leaves 12ms of the 16.6ms frame budget for browser rendering, styles, and garbage collection, preserving responsive 60Hz presentation.
+  - Holding `isTurnProcessing = true` prevents re-entrant turn scheduling or race conditions in the input queue during intermediate asynchronous yields.
+  - For RTwP mode, clamped accumulated time (`MAX_ACCUMULATED_RTWP_TIME = 1000ms`) and capped iterations (`MAX_RTWP_DRAIN_ITERATIONS = 10`) prevent the "spiral of death" where lag induces more catch-up steps, creating an unrecoverable browser freeze.
+
+- **Decision: Tiered Simulation Cadence (Micro / Local Narrative / Macro)**:
+  - Decoupled world simulation systems into three tiers (`src/core/simulation_cadence.ts`):
+    - **Tier 1 (Micro)**: Runs every turn for immediate combat, FOV, movement, and reactions in the active area.
+    - **Tier 2 (Local Narrative)**: Runs every 10 turns (`LOCAL_NARRATIVE_TICK_INTERVAL`) for NPC dialogue delays, rumor decay, and thought bubble updates.
+    - **Tier 3 (Macro)**: Runs on coarse intervals for rivalries (25 turns), schemes (50 turns), and world events (100 turns).
+  - *Rationale*: Running macro social simulations and deep rumor propagation on every sub-turn actor step was an unnecessary `O(N)` cost. Coarse ticking reduces idle turn calculation overhead by >80% with zero perceptible change in gameplay responsiveness.
+
+- **Decision: Area Wake Delta Catch-Up vs Continuous Off-Screen Ticking**:
+  - Stored `lastVisitedTurn` on `AreaData`. When re-entering a dormant area, `deltaTurns = Math.max(0, currentTurn - lastVisitedTurn)` is computed.
+  - *Rationale*: Simulating unvisited or dormant areas turn-by-turn requires loading their ECS graphs and running pathfinding and FOV for hundreds of off-screen entities. Instead, dormant areas sleep in cold storage. Upon waking, timers (like respawn thresholds) and entity states are advanced by `deltaTurns` in a single constant-time step.
+
+- **Decision: PRNG Determinism Isolation Across Generator Yields**:
+  - In async generator pipelines (`generator_async.ts`), the procedural generation yields `GenerationProgress` payloads between major stages (`resolvePalette`, `carveBaseGeometry`, `carveRoomsAndPortals`, `applyBiomesAndCull`, `computeHotPathDijkstra`).
+  - *Rationale*: To allow the UI to paint loading bars between generation stages without compromising seed reproducibility, `ROT.RNG.getState()` is captured before each `yield` and restored with `ROT.RNG.setState()` upon resumption. This prevents asynchronous browser events (such as UI clicks or event timers) from polluting or advancing the global PRNG state. Yielding inside synchronous ROT.js digger/cellular callbacks is strictly forbidden to preserve library internal state integrity.
+
+- **Decision: Pure Serializable Web Worker DTO Boundary with Fallback**:
+  - Offloaded long-running workloads (narrative fuzzing in `fuzzer.worker.ts` and area generation in `map.worker.ts`) to dedicated Web Workers via `src/worker/worker_bridge.ts`.
+  - *Rationale*: Web Workers operate in an isolated thread with no DOM or shared memory. All request/response contracts (`src/types/worker.types.ts`) are pure serializable JSON DTOs (e.g., converting `Set` collections in `DirectorContext` into plain arrays). If `Worker` is unavailable or throws during initialization, `worker_bridge.ts` transparently falls back to main-thread async generators, guaranteeing compatibility across all test environments and browser sandboxes.
+
+### Milestone 75: RTwP Auto-Pause, Modal Stack, Verb Illumination & Filter Chips
+
+- **Transient modal stack over persisted nesting.** Modal LIFO state and the auto-pause sighting set live in module memory, never in `GameState`. Persisting them would force a `SerializedGameState` change and save migration for state that is meaningless across sessions; `uiMode` already round-trips and is normalized on load, so the stack is rebuilt (cleared) rather than restored.
+- **`detrimental` as a schema flag, not a damage heuristic.** Detrimentality cannot be inferred from `perTurnDamage`: `weakness` (attack penalty), `stun` (skipped turns), and `confusion` (randomized movement) are all hostile and deal no damage. An explicit `z.boolean().default(false)` on `StatusEffectDefinitionSchema` is data-driven per Rule 12, is backward compatible for existing JSON, and surfaces an editor checkbox automatically because `zod_form_renderer.ts` unwraps `ZodDefault`.
+- **`EntitySpotted` emitted from `core`, not `systems`.** The only place FOV is refreshed is `updateExploredTiles()` in `src/systems/map.system.ts`, but the systems layer must stay event-free and the dedupe set cannot live in `GameState` under the transient policy. `map.system.ts` therefore exposes the pure query `getVisibleHostileEntityIds()`, and `src/core/auto_pause_signals.ts` owns event construction plus the transient sighting set.
+- **FOV refresh moved ahead of the event drain.** `applyIntentWithCost()` now calls `updateExploredTiles()` before draining `state.events`. Previously the update happened in `processTurn()` *after* the drain, which would have surfaced `EntitySpotted` a turn late and polluted the next tick's ledger. The other three call sites (area transition, new game, sandbox) stay put because they run outside the turn event lifecycle.
+- **Pause baseline instead of a recomputed pause flag.** The previous toggle intents derived `paused` as `nextUiMode !== UIMode.Game`, which force-resumed a manually paused RTwP game whenever a modal closed. Capturing the pause state at the moment the outermost modal opens fixes that class of bug and makes nesting coherent.
+- **Verb illumination lists all verbs.** The menu already received only *valid* verbs, so highlighting "valid" would have been a no-op. Listing every verb with applicable ones illuminated is the only formulation that removes trial-and-error, and it keeps keyboard selection aligned by numbering only the illuminated entries.
+
+### Milestone 76: Campaign Creator & Developer Tooling UX
+
+- **Global reverse-reference indexer over area-only panel.** References between templates, dialogues, items, and areas form a unified campaign graph. Confining "Where Used" queries to a third pane in `area_editor.ts` would isolate item and dialogue authors from reverse lookup. Creating `src/editor/reference_index.ts` as a shared inverted index cached via `WeakMap<CampaignData, ReferenceIndex>` provides instant O(1) usage lookups across all tabs while respecting Golden Rule 5 ("Never Duplicate Reference-Resolution Logic").
+- **Persistent collapsible validation dock over hover popup.** Replacing the hover popup in `editor_toolbar.ts` with a bottom dock (`src/rendering/ui/validation_panel.ui.ts`) solves the fundamental UX issue where moving the mouse into the popup closes it. A persistent dock allows developers to view errors while editing inputs, eliminates legacy `innerHTML` usage per Golden Rule 7, and enables single-click jump-to-error navigation.
+- **Read-time validator path normalization over validator rewrites.** Sub-validators historically emit paths in three conflicting notations (slash-leading, dotted, and bracketed array index), while form engines expect slash-leading paths. Normalizing paths at ingestion via `src/editor/validation_path.ts` (`toFormPath`) immediately fixes the silent inline-error rendering bug in `zod_form_renderer.ts` without breaking existing validator unit tests.
+- **Module-level expanded paths set for accordion persistence.** Because form changes re-render the workspace by replacing container children, storing accordion open/close state directly on native DOM `<details>` elements causes annoying snap-backs on every keystroke. Storing open states in an in-memory `Set<string>` keyed by form `basePath` preserves user UI state across re-renders and allows programmatic ancestor expansion during jump-to-error navigation.
+- **Static-map-only contextual tile spawning with walkability verification.** "Playtest from Here" right-click spawning is strictly scoped to static map canvases where coordinates map to fixed tile layouts. Spawning verifies `walkable` status from tile definitions to prevent trapping the player inside geometry. The spawn coordinates and area ID pass via `sessionStorage['editor_playtest_spawn']` to `startNewGame()` without polluting persistent save files.
+- **Strict touch scope for DOM security cleanup (Golden Rule 7).** Only components created or modified in Milestone 76 (the new validation dock, accordion headers, where-used drawer, and tile context menu) are converted to strict `document.createElement` / `textContent` patterns. Untouched legacy area canvas controls remain intact to minimize regression blast radius in accordance with Golden Rule 13.

@@ -25,10 +25,8 @@ export function resolveStateStabilization(state: GameState): GameState {
     nextState = processDeathSystem(nextState);
     nextState = processGlobalTriggers(nextState);
 
-    const hasPendingDamage =
-      queryEntities(nextState, [ComponentType.Damage]).length > 0;
-    const hasPendingDeath =
-      queryEntities(nextState, [ComponentType.Death]).length > 0;
+    const hasPendingDamage = queryEntities(nextState, [ComponentType.Damage]).length > 0;
+    const hasPendingDeath = queryEntities(nextState, [ComponentType.Death]).length > 0;
     const newEventsEmitted = nextState.events.length > prevEventCount;
 
     if (!hasPendingDamage && !hasPendingDeath && !newEventsEmitted) {

@@ -7,33 +7,80 @@ import type { GameState } from '../../types/game-state.types.ts';
 import type { ValidationError } from '../../editor/validator/validator.types.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { editorState, notifyEditorStateChanged } from './editor_state.ts';
+import { renderValidationPanel } from '../ui/validation_panel.ui';
 
 /**
  * Renders the HTML structure of the toolbar inside the given header container.
  * @param container The header element to inject the toolbar UI.
  */
 export function renderToolbar(container: HTMLElement): void {
-  container.innerHTML = `
-    <div class="editor-toolbar-left">
-      <h1 class="editor-title">🛠️ Campaign Editor</h1>
-      <button id="btn-editor-new" class="editor-btn">✨ New</button>
-      <button id="btn-editor-open" class="editor-btn">📂 Resume Workspace</button>
-      <button id="btn-editor-save" class="editor-btn">💾 Save</button>
-      <div style="width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 8px;"></div>
-      <input type="file" id="input-editor-import-zip" accept=".zip" style="display:none;" />
-      <button id="btn-editor-import-zip" class="editor-btn">📦 Import ZIP</button>
-      <button id="btn-editor-export-zip" class="editor-btn">📦 Export ZIP</button>
-    </div>
-    <div class="editor-toolbar-center">
-      <button id="btn-editor-undo" class="editor-btn">↩️ Undo</button>
-      <button id="btn-editor-redo" class="editor-btn">↪️ Redo</button>
-    </div>
-    <div class="editor-toolbar-right">
-      <span id="editor-validation-status" class="validation-status">✅ OK</span>
-      <button id="btn-editor-playtest" class="editor-btn playtest-btn">▶️ Play Test</button>
-      <button id="btn-editor-exit" class="editor-btn exit-btn">✖ Exit</button>
-    </div>
-  `;
+  container.replaceChildren();
+
+  const left = document.createElement('div');
+  left.className = 'editor-toolbar-left';
+
+  const title = document.createElement('h1');
+  title.className = 'editor-title';
+  title.textContent = '🛠️ Campaign Editor';
+  left.appendChild(title);
+
+  const btnNew = document.createElement('button');
+  btnNew.id = 'btn-editor-new'; btnNew.className = 'editor-btn'; btnNew.textContent = '✨ New';
+  left.appendChild(btnNew);
+
+  const btnOpen = document.createElement('button');
+  btnOpen.id = 'btn-editor-open'; btnOpen.className = 'editor-btn'; btnOpen.textContent = '📂 Resume Workspace';
+  left.appendChild(btnOpen);
+
+  const btnSave = document.createElement('button');
+  btnSave.id = 'btn-editor-save'; btnSave.className = 'editor-btn'; btnSave.textContent = '💾 Save';
+  left.appendChild(btnSave);
+
+  const divider = document.createElement('div');
+  divider.style.width = '1px'; divider.style.height = '24px'; divider.style.background = 'rgba(255,255,255,0.2)'; divider.style.margin = '0 8px'; divider.style.display = 'inline-block'; divider.style.verticalAlign = 'middle';
+  left.appendChild(divider);
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file'; fileInput.id = 'input-editor-import-zip'; fileInput.accept = '.zip'; fileInput.style.display = 'none';
+  left.appendChild(fileInput);
+
+  const btnImport = document.createElement('button');
+  btnImport.id = 'btn-editor-import-zip'; btnImport.className = 'editor-btn'; btnImport.textContent = '📦 Import ZIP';
+  left.appendChild(btnImport);
+
+  const btnExport = document.createElement('button');
+  btnExport.id = 'btn-editor-export-zip'; btnExport.className = 'editor-btn'; btnExport.textContent = '📦 Export ZIP';
+  left.appendChild(btnExport);
+
+  const center = document.createElement('div');
+  center.className = 'editor-toolbar-center';
+
+  const btnUndo = document.createElement('button');
+  btnUndo.id = 'btn-editor-undo'; btnUndo.className = 'editor-btn'; btnUndo.textContent = '↩️ Undo';
+  center.appendChild(btnUndo);
+
+  const btnRedo = document.createElement('button');
+  btnRedo.id = 'btn-editor-redo'; btnRedo.className = 'editor-btn'; btnRedo.textContent = '↪️ Redo';
+  center.appendChild(btnRedo);
+
+  const right = document.createElement('div');
+  right.className = 'editor-toolbar-right';
+
+  const statusEl = document.createElement('span');
+  statusEl.id = 'editor-validation-status'; statusEl.className = 'validation-status'; statusEl.textContent = '✅ OK';
+  right.appendChild(statusEl);
+
+  const btnPlaytest = document.createElement('button');
+  btnPlaytest.id = 'btn-editor-playtest'; btnPlaytest.className = 'editor-btn playtest-btn'; btnPlaytest.textContent = '▶️ Play Test';
+  right.appendChild(btnPlaytest);
+
+  const btnExit = document.createElement('button');
+  btnExit.id = 'btn-editor-exit'; btnExit.className = 'editor-btn exit-btn'; btnExit.textContent = '✖ Exit';
+  right.appendChild(btnExit);
+
+  container.appendChild(left);
+  container.appendChild(center);
+  container.appendChild(right);
 }
 
 /**
@@ -209,6 +256,10 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
   if (btnUndo) btnUndo.disabled = !controller.canUndo();
   if (btnRedo) btnRedo.disabled = !controller.canRedo();
 
+  // Clean up legacy hover popup (replaced by persistent dock in M76)
+  const existingPopup = document.getElementById('editor-validation-popup');
+  if (existingPopup) existingPopup.remove();
+
   if (statusEl) {
     if (errors.length === 0) {
       statusEl.textContent = '✅ OK';
@@ -216,54 +267,44 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
       statusEl.title = 'No validation errors found.';
       statusEl.onmouseenter = null;
       statusEl.onmouseleave = null;
-      const existingPopup = document.getElementById('editor-validation-popup');
-      if (existingPopup) {
-        existingPopup.remove();
-      }
     } else {
       const errorCount = errors.filter((e): boolean => e.severity === 'error').length;
       const warnCount = errors.filter((e): boolean => e.severity === 'warning').length;
       statusEl.textContent = `❌ ${errorCount} Err, ${warnCount} Warn`;
       statusEl.className = 'validation-status error';
-
-      let popup = document.getElementById('editor-validation-popup');
-      if (!popup) {
-        popup = document.createElement('div');
-        popup.id = 'editor-validation-popup';
-        popup.style.cssText =
-          'display:none;position:absolute;z-index:1000;background:#1a1a2e;border:1px solid #e74c3c;border-radius:6px;padding:0.75rem;max-width:480px;max-height:400px;overflow-y:auto;font-size:0.75rem;box-shadow:0 8px 24px rgba(0,0,0,0.5);white-space:pre-wrap;';
-        document.body.appendChild(popup);
-      }
-
-      popup.innerHTML =
-        `<div style="font-weight:bold;margin-bottom:0.5rem;color:#e74c3c;">⚠ Validation Errors (${errors.length})</div>` +
-        errors
-          .map(
-            (e): string =>
-              `<div style="margin-bottom:0.35rem;padding:0.25rem 0.5rem;border-left:3px solid ${e.severity === 'error' ? '#e74c3c' : '#f39c12'};background:rgba(255,255,255,0.03);border-radius:2px;">` +
-              `<span style="font-weight:bold;color:${e.severity === 'error' ? '#e74c3c' : '#f39c12'};">[${e.severity.toUpperCase()}]</span>&nbsp;` +
-              `<span style="color:#3498db;">${e.path}</span><br/>` +
-              `<span style="color:#ccc;">${e.message}</span>` +
-              (e.fixSuggestion
-                ? `<br/><span style="color:#a6e3a1;font-weight:bold;">💡 Fix: ${e.fixSuggestion}</span>`
-                : '') +
-              `</div>`
-          )
-          .join('');
-
-      statusEl.onmouseenter = (): void => {
-        if (popup) {
-          const rect = statusEl.getBoundingClientRect();
-          popup.style.left = Math.max(10, rect.left - 200) + 'px';
-          popup.style.top = rect.bottom + window.scrollY + 4 + 'px';
-          popup.style.display = 'block';
-        }
-      };
-      statusEl.onmouseleave = (): void => {
-        if (popup) {
-          popup.style.display = 'none';
-        }
-      };
+      statusEl.onmouseenter = null;
+      statusEl.onmouseleave = null;
     }
   }
+
+  // Update (or create) the persistent bottom validation dock
+  // The dock element (`#validation-dock`) is mounted by the workspace/controller layer.
+  let dock = document.getElementById('validation-dock') as HTMLElement | null;
+  if (!dock) {
+    dock = document.createElement('div');
+    dock.id = 'validation-dock';
+    dock.className = 'validation-dock';
+    dock.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:200px;max-height:30vh;background:#16162a;border-top:2px solid #e74c3c;z-index:900;padding:12px;overflow-y:auto;box-shadow:0 -4px 16px rgba(0,0,0,0.4);font-family:monospace;font-size:0.8rem;color:#cdd6f4;display:flex;flex-direction:column;';
+    document.body.appendChild(dock);
+  }
+
+  // Listen to custom navigation events from the dock (see validation_panel.ui.ts)
+  dock.addEventListener('editor:navigate-to-field', ((e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail && detail.focusSelector) {
+      const target = document.querySelector(detail.focusSelector) as HTMLElement | null;
+      if (target) {
+        target.focus();
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }) as EventListener);
+
+  renderValidationPanel(dock, {
+    errors: errors.map((e): { path: string; message: string; severity?: 'error' | 'warning' | 'info' } => ({
+      path: e.path || '',
+      message: e.message || '',
+      severity: (e.severity as 'error' | 'warning' | 'info') || 'error',
+    })),
+  });
 }

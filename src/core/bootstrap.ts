@@ -4,6 +4,8 @@ import { generateArea } from '../map/generator.ts';
 import { syncDisplayLayout, configureDisplayForCampaign } from '../rendering/display.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
+import { clearModals } from './modal_manager.ts';
+import { resetAutoPauseTracking } from './auto_pause.ts';
 import type { ActorComponent, SchemeComponent } from '../types/components.types.ts';
 import {
   ComponentType,
@@ -182,15 +184,26 @@ export function initializeCampaignWorldEntities(
   };
 }
 
+export interface SpawnOverride {
+  readonly areaId: string;
+  readonly x: number;
+  readonly y: number;
+}
+
 export async function startNewGame(
   campaignId: string,
   currentState: GameState,
   display: ROT.Display,
   setGlobalState: (s: GameState) => void,
-  seed?: number
+  seed?: number,
+  spawnOverride?: SpawnOverride
 ): Promise<void> {
   const finalSeed = initRNG(seed);
   startRecording(campaignId, finalSeed);
+
+  // Fresh run: discard transient modal nesting and sighting memory.
+  clearModals();
+  resetAutoPauseTracking();
 
   const newCampaign = await loadCampaign(campaignId);
 
@@ -213,21 +226,17 @@ export async function startNewGame(
   clearScheduler();
   initEngine();
 
-  const {
-    itemUnidentifiedNames,
-    factionEntityIds,
-    areaEntityIds,
-    initialPersistentEntities,
-    nextEntityId
-  } = initializeCampaignWorldEntities(state.campaign, state.nextEntityId || 1);
+  const { itemUnidentifiedNames, factionEntityIds, areaEntityIds, initialPersistentEntities, nextEntityId } =
+    initializeCampaignWorldEntities(state.campaign, state.nextEntityId || 1);
 
+  const initialAreaId = spawnOverride?.areaId ?? state.campaign.rules.map.startingAreaId;
   const {
     map: initialMap,
     startPos,
     portals,
     rooms,
     placedEntities
-  } = generateArea(state.campaign, state.campaign.rules.map.startingAreaId);
+  } = generateArea(state.campaign, initialAreaId);
 
   state = {
     ...state,
@@ -238,7 +247,7 @@ export async function startNewGame(
     components: new Map(),
     spatialIndex: new Map(),
     messages: [],
-    currentAreaId: state.campaign.rules.map.startingAreaId,
+    currentAreaId: initialAreaId,
     activeRooms: rooms,
     lastSpawnTurn: 0,
     areas: new Map(),
@@ -282,8 +291,10 @@ export async function startNewGame(
     }
   };
 
-  // Spawn the player entity
-  const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', startPos.x, startPos.y);
+  // Spawn the player entity (respect spawn override from contextual playtest)
+  const spawnX = spawnOverride?.x ?? startPos.x;
+  const spawnY = spawnOverride?.y ?? startPos.y;
+  const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY);
   state = stateAfterPlayerSpawn;
 
   // Pre-seed the MVP Mastermind (Bandit King)
@@ -414,6 +425,10 @@ export async function continueGame(setGlobalState: (s: GameState) => void): Prom
   if (loadedState) {
     const state = { ...loadedState, playerCommandQueue: [] };
 
+    // Loaded session: the modal stack is transient, so it cannot survive a save.
+    clearModals();
+    resetAutoPauseTracking();
+
     clearScheduler();
     initEngine();
 
@@ -434,4 +449,3 @@ export async function continueGame(setGlobalState: (s: GameState) => void): Prom
     startEngine();
   }
 }
-

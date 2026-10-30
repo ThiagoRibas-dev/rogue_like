@@ -4,15 +4,15 @@ import type { GameState } from '../types/game-state.types.ts';
  * Granular UI & rendering domains tracked for selective frame presentation.
  */
 export enum PresentationDomain {
-  Map = 'Map',             // Canvas map tiles, fog of war, camera scrolling
-  Entities = 'Entities',   // Canvas visible entities, animations
-  HUD = 'HUD',             // Player stats, HP, energy, turns, RTwP controls
-  Log = 'Log',             // Message log panel
+  Map = 'Map', // Canvas map tiles, fog of war, camera scrolling
+  Entities = 'Entities', // Canvas visible entities, animations
+  HUD = 'HUD', // Player stats, HP, energy, turns, RTwP controls
+  Log = 'Log', // Message log panel
   Inventory = 'Inventory', // Inventory, equipment panel
-  Modals = 'Modals',       // Dialogues, verb menu, targeting, inspect, dossiers, factions, quests
-  Editor = 'Editor',       // Campaign creator and area editor views
-  Debug = 'Debug',         // Debug overlay, historical ledger UI
-  VFX = 'VFX'              // Ephemeral visual effects, floating text
+  Modals = 'Modals', // Dialogues, verb menu, targeting, inspect, dossiers, factions, quests
+  Editor = 'Editor', // Campaign creator and area editor views
+  Debug = 'Debug', // Debug overlay, historical ledger UI
+  VFX = 'VFX' // Ephemeral visual effects, floating text
 }
 
 /**
@@ -136,6 +136,10 @@ class PresentationEventQueue {
       prev.activeService !== next.activeService
     ) {
       this.markDirty(PresentationDomain.Modals);
+    }
+
+    if (prev.targetingMode !== next.targetingMode || prev.inspectMode !== next.inspectMode) {
+      this.markDirty(PresentationDomain.Map);
     }
 
     if (prev.rtwpState !== next.rtwpState || prev.globalTurn !== next.globalTurn) {

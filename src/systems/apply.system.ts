@@ -11,7 +11,7 @@ import { VERBS, type Verb } from '../constants/verbs.constants.ts';
 import { ComponentType, type ItemComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import type { EntityId } from '../types/game-state.types.ts';
-import type { ApplyIntentTarget } from '../types/intents/interaction.intents.ts';
+import type { ApplyIntentTarget, VerbOption } from '../types/intents/interaction.intents.ts';
 /**
  * Processes an ApplyIntent, which represents a generic attempt by an actor
  * to apply a specific verb to a specific target, optionally using a tool.
@@ -106,4 +106,27 @@ export function getValidVerbsForTarget(
   }
 
   return Array.from(validVerbs);
+}
+
+/**
+ * Returns every engine verb annotated with its current applicability for a target,
+ * so a view can illuminate the ones that will actually work.
+ *
+ * Validity is delegated to {@link getValidVerbsForTarget} rather than recomputed,
+ * keeping a single source of truth for interaction resolution.
+ *
+ * @param state The current GameState.
+ * @param sourceEntityId The acting entity.
+ * @param target The interaction target.
+ * @param toolEntityId Optional tool entity in hand.
+ * @returns All verbs, each flagged valid or invalid.
+ */
+export function getVerbOptionsForTarget(
+  state: GameState,
+  sourceEntityId: EntityId,
+  target: ApplyIntentTarget,
+  toolEntityId?: EntityId
+): ReadonlyArray<VerbOption> {
+  const validVerbs = new Set<Verb>(getValidVerbsForTarget(state, sourceEntityId, target, toolEntityId));
+  return VERBS.map((verb) => ({ verb, valid: validVerbs.has(verb) }));
 }

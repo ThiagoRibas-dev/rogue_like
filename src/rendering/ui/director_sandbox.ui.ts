@@ -1,12 +1,7 @@
 import { rng } from '../../core/rng.ts';
 import type { EditorController } from '../editor_ui.ts';
 import type { GeneratedArea } from '../../map/generator.ts';
-import {
-  updateAreaInfo,
-  runGeneration,
-  handleBakeArea,
-  runAutoSimulation
-} from './director/director_controls.ts';
+import { updateAreaInfo, runGeneration, handleBakeArea, runAutoSimulation } from './director/director_controls.ts';
 
 export {
   renderMiniMap,

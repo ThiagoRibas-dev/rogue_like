@@ -26,13 +26,8 @@ import {
   populateCampaignList,
   renderMenus
 } from '../rendering/ui.ts';
-import {
-  consumeDirtyDomains,
-  markAllDomainsDirty,
-  markDomainDirty,
-  PresentationDomain
-} from './presentation_queue.ts';
-import { renderPresenterFrame } from '../rendering/presenter.ts';
+import { consumeDirtyDomains, markAllDomainsDirty, markDomainDirty, PresentationDomain } from './presentation_queue.ts';
+import { renderPresenterFrame, invalidateViewportSnapshot } from '../rendering/presenter.ts';
 import { flushPendingSave } from './persistence_service.ts';
 import { syncDisplayLayout, configureDisplayForCampaign, syncFogOverlayCanvas } from '../rendering/display.ts';
 import {
@@ -306,10 +301,26 @@ export function bindDOMControls(display: ROT.Display): void {
       sessionStorage.removeItem('editor_playtest_seed');
       initRNG(Number(playtestSeed));
     }
+
+    // Read contextual spawn override if set by area editor (Decision D5)
+    const spawnOverrideRaw = sessionStorage.getItem('editor_playtest_spawn');
+    let spawnOverride: { areaId: string; x: number; y: number } | undefined;
+    if (spawnOverrideRaw) {
+      try {
+        const parsed = JSON.parse(spawnOverrideRaw);
+        if (parsed && typeof parsed.areaId === 'string' && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+          spawnOverride = parsed;
+        }
+      } catch {
+        // Ignore invalid spawn override
+      }
+      sessionStorage.removeItem('editor_playtest_spawn');
+    }
+
     setTimeout(() => {
       startNewGame('default', getGameState(), display, (newState) => {
         setGameState(newState);
-      }).catch(console.error);
+      }, undefined, spawnOverride).catch(console.error);
     }, 50);
   }
 
@@ -356,7 +367,12 @@ export function bindSettingsControls(): void {
     });
   }
 
-  const bindSetting = (id: string, key: string, category: 'visualFeedback' | 'accessibility', isCheckbox = true): void => {
+  const bindSetting = (
+    id: string,
+    key: string,
+    category: 'visualFeedback' | 'accessibility',
+    isCheckbox = true
+  ): void => {
     const el = document.getElementById(id);
     if (!el) return;
     el.addEventListener('change', (e) => {
@@ -473,6 +489,7 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
         .then(() => {
           syncFogOverlayCanvas(newState.campaign);
           syncDisplayLayout(display, newState);
+          invalidateViewportSnapshot();
           markAllDomainsDirty();
         })
         .catch(console.error);
@@ -480,6 +497,7 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
 
     if (lastKnownState && newState.zoomLevel !== lastKnownState.zoomLevel) {
       syncDisplayLayout(display, newState);
+      invalidateViewportSnapshot();
       markDomainDirty(PresentationDomain.Map);
     }
     lastKnownState = newState;
@@ -544,11 +562,7 @@ export function startGlobalPresenterLoop(display: ROT.Display, globalCampaignEdi
 /**
  * Initializes the full presentation and session lifecycle.
  */
-export function initSession(
-  display: ROT.Display,
-  globalCampaignEditor: CampaignEditor,
-  initialState: GameState
-): void {
+export function initSession(display: ROT.Display, globalCampaignEditor: CampaignEditor, initialState: GameState): void {
   lastKnownState = initialState;
   refreshCampaignList().catch(console.error);
   bindDOMControls(display);

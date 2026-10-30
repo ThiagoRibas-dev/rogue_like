@@ -116,7 +116,8 @@ export function saveGame(state: GameState): void {
         entities: areaData.entities,
         components: Array.from(areaData.components.entries()),
         rooms: areaData.rooms,
-        lastSpawnTurn: areaData.lastSpawnTurn
+        lastSpawnTurn: areaData.lastSpawnTurn,
+        lastVisitedTurn: areaData.lastVisitedTurn
       }
     ]
   );
@@ -213,7 +214,8 @@ export async function loadGame(): Promise<GameState | null> {
         components: new Map(sAreaData.components),
         spatialIndex: new Map(),
         rooms: sAreaData.rooms ?? [],
-        lastSpawnTurn: sAreaData.lastSpawnTurn ?? 0
+        lastSpawnTurn: sAreaData.lastSpawnTurn ?? 0,
+        lastVisitedTurn: sAreaData.lastVisitedTurn
       });
     }
 

@@ -18,6 +18,7 @@ import { processHungerTick } from '../systems/hunger.system.ts';
 import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
+import { evaluateAutoPause } from './auto_pause.ts';
 import { processAITurn } from '../systems/ai.system.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { processTraps } from '../systems/trigger.system.ts';
@@ -25,14 +26,8 @@ import { resolveStateStabilization } from './state_stabilizer.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { processInvestigationEvents } from '../systems/investigation.system.ts';
 import { processFieldsTick } from '../systems/field.system.ts';
-import { processPersonalitySystem } from '../systems/personality.system.ts';
-import { processNemesisSystem } from '../systems/nemesis.system.ts';
-import { processRivalries } from '../systems/rivalry.system.ts';
-import { processWorldEvents } from '../systems/world_events.system.ts';
-import { processKnowledgePropagationEvents, tickPendingKnowledge } from '../systems/knowledge.system.ts';
-import { processRumorPropagationEvents, tickPendingRumors, cullStaleAndConfirmedRumors } from '../systems/gossip.system.ts';
+import { processTier2LocalCadence, processTier3GlobalCadence } from './simulation_cadence.ts';
 import { processLedgerSystem } from '../systems/ledger.system.ts';
-import { MAX_GLOBAL_DRAMA_BUDGET, DRAMA_BUDGET_REGEN_PER_TURN } from '../constants/pacing.constants.ts';
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -185,7 +180,6 @@ export function processTurn(entityId: EntityId): void {
           }
 
           if (nextState !== state) {
-            nextState = updateExploredTiles(nextState);
             updateState(nextState);
             // Checkpoint persistence at player turn settlement
             saveCheckpoint(nextState);
@@ -338,39 +332,24 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   // Investigation system consumes events
   nextState = processInvestigationEvents(nextState);
 
-  // Knowledge propagation processes events and ticks delay timers
-  nextState = processKnowledgePropagationEvents(nextState);
-  nextState = tickPendingKnowledge(nextState);
-
-  // Rumor propagation processes events and ticks delay timers
-  nextState = processRumorPropagationEvents(nextState);
-  nextState = tickPendingRumors(nextState);
-  nextState = cullStaleAndConfirmedRumors(nextState);
-
-  // Personality System (Thoughts, Stress, Core Memories)
-  nextState = processPersonalitySystem(nextState);
-
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
 
-  if (didGlobalTurnAdvance) {
-    const prevBudget = nextState.dramaTracker.globalBudget;
-    const nextBudget = Math.min(MAX_GLOBAL_DRAMA_BUDGET, prevBudget + DRAMA_BUDGET_REGEN_PER_TURN);
-    nextState = {
-      ...nextState,
-      globalTurn: (nextState.globalTurn || 0) + 1,
-      dramaTracker: {
-        ...nextState.dramaTracker,
-        globalBudget: nextBudget
-      }
-    };
-    nextState = processNemesisSystem(nextState);
-    nextState = processRivalries(nextState);
-    nextState = processWorldEvents(nextState);
-  }
+  // Tier 2: Local Narrative Cadence (Knowledge, Rumors, Personality)
+  nextState = processTier2LocalCadence(nextState, didGlobalTurnAdvance);
+
+  // Tier 3: Off-Screen Macro-Simulation (Global turn, Nemesis, Rivalries, World Events)
+  nextState = processTier3GlobalCadence(nextState, didGlobalTurnAdvance);
 
   // Filter high/normal events into historicalLedger and decay PIS
   nextState = processLedgerSystem(nextState, didGlobalTurnAdvance);
+
+  // Refresh FOV and explored tiles before the event drain so perception events are
+  // ledgered, presented, and acted upon in the same turn they occur.
+  nextState = updateExploredTiles(nextState);
+
+  // Configurable RTwP auto-pause, driven by the drained event queue plus perception.
+  nextState = evaluateAutoPause(state, nextState, intent.entityId);
 
   // Clear events at the end of the intent tick so they don't persist
   const eventsToReturn = [...nextState.events];

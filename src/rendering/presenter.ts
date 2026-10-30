@@ -3,6 +3,10 @@ import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { PresentationDomain } from '../core/presentation_queue.ts';
 import { render } from './renderer.ts';
+import { buildViewportSnapshot } from './viewport_snapshot.ts';
+import type { ViewportSnapshot } from './viewport_snapshot.types.ts';
+import { renderInspectView } from './ui/inspect_view.ui.ts';
+import { renderVFXAndFogOverlay } from './ui/vfx_overlay.ui.ts';
 import { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
 import { renderInventoryPanel } from './ui/inventory.ui.ts';
 import { renderMenus } from './ui/menus.ui.ts';
@@ -19,6 +23,20 @@ import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
+
+/**
+ * Module-level cache of the last rendered ViewportSnapshot to drive dirty-cell diffing.
+ */
+let lastViewportSnapshot: ViewportSnapshot | undefined;
+let lastRenderedAreaId: string | undefined;
+let lastRenderedCampaignId: string | undefined;
+
+/**
+ * Explicitly invalidates the cached ViewportSnapshot, forcing a full redraw on the next frame.
+ */
+export function invalidateViewportSnapshot(): void {
+  lastViewportSnapshot = undefined;
+}
 
 /**
  * Selectively renders only the visual and DOM domains that have been marked dirty.
@@ -50,13 +68,29 @@ export function renderPresenterFrame(
   if (gameLayout) gameLayout.classList.remove('hidden');
   if (editorLayout) editorLayout.classList.add('hidden');
 
+  // Invalidate snapshot cache upon area transition or campaign change
+  if (lastRenderedAreaId !== state.currentAreaId || lastRenderedCampaignId !== state.campaignId) {
+    lastViewportSnapshot = undefined;
+    lastRenderedAreaId = state.currentAreaId;
+    lastRenderedCampaignId = state.campaignId;
+  }
+
   // Canvas Viewport Redraw (Map / Entities / Visual Effects)
   if (
     dirtyDomains.has(PresentationDomain.Map) ||
     dirtyDomains.has(PresentationDomain.Entities) ||
     dirtyDomains.has(PresentationDomain.VFX)
   ) {
-    render(display, state);
+    const options = display.getOptions();
+    const viewportW = options.width ?? state.map.width;
+    const viewportH = options.height ?? state.map.height;
+
+    const snapshot = buildViewportSnapshot(state, viewportW, viewportH);
+    render(display, snapshot, lastViewportSnapshot);
+    lastViewportSnapshot = snapshot;
+
+    renderInspectView(snapshot.inspectTooltip, display, viewportW, viewportH, snapshot.is3D);
+    renderVFXAndFogOverlay(snapshot.visualEffects, snapshot.fogOverlay, display, viewportW, viewportH);
   }
 
   // HUD & Stats Panels

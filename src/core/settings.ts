@@ -1,3 +1,10 @@
+import {
+  DEFAULT_AUTO_PAUSE_SETTINGS,
+  MAX_LOW_HEALTH_PERCENT,
+  MIN_LOW_HEALTH_PERCENT,
+  type AutoPauseSettings
+} from '../constants/autopause.constants.ts';
+
 /**
  * Type union representing all configurable keyboard command actions in the game.
  */
@@ -49,6 +56,7 @@ export interface PlayerSettings {
   keybinds: Record<ActionType, string[]>;
   visualFeedback: VisualFeedbackSettings;
   accessibility: AccessibilitySettings;
+  autoPause: AutoPauseSettings;
 }
 
 const DEFAULT_SETTINGS: PlayerSettings = {
@@ -84,7 +92,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     uiScale: 'large',
     highContrast: false,
     disableAnimations: false
-  }
+  },
+  autoPause: DEFAULT_AUTO_PAUSE_SETTINGS
 };
 
 let currentSettings: PlayerSettings = { ...DEFAULT_SETTINGS };
@@ -115,7 +124,8 @@ export async function initSettings(campaignId: string = 'default'): Promise<void
       currentSettings = {
         keybinds: { ...DEFAULT_SETTINGS.keybinds, ...(parsed.keybinds || {}) },
         visualFeedback: { ...DEFAULT_SETTINGS.visualFeedback, ...(parsed.visualFeedback || {}) },
-        accessibility: { ...DEFAULT_SETTINGS.accessibility, ...(parsed.accessibility || {}) }
+        accessibility: { ...DEFAULT_SETTINGS.accessibility, ...(parsed.accessibility || {}) },
+        autoPause: { ...DEFAULT_SETTINGS.autoPause, ...(parsed.autoPause || {}) }
       };
     } catch (e) {
       console.error('Failed to parse stored settings.', e);
@@ -140,9 +150,26 @@ export function updateSettings(newSettings: Partial<PlayerSettings>): void {
   currentSettings = {
     keybinds: { ...currentSettings.keybinds, ...(newSettings.keybinds || {}) },
     visualFeedback: { ...currentSettings.visualFeedback, ...(newSettings.visualFeedback || {}) },
-    accessibility: { ...currentSettings.accessibility, ...(newSettings.accessibility || {}) }
+    accessibility: { ...currentSettings.accessibility, ...(newSettings.accessibility || {}) },
+    autoPause: { ...currentSettings.autoPause, ...(newSettings.autoPause || {}) }
   };
   localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(currentSettings));
+}
+
+/**
+ * Updates one or more auto-pause preferences and persists them.
+ * Clamps the low-health threshold to the supported range.
+ *
+ * @param partial The auto-pause fields to change.
+ */
+export function updateAutoPause(partial: Partial<AutoPauseSettings>): void {
+  const merged: AutoPauseSettings = { ...currentSettings.autoPause, ...partial };
+  const clampedPercent = Math.min(
+    MAX_LOW_HEALTH_PERCENT,
+    Math.max(MIN_LOW_HEALTH_PERCENT, Math.round(merged.lowHealthThresholdPercent))
+  );
+
+  updateSettings({ autoPause: { ...merged, lowHealthThresholdPercent: clampedPercent } });
 }
 
 /**

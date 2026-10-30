@@ -24,7 +24,8 @@ import {
   type AgreementComponent,
   type FighterComponent,
   type TemplateComponent,
-  type NemesisComponent
+  type NemesisComponent,
+  type AttitudeComponent
 } from '../types/components.types.ts';
 import { type AreaData, type EntityId, type GameMap, type GameState } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
@@ -64,6 +65,36 @@ export function updateExploredTiles(state: GameState): GameState {
     cachedFov: visibleIndices,
     map: modified ? { ...state.map, tiles: nextTiles } : state.map
   };
+}
+
+/**
+ * Returns the IDs of hostile or nemesis entities currently visible to the player.
+ *
+ * Pure read of `cachedFov`: performs no mutation and emits no events, keeping the
+ * systems layer event-free. The caller (the RTwP auto-pause evaluator) is
+ * responsible for diffing successive results and emitting `EntitySpotted`.
+ *
+ * @param state The current GameState.
+ * @returns ReadonlyArray of currently visible hostile or nemesis EntityIds.
+ */
+export function getVisibleHostileEntityIds(state: GameState): ReadonlyArray<EntityId> {
+  const visible: EntityId[] = [];
+
+  for (const entityId of state.entities) {
+    const position = getComponent(state, entityId, ComponentType.Position);
+    if (position === undefined) continue;
+
+    const index = coordToIndex(position.x, position.y, state.map.width);
+    if (!state.cachedFov.has(index)) continue;
+
+    const attitude = getComponent(state, entityId, ComponentType.Attitude) as AttitudeComponent | undefined;
+    const isNemesis = getComponent(state, entityId, ComponentType.Nemesis) !== undefined;
+    const isHostile = attitude !== undefined && attitude.attitude === 'hostile';
+
+    if (isHostile || isNemesis) visible.push(entityId);
+  }
+
+  return visible;
 }
 
 /**
@@ -109,7 +140,8 @@ export function processChangeAreaIntent(
     spatialIndex: updateSpatialIndex({ ...state, entities: regularSavedEntityIds, components: currentLevelComponents })
       .spatialIndex,
     rooms: state.activeRooms ?? [],
-    lastSpawnTurn: state.lastSpawnTurn ?? 0
+    lastSpawnTurn: state.lastSpawnTurn ?? 0,
+    lastVisitedTurn: state.globalTurn ?? 0
   };
 
   const nextAreas = new Map(state.areas);
@@ -132,6 +164,13 @@ export function processChangeAreaIntent(
     nextComponents = new Map(savedTargetArea.components);
     targetRooms = savedTargetArea.rooms ?? [];
     targetLastSpawnTurn = savedTargetArea.lastSpawnTurn ?? 0;
+
+    // Delta Catch-Up on Area Wake
+    const lastVisited = savedTargetArea.lastVisitedTurn ?? savedTargetArea.lastSpawnTurn ?? 0;
+    const deltaTurns = Math.max(0, (state.globalTurn ?? 0) - lastVisited);
+    if (deltaTurns > 0) {
+      targetLastSpawnTurn = Math.min(state.globalTurn ?? 0, targetLastSpawnTurn + deltaTurns);
+    }
 
     // Reinforcement Pass for wake phase:
     // Find unfulfilled reservations (Agreements) targeting targetAreaId

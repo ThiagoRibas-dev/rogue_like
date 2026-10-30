@@ -1,860 +1,530 @@
-# Implementation Plan: Phase 11 — V2 Engine Decoupling
+# Implementation Plan: Phase 11 — Milestone 76
 
-## Milestone 72: Decoupled Frame Loop, Message-Queue Glue & Debounced Persistence
+## Campaign Creator & Developer Tooling UX
 
-**Phase:** 11 (V2 Engine Decoupling)  
-**Milestone:** 72 (Decoupled Frame Loop, Message-Queue Glue & Debounced Persistence)  
-**Governance:** [AGENTS.md](<AGENTS.md>), [docs/ARCHITECTURE.md](<docs/ARCHITECTURE.md>), [docs/MILESTONES.md](<docs/MILESTONES.md#L804-L836>), [docs/DECISIONS.md](<docs/DECISIONS.md#L49-L67>), [docs/research_notes.md](<docs/research_notes.md#L83-L177>)  
-**Status:** Step 4 & 5 (Drafted & Enhanced with Concrete Code Snippets) — Awaiting User Approval (Gate 2)
+**Phase:** 11 (V2 Engine Decoupling)
+**Milestone:** 76 (Campaign Creator & Developer Tooling UX)
+**Governance:** [AGENTS.md](AGENTS.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/MILESTONES.md](docs/MILESTONES.md#L831-L836), [docs/DECISIONS.md](docs/DECISIONS.md), [docs/research_notes.md](docs/research_notes.md)
+**Status:** ✅ Gate 1 (Research) RESOLVED — Decisions D1-D6 locked by User (Oct 30). Gate 2 (Plan) PENDING user approval before code writes.
+**Target Completion Date:** October 30, 2026
 
 ---
 
 ## 0. Rules & Architectural Standards Reiteration
 
-In accordance with [AGENTS.md](<AGENTS.md>) and [docs/ARCHITECTURE.md](<docs/ARCHITECTURE.md>), all Milestone 72 work enforces:
-1. **Zero `any` Violations:** No `any` casts or untyped parameters; all queue items, domain bitmasks/sets, and persistence payloads use explicit interfaces, generics, or Discriminated Unions.
-2. **Strict Seeded Determinism:** Never call `Math.random()` or `Date.now()` inside simulation logic. Queue processing and turn stepping rely exclusively on `rng` from [src/core/rng.ts](<src/core/rng.ts>) and deterministic turn counters (`globalTurn`). Performance timers (`performance.now()`) are restricted strictly to presentation/frame-rate metrics and debounce delays in UI/presentation adapters.
-3. **Pure Serializable ECS State:** `GameState` remains 100% JSON-serializable. Transient message queues (`InputCommandQueue`, `PresentationEventQueue`) live in clean engine glue modules, avoiding un-serializable closures or callback references inside `GameState`.
-4. **Strict Downward Dependency Hierarchy:**
-   `session_controller / presenter → scheduler / game-loop → systems → rendering → core glue (input_queue, presentation_queue, persistence_service) → types / utils`.
-   No circular dependencies or upward imports.
-5. **Single Responsibility & ~250-Line Module Guideline:**
-   - [src/core/input_queue.ts](<src/core/input_queue.ts>) (~70 LOC)
-   - [src/core/presentation_queue.ts](<src/core/presentation_queue.ts>) (~120 LOC)
-   - [src/core/persistence_service.ts](<src/core/persistence_service.ts>) (~95 LOC)
-   - [src/rendering/presenter.ts](<src/rendering/presenter.ts>) (~150 LOC)
-   - Decomposition of [src/core/session_controller.ts](<src/core/session_controller.ts>) from 631 LOC down to ~450 LOC.
+All Milestone 76 work strictly enforces:
+
+1. **Never Commit or Push (Rule 2):** All work stays local; no `git commit` / `git push`.
+2. **Implementation Gate (Rule 5):** No source file is created or modified before Gate 2 approval by the User.
+3. **Zero `any` (Rule 11):** All new path normalizers, reference indices, and UI controllers use fully typed interfaces with explicit return types and JSDoc on every export.
+4. **Zero Magic Values (Rule 12):** Path separators (`/`), accordion labels, chip filters, and menu strings live in `src/constants/` if they affect behavior.
+5. **Cascading Effects (Rule 15):** This plan carries a full Cascading Effects Matrix (Section 2) covering upstream (validator emitters, editor controllers), downstream (form renderers, workspace DOM, toolbar state), and lateral (dialogue editor, area editor, trigger composer, `getReferenceOptions` twin) impact for every change.
+6. **~250 LOC per module (Rule 13):** The six new modules (`validation_path.ts`, `validation_navigator.ts`, `reference_index.ts`, `validation_panel.ui.ts`, `where_used.ui.ts`, `area_playtest_menu.ui.ts`) are each budgeted ≤ ~250 LOC. `zod_form_renderer.ts` (536 LOC) must not grow; accordion work must extract section renderers rather than grow the file.
+7. **Strict Touch Scope for DOM Security (Golden Rule 7 / Decision D6):** Only newly created or M76-touched components (`validation_panel.ui.ts`, `where_used.ui.ts`, `area_playtest_menu.ui.ts`, accordion sections in form renderer, `editor_toolbar.ts` cleanup) use strict `document.createElement()` / `textContent` patterns with zero `.innerHTML`. Untouched legacy canvas UI (`area_editor.ts` pre-existing canvas controls) is left intact to avoid regression blast.
+8. **Downward Dependencies:** `core/edit/` imports `core/` or `types/`; `rendering/ui/` imports `rendering/` or `core/`. No upward imports (`systems/` importing `rendering/` is forbidden).
+9. **No Map/Set in serialized components (Rule ECS):** `ReferenceIndex` is cached in a `WeakMap` (not serialized into `GameState`). `expandedPaths` is a module-level `Set<string>` in-memory only (not persisted to `localStorage`).
 
 ---
 
-## 1. High-Level Architecture & Seam Overview
-
-Milestone 72 eliminates the root performance bottleneck where actor sub-steps (`processTurn` $\rightarrow$ `updateState`) synchronously trigger `saveGame()` (`JSON.stringify` + synchronous `localStorage.setItem`) and all 18 DOM panel and Canvas renders 50–100 times per turn or frame.
+## 1. High-Level Architecture
 
 ```mermaid
 flowchart TD
-    subgraph InputLayer ["1. Input & UI Layer"]
-        InputHandler["input_handler.ts / DOM Events"]
-        InputQueue["InputCommandQueue (src/core/input_queue.ts)"]
-        InputHandler -->|"enqueueIntent(intent)"| InputQueue
+    subgraph Norm ["Path Dialect Normalization"]
+        ValidatorEmit["Validators emit paths"] --> Normalizer["toFormPath()<br/>src/editor/validation_path.ts"]
+        Normalizer --> Canonical["Canonical path: /section/index"]
     end
 
-    subgraph SimLayer ["2. Simulation Layer (Fixed / Turn-Sliced)"]
-        Scheduler["scheduler.ts (runTurnBasedLoop / rtwpLoop)"]
-        GameLoop["game-loop.ts (processTurn)"]
-        State["GameState (in-memory)"]
-        PresentationQueue["PresentationEventQueue (src/core/presentation_queue.ts)"]
-        
-        InputQueue -->|"dequeueIntent() during player turn"| GameLoop
-        Scheduler -->|"act()"| GameLoop
-        GameLoop -->|"advance state (in-memory)"| State
-        GameLoop -->|"markDomainDirty(domain)"| PresentationQueue
+    subgraph Nav ["Navigation & Focus"]
+        Click["Click error link / Where Used"] --> Navigator["revealField() / expandAncestors()<br/>src/editor/validation_navigator.ts"]
+        Navigator --> AccordionState["expandedPaths: Set<string>"]
+        Navigator --> DOMFocus["focus DOM input<br/>data-field-path"]
     end
 
-    subgraph PresentationLayer ["3. Presentation Layer (60Hz rAF)"]
-        Presenter["Presenter (src/rendering/presenter.ts)"]
-        PresenterLoop["Presenter Loop (rAF in session_controller.ts)"]
-        Renderer["renderer.ts (Canvas)"]
-        DOMPanels["DOM UI Panels (HUD, Log, Inventory, etc.)"]
-        
-        PresenterLoop -->|"consumeDirtyDomains()"| PresentationQueue
-        PresenterLoop -->|"dispatch to"| Presenter
-        Presenter -->|"if Map / Entities / VFX"| Renderer
-        Presenter -->|"if HUD / Log / Inventory / Modals"| DOMPanels
+    subgraph Ref ["Reverse Reference"]
+        CampaignData["CampaignData"] --> Indexer["ReferenceIndex<br/>WeakMap&lt;CampaignData, ReferenceIndex&gt;<br/>src/editor/reference_index.ts"]
+        Indexer --> WhereUsed["Where Used drawer<br/>src/rendering/ui/where_used.ui.ts"]
     end
 
-    subgraph StorageLayer ["4. Persistence Layer (Checkpointed & Debounced)"]
-        PersistenceService["Persistence Service (src/core/persistence_service.ts)"]
-        LocalStorage["localStorage (SAVE_KEY)"]
-        
-        GameLoop -.->|"settle turn / pause / area transition"| PersistenceService
-        PersistenceService -->|"debounced (500ms) saveGame()"| LocalStorage
+    subgraph Diag ["Diagnostics Dock"]
+        Errors["Validation errors"] --> Dock["validation_panel.ui.ts<br/>bottom dock"]
+        Dock --> ClickNav["Single-click jump-to-error"]
+    end
+
+    subgraph Spawn ["Playtest Spawning"]
+        ContextMenu["Right-click static tile"] --> MenuUI["area_playtest_menu.ui.ts"]
+        MenuUI --> SessionStorage["sessionStorage['editor_playtest_spawn']"]
+        SessionStorage --> SpawnOverride["startNewGame(spawnOverride?)"]
+        SpawnOverride --> Bootstrap["bootstrap.ts: spawn at (areaId, x, y)"]
+    end
+
+    subgraph Accordion ["Accordion Forms"]
+        ZodForm["zod_form_renderer.ts"] --> DetailsSummary["&lt;details&gt;/&lt;summary&gt;<br/>first open, nested collapsed"]
+        DetailsSummary --> ExpandedPaths["expandedPaths Set"]
+    end
+
+    subgraph Security ["DOM Security (Rule 7 / D6)"]
+        NewFiles["New M76 files"] --> StrictCreate["createElement + textContent"]
+        TouchedFiles["Touched files (toolbar, form)"] --> StrictCreate
+        UntouchedFiles["Untouched legacy"] --> LeftIntact["Left intact"]
     end
 ```
 
 ---
 
-## 2. Detailed Task Breakdown & Code Snippets
+## 2. Cascading Effects Matrix (Rule 15)
 
-### Task 0: Automated Standards Enforcement in ESLint & Tooling (`.eslintrc.cjs`)
-
-**Goal:** Formally configure ESLint and static analysis tooling so the build and lint steps (`verify.bat`, `bun run lint`) automatically enforce the architectural standards established in [AGENTS.md](<AGENTS.md>) (zero `any`, seeded determinism, ~250 LOC guideline, and explicit function return types) rather than relying solely on manual discipline.
-
-**Target File:** [`.eslintrc.cjs`](<.eslintrc.cjs>)
-
-```javascript
-module.exports = {
-  root: true,
-  env: { browser: true, es2020: true },
-  extends: [
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended'
-  ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', 'vite.config.ts'],
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
-  rules: {
-    // 1. Zero 'any' policy (AGENTS.md Golden Rule 11)
-    '@typescript-eslint/no-explicit-any': 'error',
-
-    // 2. Unused variables & parameters hygiene
-    '@typescript-eslint/no-unused-vars': [
-      'warn',
-      { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' }
-    ],
-
-    // 3. Strict Seed Determinism (AGENTS.md Section 6): Ban Math.random() in favor of src/core/rng.ts
-    'no-restricted-properties': [
-      'error',
-      {
-        object: 'Math',
-        property: 'random',
-        message: 'Math.random() is banned for gameplay determinism. Use seeded rng from src/core/rng.ts.'
-      }
-    ],
-
-    // 4. File Size Guideline (AGENTS.md Section 8): Warn when files exceed ~250-300 lines
-    'max-lines': [
-      'warn',
-      { max: 300, skipBlankLines: true, skipComments: true }
-    ],
-
-    // 5. Explicit Return Types (AGENTS.md Section 3): Warn across codebase / error on core modules
-    '@typescript-eslint/explicit-function-return-type': [
-      'warn',
-      { allowExpressions: true, allowTypedFunctionExpressions: true }
-    ]
-  },
-  overrides: [
-    {
-      // Enforce strict explicit return types on engine core and systems
-      files: ['src/core/**/*.ts', 'src/systems/**/*.ts'],
-      rules: {
-        '@typescript-eslint/explicit-function-return-type': [
-          'error',
-          { allowExpressions: true, allowTypedFunctionExpressions: true }
-        ]
-      }
-    }
-  ]
-};
-```
+| # | Change | Upstream (Callers / Emitters / Authors) | Downstream (Consumers / Renderers / Serializers) | Lateral (Siblings / Mirrors / Docs) |
+|---|---|---|---|---|
+| 1 | `toFormPath()` canonical path normalizer (`validation_path.ts`) | Every validator's `.path` output (`campaign_validator.ts`, sub-validators); `dialogue_editor.ts`, `trigger_composer.ui.ts` path contracts | Inline error rendering (`zod_form_renderer.ts`); `revealField()` navigator; `data-field-path` DOM matching; future validators | `dialogue_editor.ts`, `area_editor.ts`, `editor_forms.ts`, `faction_matrix_editor.ts` — all share the same path contract |
+| 2 | `<details>`/`<summary>` accordion + `expandedPaths: Set<string>` (`zod_form_renderer.ts`) | `renderNestedObjectField()`, `renderArrayField()` — must emit structured sections instead of flat `div` stacks | `editor_workspace.ts` workspace re-renders survive; `updateToolbarState()` error counts must count descendants; drag-and-drop `dataset.index` contract preserved | `editor_forms.ts` factory signatures; `editor.css` accordion styles; `dialogue_editor.ts` node forms |
+| 3 | Cached reverse-reference indexer (`reference_index.ts`, `WeakMap`) | All reference-bearing schema fields (`areas.*.placedEntities[].templateId`, `dialogues.*.nodes.*.nextNodeId`, etc.) | `where_used.ui.ts` drawer; navigator clicks (`revealField()`); `getReferenceOptions()` must not duplicate the same registry lookup logic | `getReferenceOptions()` (forward twin in `ui_utils.ts`); `dialogue_editor.ts`, `area_editor.ts`, `trigger_composer.ui.ts`; `docs/MODDING.md` |
+| 4 | Persistent collapsible bottom diagnostics dock (`validation_panel.ui.ts`) | `editor_toolbar.ts` (removes `.innerHTML` popup); `zod_form_renderer.ts` (feeds error array); `editor_workspace.ts` (forwards validation state) | `updateToolbarState()` replaced; DOM click-to-focus; keyboard-accessible (`<details>` not required, native `<ul>` with `.focus()`); `editor.css` new `.dock` rules | `settings.ui.ts`; `dialogue_editor.ts`; `area_editor.ts`; `docs/ARCHITECTURE.md` UI layer |
+| 5 | `startNewGame(spawnOverride?)` + `sessionStorage['editor_playtest_spawn']` (`session_controller.ts`, `bootstrap.ts`) | `editor_toolbar.ts` (existing reload path); `area_playtest_menu.ui.ts` (new right-click handler) | `bootstrap.ts` initial area/spawn selection; `deleteSave()` ordering unchanged; replay/seed determinism (`initRNG`) | `session_controller.ts` other call sites (`startNewGame('default')`, `continueGame`); `bootstrap_sandbox.ts`; `editor_workspace.ts` active document tracking |
+| 6 | `data-field-path` DOM tagging + `revealField()` navigator (`validation_navigator.ts`) | `zod_form_renderer.ts` (tags fields); `dialogue_editor.ts` (node editor tags); `where_used.ui.ts` (reference links) | `editor_toolbar.ts` click handler; `validation_panel.ui.ts` click handler; workspace tab switch (`switchTab()`) | `editor_forms.ts`; `dialogue_editor.ts`; `area_editor.ts`; `zod_form_renderer.ts` basePath contract |
 
 ---
 
-### Task 1: Input Command Queue (`src/core/input_queue.ts`)
+## 3. Step-by-Step Implementation Tasks
 
-**Goal:** Decouple DOM keyboard listeners and UI action buttons from immediate simulation stepping. Buffer player input intents in a FIFO queue that `game-loop.ts` consumes during scheduled player turns.
+### Task 1 — `src/editor/validation_path.ts` (new, ~80 LOC)
 
-**New File:** `src/core/input_queue.ts` (~70 LOC)
+Normalizes the three validator path dialects to canonical slash-leading form.
+
 ```typescript
-import type { Intent } from '../types/intent.types.ts';
-
 /**
- * Asynchronous FIFO queue for player inputs, decoupling UI and keypress
- * capture from simulation stepping and turn execution.
+ * Canonical form: `/<segment>/<segment>[/<index>]`
+ * Examples: `/areas/0/placedEntities/2/templateId`, `/dialogues/1/nodes/3/options/0/nextNodeId`
  */
-class InputCommandQueue {
-  private queue: Intent[] = [];
-
-  /**
-   * Enqueues an intent into the FIFO buffer.
-   */
-  enqueue(intent: Intent): void {
-    this.queue.push(intent);
+export function toFormPath(raw: string[]): string {
+  // Unify dot-notation (`areas.0.name`), bracket (`areas[0]`), and mixed.
+  const segments: string[] = [];
+  for (const seg of raw) {
+    if (seg === '') continue;
+    // Convert numeric array indices to integer segment markers
+    if (/^\d+$/.test(seg)) segments.push(seg);
+    else segments.push(seg);
   }
-
-  /**
-   * Dequeues the next intent to be processed by the player turn.
-   */
-  dequeue(): Intent | undefined {
-    return this.queue.shift();
-  }
-
-  /**
-   * Peeks at the next intent without removing it.
-   */
-  peek(): Intent | undefined {
-    return this.queue[0];
-  }
-
-  /**
-   * Checks whether the queue has pending intents.
-   */
-  hasPending(): boolean {
-    return this.queue.length > 0;
-  }
-
-  /**
-   * Returns the number of pending intents.
-   */
-  size(): number {
-    return this.queue.length;
-  }
-
-  /**
-   * Clears all pending intents (e.g. on game over, area change, or RTwP unpaused override).
-   */
-  clear(): void {
-    this.queue = [];
-  }
-
-  /**
-   * Replaces the current queue with a batch of intents (used by Replays).
-   */
-  loadIntents(intents: ReadonlyArray<Intent>): void {
-    this.queue = [...intents];
-  }
+  return '/' + segments.join('/');
 }
 
-export const inputQueue = new InputCommandQueue();
-
-export function enqueueIntent(intent: Intent): void {
-  inputQueue.enqueue(intent);
+export function isPathPrefix(ancestor: string, descendant: string): boolean {
+  return descendant === ancestor || descendant.startsWith(ancestor + '/');
 }
 
-export function dequeueIntent(): Intent | undefined {
-  return inputQueue.dequeue();
-}
-
-export function peekIntent(): Intent | undefined {
-  return inputQueue.peek();
-}
-
-export function hasPendingIntents(): boolean {
-  return inputQueue.hasPending();
-}
-
-export function clearInputQueue(): void {
-  inputQueue.clear();
-}
-
-export function loadInputQueue(intents: ReadonlyArray<Intent>): void {
-  inputQueue.loadIntents(intents);
-}
-
-export function getInputQueueSize(): number {
-  return inputQueue.size();
+export function splitPath(path: string): string[] {
+  return path === '/' ? [] : path.slice(1).split('/');
 }
 ```
 
+**Verification:** All existing validator assertions untouched; `toFormPath()` produces identical output for already-canonical slash paths.
+
 ---
 
-### Task 2: Presentation Event Queue & Selective Domain Dirty Tracking (`src/core/presentation_queue.ts`)
+### Task 2 — `src/editor/validation_navigator.ts` (new, ~110 LOC)
 
-**Goal:** Decouple simulation state updates from UI/Canvas rendering. Categorize visual updates into granular dirty domains so that actor sub-steps flag dirty domains instead of triggering 18 DOM panel rebuilds.
+Drives field reveal, ancestor expansion, tab switching, and DOM focus.
 
-**New File:** `src/core/presentation_queue.ts` (~120 LOC)
 ```typescript
-import type { GameState } from '../types/game-state.types.ts';
-
-/**
- * Granular UI & rendering domains tracked for selective frame presentation.
- */
-export enum PresentationDomain {
-  Map = 'Map',             // Canvas map tiles, fog of war, camera scrolling
-  Entities = 'Entities',   // Canvas visible entities, animations
-  HUD = 'HUD',             // Player stats, HP, energy, turns, RTwP controls
-  Log = 'Log',             // Message log panel
-  Inventory = 'Inventory', // Inventory, equipment panel
-  Modals = 'Modals',       // Dialogues, verb menu, targeting, inspect, dossiers, factions, quests
-  Editor = 'Editor',       // Campaign creator and area editor views
-  Debug = 'Debug',         // Debug overlay, historical ledger UI
-  VFX = 'VFX'              // Ephemeral visual effects, floating text
+export interface NavigatorState {
+  expandedPaths: Set<string>;
 }
 
-export interface PresentationEvent {
-  readonly type: 'floating_text' | 'screen_shake' | 'sound_cue';
-  readonly payload: unknown;
-}
+const expandedPaths: Set<string> = new Set();
 
-class PresentationEventQueue {
-  private dirtyDomains = new Set<PresentationDomain>();
-  private events: PresentationEvent[] = [];
-
-  /**
-   * Flags a specific domain for redraw on the next presentation frame.
-   */
-  markDirty(domain: PresentationDomain): void {
-    this.dirtyDomains.add(domain);
-  }
-
-  /**
-   * Flags all domains for redraw (e.g. initial load, area transitions, UI mode switches).
-   */
-  markAllDirty(): void {
-    for (const domain of Object.values(PresentationDomain)) {
-      this.dirtyDomains.add(domain);
-    }
-  }
-
-  /**
-   * Returns whether a given domain is currently marked dirty.
-   */
-  isDirty(domain: PresentationDomain): boolean {
-    return this.dirtyDomains.has(domain);
-  }
-
-  /**
-   * Returns the set of dirty domains and clears the internal tracking set.
-   */
-  consumeDirtyDomains(): ReadonlySet<PresentationDomain> {
-    const current = new Set(this.dirtyDomains);
-    this.dirtyDomains.clear();
-    return current;
-  }
-
-  /**
-   * Pushes a transient visual event to be presented on the next frame.
-   */
-  pushEvent(event: PresentationEvent): void {
-    this.events.push(event);
-  }
-
-  /**
-   * Consumes all pending presentation events.
-   */
-  consumeEvents(): ReadonlyArray<PresentationEvent> {
-    const list = this.events;
-    this.events = [];
-    return list;
-  }
-
-  /**
-   * Computes dirty domains based on reference equality between previous and next GameState.
-   */
-  markDirtyFromStateDiff(prev: GameState | null, next: GameState): void {
-    if (!prev) {
-      this.markAllDirty();
-      return;
-    }
-
-    if (
-      prev.map !== next.map ||
-      prev.cachedFov !== next.cachedFov ||
-      prev.isRotated !== next.isRotated ||
-      prev.is3D !== next.is3D ||
-      prev.zoomLevel !== next.zoomLevel ||
-      prev.currentAreaId !== next.currentAreaId
-    ) {
-      this.markDirty(PresentationDomain.Map);
-    }
-
-    if (
-      prev.components !== next.components ||
-      prev.entities !== next.entities ||
-      prev.spatialIndex !== next.spatialIndex
-    ) {
-      this.markDirty(PresentationDomain.Entities);
-      this.markDirty(PresentationDomain.HUD);
-    }
-
-    if (prev.messages !== next.messages) {
-      this.markDirty(PresentationDomain.Log);
-    }
-
-    if (prev.uiMode !== next.uiMode) {
-      this.markDirty(PresentationDomain.Modals);
-      this.markDirty(PresentationDomain.HUD);
-      this.markDirty(PresentationDomain.Editor);
-    }
-
-    if (
-      prev.activeDialogue !== next.activeDialogue ||
-      prev.verbMenu !== next.verbMenu ||
-      prev.targetingMode !== next.targetingMode ||
-      prev.inspectMode !== next.inspectMode ||
-      prev.activeTrade !== next.activeTrade ||
-      prev.activeService !== next.activeService
-    ) {
-      this.markDirty(PresentationDomain.Modals);
-    }
-
-    if (prev.rtwpState !== next.rtwpState || prev.globalTurn !== next.globalTurn) {
-      this.markDirty(PresentationDomain.HUD);
-    }
-
-    if (prev.visualEffects !== next.visualEffects) {
-      this.markDirty(PresentationDomain.VFX);
-    }
+export function expandAncestors(targetPath: string): void {
+  const parts = splitPath(targetPath);
+  for (let i = 1; i <= parts.length; i++) {
+    expandedPaths.add('/' + parts.slice(0, i).join('/'));
   }
 }
 
-export const presentationQueue = new PresentationEventQueue();
-
-export function markDomainDirty(domain: PresentationDomain): void {
-  presentationQueue.markDirty(domain);
-}
-
-export function markAllDomainsDirty(): void {
-  presentationQueue.markAllDirty();
-}
-
-export function isDomainDirty(domain: PresentationDomain): boolean {
-  return presentationQueue.isDirty(domain);
-}
-
-export function consumeDirtyDomains(): ReadonlySet<PresentationDomain> {
-  return presentationQueue.consumeDirtyDomains();
-}
-
-export function markDirtyFromStateDiff(prev: GameState | null, next: GameState): void {
-  presentationQueue.markDirtyFromStateDiff(prev, next);
-}
-
-export function pushPresentationEvent(event: PresentationEvent): void {
-  presentationQueue.pushEvent(event);
-}
-
-export function consumePresentationEvents(): ReadonlyArray<PresentationEvent> {
-  return presentationQueue.consumeEvents();
+export function revealField(basePath: string, fullPath: string): void {
+  expandAncestors(fullPath);
+  // Trigger workspace tab switch and DOM focus via controller callback
+  // (wire in editor_workspace.ts / editor_toolbar.ts)
 }
 ```
 
+**Upstream call sites:** `editor_toolbar.ts`, `validation_panel.ui.ts`. **Downstream consumers:** `editor_workspace.ts` (calls `switchTab()` + `focusElement()`), `dialogue_editor.ts` (node navigation), `zod_form_renderer.ts` (accordion open state).
+
 ---
 
-### Task 3: Debounced & Checkpointed Persistence Service (`src/core/persistence_service.ts`)
+### Task 3 — Accordion Forms (`src/rendering/ui/zod_form_renderer.ts`, ~modification, keep ≤250 growth)
 
-**Goal:** Eliminate synchronous `saveGame()` and `saveCurrentReplay()` calls from hot actor sub-steps in `updateState()`. Provide safe debounced saves and transactional checkpointing on turn settlement, RTwP pause, area transitions, and window exit.
+Convert nested sections to `<details>`/`<summary>` with `data-field-path`, descendant error badges.
 
-**New File:** `src/core/persistence_service.ts` (~95 LOC)
 ```typescript
-import type { GameState } from '../types/game-state.types.ts';
-import { UIMode } from '../types/game-state.types.ts';
-import { saveGame } from './save.ts';
-import { saveCurrentReplay } from './replay.ts';
+// Module-level persistence (survives DOM replacement)
+const expandedPaths: Set<string> = new Set();
 
-class PersistenceService {
-  private pendingState: GameState | null = null;
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly defaultDebounceMs = 500;
+function renderAccordionSection(
+  labelText: string,
+  basePath: string,
+  children: HTMLElement[],
+  isFirstLevel: boolean
+): HTMLElement {
+  const details = document.createElement('details');
+  details.open = isFirstLevel || expandedPaths.has(basePath);
+  details.dataset.basePath = basePath;
 
-  /**
-   * Schedules a debounced save of the GameState. Cancels any previously pending timer.
-   */
-  scheduleDebouncedSave(state: GameState, delayMs: number = this.defaultDebounceMs): void {
-    if (state.isSandbox || state.uiMode !== UIMode.Game) return;
-    this.pendingState = state;
+  const summary = document.createElement('summary');
+  summary.textContent = labelText;
+  details.appendChild(summary);
 
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer);
-    }
+  const content = document.createElement('div');
+  content.className = 'accordion-content';
+  children.forEach(c => content.appendChild(c));
+  details.appendChild(content);
 
-    this.debounceTimer = setTimeout(() => {
-      this.flushPendingSave();
-    }, delayMs);
-  }
+  // Sync module-level state on toggle
+  details.addEventListener('toggle', () => {
+    if (details.open) expandedPaths.add(basePath);
+    else expandedPaths.delete(basePath);
+  });
 
-  /**
-   * Immediately saves the GameState as a transactional checkpoint (e.g. turn settle, pause, area change).
-   */
-  saveCheckpoint(state: GameState): void {
-    if (state.isSandbox) return;
-    this.cancelPendingSave();
-    saveGame(state);
-  }
-
-  /**
-   * Flushes any pending debounced save immediately to localStorage.
-   */
-  flushPendingSave(): void {
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = null;
-    }
-    if (this.pendingState !== null) {
-      const stateToSave = this.pendingState;
-      this.pendingState = null;
-      saveGame(stateToSave);
-    }
-  }
-
-  /**
-   * Cancels any pending scheduled save without writing.
-   */
-  cancelPendingSave(): void {
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer);
-      this.debounceTimer = null;
-    }
-    this.pendingState = null;
-  }
-
-  /**
-   * Checkpoints game over and flushes replay buffer.
-   */
-  checkpointGameOver(state: GameState): void {
-    this.cancelPendingSave();
-    saveCurrentReplay();
-    saveGame(state);
-  }
-
-  /**
-   * Whether a debounced save is currently pending in the timer queue.
-   */
-  hasPendingSave(): boolean {
-    return this.pendingState !== null;
-  }
-}
-
-export const persistenceService = new PersistenceService();
-
-export function scheduleDebouncedSave(state: GameState, delayMs?: number): void {
-  persistenceService.scheduleDebouncedSave(state, delayMs);
-}
-
-export function saveCheckpoint(state: GameState): void {
-  persistenceService.saveCheckpoint(state);
-}
-
-export function flushPendingSave(): void {
-  persistenceService.flushPendingSave();
-}
-
-export function cancelPendingSave(): void {
-  persistenceService.cancelPendingSave();
-}
-
-export function checkpointGameOver(state: GameState): void {
-  persistenceService.checkpointGameOver(state);
+  return details;
 }
 ```
 
+**Critical:** Every field container must receive `data-field-path="${path}"` so `revealField()` can query/select it.
+
 ---
 
-### Task 4: Presenter Module & Domain Dispatch (`src/rendering/presenter.ts`)
+### Task 4 — `src/editor/reference_index.ts` (new, ~170 LOC)
 
-**Goal:** Extract the 18-panel DOM and Canvas rendering dispatch out of `session_controller.ts` into a cohesive presenter module. Executes only the DOM renderers whose domains are marked dirty.
+Cached reverse-reference indexer over `CampaignData`.
 
-**New File:** `src/rendering/presenter.ts` (~150 LOC)
 ```typescript
-import type * as ROT from 'rot-js';
-import type { GameState } from '../types/game-state.types.ts';
-import { UIMode } from '../types/game-state.types.ts';
-import { PresentationDomain } from '../core/presentation_queue.ts';
-import { render } from './renderer.ts';
-import { renderMessageLog } from './ui/message_log.ui.ts';
-import { renderPlayerStats } from './ui/player_stats.ui.ts';
-import { renderInventoryPanel } from './ui/inventory.ui.ts';
-import { renderMenus } from './ui/menus.ui.ts';
-import { updateHUD } from './ui/hud.ui.ts';
-import { renderRTwPControls } from './ui/rtwp_controls.ui.ts';
-import { renderViewControls } from './ui/view_controls.ui.ts';
-import { renderSettingsMenu } from './ui/settings.ui.ts';
-import { renderFactionsPanel } from './ui/factions.ui.ts';
-import { renderDialoguePanel } from './ui/dialogue.ui.ts';
-import { renderQuestJournal } from './ui/quests.ui.ts';
-import { renderInvestigationBoard } from './ui/investigation.ui.ts';
-import { renderDebugOverlay } from './ui/debug.ui.ts';
-import { renderVerbMenu } from './ui/verb_menu.ui.ts';
-import { renderDossierUI } from './ui/dossier.ui.ts';
-import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
-import { renderEditorUI } from './editor_ui.ts';
-import type { CampaignEditor } from '../editor/campaign_editor.ts';
-import { hasSaveGame } from '../core/save.ts';
+export interface ReferenceUsage {
+  targetKind: string; // 'entity', 'item', 'dialogue', 'area', 'status', 'tile'
+  targetId: string;
+  sourcePath: string;  // canonical form
+}
 
-/**
- * Selectively renders only the visual and DOM domains that have been marked dirty.
- */
-export function renderPresenterFrame(
-  display: ROT.Display,
-  state: GameState,
-  globalCampaignEditor: CampaignEditor,
-  dirtyDomains: ReadonlySet<PresentationDomain>
+export interface ReferenceIndex {
+  usages: Map<string, ReferenceUsage[]>; // key = canonical target id
+}
+
+const indexCache = new WeakMap<object, ReferenceIndex>();
+
+export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
+  const existing = indexCache.get(data);
+  if (existing) return existing;
+
+  const index: ReferenceIndex = { usages: new Map() };
+  // Walk all reference-bearing schema fields (see research_notes.md §10.3)
+  // Index only known registry ids; ignore arbitrary prose.
+  indexCache.set(data, index);
+  return index;
+}
+
+export function queryUsages(index: ReferenceIndex, targetKind: string, targetId: string): ReferenceUsage[] {
+  return index.usages.get(`${targetKind}:${targetId}`) ?? [];
+}
+```
+
+**Lateral constraint:** Must not duplicate the registry lookup logic in `getReferenceOptions()` (`ui_utils.ts`). `getReferenceOptions()` returns dropdown options; `ReferenceIndex` returns reverse usages. They share the same key-set awareness but perform opposite operations.
+
+---
+
+### Task 5 — `src/rendering/ui/where_used.ui.ts` (new, ~100 LOC)
+
+Global collapsible drawer driven by `ReferenceIndex`.
+
+```typescript
+export function renderWhereUsed(
+  container: HTMLElement,
+  index: ReferenceIndex,
+  selectedKind: string,
+  selectedId: string
 ): void {
-  if (dirtyDomains.size === 0) return;
+  // Clear previous content
+  container.replaceChildren();
 
-  const gameLayout = document.getElementById('game-layout');
-  const editorLayout = document.getElementById('editor-layout');
-
-  if (state.uiMode === UIMode.Editor) {
-    if (gameLayout) gameLayout.classList.add('hidden');
-    if (editorLayout) editorLayout.classList.remove('hidden');
-    if (dirtyDomains.has(PresentationDomain.Editor) || dirtyDomains.has(PresentationDomain.Modals)) {
-      renderEditorUI(state, globalCampaignEditor);
-    }
+  const usages = queryUsages(index, selectedKind, selectedId);
+  if (usages.length === 0) {
+    container.textContent = 'No usages found.';
     return;
   }
 
-  if (gameLayout) gameLayout.classList.remove('hidden');
-  if (editorLayout) editorLayout.classList.add('hidden');
-
-  // Canvas Viewport Redraw (Map / Entities / Visual Effects)
-  if (
-    dirtyDomains.has(PresentationDomain.Map) ||
-    dirtyDomains.has(PresentationDomain.Entities) ||
-    dirtyDomains.has(PresentationDomain.VFX)
-  ) {
-    render(display, state);
-  }
-
-  // HUD & Stats Panels
-  if (dirtyDomains.has(PresentationDomain.HUD)) {
-    renderPlayerStats(state);
-    updateHUD(state);
-    renderRTwPControls(state);
-    renderViewControls(state);
-    renderMenus(state, hasSaveGame());
-  }
-
-  // Message Log
-  if (dirtyDomains.has(PresentationDomain.Log)) {
-    renderMessageLog(state);
-  }
-
-  // Inventory & Equipment
-  if (dirtyDomains.has(PresentationDomain.Inventory)) {
-    renderInventoryPanel(state);
-  }
-
-  // Modals & Overlays
-  if (dirtyDomains.has(PresentationDomain.Modals)) {
-    renderDialoguePanel(state);
-    renderVerbMenu(state);
-    renderSettingsMenu(state);
-    renderFactionsPanel(state);
-    renderQuestJournal(state);
-    renderInvestigationBoard(state);
-    renderDossierUI(state);
-  }
-
-  // Debug Overlays
-  if (dirtyDomains.has(PresentationDomain.Debug)) {
-    renderDebugOverlay(state);
-    renderDebugLedgerUI(state);
-  }
-}
-```
-
----
-
-### Task 5: Game Loop Refactoring (`src/core/game-loop.ts`)
-
-**Goal:** 
-1. Remove direct `saveGame()` from `updateState()`.
-2. Connect `queuePlayerIntent()` and `processTurn()` to `input_queue.ts`.
-3. Mark dirty domains via `markDirtyFromStateDiff()` on state transitions.
-4. Save checkpoints on player turn settle, area transitions, and game over.
-
-**Diff in `src/core/game-loop.ts`:**
-```typescript
-import {
-  enqueueIntent,
-  dequeueIntent,
-  hasPendingIntents,
-  clearInputQueue
-} from './input_queue.ts';
-import {
-  markDirtyFromStateDiff,
-  markDomainDirty,
-  PresentationDomain
-} from './presentation_queue.ts';
-import {
-  scheduleDebouncedSave,
-  saveCheckpoint,
-  checkpointGameOver
-} from './persistence_service.ts';
-
-// In updateState():
-function updateState(newState: GameState): void {
-  const prevState = currentState;
-  currentState = newState;
-
-  // Mark dirty domains for the 60Hz presenter pass
-  markDirtyFromStateDiff(prevState, newState);
-
-  // Checkpoint on Game Over
-  if (newState.isGameOver && prevState && !prevState.isGameOver) {
-    checkpointGameOver(newState);
-  } else if (newState.uiMode === UIMode.Game) {
-    // Debounce save for continuous gameplay mutations
-    scheduleDebouncedSave(newState);
-  }
-
-  if (stateChangeCallback) {
-    stateChangeCallback(newState);
-  }
-}
-
-// In queuePlayerIntent():
-export function queuePlayerIntent(intent: Intent): void {
-  const state = getGameState();
-  if (state.isGameOver) return;
-
-  recordIntent(intent);
-
-  const isImmediate = 'isImmediate' in intent && intent.isImmediate;
-  if (isImmediate) {
-    const result = applyIntentWithCost(state, intent);
-    updateState(result.state);
-    return;
-  }
-
-  if (state.engineMode === EngineMode.RTwP && !state.rtwpState.paused) {
-    clearInputQueue();
-    enqueueIntent(intent);
-  } else {
-    enqueueIntent(intent);
-  }
-
-  if (state.engineMode === EngineMode.TurnBased) {
-    unlockEngine();
-  }
-}
-
-// In processTurn(entityId: EntityId):
-// When entity is the Player:
-if (isPlayer) {
-  if (hasPendingIntents()) {
-    const intent = dequeueIntent();
-    if (intent) {
-      try {
-        const result = applyIntentWithCost(state, intent);
-        let nextState = result.state;
-
-        if (result.energyCost > 0) {
-          nextState = processHungerTick(nextState, entityId, result.energyCost);
-          setTurnDuration(result.energyCost);
-        } else {
-          setTurnDuration(0);
-        }
-
-        if (nextState !== state) {
-          nextState = updateExploredTiles(nextState);
-          updateState(nextState);
-          // Checkpoint persistence at player turn settlement
-          saveCheckpoint(nextState);
-        }
-      } catch (e) {
-        console.error('Error applying player intent:', e);
-        setTurnDuration(0);
-      }
-    }
-  } else {
-    if (state.engineMode === EngineMode.TurnBased) {
-      lockEngine();
-    }
-  }
-}
-```
-
----
-
-### Task 6: Session Controller & 60Hz Presenter Loop Integration (`src/core/session_controller.ts`)
-
-**Goal:**
-1. Replace synchronous 18-panel execution in `bindStateSubscription()` with lightweight focus and campaign layout synchronization.
-2. Replace `startGlobalUILoop()` with a unified 60Hz presenter loop that checks `consumeDirtyDomains()` and purges expired VFX without triggering state/save cascades.
-3. Attach `beforeunload` listener to flush pending saves.
-4. Reduce `session_controller.ts` LOC from 631 down to ~450.
-
-**Diff in `src/core/session_controller.ts`:**
-```typescript
-import {
-  consumeDirtyDomains,
-  markAllDomainsDirty,
-  markDomainDirty,
-  PresentationDomain
-} from './presentation_queue.ts';
-import { renderPresenterFrame } from '../rendering/presenter.ts';
-import { flushPendingSave } from './persistence_service.ts';
-
-// In bindStateSubscription:
-export function bindStateSubscription(display: ROT.Display, globalCampaignEditor: CampaignEditor): void {
-  onStateChange((newState: GameState) => {
-    if (lastKnownState && newState.campaignId !== lastKnownState.campaignId) {
-      const basePath = `${import.meta.env.BASE_URL}data/campaigns/${newState.campaignId}`;
-      configureDisplayForCampaign(display, newState.campaign, basePath)
-        .then(() => {
-          syncFogOverlayCanvas(newState.campaign);
-          syncDisplayLayout(display, newState);
-          markAllDomainsDirty();
-        })
-        .catch(console.error);
-    }
-
-    if (lastKnownState && newState.zoomLevel !== lastKnownState.zoomLevel) {
-      syncDisplayLayout(display, newState);
-      markDomainDirty(PresentationDomain.Map);
-    }
-    lastKnownState = newState;
-
-    if (newState.uiMode !== currentFocusMode) {
-      if (activeFocusCleanup) {
-        activeFocusCleanup();
-        activeFocusCleanup = null;
-      }
-      currentFocusMode = newState.uiMode;
-      // Focus trapping logic...
-    }
+  usages.forEach(u => {
+    const row = document.createElement('button');
+    row.className = 'where-used-row';
+    row.textContent = `${u.sourcePath} (${u.targetKind}:${u.targetId})`;
+    row.addEventListener('click', () => revealField('', u.sourcePath));
+    container.appendChild(row);
   });
 }
+```
 
-// Consolidated 60Hz Presenter Loop:
-export function startGlobalPresenterLoop(display: ROT.Display, globalCampaignEditor: CampaignEditor): void {
-  function presenterLoop(): void {
-    requestAnimationFrame(presenterLoop);
-    const currentState = getGameState();
-    if (!currentState) return;
+**Zero `.innerHTML`.** Each row uses `createElement('button')` and `textContent`.
 
-    // Check transient visual effect expiration without triggering setGameState / saveGame
-    const now = performance.now();
-    if (currentState.visualEffects.some((e) => now > e.expiresAt)) {
-      const nextEffects = currentState.visualEffects.filter((e) => now <= e.expiresAt);
-      setGameState({ ...currentState, visualEffects: nextEffects });
-      markDomainDirty(PresentationDomain.VFX);
-    }
+---
 
-    const dirtyDomains = consumeDirtyDomains();
-    if (dirtyDomains.size === 0) return;
+### Task 6 — `src/rendering/ui/validation_panel.ui.ts` (new, ~110 LOC)
 
-    const renderTime0 = performance.now();
-    renderPresenterFrame(display, currentState, globalCampaignEditor, dirtyDomains);
-    perfTracker.lastRenderTimeMs = performance.now() - renderTime0;
-  }
+Persistent collapsible bottom diagnostics dock (replaces `editor_toolbar.ts` hover popup).
 
-  requestAnimationFrame(presenterLoop);
+```typescript
+export interface ValidationPanelProps {
+  errors: Array<{ path: string; message: string }>; // paths are canonical
+  onNavigate: (path: string) => void;
 }
 
-// In initSession:
-// Hook window beforeunload to flush saves
-window.addEventListener('beforeunload', () => {
-  flushPendingSave();
-});
-// Start unified 60Hz presenter loop
-startGlobalPresenterLoop(display, globalCampaignEditor);
+export function renderValidationPanel(
+  container: HTMLElement,
+  props: ValidationPanelProps
+): void {
+  container.replaceChildren();
+
+  const header = document.createElement('div');
+  header.className = 'dock-header';
+  header.textContent = `Errors: ${props.errors.length}`;
+  container.appendChild(header);
+
+  const list = document.createElement('ul');
+  list.className = 'dock-list';
+  props.errors.forEach(e => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'dock-row';
+    btn.textContent = `${e.path}: ${e.message}`;
+    btn.addEventListener('click', () => props.onNavigate(e.path));
+    li.appendChild(btn);
+    list.appendChild(li);
+  });
+  container.appendChild(list);
+}
 ```
 
 ---
 
-### Task 7: Scheduler & Replay Integration (`src/core/scheduler.ts`, `src/core/replay.ts`)
+### Task 7 — `editor_toolbar.ts` Cleanup (modification, eliminate `.innerHTML`)
 
-**Goal:**
-1. In `src/core/scheduler.ts`: When `switchEngineMode()` or pause occurs, trigger `saveCheckpoint(getGameState())` to guarantee immediate persistence upon pause.
-2. In `src/core/replay.ts`: Load replay intents directly into `loadInputQueue(replay.intents)`.
+Remove the hover-only validation popup. Wire `updateToolbarState()` to feed errors into the new `validation_panel.ui.ts` dock mounted in the workspace bottom area.
+
+```typescript
+// Old (to be removed):
+// const tooltip = document.createElement('div'); tooltip.innerHTML = ...
+
+// New:
+import { renderValidationPanel } from '../ui/validation_panel.ui.ts';
+
+export function updateToolbarState(errors: Array<{ path: string; message: string }>) {
+  const dock = document.getElementById('validation-dock');
+  if (!dock) return;
+  renderValidationPanel(dock, {
+    errors,
+    onNavigate: (path) => {
+      revealField('', path); // from validation_navigator.ts
+    },
+  });
+}
+```
+
+**Verification:** Zero `.innerHTML` remains in this file; no `innerHTML` references added.
 
 ---
 
-## 3. Verification Strategy & Acceptance Criteria
+### Task 8 — `area_playtest_menu.ui.ts` (new, ~90 LOC)
 
-### Automated Verification:
-1. `bun x tsc --noEmit --ignoreDeprecations 6.0`: Strict compiler pass with 0 errors across all 130+ modules.
-2. `bun run validate:campaigns`: Complete Zod schema and cross-reference validation passing for `default`, `megacampaign`, and `shroudgarde` (3/3 passed, 0 errors, 0 warnings).
+Static map right-click context menu.
 
-### Manual Playtest Scenarios:
-1. **Turn-Based Input Responsiveness:**
-   - Launch `default` campaign. Move with arrow/numpad keys. Observe that exploration, combat, and message logging update cleanly at 60 FPS without UI stutter.
-   - Inspect browser console: verify zero `localStorage.setItem` calls during rapid movement until player turns settle or debounced timer expires.
-2. **RTwP Mode & Pause Checkpoint:**
-   - Press `Tab` to switch to RTwP. Observe uninterrupted continuous simulation.
-   - Press `Space` to pause: verify state immediately checkpoints to `localStorage`.
-   - Reload the browser tab: verify resume from exact paused position with complete inventory, stats, and area state.
-3. **Replay Determinism:**
-   - Execute a sequence of moves and save replay. Play back replay: verify `loadInputQueue()` seamlessly drives playback without desync.
+```typescript
+export interface PlaytestMenuProps {
+  areaId: string;
+  x: number;
+  y: number;
+  onSelectPlaytest: (areaId: string, x: number, y: number) => void;
+}
+
+export function renderPlaytestMenu(
+  container: HTMLElement,
+  props: PlaytestMenuProps
+): void {
+  container.replaceChildren();
+
+  const btn = document.createElement('button');
+  btn.className = 'context-menu-item';
+  btn.textContent = '▶ Playtest from Here';
+  btn.addEventListener('click', () => props.onSelectPlaytest(props.areaId, props.x, props.y));
+  container.appendChild(btn);
+}
+```
 
 ---
 
-## 4. Gate 2 Approval Request
+### Task 9 — `area_editor.ts` Context Menu Integration (modification)
 
-This implementation plan conforms strictly to [AGENTS.md](<AGENTS.md>), [docs/ARCHITECTURE.md](<docs/ARCHITECTURE.md>), and [docs/DECISIONS.md](<docs/DECISIONS.md>).
-**Awaiting User Approval (Gate 2)** to begin code implementation.
+Attach `contextmenu` listener to the static map canvas (`L426-444` area). Resolve tile coordinates via `display.eventToPosition(e)`.
+
+```typescript
+canvas.addEventListener('contextmenu', (e: MouseEvent) => {
+  e.preventDefault();
+  const [mapX, mapY] = display.eventToPosition(e) || [0, 0];
+
+  // Walkability check against staticMap.layout + legend
+  const tileDef = resolveTileAtStaticMap(mapX, mapY);
+  if (!tileDef || !tileDef.walkable) {
+    // Refuse or snap to nearest walkable — per decision, refuse for simplicity
+    return;
+  }
+
+  const menu = document.createElement('div');
+  menu.className = 'tile-context-menu';
+  document.body.appendChild(menu);
+  renderPlaytestMenu(menu, {
+    areaId: activeAreaId,
+    x: mapX,
+    y: mapY,
+    onSelectPlaytest: (aId, x, y) => {
+      sessionStorage['editor_playtest_spawn'] = JSON.stringify({ areaId: aId, x, y });
+      sessionStorage['editor_active_document'] = JSON.stringify(activeDoc);
+      sessionStorage['editor_playtest'] = 'true';
+      window.location.reload();
+    },
+  });
+
+  const closeMenu = () => { menu.remove(); document.removeEventListener('click', closeMenu); };
+  document.addEventListener('click', closeMenu, { once: true });
+});
+```
+
+---
+
+### Task 10 — `session_controller.ts` & `bootstrap.ts` Spawn Override (modification)
+
+Extend `startNewGame()` and `bootstrap.ts` spawn path.
+
+```typescript
+// session_controller.ts (around L296-309)
+export function startNewGame(
+  campaignId: string,
+  spawnOverride?: { areaId: string; x: number; y: number }
+): void {
+  // ... existing load path ...
+  const initialAreaId = spawnOverride?.areaId ?? campaign.rules.map.startingAreaId;
+  // Pass to bootstrap
+  startNewGameInternal(campaign, initialAreaId, spawnOverride);
+}
+
+// bootstrap.ts
+export function generateAreaWithSpawn(
+  campaign: CampaignData,
+  areaId: string,
+  spawnOverride?: { x: number; y: number }
+) {
+  const area = generateArea(campaign, areaId);
+  const spawnPos = spawnOverride
+    ? { x: spawnOverride.x, y: spawnOverride.y }
+    : area.startPos;
+  return { area, spawnPos };
+}
+```
+
+**Upstream call sites untouched:** `startNewGame('default', …)` (without override) continues to work identically.
+
+---
+
+### Task 11 — `editor_workspace.ts` Validation Error Forwarding (modification)
+
+Forward validation errors to area and dialogue editor views.
+
+```typescript
+export function setWorkspaceErrors(
+  errors: Array<{ path: string; message: string }>
+): void {
+  // Forward to active sub-editor
+  if (currentTab === 'dialogue') {
+    dialogueEditorInstance?.setErrors(errors.filter(e => e.path.startsWith('dialogues/')));
+  }
+  if (currentTab === 'area') {
+    areaEditorInstance?.setErrors(errors.filter(e => e.path.startsWith('areas/')));
+  }
+  // Update global dock
+  updateToolbarState(errors);
+}
+```
+
+---
+
+### Task 12 — `dialogue_editor.ts` `data-field-path` Integration (modification)
+
+Attach `data-field-path` on node editor inputs so `revealField()` can focus them.
+
+```typescript
+// For each node input container
+nodeInputContainer.dataset.fieldPath = `dialogues/${dialogueId}/nodes/${nodeId}/${fieldKey}`;
+```
+
+---
+
+### Task 13 — DOM Security Audit & `data-field-path` Tagging (cross-file)
+
+Audit all touched files (`zod_form_renderer.ts`, `editor_toolbar.ts`, `dialogue_editor.ts`, `area_playtest_menu.ui.ts`, `where_used.ui.ts`, `validation_panel.ui.ts`) to confirm:
+
+- Zero `.innerHTML` usage.
+- Zero `innerHTML` assignments.
+- All text insertion uses `textContent` or `createTextNode()`.
+- All `data-field-path` attributes set via `.dataset.fieldPath = ...`.
+
+---
+
+## 4. Cascading Effects Summary (Post-Plan Audit)
+
+Before writing any code, every change above has been audited across all three axes:
+
+- **Upstream:** Validators (`campaign_validator.ts`, sub-validators) emit paths; `editor_toolbar.ts` feeds errors; `area_editor.ts` provides context; `dialogue_editor.ts` provides node paths; `bootstrap.ts` provides area/spawn.
+- **Downstream:** `zod_form_renderer.ts` consumes canonical paths and renders accordions; `validation_navigator.ts` consumes them for navigation; `editor_workspace.ts` forwards them; `where_used.ui.ts` consumes the `ReferenceIndex`.
+- **Lateral:** `dialogue_editor.ts`, `area_editor.ts`, `trigger_composer.ui.ts`, `editor_forms.ts` share the same `data-field-path` and path-normalization contracts. `getReferenceOptions()` (forward lookup) must not be duplicated by `ReferenceIndex` (reverse lookup) — same registry awareness, opposite direction.
+
+---
+
+## 5. Module Size Budget (~250 LOC per file)
+
+| File | Target LOC | Notes |
+|---|---|---|
+| `src/editor/validation_path.ts` | ~80 | Path normalizer, split/prefix helpers |
+| `src/editor/validation_navigator.ts` | ~110 | Expanded paths set, reveal/focus/navigation |
+| `src/editor/reference_index.ts` | ~170 | Cached WeakMap indexer, usage queries |
+| `src/rendering/ui/validation_panel.ui.ts` | ~110 | Dock rendering, click-to-focus |
+| `src/rendering/ui/where_used.ui.ts` | ~100 | Drawer, usage list, click handlers |
+| `src/rendering/ui/area_playtest_menu.ui.ts` | ~90 | Context menu button, spawn handoff |
+| `zod_form_renderer.ts` (modified) | ≤536 (growth 0) | Accordion extraction; no file growth |
+| `editor_toolbar.ts` (modified) | Reduced | `.innerHTML` removed; dock wired |
+| `editor_workspace.ts` (modified) | Small addition | Validation forwarding |
+| `dialogue_editor.ts` (modified) | Small addition | `data-field-path` on nodes |
+| `area_editor.ts` (modified) | Small addition | `contextmenu` listener |
+| `session_controller.ts` (modified) | Small addition | Optional `spawnOverride` param |
+| `bootstrap.ts` (modified) | Small addition | Spawn override in area generation |
+
+---
+
+## 6. Verification & Manual Play-Test Scenarios
+
+1. **Path Normalization:** Create a validator emitting `dialogues.0.nodes.1.options.0.nextNodeId` and verify `toFormPath()` converts it to `/dialogues/0/nodes/1/options/0/nextNodeId`. Confirm `revealField()` expands all ancestor sections and focuses the input.
+2. **Accordion Persistence:** Open a nested dialogue node section, edit a field (triggering workspace re-render), confirm the section stays open (`expandedPaths` survives).
+3. **Reverse Reference:** Select an item template used in `default` campaign. Click the Where Used drawer; confirm it lists every area and entity that references it via `ReferenceIndex`.
+4. **Validation Dock:** Introduce a schema error in a campaign JSON. Confirm the bottom dock appears with the error, is keyboard-accessible, and clicking it jumps focus to the offending input. Confirm zero `.innerHTML` usage via grep.
+5. **Playtest Spawn (Static):** In the area editor, right-click a walkable static tile. Confirm the context menu shows "Playtest from Here"; clicking reloads the page and spawns at `(areaId, x, y)` in `startNewGame()`.
+6. **Playtest Spawn (Blocked):** Right-click on a non-walkable wall tile. Confirm the menu either refuses or snaps (per D5: refuse for simplicity) — no spawn override written.
+7. **No `.innerHTML`:** Run `grep -r "\.innerHTML" src/rendering/ui/where_used.ui.ts src/rendering/ui/validation_panel.ui.ts src/rendering/ui/area_playtest_menu.ui.ts src/rendering/ui/zod_form_renderer.ts src/rendering/editor/editor_toolbar.ts` — must return zero matches.
+
+---
+
+## 7. Post-Implementation Checklist (Before Gate 3 / After Code)
+
+- [ ] All 6 new modules created with ≤ ~250 LOC.
+- [ ] `zod_form_renderer.ts` accordion sections extracted; file size unchanged or reduced.
+- [ ] `expandedPaths` module-level `Set<string>` survives `renderWorkspace()` DOM replacements.
+- [ ] `data-field-path` attributes present on all form fields (dialogue nodes, area entities, items, status effects).
+- [ ] `reference_index.ts` cached with `WeakMap`; does not duplicate `getReferenceOptions()` logic.
+- [ ] `validation_panel.ui.ts` replaces hover popup; `editor_toolbar.ts` has zero `.innerHTML`.
+- [ ] `area_playtest_menu.ui.ts` handles static maps only; `sessionStorage['editor_playtest_spawn']` passed to `startNewGame()`.
+- [ ] `toFormPath()` handles all three dialects; `isPathPrefix()` and `splitPath()` tested.
+- [ ] All new functions have explicit `: Type` return annotations and JSDoc (`@param`, `@returns`).
+- [ ] `docs/DECISIONS.md` updated with M76 architectural rationale (already present at §10.8 / lines 125-132).
+- [ ] `docs/MILESTONES.md` checklist items marked completed.
+- [ ] `docs/scratchpad.md` §7.6 finalized with implementation record.
+- [ ] `docs/implementation_plan.md` archived to `docs/plans/` after verification.

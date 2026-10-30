@@ -50,13 +50,8 @@ export async function startSandboxEncounter(
   clearScheduler();
   initEngine();
 
-  const {
-    itemUnidentifiedNames,
-    factionEntityIds,
-    areaEntityIds,
-    initialPersistentEntities,
-    nextEntityId
-  } = initializeCampaignWorldEntities(newCampaign, state.nextEntityId || 1);
+  const { itemUnidentifiedNames, factionEntityIds, areaEntityIds, initialPersistentEntities, nextEntityId } =
+    initializeCampaignWorldEntities(newCampaign, state.nextEntityId || 1);
 
   const { map, startPos, rooms, placedEntities } = generatedArea;
 

@@ -428,3 +428,157 @@ body[data-no-animations='true'] * {
   gap: 1rem;
   justify-content: flex-end;
 }
+
+/* Loading Overlay */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.loading-modal {
+  background: var(--bg-console, #161b22);
+  border: 1px solid var(--color-accent, #58a6ff);
+  border-radius: 8px;
+  padding: 32px 40px;
+  box-shadow: 0 0 30px rgba(88, 166, 255, 0.25);
+  text-align: center;
+  width: 90%;
+  max-width: 480px;
+}
+
+.loading-modal h2 {
+  font-family: var(--font-mono, monospace);
+  font-size: 1.4rem;
+  color: var(--text-highlight, #f0f6fc);
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+.loading-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.loading-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-accent, #58a6ff), #2ea043);
+  transition: width 0.15s ease-out;
+}
+
+.loading-status {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  color: var(--text-dim, #8b949e);
+  min-height: 1.2rem;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Contextual verb menu illumination (Milestone 75)
+ * All engine verbs are listed; applicable ones are illuminated and numbered,
+ * inapplicable ones are dimmed and unselectable.
+ * ------------------------------------------------------------------------ */
+
+.verb-menu-item.valid {
+  color: var(--text-color, #c9d1d9);
+  font-weight: 600;
+}
+
+.verb-menu-item.invalid {
+  opacity: 0.35;
+  font-style: italic;
+}
+
+[data-high-contrast='true'] .verb-menu-item.invalid {
+  opacity: 0.55;
+}
+
+/* ---------------------------------------------------------------------------
+ * Investigation board filter chips (Milestone 75)
+ * Fixed-height toolbar with no wrapping so filtering never reflows the panes.
+ * ------------------------------------------------------------------------ */
+
+.chip-toolbar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  min-height: 34px;
+  margin-bottom: 12px;
+  flex: 0 0 auto;
+}
+
+.chip {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim, #8b949e);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease-out, color 0.15s ease-out;
+}
+
+.chip:hover {
+  color: var(--text-color, #c9d1d9);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chip.active {
+  color: #0d1117;
+  background: var(--color-accent, #58a6ff);
+  border-color: var(--color-accent, #58a6ff);
+  font-weight: 700;
+}
+
+[data-no-animations='true'] .chip {
+  transition: none;
+}
+
+/* ---------------------------------------------------------------------------
+ * RTwP auto-pause settings group (Milestone 75)
+ * ------------------------------------------------------------------------ */
+
+.autopause-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.autopause-row > span {
+  flex: 1 1 auto;
+}
+
+.autopause-threshold-input {
+  width: 72px;
+  padding: 4px 6px;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-color, #c9d1d9);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+}

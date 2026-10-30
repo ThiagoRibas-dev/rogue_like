@@ -4,12 +4,7 @@ import type { EditorController } from '../../editor_ui.ts';
 import { runEncounterDirector } from '../../../map/encounter_director.ts';
 import { generateArea, type GeneratedArea } from '../../../map/generator.ts';
 import { runEncounterArena } from '../../../editor/simulation/ai_arena.ts';
-import {
-  renderMiniMap,
-  renderReceipt,
-  updateJsonPreview,
-  buildBakedStaticArea
-} from './director_telemetry_view.ts';
+import { renderMiniMap, renderReceipt, updateJsonPreview, buildBakedStaticArea } from './director_telemetry_view.ts';
 
 export const DEFAULT_MAX_SIM_TURNS = 100;
 
