@@ -1,5 +1,6 @@
 {
   "player": {
+    "spriteId": "actor_rogue",
     "id": "player",
     "name": "Player",
     "glyph": "@",
@@ -35,6 +36,7 @@
     "faction": "player"
   },
   "orc": {
+    "spriteId": "monster_orc",
     "id": "orc",
     "name": "Orc",
     "glyph": "o",
@@ -60,6 +62,7 @@
     ]
   },
   "goblin": {
+    "spriteId": "monster_goblin",
     "id": "goblin",
     "name": "Goblin",
     "glyph": "g",
@@ -86,6 +89,7 @@
     ]
   },
   "troll": {
+    "spriteId": "monster_troll",
     "id": "troll",
     "name": "Troll",
     "glyph": "T",
@@ -111,6 +115,7 @@
     ]
   },
   "goblin_archer": {
+    "spriteId": "monster_goblin_archer",
     "id": "goblin_archer",
     "name": "Goblin Archer",
     "glyph": "g",
@@ -136,6 +141,7 @@
     ]
   },
   "orc_shaman": {
+    "spriteId": "monster_orc_wizard",
     "id": "orc_shaman",
     "name": "Orc Shaman",
     "glyph": "s",
@@ -162,6 +168,7 @@
     ]
   },
   "hidden_trap": {
+    "spriteId": "tile_pressure_plate_up",
     "id": "hidden_trap",
     "name": "Hidden Trap",
     "glyph": "^",
@@ -178,6 +185,7 @@
     ]
   },
   "wooden_door": {
+    "spriteId": "tile_door_1",
     "id": "wooden_door",
     "name": "Wooden Door",
     "glyph": "+",
@@ -196,6 +204,7 @@
     }
   },
   "wooden_chest": {
+    "spriteId": "tile_chest_closed",
     "id": "wooden_chest",
     "name": "Wooden Chest",
     "glyph": "c",
@@ -221,6 +230,7 @@
     }
   },
   "bones_pile": {
+    "spriteId": "tile_corpse_bones_1",
     "id": "bones_pile",
     "name": "Pile of Bones",
     "glyph": "%",
@@ -241,6 +251,7 @@
     }
   },
   "fountain": {
+    "spriteId": "tile_blank_blue_floor",
     "id": "fountain",
     "name": "Fountain",
     "glyph": "{",
@@ -256,6 +267,7 @@
     "renderable": true
   },
   "altar": {
+    "spriteId": "tile_pentagram",
     "id": "altar",
     "name": "Altar",
     "glyph": "_",
@@ -274,6 +286,7 @@
     "renderable": true
   },
   "orc_bomber": {
+    "spriteId": "monster_orc_blademaster",
     "id": "orc_bomber",
     "name": "Orc Bomber",
     "glyph": "o",
@@ -303,6 +316,7 @@
     }
   },
   "caged_beast": {
+    "spriteId": "monster_warg_dire_wolf",
     "id": "caged_beast",
     "name": "Caged Beast",
     "glyph": "B",
@@ -336,6 +350,7 @@
     }
   },
   "fire_barrel": {
+    "spriteId": "tile_barrel",
     "id": "fire_barrel",
     "name": "Fire Barrel",
     "glyph": "0",
@@ -353,6 +368,7 @@
     ]
   },
   "corrupted_treant": {
+    "spriteId": "monster_dryad",
     "id": "corrupted_treant",
     "name": "Corrupted Treant",
     "glyph": "T",
@@ -378,6 +394,7 @@
     ]
   },
   "poison_vent": {
+    "spriteId": "tile_spikes_down",
     "id": "poison_vent",
     "name": "Poison Vent",
     "glyph": "^",
@@ -393,6 +410,7 @@
     ]
   },
   "corrupted_pool": {
+    "spriteId": "tile_slime_large",
     "id": "corrupted_pool",
     "name": "Corrupted Pool",
     "glyph": "{",
@@ -413,6 +431,7 @@
     "renderable": true
   },
   "spider_broodmother": {
+    "spriteId": "monster_giant_spider",
     "id": "spider_broodmother",
     "name": "Spider Broodmother",
     "glyph": "S",
@@ -438,6 +457,7 @@
     ]
   },
   "egg_sac": {
+    "spriteId": "tile_jar_closed",
     "id": "egg_sac",
     "name": "Egg Sac",
     "glyph": "0",
@@ -454,6 +474,7 @@
     ]
   },
   "web_trap": {
+    "spriteId": "tile_blood_spatter_1",
     "id": "web_trap",
     "name": "Web Trap",
     "glyph": "*",
@@ -470,6 +491,7 @@
     ]
   },
   "vault_guardian": {
+    "spriteId": "monster_rock_golem",
     "id": "vault_guardian",
     "name": "Vault Guardian",
     "glyph": "G",
@@ -495,6 +517,7 @@
     ]
   },
   "heavy_vault_door": {
+    "spriteId": "tile_framed_door_1_shut",
     "id": "heavy_vault_door",
     "name": "Heavy Vault Door",
     "glyph": "+",
@@ -517,6 +540,7 @@
     ]
   },
   "barkeeper": {
+    "spriteId": "actor_shopkeep",
     "id": "barkeeper",
     "name": "Barkeeper",
     "glyph": "B",
@@ -540,6 +564,7 @@
     "dialogueId": "barkeeper_tree"
   },
   "scout": {
+    "spriteId": "actor_ranger",
     "id": "scout",
     "name": "Scout",
     "glyph": "S",
@@ -563,6 +588,7 @@
     "dialogueId": "scout_tree"
   },
   "merchant": {
+    "spriteId": "actor_shopkeep",
     "id": "merchant",
     "name": "Merchant",
     "glyph": "M",
@@ -599,6 +625,7 @@
     "dialogueId": "merchant_tree"
   },
   "scholar": {
+    "spriteId": "actor_scholar",
     "id": "scholar",
     "name": "Scholar",
     "glyph": "K",
@@ -622,6 +649,7 @@
     "dialogueId": "scholar_tree"
   },
   "bandit": {
+    "spriteId": "actor_bandit",
     "id": "bandit",
     "name": "Bandit",
     "glyph": "b",
@@ -649,6 +677,7 @@
     ]
   },
   "bandit_king": {
+    "spriteId": "actor_male_barbarian",
     "id": "bandit_king",
     "name": "Bandit King",
     "glyph": "W",

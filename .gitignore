@@ -45,6 +45,7 @@ Thumbs.db
 
 # Utils
 *.bat
+!verify.bat
 
 # Reference projects
 references/

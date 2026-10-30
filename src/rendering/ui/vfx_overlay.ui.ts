@@ -3,7 +3,7 @@
  */
 
 import type { Display } from 'rot-js';
-import type { VisualEffectDTO, FogOverlayDTO } from '../viewport_snapshot.types.ts';
+import type { VisualEffectDTO, FogOverlayDTO, GlyphOverlayDTO } from '../viewport_snapshot.types.ts';
 import { getTilePixelMetrics } from './inspect_view.ui.ts';
 
 /**
@@ -66,7 +66,11 @@ export function renderVisualEffectsOverlay(
  * @param fogOverlay Presentational fog overlay DTO.
  * @param display The ROT.js Display instance.
  */
-export function renderFogOverlayCanvas(fogOverlay: FogOverlayDTO, display: Display): void {
+export function renderFogOverlayCanvas(
+  fogOverlay: FogOverlayDTO,
+  glyphOverlays: ReadonlyArray<GlyphOverlayDTO>,
+  display: Display
+): void {
   const overlayCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
   if (!overlayCanvas) return;
 
@@ -101,6 +105,26 @@ export function renderFogOverlayCanvas(fogOverlay: FogOverlayDTO, display: Displ
     ctx.fillStyle = cell.alpha === 1.0 ? 'rgba(0, 0, 0, 1.0)' : 'rgba(0, 0, 0, 0.55)';
     ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileWidthPx), Math.ceil(tileHeightPx));
   }
+
+  // ASCII-glyph fallbacks: ROT's tile backend cannot draw text, so anything without
+  // a resolvable sprite is painted here as its glyph instead of a placeholder sprite.
+  if (glyphOverlays.length > 0) {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = `${Math.max(8, Math.floor(tileHeightPx * 0.85))}px monospace`;
+
+    for (const overlay of glyphOverlays) {
+      const pxX = offsetX + overlay.vx * tileWidthPx;
+      const pxY = offsetY + overlay.vy * tileHeightPx;
+
+      if (overlay.bg !== 'transparent') {
+        ctx.fillStyle = overlay.bg;
+        ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileWidthPx), Math.ceil(tileHeightPx));
+      }
+      ctx.fillStyle = overlay.fg;
+      ctx.fillText(overlay.glyph, pxX + tileWidthPx / 2, pxY + tileHeightPx / 2);
+    }
+  }
 }
 
 /**
@@ -115,10 +139,11 @@ export function renderFogOverlayCanvas(fogOverlay: FogOverlayDTO, display: Displ
 export function renderVFXAndFogOverlay(
   visualEffects: ReadonlyArray<VisualEffectDTO>,
   fogOverlay: FogOverlayDTO,
+  glyphOverlays: ReadonlyArray<GlyphOverlayDTO>,
   display: Display,
   viewportW: number,
   viewportH: number
 ): void {
   renderVisualEffectsOverlay(visualEffects, display, viewportW, viewportH);
-  renderFogOverlayCanvas(fogOverlay, display);
+  renderFogOverlayCanvas(fogOverlay, glyphOverlays, display);
 }

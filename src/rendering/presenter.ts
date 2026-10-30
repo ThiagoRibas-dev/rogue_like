@@ -23,6 +23,7 @@ import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
+import { recordEarlyReturn, recordDisplayCanvas, recordMapRender } from './render_debug.ts';
 
 /**
  * Module-level cache of the last rendered ViewportSnapshot to drive dirty-cell diffing.
@@ -51,7 +52,10 @@ export function renderPresenterFrame(
   globalCampaignEditor: CampaignEditor,
   dirtyDomains: ReadonlySet<PresentationDomain>
 ): void {
-  if (dirtyDomains.size === 0) return;
+  if (dirtyDomains.size === 0) {
+    recordEarlyReturn('no-dirty-domains');
+    return;
+  }
 
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
@@ -62,6 +66,7 @@ export function renderPresenterFrame(
     if (dirtyDomains.has(PresentationDomain.Editor) || dirtyDomains.has(PresentationDomain.Modals)) {
       renderEditorUI(state, globalCampaignEditor);
     }
+    recordEarlyReturn('editor-mode');
     return;
   }
 
@@ -86,11 +91,43 @@ export function renderPresenterFrame(
     const viewportH = options.height ?? state.map.height;
 
     const snapshot = buildViewportSnapshot(state, viewportW, viewportH);
-    render(display, snapshot, lastViewportSnapshot);
+    recordDisplayCanvas(display);
+    const previous = lastViewportSnapshot;
+    const wasFullRedraw =
+      !previous ||
+      previous.viewportW !== snapshot.viewportW ||
+      previous.viewportH !== snapshot.viewportH ||
+      previous.isSpriteMode !== snapshot.isSpriteMode;
+    const drawCalls = render(display, snapshot, previous);
     lastViewportSnapshot = snapshot;
 
+    let exploredCells = 0;
+    let visibleCells = 0;
+    for (const cell of snapshot.cells) {
+      if (cell.isExplored) exploredCells++;
+      if (cell.isVisible) visibleCells++;
+    }
+    recordMapRender({
+      cells: snapshot.cells.length,
+      explored: exploredCells,
+      visible: visibleCells,
+      drawCalls,
+      fullRedraw: wasFullRedraw,
+      viewportW,
+      viewportH,
+      displayWidth: options.width ?? 0,
+      displayHeight: options.height ?? 0
+    });
+
     renderInspectView(snapshot.inspectTooltip, display, viewportW, viewportH, snapshot.is3D);
-    renderVFXAndFogOverlay(snapshot.visualEffects, snapshot.fogOverlay, display, viewportW, viewportH);
+    renderVFXAndFogOverlay(
+      snapshot.visualEffects,
+      snapshot.fogOverlay,
+      snapshot.glyphOverlays,
+      display,
+      viewportW,
+      viewportH
+    );
   }
 
   // HUD & Stats Panels

@@ -65,8 +65,9 @@ function cellEquals(a: ViewportCellDTO, b?: ViewportCellDTO): boolean {
  * @param display The ROT.js Display instance.
  * @param snapshot The current frame's ViewportSnapshot projection.
  * @param prevSnapshot The previous frame's ViewportSnapshot projection (if any).
+ * @returns The number of cell draw operations emitted (for diagnostics).
  */
-export function render(display: Display, snapshot: ViewportSnapshot, prevSnapshot?: ViewportSnapshot): void {
+export function render(display: Display, snapshot: ViewportSnapshot, prevSnapshot?: ViewportSnapshot): number {
   const isFullRedraw =
     !prevSnapshot ||
     prevSnapshot.viewportW !== snapshot.viewportW ||
@@ -77,6 +78,8 @@ export function render(display: Display, snapshot: ViewportSnapshot, prevSnapsho
     display.clear();
   }
 
+  let drawCalls = 0;
+
   for (let i = 0; i < snapshot.cells.length; i++) {
     const curr = snapshot.cells[i]!;
     if (!isFullRedraw && prevSnapshot && cellEquals(curr, prevSnapshot.cells[i])) {
@@ -86,27 +89,26 @@ export function render(display: Display, snapshot: ViewportSnapshot, prevSnapsho
     if (!curr.isExplored && curr.entities.length === 0 && !curr.highlight) {
       if (!isFullRedraw) {
         drawCell(display, curr.vx, curr.vy, snapshot.isSpriteMode, EMPTY_CELL, []);
+        drawCalls++;
       }
       continue;
     }
 
     if (curr.highlight) {
       if (snapshot.isSpriteMode) {
-        drawCell(display, curr.vx, curr.vy, true, curr, [
-          ...curr.entities,
-          {
-            glyph: curr.highlight.glyph,
-            fg: curr.highlight.fg,
-            bg: curr.highlight.bg,
-            spriteId: curr.highlight.glyph
-          }
-        ]);
+        // ROT's tile backend cannot draw text; the highlight glyph is painted on
+        // the overlay canvas via snapshot.glyphOverlays instead of as a sprite key.
+        drawCell(display, curr.vx, curr.vy, true, curr, curr.entities);
       } else {
         drawCell(display, curr.vx, curr.vy, false, curr, curr.entities);
         display.draw(curr.vx, curr.vy, curr.highlight.glyph, curr.highlight.fg, curr.highlight.bg);
       }
+      drawCalls++;
     } else {
       drawCell(display, curr.vx, curr.vy, snapshot.isSpriteMode, curr, curr.entities);
+      drawCalls++;
     }
   }
+
+  return drawCalls;
 }

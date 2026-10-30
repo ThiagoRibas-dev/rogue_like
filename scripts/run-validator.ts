@@ -25,6 +25,7 @@ import type { CampaignData } from '../src/types/campaign.types.ts';
 import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
 import type { ValidationError } from '../src/editor/validator/validator.types.ts';
 import { validateCampaign } from '../src/editor/campaign_validator.ts';
+import { collectMissingSpriteMappings } from '../src/rendering/sprite_keys.ts';
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -343,6 +344,22 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
   const allErrorDetails: string[] = [];
   let totalCrossErrors = 0;
 
+  // Sprite-artibility check. A template with no resolvable sprite is not fatal: it is
+  // rendered as its ASCII glyph on the overlay canvas. Unresolved keys are still worth
+  // surfacing because they usually indicate a typo.
+  const spriteIssues = collectMissingSpriteMappings(campaign);
+  if (spriteIssues.length > 0) {
+    console.log(`  ⚠ ${spriteIssues.length} sprite-mapping warning(s):`);
+    for (let i = 0; i < spriteIssues.length; i++) {
+      const issue = spriteIssues[i]!;
+      const detail =
+        issue.reason === 'no-spriteId'
+          ? `${issue.kind} "${issue.id}" has no spriteId (renders as ASCII glyph fallback)`
+          : `${issue.kind} "${issue.id}" references unknown spriteId "${issue.spriteId}" (renders as ASCII glyph fallback)`;
+      console.log(`    [${i + 1}] ${detail}`);
+    }
+  }
+
   if (crossErrors.length > 0) {
     console.error(`  ❌ Found ${crossErrors.length} cross-reference error(s):`);
     for (let i = 0; i < crossErrors.length; i++) {
@@ -369,7 +386,7 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
     dir,
     zodErrors: 0,
     crossErrors: totalCrossErrors,
-    warnings: crossWarnings.length,
+    warnings: crossWarnings.length + spriteIssues.length,
     errorDetails: allErrorDetails,
     passed
   };

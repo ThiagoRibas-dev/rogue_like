@@ -2,6 +2,7 @@ import * as ROT from 'rot-js';
 import { type GameState } from '../types/game-state.types.ts';
 import { GAME_ASPECT_RATIO } from '../constants/display.constants.ts';
 import { type CampaignData, type SpriteSheetSource } from '../types/campaign.types.ts';
+import { recordDrawCommand } from './render_debug.ts';
 
 /**
  * Internal interface representing a ROT.js rectangular layout backend
@@ -104,8 +105,10 @@ async function compositeAtlas(
     yOffset += img.height;
   }
 
-  // Generate a magenta square as a fallback for missing/unmapped sprites
-  ctx.fillStyle = '#ff00ff';
+  // Neutral placeholder for art that has no resolvable sprite. Deliberately not
+  // magenta: missing art is surfaced by the validator and __renderDebug.missingSprites,
+  // and the ASCII glyph fallback is painted on the overlay canvas.
+  ctx.fillStyle = '#0b0b0b';
   ctx.fillRect(0, yOffset, tileWidth, tileHeight);
   mergedTileMap['__fallback__'] = [0, yOffset];
 
@@ -135,6 +138,8 @@ export async function configureDisplayForCampaign(
         tileColorize: false,
         bg: 'transparent'
       });
+      // ROT allocates a brand-new canvas on layout changes; re-attach it to the DOM.
+      mountDisplayWithFogOverlay(display, campaign);
       return true;
     } catch (err) {
       console.error('Sprite loading failed, falling back to ASCII:', err);
@@ -147,6 +152,8 @@ export async function configureDisplayForCampaign(
     fontSize: campaign.theme.ui.fontSize,
     fontFamily: campaign.theme.ui.fontFamily
   });
+  // ROT allocates a brand-new canvas on layout changes; re-attach it to the DOM.
+  mountDisplayWithFogOverlay(display, campaign);
   return false;
 }
 
@@ -207,9 +214,11 @@ export function drawCell(
       bgs.push(ent.bg);
     }
     display.draw(x, y, chars as unknown as string, fgs as unknown as string, bgs as unknown as string);
+    recordDrawCommand(x, y, String(chars[0] ?? ''), true);
   } else {
     const top = entities.length > 0 ? (entities[entities.length - 1] ?? baseTile) : baseTile;
     display.draw(x, y, top.glyph, top.fg, top.bg);
+    recordDrawCommand(x, y, top.glyph, false);
   }
 }
 
@@ -293,11 +302,29 @@ export function mountDisplayWithFogOverlay(display: ROT.Display, campaign: Campa
     console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
     return;
   }
+
   const canvasElement = display.getContainer() as HTMLCanvasElement | null;
-  if (canvasElement) {
-    container.appendChild(canvasElement);
-    syncFogOverlayCanvas(campaign);
+  if (!canvasElement) return;
+
+  // ROT.Display.setOptions({ layout }) allocates a fresh canvas element. Remove any
+  // previously mounted display canvas so we never keep drawing into a detached node
+  // (which leaves the visible viewport permanently blank). The fog overlay is kept.
+  for (const existing of Array.from(container.querySelectorAll('canvas'))) {
+    if (existing !== canvasElement && existing.id !== 'fog-overlay') {
+      existing.remove();
+    }
   }
+
+  if (canvasElement.parentElement !== container) {
+    const fogCanvas = document.getElementById('fog-overlay');
+    if (fogCanvas && fogCanvas.parentElement === container) {
+      container.insertBefore(canvasElement, fogCanvas);
+    } else {
+      container.appendChild(canvasElement);
+    }
+  }
+
+  syncFogOverlayCanvas(campaign);
 }
 
 /**

@@ -1,5 +1,6 @@
 {
   "health_potion": {
+    "spriteId": "item_red_potion",
     "id": "health_potion",
     "name": "Health Potion",
     "unidentifiedName": "Potion",
@@ -15,6 +16,7 @@
     }
   },
   "scroll_of_lightning": {
+    "spriteId": "item_scroll",
     "id": "scroll_of_lightning",
     "name": "Scroll of Lightning",
     "unidentifiedName": "Scroll",
@@ -30,6 +32,7 @@
     }
   },
   "potion_haste": {
+    "spriteId": "item_green_potion",
     "id": "potion_haste",
     "name": "Potion of Haste",
     "unidentifiedName": "Potion",
@@ -45,6 +48,7 @@
     }
   },
   "scroll_confusion": {
+    "spriteId": "item_scroll_2",
     "id": "scroll_confusion",
     "name": "Scroll of Confusion",
     "unidentifiedName": "Scroll",
@@ -60,6 +64,7 @@
     }
   },
   "scroll_fireball": {
+    "spriteId": "item_scroll",
     "id": "scroll_fireball",
     "name": "Scroll of Fireball",
     "unidentifiedName": "Scroll",
@@ -75,6 +80,7 @@
     }
   },
   "scroll_identify": {
+    "spriteId": "item_scroll_2",
     "id": "scroll_identify",
     "name": "Scroll of Identify",
     "unidentifiedName": "Scroll",
@@ -90,6 +96,7 @@
     }
   },
   "food_ration": {
+    "spriteId": "item_bread",
     "id": "food_ration",
     "name": "Food Ration",
     "unidentifiedName": "Ration",
@@ -105,6 +112,7 @@
     }
   },
   "apple": {
+    "spriteId": "item_apple",
     "id": "apple",
     "name": "Apple",
     "unidentifiedName": "Fruit",
@@ -120,6 +128,7 @@
     }
   },
   "short_sword": {
+    "spriteId": "item_short_sword",
     "id": "short_sword",
     "name": "Short Sword",
     "unidentifiedName": "Short Sword",
@@ -138,6 +147,7 @@
     }
   },
   "leather_armor": {
+    "spriteId": "item_leather_armor",
     "id": "leather_armor",
     "name": "Leather Armor",
     "unidentifiedName": "Leather Armor",
@@ -156,6 +166,7 @@
     }
   },
   "backpack": {
+    "spriteId": "tile_chest_closed",
     "id": "backpack",
     "name": "Backpack",
     "unidentifiedName": "Backpack",
@@ -174,6 +185,7 @@
     }
   },
   "venom_dagger": {
+    "spriteId": "item_dagger",
     "id": "venom_dagger",
     "name": "Venom Dagger",
     "unidentifiedName": "Green-Tinged Dagger",
@@ -196,6 +208,7 @@
     }
   },
   "rock": {
+    "spriteId": "tile_large_rock_1",
     "id": "rock",
     "name": "Heavy Rock",
     "unidentifiedName": "Rock",
@@ -208,6 +221,7 @@
     "throwable": { "range": 4, "damage": 2 }
   },
   "throwing_knife": {
+    "spriteId": "item_kukri",
     "id": "throwing_knife",
     "name": "Throwing Knife",
     "unidentifiedName": "Small Blade",
@@ -220,6 +234,7 @@
     "throwable": { "range": 6, "damage": 3 }
   },
   "potion_of_fire": {
+    "spriteId": "item_orange_potion",
     "id": "potion_of_fire",
     "name": "Flask of Alchemist's Fire",
     "unidentifiedName": "Orange Flask",
@@ -233,6 +248,7 @@
     "throwable": { "range": 5, "destroyOnImpact": true }
   },
   "bronze_key": {
+    "spriteId": "item_metal_key",
     "id": "bronze_key",
     "name": "Bronze Key",
     "unidentifiedName": "Key",
@@ -245,6 +261,7 @@
     "tags": ["key:bronze"]
   },
   "lockpick": {
+    "spriteId": "item_primitive_key",
     "id": "lockpick",
     "name": "Lockpick",
     "unidentifiedName": "Tool",
@@ -257,6 +274,7 @@
     "tags": ["tool:lockpick"]
   },
   "wand_of_lightning": {
+    "spriteId": "item_blue_staff",
     "id": "wand_of_lightning",
     "name": "Wand of Lightning",
     "unidentifiedName": "Glass Wand",
@@ -275,6 +293,7 @@
     }
   },
   "wand_of_fire": {
+    "spriteId": "item_flame_staff",
     "id": "wand_of_fire",
     "name": "Wand of Fire",
     "unidentifiedName": "Ruby Wand",
@@ -293,6 +312,7 @@
     }
   },
   "wand_of_cold": {
+    "spriteId": "item_crystal_staff",
     "id": "wand_of_cold",
     "name": "Wand of Cold",
     "unidentifiedName": "Frosty Wand",
@@ -311,6 +331,7 @@
     }
   },
   "camp_sigil": {
+    "spriteId": "item_ankh",
     "id": "camp_sigil",
     "name": "Camp Sigil",
     "unidentifiedName": "Golden Medallion",
@@ -323,6 +344,7 @@
     "tags": ["sigil", "quest_item"]
   },
   "barkeeper_note": {
+    "spriteId": "item_page",
     "id": "barkeeper_note",
     "name": "Barkeeper's Bloody Note",
     "unidentifiedName": "Torn Paper",
@@ -335,6 +357,7 @@
     "tags": ["note", "quest_item"]
   },
   "scholar_journal": {
+    "spriteId": "item_red_book",
     "id": "scholar_journal",
     "name": "Scholar's Lost Journal",
     "unidentifiedName": "Dusty Journal",
@@ -347,6 +370,7 @@
     "tags": ["journal", "quest_item"]
   },
   "bones": {
+    "spriteId": "tile_bone_1",
     "id": "bones",
     "name": "Monster Remains",
     "unidentifiedName": "Bones",

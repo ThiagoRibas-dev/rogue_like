@@ -1,5 +1,6 @@
 {
   "stone_floor": {
+    "spriteId": "tile_floor_stone_1",
     "walkable": true,
     "transparent": true,
     "glyph": ".",
@@ -8,6 +9,7 @@
     "tags": ["terrain"]
   },
   "stone_wall": {
+    "spriteId": "tile_rough_stone_wall_top",
     "walkable": false,
     "transparent": false,
     "glyph": "#",
@@ -16,6 +18,7 @@
     "tags": ["terrain", "solid"]
   },
   "stairs_up": {
+    "spriteId": "tile_staircase_up",
     "walkable": true,
     "transparent": true,
     "glyph": "<",
@@ -24,6 +27,7 @@
     "tags": ["terrain"]
   },
   "stairs_down": {
+    "spriteId": "tile_staircase_down",
     "walkable": true,
     "transparent": true,
     "glyph": ">",
@@ -32,6 +36,7 @@
     "tags": ["terrain"]
   },
   "empty_space": {
+    "spriteId": "tile_empty",
     "walkable": false,
     "transparent": false,
     "glyph": " ",
@@ -40,6 +45,7 @@
     "tags": ["terrain"]
   },
   "shallow_water": {
+    "spriteId": "tile_blue_stone_floor_1_blue_bg",
     "walkable": true,
     "transparent": true,
     "glyph": "~",

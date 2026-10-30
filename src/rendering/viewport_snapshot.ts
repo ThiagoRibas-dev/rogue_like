@@ -8,8 +8,12 @@ import {
   type IdentityComponent,
   type MemoryComponent,
   type NemesisComponent,
-  type ChronicleComponent
+  type ChronicleComponent,
+  type TemplateComponent,
+  type FieldComponent
 } from '../types/components.types.ts';
+import { getAvailableSpriteKeys } from './sprite_keys.ts';
+import { recordMissingSprite } from './render_debug.ts';
 import { type GameState, UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
@@ -23,7 +27,8 @@ import type {
   InspectTooltipDTO,
   InspectSectionDTO,
   FogOverlayDTO,
-  FogOverlayCellDTO
+  FogOverlayCellDTO,
+  GlyphOverlayDTO
 } from './viewport_snapshot.types.ts';
 
 /**
@@ -40,9 +45,11 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
   const isSpriteMode = Boolean(
     state.campaign.theme.spriteSheets && Object.keys(state.campaign.theme.spriteSheets).length > 0
   );
+  const availableSpriteKeys = isSpriteMode ? getAvailableSpriteKeys(state.campaign) : undefined;
 
   const cells: ViewportCellDTO[] = [];
   const fogCells: FogOverlayCellDTO[] = [];
+  const glyphOverlays: GlyphOverlayDTO[] = [];
 
   for (let vy = 0; vy < viewportH; vy++) {
     for (let vx = 0; vx < viewportW; vx++) {
@@ -78,6 +85,16 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
             fg = fgColor;
             bg = tileDef.bg;
             spriteId = tileDef.spriteId;
+
+            if (availableSpriteKeys !== undefined) {
+              if (spriteId === undefined) {
+                recordMissingSprite(`tile:${tile.tileId} (no-spriteId)`);
+                glyphOverlays.push({ vx, vy, glyph: tileDef.glyph, fg: fgColor, bg: tileDef.bg });
+              } else if (!availableSpriteKeys.has(spriteId)) {
+                recordMissingSprite(`tile:${tile.tileId} (unresolved: ${spriteId})`);
+                glyphOverlays.push({ vx, vy, glyph: tileDef.glyph, fg: fgColor, bg: tileDef.bg });
+              }
+            }
           }
         }
 
@@ -103,6 +120,26 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
               if (renderable) {
                 const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
                 const entityFg = identity?.colorOverride ?? renderable.fg;
+
+                if (availableSpriteKeys !== undefined) {
+                  const template = getComponent(state, entityId, ComponentType.Template) as
+                    | TemplateComponent
+                    | undefined;
+                  const field = getComponent(state, entityId, ComponentType.Field) as FieldComponent | undefined;
+                  const label = template
+                    ? `entity:${template.templateId}`
+                    : field
+                      ? `field:${field.fieldType}`
+                      : `entity#${entityId}`;
+                  if (renderable.spriteId === undefined) {
+                    recordMissingSprite(`${label} (no-spriteId)`);
+                    glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                  } else if (!availableSpriteKeys.has(renderable.spriteId)) {
+                    recordMissingSprite(`${label} (unresolved: ${renderable.spriteId})`);
+                    glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                  }
+                }
+
                 entitiesAtTile.push({
                   glyph: renderable.glyph,
                   fg: entityFg,
@@ -128,6 +165,10 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
         highlight = { glyph: 'X', fg: '#000000', bg: '#ffff00' };
       } else if (state.inspectMode?.active && state.inspectMode.x === mapX && state.inspectMode.y === mapY) {
         highlight = { glyph: 'X', fg: '#000000', bg: '#00ffff' };
+      }
+
+      if (isSpriteMode && highlight !== undefined) {
+        glyphOverlays.push({ vx, vy, glyph: highlight.glyph, fg: highlight.fg, bg: highlight.bg });
       }
 
       cells.push({
@@ -180,7 +221,8 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
     cells,
     visualEffects,
     inspectTooltip,
-    fogOverlay
+    fogOverlay,
+    glyphOverlays
   };
 }
 

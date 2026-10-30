@@ -82,6 +82,18 @@ export interface FogOverlayCellDTO {
 }
 
 /**
+ * A cell whose art has no sprite in the campaign's sheets and must be drawn as
+ * its ASCII glyph on the overlay canvas instead of the placeholder sprite.
+ */
+export interface GlyphOverlayDTO {
+  readonly vx: number;
+  readonly vy: number;
+  readonly glyph: string;
+  readonly fg: string;
+  readonly bg: string;
+}
+
+/**
  * Presentational DTO for the 2D fog-of-war canvas overlay.
  */
 export interface FogOverlayDTO {
@@ -107,6 +119,8 @@ export interface ViewportSnapshot {
   readonly visualEffects: ReadonlyArray<VisualEffectDTO>;
   readonly inspectTooltip: InspectTooltipDTO;
   readonly fogOverlay: FogOverlayDTO;
+  /** ASCII-glyph fallbacks for cells whose art has no resolvable sprite. */
+  readonly glyphOverlays: ReadonlyArray<GlyphOverlayDTO>;
 }
 
 /**

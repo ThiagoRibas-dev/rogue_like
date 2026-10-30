@@ -28,6 +28,7 @@ import {
 } from '../rendering/ui.ts';
 import { consumeDirtyDomains, markAllDomainsDirty, markDomainDirty, PresentationDomain } from './presentation_queue.ts';
 import { renderPresenterFrame, invalidateViewportSnapshot } from '../rendering/presenter.ts';
+import { recordEarlyReturn, recordPresenterFrame } from '../rendering/render_debug.ts';
 import { flushPendingSave } from './persistence_service.ts';
 import { syncDisplayLayout, configureDisplayForCampaign, syncFogOverlayCanvas } from '../rendering/display.ts';
 import {
@@ -561,7 +562,12 @@ export function startGlobalPresenterLoop(display: ROT.Display, globalCampaignEdi
     }
 
     const dirtyDomains = consumeDirtyDomains();
-    if (dirtyDomains.size === 0) return;
+    recordPresenterFrame(dirtyDomains, currentState.uiMode);
+    if (dirtyDomains.size === 0) {
+      // Idle frames fire every animation frame; count them, never log them.
+      recordEarlyReturn('loop-idle', true);
+      return;
+    }
 
     const renderTime0 = performance.now();
     renderPresenterFrame(display, currentState, globalCampaignEditor, dirtyDomains);
