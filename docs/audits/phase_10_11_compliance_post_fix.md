@@ -173,4 +173,40 @@ Otherwise: `systems/` imports from `rendering` = **ZERO** ✅; `map/` imports fr
 | N-4 | (Optional) Add subfolder-qualified paths in M70/M74 items (F-7). | `docs/MILESTONES.md` |
 | N-5 | (Optional) Queue `generator_stages.ts` / `viewport_snapshot.ts` / `session_controller.ts` decomposition (F-8). | future milestone |
 
+---
+
+## 9. Addendum — Campaign-File Audit (Oct 30, 2026)
+
+The main audit evaluated the Phase 10/11 milestone records and source code; campaign JSON data was only exercised indirectly via `bun run validate:campaigns`. This addendum records the follow-up content review of `public/data/campaigns/{default,megacampaign,shroudgarde}` and the generated `ai-prompt-kit/` mirror.
+
+### 9.1 Findings
+
+| ID | Finding | Severity | Disposition |
+|---|---|---|---|
+| C-1 | Status definitions correct: `detrimental` present on all 16 definitions (`default` 5, `megacampaign` 5, `shroudgarde` 6 incl. `regeneration: false`). The M75 "16 campaign definitions + 5 ai-prompt-kit mirrors" claim is **accurate** (the 5 mirrors are the 5 status definitions in the kit's single `status.json`). | — | Verified, no change |
+| C-2 | **`shroudgarde/schemes.json` had the wrong shape.** It carried runtime-phase data (`phases`, `requiredAgreements`, `missionIntents`) while `SchemeRecipeSchema` expects `{id, villainArchetypeId, phaseLength, phaseTags?}`. The loader maps `schemes.json` → `campaign.schemeRecipes`, so at runtime `phaseLength` silently defaulted to 3, `phaseTags` was undefined (no phase-block tag filtering), and the authored `phases` array was stripped by Zod. The correct recipe shape existed only in `scheme_recipes.json`, which the loader never reads. | **High** (silent gameplay behavior change) | Fixed: `schemes.json` converted to recipe shape; `scheme_recipes.json` removed |
+| C-3 | **Validator coverage gap.** `run-validator.ts` resolved the `schemeRecipes` category to `scheme_recipes.json`, while the runtime loader fetches `schemes.json`. For `default`/`megacampaign` that file does not exist, so the fallback `{}` was validated and `schemes.json` was never checked — which is how C-2 survived. | **High** (validation blind spot) | Fixed: shared `CATEGORY_FILE_OVERRIDES` (`schemeRecipes → schemes.json`) in `run-validator.ts` and the kit generator |
+| C-4 | **`ai-prompt-kit/` was stale.** The gitignored generated mirror predated M35.5 (`theme.json` missing `spriteSheets`) and M74 (`schemes.json`/`world_events.json` never mirrored); `status.json` had been hand-patched for M75 instead of regenerating. | Moderate | Fixed: generator now mirrors `schemes.json`; kit regenerated |
+| C-5 | **No M74/M75/M76 campaign-data changes required.** Auto-pause lives in `UserSettings`, `detrimental` is authored, and M76 is editor-only — the AGENTS.md §5 default-campaign showcase requirement is not triggered. | — | Verified, no change |
+
+### 9.2 New guard — `ai-prompt-kit` parity check
+
+`scripts/run-validator.ts` now verifies the generated mirror in the same run as campaign validation:
+
+- Compares every expected mirror file (category files + `keybinds.json`) against `public/data/campaigns/default/` using order-independent JSON equality.
+- **Errors** (non-zero exit) on a missing or stale mirror file; files whose campaign source is optional and unauthored (e.g. `world_events.json`) are skipped.
+- Skips gracefully with an informational message when `ai-prompt-kit/` is absent (fresh clone/CI).
+- Warnings for kit files outside the generated set.
+
+### 9.3 Verification
+
+| Check | Result |
+|---|---|
+| `bun run validate:campaigns` (3 campaigns + 34-file parity) | ✅ 0 errors, 0 warnings |
+| Pre-fix parity run (before regeneration) | ❌ 3 errors detected — `theme.json` stale, `schemes.json` and `world_events.json` missing (check proven to catch drift) |
+| `bun run lint:scripts` | ✅ `run-validator.ts` and `generate-ai-prompt-kit.ts` clean (62 pre-existing errors remain in unrelated `scripts/data_importers/*` and `generate_sprite_mappings.ts`) |
+| `verify.sh` | ✅ All checks passed |
+
+**Post-fix campaign verdict:** campaign data is schema-valid **and** now validated against the same file map the runtime uses, with the generated prompt kit guarded against future drift.
+
 *This document is an audit record. No files were modified during this audit; remediation N-1 … N-5 await user authorization.*

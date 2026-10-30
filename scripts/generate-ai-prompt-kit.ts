@@ -35,6 +35,20 @@ const OUT_DIR = process.argv[2] === '--out-dir' && process.argv[3]
     ? join(ROOT, process.argv[3])
     : join(ROOT, 'ai-prompt-kit');
 
+/**
+ * Category keys whose campaign JSON filename diverges from snake_case.
+ * Must stay in sync with `CATEGORY_FILE_OVERRIDES` in scripts/run-validator.ts
+ * and with the runtime loader (src/core/loader.ts), which fetches schemes.json.
+ */
+const CATEGORY_FILE_OVERRIDES: Record<string, string> = {
+    schemeRecipes: 'schemes.json',
+};
+
+/** Resolves the on-disk campaign JSON filename for a category key. */
+function resolveCategoryFilename(key: string): string {
+    return CATEGORY_FILE_OVERRIDES[key] ?? `${key.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`)}.json`;
+}
+
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
@@ -754,7 +768,7 @@ function main() {
     // --- Heuristic Synchronization Check ---
     const expectedXrefFiles = categoryKeys
         .filter(k => k !== 'triggerBuckets') // Runtime generated
-        .map(k => k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`) + '.json');
+        .map(k => resolveCategoryFilename(k));
         
     const missingDocs = expectedXrefFiles.filter(file => !xrefMd.includes(`\`${file}\``));
     
@@ -834,7 +848,7 @@ function main() {
         // Read and write each file individually (more portable than cpSync -r)
         const defaultFiles = categoryKeys
             .filter(k => k !== 'triggerBuckets')
-            .map(k => k.replace(/[A-Z]/g, l => `_${l.toLowerCase()}`) + '.json');
+            .map(k => resolveCategoryFilename(k));
         defaultFiles.push('keybinds.json'); // Editor specific
 
         mkdirSync(defaultOut, { recursive: true });

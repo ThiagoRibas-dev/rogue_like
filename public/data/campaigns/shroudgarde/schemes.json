@@ -2,20 +2,7 @@
   "grand_slumber": {
     "id": "grand_slumber",
     "villainArchetypeId": "cult_leader",
-    "phases": [
-      {
-        "requiredAgreements": 1,
-        "missionIntents": [
-          "subvert_mind"
-        ]
-      },
-      {
-        "requiredAgreements": 2,
-        "missionIntents": [
-          "drain_will",
-          "steal_sacred_chalice"
-        ]
-      }
-    ]
+    "phaseLength": 2,
+    "phaseTags": ["cultist"]
   }
 }

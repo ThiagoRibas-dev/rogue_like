@@ -23,7 +23,7 @@ import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { CampaignData } from '../src/types/campaign.types.ts';
 import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
-import type { ValidationError, ValidationReport } from '../src/editor/validator/validator.types.ts';
+import type { ValidationError } from '../src/editor/validator/validator.types.ts';
 import { validateCampaign } from '../src/editor/campaign_validator.ts';
 
 // ──────────────────────────────────────────────
@@ -36,6 +36,20 @@ function toSnakeCase(str: string): string {
 
 function isCampaignDir(dirPath: string): boolean {
   return existsSync(join(dirPath, 'manifest.json'));
+}
+
+/**
+ * Category keys whose on-disk JSON filename diverges from the snake_case
+ * convention. `schemeRecipes` is persisted as `schemes.json` — the filename
+ * the runtime loader fetches (`src/core/loader.ts`) — not `scheme_recipes.json`.
+ */
+const CATEGORY_FILE_OVERRIDES: Partial<Record<keyof CampaignData, string>> = {
+  schemeRecipes: 'schemes.json'
+};
+
+/** Resolves the on-disk campaign JSON filename for a category key. */
+function resolveCategoryFilename(key: keyof CampaignData): string {
+  return CATEGORY_FILE_OVERRIDES[key] ?? `${toSnakeCase(key)}.json`;
 }
 
 // ──────────────────────────────────────────────
@@ -75,7 +89,6 @@ if (campaignDirIdx !== -1 && campaignDirIdx + 1 < args.length) {
 }
 
 const useJsonOutput = args.includes('--json');
-const validateAll = args.includes('--all') || (campaignDir === null && !useJsonOutput);
 
 // ──────────────────────────────────────────────
 // Path setup
@@ -110,6 +123,93 @@ function getFallbackForFile(key: keyof CampaignData): unknown {
     return { player: { player: 'friendly' } };
   }
   return {};
+}
+
+// ──────────────────────────────────────────────
+// ai-prompt-kit parity (generated mirror of the default campaign)
+// ──────────────────────────────────────────────
+
+const DEFAULT_CAMPAIGN_ROOT = join(CAMPAIGNS_ROOT, 'default');
+const AI_KIT_DEFAULT_CAMPAIGN = join(PROJECT_ROOT, 'ai-prompt-kit', 'default-campaign');
+
+interface ParityResult {
+  checked: number;
+  errors: string[];
+  warnings: string[];
+}
+
+/** Order-independent JSON stringification for semantic mirror comparison. */
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(v => stableStringify(v)).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+      .sort((a, b) => a.localeCompare(b))
+      .map(k => `${JSON.stringify(k)}:${stableStringify(record[k])}`);
+    return `{${entries.join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'null';
+}
+
+/**
+ * Verifies that the generated ai-prompt-kit mirror matches the default campaign.
+ *
+ * The kit is a gitignored generated artifact (`bun scripts/generate-ai-prompt-kit.ts`).
+ * When it is present, every mirrored campaign JSON must be byte-equivalent at the
+ * JSON value level; stale mirrors (e.g. a hand-patched status.json or a theme.json
+ * generated before a schema addition) are reported as errors so drift cannot hide.
+ * When the kit is absent (fresh clone / CI), the check is skipped with a warning.
+ *
+ * @returns Comparison counts, blocking errors, and informational warnings.
+ */
+function validateAiPromptKitParity(): ParityResult {
+  const result: ParityResult = { checked: 0, errors: [], warnings: [] };
+
+  if (!existsSync(AI_KIT_DEFAULT_CAMPAIGN)) {
+    result.warnings.push('ai-prompt-kit/ not found — parity check skipped (run `bun scripts/generate-ai-prompt-kit.ts` to generate it).');
+    return result;
+  }
+
+  const expectedFiles = (Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[])
+    .filter(key => key !== 'triggerBuckets')
+    .map(key => resolveCategoryFilename(key));
+  expectedFiles.push('keybinds.json');
+
+  for (const file of expectedFiles) {
+    const campaignPath = join(DEFAULT_CAMPAIGN_ROOT, file);
+    if (!existsSync(campaignPath)) {
+      // Category is optional and unauthored in the default campaign (e.g. world_events.json).
+      continue;
+    }
+
+    const kitPath = join(AI_KIT_DEFAULT_CAMPAIGN, file);
+    if (!existsSync(kitPath)) {
+      result.errors.push(`ai-prompt-kit/default-campaign/${file} is missing from the generated mirror`);
+      continue;
+    }
+
+    result.checked++;
+    try {
+      const campaignJson = JSON.parse(readFileSync(campaignPath, 'utf-8'));
+      const kitJson = JSON.parse(readFileSync(kitPath, 'utf-8'));
+      if (stableStringify(campaignJson) !== stableStringify(kitJson)) {
+        result.errors.push(
+          `ai-prompt-kit/default-campaign/${file} is stale (differs from public/data/campaigns/default/${file}); regenerate with \`bun scripts/generate-ai-prompt-kit.ts\``
+        );
+      }
+    } catch (err) {
+      result.errors.push(`Failed to parse ${file} during parity check: ${(err as Error).message}`);
+    }
+  }
+
+  const expectedSet = new Set(expectedFiles);
+  for (const entry of readdirSync(AI_KIT_DEFAULT_CAMPAIGN)) {
+    if (entry.endsWith('.json') && !expectedSet.has(entry)) {
+      result.warnings.push(`ai-prompt-kit/default-campaign/${entry} is not part of the generated mirror set`);
+    }
+  }
+
+  return result;
 }
 
 // ──────────────────────────────────────────────
@@ -157,7 +257,7 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
   for (const key of keys) {
     if (key === 'triggerBuckets') continue;
 
-    const filename = `${toSnakeCase(key)}.json`;
+    const filename = resolveCategoryFilename(key);
     const filePath = join(dir, filename);
 
     if (!existsSync(filePath)) {
@@ -220,8 +320,8 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
 
   // Deep cross-reference validation
   console.log('   Running deep cross-reference validation...');
-  let crossErrors: ValidationError[] = [];
-  let crossWarnings: ValidationError[] = [];
+  let crossErrors: ReadonlyArray<ValidationError> = [];
+  let crossWarnings: ReadonlyArray<ValidationError> = [];
   try {
     const report = await validateCampaign(campaign);
     crossErrors = report.errors;
@@ -284,6 +384,11 @@ async function main() {
   console.log('        Campaign Validator');
   console.log('═══════════════════════════════════════════');
 
+  if (useJsonOutput && !campaignDir) {
+    console.error('❌ --json requires --campaign-dir (single campaign mode).');
+    process.exit(1);
+  }
+
   if (campaignDir) {
     // ── Single-campaign mode ──
     console.log(`Mode: Single campaign`);
@@ -326,12 +431,29 @@ async function main() {
       results.push(result);
     }
 
+    // ai-prompt-kit parity (generated artifact mirror of the default campaign)
+    console.log('');
+    console.log('─── ai-prompt-kit parity ───');
+    const parity = validateAiPromptKitParity();
+    let parityErrors = 0;
+    if (parity.checked === 0 && parity.errors.length === 0) {
+      for (const warn of parity.warnings) console.log(`  ℹ ${warn}`);
+    } else {
+      console.log(`  🔍 Compared ${parity.checked} mirrored file(s)`);
+      for (const err of parity.errors) console.error(`  ❌ ${err}`);
+      for (const warn of parity.warnings) console.log(`  ⚠ ${warn}`);
+      if (parity.errors.length === 0) {
+        console.log('  ✅ ai-prompt-kit mirror matches default campaign');
+      }
+      parityErrors = parity.errors.length;
+    }
+
     // Summary
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('              SUMMARY');
     console.log('═══════════════════════════════════════════');
-    let totalErrors = 0;
+    let totalErrors = parityErrors;
     let totalWarnings = 0;
     for (const r of results) {
       const errCount = r.zodErrors + r.crossErrors;
@@ -339,6 +461,9 @@ async function main() {
       console.log(`  ${status} ${r.campaignName} (${r.campaignId}): ${errCount} error(s), ${r.warnings} warning(s)`);
       totalErrors += errCount;
       totalWarnings += r.warnings;
+    }
+    if (parityErrors > 0) {
+      console.log(`  ❌ ai-prompt-kit: ${parityErrors} parity error(s)`);
     }
     console.log('');
     console.log(`Total: ${results.length} campaign(s), ${totalErrors} error(s), ${totalWarnings} warning(s)`);
