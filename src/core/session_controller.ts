@@ -3,7 +3,7 @@ import type { CampaignData } from '../types/campaign.types.ts';
 import { type GameState, type EntityId, UIMode, EngineMode } from '../types/game-state.types.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from './ecs.ts';
-import { DEFAULT_ZOOM_LEVEL } from '../constants/display.constants.ts';
+import { DEFAULT_ZOOM_LEVEL, RESIZE_DEBOUNCE_MS } from '../constants/display.constants.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
 import { loadCampaignRegistry } from './loader.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
@@ -578,6 +578,23 @@ export function startGlobalPresenterLoop(display: ROT.Display, globalCampaignEdi
 }
 
 /**
+ * Re-synchronises the display layout, fog overlay and canvas after the viewport
+ * size changes, forcing a full redraw (dirty-cell diffing would otherwise skip
+ * cells because the snapshot dimensions changed).
+ *
+ * Exported so regression tests can exercise it without a real window resize.
+ *
+ * @param display The ROT.Display instance.
+ * @param state The current GameState (supplies theme + zoom + campaign).
+ */
+export function applyViewportResize(display: ROT.Display, state: GameState): void {
+  syncDisplayLayout(display, state);
+  syncFogOverlayCanvas(state.campaign);
+  invalidateViewportSnapshot();
+  markAllDomainsDirty();
+}
+
+/**
  * Initializes the full presentation and session lifecycle.
  */
 export function initSession(display: ROT.Display, globalCampaignEditor: CampaignEditor, initialState: GameState): void {
@@ -590,6 +607,15 @@ export function initSession(display: ROT.Display, globalCampaignEditor: Campaign
   // Hook window beforeunload to flush pending saves
   window.addEventListener('beforeunload', () => {
     flushPendingSave();
+  });
+
+  // Re-layout and fully redraw after a viewport resize (debounced).
+  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+  window.addEventListener('resize', () => {
+    if (resizeTimer !== undefined) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      applyViewportResize(display, getGameState());
+    }, RESIZE_DEBOUNCE_MS);
   });
 
   // Initialize HUD and pass initial state to loop

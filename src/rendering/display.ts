@@ -217,7 +217,14 @@ export function drawCell(
     recordDrawCommand(x, y, String(chars[0] ?? ''), true);
   } else {
     const top = entities.length > 0 ? (entities[entities.length - 1] ?? baseTile) : baseTile;
-    display.draw(x, y, top.glyph, top.fg, top.bg);
+
+    // 'transparent' is a valid CSS colour (rgba(0,0,0,0)), so ROT's rect backend
+    // would clear the cell with an invisible rect and leave the previous glyph
+    // underneath. Resolve an opaque background so dirty-cell redraws actually clear.
+    const candidateBg = top.bg && top.bg !== 'transparent' ? top.bg : baseTile.bg;
+    const bg = candidateBg && candidateBg !== 'transparent' ? candidateBg : '#000000';
+
+    display.draw(x, y, top.glyph, top.fg, bg);
     recordDrawCommand(x, y, top.glyph, false);
   }
 }

@@ -3,6 +3,7 @@ import { loadCampaignFromDisk, buildGameState, makeRecordingDisplay } from './he
 import { updateExploredTiles } from '../src/systems/map.system.ts';
 import { buildViewportSnapshot } from '../src/rendering/viewport_snapshot.ts';
 import { render } from '../src/rendering/renderer.ts';
+import { drawCell } from '../src/rendering/display.ts';
 import type { ViewportSnapshot } from '../src/rendering/viewport_snapshot.types.ts';
 
 function buildSnap(): { snap: ViewportSnapshot; width: number; height: number } {
@@ -54,4 +55,46 @@ test('sprite-mode highlight does not fabricate a sprite key for the glyph', () =
 
   const chars = draws.flatMap((d) => (Array.isArray(d.chars) ? (d.chars as unknown[]) : [d.chars]));
   expect(chars.map(String)).not.toContain('X');
+});
+
+test('ASCII drawCell never clears with a transparent background', () => {
+  const calls: Array<{ bg: unknown }> = [];
+  const display = {
+    draw: (_x: number, _y: number, _ch: unknown, _fg: unknown, bg: unknown) => {
+      calls.push({ bg });
+    }
+  };
+
+  drawCell(
+    display as never,
+    1,
+    1,
+    false,
+    { glyph: '.', fg: '#ffffff', bg: '#000000' },
+    [{ glyph: '@', fg: '#ffffff', bg: 'transparent' }]
+  );
+
+  expect(calls.length).toBe(1);
+  expect(calls[0]?.bg).not.toBe('transparent');
+  expect(calls[0]?.bg).toBe('#000000');
+});
+
+test('ASCII drawCell falls back to an opaque colour when both bgs are transparent', () => {
+  const calls: Array<{ bg: unknown }> = [];
+  const display = {
+    draw: (_x: number, _y: number, _ch: unknown, _fg: unknown, bg: unknown) => {
+      calls.push({ bg });
+    }
+  };
+
+  drawCell(
+    display as never,
+    1,
+    1,
+    false,
+    { glyph: '.', fg: '#ffffff', bg: 'transparent' },
+    [{ glyph: '@', fg: '#ffffff', bg: 'transparent' }]
+  );
+
+  expect(calls[0]?.bg).toBe('#000000');
 });
