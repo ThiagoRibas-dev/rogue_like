@@ -230,13 +230,7 @@ export async function startNewGame(
     initializeCampaignWorldEntities(state.campaign, state.nextEntityId || 1);
 
   const initialAreaId = spawnOverride?.areaId ?? state.campaign.rules.map.startingAreaId;
-  const {
-    map: initialMap,
-    startPos,
-    portals,
-    rooms,
-    placedEntities
-  } = generateArea(state.campaign, initialAreaId);
+  const { map: initialMap, startPos, portals, rooms, placedEntities } = generateArea(state.campaign, initialAreaId);
 
   state = {
     ...state,

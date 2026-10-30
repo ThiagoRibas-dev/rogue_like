@@ -24,10 +24,7 @@ export interface PlaytestMenuProps {
  * @param container — The menu container (usually a `<div>` appended to `document.body`
  * @param props — Tile coordinates, area ID, walkability, and spawn callback
  */
-export function renderPlaytestMenu(
-  container: HTMLElement,
-  props: PlaytestMenuProps
-): void {
+export function renderPlaytestMenu(container: HTMLElement, props: PlaytestMenuProps): void {
   container.replaceChildren();
 
   const header = document.createElement('div');

@@ -66,10 +66,7 @@ export interface WorkerErrorMessage {
 }
 
 /** Discriminated union of all worker responses. */
-export type WorkerResponse<T> =
-  | WorkerProgressMessage
-  | WorkerSuccessMessage<T>
-  | WorkerErrorMessage;
+export type WorkerResponse<T> = WorkerProgressMessage | WorkerSuccessMessage<T> | WorkerErrorMessage;
 
 /** Specific response type for map generation workers. */
 export type MapWorkerResponse = WorkerResponse<GeneratedArea>;

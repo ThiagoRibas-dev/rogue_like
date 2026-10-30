@@ -102,7 +102,12 @@ export function renderSettingsMenu(state?: GameState): void {
 
 /** Metadata for one boolean auto-pause toggle row. */
 interface AutoPauseToggleSpec {
-  readonly key: 'pauseOnEnemySpotted' | 'pauseOnNemesisSpotted' | 'pauseOnLowHealth' | 'pauseOnDetrimentalStatus' | 'pauseOnNarrative';
+  readonly key:
+    | 'pauseOnEnemySpotted'
+    | 'pauseOnNemesisSpotted'
+    | 'pauseOnLowHealth'
+    | 'pauseOnDetrimentalStatus'
+    | 'pauseOnNarrative';
   readonly label: string;
 }
 

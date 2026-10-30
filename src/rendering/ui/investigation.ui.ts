@@ -73,11 +73,7 @@ export function renderInvestigationBoard(state: GameState): void {
  * @param list The suspects container.
  * @param filter The active filter definition.
  */
-function renderSuspectsPane(
-  state: GameState,
-  list: HTMLElement,
-  filter: InvestigationFilterDefinition
-): void {
+function renderSuspectsPane(state: GameState, list: HTMLElement, filter: InvestigationFilterDefinition): void {
   const actorIds = state.investigation.knownActors;
   if (actorIds.length === 0) {
     list.appendChild(buildEmptyState(INVESTIGATION_EMPTY_SUSPECTS));
@@ -124,9 +120,7 @@ function renderCluesPane(state: GameState, list: HTMLElement, filter: Investigat
     return;
   }
 
-  const visibleClues = clues.filter(
-    (clue) => !filter.filtersClues || matchesKnowledgeFilter(clue.item, filter)
-  );
+  const visibleClues = clues.filter((clue) => !filter.filtersClues || matchesKnowledgeFilter(clue.item, filter));
   if (visibleClues.length === 0) {
     list.appendChild(buildEmptyState(INVESTIGATION_EMPTY_CLUES_FILTERED));
     return;
@@ -176,11 +170,7 @@ function collectDiscoveredClues(state: GameState): ReadonlyArray<DiscoveredClue>
  * @param filter The active filter definition.
  * @returns True when the suspect should be displayed.
  */
-function matchesSuspectFilter(
-  state: GameState,
-  actorId: EntityId,
-  filter: InvestigationFilterDefinition
-): boolean {
+function matchesSuspectFilter(state: GameState, actorId: EntityId, filter: InvestigationFilterDefinition): boolean {
   if (!filter.filtersSuspects) return true;
 
   // `All` is the only chip that filters trivia without a component predicate.

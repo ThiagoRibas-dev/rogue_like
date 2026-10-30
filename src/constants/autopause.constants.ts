@@ -10,12 +10,7 @@
  * Reason a run-time automatic pause was triggered.
  * Used both as the evaluator's return discriminator and as a stable label key.
  */
-export type AutoPauseReason =
-  | 'enemy_spotted'
-  | 'nemesis_spotted'
-  | 'low_health'
-  | 'detrimental_status'
-  | 'narrative';
+export type AutoPauseReason = 'enemy_spotted' | 'nemesis_spotted' | 'low_health' | 'detrimental_status' | 'narrative';
 
 /**
  * User-tunable auto-pause preferences for Real-Time with Pause mode.

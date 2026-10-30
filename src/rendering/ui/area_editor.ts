@@ -483,13 +483,16 @@ export function renderAreaEditor(
           y: mapY,
           walkable: isWalkable,
           onSelectPlaytest: (spawnAreaId: string, spawnX: number, spawnY: number) => {
-            sessionStorage.setItem('editor_playtest_spawn', JSON.stringify({ areaId: spawnAreaId, x: spawnX, y: spawnY }));
+            sessionStorage.setItem(
+              'editor_playtest_spawn',
+              JSON.stringify({ areaId: spawnAreaId, x: spawnX, y: spawnY })
+            );
             sessionStorage.setItem('editor_active_document', JSON.stringify(activeDoc));
             sessionStorage.setItem('editor_active_category', editorState.activeTabId || '');
             sessionStorage.setItem('editor_active_item', editorState.activeItemId || '');
             sessionStorage.setItem('editor_playtest', 'true');
             window.location.reload();
-          },
+          }
         });
 
         const closeMenu = (): void => {

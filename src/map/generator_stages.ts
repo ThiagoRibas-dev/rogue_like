@@ -155,7 +155,9 @@ export function carveRoomsAndPortals(
       }
     }
     if (floorCoords.length === 0) {
-      throw new Error(`${areaDef.generatorType === 'cellular' ? 'Cellular' : 'DLA'} generation failed: No floor tiles were created.`);
+      throw new Error(
+        `${areaDef.generatorType === 'cellular' ? 'Cellular' : 'DLA'} generation failed: No floor tiles were created.`
+      );
     }
     const startTile = ROT.RNG.getItem(floorCoords)!;
     startX = startTile.x;
@@ -183,7 +185,16 @@ export function carveRoomsAndPortals(
             let bestIndex = roomIndex;
             let bestScore = -Infinity;
             diggerRooms.forEach((r, idx) => {
-              const score = side === 'top' ? -r.getTop() : side === 'bottom' ? r.getBottom() : side === 'left' ? -r.getLeft() : side === 'right' ? r.getRight() : 0;
+              const score =
+                side === 'top'
+                  ? -r.getTop()
+                  : side === 'bottom'
+                    ? r.getBottom()
+                    : side === 'left'
+                      ? -r.getLeft()
+                      : side === 'right'
+                        ? r.getRight()
+                        : 0;
               const noisyScore = score + ROT.RNG.getUniform();
               if (noisyScore > bestScore) {
                 bestScore = noisyScore;
@@ -213,7 +224,16 @@ export function carveRoomsAndPortals(
                   const isBottom = wy === rBottom + 1 && wx >= rLeft && wx <= rRight;
                   const isLeft = wx === rLeft - 1 && wy >= rTop && wy <= rBottom;
                   const isRight = wx === rRight + 1 && wy >= rTop && wy <= rBottom;
-                  const matchesSide = side === 'any' ? (isTop || isBottom || isLeft || isRight) : side === 'top' ? isTop : side === 'bottom' ? isBottom : side === 'left' ? isLeft : isRight;
+                  const matchesSide =
+                    side === 'any'
+                      ? isTop || isBottom || isLeft || isRight
+                      : side === 'top'
+                        ? isTop
+                        : side === 'bottom'
+                          ? isBottom
+                          : side === 'left'
+                            ? isLeft
+                            : isRight;
                   if (matchesSide) candidates.push({ x: wx, y: wy });
                 }
               }
@@ -380,7 +400,10 @@ export function computeHotPathDijkstra(
   const radius =
     areaDef.hotPathRadius ??
     (areaDef.generatorType === 'cellular'
-      ? Math.max(MIN_CELLULAR_HOT_PATH_RADIUS, Math.floor(Math.min(width, height) / CELLULAR_HOT_PATH_RADIUS_DENOMINATOR))
+      ? Math.max(
+          MIN_CELLULAR_HOT_PATH_RADIUS,
+          Math.floor(Math.min(width, height) / CELLULAR_HOT_PATH_RADIUS_DENOMINATOR)
+        )
       : DEFAULT_HOT_PATH_RADIUS);
 
   for (const portal of portals) {

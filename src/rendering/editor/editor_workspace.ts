@@ -163,9 +163,21 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
       const activeItem = (doc[tab.id as keyof CampaignData] as Record<string, unknown>)[editorState.activeItemId];
       if (activeItem) {
         if (tab.id === 'dialogues') {
-          renderDialogueTreeEditor(controller, activeItem, `/${tab.id}/${editorState.activeItemId}`, formContainer, report?.errors);
+          renderDialogueTreeEditor(
+            controller,
+            activeItem,
+            `/${tab.id}/${editorState.activeItemId}`,
+            formContainer,
+            report?.errors
+          );
         } else if (tab.id === 'areas') {
-          renderAreaEditor(controller, activeItem, `/${tab.id}/${editorState.activeItemId}`, formContainer, report?.errors);
+          renderAreaEditor(
+            controller,
+            activeItem,
+            `/${tab.id}/${editorState.activeItemId}`,
+            formContainer,
+            report?.errors
+          );
         } else {
           renderFormForZodSchema(
             controller,

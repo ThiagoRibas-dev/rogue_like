@@ -42,7 +42,7 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
     const safeAreaId = String(areaId);
 
     // Placed entities
-    for (const placedObj of (area.placedEntities || [])) {
+    for (const placedObj of area.placedEntities || []) {
       const placed = placedObj as Record<string, unknown>;
       const indexVal = String(placed.index || '');
       const base = `/areas/${safeAreaId}/placedEntities/${indexVal}`;
@@ -54,12 +54,13 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
     }
 
     // Connections
-    for (const connObj of (area.connections || [])) {
+    for (const connObj of area.connections || []) {
       const conn = connObj as Record<string, unknown>;
       const indexValConn = String(conn.index || '');
       const connBase = `/areas/${safeAreaId}/connections/${indexValConn}`;
       const portalId = String((conn as Record<string, unknown>).portalTemplateId || '');
-      if (portalId) usages.push({ targetKind: 'entity', targetId: portalId, sourcePath: `${connBase}/portalTemplateId` });
+      if (portalId)
+        usages.push({ targetKind: 'entity', targetId: portalId, sourcePath: `${connBase}/portalTemplateId` });
     }
 
     // Procedural palette
@@ -67,8 +68,12 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
     for (const [key, val] of Object.entries(palette)) {
       const valStr = String(val || '');
       if (valStr) {
-        const kind = (key === 'floor' || key === 'wall' || key === 'door' || key === 'water') ? 'tile' : 'entity';
-        usages.push({ targetKind: kind, targetId: valStr, sourcePath: `/areas/${safeAreaId}/proceduralPalette/${key}` });
+        const kind = key === 'floor' || key === 'wall' || key === 'door' || key === 'water' ? 'tile' : 'entity';
+        usages.push({
+          targetKind: kind,
+          targetId: valStr,
+          sourcePath: `/areas/${safeAreaId}/proceduralPalette/${key}`
+        });
       }
     }
 
@@ -76,18 +81,29 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
     const legend = area.staticMap?.legend || {};
     for (const [key, val] of Object.entries(legend)) {
       const valStr = String(val || '');
-      if (valStr) usages.push({ targetKind: 'tile', targetId: valStr, sourcePath: `/areas/${safeAreaId}/staticMap/legend/${key}` });
+      if (valStr)
+        usages.push({
+          targetKind: 'tile',
+          targetId: valStr,
+          sourcePath: `/areas/${safeAreaId}/staticMap/legend/${key}`
+        });
     }
 
     // Encounter profile
     const profileId = String(area.encounterProfileId || '');
-    if (profileId) usages.push({ targetKind: 'encounterProfile', targetId: profileId, sourcePath: `/areas/${safeAreaId}/encounterProfileId` });
+    if (profileId)
+      usages.push({
+        targetKind: 'encounterProfile',
+        targetId: profileId,
+        sourcePath: `/areas/${safeAreaId}/encounterProfileId`
+      });
   }
 
   // Entities (Record<string, EntityTemplateSchema>) -> dialogues
   for (const [entityId, entity] of Object.entries(data.entities || {})) {
     const dialogueId = String((entity as Record<string, unknown>).dialogueId || '');
-    if (dialogueId) usages.push({ targetKind: 'dialogue', targetId: dialogueId, sourcePath: `/entities/${entityId}/dialogueId` });
+    if (dialogueId)
+      usages.push({ targetKind: 'dialogue', targetId: dialogueId, sourcePath: `/entities/${entityId}/dialogueId` });
   }
 
   // Items (Record<string, ItemDefinitionSchema>) -> status
@@ -95,7 +111,12 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
     const equippable = (item as Record<string, unknown>).equippable as Record<string, unknown> | undefined;
     const onHitObj = equippable ? (equippable.onHit as Record<string, unknown> | undefined) : undefined;
     const statusId = String(onHitObj?.statusId || '');
-    if (statusId) usages.push({ targetKind: 'status', targetId: statusId, sourcePath: `/items/${itemId}/equippable/onHit/statusId` });
+    if (statusId)
+      usages.push({
+        targetKind: 'status',
+        targetId: statusId,
+        sourcePath: `/items/${itemId}/equippable/onHit/statusId`
+      });
   }
 
   // Dialogues (Record<string, DialogueTreeSchema>) -> dialogue nodes (intra-tree)
@@ -109,15 +130,35 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
       const options = (node.options || []) as Array<Record<string, unknown>>;
       for (const opt of options) {
         const nextId = String(opt.nextNodeId || '');
-        if (nextId) usages.push({ targetKind: 'dialogueNode', targetId: `${safeDialogueId}:${nextId}`, sourcePath: `${nodeBase}/options/${String(opt.index || '')}/nextNodeId` });
+        if (nextId)
+          usages.push({
+            targetKind: 'dialogueNode',
+            targetId: `${safeDialogueId}:${nextId}`,
+            sourcePath: `${nodeBase}/options/${String(opt.index || '')}/nextNodeId`
+          });
       }
       const onKnownId = String(node.onKnownNodeId || '');
-      if (onKnownId) usages.push({ targetKind: 'dialogueNode', targetId: `${safeDialogueId}:${onKnownId}`, sourcePath: `${nodeBase}/onKnownNodeId` });
+      if (onKnownId)
+        usages.push({
+          targetKind: 'dialogueNode',
+          targetId: `${safeDialogueId}:${onKnownId}`,
+          sourcePath: `${nodeBase}/onKnownNodeId`
+        });
       const onUnknownId = String(node.onUnknownNodeId || '');
-      if (onUnknownId) usages.push({ targetKind: 'dialogueNode', targetId: `${safeDialogueId}:${onUnknownId}`, sourcePath: `${nodeBase}/onUnknownNodeId` });
+      if (onUnknownId)
+        usages.push({
+          targetKind: 'dialogueNode',
+          targetId: `${safeDialogueId}:${onUnknownId}`,
+          sourcePath: `${nodeBase}/onUnknownNodeId`
+        });
     }
     const startNodeId = String((dialogue as Record<string, unknown>).startNodeId || '');
-    if (startNodeId) usages.push({ targetKind: 'dialogueNode', targetId: `${safeDialogueId}:${startNodeId}`, sourcePath: `/dialogues/${safeDialogueId}/startNodeId` });
+    if (startNodeId)
+      usages.push({
+        targetKind: 'dialogueNode',
+        targetId: `${safeDialogueId}:${startNodeId}`,
+        sourcePath: `/dialogues/${safeDialogueId}/startNodeId`
+      });
   }
 
   const usageMap = new Map<string, ReferenceUsage[]>();
@@ -147,10 +188,6 @@ export function queryUsages(
 /**
  * Check whether a reference to a given target exists anywhere in the campaign.
  */
-export function hasUsage(
-  index: ReferenceIndex,
-  targetKind: string,
-  targetId: string
-): boolean {
+export function hasUsage(index: ReferenceIndex, targetKind: string, targetId: string): boolean {
   return queryUsages(index, targetKind, targetId).length > 0;
 }

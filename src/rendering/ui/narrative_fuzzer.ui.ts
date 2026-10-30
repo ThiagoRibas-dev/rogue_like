@@ -129,42 +129,42 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
         }
       );
 
-        // Set metrics
-        if (metricPassFail) {
-          const pass = report.aggregate.successfulRuns;
-          const fail = report.aggregate.failedRuns;
-          metricPassFail.innerHTML = `<span style="color: var(--success-color, #2ecc71);">${pass}</span> / <span style="color: var(--danger-color, #e74c3c);">${fail}</span>`;
-        }
-        if (metricTurns) {
-          metricTurns.textContent = report.aggregate.avgTurns.toFixed(0);
-        }
-        if (metricDrama) {
-          metricDrama.textContent = report.aggregate.avgDramaEventsPerHour.toFixed(1);
-        }
-        if (metricClueRatio) {
-          metricClueRatio.textContent = report.aggregate.clueToEventRatio.toFixed(2);
-        }
-        if (metricSaveSize) {
-          const kb = report.aggregate.avgSaveSize / 1024;
-          metricSaveSize.textContent = `${kb.toFixed(1)} KB`;
-        }
+      // Set metrics
+      if (metricPassFail) {
+        const pass = report.aggregate.successfulRuns;
+        const fail = report.aggregate.failedRuns;
+        metricPassFail.innerHTML = `<span style="color: var(--success-color, #2ecc71);">${pass}</span> / <span style="color: var(--danger-color, #e74c3c);">${fail}</span>`;
+      }
+      if (metricTurns) {
+        metricTurns.textContent = report.aggregate.avgTurns.toFixed(0);
+      }
+      if (metricDrama) {
+        metricDrama.textContent = report.aggregate.avgDramaEventsPerHour.toFixed(1);
+      }
+      if (metricClueRatio) {
+        metricClueRatio.textContent = report.aggregate.clueToEventRatio.toFixed(2);
+      }
+      if (metricSaveSize) {
+        const kb = report.aggregate.avgSaveSize / 1024;
+        metricSaveSize.textContent = `${kb.toFixed(1)} KB`;
+      }
 
-        // Render runs list
-        if (runsList) {
-          runsList.replaceChildren();
-          report.results.forEach((run, idx) => {
-            const runDiv = document.createElement('div');
-            runDiv.style.cssText =
-              'border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 0.25rem;';
+      // Render runs list
+      if (runsList) {
+        runsList.replaceChildren();
+        report.results.forEach((run, idx) => {
+          const runDiv = document.createElement('div');
+          runDiv.style.cssText =
+            'border: 1px solid var(--border-color); border-radius: 4px; padding: 0.5rem; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 0.25rem;';
 
-            const header = document.createElement('div');
-            header.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
+          const header = document.createElement('div');
+          header.style.cssText = 'display: flex; justify-content: space-between; align-items: center;';
 
-            const status = run.error
-              ? `<span style="color: var(--danger-color, #e74c3c); font-weight: bold;">[FAIL: ${run.error.type.toUpperCase()}]</span>`
-              : `<span style="color: var(--success-color, #2ecc71); font-weight: bold;">[PASS]</span>`;
+          const status = run.error
+            ? `<span style="color: var(--danger-color, #e74c3c); font-weight: bold;">[FAIL: ${run.error.type.toUpperCase()}]</span>`
+            : `<span style="color: var(--success-color, #2ecc71); font-weight: bold;">[PASS]</span>`;
 
-            header.innerHTML = `
+          header.innerHTML = `
               <div>
                 ${status} <strong>Run #${idx + 1}</strong> <span style="color: var(--text-dim); font-size: 0.8rem; margin-left: 0.5rem;">Seed: ${run.seed}</span>
               </div>
@@ -174,55 +174,55 @@ export function renderNarrativeFuzzer(controller: EditorController, container: H
               </div>
             `;
 
-            const timelineDiv = document.createElement('pre');
-            timelineDiv.style.cssText =
-              'display: none; margin: 0.5rem 0 0 0; padding: 0.5rem; background: #111; color: #ddd; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; border-radius: 2px; white-space: pre-wrap;';
-            if (run.events.length > 0) {
-              timelineDiv.textContent = run.events.join('\n');
-            } else {
-              timelineDiv.textContent = 'No narrative events recorded.';
-            }
+          const timelineDiv = document.createElement('pre');
+          timelineDiv.style.cssText =
+            'display: none; margin: 0.5rem 0 0 0; padding: 0.5rem; background: #111; color: #ddd; max-height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; border-radius: 2px; white-space: pre-wrap;';
+          if (run.events.length > 0) {
+            timelineDiv.textContent = run.events.join('\n');
+          } else {
+            timelineDiv.textContent = 'No narrative events recorded.';
+          }
 
-            if (run.error) {
-              const errDiv = document.createElement('div');
-              errDiv.style.cssText =
-                'color: var(--danger-color, #e74c3c); font-size: 0.8rem; font-family: monospace; margin-top: 0.25rem;';
-              errDiv.textContent = `Error at Turn ${run.error.turn}: ${run.error.message}`;
-              runDiv.appendChild(errDiv);
-            }
+          if (run.error) {
+            const errDiv = document.createElement('div');
+            errDiv.style.cssText =
+              'color: var(--danger-color, #e74c3c); font-size: 0.8rem; font-family: monospace; margin-top: 0.25rem;';
+            errDiv.textContent = `Error at Turn ${run.error.turn}: ${run.error.message}`;
+            runDiv.appendChild(errDiv);
+          }
 
-            runDiv.appendChild(header);
-            runDiv.appendChild(timelineDiv);
-            runsList.appendChild(runDiv);
+          runDiv.appendChild(header);
+          runDiv.appendChild(timelineDiv);
+          runsList.appendChild(runDiv);
 
-            // Toggle timeline action
-            header.querySelector('.btn-toggle-timeline')?.addEventListener('click', () => {
-              const isHidden = timelineDiv.style.display === 'none';
-              timelineDiv.style.display = isHidden ? 'block' : 'none';
-            });
-
-            // Replay visually action
-            header.querySelector('.btn-replay-visual')?.addEventListener('click', () => {
-              if (confirm(`Save current workspace and visually playtest with Seed: ${run.seed}?`)) {
-                // Setup playtest session storage variables
-                sessionStorage.setItem('editor_active_document', JSON.stringify(controller.getDocument()));
-                sessionStorage.setItem('editor_playtest', 'true');
-                sessionStorage.setItem('editor_playtest_seed', run.seed);
-                window.location.reload();
-              }
-            });
+          // Toggle timeline action
+          header.querySelector('.btn-toggle-timeline')?.addEventListener('click', () => {
+            const isHidden = timelineDiv.style.display === 'none';
+            timelineDiv.style.display = isHidden ? 'block' : 'none';
           });
-        }
-      } catch (err) {
-        console.error(err);
-        if (runsList) {
-          runsList.innerHTML = `<div style="color: var(--danger-color, #e74c3c);">Fuzzer Crash: ${(err as Error).message}</div>`;
-        }
-      } finally {
-        if (btnRun) {
-          btnRun.disabled = false;
-          btnRun.textContent = '▶ Run Fuzzer';
-        }
+
+          // Replay visually action
+          header.querySelector('.btn-replay-visual')?.addEventListener('click', () => {
+            if (confirm(`Save current workspace and visually playtest with Seed: ${run.seed}?`)) {
+              // Setup playtest session storage variables
+              sessionStorage.setItem('editor_active_document', JSON.stringify(controller.getDocument()));
+              sessionStorage.setItem('editor_playtest', 'true');
+              sessionStorage.setItem('editor_playtest_seed', run.seed);
+              window.location.reload();
+            }
+          });
+        });
       }
-    });
+    } catch (err) {
+      console.error(err);
+      if (runsList) {
+        runsList.innerHTML = `<div style="color: var(--danger-color, #e74c3c);">Fuzzer Crash: ${(err as Error).message}</div>`;
+      }
+    } finally {
+      if (btnRun) {
+        btnRun.disabled = false;
+        btnRun.textContent = '▶ Run Fuzzer';
+      }
+    }
+  });
 }

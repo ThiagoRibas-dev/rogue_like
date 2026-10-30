@@ -34,7 +34,7 @@ export function expandAncestors(targetPath: string): void {
 export function collapsePath(path: string): void {
   expandedPaths.delete(path);
   // Also remove descendants so nested sections stay collapsed
-  const descendants = Array.from(expandedPaths).filter(p => isPathPrefix(path, p));
+  const descendants = Array.from(expandedPaths).filter((p) => isPathPrefix(path, p));
   for (const desc of descendants) {
     expandedPaths.delete(desc);
   }
@@ -64,7 +64,7 @@ export function revealField(targetPath: string): {
   return {
     expanded: Array.from(expandedPaths),
     targetPath,
-    focusSelector,
+    focusSelector
   };
 }
 

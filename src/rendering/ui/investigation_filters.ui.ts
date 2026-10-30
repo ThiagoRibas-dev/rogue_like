@@ -1,7 +1,4 @@
-import {
-  INVESTIGATION_FILTERS,
-  type InvestigationFilterId
-} from '../../constants/investigation_filter.constants.ts';
+import { INVESTIGATION_FILTERS, type InvestigationFilterId } from '../../constants/investigation_filter.constants.ts';
 
 /**
  * Renders the investigation board filter chip toolbar.

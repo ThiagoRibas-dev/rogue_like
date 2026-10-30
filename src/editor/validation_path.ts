@@ -38,7 +38,7 @@ export function toFormPathString(rawPath: string): string {
   }
   // Dot-notation: split on dots, ignore empty segments
   if (rawPath.includes('.')) {
-    return toFormPath(rawPath.split('.').filter(s => s !== ''));
+    return toFormPath(rawPath.split('.').filter((s) => s !== ''));
   }
   // Bracket notation: `dialogues[0][nodes]` -> split by brackets
   if (rawPath.includes('[')) {

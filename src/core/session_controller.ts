@@ -308,7 +308,12 @@ export function bindDOMControls(display: ROT.Display): void {
     if (spawnOverrideRaw) {
       try {
         const parsed = JSON.parse(spawnOverrideRaw);
-        if (parsed && typeof parsed.areaId === 'string' && typeof parsed.x === 'number' && typeof parsed.y === 'number') {
+        if (
+          parsed &&
+          typeof parsed.areaId === 'string' &&
+          typeof parsed.x === 'number' &&
+          typeof parsed.y === 'number'
+        ) {
           spawnOverride = parsed;
         }
       } catch {
@@ -318,9 +323,16 @@ export function bindDOMControls(display: ROT.Display): void {
     }
 
     setTimeout(() => {
-      startNewGame('default', getGameState(), display, (newState) => {
-        setGameState(newState);
-      }, undefined, spawnOverride).catch(console.error);
+      startNewGame(
+        'default',
+        getGameState(),
+        display,
+        (newState) => {
+          setGameState(newState);
+        },
+        undefined,
+        spawnOverride
+      ).catch(console.error);
     }, 50);
   }
 

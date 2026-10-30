@@ -25,57 +25,85 @@ export function renderToolbar(container: HTMLElement): void {
   left.appendChild(title);
 
   const btnNew = document.createElement('button');
-  btnNew.id = 'btn-editor-new'; btnNew.className = 'editor-btn'; btnNew.textContent = '✨ New';
+  btnNew.id = 'btn-editor-new';
+  btnNew.className = 'editor-btn';
+  btnNew.textContent = '✨ New';
   left.appendChild(btnNew);
 
   const btnOpen = document.createElement('button');
-  btnOpen.id = 'btn-editor-open'; btnOpen.className = 'editor-btn'; btnOpen.textContent = '📂 Resume Workspace';
+  btnOpen.id = 'btn-editor-open';
+  btnOpen.className = 'editor-btn';
+  btnOpen.textContent = '📂 Resume Workspace';
   left.appendChild(btnOpen);
 
   const btnSave = document.createElement('button');
-  btnSave.id = 'btn-editor-save'; btnSave.className = 'editor-btn'; btnSave.textContent = '💾 Save';
+  btnSave.id = 'btn-editor-save';
+  btnSave.className = 'editor-btn';
+  btnSave.textContent = '💾 Save';
   left.appendChild(btnSave);
 
   const divider = document.createElement('div');
-  divider.style.width = '1px'; divider.style.height = '24px'; divider.style.background = 'rgba(255,255,255,0.2)'; divider.style.margin = '0 8px'; divider.style.display = 'inline-block'; divider.style.verticalAlign = 'middle';
+  divider.style.width = '1px';
+  divider.style.height = '24px';
+  divider.style.background = 'rgba(255,255,255,0.2)';
+  divider.style.margin = '0 8px';
+  divider.style.display = 'inline-block';
+  divider.style.verticalAlign = 'middle';
   left.appendChild(divider);
 
   const fileInput = document.createElement('input');
-  fileInput.type = 'file'; fileInput.id = 'input-editor-import-zip'; fileInput.accept = '.zip'; fileInput.style.display = 'none';
+  fileInput.type = 'file';
+  fileInput.id = 'input-editor-import-zip';
+  fileInput.accept = '.zip';
+  fileInput.style.display = 'none';
   left.appendChild(fileInput);
 
   const btnImport = document.createElement('button');
-  btnImport.id = 'btn-editor-import-zip'; btnImport.className = 'editor-btn'; btnImport.textContent = '📦 Import ZIP';
+  btnImport.id = 'btn-editor-import-zip';
+  btnImport.className = 'editor-btn';
+  btnImport.textContent = '📦 Import ZIP';
   left.appendChild(btnImport);
 
   const btnExport = document.createElement('button');
-  btnExport.id = 'btn-editor-export-zip'; btnExport.className = 'editor-btn'; btnExport.textContent = '📦 Export ZIP';
+  btnExport.id = 'btn-editor-export-zip';
+  btnExport.className = 'editor-btn';
+  btnExport.textContent = '📦 Export ZIP';
   left.appendChild(btnExport);
 
   const center = document.createElement('div');
   center.className = 'editor-toolbar-center';
 
   const btnUndo = document.createElement('button');
-  btnUndo.id = 'btn-editor-undo'; btnUndo.className = 'editor-btn'; btnUndo.textContent = '↩️ Undo';
+  btnUndo.id = 'btn-editor-undo';
+  btnUndo.className = 'editor-btn';
+  btnUndo.textContent = '↩️ Undo';
   center.appendChild(btnUndo);
 
   const btnRedo = document.createElement('button');
-  btnRedo.id = 'btn-editor-redo'; btnRedo.className = 'editor-btn'; btnRedo.textContent = '↪️ Redo';
+  btnRedo.id = 'btn-editor-redo';
+  btnRedo.className = 'editor-btn';
+  btnRedo.textContent = '↪️ Redo';
   center.appendChild(btnRedo);
 
   const right = document.createElement('div');
   right.className = 'editor-toolbar-right';
 
   const statusEl = document.createElement('span');
-  statusEl.id = 'editor-validation-status'; statusEl.className = 'validation-status'; statusEl.textContent = '✅ OK';
+  statusEl.id = 'editor-validation-status';
+  statusEl.className = 'validation-status';
+  statusEl.textContent = '✅ OK';
   right.appendChild(statusEl);
 
   const btnPlaytest = document.createElement('button');
-  btnPlaytest.id = 'btn-editor-playtest'; btnPlaytest.className = 'editor-btn playtest-btn'; btnPlaytest.textContent = '▶️ Play Test';
+  btnPlaytest.id = 'btn-editor-playtest';
+  btnPlaytest.className = 'editor-btn playtest-btn';
+  btnPlaytest.textContent = '▶️ Play Test';
   right.appendChild(btnPlaytest);
 
   const btnExit = document.createElement('button');
-  btnExit.id = 'btn-editor-exit'; btnExit.className = 'editor-btn exit-btn'; btnExit.textContent = '✖ Exit';
+  btnExit.id = 'btn-editor-exit';
+  btnExit.className = 'editor-btn exit-btn';
+  btnExit.textContent = '✖ Exit';
   right.appendChild(btnExit);
 
   container.appendChild(left);
@@ -284,7 +312,8 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
     dock = document.createElement('div');
     dock.id = 'validation-dock';
     dock.className = 'validation-dock';
-    dock.style.cssText = 'position:fixed;bottom:0;left:0;right:0;height:200px;max-height:30vh;background:#16162a;border-top:2px solid #e74c3c;z-index:900;padding:12px;overflow-y:auto;box-shadow:0 -4px 16px rgba(0,0,0,0.4);font-family:monospace;font-size:0.8rem;color:#cdd6f4;display:flex;flex-direction:column;';
+    dock.style.cssText =
+      'position:fixed;bottom:0;left:0;right:0;height:200px;max-height:30vh;background:#16162a;border-top:2px solid #e74c3c;z-index:900;padding:12px;overflow-y:auto;box-shadow:0 -4px 16px rgba(0,0,0,0.4);font-family:monospace;font-size:0.8rem;color:#cdd6f4;display:flex;flex-direction:column;';
     document.body.appendChild(dock);
   }
 
@@ -304,7 +333,7 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
     errors: errors.map((e): { path: string; message: string; severity?: 'error' | 'warning' | 'info' } => ({
       path: e.path || '',
       message: e.message || '',
-      severity: (e.severity as 'error' | 'warning' | 'info') || 'error',
-    })),
+      severity: (e.severity as 'error' | 'warning' | 'info') || 'error'
+    }))
   });
 }

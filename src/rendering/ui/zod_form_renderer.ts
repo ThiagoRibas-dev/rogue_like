@@ -11,10 +11,7 @@ import {
   createMultiSelectField
 } from './editor_forms.ts';
 import { getReferenceOptions } from './ui_utils.ts';
-import {
-  isPathExpanded,
-  togglePath,
-} from '../../editor/validation_navigator';
+import { isPathExpanded, togglePath } from '../../editor/validation_navigator';
 
 /**
  * Renders a form dynamically based on a Zod schema.
@@ -319,7 +316,7 @@ function renderNestedObjectField(
 ) {
   // Accordion: nested objects use <details>/<summary> with module-level persistence.
   // First-level nested sections are open by default; deeper sections follow expandedPaths.
-  const isFirstLevel = basePath.split('/').filter(s => s !== '').length <= 2;
+  const isFirstLevel = basePath.split('/').filter((s) => s !== '').length <= 2;
   const detailsOpen = isFirstLevel ? true : isPathExpanded(basePath);
 
   const details = document.createElement('details');
@@ -342,7 +339,7 @@ function renderNestedObjectField(
   // Descendant error badge for quick visibility
   let descendantErrors = 0;
   if (errors) {
-    descendantErrors = errors.filter(e => {
+    descendantErrors = errors.filter((e) => {
       const ePath = e.path || '';
       return ePath.startsWith(basePath + '/') && ePath !== basePath;
     }).length;

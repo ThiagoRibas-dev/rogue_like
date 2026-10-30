@@ -23,10 +23,7 @@ export interface ValidationPanelProps {
  * @param container — The dock DOM element (`#validation-dock`)
  * @param props — Current validation error state
  */
-export function renderValidationPanel(
-  container: HTMLElement,
-  props: ValidationPanelProps
-): void {
+export function renderValidationPanel(container: HTMLElement, props: ValidationPanelProps): void {
   // Clear previous children safely (no innerHTML assignment)
   container.replaceChildren();
 
@@ -79,7 +76,7 @@ export function renderValidationPanel(
       // and applies focus; here we emit a custom event or rely on the caller.
       // For simplicity, the button click also dispatches a navigation event.
       const event = new CustomEvent('editor:navigate-to-field', {
-        detail: { targetPath: err.path, focusSelector: navResult.focusSelector },
+        detail: { targetPath: err.path, focusSelector: navResult.focusSelector }
       });
       container.dispatchEvent(event);
     });

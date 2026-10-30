@@ -22,10 +22,7 @@ export interface WhereUsedDrawerProps {
  * @param container — The drawer DOM container
  * @param props — Reference index + selected target
  */
-export function renderWhereUsedDrawer(
-  container: HTMLElement,
-  props: WhereUsedDrawerProps
-): void {
+export function renderWhereUsedDrawer(container: HTMLElement, props: WhereUsedDrawerProps): void {
   container.replaceChildren();
 
   const usages = props.index.usages.get(`${props.selectedKind}:${props.selectedId}`) ?? [];
@@ -76,8 +73,12 @@ export function renderWhereUsedDrawer(
     btn.style.transition = 'background 0.1s ease';
 
     // Hover state via native CSS class (no inline style mutation needed for basic hover)
-    btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(255,255,255,0.05)'; });
-    btn.addEventListener('mouseleave', () => { btn.style.background = 'none'; });
+    btn.addEventListener('mouseenter', () => {
+      btn.style.background = 'rgba(255,255,255,0.05)';
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = 'none';
+    });
 
     btn.textContent = `${usage.sourcePath}`;
 
@@ -86,7 +87,7 @@ export function renderWhereUsedDrawer(
       revealField(usage.sourcePath);
       // Emit navigation event for controller layer
       const event = new CustomEvent('editor:navigate-to-field', {
-        detail: { targetPath: usage.sourcePath, focusSelector: `[data-field-path="${usage.sourcePath}"]` },
+        detail: { targetPath: usage.sourcePath, focusSelector: `[data-field-path="${usage.sourcePath}"]` }
       });
       container.dispatchEvent(event);
     });
