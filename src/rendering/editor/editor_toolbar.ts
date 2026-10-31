@@ -305,8 +305,12 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
     }
   }
 
-  // Update (or create) the persistent bottom validation dock
-  // The dock element (`#validation-dock`) is mounted by the workspace/controller layer.
+  const editorLayout = document.getElementById('editor-layout');
+  if (!editorLayout || editorLayout.classList.contains('hidden')) {
+    return;
+  }
+
+  // Update (or create) the persistent bottom validation dock inside #editor-layout
   let dock = document.getElementById('validation-dock') as HTMLElement | null;
   if (!dock) {
     dock = document.createElement('div');
@@ -314,20 +318,18 @@ export function updateToolbarState(controller: EditorController, errors: Readonl
     dock.className = 'validation-dock';
     dock.style.cssText =
       'position:fixed;bottom:0;left:0;right:0;height:200px;max-height:30vh;background:#16162a;border-top:2px solid #e74c3c;z-index:900;padding:12px;overflow-y:auto;box-shadow:0 -4px 16px rgba(0,0,0,0.4);font-family:monospace;font-size:0.8rem;color:#cdd6f4;display:flex;flex-direction:column;';
-    document.body.appendChild(dock);
-  }
-
-  // Listen to custom navigation events from the dock (see validation_panel.ui.ts)
-  dock.addEventListener('editor:navigate-to-field', ((e: Event) => {
-    const detail = (e as CustomEvent).detail;
-    if (detail && detail.focusSelector) {
-      const target = document.querySelector(detail.focusSelector) as HTMLElement | null;
-      if (target) {
-        target.focus();
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    dock.addEventListener('editor:navigate-to-field', ((e: Event): void => {
+      const detail = (e as CustomEvent).detail as { focusSelector?: string } | undefined;
+      if (detail && detail.focusSelector) {
+        const target = document.querySelector(detail.focusSelector) as HTMLElement | null;
+        if (target) {
+          target.focus();
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       }
-    }
-  }) as EventListener);
+    }) as EventListener);
+    editorLayout.appendChild(dock);
+  }
 
   renderValidationPanel(dock, {
     errors: errors.map((e): { path: string; message: string; severity?: 'error' | 'warning' | 'info' } => ({

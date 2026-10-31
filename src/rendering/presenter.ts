@@ -76,6 +76,7 @@ export function renderPresenterFrame(
 
   if (gameLayout) gameLayout.classList.remove('hidden');
   if (editorLayout) editorLayout.classList.add('hidden');
+  renderEditorUI(state, globalCampaignEditor);
 
   // Invalidate snapshot cache upon area transition or campaign change
   if (lastRenderedAreaId !== state.currentAreaId || lastRenderedCampaignId !== state.campaignId) {

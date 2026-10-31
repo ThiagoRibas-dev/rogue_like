@@ -39,6 +39,9 @@ export interface EditorController {
   onChange(listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void): void;
 }
 
+let activeEditorCleanup: (() => void) | null = null;
+let activeSessionId = 0;
+
 /**
  * Initializes and renders the Campaign Editor UI.
  * This acts as the View layer orchestrator for the Editor.
@@ -52,13 +55,23 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
   }
 
   if (state.uiMode !== UIMode.Editor) {
-    editorLayout.replaceChildren();
-    editorState.isInitialized = false;
+    if (editorState.isInitialized) {
+      activeSessionId++;
+      if (activeEditorCleanup) {
+        activeEditorCleanup();
+        activeEditorCleanup = null;
+      }
+      document.getElementById('validation-dock')?.remove();
+      editorLayout.replaceChildren();
+      editorState.isInitialized = false;
+    }
     return;
   }
 
   // Initialize the DOM scaffold once
   if (!editorState.isInitialized) {
+    editorState.isInitialized = true;
+    const sessionId = ++activeSessionId;
     editorLayout.replaceChildren();
 
     // 1. Scaffold HTML Layout
@@ -103,7 +116,10 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     bindResizeHandle(resizeHandleEl, sidebarEl);
 
     // 5. Bind Editor State Changes (Re-render views)
-    subscribeToEditorState((): void => {
+    const unsubscribeState = subscribeToEditorState((): void => {
+      if (!editorState.isInitialized || sessionId !== activeSessionId) {
+        return;
+      }
       // Sync active states on Activity Bar buttons
       activityBarEl.querySelectorAll('.editor-activity-btn').forEach((btn): void => {
         const htmlBtn = btn as HTMLButtonElement;
@@ -118,12 +134,18 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
 
     // 6. Bind Controller Changes (Data updates from outside)
     controller.onChange(async (_doc, _errors, isCoalesced): Promise<void> => {
+      if (!editorState.isInitialized || sessionId !== activeSessionId) {
+        return;
+      }
       if (isCoalesced) {
         updateToolbarState(controller, _errors);
         return;
       }
       try {
         const report = await validateCampaign(controller.getDocument());
+        if (!editorState.isInitialized || sessionId !== activeSessionId) {
+          return;
+        }
         updateToolbarState(controller, report.errors);
 
         renderSidebar(controller, sidebarEl);
@@ -136,7 +158,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
 
     // 7. Bind Keyboard Shortcuts (Undo/Redo)
     const handleKeydown = (e: KeyboardEvent): void => {
-      if (state.uiMode !== UIMode.Editor) {
+      if (!editorState.isInitialized || sessionId !== activeSessionId) {
         return;
       }
       if (e.ctrlKey || e.metaKey) {
@@ -154,6 +176,11 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       }
     };
     window.addEventListener('keydown', handleKeydown);
+
+    activeEditorCleanup = (): void => {
+      unsubscribeState();
+      window.removeEventListener('keydown', handleKeydown);
+    };
 
     // 8. Restore active categories from session storage (Reload or playtest recovery)
     const savedCat = sessionStorage.getItem('editor_active_category');
@@ -190,8 +217,6 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     } catch (err) {
       console.error(err);
     }
-
-    editorState.isInitialized = true;
   }
 }
 
