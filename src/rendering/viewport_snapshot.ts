@@ -3,6 +3,7 @@
  */
 
 import { getComponent } from '../core/ecs.ts';
+import { getHoverState } from '../core/hover_state.ts';
 import {
   ComponentType,
   type IdentityComponent,
@@ -19,6 +20,8 @@ import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { getCameraOffset } from './camera.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
+import { buildTacticalViewportData } from './tactical_snapshot.ts';
+import { isEffectiveSpriteMode } from './procedural_sprites.ts';
 import type {
   ViewportSnapshot,
   ViewportCellDTO,
@@ -42,10 +45,11 @@ import type {
 export function buildViewportSnapshot(state: GameState, viewportW: number, viewportH: number): ViewportSnapshot {
   const { x: cameraX, y: cameraY } = getCameraOffset(state, viewportW, viewportH);
   const visibleIndices: ReadonlySet<number> = state.cachedFov;
-  const isSpriteMode = Boolean(
+  const hasNativeSheets = Boolean(
     state.campaign.theme.spriteSheets && Object.keys(state.campaign.theme.spriteSheets).length > 0
   );
-  const availableSpriteKeys = isSpriteMode ? getAvailableSpriteKeys(state.campaign) : undefined;
+  const isSpriteMode = isEffectiveSpriteMode(state.campaign);
+  const availableSpriteKeys = isSpriteMode && hasNativeSheets ? getAvailableSpriteKeys(state.campaign) : undefined;
 
   const cells: ViewportCellDTO[] = [];
   const fogCells: FogOverlayCellDTO[] = [];
@@ -211,6 +215,8 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
     cells: fogCells
   };
 
+  const tactical = buildTacticalViewportData(state, cameraX, cameraY, viewportW, viewportH, visibleIndices);
+
   return {
     viewportW,
     viewportH,
@@ -222,12 +228,13 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
     visualEffects,
     inspectTooltip,
     fogOverlay,
-    glyphOverlays
+    glyphOverlays,
+    tactical
   };
 }
 
 /**
- * Builds the presentational inspect tooltip DTO from the inspectMode state.
+ * Builds the presentational inspect tooltip DTO from inspectMode or transient pointer hover state.
  */
 function buildInspectTooltip(
   state: GameState,
@@ -236,12 +243,15 @@ function buildInspectTooltip(
   viewportW: number,
   viewportH: number
 ): InspectTooltipDTO {
-  if (!state.inspectMode?.active) {
+  const hovered = getHoverState().hoveredTile;
+  const isKeyboardInspect = Boolean(state.inspectMode?.active);
+  const ix = isKeyboardInspect ? state.inspectMode!.x : hovered?.x;
+  const iy = isKeyboardInspect ? state.inspectMode!.y : hovered?.y;
+
+  if (ix === undefined || iy === undefined) {
     return { active: false, vx: 0, vy: 0, sections: [] };
   }
 
-  const ix = state.inspectMode.x;
-  const iy = state.inspectMode.y;
   const vx = ix - cameraX;
   const vy = iy - cameraY;
 
@@ -383,9 +393,8 @@ function buildInspectTooltip(
         if (rankDef) {
           sections.push({
             type: 'desc',
-            value: `<strong>${rankDef.displayName}</strong> (Tier ${nemesis.tier})`,
-            color: '#f1c40f',
-            isHtml: true
+            value: `${rankDef.displayName} (Tier ${nemesis.tier})`,
+            color: '#f1c40f'
           });
         }
       }
@@ -394,9 +403,8 @@ function buildInspectTooltip(
       if (chronicle && chronicle.scars.length > 0) {
         sections.push({
           type: 'desc',
-          value: `<em>Scars:</em> ${chronicle.scars.join(', ')}`,
-          color: '#e74c3c',
-          isHtml: true
+          value: `Scars: ${chronicle.scars.join(', ')}`,
+          color: '#e74c3c'
         });
       }
       if (chronicle && chronicle.eventExcerpts.length > 0) {
@@ -405,9 +413,8 @@ function buildInspectTooltip(
         if (latestEvent && latestEvent.summary) {
           sections.push({
             type: 'desc',
-            value: `<em>Latest:</em> ${latestEvent.summary}`,
-            color: '#bdc3c7',
-            isHtml: true
+            value: `Latest: ${latestEvent.summary}`,
+            color: '#bdc3c7'
           });
         }
       }
@@ -460,6 +467,7 @@ function buildInspectTooltip(
 
   return {
     active: true,
+    showFloatingBox: isKeyboardInspect,
     vx,
     vy,
     sections

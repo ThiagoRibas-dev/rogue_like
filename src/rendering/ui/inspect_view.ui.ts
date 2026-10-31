@@ -51,17 +51,34 @@ export function renderInspectView(
   const inspectPanel = document.getElementById('inspect-panel');
   const inspectContent = document.getElementById('inspect-content');
 
+  const scannerBadge = document.getElementById('edge-badge-scanner');
+
   if (!tooltipDto.active) {
     if (tooltip) tooltip.classList.add('hidden');
-    if (inspectPanel) inspectPanel.classList.add('hidden');
+    if (scannerBadge) scannerBadge.textContent = 'SCAN';
+    if (inspectContent) {
+      const idle = document.createElement('div');
+      idle.className = 'status-empty';
+      idle.textContent = 'Hover or [X] any tile to inspect. Right-click for actions.';
+      inspectContent.replaceChildren(idle);
+    }
     return;
   }
 
   if (inspectPanel) {
     inspectPanel.classList.remove('hidden');
+    if (tooltipDto.showFloatingBox !== false) {
+      inspectPanel.classList.remove('folded');
+    }
   }
 
-  if (tooltip && !is3D) {
+  if (scannerBadge) {
+    const firstHeader = tooltipDto.sections.find((s) => s.type === 'header');
+    scannerBadge.textContent = firstHeader ? firstHeader.value.slice(0, 5) : 'LOCK';
+  }
+
+  const shouldShowFloating = tooltipDto.showFloatingBox !== false && !is3D;
+  if (tooltip && shouldShowFloating) {
     const canvas = display.getContainer() as HTMLCanvasElement | null;
     if (canvas) {
       const { tileWidthPx, tileHeightPx, offsetX, offsetY } = getTilePixelMetrics(canvas, viewportW, viewportH);
@@ -106,16 +123,12 @@ export function renderInspectView(
       if (section.color) {
         el.style.color = section.color;
       }
-      if (section.isHtml) {
-        el.innerHTML = section.value;
-      } else {
-        el.textContent = section.value;
-      }
+      el.textContent = section.value;
       fragment.appendChild(el);
     }
   }
 
-  if (tooltip && !is3D) {
+  if (tooltip && shouldShowFloating) {
     tooltip.replaceChildren(fragment.cloneNode(true));
   }
 

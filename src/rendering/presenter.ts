@@ -7,7 +7,11 @@ import { buildViewportSnapshot } from './viewport_snapshot.ts';
 import type { ViewportSnapshot } from './viewport_snapshot.types.ts';
 import { renderInspectView } from './ui/inspect_view.ui.ts';
 import { renderVFXAndFogOverlay } from './ui/vfx_overlay.ui.ts';
+import { renderTacticalOverlay } from './ui/tactical_overlay.ui.ts';
 import { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
+import { renderHudPaperdoll } from './ui/hud_paperdoll.ui.ts';
+import { renderHudAlerts } from './ui/hud_alerts.ui.ts';
+import { renderHudDock } from './ui/hud_dock.ui.ts';
 import { renderInventoryPanel } from './ui/inventory.ui.ts';
 import { renderMenus } from './ui/menus.ui.ts';
 import { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';
@@ -128,12 +132,16 @@ export function renderPresenterFrame(
       viewportW,
       viewportH
     );
+    renderTacticalOverlay(snapshot.tactical, display, viewportW, viewportH);
   }
 
   // HUD & Stats Panels
   if (dirtyDomains.has(PresentationDomain.HUD)) {
     renderPlayerStats(state);
     updateHUD(state);
+    renderHudPaperdoll(state);
+    renderHudAlerts(state);
+    renderHudDock(state);
     renderRTwPControls(state);
     renderViewControls(state);
     renderMenus(state, hasSaveGame());
@@ -147,6 +155,7 @@ export function renderPresenterFrame(
   // Inventory & Equipment
   if (dirtyDomains.has(PresentationDomain.Inventory)) {
     renderInventoryPanel(state);
+    renderHudPaperdoll(state);
   }
 
   // Modals & Overlays
@@ -158,6 +167,7 @@ export function renderPresenterFrame(
     renderQuestJournal(state);
     renderInvestigationBoard(state);
     renderDossierUI(state);
+    renderHudDock(state);
   }
 
   // Debug Overlays

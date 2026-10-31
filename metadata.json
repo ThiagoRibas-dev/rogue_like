@@ -1,0 +1,6 @@
+{
+  "name": "Rogue-like Engine",
+  "description": "A browser-based traditional roguelike engine featuring Turn-Based and RTwP modes, built with TypeScript and ROT.js.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

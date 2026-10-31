@@ -31,6 +31,11 @@ export type ActionType =
   | 'ledger';
 
 /**
+ * Rendering mode preference: campaign default ('auto'), procedural/sheet 2D pixel sprites ('sprites'), or classic ASCII ('ascii').
+ */
+export type RenderModePreference = 'auto' | 'sprites' | 'ascii';
+
+/**
  * Settings configuration controlling combat and visual telemetry effects.
  */
 export interface VisualFeedbackSettings {
@@ -38,6 +43,7 @@ export interface VisualFeedbackSettings {
   showStatusText: boolean;
   showDangerTelegraphs: boolean;
   reduceDramaticDelays: boolean;
+  renderMode: RenderModePreference;
 }
 
 /**
@@ -86,7 +92,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     showDamageNumbers: true,
     showStatusText: true,
     showDangerTelegraphs: true,
-    reduceDramaticDelays: false
+    reduceDramaticDelays: false,
+    renderMode: 'auto'
   },
   accessibility: {
     uiScale: 'large',

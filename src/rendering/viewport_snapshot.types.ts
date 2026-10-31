@@ -67,6 +67,7 @@ export interface InspectSectionDTO {
  */
 export interface InspectTooltipDTO {
   readonly active: boolean;
+  readonly showFloatingBox?: boolean | undefined;
   readonly vx: number;
   readonly vy: number;
   readonly sections: ReadonlyArray<InspectSectionDTO>;
@@ -106,6 +107,53 @@ export interface FogOverlayDTO {
 }
 
 /**
+ * Faction/hostility classification for tactical unit badges and cursor brackets.
+ */
+export type TacticalAttitude = 'player' | 'hostile' | 'neutral' | 'friendly';
+
+/**
+ * Presentational DTO for an in-world unit health bar, attitude pip, and status indicators.
+ */
+export interface TacticalUnitBadgeDTO {
+  readonly vx: number;
+  readonly vy: number;
+  readonly hpRatio: number;
+  readonly attitude: TacticalAttitude;
+  readonly statusColors: ReadonlyArray<string>;
+}
+
+/**
+ * Presentational DTO for a single step along the tactical path preview.
+ */
+export interface TacticalPathStepDTO {
+  readonly vx: number;
+  readonly vy: number;
+  readonly blocked: boolean;
+}
+
+/**
+ * Presentational DTO for the animated corner-bracket cursor and path preview.
+ */
+export interface TacticalCursorDTO {
+  readonly vx: number;
+  readonly vy: number;
+  readonly attitude: TacticalAttitude | 'terrain';
+  readonly pathSteps: ReadonlyArray<TacticalPathStepDTO>;
+}
+
+/**
+ * Presentational DTO for the tactical canvas overlay (torchlight FOV, unit micro-bars, bracket cursor).
+ */
+export interface TacticalViewportDTO {
+  readonly playerVx: number | null;
+  readonly playerVy: number | null;
+  readonly fovRadius: number;
+  readonly visibleCells: ReadonlyArray<{ readonly vx: number; readonly vy: number }>;
+  readonly unitBadges: ReadonlyArray<TacticalUnitBadgeDTO>;
+  readonly cursor: TacticalCursorDTO | null;
+}
+
+/**
  * Complete immutable projection of the visible viewport state for a single frame.
  */
 export interface ViewportSnapshot {
@@ -121,6 +169,8 @@ export interface ViewportSnapshot {
   readonly fogOverlay: FogOverlayDTO;
   /** ASCII-glyph fallbacks for cells whose art has no resolvable sprite. */
   readonly glyphOverlays: ReadonlyArray<GlyphOverlayDTO>;
+  /** RimWorld/DF-style tactical telemetry overlay data. */
+  readonly tactical: TacticalViewportDTO;
 }
 
 /**
@@ -132,3 +182,4 @@ export interface CanvasPixelMetrics {
   readonly offsetX: number;
   readonly offsetY: number;
 }
+

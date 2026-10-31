@@ -15,6 +15,7 @@ import { setGameState, onStateChange, queuePlayerIntent, getGameState } from './
 import { startNewGame, continueGame } from './bootstrap.ts';
 import { startSandboxEncounter } from './bootstrap_sandbox.ts';
 import { handleKeyDown } from './input_handler.ts';
+import { bindCanvasMouseControls } from './input/mouse_input.ts';
 import { perfTracker } from './performance.ts';
 import { trapFocus } from '../utils/a11y.ts';
 import { getActiveReplay } from './replay.ts';
@@ -601,6 +602,7 @@ export function initSession(display: ROT.Display, globalCampaignEditor: Campaign
   lastKnownState = initialState;
   refreshCampaignList().catch(console.error);
   bindDOMControls(display);
+  bindCanvasMouseControls(display);
   bindSettingsControls();
   bindStateSubscription(display, globalCampaignEditor);
 

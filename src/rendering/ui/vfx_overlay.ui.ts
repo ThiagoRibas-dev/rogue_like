@@ -28,9 +28,9 @@ export function renderVisualEffectsOverlay(
 
   const activeIds = new Set(visualEffects.map((e) => e.id));
 
-  // Remove DOM elements for expired effects
+  // Remove DOM elements for expired effects (preserving the #tactical-overlay canvas)
   Array.from(overlay.children).forEach((child) => {
-    if (!activeIds.has(child.id)) {
+    if (child.id !== 'tactical-overlay' && !activeIds.has(child.id)) {
       overlay.removeChild(child);
     }
   });
@@ -85,12 +85,18 @@ export function renderFogOverlayCanvas(
   const canvas = display.getContainer() as HTMLCanvasElement | null;
   if (!canvas) return;
 
-  if (overlayCanvas.width !== canvas.clientWidth || overlayCanvas.height !== canvas.clientHeight) {
-    overlayCanvas.width = canvas.clientWidth;
-    overlayCanvas.height = canvas.clientHeight;
+  const targetW = Math.max(1, canvas.clientWidth);
+  const targetH = Math.max(1, canvas.clientHeight);
+  if (overlayCanvas.width !== targetW || overlayCanvas.height !== targetH) {
+    overlayCanvas.width = targetW;
+    overlayCanvas.height = targetH;
   }
+  overlayCanvas.style.left = `${canvas.offsetLeft}px`;
+  overlayCanvas.style.top = `${canvas.offsetTop}px`;
+  overlayCanvas.style.width = `${targetW}px`;
+  overlayCanvas.style.height = `${targetH}px`;
 
-  const { tileWidthPx, tileHeightPx, offsetX, offsetY } = getTilePixelMetrics(
+  const { tileWidthPx, tileHeightPx } = getTilePixelMetrics(
     canvas,
     fogOverlay.viewportW,
     fogOverlay.viewportH
@@ -99,8 +105,8 @@ export function renderFogOverlayCanvas(
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
   for (const cell of fogOverlay.cells) {
-    const pxX = offsetX + cell.vx * tileWidthPx;
-    const pxY = offsetY + cell.vy * tileHeightPx;
+    const pxX = cell.vx * tileWidthPx;
+    const pxY = cell.vy * tileHeightPx;
 
     ctx.fillStyle = cell.alpha === 1.0 ? 'rgba(0, 0, 0, 1.0)' : 'rgba(0, 0, 0, 0.55)';
     ctx.fillRect(Math.floor(pxX), Math.floor(pxY), Math.ceil(tileWidthPx), Math.ceil(tileHeightPx));
@@ -114,8 +120,8 @@ export function renderFogOverlayCanvas(
     ctx.font = `${Math.max(8, Math.floor(tileHeightPx * 0.85))}px monospace`;
 
     for (const overlay of glyphOverlays) {
-      const pxX = offsetX + overlay.vx * tileWidthPx;
-      const pxY = offsetY + overlay.vy * tileHeightPx;
+      const pxX = overlay.vx * tileWidthPx;
+      const pxY = overlay.vy * tileHeightPx;
 
       if (overlay.bg !== 'transparent') {
         ctx.fillStyle = overlay.bg;

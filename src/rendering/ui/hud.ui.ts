@@ -1,15 +1,59 @@
 import { type GameState } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
+import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
-import { UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
+import {
+  LOG_FILTER_TABS,
+  type LogFilterCategory,
+  UITooltipType,
+  UIStatId
+} from '../../constants/ui.constants.ts';
+
+let activeLogFilter: LogFilterCategory = 'all';
 
 /**
- * Renders the GameState's messages to the DOM.
+ * Classifies a message log entry into a filter tab category based on its cssClass and text.
+ */
+function matchesLogCategory(msg: { readonly text: string; readonly cssClass?: string | undefined }, filter: LogFilterCategory): boolean {
+  if (filter === 'all') return true;
+  const cls = msg.cssClass ?? 'system';
+  const isCombat = cls.startsWith('combat');
+  const isSpeech = cls === 'flavor' || msg.text.startsWith('"');
+  if (filter === 'combat') return isCombat;
+  if (filter === 'speech') return isSpeech;
+  return !isCombat && !isSpeech;
+}
+
+/**
+ * Renders the filter tab toolbar above the message log.
+ */
+function renderLogFilterTabs(): void {
+  const tabsContainer = document.getElementById('message-log-tabs');
+  if (!tabsContainer) return;
+
+  tabsContainer.replaceChildren();
+  for (const tab of LOG_FILTER_TABS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = tab.id === activeLogFilter ? 'log-tab-btn active' : 'log-tab-btn';
+    btn.textContent = tab.label;
+    btn.addEventListener('click', () => {
+      activeLogFilter = tab.id;
+      markDomainDirty(PresentationDomain.Log);
+    });
+    tabsContainer.appendChild(btn);
+  }
+}
+
+/**
+ * Renders the GameState's messages to the DOM, filtered by the active log category tab.
  * @param state The current GameState containing the messages array.
  */
 export function renderMessageLog(state: GameState): void {
+  renderLogFilterTabs();
+
   const messageLog = document.getElementById('message-log');
 
   if (!messageLog) {
@@ -21,6 +65,8 @@ export function renderMessageLog(state: GameState): void {
 
   // Render messages from oldest to newest (top to bottom)
   for (const msg of state.messages) {
+    if (!matchesLogCategory(msg, activeLogFilter)) continue;
+
     const entry = document.createElement('div');
     entry.className = 'log-entry';
     if (msg.cssClass) {
@@ -30,8 +76,13 @@ export function renderMessageLog(state: GameState): void {
     messageLog.appendChild(entry);
   }
 
-  // Auto-scroll to the bottom so the newest message is always visible
+    // Auto-scroll to the bottom so the newest message is always visible
   messageLog.scrollTop = messageLog.scrollHeight;
+
+  const logBadge = document.getElementById('edge-badge-log');
+  if (logBadge) {
+    logBadge.textContent = state.messages.length > 0 ? String(state.messages.length) : 'LOG';
+  }
 }
 
 /**
@@ -50,8 +101,12 @@ export function renderPlayerStats(state: GameState): void {
   // Update Health
   const hpFill = document.getElementById('health-bar-fill');
   const hpText = document.getElementById('health-bar-text');
+  const hpPercent = Math.max(0, Math.min(100, (fighter.hp / effectiveStats.maxHp) * 100));
+  const vitalsBadge = document.getElementById('edge-badge-vitals');
+  if (vitalsBadge) {
+    vitalsBadge.textContent = `${Math.round(hpPercent)}%`;
+  }
   if (hpFill && hpText) {
-    const hpPercent = Math.max(0, Math.min(100, (fighter.hp / effectiveStats.maxHp) * 100));
     hpFill.style.width = `${hpPercent}%`;
     hpText.textContent = `${fighter.hp} / ${effectiveStats.maxHp}`;
 
@@ -123,8 +178,13 @@ export function renderPlayerStats(state: GameState): void {
 
   // Update Status Effects
   const statusContainer = document.getElementById('status-effects-container');
+  const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects);
+  const statusBadge = document.getElementById('edge-badge-status');
+  if (statusBadge) {
+    const count = statuses?.activeEffects.length ?? 0;
+    statusBadge.textContent = count > 0 ? `${count}` : 'OK';
+  }
   if (statusContainer) {
-    const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects);
     statusContainer.replaceChildren();
 
     if (!statuses || statuses.activeEffects.length === 0) {

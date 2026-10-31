@@ -3,6 +3,7 @@ import { type GameState } from '../types/game-state.types.ts';
 import { GAME_ASPECT_RATIO } from '../constants/display.constants.ts';
 import { type CampaignData, type SpriteSheetSource } from '../types/campaign.types.ts';
 import { recordDrawCommand } from './render_debug.ts';
+import { buildProceduralSpriteAtlas, isEffectiveSpriteMode } from './procedural_sprites.ts';
 
 /**
  * Internal interface representing a ROT.js rectangular layout backend
@@ -124,26 +125,41 @@ export async function configureDisplayForCampaign(
   campaign: CampaignData,
   basePath: string
 ): Promise<boolean> {
+  const useSprites = isEffectiveSpriteMode(campaign);
   const sheets = campaign.theme.spriteSheets;
 
-  if (sheets && Object.keys(sheets).length > 0) {
-    try {
-      const { atlas, mergedTileMap, tileWidth, tileHeight } = await compositeAtlas(sheets, basePath);
-      display.setOptions({
-        layout: 'tile',
-        tileWidth,
-        tileHeight,
-        tileSet: atlas,
-        tileMap: mergedTileMap,
-        tileColorize: false,
-        bg: 'transparent'
-      });
-      // ROT allocates a brand-new canvas on layout changes; re-attach it to the DOM.
-      mountDisplayWithFogOverlay(display, campaign);
-      return true;
-    } catch (err) {
-      console.error('Sprite loading failed, falling back to ASCII:', err);
+  if (useSprites) {
+    if (sheets && Object.keys(sheets).length > 0) {
+      try {
+        const { atlas, mergedTileMap, tileWidth, tileHeight } = await compositeAtlas(sheets, basePath);
+        display.setOptions({
+          layout: 'tile',
+          tileWidth,
+          tileHeight,
+          tileSet: atlas,
+          tileMap: mergedTileMap,
+          tileColorize: false,
+          bg: 'transparent'
+        });
+        mountDisplayWithFogOverlay(display, campaign);
+        return true;
+      } catch (err) {
+        console.error('Sprite loading failed, falling back to procedural sprite atlas:', err);
+      }
     }
+
+    const { atlas, mergedTileMap, tileWidth, tileHeight } = buildProceduralSpriteAtlas(campaign);
+    display.setOptions({
+      layout: 'tile',
+      tileWidth,
+      tileHeight,
+      tileSet: atlas,
+      tileMap: mergedTileMap,
+      tileColorize: false,
+      bg: 'transparent'
+    });
+    mountDisplayWithFogOverlay(display, campaign);
+    return true;
   }
 
   // ASCII fallback / reset
@@ -152,7 +168,6 @@ export async function configureDisplayForCampaign(
     fontSize: campaign.theme.ui.fontSize,
     fontFamily: campaign.theme.ui.fontFamily
   });
-  // ROT allocates a brand-new canvas on layout changes; re-attach it to the DOM.
   mountDisplayWithFogOverlay(display, campaign);
   return false;
 }
@@ -198,7 +213,7 @@ export function drawCell(
   if (isSpriteMode) {
     const tileMap = display.getOptions().tileMap as Record<string, [number, number]> | undefined;
 
-    const getSprite = (id: string | undefined, glyph: string) => {
+    const getSprite = (id: string | undefined, glyph: string): string => {
       if (id && tileMap?.[id]) return id;
       if (tileMap?.[glyph]) return glyph; // In case the designer mapped the ASCII char directly
       return '__fallback__';
@@ -247,11 +262,9 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
   const activeFontSize = Math.round(baseFontSize * state.zoomLevel);
 
   const spriteConfig = theme.spriteSheets;
-  const isSpriteMode = spriteConfig && Object.keys(spriteConfig).length > 0;
+  const isSpriteMode = isEffectiveSpriteMode(state.campaign);
 
-  if (isSpriteMode) {
-    // In sprite mode, don't set font options as it can reset the layout backend in some rot-js versions
-  } else {
+  if (!isSpriteMode) {
     display.setOptions({
       fontSize: activeFontSize,
       fontFamily
@@ -265,12 +278,15 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
   if (isRectBackend(backend)) {
     cellWidth = backend._spacingX;
     cellHeight = backend._spacingY;
-  } else if (isSpriteMode && spriteConfig) {
+  } else if (isSpriteMode && spriteConfig && Object.keys(spriteConfig).length > 0) {
     const firstConfig = Object.values(spriteConfig)[0];
     if (firstConfig !== undefined) {
       cellWidth = firstConfig.tileWidth;
       cellHeight = firstConfig.tileHeight;
     }
+  } else if (isSpriteMode) {
+    cellWidth = 32;
+    cellHeight = 32;
   } else {
     cellWidth = activeFontSize;
     cellHeight = activeFontSize;
@@ -313,11 +329,8 @@ export function mountDisplayWithFogOverlay(display: ROT.Display, campaign: Campa
   const canvasElement = display.getContainer() as HTMLCanvasElement | null;
   if (!canvasElement) return;
 
-  // ROT.Display.setOptions({ layout }) allocates a fresh canvas element. Remove any
-  // previously mounted display canvas so we never keep drawing into a detached node
-  // (which leaves the visible viewport permanently blank). The fog overlay is kept.
   for (const existing of Array.from(container.querySelectorAll('canvas'))) {
-    if (existing !== canvasElement && existing.id !== 'fog-overlay') {
+    if (existing !== canvasElement && existing.id !== 'fog-overlay' && existing.id !== 'tactical-overlay') {
       existing.remove();
     }
   }
@@ -335,7 +348,7 @@ export function mountDisplayWithFogOverlay(display: ROT.Display, campaign: Campa
 }
 
 /**
- * Synchronizes the existence of the fog overlay canvas based on whether sprite sheets are enabled.
+ * Synchronizes the existence of the fog overlay canvas based on whether sprite mode is enabled.
  *
  * @param campaign The active campaign data.
  */
@@ -344,7 +357,7 @@ export function syncFogOverlayCanvas(campaign: CampaignData): void {
   if (!container) return;
 
   let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
-  const hasSpriteSheets = campaign.theme.spriteSheets && Object.keys(campaign.theme.spriteSheets).length > 0;
+  const hasSpriteSheets = isEffectiveSpriteMode(campaign);
 
   if (hasSpriteSheets) {
     if (!fogCanvas) {
