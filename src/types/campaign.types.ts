@@ -126,7 +126,7 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   phaseBlocks: PhaseBlockSchema,
   agreements: AgreementDefinitionSchema,
   tagRegistry: TagDefinitionSchema,
-  reactions: ReactionDefinitionSchema,
+  reactions: ReactionDefinitionSchema.array(),
   fields: FieldDefinitionSchema,
   spawnPools: SpawnPoolDefinitionSchema,
   encounterProfiles: EncounterProfileSchema,

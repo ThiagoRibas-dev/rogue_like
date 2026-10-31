@@ -295,7 +295,13 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     if (key === 'triggerBuckets' || key === 'systemContent') continue;
 
     const filename = resolveCategoryFilename(key);
-    const filePath = join(dir, filename);
+    let filePath = join(dir, filename);
+    if (!existsSync(filePath) && basename(dir) !== 'default') {
+      const defaultPath = join(CAMPAIGNS_ROOT, 'default', filename);
+      if (existsSync(defaultPath)) {
+        filePath = defaultPath;
+      }
+    }
 
     if (!existsSync(filePath)) {
       campaignData[key] = getFallbackForFile(key);
