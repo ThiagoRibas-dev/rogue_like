@@ -1,20 +1,23 @@
-/* Floating Side HUD Cards (RimWorld / Dwarf Fortress Steam / Ultima Aesthetic) */
+/* Dwarf Fortress Steam / Dark Fantasy CRPG HUD Plates & Sunken Sockets */
 .hud-card {
   width: 100%;
-  background: rgba(12, 15, 22, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  padding: 10px 12px;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.65);
-  transition: border-color 0.15s ease, width 0.12s ease;
+  background: linear-gradient(180deg, #191c24 0%, #111319 100%);
+  border: 2px solid #484f5e;
+  outline: 1px solid #000000;
+  border-radius: 1px;
+  padding: 8px 10px;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.09),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85),
+    3px 3px 0 rgba(0, 0, 0, 0.92);
+  transition: border-color 0.12s ease;
 }
 
 .hud-card:hover {
-  border-color: rgba(0, 210, 211, 0.35);
+  border-color: var(--border-brass);
 }
 
-/* Dwarf Fortress Steam Style Edge-Folded Icon Tab (44x44px square flush to edge) */
+/* Dwarf Fortress Steam Style Edge-Folded Emblem (44x44px chiseled brass/stone square) */
 .hud-card.folded,
 .log-card.folded {
   width: 44px;
@@ -23,15 +26,20 @@
   max-height: 44px;
   flex: 0 0 auto;
   padding: 0;
-  border-radius: 6px;
-  border: 1px solid rgba(241, 196, 15, 0.45);
-  background: rgba(14, 18, 26, 0.92);
+  border-radius: 1px;
+  border: 2px solid var(--border-brass);
+  outline: 1px solid #000000;
+  background: linear-gradient(180deg, #1e212a 0%, #12141a 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 230, 160, 0.18),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    3px 3px 0 rgba(0, 0, 0, 0.92);
   overflow: hidden;
 }
 
 .hud-card.folded:hover {
-  border-color: var(--color-accent);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.25);
+  border-color: var(--border-brass-bright);
+  background: linear-gradient(180deg, #272b36 0%, #171a22 100%);
 }
 
 .hud-edge-tab,
@@ -42,18 +50,31 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  background: rgba(14, 18, 26, 0.92);
-  border: 1px solid rgba(241, 196, 15, 0.45);
-  border-radius: 6px;
-  color: #fff;
+  gap: 2px;
+  background: linear-gradient(180deg, #20242e 0%, #12141b 100%);
+  border: 2px solid var(--border-brass);
+  outline: 1px solid #000000;
+  border-radius: 1px;
+  color: var(--text-main);
   cursor: pointer;
   padding: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.65);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 230, 160, 0.2),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.9),
+    3px 3px 0 rgba(0, 0, 0, 0.92);
+}
+
+.hud-edge-tab:active,
+.hud-master-edge-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow:
+    inset 2px 2px 0 rgba(0, 0, 0, 0.9),
+    1px 1px 0 rgba(0, 0, 0, 0.9);
 }
 
 .hud-card .hud-edge-tab {
   border: none;
+  outline: none;
   box-shadow: none;
   background: transparent;
   width: 100%;
@@ -70,20 +91,22 @@
 }
 
 .hud-master-edge-btn:hover {
-  border-color: var(--color-accent);
-  background: rgba(0, 255, 255, 0.14);
+  border-color: var(--border-brass-bright);
+  background: linear-gradient(180deg, #2a2e3b 0%, #181b24 100%);
 }
 
 .hud-edge-icon {
   font-size: 1.05rem;
   line-height: 1;
+  color: var(--text-highlight);
+  text-shadow: 1px 1px 0 #000;
 }
 
 .hud-edge-badge {
   font-family: var(--font-mono);
   font-size: 0.56rem;
   font-weight: 700;
-  color: var(--text-highlight);
+  color: var(--text-main);
   line-height: 1;
   max-width: 40px;
   overflow: hidden;
@@ -91,20 +114,91 @@
   white-space: nowrap;
 }
 
+/* Headerless Vitals & Chronos Gauge Plate */
+.vitals-plate {
+  border-color: var(--border-brass);
+}
+
+.vitals-plate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vitals-banner-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #0b0d11;
+  border: 1px solid #2d323d;
+  box-shadow: inset 1px 1px 0 #000;
+  padding: 4px 6px;
+}
+
+.vitals-area-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+}
+
+.vitals-crest {
+  color: var(--text-highlight);
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.area-banner-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.76rem;
+  letter-spacing: 0.6px;
+  color: var(--text-highlight);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+}
+
+.vitals-banner-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.level-crest {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  background: #14171f;
+  border: 1px solid #3c4250;
+  padding: 1px 5px;
+}
+
+.level-crest strong {
+  color: var(--text-main);
+}
+
+/* Drawer Card Headers (Right Side Drawers) */
 .hud-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  padding-bottom: 5px;
-  margin-bottom: 8px;
+  background: #0c0e13;
+  border: 1px solid #2e333e;
+  box-shadow: inset 1px 1px 0 #000;
+  padding: 3px 6px;
+  margin-bottom: 7px;
 }
 
 .hud-card h2 {
+  font-family: var(--font-display);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1.4px;
+  letter-spacing: 1.2px;
   color: var(--text-highlight);
   margin: 0;
   border: none;
@@ -119,100 +213,101 @@
 
 .hud-fold-btn,
 .hud-mini-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, #252934 0%, #151820 100%);
+  border: 1px solid #4c5363;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85);
   color: var(--text-highlight);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
+  padding: 1px 6px;
+  border-radius: 1px;
   cursor: pointer;
 }
 
 .hud-fold-btn:hover,
 .hud-mini-btn:hover {
   color: #fff;
-  border-color: var(--color-accent);
-  background: rgba(0, 255, 255, 0.15);
+  border-color: var(--border-brass-bright);
+  background: linear-gradient(180deg, #323746 0%, #1d212b 100%);
 }
 
-/* Vitals & Bars */
-.stat-row {
-  margin-bottom: 7px;
-}
-
-.stat-row:last-child {
-  margin-bottom: 0;
-}
-
-.stat-inline-pair {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-}
-
-.stat-label {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-  display: block;
-  margin-bottom: 3px;
-}
-
-.stat-label-inline {
-  font-size: 0.72rem;
-  color: var(--text-dim);
-}
-
-.stat-value {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.82rem;
-}
-
-.stat-grid-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  margin-top: 6px;
-}
-
-.stat-pill {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  padding: 4px 6px;
+/* Chiseled Segmented HP & XP Meters */
+.vitals-meters {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 4px;
+}
+
+.stat-row {
   margin-bottom: 0;
 }
 
-.text-highlight {
-  color: var(--color-accent);
+.meter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meter-tag {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  width: 20px;
+  text-align: right;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.hp-tag {
+  color: #e05257;
+}
+
+.xp-tag {
+  color: #5cc46d;
 }
 
 .bar-container {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1;
+  background: #07080b;
+  border: 1px solid #3b404d;
+  box-shadow:
+    inset 2px 2px 0 #000000,
+    inset -1px -1px 0 rgba(255, 255, 255, 0.06);
   height: 16px;
-  border-radius: 3px;
+  border-radius: 0;
   position: relative;
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  transition: width 0.25s ease;
+  transition: width 0.2s ease;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22), inset 0 -2px 0 rgba(0, 0, 0, 0.45);
 }
 
 .health-bar {
-  background: linear-gradient(90deg, #ff4757, #ff6b81);
+  background: linear-gradient(90deg, #8f181c 0%, #c92a2f 100%);
 }
 
 .xp-bar {
-  background: linear-gradient(90deg, #2ed573, #7bed9f);
+  background: linear-gradient(90deg, #236930 0%, #3ca14e 100%);
+}
+
+/* 10% Segmented CRPG Gauge Notches */
+.bar-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent calc(10% - 1px),
+    rgba(0, 0, 0, 0.55) calc(10% - 1px),
+    rgba(0, 0, 0, 0.55) 10%
+  );
 }
 
 .bar-text {
@@ -221,144 +316,191 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 700;
-  color: #fff;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
-}
-
-/* Mini Paper-Doll & Quick-Use Belt */
-.mini-paperdoll-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.mini-doll-slot {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 4px 6px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-main);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  cursor: pointer;
-  text-align: left;
-  overflow: hidden;
-}
-
-.mini-doll-slot.equipped {
-  border-color: rgba(0, 210, 211, 0.35);
-  background: rgba(0, 210, 211, 0.06);
-}
-
-.mini-doll-slot:hover {
-  border-color: var(--color-accent);
-}
-
-.mini-doll-tag {
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-
-.mini-doll-glyph {
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.mini-doll-name {
+  color: #f5efe4;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.68rem;
 }
 
-.mini-doll-empty {
-  color: var(--text-dim);
-  margin-left: auto;
+/* Sunken Combat & Survival Readout Sockets */
+.stat-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
 }
 
-.quickbelt-header {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: var(--text-dim);
-  margin-bottom: 4px;
+.stat-pill {
+  background: var(--bg-socket);
+  border: 1px solid #353a46;
+  box-shadow:
+    inset 2px 2px 0 #000000,
+    inset -1px -1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 0;
+  padding: 3px 6px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.stat-label-inline {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: var(--text-main);
+}
+
+.text-highlight {
+  color: var(--text-highlight);
+}
+
+/* Tactile Chronos & Camera Strip inside Vitals Plate */
+.chronos-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 5px;
+  border-top: 1px solid #2a2f3a;
+}
+
+/* Sunken 5x2 Equipment & Quick-Belt Socket Plate */
+.socket-plate-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.socket-plate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.socket-plate-label {
+  font-family: var(--font-display);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  color: var(--text-dim);
 }
 
 .quickbelt-sub {
   font-family: var(--font-mono);
-  font-size: 0.62rem;
+  font-size: 0.6rem;
+  color: var(--text-highlight);
 }
 
+.mini-paperdoll-grid,
 .quickbelt-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
 }
 
+/* Sunken Stone/Iron Inventory & Belt Sockets */
+.mini-doll-slot,
 .quickbelt-slot {
   position: relative;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  padding: 5px 2px 3px;
+  background: var(--bg-socket);
+  border: 1px solid #3c4250;
+  box-shadow:
+    inset 2px 2px 0 #000000,
+    inset -1px -1px 0 rgba(255, 255, 255, 0.07);
+  border-radius: 1px;
+  padding: 11px 2px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 40px;
+  height: 44px;
   cursor: pointer;
   color: var(--text-main);
   font-family: var(--font-mono);
+  overflow: hidden;
 }
 
+.mini-doll-slot.equipped,
 .quickbelt-slot.filled {
-  border-color: rgba(255, 211, 42, 0.4);
-  background: rgba(255, 211, 42, 0.06);
+  border-color: var(--border-brass);
+  background: linear-gradient(180deg, #1b1710 0%, #0d0c09 100%);
+  box-shadow:
+    inset 1px 1px 0 rgba(230, 184, 76, 0.2),
+    inset -1px -1px 0 #000000;
 }
 
-.quickbelt-slot.filled:hover {
-  border-color: var(--text-highlight);
-  transform: translateY(-1px);
+.mini-doll-slot:hover,
+.quickbelt-slot:hover {
+  border-color: var(--border-brass-bright);
+  background: #1c2029;
 }
 
+.mini-doll-slot:active,
+.quickbelt-slot:active {
+  transform: translate(1px, 1px);
+}
+
+.mini-doll-tag,
 .quickbelt-key {
   position: absolute;
-  top: 1px;
+  top: 2px;
   left: 3px;
-  font-size: 0.56rem;
-  color: var(--text-dim);
-}
-
-.quickbelt-glyph {
-  font-size: 0.85rem;
+  font-size: 0.5rem;
   font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  line-height: 1;
 }
 
+.quickbelt-slot.filled .quickbelt-key,
+.mini-doll-slot.equipped .mini-doll-tag {
+  color: var(--text-highlight);
+}
+
+.mini-doll-glyph,
+.quickbelt-glyph {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.mini-doll-name,
 .quickbelt-name,
 .quickbelt-empty-label {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text-dim);
+  line-height: 1.1;
+  margin-top: 1px;
 }
 
-/* RimWorld-Style Right-Edge Alert Ribbons */
+.mini-doll-empty {
+  color: #464c5a;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+/* RimWorld / DF Style Right-Edge Alert Banners */
 .hud-alerts-stack {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 100%;
 }
 
 .hud-alerts-stack:empty {
@@ -369,69 +511,82 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  border-radius: 4px;
-  border-left: 4px solid var(--color-accent);
-  background: rgba(14, 18, 26, 0.9);
-  color: #fff;
-  font-family: var(--font-sans);
-  font-size: 0.76rem;
+  padding: 5px 8px;
+  border-radius: 1px;
+  border: 1px solid var(--border-brass);
+  border-left: 4px solid var(--border-brass-bright);
+  outline: 1px solid #000000;
+  background: linear-gradient(90deg, #1b1710 0%, #12141a 100%);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.9);
   text-align: left;
 }
 
 .hud-alert-ribbon.alert-critical {
-  border-left-color: #ff4757;
-  background: rgba(65, 14, 22, 0.9);
+  border-color: #8f2226;
+  border-left-color: #e03e44;
+  background: linear-gradient(90deg, #3b1014 0%, #1a0d10 100%);
 }
 
 .hud-alert-ribbon.alert-warning {
-  border-left-color: #ffa502;
-  background: rgba(60, 40, 10, 0.9);
+  border-color: #9e6b1e;
+  border-left-color: #f0a52b;
+  background: linear-gradient(90deg, #38250b 0%, #19140d 100%);
 }
 
 .hud-alert-ribbon.alert-info {
-  border-left-color: #00d2d3;
+  border-color: #485e78;
+  border-left-color: #78a5d4;
 }
 
 .hud-alert-title {
   font-weight: 700;
+  color: #fff;
 }
 
 .hud-alert-detail {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.64rem;
+  color: var(--text-dim);
 }
 
-/* Side Command Dock */
+/* Side Command Dock — Beveled Iron & Brass Buttons */
 .dock-cmd-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
 }
 
 .dock-cmd-btn {
-  background: rgba(0, 0, 0, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.11);
-  border-radius: 4px;
+  background: linear-gradient(180deg, #222631 0%, #14171e 100%);
+  border: 1px solid #484f5f;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.85);
+  border-radius: 1px;
   padding: 5px 6px;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   color: var(--text-main);
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
   cursor: pointer;
   position: relative;
 }
 
 .dock-cmd-btn:hover,
 .dock-cmd-btn.active {
-  border-color: var(--color-accent);
-  background: rgba(0, 255, 255, 0.12);
-  color: #fff;
+  border-color: var(--border-brass-bright);
+  background: linear-gradient(180deg, #2d2618 0%, #1c1810 100%);
+  color: var(--text-highlight);
+}
+
+.dock-cmd-btn:active {
+  transform: translate(1px, 1px);
 }
 
 .dock-cmd-icon {
@@ -440,7 +595,7 @@
 
 .dock-cmd-label {
   font-weight: 600;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   flex: 1;
   text-align: left;
   white-space: nowrap;
@@ -450,48 +605,55 @@
 
 .dock-cmd-key {
   font-family: var(--font-mono);
-  font-size: 0.58rem;
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 3px;
+  font-size: 0.56rem;
+  background: #0a0b0e;
+  border: 1px solid #3b414f;
+  border-radius: 1px;
   padding: 1px 3px;
   color: var(--text-highlight);
 }
 
-/* Status Effects & Log Card */
+/* Status Effects Strip & Chronicle Log Plate */
 .status-content {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.status-content:empty {
+  display: none;
 }
 
 .status-empty {
   color: var(--text-dim);
   font-style: italic;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
 }
 
 .status-row {
-  display: flex;
-  justify-content: space-between;
+  display: inline-flex;
   align-items: center;
+  gap: 4px;
+  background: #0b0d11;
+  border: 1px solid var(--border-brass);
+  padding: 2px 5px;
   font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-size: 0.66rem;
 }
 
 .status-label {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 .status-duration {
   color: var(--text-dim);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
 }
 
 .log-card {
   flex: 1;
   min-height: 150px;
-  max-height: 300px;
+  max-height: 290px;
   display: flex;
   flex-direction: column;
 }
@@ -505,40 +667,43 @@
 
 .log-filter-tabs {
   display: flex;
-  gap: 4px;
-  margin-bottom: 6px;
+  gap: 3px;
+  margin-bottom: 5px;
 }
 
 .log-tab-btn {
   flex: 1;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: #0c0e13;
+  border: 1px solid #383e4c;
+  border-radius: 1px;
   padding: 3px 4px;
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
   color: var(--text-dim);
   cursor: pointer;
 }
 
 .log-tab-btn.active {
-  background: rgba(0, 255, 255, 0.16);
-  border-color: var(--color-accent);
-  color: #fff;
+  background: linear-gradient(180deg, #2d2515 0%, #1a160d 100%);
+  border-color: var(--border-brass-bright);
+  color: var(--text-highlight);
   font-weight: 700;
 }
 
 .log-content {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   line-height: 1.35;
   overflow-y: auto;
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-right: 4px;
+  gap: 3px;
+  background: var(--bg-socket);
+  border: 1px solid #2b303b;
+  box-shadow: inset 2px 2px 0 #000;
+  padding: 5px 6px;
 }
 
 .log-entry {
@@ -551,35 +716,39 @@
 
 .log-entry.combat-hit,
 .log-entry.combat-death {
-  color: var(--color-health);
+  color: #e05257;
 }
 
 .log-entry.combat-heal,
 .log-entry.flavor {
-  color: var(--color-xp);
+  color: #63c773;
 }
 
-/* RimWorld-Style Floating Context Verb Menu Popover */
+/* Chiseled Context Verb Menu Popover */
 .verb-menu-popover {
   position: fixed;
   z-index: 250;
-  min-width: 200px;
-  max-width: 240px;
-  background: rgba(10, 14, 20, 0.96);
-  border: 1px solid var(--color-accent);
-  border-radius: 6px;
+  min-width: 205px;
+  max-width: 245px;
+  background: linear-gradient(180deg, #1a1d25 0%, #101217 100%);
+  border: 2px solid var(--border-brass);
+  outline: 1px solid #000000;
+  border-radius: 1px;
   padding: 8px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 230, 160, 0.15),
+    4px 4px 0 rgba(0, 0, 0, 0.92);
   font-family: var(--font-mono);
 }
 
 .verb-menu-header {
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.8px;
   color: var(--text-highlight);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid #383e4c;
   padding-bottom: 4px;
   margin-bottom: 6px;
 }
@@ -595,8 +764,8 @@
 
 .verb-menu-item {
   padding: 4px 6px;
-  border-radius: 4px;
-  font-size: 0.76rem;
+  border-radius: 1px;
+  font-size: 0.74rem;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -607,25 +776,26 @@
 }
 
 .verb-menu-item.valid:hover {
-  background: rgba(0, 255, 255, 0.15);
+  background: #2b2416;
+  outline: 1px solid var(--border-brass);
   color: #fff;
 }
 
 .verb-key {
-  color: var(--color-accent);
+  color: var(--text-highlight);
   font-weight: 700;
 }
 
 .verb-menu-footer {
   margin-top: 6px;
   width: 100%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
+  background: #14171f;
+  border: 1px solid #3e4452;
+  border-radius: 1px;
   padding: 4px;
   color: var(--text-dim);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   cursor: pointer;
 }
 

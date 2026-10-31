@@ -1,20 +1,26 @@
-/* Core Styling System */
+/* Core Styling System — Dwarf Fortress Steam / Dark Fantasy CRPG Material Palette */
 :root {
-  --bg-main: #060709;
-  --bg-console: #0c0e12;
-  --bg-card: rgba(20, 24, 33, 0.6);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(0, 255, 136, 0.15);
+  --bg-main: #050507;
+  --bg-console: #121419;
+  --bg-card: #16181f;
+  --bg-socket: #090a0d;
 
-  --text-main: #cdcfd4;
-  --text-dim: #7f8490;
-  --text-highlight: #ffd32a;
+  --border-color: #3d4350;
+  --border-stone-light: #565e70;
+  --border-brass: #9e782f;
+  --border-brass-bright: #dfb15b;
+  --border-glow: rgba(212, 160, 36, 0.22);
 
-  --color-health: #ff4757;
-  --color-xp: #2ed573;
-  --color-accent: #00ffff;
+  --text-main: #e2d9c8;
+  --text-dim: #8e8779;
+  --text-highlight: #e6b84c;
 
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-health: #b8252a;
+  --color-xp: #388e48;
+  --color-accent: #d4a024;
+
+  --font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --font-sans: 'JetBrains Mono', 'Courier New', Courier, monospace;
   --font-mono: 'JetBrains Mono', 'Courier New', Courier, monospace;
 }
 
@@ -30,11 +36,8 @@
 
 body {
   background-color: var(--bg-main);
-  background-image:
-    radial-gradient(at 0% 0%, rgba(0, 255, 255, 0.03) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(255, 71, 87, 0.03) 0px, transparent 50%);
   color: var(--text-main);
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -52,7 +55,7 @@ body {
 /* Animations */
 @keyframes pulse {
   0% {
-    opacity: 0.7;
+    opacity: 0.75;
   }
 
   50% {
@@ -60,7 +63,7 @@ body {
   }
 
   100% {
-    opacity: 0.7;
+    opacity: 0.75;
   }
 }
 
@@ -75,3 +78,4 @@ body {
     scroll-behavior: auto !important;
   }
 }
+

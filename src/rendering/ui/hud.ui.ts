@@ -151,7 +151,8 @@ export function renderPlayerStats(state: GameState): void {
     if (hunger) {
       const stateLabel = getHungerState(state, hunger.satiation);
       hungerText.textContent = stateLabel;
-      hungerText.style.color = stateLabel === 'Starving' ? '#e74c3c' : stateLabel === 'Hungry' ? '#f39c12' : '#ecf0f1';
+      hungerText.style.color =
+        stateLabel === 'Starving' ? '#d9383e' : stateLabel === 'Hungry' ? '#e6a23c' : 'var(--text-main)';
     }
   }
 
@@ -176,7 +177,7 @@ export function renderPlayerStats(state: GameState): void {
     }
   }
 
-  // Update Status Effects
+  // Update Status Effects (inline inside Vitals plate; collapses when empty)
   const statusContainer = document.getElementById('status-effects-container');
   const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects);
   const statusBadge = document.getElementById('edge-badge-status');
@@ -187,12 +188,7 @@ export function renderPlayerStats(state: GameState): void {
   if (statusContainer) {
     statusContainer.replaceChildren();
 
-    if (!statuses || statuses.activeEffects.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'status-empty';
-      empty.textContent = 'Normal';
-      statusContainer.appendChild(empty);
-    } else {
+    if (statuses && statuses.activeEffects.length > 0) {
       for (const active of statuses.activeEffects) {
         const def = state.campaign.status[active.effectId];
         const effectDiv = document.createElement('div');
@@ -209,7 +205,7 @@ export function renderPlayerStats(state: GameState): void {
 
         const duration = document.createElement('span');
         duration.className = 'status-duration';
-        duration.textContent = `(${active.duration}t)`;
+        duration.textContent = `${active.duration}t`;
 
         effectDiv.appendChild(label);
         effectDiv.appendChild(duration);

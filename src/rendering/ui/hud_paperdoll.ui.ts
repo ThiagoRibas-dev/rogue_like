@@ -103,6 +103,11 @@ export function renderHudPaperdoll(state: GameState): void {
   if (equipContainer) {
     equipContainer.replaceChildren();
     const slots = equipment?.slots ?? [];
+    const equippedCount = slots.filter((s) => s.equippedItem !== null).length;
+    const gearBadge = document.getElementById('edge-badge-gear');
+    if (gearBadge) {
+      gearBadge.textContent = `${equippedCount}/${slots.length || 5}`;
+    }
 
     for (const slot of slots) {
       const cell = document.createElement('button');
@@ -142,9 +147,9 @@ export function renderHudPaperdoll(state: GameState): void {
       } else {
         const emptySpan = document.createElement('span');
         emptySpan.className = 'mini-doll-empty';
-        emptySpan.textContent = '—';
+        emptySpan.textContent = '·';
         cell.appendChild(emptySpan);
-        cell.title = 'Open Inventory [I]';
+        cell.title = `${slot.slotType.toUpperCase()} — Click to open Inventory [I]`;
         cell.addEventListener('click', () => {
           queuePlayerIntent(createToggleInventoryAction(playerEntityId));
         });

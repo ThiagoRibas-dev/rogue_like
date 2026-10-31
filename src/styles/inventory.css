@@ -35,8 +35,11 @@
 }
 
 .inv-header {
-  font-size: 1.2rem;
-  font-weight: bold;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
   color: var(--text-highlight);
   margin-bottom: 8px;
   text-align: center;
@@ -64,22 +67,24 @@
   gap: 12px;
   padding: 4px 8px;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  border-radius: 4px;
+  font-size: 0.82rem;
+  border-radius: 1px;
 }
 
 .inv-slot:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(230, 184, 76, 0.1);
 }
 
 .inv-equipped {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(230, 184, 76, 0.08);
 }
 
 .equipment-slot-header {
-  font-size: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
   color: var(--text-dim);
   text-transform: uppercase;
+  letter-spacing: 0.8px;
   margin-top: 8px;
   margin-bottom: 4px;
 }
@@ -88,9 +93,10 @@
   color: var(--text-dim);
   font-style: italic;
   padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  border: 1px dashed var(--border-color);
+  background: var(--bg-socket);
+  border-radius: 1px;
+  border: 1px solid #2e333e;
+  box-shadow: inset 2px 2px 0 #000;
 }
 
 .inv-slot-label {
@@ -104,23 +110,23 @@
 
 /* Category colors */
 .inv-cat-consumable .inv-slot-name {
-  color: #ff9f43; /* Orange */
+  color: #e69d45;
 }
 
 .inv-cat-weapon .inv-slot-name {
-  color: #ee5253; /* Red/Pink */
+  color: #e05a5f;
 }
 
 .inv-cat-armor .inv-slot-name {
-  color: #0abde3; /* Cyan */
+  color: #6ea8d6;
 }
 
 .inv-cat-usable .inv-slot-name {
-  color: #10ac84; /* Green */
+  color: #5cc46d;
 }
 
 .inv-equipped .inv-slot-name {
-  color: var(--color-xp); /* Green */
+  color: var(--text-highlight);
   font-weight: bold;
 }
 
@@ -133,7 +139,7 @@
     '. legs .';
   grid-template-columns: 1fr 1fr 1fr;
   grid-template-rows: auto auto auto;
-  gap: 16px;
+  gap: 14px;
   justify-items: center;
   align-items: start;
   padding: 10px;
@@ -163,9 +169,12 @@
 }
 
 .paperdoll-slot {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  background: var(--bg-socket);
+  border: 1px solid #3c4250;
+  box-shadow:
+    inset 2px 2px 0 #000000,
+    inset -1px -1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 1px;
   padding: 8px;
   display: flex;
   flex-direction: column;
@@ -177,49 +186,53 @@
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
-  gap: 6px;
+  gap: 5px;
   padding: 10px;
 }
 
 .inv-grid-slot {
   width: 44px;
   height: 44px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+  background: var(--bg-socket);
+  border: 1px solid #3c4250;
+  box-shadow:
+    inset 2px 2px 0 #000000,
+    inset -1px -1px 0 rgba(255, 255, 255, 0.06);
+  border-radius: 1px;
   position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  transition: background 0.1s;
 }
 
 .inv-grid-slot:hover {
-  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-brass-bright);
+  background: #1c2029;
 }
 
 .inv-grid-empty {
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px solid #282c36;
   cursor: default;
 }
 
 .inv-equipped-grid {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--text-highlight);
+  background: linear-gradient(180deg, #211b10 0%, #110f0a 100%);
+  border-color: var(--border-brass-bright);
 }
 
 .inv-grid-label {
   position: absolute;
   top: 2px;
   left: 4px;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   color: var(--text-dim);
   pointer-events: none;
 }
 
 .inv-item-icon {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-family: var(--font-mono);
   font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
 }

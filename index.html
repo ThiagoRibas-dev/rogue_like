@@ -8,11 +8,11 @@
   <meta name="description" content="A browser-based traditional roguelike engine featuring Turn-Based and RTwP modes, built with TypeScript and ROT.js." />
   <meta property="og:title" content="Rogue-like Engine" />
   <meta property="og:description" content="A browser-based traditional roguelike engine featuring Turn-Based and RTwP modes, built with TypeScript and ROT.js." />
-  <!-- Google Fonts: Outfit for UI, JetBrains Mono for clean code/log aesthetics -->
+  <!-- Google Fonts: Cinzel for carved CRPG headers, JetBrains Mono for crisp tactical telemetry & logs -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Outfit:wght@100..900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&display=swap"
     rel="stylesheet">
 </head>
 
@@ -33,76 +33,53 @@
       <aside class="left-panel side-panel" id="hud-left-stack">
 
         <!-- Master Edge Toggle [Tab] -->
-        <button type="button" id="btn-toggle-hud-fold" class="hud-master-edge-btn" title="Expand or collapse all HUD panels to edge icons [Tab]">
-          <span class="hud-edge-icon">⊞</span>
+        <button type="button" id="btn-toggle-hud-fold" class="hud-master-edge-btn" title="Expand or collapse all HUD plates to edge emblems [Tab]">
+          <span class="hud-edge-icon">⊟</span>
           <span class="hud-edge-badge">TAB</span>
         </button>
 
-        <!-- Compact Time & Camera Toolbar Card -->
-        <div class="hud-card toolbar-card folded">
-          <button type="button" class="hud-edge-tab" title="Expand Chronos &amp; Camera Controls">
-            <span class="hud-edge-icon">⏱️</span>
-            <span class="hud-edge-badge" id="edge-badge-time">TB</span>
+        <!-- Consolidated Headerless Adventurer Vitals, Status & Chronos Gauge Plate -->
+        <div class="hud-card vitals-plate">
+          <button type="button" class="hud-edge-tab" title="Expand Adventurer Vitals &amp; Chronos">
+            <span class="hud-edge-icon">⚜</span>
+            <span class="hud-edge-badge" id="edge-badge-vitals">100%</span>
+            <span class="hidden" id="edge-badge-time">TB</span>
+            <span class="hidden" id="edge-badge-status">OK</span>
           </button>
-          <div class="hud-card-header">
-            <h2>Chronos &amp; Camera</h2>
-            <div class="hud-header-actions">
-              <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">«</button>
+          <div class="hud-card-body vitals-plate-body">
+            <!-- Top Area Banner + Level Crest + Collapse Button -->
+            <div class="vitals-banner-row">
+              <div class="vitals-area-title">
+                <span class="vitals-crest">⚜</span>
+                <span id="dungeon-depth" class="area-banner-name">Dungeon</span>
+              </div>
+              <div class="vitals-banner-right">
+                <span class="level-crest">LV <strong id="player-level-text">1</strong></span>
+                <button type="button" class="hud-fold-btn" aria-expanded="true" title="Collapse to edge emblem">«</button>
+              </div>
             </div>
-          </div>
-          <div class="hud-card-body toolbar-body">
-            <div class="time-controls">
-              <button id="btn-engine-mode" class="time-btn mode-btn">Turn-Based</button>
-              <div class="rtwp-controls" id="rtwp-controls" style="display: none;">
-                <button id="btn-pause" class="time-btn pause-btn">⏸ Paused</button>
-                <div class="speed-btns">
-                  <button id="btn-speed-1" class="time-btn speed-btn active">1x</button>
-                  <button id="btn-speed-2" class="time-btn speed-btn">2x</button>
-                  <button id="btn-speed-4" class="time-btn speed-btn">4x</button>
+
+            <!-- Chiseled Segmented HP & XP Meters -->
+            <div class="vitals-meters">
+              <div class="stat-row meter-row">
+                <span class="meter-tag hp-tag">HP</span>
+                <div class="bar-container">
+                  <div id="health-bar-fill" class="bar-fill health-bar" style="width: 100%;"></div>
+                  <div class="bar-ticks"></div>
+                  <span id="health-bar-text" class="bar-text">30 / 30</span>
+                </div>
+              </div>
+              <div class="stat-row meter-row">
+                <span class="meter-tag xp-tag">XP</span>
+                <div class="bar-container">
+                  <div id="xp-bar-fill" class="bar-fill xp-bar" style="width: 0%;"></div>
+                  <div class="bar-ticks"></div>
+                  <span id="xp-bar-text" class="bar-text">0 / 100</span>
                 </div>
               </div>
             </div>
-            <div class="view-controls">
-              <button id="btn-toggle-rotate" class="time-btn" title="Rotate 45°">45°</button>
-              <button id="btn-toggle-3d" class="time-btn" title="3D Tilt">3D</button>
-              <button id="btn-zoom-out" class="time-btn" title="Zoom Out">−</button>
-              <button id="btn-zoom-in" class="time-btn" title="Zoom In">+</button>
-              <button id="btn-open-settings" class="time-btn" title="Settings">⚙️</button>
-            </div>
-          </div>
-        </div>
 
-        <!-- Vitals & Telemetry Card -->
-        <div class="hud-card stats-card folded">
-          <button type="button" class="hud-edge-tab" title="Expand Adventurer Vitals">
-            <span class="hud-edge-icon">❤️</span>
-            <span class="hud-edge-badge" id="edge-badge-vitals">100%</span>
-          </button>
-          <div class="hud-card-header">
-            <h2>Adventurer Vitals</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">«</button>
-          </div>
-          <div class="hud-card-body">
-            <div class="stat-row">
-              <div class="stat-inline-pair">
-                <span><span class="stat-label-inline">Area:</span> <span id="dungeon-depth" class="stat-value text-highlight">1</span></span>
-                <span><span class="stat-label-inline">Lv:</span> <span id="player-level-text" class="stat-value">1</span></span>
-              </div>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Health</span>
-              <div class="bar-container">
-                <div id="health-bar-fill" class="bar-fill health-bar" style="width: 100%;"></div>
-                <span id="health-bar-text" class="bar-text">30 / 30</span>
-              </div>
-            </div>
-            <div class="stat-row">
-              <span class="stat-label">Experience</span>
-              <div class="bar-container">
-                <div id="xp-bar-fill" class="bar-fill xp-bar" style="width: 0%;"></div>
-                <span id="xp-bar-text" class="bar-text">0 / 100</span>
-              </div>
-            </div>
+            <!-- Recessed Combat & Survival Readout Sockets -->
             <div class="stat-grid-3">
               <div class="stat-row stat-pill">
                 <span class="stat-label-inline">ATK</span>
@@ -113,44 +90,51 @@
                 <span id="def-text" class="stat-value">0</span>
               </div>
               <div class="stat-row stat-pill">
-                <span class="stat-label-inline">Food</span>
+                <span class="stat-label-inline">SAT</span>
                 <span id="hunger-text" class="stat-value">Normal</span>
+              </div>
+            </div>
+
+            <!-- Inline Active Conditions Strip (collapses when Normal) -->
+            <div id="status-effects-container" class="status-content"></div>
+
+            <!-- Tactile Beveled Chronos & Camera Strip -->
+            <div class="chronos-strip">
+              <div class="time-controls">
+                <button id="btn-engine-mode" class="time-btn mode-btn">Turn-Based</button>
+                <div class="rtwp-controls" id="rtwp-controls" style="display: none;">
+                  <button id="btn-pause" class="time-btn pause-btn">⏸</button>
+                  <div class="speed-btns">
+                    <button id="btn-speed-1" class="time-btn speed-btn active">1x</button>
+                    <button id="btn-speed-2" class="time-btn speed-btn">2x</button>
+                    <button id="btn-speed-4" class="time-btn speed-btn">4x</button>
+                  </div>
+                </div>
+              </div>
+              <div class="view-controls">
+                <button id="btn-toggle-rotate" class="time-btn" title="Rotate 45°">45°</button>
+                <button id="btn-toggle-3d" class="time-btn" title="3D Tilt">3D</button>
+                <button id="btn-zoom-out" class="time-btn" title="Zoom Out">−</button>
+                <button id="btn-zoom-in" class="time-btn" title="Zoom In">+</button>
+                <button id="btn-open-settings" class="time-btn" title="Settings">⚙</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Ultima / DF Mini Paper-Doll & Quick-Use Belt Card -->
-        <div class="hud-card paperdoll-card folded">
+        <!-- Ultima / DF Sunken 5x2 Equipment & Quick-Belt Socket Plate -->
+        <div class="hud-card paperdoll-card">
           <button type="button" class="hud-edge-tab" title="Expand Gear &amp; Quick Belt [1]–[5]">
-            <span class="hud-edge-icon">🛡️</span>
+            <span class="hud-edge-icon">⚔</span>
             <span class="hud-edge-badge" id="edge-badge-gear">1-5</span>
           </button>
-          <div class="hud-card-header">
-            <h2>Gear &amp; Quick Belt</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">«</button>
-          </div>
-          <div class="hud-card-body">
-            <div id="hud-paperdoll-grid" class="mini-paperdoll-grid"></div>
-            <div class="quickbelt-header">Quick Belt <span class="quickbelt-sub">[1]–[5] / Click</span></div>
-            <div id="hud-quickbelt-grid" class="quickbelt-grid"></div>
-          </div>
-        </div>
-
-        <!-- Active Status Effects Card -->
-        <div class="hud-card status-card folded">
-          <button type="button" class="hud-edge-tab" title="Expand Active Conditions">
-            <span class="hud-edge-icon">🧪</span>
-            <span class="hud-edge-badge" id="edge-badge-status">OK</span>
-          </button>
-          <div class="hud-card-header">
-            <h2>Conditions</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">«</button>
-          </div>
-          <div class="hud-card-body">
-            <div id="status-effects-container" class="status-content">
-              <div class="status-empty">Normal</div>
+          <div class="hud-card-body socket-plate-body">
+            <div class="socket-plate-header">
+              <span class="socket-plate-label">Equipped &amp; Belt <span class="quickbelt-sub">[1–5]</span></span>
+              <button type="button" class="hud-fold-btn" aria-expanded="true" title="Collapse to edge emblem">«</button>
             </div>
+            <div id="hud-paperdoll-grid" class="mini-paperdoll-grid"></div>
+            <div id="hud-quickbelt-grid" class="quickbelt-grid"></div>
           </div>
         </div>
 
@@ -170,7 +154,7 @@
           </button>
           <div class="hud-card-header">
             <h2>Command Dock</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">»</button>
+            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge emblem">»</button>
           </div>
           <div class="hud-card-body">
             <div id="hud-command-dock" class="dock-cmd-grid"></div>
@@ -180,12 +164,12 @@
         <!-- Inspect / Hover Telemetry Card -->
         <div id="inspect-panel" class="hud-card inspect-card folded">
           <button type="button" class="hud-edge-tab" title="Expand Tactical Scanner [X]">
-            <span class="hud-edge-icon">🔍</span>
+            <span class="hud-edge-icon">⌖</span>
             <span class="hud-edge-badge" id="edge-badge-scanner">SCAN</span>
           </button>
           <div class="hud-card-header">
             <h2>Tactical Scanner</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">»</button>
+            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge emblem">»</button>
           </div>
           <div class="hud-card-body">
             <div id="inspect-content" class="inspect-content">
@@ -202,7 +186,7 @@
           </button>
           <div class="hud-card-header">
             <h2>Chronicle Log</h2>
-            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge icon">»</button>
+            <button type="button" class="hud-fold-btn" aria-expanded="false" title="Collapse to edge emblem">»</button>
           </div>
           <div class="hud-card-body log-card-body">
             <div id="message-log-tabs" class="log-filter-tabs" role="tablist"></div>
@@ -243,16 +227,16 @@
         <div class="modal-buttons">
           <button id="btn-continue" class="modal-btn" disabled>Continue Game</button>
           <button id="btn-new-game" class="modal-btn">New Game</button>
-          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 16px; background: #6c5ce7;">🛠️ Campaign Editor</button>
-          <button id="btn-install-campaign" class="modal-btn" style="margin-top: 8px; background: #27ae60;">📦 Install Campaign (.zip)</button>
+          <button id="btn-dev-tools" class="modal-btn" style="margin-top: 12px;">⚒ Campaign Editor</button>
+          <button id="btn-install-campaign" class="modal-btn" style="margin-top: 4px;">📦 Install Campaign (.zip)</button>
           <input type="file" id="file-install-campaign" accept=".zip" style="display: none;" />
-          <div style="display: flex; gap: 8px; margin-top: 16px;">
-            <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;" disabled>Export
+          <div style="display: flex; gap: 8px; margin-top: 12px;">
+            <button id="btn-export-save" class="modal-btn" style="flex: 1; font-size: 0.78rem;" disabled>Export
               Save</button>
-            <button id="btn-import-save" class="modal-btn" style="flex: 1; font-size: 0.8rem;">Import Save</button>
+            <button id="btn-import-save" class="modal-btn" style="flex: 1; font-size: 0.78rem;">Import Save</button>
             <input type="file" id="file-import-save" accept=".json" style="display: none;" />
           </div>
-          <button id="btn-main-menu-settings" class="modal-btn" style="margin-top: 16px;">⚙️ Settings</button>
+          <button id="btn-main-menu-settings" class="modal-btn" style="margin-top: 12px;">⚙ Settings</button>
         </div>
       </div>
     </div>

@@ -1,9 +1,9 @@
-/* Full-Viewport RimWorld / Dwarf Fortress Steam Layout (Zero Vertical Obstruction) */
+/* Full-Viewport Dwarf Fortress Steam / Ultima CRPG Layout (Zero Vertical Obstruction) */
 .layout-wrapper {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #020305;
+  background: #000000;
   overflow: hidden;
 }
 
@@ -16,16 +16,15 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: radial-gradient(circle at center, #080b10 0%, #020305 100%);
+  background: #000000;
   overflow: hidden;
   z-index: 1;
 }
 
 .canvas-wrapper {
   position: relative;
-  background: #000;
-  border: 1px solid rgba(0, 255, 255, 0.14);
-  box-shadow: 0 0 36px rgba(0, 0, 0, 0.9);
+  background: #000000;
+  border: none;
   width: 100%;
   height: 100%;
   display: flex;
@@ -44,15 +43,15 @@
   image-rendering: pixelated;
 }
 
-/* Floating Left & Right Side Stacks (Pointer-transparent containers, interactive cards) */
+/* Floating Left & Right Side Stacks (Pointer-transparent containers, interactive plates) */
 .side-panel {
   position: absolute;
-  top: 10px;
-  bottom: 10px;
-  width: 288px;
+  top: 8px;
+  bottom: 8px;
+  width: 268px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   overflow-y: auto;
   overflow-x: hidden;
   pointer-events: none;
