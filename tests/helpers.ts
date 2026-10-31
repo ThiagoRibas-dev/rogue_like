@@ -33,11 +33,15 @@ const CATEGORY_FILE_OVERRIDES: Partial<Record<keyof CampaignData, string>> = {
 /** Loads a campaign from disk the same way the runtime loader maps files, including parent ruleset System Content. */
 export function loadCampaignFromDisk(id: string): CampaignData {
   const dir = join(CAMPAIGNS_ROOT, id);
+  const defaultDir = join(CAMPAIGNS_ROOT, 'default');
   const assembled: Record<string, unknown> = {};
   for (const key of Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[]) {
     if (key === 'triggerBuckets' || key === 'systemContent') continue;
     const filename = CATEGORY_FILE_OVERRIDES[key] ?? `${toSnakeCase(key)}.json`;
-    const filePath = join(dir, filename);
+    let filePath = join(dir, filename);
+    if (!existsSync(filePath) && id !== 'default') {
+      filePath = join(defaultDir, filename);
+    }
     if (!existsSync(filePath)) continue;
     assembled[key] = JSON.parse(readFileSync(filePath, 'utf-8'));
   }
