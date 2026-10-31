@@ -33,9 +33,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: 'Install TypeScript 6 (for ignoreDeprecations: "6.0")'
-        run: bun add -D typescript@6
-
       - name: Install dependencies
         run: bun install
 
