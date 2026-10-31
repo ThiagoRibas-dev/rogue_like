@@ -1,0 +1,245 @@
+{
+  "player": {
+    "archetypeId": "player",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 16,
+      "dex": 14,
+      "con": 14,
+      "int": 12,
+      "wis": 12,
+      "cha": 10
+    },
+    "tracks": [
+      {
+        "trackId": "fighter",
+        "levels": 1,
+        "hitDieSides": 10,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["slashing"],
+    "armorBonus": 4,
+    "shieldBonus": 2,
+    "naturalArmorBonus": 0,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "feats": ["power_attack", "cleave", "combat_reflexes"],
+    "skillRanks": {
+      "tumble": 4,
+      "jump": 4,
+      "intimidate": 4,
+      "spot": 2
+    }
+  },
+  "skeleton": {
+    "archetypeId": "skeleton",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 13,
+      "dex": 13,
+      "con": null,
+      "int": null,
+      "wis": 10,
+      "cha": 1
+    },
+    "tracks": [
+      {
+        "trackId": "undead",
+        "levels": 1,
+        "hitDieSides": 12,
+        "babCurve": "half",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good",
+        "skillPointsPerLevel": 0
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 18,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["slashing"],
+    "armorBonus": 0,
+    "shieldBonus": 1,
+    "naturalArmorBonus": 2,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": ["bludgeoning"]
+    },
+    "energyResistance": {},
+    "immunities": ["cold"],
+    "vulnerabilities": [],
+    "feats": ["improved_initiative"],
+    "skillRanks": {}
+  },
+  "wolf": {
+    "archetypeId": "wolf",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 13,
+      "dex": 15,
+      "con": 15,
+      "int": 2,
+      "wis": 12,
+      "cha": 6
+    },
+    "tracks": [
+      {
+        "trackId": "animal",
+        "levels": 2,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["piercing", "bludgeoning", "slashing"],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 2,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "feats": ["weapon_focus_bite"],
+    "skillRanks": {
+      "listen": 3,
+      "spot": 3,
+      "move_silently": 3,
+      "hide": 2
+    }
+  },
+  "ogre": {
+    "archetypeId": "ogre",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 21,
+      "dex": 8,
+      "con": 15,
+      "int": 6,
+      "wis": 10,
+      "cha": 7
+    },
+    "tracks": [
+      {
+        "trackId": "giant",
+        "levels": 4,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "2d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["bludgeoning"],
+    "armorBonus": 3,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 5,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "feats": ["weapon_focus_greatclub", "toughness"],
+    "skillRanks": {
+      "climb": 4,
+      "listen": 2,
+      "spot": 2
+    }
+  },
+  "troll": {
+    "archetypeId": "troll",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 23,
+      "dex": 14,
+      "con": 23,
+      "int": 6,
+      "wis": 9,
+      "cha": 6
+    },
+    "tracks": [
+      {
+        "trackId": "giant",
+        "levels": 6,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["slashing", "piercing"],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 5,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": ["fire", "acid"],
+    "feats": ["alertness", "iron_will", "track"],
+    "skillRanks": {
+      "listen": 5,
+      "spot": 6
+    }
+  },
+  "default_creature": {
+    "archetypeId": "default_creature",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 14,
+      "dex": 12,
+      "con": 12,
+      "int": 8,
+      "wis": 10,
+      "cha": 8
+    },
+    "tracks": [
+      {
+        "trackId": "creature",
+        "levels": 1,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": ["slashing"],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 1,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "feats": [],
+    "skillRanks": {}
+  }
+}

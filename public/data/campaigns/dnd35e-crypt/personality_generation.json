@@ -1,0 +1,25 @@
+{
+  "default_personality": {
+    "facets": [
+      "cowardice",
+      "cruelty",
+      "generosity",
+      "greed",
+      "loyalty",
+      "ambition"
+    ],
+    "values": [
+      "power",
+      "peace",
+      "wealth",
+      "knowledge",
+      "survival"
+    ],
+    "leverageMappings": {
+      "money": ["greed"],
+      "ideology": ["loyalty", "ambition"],
+      "coercion": ["cowardice"],
+      "ego": ["cruelty", "ambition"]
+    }
+  }
+}

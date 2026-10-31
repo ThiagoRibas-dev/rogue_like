@@ -12,10 +12,13 @@ import { spawnEntity } from '../src/core/ecs.ts';
 import { initRNG } from '../src/core/rng.ts';
 import { type GameState, UIMode, EngineMode } from '../src/types/game-state.types.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../src/constants/pacing.constants.ts';
+import { getRuleset } from '../src/rulesets/registry.ts';
+import type { RulesetId } from '../src/types/ruleset.types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const CAMPAIGNS_ROOT = join(ROOT, 'public', 'data', 'campaigns');
+const RULESETS_ROOT = join(ROOT, 'public', 'data', 'rulesets');
 
 initRNG(42);
 
@@ -27,17 +30,46 @@ const CATEGORY_FILE_OVERRIDES: Partial<Record<keyof CampaignData, string>> = {
   schemeRecipes: 'schemes.json'
 };
 
-/** Loads a campaign from disk the same way the runtime loader maps files. */
+/** Loads a campaign from disk the same way the runtime loader maps files, including parent ruleset System Content. */
 export function loadCampaignFromDisk(id: string): CampaignData {
   const dir = join(CAMPAIGNS_ROOT, id);
   const assembled: Record<string, unknown> = {};
   for (const key of Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[]) {
-    if (key === 'triggerBuckets') continue;
+    if (key === 'triggerBuckets' || key === 'systemContent') continue;
     const filename = CATEGORY_FILE_OVERRIDES[key] ?? `${toSnakeCase(key)}.json`;
     const filePath = join(dir, filename);
     if (!existsSync(filePath)) continue;
     assembled[key] = JSON.parse(readFileSync(filePath, 'utf-8'));
   }
+
+  const manifest = assembled['manifest'] as Record<string, unknown> | undefined;
+  const rulesetId = typeof manifest?.['rulesetId'] === 'string' ? (manifest['rulesetId'] as RulesetId) : 'classic';
+  const ruleset = getRuleset(rulesetId);
+  const rulesetDir = join(RULESETS_ROOT, ruleset.id);
+  const readRulesetJson = (filename: string): Record<string, unknown> => {
+    const p = join(rulesetDir, filename);
+    return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf-8')) as Record<string, unknown>) : {};
+  };
+
+  for (const sharedKey of ['items', 'entities', 'status', 'effects'] as const) {
+    const baseRecord = readRulesetJson(`${sharedKey}.json`);
+    if (Object.keys(baseRecord).length > 0) {
+      assembled[sharedKey] = {
+        ...baseRecord,
+        ...((assembled[sharedKey] as Record<string, unknown> | undefined) ?? {})
+      };
+    }
+  }
+
+  const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
+  const rawSystemContent: Record<string, unknown> = {};
+  for (const desc of systemDescriptors) {
+    rawSystemContent[desc.key] = readRulesetJson(desc.filename);
+  }
+  assembled['systemContent'] = ruleset.parseSystemContent
+    ? ruleset.parseSystemContent(rawSystemContent)
+    : rawSystemContent;
+
   return CampaignDataSchema.parse(assembled);
 }
 
@@ -124,7 +156,10 @@ export interface RecordedDraw {
  * @param width Viewport width returned by `getOptions()`.
  * @param height Viewport height returned by `getOptions()`.
  */
-export function makeRecordingDisplay(width = 50, height = 25): {
+export function makeRecordingDisplay(
+  width = 50,
+  height = 25
+): {
   readonly display: Record<string, unknown>;
   readonly draws: RecordedDraw[];
   readonly clearCount: () => number;
@@ -142,4 +177,66 @@ export function makeRecordingDisplay(width = 50, height = 25): {
     getContainer: () => null
   };
   return { display, draws, clearCount: () => clears };
+}
+
+/**
+ * Recursively freezes all plain objects, arrays, Maps, and Sets inside a GameState
+ * so any in-place mutation throws a TypeError immediately during tests.
+ *
+ * @param value The value or GameState to deep-freeze in place.
+ * @param seen WeakSet tracking visited object references.
+ * @returns The frozen value.
+ */
+export function deepFreezeGameState<T>(value: T, seen: WeakSet<object> = new WeakSet()): T {
+  if (value === null || typeof value !== 'object') {
+    return value;
+  }
+
+  const obj = value as object;
+  if (seen.has(obj)) {
+    return value;
+  }
+  seen.add(obj);
+
+  if (obj instanceof Map) {
+    for (const [k, v] of obj.entries()) {
+      deepFreezeGameState(k, seen);
+      deepFreezeGameState(v, seen);
+    }
+    const throwMutate = (): never => {
+      throw new TypeError('Attempted to mutate a frozen Map in GameState');
+    };
+    Object.defineProperty(obj, 'set', { value: throwMutate });
+    Object.defineProperty(obj, 'delete', { value: throwMutate });
+    Object.defineProperty(obj, 'clear', { value: throwMutate });
+    return value;
+  }
+
+  if (obj instanceof Set) {
+    for (const v of obj.values()) {
+      deepFreezeGameState(v, seen);
+    }
+    const throwMutate = (): never => {
+      throw new TypeError('Attempted to mutate a frozen Set in GameState');
+    };
+    Object.defineProperty(obj, 'add', { value: throwMutate });
+    Object.defineProperty(obj, 'delete', { value: throwMutate });
+    Object.defineProperty(obj, 'clear', { value: throwMutate });
+    return value;
+  }
+
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      deepFreezeGameState(item, seen);
+    }
+    Object.freeze(obj);
+    return value;
+  }
+
+  for (const key of Object.keys(obj)) {
+    const prop = (obj as Record<string, unknown>)[key];
+    deepFreezeGameState(prop, seen);
+  }
+  Object.freeze(obj);
+  return value;
 }

@@ -115,9 +115,7 @@ export function buildTacticalViewportData(
     const hpRatio = Math.max(0, Math.min(1, fighter.hp / maxHp));
     const attitude = resolveUnitAttitude(state, playerEntityId, entityId);
 
-    const statusComp = getComponent(state, entityId, ComponentType.StatusEffects) as
-      | StatusEffectsComponent
-      | undefined;
+    const statusComp = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
     const statusColors: string[] = [];
     if (statusComp) {
       for (const effect of statusComp.activeEffects) {

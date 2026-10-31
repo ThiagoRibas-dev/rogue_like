@@ -11,7 +11,7 @@ export function trapFocus(element: HTMLElement): () => void {
   const firstFocusableEl = focusableEls[0];
   const lastFocusableEl = focusableEls[focusableEls.length - 1];
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent): void => {
     if (e.key !== 'Tab') return;
 
     if (e.shiftKey) {

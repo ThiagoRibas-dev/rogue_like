@@ -99,6 +99,8 @@ function processTelemetryQueue(deadline?: IdleDeadline): void {
         telemetryStore.questsCompleted += 1;
         break;
       }
+      default:
+        break;
     }
   }
 }

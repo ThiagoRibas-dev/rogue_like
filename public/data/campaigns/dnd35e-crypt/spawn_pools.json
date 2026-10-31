@@ -1,0 +1,109 @@
+{
+  "early_dungeon_monsters": {
+    "id": "early_dungeon_monsters",
+    "name": "Early Dungeon Monsters",
+    "conditions": {
+      "areaTags": [
+        "early_game",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "goblin": 100,
+      "goblin_archer": 50,
+      "orc": 30,
+      "orc_shaman": 10,
+      "troll": 5
+    }
+  },
+  "dungeon_hazards": {
+    "id": "dungeon_hazards",
+    "name": "Dungeon Hazards",
+    "conditions": {
+      "areaTags": [
+        "dungeon",
+        "cave"
+      ]
+    },
+    "entities": {
+      "hidden_trap": 100
+    }
+  },
+  "dungeon_appetizers": {
+    "id": "dungeon_appetizers",
+    "name": "Dungeon Loot Containers",
+    "conditions": {
+      "areaTags": [
+        "dungeon",
+        "cave",
+        "early_game",
+        "mid_game"
+      ]
+    },
+    "entities": {
+      "wooden_chest": 80,
+      "bones_pile": 20
+    }
+  },
+  "spider_nest_denizens": {
+    "id": "spider_nest_denizens",
+    "name": "Spider Nest Denizens",
+    "conditions": {
+      "biomeTags": [
+        "spider_nest"
+      ]
+    },
+    "entities": {
+      "spider_broodmother": 100,
+      "egg_sac": 80,
+      "web_trap": 100,
+      "goblin": 20
+    }
+  },
+  "orc_camp_denizens": {
+    "id": "orc_camp_denizens",
+    "name": "Orc Camp Denizens",
+    "conditions": {
+      "biomeTags": [
+        "orc_camp"
+      ]
+    },
+    "entities": {
+      "orc": 100,
+      "orc_bomber": 50,
+      "orc_shaman": 30,
+      "caged_beast": 40,
+      "fire_barrel": 80
+    }
+  },
+  "corrupted_forest_denizens": {
+    "id": "corrupted_forest_denizens",
+    "name": "Corrupted Forest Denizens",
+    "conditions": {
+      "biomeTags": [
+        "corrupted"
+      ]
+    },
+    "entities": {
+      "corrupted_treant": 100,
+      "poison_vent": 80,
+      "corrupted_pool": 60,
+      "troll": 30
+    }
+  },
+  "shrine_vault_denizens": {
+    "id": "shrine_vault_denizens",
+    "name": "Shrine Vault Denizens",
+    "conditions": {
+      "biomeTags": [
+        "shrine_vault"
+      ]
+    },
+    "entities": {
+      "vault_guardian": 100,
+      "heavy_vault_door": 60,
+      "altar": 40,
+      "wooden_chest": 80
+    }
+  }
+}

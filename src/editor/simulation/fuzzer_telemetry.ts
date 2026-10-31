@@ -60,6 +60,8 @@ export function processLedgerEvents(events: ReadonlyArray<GameEvent>, turns: num
         dramaCountDelta++;
         eventSummary = eventSummary || `Rivalry Resolved: ${event.rivalryId}`;
         break;
+      default:
+        break;
     }
 
     if (isNarrativeRelevant) {

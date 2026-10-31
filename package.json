@@ -9,6 +9,8 @@
     "build:itch": "tsc && vite build --base ./",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --cache",
+    "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
+    "lint:deadcode": "knip --files --dependencies",
     "lint:scripts": "tsc -p tsconfig.scripts.json --noEmit",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" --cache",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache",
@@ -25,7 +27,9 @@
     "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^7.10.0",
     "@typescript-eslint/parser": "^7.10.0",
+    "dependency-cruiser": "^18.7.0",
     "eslint": "^8.57.0",
+    "knip": "^6.44.1",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5",
     "vite": "^5.2.11"

@@ -1,0 +1,31 @@
+{
+  "fire": {
+    "id": "fire",
+    "spriteId": "tile_red_stone_floor_1_red_bg",
+    "name": "Fire",
+    "glyph": "~",
+    "fg": "#ff8800",
+    "bg": "transparent",
+    "blocksSight": false,
+    "damagePerTurn": 5
+  },
+  "smoke": {
+    "id": "smoke",
+    "spriteId": "tile_blank_floor_dark_grey",
+    "name": "Smoke",
+    "glyph": "8",
+    "fg": "#aaaaaa",
+    "bg": "transparent",
+    "blocksSight": true
+  },
+  "poison_gas": {
+    "id": "poison_gas",
+    "spriteId": "tile_slime_small",
+    "name": "Poison Gas",
+    "glyph": "8",
+    "fg": "#00ff00",
+    "bg": "transparent",
+    "blocksSight": true,
+    "statusEffectId": "poison"
+  }
+}

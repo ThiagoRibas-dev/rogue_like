@@ -1,0 +1,66 @@
+{
+  "melee_aggressive": {
+    "id": "melee_aggressive",
+    "behaviors": [
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 5
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "melee_coward": {
+    "id": "melee_coward",
+    "behaviors": [
+      {
+        "behaviorId": "flee",
+        "hpThreshold": 0.3
+      },
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 5
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "ranged_archer": {
+    "id": "ranged_archer",
+    "behaviors": [
+      {
+        "behaviorId": "ranged",
+        "spellId": "shoot_arrow"
+      },
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 6
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "caster_mage": {
+    "id": "caster_mage",
+    "behaviors": [
+      {
+        "behaviorId": "flee",
+        "hpThreshold": 0.4
+      },
+      {
+        "behaviorId": "ranged",
+        "spellId": "spell_confusion"
+      },
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 8
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  }
+}

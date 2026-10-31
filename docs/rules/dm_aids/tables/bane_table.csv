@@ -1,0 +1,51 @@
+Range,Name,Description
+1-2,Curse of Shar,"The goddess of dark, night, and forgetfulness roams this area, and you have unknowingly been touched by her malevolent energy. One random player must make a DC 12 \+ tier    Charisma saving throw. If they fail, they are under the effects of a level 1 *bane* spell, but will not be aware of this until the next combat encounter begins. During your next combat, deduct 1d4 from all attack rolls and saving throws. You may repeat this saving throw at the end of each of your turns, ending the effect on a success."
+3-4,Dark Foreboding,"You have been assailed by a haunting vision or premonition. Choose a character to make a DC 17 \+ tier Wisdom saving throw. If they fail, then for the rest of this quest that   character has disadvantage when making attack rolls against one of the following monster types \[d8\]  (1) Aberration (2) Beast (3) Construct (4) Elemental (5) Fiend (6) Humanoid (7) Monstrosity (8) Undead."
+5-6,Moment of Weakness,"Any resistances you are able to gain, as a result of traits, feats or other effects (for example,   a barbarian’s resistance to certain damage while raging), are gone during the next combat encounter. Other aspects of the trait or feat are unaffected (for example, the barbarian would still get the \+2 damage bonus from raging, just not the resistance)."
+7-8,Forgot to Stretch,"You woke up this morning feeling a little bit stiff, perhaps after recent exertions. You have   a \-1 to any Dexterity-based checks and saving throws until you complete your next long rest."
+9-10,Rumbling from Below,Something you ate recently is not agreeing with you. You have a \-2 to Constitution-based checks and saving throws until you complete your next long rest.
+12,Thieving Rascals,
+14,11-,"Someone’s been into your pack while your back was turned\! Choose or roll for a random   possession to remove from your inventory, or deduct 1d10x10 gp."
+16,Dancing Lights,"Not far off, you see strange dancing lights which attract you with their playful movement. You cannot help but feel drawn towards them."
+18,13-,Make a DC 9 \+ tier Wisdom saving throw or suffer one of the following effects (your choice):    Lose 1 Clue Point  Lose an Inspiration  Suffer 2d6 psychic damage
+20,Resistance is Futile,
+22,15-,Some foul arcane trickery is afoot. Any resistances you have to particular damage types are null until you complete the next long rest. This applies to all race and class features and     traits.
+24,Curse of Poor Speech,"Somehow you have lost your voice\! Perhaps you’ve been arguing with your fellow adventurers, are a bit run down, or are just on the wrong end of some mischievous sorcery,"
+26,17-,"but whatever the case your voice has taken on a raspy and unpleasant tone. You have disadvantage on all Charisma checks that rely on speech until you finish your current     quest. Also, whenever you attempt to cast a spell with a verbal component, you must make a DC 11 \+ tier Constitution check. If you fail, you cannot cast the spell (but you do not lose the slot)."
+28,Weakest Link,"For some reason, your courage has deserted you somewhat, and the very idea of combat"
+30,19-,"seems daunting. You wonder if your companions will notice.    During the next combat encounter, your character will not be able to participate in any flanking manoeuvres."
+32,Arcane Memory Loss,"Try as you might, your spells are not coming to you as easy as they normally do. Perhaps"
+34,21-,"it is the wine you drank last night, but your mental acuity is somewhat less than normal.   During the next combat encounter, you can either cast a spell or cantrip as your main action, but you cannot cast a spell or cantrip as a bonus action."
+36,Brain Fog,
+38,23-,"Something is clouding your judgment and decision making. Until the end of this quest, you   have a penalty of \-1 on Wisdom- and Intelligence-based checks and saving throws."
+40,Deserted by Luck,
+42,25-,You feel as if the entire cosmos is bent against your good fortune. Make your next three   saving throws at disadvantage.
+44,Lead in Your Boots,
+46,27-,"You just can’t seem to shake this lethargy. The next time you roll initiative, your speed is   halved for the first two rounds."
+48,Fear the Reaper,
+50,29-,"Your fate teeters on a knife edge. If at any time during the remainder of this quest you are   forced to make death saving throws, you automatically fail the first one."
+52,Clumsy,
+54,31-,You just can’t seem to co-ordinate yourself today. You have disadvantage on all Dexterity   based checks and saving throws until you finish your next combat encounter.
+56,Slow Healer,
+58,33-,
+60,Berserker,"You immediately begin to feel a little sickly. Until the end of this quest, when you regain hit points through magical means (such as spells or healing potions) you only regain half     the hit points bestowed."
+62,35-,"You feel a sudden, irrational anger against your enemies. The next time you are hit in"
+64,Nightmares,"combat by an enemy, you go berserk against that enemy, immediately making an extra   attack at disadvantage vs that enemy. The same enemy then has advantage on their next attack roll against you. This only occurs once."
+66,37-,You begin to be tormented by disturbing visions of horrific creatures. The next time you
+68,Insomniac,"encounter a non-humanoid enemy, make a DC 17 \+ tier Wisdom saving throw. On a fail   you are immediately frightened. You may repeat the saving throw at the beginning of each of your turns, ending the effect on a success. The bane then ends."
+70,39-,"You feel a bizarre, washed-out tiredness. The next time you attempt to take a long rest,"
+72,Weak Hitter,"make a DC 14 \+ tier Constitution saving throw. On a failed save, you get a terrible sleep.   You must choose one class feature to not refresh, and after replenishing hit points, roll (tier x d4) hit dice and deduct this from your hit point total."
+74,41-,
+76,Forgetful Caster,"Your main attack (be it weapon or spell-based) has lost some of its gusto. During the next   combat encounter, deduct (tier x d4) damage from each of your weapon’s damage rolls."
+78,43-,"If you are a non-casting class, reroll."
+80,Tired in Your Bones,You have temporarily forgotten one of your spells. Choose or randomly select one of your   spells (not a cantrip). You have temporarily forgotten this spell until after your next long rest.
+82,45-,
+84,Curse of Withering,All this adventuring seems to have taken it out of you \- or perhaps you are just coming down with a cold. Your hit point maximum is reduced by 5 until after you complete your     next long rest.
+86,47-,
+88,Rust Never Sleeps,"Some ancient curse lingers here\! You immediately age 10 years, and can feel it in all the bones of your body. Immediately take one level of exhaustion. This curse can be removed     with a *remove curse* spell. The exhaustion can be removed as per normal rules."
+90,49-,"If you are wearing metal armour, you look down to notice that a significant portion has"
+92,Jammed Crossbow,"become afflicted with some kind of rapidly advancing rust. It is repairable at a blacksmith’s,   but for now subtract 1 from your AC until you can find a blacksmith to repair this. The repairs should cost you around 15 gp."
+94,51-,"If you do not use a crossbow, re-roll."
+96,Wild Magic Everywhere,"If you are using a crossbow, you see that some fault has afflicted it. From now on, whenever you roll a nat 1 on an attack roll, the crossbow seizes and you must spend an     action clearing the jam. You can fix this as soon as you can find a weaponsmith. The repairs should cost you around 20 gp."
+98,53-,"If you are not a caster, re-roll."
+100,NPC Exhausted,"Somehow you seem to be the recipient of some kind of wild magic curse. During the next combat encounter, you cast a spell, make a DC 14 \+ tier check using your spellcasting     ability score. If you fail the check, roll on the Wild Magic Surge table to create a random magical effect (PHB p.104)."

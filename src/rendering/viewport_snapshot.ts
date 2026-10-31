@@ -127,8 +127,7 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
 
                 if (availableSpriteKeys !== undefined) {
                   const template = getComponent(state, entityId, ComponentType.Template) as
-                    | TemplateComponent
-                    | undefined;
+                    TemplateComponent | undefined;
                   const field = getComponent(state, entityId, ComponentType.Field) as FieldComponent | undefined;
                   const label = template
                     ? `entity:${template.templateId}`

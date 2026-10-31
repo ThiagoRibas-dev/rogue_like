@@ -96,11 +96,7 @@ export function renderFogOverlayCanvas(
   overlayCanvas.style.width = `${targetW}px`;
   overlayCanvas.style.height = `${targetH}px`;
 
-  const { tileWidthPx, tileHeightPx } = getTilePixelMetrics(
-    canvas,
-    fogOverlay.viewportW,
-    fogOverlay.viewportH
-  );
+  const { tileWidthPx, tileHeightPx } = getTilePixelMetrics(canvas, fogOverlay.viewportW, fogOverlay.viewportH);
 
   ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 

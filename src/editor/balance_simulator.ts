@@ -161,11 +161,9 @@ export function runBalanceSimulations(campaign: CampaignData, runs: number): Bal
       // Process scheme turn
       const nextState = processSchemeTurn(state, mastermindId);
       const prevScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-        | SchemeComponent
-        | undefined;
+        SchemeComponent | undefined;
       const nextScheme = nextState.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-        | SchemeComponent
-        | undefined;
+        SchemeComponent | undefined;
 
       if (prevScheme && nextScheme && nextScheme.currentPhase > prevScheme.currentPhase) {
         escalations++;
@@ -175,8 +173,7 @@ export function runBalanceSimulations(campaign: CampaignData, runs: number): Bal
 
     totalEscalations += escalations;
     const finalScheme = state.persistentEntities.get(mastermindId)?.components[ComponentType.Scheme] as
-      | SchemeComponent
-      | undefined;
+      SchemeComponent | undefined;
     totalConspiracyAwareness += finalScheme?.conspiracyAwareness ?? 0;
   }
 

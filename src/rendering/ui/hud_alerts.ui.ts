@@ -77,7 +77,12 @@ export function renderHudAlerts(state: GameState): void {
   }
 
   // 2. Check Visible Hostiles & Nemeses in FOV
-  const visibleHostiles: Array<{ readonly id: EntityId; readonly name: string; readonly pos: PositionComponent; readonly isNemesis: boolean }> = [];
+  const visibleHostiles: Array<{
+    readonly id: EntityId;
+    readonly name: string;
+    readonly pos: PositionComponent;
+    readonly isNemesis: boolean;
+  }> = [];
   for (const entityId of state.entities) {
     if (entityId === playerEntityId) continue;
     const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
@@ -137,8 +142,7 @@ export function renderHudAlerts(state: GameState): void {
 
   // 4. Active Status Effects
   const statuses = getComponent(state, playerEntityId, ComponentType.StatusEffects) as
-    | StatusEffectsComponent
-    | undefined;
+    StatusEffectsComponent | undefined;
   if (statuses) {
     for (const active of statuses.activeEffects) {
       const def = state.campaign.status[active.effectId];
@@ -152,9 +156,7 @@ export function renderHudAlerts(state: GameState): void {
 
   // 5. Active Quests Summary Ribbon
   const questLog = getComponent(state, playerEntityId, ComponentType.QuestLog) as QuestLogComponent | undefined;
-  const activeQuestCount = questLog
-    ? Object.values(questLog.quests).filter((q) => q.status === 'active').length
-    : 0;
+  const activeQuestCount = questLog ? Object.values(questLog.quests).filter((q) => q.status === 'active').length : 0;
   if (activeQuestCount > 0) {
     alerts.push({
       label: `Active Quests (${activeQuestCount})`,

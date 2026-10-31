@@ -79,8 +79,7 @@ export function processNemesisSystem(state: GameState): GameState {
         const factionEntId = nextState.factionEntityIds[faction.factionId];
         if (factionEntId) {
           const piComp = getComponent(nextState, factionEntId, ComponentType.InteractionScore) as
-            | InteractionScoreComponent
-            | undefined;
+            InteractionScoreComponent | undefined;
           if (piComp) {
             nextState = addComponent(nextState, factionEntId, { ...piComp, score: piComp.score + increment });
           }
@@ -90,8 +89,7 @@ export function processNemesisSystem(state: GameState): GameState {
       const currentAreaEntId = nextState.areaEntityIds[nextState.currentAreaId];
       if (currentAreaEntId) {
         const areaPiComp = getComponent(nextState, currentAreaEntId, ComponentType.InteractionScore) as
-          | InteractionScoreComponent
-          | undefined;
+          InteractionScoreComponent | undefined;
         if (areaPiComp) {
           nextState = addComponent(nextState, currentAreaEntId, { ...areaPiComp, score: areaPiComp.score + increment });
         }

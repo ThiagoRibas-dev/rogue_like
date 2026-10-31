@@ -14,6 +14,7 @@ import { validateEntities } from './validator/entity.validator.ts';
 import { loadCampaign } from '../core/loader.ts';
 import { compileTrigger } from '../systems/trigger-composer.system.ts';
 import type { GameState } from '../types/game-state.types.ts';
+import { getRuleset } from '../rulesets/registry.ts';
 
 /**
  * Headless state-diffing runner to validate that a campaign's triggers
@@ -203,6 +204,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const entityErrs = await validateEntities(campaign);
   const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
   const triggerTemplateErrs = validateTriggerTemplates(campaign);
+  const rulesetErrs = getRuleset(campaign.manifest?.rulesetId).validateCampaignRuleset?.(campaign) ?? [];
 
   function validateWithFuzzer(campaign: Readonly<CampaignData>): ValidationError[] {
     const fuzzerErrors: ValidationError[] = [];
@@ -246,6 +248,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...entityErrs,
     ...aiPersonalityErrs,
     ...triggerTemplateErrs,
+    ...rulesetErrs,
     ...fuzzerErrs
   ];
 

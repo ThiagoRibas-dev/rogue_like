@@ -1,5 +1,5 @@
 {
-  "summary":  "Research notes mapping the Dwarf Fortress Steam / Dark Fantasy CRPG UI & HUD restyling, consolidated top-left vitals/time gauge, recessed inventory/belt sockets, and Cinzel + JetBrains Mono typography across the codebase.",
-  "updatedAt":  "2026-10-31T03:07:27.683885824Z",
+  "summary":  "Research notes analyzing the Campaign Editor's alignment with the Ruleset -> Campaign architecture, detailing current gaps in New Campaign creation, workspace selection, view-group resolution, and archetype dropdown reference options.",
+  "updatedAt":  "2026-10-31T17:39:32.284584246Z",
   "userFacing":  true
 }

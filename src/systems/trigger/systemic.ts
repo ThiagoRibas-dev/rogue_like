@@ -1,4 +1,4 @@
-import * as ROT from 'rot-js';
+import { rng } from '../../core/rng.ts';
 import type { GameState, EntityId } from '../../types/game-state.types.ts';
 import { UIMode } from '../../types/game-state.types.ts';
 import type { GameEvent } from '../../types/events.types.ts';
@@ -127,7 +127,7 @@ export const systemicConsequences = {
     let nextState = state;
     try {
       const sandboxFn = new Function('context', code) as RunScriptConsequenceFn;
-      const context = { event, state, rng: ROT.RNG };
+      const context = { event, state, rng };
       const dynamicConsequences = sandboxFn(code, context);
       if (dynamicConsequences && Array.isArray(dynamicConsequences)) {
         for (const dynCons of dynamicConsequences) {
@@ -270,8 +270,7 @@ export const systemicConsequences = {
       const targetPayload = rxEvent.target as { type: string; entityId?: EntityId } | undefined;
       if (targetPayload?.type === 'entity' && targetPayload.entityId !== undefined) {
         const portalComp = getComponent(state, targetPayload.entityId, ComponentType.Portal) as
-          | PortalComponent
-          | undefined;
+          PortalComponent | undefined;
         if (portalComp) {
           targetAreaId = portalComp.targetAreaId;
           targetX = portalComp.targetX;
@@ -572,10 +571,10 @@ export const systemicConsequences = {
       for (let i = 0; i < weights.length; i++) {
         weightMap[i.toString()] = weights[i]!;
       }
-      const chosenStr = ROT.RNG.getWeightedValue(weightMap);
+      const chosenStr = rng.getWeightedValue(weightMap);
       chosenIndex = chosenStr !== undefined ? parseInt(chosenStr, 10) : 0;
     } else {
-      chosenIndex = ROT.RNG.getUniformInt(0, choices.length - 1);
+      chosenIndex = rng.getUniformInt(0, choices.length - 1);
     }
 
     const chosenConsequences = choices[chosenIndex];

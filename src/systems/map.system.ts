@@ -1,4 +1,3 @@
-import * as ROT from 'rot-js';
 import {
   addComponent,
   collectOwnedEntityIds,
@@ -9,6 +8,7 @@ import {
   spawnItem,
   updateSpatialIndex
 } from '../core/ecs.ts';
+import { rng } from '../core/rng.ts';
 import { computeFOV } from '../map/fov.ts';
 import { generateArea } from '../map/generator.ts';
 import { runEncounterDirector } from '../map/encounter_director.ts';
@@ -17,6 +17,7 @@ import { GameEventType } from '../types/events.types.ts';
 import {
   ComponentType,
   type Component,
+  type DirectorBudgetComponent,
   type PortalComponent,
   type PositionComponent,
   type RenderableComponent,
@@ -205,8 +206,8 @@ export function processChangeAreaIntent(
 
       for (const token of reservedTokens) {
         for (let attempt = 0; attempt < 100; attempt++) {
-          const rx = Math.floor(ROT.RNG.getUniform() * targetMap.width);
-          const ry = Math.floor(ROT.RNG.getUniform() * targetMap.height);
+          const rx = Math.floor(rng.getUniform() * targetMap.width);
+          const ry = Math.floor(rng.getUniform() * targetMap.height);
           const idx = coordToIndex(rx, ry, targetMap.width);
           const tile = targetMap.tiles[idx];
           if (tile && state.campaign.tiles[tile.tileId]?.walkable && !occupiedCoords.has(`${rx},${ry}`)) {
@@ -281,12 +282,9 @@ export function processChangeAreaIntent(
       let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
       const areaEntId1 = state.areaEntityIds[targetAreaId];
       if (areaEntId1) {
-        const tagsComp = getComponent(state, areaEntId1, ComponentType.Tags) as
-          | import('../types/components.types.ts').TagsComponent
-          | undefined;
+        const tagsComp = getComponent(state, areaEntId1, ComponentType.Tags) as TagsComponent | undefined;
         const budgetComp = getComponent(state, areaEntId1, ComponentType.DirectorBudget) as
-          | import('../types/components.types.ts').DirectorBudgetComponent
-          | undefined;
+          DirectorBudgetComponent | undefined;
         if (tagsComp || budgetComp) {
           areaMutation = {
             addedTags: tagsComp ? tagsComp.tags : [],
@@ -362,12 +360,9 @@ export function processChangeAreaIntent(
     let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
     const areaEntId2 = state.areaEntityIds[targetAreaId];
     if (areaEntId2) {
-      const tagsComp = getComponent(state, areaEntId2, ComponentType.Tags) as
-        | import('../types/components.types.ts').TagsComponent
-        | undefined;
+      const tagsComp = getComponent(state, areaEntId2, ComponentType.Tags) as TagsComponent | undefined;
       const budgetComp = getComponent(state, areaEntId2, ComponentType.DirectorBudget) as
-        | import('../types/components.types.ts').DirectorBudgetComponent
-        | undefined;
+        DirectorBudgetComponent | undefined;
       if (tagsComp || budgetComp) {
         areaMutation = {
           addedTags: tagsComp ? tagsComp.tags : [],

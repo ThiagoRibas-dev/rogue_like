@@ -8,10 +8,10 @@ This guide provides a step-by-step checklist for building, testing, validating, 
 
 Follow this workflow in order to prevent validation errors:
 
-- [ ] **Step 1: Manifest & Configuration**
-  - Create the folder structure under `public/data/campaigns/<campaign_id>/`.
-  - Author `manifest.json` with the campaign ID, name, version, and tags.
-  - Set up starting rules (`rules.json`), color theme (`theme.json`), and XP progression (`advancement.json`).
+- [ ] **Step 1: Manifest & Ruleset Configuration**
+  - Create the folder structure under `public/data/campaigns/<campaign_id>/` (or click **✨ New** in the Campaign Editor).
+  - Author `manifest.json` with the campaign ID, name, version, tags, and **`rulesetId`** (`"classic"` for standard roguelike or `"dnd35e"` for D&D 3.5e SRD).
+  - Set up starting rules (`rules.json`), color theme (`theme.json`), and XP progression (`advancement.json`). When creating via the Campaign Editor, Tier 2 System Content (archetypes, classes, skills, feats, spells) is hydrated automatically.
 
 - [ ] **Step 2: Base System Definitions**
   - Set up tag classifications in `tag_registry.json`. Any tag used in other files must be registered here.
@@ -43,23 +43,26 @@ Follow this workflow in order to prevent validation errors:
 
 The Campaign Editor is equipped with real-time Zod schema and cross-reference validation.
 
-*   **Validation Status Bar**: Located in the top right of the toolbar (`editor_toolbar.ts`).
-    *   **Green (✅ OK)**: The campaign is valid and ready to play or export.
-    *   **Red (❌ X Err, Y Warn)**: Hover over the status text to view a popup list of errors.
-*   **Fix-It Suggestions**: Many common errors include a green `💡 Fix:` line explaining how to resolve them (e.g. adding a missing key in a registry file or correcting a weight sum).
-*   **Field Tooltips**: Form inputs derived from Zod schemas feature field descriptions. Hover over input fields to see what the parameters do.
+- **Validation Status Bar**: Located in the top right of the toolbar (`editor_toolbar.ts`).
+  - **Green (✅ OK)**: The campaign is valid and ready to play or export.
+  - **Red (❌ X Err, Y Warn)**: Hover over the status text to view a popup list of errors.
+- **Fix-It Suggestions**: Many common errors include a green `💡 Fix:` line explaining how to resolve them (e.g. adding a missing key in a registry file or correcting a weight sum).
+- **Field Tooltips**: Form inputs derived from Zod schemas feature field descriptions. Hover over input fields to see what the parameters do.
 
 ---
 
 ## 3. Playtesting & CLI Validation
 
 ### Real-Time Playtesting
+
 1. In the editor, click the **▶️ Play Test** button in the toolbar.
 2. The editor will validate the campaign. If clean, it saves the state to `sessionStorage` and immediately reloads the game using your custom campaign.
 3. Upon dying or exiting the playtest, you are returned to the editor workspace.
 
 ### Running CLI Validation
+
 Before distributing, you can run the headless validator runner using Bun:
+
 ```bash
 # Validate all campaigns under public/data/campaigns
 bun scripts/run-validator.ts
@@ -67,6 +70,7 @@ bun scripts/run-validator.ts
 # Validate only your specific campaign folder
 bun scripts/run-validator.ts --campaign-dir ./public/data/campaigns/my-campaign
 ```
+
 Ensure that the console reports **✅ PASS** before packaging.
 
 ---

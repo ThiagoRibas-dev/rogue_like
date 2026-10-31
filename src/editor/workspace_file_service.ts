@@ -1,7 +1,8 @@
 import JSZip from 'jszip';
-import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
-import { loadCampaign } from '../core/loader.ts';
+import { type CampaignData, CampaignDataSchema, type GenericSystemContent } from '../types/campaign.types.ts';
+import { loadCampaign, loadRulesetSystemContent } from '../core/loader.ts';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
+import type { RulesetId } from '../types/ruleset.types.ts';
 
 // List of the JSON files making up the campaign data package
 const CAMPAIGN_FILES: ReadonlyArray<{
@@ -94,7 +95,20 @@ export async function readCampaignFromZip(file: File | Blob): Promise<CampaignDa
     throw new Error(`ZIP campaign validation failed: ${result.error.message}`);
   }
 
-  return result.data;
+  const campaign = result.data;
+  const rulesetId = (campaign.manifest.rulesetId as RulesetId | undefined) ?? 'classic';
+  if (!campaign.systemContent) {
+    try {
+      const sysContent = await loadRulesetSystemContent(rulesetId);
+      if (Object.keys(sysContent).length > 0) {
+        campaign.systemContent = sysContent;
+      }
+    } catch (err) {
+      console.warn(`Could not hydrate system content for ruleset "${rulesetId}":`, err);
+    }
+  }
+
+  return campaign;
 }
 
 /**
@@ -128,20 +142,29 @@ export async function fetchDefaultCampaignData(): Promise<CampaignData> {
 }
 
 /**
- * Instantiates a blank slate campaign with minimal bootstrappable content.
+ * Instantiates a blank slate campaign with minimal bootstrappable content for the specified ruleset.
+ * @param rulesetId The target ruleset ID (defaults to 'classic').
+ * @param systemContent Optional pre-hydrated Tier 2 system content.
  * @returns A template CampaignData structure.
  */
-export function createBlankSlateCampaign(): CampaignData {
+export function createBlankSlateCampaign(
+  rulesetId: RulesetId = 'classic',
+  systemContent?: GenericSystemContent
+): CampaignData {
+  const isDnD = rulesetId === 'dnd35e';
+
   return {
     manifest: {
-      id: 'custom-campaign',
-      name: 'My Custom Campaign',
-      description: 'A custom-built adventure.',
+      id: isDnD ? 'custom-dnd35e-campaign' : 'custom-campaign',
+      name: isDnD ? 'My D&D 3.5e Adventure' : 'My Custom Campaign',
+      description: isDnD ? 'A custom D&D 3.5e dungeon crawl.' : 'A custom-built adventure.',
       version: '1.0.0',
       author: 'Unknown',
       tags: [],
-      schemaVersion: CURRENT_SCHEMA_VERSION
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      rulesetId
     },
+    ...(systemContent ? { systemContent } : {}),
     rules: {
       map: {
         width: 80,
@@ -169,9 +192,7 @@ export function createBlankSlateCampaign(): CampaignData {
       spawning: {
         maxMonstersPerRoom: 2,
         maxItemsPerRoom: 1,
-        spawnWeights: {
-          goblin: 1
-        },
+        spawnWeights: isDnD ? { skeleton: 1 } : { goblin: 1 },
         lootTable: {
           health_potion: 1
         },
@@ -254,6 +275,7 @@ export function createBlankSlateCampaign(): CampaignData {
       player: {
         id: 'player',
         name: 'Adventurer',
+        ...(isDnD ? { archetypeId: 'player' } : {}),
         glyph: '@',
         fg: '#ffffff',
         bg: 'transparent',
@@ -269,27 +291,54 @@ export function createBlankSlateCampaign(): CampaignData {
         },
         equipmentSlots: ['head', 'torso', 'hand']
       },
-      goblin: {
-        id: 'goblin',
-        name: 'Goblin',
-        glyph: 'g',
-        fg: '#2ecc71',
-        bg: 'transparent',
-        isActor: true,
-        speed: 90,
-        fighter: {
-          maxHp: 12,
-          attack: 3,
-          defense: 1,
-          xpGiven: 25
-        },
-        ai: {
-          profileId: 'melee_aggro',
-          aggroRadius: 6,
-          wanders: true
-        },
-        faction: 'monsters'
-      }
+      ...(isDnD
+        ? {
+            skeleton: {
+              id: 'skeleton',
+              name: 'Crypt Skeleton',
+              archetypeId: 'skeleton',
+              glyph: 'z',
+              fg: '#ecf0f1',
+              bg: 'transparent',
+              isActor: true,
+              speed: 90,
+              fighter: {
+                maxHp: 12,
+                attack: 3,
+                defense: 1,
+                xpGiven: 25
+              },
+              ai: {
+                profileId: 'melee_aggro',
+                aggroRadius: 6,
+                wanders: true
+              },
+              faction: 'monsters'
+            }
+          }
+        : {
+            goblin: {
+              id: 'goblin',
+              name: 'Goblin',
+              glyph: 'g',
+              fg: '#2ecc71',
+              bg: 'transparent',
+              isActor: true,
+              speed: 90,
+              fighter: {
+                maxHp: 12,
+                attack: 3,
+                defense: 1,
+                xpGiven: 25
+              },
+              ai: {
+                profileId: 'melee_aggro',
+                aggroRadius: 6,
+                wanders: true
+              },
+              faction: 'monsters'
+            }
+          })
     },
     status: {},
     tiles: {
@@ -347,4 +396,28 @@ export function createBlankSlateCampaign(): CampaignData {
     relationshipThresholds: [],
     worldEvents: { areaEvents: [], factionEvents: [] }
   };
+}
+
+/**
+ * Creates a new CampaignData instance, either from an existing template (e.g. 'default', 'dnd35e-crypt')
+ * or as a fresh blank slate seeded with the target ruleset and hydrated system content.
+ * @param rulesetId The target ruleset ID.
+ * @param templateCampaignId Optional campaign ID to clone.
+ * @returns A promise resolving to the fully instantiated and hydrated CampaignData.
+ */
+export async function createNewCampaign(rulesetId: RulesetId, templateCampaignId?: string): Promise<CampaignData> {
+  if (templateCampaignId) {
+    const loaded = await loadCampaign(templateCampaignId);
+    return {
+      ...loaded,
+      manifest: {
+        ...loaded.manifest,
+        id: `clone-${loaded.manifest.id}-${Date.now().toString(36)}`,
+        name: `${loaded.manifest.name} (Copy)`
+      }
+    };
+  }
+
+  const sysContent = await loadRulesetSystemContent(rulesetId);
+  return createBlankSlateCampaign(rulesetId, sysContent);
 }

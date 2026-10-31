@@ -26,13 +26,15 @@ import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campai
 import type { ValidationError } from '../src/editor/validator/validator.types.ts';
 import { validateCampaign } from '../src/editor/campaign_validator.ts';
 import { collectMissingSpriteMappings } from '../src/rendering/sprite_keys.ts';
+import { getRuleset } from '../src/rulesets/registry.ts';
+import type { RulesetId } from '../src/types/ruleset.types.ts';
 
 // ──────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────
 
 function toSnakeCase(str: string): string {
-  return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 function isCampaignDir(dirPath: string): boolean {
@@ -60,7 +62,7 @@ function resolveCategoryFilename(key: keyof CampaignData): string {
 const args = process.argv.slice(2);
 const helpFlags = ['--help', '-h', '-?'];
 
-if (args.some(a => helpFlags.includes(a))) {
+if (args.some((a) => helpFlags.includes(a))) {
   console.log(`
   Campaign Validator Runner
 
@@ -108,17 +110,49 @@ function getFallbackForFile(key: keyof CampaignData): unknown {
     return [];
   }
   if (key === 'manifest') {
-    return { id: 'custom', name: 'Custom Campaign', description: '', version: '1.0.0', author: 'Unknown', tags: [], schemaVersion: 0 };
+    return {
+      id: 'custom',
+      name: 'Custom Campaign',
+      description: '',
+      version: '1.0.0',
+      author: 'Unknown',
+      tags: [],
+      schemaVersion: 0,
+      rulesetId: 'classic'
+    };
   }
   if (key === 'rules') {
     return {
-      map: { width: 80, height: 30, minRoomWidth: 3, maxRoomWidth: 8, minRoomHeight: 3, maxRoomHeight: 6, minCorridorLength: 2, maxCorridorLength: 8, dugPercentage: 0.15, startingAreaId: 'start', fovRadius: 8 },
+      map: {
+        width: 80,
+        height: 30,
+        minRoomWidth: 3,
+        maxRoomWidth: 8,
+        minRoomHeight: 3,
+        maxRoomHeight: 6,
+        minCorridorLength: 2,
+        maxCorridorLength: 8,
+        dugPercentage: 0.15,
+        startingAreaId: 'start',
+        fovRadius: 8
+      },
       hunger: { maxSatiation: 1000, thresholds: { satiated: 800, normal: 500, hungry: 200, starving: 0 } },
       spawning: { maxMonstersPerRoom: 3, maxItemsPerRoom: 2, spawnWeights: {}, lootTable: {} }
     };
   }
   if (key === 'theme') {
-    return { colors: { background: '#000', floorDimFg: '#333', playerFg: '#fff', stairsFg: '#fff', transparent: '#fff', wallDimFg: '#222' }, glyphs: { stairsDown: '>', stairsUp: '<' }, ui: { displayWidth: 80, displayHeight: 30, fontSize: 16, fontFamily: 'monospace' } };
+    return {
+      colors: {
+        background: '#000',
+        floorDimFg: '#333',
+        playerFg: '#fff',
+        stairsFg: '#fff',
+        transparent: '#fff',
+        wallDimFg: '#222'
+      },
+      glyphs: { stairsDown: '>', stairsUp: '<' },
+      ui: { displayWidth: 80, displayHeight: 30, fontSize: 16, fontFamily: 'monospace' }
+    };
   }
   if (key === 'factions') {
     return { player: { player: 'friendly' } };
@@ -141,12 +175,12 @@ interface ParityResult {
 
 /** Order-independent JSON stringification for semantic mirror comparison. */
 function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(v => stableStringify(v)).join(',')}]`;
+  if (Array.isArray(value)) return `[${value.map((v) => stableStringify(v)).join(',')}]`;
   if (value !== null && typeof value === 'object') {
     const record = value as Record<string, unknown>;
     const entries = Object.keys(record)
       .sort((a, b) => a.localeCompare(b))
-      .map(k => `${JSON.stringify(k)}:${stableStringify(record[k])}`);
+      .map((k) => `${JSON.stringify(k)}:${stableStringify(record[k])}`);
     return `{${entries.join(',')}}`;
   }
   return JSON.stringify(value) ?? 'null';
@@ -167,13 +201,15 @@ function validateAiPromptKitParity(): ParityResult {
   const result: ParityResult = { checked: 0, errors: [], warnings: [] };
 
   if (!existsSync(AI_KIT_DEFAULT_CAMPAIGN)) {
-    result.warnings.push('ai-prompt-kit/ not found — parity check skipped (run `bun scripts/generate-ai-prompt-kit.ts` to generate it).');
+    result.warnings.push(
+      'ai-prompt-kit/ not found — parity check skipped (run `bun scripts/generate-ai-prompt-kit.ts` to generate it).'
+    );
     return result;
   }
 
   const expectedFiles = (Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[])
-    .filter(key => key !== 'triggerBuckets')
-    .map(key => resolveCategoryFilename(key));
+    .filter((key) => key !== 'triggerBuckets' && key !== 'systemContent')
+    .map((key) => resolveCategoryFilename(key));
   expectedFiles.push('keybinds.json');
 
   for (const file of expectedFiles) {
@@ -219,20 +255,20 @@ function validateAiPromptKitParity(): ParityResult {
 
 (globalThis as any).sessionStorage = {
   getItem: () => null,
-  setItem: () => { },
-  removeItem: () => { },
-  clear: () => { },
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
   length: 0,
-  key: () => null,
+  key: () => null
 };
 
 (globalThis as any).localStorage = {
   getItem: () => null,
-  setItem: () => { },
-  removeItem: () => { },
-  clear: () => { },
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
   length: 0,
-  key: () => null,
+  key: () => null
 };
 
 // ──────────────────────────────────────────────
@@ -256,7 +292,7 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
 
   const keys = Object.keys(CampaignCategorySchemas) as (keyof CampaignData)[];
   for (const key of keys) {
-    if (key === 'triggerBuckets') continue;
+    if (key === 'triggerBuckets' || key === 'systemContent') continue;
 
     const filename = resolveCategoryFilename(key);
     const filePath = join(dir, filename);
@@ -273,6 +309,25 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     }
   }
 
+  const manifestObj = campaignData['manifest'] as Record<string, unknown> | undefined;
+  const rulesetId =
+    typeof manifestObj?.['rulesetId'] === 'string' ? (manifestObj['rulesetId'] as RulesetId) : 'classic';
+  const ruleset = getRuleset(rulesetId);
+  const rulesetDir = join(PROJECT_ROOT, 'public', 'data', 'rulesets', ruleset.id);
+  const readRulesetJson = (filename: string): Record<string, unknown> => {
+    const p = join(rulesetDir, filename);
+    return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf-8')) as Record<string, unknown>) : {};
+  };
+
+  const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
+  const rawSystemContent: Record<string, unknown> = {};
+  for (const desc of systemDescriptors) {
+    rawSystemContent[desc.key] = readRulesetJson(desc.filename);
+  }
+  campaignData['systemContent'] = ruleset.parseSystemContent
+    ? ruleset.parseSystemContent(rawSystemContent)
+    : rawSystemContent;
+
   // Build trigger buckets
   const triggers = campaignData.triggers as Record<string, { eventType: string }> | undefined;
   const triggerBuckets: Record<string, unknown[]> = {};
@@ -288,11 +343,13 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
 
   const result = CampaignDataSchema.safeParse(campaignData);
   if (!result.success) {
-    const errorDetails = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`);
+    const errorDetails = result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
     return { errors: result.error.issues.length, errorDetails };
   }
 
-  console.log(`  ✅ Zod schema validation passed (${missingCount > 0 ? `${missingCount} missing file(s) used fallbacks` : 'all files present'})`);
+  console.log(
+    `  ✅ Zod schema validation passed (${missingCount > 0 ? `${missingCount} missing file(s) used fallbacks` : 'all files present'})`
+  );
   return { data: result.data, errors: 0, errorDetails: [] };
 }
 
@@ -427,8 +484,8 @@ async function main() {
 
     const entries = readdirSync(CAMPAIGNS_ROOT);
     const campaignDirs = entries
-      .map(e => join(CAMPAIGNS_ROOT, e))
-      .filter(d => statSync(d).isDirectory() && isCampaignDir(d))
+      .map((e) => join(CAMPAIGNS_ROOT, e))
+      .filter((d) => statSync(d).isDirectory() && isCampaignDir(d))
       .sort();
 
     if (campaignDirs.length === 0) {

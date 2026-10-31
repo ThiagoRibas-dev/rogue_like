@@ -24,9 +24,12 @@ import {
   applySettingsToDOM,
   initUITooltips,
   renderSettingsMenu,
+  populateRulesetList,
   populateCampaignList,
   renderMenus
 } from '../rendering/ui.ts';
+import type { RulesetId } from '../types/ruleset.types.ts';
+import { getAllRulesets, getRuleset } from '../rulesets/registry.ts';
 import { consumeDirtyDomains, markAllDomainsDirty, markDomainDirty, PresentationDomain } from './presentation_queue.ts';
 import { renderPresenterFrame, invalidateViewportSnapshot } from '../rendering/presenter.ts';
 import { recordEarlyReturn, recordPresenterFrame } from '../rendering/render_debug.ts';
@@ -44,6 +47,7 @@ import {
 import { createDebugFastForwardSchemesAction, createDebugPromoteAction } from '../actions/debug.actions.ts';
 import { initRNG } from './rng.ts';
 
+let selectedRulesetId: RulesetId = 'classic';
 let selectedCampaignId: string | null = null;
 let rebindingAction: ActionType | null = null;
 let activeFocusCleanup: (() => void) | null = null;
@@ -116,12 +120,29 @@ export function createInitialMenuState(campaignId: string, campaign: CampaignDat
 }
 
 /**
- * Refreshes the campaign list in the campaign selection modal.
+ * Refreshes the ruleset list in the ruleset selection modal.
+ */
+export function refreshRulesetList(): void {
+  const rulesets = getAllRulesets();
+  populateRulesetList(rulesets, selectedRulesetId, (rulesetId) => {
+    selectedRulesetId = rulesetId;
+  });
+}
+
+/**
+ * Refreshes the campaign list in the campaign selection modal, filtered by the selected ruleset.
  */
 export async function refreshCampaignList(): Promise<void> {
   const registry = await loadCampaignRegistry();
+  const activeRuleset = getRuleset(selectedRulesetId);
+  const rulesetLabel = document.getElementById('campaign-select-ruleset-label');
+  if (rulesetLabel) {
+    rulesetLabel.textContent = `Ruleset: ${activeRuleset.metadata.badgeIcon} ${activeRuleset.metadata.name}`;
+  }
+  const filteredCampaigns = registry.campaigns.filter((c) => (c.rulesetId ?? 'classic') === selectedRulesetId);
+  selectedCampaignId = null;
   populateCampaignList(
-    registry.campaigns,
+    filteredCampaigns,
     (campaign) => {
       selectedCampaignId = campaign.id;
     },
@@ -171,11 +192,25 @@ function triggerReplayDownload(): void {
  */
 export function bindDOMControls(display: ROT.Display): void {
   document.getElementById('btn-new-game')?.addEventListener('click', () => {
-    setGameState({ ...getGameState(), uiMode: UIMode.CampaignSelect });
+    refreshRulesetList();
+    setGameState({ ...getGameState(), uiMode: UIMode.RulesetSelect });
+  });
+
+  document.getElementById('btn-ruleset-back')?.addEventListener('click', () => {
+    setGameState({ ...getGameState(), uiMode: UIMode.MainMenu });
+  });
+
+  document.getElementById('btn-ruleset-next')?.addEventListener('click', () => {
+    refreshCampaignList()
+      .then(() => {
+        setGameState({ ...getGameState(), uiMode: UIMode.CampaignSelect });
+      })
+      .catch(console.error);
   });
 
   document.getElementById('btn-campaign-back')?.addEventListener('click', () => {
-    setGameState({ ...getGameState(), uiMode: UIMode.MainMenu });
+    refreshRulesetList();
+    setGameState({ ...getGameState(), uiMode: UIMode.RulesetSelect });
   });
 
   const fileInstallCampaign = document.getElementById('file-install-campaign') as HTMLInputElement | null;
@@ -528,6 +563,8 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
         targetEl = document.getElementById('settings-overlay');
       } else if (newState.uiMode === UIMode.Dialogue) {
         targetEl = document.getElementById('dialogue-overlay');
+      } else if (newState.uiMode === UIMode.RulesetSelect) {
+        targetEl = document.getElementById('ruleset-selection-overlay');
       } else if (newState.uiMode === UIMode.CampaignSelect) {
         targetEl = document.getElementById('campaign-selection-overlay');
       } else if (newState.uiMode === UIMode.GameOver) {
@@ -600,6 +637,7 @@ export function applyViewportResize(display: ROT.Display, state: GameState): voi
  */
 export function initSession(display: ROT.Display, globalCampaignEditor: CampaignEditor, initialState: GameState): void {
   lastKnownState = initialState;
+  refreshRulesetList();
   refreshCampaignList().catch(console.error);
   bindDOMControls(display);
   bindCanvasMouseControls(display);

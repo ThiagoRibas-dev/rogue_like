@@ -7,6 +7,8 @@ import {
   CampaignRegistrySchema
 } from '../types/campaign.types.ts';
 import { getInstalledCampaign, listInstalledCampaigns } from './campaign_store.ts';
+import { getRuleset } from '../rulesets/registry.ts';
+import type { RulesetId } from '../types/ruleset.types.ts';
 
 /**
  * Loads and validates all JSON files for a given campaign ID.
@@ -263,16 +265,25 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       }
     }
 
+    const rulesetId =
+      typeof (manifest as Record<string, unknown>)['rulesetId'] === 'string'
+        ? ((manifest as Record<string, unknown>)['rulesetId'] as RulesetId)
+        : 'classic';
+    const [rulesetBase, parsedSystemContent] = await Promise.all([
+      loadRulesetBaseContent(rulesetId),
+      loadRulesetSystemContent(rulesetId)
+    ]);
+
     const data = {
       manifest,
       rules,
       theme,
       advancement,
       areas,
-      items,
-      effects,
-      entities,
-      status,
+      items: { ...rulesetBase.items, ...(items as Record<string, unknown>) },
+      effects: { ...rulesetBase.effects, ...(effects as Record<string, unknown>) },
+      entities: { ...rulesetBase.entities, ...(entities as Record<string, unknown>) },
+      status: { ...rulesetBase.status, ...(status as Record<string, unknown>) },
       tiles,
       factions,
       ai,
@@ -296,7 +307,8 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       nemesisHierarchies,
       relationshipThresholds,
       triggerTemplates,
-      triggerBuckets: {}
+      triggerBuckets: {},
+      systemContent: parsedSystemContent
     };
 
     const result = CampaignDataSchema.safeParse(data);
@@ -364,4 +376,62 @@ export async function loadCampaignRegistry(): Promise<CampaignRegistry> {
     console.error('Error loading campaign registry:', error);
     throw error;
   }
+}
+
+/**
+ * Fetches optional JSON resource from a given URL without throwing.
+ * @param url The resource URL.
+ * @returns Parsed JSON object, or empty object if fetch fails.
+ */
+async function fetchOptionalJson(url: string): Promise<Record<string, unknown>> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return {};
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Loads and parses Tier 2 System Content for a given ruleset.
+ * @param rulesetId The ID of the ruleset.
+ * @returns A promise resolving to the parsed system content map.
+ */
+export async function loadRulesetSystemContent(rulesetId: RulesetId): Promise<Record<string, Record<string, unknown>>> {
+  const ruleset = getRuleset(rulesetId);
+  const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
+  const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
+  const systemContentEntries = await Promise.all(
+    systemDescriptors.map(async (desc) => {
+      const content = await fetchOptionalJson(`${rulesetBasePath}/${desc.filename}`);
+      return [desc.key, content] as const;
+    })
+  );
+  const rawSystemContent: Record<string, Record<string, unknown>> = Object.fromEntries(systemContentEntries);
+  return ruleset.parseSystemContent
+    ? (ruleset.parseSystemContent(rawSystemContent) as unknown as Record<string, Record<string, unknown>>)
+    : rawSystemContent;
+}
+
+/**
+ * Loads base items, entities, status effects, and effects provided by the ruleset cartridge.
+ * @param rulesetId The ID of the ruleset.
+ * @returns A promise resolving to the base ruleset items, entities, status, and effects.
+ */
+export async function loadRulesetBaseContent(rulesetId: RulesetId): Promise<{
+  readonly items: Record<string, unknown>;
+  readonly entities: Record<string, unknown>;
+  readonly status: Record<string, unknown>;
+  readonly effects: Record<string, unknown>;
+}> {
+  const ruleset = getRuleset(rulesetId);
+  const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
+  const [items, entities, status, effects] = await Promise.all([
+    fetchOptionalJson(`${rulesetBasePath}/items.json`),
+    fetchOptionalJson(`${rulesetBasePath}/entities.json`),
+    fetchOptionalJson(`${rulesetBasePath}/status.json`),
+    fetchOptionalJson(`${rulesetBasePath}/effects.json`)
+  ]);
+  return { items, entities, status, effects };
 }

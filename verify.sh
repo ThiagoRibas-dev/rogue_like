@@ -9,49 +9,65 @@ echo "===================================="
 echo "Running type check and build verification..."
 echo "===================================="
 
-# [1/6] Running type check (tsc --noEmit)...
+# [1/8] Running type check (tsc --noEmit)...
 echo ""
-echo "[1/6] Running type check (tsc --noEmit)..."
+echo "[1/8] Running type check (tsc --noEmit)..."
 T1=$(node -e "console.log(Date.now())")
 bun x tsc --noEmit
 T2=$(node -e "console.log(Date.now())")
 node -e "console.log('\x1b[36m=> Type check completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
 
-# [2/6] Running format...
+# [2/8] Running format...
 echo ""
-echo "[2/6] Running format..."
+echo "[2/8] Running format..."
 T1=$(node -e "console.log(Date.now())")
 bun run format
 T2=$(node -e "console.log(Date.now())")
 node -e "console.log('\x1b[36m=> Format completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
 
-# [3/6] Running lint...
+# [3/8] Running lint...
 echo ""
-echo "[3/6] Running lint..."
+echo "[3/8] Running lint..."
 T1=$(node -e "console.log(Date.now())")
 bun run lint --fix
 T2=$(node -e "console.log(Date.now())")
 node -e "console.log('\x1b[36m=> Lint completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
 
-# [4/6] Running regression tests...
+# [4/8] Running architectural dependency check (dependency-cruiser)...
 echo ""
-echo "[4/6] Running regression tests..."
+echo "[4/8] Running architectural dependency check..."
+T1=$(node -e "console.log(Date.now())")
+bun run lint:arch
+T2=$(node -e "console.log(Date.now())")
+node -e "console.log('\x1b[36m=> Architecture check completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
+
+# [5/8] Running dead-code & unused-file check (knip)...
+echo ""
+echo "[5/8] Running dead-code & unused-file check..."
+T1=$(node -e "console.log(Date.now())")
+bun run lint:deadcode
+T2=$(node -e "console.log(Date.now())")
+node -e "console.log('\x1b[36m=> Dead-code check completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
+
+# [6/8] Running regression tests...
+echo ""
+echo "[6/8] Running regression tests..."
 T1=$(node -e "console.log(Date.now())")
 bun test
 T2=$(node -e "console.log(Date.now())")
 node -e "console.log('\x1b[36m=> Regression tests completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
 
-# [5/6] Running build...
+# [7/8] Running build...
 echo ""
-echo "[5/6] Running build..."
+echo "[7/8] Running build..."
 T1=$(node -e "console.log(Date.now())")
 bun run build
 T2=$(node -e "console.log(Date.now())")
 node -e "console.log('\x1b[36m=> Build completed in ' + (($T2 - $T1)/1000).toFixed(2) + ' seconds\x1b[0m')"
 
-# [6/6] Running campaign validation...
+# [8/8] Running campaign validation...
 echo ""
-echo "[6/6] Running campaign validation..."
+echo "[8/8] Running campaign validation..."
 T1=$(node -e "console.log(Date.now())")
 bun run scripts/run-validator.ts
 T2=$(node -e "console.log(Date.now())")

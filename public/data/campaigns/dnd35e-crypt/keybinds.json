@@ -1,0 +1,16 @@
+{
+  "move_north": ["arrowup", "w", "k", "8"],
+  "move_south": ["arrowdown", "s", "j", "2"],
+  "move_west": ["arrowleft", "a", "h", "4"],
+  "move_east": ["arrowright", "d", "l", "6"],
+  "wait": [" "],
+  "interact": ["<", ">", ",", "."],
+  "pick_up": ["g"],
+  "inventory": ["i"],
+  "target_toggle": ["f"],
+  "target_confirm": ["enter"],
+  "inspect": ["x"],
+  "debug_reveal_map": ["r"],
+  "debug_god_mode": ["o"],
+  "debug_spawn_entity": ["e"]
+}

@@ -27,6 +27,16 @@ function getBadge(category: string, id: string, doc: CampaignData): string {
  * Resolves drop-down choices from a key identifier matching campaign reference databases.
  */
 export function getReferenceOptions(key: string, doc: CampaignData): { value: string; label: string }[] | null {
+  if (key === 'archetypeId') {
+    const archetypes = (doc.systemContent as Record<string, unknown> | undefined)?.archetypes;
+    if (archetypes && typeof archetypes === 'object') {
+      return Object.keys(archetypes).map((k) => ({
+        value: k,
+        label: `${k} [ARCHETYPE]`
+      }));
+    }
+    return null;
+  }
   if (key === 'faction' || key.toLowerCase().includes('factionid')) {
     return Object.keys(doc.factions).map((k) => ({ value: k, label: `${k} [ST]` }));
   }

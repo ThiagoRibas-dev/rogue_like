@@ -1,0 +1,738 @@
+{
+  "player": {
+    "spriteId": "actor_rogue",
+    "id": "player",
+    "archetypeId": "player",
+    "name": "Player",
+    "glyph": "@",
+    "fg": "#00ffff",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 5,
+      "defense": 2
+    },
+    "inventoryConfig": {
+      "baseCapacity": 10
+    },
+    "equipmentSlots": [
+      "head",
+      "neck",
+      "torso",
+      "back",
+      "arm",
+      "arm",
+      "hand",
+      "hand",
+      "finger",
+      "finger",
+      "leg",
+      "foot"
+    ],
+    "tags": [
+      "actor"
+    ],
+    "faction": "player"
+  },
+  "skeleton": {
+    "spriteId": "monster_skeleton",
+    "id": "skeleton",
+    "archetypeId": "skeleton",
+    "name": "Crypt Skeleton",
+    "glyph": "z",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 2,
+      "defense": 2,
+      "xpGiven": 50
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 10,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "orc": {
+    "spriteId": "monster_orc",
+    "id": "orc",
+    "name": "Orc",
+    "glyph": "o",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 10,
+      "attack": 3,
+      "defense": 0,
+      "xpGiven": 50
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 10,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "goblin": {
+    "spriteId": "monster_goblin",
+    "id": "goblin",
+    "name": "Goblin",
+    "glyph": "g",
+    "fg": "#84e6ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 5,
+      "attack": 1,
+      "defense": 0,
+      "xpGiven": 10
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 5,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "troll": {
+    "spriteId": "monster_troll",
+    "id": "troll",
+    "archetypeId": "troll",
+    "name": "Troll",
+    "glyph": "T",
+    "fg": "#27ae60",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 80,
+    "fighter": {
+      "maxHp": 16,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 4,
+      "wanders": false
+    },
+    "faction": "monster",
+    "crCost": 25,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "goblin_archer": {
+    "spriteId": "monster_goblin_archer",
+    "id": "goblin_archer",
+    "name": "Goblin Archer",
+    "glyph": "g",
+    "fg": "#8B4513",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 40
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 8,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "orc_shaman": {
+    "spriteId": "monster_orc_wizard",
+    "id": "orc_shaman",
+    "name": "Orc Shaman",
+    "glyph": "s",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 100
+    },
+    "ai": {
+      "profileId": "caster_mage",
+      "aggroRadius": 8,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 15,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "hidden_trap": {
+    "spriteId": "tile_pressure_plate_up",
+    "id": "hidden_trap",
+    "name": "Hidden Trap",
+    "glyph": "^",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": false,
+    "renderable": false,
+    "trap": {
+      "triggerId": "hidden_trap_trigger"
+    },
+    "crCost": 5,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "wooden_door": {
+    "spriteId": "tile_door_1",
+    "id": "wooden_door",
+    "name": "Wooden Door",
+    "glyph": "+",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 10,
+      "locked": false,
+      "breakable": true
+    }
+  },
+  "wooden_chest": {
+    "spriteId": "tile_chest_closed",
+    "id": "wooden_chest",
+    "name": "Wooden Chest",
+    "glyph": "c",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "chest",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 3,
+    "inventoryConfig": {
+      "baseCapacity": 5
+    },
+    "lock": {
+      "difficulty": 20,
+      "keyTag": "key:bronze",
+      "locked": true,
+      "breakable": true
+    }
+  },
+  "bones_pile": {
+    "spriteId": "tile_corpse_bones_1",
+    "id": "bones_pile",
+    "name": "Pile of Bones",
+    "glyph": "%",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "remains",
+      "bones",
+      "solid"
+    ],
+    "roleTags": [
+      "appetizer"
+    ],
+    "crCost": 2,
+    "inventoryConfig": {
+      "baseCapacity": 3
+    }
+  },
+  "fountain": {
+    "spriteId": "tile_blank_blue_floor",
+    "id": "fountain",
+    "name": "Fountain",
+    "glyph": "{",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source"
+    ],
+    "renderable": true
+  },
+  "altar": {
+    "spriteId": "tile_pentagram",
+    "id": "altar",
+    "name": "Altar",
+    "glyph": "_",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "altar",
+      "divine",
+      "terrain"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "side"
+    ],
+    "renderable": true
+  },
+  "orc_bomber": {
+    "spriteId": "monster_orc_blademaster",
+    "id": "orc_bomber",
+    "name": "Orc Bomber",
+    "glyph": "o",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 75
+    },
+    "ai": {
+      "profileId": "ranged_archer",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 12,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ],
+    "inventoryConfig": {
+      "baseCapacity": 5
+    }
+  },
+  "caged_beast": {
+    "spriteId": "monster_warg_dire_wolf",
+    "id": "caged_beast",
+    "name": "Caged Beast",
+    "glyph": "B",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 120,
+    "fighter": {
+      "maxHp": 25,
+      "attack": 6,
+      "defense": 2,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "neutral",
+    "crCost": 20,
+    "roleTags": [
+      "appetizer"
+    ],
+    "tags": [
+      "actor"
+    ],
+    "lock": {
+      "difficulty": 15,
+      "locked": true,
+      "breakable": true
+    }
+  },
+  "fire_barrel": {
+    "spriteId": "tile_barrel",
+    "id": "fire_barrel",
+    "name": "Fire Barrel",
+    "glyph": "0",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "solid",
+      "flammable",
+      "explosive"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "dessert"
+    ]
+  },
+  "corrupted_treant": {
+    "spriteId": "monster_dryad",
+    "id": "corrupted_treant",
+    "name": "Corrupted Treant",
+    "glyph": "T",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 70,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 5,
+      "defense": 3,
+      "xpGiven": 200
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": false
+    },
+    "faction": "monster",
+    "crCost": 30,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "poison_vent": {
+    "spriteId": "tile_spikes_down",
+    "id": "poison_vent",
+    "name": "Poison Vent",
+    "glyph": "^",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "terrain"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "corrupted_pool": {
+    "spriteId": "tile_slime_large",
+    "id": "corrupted_pool",
+    "name": "Corrupted Pool",
+    "glyph": "{",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source",
+      "corrupted"
+    ],
+    "crCost": 6,
+    "roleTags": [
+      "appetizer"
+    ],
+    "renderable": true
+  },
+  "spider_broodmother": {
+    "spriteId": "monster_giant_spider",
+    "id": "spider_broodmother",
+    "name": "Spider Broodmother",
+    "glyph": "S",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 6,
+      "defense": 4,
+      "xpGiven": 250
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 8,
+      "wanders": true
+    },
+    "faction": "monster",
+    "crCost": 35,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "egg_sac": {
+    "spriteId": "tile_jar_closed",
+    "id": "egg_sac",
+    "name": "Egg Sac",
+    "glyph": "0",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "solid",
+      "flammable"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "dessert"
+    ]
+  },
+  "web_trap": {
+    "spriteId": "tile_blood_spatter_1",
+    "id": "web_trap",
+    "name": "Web Trap",
+    "glyph": "*",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "terrain",
+      "flammable"
+    ],
+    "crCost": 4,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "vault_guardian": {
+    "spriteId": "monster_rock_golem",
+    "id": "vault_guardian",
+    "name": "Vault Guardian",
+    "glyph": "G",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 80,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 8,
+      "defense": 6,
+      "xpGiven": 300
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": false
+    },
+    "faction": "neutral",
+    "crCost": 40,
+    "roleTags": [
+      "protein"
+    ]
+  },
+  "heavy_vault_door": {
+    "spriteId": "tile_framed_door_1_shut",
+    "id": "heavy_vault_door",
+    "name": "Heavy Vault Door",
+    "glyph": "+",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid",
+      "opaque"
+    ],
+    "lock": {
+      "difficulty": 50,
+      "locked": true,
+      "breakable": false
+    },
+    "crCost": 10,
+    "roleTags": [
+      "side"
+    ]
+  },
+  "barkeeper": {
+    "spriteId": "actor_shopkeep",
+    "id": "barkeeper",
+    "name": "Barkeeper",
+    "glyph": "B",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "I just pour the drinks, friend. Try asking the scout.",
+        "Rumors? Hah! Ask someone else, I'm busy.",
+        "You want stories? Go to the dungeons, they'll give you plenty."
+      ]
+    },
+    "dialogueId": "barkeeper_tree"
+  },
+  "scout": {
+    "spriteId": "actor_ranger",
+    "id": "scout",
+    "name": "Scout",
+    "glyph": "S",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "I'm keeping my eyes on the horizon, not gossip.",
+        "Nothing new to report.",
+        "Ask the barkeeper, he hears everything."
+      ]
+    },
+    "dialogueId": "scout_tree"
+  },
+  "merchant": {
+    "spriteId": "actor_shopkeep",
+    "id": "merchant",
+    "name": "Merchant",
+    "glyph": "M",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "relationshipAxes": {
+        "loyalty": 0,
+        "fear": 0,
+        "resentment": 0,
+        "respect": 0,
+        "debt": 0
+      },
+      "knowledge": {},
+      "deflectionLines": [
+        "Gold talks, friend.",
+        "Buy something or move along.",
+        "A deal is a deal."
+      ]
+    },
+    "shop": {
+      "inventory": ["health_potion", "short_sword", "leather_armor", "food_ration", "lockpick"],
+      "markupMultiplier": 1.2,
+      "buyTags": ["potion", "weapon", "armor"],
+      "sellTags": ["potion", "weapon", "armor", "valuable"]
+    },
+    "dialogueId": "merchant_tree"
+  },
+  "scholar": {
+    "spriteId": "actor_scholar",
+    "id": "scholar",
+    "name": "Scholar",
+    "glyph": "K",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 95,
+    "tags": ["actor", "town"],
+    "faction": "town",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {},
+      "deflectionLines": [
+        "Knowledge is the greatest treasure, but it requires patience.",
+        "The ancient archives hold secrets, yet many remain buried.",
+        "Seek and you shall find."
+      ]
+    },
+    "dialogueId": "scholar_tree"
+  },
+  "bandit": {
+    "spriteId": "actor_bandit",
+    "id": "bandit",
+    "name": "Bandit",
+    "glyph": "b",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 3,
+      "defense": 1,
+      "xpGiven": 30
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "tags": ["actor", "bandit"],
+    "faction": "bandits",
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "dessert"
+    ]
+  },
+  "bandit_king": {
+    "spriteId": "actor_male_barbarian",
+    "id": "bandit_king",
+    "name": "Bandit King",
+    "glyph": "W",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 8,
+      "defense": 3,
+      "xpGiven": 150
+    },
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "tags": ["actor", "bandit", "boss", "warlord"],
+    "faction": "bandits",
+    "attitude": "hostile",
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    }
+  }
+}

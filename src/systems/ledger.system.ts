@@ -38,8 +38,7 @@ export function processLedgerSystem(state: GameState, didGlobalTurnAdvance: bool
 
     for (const entId of allEntityIds) {
       const piComp = getComponent(nextState, entId, ComponentType.InteractionScore) as
-        | InteractionScoreComponent
-        | undefined;
+        InteractionScoreComponent | undefined;
       if (piComp) {
         const decayed = Math.floor(piComp.score * 0.95);
         if (decayed !== piComp.score) {

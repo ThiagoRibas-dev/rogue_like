@@ -1,4 +1,5 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
+import { getRuleset } from '../../rulesets/registry.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { editorState, notifyEditorStateChanged } from './editor_state.ts';
 import { VIEW_GROUPS } from './editor_config.ts';
@@ -11,7 +12,9 @@ import { showPromptModal } from '../ui/modal.ui.ts';
  * @param container The sidebar DOM container.
  */
 export function renderSidebar(controller: EditorController, container: HTMLElement): void {
-  const group = VIEW_GROUPS.find((g): boolean => g.id === editorState.activeGroupId);
+  const doc = controller.getDocument();
+  const activeGroups = getRuleset(doc.manifest?.rulesetId).getEditorViewGroups(VIEW_GROUPS);
+  const group = activeGroups.find((g): boolean => g.id === editorState.activeGroupId);
   const tab = group?.tabs.find((t): boolean => t.id === editorState.activeTabId);
 
   // Model 2: Evolution-Based Semi-Modal Layout

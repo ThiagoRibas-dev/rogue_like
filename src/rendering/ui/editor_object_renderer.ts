@@ -17,7 +17,7 @@ export function renderFormForObject(
   obj: unknown,
   basePath: string,
   container: HTMLElement
-) {
+): void {
   if (!obj || typeof obj !== 'object') return;
 
   for (const [key, val] of Object.entries(obj)) {
@@ -26,7 +26,13 @@ export function renderFormForObject(
   }
 }
 
-function renderField(controller: EditorController, key: string, val: unknown, path: string, container: HTMLElement) {
+function renderField(
+  controller: EditorController,
+  key: string,
+  val: unknown,
+  path: string,
+  container: HTMLElement
+): void {
   if (val === null) return;
 
   if (typeof val === 'string') {
@@ -61,9 +67,9 @@ function renderStringField(
   val: string,
   path: string,
   container: HTMLElement
-) {
+): void {
   const doc = controller.getDocument();
-  const onChange = (newVal: string) => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
+  const onChange = (newVal: string): void => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
 
   // Heuristics for specialized fields
   if (key.toLowerCase().includes('color') || key === 'fg' || key === 'bg') {
@@ -87,8 +93,8 @@ function renderNumberField(
   val: number,
   path: string,
   container: HTMLElement
-) {
-  const onChange = (newVal: number) => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
+): void {
+  const onChange = (newVal: number): void => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
   container.appendChild(createNumberField({ label: key, value: val, onChange }));
 }
 
@@ -98,8 +104,9 @@ function renderBooleanField(
   val: boolean,
   path: string,
   container: HTMLElement
-) {
-  const onChange = (newVal: boolean) => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
+): void {
+  const onChange = (newVal: boolean): void =>
+    controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
   container.appendChild(createBooleanField({ label: key, value: val, onChange }));
 }
 
@@ -109,7 +116,7 @@ function renderNestedObjectField(
   val: unknown,
   path: string,
   container: HTMLElement
-) {
+): void {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
   group.style.border = '1px solid rgba(255,255,255,0.1)';
@@ -131,7 +138,7 @@ function renderArrayField(
   arr: unknown[],
   path: string,
   container: HTMLElement
-) {
+): void {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
   group.style.border = '1px solid rgba(255,255,255,0.1)';
@@ -165,7 +172,7 @@ function renderArrayItem(
   itemVal: unknown,
   parentPath: string,
   parentGroup: HTMLElement
-) {
+): void {
   const itemPath = `${parentPath}/${index}`;
   const itemGroup = document.createElement('div');
   itemGroup.style.borderLeft = '2px solid #6c5ce7';

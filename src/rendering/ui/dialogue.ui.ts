@@ -12,7 +12,7 @@ import { parseWikiSegments } from '../../utils/text.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../../types/events.types.ts';
 
-function appendWikiSegments(container: HTMLElement, text: string) {
+function appendWikiSegments(container: HTMLElement, text: string): void {
   const segments = parseWikiSegments(text);
   for (const seg of segments) {
     if (seg.type) {

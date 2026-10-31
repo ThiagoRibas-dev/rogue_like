@@ -1,0 +1,12 @@
+{
+  "standard_dungeon": {
+    "id": "standard_dungeon",
+    "name": "Standard Dungeon",
+    "budgetAllocation": {
+      "protein": 0.6,
+      "appetizer": 0.1,
+      "side": 0.2,
+      "dessert": 0.1
+    }
+  }
+}

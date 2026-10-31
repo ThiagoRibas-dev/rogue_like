@@ -1,0 +1,21 @@
+# Run
+
+## Category
+Full-Round Action
+
+## Summary
+You can run as a full-round action.
+
+## Mechanics
+- **Action Type:** Full-Round Action
+- **Movement:** When you run, you can move up to four times your speed in a straight line (or three times your speed if you’re in heavy armor).
+- **AC Penalty:** You lose any Dexterity bonus to AC unless you have the Run feat.
+- **Duration:** You can run for a number of rounds equal to your Constitution score, but after that you must make a DC 10 Constitution check to continue running. You must check again each round in which you continue to run, and the DC of this check increases by 1 for each check you have made. When you fail this check, you must stop running.
+- **Rest:** A character who has run to his limit must rest for 1 minute (10 rounds) before running again. During a rest period, a character can move no faster than a normal move action.
+- **Restrictions:** You can’t run across difficult terrain or if you can’t see where you’re going.
+
+## Special Notes
+A run represents a speed of about 12 miles per hour for an unencumbered human.
+
+## Source
+Player's Handbook

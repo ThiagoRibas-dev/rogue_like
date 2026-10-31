@@ -108,7 +108,7 @@ export function showPromptModal(options: PromptModalOptions): void {
   overlay.appendChild(modal);
 
   // Validation logic
-  const validate = () => {
+  const validate = (): boolean => {
     const val = input.value.trim();
     if (!val) {
       errorMsg.textContent = 'Input cannot be empty.';
@@ -131,7 +131,7 @@ export function showPromptModal(options: PromptModalOptions): void {
     return true;
   };
 
-  const close = () => {
+  const close = (): void => {
     if (overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
     }

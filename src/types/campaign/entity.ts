@@ -108,7 +108,9 @@ export const EntityTemplateSchema = z.object({
         effectId: z.string()
       })
     )
-    .optional()
+    .optional(),
+  archetypeId: z.string().optional(),
+  rulesetData: z.record(z.string(), z.unknown()).optional()
 });
 /** Inferred type for an entity template definition. */
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;

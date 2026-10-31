@@ -193,7 +193,7 @@ function generate() {
     let entitiesCount = 0, itemsCount = 0, areasCount = 0, tilesCount = 0, factionsCount = 0, statusCount = 0, effectsCount = 0, aiCount = 0, spawnPoolsCount = 0, encounterProfilesCount = 0;
 
     for (const key of keys) {
-        if (key === 'triggerBuckets') continue;
+        if (key === 'triggerBuckets' || key === 'systemContent') continue;
         const filename = `${toSnakeCase(key)}.json`;
         
         let content: unknown = {};

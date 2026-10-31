@@ -3,7 +3,9 @@
 This document outlines the high-level roadmap for the project, organizing our progression from a basic moving character to a fully modular, extensible roguelike with a robust engine.
 
 ## 🟢 Milestone 1: The Foundation
+
 Establish the strict structural and architectural patterns that the rest of the game will rely on.
+
 - [x] Initial Vite + ROT.js + TypeScript environment setup.
 - [x] Basic ECS (Entity-Component-System) structure (`createEntity`, `addComponent`, queries).
 - [x] Immutable GameState definition.
@@ -14,7 +16,9 @@ Establish the strict structural and architectural patterns that the rest of the 
 - [x] **Implement a Message Log scaffold/stub (`src/systems/message.system.ts`).**
 
 ## 🟢 Milestone 2: Map Generation & Vision
+
 Introduce procedural generation and line-of-sight to make the world feel like a true dungeon.
+
 - [x] Integrate `ROT.Map.Digger` for procedural dungeon generation.
 - [x] Implement Map wrappers to handle rooms and corridors.
 - [x] Implement `ROT.FOV.PreciseShadowcasting` for Field of View.
@@ -23,7 +27,9 @@ Introduce procedural generation and line-of-sight to make the world feel like a 
 - [x] Implement Stairs and multiple dungeon levels (Up, Down, Ground Floor).
 
 ## 🟢 Milestone 3: The Engine, Scheduling, & Extensible Actions
+
 Transition from simple input-driven updates to a robust turn queue with a generalized, pluggable action system.
+
 - [x] Implement `ROT.Scheduler.Speed` and the formal Game Loop.
 - [x] **Formalize the Command (intent) -> Action (validation) -> Event (result) distinction.**
 - [x] Design an Extensible Action System (actions are classes/functions that return intents).
@@ -32,7 +38,9 @@ Transition from simple input-driven updates to a robust turn queue with a genera
 - [x] **Implement Debug/Cheat tools (reveal map, god mode, spawn entity).**
 
 ## 🟢 Milestone 4: Entities & Combat (MVP Baseline)
+
 Bring the dungeon to life with interactive actors and the core combat loop.
+
 - [x] Implement the Entity Registry (Data-driven spawning).
 - [x] **Define basic Entity Stat schema (HP, attack, defense).**
 - [x] **Implement Bump-to-Attack collision resolution.**
@@ -43,6 +51,7 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 - [x] **Implement Player Death state flag (halt game processing).**
 
 ## 🟢 Milestone 5: Items & Inventory (Complete)
+
 - [x] Create a data-driven Item Registry (consumables, weapons, armor)
 - [x] Add ItemComponent, InventoryComponent, EquipmentComponent
 - [x] Add ground items and Pick Up / Drop mechanics
@@ -51,12 +60,16 @@ Bring the dungeon to life with interactive actors and the core combat loop.
 - [x] Render inventory UI panel for interaction
 
 ## 🟢 Milestone 6: XP & Leveling (Complete)
+
 Transform the mechanical systems into a cohesive game experience.
+
 - [x] XP and Leveling System for the Player.
 - [x] Fully wire the HTML HUD (Health bars, XP bars, stats) to the GameState.
 
 ## 🟢 Milestone 7: Persistence & Game Flow
+
 Implement the full lifecycle of a play session.
+
 - [x] Implement the Initial Page (Main Menu).
 - [x] Implement starting a New Game / full Game Over screens.
 - [x] Implement Saving/Loading (serializing the immutable `GameState` to `localStorage`).
@@ -64,12 +77,15 @@ Implement the full lifecycle of a play session.
 ---
 
 # 🚀 Phase 2: Post-MVP Expansion
+
 Features to be added once the core MVP loop is playable and balanced.
 
-*(Note: Premium UI Polish is treated as a continuous concern and should be integrated into every milestone rather than being its own distinct phase.)*
+_(Note: Premium UI Polish is treated as a continuous concern and should be integrated into every milestone rather than being its own distinct phase.)_
 
 ## 🟢 Milestone 8: Status Effects & Abilities
+
 Add temporary, duration-based modifiers to entities, and implement the `DamageArea` effect type already stubbed in `effects.system.ts`.
+
 - [x] Define `StatusEffectComponent` and a declarative `StatusEffectDefinition` registry (effect ID, stat modifiers, duration, per-turn damage/heal, behavior flags like `stunned`/`confused`).
 - [x] Add a `status-effect.system.ts` that ticks durations each turn, applies per-turn effects (e.g., poison damage), and removes expired effects.
 - [x] Integrate status effects into `getEffectiveStats()` so active buffs/debuffs modify attack, defense, maxHp, and speed dynamically.
@@ -82,7 +98,9 @@ Add temporary, duration-based modifiers to entities, and implement the `DamageAr
 - [x] Ensure status effects serialize/deserialize correctly with the M7 save system.
 
 ## 🟢 Milestone 9: Advanced AI & Factions
+
 Refactor the monolithic `processAITurn` into composable behavior modules and introduce a faction system that governs who attacks whom.
+
 - [x] Define a `FactionComponent` and a Faction Hostility Matrix (data-driven lookup: faction A vs. faction B → hostile / neutral / friendly).
 - [x] Refactor bump-to-attack and AI targeting to consult the hostility matrix instead of assuming "all non-player entities are enemies."
 - [x] Design a composable AI Behavior interface (e.g., `AIBehaviorFn: (state, entityId) => Intent | null`) and a priority-ordered behavior pipeline.
@@ -94,7 +112,9 @@ Refactor the monolithic `processAITurn` into composable behavior modules and int
 - [x] Add at least two new monster templates that showcase the new AI (e.g., a ranged archer, a mage that casts confusion).
 
 ## 🟢 Milestone 10: Deep Mechanics
+
 Layer in identification mystery, resource pressure, and environmental hazards on top of the mature combat and AI systems.
+
 - [x] Implement an **Identification System**: unidentified items display randomized placeholder names (e.g., "Murky Potion") until identified.
 - [x] Randomize unidentified names per run using the seeded RNG so that the same item type gets a consistent placeholder within a single playthrough.
 - [x] Add identification methods: **Scroll of Identify**, and **identify-on-use** (using a consumable reveals its true name for future pickups).
@@ -106,7 +126,9 @@ Layer in identification mystery, resource pressure, and environmental hazards on
 - [x] Add **terrain movement cost modifiers** to the Tile Registry (e.g., shallow water = 2x movement cost via speed penalty).
 
 ## 🟢 Milestone 11: Modding & Extensibility (Data-Driven Engine)
+
 Extract all hardcoded registries and tables into external data files, and build the loading/validation pipeline.
+
 - [x] Design a **Campaign Manifest** JSON schema (campaign name, starting stats, floor generation parameters, which data files to load).
 - [x] Extract the **Entity Registry** (monster/NPC prefabs) from TypeScript constants to loadable `.json` files.
 - [x] Extract **Spawn Tables & Loot Tables** from TypeScript constants to `.json` files.
@@ -119,7 +141,9 @@ Extract all hardcoded registries and tables into external data files, and build 
 - [x] Implement a **Campaign Selection** screen on the Main Menu that lists available campaigns from loaded manifests.
 
 ## 🟢 Milestone 12: RTwP (Real-Time with Pause) Engine Toggle (Complete)
+
 Re-use the pure systems architecture to support an optional real-time mode alongside the existing turn-based mode.
+
 - [x] **Phase 1: Architectural Foundation**: Refactor Intent results to explicitly return `{ state, success }` to eliminate 0-energy inference, and decouple hardcoded terrain/trigger logic (doors, traps) into data-driven definitions.
 - [x] Implement a **real-time game loop** using `requestAnimationFrame` that continuously advances entity turns based on elapsed time and speed.
 - [x] Add a **Pause state** that freezes the real-time loop while allowing UI interaction (inventory, menus).
@@ -128,7 +152,9 @@ Re-use the pure systems architecture to support an optional real-time mode along
 - [x] Add **UI controls** for RTwP: pause/unpause button, speed controls (1x, 2x, 4x), and visual indicators of the current mode.
 
 ## 🟢 Milestone 13: UI Architecture & UX Polish (Complete)
+
 Overhaul the user interface to support robust UX models and dynamic layouts based on modern roguelike UI research.
+
 - [x] Create a **3-column layout** instead of 2 to support more UI panels.
 - [x] Expand the game to use the **browser's full viewport** instead of a constrained subset.
 - [x] Migrate persistent inventory to a **Floating Semi-Modal Overlay** for better scalability.
@@ -143,16 +169,21 @@ Overhaul the user interface to support robust UX models and dynamic layouts base
 ---
 
 # 🚀 Phase 3: Deep Narrative & Advanced Systems
+
 Transitioning from a flat simulation into a world with causal narrative depth, supported by highly scalable architecture.
 
 ## 🟢 Milestone 14: Stabilization & Polish
+
 Ensure the foundation is rock-solid and balanced before introducing massive systemic complexity.
+
 - [x] **Audit Combat Math**: Normalize HP, damage scaling, and status effect scaling to ensure mid-to-late game viability.
 - [x] **RTwP Robustness**: Implement strict error boundaries and fallback states in the Real-Time loop to prevent silent soft-locks during complex interactions.
 - [x] **UI Edge Cases**: Refine floating combat text, tooltips, and log grouping to gracefully handle dozens of simultaneous events (e.g., AoE explosions).
 
 ## 🟢 Milestone 15: Core Architecture (Commands & Tags)
+
 Low-risk, high-reward refactoring to support combinatorial depth.
+
 - [x] **The Command Pattern**: Define a formal `Action` interface (e.g., `execute(state, entityId): ActionResult`). Crucially, Actions must emit structured `Events` to form a unified event ledger.
 - [x] **Migrate Intents**: Refactor `applyIntentWithCost` and the massive `switch` statement into discrete, self-contained Action objects (e.g., `WalkAction`, `AttackAction`).
 - [x] **Tags Component**: Add a `TagsComponent` to entities and `AreaTags` to maps for semantic descriptors (e.g., `["undead", "fire_aligned"]`, `["forest", "surface"]`).
@@ -160,7 +191,9 @@ Low-risk, high-reward refactoring to support combinatorial depth.
 - [x] **System Integration**: Update `getEffectiveStats()` and AI behaviors to dynamically query Traits and Tags instead of hardcoded component checks.
 
 ## 🟢 Milestone 16: World Interconnectivity & Biomes (Complete)
+
 Move away from a strict vertical dungeon descent into an interconnected "overworld" of distinct zones.
+
 - [x] **Area Data Model**: Rename internal concepts of "Floor" and "Level" to "Area" or "Zone" within the `GameState`.
 - [x] **Biome Generators**: Update Map Generation to select `ROT.Map` algorithms dynamically based on Area tags (e.g., `Cellular` for wild/forests, `BSP` for urban/villages).
 - [x] **Contextual Spawns**: Modify `spawnWeights` to filter the global entity/item pools by the Area's semantic tags.
@@ -169,21 +202,27 @@ Move away from a strict vertical dungeon descent into an interconnected "overwor
 - [x] **Static Hubs**: Add support for parsing purely static map definitions (e.g., a hand-crafted starting tavern) that seamlessly connect to procedural zones.
 
 ## 🟢 Milestone 17: Persistent Entities & Relationships (Complete)
+
 The missing prerequisite for procedural narrative: entities that exist and act outside the player's immediate vicinity.
+
 - [x] **Global Persistence**: Extract unique/named NPCs into a global `PersistentEntities` map on `GameState` that survives regardless of the active floor.
 - [x] **Sleep/Wake Pipeline**: Build logic that syncs persistent NPCs into the active ECS arrays when the player enters their Area, and packages them back out when the player leaves.
 - [x] **Memory Component**: Allow NPCs to track a history of interactions, grudges, and faction alignments.
 - [x] **Faction Standing UI**: Build a player-facing interface to track reputation and standing with various global factions.
 
 ## 🟢 Milestone 18: Component-Driven Combat Pipeline (Complete)
+
 **Goal:** Transition combat resolution from a monolithic intent handler to a true ECS pipeline, setting the stage for AoE, DoTs, and environmental hazards.
+
 - [x] **Damage Components:** Introduce `DamageComponent` to represent incoming damage events.
 - [x] **Damage System:** Build `damage.system.ts` to process `DamageComponents`, reducing HP, applying on-hit effects, and emitting floating text.
 - [x] **Death System:** Build `death.system.ts` to handle entities that reach 0 HP (XP distribution, drops, removal) independently of what killed them.
 - [x] **Refactor Combat Logic:** Update `processMeleeAttackIntent` to simply calculate initial attack vs defense and attach a `DamageComponent`, delegating the rest to the pipeline.
 
 ## 🟢 Milestone 19: The Social Layer (Complete)
+
 **Goal:** Introduce dialogue, quests, and rich interaction menus.
+
 - [x] **Conversation UI**: Build an interactive, branching dialogue modal for speaking with friendly or neutral NPCs.
 - [x] **Memory-Driven Dialogue**: Connect the dialogue system to the `MemoryComponent`, allowing NPCs to alter their responses based on past interactions, faction standing, or grudges.
 - [x] **Declarative Quests**: Implement logic for friendly NPCs to assign missions (e.g., retrieve item, slay monster) directly to the player using JSON-defined quests.
@@ -196,20 +235,25 @@ The missing prerequisite for procedural narrative: entities that exist and act o
 - [x] **Dynamic Hostility (Attitudes):** Replace hardcoded hostility checks in `ai.system.ts` with an `AttitudeComponent` that can change dynamically based on actions, enabling foes to become neutral or friendly.
 
 ## 🟢 Milestone 20: The Adversarial Layer (Schemes & Investigation) (Complete)
+
 Introduce systemic villains that act against the player, pairing the background simulation tightly with the investigation UI.
+
 - [x] **Scheme & Mission Data**: Define the JSON schemas for Villain Schemes, intermediary Agreements, and Missions.
 - [x] **Unique Token Pools**: Implement the "Bag/Deck" pattern to enforce global spawning limits so unique villains or key items cannot be duplicated.
 - [x] **Scheme Simulator**: Build the background system that hooks directly into the `ROT.Scheduler.Speed` (decoupled from player input) to advance villain goals and dispatch missions across Areas.
 - [x] **Clue Generation**: Mechanically drop physical evidence or generate witness memories whenever a mission executes (emitting structured `ClueEvents`).
-- [x] **Investigation Board UI**: Build a "conspiracy board" UI engineered as a filtered view of the global *Event Ledger*, allowing the player to naturally review discovered clues and expose active schemes.
+- [x] **Investigation Board UI**: Build a "conspiracy board" UI engineered as a filtered view of the global _Event Ledger_, allowing the player to naturally review discovered clues and expose active schemes.
 
 ---
 
 # 🚀 Phase 4: Campaign Creator & Modular Tooling (Refined)
+
 Features to allow building, testing, and sharing campaigns using structured JSON data and custom map configurations.
 
 ## 🟢 Milestone 21: Editor Foundation & Database Forms (Complete)
+
 **Goal:** Create the basic workspace shell, modular form templates, and simple string/number fields for JSON data editing, with direct local workspace interaction.
+
 - [x] **Developer Workspace Toggle & Routing**
   - Add a "Dev Tools" action button on the Main Menu screen.
   - Setup screen switching between the main game state and the editor workspace state in [src/main.ts](src/main.ts) and [src/core/game-loop.ts](src/core/game-loop.ts).
@@ -224,7 +268,7 @@ Features to allow building, testing, and sharing campaigns using structured JSON
 - [x] **⭐ Undo/Redo + Change History (JSON Patch)**
   - Implement an editor command stack in [src/editor/campaign_editor.ts](src/editor/campaign_editor.ts) over the in-memory campaign document using **JSON Patch (RFC 6902) deltas** rather than full-state snapshots, so history is cheap and memory-stable.
   - Bind `Ctrl+Z` / `Ctrl+Shift+Z` to undo/redo changes in forms.
-  - *RNG Note:* This stack tracks editor changes only. We document that gameplay turn-rewinds require RNG checkpointing due to state-counter dependencies in [src/core/rng.ts](src/core/rng.ts).
+  - _RNG Note:_ This stack tracks editor changes only. We document that gameplay turn-rewinds require RNG checkpointing due to state-counter dependencies in [src/core/rng.ts](src/core/rng.ts).
 - [x] **⭐ Fast Iteration & "Round-Trip" Goal**
   - Establish a fast-path re-injection of the in-memory doc to the campaign loader [src/core/loader.ts](src/core/loader.ts) to avoid full page reload on playtest.
   - Track iteration speeds in the developer toolbar.
@@ -247,7 +291,9 @@ Features to allow building, testing, and sharing campaigns using structured JSON
   - **⭐ "Return to Editor" Re-entry:** Preserve the editor document state across playtest detours in [src/main.ts](src/main.ts) so authors return to the exact object they were editing.
 
 ## 🟢 Milestone 22: The Trigger System (Events → Conditions → Consequences) ⭐ KEYSTONE
+
 Promote scattered condition/action primitives into a single, unified, event-reactive trigger engine.
+
 - [x] **Generalize the Event Surface**
   - Audit and expand the existing `GameEventType` enum and event ledger in [src/types/events.types.ts](src/types/events.types.ts); ensure all state changes publish uniformly in [src/core/game-loop.ts](src/core/game-loop.ts).
 - [x] **Declarative Trigger Schema**
@@ -267,7 +313,9 @@ Promote scattered condition/action primitives into a single, unified, event-reac
   - **Phase 3 Narrative Migrations:** Port heavy NPC dialogues and quest events to triggers once diff-testing passes.
 
 ## 🟢 Milestone 23: Narrative Architect (Dialogue, Quests & Flow)
+
 Construct narrative structures and test conditional triggers in-editor on top of the Trigger System.
+
 - [x] **Conversation Editor (Tree-First, Scope-Protected)**
   - Build a folder-style nested branching list dialogue editor in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts), modifying dialogue schemas in [src/types/dialogue.types.ts](src/types/dialogue.types.ts).
 - [x] **Dialogue Triggers**
@@ -280,7 +328,9 @@ Construct narrative structures and test conditional triggers in-editor on top of
   - Integrate an editor sidebar panel in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) to mock player memory fact logs and standings from `MemoryComponent` in [src/types/components.types.ts](src/types/components.types.ts), highlighting visible dialogue branches.
 
 ## 🟢 Milestone 24: World & Area Builder (Complete)
+
 Provide visual environment design and portal networking.
+
 - [x] **Visual Grid Painter**
   - Setup a tile painter canvas in [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) utilizing `ROT.Display` or custom Canvas elements, painting tiles mapped to [src/types/game-state.types.ts](src/types/game-state.types.ts) (`Tile` and `GameMap`) and properties in [src/types/campaign.types.ts](src/types/campaign.types.ts) (`TileDefinitionSchema`).
   - Integrate undo/redo command stack patches with paint brush actions.
@@ -293,7 +343,9 @@ Provide visual environment design and portal networking.
   - Real-time preview of cellular/digger parameters inside [src/rendering/editor_ui.ts](src/rendering/editor_ui.ts) by invoking [src/map/generator.ts](src/map/generator.ts) with seed rerolling and exit pathfinding reachability checks.
 
 ## 🟢 Milestone 25: Simulation Lab & Campaign Validator
+
 Real-time simulation testing and campaign-wide sanity check validations.
+
 - [x] **⭐ Campaign Smoke-Test / Validator**
   - Build out the final automated asynchronous checker in [src/editor/campaign_validator.ts](src/editor/campaign_validator.ts): starting area reachability, complete path graph solvability, quest parameter sanity, and trigger loop/recursion traps. Block exports on major validation failures and show a loading state in the UI.
 - [x] **Observability Overlays**
@@ -304,7 +356,9 @@ Real-time simulation testing and campaign-wide sanity check validations.
   - Run background mastermind villain schemes in [src/systems/scheme.system.ts](src/systems/scheme.system.ts) in a fast-forward loop, verifying clue compilation on the Investigation Board UI in [src/rendering/ui/investigation.ui.ts](src/rendering/ui/investigation.ui.ts).
 
 ## 🟢 Milestone 26: Visual Editor Enhancements (Drag-and-Drop & Previews)
+
 Enhance the Developer Tools to feel like a modern visual game engine rather than just a smart forms editor.
+
 - [x] **Targeted DOM Updates (Cursor Loss Fix):** Refactor the editor controller and renderer to use differential updates instead of full-tree re-renders on keystrokes, which is a strict prerequisite for drag-and-drop.
 - [x] **Sidebar Search & Filtering:** Add a search bar to the middle pane to easily locate specific entities or items in massive campaigns.
 - [x] **Unsaved Changes Protection:** Add a `beforeunload` event listener to warn users of unsaved changes before closing the tab.
@@ -317,14 +371,18 @@ Enhance the Developer Tools to feel like a modern visual game engine rather than
 - [x] **Live Map Previews:** Add an inset Canvas view when editing an Area or Map Template to instantly visualize what the procedural generation parameters or static map layout will look like.
 
 ## 🟢 Milestone 27: Engine Data Structures & Render Optimizations
+
 Transition the ECS internal data structures from arrays to constant-time dictionaries and optimize the per-frame render loop.
+
 - [x] **O(1) Component Access:** Refactor `GameState.components` from `ReadonlyArray<Component>` to an `O(1)` dictionary `Readonly<Record<string, Component>>` keyed by `ComponentType`.
 - [x] **Array Loop Elimination:** Remove expensive `.filter` and `.find` operations across the codebase by adopting the new `getComponent`, `addComponent`, and `removeComponent` architecture.
 - [x] **FOV Caching:** Decouple FOV `PreciseShadowcasting` math from the active render loop. Recompute FOV only when a new `fovNeedsUpdate` flag is tripped by a system (like moving or opening a door).
 - [x] **O(1) Spatial Rendering:** Eliminate the global `queryEntities` rendering loop. Instead, iterate exactly over the camera viewport bounds, retrieving standing entities via `state.spatialIndex` to ensure the render layer scales perfectly regardless of the total number of entities in the dungeon.
 
 ## 🟢 Milestone 28: Campaign Packaging & Standalone Distribution
+
 Implement packaging structure and install operations for modular campaigns.
+
 - [x] **Campaign Manifest & Versioning**
   - Edit metadata block (name, version, author, description, tags) and enforce strict schema versioning checks in [src/core/loader.ts](src/core/loader.ts).
 - [x] **IndexedDB Workspace Storage**
@@ -341,10 +399,13 @@ Implement packaging structure and install operations for modular campaigns.
 ---
 
 # 🚀 Phase 5: Interaction Combinatorics & Roguelike Depth
+
 **Goal:** Close the classic roguelike interaction-depth gap by adding more verbs, more target surfaces, and persistent world-state modifications — without hardcoding item-specific special cases. This phase should produce the “70% NetHack/Qud feel” through tag-based combinatorics, strong observability, and designer-authorable reactions.
 
 ## 🟢 Milestone 29: Unified Apply Intent & Verb Vocabulary ⭐ KEYSTONE
+
 Unify bespoke item-use, terrain interaction, and aimed interaction plumbing behind one canonical verb/tool/target pipeline.
+
 - [x] Define `ApplyIntent` in `src/types/intents/interaction.intents.ts` with `actorId`, `verb`, optional `toolEntityId`, and a target union covering self, entity, item, and tile targets.
 - [x] Add `IntentType.Apply` to `src/types/intents/intent.enum.ts` and route it through `src/actions/action.registry.ts` without adding a new monolithic switch/router to the core game loop.
 - [x] Keep existing `UseItemIntent`, `InteractIntent`, and targeting flows as temporary compatibility wrappers/adapters in `src/core/game-loop.ts` until migration is complete.
@@ -353,7 +414,9 @@ Unify bespoke item-use, terrain interaction, and aimed interaction plumbing behi
 - [x] Ensure all Apply outcomes return explicit `{ state, success }` and deterministic energy costs to `src/core/game-loop.ts`, preserving RTwP compatibility.
 
 ## 🟢 Milestone 30: Reaction System 2.0 — Verb + Source/Target Matchers
+
 Upgrade the existing tag-based reaction system into the primary combinatorial interaction engine.
+
 - [x] Extend `ReactionDefinitionSchema` in `src/types/campaign.types.ts` with `verb`, `sourceMatcher`, `targetMatcher`, optional `contextMatcher`, `priority`, and declarative `consequences`.
 - [x] Update `src/systems/reaction.system.ts` to allow matchers to check tags, traits (`src/types/components.types.ts`), item categories, tile tags, field types, and faction/memory context.
 - [x] Validate all tag references in `ReactionDefinitionSchema` against the campaign `tagRegistry` at load time in `src/core/loader.ts`.
@@ -366,7 +429,9 @@ Upgrade the existing tag-based reaction system into the primary combinatorial in
 - [x] **Environmental Tile-Based Reactions:** Extend `ReactionTargetMatcherSchema` to accept `targetType: 'tile'` and update `reaction.system.ts` to fetch and react against tile definition tags from `tiles.json`.
 
 ## 🟢 Milestone 31: Throwing, Projectiles & On-Impact Consequences
+
 Implement the highest-ROI roguelike verb: throwing items and resolving their impact through the targeting/reaction pipeline.
+
 - [x] Implement `throw` as an Apply verb reusing the existing targeting crosshair and line-trace infrastructure from `src/actions/targeting.actions.ts`.
 - [x] Add deterministic projectile resolution in a new `src/systems/projectile.system.ts` or within the targeting system: range, blocked tiles, hit entities, miss scatter, item weight, and stack quantity handling.
 - [x] Support on-impact consequences through `src/systems/reaction.system.ts`: shatter, explode, spill field, apply status, create noise, break item, or land on the floor.
@@ -376,7 +441,9 @@ Implement the highest-ROI roguelike verb: throwing items and resolving their imp
 - [x] Add validator tests in `src/editor/campaign_validator.ts` ensuring thrown unique/key items cannot be silently destroyed unless explicitly allowed.
 
 ## 🟢 Milestone 32: Containers, Locks & Forceful Access Problems (Complete)
+
 Turn doors, chests, and storage objects into procedural tactical/loot/access challenges.
+
 - [x] Add `ContainerComponent` or extend `InventoryComponent` semantics in `src/types/components.types.ts` so chest entities can hold item entity IDs safely.
 - [x] Add `LockComponent { difficulty, keyTag?, locked, jammed?, breakable? }` to `src/types/components.types.ts` for doors, chests, cages, and special containers.
 - [x] Implement `open`, `close`, `lock`, `unlock`, and `kick` as Apply verbs resolved by reactions and the existing `InteractableComponent`.
@@ -389,7 +456,9 @@ Turn doors, chests, and storage objects into procedural tactical/loot/access cha
 - [x] **Static Chest Inventories:** Update `map.system.ts` to allow the `placedEntities` array in `areas.json` to define an optional `inventory` array, overriding random loot generation for specific quest/boss chests.
 
 ## 🟢 Milestone 33: Fields & Lightweight Substance Simulation (Complete)
+
 Represent persistent environmental effects as entities rather than building a full fluid simulation.
+
 - [x] Define `FieldComponent { fieldType, intensity, duration, spreadRuleId }` in `src/types/components.types.ts` and a data-driven `FieldDefinitionSchema` in `src/types/campaign.types.ts`.
 - [x] Build `src/systems/field.system.ts` to tick duration, decay intensity, process deterministic spread, and apply effects to occupants.
 - [x] Ship an initial field set in the default campaign data: `fire`, `smoke`, and `poison_gas`.
@@ -399,7 +468,9 @@ Represent persistent environmental effects as entities rather than building a fu
 - [x] Add debug overlay rendering in `src/rendering/ui/debug.ui.ts` for field type, intensity, duration, and spread decisions.
 
 ## 🟢 Milestone 34: Dip/Coat, Wands/Zaps, Fountains & Altars
+
 Add the first compact content pack that proves the unified Apply + Reaction architecture creates combinatorial depth.
+
 - [x] Implement `dip` reactions in `src/systems/reaction.system.ts` for item-to-item and item-to-terrain interactions.
 - [x] Support temporary item coatings such as poisoned blades or coated arrows with finite on-hit charges, updating `getEffectiveStats` or weapon hit resolution.
 - [x] Implement `zap` delivery modes for wands in targeting logic: beam, bolt, cone, and simple bounce/reflection where tractable.
@@ -409,7 +480,9 @@ Add the first compact content pack that proves the unified Apply + Reaction arch
 - [x] Surface all hidden consequences through messages (`src/systems/message.system.ts`), clues, tooltips, or Reaction Trace entries.
 
 ## 🟢 Milestone 35: Action Discovery, Verb Menu & Interaction UX
+
 Make the expanded interaction vocabulary discoverable instead of requiring players to memorize every verb.
+
 - [x] Add a “smart apply” default action in input handling that chooses the highest-confidence valid verb while still allowing manual override.
 - [x] Use a dry-run validation path in `src/actions/action.registry.ts` to show why an action is valid or invalid without mutating the `GameState`.
 - [x] Add tooltip explanations in `src/rendering/ui/tooltip.ui.ts` for tool tags, target tags, reaction previews, lock difficulty, and field hazards.
@@ -420,7 +493,9 @@ Make the expanded interaction vocabulary discoverable instead of requiring playe
 - [x] Ensure the existing Trigger System can intercept this event and author a fallback consequence (like spawning a frightened witness).
 
 ## 🟢 Milestone 35.5: Sprite Rendering Engine (Complete)
+
 Introduce graphical tile support as a drop-in alternative to the traditional ASCII rendering.
+
 - [x] **Tile-based Layout Backend**: Refactor the display factory (`src/rendering/display.ts`) to initialize `ROT.Display` with a `layout: 'tile'` backend when a campaign theme includes `spriteSheets`.
 - [x] **Dynamic Atlas Composition**: Build an async sprite loader that combines multiple spritesheets into a single `<canvas>` atlas at runtime, calculating offset coordinates for seamless multi-spritesheet support.
 - [x] **Multi-Tile Stacking**: Implement `drawCell` logic to layer multiple sprites per tile (e.g., drawing a monster over an item over a floor tile) to preserve ECS spatial integrity visually.
@@ -431,10 +506,13 @@ Introduce graphical tile support as a drop-in alternative to the traditional ASC
 ---
 
 # 🚀 Phase 6: Encounter Director & Tactical Procedural Generation
+
 **Goal:** Replace flat spawn-table population with an algorithmic “Game Master” that spends area budgets across tactical axes: objective, advantages, hazards, and chaos. This phase turns procedural rooms into authored-feeling combat puzzles.
 
 ## 🟢 Milestone 36: Area Budgets, Spawn Roles & Director Schemas (Complete) ⭐ KEYSTONE
+
 Add the data model the Encounter Director needs to reason about difficulty and encounter composition.
+
 - [x] Extend `AreaDefinitionSchema` with `crBudget`, `encounterProfileId`, optional `directorTags`, and budget scaling by depth/difficulty.
 - [x] Extend entity templates with `crCost`, role tags, encounter tags, and optional director hints.
 - [x] Define spawn pools that filter by area tags, biome tags, faction tags, role tags, and global token-pool availability.
@@ -444,7 +522,9 @@ Add the data model the Encounter Director needs to reason about difficulty and e
 - [x] Add editor fields and tooltips for budgets, role tags, spawn pools, and dynamic templates.
 
 ## 🟢 Milestone 37: Encounter Director Core — Protein/Appetizer/Sides/Dessert
+
 Implement the budget-spending algorithm inside area/room population.
+
 - [x] Hook the Encounter Director into `src/map/generator.ts` after terrain generation and before final entity placement.
 - [x] Split encounter budget across tactical axes: main objective, player advantages, environmental hazards, and chaotic disruptors.
 - [x] Generate an explicit Director Receipt recording budget inputs, selected ingredients, rejected candidates, and final cost.
@@ -453,7 +533,9 @@ Implement the budget-spending algorithm inside area/room population.
 - [x] Preserve strict seed determinism for all selection and placement decisions.
 
 ## 🟢 Milestone 38: Dynamic Templates, Sub-Biomes & Token Pools
+
 Make procedural generation adaptive without losing designer control.
+
 - [x] Implement dynamic trait/template application as budget padding for under-cost encounters.
 - [x] Add sub-biome generation: rooms can acquire tags such as `spider_nest`, `corrupted`, `flooded`, `burned`, or `shrine_vault`.
 - [x] Filter enemy, item, field, and hazard candidates by combined area + sub-biome tags.
@@ -467,7 +549,9 @@ Make procedural generation adaptive without losing designer control.
   - During map generation, dynamically select a wall tile matching `placementSide`, spawn `portalTemplateId`, and attach a `PortalComponent`.
 
 ## 🟢 Milestone 39: Encounter Director Sandbox & Validation UI (Complete)
+
 Give designers a window into the Director before relying on it in real campaigns.
+
 - [x] Add an Encounter Director preview panel to the editor's Simulation Lab.
 - [x] Let designers select an area, seed, budget, and encounter profile, then reroll deterministic previews.
 - [x] Render the generated map, placed actors, hazards, fields, portals, loot, and objectives.
@@ -477,7 +561,9 @@ Give designers a window into the Director before relying on it in real campaigns
 - [x] Block export on fatal Director configuration errors.
 
 ## 🟢 Milestone 40: Macro/Micro Integration — Schemes Mutate Encounters (Complete)
+
 Let the existing Scheme Simulator influence future area generation and encounter composition.
+
 - [x] Allow schemes to mutate area tags, sub-biome probabilities, encounter profiles, or budget modifiers.
 - [x] Let villain agreements reserve encounter slots/tokens for minions, lieutenants, clues, or ritual objectives.
 - [x] Surface scheme-driven area changes through investigation clues, rumors, map annotations, or faction dialogue.
@@ -486,7 +572,9 @@ Let the existing Scheme Simulator influence future area generation and encounter
 - [x] Add fail-graceful behavior when a scheme references an exhausted token pool or an unavailable area.
 
 ## 🟢 Milestone 41: Tactical Content Pass — First Directed Biomes
+
 Prove the Director with a compact but high-quality content set.
+
 - [x] Build at least four directed encounter families: orc camp, corrupted forest, spider nest, and shrine vault.
 - [x] Ensure each family uses at least three Phase 5 interaction ingredients: locks, fields, throwing, altars/fountains, or dip/zap reactions.
 - [x] Add designer-authored examples showing static, parameterized, and fully dynamic encounter variants.
@@ -495,14 +583,18 @@ Prove the Director with a compact but high-quality content set.
 - [x] Add "Play Encounter" interactive sandbox mode to test generated encounters firsthand.
 
 ## 🟢 Milestone 42: "Hot Path" Dijkstra Mapping & Spawning (Complete)
+
 Use Dijkstra shortest-path calculations to identify critical player-to-portal routes and focus major encounters along them.
+
 - [x] **Dijkstra Hot Path Mapping:** Use `ROT.Path.Dijkstra` to map the critical route from the player's spawn point to area portals/exits in `src/map/generator.ts`.
 - [x] **Radius Expansion (Approach 3):** Expand the Dijkstra path by a radius thickness (defaults to `1` for digger maps and scales dynamically with cellular map sizes) to define the hot path coordinates.
 - [x] **Spawning Preference:** Weight the Encounter Director so major monsters (`protein`) and hazards/traps (`side`) prefer spawning on or near the hot path.
 - [x] **Modding Schema Overrides:** Add optional `hotPathRadius` override support to `AreaDefinitionSchema` for custom campaign design.
 
 ## 🟢 Milestone 43: Advanced Biome Algorithms (DLA/Voronoi)
+
 Expand the world generator with algorithms that produce more organic, sprawling terrain.
+
 - [x] **DLA Generator:** Implement a Diffusion Limited Aggregation (DLA) walker in `src/map/generator.ts` to carve out highly organic, sprawling cave networks (creating a distinct feel from ROT.js Cellular).
 - [x] **Voronoi Sub-Biomes:** Implement a Voronoi partitioning utility. Use it after primary map generation to overlay localized thematic zones (e.g., drawing a distinct "fungal patch" or "bandit camp" inside a larger map).
 - [x] **Zod Schema Updates:** Add `dla` to the allowed map generator types in `CampaignData`. Add `subBiomeRules` arrays allowing designers to configure Voronoi overlays in the editor.
@@ -511,10 +603,13 @@ Expand the world generator with algorithms that produce more organic, sprawling 
 ---
 
 # 🚀 Phase 7: Chronicle, Personality & Nemesis
+
 **Goal:** Give important entities identity, memory, growth, autonomy, and surfacing. This phase turns repeated interactions into personal stories while reusing the existing Memory, AI, Faction, Trigger, Scheme, and Investigation infrastructure.
 
 ## 🟢 Milestone 44: Chronicle & Identity Layer ⭐ KEYSTONE
+
 Create a generalized memory/identity wrapper for entities the player may care about.
+
 - [x] Add a `ChronicleComponent` or expand `MemoryComponent` with identity hooks, player interaction score, scars, relationships, and important event references.
 - [x] Generate salient names, titles, mannerisms, and visual identity cues from data-driven tables.
 - [x] Support promotion of eligible generic entities into persistent named entities when they become narratively important.
@@ -523,7 +618,9 @@ Create a generalized memory/identity wrapper for entities the player may care ab
 - [x] Add debug/dossier UI showing identity, PIS, recent memories, scars, and current location.
 
 ## 🟢 Milestone 45: Personality Facets, Values, Stress & Core Memories (Complete)
+
 Add Dwarf-Fortress-inspired internal causality without making a separate AI stack.
+
 - [x] Define data schemas for personality facets, values, needs/goals, stress, thoughts, and core memories.
 - [x] Generate facet/value distributions deterministically, with extreme traits rare and therefore memorable.
 - [x] Implement event-to-memory filters: defeat, mercy, humiliation, betrayal, gift, rescue, faction harm, and repeated combat style.
@@ -533,7 +630,9 @@ Add Dwarf-Fortress-inspired internal causality without making a separate AI stac
 - [x] Surface internal changes through logs, barks, dialogue options, or dossier updates so the system is not invisible.
 
 ## 🟢 Milestone 46: Personality-Weighted AI & Social Gating (Complete)
+
 Make personality mechanically visible through behavior and dialogue.
+
 - [x] Refactor AI behavior evaluation to support numeric weights where needed, allowing personality facets to multiply existing hunt/flee/ranged/spell/wander preferences.
 - [x] Connect values/core memories to faction standing changes and hostility shifts where appropriate.
 - [x] Add Trigger/Dialogue condition predicates for facets, values, stress thresholds, memories, grudges, and PIS.
@@ -542,6 +641,7 @@ Make personality mechanically visible through behavior and dialogue.
 - [x] Add tests proving personality modifies decisions without breaking deterministic AI resolution.
 
 ## 🟢 Milestone 47: Social Memory & Interaction Tracking ⭐ KEYSTONE (Complete)
+
 Build the data layer for NPCs as persistent social agents. Extend `MemoryComponent` so NPCs remember what they know, count how often they've interacted with the player, and accumulate temporary social states that influence future dialogue and trade.
 
 - [x] Extend `MemoryComponent` with a `knowledge` record: structured facts the NPC knows about schemes, areas, hazards, other NPC locations, and hidden loot. Knowledge items are typed (`rumor`, `location`, `weakness`, `secret`) and tagged for query filtering.
@@ -555,6 +655,7 @@ Build the data layer for NPCs as persistent social agents. Extend `MemoryCompone
 **Testable in game:** Use `/debug` to inspect an NPC before and after talking to them. Interaction counters increment. Use a trigger to set `annoyed` state — verify the debug tooltip shows the change. Set `patienceThreshold` to 1, ask the same question twice, verify the NPC refuses the second time.
 
 ## 🟢 Milestone 48: Knowledge Brokering — NPCs as Information Sources (Complete)
+
 Make NPCs into walking repositories of world knowledge. The player can ask about topics they've heard of, NPCs respond based on what they actually know, and knowledge flows organically from world events into the NPC social graph.
 
 - [x] Implement knowledge propagation: when the Event Ledger (M15) records a major event (EntityDied, QuestCompleted, SchemeAdvanced, boss spawned), eligible NPCs in connected or faction-aligned areas add corresponding `knowledge` entries deterministically, with a configurable propagation delay.
@@ -566,6 +667,7 @@ Make NPCs into walking repositories of world knowledge. The player can ask about
 **Testable in game:** Kill a boss in `dungeon_1`. Return to the `safe_hub` barkeep. Use `ask_about` → select the boss's name. The barkeep says "Word is someone killed the troll in the upper dungeons." This works because the `EntityDied` event propagated knowledge. Now talk to the scout NPC — they don't know about the boss (not in their knowledge pool), so they deflect.
 
 ## 🟢 Milestone 49: Trade & Barter Economy (Complete)
+
 Give NPCs the ability to buy, sell, and barter items with the player. Prices respond to faction standing, personality, and social history — the same item costs different amounts from different merchants.
 
 - [x] Add a `ShopComponent { inventory: EntityId[], markupMultiplier: number, buyTags: string[], sellTags: string[] }` to NPC entities in the ECS, making any NPC capable of being a merchant.
@@ -581,6 +683,7 @@ Give NPCs the ability to buy, sell, and barter items with the player. Prices res
 **Testable in game:** Walk up to the `safe_hub` merchant, talk to them to open branching dialogue, select the trade option to open the trade panel, see items with prices. Buy a health potion. Gold decreases, potion appears in inventory. Talk to a different merchant — notice prices differ. Intimidate the merchant — prices drop 20% for this session. Barter a goblin sword to cover part of the cost.
 
 ## 🟢 Milestone 50: Gossip & Rumors — Social Information Propagation (Complete)
+
 Turn the Event Ledger into a social rumor mill. Major world events generate gossip that spreads organically through the NPC social graph. Players can ask for gossip and hear different things from different people.
 
 - [x] Add a `rumorPool` to `MemoryComponent`: a capped array of structured rumor fragments (text + source event reference + freshness timestamp). Each NPC has their own pool representing what they've heard.
@@ -594,6 +697,7 @@ Turn the Event Ledger into a social rumor mill. Major world events generate goss
 **Testable in game:** Advance a scheme via `/debug fast-forward-schemes`. Talk to the `safe_hub` barkeep → use `gossip` → hear "Strange figures have been seen near the goblin camp." Talk to another NPC — they haven't heard yet (propagation delay). Wait N turns → now they know too. Return to the first NPC — they won't repeat the same rumor (consumed).
 
 ## 🟢 Milestone 51: Social Commerce Authoring & Campaign Content Pass (Complete)
+
 Wire the M47–M50 systems into the Campaign Editor and ship a default campaign content pass that proves every system works together in a coherent player experience.
 
 - [x] Extend the Dialogue Tree editor in `src/rendering/ui/dialogue_editor.ts` (M23) with knowledge-gating nodes (condition: `has_knowledge`), trade-node types (opens `trade.ui.ts` directly), rumor-injection slots (injects a rumor into the dialogue flow), and social state preview (shows which branches are gated by `annoyed`/`grateful`/`patience_below`).
@@ -610,7 +714,9 @@ Wire the M47–M50 systems into the Campaign Editor and ship a default campaign 
 **Testable in game:** Open the editor. Design a merchant with inventory using the new Trade panel. Open the Knowledge Simulator — see which NPCs would know about the troll boss after it spawns. Playtest the campaign: talk to the barkeep (gossip), ask the scout (ask_about spider_nest), trade with the merchant (buy health potion), notice the scholar has a clue about the villain. All four M47–M50 systems work together in one coherent hub area.
 
 ## 🟢 Milestone 52: Nemesis Hierarchy, Promotion & Cheating Death (Complete)
+
 Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and replacement.
+
 - [x] Define hierarchy data: grunts, champions/captains, lieutenants, chiefs/bosses, faction-specific titles, and vacancies.
 - [x] Promote entities based on PIS, victories, surviving defeat, killing allies, humiliating the player, or completing off-screen goals.
 - [x] Implement controlled “cheat death” events with scars, changed stats/traits, changed dialogue, and strict pacing cooldowns.
@@ -619,7 +725,9 @@ Build the core Shadow-of-Mordor-style loop of rise, survival, revenge, and repla
 - [x] Emit promotion, vacancy, scar, and return events to the event ledger and investigation surfaces.
 
 ## 🟢 Milestone 53: Background Rivalries & Power Struggles (Complete)
+
 Let important NPCs act autonomously even when the player is elsewhere. This milestone connects to M48 (Knowledge: NPCs learn about rivalries) and M50 (Gossip: rumors about power struggles spread through the social graph).
+
 - [x] Build a `nemesis.system.ts` or extend the scheme scheduler to tick power struggles, duels, betrayals, recruitment, territory shifts, and training.
 - [x] Resolve off-screen conflicts using deterministic combat/contest summaries rather than full map simulation.
 - [x] Allow the player to intercept, sabotage, or support scheduled rivalry events through quests, rumors, or map objectives — surfaced via M48's `ask_about` and M50's `gossip` verbs so players learn about rivalry opportunities through NPC dialogue.
@@ -630,7 +738,9 @@ Let important NPCs act autonomously even when the player is elsewhere. This mile
 - [x] Integrate rivalry outcomes with factions, schemes, area tags, encounter budgets, and NPC shop inventories (M49 — a merchant whose supplier was killed in a rivalry may have depleted stock).
 
 ## 🟢 Milestone 54: Adversarial Resilience & Escalation (Complete)
+
 Give the conspiracy teeth, memory, and adaptability. Builds on M45 (Personality) and M47 (Social Memory) to make schemes react to player interference.
+
 - [x] **MICE Recruitment:** Cross-reference villain leverage preferences with target NPC personality facets to select the most effective leverage and record it in the `AgreementComponent`.
 - [x] **Compromise Tracking:** Add `compromiseScore` to `MemoryComponent` that increments as NPCs commit crimes, powering blackmail, confessions, and repair decisions.
 - [x] **Local Repair Logic:** When a scheme node dies, have remaining nodes evaluate their compromise and personality to independently abandon, continue, reroute, or confess.
@@ -638,7 +748,9 @@ Give the conspiracy teeth, memory, and adaptability. Builds on M45 (Personality)
 - [x] **Retaliation Escalation:** Track `conspiracyAwareness` on schemes that increases when players disrupt nodes, triggering escalating countermeasures (scouts, ambushes, assassins) via `areaMutations`.
 
 ## 🟢 Milestone 55: Player Manipulation & Relationship Levers (Complete)
+
 Give players ways to intentionally shape the emerging cast. This milestone builds on the M47–M50 social commerce foundation: social memory (M47) tracks what the player has done, knowledge brokering (M48) determines what NPCs know about the player's reputation, trade (M49) uses relationship axes as pricing modifiers, and gossip (M50) spreads stories about the player's actions.
+
 - [x] Add relationship axes to `MemoryComponent` (M47): `loyalty`, `fear`, `resentment`, `respect`, `debt`, `ideologicalAlignment` — numeric values (-100 to +100) that NPCs track for the player and other entities.
 - [x] Relationship axes dynamically modify trade pricing in `getEffectivePrice()` (M49): high `loyalty` discounts, high `fear` discounts temporarily, high `resentment` surcharges, high `debt` reduces markup.
 - [x] Relationship axes gate knowledge sharing (M48): NPCs with low `loyalty` or high `fear` are more likely to share sensitive information under pressure; NPCs with high `resentment` refuse to share anything positive about the player.
@@ -650,7 +762,9 @@ Give players ways to intentionally shape the emerging cast. This milestone build
 - [x] Surface manipulation risks clearly so players understand why an ally defected or enemy became obsessed — surfaced through M47's interaction history tooltip and M51's Knowledge Simulator.
 
 ## 🟢 Milestone 56: Nemesis Surfacing & Narrative UX
+
 Make the system legible, dramatic, and emotionally sticky.
+
 - [x] Add encounter introductions, revenge callouts, death/escape lines, victory taunts, and memory-specific dialogue fragments.
 - [x] Show scars, titles, changed glyph/color/traits, and notable history in inspect tooltips and dossier screens.
 - [x] Connect rumors, witnesses, clues, and investigation board entries to nemesis changes.
@@ -661,10 +775,13 @@ Make the system legible, dramatic, and emotionally sticky.
 ---
 
 # 🚀 Phase 8: Drama Director & Dynamic Composition
+
 **Goal:** Use the Event Ledger + Trigger System as a pacing-aware Drama Director that dynamically composes narrative triggers for characters, factions, areas, dungeons, and artifacts.
 
 ## 🟢 Milestone 57: Event Ledger 2.0 & Player Interest Scoring (Complete) ⭐ KEYSTONE
+
 Turn the event ledger into a durable, queryable narrative substrate without storing infinite noise.
+
 - [x] Add event importance tiers and long-lived compact summaries for narratively meaningful events.
 - [x] Implement Player Interaction Score for entities, factions, areas, artifacts, and possibly dungeons.
 - [x] Add deterministic decay/boost rules so recent and repeated interactions matter more.
@@ -674,7 +791,9 @@ Turn the event ledger into a durable, queryable narrative substrate without stor
 - [x] Add debug timeline visualization and exportable simulation logs.
 
 ## 🟢 Milestone 58: Drama Trigger Composer — Runtime Trigger Generation (Complete)
+
 Generate specific narrative triggers from reusable primitives instead of hand-authoring every permutation.
+
 - [x] Define composer primitives: condition snippets, consequence snippets, dialogue/bark snippets, spawn/location constraints, and cooldown rules.
 - [x] Implement deterministic binding variables such as `$NEMESIS_ID`, `$ALLY_ID`, `$AREA_ID`, `$FACTION_ID`, and `$ARTIFACT_ID`.
 - [x] Compose full `TriggerDefinition` objects at runtime and inject them into active campaign data.
@@ -683,7 +802,9 @@ Generate specific narrative triggers from reusable primitives instead of hand-au
 - [x] Add editor UI for previewing generated triggers and optionally baking them into static campaign data.
 
 ## 🟢 Milestone 59: Pacing Governor & Surprise Budget (Complete)
+
 Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
+
 - [x] Add a global and per-domain drama budget that limits extreme events such as ambushes, betrayals, returns from death, and rescues.
 - [x] Add safe-context checks: no unfair ambushes during onboarding, unavoidable death spirals, critical UI states, or just after another major event.
 - [x] Add cooldowns per character, faction, area, and event type.
@@ -692,14 +813,18 @@ Prevent emergent drama from becoming spammy, unfair, or tonally incoherent.
 - [x] Surface Drama Director decisions in debug receipts.
 
 ## 🟢 Milestone 60: Scheme Compiler & Contextual Investigation (Complete)
+
 Move from fully hand-authored schemes to dynamically assembled conspiracies driven by world events.
+
 - [x] **Phase Blocks & Recipes:** Split monolithic `SchemeTemplate`s into reusable `PhaseBlock`s (ingredients) and `SchemeRecipe`s (constraints).
 - [x] **Scheme Compiler:** Build a pure function that assembles a runtime `SchemeComponent` from a recipe + world state, ensuring identical execution to hand-authored schemes.
 - [x] **History-Derived Triggers:** Use `ChronicleComponent` events (e.g., exile, territory loss, humiliation) to trigger the Scheme Compiler, generating schemes out of emergent gameplay.
 - [x] **Contextual Clues:** Add `narrativeVerb` and `evidenceTags` to Phase Blocks, allowing the Investigation system to generate context-aware clues (e.g., "alchemical residue" for disruption phases).
 
 ## 🟢 Milestone 61: Generalized Chronicles for Regions, Dungeons & Artifacts (Complete)
+
 Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/surfacing makes sense.
+
 - [x] **Architectural Refactor:** Convert Areas and Factions into standard ECS Global Entities, attaching `TagsComponent` and `MemoryComponent` to replace hardcoded `GameState` arrays (`factionPis`, `areaMutations`, etc.), establishing the foundation for robust narrative tracking.
 - [x] Add chronicle support for artifacts: owner genealogy, kills, curses/blessings, grudges, awakened traits, and inscriptions.
 - [x] Add chronicle support for factions: internal schisms, vendettas, debts, leadership changes, and goals.
@@ -708,7 +833,9 @@ Apply the Nemesis pattern beyond NPCs wherever identity/memory/growth/autonomy/s
 - [x] Keep all chronicle data compact and serializable.
 
 ## 🟢 Milestone 62: Authoring Continuum Tools — Static, Blueprint, Dynamic (Complete)
+
 Make the three authoring levels explicit in the Campaign Editor.
+
 - [x] Label editor objects as Static, Parameterized Blueprint, or Dynamic Primitive where appropriate.
 - [x] Provide “generated object inspectors” showing the exact JSON produced by Encounter Director or Drama Composer algorithms.
 - [x] Allow designers to bake a generated result into static data for hand-polishing.
@@ -717,7 +844,9 @@ Make the three authoring levels explicit in the Campaign Editor.
 - [x] Update campaign export so all dynamic rules and primitives remain self-contained and installable.
 
 ## 🟢 Milestone 63: Narrative Simulation Lab & Fuzzer (Complete)
+
 Stress-test emergent narrative systems across many seeds before they reach players.
+
 - [x] Extend the Simulation Lab to run hundreds of deterministic narrative simulations headlessly.
 - [x] Output timelines of promotions, betrayals, area mutations, clue discovery, quest failures, and major drama events.
 - [x] Detect softlocks, unobservable scheme progress, orphaned triggers, impossible participants, runaway event loops, and save-size explosions.
@@ -729,10 +858,13 @@ Stress-test emergent narrative systems across many seeds before they reach playe
 ---
 
 # 🚀 Phase 9: Default Campaign Vertical Slice, Balance & Release Hardening
+
 **Goal:** Convert the systemic engine into a coherent playable campaign and robust creator platform. This phase is less about new architecture and more about proving the full stack through content, balance, polish, and documentation.
 
 ## 🟢 Milestone 64: Default Campaign Vertical Slice (Complete)
+
 Ship a compact campaign that exercises every major system in a coherent arc.
+
 - [x] Build a 60–90 minute default campaign with a starting hub, multiple directed biomes, at least one scheme, and at least one nemesis-capable faction.
 - [x] Include interaction tutorials for throwing, locks, fields, dip/zap, altars/fountains, investigation, and nemesis surfacing.
 - [x] Add a clear campaign objective and finale that can be won, failed, or transformed by systemic outcomes.
@@ -740,7 +872,9 @@ Ship a compact campaign that exercises every major system in a coherent arc.
 - [x] Add content-review passes for message tone, tooltip clarity, encounter readability, and UI pacing.
 
 ## 🟢 Milestone 65: Balance, Telemetry & Deterministic Replay QA
+
 Create repeatable ways to tune and debug the game as a game, not just an engine.
+
 - [x] Add automated balance simulations for combat, hunger, loot economy, encounter budgets, and scheme pressure.
 - [x] Add seed-based replay capture for bug reports and deterministic regression tests.
 - [x] Track difficulty metrics: player deaths, damage taken, resources consumed, flee frequency, average encounter duration, and quest completion rate.
@@ -749,13 +883,17 @@ Create repeatable ways to tune and debug the game as a game, not just an engine.
 - [x] Establish target performance budgets for browser play and editor simulations.
 
 ## 🟢 Milestone 66: Campaign Editor UX Refactor & Consolidation (Complete)
+
 Transform the editor workspace into a scalable, multi-pane application.
+
 - [x] Implement a professional IDE-style layout (Slim Icons -> Category List -> Workspace) to maximize horizontal real estate for forms and node editors.
 - [x] Consolidate related data into single views using workspace tabs (e.g., an "Adversary Director" view that tabs between Villains, Schemes, Agreements, and Hierarchies).
 - [x] Add searchable and resizable panels, allowing users to collapse or focus on specific parts of the workspace.
 
 ## 🟢 Milestone 67: Release Robustness & Distribution Polish
+
 Prepare for public builds and long-term iteration.
+
 - [x] Harden IndexedDB import/export/uninstall flows, including orphaned saves and version mismatch UX.
 - [x] Audit accessibility: keyboard-only play, scaling, contrast, animation reduction, tooltip readability, and modal focus trapping.
 - [x] Test browser compatibility across Chromium, Firefox, Safari, and mobile/tablet where feasible.
@@ -764,7 +902,9 @@ Prepare for public builds and long-term iteration.
 - [x] Prepare deployment packaging for itch.io/GitHub Pages and update README screenshots/instructions.
 
 ## 🟢 Milestone 68: Modding Documentation, Examples & Creator Onboarding
+
 Make the system understandable to campaign authors.
+
 - [x] Write schema reference docs (seeded from `generate-ai-prompt-kit.ts` output) with annotated walkthroughs using the default campaign as the worked example.
 - [x] Add in-editor help text, warning explanations, and "fix-it" suggestions for common validation errors.
 - [x] Provide a creator checklist (`docs/CREATOR_GUIDE.md`) for packaging, installing, validating, and playtesting campaigns, including AI-assisted authoring via the prompt kit.
@@ -773,10 +913,13 @@ Make the system understandable to campaign authors.
 ---
 
 # 🚀 Phase 10: Architectural Refactoring & Core Engine Stabilization
+
 **Goal:** Harden engine stability, enforce strict compliance with `AGENTS.md`, decompose monolithic modules (especially `src/main.ts` into a dedicated `session_controller.ts`), and stabilize turn-step and persistence boundaries before introducing V2 Engine loop/renderer decoupling.
 
 ## 🟢 Milestone 69: Rule Compliance & Determinism Hardening (Completed)
+
 Eliminate rule deviations, upward dependency leaks, and non-deterministic logic that would corrupt time-sliced or worker-backed execution.
+
 - [x] Eliminate `any` casts in `src/rendering/ui/ui_utils.ts` by introducing generic element type parameters `<T extends HTMLElement>`.
 - [x] Enforce seeded PRNG determinism by replacing `Math.random()` with `rng` from `src/core/rng.ts` in visualizer and telemetry tools (`narrative_fuzzer.ts`, `director_sandbox.ui.ts`, `knowledge_simulator.ui.ts`, `world_graph.ts`).
 - [x] Migrate 35 DOM clearing operations (`innerHTML = ''`) to `replaceChildren()` (109 total `.innerHTML` uses in pre-Phase-10 tree; 0 clearing sites remain today, 41 `replaceChildren()` call sites in current `src/`).
@@ -784,14 +927,18 @@ Eliminate rule deviations, upward dependency leaks, and non-deterministic logic 
 - [x] Remove upward action imports in `src/systems/ai.system.ts` and `src/systems/trigger/social.ts`.
 
 ## 🟢 Milestone 70: Architectural Monolith Decomposition & Session Orchestration (Completed)
+
 Split overgrown modules exceeding the ~250-line guideline into cohesive, single-responsibility files to establish clean seams for message queues and decoupled presentation.
+
 - [x] Extract session lifecycle, loop wiring, and presentation orchestration from `src/main.ts` (745 LOC -> 98 LOC bootstrap) into `src/core/session_controller.ts` (630 LOC) and fog overlay helpers in `src/rendering/display.ts`.
 - [x] Decompose `src/systems/nemesis.system.ts` (833 LOC -> 11 LOC facade) into `nemesis_tracker.ts`, `nemesis_hierarchy.ts`, `nemesis_adaptation.ts`, and `nemesis_presentation.ts` (`src/systems/nemesis/`).
 - [x] Split `src/rendering/ui/director_sandbox.ui.ts` (828 LOC -> 214 LOC facade) into `director_telemetry_view.ts` and `director_controls.ts` (`src/rendering/ui/director/`).
 - [x] Decompose `src/editor/simulation/narrative_fuzzer.ts` (664 LOC -> 215 LOC runner) into `fuzzer_invariants.ts` (166 LOC), `fuzzer_mock_state.ts` (284 LOC), and `fuzzer_telemetry.ts` (112 LOC).
 
 ## 🟢 Milestone 71: Core Engine, Turn Loop & Persistence Stabilization (Completed)
+
 Formalize state transitions, turn step invariants, and entity cold storage boundaries so every simulation step produces a compact, leak-free state snapshot.
+
 - [x] Implement bounded `resolveStateStabilization(state: GameState): GameState` pipeline with a 16-iteration guard (`MAX_STABILIZATION_ITERATIONS = 16`) to safely process cascading damage, hazards, and reactive triggers (`src/core/state_stabilizer.ts`).
 - [x] Implement deep recursive entity packaging and orphan entity pruning sweeps in `src/core/ecs.ts` and `src/core/save.ts` (`pruneOrphanEntities`, `collectOwnedEntityIds`) for area sleep/wake transitions.
 - [x] Isolate sandbox and demo bootstrap routines from `src/core/bootstrap.ts` into dedicated setup modules (`src/core/bootstrap_sandbox.ts`, `initializeCampaignWorldEntities`).
@@ -799,37 +946,48 @@ Formalize state transitions, turn step invariants, and entity cold storage bound
 ---
 
 # 🚀 Phase 11: V2 Engine — Decoupled Frame Loop, Message-Queue Glue & Pure Dumb Renderer
-**Goal:** Guarantee butter-smooth 60 FPS framerates during Real-Time with Pause (RTwP) mode and *Dwarf Fortress* / *Caves of Qud*-scale world simulations by decoupling simulation ticks from presentation frames via message queues, turning `renderer.ts` into a pure dumb canvas renderer, throttling persistence out of the hot loop, and time-slicing heavy generation/simulation work.
+
+**Goal:** Guarantee butter-smooth 60 FPS framerates during Real-Time with Pause (RTwP) mode and _Dwarf Fortress_ / _Caves of Qud_-scale world simulations by decoupling simulation ticks from presentation frames via message queues, turning `renderer.ts` into a pure dumb canvas renderer, throttling persistence out of the hot loop, and time-slicing heavy generation/simulation work.
 
 ## 🟢 Milestone 72: Decoupled Frame Loop, Message-Queue Glue & Debounced Persistence (Completed)
+
 Eliminate synchronous `render()`, 17-panel DOM rebuilds, and `localStorage` serialization inside individual actor sub-steps (`processTurn` / `updateState`).
+
 - [x] **Layer Decoupling via Message / Event Queues**: Introduce explicit typed queues (`InputCommandQueue` from UI/Input to Simulation, and `PresentationEventQueue` / dirty flags from Simulation to Renderer, DOM UI, and Persistence) in `src/core/session_controller.ts` and `src/core/game-loop.ts` so simulation, presentation, and storage never block or synchronously re-enter each other.
 - [x] **60Hz Frame-Synced Presenter Pass**: Decouple `updateState()` from direct rendering; mutate/advance `currentState` in memory during actor turns (`scheduler.ts`) and run a single `requestAnimationFrame` presenter pass at most once per display frame when state is marked dirty.
 - [x] **Debounced & Checkpointed Persistence**: Remove synchronous `saveGame()` (`JSON.stringify` + `localStorage.setItem`) and `saveCurrentReplay()` calls from `updateState()`. Trigger persistence asynchronously/debounced on safe checkpoints (player turn settle, RTwP pause, area transitions, modal close, or periodic cooldown).
 - [x] **Selective UI Dirty-Domain Tracking**: Track dirty UI domains (`hud`, `log`, `inventory`, `modal`, `camera`) in the presentation queue so passive NPC ticks do not rebuild unchanged DOM panels.
 
 ## 🟢 Milestone 73: Pure Dumb Canvas Renderer & Presentational `ViewportSnapshot` (Completed)
+
 Enforce strict model-view separation (inspired by `slashman/jsrl`) by splitting ECS view projection from canvas drawing.
+
 - [x] **Presentational Viewport Projector (`src/rendering/viewport_snapshot.ts`)**: Build a pure `buildViewportSnapshot(state, viewportW, viewportH): ViewportSnapshot` projector that pre-computes visible/explored cells, z-sorted entity stacks, camera offsets, fog-of-war state, active visual effects, and inspect tooltip DTOs using flat pre-allocated buffers and integer coordinate indexing (`y * width + x` instead of per-tile `${x},${y}` string allocations).
 - [x] **Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`)**: Refactor `renderer.ts` to accept only `(display, snapshot: ViewportSnapshot)` with zero imports from `ecs.ts`, `ComponentType`, or `GameState`.
 - [x] **Dirty-Cell Canvas Diffing**: Replace full-frame `display.clear()` redraws in `renderer.ts` with cell-level diffing against the previous `ViewportSnapshot` so only changed viewport cells are redrawn each frame, keeping the display adapter swappable for future WebGL/PixiJS batch backends (`FlameNeon/pixi.js`).
 
 ## 🟢 Milestone 74: Cooperative Frame-Budgeted Scheduler, Tiered World Simulation & Worker Offload (Completed)
+
 Prevent browser lock-ups during turn storms, large-scale world ticks, and multi-stage procedural generation.
+
 - [x] **Frame-Budgeted Cooperative Scheduler (`src/core/scheduler.ts`)**: Wrap `runTurnBasedLoop`, `rtwpLoop`, and fast-forward batching in a `FRAME_BUDGET_MS = 4` (`performance.now()`) time budget that yields back to the frame presenter when exceeded while keeping conflicting player inputs locked until the turn slice settles.
 - [x] **Tiered World Simulation Cadence**: Separate active-zone micro-simulation (every turn: FOV, A*, combat, reactions) from off-screen macro-simulation (coarse global turn cadence for `scheme.system.ts`, `world_events.system.ts`, `rivalry.system.ts`, and `gossip.system.ts`) and delta catch-up on area wake (`src/core/simulation_cadence.ts`, `src/systems/map.system.ts`).
 - [x] **Stage-Sliced Generators & RNG Determinism Guard**: Add cooperative `function*` generator pipelines (`generateAreaAsync`, `runNarrativeFuzzerAsync`) that yield `{ stage, progress }` checkpoints between heavy stages (`Base Carve → DLA/Voronoi → Dijkstra Hot-Path → Room Spawning → Fuzzer Turn Batches`) while snapshotting/restoring `ROT.RNG.getState()` across every yield boundary (`src/map/generator_stages.ts`, `src/map/generator_async.ts`, `src/editor/simulation/narrative_fuzzer_async.ts`).
 - [x] **Smooth Non-Blocking Loading & Background Worker Offload**: Drive a continuous UI progress overlay (`src/rendering/ui/loading_overlay.ui.ts`, `#loading-overlay`) from yielded generation checkpoints during area transitions and Fuzzer runs, and provide a typed Web Worker bridge (`src/worker/worker_bridge.ts`, `src/worker/fuzzer.worker.ts`, `src/worker/map.worker.ts`) over serializable message boundaries for background chunk generation and headless multi-seed fuzzing with automatic main-thread fallback.
 
 ## 🟢 Milestone 75: Gameplay HUD & RTwP Controls Refinements (Completed)
+
 Enhance tactile responsiveness, situational awareness, and menu management atop the decoupled RTwP event loop.
+
 - [x] Add configurable RTwP auto-pause triggers in `src/core/auto_pause.ts`, evaluated in `src/core/game-loop.ts` from the simulation event queue (hostile/nemesis newly spotted in FOV, player HP below threshold, detrimental statuses applied, narrative triggers). FOV perception is surfaced via a new `GameEventType.EntitySpotted` emitted by the auto-pause evaluator from the pure query `getVisibleHostileEntityIds()` in `src/systems/map.system.ts`, keeping the systems layer event-free and the transient sighting dedupe in `core`.
 - [x] Centralize modal ESC-key stack management (LIFO) and auto-pause synchronization across all overlays (`src/core/modal_manager.ts`).
 - [x] Add dynamic contextual verb illumination in `renderVerbMenu` indicating valid interactions on adjacent targets (`getVerbOptionsForTarget` + all-verb rendering).
 - [x] Add filter chips (Scheme, Faction, Nemesis, Area) to `src/rendering/ui/investigation.ui.ts` (`src/constants/investigation_filter.constants.ts`).
 
 ## 🟢 Milestone 76: Campaign Creator & Developer Tooling UX (Completed)
+
 Streamline authoring workflows, navigation, and validation diagnostics.
+
 - [x] Implement interactive validation diagnostics (canonical path normalizer `src/editor/validation_path.ts`, navigator `src/editor/validation_navigator.ts`, persistent bottom dock `src/rendering/ui/validation_panel.ui.ts`, `editor_toolbar.ts` cleanup).
 - [x] Introduce `<details>` / `<summary>` accordion rendering in `src/rendering/ui/zod_form_renderer.ts` (`expandedPaths` persistence, `data-field-path`, descendant error badges).
 - [x] Build a reverse-reference ("Where Used") inspector (`src/editor/reference_index.ts` cached `WeakMap`, `src/rendering/ui/where_used.ui.ts` drawer, `dialogue_editor.ts` node references).
@@ -838,35 +996,263 @@ Streamline authoring workflows, navigation, and validation diagnostics.
 ---
 
 # 🚀 Phase 12: Tactical Presentation, Edge-Folded HUD & RimWorld/DF/Ultima UX Overhaul
-**Goal:** Maximize map viewport presence, visual atmosphere, and mouse-first tactical ergonomics (inspired by *Dwarf Fortress Steam*, *RimWorld*, and classic *Ultima*) while preserving all Phase 10/11 V2 Engine invariants (pure `renderer.ts`, `ViewportSnapshot` projection, 60Hz `PresentationDomain` dirty tracking, and `InputCommandQueue` routing).
+
+**Goal:** Maximize map viewport presence, visual atmosphere, and mouse-first tactical ergonomics (inspired by _Dwarf Fortress Steam_, _RimWorld_, and classic _Ultima_) while preserving all Phase 10/11 V2 Engine invariants (pure `renderer.ts`, `ViewportSnapshot` projection, 60Hz `PresentationDomain` dirty tracking, and `InputCommandQueue` routing).
 
 ## 🟢 Milestone 77: Full-Viewport Canvas Stage & Dwarf Fortress-Style Edge-Folded Icon HUD (Completed)
+
 Eliminate permanent horizontal/vertical UI bars and header clutter in favor of a full-bleed map stage flanked by collapsible edge-pinned icon tabs.
+
 - [x] **Zero-Vertical-Obstruction Full-Viewport Layout (`index.html`, `src/styles/layout.css`, `src/styles/hud.css`)**: Replaced the rigid 3-column grid and top/bottom horizontal bars with a `100vw × 100vh` map canvas stage (`#game-canvas-wrapper`) flanked by pointer-transparent left and right floating stacks (`#hud-left-stack`, `#hud-right-stack`).
 - [x] **Edge-Pinned `44×44px` Icon Folding (`.hud-edge-tab`, `.hud-card.folded`)**: Instead of collapsing into wide `288px` headers that consume horizontal viewport space, folded HUD panels collapse flush against the left/right screen edges into compact `44×44px` icon tabs (`⏱` Chronos & Camera, `♥` Adventurer Vitals, `⚔` Gear & Quick Belt, `✦` Conditions, `⊞` Command Dock, `⌖` Tactical Scanner, `📜` Chronicle Log) with zero `min-height` bloat on `.log-card.folded`.
 - [x] **Live Edge-Tab Telemetry Badges (`src/rendering/ui/hud.ui.ts`)**: Folded icon tabs display live micro-badges (`#edge-badge-time` turn/RTwP state, `#edge-badge-vitals` HP%, `#edge-badge-gear` equipped slot count, `#edge-badge-status` active condition count with hidden-when-zero behavior, `#edge-badge-scanner` inspected target indicator, and `#edge-badge-log` event counter) so players retain critical telemetry while the viewport is 95%+ unobstructed.
 - [x] **Global `[Tab]` HUD Collapse/Expand & Auto-Unfold Ergonomics (`src/core/input/mouse_input.ts`, `src/rendering/ui/inspect_view.ui.ts`)**: Added `toggleAllHudPanelsFolded()` (`[Tab]` key and `#btn-toggle-hud-fold`) to collapse or expand all 7 side panels at once, while automatically unfolding `#inspect-panel` when keyboard examine mode (`[X]`) is invoked.
 
 ## 🟢 Milestone 78: Tactical Canvas Telemetry, FOV-Clipped Torchlight & Fog-of-War Alignment (Completed)
+
 Project rich in-world tactical overlays and atmospheric lighting directly over the map canvas without violating `renderer.ts` purity.
+
 - [x] **Pure Tactical Viewport Snapshot (`src/rendering/tactical_snapshot.ts`, `src/rendering/viewport_snapshot.types.ts`)**: Projected unit health ratios, faction hostility attitudes (`getFactionRelation` -> `player`, `hostile`, `neutral`, `friendly`), status effect pips, currently visible FOV cell coordinates (`visibleCells`), and Bresenham path preview steps (`getBresenhamLine`) into `TacticalViewportDTO` on `ViewportSnapshot`, keeping `renderer.ts` 100% ECS-free.
 - [x] **FOV-Clipped Warm Torchlight & 2D Telemetry Overlay (`src/rendering/ui/tactical_overlay.ui.ts`)**: Built a 60Hz 2D canvas presenter (`#tactical-overlay`) that renders warm radial torchlight strictly clipped (`ctx.clip()`) to `tactical.visibleCells` so unexplored void stays pitch-black (`#000000`), alongside in-world micro health bars, hostility pips, animated corner-bracket cursor, and path preview dots.
 - [x] **Letterboxed Fog-of-War & VFX Canvas Alignment (`src/rendering/ui/vfx_overlay.ui.ts`)**: Synchronized `#fog-overlay` CSS bounds (`left`, `top`, `width`, `height`) and internal bitmap dimensions directly with the letterboxed ROT.js `<canvas>` element and eliminated double-offsetting so explored fog-of-war dimming aligns pixel-for-pixel across all aspect ratios.
 
 ## 🟢 Milestone 79: Runtime 2D Pixel-Art Sprite Mode vs. Classic ASCII Toggle (Completed)
+
 Allow seamless live switching between classic roguelike ASCII glyphs and 2D pixel-art tiles across every campaign.
+
 - [x] **Procedural 32×32 Pixel-Art Tile & Sprite Atlas (`src/rendering/procedural_sprites.ts`)**: Built `buildProceduralSpriteAtlas()` to deterministically synthesize textured 32×32 pixel-art terrain tiles (stone walls, masonry, floors, doors, stairs, foliage, water, hazards) and shaded character/item silhouettes for campaigns without external PNG sprite sheets.
 - [x] **Live 2D Tiles / ASCII Mode Toggle (`src/rendering/display.ts`, `src/core/settings.ts`)**: Added `renderMode: 'auto' | 'sprites' | 'ascii'` to `VisualFeedbackSettings` and implemented `toggleRenderMode()` / `isSpriteModeActive()` so clicking the `2D Tiles` / `ASCII` camera button re-initializes the ROT.js display adapter and redraws the current `ViewportSnapshot` on the fly.
 
 ## 🟢 Milestone 80: Mouse-First Tactical Controls, Context Verb Menu & Side HUD Widgets (Completed)
+
 Unify keyboard precision with full mouse-driven inspection, movement, contextual actions, and quick-access HUD widgets.
+
 - [x] **Non-Mutating Mouse Hover Inspection & Left-Click Smart Action (`src/core/hover_state.ts`, `src/core/input/mouse_input.ts`)**: Added hover tile/entity inspection (`setHoveredViewportCell` marking `PresentationDomain.Hud` and `Camera` dirty without mutating `GameState`) and left-click adjacent movement, bump-attack, dialogue initiation, or examine fallback.
 - [x] **Floating Right-Click Context Verb Menu (`src/rendering/ui/verb_menu.ui.ts`, `UIMode.VerbMenu`)**: Transformed the verb menu into a cursor-anchored floating popover with clamped viewport coordinates, valid target illumination, and direct mouse click routing through `InputCommandQueue`.
 - [x] **Ultima Mini Paper-Doll, Quick Belt & RimWorld Alert Ribbons (`src/rendering/ui/hud_paperdoll.ui.ts`, `src/rendering/ui/hud_alerts.ui.ts`, `src/rendering/ui/hud_dock.ui.ts`, `src/rendering/ui/hud.ui.ts`)**: Added an interactive 5-slot equipment paper-doll (`Head`, `MainHand`, `OffHand`, `Body`, `Accessory`), a `[1]–[5]` quick-use consumable belt, top-right clickable status/hazard/hostile alert ribbons, a 2-column command dock with live hotkey badges, and `All | Combat | Speech | World` Chronicle Log filter tabs.
 
 ## 🟢 Milestone 81: Dwarf Fortress Steam / Dark Fantasy CRPG Material & HUD Consolidation Overhaul (Completed)
+
 Replace generic web-dashboard styling (frosted glass, soft rounded cards, neon cyan accents, and stacked accordion headers) with forged dark-fantasy CRPG plates and headerless game gauges.
+
 - [x] **Forged Iron, Stone & Burnished Brass Material Palette (`src/styles/core.css`, `src/styles/hud.css`, `src/styles/modals.css`, `src/styles/inventory.css`)**: Replaced translucent glass (`backdrop-filter: blur`) and `#00ffff` neon cyan with opaque dark iron/slate surfaces (`#121419` / `#16181f`), `0px–1px` sharp corners, double-beveled burnished brass (`#9e782f` / `#dfb15b`) and chiseled stone (`#3d4350`) borders with `1px` pitch-black pixel keylines, raised 3D bevel buttons, and hard pixel drop shadows (`3px 3px 0 #000`).
 - [x] **CRPG Typography Pairing (`index.html`, `src/styles/core.css`)**: Replaced `'Outfit'` with **`Cinzel`** (carved serif display for area banners, drawer headers, and modal titles) paired with **`JetBrains Mono`** for all HUD gauges, tabular numbers, sockets, and logs.
 - [x] **Consolidated Headerless Vitals & Chronos Gauge Plate (`index.html`, `src/styles/hud.css`, `src/rendering/ui/hud.ui.ts`)**: Merged the left-side `Chronos & Camera`, `Adventurer Vitals`, and `Conditions` accordion cards into a single compact, headerless **Adventurer & Chronos Gauge Plate** featuring an engraved area banner (`⚜`), segmented **HP** and **XP** recessed troughs with 10% tick notches (`.bar-ticks`), sunken `ATK / DEF / SAT` sockets, inline auto-collapsing condition pills, and a tactile beveled time/camera strip.
 - [x] **Sunken `5×2` Equipment & Quick-Belt Socket Strip (`src/rendering/ui/hud_paperdoll.ui.ts`, `src/styles/hud.css`)**: Aligned the 5 equipment slots (`HEAD`, `MAIN`, `OFF`, `BODY`, `ACC`) and 5 `[1]–[5]` quick-belt slots into a `5×2` grid of `44×44px` recessed iron/stone sockets (`inset 2px 2px 0 #000`) with gilded brass framing on equipped/filled items.
+
+---
+
+# 🚀 Phase 13: Pluggable Ruleset Cartridge Architecture & `classic` Extraction _(Branch: `master`)_
+
+**Goal:** Transform the engine into a multi-ruleset "Console + Cartridge" architecture following the **Rule of Three**. Extract the existing Milestones 1–81 mechanics into the `"classic"` ruleset cartridge (`src/rulesets/classic/`), establish the Domain-Driven `RulesetContract` dependency-injection boundary, and upgrade the game/editor UX to `New Game -> Ruleset Selection -> Campaign Selection` on `master` before branching individual ruleset cartridges.
+
+## 🟢 Milestone 82: Domain-Driven `RulesetContract`, Component Namespacing & DI Registry (Completed)
+
+Define the explicit runtime contract between the ruleset-agnostic Console Engine (`src/core/`, `src/map/`, `src/systems/`, `src/rendering/`) and pluggable Ruleset Cartridges (`src/rulesets/<rulesetId>/`).
+
+- [x] **Ruleset Contract & Port Interfaces (`src/types/ruleset.types.ts`, `src/rulesets/ruleset.types.ts`)**: Define `RulesetId` (`'classic' | 'dnd35e'`), `RulesetMetadata` (name, description, tactical features, supported campaign schema version), and the `RulesetContract` interface covering:
+  - _Entity Hydration & Validation Ports_: `validateCampaignRuleset()`, and ruleset-scoped view group descriptors (`getEditorViewGroups()`) for the Campaign Editor.
+  - _Combat, Check & Damage Resolution Ports_: `resolveMeleeAttack()`, `processDamage()`, `grantActorXp()`, and `getEffectiveActorStats()`.
+  - _UI & Presentation Ports_: `projectHudVitals()` and `getEditorViewGroups()`.
+- [x] **Runtime Cartridge Registry & DI Lookup (`src/rulesets/registry.ts`)**: Implement `registerRuleset(contract)`, `getRuleset(rulesetId): RulesetContract`, `getAllRulesets()`, and `getActiveRuleset(state: GameState): RulesetContract` (resolved from `state.campaign.manifest.rulesetId`), eliminating raw ruleset `switch` statements in core engine loops.
+- [x] **ECS Component Slice Isolation (`src/types/components.types.ts`)**: Added `ComponentType.RulesetData = 'RulesetData'` and `RulesetDataComponent` (`rulesetId: RulesetId`, `data: Readonly<Record<string, unknown>>`) so `classic` and `dnd35e` never pollute a single monolithic `CombatStatsComponent` with dozens of optional fields under `exactOptionalPropertyTypes: true`.
+
+## 🟢 Milestone 83: `classic` Ruleset Cartridge Extraction (`src/rulesets/classic/`) (Completed)
+
+Encapsulate the existing Milestones 1–81 combat, progression, status, and character-sheet implementation into the canonical `"classic"` cartridge with zero behavioral regressions.
+
+- [x] **`classic` Combat, Stats & Progression Adapter (`src/rulesets/classic/classic_combat.ts`, `classic_stats.ts`, `classic_ruleset.ts`)**: Moved the existing flat `ATK - DEF` combat formula, level/XP progression, damage pipeline, and equipment stat aggregation behind the `classic` `RulesetContract` implementation (`classicRulesetContract`).
+- [x] **`classic` UI & Editor Descriptors (`src/rulesets/classic/classic_stats.ts`, `classic_ruleset.ts`)**: Bound HUD `ATK / DEF` socket projection (`projectClassicHudVitals`) and Campaign Editor view groups to `"classic"`.
+- [x] **Core Loop Delegation & Zero-Regression Audit (`src/utils/stats.ts`, `src/systems/combat.system.ts`, `src/systems/damage.system.ts`, `src/systems/death.system.ts`, `src/rendering/ui/hud.ui.ts`)**: Routed `getEffectiveStats()`, `processMeleeAttackIntent()`, `processDamageSystem()`, `grantXp()`, and `renderPlayerStats()` through `getActiveRuleset(state)` and verified that all existing unit/integration tests and campaigns (`default`, `megacampaign`, `shroudgarde`) pass `./verify.sh` with 0 errors.
+
+## 🟢 Milestone 84: `New Game -> Ruleset Selection -> Campaign Selection`, Editor Scoping & `dnd35e` Skeleton (Completed)
+
+Surface ruleset selection to players and campaign authors and register the `dnd35e` cartridge entry point before branching `DND35`.
+
+- [x] **Campaign Manifest `rulesetId` Binding (`src/types/campaign/meta.ts`, `public/data/campaigns.json`, `public/data/campaigns/*/manifest.json`)**: Added `rulesetId: RulesetIdSchema.default('classic')` to `CampaignManifestSchema` and `CampaignRegistryEntrySchema` and tagged `default`, `megacampaign`, and `shroudgarde` as `"classic"`.
+- [x] **Two-Stage Title Screen Flow (`index.html`, `src/rendering/ui/menus.ui.ts`, `src/core/session_controller.ts`)**: Upgraded the New Game flow to **New Game $\rightarrow$ Ruleset Selection (`Classic Roguelike` vs. `Dungeons & Dragons 3.5e (SRD)`) $\rightarrow$ Campaign Selection** (filtering available campaigns by the chosen `rulesetId` via `UIMode.RulesetSelect`).
+- [x] **Ruleset-Scoped Campaign Editor & `dnd35e` Cartridge Skeleton (`src/rendering/editor/editor_toolbar.ts`, `src/rendering/editor_ui.ts`, `src/editor/campaign_validator.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`)**: Added the `#editor-ruleset-badge` indicator in the Campaign Editor toolbar, scoped editor view groups and deep campaign validation to the active ruleset, and registered the `dnd35e` cartridge skeleton (`dnd35eRulesetContract` projecting `BAB` and `AC` HUD sockets) ready for feature development on the `DND35` branch.
+
+---
+
+# 🚀 Phase 14: D&D 3.5e Cartridge Layer 1 — Core Math, Dice, Ability & Typed Modifier Engine _(Branch: `DND35`)_
+
+**Goal:** Implement the foundational D&D 3.5e mathematical primitives inside `src/rulesets/dnd35e/`: seeded `d20` / `NdX+C` expressions, abstract multiplier rules, the 6-Ability Score / Nonability / Damage / Drain model, and the 18-type Bonus Stacking Resolver.
+
+## 🟢 Milestone 85: Seeded Dice Expression Evaluator, `d20` Bounds & D&D Multiplier Math (Completed)
+
+Establish deterministic dice and rounding primitives in `src/rulesets/dnd35e/math/`.
+
+- [x] **Seeded `NdX+C` & Roll-Keep Expression Evaluator (`src/rulesets/dnd35e/math/dice.ts`)**: Parse and roll arbitrary dice expressions (`1d8+3`, `2d6`, `4d6kh3`) through `src/core/rng.ts`, returning `DiceRollResult` (`total`, `rolls: ReadonlyArray<number>`, `keptRolls`, `flatModifier`, `expression`) for combat log and inspect breakdowns.
+- [x] **Configurable `d20` Roll Primitive (`rollD20` in `src/rulesets/dnd35e/math/dice.ts`)**: Implement `D20RollMode` (`'attack' | 'save' | 'skill_check' | 'ability_check' | 'caster_level_check' | 'initiative'`), enforcing natural `1` automatic failure and natural `20` automatic success _only_ for `'attack'` and `'save'` modes (`/docs/rules/core_mechanics.md`).
+- [x] **D&D Floor Rounding & Abstract Multiplier Combinator (`src/rulesets/dnd35e/math/multipliers.ts`)**: Implement universal floor rounding (`Math.floor`) and `combineAbstractMultipliers(multipliers: ReadonlyArray<number>): number` enforcing $M_{\text{total}} = 1 + \sum (M_i - 1)$ (so two $\times 2$ modifiers combine into $\times 3$, and $\times 2 + \times 1.5 \rightarrow \times 2.5$) vs. `combineRealWorldMultipliers()` (sequential multiplication for weight, distance, and light radius per `/docs/rules/combat/multiplying.md`).
+
+## 🟢 Milestone 86: Six-Ability Score Model, Nonabilities (`null`) & Ability Damage/Drain State (Completed)
+
+Implement the D&D 3.5e ability score model in `src/rulesets/dnd35e/abilities.ts` and `src/rulesets/dnd35e/types/dnd35e.types.ts`.
+
+- [x] **Ability Score Component & Modifier Formula (`AbilityScoresRecord`)**: Store `Record<AbilityId, AbilityScoreState>` (`str`, `dex`, `con`, `int`, `wis`, `cha`) with `{ base: number | null, inherentBonus: number, damage: number, drain: number, tempPenalty: number }` and compute $\text{Mod} = \lfloor (\text{EffectiveScore} - 10) / 2 \rfloor$.
+- [x] **Nonability (`null`) vs. Score `0` Collapse Semantics**:
+  - When `base === null` (Nonability `—`): return modifier `+0`, block Ability Damage/Drain/Penalties to that ability, grant Fortitude save immunity (unless `affectsObjects: true`) and route `Concentration` checks to `CHA` when `CON === null` (Undead/Constructs), and grant mind-affecting immunity when `INT === null`.
+  - When an active score drops to `0` from Damage/Drain: apply `Dead` if `CON <= 0`, `Paralyzed`/`Helpless` if `STR <= 0` or `DEX <= 0`, and `Unconscious` if `INT <= 0`, `WIS <= 0`, or `CHA <= 0` (`/docs/rules/special-abilities/ability-score-loss.md`).
+- [x] **Temporary Penalty Floor vs. Damage/Drain Tracking**: Enforce that temporary Ability Penalties (`Ray of Enfeeblement`, `Fatigued`, `Entangled`) cannot reduce an effective ability score below `1`, whereas `damage` ($\lfloor \text{damage}/2 \rfloor$ penalty, heals `1 pt/day` on 8-hour rest) and `drain` (permanent reduction) can reduce effective scores to `0`.
+
+## 🟢 Milestone 87: Typed Bonus Stacking Resolver & Contextual Stat Queries (Completed)
+
+Build the query-time 18-type modifier stacking engine in `src/rulesets/dnd35e/modifiers.ts`.
+
+- [x] **Typed Modifier Collector & Stacking Matrix (`resolveTypedModifiers`)**: Group active `StatModifier` entries by `BonusType` (`alchemical`, `armor`, `circumstance`, `competence`, `deflection`, `dodge`, `enhancement`, `inherent`, `insight`, `luck`, `morale`, `natural_armor`, `profane`, `racial`, `resistance`, `sacred`, `shield`, `size`, `untyped`).
+  - Apply `Math.max` per non-stacking positive bonus type; sum `dodge` (unless `loseDexToAC`), differently-sourced `circumstance`, `untyped`, and all penalties (`value < 0`).
+  - Fold compound `armor_enhancement`, `shield_enhancement`, and `natural_armor_enhancement` into their parent `armor`/`shield`/`natural_armor` bonus before comparing sources; treat Masterwork weapon `+1` attack as an `enhancement` bonus so it never stacks with magical weapon enhancement (`/docs/rules/combat/armor-class.md`).
+  - Support dynamic suppression (`Antimagic Field` suppresses `magical`, `spell`, `su`, and `sp` source tags at query time without mutating stored components).
+- [x] **Contextual Stat & AC Triplet Query Engine (`computeEffectiveAC`)**: Compute `fullAC`, `touchAC` (stripping `armor`, `shield`, `natural_armor` and their enhancements), and `flatFootedAC` (stripping positive `DEX` and `dodge` bonuses unless the entity has `Uncanny Dodge`), plus itemized `ACBreakdownDTO` tooltips for the HUD and inspect panel.
+
+---
+
+# 🚀 Phase 15: D&D 3.5e Cartridge Layer 2 — Progression Curves, Entity Chassis & Check Resolution _(Branch: `DND35`)_
+
+**Goal:** Build the mathematical curve evaluators for Base Attack Bonus, Base Saving Throws, Hit Dice/Level aggregation, generic Skill/Ability/Opposed check resolution, and prerequisite AST validation inside `src/rulesets/dnd35e/`.
+
+## 🟢 Milestone 88: Progression Curve Evaluators & Multi-Source Hit Dice / Level Chassis (Completed)
+
+Provide pure mathematical progression curves in `src/rulesets/dnd35e/progression.ts` that any class or creature type definition in JSON can reference.
+
+- [x] **Base Attack Bonus (`BAB`) & Iterative Step-Down Evaluators**: Implement `full` ($L$), `three_quarters` ($\lfloor 0.75L \rfloor$), and `half` ($\lfloor 0.5L \rfloor$) BAB curve formulas and `getIterativeBabSequence(totalBab): ReadonlyArray<number>` returning `[B, B-5, B-10, B-15]` (capped at 4 iterative attacks while $B - 5k \ge 1$; temporary attack bonuses never grant extra iterative attacks).
+- [x] **Base Saving Throw Curve Evaluators**: Implement `good` ($2 + \lfloor L/2 \rfloor$) and `poor` ($\lfloor L/3 \rfloor$) progression formulas for `Fortitude`, `Reflex`, and `Will`.
+- [x] **Multi-Source Hit Dice (`HD`) & Effective Character Level (`ECL`) Aggregator**: Sum `racialHitDice` and `classLevels` into unified `totalHD`, `totalBab`, base saves, XP thresholds ($\frac{\text{ECL}(\text{ECL}-1)}{2} \times 1000$), general feat entitlement ($\lfloor \text{HD} / 3 \rfloor + 1$), ability increase entitlement ($\lfloor \text{HD} / 4 \rfloor$), and Hit Point pools ($d4, d6, d8, d10, d12$ + `CON` mod per HD, minimum `1` HP/HD, maximized at 1st HD).
+
+## 🟢 Milestone 89: Generic Skill Check, Ability Check, Opposed Roll & Prerequisite Engine (Completed)
+
+Unify non-combat and tactical check resolution in `src/rulesets/dnd35e/skills.ts` and `src/rulesets/dnd35e/prerequisites.ts`.
+
+- [x] **Skill & Ability Check Resolver (`resolveSkillCheck`)**:
+  - Support half-rank storage (`0.5` per skill point on cross-class skills) while using whole ranks ($\lfloor \text{Ranks} \rfloor$) for check rolls: $d20 + \lfloor \text{Ranks} \rfloor + \text{KeyAbilityMod} + \text{Synergy} + \text{TypedBonuses} + (\text{ACP} \times \text{acpMultiplier})$ against static DCs.
+  - Enforce `trainedOnly` gates ($\lfloor \text{Ranks} \rfloor < 1 \rightarrow$ blocked), rank caps ($\text{HD} + 3$ class vs. $(\text{HD} + 3)/2$ cross-class), declarative 5-rank Synergy bonuses (`+2` untyped when $\lfloor \text{Ranks} \rfloor \ge 5$), and `acpMultiplier: 0 | 1 | 2` (handling Swim's `2 × ACP` per `/docs/rules/skills/skill-basics.md`).
+- [x] **Opposed Check & `Take 10 / Take 20` Mechanics (`resolveOpposedCheck`)**: Resolve symmetric opposed rolls (ties broken by higher total modifier, then seeded `rng` coin flip) and threat-gated `Take 10` (blocked when threatened/distracted or on `Use Magic Device`) and `Take 20` (blocked when failure carries a penalty/trap trigger; consumes $20\times$ action duration).
+- [x] **Generic Prerequisite AST Evaluator (`evaluatePrerequisiteAST`)**: Validate recursive requirement trees (`and`, `or`, `not`, `min_ability`, `min_bab`, `min_skill_ranks`, `has_feat`, `has_tag`, `min_caster_level`, `size_in`) for feat selection, item usage, and Campaign Editor validation.
+
+---
+
+# 🚀 Phase 16: D&D 3.5e Cartridge Layer 3 — Spatial Grid, Footprint/Reach, Cover & Multi-Spectrum Senses _(Branch: `DND35`)_
+
+**Goal:** Implement D&D 3.5e 5-ft tactical geometry, reach rings, cover/flanking raycasting, and multi-spectrum senses in `src/rulesets/dnd35e/spatial/`.
+
+## 🟢 Milestone 90: 5-Foot Grid Metric, `1-2-1-2` Diagonals, Multi-Tile Footprints & Reach Rings (Completed)
+
+Enforce tabletop spatial geometry in `src/rulesets/dnd35e/spatial/grid_geometry.ts`.
+
+- [x] **`1-2-1-2` Diagonal Distance Metric & Hard-Corner Blocking (`measureDnD35DistanceFt`, `isDiagonalStepBlockedByHardCorner`)**: Alternate diagonal step costs (`5 ft`, `10 ft`, `5 ft`, `10 ft` via $\text{orth} + \lfloor 1.5 \times \text{diag} \rfloor$) and block diagonal movement/melee across any tile corner adjacent to an impassable wall.
+- [x] **9-Tier Creature Size Matrix & $N\times N$ Footprints (`SIZE_METRICS`, `computeFootprintSquares`)**:
+  - Support `Large` ($2\times 2$), `Huge` ($3\times 3$), `Gargantuan` ($4\times 4$), and `Colossal` ($6\times 6$) footprints alongside `Tiny`, `Diminutive`, and `Fine` (`0 ft` natural reach: they do not threaten adjacent squares and must enter a target's tile to make a melee attack).
+- [x] **Threatened Reach Rings & Dead Zones (`computeThreatenedSquares`)**: Compute threatened squares from `[minReachFt, maxReachFt]` (distinguishing `Large (tall)` `[5, 10]` from `Large (long)` `[5, 5]`, and reach weapons `[10, 10]` with adjacent dead zones unless `hasFlexibleReach: true`).
+
+## 🟢 Milestone 91: Cover, Soft Cover, Flanking & Line-of-Effect Raycasting (Completed)
+
+Derive tactical positioning modifiers directly from grid geometry in `src/rulesets/dnd35e/spatial/cover_senses.ts`.
+
+- [x] **Corner-to-Corner Cover & Soft Cover Raycaster (`evaluateCover`)**:
+  - Grant `Cover` (`+4` AC, `+2` Reflex saves, and **prevent executing Attacks of Opportunity** against the covered target), `Improved Cover` (`+8` AC, `+4` Reflex), and `Total Cover` (blocks Line of Effect).
+  - Grant creature-interposed `Soft Cover` (`+4` AC vs. ranged attacks, no Reflex bonus, does not block AoOs).
+- [x] **Flanking Geometry Resolver (`isFlankingTarget`)**: Grant `+2` melee attack bonus when an attacker and an allied combatant who **actively threatens** the defender occupy opposite sides or opposite corners across the defender's center.
+
+## 🟢 Milestone 92: Illumination States, Multi-Spectrum Senses & Concealment Miss-Chance (Completed)
+
+Decouple ambient lighting from observer sensory capabilities in `src/rulesets/dnd35e/spatial/cover_senses.ts`.
+
+- [x] **Per-Tile Illumination & Multi-Spectrum Sensory Resolver (`evaluateConcealmentAndSenses`)**: Evaluate `Bright`, `Shadowy` (`20%` Concealment), and `Darkness` (`50%` Total Concealment) across `lowLightVision`, `darkvisionRangeFt`, `blindsenseRangeFt`, `blindsightRangeFt`, `tremorsenseRangeFt`, and `scentRangeFt`.
+- [x] **Concealment (`20%`) & Total Concealment (`50%`) Combat & AoO Gating**: Compute net Concealment miss-chance % for any attacker-defender pair, enforce `Blind-Fight` miss-chance re-roll hooks, and **prohibit executing Attacks of Opportunity against any target with Total Concealment (`50%`)**.
+
+---
+
+# 🚀 Phase 17: D&D 3.5e Cartridge Layer 4 — Round Lifecycle, 5-Tier Action Economy & Interrupt (`AoO`) Engine _(Branch: `DND35`)_
+
+**Goal:** Reconcile D&D 3.5e's 6-second tactical round, 5-tier action economy (`Full-Round`, `Standard`, `Move`, `Swift`, `Immediate`), and LIFO Pre-Action Attack of Opportunity (`AoO`) interrupts with responsive grid-roguelike movement.
+
+## 🟢 Milestone 93: 6-Second Combat Round Lifecycle, Initiative, 5-Tier Action Budget & Swift/Immediate Debt (Completed)
+
+Manage round transitions and granular action/movement budgets in `src/rulesets/dnd35e/action_economy.ts`.
+
+- [x] **5-Tier Action Budget, Swift vs. Immediate Cross-Turn Debt & Action Substitutions (`DnD35ActionBudget`)**:
+  - Track `standardRemaining`, `moveRemaining`, `movementRemainingFt`, `swiftRemaining`, `immediateUsedOffTurn`, `fiveFootStepAvailable`, and `distanceMovedThisRoundFt`.
+  - Enforce `Immediate` off-turn debt consuming the actor's `Swift` action on their next turn, `Standard -> Move` downgrades, and `5-Foot Step` gating (`distanceMovedThisRoundFt === 0` and non-difficult terrain).
+
+## 🟢 Milestone 94: LIFO Pre-Action Interrupt Stack & Attack of Opportunity (`AoO`) Pipeline (Completed)
+
+Allow threatening entities to interrupt provoking actions before primary execution in `src/rulesets/dnd35e/action_economy.ts`.
+
+- [x] **LIFO Reaction Stack & Per-Opportunity / Movement Deduplication (`filterAndOrderAoOReactors`)**:
+  - Order reactions in **Last-In, First-Out (LIFO)** order bounded by `MAX_AOO_CHAIN_DEPTH = 4`.
+  - Enforce `Combat Reflexes` (`max(1, 1 + dexMod)` AoOs and flat-footed AoO permission), Cover/Total Concealment suppression, **One AoO Per Opportunity**, and **Movement Provocation Deduplication** per round.
+
+---
+
+# 🚀 Phase 18: D&D 3.5e Cartridge Layer 5 — Physical Combat, Maneuvers, Typed Damage/DR & Vitality _(Branch: `DND35`)_
+
+**Goal:** Implement full D&D 3.5e attack sequences, two-weapon/natural weapon matrices, multi-step special combat maneuvers, typed damage mitigation (`DR`, Energy Resistance, Object Hardness), `-1..-9 / -10` vitality, saving throws, and canonical conditions in `src/rulesets/dnd35e/combat/`.
+
+## 🟢 Milestone 95: Attack Roll, Critical Confirmation, Iterative/TWF/Natural Weapons & Encumbrance Solver (Completed)
+
+Implement physical attack sequences and equipment constraints in `src/rulesets/dnd35e/combat/attack_resolver.ts`.
+
+- [x] **AC Triplet Targeting & Critical Confirmation Pipeline (`resolveAttackRoll`)**: Resolve Concealment miss-chance % (with `Blind-Fight` re-roll), roll $d20 + \text{AtkBonus} \ge \text{TargetAC}$, check `critThreatMin`, roll Critical Confirmation, and multiply base weapon dice + flat bonuses using `combineAbstractMultipliers` while leaving extra/precision dice unmultiplied (and stripping precision dice against concealment or crit-immune targets).
+- [x] **Full Attack Iteratives, Two-Weapon Fighting & Natural Weapons (`buildFullAttackSequence`)**: Apply TWF penalties (`-6/-10`, `-4/-4` light, `-2/-2` TWF + light), handedness `STR` multipliers (`1.5x` two-handed, `0.5x` off-hand, `1.0x` negative `STR`), and secondary natural weapon penalties (`-5` or `-2` with `Multiattack`).
+- [x] **Carrying Capacity & Encumbrance Solver (`computeEncumbranceState`)**: Compute Light/Medium/Heavy load thresholds from `STR` and size category, enforcing Max DEX, ACP, and encumbered speed (`30 ft -> 20 ft`).
+
+## 🟢 Milestone 96: Special Combat Maneuvers, Typed Damage Mitigation (`DR`, Resistance, Hardness), Vitality & Saves (Completed)
+
+Implement maneuvers, damage mitigation, and condition state machines in `src/rulesets/dnd35e/combat/damage_vitality.ts` and `maneuvers_conditions.ts`.
+
+- [x] **Multi-Step Special Combat Maneuvers (`resolveCombatManeuver`)**: Implement the 4-step maneuver pipeline (Provocation check, Preliminary Touch Attack, Opposed Roll with `4 × sizeRank` special size modifiers, and `-20` single-limb `Improved Grab`) for `Trip`, `Bull Rush`, `Disarm`, `Sunder`, `Overrun`, `Grapple`, and `Feint`.
+- [x] **Typed Damage Mitigation (`mitigateIncomingDamage`)**: Evaluate Immunity (`0x`), Vulnerability (`+50%`), boolean `DamageReductionRule` (automatically suppressing secondary injury riders when `DR` reduces physical damage to `0`), Energy Resistance, and Object Hardness.
+- [x] **Lethal vs. Nonlethal HP, Dying (`-1..-9`) & Condition Escalation (`evaluateVitalityStatus`, `rollDyingStabilization`, `resolveSavingThrow`, `applyConditionWithEscalation`)**: Track `Disabled` (`0 HP`), `Dying` (`-1..-9 HP` with `10%` stabilization), `Dead` (`-10 HP`, or `0 HP` for `CON: null` Undead/Constructs), `Evasion`/`Improved Evasion` saves, and condition escalation (`Shaken -> Frightened -> Panicked`, `Fatigued -> Exhausted`).
+
+---
+
+# 🚀 Phase 19: D&D 3.5e Cartridge Layer 6 — Vancian/Spontaneous Spellcasting, AoE Geometry & 8-Hour Rest _(Branch: `DND35`)_
+
+**Goal:** Build the apex `dnd35e` systems for `Ex`/`Sp`/`Su` capabilities, Vancian prepared vs. spontaneous spellcasting, Line-of-Effect AoE geometry, and roguelike 8-hour rest & open-slot preparation in `src/rulesets/dnd35e/magic/`.
+
+## 🟢 Milestone 97: Capability Classification (`Ex`/`Sp`/`Su`), Vancian/Spontaneous Engine & 7-Step Cast Pipeline (Completed)
+
+Unify spells, supernatural/spell-like abilities, and AoE templates in `src/rulesets/dnd35e/magic/spellcasting.ts` and `aoe_rest.ts`.
+
+- [x] **Capability Classification Matrix & Bonus/Spontaneous Slots (`CAPABILITY_RULES`, `computeBonusSpellSlots`, `convertPreparedSlotSpontaneously`)**: Enforce `Spell / Ex / Sp / Su` rules, minimum casting ability gate ($\text{Score} \ge 10 + L$), bonus daily spell slots ($\lfloor (\text{Mod} - L + 4)/4 \rfloor$ for $L \ge 1$, `0` for cantrips), and spontaneous cure/inflict conversion.
+- [x] **7-Step Cast Resolution & Line-of-Effect AoE Geometry (`resolveCastPipeline`, `computeAoEAffectedSquares`)**: Execute Antimagic/Silence check, Deafened 20% verbal / Arcane Spell Failure %, Cast Defensively ($\text{DC } 15 + L$) or AoO + damage Concentration ($\text{DC } 10 + \text{Dmg} + L$), `Burst` / `Spread` / `Cone` / `Line` AoE geometry, Spell Resistance ($d20 + \text{CL} \ge \text{SR}$), and Saving Throw DC ($10 + L + \text{KeyMod}$).
+
+## 🟢 Milestone 98: Roguelike 8-Hour Rest, Recent-Cast Retention & 15-Minute Open Slot Preparation (Completed)
+
+Connect tabletop recovery mechanics to roguelike dungeon pacing in `src/rulesets/dnd35e/magic/aoe_rest.ts`.
+
+- [x] **8-Hour Recent Cast Retention & Open Slot Preparation (`resolveEightHourRest`, `prepareOpenSpellSlot`)**: Enforce the **Recent Casting Limit** (`restCompletionTurn - castTimestampTurn < 4800` rounds cannot be refreshed), 15-minute (`150` rounds) open-slot preparation, natural HP healing ($\text{1 HP} \times \text{Level}$), and `1 pt` Ability Damage recovery.
+
+---
+
+# 🚀 Phase 20: D&D 3.5e Content Showcase Campaign & Cartridge Integration _(Branch: `DND35` -> Merge to `master`)_
+
+**Goal:** Wire the 6-Layer D&D 3.5e engine into `dnd35eRulesetContract`, provide SRD 3.5e archetypes and the `dnd35e-crypt` showcase campaign, and verify 100% green checks across the 8-step verification pipeline.
+
+## 🟢 Milestone 99: SRD Archetype Registry, `dnd35eRulesetContract` Integration & `dnd35e-crypt` Showcase Campaign (Completed)
+
+Deliver the playable D&D 3.5e showcase campaign and cartridge integration in `src/rulesets/dnd35e/` and `public/data/campaigns/dnd35e-crypt/`.
+
+- [x] **SRD 3.5e Archetype Registry & `dnd35eRulesetContract` Integration (`src/rulesets/dnd35e/srd_archetypes.ts`, `srd_registry.ts`, `dnd35e_ruleset.ts`)**: Wired `computeDnD35eEffectiveStats`, `resolveDnD35eMeleeAttack` ($d20 + \text{Atk} \ge \text{AC}$, crit confirmation, weapon dice + STR), `processDnD35eDamage` (`DR 5/bludgeoning`, Energy Resistance, `-1..-9 / -10` vitality, `CON: null` Undead 0 HP destruction), `grantDnD35eXp` (triangular XP table), and `projectDnD35eHudVitals` (`ECL`, `BAB`, `Full AC`).
+- [x] **Playable `dnd35e-crypt` Showcase Campaign & 6-Layer Test Suite (`public/data/campaigns/dnd35e-crypt/`, `tests/dnd35e_cartridge.test.ts`)**: Registered _"The Sunless Reliquary (SRD 3.5e)"_ under `"rulesetId": "dnd35e"` and verified all 6 layers (`Milestones 85–99`) in `tests/dnd35e_cartridge.test.ts` and `./verify.sh`.
+
+## 🟢 Milestone 100: Three-Tier Separation & Per-Cartridge System Content Schemas (Completed)
+
+Formalize the strict 3-tier boundary between the TypeScript Rules Engine (mechanical building blocks), declarative System Content ("Core Rulebooks" shared across all campaigns of a ruleset), and declarative Campaign Content ("Adventure Modules").
+
+- [x] **Per-Cartridge System Content Schemas (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`, `src/types/campaign/system_content.ts`, `src/types/campaign.types.ts`)**: Isolated ruleset-specific schemas (`DnD35ArchetypeSchema`, `DnD35ClassSchema`, `DnD35SkillSchema`, `DnD35FeatSchema`, `DnD35SpellSchema`) inside `src/rulesets/dnd35e/types/`, keeping the shared `CampaignDataSchema.systemContent` as an opaque/generic ruleset dictionary (`Record<string, unknown>`) to preserve clean cartridge boundaries without schema contamination.
+- [x] **Contract-Driven System File Manifests & Parsing (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`, `src/rulesets/classic/classic_ruleset.ts`)**: Extended `RulesetContract` with `getSystemContentFiles()` and `parseSystemContent()`, enabling each cartridge to authoritatively declare its own system files and validate them against internal schemas. Removed dummy `feats.json` and `spells.json` from `classic/`.
+- [x] **Declarative System Content Registries (`public/data/rulesets/dnd35e/`, `public/data/rulesets/classic/`)**: Extracted all SRD 3.5e archetypes (`player`, `skeleton`, `wolf`, `ogre`, `troll`, `default_creature`), core classes (`fighter`, `rogue`, `cleric`, `wizard`), skills, feats, and spells into pure declarative JSON under `public/data/rulesets/dnd35e/` and deleted the hardcoded `src/rulesets/dnd35e/srd_archetypes.ts` module.
+- [x] **Two-Layer Data Inheritance Pipeline (`src/core/loader.ts`, `tests/helpers.ts`, `scripts/run-validator.ts`, `scripts/bootstrap-campaign.ts`, `src/rulesets/dnd35e/srd_registry.ts`)**: Updated the runtime loader, headless test fixture loader, and CLI campaign validator to load and validate `public/data/rulesets/<rulesetId>/` system content dynamically via `ruleset.getSystemContentFiles()` beneath `public/data/campaigns/<campaignId>/` campaign content (`{ ...systemCategory, ...campaignCategory }`), allowing campaigns to inherit or override system-level archetypes, items, entities, and statuses seamlessly.
+
+## 🟢 Milestone 101: Campaign Editor Ruleset Cartridge Parity & Developer Tooling Integration (Completed)
+
+Bring the top-tier Campaign Creator (`src/editor/`, `src/rendering/editor/`, and `src/rendering/ui/`) to 100% parity with the 2-tier (`Ruleset -> Campaign`) and 3-tier (`Rules Engine -> System Content -> Campaign Content`) architecture.
+
+- [x] **Ruleset-Aware Campaign Creation Modal (`src/rendering/editor/editor_toolbar.ts`, `src/editor/workspace_file_service.ts`)**: Replaced the legacy binary confirmation prompt with a 2-step modal dialog allowing authors to select their target Ruleset (`🐉 D&D 3.5e` or `⚔️ Classic`) and starting template (`Blank Slate` seeded with ruleset archetypes, or clone an existing campaign like `dnd35e-crypt` or `default`).
+- [x] **Bundled Disk Campaign Browser on Workspace Splash (`src/rendering/editor/editor_workspace.ts`)**: Upgraded the welcome/empty screen to present both saved browser IndexedDB workspaces and disk campaigns fetched via `loadCampaignRegistry()`, organized neatly by ruleset with 1-click loading into the editor.
+- [x] **Dynamic ViewGroup Resolution (`src/rendering/editor/editor_sidebar.ts`, `src/rendering/editor/editor_workspace.ts`)**: Replaced static array lookups with `getRuleset(doc.manifest?.rulesetId).getEditorViewGroups(VIEW_GROUPS)` across sidebar and workspace tabs so ruleset-specific views and tabs render without desync.
+- [x] **System Archetype Reference Resolution (`src/rendering/ui/ui_utils.ts`)**: Added `archetypeId` option resolution in `getReferenceOptions()` pulling keys from `doc.systemContent.archetypes` with the `[ARCHETYPE]` badge, giving entity forms guided auto-complete dropdowns instead of raw text inputs.
+- [x] **Automated Tier 2 System Content Re-Hydration (`src/core/loader.ts`, `src/editor/workspace_file_service.ts`, `src/rendering/ui/zod_form_renderer.ts`)**: Exported `loadRulesetSystemContent(rulesetId)` from `loader.ts` and wired automated re-hydration during blank campaign creation, ZIP package extraction, and runtime ruleset switches in the Manifest form.

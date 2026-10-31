@@ -1,0 +1,23 @@
+{
+  "bandit_king": {
+    "id": "bandit_king",
+    "name": "The Bandit King",
+    "goals": [
+      "destabilize_region",
+      "amass_wealth"
+    ],
+    "recruitmentPreferences": {
+      "targetTags": [
+        "bandit",
+        "thief",
+        "guard"
+      ],
+      "leverageWeight": {
+        "money": 5,
+        "ideology": 1,
+        "coercion": 3,
+        "ego": 2
+      }
+    }
+  }
+}

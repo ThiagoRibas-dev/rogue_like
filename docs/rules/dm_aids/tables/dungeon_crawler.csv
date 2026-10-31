@@ -1,0 +1,7 @@
+Roll,Location,Encounter,Object,Total_Exits
+1,Typical area,None,Nothing or mundane objects,Dead end
+2,Transitional area,None,Nothing or mundane objects,Dead end
+3,Living area or meeting place,Hostile enemies,An interesting item or clue,1 additional exit
+4,Working or utility area,Hostile enemies,A useful tool/key/device,1 additional exit
+5,Area with a special feature,An obstacle blocks the way,Something valuable,2 additional exits
+6,Location for a specialized purpose,Unique NPC or adversary,Rare or special item,2 additional exits

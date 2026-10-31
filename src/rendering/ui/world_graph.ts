@@ -53,7 +53,7 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   if (!ctx) return;
 
   // Sync canvas internal resolution with display size
-  const updateCanvasSize = () => {
+  const updateCanvasSize = (): void => {
     const rect = wrapper.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
@@ -134,7 +134,7 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   const repulsion = 5000;
   const damping = 0.8;
 
-  const stepSimulation = () => {
+  const stepSimulation = (): void => {
     // Apply repulsion between all node pairs
     const nodeArray = Object.values(nodes);
     for (let i = 0; i < nodeArray.length; i++) {
@@ -191,7 +191,7 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     }
   };
 
-  const draw = () => {
+  const draw = (): void => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw Edges
@@ -363,7 +363,7 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     return null;
   };
 
-  const animate = () => {
+  const animate = (): void => {
     if (!isDragging) {
       stepSimulation();
     } else if (draggedNode) {

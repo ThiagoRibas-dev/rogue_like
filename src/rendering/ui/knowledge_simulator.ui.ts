@@ -95,7 +95,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const updateCanvasSize = () => {
+  const updateCanvasSize = (): void => {
     const rect = wrapper.getBoundingClientRect();
     canvas.width = rect.width;
     canvas.height = rect.height;
@@ -176,7 +176,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
   });
 
   // Helper for logging
-  const log = (msg: string, color = '#2ecc71') => {
+  const log = (msg: string, color = '#2ecc71'): void => {
     const div = document.createElement('div');
     div.style.color = color;
     div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
@@ -212,7 +212,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
   let sourceNodeId: string | null = null;
   let propagationEdges: SimEdge[] = [];
 
-  const resetSimulation = () => {
+  const resetSimulation = (): void => {
     nodes.forEach((n) => {
       n.hasRumor = false;
     });
@@ -293,7 +293,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
   let mouseX = 0;
   let mouseY = 0;
 
-  const stepPhysics = () => {
+  const stepPhysics = (): void => {
     // 1. Repulsion between all nodes
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
@@ -365,7 +365,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     });
   };
 
-  const draw = () => {
+  const draw = (): void => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Draw area clusters (physical bounding circles / labels)
@@ -499,7 +499,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
 
   let animationFrameId: number;
 
-  const animate = () => {
+  const animate = (): void => {
     if (!isDragging) {
       stepPhysics();
     } else if (draggedNode) {

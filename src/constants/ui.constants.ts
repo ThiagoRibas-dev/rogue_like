@@ -64,4 +64,3 @@ export const TACTICAL_COLORS = {
   pathDot: 'rgba(0, 210, 211, 0.55)',
   pathBlocked: 'rgba(255, 71, 87, 0.55)'
 } as const;
-

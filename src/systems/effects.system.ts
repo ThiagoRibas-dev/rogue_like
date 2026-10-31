@@ -116,8 +116,7 @@ export function applyItemEffect(
       const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
 
       const existingDamageComp = getComponent(nextState, explicitTargetId, ComponentType.Damage) as
-        | DamageComponent
-        | undefined;
+        DamageComponent | undefined;
       const damageInstance: DamageInstance = {
         amount: effectDef.value,
         sourceEntityId: userId,
@@ -173,8 +172,7 @@ export function applyItemEffect(
 
       // Attach DamageComponent
       const existingDamageComp = getComponent(nextState, nearestId, ComponentType.Damage) as
-        | DamageComponent
-        | undefined;
+        DamageComponent | undefined;
 
       const damageInstance: DamageInstance = {
         amount: effectDef.value,

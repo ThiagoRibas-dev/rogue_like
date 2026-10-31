@@ -13,7 +13,7 @@ export function initUITooltips(getState: () => GameState | undefined): void {
   const tooltip = document.getElementById('ui-tooltip');
   if (!tooltip) return;
 
-  const handleMouseMove = (e: MouseEvent) => {
+  const handleMouseMove = (e: MouseEvent): void => {
     // Look for a target with data-tooltip-type
     const target = (e.target as HTMLElement).closest('[data-tooltip-type]') as HTMLElement | null;
 

@@ -5,6 +5,7 @@ import { UIMode } from '../types/game-state.types.ts';
 import type { PatchOperation } from '../utils/json-patch.ts';
 import type { ValidationError } from '../editor/validator/validator.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
+import { getRuleset } from '../rulesets/registry.ts';
 
 // Import refactored editor modules
 import {
@@ -109,8 +110,8 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     renderToolbar(toolbarEl);
     bindToolbarEvents(controller, toolbarEl, state);
 
-    // 3. Render Activity Bar
-    renderActivityBar(activityBarEl);
+    // 3. Render Activity Bar scoped by active ruleset
+    renderActivityBar(activityBarEl, controller);
 
     // 4. Bind Sidebar Resize Drag Handle
     bindResizeHandle(resizeHandleEl, sidebarEl);
@@ -147,6 +148,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
           return;
         }
         updateToolbarState(controller, report.errors);
+        renderActivityBar(activityBarEl, controller);
 
         renderSidebar(controller, sidebarEl);
         workspaceEl.replaceChildren();
@@ -183,10 +185,11 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
     };
 
     // 8. Restore active categories from session storage (Reload or playtest recovery)
+    const activeGroups = getRuleset(controller.getDocument().manifest.rulesetId).getEditorViewGroups(VIEW_GROUPS);
     const savedCat = sessionStorage.getItem('editor_active_category');
     const savedItem = sessionStorage.getItem('editor_active_item');
     if (savedCat) {
-      const foundGroup = VIEW_GROUPS.find((g): boolean => g.tabs.some((t): boolean => t.id === savedCat));
+      const foundGroup = activeGroups.find((g): boolean => g.tabs.some((t): boolean => t.id === savedCat));
       if (foundGroup) {
         editorState.activeGroupId = foundGroup.id;
         editorState.activeTabId = savedCat as EditorState['activeTabId'];
@@ -196,7 +199,7 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
       }
     } else {
       // Default to first tab of core group
-      const firstGroup = VIEW_GROUPS[0];
+      const firstGroup = activeGroups[0];
       if (firstGroup) {
         editorState.activeGroupId = firstGroup.id;
         const firstTab = firstGroup.tabs[0];
@@ -221,19 +224,34 @@ export function renderEditorUI(state: GameState, controller: EditorController): 
 }
 
 /**
- * Builds the Activity Bar buttons.
+ * Builds the Activity Bar buttons scoped to the active campaign's ruleset.
  */
-function renderActivityBar(container: HTMLElement): void {
+function renderActivityBar(container: HTMLElement, controller: EditorController): void {
   container.replaceChildren();
-  VIEW_GROUPS.forEach((group): void => {
+  const activeGroups = getRuleset(controller.getDocument().manifest.rulesetId).getEditorViewGroups(VIEW_GROUPS);
+  activeGroups.forEach((group): void => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = `editor-activity-btn ${editorState.activeGroupId === group.id ? 'active' : ''}`;
     btn.dataset.group = group.id;
     btn.title = group.description ? `${group.label}\n\n${group.description}` : group.label;
-    btn.innerHTML = `
-      <span class="activity-icon" style="font-size:1.5rem;display:block;">${group.icon}</span>
-      <span class="activity-label" style="font-size:0.6rem;display:block;opacity:0.7;margin-top:2px;">${group.label.split(' ')[0]}</span>
-    `;
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'activity-icon';
+    iconSpan.style.fontSize = '1.5rem';
+    iconSpan.style.display = 'block';
+    iconSpan.textContent = group.icon;
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'activity-label';
+    labelSpan.style.fontSize = '0.6rem';
+    labelSpan.style.display = 'block';
+    labelSpan.style.opacity = '0.7';
+    labelSpan.style.marginTop = '2px';
+    labelSpan.textContent = group.label.split(' ')[0] ?? group.label;
+
+    btn.appendChild(iconSpan);
+    btn.appendChild(labelSpan);
 
     btn.onclick = (): void => {
       if (editorState.activeGroupId !== group.id) {

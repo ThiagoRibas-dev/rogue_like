@@ -1,0 +1,57 @@
+{
+  "stone_floor": {
+    "spriteId": "tile_floor_stone_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#1a1d24",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "stone_wall": {
+    "spriteId": "tile_rough_stone_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#4a4d53",
+    "bg": "#000000",
+    "tags": ["terrain", "solid"]
+  },
+  "stairs_up": {
+    "spriteId": "tile_staircase_up",
+    "walkable": true,
+    "transparent": true,
+    "glyph": "<",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "stairs_down": {
+    "spriteId": "tile_staircase_down",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ">",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "empty_space": {
+    "spriteId": "tile_empty",
+    "walkable": false,
+    "transparent": false,
+    "glyph": " ",
+    "fg": "#000000",
+    "bg": "#000000",
+    "tags": ["terrain"]
+  },
+  "shallow_water": {
+    "spriteId": "tile_blue_stone_floor_1_blue_bg",
+    "walkable": true,
+    "transparent": true,
+    "glyph": "~",
+    "fg": "#3498db",
+    "bg": "#000000",
+    "movementCost": 200,
+    "tags": ["terrain", "liquid", "water"]
+  }
+}

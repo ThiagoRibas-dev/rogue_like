@@ -12,7 +12,7 @@ export async function validateReactions(campaign: Readonly<CampaignData>): Promi
 
   // 1. Validate Tag References
   for (const reaction of campaign.reactions) {
-    const checkTags = (tags: string[] | undefined, matcherName: string) => {
+    const checkTags = (tags: string[] | undefined, matcherName: string): void => {
       if (!tags) return;
       for (const tag of tags) {
         if (!validTags.has(tag)) {

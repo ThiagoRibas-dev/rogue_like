@@ -115,7 +115,8 @@ export async function listInstalledCampaigns(): Promise<CampaignRegistryEntry[]>
           mapSize: `${c.rules.map.width}x${c.rules.map.height}`,
           startingAreaId: c.rules.map.startingAreaId,
           source: 'installed',
-          author: c.manifest.author ?? 'Unknown'
+          author: c.manifest.author ?? 'Unknown',
+          rulesetId: c.manifest.rulesetId ?? 'classic'
         }));
         resolve(entries);
       };

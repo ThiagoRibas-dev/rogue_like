@@ -1,4 +1,3 @@
-import * as ROT from 'rot-js';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
@@ -20,47 +19,19 @@ import { processQuestEvent } from './quest.system.ts';
 import { evaluateCheatDeath } from './nemesis.system.ts';
 import { rng } from '../core/rng.ts';
 import { getEntityBarks } from './nemesis.system.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 
 /**
- * Helper to grant XP to an entity and handle level ups.
- * Moved from combat.system.ts to death.system.ts where it belongs.
+ * Helper to grant XP to an entity and handle level ups by delegating to the
+ * active ruleset cartridge (`getActiveRuleset(state).grantActorXp`).
+ *
+ * @param state The current GameState.
+ * @param entityId The recipient EntityId.
+ * @param amount The XP amount to award.
+ * @returns The updated GameState.
  */
 export function grantXp(state: GameState, entityId: EntityId, amount: number): GameState {
-  if (amount <= 0) return state;
-
-  const fighter = getComponent(state, entityId, ComponentType.Fighter);
-  if (!fighter) return state;
-
-  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-
-  let nextState = state;
-  let nextFighter = { ...fighter, xp: fighter.xp + amount };
-
-  if (isPlayer) {
-    nextState = addMessage(nextState, `You gained ${amount} XP.`, MessageLogCategory.System);
-  }
-
-  let nextLevelDef = state.campaign.advancement.find((a) => a.level === nextFighter.level + 1);
-
-  while (nextLevelDef && nextFighter.xp >= nextLevelDef.requiredXp) {
-    nextFighter = {
-      ...nextFighter,
-      level: nextLevelDef.level,
-      maxHp: nextFighter.maxHp + nextLevelDef.hpGain,
-      attack: nextFighter.attack + nextLevelDef.attackGain,
-      defense: nextFighter.defense + nextLevelDef.defenseGain
-    };
-    // Full heal on level up
-    nextFighter.hp = nextFighter.maxHp;
-
-    if (isPlayer) {
-      nextState = addMessage(nextState, `You reached level ${nextFighter.level}!`, MessageLogCategory.System);
-    }
-
-    nextLevelDef = state.campaign.advancement.find((a) => a.level === nextFighter.level + 1);
-  }
-
-  return addComponent(nextState, entityId, nextFighter);
+  return getActiveRuleset(state).grantActorXp(state, entityId, amount);
 }
 
 /**
@@ -112,8 +83,7 @@ export function processDeathSystem(state: GameState): GameState {
 
       if (deathComp.killerId !== undefined) {
         const killerNemesis = getComponent(nextState, deathComp.killerId, ComponentType.Nemesis) as
-          | NemesisComponent
-          | undefined;
+          NemesisComponent | undefined;
         if (killerNemesis) {
           const barks = getEntityBarks(nextState, deathComp.killerId, 'victory_taunt');
           if (barks.length > 0) {
@@ -167,8 +137,7 @@ export function processDeathSystem(state: GameState): GameState {
         // Notify quest system if player killed it
         if (deathComp.killerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
           const templateComp = getComponent(nextState, entityId, ComponentType.Template) as
-            | TemplateComponent
-            | undefined;
+            TemplateComponent | undefined;
           if (templateComp) {
             nextState = processQuestEvent(nextState, 'kill', templateComp.templateId, 1);
           }
@@ -181,10 +150,10 @@ export function processDeathSystem(state: GameState): GameState {
       // Contextual loot drop: roll on the global loot table at configured chance
       const lootTable = nextState.campaign.rules.spawning.lootTable;
       const lootDropChance = nextState.campaign.rules.spawning.lootDropChance;
-      if (Object.keys(lootTable).length > 0 && ROT.RNG.getUniform() < lootDropChance) {
+      if (Object.keys(lootTable).length > 0 && rng.getUniform() < lootDropChance) {
         const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
         if (pos) {
-          const itemId = ROT.RNG.getWeightedValue(lootTable as Record<string, number>);
+          const itemId = rng.getWeightedValue(lootTable as Record<string, number>);
           if (itemId && nextState.campaign.items[itemId]) {
             const itemDef = nextState.campaign.items[itemId]!;
             [nextState] = spawnItem(nextState, itemId, pos.x, pos.y);
@@ -198,8 +167,7 @@ export function processDeathSystem(state: GameState): GameState {
       if (agreement) {
         const mastermindId = agreement.mastermindId;
         const mastermindScheme = getComponent(nextState, mastermindId, ComponentType.Scheme) as
-          | SchemeComponent
-          | undefined;
+          SchemeComponent | undefined;
         const recipeId = mastermindScheme ? mastermindScheme.recipeId : '';
         nextState = {
           ...nextState,

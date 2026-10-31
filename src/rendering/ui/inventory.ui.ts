@@ -105,7 +105,7 @@ export function renderInventoryPanel(state: GameState): void {
     return slotDiv;
   };
 
-  const createZone = (zoneName: string, slotTypes: string[]) => {
+  const createZone = (zoneName: string, slotTypes: string[]): void => {
     const zoneDiv = document.createElement('div');
     zoneDiv.className = `paperdoll-zone zone-${zoneName}`;
 
@@ -120,7 +120,7 @@ export function renderInventoryPanel(state: GameState): void {
     }
   };
 
-  const createSplitZone = (zonePrefix: string, slotTypes: string[]) => {
+  const createSplitZone = (zonePrefix: string, slotTypes: string[]): void => {
     if (equipment) {
       const leftSlots: typeof equipment.slots = [];
       const rightSlots: typeof equipment.slots = [];

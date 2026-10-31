@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RulesetIdSchema } from '../ruleset.types.ts';
 
 /** Zod schema for the campaign manifest. */
 export const CampaignManifestSchema = z.object({
@@ -8,7 +9,8 @@ export const CampaignManifestSchema = z.object({
   version: z.string(),
   author: z.string().default('Unknown'),
   tags: z.array(z.string()).default([]),
-  schemaVersion: z.number().int().nonnegative().default(0)
+  schemaVersion: z.number().int().nonnegative().default(0),
+  rulesetId: RulesetIdSchema.default('classic')
 });
 /** Inferred type for the campaign manifest. */
 export type CampaignManifest = z.infer<typeof CampaignManifestSchema>;
@@ -22,7 +24,8 @@ export const CampaignRegistryEntrySchema = z.object({
   mapSize: z.string(),
   startingAreaId: z.string(),
   source: z.enum(['builtin', 'installed', 'editor']).default('builtin'),
-  author: z.string().default('Unknown')
+  author: z.string().default('Unknown'),
+  rulesetId: RulesetIdSchema.default('classic')
 });
 /** Inferred type for a campaign registry entry. */
 export type CampaignRegistryEntry = z.infer<typeof CampaignRegistryEntrySchema>;

@@ -1,6 +1,6 @@
 {
-  "summary":  "Enhanced Implementation Plan for the Dwarf Fortress Steam / Dark Fantasy CRPG UI & HUD Material Overhaul, including Cascading Effects Matrix and exact code snippets.",
-  "updatedAt":  "2026-10-31T03:10:36.730308737Z",
+  "summary":  "Comprehensive implementation plan to upgrade the Campaign Editor for full 2-tier / 3-tier ruleset integration: ruleset-aware 'New Campaign' modal, bundled campaign browser on the splash screen, dynamic viewgroup resolution in sidebar/workspace, archetypeId dropdown resolution in forms, and ruleset system content hydration.",
+  "updatedAt":  "2026-10-31T17:44:50.330318196Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

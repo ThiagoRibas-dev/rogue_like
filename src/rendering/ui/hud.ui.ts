@@ -2,21 +2,19 @@ import { type GameState } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
-import { getEffectiveStats } from '../../utils/stats.ts';
+import { getActiveRuleset } from '../../rulesets/registry.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
-import {
-  LOG_FILTER_TABS,
-  type LogFilterCategory,
-  UITooltipType,
-  UIStatId
-} from '../../constants/ui.constants.ts';
+import { LOG_FILTER_TABS, type LogFilterCategory, UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
 
 let activeLogFilter: LogFilterCategory = 'all';
 
 /**
  * Classifies a message log entry into a filter tab category based on its cssClass and text.
  */
-function matchesLogCategory(msg: { readonly text: string; readonly cssClass?: string | undefined }, filter: LogFilterCategory): boolean {
+function matchesLogCategory(
+  msg: { readonly text: string; readonly cssClass?: string | undefined },
+  filter: LogFilterCategory
+): boolean {
   if (filter === 'all') return true;
   const cls = msg.cssClass ?? 'system';
   const isCombat = cls.startsWith('combat');
@@ -76,7 +74,7 @@ export function renderMessageLog(state: GameState): void {
     messageLog.appendChild(entry);
   }
 
-    // Auto-scroll to the bottom so the newest message is always visible
+  // Auto-scroll to the bottom so the newest message is always visible
   messageLog.scrollTop = messageLog.scrollHeight;
 
   const logBadge = document.getElementById('edge-badge-log');
@@ -86,29 +84,27 @@ export function renderMessageLog(state: GameState): void {
 }
 
 /**
- * Renders the player's stats (HP, Level, XP) to the DOM.
+ * Renders the player's stats (HP, Level, XP, and ruleset-projected primary/secondary stat sockets) to the DOM.
  * @param state The current GameState.
  */
 export function renderPlayerStats(state: GameState): void {
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
   if (playerEntityId === undefined) return;
 
-  const fighter = getComponent(state, playerEntityId, ComponentType.Fighter);
-  if (!fighter) return;
-
-  const effectiveStats = getEffectiveStats(state, playerEntityId);
+  const vitals = getActiveRuleset(state).projectHudVitals(state, playerEntityId);
+  if (!vitals) return;
 
   // Update Health
   const hpFill = document.getElementById('health-bar-fill');
   const hpText = document.getElementById('health-bar-text');
-  const hpPercent = Math.max(0, Math.min(100, (fighter.hp / effectiveStats.maxHp) * 100));
+  const hpPercent = vitals.hpPercent;
   const vitalsBadge = document.getElementById('edge-badge-vitals');
   if (vitalsBadge) {
     vitalsBadge.textContent = `${Math.round(hpPercent)}%`;
   }
   if (hpFill && hpText) {
     hpFill.style.width = `${hpPercent}%`;
-    hpText.textContent = `${fighter.hp} / ${effectiveStats.maxHp}`;
+    hpText.textContent = `${vitals.hpCurrent} / ${vitals.hpMax}`;
 
     const hpRow = hpFill.closest('.stat-row') as HTMLElement;
     if (hpRow) {
@@ -117,10 +113,14 @@ export function renderPlayerStats(state: GameState): void {
     }
   }
 
-  // Update ATK/DEF
+  // Update Primary / Secondary Stat Sockets (e.g., ATK/DEF in classic, BAB/AC in dnd35e)
   const atkText = document.getElementById('atk-text');
   if (atkText) {
-    atkText.textContent = effectiveStats.attack.toString();
+    atkText.textContent = vitals.primaryStat.value;
+    const prevEl = atkText.previousElementSibling;
+    if (prevEl && prevEl.classList.contains('stat-label-inline')) {
+      prevEl.textContent = vitals.primaryStat.label;
+    }
     const atkRow = atkText.closest('.stat-row') as HTMLElement;
     if (atkRow) {
       atkRow.dataset.tooltipType = UITooltipType.Stat;
@@ -130,7 +130,11 @@ export function renderPlayerStats(state: GameState): void {
 
   const defText = document.getElementById('def-text');
   if (defText) {
-    defText.textContent = effectiveStats.defense.toString();
+    defText.textContent = vitals.secondaryStat.value;
+    const prevEl = defText.previousElementSibling;
+    if (prevEl && prevEl.classList.contains('stat-label-inline')) {
+      prevEl.textContent = vitals.secondaryStat.label;
+    }
     const defRow = defText.closest('.stat-row') as HTMLElement;
     if (defRow) {
       defRow.dataset.tooltipType = UITooltipType.Stat;
@@ -141,7 +145,7 @@ export function renderPlayerStats(state: GameState): void {
   // Update Level
   const levelText = document.getElementById('player-level-text');
   if (levelText) {
-    levelText.textContent = fighter.level.toString();
+    levelText.textContent = vitals.levelLabel;
   }
 
   // Update Hunger
@@ -160,21 +164,8 @@ export function renderPlayerStats(state: GameState): void {
   const xpFill = document.getElementById('xp-bar-fill');
   const xpText = document.getElementById('xp-bar-text');
   if (xpFill && xpText) {
-    const currentAdvancement = state.campaign.advancement.find((a) => a.level === fighter.level);
-    const nextAdvancement = state.campaign.advancement.find((a) => a.level === fighter.level + 1);
-
-    const baseLevelXp = currentAdvancement ? currentAdvancement.requiredXp : 0;
-    const currentXpInLevel = Math.max(0, fighter.xp - baseLevelXp);
-
-    if (nextAdvancement) {
-      const xpNeededForNextLevel = nextAdvancement.requiredXp - baseLevelXp;
-      const xpPercent = Math.max(0, Math.min(100, (currentXpInLevel / xpNeededForNextLevel) * 100));
-      xpFill.style.width = `${xpPercent}%`;
-      xpText.textContent = `${fighter.xp} / ${nextAdvancement.requiredXp}`;
-    } else {
-      xpFill.style.width = '100%';
-      xpText.textContent = `MAX (${fighter.xp})`;
-    }
+    xpFill.style.width = `${vitals.xpPercent}%`;
+    xpText.textContent = vitals.xpText;
   }
 
   // Update Status Effects (inline inside Vitals plate; collapses when empty)

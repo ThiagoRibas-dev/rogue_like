@@ -23,6 +23,7 @@ export enum EngineMode {
  */
 export const enum UIMode {
   MainMenu = 'main_menu',
+  RulesetSelect = 'ruleset_select',
   CampaignSelect = 'campaign_select',
   Game = 'game',
   Inventory = 'inventory',

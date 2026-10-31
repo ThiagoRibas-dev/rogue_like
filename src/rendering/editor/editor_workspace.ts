@@ -2,6 +2,8 @@ import type { CampaignData } from '../../types/campaign.types.ts';
 import { CampaignCategorySchemas } from '../../types/campaign.types.ts';
 import { AUTHORING_LEVELS } from '../../constants/campaign.constants.ts';
 import { listEditorWorkspaces } from '../../core/campaign_store.ts';
+import { loadCampaignRegistry, loadCampaign } from '../../core/loader.ts';
+import { getRuleset, getAllRulesets } from '../../rulesets/registry.ts';
 import type { EditorController } from '../editor_ui.ts';
 import type { ValidationReport } from '../../editor/validator/validator.types.ts';
 import { editorState, notifyEditorStateChanged } from './editor_state.ts';
@@ -35,15 +37,31 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
       <div class="workspace-header">
         <h2 class="workspace-title">Welcome to the Campaign Creator</h2>
       </div>
-      <div class="workspace-placeholder editor-drag-splash" id="editor-start-screen">
+      <div class="workspace-placeholder editor-drag-splash" id="editor-start-screen" style="max-width: 900px; margin: 0 auto; padding: 24px;">
         <div class="editor-drag-icon">📁</div>
-        <h2>Select a Workspace to Begin</h2>
-        <div id="editor-workspace-list" style="margin-top: 20px; display: flex; flex-direction: column; gap: 8px;">
-           <p style="color: var(--text-dim)">Loading workspaces...</p>
+        <h2 style="margin-bottom: 24px;">Select a Workspace or Load a Campaign</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: left; width: 100%;">
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px;">
+            <h3 style="margin-top:0; font-size: 1rem; color: #89b4fa; display:flex; align-items:center; gap:8px;">
+              💾 Saved Workspaces (Browser IDB)
+            </h3>
+            <div id="editor-workspace-list" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <p style="color: var(--text-dim)">Loading saved workspaces...</p>
+            </div>
+          </div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 16px;">
+            <h3 style="margin-top:0; font-size: 1rem; color: #a6e3a1; display:flex; align-items:center; gap:8px;">
+              📦 Bundled Campaigns (Disk)
+            </h3>
+            <div id="editor-bundled-campaign-list" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+              <p style="color: var(--text-dim)">Loading bundled campaigns...</p>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
+    // Populate saved workspaces
     listEditorWorkspaces()
       .then((workspaces): void => {
         const listEl = container.querySelector('#editor-workspace-list');
@@ -51,16 +69,17 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
           return;
         }
         if (workspaces.length === 0) {
-          listEl.innerHTML = `<p style="color: var(--text-dim)">No saved workspaces found. Click 'New' to start.</p>`;
+          listEl.innerHTML = `<p style="color: var(--text-dim); font-size: 0.85rem;">No saved browser workspaces found.</p>`;
           return;
         }
         listEl.replaceChildren();
         workspaces.forEach((ws): void => {
           const btn = document.createElement('button');
           btn.className = 'modal-btn';
-          btn.style.width = '300px';
+          btn.style.width = '100%';
           btn.style.textAlign = 'left';
-          btn.innerHTML = `<strong>${ws.name}</strong><br><small style="opacity:0.7">Last modified: ${new Date(ws.lastModified).toLocaleString()}</small>`;
+          btn.style.padding = '8px 12px';
+          btn.innerHTML = `<strong>${ws.name}</strong><br><small style="opacity:0.7">Modified: ${new Date(ws.lastModified).toLocaleDateString()}</small>`;
           btn.onclick = (): void => {
             controller.loadFromIDB(ws.id).catch(console.error);
           };
@@ -68,10 +87,73 @@ export function renderWorkspace(controller: EditorController, container: HTMLEle
         });
       })
       .catch(console.error);
+
+    // Populate bundled disk campaigns grouped by ruleset
+    loadCampaignRegistry()
+      .then((registry): void => {
+        const bundledListEl = container.querySelector('#editor-bundled-campaign-list');
+        if (!bundledListEl) {
+          return;
+        }
+        bundledListEl.replaceChildren();
+
+        const rulesets = getAllRulesets();
+        rulesets.forEach((rs): void => {
+          const matching = registry.campaigns.filter((c) => (c.rulesetId ?? 'classic') === rs.id);
+          if (matching.length === 0) {
+            return;
+          }
+
+          const groupHeader = document.createElement('div');
+          groupHeader.style.cssText =
+            'font-size:0.8rem;font-weight:bold;color:#cdd6f4;opacity:0.85;margin-top:8px;margin-bottom:4px;';
+          groupHeader.textContent = `${rs.metadata.badgeIcon} ${rs.metadata.name}`;
+          bundledListEl.appendChild(groupHeader);
+
+          matching.forEach((c): void => {
+            const btn = document.createElement('button');
+            btn.className = 'modal-btn';
+            btn.style.width = '100%';
+            btn.style.textAlign = 'left';
+            btn.style.padding = '8px 12px';
+            btn.style.display = 'flex';
+            btn.style.justifyContent = 'space-between';
+            btn.style.alignItems = 'center';
+            btn.innerHTML = `
+              <div>
+                <strong>${c.name}</strong>
+                <div style="font-size:0.75rem;opacity:0.7;">${c.description}</div>
+              </div>
+              <span style="font-size:0.8rem;background:#313244;padding:2px 8px;border-radius:4px;white-space:nowrap;margin-left:8px;">Open ➔</span>
+            `;
+            btn.onclick = async (): Promise<void> => {
+              btn.style.opacity = '0.5';
+              btn.style.pointerEvents = 'none';
+              try {
+                const campaignDoc = await loadCampaign(c.id);
+                controller.resetDocument(campaignDoc);
+                const firstGroup = getRuleset(campaignDoc.manifest.rulesetId).getEditorViewGroups(VIEW_GROUPS)[0];
+                if (firstGroup) {
+                  editorState.activeGroupId = firstGroup.id;
+                  editorState.activeTabId = firstGroup.tabs[0]?.id ?? null;
+                }
+                notifyEditorStateChanged();
+              } catch (err) {
+                console.error(`Failed to load campaign ${c.id}:`, err);
+                alert(`Failed to load campaign: ${(err as Error).message}`);
+              }
+            };
+            bundledListEl.appendChild(btn);
+          });
+        });
+      })
+      .catch(console.error);
+
     return;
   }
 
-  const group = VIEW_GROUPS.find((g): boolean => g.id === editorState.activeGroupId);
+  const activeGroups = getRuleset(doc.manifest?.rulesetId).getEditorViewGroups(VIEW_GROUPS);
+  const group = activeGroups.find((g): boolean => g.id === editorState.activeGroupId);
   if (!group) {
     return;
   }

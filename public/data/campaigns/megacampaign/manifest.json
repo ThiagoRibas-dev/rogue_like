@@ -10,5 +10,6 @@
     "traditional",
     "dungeon-crawler"
   ],
-  "schemaVersion": 1
+  "schemaVersion": 1,
+  "rulesetId": "classic"
 }

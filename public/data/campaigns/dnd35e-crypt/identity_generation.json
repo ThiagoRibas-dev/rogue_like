@@ -1,0 +1,58 @@
+{
+  "orc_identity": {
+    "firstNames": [
+      "Gruk",
+      "Throm",
+      "Krag",
+      "Urz",
+      "Orog",
+      "Gar"
+    ],
+    "titles": [
+      "the Cleaver",
+      "the Unyielding",
+      "the Bloodthirsty",
+      "the Vile",
+      "Skull-crusher"
+    ],
+    "mannerisms": [
+      "snorts loudly",
+      "spits on the ground",
+      "grinds their teeth",
+      "growls menacingly"
+    ],
+    "colors": [
+      "#e74c3c",
+      "#c0392b",
+      "#8e44ad"
+    ]
+  },
+  "goblin_identity": {
+    "firstNames": [
+      "Snik",
+      "Glub",
+      "Ferk",
+      "Rik",
+      "Snag",
+      "Grit"
+    ],
+    "titles": [
+      "the Sneak",
+      "the Rat",
+      "the Backstabber",
+      "the Quick",
+      "Shadow-skulker"
+    ],
+    "mannerisms": [
+      "cackles maniacally",
+      "twitches nervously",
+      "darts their eyes around",
+      "hisses quietly"
+    ],
+    "colors": [
+      "#2ecc71",
+      "#27ae60",
+      "#1abc9c"
+    ]
+  }
+}

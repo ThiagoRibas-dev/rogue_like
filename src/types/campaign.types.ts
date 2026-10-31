@@ -48,6 +48,7 @@ import {
   PersonalityGenerationTableSchema,
   NemesisHierarchySchema
 } from './campaign/entity.ts';
+import { GenericSystemContentSchema } from './campaign/system_content.ts';
 
 // Re-export all sub-domain schemas and types for public consumption
 export * from './campaign/meta.ts';
@@ -55,6 +56,7 @@ export * from './campaign/world.ts';
 export * from './campaign/item.ts';
 export * from './campaign/social.ts';
 export * from './campaign/entity.ts';
+export * from './campaign/system_content.ts';
 
 /** The root Zod schema for a full campaign JSON document. */
 export const CampaignDataSchema = z.object({
@@ -92,7 +94,8 @@ export const CampaignDataSchema = z.object({
   knowledgePropagation: z.array(KnowledgePropagationRuleSchema).default([]),
   rumorPropagation: z.array(RumorPropagationRuleSchema).default([]),
   relationshipThresholds: z.array(RelationshipThresholdSchema).default([]),
-  worldEvents: WorldEventsConfigSchema.default({ areaEvents: [], factionEvents: [] })
+  worldEvents: WorldEventsConfigSchema.default({ areaEvents: [], factionEvents: [] }),
+  systemContent: GenericSystemContentSchema.optional()
 });
 /** The inferred type for a complete campaign data structure. */
 export type CampaignData = z.infer<typeof CampaignDataSchema>;
@@ -134,5 +137,6 @@ export const CampaignCategorySchemas: Record<keyof CampaignData, z.ZodTypeAny> =
   knowledgePropagation: KnowledgePropagationRuleSchema.array(),
   rumorPropagation: RumorPropagationRuleSchema.array(),
   relationshipThresholds: RelationshipThresholdSchema.array(),
-  worldEvents: WorldEventsConfigSchema
+  worldEvents: WorldEventsConfigSchema,
+  systemContent: GenericSystemContentSchema
 };

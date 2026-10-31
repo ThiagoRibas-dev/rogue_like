@@ -1,20 +1,6 @@
-import type { CampaignData } from '../../types/campaign.types.ts';
+import type { ViewGroup, ViewPanelType, TabDefinition } from '../../types/ruleset.types.ts';
 
-export type ViewPanelType = 'singleton' | 'dictionary' | 'custom';
-
-export interface TabDefinition {
-  id: keyof CampaignData | 'simulation' | 'triggerComposer';
-  label: string;
-  panelType: ViewPanelType;
-}
-
-export interface ViewGroup {
-  id: string;
-  icon: string;
-  label: string;
-  description?: string;
-  tabs: TabDefinition[];
-}
+export type { ViewPanelType, TabDefinition, ViewGroup };
 
 export const VIEW_GROUPS: ViewGroup[] = [
   {

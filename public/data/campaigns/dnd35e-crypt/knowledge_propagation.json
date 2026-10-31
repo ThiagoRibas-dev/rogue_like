@@ -1,0 +1,16 @@
+[
+  {
+    "id": "boss_death_rumor",
+    "eventType": "EntityDied",
+    "eligibleTags": [],
+    "eligibleFactions": ["town"],
+    "requireAreaProximity": true,
+    "delay": 50,
+    "knowledgeTemplate": {
+      "id": "death_{eventId}",
+      "type": "rumor",
+      "description": "Word is something powerful was slain in the dungeons.",
+      "tags": ["combat", "boss"]
+    }
+  }
+]

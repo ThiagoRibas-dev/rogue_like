@@ -1,0 +1,27 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "tests/**/*.test.ts",
+    "scripts/**/*.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "scripts/**/*.ts"
+  ],
+  "ignore": [
+    "src/editor/reference_index.ts",
+    "src/rendering/ui/editor_object_renderer.ts",
+    "src/rendering/ui/loading_overlay.ui.ts",
+    "src/rendering/ui/trade.ui.ts",
+    "src/rendering/ui/where_used.ui.ts",
+    "src/systems/procedural-quest.system.ts",
+    "src/systems/shop.system.ts",
+    "src/types/fuzzer.types.ts",
+    "src/types/generation.types.ts",
+    "src/utils/trade.ts"
+  ],
+  "ignoreDependencies": [
+    "@types/jszip"
+  ]
+}

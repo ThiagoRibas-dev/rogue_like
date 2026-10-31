@@ -1,0 +1,7 @@
+Roll,Terrain,Contents,Features,Event
+1,Same as current hex,Nothing notable,Notable structure,None
+2,Same as current hex,Nothing notable,Dangerous hazard,None
+3,Common terrain,Nothing notable,A settlement,None
+4,Common terrain,Nothing notable,Strange natural feature,None
+5,Uncommon terrain,Nothing notable,New region (set new terrain types),RANDOM EVENT then SET THE SCENE
+6,Rare terrain,Roll a FEATURE,DUNGEON CRAWLER entrance,RANDOM EVENT then SET THE SCENE

@@ -1,0 +1,253 @@
+{
+  "safe_hub": {
+    "id": "safe_hub",
+    "name": "Camp",
+    "generatorType": "static",
+    "dangerRating": 0,
+    "tags": [
+      "hub",
+      "safe"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_1",
+        "direction": "down",
+        "placementX": 4,
+        "placementY": 5
+      },
+      {
+        "targetAreaId": "shrine_vault_hub",
+        "direction": "down",
+        "placementX": 4,
+        "placementY": 7
+      }
+    ],
+    "placedEntities": [
+      {
+        "templateId": "barkeeper",
+        "x": 3,
+        "y": 3
+      },
+      {
+        "templateId": "scout",
+        "x": 5,
+        "y": 6
+      },
+      {
+        "templateId": "merchant",
+        "x": 12,
+        "y": 3
+      },
+      {
+        "templateId": "scholar",
+        "x": 15,
+        "y": 6
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "#####################",
+        "#.......#...........#",
+        "#.......#...........#",
+        "#.......+...........#",
+        "#.......#...........#",
+        "#...>...#...........#",
+        "#.......#...........#",
+        "#...>...#...........#",
+        "#.......+...........#",
+        "#.......#...........#",
+        "#####################"
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        ">": "stone_floor",
+        "+": "stone_floor"
+      },
+      "entityLegend": {
+        "+": "wooden_door"
+      }
+    }
+  },
+  "dungeon_1": {
+    "id": "dungeon_1",
+    "name": "The Upper Dungeons",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "crBudget": 15,
+    "encounterProfileId": "standard_dungeon",
+    "respawnTimerTurns": 10,
+    "tags": [
+      "dungeon",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "safe_hub",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "dungeon_2",
+        "direction": "down"
+      }
+    ]
+  },
+  "dungeon_2": {
+    "id": "dungeon_2",
+    "name": "The Deep Caverns",
+    "generatorType": "cellular",
+    "dangerRating": 2,
+    "crBudget": 50,
+    "encounterProfileId": "standard_dungeon",
+    "tags": [
+      "cave",
+      "mid_game"
+    ],
+    "subBiomes": {
+      "spider_nest": 0.3,
+      "orc_camp": 0.3,
+      "corrupted": 0.2,
+      "flooded": 0.2
+    },
+    "connections": [
+      {
+        "targetAreaId": "dungeon_1",
+        "direction": "up"
+      },
+      {
+        "targetAreaId": "bandit_stronghold",
+        "direction": "down"
+      }
+    ]
+  },
+  "bandit_stronghold": {
+    "id": "bandit_stronghold",
+    "name": "Bandit Stronghold",
+    "generatorType": "static",
+    "dangerRating": 3,
+    "tags": [
+      "camp",
+      "boss",
+      "stronghold"
+    ],
+    "placedEntities": [
+      {
+        "templateId": "bandit_king",
+        "x": 9,
+        "y": 4
+      },
+      {
+        "templateId": "wooden_chest",
+        "x": 9,
+        "y": 3,
+        "inventory": [
+          "health_potion",
+          "camp_sigil"
+        ]
+      }
+    ],
+    "connections": [
+      {
+        "targetAreaId": "dungeon_2",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "####################",
+        "#..................#",
+        "#...o..........o...#",
+        "#........c.........#",
+        "#........W.........#",
+        "#..................#",
+        "###+############+###",
+        "  #.#          #.#  ",
+        "  #.#          #.#  ",
+        "  #<#          #>#  ",
+        "  ###          ###  "
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        ">": "stone_floor",
+        "W": "stone_floor",
+        "o": "stone_floor",
+        "c": "stone_floor",
+        "+": "stone_floor",
+        " ": "empty_space"
+      },
+      "entityLegend": {
+        "+": "wooden_door",
+        "o": "bandit"
+      }
+    }
+  },
+  "shrine_vault_hub": {
+    "id": "shrine_vault_hub",
+    "name": "The Ancient Shrine Vault",
+    "generatorType": "static",
+    "dangerRating": 4,
+    "tags": [
+      "hub",
+      "shrine_vault"
+    ],
+    "placedEntities": [
+      {
+        "templateId": "wooden_chest",
+        "x": 10,
+        "y": 5,
+        "inventory": [
+          "health_potion",
+          "health_potion",
+          "bronze_key"
+        ]
+      },
+      {
+        "templateId": "altar",
+        "x": 10,
+        "y": 3
+      },
+      {
+        "templateId": "vault_guardian",
+        "x": 10,
+        "y": 4
+      }
+    ],
+    "connections": [
+      {
+        "targetAreaId": "safe_hub",
+        "direction": "up"
+      }
+    ],
+    "staticMap": {
+      "layout": [
+        "####################",
+        "#..................#",
+        "#.G......_.......G.#",
+        "#........G.........#",
+        "#.G......c.......G.#",
+        "#..................#",
+        "###+############+###",
+        "  #.#          #.#  ",
+        "  #.#          #.#  ",
+        "  #<#          #>#  ",
+        "  ###          ###  "
+      ],
+      "legend": {
+        "#": "stone_wall",
+        ".": "stone_floor",
+        "<": "stone_floor",
+        ">": "stone_floor",
+        "G": "stone_floor",
+        "_": "stone_floor",
+        "c": "stone_floor",
+        "+": "stone_floor",
+        " ": "empty_space"
+      },
+      "entityLegend": {
+        "+": "heavy_vault_door"
+      }
+    }
+  }
+}

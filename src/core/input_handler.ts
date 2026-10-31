@@ -126,6 +126,7 @@ export function handleKeyDown(
 
   if (
     currentState.uiMode === UIMode.MainMenu ||
+    currentState.uiMode === UIMode.RulesetSelect ||
     currentState.uiMode === UIMode.GameOver ||
     currentState.uiMode === UIMode.CampaignSelect ||
     currentState.uiMode === UIMode.Editor

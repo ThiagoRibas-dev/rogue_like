@@ -1,0 +1,10 @@
+{
+  "id": "dnd35e-crypt",
+  "name": "The Sunless Reliquary (SRD 3.5e)",
+  "description": "Venture into an ancient reliquary governed by the Dungeons & Dragons 3.5e Open Gaming Ruleset—featuring 6 Ability Scores, 18-type bonus stacking, d20 vs AC, Damage Reduction, and Vancian magic.",
+  "version": "1.0.0",
+  "author": "SRD 3.5e Cartridge Team",
+  "tags": ["dnd35e", "srd", "tactical-d20"],
+  "schemaVersion": 1,
+  "rulesetId": "dnd35e"
+}

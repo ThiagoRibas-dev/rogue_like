@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { EditorController } from '../editor_ui.ts';
 import type { ValidationError } from '../../editor/validator/validator.types.ts';
+import { loadRulesetSystemContent } from '../../core/loader.ts';
+import type { RulesetId } from '../../types/ruleset.types.ts';
 
 import {
   createStringField,
@@ -23,7 +25,7 @@ export function renderFormForZodSchema(
   basePath: string,
   container: HTMLElement,
   errors?: ReadonlyArray<ValidationError>
-) {
+): void {
   // Unwrap optional/nullable types
   let isOptional = false;
   let innerSchema = schema;
@@ -115,7 +117,18 @@ export function renderFormForZodSchema(
         label: label,
         value: (val as string) || options[0]?.value || '',
         options,
-        onChange: (newVal) => controller.applyOperations([{ op: 'replace', path: basePath, value: newVal }], true)
+        onChange: (newVal) => {
+          controller.applyOperations([{ op: 'replace', path: basePath, value: newVal }], true);
+          if (basePath.endsWith('rulesetId')) {
+            loadRulesetSystemContent(newVal as RulesetId)
+              .then((sysContent) => {
+                if (Object.keys(sysContent).length > 0) {
+                  controller.applyOperations([{ op: 'add', path: '/systemContent', value: sysContent }]);
+                }
+              })
+              .catch(console.error);
+          }
+        }
       })
     );
   } else if (innerSchema instanceof z.ZodRecord) {
@@ -178,7 +191,7 @@ function renderRawJsonField(
   val: unknown,
   path: string,
   container: HTMLElement
-) {
+): void {
   const group = document.createElement('div');
   group.className = 'form-group';
 
@@ -214,13 +227,13 @@ function renderStringField(
   path: string,
   container: HTMLElement,
   schema?: z.ZodTypeAny
-) {
+): void {
   const doc = controller.getDocument();
-  const onChange = (newVal: string) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
+  const onChange = (newVal: string): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
 
   let onBlur: ((v: string) => string | null | undefined) | undefined;
   if (schema) {
-    onBlur = (newVal: string) => {
+    onBlur = (newVal: string): string | null => {
       const res = schema.safeParse(newVal);
       if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
       return null;
@@ -259,12 +272,12 @@ function renderNumberField(
   path: string,
   container: HTMLElement,
   schema?: z.ZodTypeAny
-) {
-  const onChange = (newVal: number) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
+): void {
+  const onChange = (newVal: number): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
 
   let onBlur: ((v: number) => string | null | undefined) | undefined;
   if (schema) {
-    onBlur = (newVal: number) => {
+    onBlur = (newVal: number): string | null => {
       const res = schema.safeParse(newVal);
       if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
       return null;
@@ -284,8 +297,8 @@ function renderBooleanField(
   val: boolean,
   path: string,
   container: HTMLElement
-) {
-  const onChange = (newVal: boolean) => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
+): void {
+  const onChange = (newVal: boolean): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
   container.appendChild(createBooleanField({ label, value: val, onChange }));
 }
 
@@ -296,12 +309,13 @@ function renderMultiSelectTagsField(
   val: string[],
   path: string,
   container: HTMLElement
-) {
+): void {
   const doc = controller.getDocument();
   const options = getReferenceOptions(key, doc);
   if (!options) return; // Fallback to array rendering if no options found
 
-  const onChange = (newVal: string[]) => controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
+  const onChange = (newVal: string[]): void =>
+    controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
   container.appendChild(createMultiSelectField({ label, value: val, options, onChange }));
 }
 
@@ -313,7 +327,7 @@ function renderNestedObjectField(
   container: HTMLElement,
   canBeRemoved: boolean,
   errors?: ReadonlyArray<ValidationError>
-) {
+): void {
   // Accordion: nested objects use <details>/<summary> with module-level persistence.
   // First-level nested sections are open by default; deeper sections follow expandedPaths.
   const isFirstLevel = basePath.split('/').filter((s) => s !== '').length <= 2;
@@ -422,7 +436,7 @@ function renderArrayField(
   container: HTMLElement,
   canBeRemoved: boolean,
   errors?: ReadonlyArray<ValidationError>
-) {
+): void {
   const group = document.createElement('fieldset');
   group.className = 'form-group';
   group.dataset.fieldPath = basePath;

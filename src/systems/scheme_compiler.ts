@@ -2,7 +2,7 @@ import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { CampaignData, PhaseBlock } from '../types/campaign.types.ts';
 import { ComponentType, type SchemeComponent } from '../types/components.types.ts';
 import { addComponent } from '../core/ecs.ts';
-import * as ROT from 'rot-js';
+import { rng } from '../core/rng.ts';
 
 /**
  * Compiles a scheme dynamically from a SchemeRecipe and the available PhaseBlocks.
@@ -57,7 +57,7 @@ export function compilePhases(campaign: CampaignData, recipeId: string): PhaseBl
 
   for (let i = 0; i < recipe.phaseLength; i++) {
     if (pool.length === 0) break;
-    const index = ROT.RNG.getUniformInt(0, pool.length - 1);
+    const index = rng.getUniformInt(0, pool.length - 1);
     const block = pool[index];
     if (block) compiledPhases.push(block);
     pool.splice(index, 1);

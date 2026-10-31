@@ -1,0 +1,5 @@
+MinRoll,MaxRoll,Answer,Nuance,Outcome
+1,5,No,"No, and...",Worst possible result
+6,9,No,"No, but...",Negative result
+10,15,Yes,"Yes, but...",Positive result
+16,20,Yes,"Yes, and...",Best case scenario

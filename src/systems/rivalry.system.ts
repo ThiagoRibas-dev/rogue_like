@@ -2,6 +2,7 @@ import type { GameState, PendingRivalry } from '../types/game-state.types.ts';
 import { getComponent, addComponent } from '../core/ecs.ts';
 import {
   ComponentType,
+  type DirectorBudgetComponent,
   type IdentityComponent,
   type NemesisComponent,
   type FighterComponent
@@ -164,8 +165,7 @@ export function generateEventDrivenRivalry(state: GameState, event: GameEvent): 
         const victimName =
           (
             findNemesisComponents(state, cheatEvent.entityId)?.components[ComponentType.Identity] as
-              | IdentityComponent
-              | undefined
+              IdentityComponent | undefined
           )?.name ?? 'A nemesis';
         const killerName =
           (killerComps?.components[ComponentType.Identity] as IdentityComponent | undefined)?.name ?? 'their killer';
@@ -223,8 +223,7 @@ export function generateEventDrivenRivalry(state: GameState, event: GameEvent): 
       const jealousName =
         (
           findNemesisComponents(state, jealous.entityId)?.components[ComponentType.Identity] as
-            | IdentityComponent
-            | undefined
+            IdentityComponent | undefined
         )?.name ?? 'A nemesis';
       const promotedName =
         (findNemesisComponents(state, promotedId)?.components[ComponentType.Identity] as IdentityComponent | undefined)
@@ -411,8 +410,7 @@ function resolveRivalry(state: GameState, rivalry: PendingRivalry): GameState {
     const areaEntId = nextState.areaEntityIds[targetAreaId];
     if (areaEntId) {
       const budgetComp = getComponent(nextState, areaEntId, ComponentType.DirectorBudget) as
-        | import('../types/components.types.ts').DirectorBudgetComponent
-        | undefined;
+        DirectorBudgetComponent | undefined;
       if (budgetComp) {
         nextState = addComponent(nextState, areaEntId, {
           ...budgetComp,

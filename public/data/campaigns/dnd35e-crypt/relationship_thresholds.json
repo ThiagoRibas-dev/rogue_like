@@ -1,0 +1,11 @@
+[
+  {
+    "axis": "loyalty",
+    "operator": "<=",
+    "value": -50,
+    "consequence": {
+      "type": "change_faction",
+      "factionId": "monster"
+    }
+  }
+]

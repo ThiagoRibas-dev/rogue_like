@@ -8,7 +8,8 @@
       "mapSize": "50x50",
       "startingAreaId": "dungeon_1",
       "source": "builtin",
-      "author": "Core Team"
+      "author": "Core Team",
+      "rulesetId": "classic"
     },
     {
       "id": "shroudgarde",
@@ -18,7 +19,8 @@
       "mapSize": "80x50",
       "startingAreaId": "shroudgarde_courtyard",
       "source": "builtin",
-      "author": "Heroic AI Designer"
+      "author": "Heroic AI Designer",
+      "rulesetId": "classic"
     },
     {
       "id": "megacampaign",
@@ -28,7 +30,19 @@
       "mapSize": "huge",
       "startingAreaId": "megadungeon_hub",
       "source": "builtin",
-      "author": "Data Pipeline"
+      "author": "Data Pipeline",
+      "rulesetId": "classic"
+    },
+    {
+      "id": "dnd35e-crypt",
+      "name": "The Sunless Reliquary (SRD 3.5e)",
+      "description": "Venture into an ancient reliquary governed by the Dungeons & Dragons 3.5e Open Gaming Ruleset—featuring 6 Ability Scores, 18-type bonus stacking, d20 vs AC, Damage Reduction, and Vancian magic.",
+      "version": "1.0.0",
+      "mapSize": "50x50",
+      "startingAreaId": "dungeon_1",
+      "source": "builtin",
+      "author": "SRD 3.5e Cartridge Team",
+      "rulesetId": "dnd35e"
     }
   ]
 }

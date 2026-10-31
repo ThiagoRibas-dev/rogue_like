@@ -100,15 +100,15 @@ export function pruneOrphanEntities(state: GameState): GameState {
 }
 
 /**
- * Serializes the GameState and saves it to localStorage.
- * Converts Map objects to arrays of tuples for JSON compatibility.
+ * Purely serializes a live GameState (after pruning orphan entities) into a JSON-ready SerializedGameState DTO.
+ *
+ * @param state The current live GameState.
+ * @returns The JSON-serializable SerializedGameState DTO.
  */
-export function saveGame(state: GameState): void {
-  if (state.isSandbox) return;
+export function serializeGameState(state: GameState): SerializedGameState {
+  const sanitized = pruneOrphanEntities(state);
 
-  state = pruneOrphanEntities(state);
-
-  const serializedAreas: Array<[string, SerializedAreaData]> = Array.from(state.areas.entries()).map(
+  const serializedAreas: Array<[string, SerializedAreaData]> = Array.from(sanitized.areas.entries()).map(
     ([areaId, areaData]) => [
       areaId,
       {
@@ -123,58 +123,188 @@ export function saveGame(state: GameState): void {
   );
 
   const serializedPersistentEntities: Array<[EntityId, SerializedPersistentEntityRecord]> = Array.from(
-    state.persistentEntities.entries()
+    sanitized.persistentEntities.entries()
   ).map(([id, record]) => [id, { areaId: record.areaId, components: record.components }]);
 
-  const serializedState: SerializedGameState = {
-    campaignId: state.campaignId,
-    entities: state.entities,
-    components: Array.from(state.components.entries()),
-    map: state.map,
-    nextEntityId: state.nextEntityId,
-    nextItemInstanceId: state.nextItemInstanceId,
-    nextQuestId: state.nextQuestId,
-    dynamicQuests: state.dynamicQuests,
-    messages: state.messages,
-    currentAreaId: state.currentAreaId,
-    activeRooms: state.activeRooms,
-    lastSpawnTurn: state.lastSpawnTurn,
+  return {
+    campaignId: sanitized.campaignId,
+    entities: sanitized.entities,
+    components: Array.from(sanitized.components.entries()),
+    map: sanitized.map,
+    nextEntityId: sanitized.nextEntityId,
+    nextItemInstanceId: sanitized.nextItemInstanceId,
+    nextQuestId: sanitized.nextQuestId,
+    dynamicQuests: sanitized.dynamicQuests,
+    messages: sanitized.messages,
+    currentAreaId: sanitized.currentAreaId,
+    activeRooms: sanitized.activeRooms,
+    lastSpawnTurn: sanitized.lastSpawnTurn,
     areas: serializedAreas,
     persistentEntities: serializedPersistentEntities,
-    isGameOver: state.isGameOver,
-    uiMode: state.uiMode,
-    nemesisSlots: state.nemesisSlots || {},
-    vacancyTurns: state.vacancyTurns || {},
-    globalTurn: state.globalTurn || 0,
-    lastCheatDeathTurn: state.lastCheatDeathTurn || -9999,
-    activeDialogue: state.activeDialogue
+    isGameOver: sanitized.isGameOver,
+    uiMode: sanitized.uiMode,
+    nemesisSlots: sanitized.nemesisSlots || {},
+    vacancyTurns: sanitized.vacancyTurns || {},
+    globalTurn: sanitized.globalTurn || 0,
+    lastCheatDeathTurn: sanitized.lastCheatDeathTurn || -9999,
+    activeDialogue: sanitized.activeDialogue
       ? {
-          treeId: state.activeDialogue.treeId,
-          currentNodeId: state.activeDialogue.currentNodeId,
-          npcEntityId: state.activeDialogue.npcEntityId,
-          ...(state.activeDialogue.textOverride !== undefined
-            ? { textOverride: state.activeDialogue.textOverride }
+          treeId: sanitized.activeDialogue.treeId,
+          currentNodeId: sanitized.activeDialogue.currentNodeId,
+          npcEntityId: sanitized.activeDialogue.npcEntityId,
+          ...(sanitized.activeDialogue.textOverride !== undefined
+            ? { textOverride: sanitized.activeDialogue.textOverride }
             : {})
         }
       : undefined,
-    identifiedItems: Array.from(state.identifiedItems),
-    itemUnidentifiedNames: Array.from(state.itemUnidentifiedNames.entries()),
-    engineMode: state.engineMode,
-    rtwpState: state.rtwpState,
-    visualEffects: state.visualEffects,
-    isRotated: state.isRotated,
-    is3D: state.is3D,
-    zoomLevel: state.zoomLevel,
-    investigation: state.investigation,
-    historicalLedger: state.historicalLedger,
-    factionEntityIds: state.factionEntityIds,
-    areaEntityIds: state.areaEntityIds,
-    pendingKnowledge: state.pendingKnowledge,
-    pendingRumors: state.pendingRumors,
-    pendingRivalries: state.pendingRivalries,
-    dramaTracker: state.dramaTracker,
+    identifiedItems: Array.from(sanitized.identifiedItems),
+    itemUnidentifiedNames: Array.from(sanitized.itemUnidentifiedNames.entries()),
+    engineMode: sanitized.engineMode,
+    rtwpState: sanitized.rtwpState,
+    visualEffects: sanitized.visualEffects,
+    isRotated: sanitized.isRotated,
+    is3D: sanitized.is3D,
+    zoomLevel: sanitized.zoomLevel,
+    investigation: sanitized.investigation,
+    historicalLedger: sanitized.historicalLedger,
+    factionEntityIds: sanitized.factionEntityIds,
+    areaEntityIds: sanitized.areaEntityIds,
+    pendingKnowledge: sanitized.pendingKnowledge,
+    pendingRumors: sanitized.pendingRumors,
+    pendingRivalries: sanitized.pendingRivalries,
+    dramaTracker: sanitized.dramaTracker,
     telemetry: getTelemetryStore()
   };
+}
+
+/**
+ * Purely deserializes a SerializedGameState DTO and its loaded CampaignData back into a live GameState.
+ *
+ * @param sState The parsed SerializedGameState DTO.
+ * @param campaign The loaded CampaignData.
+ * @param campaignIdOverride Optional campaignId fallback.
+ * @returns The rehydrated GameState with rebuilt spatialIndex.
+ */
+export function deserializeGameState(
+  sState: SerializedGameState,
+  campaign: GameState['campaign'],
+  campaignIdOverride?: string
+): GameState {
+  const campaignId = campaignIdOverride ?? (sState.campaignId || 'default');
+
+  const rehydratedAreas = new Map<string, AreaData>();
+  for (const [areaId, sAreaData] of sState.areas) {
+    rehydratedAreas.set(areaId, {
+      map: sAreaData.map,
+      entities: sAreaData.entities,
+      components: new Map(sAreaData.components),
+      spatialIndex: new Map(),
+      rooms: sAreaData.rooms ?? [],
+      lastSpawnTurn: sAreaData.lastSpawnTurn ?? 0,
+      lastVisitedTurn: sAreaData.lastVisitedTurn
+    });
+  }
+
+  const rehydratedPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
+  if (sState.persistentEntities) {
+    for (const [id, record] of sState.persistentEntities) {
+      rehydratedPersistentEntities.set(id, {
+        areaId: record.areaId,
+        components: record.components
+      });
+    }
+  }
+
+  const stateWithoutIndex: GameState = {
+    campaignId,
+    campaign,
+    entities: sState.entities,
+    components: new Map(sState.components),
+    map: sState.map,
+    fovNeedsUpdate: true,
+    cachedFov: new Set(),
+    nextEntityId: sState.nextEntityId,
+    nextItemInstanceId: sState.nextItemInstanceId,
+    nextQuestId: sState.nextQuestId ?? 1,
+    dynamicQuests: sState.dynamicQuests ?? {},
+    messages: sState.messages,
+    events: [],
+    currentAreaId: sState.currentAreaId,
+    activeRooms: sState.activeRooms ?? [],
+    lastSpawnTurn: sState.lastSpawnTurn ?? 0,
+    areas: rehydratedAreas,
+    persistentEntities: rehydratedPersistentEntities,
+    spatialIndex: new Map(),
+    isGameOver: sState.isGameOver,
+    uiMode: sState.uiMode === UIMode.VerbMenu ? UIMode.Game : sState.uiMode,
+    nemesisSlots: sState.nemesisSlots || {},
+    vacancyTurns: sState.vacancyTurns || {},
+    globalTurn: sState.globalTurn || 0,
+    lastCheatDeathTurn: sState.lastCheatDeathTurn || -9999,
+    activeDialogue: sState.activeDialogue
+      ? {
+          treeId: sState.activeDialogue.treeId,
+          currentNodeId: sState.activeDialogue.currentNodeId,
+          npcEntityId: sState.activeDialogue.npcEntityId as EntityId,
+          ...(sState.activeDialogue.textOverride !== undefined
+            ? { textOverride: sState.activeDialogue.textOverride }
+            : {})
+        }
+      : undefined,
+    identifiedItems: new Set(sState.identifiedItems || []),
+    itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
+    engineMode: sState.engineMode || EngineMode.TurnBased,
+    rtwpState: sState.rtwpState || { paused: false, speedMultiplier: 1 },
+    visualEffects: sState.visualEffects || [],
+    isRotated: sState.isRotated || false,
+    is3D: sState.is3D || false,
+    zoomLevel: sState.zoomLevel ?? DEFAULT_ZOOM_LEVEL,
+    playerCommandQueue: [],
+    investigation: sState.investigation
+      ? {
+          knownActors: sState.investigation.knownActors || [],
+          exposedAgreements: sState.investigation.exposedAgreements || [],
+          lastClueTurn: sState.investigation.lastClueTurn || 0,
+          lastStallTriggerTurn: sState.investigation.lastStallTriggerTurn
+        }
+      : {
+          knownActors: [],
+          exposedAgreements: [],
+          lastClueTurn: 0
+        },
+    historicalLedger: sState.historicalLedger || [],
+    factionEntityIds: sState.factionEntityIds || {},
+    areaEntityIds: sState.areaEntityIds || {},
+    pendingKnowledge: sState.pendingKnowledge ?? [],
+    pendingRumors: sState.pendingRumors ?? [],
+    pendingRivalries: sState.pendingRivalries ?? [],
+    dramaTracker: sState.dramaTracker || {
+      globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
+      domainBudgets: {},
+      activeCooldowns: {},
+      lastMajorEventTurn: 0
+    },
+    telemetry: sState.telemetry || {
+      playerDeaths: 0,
+      damageTaken: 0,
+      resourcesConsumed: 0,
+      questsCompleted: 0
+    }
+  };
+
+  setTelemetryStore(stateWithoutIndex.telemetry);
+
+  return updateSpatialIndex(stateWithoutIndex);
+}
+
+/**
+ * Serializes the GameState and saves it to localStorage.
+ * Converts Map objects to arrays of tuples for JSON compatibility.
+ */
+export function saveGame(state: GameState): void {
+  if (state.isSandbox) return;
+
+  const serializedState = serializeGameState(state);
 
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(serializedState));
@@ -195,122 +325,17 @@ export async function loadGame(): Promise<GameState | null> {
   try {
     const sState: SerializedGameState = JSON.parse(data);
 
-    // Default to 'default' if an old save is loaded
     const campaignId = sState.campaignId || 'default';
     let campaign;
     try {
       campaign = await loadCampaign(campaignId);
-    } catch (err) {
+    } catch {
       throw new CampaignNotFoundError(
         `Campaign "${campaignId}" could not be loaded. It may have been uninstalled or contains errors.`
       );
     }
 
-    const rehydratedAreas = new Map<string, AreaData>();
-    for (const [areaId, sAreaData] of sState.areas) {
-      rehydratedAreas.set(areaId, {
-        map: sAreaData.map,
-        entities: sAreaData.entities,
-        components: new Map(sAreaData.components),
-        spatialIndex: new Map(),
-        rooms: sAreaData.rooms ?? [],
-        lastSpawnTurn: sAreaData.lastSpawnTurn ?? 0,
-        lastVisitedTurn: sAreaData.lastVisitedTurn
-      });
-    }
-
-    const rehydratedPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
-    if (sState.persistentEntities) {
-      for (const [id, record] of sState.persistentEntities) {
-        rehydratedPersistentEntities.set(id, {
-          areaId: record.areaId,
-          components: record.components
-        });
-      }
-    }
-
-    const stateWithoutIndex: GameState = {
-      campaignId,
-      campaign,
-      entities: sState.entities,
-      components: new Map(sState.components),
-      map: sState.map,
-      fovNeedsUpdate: true,
-      cachedFov: new Set(),
-      nextEntityId: sState.nextEntityId,
-      nextItemInstanceId: sState.nextItemInstanceId,
-      nextQuestId: sState.nextQuestId ?? 1, // Fallback for old saves
-      dynamicQuests: sState.dynamicQuests ?? {},
-      messages: sState.messages,
-      events: [], // Events are transient per-turn, so we start with empty on load
-      currentAreaId: sState.currentAreaId,
-      activeRooms: sState.activeRooms ?? [],
-      lastSpawnTurn: sState.lastSpawnTurn ?? 0,
-      areas: rehydratedAreas,
-      persistentEntities: rehydratedPersistentEntities,
-      spatialIndex: new Map(), // Will be rebuilt below
-      isGameOver: sState.isGameOver,
-      uiMode: sState.uiMode === UIMode.VerbMenu ? UIMode.Game : sState.uiMode,
-      nemesisSlots: sState.nemesisSlots || {},
-      vacancyTurns: sState.vacancyTurns || {},
-      globalTurn: sState.globalTurn || 0,
-      lastCheatDeathTurn: sState.lastCheatDeathTurn || -9999,
-      activeDialogue: sState.activeDialogue
-        ? {
-            treeId: sState.activeDialogue.treeId,
-            currentNodeId: sState.activeDialogue.currentNodeId,
-            npcEntityId: sState.activeDialogue.npcEntityId as EntityId,
-            ...(sState.activeDialogue.textOverride !== undefined
-              ? { textOverride: sState.activeDialogue.textOverride }
-              : {})
-          }
-        : undefined,
-      identifiedItems: new Set(sState.identifiedItems || []),
-      itemUnidentifiedNames: new Map(sState.itemUnidentifiedNames || []),
-      engineMode: sState.engineMode || EngineMode.TurnBased,
-      rtwpState: sState.rtwpState || { paused: false, speedMultiplier: 1 },
-      visualEffects: sState.visualEffects || [],
-      isRotated: sState.isRotated || false,
-      is3D: sState.is3D || false,
-      zoomLevel: sState.zoomLevel ?? DEFAULT_ZOOM_LEVEL,
-      playerCommandQueue: [],
-      investigation: sState.investigation
-        ? {
-            knownActors: sState.investigation.knownActors || [],
-            exposedAgreements: sState.investigation.exposedAgreements || [],
-            lastClueTurn: sState.investigation.lastClueTurn || 0,
-            lastStallTriggerTurn: sState.investigation.lastStallTriggerTurn
-          }
-        : {
-            knownActors: [],
-            exposedAgreements: [],
-            lastClueTurn: 0
-          },
-      historicalLedger: sState.historicalLedger || [],
-      factionEntityIds: sState.factionEntityIds || {},
-      areaEntityIds: sState.areaEntityIds || {},
-      pendingKnowledge: sState.pendingKnowledge ?? [],
-      pendingRumors: sState.pendingRumors ?? [],
-      pendingRivalries: sState.pendingRivalries ?? [],
-      dramaTracker: sState.dramaTracker || {
-        globalBudget: DEFAULT_GLOBAL_DRAMA_BUDGET,
-        domainBudgets: {},
-        activeCooldowns: {},
-        lastMajorEventTurn: 0
-      },
-      telemetry: sState.telemetry || {
-        playerDeaths: 0,
-        damageTaken: 0,
-        resourcesConsumed: 0,
-        questsCompleted: 0
-      }
-    };
-
-    // Initialize the background telemetry store
-    setTelemetryStore(stateWithoutIndex.telemetry);
-
-    // Rebuild the spatial index for the active floor
-    return updateSpatialIndex(stateWithoutIndex);
+    return deserializeGameState(sState, campaign, campaignId);
   } catch (err) {
     console.error('Failed to load game from localStorage', err);
     return null;

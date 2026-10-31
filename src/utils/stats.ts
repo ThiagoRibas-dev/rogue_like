@@ -1,102 +1,17 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { ComponentType } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import type { EffectiveStats } from '../types/ruleset.types.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
+
+export type { EffectiveStats };
 
 /**
- * The effective combat stats for an entity after applying all equipment bonuses.
- * Use this everywhere stats are needed — never read FighterComponent directly in combat.
- */
-export interface EffectiveStats {
-  readonly attack: number;
-  readonly defense: number;
-  readonly maxHp: number;
-  readonly speed: number;
-}
-
-/**
- * Computes the effective combat stats for an entity by summing base FighterComponent
- * values with bonuses from all equipped items.
- *
- * This is the canonical stat query function. Any future sources of stat modification
- * (M6 level bonuses, M8 status effects) should add to this function as additional sources.
+ * Computes the effective combat stats for an entity by delegating to the
+ * active ruleset cartridge (`getActiveRuleset(state).getEffectiveActorStats`).
  *
  * @param state The current GameState.
  * @param entityId The entity whose stats to compute.
- * @returns The effective EffectiveStats, or zeroed stats if FighterComponent is missing.
+ * @returns The effective EffectiveStats, or zeroed stats if combat components are missing.
  */
 export function getEffectiveStats(state: GameState, entityId: EntityId): EffectiveStats {
-  const fighter = getComponent(state, entityId, ComponentType.Fighter);
-  const actor = getComponent(state, entityId, ComponentType.Actor);
-
-  let baseAttack = 0;
-  let baseDefense = 0;
-  let baseMaxHp = 0;
-  let baseSpeed = 100;
-
-  if (fighter) {
-    baseAttack = fighter.attack;
-    baseDefense = fighter.defense;
-    baseMaxHp = fighter.maxHp;
-  }
-
-  if (actor) {
-    baseSpeed = actor.speed;
-  }
-
-  let attackBonus = 0;
-  let defenseBonus = 0;
-  let maxHpBonus = 0;
-  let speedBonus = 0;
-
-  const equipment = getComponent(state, entityId, ComponentType.Equipment);
-  if (equipment) {
-    for (const slot of equipment.slots) {
-      if (slot.equippedItem !== null) {
-        const item = getComponent(state, slot.equippedItem, ComponentType.Item);
-        if (item) {
-          const def = state.campaign.items[item.itemId];
-          if (def?.equippable) {
-            attackBonus += def.equippable.attackBonus;
-            defenseBonus += def.equippable.defenseBonus;
-            maxHpBonus += def.equippable.maxHpBonus;
-          }
-        }
-      }
-    }
-  }
-
-  const statuses = getComponent(state, entityId, ComponentType.StatusEffects);
-  if (statuses) {
-    for (const active of statuses.activeEffects) {
-      const def = state.campaign.status[active.effectId];
-      if (def?.statModifiers) {
-        attackBonus += def.statModifiers.attack ?? 0;
-        defenseBonus += def.statModifiers.defense ?? 0;
-        maxHpBonus += def.statModifiers.maxHp ?? 0;
-        speedBonus += def.statModifiers.speed ?? 0;
-      }
-    }
-  }
-
-  const finalAttack = baseAttack + attackBonus;
-  let finalDefense = baseDefense + defenseBonus;
-  const finalMaxHp = baseMaxHp + maxHpBonus;
-  const finalSpeed = baseSpeed + speedBonus;
-
-  const traitsCmp = getComponent(state, entityId, ComponentType.Traits);
-  if (traitsCmp) {
-    if (traitsCmp.traits.includes('fragile')) {
-      finalDefense = Math.max(0, finalDefense - 2);
-    }
-    if (traitsCmp.traits.includes('tough')) {
-      finalDefense += 2;
-    }
-  }
-
-  return {
-    attack: Math.max(0, finalAttack),
-    defense: Math.max(0, finalDefense),
-    maxHp: Math.max(1, finalMaxHp),
-    speed: Math.max(0, finalSpeed)
-  };
+  return getActiveRuleset(state).getEffectiveActorStats(state, entityId);
 }

@@ -284,7 +284,7 @@ export function renderAreaEditor(
       const isSpriteMode = doc.theme.spriteSheets !== undefined;
 
       // Draw current layout
-      const drawMap = () => {
+      const drawMap = (): void => {
         display.clear();
         for (let y = 0; y < height; y++) {
           const row = layout[y] || '';

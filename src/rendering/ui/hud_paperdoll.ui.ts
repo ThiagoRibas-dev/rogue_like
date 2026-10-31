@@ -122,8 +122,7 @@ export function renderHudPaperdoll(state: GameState): void {
       if (slot.equippedItem !== null) {
         const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
         const renderable = getComponent(state, slot.equippedItem, ComponentType.Renderable) as
-          | RenderableComponent
-          | undefined;
+          RenderableComponent | undefined;
 
         const glyphSpan = document.createElement('span');
         glyphSpan.className = 'mini-doll-glyph';
@@ -177,8 +176,7 @@ export function renderHudPaperdoll(state: GameState): void {
       if (itemEntityId !== undefined) {
         const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
         const renderable = getComponent(state, itemEntityId, ComponentType.Renderable) as
-          | RenderableComponent
-          | undefined;
+          RenderableComponent | undefined;
 
         const glyphSpan = document.createElement('span');
         glyphSpan.className = 'quickbelt-glyph';

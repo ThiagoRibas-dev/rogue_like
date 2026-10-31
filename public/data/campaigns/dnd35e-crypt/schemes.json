@@ -1,0 +1,8 @@
+{
+  "bandit_uprising": {
+    "id": "bandit_uprising",
+    "villainArchetypeId": "bandit_king",
+    "phaseLength": 2,
+    "phaseTags": ["bandit"]
+  }
+}

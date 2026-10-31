@@ -14,14 +14,15 @@ import {
   type LockComponent,
   type InteractableComponent,
   type ShopComponent,
+  type ChronicleComponent,
+  type IdentityComponent,
   toItemInstanceId
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../types/intents/ui.intents.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
-import { rollFacetValue, rollPersonalityValue } from './rng.ts';
-import { promoteEntity } from '../systems/chronicle.system.ts';
+import { rng, rollFacetValue, rollPersonalityValue } from './rng.ts';
 
 /**
  * Creates a new entity in the game state, returning the updated state and the new entity's ID.
@@ -368,8 +369,7 @@ export function spawnEntity(
 
     // Initial interactable setup for locked/openable objects
     const interactable = getComponent(nextState, entityId, ComponentType.Interactable) as
-      | InteractableComponent
-      | undefined;
+      InteractableComponent | undefined;
     const intents = interactable ? [...interactable.intents] : [];
 
     intents.push({
@@ -628,4 +628,60 @@ export function moveToLimbo(state: GameState, rootEntityId: EntityId, targetArea
     components: nextActiveComponents,
     persistentEntities: nextPersistent
   });
+}
+
+/**
+ * Promotes a generic entity to a named, persistent entity.
+ * Generates an identity, creates a chronicle, and marks them persistent.
+ *
+ * @param state The current game state.
+ * @param entityId The ID of the entity to promote.
+ * @returns The updated game state.
+ */
+export function promoteEntity(state: GameState, entityId: EntityId): GameState {
+  if (getComponent(state, entityId, ComponentType.Chronicle)) {
+    return state;
+  }
+
+  let nextState = state;
+  const templateCmp = getComponent(state, entityId, ComponentType.Template);
+  const templateId = templateCmp ? templateCmp.templateId : 'orc';
+
+  const identityKey = `${templateId}_identity`;
+  let table = state.campaign.identityGeneration[identityKey];
+  if (!table) {
+    const keys = Object.keys(state.campaign.identityGeneration);
+    if (keys.length > 0) {
+      table = state.campaign.identityGeneration[keys[0]!]!;
+    }
+  }
+
+  const name = table && table.firstNames.length > 0 ? (rng.getItem(table.firstNames) ?? 'Gruk') : 'Gruk';
+  const title = table && table.titles.length > 0 ? (rng.getItem(table.titles) ?? 'the Unknown') : 'the Unknown';
+  const mannerism =
+    table && table.mannerisms.length > 0 ? (rng.getItem(table.mannerisms) ?? 'stares blankly') : 'stares blankly';
+  const color = table && table.colors && table.colors.length > 0 ? rng.getItem(table.colors) : undefined;
+
+  const identity: IdentityComponent = {
+    type: ComponentType.Identity,
+    name,
+    title,
+    mannerisms: [mannerism],
+    colorOverride: color ?? undefined
+  };
+
+  nextState = addComponent(nextState, entityId, identity);
+
+  const chronicle: ChronicleComponent = {
+    type: ComponentType.Chronicle,
+    pis: 1,
+    scars: [],
+    coreMemories: [],
+    eventExcerpts: []
+  };
+
+  nextState = addComponent(nextState, entityId, chronicle);
+  nextState = addComponent(nextState, entityId, { type: ComponentType.Persistent });
+
+  return nextState;
 }

@@ -1,0 +1,52 @@
+{
+  "fighter": {
+    "id": "fighter",
+    "name": "Fighter",
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["climb", "intimidate", "jump", "swim"],
+    "castingMode": "none"
+  },
+  "rogue": {
+    "id": "rogue",
+    "name": "Rogue",
+    "hitDieSides": 6,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 8,
+    "classSkills": ["climb", "diplomacy", "hide", "intimidate", "jump", "listen", "move_silently", "spot", "swim", "tumble", "use_magic_device"],
+    "castingMode": "none"
+  },
+  "cleric": {
+    "id": "cleric",
+    "name": "Cleric",
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "diplomacy"],
+    "castingMode": "prepared",
+    "castingKeyAbility": "wis"
+  },
+  "wizard": {
+    "id": "wizard",
+    "name": "Wizard",
+    "hitDieSides": 4,
+    "babCurve": "half",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration"],
+    "castingMode": "prepared",
+    "castingKeyAbility": "int"
+  }
+}

@@ -6,11 +6,13 @@ import {
   type MemoryComponent,
   type PositionComponent,
   type ClueComponent,
+  type TagsComponent,
+  type DirectorBudgetComponent,
   toItemInstanceId
 } from '../types/components.types.ts';
 import { getComponent, addComponent, createEntity, removeComponent, moveToLimbo, spawnEntity } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import * as ROT from 'rot-js';
+import { rng } from '../core/rng.ts';
 import type { VillainArchetype } from '../types/campaign.types.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
 
@@ -49,7 +51,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
     const mem = getComponent(nextState, minionId, ComponentType.Memory) as MemoryComponent | undefined;
     if (mem && (mem.compromiseScore || 0) > 50) {
       // Roll morale check (50% chance to flee and confess)
-      if (ROT.RNG.getUniform() < 0.5) {
+      if (rng.getUniform() < 0.5) {
         // Abandon & Confess
         // 1. Add secret knowledge to minion's memory
         const knowledgeId = `confession_${schemeComponent.recipeId}_${minionId}`;
@@ -67,11 +69,10 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
         });
 
         // 2. 50% chance to drop clue at their feet if they have a physical position and agreement
-        if (ROT.RNG.getUniform() < 0.5) {
+        if (rng.getUniform() < 0.5) {
           const pos = getComponent(nextState, minionId, ComponentType.Position) as PositionComponent | undefined;
           const agreement = getComponent(nextState, minionId, ComponentType.Agreement) as
-            | AgreementComponent
-            | undefined;
+            AgreementComponent | undefined;
           if (pos && agreement) {
             const agreementDef = nextState.campaign.agreements[agreement.agreementId];
             if (agreementDef && agreementDef.clueTemplates.length > 0) {
@@ -194,9 +195,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
 
         if (areaEntId) {
           if (mut.addedTags && mut.addedTags.length > 0) {
-            const tagsComp = getComponent(nextState, areaEntId, ComponentType.Tags) as
-              | import('../types/components.types.ts').TagsComponent
-              | undefined;
+            const tagsComp = getComponent(nextState, areaEntId, ComponentType.Tags) as TagsComponent | undefined;
             if (tagsComp) {
               const newTags = Array.from(new Set([...tagsComp.tags, ...mut.addedTags]));
               nextState = addComponent(nextState, areaEntId, { ...tagsComp, tags: newTags });
@@ -204,8 +203,7 @@ export function processSchemeTurn(state: GameState, mastermindId: EntityId): Gam
           }
           if (mut.budgetModifier) {
             const budgetComp = getComponent(nextState, areaEntId, ComponentType.DirectorBudget) as
-              | import('../types/components.types.ts').DirectorBudgetComponent
-              | undefined;
+              DirectorBudgetComponent | undefined;
             if (budgetComp) {
               nextState = addComponent(nextState, areaEntId, {
                 ...budgetComp,
@@ -292,7 +290,7 @@ function recruitMinion(
   } else {
     const areas = Object.keys(state.campaign.areas).filter((id) => id !== 'safe_hub');
     if (areas.length > 0) {
-      targetAreaId = ROT.RNG.getItem(areas) || 'dungeon_1';
+      targetAreaId = rng.getItem(areas) || 'dungeon_1';
     }
   }
 
@@ -307,7 +305,7 @@ function recruitMinion(
 
   let templateId: string;
   if (eligibleTemplates.length > 0) {
-    templateId = ROT.RNG.getItem(eligibleTemplates) || 'orc';
+    templateId = rng.getItem(eligibleTemplates) || 'orc';
   } else {
     // Fail-graceful: pool exhausted or empty. Write debug log, fallback to generic 'orc'
     templateId = 'orc';
@@ -329,7 +327,7 @@ function recruitMinion(
   const facets: Record<string, number> = {};
   if (personalityTable?.facets) {
     for (const facet of personalityTable.facets) {
-      facets[facet] = ROT.RNG.getUniformInt(0, 100);
+      facets[facet] = rng.getUniformInt(0, 100);
     }
   }
 
@@ -369,7 +367,7 @@ function recruitMinion(
 
   // Pick a random agreement template
   const agreementIds = Object.keys(state.campaign.agreements);
-  const agreementId = ROT.RNG.getItem(agreementIds) || 'raid_contract';
+  const agreementId = rng.getItem(agreementIds) || 'raid_contract';
 
   // Attach AgreementComponent to target
   const agreement: AgreementComponent = {

@@ -35,8 +35,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
     targetY = intent.target.y;
   } else if (intent.target.type === 'entity') {
     const targetPos = getComponent(state, intent.target.entityId, ComponentType.Position) as
-      | PositionComponent
-      | undefined;
+      PositionComponent | undefined;
     if (!targetPos) return { state, success: false };
     targetX = targetPos.x;
     targetY = targetPos.y;

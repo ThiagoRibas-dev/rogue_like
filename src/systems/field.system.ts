@@ -103,8 +103,7 @@ export function processFieldsTick(state: GameState): GameState {
           // Apply Damage
           if (def.damagePerTurn !== undefined && def.damagePerTurn > 0) {
             const existingDamage = getComponent(nextState, occupantId, ComponentType.Damage) as
-              | DamageComponent
-              | undefined;
+              DamageComponent | undefined;
             const newInstances = existingDamage ? [...existingDamage.instances] : [];
             newInstances.push({
               amount: def.damagePerTurn,

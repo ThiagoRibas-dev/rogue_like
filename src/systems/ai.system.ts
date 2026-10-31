@@ -4,7 +4,7 @@ import { executeSay } from './message.system.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
-import * as ROT from 'rot-js';
+import { rng } from '../core/rng.ts';
 import { type AIBehaviorFn } from '../types/ai.types.ts';
 import { huntBehavior } from '../ai/hunt.behavior.ts';
 import { wanderBehavior } from '../ai/wander.behavior.ts';
@@ -47,7 +47,7 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
       { dx: -1, dy: 1 },
       { dx: 1, dy: 1 }
     ];
-    const randomDir = ROT.RNG.getItem(directions);
+    const randomDir = rng.getItem(directions);
     if (randomDir) {
       return {
         intent: {
@@ -107,8 +107,8 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
         if (profile.barks && profile.barks[entry.behaviorId]) {
           const barkList = profile.barks[entry.behaviorId]!;
           // 25% chance to bark if they have barks for this behavior
-          if (barkList.length > 0 && ROT.RNG.getUniform() < 0.25) {
-            const barkMsg = ROT.RNG.getItem(barkList);
+          if (barkList.length > 0 && rng.getUniform() < 0.25) {
+            const barkMsg = rng.getItem(barkList);
             if (barkMsg) {
               const sayResult = executeSay(nextState, entityId, barkMsg);
               nextState = {

@@ -207,8 +207,7 @@ export function renderDossierUI(state: GameState): void {
   const playerEntityId = state.entities.find((e) => getComponent(state, e, ComponentType.Player) !== undefined);
   if (playerEntityId !== undefined) {
     const playerChronicle = getComponent(state, playerEntityId, ComponentType.Chronicle) as
-      | ChronicleComponent
-      | undefined;
+      ChronicleComponent | undefined;
     if (playerChronicle && playerChronicle.eventExcerpts.length > 0) {
       const playerHeader = document.createElement('h2');
       playerHeader.style.color = '#fff';

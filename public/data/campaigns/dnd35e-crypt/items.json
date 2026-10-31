@@ -1,0 +1,385 @@
+{
+  "health_potion": {
+    "spriteId": "item_red_potion",
+    "id": "health_potion",
+    "name": "Health Potion",
+    "unidentifiedName": "Potion",
+    "description": "A vial of crimson liquid that restores vitality when consumed.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    }
+  },
+  "scroll_of_lightning": {
+    "spriteId": "item_scroll",
+    "id": "scroll_of_lightning",
+    "name": "Scroll of Lightning",
+    "unidentifiedName": "Scroll",
+    "description": "A crackling scroll that strikes the nearest enemy with a bolt of lightning.",
+    "glyph": "?",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "damage_nearest_10",
+      "charges": 1
+    }
+  },
+  "potion_haste": {
+    "spriteId": "item_green_potion",
+    "id": "potion_haste",
+    "name": "Potion of Haste",
+    "unidentifiedName": "Potion",
+    "description": "A potion that greatly increases your speed for a short duration.",
+    "glyph": "!",
+    "fg": "#feca57",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "potion_haste",
+      "charges": 1
+    }
+  },
+  "scroll_confusion": {
+    "spriteId": "item_scroll_2",
+    "id": "scroll_confusion",
+    "name": "Scroll of Confusion",
+    "unidentifiedName": "Scroll",
+    "description": "A scroll covered in erratic runes. Confuses the nearest enemy.",
+    "glyph": "?",
+    "fg": "#f368e0",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_confusion",
+      "charges": 1
+    }
+  },
+  "scroll_fireball": {
+    "spriteId": "item_scroll",
+    "id": "scroll_fireball",
+    "name": "Scroll of Fireball",
+    "unidentifiedName": "Scroll",
+    "description": "Unleashes a massive fireball that damages all enemies in a wide radius.",
+    "glyph": "?",
+    "fg": "#ee5253",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_fireball",
+      "charges": 1
+    }
+  },
+  "scroll_identify": {
+    "spriteId": "item_scroll_2",
+    "id": "scroll_identify",
+    "name": "Scroll of Identify",
+    "unidentifiedName": "Scroll",
+    "description": "Magical script that reveals the true nature of all items in your inventory.",
+    "glyph": "?",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "scroll_identify",
+      "charges": 1
+    }
+  },
+  "food_ration": {
+    "spriteId": "item_bread",
+    "id": "food_ration",
+    "name": "Food Ration",
+    "unidentifiedName": "Ration",
+    "description": "A wrapped bundle of dried meats and bread. Highly nutritious.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "food_ration",
+      "charges": 1
+    }
+  },
+  "apple": {
+    "spriteId": "item_apple",
+    "id": "apple",
+    "name": "Apple",
+    "unidentifiedName": "Fruit",
+    "description": "A crisp, red apple. Good for a quick snack.",
+    "glyph": "%",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "consumable": {
+      "effectId": "apple",
+      "charges": 1
+    }
+  },
+  "short_sword": {
+    "spriteId": "item_short_sword",
+    "id": "short_sword",
+    "name": "Short Sword",
+    "unidentifiedName": "Short Sword",
+    "description": "A light, double-edged blade favored by adventurers for its speed.",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 3,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 3,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "leather_armor": {
+    "spriteId": "item_leather_armor",
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "unidentifiedName": "Leather Armor",
+    "description": "Tanned hide stitched into a vest. Provides modest protection.",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 2,
+      "carryBonus": 0
+    }
+  },
+  "backpack": {
+    "spriteId": "tile_chest_closed",
+    "id": "backpack",
+    "name": "Backpack",
+    "unidentifiedName": "Backpack",
+    "description": "A sturdy pack that increases the amount of items you can carry.",
+    "glyph": "b",
+    "fg": "#8e6b3e",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 5
+    }
+  },
+  "venom_dagger": {
+    "spriteId": "item_dagger",
+    "id": "venom_dagger",
+    "name": "Venom Dagger",
+    "unidentifiedName": "Green-Tinged Dagger",
+    "description": "A wicked blade dripping with corrosive poison.",
+    "glyph": "/",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 2,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0,
+      "onHit": {
+        "statusId": "poison",
+        "duration": 5
+      }
+    }
+  },
+  "rock": {
+    "spriteId": "tile_large_rock_1",
+    "id": "rock",
+    "name": "Heavy Rock",
+    "unidentifiedName": "Rock",
+    "description": "A heavy, jagged rock. Good for throwing.",
+    "glyph": "*",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 5,
+    "throwable": { "range": 4, "damage": 2 }
+  },
+  "throwing_knife": {
+    "spriteId": "item_kukri",
+    "id": "throwing_knife",
+    "name": "Throwing Knife",
+    "unidentifiedName": "Small Blade",
+    "description": "A perfectly balanced throwing knife.",
+    "glyph": "-",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 1,
+    "throwable": { "range": 6, "damage": 3 }
+  },
+  "potion_of_fire": {
+    "spriteId": "item_orange_potion",
+    "id": "potion_of_fire",
+    "name": "Flask of Alchemist's Fire",
+    "unidentifiedName": "Orange Flask",
+    "description": "A volatile mixture that explodes on impact.",
+    "glyph": "!",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "tags": ["explosive", "flask"],
+    "throwable": { "range": 5, "destroyOnImpact": true }
+  },
+  "bronze_key": {
+    "spriteId": "item_metal_key",
+    "id": "bronze_key",
+    "name": "Bronze Key",
+    "unidentifiedName": "Key",
+    "description": "A heavy bronze key.",
+    "glyph": "[",
+    "fg": "#cd7f32",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["key:bronze"]
+  },
+  "lockpick": {
+    "spriteId": "item_primitive_key",
+    "id": "lockpick",
+    "name": "Lockpick",
+    "unidentifiedName": "Tool",
+    "description": "A set of tools for picking locks.",
+    "glyph": "~",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["tool:lockpick"]
+  },
+  "wand_of_lightning": {
+    "spriteId": "item_blue_staff",
+    "id": "wand_of_lightning",
+    "name": "Wand of Lightning",
+    "unidentifiedName": "Glass Wand",
+    "description": "A wand that shoots a beam of lightning, piercing through enemies.",
+    "glyph": "/",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "beam",
+      "range": 6,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_fire": {
+    "spriteId": "item_flame_staff",
+    "id": "wand_of_fire",
+    "name": "Wand of Fire",
+    "unidentifiedName": "Ruby Wand",
+    "description": "A wand that shoots a bolt of fire, stopping at the first enemy hit.",
+    "glyph": "/",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_10",
+      "pattern": "bolt",
+      "range": 5,
+      "maxCharges": 5,
+      "currentCharges": 5
+    }
+  },
+  "wand_of_cold": {
+    "spriteId": "item_crystal_staff",
+    "id": "wand_of_cold",
+    "name": "Wand of Cold",
+    "unidentifiedName": "Frosty Wand",
+    "description": "A wand that emits a cone of freezing cold air.",
+    "glyph": "/",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 2,
+    "zappable": {
+      "effectId": "damage_5_cold",
+      "pattern": "cone",
+      "range": 3,
+      "maxCharges": 3,
+      "currentCharges": 3
+    }
+  },
+  "camp_sigil": {
+    "spriteId": "item_ankh",
+    "id": "camp_sigil",
+    "name": "Camp Sigil",
+    "unidentifiedName": "Golden Medallion",
+    "description": "The stolen crest of the Safe Hub. Bringing it back will secure the camp.",
+    "glyph": "*",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["sigil", "quest_item"]
+  },
+  "barkeeper_note": {
+    "spriteId": "item_page",
+    "id": "barkeeper_note",
+    "name": "Barkeeper's Bloody Note",
+    "unidentifiedName": "Torn Paper",
+    "description": "A bloody note written by the barkeeper before his death. It says: 'The Bandit King has the Camp Sigil in his chest. Defeat him and take the sigil!'",
+    "glyph": "?",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["note", "quest_item"]
+  },
+  "scholar_journal": {
+    "spriteId": "item_red_book",
+    "id": "scholar_journal",
+    "name": "Scholar's Lost Journal",
+    "unidentifiedName": "Dusty Journal",
+    "description": "The scholar's journal. It contains notes about the Shrine Vault: 'Sacrifice monster remains (bones) at the altar to receive the gods' blessing!'",
+    "glyph": "?",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["journal", "quest_item"]
+  },
+  "bones": {
+    "spriteId": "tile_bone_1",
+    "id": "bones",
+    "name": "Monster Remains",
+    "unidentifiedName": "Bones",
+    "description": "Remains of a defeated feral monster. Can be placed on the altar.",
+    "glyph": "~",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "tags": ["bones", "quest_item"]
+  }
+}

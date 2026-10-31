@@ -41,7 +41,8 @@ export const enum ComponentType {
   Services = 'Services',
   Nemesis = 'Nemesis',
   InteractionScore = 'InteractionScore',
-  DirectorBudget = 'DirectorBudget'
+  DirectorBudget = 'DirectorBudget',
+  RulesetData = 'RulesetData'
 }
 
 /**
@@ -572,6 +573,16 @@ export interface DirectorBudgetComponent {
 }
 
 /**
+ * Component storing isolated, JSON-serializable ruleset cartridge state on an entity
+ * without polluting shared core components with ruleset-specific optional fields.
+ */
+export interface RulesetDataComponent {
+  readonly type: ComponentType.RulesetData;
+  readonly rulesetId: 'classic' | 'dnd35e';
+  readonly payload: Readonly<Record<string, unknown>>;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -614,4 +625,5 @@ export type Component =
   | ServicesComponent
   | NemesisComponent
   | InteractionScoreComponent
-  | DirectorBudgetComponent;
+  | DirectorBudgetComponent
+  | RulesetDataComponent;

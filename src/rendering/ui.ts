@@ -1,6 +1,6 @@
 export { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
 export { renderInventoryPanel } from './ui/inventory.ui.ts';
-export { renderMenus, populateCampaignList } from './ui/menus.ui.ts';
+export { renderMenus, populateRulesetList, populateCampaignList } from './ui/menus.ui.ts';
 export { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';
 export { initUITooltips } from './ui/tooltips.ui.ts';
 export { applySettingsToDOM, renderSettingsMenu } from './ui/settings.ui.ts';

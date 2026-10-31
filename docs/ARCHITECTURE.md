@@ -13,13 +13,13 @@ This project is a grid-based traditional roguelike game featuring dual **Turn-Ba
 Beyond the technical ECS constraints, the development of systemic mechanics (like factions, quests, and background schemes) adheres to two primary philosophies:
 
 - **Prioritize Observability**: Background simulations are notoriously difficult to debug because they fail silently. Never build an invisible system without a window into it. Complex simulation logic (like scheme advancement) must always be paired with explicit UI surfaces (investigation boards, dialogue logs) or dedicated `/debug` cheat commands so its state can be verified.
-- **Defensive Simulation (Fail Gracefully)**: In systemic games, unpredictable edge cases *will* happen. If an intermediary NPC vital to a quest dies or is trapped, the simulation must not crash or soft-lock the campaign. Systems must handle broken chains gracefully—either by generating a new NPC to fill the role, or by explicitly failing the quest and rendering the failure in the UI.
+- **Defensive Simulation (Fail Gracefully)**: In systemic games, unpredictable edge cases _will_ happen. If an intermediary NPC vital to a quest dies or is trapped, the simulation must not crash or soft-lock the campaign. Systems must handle broken chains gracefully—either by generating a new NPC to fill the role, or by explicitly failing the quest and rendering the failure in the UI.
 
 ---
 
 ## 3. Module Dependency Graph
 
-The dependency graph flows strictly downward. Circular imports are banned. Modules at lower layers (e.g., `types`, `constants`, `utils`) may never import from upper layers. 
+The dependency graph flows strictly downward. Circular imports are banned. Modules at lower layers (e.g., `types`, `constants`, `utils`) may never import from upper layers.
 
 Since the Campaign Editor is a top-level creator tool rather than a part of the active gameplay loops, the `editor/` controller folder sits at the top tier of the graph alongside the game bootstrap, permitting it to import from any engine layer while keeping the `rendering/` view layer completely isolated.
 
@@ -72,32 +72,32 @@ graph TD
     IH --> |Keypress| GL
     UI --> |Click| GL
     GL --> |Generates| Intent
-    
+
     %% Core to Systems
     Intent --> |Dispatched via| AR
     AR --> SysMap
     AR --> SysMove
     AR --> SysCombat
-    
+
     %% Systems interacting with ECS
     SysMove --> |1. getComponent| Dict
     SysMove --> |2. Calculates next pos| SysMove
     SysMove --> |3. addComponent| Dict
-    
+
     SysCombat --> |Calculates Damage| SysDeath
     SysDeath --> |Emits Event| SysQuest
-    
+
     %% State to Render
     Dict --- ECS
     ECS --> |Current State| Render
     ECS --> |Current State| DOM
     Render --> FOV
-    
+
     %% Scheduler loop
     ECS --> SCH
     SCH --> |AI Turns| GL
     SCH --> |Background Ticks| SysScheme
-    
+
     %% JSON Validation
     JSON -.-> |Defines rules/stats| SysCombat
     JSON -.-> |Defines map rules| SysMap
@@ -110,6 +110,7 @@ graph TD
 ### 4.1 ECS-lite
 
 We use a low-overhead, framework-free ECS:
+
 - **Entities** are simple numeric IDs (`EntityId` branded type), not class instances.
 - **Components** are pure data objects (TS interfaces) with no methods, stored in a `ReadonlyMap<EntityId, Readonly<Record<string, Component>>>` within the global `GameState` for `O(1)` access. The `GameState` is strictly immutable; systems clone the outer map when adding/removing entities, but only clone and replace the specific dictionary for the modified entity during updates.
 - **Component Heuristic**: When deciding if data warrants a new component, evaluate **Reusability** (does it apply to multiple entity types like Actors, Areas, Factions?), **System Querying** (does a system need to iterate over all entities with this specific property?), and **Lifecycle** (is the data conceptually distinct, e.g. a temporary status effect vs intrinsic tags).
@@ -232,6 +233,7 @@ graph TD
 ```
 
 #### Core Data Ordering Constraints:
+
 1. **Low-level Building Blocks (Factions, Status Effects, AI, Dialogues)**: Must be created first. They are the target of references for items and entities.
 2. **Game Objects (Entities, Items)**: Require valid faction IDs, dialogue IDs, AI profiles, and effect IDs. These must exist before they can be placed on maps.
 3. **World Generators (Spawn Pools, Encounter Profiles, Areas)**: Spend "CR budgets" by referencing entity templates and placed items.
@@ -242,6 +244,7 @@ This tree is directly mapped in `editor_config.ts`'s `VIEW_GROUPS` layout, guidi
 ### 4.7 Web Worker Offload & Background Simulation (`src/worker/`)
 
 Computationally intensive operations that risk blocking main thread 60Hz rendering (e.g., deep campaign narrative fuzzing, heavy multi-room procedural dungeon generation) are offloaded to dedicated Web Workers:
+
 - **Worker Bridge (`src/worker/worker_bridge.ts`)**: Manages the lifecycle of background worker threads (`fuzzer.worker.ts`, `map.worker.ts`). It performs feature detection via `isWorkerAvailable()`, transparently falling back to main-thread asynchronous generator execution if Web Workers are not supported in the host environment.
 - **Serializable JSON DTO Boundary (`src/types/worker.types.ts`)**: All worker requests and responses use pure JSON-serializable DTOs (e.g., transforming `Set<string>` in `DirectorContext` into plain arrays).
 - **Non-Blocking Progress Streaming**: Workers emit `WorkerProgressPayload` messages during execution, updating DOM loading overlays (`#loading-overlay`) and UI progress bars at native browser frame rates without freezing UI animation.
@@ -265,6 +268,7 @@ The game world is divided into distinct "Areas" — procedural dungeons or stati
 **Persistent Entities & Limbo (Sleep/Wake):** Entities with a `PersistentComponent` are saved into a global `persistentEntities` pool (rather than area-local storage) when unloading. To prevent orphaned references (e.g., leaving a sword on the floor when its owner teleports out), the `moveToLimbo` utility recursively packages the entity and all of its foreign key children (inventory, equipped items) together into Limbo. They are then re-injected into the active ECS when their target area loads. This ensures named NPCs maintain state and belongings across transitions and off-screen scheme missions.
 
 **Area Respawn Timers & Delta Catch-Up:** Areas define a `respawnTimerTurns` threshold and track `lastVisitedTurn` on `AreaData`. When transitioning into a sleeping area:
+
 1. **Delta Calculation**: The map system evaluates `deltaTurns = Math.max(0, (state.globalTurn || 0) - lastVisited)`.
 2. **Entity Respawning**: If `deltaTurns` exceeds `respawnTimerTurns`, the `EncounterDirector` re-runs, repopulating the area's active rooms with new non-persistent entities and emitting an `AreaRespawned` event.
 3. **Simulation Catch-Up**: Off-screen spawn timers advance, minion contracts and agreements decay or mature, and dormant timers progress proportionally to `deltaTurns` without incurring the computational cost of running full tile-level pathfinding or FOV for dormant areas.
@@ -282,17 +286,17 @@ The game world is divided into distinct "Areas" — procedural dungeons or stati
 
 ### 6.1 Unified Damage Pipeline
 
-All damage sources (melee, traps, spells, environment) inject a `DamageComponent` onto the target containing `DamageInstance`s with `amount`, `sourceEntityId`, and semantic `tags` (e.g., `["spell", "lightning"]`). `damage.system.ts` aggregates damage, reduces HP, processes on-hit effects, and generates floating combat text. If HP reaches 0, a `DeathComponent` is attached; `death.system.ts` handles messages, XP, drops, and cleanup. This fully decouples the *cause* of damage from its *resolution*.
+All damage sources (melee, traps, spells, environment) inject a `DamageComponent` onto the target containing `DamageInstance`s with `amount`, `sourceEntityId`, and semantic `tags` (e.g., `["spell", "lightning"]`). `damage.system.ts` aggregates damage, reduces HP, processes on-hit effects, and generates floating combat text. If HP reaches 0, a `DeathComponent` is attached; `death.system.ts` handles messages, XP, drops, and cleanup. This fully decouples the _cause_ of damage from its _resolution_.
 
 ### 6.2 Status Effects Engine
 
-A declarative `StatusEffectDefinition` registry describes effects (duration, stat modifiers, per-turn damage/heal, behavior flags). `status-effect.system.ts` ticks every turn, removing expired effects and modifying stats via `getEffectiveStats()`. Behavioral flags describe *mechanics* (`skipTurn`, `confused`), not *flavor* (`stunned`, `frozen`) — so any number of thematic variants reuse `skipTurn: true` without code changes. The game loop queries generic helpers like `shouldSkipTurn()` and never inspects specific effect names.
+A declarative `StatusEffectDefinition` registry describes effects (duration, stat modifiers, per-turn damage/heal, behavior flags). `status-effect.system.ts` ticks every turn, removing expired effects and modifying stats via `getEffectiveStats()`. Behavioral flags describe _mechanics_ (`skipTurn`, `confused`), not _flavor_ (`stunned`, `frozen`) — so any number of thematic variants reuse `skipTurn: true` without code changes. The game loop queries generic helpers like `shouldSkipTurn()` and never inspects specific effect names.
 
 ### 6.3 Items, Equipment & Stat Model
 
 - **Registries**: Items and Effects are defined declaratively in JSON as pure data objects keyed by string ID, enabling trivial serialization and future modding.
 - **Inventory**: The player's `InventoryComponent` holds item `EntityId`s. Pickup removes `PositionComponent`; drop restores it.
-- **"Bonus at Query Time"**: Equipment bonuses are *never* baked into `FighterComponent`. `getEffectiveStats()` dynamically sums base stats with equipment and status effect bonuses on demand, preventing desyncs from forced item removal and composing cleanly with future modifiers (level-ups, curses).
+- **"Bonus at Query Time"**: Equipment bonuses are _never_ baked into `FighterComponent`. `getEffectiveStats()` dynamically sums base stats with equipment and status effect bonuses on demand, preventing desyncs from forced item removal and composing cleanly with future modifiers (level-ups, curses).
 
 ### 6.4 Reactions & Triggers
 
@@ -327,6 +331,7 @@ AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`) com
 - **Knowledge**: NPCs learn about world events through delayed propagation in the social graph. The player uses dialogue verbs (`ask_about`, `gossip`) to acquire knowledge dynamically. Rumors spread organically and decay over time. Knowledge sharing is gated dynamically: NPCs with high loyalty or fear are more willing to share rumors (evaluated via `getWillingnessToShare()` which considers relationship axes), while high resentment blocks it.
 
 ### 7.4 Trade & Barter Economy
+
 Entities with a `ShopComponent` act as merchants. `getEffectivePrice` dynamically evaluates NPC markup, faction standing, personality facets, social states (`annoyed`/`grateful`), and relationship axes (`loyalty`, `fear`, `debt` reduce markups, while `resentment` increases markups). Social verbs (`intimidate`, `persuade`) use personality-weighted contests (boosted by active relationship values like fear and respect) to temporarily modify pricing. Depleted inventories generate procedural fetch quests via the existing quest template system.
 
 ### 7.5 Scheme Simulator & Investigation
@@ -338,10 +343,10 @@ Entities with a `ShopComponent` act as merchants. `getEffectivePrice` dynamicall
 `rivalry.system.ts` provides autonomous background conflicts for persistent entities and handles the core simulation loop (`processRivalries`, `generateEventDrivenRivalry`). The system delegates heavy lifting to strict domain modules: `query.ts` handles searching across active/inactive states for nemesis entities, and `resolve.ts` applies structural mutations (like promotion and scarring). Outcomes of rivalries (such as death, promotion, or status effect changes) deterministically resolve off-screen and propagate as `RivalryResolved` events.
 This connects to the knowledge and gossip systems: major power shifts result in rumor propagation (`gossip.system.ts`) and add verifiable knowledge (`knowledge.system.ts`) to NPCs. Trade mechanics (`trade.ts`) also reflect rivalry impacts by imposing markup penalties on merchants whose suppliers suffer vacancies in the top-tier hierarchy.
 
-
 ### 7.7 Nemesis Surfacing & Narrative UX
 
 The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encounters legibly dramatic and narratively sticky:
+
 - **Combinatorial Bark Pools**: Instead of hardcoding dialogue, barks (encounter, cheat death, victory taunt) are resolved dynamically from the entity's active semantic tags and traits, creating highly varied, emergent dialogues.
 - **Narrative Throttling & Throttled Encounters**: Nemesis entities track player encounters via `lastEncounterTurn` to prevent spamming introduction callouts.
 - **Player Dossier & Timelines**: The Dossier UI provides a dedicated Player Timeline Section presenting the player's personal chronicle chronologically alongside active faction hierarchies and notable NPC records.
@@ -409,6 +414,12 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 - **Persistent Validation Dock (`src/rendering/ui/validation_panel.ui.ts`)** — Replaces the previous `.innerHTML` hover popup in `editor_toolbar.ts`. The dock uses native `createElement()` / `textContent`; clicking an error row triggers `revealField('', path)` via `onNavigate`. Module-level persistence of errors feeds both `updateToolbarState()` and the workspace sub-editors.
 - **Static-Only Playtest Spawn (`src/rendering/ui/area_playtest_menu.ui.ts` + `sessionStorage`)** — Right-click on a static tile resolves coordinates via `display.eventToPosition()`; the menu verifies `tileDef.walkable` before writing `editor_playtest_spawn` JSON to `sessionStorage`. `startNewGame()` accepts an optional `spawnOverride?: { areaId; x; y }` (`SpawnOverride` interface exported from `src/core/bootstrap.ts`) without polluting persistent saves.
 - **Strict Touch Scope (D6)** — All six new M76 files contain zero `.innerHTML`; modified files (`editor_toolbar.ts`, `zod_form_renderer.ts`, `dialogue_editor.ts`, `area_editor.ts`) converted their M76-touched components. Pre-existing `.innerHTML` in untouched legacy blocks preserved.
+- **Ruleset Cartridge Parity & System Content Hydration** — The Campaign Editor respects the 2-tier (`Ruleset -> Campaign`) and 3-tier (`Engine -> System Content -> Campaign Content`) hierarchy:
+  - **Ruleset-Aware Creation**: `#btn-editor-new` opens a modal allowing authors to pick the ruleset (`🐉 D&D 3.5e` or `⚔️ Classic`) and starting template (Blank Slate with appropriate archetypes or cloning an existing campaign).
+  - **Dynamic ViewGroup Resolution**: Activity Bar, Sidebar, and Workspace panes resolve view tabs through `ruleset.getEditorViewGroups(VIEW_GROUPS)` rather than static tables.
+  - **Bundled Campaign Browser**: The Welcome/Splash screen lists disk campaigns alongside IndexedDB workspaces, grouped by ruleset.
+  - **Foreign-Key Dropdowns**: `getReferenceOptions()` resolves system-level `archetypeId` choices from `doc.systemContent.archetypes` with `[ARCHETYPE]` badges.
+  - **Automated Re-Hydration**: Switching `manifest.rulesetId` or creating blank campaigns triggers dynamic fetching of Tier 2 system content files (`archetypes`, `classes`, `skills`, `feats`, `spells`) via `loadRulesetSystemContent()`.
 
 ### 8.6 Tactical Viewport Overlay, Floating Side HUD & Pointer UX (Milestone 77)
 
@@ -417,5 +428,57 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 - **Runtime 2D Sprite Mode & Procedural Atlas (`src/rendering/procedural_sprites.ts`)** — Evaluates `isEffectiveSpriteMode(campaign)` from `getSettings().visualFeedback.renderMode` (`'auto' | 'sprites' | 'ascii'`). Synthesizes a 32×32 pixel-art fallback sprite atlas in memory when 2D Tiles mode is toggled on campaigns without PNG sprite sheets.
 - **Decomposed Side HUD Modules (`src/rendering/ui/hud_paperdoll.ui.ts`, `hud_alerts.ui.ts`, `hud_dock.ui.ts`)** — Provide an always-visible mini paper-doll and `[1]–[5]` quick-use belt, RimWorld-style right-edge alert ribbons, a clickable command dock with live keybind badges, and categorized message log filter tabs (`All | Combat | Speech | World`) inside foldable side-stack cards.
 
-> **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+---
 
+## 9. Pluggable Ruleset Cartridge Architecture (`src/rulesets/`)
+
+To support multiple tabletop RPG rulesets (starting with the original lightweight roguelike ruleset as `classic` and D&D 3.5e as `dnd35e`, with future support for `pf2e`, `brp_d100`, `gurps`, etc.) without polluting ECS components or inventing a brittle JSON meta-language, the engine separates **The Shared Console Substrate** from **Pluggable Ruleset Cartridges**:
+
+```
+src/
+├── core/          <-- Shared Console: ECS storage, RNG, Event Bus, Save/Load, Scheduler
+├── map/           <-- Shared Console: Generators, FOV, SpatialIndex (N×N footprints), Cover/LOS
+├── systems/       <-- Shared World Simulation: Fluids, Weather, Factions, Schemes, Dialogue, Director
+├── rendering/     <-- Shared Viewport/ASCII/Sprites/VFX + Ruleset UI Slot Providers
+└── rulesets/      <-- Pluggable Ruleset Cartridges (Domain-Driven Contracts)
+    ├── ruleset.types.ts  <-- RulesetContract interface & port definitions
+    ├── registry.ts       <-- Runtime Ruleset Cartridge Registry & DI resolver
+    ├── classic/          <-- Original lightweight roguelike ruleset (Milestones 1–81)
+    └── dnd35e/           <-- D&D 3.5e ruleset cartridge (6-Layer Pyramid)
+```
+
+### 9.1 Core Principles & Boundaries
+
+- **Domain-Driven `RulesetContract` Injection**: Rather than scattering `if (state.rulesetId === 'dnd35e')` across core loops, `src/core/` and `src/systems/` delegate ruleset-specific resolution (attack/damage/save math, skill/ability checks, turn/action economy budgets, reactive interrupts/AoOs, entity template hydration, and character sheet/HUD/editor views) to the active `RulesetContract` resolved from `state.campaign.rulesetId`.
+- **Isolated Ruleset Schemas & Components**: Each cartridge under `src/rulesets/<rulesetId>/` defines its own strict TypeScript interfaces, ECS component payloads, and Zod campaign schemas—avoiding "Uber-Component" optional-property bloat and obeying the **Rule of Three** (only promoting concepts to the shared `RulesetContract` when multiple cartridges share a concrete port).
+- **Shared Core Spatial Upgrades**: Tactical grid capabilities discovered during ruleset engineering (such as $N\times N$ creature footprints, multi-entity tile occupancy for `Tiny` creatures, reach rings, and Bresenham corner-to-corner cover raycasting) are implemented in `src/map/` and `src/core/` with backward-compatible defaults (`1×1` footprint for `classic`) so every ruleset benefits from spatial engine enhancements.
+- **End-User & Campaign Hierarchy (`New Game -> Ruleset Selection -> Campaign Selection`)**: Every campaign manifest (`campaign.json`) declares a `rulesetId` (`"classic"`, `"dnd35e"`, etc.). Players first select a Ruleset and then choose among campaigns bound to that ruleset; the Campaign Editor similarly scopes its forms and validators to the active campaign's `rulesetId`.
+- **Git Branching & Merge Policy**:
+  - **Core Engine & Multi-Ruleset Infrastructure (Phase 13, `Milestones 82–84`)** is developed directly on `master`.
+  - **Individual Ruleset Cartridges (e.g., Phases 14–20, `Milestones 85–100` for `dnd35e`)** are developed on dedicated ruleset branches (such as `DND35`) inside `src/rulesets/<rulesetId>/` and merged back into `master` upon completion.
+
+### 9.2 Three-Tier Separation: Rules Engine vs. System Content vs. Campaign Content (Milestone 100)
+
+Every ruleset follows a strict **3-Tier Separation** between mechanical laws, ruleset-wide "Core Rulebook" definitions, and adventure-specific "Campaign Module" content:
+
+1. **Tier 1 — Rules Engine (`src/core/`, `src/map/`, `src/systems/`, `src/rulesets/<rulesetId>/`)**:
+   - Pure TypeScript mathematical and mechanical building blocks: progression curve formulas (`full`, `three_quarters`, `half` BAB; `good`, `poor` saves), 18-type bonus stacking rules, `d20` roll bounds, `1-2-1-2` diagonal distance & corner blocking, 5-tier round action budgets, LIFO Attack of Opportunity interrupt stack, typed damage mitigation (`DR`, Energy Resistance, Hardness), and Vancian/spontaneous slot state machines.
+   - Contains **zero** hardcoded classes, creature statblocks, feat tables, skill lists, or spell definitions in `.ts` files.
+2. **Tier 2 — System Content ("Core Rulebooks" — `public/data/rulesets/<rulesetId>/`)**:
+   - Declarative JSON registries shared across all campaigns that use `<rulesetId>`:
+     - For `dnd35e`: `archetypes.json` (SRD statblocks), `classes.json` (progression curves and HD), `skills.json` (key abilities and ACP), `feats.json` (AST prerequisite trees), and `spells.json` (Vancian spell definitions).
+     - For other cartridges (e.g. `classic`): Cartridge-specific registries declared via `RulesetContract.getSystemContentFiles()` without fabricating dummy files for foreign concepts like feats or spells.
+     - Optional base `items.json`, `entities.json`, `status.json`, and `effects.json` shared across all campaigns of that ruleset.
+3. **Tier 3 — Campaign Content ("Adventure Modules" — `public/data/campaigns/<campaignId>/`)**:
+   - Adventure-specific maps (`areas.json`, `tiles.json`), creature & loot placement (`spawn_pools.json`, `encounter_profiles.json`, `rules.json`), factions, villains, schemes, quests, dialogues, triggers, and campaign-specific entity/item overrides.
+   - During campaign loading (`src/core/loader.ts`, `tests/helpers.ts`, `scripts/run-validator.ts`), the loader reads `manifest.rulesetId`, delegates to `RulesetContract.getSystemContentFiles()` to fetch the cartridge's system files into `campaign.systemContent`, calls `RulesetContract.parseSystemContent()` to validate them with the cartridge's schemas, and merges any base system records beneath the campaign's records (`{ ...systemRecord, ...campaignRecord }`).
+
+### 9.3 Cartridge Isolation for System Content Schemas
+
+To prevent schema contamination across rulesets, System Content schemas are **strictly owned by their respective cartridges**:
+
+- **Shared Campaign Boundary (`src/types/campaign/system_content.ts`, `src/types/campaign.types.ts`)**: The shared `CampaignDataSchema.systemContent` is typed as an opaque record (`GenericSystemContent = Record<string, unknown>`), keeping the shared console completely agnostic of system concepts like BAB curves, spell schools, or feat trees.
+- **Cartridge Domain Schemas (`src/rulesets/<rulesetId>/types/`)**: Each ruleset cartridge defines and exports its own typed Zod schemas (e.g., `DnD35ArchetypeSchema`, `DnD35ClassSchema`, `DnD35FeatSchema`, `DnD35SpellSchema` in `src/rulesets/dnd35e/types/dnd35e_system.types.ts`).
+- **Contract Seam (`RulesetContract`)**: Each cartridge declares its system file manifest via `getSystemContentFiles(): ReadonlyArray<RulesetSystemFileDescriptor>` and optionally validates them via `parseSystemContent(raw)` and `validateCampaignRuleset(campaign)`.
+
+> **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**

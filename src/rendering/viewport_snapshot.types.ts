@@ -182,4 +182,3 @@ export interface CanvasPixelMetrics {
   readonly offsetX: number;
   readonly offsetY: number;
 }
-

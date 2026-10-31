@@ -42,8 +42,7 @@ export function getHoverState(): TransientHoverState {
 export function setHoveredTile(tile: GridCoord | null): boolean {
   const prev = currentHover.hoveredTile;
   const isUnchanged =
-    (prev === null && tile === null) ||
-    (prev !== null && tile !== null && prev.x === tile.x && prev.y === tile.y);
+    (prev === null && tile === null) || (prev !== null && tile !== null && prev.x === tile.x && prev.y === tile.y);
   if (isUnchanged) {
     return false;
   }

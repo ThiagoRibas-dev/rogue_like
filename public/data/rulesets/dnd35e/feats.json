@@ -1,0 +1,88 @@
+{
+  "power_attack": {
+    "id": "power_attack",
+    "name": "Power Attack",
+    "description": "Trade melee attack bonus for melee damage (1:1 one-handed, 1:2 two-handed).",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "str",
+      "minScore": 13
+    }
+  },
+  "cleave": {
+    "id": "cleave",
+    "name": "Cleave",
+    "description": "Take an immediate extra melee attack after dropping a foe to 0 HP or below.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_ability", "ability": "str", "minScore": 13 },
+        { "type": "has_feat", "featId": "power_attack" }
+      ]
+    }
+  },
+  "combat_reflexes": {
+    "id": "combat_reflexes",
+    "name": "Combat Reflexes",
+    "description": "Make additional Attacks of Opportunity equal to your DEX modifier and make AoOs while flat-footed.",
+    "isFighterBonusFeat": true
+  },
+  "improved_initiative": {
+    "id": "improved_initiative",
+    "name": "Improved Initiative",
+    "description": "+4 bonus on initiative checks.",
+    "isFighterBonusFeat": true
+  },
+  "blind_fight": {
+    "id": "blind_fight",
+    "name": "Blind-Fight",
+    "description": "Re-roll miss chance percentiles caused by concealment once.",
+    "isFighterBonusFeat": true
+  },
+  "weapon_focus_bite": {
+    "id": "weapon_focus_bite",
+    "name": "Weapon Focus (Bite)",
+    "description": "+1 bonus on attack rolls with bite attacks.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    }
+  },
+  "weapon_focus_greatclub": {
+    "id": "weapon_focus_greatclub",
+    "name": "Weapon Focus (Greatclub)",
+    "description": "+1 bonus on attack rolls with a greatclub.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    }
+  },
+  "toughness": {
+    "id": "toughness",
+    "name": "Toughness",
+    "description": "+3 hit points.",
+    "isFighterBonusFeat": false
+  },
+  "iron_will": {
+    "id": "iron_will",
+    "name": "Iron Will",
+    "description": "+2 bonus on Will saving throws.",
+    "isFighterBonusFeat": false
+  },
+  "alertness": {
+    "id": "alertness",
+    "name": "Alertness",
+    "description": "+2 bonus on Listen and Spot checks.",
+    "isFighterBonusFeat": false
+  },
+  "track": {
+    "id": "track",
+    "name": "Track",
+    "description": "Use Survival checks to follow tracks.",
+    "isFighterBonusFeat": false
+  }
+}

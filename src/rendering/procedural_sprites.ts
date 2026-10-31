@@ -134,7 +134,13 @@ export function buildProceduralSpriteAtlas(campaign: CampaignData): {
   readonly tileWidth: number;
   readonly tileHeight: number;
 } {
-  const entries: Array<{ readonly key: string; readonly glyph: string; readonly fg: string; readonly bg: string; readonly kind: 'tile' | 'entity' }> = [];
+  const entries: Array<{
+    readonly key: string;
+    readonly glyph: string;
+    readonly fg: string;
+    readonly bg: string;
+    readonly kind: 'tile' | 'entity';
+  }> = [];
   const seen = new Set<string>();
 
   const register = (key: string, glyph: string, fg: string, bg: string, kind: 'tile' | 'entity'): void => {
