@@ -6,7 +6,7 @@
 
 ### Tool & Workflow Rules
 1. **Prioritize built-in tools** over console commands (e.g., use file viewer tools rather than `cat` in bash).
-2. **Never commit or push** to a git repository.
+2. **Never commit or push** to a git repository, unless the User explicitly requests it. If the User asks for a git commit or push, first you summarize what will get commited and asks for a review of the commit message, then ask for a confirmation of the commit and/or push opperation.
 3. **Always keep tracking up to date.** Update task checklists and milestones immediately after completing a step, not just at the very end of the task.
 4. **Consult artifacts first.** Always review existing artifacts (like research reports or design docs) when building a new plan.
 5. **Wait for authorization.** Never move on to executing a plan or writing code before the User gives explicit approval.
