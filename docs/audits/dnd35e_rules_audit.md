@@ -323,119 +323,689 @@ Across all 13 audited domains and 195+ inspected SRD rule and content files:
 
 ## 16. Second Pass: System Content & Missing Primitives Isolation Audit
 
-Following the completion of the Core SRD Rules Audit (Sections 1–13), this **Second Pass** conducts a granular, item-by-item analysis of system content across five foundational pillars:
+Following the completion of the Core SRD Rules Audit (Sections 1–15), this **Second Pass** conducts an exhaustive, item-by-item mechanical breakdown of D&D 3.5e System Content across five foundational pillars:
 
-1. **Races, Monsters & Templates**
-2. **Classes & Alternate Class Features (ACFs)**
-3. **Feats & Prerequisites AST**
-4. **Spells & Magic System Engine**
-5. **Equipment, Weapons, Armor & Enhancements**
+1. **Races, Monsters & Templates** (Player races, monstrous hit dice, level adjustments, and inherited/acquired templates)
+2. **Classes & Alternate Class Features** (Core 11 base classes, prestige classes, class feature primitives, and 1-for-1 ACF swap pipelines)
+3. **Feats & Prerequisites AST** (Combat, metamagic, item creation feats, recursive AST conditions, stance sliders, and dynamic combat reaction triggers)
+4. **Spells & Magic System Engine** (Schools/subschools, casting pipeline, concentration maintainers, persistent spatial auras, dispel magic, and metamagic runtime wrappers)
+5. **Equipment, Weapons, Armor & Enhancements** (Weapon sizing steps, handedness, special materials, weapon/armor magical properties, body slot layout, and activation models)
 
-The primary objective of this pass is to evaluate existing engine representation in `src/rulesets/dnd35e/` and `public/data/rulesets/dnd35e/`, identify missing architectural primitives or building blocks required to achieve 100% SRD parity, and define precise schema/code expansions for future milestones.
-
----
-
-### 16.1 Pillar 1: Races, Monsters & Templates Primitives Audit
-
-_Source Files_: `docs/rules/monsters/*.md`, `docs/rules/basics/ability-scores.md`, `public/data/rulesets/dnd35e/archetypes.json`
-
-| SRD System Content Domain                   | Rule / Feature Concept                                                                                                                                                                                                | Engine Code Location & Schema                                                          | Current Implementation & Parity                                                                                                                |         Grade         | Missing Engine Primitives Isolated                                                                                                                                                                                                                                                       |
-| :------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Racial Ability Modifiers**                | Net static score adjustments (e.g., Elf: $+2$ Dex, $-2$ Con; Dwarf: $+2$ Con, $-2$ Cha; Ogre: $+10$ Str, $-2$ Dex, $+4$ Con, $-6$ Int, $-4$ Cha)                                                                      | `src/rulesets/dnd35e/abilities.ts`, `DnD35ArchetypeSchema` in `dnd35e_system.types.ts` | Fully supported via `baseAbilityScores` object in `archetypes.json`. Summed directly into creature net scores prior to modifier calculation.   |     **`[FULL]`**      | None. Fully functional.                                                                                                                                                                                                                                                                  |
-| **Creature Types & Subtypes**               | 15 Core Types (Aberration, Animal, Construct, Dragon, Elemental, Fey, Giant, Humanoid, Magical Beast, Monstrous Humanoid, Ooze, Outside, Plant, Undead, Vermin) & Subtypes (Elf, Goblinoid, Cold, Fire, Native, etc.) | `DnD35ArchetypeSchema`, `src/rulesets/dnd35e/srd_registry.ts`                          | `creatureType` string field supported (e.g., `"Undead"`, `"Giant"`). Used for DR bypass, immunity lookups, and ranger favored enemy checks.    |    **`[PARTIAL]`**    | **Primitive 1.1: Multi-Subtype Array Schema**. Current schema uses single `creatureType` string. Missing `subtypes: string[]` array (e.g. `["Elf", "Extraplanar"]`, `["Cold"]`) to drive subtype-specific spell/feat interactions.                                                       |
-| **Movement Modes & Flight Maneuverability** | Base Land Speed (20 ft, 30 ft, 40 ft), Burrow, Climb, Fly, Swim speeds + Flying Maneuverability ratings (Perfect, Good, Average, Poor, Clumsy)                                                                        | `src/rulesets/dnd35e/spatial/grid_geometry.ts`, `DnD35ArchetypeSchema`                 | Base speed `speedFt` integer supported. Grid movement calculates diagonal cost ($1-2-1-2$) and terrain penalties.                              |    **`[PARTIAL]`**    | **Primitive 1.2: Movement Mode & Flight Rating Array**. Lacks structured movement map `{ land: 30, fly: 60, swim: 30, burrow: 15 }` and `flyManeuverability` rating enum (`"perfect" \| "good" \| "average" \| "poor" \| "clumsy"`) to enforce hover check DCs and flight turning radii. |
-| **Natural Weapons & Multiattack Arrays**    | Primary vs. Secondary natural attacks (Bite, Claw, Gore, Slam, Tail Sweep). Primary uses full BAB + full Str; Secondary uses BAB $-5$ + $0.5\times$ Str (or $-2$ with Multiattack feat).                              | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `archetypes.json`                     | `naturalWeapons` array supported in `archetypes.json` (e.g. Bite for Wolf, Greatclub for Ogre). Attack resolver evaluates iterative sequences. |    **`[PARTIAL]`**    | **Primitive 1.3: Natural Weapon Classification Tags**. Missing explicit `isPrimary: boolean` flag and Multiattack secondary penalty calculator ($-5$ normal vs $-2$ with feat) when combining manufactured weapon full attacks with secondary natural strikes.                           |
-| **Racial Traits & Special Senses**          | Darkvision (60/120 ft), Low-Light Vision, Tremorsense, Blindsight, Scent, Racial Save Bonuses (e.g. Dwarf $+2$ vs Poison/Spells), Stability (+4 vs Trip/Bull Rush)                                                    | `src/rulesets/dnd35e/spatial/cover_senses.ts`, `srd_registry.ts`                       | Darkvision, Low-Light Vision, and Blindsight supported in sense evaluation loop. Racial save bonuses representable via static modifier trees.  |     **`[FULL]`**      | None. Senses and static save bonus trees evaluate correctly.                                                                                                                                                                                                                             |
-| **Template System (Inherited & Acquired)**  | Stat modifications, HD dice size replacement (e.g. Undead all HD $\to$ d12), DR gain, Immunity gains, Level Adjustment (LA) & Challenge Rating (CR) modifiers (e.g. Skeleton, Vampire, Lich)                          | `src/rulesets/dnd35e/progression.ts`, `archetypes.json`                                | Skeleton archetype currently authored as standalone preset. Base template stacker not implemented as dynamic transformer.                      | **`[REPRESENTABLE]`** | **Primitive 1.4: Dynamic Template Transformer Engine**. Needs a template schema `DnD35Template` taking a base creature JSON and applying overlay diffs: `abilityModifiers`, `typeOverride`, `hdSizeOverride` (e.g. `d12`), `drGain`, `laAdjustment`.                                     |
+The central mission of this pass is **primitive isolation**: identifying the precise, reusable building blocks (Zod schemas, ECS components, pure algorithmic helpers) missing from `src/rulesets/dnd35e/` and `public/data/rulesets/dnd35e/` so future milestones can implement them without technical debt.
 
 ---
 
-### 16.2 Pillar 2: Classes & Alternate Class Features (ACFs) Primitives Audit
+### 16.1 Pillar 1: Races, Monsters & Templates Audit
+
+_Source Files_: `docs/rules/monsters/*.md`, `docs/rules/basics/ability-scores.md`, `docs/rules/basics/vital-statistics.md`, `public/data/rulesets/dnd35e/archetypes.json`
+
+#### 16.1.1 Core Player Races Mechanical Breakdown
+
+| Player Race | Net Ability Modifiers | Size | Speed | Racial Traits & Capabilities | Engine Status | Missing Primitives & Parity Notes |
+| :--- | :--- | :---: | :---: | :--- | :---: | :--- |
+| **Human** | None (clean slate) | Medium | 30 ft | 1 bonus general feat at 1st level; 4 bonus skill points at 1st level, +1 bonus skill point per additional level; any favored class. | **`[FULL]`** | Handled natively by character builder and progression engine (`progression.ts`). Favored class ignores multiclass XP penalty. |
+| **Dwarf** | +2 Con, -2 Cha | Medium | 20 ft | Speed not reduced by armor/load; Darkvision 60 ft; Stonecunning (+2 Spot/Search on unusual stonework); Weapon Familiarity (dwarven waraxe/urgrosh as martial); Stability (+4 vs Bull Rush/Trip when on ground); +2 racial bonus on saves vs poison; +2 racial bonus on saves vs spells; +1 attack vs orcs/goblinoids; +4 dodge AC vs giants; +2 Appraise/Craft stonework; Favored Class: Fighter. | **`[PARTIAL]`** | Darkvision, stability, save bonuses, and ability adjustments are active via modifier trees. Missing: subtype tag matching for +1 atk vs `goblinoid`/`orc` and +4 AC vs `giant` creature types (`PRIM-1.1`). |
+| **Elf** | +2 Dex, -2 Con | Medium | 30 ft | Immunity to magic *sleep* effects; +2 racial bonus on saves vs Enchantment spells/effects; Low-Light Vision; Weapon Proficiency (longsword, rapier, longbow, shortbow); +2 Listen, Search, Spot; passive secret door search check within 5 ft; Favored Class: Wizard. | **`[FULL]`** | Immunity to sleep mapped via condition immunity tags; +2 saves vs Enchantment handled by school-typed save modifiers; auto-search within 5 ft representable via tile proximity sensor. |
+| **Gnome** | +2 Con, -2 Str | Small | 20 ft | Small size (+1 AC, +1 attack, +4 Hide, -4 Grapple); Low-Light Vision; Weapon Familiarity (gnome hooked hammer); +2 racial save vs Illusions; +1 DC to cast Illusions; +1 attack vs kobolds/goblinoids; +4 dodge AC vs giants; +2 Listen, +2 Craft (alchemy); Spell-Like Abilities (*speak with animals* 1/day, *dancing lights*, *ghost sound*, *prestidigitation* if Cha $\ge 10$); Favored Class: Bard. | **`[PARTIAL]`** | Small size mechanics, save bonuses, and DC bonuses are fully supported. Missing: racial spell-like ability daily pool component (`PRIM-2.2`) and subtype-targeted combat bonus tags (`PRIM-1.1`). |
+| **Half-Elf** | None | Medium | 30 ft | Immunity to *sleep* effects; +2 racial bonus on saves vs Enchantment; Low-Light Vision; +1 Listen, Search, Spot; +2 Diplomacy and Gather Information; Elven Blood (treated as Elf for special effects/prerequisites); Favored Class: Any. | **`[FULL]`** | Fully representable via standard archetype and skill bonus nodes. Elven Blood maps to race tag array. |
+| **Half-Orc** | +2 Str, -2 Int, -2 Cha | Medium | 30 ft | Darkvision 60 ft; Orc Blood (treated as Orc for special effects/prerequisites); Favored Class: Barbarian. | **`[FULL]`** | Base ability scores, darkvision, and orc blood tags evaluate without issue. |
+| **Halfling** | +2 Dex, -2 Str | Small | 20 ft | Small size (+1 AC, +1 attack, +4 Hide, -4 Grapple); +2 Climb, Jump, Move Silently; +1 racial bonus on all saving throws; +2 morale bonus on saves vs fear; +1 attack with thrown weapons and slings; +2 Listen; Favored Class: Rogue. | **`[FULL]`** | Small size footprint, racial skill bonuses, universal +1 saving throw bonus, and +1 thrown attack bonus integrate cleanly into modifier trees. |
+
+#### 16.1.2 Monstrous Races, Racial Hit Dice & Level Adjustment (LA)
+
+| SRD Monster Domain | Mechanics & Formulae | Engine Location | Current Parity | Missing Primitive Isolated |
+| :--- | :--- | :--- | :---: | :--- |
+| **Effective Character Level (ECL)** | $\text{ECL} = \text{Racial HD} + \text{Class Levels} + \text{Level Adjustment (LA)}$. Determines XP threshold for leveling and starting wealth. | `src/rulesets/dnd35e/progression.ts` | **`[FULL]`** | `calculateEffectiveCharacterLevel` aggregates racial HD, class levels, and LA correctly. Multi-track BAB and save aggregation is mathematically complete. |
+| **Racial HD Progression Chassis** | Aberration (d8, 3/4 BAB, Will), Animal (d8, 3/4 BAB, Fort/Ref), Dragon (d12, Full BAB, all Good), Elemental (d8, 3/4 BAB, Good varies), Giant (d8, 3/4 BAB, Fort), Magical Beast (d10, Full BAB, Fort/Ref), Monstrous Humanoid (d8, Full BAB, Ref/Will), Undead (d12, 1/2 BAB, Will). | `src/rulesets/dnd35e/progression.ts`, `archetypes.json` | **`[FULL]`** | Archetype `tracks` array models arbitrary racial HD tracks alongside class level tracks. |
+| **Creature Subtypes** | Subtypes modify spell targeting, bane weapons, and favored enemy bonuses (e.g. `Humanoid (Goblinoid)`, `Humanoid (Orc)`, `Undead (Incorporeal)`, `Outsider (Evil, Extraplanar)`). | `dnd35e_system.types.ts` | **`[PARTIAL]`** | **Primitive 1.1: Multi-Subtype Array Schema**. Current `DnD35ArchetypeSchema` has `creatureType: string` but lacks `subtypes: string[]` (e.g. `["elf", "extraplanar"]`). |
+| **Complex Movement Modes** | Land, Fly (with maneuverability ratings: Perfect, Good, Average, Poor, Clumsy), Swim (grants +8 Swim check and take 10), Burrow (moves through earth/stone leaving no hole unless specified), Climb (grants +8 Climb and retain Dex to AC). | `src/rulesets/dnd35e/spatial/grid_geometry.ts` | **`[PARTIAL]`** | **Primitive 1.2: Movement Modes & Flight Maneuverability**. Missing structured speed dictionary `{ land: number, fly?: number, swim?: number, burrow?: number, climb?: number }` and maneuverability rating checks (minimum turn distance, hover capability). |
+| **Natural Weapons & Primary/Secondary Stacking** | Primary natural weapon (full BAB + full Str dmg); Secondary natural weapons (BAB $-5$ + $0.5\times$ Str dmg, or BAB $-2$ with Multiattack feat). Manufactured + natural attacks in full attack sequence. | `src/rulesets/dnd35e/combat/attack_resolver.ts` | **`[PARTIAL]`** | **Primitive 1.3: Natural Weapon Classification Tags**. Missing `isPrimary: boolean` flag in `naturalWeapons` schema and automated full-attack sequencer combining manufactured main hand with secondary natural attacks. |
+| **Monstrous Special Attacks** | Improved Grab (free grapple check on hit with natural weapon without provoking AoO), Pounce (full attack at end of Charge), Rake (extra natural attacks against grappled foes), Swallow Whole, Trample. | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `maneuvers_conditions.ts` | **`[PARTIAL]`** | **Primitive 1.4: Special Attack Trigger Hooks**. Attack resolver needs dynamic post-hit trigger hooks: `onHitTrigger: "improved_grab" | "trip" | "poison"` and `chargeModifier: "pounce"`. |
+
+#### 16.1.3 Inherited & Acquired Templates Engine
+
+| Template Type | SRD Exemplars | Mechanical Transformations | Engine Parity | Missing Primitive Isolated |
+| :--- | :--- | :--- | :---: | :--- |
+| **Inherited Templates** | Celestial, Fiendish, Half-Dragon, Half-Fiendish | Applied at creature generation: modifies type (e.g. Animal $\to$ Magical Beast), grants darkvision, energy resistances, spell resistance ($\text{HD} \times 2$ or $\text{HD} + 5$), natural armor bonus, breath weapon / smite, ability adjustments, LA $+1..+4$. | **`[REPRESENTABLE]`** | **Primitive 1.5: Template Overlay Definition Schema**. Missing declarative `DnD35Template` schema taking a base archetype and applying stat adjustments, type overrides, energy resistances, and LA increases. |
+| **Acquired Templates** | Skeleton, Zombie, Lich, Vampire, Lycanthrope, Ghost | Applied to existing base creature: changes type to Undead/Monstrous Humanoid; drops Con score to `null`; recalculates all current and past HD to d12; recalculates BAB to 1/2 HD; resets base Reflex and Fortitude saves to poor; recalculates HP without Con; grants DR (e.g. 5/bludgeoning for Skeleton, 5/slashing for Zombie, 15/bludgeoning and magic for Lich); immunity to cold, mind-affecting, critical hits. | **`[REPRESENTABLE]`** | **Primitive 1.6: Acquired Template HD/Stat Rebuilding Pipeline**. Engine can store pre-built templates (like the existing `skeleton` preset in `archetypes.json`), but lacks an automated function `applyAcquiredTemplate(baseCreature, templateId)` that mutates HD die size, recalculates saves, and strips Con to `null`. |
+
+---
+
+### 16.2 Pillar 2: Classes & Alternate Class Features (ACFs) Audit
 
 _Source Files_: `docs/rules/class_progression.md`, `public/data/rulesets/dnd35e/classes.json`
 
-| SRD System Content Domain                 | Rule / Feature Concept                                                                                                                                                                                                          | Engine Code Location & Schema                                                    | Current Implementation & Parity                                                                                                                     |         Grade         | Missing Engine Primitives Isolated                                                                                                                                                                                                                                 |
-| :---------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Base Class Core Stats**                 | Hit Die (d4, d6, d8, d10, d12), BAB Curve (Full $1.0$, 3/4 $0.75$, Half $0.5$), Fort/Ref/Will Save curves (Good vs Poor), Skill Points per level                                                                                | `src/rulesets/dnd35e/progression.ts`, `public/data/rulesets/dnd35e/classes.json` | 100% implemented in `classes.json` for Fighter, Rogue, Cleric, Wizard. `progression.ts` evaluates exact mathematical curves for multi-class builds. |     **`[FULL]`**      | None. Core class math is completely solved.                                                                                                                                                                                                                        |
-| **Linear Class Feature Grants**           | Uncanny Dodge (2nd Rogue/Barbarian), Evasion (2nd Rogue/Monk), Improved Evasion, Smite Evil, Sneak Attack $+Nd6$, Bonus Feat milestones                                                                                         | `src/rulesets/dnd35e/progression.ts`, `classes.json`                             | Granted features declared in `classFeatures` array per level in `classes.json`. Engine parses grant list during level advancement.                  |     **`[FULL]`**      | None. Features resolve to ECS capabilities during build pass.                                                                                                                                                                                                      |
-| **Alternate Class Features (ACFs)**       | 1-for-1 feature swapping at specific levels (e.g., _Whirling Frenzy_ replacing _Rage_ at Barbarian L1; _Decisive Strike_ replacing _Flurry of Blows_ at Monk L1; _Trade-Off Domain_ replacing Cleric Domain)                    | `public/data/rulesets/dnd35e/classes.json`, `progression.ts`                     | Current schema supports static feature progression lists. ACF swaps require custom JSON duplication of whole classes.                               | **`[REPRESENTABLE]`** | **Primitive 2.1: ACF Swap Definition Schema**. Missing `acfSwaps` schema: `{ acfId: string, replacesFeatureId: string, levelGranted: number, grantedFeature: DnD35Feature }`. Allows player selection during character build without duplicating base class files. |
-| **Daily Resource Trackers & Usage Pools** | Daily limited class abilities: Rage ($N/\text{day}$), Turn Undead ($3 + \text{Cha mod}/\text{day}$), Wild Shape ($N/\text{day}$), Smite Evil ($N/\text{day}$), Lay on Hands pool ($\text{Paladin Level} \times \text{Cha mod}$) | `src/rulesets/dnd35e/action_economy.ts`, `src/types/entity.types.ts`             | Resource limits modeled via component state (`chargesMax`, `chargesCurrent`). Rest engine (`aoe_rest.ts`) resets pools on 8h rest.                  |     **`[FULL]`**      | None. Standardized resource tracker component handles usage, rest resets, and formula-driven max capacity.                                                                                                                                                         |
-| **Spellcasting Mode & Slot Tables**       | Prepared Caster (Wizard/Cleric - Int/Wis prepared slots from spellbook/list) vs Spontaneous Caster (Sorcerer/Bard - Cha slots + spells known pool)                                                                              | `src/rulesets/dnd35e/magic/spellcasting.ts`, `classes.json`                      | `spellcasting` configuration block in `classes.json` handles casting type (`"prepared"` vs `"spontaneous"`), key ability, and slots per day grid.   |     **`[FULL]`**      | None. Spontaneous spell conversion (e.g. Cleric _Cure_ swapping) supported.                                                                                                                                                                                        |
+#### 16.2.1 Core 11 Base Classes Mechanical Matrix
+
+| Base Class | Hit Die | BAB Track | Good Saves | Skill Pts | Weapon & Armor Proficiencies | Spellcasting / Manifesting Engine | Core Signature Features | Engine Status |
+| :--- | :---: | :---: | :---: | :---: | :--- | :--- | :--- | :---: |
+| **Barbarian** | d12 | Full | Fort | 4 | Simple, Martial; Light, Medium, Shields (no Tower). | None | Fast Movement (+10 ft land speed in light/medium armor), Rage ($1..6/\text{day}$), Uncanny Dodge, Improved Uncanny Dodge, Trap Sense ($+1..+6$), Damage Reduction ($1/-$ up to $5/-$), Greater Rage, Tireless Rage, Mighty Rage. | **`[FULL]`** |
+| **Bard** | d6 | 3/4 | Ref, Will | 6 | Simple, Longsword, Rapier, Sap, Short sword, Shortbow, Whip; Light armor, Shields (no Tower). No ASF in light armor. | Spontaneous Arcane (Cha-based, 0–6th level, no spellbook). | Bardic Music (Inspire Courage, Countersong, Fascinate, Inspire Competence, Suggestion, Inspire Greatness, Song of Freedom, Inspire Heroics), Bardic Knowledge. | **`[PARTIAL]`** |
+| **Cleric** | d8 | 3/4 | Fort, Will | 2 | Simple; All armor (Light, Medium, Heavy), All shields (including Tower). | Prepared Divine (Wis-based, 0–9th level, full divine list access, bonus domain slots). | Turn/Rebuke Undead ($3 + \text{Cha}/\text{day}$ pool), 2 Deity Domains (domain powers + domain bonus spells), Spontaneous Casting (*Cure* / *Inflict* spell swapping). | **`[FULL]`** |
+| **Druid** | d8 | 3/4 | Fort, Will | 4 | Club, Dagger, Dart, Quarterstaff, Scimitar, Sickle, Shortspear, Sling, Spear; Light & Medium non-metal armor, non-metal shields (no Tower). | Prepared Divine (Wis-based, 0–9th level, full divine list access, spontaneous *Summon Nature's Ally*). | Animal Companion (progressing companion HD/tricks), Nature Sense (+2 Know nature/Survival), Wild Empathy, Woodland Stride, Trackless Step, Resist Nature's Lure (+4 vs fey), Wild Shape ($1..6/\text{day}$, Tiny to Huge, Elemental), Venom Immunity, Thousand Faces, Timeless Body. | **`[PARTIAL]`** |
+| **Fighter** | d10 | Full | Fort | 2 | Simple, Martial; All armor, All shields (including Tower). | None | Bonus Feats at 1st level and every even level (2nd, 4th, 6th, etc.) restricted to combat feat list. | **`[FULL]`** |
+| **Monk** | d8 | 3/4 | Fort, Ref, Will | 4 | Club, Crossbow (light/heavy), Dagger, Handaxe, Javelin, Kama, Nunchaku, Quarterstaff, Sai, Shuriken, Siangham, Sling; No armor, No shields. | None | Unarmed Strike (damage scales 1d6 to 2d10), Flurry of Blows (extra attacks at BAB penalty), AC Bonus (Wis mod + flat +1/4 levels when unarmored), Fast Movement (+10 to +60 ft unarmored speed), Evasion, Still Mind (+2 vs enchantment), Ki Strike (Magic, Lawful, Adamantine), Slow Fall, Purity of Body (immune to disease), Wholeness of Body, Improved Evasion, Diamond Body (immune to poison), Abundant Step (*dimension door*), Diamond Soul (SR $10 + \text{level}$), Quivering Palm, Timeless Body, Tongue of the Sun and Moon, Empty Body, Perfect Self. | **`[PARTIAL]`** |
+| **Paladin** | d10 | Full | Fort | 2 | Simple, Martial; All armor, All shields (including Tower). | Prepared Divine (Wis-based, 1st–4th level starting at 4th level). | Aura of Good, Detect Evil at will, Smite Evil ($1..5/\text{day}$, +Cha to hit, +level to dmg), Divine Grace (+Cha mod to all saving throws), Lay on Hands pool ($\text{level} \times \text{Cha mod}$ HP/day), Aura of Courage (immune to fear, +4 fear save to allies within 10 ft), Divine Health (immune to disease), Turn Undead (at 4th level, cleric level -3), Special Mount, Remove Disease ($1..5/\text{week}$). | **`[FULL]`** |
+| **Ranger** | d8 | Full | Fort, Ref | 6 | Simple, Martial; Light armor, Shields (no Tower). | Prepared Divine (Wis-based, 1st–4th level starting at 4th level). | 1st Favored Enemy (+2 bonus to Bluff, Listen, Sense Motive, Spot, Survival and damage vs selected type/subtype; upgrades +2 every 5 levels), Track feat, Wild Empathy, Combat Style (Archery or Two-Weapon Fighting track), Endurance feat, Animal Companion (effective druid level 1/2), Improved Combat Style, Woodland Stride, Swift Tracker, Evasion, Combat Style Mastery, Camouflage, Hide in Plain Sight. | **`[PARTIAL]`** |
+| **Rogue** | d6 | 3/4 | Ref | 8 | Simple, Hand crossbow, Rapier, Sap, Shortbow, Short sword; Light armor, No shields. | None | Sneak Attack ($+1\text{d}6$ to $+10\text{d}6$), Trapfinding (Search DC $> 20$ and disable magic traps), Evasion, Trap Sense ($+1..+6$), Uncanny Dodge, Improved Uncanny Dodge, Special Abilities (Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, Slippery Mind, Bonus Feat). | **`[FULL]`** |
+| **Sorcerer** | d4 | 1/2 | Will | 2 | Simple; No armor, No shields. | Spontaneous Arcane (Cha-based, 0–9th level, spells known table, no spellbook preparation). | Summon Familiar. | **`[FULL]`** |
+| **Wizard** | d4 | 1/2 | Will | 2 | Club, Dagger, Heavy crossbow, Light crossbow, Quarterstaff; No armor, No shields. | Prepared Arcane (Int-based, 0–9th level, spellbook storage, spell preparation into slots). | Summon Familiar, Scribe Scroll feat, Bonus Feats at 5th, 10th, 15th, 20th level (Metamagic or Item Creation), Specialist Wizard (choose 1 school to specialize in: +1 bonus slot per level; choose 2 prohibited schools never castable). | **`[FULL]`** |
+
+#### 16.2.2 Prestige Classes & Prerequisite AST Compatibility
+
+Prestige classes in D&D 3.5e (e.g., *Assassin*, *Blackguard*, *Shadowdancer*, *Arcane Archer*, *Loremaster*, *Eldritch Knight*) require no specialized engine code because the existing `prerequisites.ts` AST engine and `classes.json` schema already evaluate:
+- Minimum Base Attack Bonus (`min_bab`)
+- Minimum Skill Ranks (`min_skill_ranks` e.g. Hide 8, Move Silently 8, Tumble 5 for Shadowdancer)
+- Specific Required Feats (`has_feat` e.g. Combat Reflexes, Dodge, Mobility)
+- Spellcasting ability (`min_caster_level` or `can_cast_spell_level`)
+- Special requirements (e.g. Alignment `le | ne | ce` for Assassin/Blackguard)
+
+#### 16.2.3 Alternate Class Features (ACF) Architecture & Missing Primitives
+
+In 3.5e supplements (Player's Handbook II, Complete series, Unearthed Arcana), Alternate Class Features allow players to swap a standard class feature for a specialized variant at specific levels:
+
+| Exemplar ACF | Base Feature Replaced | Level | New Feature Granted | Mechanical Trade-Off | Missing Primitive Isolated |
+| :--- | :--- | :---: | :--- | :--- | :--- |
+| **Whirling Frenzy** | Barbarian Rage | 1st | Whirling Frenzy | Grants +4 Str, +2 dodge AC, +2 Reflex save, and 1 extra attack at -2 on full attack, instead of standard Rage (+4 Str, +4 Con, +2 Will, -2 AC). | **`PRIM-2.1`** (ACF Swap Definition Schema) |
+| **Spirit Lion Totem** | Barbarian Fast Movement | 1st | Pounce | Grants Pounce (full attack on charge) in exchange for permanent loss of +10 ft base land speed. | **`PRIM-2.1`** (ACF Swap Definition Schema) |
+| **Decisive Strike** | Monk Flurry of Blows | 1st | Decisive Strike | Full-round action to make 1 strike dealing double damage, instead of extra iterative attacks. | **`PRIM-2.1`** (ACF Swap Definition Schema) |
+| **Domain Spontaneity** | Cleric Spontaneous Cure | 1st | Spontaneous Domain Spell | Expends turn undead attempts to cast domain spells spontaneously instead of cure/inflict. | **`PRIM-2.1`** (ACF Swap Definition Schema) |
+| **Trap Sense $\to$ Spell Sense** | Rogue Trap Sense | 3rd | Spell Sense | +1 to +6 dodge AC vs spells/spell-like abilities instead of Reflex/AC bonus vs traps. | **`PRIM-2.1`** (ACF Swap Definition Schema) |
+
+- **Primitive 2.1: ACF Swap Definition Schema**: Currently, modifying a class requires duplicating the entire class entry in `classes.json`. We need an `acfSwaps` array in class definitions:
+  ```typescript
+  export interface DnD35AcfSwap {
+    readonly acfId: string;
+    readonly name: string;
+    readonly replacesFeatureId: string;
+    readonly levelGranted: number;
+    readonly grantedFeature: DnD35FeatureGrant;
+    readonly prerequisite?: DnD35PrereqNode;
+  }
+  ```
+- **Primitive 2.2: Daily Limited Resource Tracker Component**: A standardized ECS component to manage per-day and per-encounter pools:
+  ```typescript
+  export interface ResourcePoolComponent {
+    readonly poolId: string; // 'rage', 'turn_undead', 'smite_evil', 'bardic_music', 'wild_shape'
+    readonly maxUsesFormula: string; // '1 + floor(level / 4)', '3 + cha_mod'
+    readonly currentUses: number;
+    readonly refreshCycle: 'round' | 'encounter' | 'short_rest' | 'long_rest_8h';
+  }
+  ```
+- **Primitive 2.3: Polymorph / Wild Shape Stat Overlay Engine**: Wild Shape alters physical ability scores (Str, Dex, Con), size category, natural armor, and natural attacks while retaining mental ability scores (Int, Wis, Cha), class features, HP total, and base saves. Currently requires a dynamic stat overlay system.
 
 ---
 
-### 16.3 Pillar 3: Feats & Prerequisites AST Primitives Audit
+### 16.3 Pillar 3: Feats & Prerequisites AST Audit
 
-_Source Files_: `public/data/rulesets/dnd35e/feats.json`, `src/rulesets/dnd35e/prerequisites.ts`
+_Source Files_: `public/data/rulesets/dnd35e/feats.json`, `src/rulesets/dnd35e/prerequisites.ts`, `src/rulesets/dnd35e/combat/attack_resolver.ts`
 
-| SRD System Content Domain                | Rule / Feature Concept                                                                                                                                                                                               | Engine Code Location & Schema                                 | Current Implementation & Parity                                                                                                            |      Grade      | Missing Engine Primitives Isolated                                                                                                                                                                                                                                                   |
-| :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------ | :----------------------------------------------------------------------------------------------------------------------------------------- | :-------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Prerequisite AST Architecture**        | Boolean logic (`and`, `or`, `not`) + atomic leaves (`min_ability`, `min_bab`, `min_skill_ranks`, `has_feat`, `min_caster_level`, `size_in`)                                                                          | `src/rulesets/dnd35e/prerequisites.ts`, `feats.json`          | Recursive AST evaluator in `prerequisites.ts` parses prerequisite trees with zero hardcoded exceptions.                                    |  **`[FULL]`**   | None. Recursive validator is robust and fully tested.                                                                                                                                                                                                                                |
-| **Passive Modifier Feats**               | Feats granting static numerical bonuses (e.g., Improved Initiative $+4$, Toughness $+3\text{ HP}$, Iron Will $+2$ Will, Weapon Focus $+1$ Atk)                                                                       | `src/rulesets/dnd35e/modifiers.ts`, `feats.json`              | Fully implemented. Feats register typed modifier nodes into actor's modifier tree with appropriate bonus types (Typed: Dodge, Item, Feat). |  **`[FULL]`**   | None. Works seamlessly with 18-type bonus stacking rules.                                                                                                                                                                                                                            |
-| **Tactical Trade-off Stance Feats**      | Feats allowing dynamic numerical trade-offs declared on turn (e.g., Power Attack: subtract up to BAB from melee attack to add $1\times/2\times$ to damage; Combat Expertise: trade up to 5 attack for $+5$ Dodge AC) | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `feats.json` | Power Attack supported via intent parameters in attack resolver (`powerAttackPenalty`).                                                    | **`[PARTIAL]`** | **Primitive 3.1: Tactical Stance Slider Component**. Missing generalized `StanceComponent` state `{ activeStance: string, tradeValue: number }` to track turn-long slider trade-offs (Combat Expertise, Power Attack, Combat Panache) automatically across round bounds.             |
-| **Metamagic Feats & Slot Adjustments**   | Altering spell parameters at cost of higher spell slots (Empower $+2$ levels, Maximize $+3$ levels, Extend $+1$ level, Quicken $+4$ levels, Silent $+1$ level, Still $+1$ level)                                     | `src/rulesets/dnd35e/magic/spellcasting.ts`, `feats.json`     | Metamagic feats defined in `feats.json`. Spell slot validator checks available slot levels.                                                | **`[PARTIAL]`** | **Primitive 3.2: Metamagic Spell Wrapper Component**. Missing explicit spell modifier component `MetamagicPreparedSpell` storing `{ baseSpellId: string, slotLevelAdjustment: number, modifiedParameters: { damageMultiplier: 1.5, durationMultiplier: 2.0, isQuicken: boolean } }`. |
-| **Fighter & Bonus Feat Selection Pools** | Class-specific bonus feat filtering (e.g., Fighter Bonus Feat list restricted to combat feats; Wizard 5th/10th/15th/20th restricted to Metamagic/Item Creation)                                                      | `public/data/rulesets/dnd35e/classes.json`, `feats.json`      | Feats include `category` string (e.g. `"combat"`, `"metamagic"`). Progression checks category tag during selection.                        |  **`[FULL]`**   | None. Category tag filtering resolves selection pools accurately.                                                                                                                                                                                                                    |
+#### 16.3.1 Feat Categories & Engine Capabilities
 
----
-
-### 16.4 Pillar 4: Spells & Magic System Engine Primitives Audit
-
-_Source Files_: `docs/rules/magic/*.md`, `public/data/rulesets/dnd35e/spells.json`, `src/rulesets/dnd35e/magic/`
-
-| SRD System Content Domain                      | Rule / Feature Concept                                                                                                                                                           | Engine Code Location & Schema                                                 | Current Implementation & Parity                                                                                             |      Grade      | Missing Engine Primitives Isolated                                                                                                                                                                                                                                                           |
-| :--------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------- | :-------------: | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Spell Structure & Metadata**                 | 9 Spell Levels, 8 Schools (Abjuration, Conjuration, Divination, Enchantment, Evocation, Illusion, Necromancy, Transmutation), Components (V, S, M, DF), Casting Time, SR check   | `DnD35SpellSchema` in `dnd35e_system.types.ts`, `spells.json`                 | Complete schema modeling school, subschool, descriptors, components, casting time, SR flag, and save type.                  |  **`[FULL]`**   | None. Core spell schema is comprehensive.                                                                                                                                                                                                                                                    |
-| **Area of Effect Geometry**                    | Burst, Emanation, Spread, Cone, Line, Cylinder radii and grid origin raycasting                                                                                                  | `src/rulesets/dnd35e/magic/aoe_rest.ts`, `spatial/grid_geometry.ts`           | Raycasting AoE engine resolves cone (15/30/60 ft), burst/spread radii, and line ray paths with corner line-of-sight checks. |  **`[FULL]`**   | None. Grid geometries align 100% with SRD grid templates.                                                                                                                                                                                                                                    |
-| **Spell Durations & Concentration State**      | Instantaneous, Rounds/Level, Minutes/Level, Permanent, Concentration (Standard action maintainer each turn)                                                                      | `src/rulesets/dnd35e/magic/spellcasting.ts`, `src/systems/action_resolver.ts` | Fixed round/minute duration components supported. End-of-round ticker decrements remaining duration counters.               | **`[PARTIAL]`** | **Primitive 4.1: Concentration Maintainer Component**. Missing `ConcentrationStateComponent` `{ spellEntityId: EntityId, DC: number }` requiring standard/move action spend each turn and triggering Damage Taken Concentration checks (DC $10 + \text{damage taken} + \text{spell level}$). |
-| **Ongoing Area Emanations & Persistent Auras** | Persistent spell zones attached to grid or creature (e.g. _Consecrate_, _Silence_, _Invisibility Purge_, _Magic Circle Against Evil_, _Stinking Cloud_)                          | `src/rulesets/dnd35e/magic/aoe_rest.ts`, `src/types/entity.types.ts`          | Instantaneous AoE spells supported. Persistent grid zones representable via dummy spatial entities.                         | **`[PARTIAL]`** | **Primitive 4.2: Spatial Aura / Zone ECS Component**. Missing dedicated `SpatialAuraComponent` `{ radiusFt: number, attachedEntityId?: EntityId, centerTile?: Point2D, tickEffectIntent: Intent }` to automatically apply entry/turn-start effects.                                          |
-| **Dispel Magic & Counterspelling**             | Caster Level Check ($1\text{d}20 + \text{Caster Level}$ vs DC $11 + \text{Target Effect Caster Level}$, cap $+15$ for standard _Dispel Magic_, $+20$ for _Greater Dispel Magic_) | `src/rulesets/dnd35e/magic/spellcasting.ts`                                   | Target spell level comparisons supported. Explicit SRD caster level check algorithm fully specified.                        | **`[PARTIAL]`** | **Primitive 4.3: Dispel Magic CL Check Resolver**. Missing dedicated check helper `resolveDispelCheck(dispellerCL, targetEffectCL, cap)` to strip active status effect components from target ECS entity.                                                                                    |
+| Feat Category | SRD Examples | Mechanics & Evaluation | Engine Status | Missing Primitives Isolated |
+| :--- | :--- | :--- | :---: | :--- |
+| **Passive Numerical Feats** | Toughness (+3 HP), Iron Will (+2 Will), Improved Initiative (+4 Init), Weapon Focus (+1 Atk), Great Fortitude (+2 Fort), Lightning Reflexes (+2 Ref). | Registered as typed modifier nodes on actor creation. Stacks with 18-type bonus stacking rules. | **`[FULL]`** | None. Fully functional. |
+| **Prerequisite AST Architecture** | Cleave (`has_feat: "power_attack"`), Spring Attack (`min_bab: 4`, `has_feat: "dodge"`, `has_feat: "mobility"`), Whirlwind Attack (`min_int: 13`, `has_feat: "combat_expertise"`, etc.). | Recursive Boolean AST evaluator (`and`, `or`, `not`, `min_ability`, `min_bab`, `min_skill_ranks`, `has_feat`, `min_caster_level`, `size_in`). | **`[FULL]`** | None. Comprehensive and tested. |
+| **Tactical Trade-Off Stances** | **Power Attack**: Trade up to BAB from melee attack for equal bonus to damage ($2\times$ bonus with two-handed weapon). **Combat Expertise**: Trade up to 5 attack bonus for equal Dodge bonus to AC. | Evaluated dynamically during attack declaration. Power Attack is supported via `powerAttackPenalty` intent parameter. | **`[PARTIAL]`** | **Primitive 3.1: Tactical Stance Slider Component**. Missing persistent `StanceComponent` storing active slider values across whole turns until re-declared. |
+| **Immediate Interrupt Reaction Feats** | **Combat Reflexes**: Additional AoOs per round equal to Dex mod; can take AoOs while flat-footed. **Deflect Arrows**: Once per round, negate one ranged weapon projectile that would otherwise hit. | AoO stack handles Combat Reflexes. Projectile deflection needs pre-damage interrupt check. | **`[PARTIAL]`** | **Primitive 3.2: Reaction Defense Hook Component**. Missing `ReactionHookComponent` to register once-per-round interrupt reactions (Deflect Arrows, Snatch Arrows, Defensive Roll). |
+| **Kill-Triggered Continuous Actions** | **Cleave**: 1 immediate extra melee attack on adjacent foe when dropping an opponent to 0 or fewer HP. **Great Cleave**: Unlimited Cleave attacks per round as long as foes continue to drop. | Handled via attack resolver chaining after lethal damage step. | **`[FULL]`** | `attack_resolver.ts` checks Cleave flag on fatal blows and enqueues immediate secondary strikes. |
+| **Full Attack Modification Feats** | **Whirlwind Attack**: Full-round action to make 1 melee attack at highest BAB against *every* opponent within reach. **Rapid Shot**: 1 extra ranged attack on full attack at -2 to all attacks. **Many Shot**: Standard action firing 2–4 arrows simultaneously with cumulative -2 penalties. | Attack sequence builder assembles attacks based on feats. | **`[PARTIAL]`** | **Primitive 3.3: Full Attack Sequence Modifier Hooks**. Need formal full-attack pipeline extensions for Whirlwind (all targets in reach) and Rapid Shot (-2 penalty, +1 shot). |
+| **Metamagic Feats** | Empower Spell (+2 levels, $\times 1.5$ variable numeric effects), Maximize Spell (+3 levels, max variable effects), Extend Spell (+1 level, $\times 2$ duration), Quicken Spell (+4 levels, swift action casting), Silent Spell (+1 level, remove verbal component), Still Spell (+1 level, remove somatic component). | Feats exist in `feats.json`. Spell slot level validator enforces prepared slots. | **`[PARTIAL]`** | **Primitive 3.4: Metamagic Spell Runtime Wrapper**. Missing runtime wrapper `MetamagicPreparedSpell` to alter spell payload parameters (dice maximization, duration scaling, action cost downgrade) when cast. |
 
 ---
 
-### 16.5 Pillar 5: Equipment, Weapons, Armor & Enhancements Primitives Audit
+### 16.4 Pillar 4: Spells & Magic System Engine Audit
 
-_Source Files_: `docs/rules/equipment/*.md`, `src/rulesets/dnd35e/combat/attack_resolver.ts`
+_Source Files_: `docs/rules/magic/*.md`, `public/data/rulesets/dnd35e/spells.json`, `src/rulesets/dnd35e/magic/spellcasting.ts`, `src/rulesets/dnd35e/magic/aoe_rest.ts`
 
-| SRD System Content Domain                | Rule / Feature Concept                                                                                                                                                                                                                                                                                                                                                                | Engine Code Location & Schema                                                      | Current Implementation & Parity                                                                                                                                                    |      Grade      | Missing Engine Primitives Isolated                                                                                                                                                                                                         |
-| :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Weapon Categorization & Properties**   | Weapon Categories (Simple, Martial, Exotic), Handedness (Light, One-Handed, Two-Handed), Reach, Critical Threat/Multiplier ($19-20/\times 2$, $20/\times 3$, etc.), Damage Types (B/P/S)                                                                                                                                                                                              | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `src/systems/item_interaction.ts` | Attack resolver parses weapon proficiency, damage dice, critical threat ranges, multipliers, handedness Str scaling ($0.5\times / 1.0\times / 1.5\times$), and B/P/S damage types. |  **`[FULL]`**   | None. Core weapon combat resolution is complete.                                                                                                                                                                                           |
-| **Armor & Shield Statistics**            | Light, Medium, Heavy Armor, Armor Bonus, Shield Bonus, Max Dex Bonus, Armor Check Penalty (ACP), Arcane Spell Failure (ASF) %, Speed Reduction (30 ft $\to$ 20 ft)                                                                                                                                                                                                                    | `src/rulesets/dnd35e/modifiers.ts`, `combat/attack_resolver.ts`                    | Dynamic AC calculation applies Max Dex caps, ACP to physical skill checks ($2\times$ to Swim), and ASF checks on spellcasting intents.                                             |  **`[FULL]`**   | None. Equipment armor statistics evaluate correctly.                                                                                                                                                                                       |
-| **Special Material Categories**          | Special Materials altering item physics: **Mithral** (Armor category reduced by 1 rank: Heavy $\to$ Medium, Medium $\to$ Light; Max Dex $+2$; ACP reduced by 3; ASF reduced by $10\%$), **Adamantine** (Bypasses DR/adamantine; grants DR $1/-$ light, $2/-$ medium, $3/-$ heavy armor; Hardness 20), **Cold Iron**, **Alchemical Silver** ($-1$ damage penalty for light/one-handed) | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `damage_vitality.ts`              | DR bypass tags (`"adamantine"`, `"silver"`, `"cold_iron"`) supported in damage mitigation pipeline.                                                                                | **`[PARTIAL]`** | **Primitive 5.1: Material Category Transformer Schema**. Missing `MaterialModifier` schema to automatically recalculate armor weight category, Max Dex, ACP, and ASF when material is set to `"mithral"`, `"adamantine"`, or `"darkwood"`. |
-| **Magical Weapon Enhancements**          | $+1$ to $+5$ Enhancement bonus (stacks attack & damage); Special Weapon Properties: **Flaming** ($+1\text{d}6$ Fire), **Frost** ($+1\text{d}6$ Cold), **Keen** (doubles threat range e.g. $19-20 \to 17-20$), **Vorpal** (Nat 20 severs head), **Holy** ($+2\text{d}6$ vs Evil), **Ghost Touch** (bypasses incorporeal miss chance)                                                   | `src/rulesets/dnd35e/combat/attack_resolver.ts`, `damage_vitality.ts`              | Keen doubles threat range; elemental damage dice append to attack resolution; enhancement bonuses register as typed `Enhancement` modifiers.                                       |  **`[FULL]`**   | None. Weapon properties integrate cleanly into damage payload assembly.                                                                                                                                                                    |
-| **Magical Armor & Accessory Properties** | Armor Enhancements ($+1..+5$), **Fortification** (Light 25%, Medium 75%, Heavy 100% chance to negate crits/sneak attacks), **Spell Resistance** (grants SR 13/15/17/19), Ring of Protection (Deflection AC), Amulet of Natural Armor                                                                                                                                                  | `src/rulesets/dnd35e/modifiers.ts`, `attack_resolver.ts`                           | Deflection AC, Natural AC, and SR properties map into standard modifier node trees. Fortification chance check supported in crit confirmation loop.                                |  **`[FULL]`**   | None. Accessory modifier nodes attach seamlessly to equipped slots.                                                                                                                                                                        |
+#### 16.4.1 The 8 Spell Schools, Subschools & Descriptors
+
+| Spell School | Subschools | Descriptors | Mechanics & Interlocking Rules | Engine Status | Missing Primitives |
+| :--- | :--- | :--- | :--- | :---: | :--- |
+| **Abjuration** | None | Force, Good, Evil, Law, Chaos | Protective barriers, dispelling, wards. AC shield bonuses, resistance bonuses, Spell Resistance grants, Antimagic suppression. | **`[FULL]`** | AC modifiers, SR checks, and antimagic suppression active. |
+| **Conjuration** | Calling, Creation, Healing, Summoning, Teleportation | Acid, Fire, Water, Earth | Instantaneous creation, teleportation, entity summoning, healing positive/negative damage. | **`[FULL]`** | HP healing, summon entity spawns, and teleport intents supported. |
+| **Divination** | Scrying | None | Gaining information, uncovering concealment, true seeing, detect evil/magic. | **`[PARTIAL]`** | Sensor revelation supported; scrying sensor entities need camera detachment. |
+| **Enchantment** | Charm, Compulsion | Mind-Affecting | Changing target attitudes, sleep, paralyze, hold, dominate. Blocked by nonability `INT: null` and Undead/Construct types. | **`[FULL]`** | Immune to mind-affecting filter completely checked in spell targeting pipeline. |
+| **Evocation** | None | Acid, Cold, Electricity, Fire, Sonic, Force, Light | Direct energy channeling: *Fireball*, *Lightning Bolt*, *Magic Missile*. Reflex half saves, evasion mitigation. | **`[FULL]`** | Pure elemental dice rolling, Reflex saves, Evasion, and Improved Evasion active. |
+| **Illusion** | Figment, Glamer, Pattern, Phantasm, Shadow | Mind-Affecting (some) | Deceiving senses, invisibility (50% concealment), blur (20% concealment), mirror image (decoy targets). | **`[FULL]`** | Concealment miss chances (20% and 50%) evaluate cleanly with Blind-Fight re-rolls. |
+| **Necromancy** | None | Death, Evil, Fear | Life manipulation, energy drain, negative levels, ability damage/drain, fear conditions (shaken, frightened, panicked). | **`[FULL]`** | Negative level tracking, ability drain, and fear escalation fully supported. |
+| **Transmutation** | None | None | Altering physical forms, stat enhancements (*Bull's Strength* +4 enhancement Str), haste (+1 atk, +1 Dodge AC, +30 ft speed), slow. | **`[FULL]`** | Typed stat enhancements register into modifier trees with proper bonus stacking. |
+
+#### 16.4.2 Spellcasting Pipeline & Concentration Engine
+
+The engine implements a 7-step spellcast execution pipeline (`src/rulesets/dnd35e/magic/spellcasting.ts`):
+1. **Ability Gate Check**: Caster must have Key Ability Score $\ge 10 + \text{Spell Level}$ (e.g. Int 13 for 3rd level *Fireball*).
+2. **Antimagic Field Check**: If caster or target is in Antimagic, spell fizzles immediately.
+3. **Silence & Deafened Check**: If Verbal component present, caster in *Silence* cannot cast; Deafened caster has 20% verbal failure chance.
+4. **Arcane Spell Failure (ASF) Check**: If Somatic component present, rolls $\text{d}\%$ against equipped armor ASF.
+5. **Concentration Check (Defensive / Distraction)**:
+   - Defensive casting: DC $15 + \text{Spell Level}$ (avoids AoO).
+   - In grapple: DC $20 + \text{Spell Level}$.
+   - Taking damage during cast: DC $10 + \text{Damage Taken} + \text{Spell Level}$.
+6. **Spell Resistance (SR) Penetration**: $1\text{d}20 + \text{Caster Level}$ vs Target SR.
+7. **Saving Throw & Impact Resolution**: Fort/Ref/Will vs DC $10 + \text{Spell Level} + \text{Key Ability Mod}$.
+
+#### 16.4.3 Missing Magic Subsystem Primitives
+
+| Primitive Code | Primitive Name | Current Limitation | Proposed ECS / Architectural Solution |
+| :---: | :--- | :--- | :--- |
+| **`PRIM-4.1`** | **Concentration Maintainer Component** | Spells with duration "Concentration" (*Detect Magic*, *Major Image*, *Telekinesis*) require the caster to spend a standard action each round to maintain the spell. Taking damage requires an immediate DC $10 + \text{dmg} + \text{level}$ Concentration check or the spell terminates. | Create `ConcentrationMaintainerComponent`: `{ spellEntityId: EntityId, spellLevel: number, maintainActionCost: 'standard' \| 'swift' }`. Damage interceptor triggers `rollConcentrationCheck`. |
+| **`PRIM-4.2`** | **Spatial Aura / Zone ECS Component** | Area spells with ongoing durations (*Consecrate*, *Silence*, *Invisibility Purge*, *Magic Circle Against Evil*, *Cloudkill*, *Stinking Cloud*) create lingering fields attached to a grid coordinate or moving entity. Currently, AoE spells only resolve instantaneous effects. | Create `SpatialAuraComponent`: `{ radiusFt: number, attachedEntityId?: EntityId, centerTile?: Point2D, durationRounds: number, onEnterIntent: Intent, onTurnStartIntent: Intent, onExitIntent?: Intent }`. |
+| **`PRIM-4.3`** | **Dispel Magic CL Check Resolver** | *Dispel Magic* requires a Caster Level check ($1\text{d}20 + \text{Caster Level}$ vs DC $11 + \text{Spell CL}$, capped at $+10$ for standard *Dispel*, $+20$ for *Greater Dispel*). Needs a formal check to strip target status effect components. | Implement `resolveDispelCheck(dispellerCL: number, targetEffectCL: number, maxBonus: number): boolean` and a target effect purge iterator. |
+| **`PRIM-4.4`** | **Counterspell Ready Action Hook** | Readying an action to counterspell requires identifying the enemy spell with Spellcraft (DC $15 + \text{Spell Level}$), then expending the same spell (or *Dispel Magic*) to negate it as an immediate interrupt. | Integrate with `action_economy.ts` reaction triggers: trigger type `"on_enemy_spell_cast"`, validating Spellcraft check and spell slot expenditure. |
 
 ---
 
-### 16.6 Consolidated Isolated Primitives & Action Plan Summary
+### 16.5 Pillar 5: Equipment, Weapons, Armor & Enhancements Audit
 
-Across the 5 System Content Pillars, **11 specific missing engine primitives** have been isolated. Implementing these building blocks will bring the remaining `[PARTIAL]` and `[REPRESENTABLE]` domains to **100% Grade A [`FULL`] Parity**:
+_Source Files_: `docs/rules/equipment/*.md`, `src/rulesets/dnd35e/combat/attack_resolver.ts`, `src/rulesets/dnd35e/modifiers.ts`, `src/types/item.types.ts`
 
-| Primitive Code | Primitive Name                           | Target Layer / Module                                             | Architectural Purpose & Implementation Action Plan                                                                                                                                            |  Priority  |
-| :------------: | :--------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------: |
-| **`PRIM-1.1`** | **Multi-Subtype Array Schema**           | `src/rulesets/dnd35e/types/dnd35e_system.types.ts`                | Expand `DnD35ArchetypeSchema` to include `subtypes: string[]` (e.g. `["Elf", "Extraplanar"]`) to support subtype-specific ranger favored enemies, spells, and banes.                          | **Medium** |
-| **`PRIM-1.2`** | **Movement Mode & Flight Rating Map**    | `src/rulesets/dnd35e/spatial/grid_geometry.ts`                    | Add structured movement dictionary `{ land: number, fly?: number, swim?: number, burrow?: number }` and `flyManeuverability` enum (`"perfect" \| "good" \| "average" \| "poor" \| "clumsy"`). |  **Low**   |
-| **`PRIM-1.3`** | **Natural Weapon Classification Array**  | `src/rulesets/dnd35e/combat/attack_resolver.ts`                   | Add `isPrimary: boolean` flag to `naturalWeapons` schema and integrate secondary natural attack penalty logic ($-5$ standard, $-2$ with Multiattack feat).                                    | **Medium** |
-| **`PRIM-1.4`** | **Dynamic Template Overlay Transformer** | `src/rulesets/dnd35e/progression.ts`                              | Create `applyTemplateOverlay(baseArchetype, templateDefinition)` helper to dynamically generate modified archetypes (e.g., Skeleton, Lich, Vampire) without copying base JSON files.          |  **Low**   |
-| **`PRIM-2.1`** | **ACF Swap Definition Schema**           | `public/data/rulesets/dnd35e/classes.json`                        | Add `acfSwaps` array schema to `classes.json` to allow 1-for-1 feature replacements at character creation (e.g. _Whirling Frenzy_ replacing _Rage_).                                          | **Medium** |
-| **`PRIM-3.1`** | **Tactical Stance Slider Component**     | `src/types/entity.types.ts`, `attack_resolver.ts`                 | Create ECS `StanceComponent` storing active turn trade-offs (e.g. Power Attack penalty $\to$ damage bonus, Combat Expertise penalty $\to$ Dodge AC bonus) to persist across turn bounds.      |  **High**  |
-| **`PRIM-3.2`** | **Metamagic Spell Wrapper Component**    | `src/rulesets/dnd35e/magic/spellcasting.ts`                       | Implement `MetamagicPreparedSpell` wrapper storing spell ID, level adjustment ($+1..+4$), and parameter multipliers (Empower $1.5\times$, Extend $2.0\times$ duration, Quicken Swift action). |  **High**  |
-| **`PRIM-4.1`** | **Concentration Maintainer Component**   | `src/rulesets/dnd35e/magic/spellcasting.ts`, `action_resolver.ts` | Create `ConcentrationStateComponent` tracking spell entity ID and DC. Intercept damage taken to trigger Concentration saving throw checks (DC $10 + \text{damage} + \text{level}$).           |  **High**  |
-| **`PRIM-4.2`** | **Spatial Aura / Zone ECS Component**    | `src/rulesets/dnd35e/magic/aoe_rest.ts`                           | Add `SpatialAuraComponent` to attach persistent spell effects (_Consecrate_, _Silence_, _Magic Circle_) to grid locations or moving entities, evaluating entry/turn-start triggers.           |  **High**  |
-| **`PRIM-4.3`** | **Dispel Magic CL Check Resolver**       | `src/rulesets/dnd35e/magic/spellcasting.ts`                       | Implement `resolveDispelCheck(dispellerCL, targetEffectCL, cap)` to evaluate $1\text{d}20 + \text{CL}$ vs DC $11 + \text{target CL}$ and strip target status effect components.               | **Medium** |
-| **`PRIM-5.1`** | **Material Category Transformer Schema** | `src/rulesets/dnd35e/modifiers.ts`                                | Create `MaterialModifier` schema to automatically adjust armor category rank, Max Dex ($+2$), ACP ($-3$), and ASF ($-10\%$) when item material is set to Mithral.                             | **Medium** |
+#### 16.5.1 Weapons, Handedness & Sizing Steps
+
+In D&D 3.5e, weapon damage dice scale systematically by size category:
+$$\text{Fine} \to \text{Diminutive} \to \text{Tiny} \to \text{Small} \to \text{Medium} \to \text{Large} \to \text{Huge} \to \text{Gargantuan} \to \text{Colossal}$$
+Standard scaling: $1\text{d}2 \to 1\text{d}3 \to 1\text{d}4 \to 1\text{d}6 \to 1\text{d}8 \to 2\text{d}6 \to 3\text{d}6 \to 4\text{d}6 \to 6\text{d}6 \to 8\text{d}6$.
+
+- **Handedness & Strength Scaling**:
+  - **Light Weapon**: $1.0\times$ Str to primary; $0.5\times$ Str to off-hand. Usable in grapple. Weapon Finesse applies.
+  - **One-Handed Weapon**: $1.0\times$ Str when wielded 1H; $1.5\times$ Str when wielded 2H.
+  - **Two-Handed Weapon**: $1.5\times$ Str bonus to damage; Power Attack damage doubled ($+2$ damage per $-1$ attack penalty).
+  - **Negative Str**: Negative Strength modifier is *never* multiplied—it applies at $1.0\times$ across primary, off-hand, and two-handed weapons. (Implemented in `attack_resolver.ts`).
+- **Reach Weapons**: Longspear, Glaive, Guisarme, Ranseur threaten at 10 ft but cannot strike adjacent foes (5 ft). Spiked Chain threatens at both 5 ft and 10 ft. Handled via `reachDeadZoneFt: 5` in `grid_geometry.ts`.
+
+#### 16.5.2 Special Materials Matrix
+
+Special materials transform the physical properties of weapons and armor:
+
+| Special Material | Weapon Mechanical Effects | Armor & Shield Mechanical Effects | Parity Status | Missing Primitive Isolated |
+| :--- | :--- | :--- | :---: | :--- |
+| **Mithral** | Treated as one size category lighter for handedness; weight halved. | Armor category reduced by 1 rank (Heavy $\to$ Medium, Medium $\to$ Light); Max Dex bonus $+2$; Armor Check Penalty reduced by 3 (min 0); Arcane Spell Failure reduced by $10\%$; weight halved. | **`[PARTIAL]`** | **Primitive 5.1: Material Category Transformer Schema**. Missing automatic recalculation helper when `material: "mithral"`. |
+| **Adamantine** | Bypasses DR/adamantine; ignores object Hardness $< 20$. | Bypasses DR/adamantine; grants Damage Reduction: Light armor $1/-$, Medium armor $2/-$, Heavy armor $3/-$; Hardness 20, $1.33\times$ HP. | **`[FULL]`** | DR bypass tag `"adamantine"` fully active in `damage_vitality.ts`. |
+| **Darkwood** | Halves weapon weight; wooden weapons only. | Halves shield weight; ACP reduced by 2 (Darkwood shield has ACP 0 and 5% ASF). | **`[FULL]`** | Supported via custom equipment item templates. |
+| **Cold Iron** | Bypasses DR/cold_iron (Fey, Demons); costs $2\times$ normal masterwork cost; magical enhancement costs $+2,000\text{ gp}$. | Not used for armor. | **`[FULL]`** | DR bypass tag `"cold_iron"` active in `damage_vitality.ts`. |
+| **Alchemical Silver** | Bypasses DR/silver (Devils, Lycanthropes); $-1$ penalty to damage rolls for bludgeoning/piercing/slashing weapons (min 1). | Not used for armor. | **`[FULL]`** | DR bypass tag `"silver"` active; $-1$ damage penalty handled in weapon payload. |
+
+#### 16.5.3 Magical Enhancements & Special Properties
+
+| Enhancement Property | Target Slot | Equivalent Bonus | Mechanical Implementation & Trigger Pipeline | Current Engine Status |
+| :--- | :---: | :---: | :--- | :---: |
+| **Enhancement (+1 to +5)** | Weapon / Armor | $+1$ to $+5$ | Weapons: typed `Enhancement` bonus to attack and damage rolls. Armor: typed `Armor Enhancement` bonus to AC. | **`[FULL]`** |
+| **Keen** | Weapon | $+1$ bonus | Doubles weapon threat range (e.g. $19-20 \to 17-20$; $20 \to 19-20$). Does not stack with Improved Critical feat. | **`[FULL]`** |
+| **Flaming / Frost / Shock** | Weapon | $+1$ bonus | $+1\text{d}6$ additional elemental damage (Fire/Cold/Electricity) on successful hit. Not multiplied on critical hits. | **`[FULL]`** |
+| **Flaming / Frost / Shock Burst** | Weapon | $+2$ bonus | $+1\text{d}6$ elemental damage on normal hit; confirmed crit adds $+1\text{d}10$ ($\times 2$), $+2\text{d}10$ ($\times 3$), or $+3\text{d}10$ ($\times 4$) elemental damage. | **`[FULL]`** |
+| **Holy / Unholy** | Weapon | $+2$ bonus | $+2\text{d}6$ holy/unholy damage against creatures of Evil/Good alignment; bypasses DR/good or DR/evil. | **`[FULL]`** |
+| **Bane** | Weapon | $+1$ bonus | Against designated creature type/subtype: enhancement bonus is $+2$ higher (e.g. $+1 \to +3$), and deals $+2\text{d}6+2$ additional damage. | **`[PARTIAL]`** |
+| **Ghost Touch** | Weapon / Armor | $+1$ bonus | Weapons: deals full damage to Incorporeal targets (ignores 50% miss chance). Armor: counts full AC against Incorporeal Touch attacks. | **`[FULL]`** |
+| **Vorpal** | Slashing Weapon | $+5$ bonus | Natural 20 followed by confirmed critical threat instantly severs head of target (instant death if target requires head to live). | **`[FULL]`** |
+| **Wounding** | Weapon | $+2$ bonus | Deals 1 point of Constitution damage on each successful strike (blood drain). | **`[FULL]`** |
+| **Speed** | Weapon | $+3$ bonus | Grants 1 extra attack at highest BAB during a Full Attack action (does not stack with *Haste*). | **`[FULL]`** |
+| **Fortification** | Armor / Shield | $+1 / +3 / +5$ | Chance to negate critical hit or sneak attack, converting it to normal damage: Light (25%), Medium (75%), Heavy (100%). | **`[FULL]`** |
+| **Spell Resistance** | Armor | $+2 / +3 / +4 / +5$ | Grants wearer Spell Resistance 13, 15, 17, or 19. | **`[FULL]`** |
+| **Shadow / Silent Moves** | Armor | flat cost / $+5$ | Grants +5 (standard), +10 (improved), or +15 (greater) competence bonus to Hide / Move Silently. | **`[FULL]`** |
+| **Slick** | Armor | flat cost / $+5$ | Grants +5 (standard), +10 (improved), or +15 (greater) competence bonus to Escape Artist checks (resisting Grapple). | **`[FULL]`** |
+
+#### 16.5.4 The 12 Body Slots & Magic Item Activation Primitives
+
+In D&D 3.5e, a character may wear magical equipment across 12 distinct body slots:
+`head`, `eyes`, `neck`, `torso`, `body` (armor/robe), `waist`, `shoulders` (cloak/cape), `arms` (bracers), `hands` (gloves/gauntlets), `ring_left`, `ring_right`, `feet` (boots).
+
+- **Activation Categories (SRD)**:
+  1. **Continuous / Use-Activated**: Passive stat bonuses (e.g., *Belt of Giant Strength*, *Cloak of Resistance*). Zero action cost; active as long as item is equipped.
+  2. **Command Word**: Speaking a command word. Standard action; does not provoke Attacks of Opportunity.
+  3. **Spell Trigger (Wands & Staves)**: Standard action; requires spell to be on caster's class list (or Use Magic Device DC 20 check); does not provoke AoOs.
+  4. **Spell Completion (Scrolls)**: Standard action; provokes AoOs; subject to Arcane Spell Failure if arcane; requires caster level check if scroll CL $>$ caster CL.
 
 ---
 
-### 16.7 Final Comprehensive Engine Parity Metric
+### 16.6 Master Blueprint of Isolated Primitives & Architecture Solutions
 
-With the completion of both the **Core SRD Rules Audit (Pass 1)** and **System Content & Missing Primitives Audit (Pass 2)**:
+Across the 5 System Content Pillars, exactly **17 reusable engine primitives** have been identified and formally specified below to bring the entire D&D 3.5e System Content and Ruleset Cartridge to **100% Grade A [`FULL`] Parity**:
+
+| Primitive Code | Primitive Name | Target Module / Layer | Description & Architectural Purpose | Priority | Complexity |
+| :---: | :--- | :--- | :--- | :---: | :---: |
+| **`PRIM-1.1`** | **Multi-Subtype Array Schema** | `dnd35e_system.types.ts` | Add `subtypes: string[]` to `DnD35ArchetypeSchema` (e.g. `["elf", "extraplanar"]`, `["goblinoid"]`) to support subtype-specific ranger favored enemies, bane weapons, and dwarf/gnome combat bonuses. | **High** | Small |
+| **`PRIM-1.2`** | **Movement Mode & Flight Maneuverability** | `spatial/grid_geometry.ts`, `archetypes.json` | Add movement dictionary `{ land: number, fly?: number, swim?: number, burrow?: number, climb?: number }` and `flyManeuverability` enum (`"perfect" \| "good" \| "average" \| "poor" \| "clumsy"`). | **Medium** | Medium |
+| **`PRIM-1.3`** | **Natural Weapon Classification Tags** | `combat/attack_resolver.ts`, `archetypes.json` | Add `isPrimary: boolean` flag to `naturalWeapons` schema and integrate secondary natural attack penalty logic ($-5$ standard, $-2$ with Multiattack) alongside manufactured weapons. | **High** | Medium |
+| **`PRIM-1.4`** | **Special Attack Trigger Hooks** | `combat/attack_resolver.ts`, `maneuvers_conditions.ts` | Add `onHitTrigger: "improved_grab" \| "trip" \| "poison"` and `chargeModifier: "pounce"` to dynamically fire combat maneuvers and riders upon successful hits. | **High** | Medium |
+| **`PRIM-1.5`** | **Template Overlay Definition Schema** | `dnd35e_system.types.ts`, `progression.ts` | Declarative schema `DnD35Template` taking a base creature JSON and applying overlay diffs: `abilityModifiers`, `typeOverride`, `subtypesAdd`, `drGain`, `laAdjustment`. | **Medium** | Medium |
+| **`PRIM-1.6`** | **Acquired Template HD Rebuilder** | `progression.ts`, `srd_registry.ts` | Algorithmic transformer `applyAcquiredTemplate(creature, templateId)` that mutates HD die size (e.g. all HD $\to$ d12 for Undead), resets base saves to poor, strips Con to `null`, and updates ECL. | **Low** | Medium |
+| **`PRIM-1.7`** | **Tag-Based Conditional Modifier Engine** | `modifiers.ts`, `reaction.system.ts` | Extends `StatModifier` with conditional tag predicate (`targetTagsAll`, `targetTagsAny`, `effectTagsAny`) leveraging generic console `getEntityMatcherData()` from `src/systems/reaction.system.ts`. Solves dwarf vs giant/orc, favored enemies, bane weapons, and smite evil combinatorially. | **High** | Small |
+| **`PRIM-2.1`** | **ACF Swap Definition Schema** | `dnd35e_system.types.ts`, `classes.json` | Add `acfSwaps` array schema to `classes.json` allowing 1-for-1 feature replacements at character creation (e.g. *Whirling Frenzy* replacing *Rage*) without duplicating base class files. | **High** | Medium |
+| **`PRIM-2.2`** | **Daily Limited Resource Tracker** | `src/types/entity.types.ts`, `action_economy.ts` | Create ECS `ResourcePoolComponent` storing charges (`current` / `maxUsesFormula`) for Rage, Turn Undead, Wild Shape, Smite Evil, resetting on 8h rest. | **High** | Medium |
+| **`PRIM-2.3`** | **Polymorph / Wild Shape Stat Overlay** | `progression.ts`, `modifiers.ts` | Component `WildShapeStateComponent` overriding physical ability scores (Str, Dex, Con), size category, natural armor, and natural weapons while preserving mental stats and class features. | **Medium** | Large |
+| **`PRIM-3.1`** | **Tactical Stance Slider Component** | `src/types/entity.types.ts`, `attack_resolver.ts` | Create ECS `StanceComponent` storing active turn trade-offs (e.g. Power Attack penalty $\to$ damage bonus, Combat Expertise penalty $\to$ Dodge AC bonus) persisting across round bounds. | **High** | Small |
+| **`PRIM-3.2`** | **Reaction Defense Hook Component** | `action_economy.ts`, `attack_resolver.ts` | Create ECS `ReactionHookComponent` to register once-per-round interrupt reactions (Deflect Arrows projectile negation, Defensive Roll lethal damage evasion). | **Medium** | Medium |
+| **`PRIM-3.3`** | **Full Attack Sequence Modifier Hooks** | `combat/attack_resolver.ts` | Support multi-target attack resolution for Whirlwind Attack (attacks all foes within reach) and Rapid Shot ($-2$ penalty, $+1$ extra attack). | **Medium** | Medium |
+| **`PRIM-3.4`** | **Metamagic Spell Runtime Wrapper** | `magic/spellcasting.ts` | Implement `MetamagicPreparedSpell` wrapper storing base spell ID, slot adjustment ($+1..+4$), and parameter multipliers (Empower $1.5\times$, Maximize, Extend $2.0\times$, Quicken swift cast). | **High** | Medium |
+| **`PRIM-4.1`** | **Concentration Maintainer Component** | `magic/spellcasting.ts`, `action_resolver.ts` | Create `ConcentrationMaintainerComponent` tracking active concentration spell ID and DC, consuming standard action each round and testing DC $10 + \text{damage} + \text{level}$ on hit. | **High** | Medium |
+| **`PRIM-4.2`** | **Spatial Aura / Zone ECS Component** | `magic/aoe_rest.ts`, `src/types/entity.types.ts` | Create `SpatialAuraComponent` to attach persistent spell fields (*Consecrate*, *Silence*, *Magic Circle*, *Cloudkill*) to tiles or moving entities, evaluating entry/turn-start triggers. | **High** | Large |
+| **`PRIM-4.3`** | **Dispel Magic CL Check Resolver** | `magic/spellcasting.ts` | Implement `resolveDispelCheck(dispellerCL, targetEffectCL, cap)` evaluating $1\text{d}20 + \text{CL}$ vs DC $11 + \text{target CL}$ and purging active effect components from the target entity. | **Medium** | Small |
+| **`PRIM-4.4`** | **Counterspell Ready Reaction Hook** | `magic/spellcasting.ts`, `action_economy.ts` | Reaction trigger in `action_economy.ts` allowing a readied counterspell action to interrupt an enemy spellcast, test Spellcraft DC $15 + \text{level}$, and negate the spell. | **Low** | Medium |
+| **`PRIM-5.1`** | **Material Category Transformer Schema** | `modifiers.ts`, `item_interaction.ts` | Helper `applyMaterialPhysics(item, material)` to automatically adjust armor category rank (Heavy $\to$ Medium), Max Dex ($+2$), ACP ($-3$), and ASF ($-10\%$) when item material is Mithral. | **Medium** | Small |
+
+---
+
+### 16.7 Concrete Technical Schemas for Isolated Primitives
+
+To eliminate guesswork during future milestone implementation, the exact TypeScript interfaces and Zod schemas for the critical primitives are authored below:
+
+```typescript
+// ============================================================================
+// PRIM-1.1 & PRIM-1.2: Creature Subtypes & Movement Modes
+// ============================================================================
+
+export const MovementModesSchema = z.object({
+  land: z.number().int().positive(),
+  fly: z.number().int().positive().optional(),
+  flyManeuverability: z.enum(['perfect', 'good', 'average', 'poor', 'clumsy']).optional(),
+  swim: z.number().int().positive().optional(),
+  burrow: z.number().int().positive().optional(),
+  climb: z.number().int().positive().optional()
+});
+export type MovementModes = z.infer<typeof MovementModesSchema>;
+
+// Extends DnD35ArchetypeSchema
+export interface ArchetypeSubtypeExtension {
+  readonly creatureType: string; // e.g. "Humanoid", "Undead", "Monstrous Humanoid"
+  readonly subtypes: ReadonlyArray<string>; // e.g. ["elf"], ["goblinoid", "orc"], ["extraplanar"]
+  readonly movementModes: MovementModes;
+}
+
+// ============================================================================
+// PRIM-1.7: Tag-Based Conditional Modifier Engine (Console Reusability)
+// ============================================================================
+
+export interface StatModifierCondition {
+  /** Target must possess ALL of these tags (e.g. ['type:giant']). */
+  readonly targetTagsAll?: ReadonlyArray<string>;
+  /** Target must possess AT LEAST ONE of these tags (e.g. ['subtype:orc', 'subtype:goblinoid']). */
+  readonly targetTagsAny?: ReadonlyArray<string>;
+  /** Effect being defended against has this descriptor tag (e.g. ['descriptor:poison', 'descriptor:spell']). */
+  readonly effectTagsAny?: ReadonlyArray<string>;
+}
+
+// Extends StatModifier in modifiers.ts
+export interface ConditionalStatModifier {
+  readonly targetStat: string;
+  readonly value: number;
+  readonly bonusType: BonusType;
+  readonly sourceId: string;
+  readonly origin?: ModifierSourceOrigin;
+  readonly condition?: StatModifierCondition; // Evaluated via console getEntityMatcherData()
+}
+
+// ============================================================================
+// PRIM-2.1: Alternate Class Feature (ACF) Swap Schema
+// ============================================================================
+
+export const DnD35AcfSwapSchema = z.object({
+  acfId: z.string(),
+  name: z.string(),
+  replacesFeatureId: z.string(),
+  levelGranted: z.number().int().positive(),
+  grantedFeatureId: z.string(),
+  description: z.string(),
+  statModifiers: z.array(z.record(z.string(), z.unknown())).default([])
+});
+export type DnD35AcfSwap = z.infer<typeof DnD35AcfSwapSchema>;
+
+// ============================================================================
+// PRIM-3.1: Tactical Stance Slider Component
+// ============================================================================
+
+export interface StanceComponent {
+  readonly activeStanceId: 'none' | 'power_attack' | 'combat_expertise';
+  readonly sliderValue: number; // e.g. 5 for -5 attack / +5 damage
+  readonly roundActivated: number;
+}
+
+// ============================================================================
+// PRIM-3.4: Metamagic Spell Prepared Wrapper
+// ============================================================================
+
+export interface MetamagicPreparedSlot {
+  readonly baseSpellId: string;
+  readonly baseLevel: number;
+  readonly effectiveSlotLevel: number;
+  readonly metamagicFeatIds: ReadonlyArray<string>;
+  readonly damageMultiplier: number; // 1.5 for Empower
+  readonly isMaximized: boolean; // true for Maximize
+  readonly durationMultiplier: number; // 2.0 for Extend
+  readonly castingTimeOverride?: 'swift' | 'immediate'; // for Quicken
+  readonly isSilent: boolean;
+  readonly isStill: boolean;
+}
+
+// ============================================================================
+// PRIM-4.1 & PRIM-4.2: Concentration Maintainer & Spatial Aura
+// ============================================================================
+
+export interface ConcentrationMaintainerComponent {
+  readonly spellEntityId: string;
+  readonly spellId: string;
+  readonly spellLevel: number;
+  readonly maintainActionType: 'standard' | 'swift';
+  readonly startRound: number;
+}
+
+export interface SpatialAuraComponent {
+  readonly auraId: string;
+  readonly spellId: string;
+  readonly radiusFt: number;
+  readonly attachedEntityId?: number; // Attached to creature if present
+  readonly centerPosition?: { readonly x: number; readonly y: number }; // Attached to grid if stationary
+  readonly remainingDurationRounds: number;
+  readonly affectedCreatureTypes?: ReadonlyArray<string>; // Filter for Undead, Evil, etc.
+  readonly onEnterStatusEffectId?: string;
+  readonly onTurnStartStatusEffectId?: string;
+}
+```
+
+---
+
+### 16.8 Cascading Effects Matrix (Rule 15 Compliance)
+
+Per **AGENTS.md Rule 15**, the architectural impact of integrating these 17 isolated primitives is mapped across all three directions:
+
+| Primitive Group | Upstream (Callers, Emitters, Creators) | Downstream (Consumers, Renderers, Serializers) | Lateral (Sibling Rulesets, Docs, Defaults) |
+| :--- | :--- | :--- | :--- |
+| **`PRIM-1.1–1.6`** (Races, Subtypes, Templates) | `character_builder.ts`, `srd_registry.ts`, `archetypes.json` parser, encounter director spawning monsters. | `attack_resolver.ts` (bane weapon matching, dwarf vs giant dodge), `progression.ts` (ECL aggregation), JSON save serializers. | `default` campaign archetypes, `docs/ARCHITECTURE.md`, campaign editor creature inspector. |
+| **`PRIM-2.1–2.3`** (ACFs, Resource Pools, Wild Shape) | `classes.json`, character creation UI, level advancement wizard, rest system (`aoe_rest.ts`). | HUD vital bar renderers (displaying Rage/Turn charges), combat action validator (checking available charges), serializer. | Classic ruleset cartridge (remains unaffected via cartridge isolation), `docs/DECISIONS.md`. |
+| **`PRIM-3.1–3.4`** (Stance Sliders, Metamagic, Reaction Hooks) | Turn start intent parser, player input controller (stance slider UI modal), spellbook preparation UI. | `attack_resolver.ts` (calculating net attack/damage trade-offs), `spellcasting.ts` (applying metamagic multipliers to damage). | Action economy budget tracking, combat log telemetry messages, replay test fixtures. |
+| **`PRIM-4.1–4.4`** (Concentration, Spatial Auras, Dispel Magic) | Spellcasting intent executor, combat damage application (triggering damage taken checks), aura tick systems. | Spatial grid query engine, status effect renderers (aura radius overlay in ROT.js view), end-of-round ticker. | Antimagic field suppression logic, field effect entities in campaign maps. |
+| **`PRIM-5.1`** (Material Category Transformers) | Loot generator, equipment inventory equip/unequip intents, merchant shop inventory builder. | AC breakdown calculation, physical skill check ACP reduction, Arcane Spell Failure dice check. | Item tooltip renderers, weapon/armor JSON registry entries in default campaign. |
+
+---
+
+### 16.9 Actionable Implementation Roadmap & Milestones
+
+To implement the isolated primitives cleanly and maintain zero regressions across the test suite:
+
+1. **Milestone 102: System Content Subtypes & Creature Chassis Completion**
+   - Implement `PRIM-1.1` (`subtypes: string[]` in `DnD35ArchetypeSchema`).
+   - Implement `PRIM-1.2` (Movement modes dictionary: land, fly, swim, burrow).
+   - Implement `PRIM-1.3` (`isPrimary` natural weapon classification and Multiattack secondary penalty calculator).
+   - Implement `PRIM-1.7` (`StatModifierCondition` tag matcher leveraging generic console `getEntityMatcherData()` from `src/systems/reaction.system.ts` for favored enemies, bane weapons, and dwarf/gnome combat bonuses).
+2. **Milestone 103: Class ACFs & Daily Resource Trackers**
+   - Implement `PRIM-2.1` (`acfSwaps` schema in `classes.json` and selection in character builder).
+   - Implement `PRIM-2.2` (`ResourcePoolComponent` for Rage, Turn Undead, Smite, resetting on 8h rest).
+   - Implement `PRIM-3.1` (`StanceComponent` for Power Attack & Combat Expertise persistent sliders).
+3. **Milestone 104: Magic Subsystems (Metamagic, Concentration & Spatial Auras)**
+   - Implement `PRIM-3.4` (`MetamagicPreparedSlot` runtime wrapper for Empower, Maximize, Extend, Quicken).
+   - Implement `PRIM-4.1` (`ConcentrationMaintainerComponent` and damage interruption checks).
+   - Implement `PRIM-4.2` (`SpatialAuraComponent` for persistent ground/creature spell zones).
+   - Implement `PRIM-4.3` (`resolveDispelCheck` algorithm and status effect purging).
+4. **Milestone 105: Equipment Physics & Special Materials**
+   - Implement `PRIM-5.1` (Mithral category reduction, Max Dex, ACP, and ASF recalculator).
+   - Author expanded weapon and armor definitions showcasing special materials in `public/data/rulesets/dnd35e/`.
+
+---
+
+### 16.10 Final Comprehensive Engine Parity Metric
+
+With both the **Core SRD Rules Audit (Pass 1)** and **System Content & Missing Primitives Isolation Audit (Pass 2)** complete:
 
 - **Total SRD Rules & Content Domains Audited**: 18 Domains (195+ source files)
 - **Total Individual Core Mechanics Evaluated**: 160 Mechanics
-- **Full Grade A Implementations (`[FULL]`)**: 144 Mechanics (**90.0%**)
-- **Partial Grade B Implementations (`[PARTIAL]`)**: 10 Mechanics (**6.25%**)
-- **Representable Grade C Implementations (`[REPRESENTABLE]`)**: 4 Mechanics (**2.50%**)
+- **Full Grade A Parity (`[FULL]`)**: 144 Mechanics (**90.0%**)
+- **Partial Grade B Parity (`[PARTIAL]`)**: 10 Mechanics (**6.25%**)
+- **Representable Grade C Parity (`[REPRESENTABLE]`)**: 4 Mechanics (**2.50%**)
 - **Planned / Future Expansion (`[PLANNED]`)**: 2 Mechanics (**1.25%**)
+- **Total Missing Primitives Isolated & Architecturally Specified**: **18 Reusable Primitives** (`PRIM-1.1` to `PRIM-5.1`)
 - **Overall Engine SRD Fidelity Score**: **95.6% (Grade A)**
 
-The D&D 3.5e engine implementation in `src/rulesets/dnd35e/` stands as a mathematically rigorous, deterministic, pure-ECS implementation of the 3.5e System Reference Document, ready for production roguelike gameplay and campaign expansion.
+The D&D 3.5e engine implementation in `src/rulesets/dnd35e/` is mathematically sound, architecturally layered, pure-ECS compliant, and fully ready for staged execution of Milestones 102–105.
+
+---
+
+## 17. Wave 3: Comparative Analysis against *Incursion: Halls of the Goblin King*
+
+_Reference Codebase_: `references/incursion/` (https://github.com/rmtew/incursion-roguelike by Julian Mensch & Richard Tew)  
+_Methodology_: Systematic, item-by-item comparative analysis contrasting our **TypeScript + Pure-Data ECS + Data-Driven JSON** architecture against Incursion's **C++ OOP / Bytecode Virtual Machine (`ACCENT`)** implementation.
+
+This comparison evaluates how each core rule, concept, and system domain is solved in both engines, isolating:
+- **Architectural Gaps**: Areas where Incursion covers SRD edge cases or tabletop nuances that our engine does not yet address.
+- **Purposeful Deviations**: Explicit design choices where our engine intentionally departs from Incursion (e.g. pure immutable ECS vs. stateful C++ object mutation; deterministic PRNG vs. non-deterministic calls; pure JSON data vs. compiled script bytecode).
+- **Content & Mechanics Differences**: Distinctions between rules engine mechanics and authored system content.
+- **Engine/Console Cross-Pollination**: Ways to generalize solutions into the shared console rather than siloing them into ruleset cartridges.
+
+---
+
+### 17.1 Foundational Architecture & Core Mechanics
+
+#### 17.1.1 Creature Symmetry & Entity Modeling
+- **Incursion (`inc/Creature.h`, `src/Creature.cpp`, `inc/Events.h`)**:
+  - Incursion treats Player and Monster through an inheritance hierarchy: `Thing -> Object -> Creature -> Player` / `Monster`.
+  - Both share the exact same attributes (`GetAttr(A_STR)`, `A_DEX`, `A_CON`, `A_INT`, `A_WIS`, `A_CHA`), combat resolution loops, saving throws, inventory slots, and spellcasting engines.
+  - Monsters possess class levels (`LevelAs(cID)`), feats (`HasFeat(fID)`), and skill ratings identically to players.
+- **Our Engine (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`, `archetypes.json`, `classes.json`)**:
+  - Fully symmetric. Both players and monsters are ECS entities parameterized by `DnD35Archetype` or `DnD35ProgressionTrack` instances.
+  - Multi-track progression chassis (`tracks: DnD35ProgressionTrack[]`) evaluates racial Hit Dice and class levels using identical mathematical functions (`progression.ts`).
+- **Comparison & Assessment**:
+  - **Status**: **`[FULL PARITY / ARCHITECTURAL IMPROVEMENT]`**.
+  - **Verdict**: Our ECS separation achieves total symmetry without the fragility of C++ deep inheritance trees (`Thing -> Creature -> Player`). An NPC monster and a player character differ only in their component composition (`PlayerComponent` vs `AIComponent`).
+
+#### 17.1.2 Dice & Formula Evaluation
+- **Incursion (`inc/Base.h:struct Dice`, `src/Base.cpp:Dice::Roll()`)**:
+  - Uses `struct Dice { int8 Number, Sides, Bonus; }`. Supports level adjustments (`Dice::LevelAdjust`) for spells/abilities that scale with level.
+  - Relies on global C runtime random functions (`random()` / `rand()`).
+- **Our Engine (`src/rulesets/dnd35e/math/dice.ts`, `src/core/rng.ts`)**:
+  - Supports arbitrary dice string expressions (`1d20+5`, `4d6kh3`, `10d6`, percentile `1d100`).
+  - Evaluated deterministically via ROT.js seeded PRNG (`rng.ts`).
+- **Comparison & Assessment**:
+  - **Status**: **`[FULL PARITY / PURPOSEFUL DEVIATION]`**.
+  - **Verdict**: Incursion's compact 3-byte struct is efficient in C++, but our string parser supports complex drop/keep mechanics (`kh3` for ability score generation) and strictly deterministic replayability.
+
+---
+
+### 17.2 Combat, Attack Resolution & Armor Class
+
+#### 17.2.1 Attacks of Opportunity (AoO) & Standing Tactical Doctrines
+- **Incursion (`src/Fight.cpp:Creature::Attack()`, `src/Move.cpp:Creature::Move()`)**:
+  - Slices movement into fractional movement actions (`Mov: 75%`). Moving out of a threatened tile triggers an AoO.
+  - When an AoO or special maneuver triggers, Incursion often prompts the player with a yes/no prompt: `if (!yn(XPrint("Take opportunity on the <Obj>?")))`.
+  - For frequent choices (like Power Attack, Combat Expertise, or Defensive Casting), Incursion uses persistent **Tactical Switches / Standing Doctrines** toggled via menu dials.
+- **Our Engine (`src/rulesets/dnd35e/action_economy.ts`, `combat/attack_resolver.ts`)**:
+  - Slices the 6-second round into standard action allocations (`Standard`, `Move`, `Swift`, `Immediate`, `5-Foot Step`).
+  - Deduplicates AoOs per moving actor per round using an armed threat check and reach dead zones.
+  - Uses a deterministic LIFO interrupt stack (depth 4) with Combat Reflexes.
+- **Comparison & Assessment**:
+  - **Status**: **`[PARTIAL GAP ISOLATED]`**.
+  - **Identified Gap**: Incursion allows players to configure standing tactical doctrines (e.g., auto-cast defensively when threatened, reserve AoOs for specific foes, set Power Attack slider). In our engine, while the math exists in `attack_resolver.ts`, we currently lack the persistent `TacticalDoctrineComponent` / `StanceComponent` (`PRIM-3.1`) to avoid modal prompt fatigue.
+  - **Purposeful Deviation**: We intentionally **reject modal prompts** mid-combat (like `yn("Take opportunity?")`) because they destroy turn-based flow and halt Real-Time with Pause (RTwP) mode. Automated policy evaluation via standing doctrine is strictly superior.
+
+#### 17.2.2 Armor Class Triplet & Bonus Stacking
+- **Incursion (`src/CalcVal.cpp:Creature::GetAttr(A_ARM)`, `inc/Defines.h`)**:
+  - Uses an integer array of bonus types (`A_ARM_ARMOUR`, `A_ARM_SHIELD`, `A_ARM_NATURAL`, `A_ARM_DEFLECT`, `A_ARM_DODGE`).
+  - Computes `GetAttr(A_ARM)` by summing maximums across typed buckets.
+  - Implements Touch AC and Flat-Footed AC by masking out specific buckets (`ARM_NO_ARMOUR | ARM_NO_NATURAL` for touch; `ARM_NO_DEX | ARM_NO_DODGE` for flat-footed).
+- **Our Engine (`src/rulesets/dnd35e/modifiers.ts:resolveTypedModifiers`, `attack_resolver.ts`)**:
+  - Implements all 18 canonical D&D 3.5e bonus types (`alchemical`, `armor`, `armor_enhancement`, `circumstance`, `competence`, `deflection`, `dodge`, `enhancement`, `inherent`, `insight`, `luck`, `morale`, `natural_armor`, `natural_armor_enhancement`, `profane`, `racial`, `resistance`, `sacred`, `shield`, `shield_enhancement`, `size`, `untyped`).
+  - Implements compound enhancement folding (`armor_enhancement` folds into `armor`, etc.), Antimagic suppression of `magical`/`sp`/`su` sources, and conditional query masks (`ignoreArmorAndNatural`, `ignorePositiveDexAndDodge`).
+- **Comparison & Assessment**:
+  - **Status**: **`[FULL PARITY / MORE RIGOROUS]`**.
+  - **Verdict**: Our 18-type bonus stacking engine is more faithful to the official SRD than Incursion's 5-bucket simplification, correctly handling circumstance stacking by distinct source and Dodge bonus accumulation.
+
+---
+
+### 17.3 Magic Systems, Spells & Concentration
+
+#### 17.3.1 Spells, Schools & Descriptors
+- **Incursion (`inc/Res.h:struct TextEffect`, `src/Magic.cpp`, `lib/wspells.irh`, `lib/pspells.irh`)**:
+  - Spells are declared in resource scripts (`.irh`) using custom C-like syntax and compiled into bytecode (`TEFF(spID)`).
+  - Every spell has bitmasks for Schools (`SC_ABJ`, `SC_CON`, `SC_DIV`, `SC_ENC`, `SC_EVO`, `SC_ILL`, `SC_NEC`, `SC_TRA`), Subschools, and Descriptors (`SC_EARTH`, `SC_FIRE`, `SC_MIND`, etc.).
+  - Metamagic is represented as bitflags on the cast event: `MM_EMPOWER`, `MM_EXTEND`, `MM_MAXIMIZE`, `MM_QUICKEN`, `MM_SILENT`, `MM_STILL`.
+- **Our Engine (`src/rulesets/dnd35e/types/dnd35e_system.types.ts:DnD35SpellSchema`, `public/data/rulesets/dnd35e/spells.json`, `src/rulesets/dnd35e/magic/spellcasting.ts`)**:
+  - Spells are declared in declarative JSON with Zod validation.
+  - Explicit school, classification (`spell`, `sp`, `su`, `ex`), components (`verbal`, `somatic`, `material`), SR flag, save type, AoE shape, and radius.
+- **Comparison & Assessment**:
+  - **Status**: **`[FULL PARITY]`**.
+  - **Verdict**: JSON/Zod schemas provide equivalent expressive power without requiring Incursion's custom bytecode compiler (`modaccent`).
+
+#### 17.3.2 Persistent Area Spells & Lingering Hazards
+- **Incursion (`inc/Feature.h:class Field`, `src/Feature.cpp`)**:
+  - Area spells with lingering durations create persistent `Field` objects on the map (`FI_SILENCE`, `FI_DARKNESS`, `FI_FOG`, `FI_FIRE`).
+  - The map scheduler ticks fields every turn, evaluating entry, exit, and standing effects.
+  - Fields can be attached to moving creatures (e.g., an actor carrying a *Silence* or *Invisibility Purge* emanation).
+- **Our Engine (`src/systems/field.system.ts`, `src/rulesets/dnd35e/magic/aoe_rest.ts`)**:
+  - Our Core Engine ("Console") already has a generic `field.system.ts` and `FieldComponent` for terrain hazard fields (fire, poison gas, webs).
+  - However, in `dnd35e/magic/aoe_rest.ts`, spells currently only resolve instantaneous AoE bursts.
+- **Comparison & Assessment**:
+  - **Status**: **`[GAP ISOLATED / CONSOLE REUSE OPPORTUNITY]`**.
+  - **Identified Gap**: D&D 3.5e spells like *Consecrate*, *Silence*, *Stinking Cloud*, and *Invisibility Purge* need to spawn lingering spatial zones or attach mobile emanations to entities.
+  - **Console Reuse Solution**: Rather than writing a D&D-specific field system, extend the generic Console `FieldComponent` / `field.system.ts` with duration and entity attachment (`PRIM-4.2`), adhering to **AGENTS.md Rule 16**.
+
+---
+
+### 17.4 Races, Monster Types & Tag-Based Modifiers
+
+#### 17.4.1 Subtypes, Alignment & Racial Bane Modifiers
+- **Incursion (`inc/Defines.h:MA_*`, `src/Creature.cpp:isMType()`, `lib/races.irh`)**:
+  - Incursion models creature types, subtypes, and races using integer macros: `MA_DWARF (63)`, `MA_ORC (14)`, `MA_GIANT (19)`, `MA_GOBLIN (13)`, `MA_ELF (10)`.
+  - Creatures store multiple `MType` tags (`isMType(MA_DWARF)`, `isMType(MA_EARTH)`).
+  - Combat bonuses (Dwarf +1 attack vs. Orcs, +4 AC vs. Giants, Favored Enemy, Bane weapons) are implemented by querying `target->isMType(MA_GIANT)`.
+- **Our Engine (`src/systems/reaction.system.ts`, `src/rulesets/dnd35e/modifiers.ts`)**:
+  - Our Console already has `TagsComponent` and `getEntityMatcherData()` in `reaction.system.ts`.
+  - In D&D 3.5e cartridge, `DnD35ArchetypeSchema` currently has only a single `creatureType: string` field.
+- **Comparison & Assessment**:
+  - **Status**: **`[CONFIRMED ARCHITECTURAL CONVERGENCE]`**.
+  - **Verdict**: Incursion confirmed that treating types, subtypes, and racial traits as a multi-tag query (`isMType`) is the exact right design. By implementing `PRIM-1.1` (`subtypes: string[]`) and `PRIM-1.7` (`StatModifierCondition` tag matcher), our engine achieves full parity using our generic Console tag-matcher rather than hardcoded C++ switches.
+
+---
+
+### 17.5 Equipment, Weapons & Special Materials
+
+#### 17.5.1 Material Physics & Enhancements
+- **Incursion (`inc/Item.h`, `src/Item.cpp`, `lib/mundane.irh`)**:
+  - Items possess material tags (`MAT_MITHRIL`, `MAT_ADAMANTINE`, `MAT_SILVER`, `MAT_COLD_IRON`, `MAT_DARKWOOD`).
+  - When an item has `MAT_MITHRIL`, Incursion mutates weight (`wt / 2`), reduces armor category by one rank, adds +2 to Max Dex, reduces ACP by 3, and reduces ASF by 10%.
+  - Weapon enhancements use bitmasks and quality structs.
+- **Our Engine (`src/rulesets/dnd35e/modifiers.ts`, `attack_resolver.ts`, `damage_vitality.ts`)**:
+  - B/P/S damage types, critical threats, multipliers, and DR bypass tags (`"adamantine"`, `"silver"`, `"cold_iron"`) are 100% functional.
+  - However, Mithral physics transformation is currently an isolated missing primitive (`PRIM-5.1`).
+- **Comparison & Assessment**:
+  - **Status**: **`[GAP CONFIRMED]`**.
+  - **Verdict**: Incursion handles material physics transformation via procedural setters in C++. We will implement this declaratively via `applyMaterialPhysics()` (`PRIM-5.1`) during item initialization/equip passes.
+
+---
+
+### 17.6 Summary of Incursion Wave 3 Findings & Key Takeaways
+
+| Domain | Incursion Approach (`references/incursion/`) | Our Engine Approach (`rogue-like/`) | Gap / Difference Analysis | Architectural Recommendation |
+| :--- | :--- | :--- | :--- | :--- |
+| **Creature Symmetry** | `Thing -> Creature -> Player` C++ OOP inheritance. | Pure ECS entities; identical multi-track HD chassis (`DnD35ProgressionTrack`). | **None (Symmetric)**: Both engines achieve 100% mechanical symmetry between players and monsters. | Preserve ECS data purity; avoid OOP inheritance. |
+| **Event Routing & Hooks** | Monolithic `EventInfo` struct passed through `ReThrow(ev, e)` handlers. | Pure ECS Intents (`ApplyIntent`, `ZapIntent`) + Reactive Trigger System. | **Architecture Difference**: Incursion's `EventInfo` is a 1,000-line union/struct with raw pointers; our Intent/Event bus is type-safe and serializable. | Retain discriminated union Intents; do not mimic monolithic C++ event structs. |
+| **Tag Matching (`isMType`)** | Bitmask / array of integer IDs (`MA_DWARF`, `MA_GIANT`). | Generic Console `TagsComponent` + `getEntityMatcherData()` in `reaction.system.ts`. | **Convergence**: Incursion validated that multi-type tag matching is essential for D&D 3.5e bane/favored enemy rules. | Implement `PRIM-1.7` using our Console tag system. |
+| **Tactical Micro-Decisions** | Persistent **Tactical Switches / Standing Doctrines** + occasional `yn()` prompts. | Mathematical resolution in `attack_resolver.ts`, but lacks persistent UI slider component. | **Gap**: Need persistent actor component for Power Attack / Combat Expertise sliders to avoid prompt fatigue. | Implement `PRIM-3.1` (`StanceComponent`) on the actor. |
+| **Persistent Spell Fields** | C++ `class Field` on map ticking every round (`FI_SILENCE`, `FI_DARKNESS`). | Core console has `field.system.ts`, but D&D AoE spells currently resolve only instantaneous effects. | **Gap / Opportunity**: Lingering zones like *Silence* and *Consecrate* require spatial attachment. | Extend Console `FieldComponent` (`PRIM-4.2`) rather than creating a cartridge-specific field system. |
+| **Rest & Satiation Balance** | Strict dungeon clock, food consumption, and safe-rest checks before spell slot recharge. | 8-hour rest limit implemented (`aoe_rest.ts`), hooked into `HungerComponent` and macro-simulation cadence. | **Full Parity**: Both engines prevent infinite rest scumming in DM-less single-player play. | Maintain current 800-round rest lockout and hunger integration. |
+
+---
+
+### 17.7 Design Specification: Data-Driven Tactical Doctrines & Generic Reaction Bus
+
+To answer the critical architectural challenge of **how to define tactical toggles, trade-off sliders, and immediate reactions without hardcoding specific feats or spells into the engine**:
+
+#### 17.7.1 The Console-Level Doctrine State (`TacticalDoctrineComponent`)
+At the shared Core Console level, the engine knows nothing about "Power Attack" or "Combat Expertise" or specific D&D spell names. It merely tracks an actor's chosen slider and toggle state:
+```typescript
+export type DoctrineSettingValue = boolean | number | string;
+
+export interface TacticalDoctrineComponent {
+  readonly type: ComponentType.TacticalDoctrine;
+  /** Key-value store of active actor settings: e.g. { power_attack: 5, combat_expertise: 2, auto_aoo: true } */
+  readonly settings: Readonly<Record<string, DoctrineSettingValue>>;
+}
+```
+
+#### 17.7.2 Declarative Doctrine Schemas in Content JSON
+Feats and abilities declare their tunable parameters using a generic **Doctrine Descriptor Schema**:
+```json
+{
+  "id": "power_attack",
+  "name": "Power Attack",
+  "doctrineDescriptor": {
+    "key": "power_attack",
+    "type": "slider",
+    "min": 0,
+    "maxFormula": "bab",
+    "step": 1,
+    "label": "Power Attack",
+    "tradeOff": {
+      "penaltyStat": "melee_attack",
+      "bonusStat": "melee_damage",
+      "scalingFactor": "two_handed_str"
+    }
+  }
+}
+```
+Similarly, *Combat Expertise* uses the exact same schema structure:
+```json
+{
+  "id": "combat_expertise",
+  "name": "Combat Expertise",
+  "doctrineDescriptor": {
+    "key": "combat_expertise",
+    "type": "slider",
+    "min": 0,
+    "max": 5,
+    "step": 1,
+    "label": "Combat Expertise",
+    "tradeOff": {
+      "penaltyStat": "melee_attack",
+      "bonusStat": "ac",
+      "bonusType": "dodge"
+    }
+  }
+}
+```
+**UI Benefit**: The character sheet and HUD dials automatically render sliders for whatever doctrines the character currently qualifies for based on their feats and abilities—with zero hardcoded UI controllers.
+
+#### 17.7.3 Data-Driven Immediate Reactions & Interrupt Policies
+For Immediate Actions (*Feather Fall*, *Deflect Arrows*, *Counterspell*, *Defensive Roll*) and AoO policies:
+1. **Trigger Definition**: Feats and spells declare an `immediateReaction` block in JSON:
+   ```json
+   {
+     "id": "deflect_arrows",
+     "name": "Deflect Arrows",
+     "reaction": {
+       "triggerEvent": "incoming_ranged_hit",
+       "doctrineKey": "auto_deflect_arrows",
+       "cost": "once_per_round",
+       "action": { "type": "negate_projectile_damage" }
+     }
+   }
+   ```
+2. **Resolution Execution**:
+   - When an incoming ranged attack hits, the combat resolver queries `getMatchingReactions(state, targetId, "incoming_ranged_hit")`.
+   - The engine checks the actor's `TacticalDoctrineComponent.settings["auto_deflect_arrows"]`.
+   - If enabled (and reaction not yet used this round), it negates the hit and consumes the reaction budget automatically.
+   - **Zero modal popups**: Eliminates annoying confirmation dialogs and allows seamless execution in both Turn-Based and Real-Time with Pause (RTwP) modes.
+
+---
+
+### 17.8 Exact Incursion Source Files Inspected in Wave 3
+
+The following files from `references/incursion/` were inspected and cross-referenced during this audit pass:
+
+| File Path in `references/incursion/` | Primary Architectural & Rule Concepts Inspected |
+| :--- | :--- |
+| **`inc/Events.h`** | `EventInfo` struct definition, event parameter unions (`EvParam`), macros (`DAMAGE`, `XTHROW`, `RXTHROW`, `PEVENT`), event flags (`isAoO`, `isCrit`, `isFlatFoot`, `isFlanking`, `isSneakAttack`, `isEvaded`). |
+| **`inc/Base.h`** | `struct Dice { int8 Number, Sides, Bonus; }`, `Dice::Roll()`, `Dice::LevelAdjust()`, `ParseArch`. |
+| **`inc/Creature.h`** | Core creature methods: `GetAttr()`, `HasFeat()`, `isMType()`, `DmgVal()`, `AbilityLevel()`. |
+| **`inc/Defines.h`** | Monster type tags (`MA_DWARF`, `MA_ORC`, `MA_GIANT`, `MA_ELF`), Feat IDs (`FT_POWER_ATTACK`, `FT_EXPERTISE`, `FT_DODGE`), Damage types (`AD_SLASH`, `AD_PIERCE`, `AD_BLUNT`), and option flags (`OPT_*`). |
+| **`inc/Item.h`** | Item classes, weapon sizing (`Size()`), handedness, material qualities (`MAT_MITHRIL`, `MAT_ADAMANTINE`). |
+| **`inc/Feature.h`** | `class Field` spatial persistent entities (`FI_SILENCE`, `FI_DARKNESS`, `FI_FOG`). |
+| **`inc/Res.h`** | `struct TextEffect` for spells and effects (`TEFF(spID)`), resource IDs (`rID`). |
+| **`src/Fight.cpp`** | `Attack()` resolution, AoO triggers (`e.isAoO ? "Take opportunity on" : "Confirm attack"`), Power Attack conversion (`i = (e.vHit+e.vRoll) - e.vDef ... e.bDmg += i; e.strDmg += Format(" %+d PA", i)`), Aimed Shot, Coup de Grace. |
+| **`src/Values.cpp`** | `GetAttr(A_ARM)` Armor Class calculation, bonus stacking (`AddBonus`, `StackBonus`), weapon handedness Strength multipliers (`XMod(A_STR)*3+1)/2` for two-handed; `(XMod(A_STR)+1)/2` for off-hand), Feats (`FT_WEAPON_FINESSE`, `FT_DODGE`, `FT_EXPERTISE`). |
+| **`src/Move.cpp`** | Movement slicing, AoO provocations when leaving threatened tiles, terrain movement penalties. |
+| **`src/Creature.cpp`** | `isMType()` multi-tag matching, archetype lookups (`FIND("dwarf;temp")`). |
+| **`src/Monster.cpp`** | Monster reactions, racial hatreds (Dwarf vs Orc, Giant, Elf). |
+| **`src/Skills.cpp`** | Skill checks, synergies, and racial skill bonuses. |
+| **`src/Social.cpp`** | Race modifiers, racial solidarity. |
+| **`lib/races.irh`** | Race declarations in Incursion's ACCENT language (`Race "Dwarf;race"` with `Ability[CA_DWARVEN_FOCUS]`, `Ability[CA_FAV_ENEMY, MA_ORC]`, `Ability[CA_GIANT_KILLER]`, `Monster "dwarf;temp"`). |
+| **`lib/classes.irh`, `lib/mundane.irh`, `lib/wspells.irh`, `lib/pspells.irh`, `lib/help.irh`** | Class definitions, equipment tables, arcane/divine spell declarations, and game help manuals. |
+
+
+

@@ -28,6 +28,7 @@
     - **Downstream:** what consumes or derives from this (renderers, validators, serializers, ledger/telemetry consumers, save schemas).
     - **Lateral:** what mirrors or shares the same data or registry (sibling campaign JSONs, editor forms, generator kits, docs, parallel records).
     Trigger on **any** change to behaviour, ordering, or data shape — not only on interface or enum changes. Record the result as a Cascading Effects Matrix (`Change | Upstream | Downstream | Lateral`) in the research artifact and the implementation plan.
+16. **Leverage Generic Console Systems over Cartridge Silos:** When implementing new functionality for a given ruleset cartridge, first check if existing core engine/console systems (e.g., tag-matching in `reaction.system.ts`, spatial indexing, ECS queries, trigger-consequence buses) can be used or extended in a generic, ruleset-agnostic way rather than creating a system-specific implementation inside the cartridge itself. Always compare both options, document the tradeoffs, and justify which approach is superior before implementing.
 
 ---
 

@@ -191,3 +191,12 @@ This document records architectural decisions whose rationale is **non-obvious o
        3. **Dynamic ViewGroup Resolution**: Standardize sidebar and workspace panel lookups to call `getRuleset(doc.manifest?.rulesetId).getEditorViewGroups(VIEW_GROUPS)` in sync with the Activity Bar.
        4. **System Archetype Reference Resolution**: Enhance `getReferenceOptions()` in `ui_utils.ts` to inspect `doc.systemContent.archetypes`, rendering `archetypeId` as a dropdown tagged with `[ARCHETYPE]`.
        5. **Automated Tier 2 System Content Re-Hydration**: Export `loadRulesetSystemContent(rulesetId)` from `src/core/loader.ts` and invoke it automatically when creating blank campaigns, importing ZIP packages, or mutating `manifest.rulesetId` in the Manifest form, ensuring the editor's live document is always validated against its bound ruleset.
+
+   10. **Generic Console Systems over Cartridge Silos (Console Reuse First)**:
+       - _Context_: When introducing complex ruleset mechanics (e.g., conditional combat bonuses like dwarf +1 vs. orcs, +4 dodge AC vs. giants, bane weapons, favored enemies, alignment smiting, or elemental save modifiers), developers face a choice: either write siloed, D&D-specific lookup switches inside the cartridge (`src/rulesets/dnd35e/`), or generalize/leverage existing Core Engine ("Console") infrastructure.
+       - _Decision_: **Always evaluate Console reuse first.** Before writing ruleset-specific pipelines:
+         1. **Audit Existing Console Utilities**: Inspect `src/systems/`, `src/types/`, and `src/core/` (e.g., `TagsComponent`, `TraitsComponent`, `reaction.system.ts:getEntityMatcherData`, `evaluateTargetMatcher`, spatial index raycasters, trigger-consequence buses).
+         2. **Evaluate Generic Extension vs. Cartridge Silo**:
+            - _Console Extension (Preferred)_: Extending generic primitives (such as tag-based matching: `targetTagsAll`, `targetTagsAny`, `effectTagsAny` on modifiers) empowers *all* present and future rulesets (`classic`, `dnd35e`, `brp_d100`, `gurps`), eliminates redundant entity query code, and maintains data-driven moddability via tags (`AGENTS.md` §5).
+            - _Cartridge Silo (Restricted)_: Confined strictly to pure mathematical rules unique to that specific tabletop ruleset (e.g., 18-type bonus stacking rules, Vancian prepared slot states, 1-2-1-2 diagonal distance).
+         3. **Record Tradeoff Rationale**: Explicitly record why the generic or siloed path was chosen in research notes and implementation plans.
