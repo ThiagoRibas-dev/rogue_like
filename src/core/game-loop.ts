@@ -3,7 +3,7 @@ import { ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { type ActionResult, type Intent } from '../types/intents/intent.union.ts';
-import { addComponent, getComponent } from './ecs.ts';
+import { addComponent, getComponent, tickControllerLinksAndOverlays } from './ecs.ts';
 import { pushTelemetryEvents } from './telemetry.ts';
 import { recordIntent } from './replay.ts';
 import { perfTracker } from './performance.ts';
@@ -334,6 +334,10 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
+
+  if (didGlobalTurnAdvance) {
+    nextState = tickControllerLinksAndOverlays(nextState);
+  }
 
   // Tier 2: Local Narrative Cadence (Knowledge, Rumors, Personality)
   nextState = processTier2LocalCadence(nextState, didGlobalTurnAdvance);

@@ -70,7 +70,17 @@ export const EntityTemplateSchema = z.object({
     })
     .optional(),
   dialogueId: z.string().optional(),
-  attitude: z.enum(['hostile', 'neutral', 'friendly']).optional(),
+  attitude: z.enum(['hostile', 'unfriendly', 'indifferent', 'neutral', 'friendly', 'helpful']).optional(),
+  movementModes: z
+    .object({
+      land: z.number().int().nonnegative(),
+      burrow: z.number().int().nonnegative().optional(),
+      climb: z.number().int().nonnegative().optional(),
+      fly: z.number().int().nonnegative().optional(),
+      swim: z.number().int().nonnegative().optional(),
+      maneuverability: z.enum(['clumsy', 'poor', 'average', 'good', 'perfect']).optional()
+    })
+    .optional(),
   trap: z
     .object({
       triggerId: z.string()

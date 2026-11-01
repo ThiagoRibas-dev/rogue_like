@@ -76,6 +76,20 @@ export function processFieldsTick(state: GameState): GameState {
     const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
     if (!pos) continue;
 
+    // 0. Synchronize mobile emanations anchored to an entity
+    if (fieldCmp.anchorEntityId !== undefined) {
+      const anchorPos = getComponent(nextState, fieldCmp.anchorEntityId, ComponentType.Position) as
+        | PositionComponent
+        | undefined;
+      if (anchorPos && (anchorPos.x !== pos.x || anchorPos.y !== pos.y)) {
+        nextState = addComponent(nextState, entityId, {
+          type: ComponentType.Position,
+          x: anchorPos.x,
+          y: anchorPos.y
+        });
+      }
+    }
+
     const def = nextState.campaign.fields[fieldCmp.fieldType];
 
     // 1. Tick duration
@@ -140,3 +154,55 @@ export function processFieldsTick(state: GameState): GameState {
 
   return nextState;
 }
+
+/**
+ * Result descriptor for an active field affecting a grid position.
+ */
+export interface ActiveFieldQueryResult {
+  readonly entityId: EntityId;
+  readonly field: FieldComponent;
+}
+
+/**
+ * Queries all active fields affecting a grid coordinate, including stationary fields
+ * and mobile radial emanations anchored to moving entities.
+ *
+ * @param state Current immutable GameState.
+ * @param x Grid X coordinate.
+ * @param y Grid Y coordinate.
+ * @returns Array of active fields covering the coordinates.
+ */
+export function queryActiveFieldsAtPosition(
+  state: GameState,
+  x: number,
+  y: number
+): ReadonlyArray<ActiveFieldQueryResult> {
+  const results: ActiveFieldQueryResult[] = [];
+
+  for (const entityId of state.entities) {
+    const field = getComponent(state, entityId, ComponentType.Field) as FieldComponent | undefined;
+    if (!field) continue;
+
+    const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+    if (!pos) continue;
+
+    const radiusFt = field.radiusFt ?? 0;
+    const radiusTiles = Math.floor(radiusFt / 5);
+
+    if (radiusTiles <= 0) {
+      if (pos.x === x && pos.y === y) {
+        results.push({ entityId, field });
+      }
+    } else {
+      const dx = Math.abs(pos.x - x);
+      const dy = Math.abs(pos.y - y);
+      const distTiles = Math.max(dx, dy);
+      if (distTiles <= radiusTiles) {
+        results.push({ entityId, field });
+      }
+    }
+  }
+
+  return results;
+}
+

@@ -3,6 +3,7 @@ import { rollD20 } from './math/dice.ts';
 import { dndFloor } from './math/multipliers.ts';
 import { resolveTypedModifiers } from './modifiers.ts';
 import type { AbilityId, StatModifier } from './types/dnd35e.types.ts';
+import type { AttitudeTier } from '../../types/components.types.ts';
 
 /** Minimum whole ranks required in a source skill to grant a +2 Synergy bonus. */
 const SYNERGY_REQUIRED_RANKS = 5;
@@ -237,5 +238,68 @@ export function resolveOpposedCheck(
     totalB: d20B.total,
     rollA: d20A.naturalRoll,
     rollB: d20B.naturalRoll
+  };
+}
+
+/**
+ * Result of resolving a D&D 3.5e Diplomacy check to adjust an NPC's attitude.
+ */
+export interface DiplomacyResult {
+  readonly initialAttitude: AttitudeTier;
+  readonly newAttitude: AttitudeTier;
+  readonly rollTotal: number;
+  readonly changed: boolean;
+}
+
+/**
+ * Resolves a D&D 3.5e Diplomacy check to influence an NPC's attitude according to
+ * the 5-tier standard progression (PHB p. 72).
+ *
+ * @param initialAttitude Current AttitudeTier of the target.
+ * @param checkRollTotal Total Diplomacy skill check roll.
+ * @returns Resulting DiplomacyResult with updated AttitudeTier.
+ */
+export function resolveDiplomacyCheck(
+  initialAttitude: AttitudeTier,
+  checkRollTotal: number
+): DiplomacyResult {
+  const normalizedInitial: 'hostile' | 'unfriendly' | 'indifferent' | 'friendly' | 'helpful' =
+    initialAttitude === 'neutral' ? 'indifferent' : initialAttitude;
+
+  let newAttitude: AttitudeTier = normalizedInitial;
+
+  switch (normalizedInitial) {
+    case 'hostile':
+      if (checkRollTotal >= 50) newAttitude = 'helpful';
+      else if (checkRollTotal >= 35) newAttitude = 'friendly';
+      else if (checkRollTotal >= 25) newAttitude = 'indifferent';
+      else if (checkRollTotal >= 20) newAttitude = 'unfriendly';
+      else newAttitude = 'hostile';
+      break;
+    case 'unfriendly':
+      if (checkRollTotal >= 40) newAttitude = 'helpful';
+      else if (checkRollTotal >= 25) newAttitude = 'friendly';
+      else if (checkRollTotal >= 15) newAttitude = 'indifferent';
+      else newAttitude = 'unfriendly';
+      break;
+    case 'indifferent':
+      if (checkRollTotal >= 30) newAttitude = 'helpful';
+      else if (checkRollTotal >= 15) newAttitude = 'friendly';
+      else newAttitude = 'indifferent';
+      break;
+    case 'friendly':
+      if (checkRollTotal >= 20) newAttitude = 'helpful';
+      else newAttitude = 'friendly';
+      break;
+    case 'helpful':
+      newAttitude = 'helpful';
+      break;
+  }
+
+  return {
+    initialAttitude,
+    newAttitude,
+    rollTotal: checkRollTotal,
+    changed: newAttitude !== initialAttitude
   };
 }

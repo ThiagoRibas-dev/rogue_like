@@ -79,6 +79,35 @@ export const DnD35DamageReductionSchema = z.object({
 /** Inferred type for Damage Reduction rules. */
 export type DnD35DamageReduction = z.infer<typeof DnD35DamageReductionSchema>;
 
+/** Zod schema for an on-hit poison, disease, or curse rider. */
+export const OnHitRiderDescriptorSchema = z.object({
+  riderId: z.string(),
+  type: z.enum(['poison', 'disease', 'energy_drain', 'curse', 'paralysis']),
+  delivery: z.enum(['injury', 'contact']),
+  saveType: z.enum(['fort', 'ref', 'will']),
+  dc: z.number().int().positive(),
+  initialEffectDescription: z.string(),
+  secondaryEffectDescription: z.string().optional(),
+  secondaryDelayRounds: z.number().int().positive().optional()
+});
+export type OnHitRiderDescriptor = z.infer<typeof OnHitRiderDescriptorSchema>;
+
+/** Zod schema for a natural weapon attack entry. */
+export const NaturalWeaponDescriptorSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  naturalType: z.enum(['bite', 'claw', 'gore', 'slam', 'sting', 'tentacle', 'talon', 'tail_slap']),
+  isPrimary: z.boolean().default(false),
+  count: z.number().int().positive().default(1),
+  damageDice: z.string(),
+  damageType: DnD35DamageTypeSchema,
+  critThreatMin: z.number().int().min(1).max(20).default(20),
+  critMultiplier: z.number().int().min(2).max(4).default(2),
+  reachFt: z.number().int().positive().optional(),
+  riders: z.array(OnHitRiderDescriptorSchema).optional()
+});
+export type NaturalWeaponDescriptor = z.infer<typeof NaturalWeaponDescriptorSchema>;
+
 /** Zod schema for a declarative System Content creature/character archetype (`archetypes.json`). */
 export const DnD35ArchetypeSchema = z.object({
   archetypeId: z.string(),
@@ -99,10 +128,26 @@ export const DnD35ArchetypeSchema = z.object({
   vulnerabilities: z.array(DnD35DamageTypeSchema).default([]),
   spellResistance: z.number().int().nonnegative().optional(),
   feats: z.array(z.string()).default([]),
-  skillRanks: z.record(z.string(), z.number().nonnegative()).default({})
+  skillRanks: z.record(z.string(), z.number().nonnegative()).default({}),
+  creatureType: z.string().optional(),
+  subtypes: z.array(z.string()).default([]),
+  levelAdjustment: z.number().int().nonnegative().default(0),
+  naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  hasPounce: z.boolean().default(false),
+  singleActionsOnly: z.boolean().default(false)
 });
 /** Inferred type for a declarative System Content archetype. */
 export type DnD35Archetype = z.infer<typeof DnD35ArchetypeSchema>;
+
+/** Zod schema for an Alternate Class Feature (ACF) swap. */
+export const DnD35AcfSwapSchema = z.object({
+  acfId: z.string(),
+  name: z.string(),
+  replacesFeature: z.string(),
+  grantedFeature: z.string(),
+  level: z.number().int().positive()
+});
+export type DnD35AcfSwap = z.infer<typeof DnD35AcfSwapSchema>;
 
 /** Zod schema for a declarative character class definition (`classes.json`). */
 export const DnD35ClassDefinitionSchema = z.object({
@@ -116,10 +161,41 @@ export const DnD35ClassDefinitionSchema = z.object({
   skillPointsPerLevel: z.number().int().nonnegative(),
   classSkills: z.array(z.string()).default([]),
   castingMode: z.enum(['none', 'prepared', 'spontaneous']).default('none'),
-  castingKeyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional()
+  castingKeyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+  acfSwaps: z.array(DnD35AcfSwapSchema).default([])
 });
 /** Inferred type for a declarative class definition. */
 export type DnD35ClassDefinition = z.infer<typeof DnD35ClassDefinitionSchema>;
+
+/** Zod schema for an inherited or acquired template definition (`templates.json`). */
+export const DnD35TemplateSchema = z.object({
+  templateId: z.string(),
+  name: z.string(),
+  kind: z.enum(['inherited', 'acquired']),
+  targetCreatureTypes: z.array(z.string()).optional(),
+  resultCreatureType: z.string().optional(),
+  addSubtypes: z.array(z.string()).default([]),
+  sizeCategoryChange: SizeCategorySchema.optional(),
+  abilityScoreModifiers: z
+    .object({
+      str: z.number().int().optional(),
+      dex: z.number().int().optional(),
+      con: z.number().int().optional(),
+      int: z.number().int().optional(),
+      wis: z.number().int().optional(),
+      cha: z.number().int().optional()
+    })
+    .default({}),
+  naturalArmorBonusDelta: z.number().int().default(0),
+  damageReduction: DnD35DamageReductionSchema.optional(),
+  energyResistance: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  immunities: z.array(DnD35DamageTypeSchema).default([]),
+  spellResistanceBonus: z.number().int().nonnegative().optional(),
+  grantedFeats: z.array(z.string()).default([]),
+  grantedTags: z.array(z.string()).default([]),
+  levelAdjustmentDelta: z.number().int().default(0)
+});
+export type DnD35Template = z.infer<typeof DnD35TemplateSchema>;
 
 /** Zod schema for a declarative skill definition (`skills.json`). */
 export const DnD35SkillDefinitionSchema = z.object({
@@ -181,7 +257,8 @@ export const DnD35SystemContentSchema = z.object({
   classes: z.record(z.string(), DnD35ClassDefinitionSchema).default({}),
   skills: z.record(z.string(), DnD35SkillDefinitionSchema).default({}),
   feats: z.record(z.string(), DnD35FeatDefinitionSchema).default({}),
-  spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({})
+  spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({}),
+  templates: z.record(z.string(), DnD35TemplateSchema).default({})
 });
 /** Inferred type for D&D 3.5e System Content registries. */
 export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;

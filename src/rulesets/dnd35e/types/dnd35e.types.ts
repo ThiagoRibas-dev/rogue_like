@@ -1,6 +1,4 @@
-/**
- * Domain types and serializable component payloads for the D&D 3.5e ruleset cartridge.
- */
+import type { MovementModes } from '../../../types/components.types.ts';
 
 /** The six canonical D&D 3.5e ability score identifiers. */
 export type AbilityId = 'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha';
@@ -76,21 +74,34 @@ export type BonusType =
 /** Source origin tag used for dynamic Antimagic Field suppression. */
 export type ModifierSourceOrigin = 'ex' | 'su' | 'sp' | 'spell' | 'magical' | 'mundane';
 
+/**
+ * Tag-based condition required for a conditional stat modifier to apply.
+ */
+export interface StatModifierCondition {
+  readonly targetTagsAll?: ReadonlyArray<string> | undefined;
+  readonly targetTagsAny?: ReadonlyArray<string> | undefined;
+  readonly targetTagsNone?: ReadonlyArray<string> | undefined;
+  readonly effectTagsAny?: ReadonlyArray<string> | undefined;
+}
+
 /** A single typed stat modifier entry evaluated at query time. */
 export interface StatModifier {
   readonly targetStat: string;
   readonly value: number;
   readonly bonusType: BonusType;
   readonly sourceId: string;
-  readonly origin?: ModifierSourceOrigin;
+  readonly origin?: ModifierSourceOrigin | undefined;
+  readonly condition?: StatModifierCondition | undefined;
 }
 
 /** Contextual flags passed when resolving typed modifiers or Armor Class. */
 export interface StatQueryContext {
-  readonly inAntimagicField?: boolean;
-  readonly ignoreArmorAndNatural?: boolean;
-  readonly ignorePositiveDexAndDodge?: boolean;
-  readonly maxDexBonus?: number;
+  readonly inAntimagicField?: boolean | undefined;
+  readonly ignoreArmorAndNatural?: boolean | undefined;
+  readonly ignorePositiveDexAndDodge?: boolean | undefined;
+  readonly maxDexBonus?: number | undefined;
+  readonly targetTags?: ReadonlyArray<string> | undefined;
+  readonly effectTags?: ReadonlyArray<string> | undefined;
 }
 
 /** Itemized Armor Class triplet and breakdown DTO. */
@@ -203,7 +214,7 @@ export type DnD35DamageType =
 export interface DamageReductionRule {
   readonly amount: number;
   readonly bypassTags: ReadonlyArray<string>;
-  readonly requireAllTags?: boolean;
+  readonly requireAllTags?: boolean | undefined;
 }
 
 /** Vitality state tracking lethal HP, nonlethal damage, and `-1..-9 / -10` status. */
@@ -233,7 +244,38 @@ export type DnD35ConditionId =
 /** Capability classification governing Antimagic, SR, AoO, and Concentration rules. */
 export type CapabilityClassification = 'spell' | 'ex' | 'sp' | 'su';
 
-/** Serializable D&D 3.5e entity payload stored inside `RulesetDataComponent.data`. */
+/**
+ * On-hit poison, disease, or curse rider attached to a natural or manufactured attack.
+ */
+export interface OnHitRiderDescriptor {
+  readonly riderId: string;
+  readonly type: 'poison' | 'disease' | 'energy_drain' | 'curse' | 'paralysis';
+  readonly delivery: 'injury' | 'contact';
+  readonly saveType: SaveType;
+  readonly dc: number;
+  readonly initialEffectDescription: string;
+  readonly secondaryEffectDescription?: string | undefined;
+  readonly secondaryDelayRounds?: number | undefined;
+}
+
+/**
+ * Natural weapon attack configuration (claws, bites, gores, slams, stingers, tentacles).
+ */
+export interface NaturalWeaponDescriptor {
+  readonly id: string;
+  readonly name: string;
+  readonly naturalType: 'bite' | 'claw' | 'gore' | 'slam' | 'sting' | 'tentacle' | 'talon' | 'tail_slap';
+  readonly isPrimary: boolean;
+  readonly count: number;
+  readonly damageDice: string;
+  readonly damageType: DnD35DamageType;
+  readonly critThreatMin: number;
+  readonly critMultiplier: number;
+  readonly reachFt?: number | undefined;
+  readonly riders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;
+}
+
+/** Serializable D&D 3.5e entity payload stored inside `RulesetDataComponent.payload`. */
 export interface DnD35EntityData {
   readonly archetypeId: string;
   readonly sizeCategory: CreatureSizeCategory;
@@ -247,7 +289,7 @@ export interface DnD35EntityData {
   readonly armorBonus: number;
   readonly shieldBonus: number;
   readonly naturalArmorBonus: number;
-  readonly damageReduction?: DamageReductionRule;
+  readonly damageReduction?: DamageReductionRule | undefined;
   readonly energyResistance: Readonly<Record<string, number>>;
   readonly immunities: ReadonlyArray<string>;
   readonly vulnerabilities: ReadonlyArray<string>;
@@ -257,4 +299,14 @@ export interface DnD35EntityData {
   readonly conditions: ReadonlyArray<DnD35ConditionId>;
   readonly feats: ReadonlyArray<string>;
   readonly skillRanks: Readonly<Record<string, number>>;
+  readonly creatureType?: string | undefined;
+  readonly subtypes?: ReadonlyArray<string> | undefined;
+  readonly levelAdjustment?: number | undefined;
+  readonly spellResistance?: number | undefined;
+  readonly senses?: SensoryProfile | undefined;
+  readonly movementModes?: MovementModes | undefined;
+  readonly naturalWeapons?: ReadonlyArray<NaturalWeaponDescriptor> | undefined;
+  readonly hasPounce?: boolean | undefined;
+  readonly singleActionsOnly?: boolean | undefined;
 }
+

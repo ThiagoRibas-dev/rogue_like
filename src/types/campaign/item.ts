@@ -7,7 +7,27 @@ export const ItemCategoryEnum = z.enum(['consumable', 'weapon', 'armor', 'tool']
 export type ItemCategory = z.infer<typeof ItemCategoryEnum>;
 
 /** Zod enum for available equipment slots. */
-export const EquipmentSlotEnum = z.enum(['head', 'neck', 'torso', 'back', 'arm', 'hand', 'finger', 'leg', 'foot']);
+export const EquipmentSlotEnum = z.enum([
+  'head',
+  'neck',
+  'torso',
+  'back',
+  'arm',
+  'hand',
+  'finger',
+  'leg',
+  'foot',
+  'eyes',
+  'shoulders',
+  'body',
+  'waist',
+  'ring',
+  'held',
+  'main_hand',
+  'off_hand',
+  'two_handed',
+  'ranged'
+]);
 /** Inferred type representing an equipment slot. */
 export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 

@@ -42,7 +42,11 @@ export const enum ComponentType {
   Nemesis = 'Nemesis',
   InteractionScore = 'InteractionScore',
   DirectorBudget = 'DirectorBudget',
-  RulesetData = 'RulesetData'
+  RulesetData = 'RulesetData',
+  PropertyOverlay = 'PropertyOverlay',
+  ControllerLink = 'ControllerLink',
+  ResourcePool = 'ResourcePool',
+  TacticalDoctrine = 'TacticalDoctrine'
 }
 
 /**
@@ -73,11 +77,29 @@ export interface PlayerComponent {
 }
 
 /**
+ * Maneuverability rating for flying creatures in D&D 3.5e.
+ */
+export type FlightManeuverability = 'clumsy' | 'poor' | 'average' | 'good' | 'perfect';
+
+/**
+ * Multi-mode movement speeds for creatures (land, burrow, climb, fly, swim).
+ */
+export interface MovementModes {
+  readonly land: number;
+  readonly burrow?: number | undefined;
+  readonly climb?: number | undefined;
+  readonly fly?: number | undefined;
+  readonly swim?: number | undefined;
+  readonly maneuverability?: FlightManeuverability | undefined;
+}
+
+/**
  * Component indicating the entity takes turns in the scheduler.
  */
 export interface ActorComponent {
   readonly type: ComponentType.Actor;
   readonly speed: number;
+  readonly movementModes?: MovementModes | undefined;
 }
 
 /**
@@ -196,6 +218,9 @@ export interface EquipmentSlotInstance {
   readonly id: string; // Unique instance ID, e.g., "head_1", "arm_2", "finger_3"
   readonly slotType: EquipmentSlot;
   readonly equippedItem: EntityId | null;
+  readonly limbGroupId?: string | undefined;
+  readonly occupiedBySlotId?: string | undefined;
+  readonly suppressed?: boolean | undefined;
 }
 
 /**
@@ -453,7 +478,7 @@ export interface ClueComponent {
 }
 
 /**
- * Component representing a hazard field tile (like fire or poison gas).
+ * Component representing a hazard field tile or mobile aura/emanation (like fire, poison gas, or silence/antimagic).
  */
 export interface FieldComponent {
   readonly type: ComponentType.Field;
@@ -461,6 +486,13 @@ export interface FieldComponent {
   readonly intensity: number;
   readonly duration: number;
   readonly spreadRuleId?: string | undefined;
+  readonly anchorEntityId?: EntityId | undefined;
+  readonly radiusFt?: number | undefined;
+  readonly sourceEntityId?: EntityId | undefined;
+  readonly blocksLoS?: boolean | undefined;
+  readonly blocksLoE?: boolean | undefined;
+  readonly suppressedTags?: ReadonlyArray<string> | undefined;
+  readonly movementCostMultiplier?: number | undefined;
 }
 
 /**
@@ -472,11 +504,16 @@ export interface DialogueComponent {
 }
 
 /**
- * Component defining an NPC's general attitude towards the player (hostile, neutral, friendly).
+ * Standard 5-tier D&D 3.5e NPC attitude categories plus legacy 'neutral'.
+ */
+export type AttitudeTier = 'hostile' | 'unfriendly' | 'indifferent' | 'neutral' | 'friendly' | 'helpful';
+
+/**
+ * Component defining an NPC's attitude towards another entity or faction.
  */
 export interface AttitudeComponent {
   readonly type: ComponentType.Attitude;
-  readonly attitude: 'hostile' | 'neutral' | 'friendly';
+  readonly attitude: AttitudeTier;
 }
 
 /**
@@ -583,6 +620,90 @@ export interface RulesetDataComponent {
 }
 
 /**
+ * A single composable layer within a PropertyOverlayComponent stack.
+ */
+export interface PropertyOverlayLayer {
+  readonly layerId: string;
+  readonly source: string;
+  readonly priority: number;
+  readonly durationTurns?: number | undefined;
+  readonly statOverrides?: Readonly<Record<string, number>> | undefined;
+  readonly sizeCategoryOverride?: string | undefined;
+  readonly creatureTypeOverride?: string | undefined;
+  readonly movementModesOverride?: MovementModes | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly suppressedTags?: ReadonlyArray<string> | undefined;
+  readonly suppressedSlots?: ReadonlyArray<string> | undefined;
+}
+
+/**
+ * Component representing a non-destructive property overlay or priority-ordered overlay stack
+ * (Wild Shape, polymorph, Enlarge Person, possession, curses).
+ */
+export interface PropertyOverlayComponent {
+  readonly type: ComponentType.PropertyOverlay;
+  readonly source: string;
+  readonly priority: number;
+  readonly durationTurns?: number | undefined;
+  readonly statOverrides?: Readonly<Record<string, number>> | undefined;
+  readonly sizeCategoryOverride?: string | undefined;
+  readonly creatureTypeOverride?: string | undefined;
+  readonly movementModesOverride?: MovementModes | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
+  readonly suppressedTags?: ReadonlyArray<string> | undefined;
+  readonly suppressedSlots?: ReadonlyArray<string> | undefined;
+  readonly layers?: ReadonlyArray<PropertyOverlayLayer> | undefined;
+}
+
+/**
+ * Component linking an entity to its controller/master (minions, companions, familiars, eidolons, summons).
+ */
+export interface ControllerLinkComponent {
+  readonly type: ComponentType.ControllerLink;
+  readonly controllerEntityId: EntityId;
+  readonly relationship: 'minion' | 'companion' | 'familiar' | 'eidolon' | 'mount' | 'summon';
+  readonly shareInitiative?: boolean | undefined;
+  readonly expirationTurn?: number | undefined;
+}
+
+/**
+ * Canonical recharge cycle for modular resource pools.
+ */
+export type ResourceRefreshCycle = 'round' | 'encounter' | 'short_rest' | 'rest_8h';
+
+/**
+ * Pool entry for modular character resources (rage uses, turn undead, smite, ki).
+ */
+export interface ResourcePoolEntry {
+  readonly current: number;
+  readonly max: number;
+  readonly resetOnRest: boolean;
+  readonly label?: string | undefined;
+  readonly refreshCycle?: ResourceRefreshCycle | undefined;
+}
+
+/**
+ * Component tracking named modular resource pools.
+ */
+export interface ResourcePoolComponent {
+  readonly type: ComponentType.ResourcePool;
+  readonly pools: Readonly<Record<string, ResourcePoolEntry>>;
+}
+
+/**
+ * Component storing active tactical stances and combat trade-offs (Power Attack, Combat Expertise, Fighting Defensively)
+ * as well as data-driven doctrine settings.
+ */
+export interface TacticalDoctrineComponent {
+  readonly type: ComponentType.TacticalDoctrine;
+  readonly powerAttackAmount?: number | undefined;
+  readonly combatExpertiseAmount?: number | undefined;
+  readonly fightingDefensively?: boolean | undefined;
+  readonly totalDefense?: boolean | undefined;
+  readonly settings?: Readonly<Record<string, boolean | number | string>> | undefined;
+}
+
+/**
  * Discriminated union of all component types in the game.
  */
 export type Component =
@@ -626,4 +747,9 @@ export type Component =
   | NemesisComponent
   | InteractionScoreComponent
   | DirectorBudgetComponent
-  | RulesetDataComponent;
+  | RulesetDataComponent
+  | PropertyOverlayComponent
+  | ControllerLinkComponent
+  | ResourcePoolComponent
+  | TacticalDoctrineComponent;
+

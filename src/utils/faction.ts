@@ -20,10 +20,18 @@ export function getFactionRelation(
 
   if (isSubjectPlayer && !isTargetPlayer) {
     const attitudeCmp = getComponent(state, target, ComponentType.Attitude) as AttitudeComponent | undefined;
-    if (attitudeCmp) return attitudeCmp.attitude;
+    if (attitudeCmp) {
+      if (attitudeCmp.attitude === 'hostile') return 'hostile';
+      if (attitudeCmp.attitude === 'friendly' || attitudeCmp.attitude === 'helpful') return 'friendly';
+      return 'neutral';
+    }
   } else if (isTargetPlayer && !isSubjectPlayer) {
     const attitudeCmp = getComponent(state, subject, ComponentType.Attitude) as AttitudeComponent | undefined;
-    if (attitudeCmp) return attitudeCmp.attitude;
+    if (attitudeCmp) {
+      if (attitudeCmp.attitude === 'hostile') return 'hostile';
+      if (attitudeCmp.attitude === 'friendly' || attitudeCmp.attitude === 'helpful') return 'friendly';
+      return 'neutral';
+    }
   }
 
   const subjectFactionCmp = getComponent(state, subject, ComponentType.Faction) as FactionComponent | undefined;

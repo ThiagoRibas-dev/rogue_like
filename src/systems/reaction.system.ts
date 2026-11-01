@@ -25,14 +25,75 @@ export function getEntityMatcherData(state: GameState, entityId: EntityId): Enti
   const itemCmp = getComponent(state, entityId, ComponentType.Item) as ItemComponent | undefined;
   const itemDef = itemCmp ? state.campaign.items[itemCmp.itemId] : undefined;
 
-  // Combine component tags with base template/item tags if needed,
-  // but usually they are flattened into TagsComponent during creation.
   const tags = tagsCmp?.tags ?? [];
   const traits = traitsCmp?.traits ?? [];
   const category = itemDef?.category;
 
   return { tags, traits, category, entityId };
 }
+
+/**
+ * Condition specification for tag-based matching on an entity or combat context.
+ */
+export interface EntityTagCondition {
+  readonly targetTagsAll?: ReadonlyArray<string> | undefined;
+  readonly targetTagsAny?: ReadonlyArray<string> | undefined;
+  readonly targetTagsNone?: ReadonlyArray<string> | undefined;
+  readonly effectTagsAny?: ReadonlyArray<string> | undefined;
+  readonly targetSizeMin?: string | undefined;
+}
+
+/**
+ * Checks if target tags and effect tags satisfy an EntityTagCondition.
+ * Evaluates targetTagsAll (conjunction), targetTagsAny (disjunction), targetTagsNone (negation), and effectTagsAny.
+ */
+export function matchesEntityTagCondition(
+  condition: EntityTagCondition,
+  targetTags?: ReadonlyArray<string> | undefined,
+  effectTags?: ReadonlyArray<string> | undefined
+): boolean {
+  if (condition.targetTagsAll && condition.targetTagsAll.length > 0) {
+    if (!targetTags) return false;
+    for (const tag of condition.targetTagsAll) {
+      if (!targetTags.includes(tag)) return false;
+    }
+  }
+
+  if (condition.targetTagsAny && condition.targetTagsAny.length > 0) {
+    if (!targetTags) return false;
+    let match = false;
+    for (const tag of condition.targetTagsAny) {
+      if (targetTags.includes(tag)) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) return false;
+  }
+
+  if (condition.targetTagsNone && condition.targetTagsNone.length > 0) {
+    if (targetTags) {
+      for (const tag of condition.targetTagsNone) {
+        if (targetTags.includes(tag)) return false;
+      }
+    }
+  }
+
+  if (condition.effectTagsAny && condition.effectTagsAny.length > 0) {
+    if (!effectTags) return false;
+    let match = false;
+    for (const tag of condition.effectTagsAny) {
+      if (effectTags.includes(tag)) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) return false;
+  }
+
+  return true;
+}
+
 
 /**
  * Helper to evaluate a specific target against a matcher definition.

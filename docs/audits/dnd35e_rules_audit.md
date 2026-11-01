@@ -717,33 +717,39 @@ Per **AGENTS.md Rule 15**, the architectural impact of integrating these 17 isol
 
 ---
 
-### 16.9 Actionable Implementation Roadmap & Milestones
+### 16.9 Actionable Implementation Roadmap & Milestones (`docs/MILESTONES.md` Phases 21–26)
 
-To implement the isolated primitives cleanly and maintain zero regressions across the test suite:
+To implement the isolated primitives cleanly and then systematically author the full SRD system content registries without regressions, the roadmap in `docs/MILESTONES.md` is organized into 6 phases (`Milestones 102–118`):
 
-1. **Milestone 102: System Content Subtypes & Creature Chassis Completion**
-   - Implement `PRIM-1.1` (`subtypes: string[]` in `DnD35ArchetypeSchema`).
-   - Implement `PRIM-1.2` (Movement modes dictionary: land, fly, swim, burrow).
-   - Implement `PRIM-1.3` (`isPrimary` natural weapon classification and Multiattack secondary penalty calculator).
-   - Implement `PRIM-1.7` (`StatModifierCondition` tag matcher leveraging generic console `getEntityMatcherData()` from `src/systems/reaction.system.ts` for favored enemies, bane weapons, and dwarf/gnome combat bonuses).
-2. **Milestone 103: Class ACFs & Daily Resource Trackers**
-   - Implement `PRIM-2.1` (`acfSwaps` schema in `classes.json` and selection in character builder).
-   - Implement `PRIM-2.2` (`ResourcePoolComponent` for Rage, Turn Undead, Smite, resetting on 8h rest).
-   - Implement `PRIM-3.1` (`StanceComponent` for Power Attack & Combat Expertise persistent sliders).
-3. **Milestone 104: Magic Subsystems (Metamagic, Concentration & Spatial Auras)**
-   - Implement `PRIM-3.4` (`MetamagicPreparedSlot` runtime wrapper for Empower, Maximize, Extend, Quicken).
-   - Implement `PRIM-4.1` (`ConcentrationMaintainerComponent` and damage interruption checks).
-   - Implement `PRIM-4.2` (`SpatialAuraComponent` for persistent ground/creature spell zones).
-   - Implement `PRIM-4.3` (`resolveDispelCheck` algorithm and status effect purging).
-4. **Milestone 105: Equipment Physics & Special Materials**
-   - Implement `PRIM-5.1` (Mithral category reduction, Max Dex, ACP, and ASF recalculator).
-   - Author expanded weapon and armor definitions showcasing special materials in `public/data/rulesets/dnd35e/`.
+- **Phase 21: Pre-Content Engine & Cartridge Primitives (`Milestones 102–105`)**
+  - **Milestone 102 (Shared Console Primitives)**: Elevate reusable building blocks to the Core Console (`matchesTagCondition` via `reaction.system.ts` for `PRIM-1.7`, `TacticalDoctrineComponent` for `PRIM-3.1`/`PRIM-3.2`, `ResourcePoolComponent` for `PRIM-2.2`, entity-attached & persistent `FieldComponent` extensions for `PRIM-4.2`, and multi-mode `MovementModes` for `PRIM-1.2`).
+  - **Milestone 103 (Cartridge Chassis Primitives)**: Implement `PRIM-1.1` (`subtypes` array + automatic `TagsComponent` hydration), `PRIM-1.7` (`StatModifierCondition` integration), `PRIM-1.3` (primary/secondary natural weapon sequencing), `PRIM-1.4` (`onHitTrigger` maneuvers & `pounce`), and `PRIM-1.5` / `PRIM-1.6` (Inherited & Acquired Template transformers).
+  - **Milestone 104 (Cartridge Class, Stance & Magic Primitives)**: Implement `PRIM-2.1` (`acfSwaps` & class progression tables), `PRIM-2.3` (`WildShapeOverlayState`), `PRIM-3.1`–`PRIM-3.3` (Doctrine slider evaluation, immediate defense reactions, full-attack sequence hooks), `PRIM-3.4` (`MetamagicPreparedSlot`), and `PRIM-4.1`, `PRIM-4.3`, `PRIM-4.4` (Concentration maintainer, Dispel check resolver, Counterspell hook).
+  - **Milestone 105 (Cartridge Equipment Physics & 12-Slot Body Layout)**: Implement `PRIM-5.1` (`applyMaterialPhysics` for Mithral/Adamantine/Silver/Cold Iron/Darkwood), weapon size-step scaling, and the 12-slot body layout + 4-mode magic item activation pipeline.
+- **Phase 22: System Content Pillar 1 — Playable Races, Templates & Monster Bestiary (`Milestones 106–108`)**
+  - **Milestone 106**: Core 7 Player's Handbook races + subraces, planetouched, and monstrous races (`races.json`).
+  - **Milestone 107**: Inherited (*Celestial*, *Fiendish*, *Half-Dragon*) and Acquired (*Skeleton*, *Zombie*, *Lich*, *Vampire*, *Ghost*) creature templates (`templates.json`).
+  - **Milestone 108**: Expanded Monster Manual Bestiary across all 15 SRD creature types from CR 1/4 to CR 15+ (`archetypes.json` & `entities.json`).
+- **Phase 23: System Content Pillar 2 — Core 11 Classes, Prestige Classes, ACFs & Character Builder (`Milestones 109–111`)**
+  - **Milestone 109**: All 11 SRD Base Classes (levels 1–20), all 22 Cleric Domains, Wizard Specializations, and signature ACFs (`classes.json`).
+  - **Milestone 110**: Iconic SRD Prestige Classes (*Arcane Archer*, *Assassin*, *Blackguard*, *Dragon Disciple*, *Duelist*, *Dwarven Defender*, *Eldritch Knight*, *Loremaster*, *Mystic Theurge*, *Shadowdancer*) + multiclass XP rules.
+  - **Milestone 111**: Interactive 7-step D&D 3.5e Character Creation Wizard & Level-Up Advancement Modal.
+- **Phase 24: System Content Pillars 3 & 5 — Complete SRD Skills, Feats, Weapons, Armor & Magic Items (`Milestones 112–114`)**
+  - **Milestone 112**: Complete 35+ SRD Skill Matrix & active dungeon/combat skill verbs (`skills.json`).
+  - **Milestone 113**: Complete SRD Feat catalog: melee/maneuver/ranged/TWF chains, tactical doctrines, monster feats, and metamagic (`feats.json`).
+  - **Milestone 114**: Simple/Martial/Exotic weapons, Light/Medium/Heavy armors, Special Materials, Weapon/Armor enhancements, 12-slot Wondrous Items, Rings, Rods, Staves, Wands, Scrolls, and Potions (`items.json`).
+- **Phase 25: System Content Pillar 4 — Comprehensive SRD Grimoire (`Milestones 115–116`)**
+  - **Milestone 115**: 0th–3rd level Arcane & Divine tactical spells, rays, cones, spreads, and lingering zones (`spells.json`).
+  - **Milestone 116**: 4th–9th level Arcane & Divine spells, *Summon Monster I–IX* / *Summon Nature's Ally I–IX*, high-tier wards, and apex spells (`spells.json`).
+- **Phase 26: D&D 3.5e Tactical HUD, Character Sheet, Spellbook UI & Showcase Polish (`Milestones 117–118`)**
+  - **Milestone 117**: HUD Tactical Doctrine Dials, Resource Pool gauges, 6-Tab Character Sheet, 12-Slot Paper Doll, and Vancian Spellbook / Open-Slot Preparation UI.
+  - **Milestone 118**: Multi-zone upgrade of *The Sunless Reliquary* (`dnd35e-crypt`) showcasing all content pillars, full test suite coverage, and `DND35 -> master` merge readiness.
 
 ---
 
 ### 16.10 Final Comprehensive Engine Parity Metric
 
-With both the **Core SRD Rules Audit (Pass 1)** and **System Content & Missing Primitives Isolation Audit (Pass 2)** complete:
+With both the **Core SRD Rules Audit (Pass 1)**, **System Content & Missing Primitives Isolation Audit (Pass 2)**, and **Wave 3 Incursion Comparative Analysis** complete:
 
 - **Total SRD Rules & Content Domains Audited**: 18 Domains (195+ source files)
 - **Total Individual Core Mechanics Evaluated**: 160 Mechanics
@@ -754,7 +760,7 @@ With both the **Core SRD Rules Audit (Pass 1)** and **System Content & Missing P
 - **Total Missing Primitives Isolated & Architecturally Specified**: **18 Reusable Primitives** (`PRIM-1.1` to `PRIM-5.1`)
 - **Overall Engine SRD Fidelity Score**: **95.6% (Grade A)**
 
-The D&D 3.5e engine implementation in `src/rulesets/dnd35e/` is mathematically sound, architecturally layered, pure-ECS compliant, and fully ready for staged execution of Milestones 102–105.
+The D&D 3.5e engine implementation in `src/rulesets/dnd35e/` is mathematically sound, architecturally layered, pure-ECS compliant, and fully ready for staged execution of Phases 21–26 (`Milestones 102–118`).
 
 ---
 

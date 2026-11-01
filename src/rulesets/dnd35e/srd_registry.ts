@@ -85,8 +85,40 @@ export function hydrateArchetypeData(archetype: DnD35Archetype, levelOverride?: 
     isStable: true,
     conditions: [],
     feats: archetype.feats,
-    skillRanks: archetype.skillRanks
+    skillRanks: archetype.skillRanks,
+    ...(archetype.creatureType !== undefined ? { creatureType: archetype.creatureType } : {}),
+    subtypes: archetype.subtypes ?? [],
+    levelAdjustment: archetype.levelAdjustment ?? 0,
+    naturalWeapons: archetype.naturalWeapons ?? [],
+    hasPounce: archetype.hasPounce ?? false,
+    singleActionsOnly: archetype.singleActionsOnly ?? false
   };
+}
+
+/**
+ * Projects semantic creature type, subtype, and size tags (`type:<creatureType>`,
+ * `subtype:<subtype>`, `size:<sizeCategory>`) from `DnD35EntityData` (`PRIM-1.1`),
+ * merging them deduplicated with any existing tags on the entity.
+ *
+ * @param dndData Resolved `DnD35EntityData` of the actor.
+ * @param existingTags Optional existing tags from `TagsComponent`.
+ * @returns Deduplicated array of semantic tags for `matchesEntityTagCondition`.
+ */
+export function projectDnD35ActorSemanticTags(
+  dndData: DnD35EntityData,
+  existingTags: ReadonlyArray<string> = []
+): ReadonlyArray<string> {
+  const tags = new Set<string>(existingTags);
+  tags.add(`size:${dndData.sizeCategory}`);
+  if (dndData.creatureType) {
+    tags.add(dndData.creatureType);
+    tags.add(`type:${dndData.creatureType}`);
+  }
+  for (const subtype of dndData.subtypes ?? []) {
+    tags.add(subtype);
+    tags.add(`subtype:${subtype}`);
+  }
+  return Array.from(tags);
 }
 
 /**
@@ -220,7 +252,7 @@ export function getEquippedItemBonuses(
   let equipAttackBonus = 0;
   let equipArmorBonus = 0;
   for (const slot of equipment.slots) {
-    if (slot.equippedItem === null) continue;
+    if (slot.equippedItem === null || slot.suppressed === true) continue;
     const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
     const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
     if (itemDef?.equippable) {

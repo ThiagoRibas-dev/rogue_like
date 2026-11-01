@@ -1,5 +1,6 @@
 import { dndFloor } from './math/multipliers.ts';
 import type { AggregatedChassis, BabCurveType, HitDieTrack, SaveCurveType } from './types/dnd35e.types.ts';
+import type { DnD35ClassDefinition } from './types/dnd35e_system.types.ts';
 
 /** Multiplier for the Three-Quarters (0.75) BAB progression curve. */
 const BAB_THREE_QUARTERS_RATIO = 0.75;
@@ -183,4 +184,33 @@ export function aggregateProgressionChassis(
     abilityIncreaseCount,
     maxHp: Math.max(MIN_HP_PER_HIT_DIE, totalHp + flatBonusHp)
   };
+}
+
+/**
+ * Resolves active class features for an actor given baseline features, active ACF selections,
+ * and the class's declarative ACF swap tables.
+ *
+ * @param baseClassFeatures Array of feature IDs granted by base class level.
+ * @param activeAcfIds Array of ACF IDs selected by the character.
+ * @param classDef Class definition from System Content.
+ * @returns Transformed array of active feature IDs.
+ */
+export function resolveActiveClassFeatures(
+  baseClassFeatures: ReadonlyArray<string>,
+  activeAcfIds: ReadonlyArray<string>,
+  classDef: DnD35ClassDefinition
+): ReadonlyArray<string> {
+  let active = [...baseClassFeatures];
+
+  for (const acfId of activeAcfIds) {
+    const swap = classDef.acfSwaps.find((s) => s.acfId === acfId);
+    if (swap) {
+      active = active.filter((f) => f !== swap.replacesFeature);
+      if (!active.includes(swap.grantedFeature)) {
+        active.push(swap.grantedFeature);
+      }
+    }
+  }
+
+  return active;
 }

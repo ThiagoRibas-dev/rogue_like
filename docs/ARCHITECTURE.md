@@ -481,4 +481,31 @@ To prevent schema contamination across rulesets, System Content schemas are **st
 - **Cartridge Domain Schemas (`src/rulesets/<rulesetId>/types/`)**: Each ruleset cartridge defines and exports its own typed Zod schemas (e.g., `DnD35ArchetypeSchema`, `DnD35ClassSchema`, `DnD35FeatSchema`, `DnD35SpellSchema` in `src/rulesets/dnd35e/types/dnd35e_system.types.ts`).
 - **Contract Seam (`RulesetContract`)**: Each cartridge declares its system file manifest via `getSystemContentFiles(): ReadonlyArray<RulesetSystemFileDescriptor>` and optionally validates them via `parseSystemContent(raw)` and `validateCampaignRuleset(campaign)`.
 
+### 9.4 Shared Console Primitives & Symmetrical Actor Architecture (Phase 21, Milestones 102–105)
+
+In strict accordance with **AGENTS.md Rule 16** (Three-Tier Placement Heuristic), **Rule 17** (Baseline Rules + Declarative Overrides), and **Rule 18** (Universal Actor Symmetry), Phase 21 elevated reusable simulation primitives to the Core Console while keeping tabletop-specific mathematical laws in the Cartridge:
+
+1. **Shared Console Primitives (Tier 1 — `src/types/components.types.ts`, `src/systems/`)**:
+   - **`matchesEntityTagCondition` (`src/systems/reaction.system.ts`)**: Pure zero-allocation entity and effect tag matcher (`targetTagsAll`, `targetTagsAny`, `effectTagsAny`) empowering conditional combat bonuses, bane weapons, and saving throw modifiers across all rulesets.
+   - **`PropertyOverlayComponent` (`src/types/components.types.ts`)**: Serializable, non-destructive overlay stack for priority-ordered temporary form modifications (*Wild Shape*, *Polymorph*, *Enlarge Person*, templates) with turn-based durations and reversion semantics.
+   - **`ControllerLinkComponent` (`src/types/components.types.ts`, `src/core/ecs.ts`)**: Links minions, familiars, summoned allies, and spiritual weapons to their controller entity, handling automatic turn-counter expiration and foreign-key floor transitions.
+   - **`ResourcePoolComponent` (`src/types/components.types.ts`)**: Modular charge pools (`rage`, `turn_undead`, `smite_evil`, `wild_shape`, `ki`) with configurable refresh cycles (`round`, `encounter`, `short_rest`, `rest_8h`).
+   - **`TacticalDoctrineComponent` (`src/types/components.types.ts`)**: Stores dynamic tactical stance sliders (*Power Attack*, *Combat Expertise*) and reaction toggles (*Deflect Arrows*, *Cast Defensively*) to preserve fluid RTwP and turn-based flow without mid-combat modal interruptions.
+   - **Mobile Spatial Emanations (`src/systems/field.system.ts`)**: `FieldComponent` supports `anchorEntityId` tracking mobile auras (*Silence*, *Magic Circle*), LoS/LoE blocking, and tag suppression (`verbal_casting`, `magical`).
+   - **Multi-Mode Movement & 5-Tier Attitude (`src/types/`, `src/utils/faction.ts`)**: Added `MovementModes` (`land`, `fly`, `swim`, `burrow`, `climb`) with flight maneuverability and expanded `AttitudeTier` (`hostile`, `unfriendly`, `indifferent`, `friendly`, `helpful`, `neutral`).
+   - **Anatomical Equipment Topologies (`src/systems/inventory.system.ts`, `src/types/campaign/item.ts`)**: Expanded `EquipmentSlotEnum` and added `buildAnatomyEquipmentSlots()` supporting arbitrary anatomies (`humanoid_biped`, `quadruped`, `marilith_6arm`, `avian`, `serpentine`) with `limbGroupId`, `occupiedBySlotId`, and `suppressed` slot melding.
+
+2. **Cartridge Baseline Mechanics & Declarative Overrides (Tier 2 — `src/rulesets/dnd35e/`)**:
+   - **Universal Actor Chassis (`DnD35EntityData`, `DnD35ArchetypeSchema`)**: Symmetrical entity data modeling PCs, NPCs, and creatures identically through `creatureType`, `subtypes`, `tracks`, `anatomySlots`, `naturalWeapons`, and `movementModes`.
+   - **Manufactured + Natural Weapon Routine (`src/rulesets/dnd35e/combat/attack_resolver.ts`)**: Implements SRD full attacks where primary manufactured weapons take full iterative BAB + offhand attacks without TWF penalty on natural weapons, and unheld natural weapons are demoted to secondary attacks (`-5` baseline, `-2` with *Multiattack* modifier) with `0.5x STR`.
+   - **Declarative Maneuver Overrides (`src/rulesets/dnd35e/combat/maneuvers_conditions.ts`)**: Maneuvers (`trip`, `grapple`, `disarm`, `sunder`, `bull_rush`, `overrun`, `feint`) accept `ManeuverRuleOverrides` (`provokesAoO`, `grantedFreeFollowupAttack`, `canBeCounterTripped`), eliminating hardcoded feat checks.
+   - **Rider Suppression on Damage Reduction (`shouldTriggerOnHitRider`)**: Automatically suppresses contact and injury riders (poison, disease) when DR absorbs all physical damage.
+   - **5-Tier Diplomacy Progression (`resolveDiplomacyCheck`)**: Implements standard SRD DC tables based on initial attitude and target Cha modifier.
+   - **Inherited & Acquired Templates (`src/rulesets/dnd35e/templates.ts`)**: Composable template transformers (`applyCreatureTemplate`) for *Celestial*, *Fiendish*, *Skeleton*, *Zombie*, and *Lich*.
+   - **Wild Shape & Form Facade (`src/rulesets/dnd35e/wild_shape.ts`)**: Cartridge facade applying non-destructive overlays and equipment slot melding over Console primitives.
+   - **Tactical Doctrine Evaluators & Reactions (`src/rulesets/dnd35e/action_economy.ts`, `attack_resolver.ts`)**: Evaluates Power Attack (1:1 one-handed, 1:2 two-handed, 0:1 light) and Combat Expertise; processes immediate defense reactions (*Deflect Arrows*, *Feather Fall*, *Defensive Roll*) with action economy debt.
+   - **Metamagic, Concentration & Dispel Mechanics (`src/rulesets/dnd35e/magic/spellcasting.ts`)**: Runtime metamagic damage calculation (`evaluateMetamagicDamage`), spontaneous casting action adjustments, Concentration maintenance, Dispel Magic d20 checks, and readied Counterspell reactions.
+   - **Special Material Physics & Sizing (`src/rulesets/dnd35e/equipment_physics.ts`)**: Applies material adjustments (Mithral category shift, Adamantine DR, Silver damage penalty, Cold Iron, Darkwood) and 9-size weapon damage dice scaling (`scaleWeaponDamageDice`).
+
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+

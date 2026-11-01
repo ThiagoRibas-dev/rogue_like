@@ -1,5 +1,10 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type InventoryComponent, type EquipmentComponent } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type InventoryComponent,
+  type EquipmentComponent,
+  type EquipmentSlotInstance
+} from '../types/components.types.ts';
 import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
@@ -24,7 +29,7 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
 
   let bonus = 0;
   for (const slot of equipment.slots) {
-    if (slot.equippedItem !== null) {
+    if (slot.equippedItem !== null && slot.suppressed !== true) {
       const item = getComponent(state, slot.equippedItem, ComponentType.Item);
       if (item) {
         const def = state.campaign.items[item.itemId];
@@ -220,11 +225,11 @@ export function processEquipItemIntent(
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
 
-  // Find an available slot of this type
-  const matchingSlots = equipment.slots.filter((s) => s.slotType === slotType);
+  // Find an available slot of this type that is not suppressed
+  const matchingSlots = equipment.slots.filter((s) => s.slotType === slotType && s.suppressed !== true);
   if (matchingSlots.length === 0) {
     return {
-      state: addMessage(state, `You have no ${slotType} slot to equip the ${itemName}.`, MessageLogCategory.System),
+      state: addMessage(state, `You have no available ${slotType} slot to equip the ${itemName}.`, MessageLogCategory.System),
       success: false
     };
   }
@@ -298,4 +303,116 @@ export function processUnequipItemIntent(
     success: true,
     events: [{ type: GameEventType.ItemUnequipped, entityId, itemId: itemEntityId }]
   };
+}
+
+/**
+ * Known body anatomy topology plans.
+ */
+export type AnatomyBodyPlan = 'humanoid_biped' | 'quadruped' | 'marilith_6arm' | 'avian' | 'serpentine';
+
+/**
+ * Builds an array of EquipmentSlotInstance objects for a given anatomical body plan.
+ * Encapsulates multi-armed (e.g. Marilith 6 arms), quadruped (4 legs/feet, no hands),
+ * avian (wings, talons), and serpentine (no legs/feet) morphologies.
+ *
+ * @param bodyPlan AnatomyBodyPlan topology identifier.
+ * @returns Array of EquipmentSlotInstance records.
+ */
+export function buildAnatomyEquipmentSlots(bodyPlan: AnatomyBodyPlan): EquipmentSlotInstance[] {
+  switch (bodyPlan) {
+    case 'humanoid_biped':
+      return [
+        { id: 'head_1', slotType: 'head', equippedItem: null },
+        { id: 'eyes_1', slotType: 'eyes', equippedItem: null },
+        { id: 'neck_1', slotType: 'neck', equippedItem: null },
+        { id: 'shoulders_1', slotType: 'shoulders', equippedItem: null },
+        { id: 'torso_1', slotType: 'torso', equippedItem: null },
+        { id: 'body_1', slotType: 'body', equippedItem: null },
+        { id: 'waist_1', slotType: 'waist', equippedItem: null },
+        { id: 'arm_1', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'arm_2', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_2' },
+        { id: 'hand_1', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'hand_2', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_2' },
+        { id: 'finger_1', slotType: 'finger', equippedItem: null },
+        { id: 'finger_2', slotType: 'finger', equippedItem: null },
+        { id: 'leg_1', slotType: 'leg', equippedItem: null },
+        { id: 'leg_2', slotType: 'leg', equippedItem: null },
+        { id: 'foot_1', slotType: 'foot', equippedItem: null },
+        { id: 'foot_2', slotType: 'foot', equippedItem: null },
+        { id: 'main_hand_1', slotType: 'main_hand', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'off_hand_1', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_2' }
+      ];
+
+    case 'quadruped':
+      return [
+        { id: 'head_1', slotType: 'head', equippedItem: null },
+        { id: 'eyes_1', slotType: 'eyes', equippedItem: null },
+        { id: 'neck_1', slotType: 'neck', equippedItem: null },
+        { id: 'torso_1', slotType: 'torso', equippedItem: null },
+        { id: 'body_1', slotType: 'body', equippedItem: null },
+        { id: 'waist_1', slotType: 'waist', equippedItem: null },
+        { id: 'foot_1', slotType: 'foot', equippedItem: null, limbGroupId: 'foreleg_left' },
+        { id: 'foot_2', slotType: 'foot', equippedItem: null, limbGroupId: 'foreleg_right' },
+        { id: 'foot_3', slotType: 'foot', equippedItem: null, limbGroupId: 'hindleg_left' },
+        { id: 'foot_4', slotType: 'foot', equippedItem: null, limbGroupId: 'hindleg_right' }
+      ];
+
+    case 'marilith_6arm':
+      return [
+        { id: 'head_1', slotType: 'head', equippedItem: null },
+        { id: 'eyes_1', slotType: 'eyes', equippedItem: null },
+        { id: 'neck_1', slotType: 'neck', equippedItem: null },
+        { id: 'shoulders_1', slotType: 'shoulders', equippedItem: null },
+        { id: 'torso_1', slotType: 'torso', equippedItem: null },
+        { id: 'body_1', slotType: 'body', equippedItem: null },
+        { id: 'waist_1', slotType: 'waist', equippedItem: null },
+        { id: 'arm_1', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'arm_2', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_2' },
+        { id: 'arm_3', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_3' },
+        { id: 'arm_4', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_4' },
+        { id: 'arm_5', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_5' },
+        { id: 'arm_6', slotType: 'arm', equippedItem: null, limbGroupId: 'arm_group_6' },
+        { id: 'hand_1', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'hand_2', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_2' },
+        { id: 'hand_3', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_3' },
+        { id: 'hand_4', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_4' },
+        { id: 'hand_5', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_5' },
+        { id: 'hand_6', slotType: 'hand', equippedItem: null, limbGroupId: 'arm_group_6' },
+        { id: 'finger_1', slotType: 'finger', equippedItem: null },
+        { id: 'finger_2', slotType: 'finger', equippedItem: null },
+        { id: 'finger_3', slotType: 'finger', equippedItem: null },
+        { id: 'finger_4', slotType: 'finger', equippedItem: null },
+        { id: 'finger_5', slotType: 'finger', equippedItem: null },
+        { id: 'finger_6', slotType: 'finger', equippedItem: null },
+        { id: 'main_hand_1', slotType: 'main_hand', equippedItem: null, limbGroupId: 'arm_group_1' },
+        { id: 'off_hand_1', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_2' },
+        { id: 'off_hand_2', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_3' },
+        { id: 'off_hand_3', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_4' },
+        { id: 'off_hand_4', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_5' },
+        { id: 'off_hand_5', slotType: 'off_hand', equippedItem: null, limbGroupId: 'arm_group_6' }
+      ];
+
+    case 'avian':
+      return [
+        { id: 'head_1', slotType: 'head', equippedItem: null },
+        { id: 'eyes_1', slotType: 'eyes', equippedItem: null },
+        { id: 'neck_1', slotType: 'neck', equippedItem: null },
+        { id: 'torso_1', slotType: 'torso', equippedItem: null },
+        { id: 'body_1', slotType: 'body', equippedItem: null },
+        { id: 'arm_1', slotType: 'arm', equippedItem: null, limbGroupId: 'wing_left' },
+        { id: 'arm_2', slotType: 'arm', equippedItem: null, limbGroupId: 'wing_right' },
+        { id: 'foot_1', slotType: 'foot', equippedItem: null, limbGroupId: 'talon_left' },
+        { id: 'foot_2', slotType: 'foot', equippedItem: null, limbGroupId: 'talon_right' }
+      ];
+
+    case 'serpentine':
+      return [
+        { id: 'head_1', slotType: 'head', equippedItem: null },
+        { id: 'eyes_1', slotType: 'eyes', equippedItem: null },
+        { id: 'neck_1', slotType: 'neck', equippedItem: null },
+        { id: 'torso_1', slotType: 'torso', equippedItem: null },
+        { id: 'body_1', slotType: 'body', equippedItem: null },
+        { id: 'waist_1', slotType: 'waist', equippedItem: null }
+      ];
+  }
 }

@@ -274,3 +274,50 @@ export function filterAndOrderAoOReactors(
     }
   };
 }
+
+/**
+ * Resolves whether an actor can take an Immediate Action (such as Feather Fall, Wings of Cover, or Abrupt Jaunt).
+ * Consumes the character's current swift action if it is their turn, or marks immediateUsedOffTurn if taken off-turn,
+ * which will consume their swift action on their next turn.
+ *
+ * @param budget Current DnD35ActionBudget of the reactor.
+ * @param isActorTurn Whether the reaction is being taken during the reactor's own turn.
+ * @returns Result with allowed flag and updated DnD35ActionBudget.
+ */
+export function resolveImmediateDefenseReaction(
+  budget: DnD35ActionBudget,
+  isActorTurn: boolean
+): {
+  readonly allowed: boolean;
+  readonly updatedBudget: DnD35ActionBudget;
+} {
+  if (budget.isFlatFooted) {
+    return { allowed: false, updatedBudget: budget };
+  }
+
+  if (isActorTurn) {
+    if (budget.swiftRemaining < 1) {
+      return { allowed: false, updatedBudget: budget };
+    }
+    return {
+      allowed: true,
+      updatedBudget: {
+        ...budget,
+        swiftRemaining: budget.swiftRemaining - 1
+      }
+    };
+  }
+
+  // Off-turn immediate action
+  if (budget.immediateUsedOffTurn) {
+    return { allowed: false, updatedBudget: budget };
+  }
+
+  return {
+    allowed: true,
+    updatedBudget: {
+      ...budget,
+      immediateUsedOffTurn: true
+    }
+  };
+}

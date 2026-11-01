@@ -1,13 +1,24 @@
 import { rollD20 } from '../math/dice.ts';
 import { resolveOpposedCheck } from '../skills.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
-import type { CreatureSizeCategory, DnD35ConditionId } from '../types/dnd35e.types.ts';
+import type { CreatureSizeCategory, DnD35ConditionId, OnHitRiderDescriptor } from '../types/dnd35e.types.ts';
 
 /** Single-limb grapple penalty (`-20`) allowing a monster with Improved Grab to not be considered grappled itself. */
 export const SINGLE_LIMB_IMPROVED_GRAB_PENALTY = -20;
 
 /** Canonical D&D 3.5e special combat maneuver types. */
 export type CombatManeuverType = 'trip' | 'bull_rush' | 'disarm' | 'sunder' | 'overrun' | 'grapple' | 'feint';
+
+/**
+ * Declarative rule overrides parameterizing combat maneuver resolution.
+ */
+export interface ManeuverRuleOverrides {
+  readonly provokesAoO?: boolean | undefined;
+  readonly opposedBonus?: number | undefined;
+  readonly grantsFreeFollowupAttackOnSuccess?: boolean | undefined;
+  readonly bypassesTouchAttack?: boolean | undefined;
+  readonly canBeCounterTripped?: boolean | undefined;
+}
 
 /** Input parameters for the 4-step special combat maneuver pipeline. */
 export interface CombatManeuverParams {
@@ -20,12 +31,13 @@ export interface CombatManeuverParams {
   readonly defenderStrOrDexMod: number;
   readonly attackerTouchAttackBonus: number;
   readonly defenderTouchAC: number;
-  readonly hasImprovedManeuverFeat?: boolean;
-  readonly singleLimbImprovedGrab?: boolean;
-  readonly defenderStabilityBonus?: number;
-  readonly AoODamageDealtToAttacker?: number;
-  readonly forcedTouchRoll?: number;
-  readonly forcedOpposedRolls?: { readonly rollA: number; readonly rollB: number };
+  readonly hasImprovedManeuverFeat?: boolean | undefined;
+  readonly singleLimbImprovedGrab?: boolean | undefined;
+  readonly defenderStabilityBonus?: number | undefined;
+  readonly AoODamageDealtToAttacker?: number | undefined;
+  readonly forcedTouchRoll?: number | undefined;
+  readonly forcedOpposedRolls?: { readonly rollA: number; readonly rollB: number } | undefined;
+  readonly overrides?: ManeuverRuleOverrides | undefined;
 }
 
 /** Result of resolving a 4-step special combat maneuver. */
@@ -37,6 +49,8 @@ export interface CombatManeuverResult {
   readonly attackerTotal: number;
   readonly defenderTotal: number;
   readonly attackerRemainsUngrappled: boolean;
+  readonly grantedFreeFollowupAttack: boolean;
+  readonly counterTripAllowed: boolean;
 }
 
 /**
@@ -50,16 +64,12 @@ export interface CombatManeuverResult {
  * @param params Structured `CombatManeuverParams`.
  * @returns Complete `CombatManeuverResult`.
  */
-export function resolveCombatManeuver(params: CombatManeuverParams): {
-  readonly provokedAoO: boolean;
-  readonly disruptedByAoO: boolean;
-  readonly touchAttackHit: boolean;
-  readonly opposedSuccess: boolean;
-  readonly attackerTotal: number;
-  readonly defenderTotal: number;
-  readonly attackerRemainsUngrappled: boolean;
-} {
-  const provokedAoO = params.hasImprovedManeuverFeat !== true;
+export function resolveCombatManeuver(params: CombatManeuverParams): CombatManeuverResult {
+  let provokedAoO = params.hasImprovedManeuverFeat !== true;
+  if (params.overrides?.provokesAoO !== undefined) {
+    provokedAoO = params.overrides.provokesAoO;
+  }
+
   const aooDamage = params.AoODamageDealtToAttacker ?? 0;
 
   if (provokedAoO && aooDamage > 0 && params.maneuver === 'grapple') {
@@ -70,11 +80,15 @@ export function resolveCombatManeuver(params: CombatManeuverParams): {
       opposedSuccess: false,
       attackerTotal: 0,
       defenderTotal: 0,
-      attackerRemainsUngrappled: true
+      attackerRemainsUngrappled: true,
+      grantedFreeFollowupAttack: false,
+      counterTripAllowed: false
     };
   }
 
-  const requiresTouchAttack = params.maneuver === 'trip' || params.maneuver === 'grapple';
+  const bypassTouch = params.overrides?.bypassesTouchAttack === true;
+  const requiresTouchAttack = !bypassTouch && (params.maneuver === 'trip' || params.maneuver === 'grapple');
+
   if (requiresTouchAttack) {
     const touchRoll = rollD20('attack', params.attackerTouchAttackBonus, params.forcedTouchRoll);
     const hit = !touchRoll.isAutoFailure && (touchRoll.isAutoSuccess || touchRoll.total >= params.defenderTouchAC);
@@ -86,7 +100,9 @@ export function resolveCombatManeuver(params: CombatManeuverParams): {
         opposedSuccess: false,
         attackerTotal: 0,
         defenderTotal: 0,
-        attackerRemainsUngrappled: true
+        attackerRemainsUngrappled: true,
+        grantedFreeFollowupAttack: false,
+        counterTripAllowed: false
       };
     }
   }
@@ -97,11 +113,15 @@ export function resolveCombatManeuver(params: CombatManeuverParams): {
     params.maneuver === 'grapple' && params.singleLimbImprovedGrab === true ? SINGLE_LIMB_IMPROVED_GRAB_PENALTY : 0;
 
   const includeBab = params.maneuver === 'grapple' || params.maneuver === 'disarm' || params.maneuver === 'sunder';
+  const baselineFeatBonus = params.hasImprovedManeuverFeat === true ? 4 : 0;
+  const overrideOpposedBonus = params.overrides?.opposedBonus ?? 0;
+
   const atkMod =
     (includeBab ? params.attackerBab : 0) +
     params.attackerStrMod +
     atkSizeMod +
-    (params.hasImprovedManeuverFeat === true ? 4 : 0) +
+    baselineFeatBonus +
+    overrideOpposedBonus +
     singleLimbPenalty;
   const defMod =
     (includeBab ? params.defenderBab : 0) +
@@ -112,6 +132,17 @@ export function resolveCombatManeuver(params: CombatManeuverParams): {
   const opposed = resolveOpposedCheck(atkMod, defMod, params.forcedOpposedRolls);
   const opposedSuccess = opposed.winner === 'A';
 
+  const grantedFreeFollowupAttack =
+    opposedSuccess &&
+    (params.overrides?.grantsFreeFollowupAttackOnSuccess === true ||
+      (params.maneuver === 'trip' && params.hasImprovedManeuverFeat === true));
+
+  const counterTripAllowed =
+    params.maneuver === 'trip' &&
+    !opposedSuccess &&
+    params.overrides?.canBeCounterTripped !== false &&
+    params.hasImprovedManeuverFeat !== true;
+
   return {
     provokedAoO,
     disruptedByAoO: false,
@@ -119,8 +150,31 @@ export function resolveCombatManeuver(params: CombatManeuverParams): {
     opposedSuccess,
     attackerTotal: opposed.totalA,
     defenderTotal: opposed.totalB,
-    attackerRemainsUngrappled: params.singleLimbImprovedGrab === true || !opposedSuccess
+    attackerRemainsUngrappled: params.singleLimbImprovedGrab === true || !opposedSuccess,
+    grantedFreeFollowupAttack,
+    counterTripAllowed
   };
+}
+
+/**
+ * Evaluates whether an on-hit rider (poison, disease, paralysis) triggers:
+ * - Contact delivery: triggers on any hit.
+ * - Injury delivery: only triggers if attack hits AND damage dealt penetrates Damage Reduction (> 0).
+ *
+ * @param rider OnHitRiderDescriptor describing the poison/disease/rider.
+ * @param damageDealtAfterDR Effective damage dealt that penetrated DR.
+ * @param attackHit Whether the attack successfully connected.
+ * @returns True if the rider delivery succeeds and triggers a saving throw.
+ */
+export function shouldTriggerOnHitRider(
+  rider: OnHitRiderDescriptor,
+  damageDealtAfterDR: number,
+  attackHit: boolean
+): boolean {
+  if (!attackHit) return false;
+  if (rider.delivery === 'contact') return true;
+  if (rider.delivery === 'injury') return damageDealtAfterDR > 0;
+  return false;
 }
 
 /**

@@ -3,6 +3,7 @@ import { evaluateDiceExpression, rollD20 } from '../math/dice.ts';
 import { combineAbstractMultipliers, dndFloor } from '../math/multipliers.ts';
 import { getIterativeBabSequence } from '../progression.ts';
 import type { CreatureSizeCategory } from '../types/dnd35e.types.ts';
+import type { TacticalDoctrineComponent } from '../../../types/components.types.ts';
 
 /** Percentage roll modulus (`100`). */
 const PERCENT_ROLL_MODULUS = 100;
@@ -186,54 +187,342 @@ export function resolveAttackRoll(params: AttackRollParams): AttackResolutionRes
 }
 
 /**
- * Builds the ordered attack bonus sequence for a `Full-Round Attack` combining primary
- * iterative attacks, Two-Weapon Fighting off-hand attack(s), and secondary natural weapons.
+ * Declarative rule overrides parameterizing full attacks and two-weapon/natural combat.
+ */
+export interface CombatRuleOverrides {
+  readonly secondaryNaturalPenalty?: number | undefined;
+  readonly twfPrimaryPenalty?: number | undefined;
+  readonly twfOffHandPenalty?: number | undefined;
+  readonly extraOffHandAttacks?: number | undefined;
+  readonly naturalAttacksCountMultiplier?: number | undefined;
+  readonly manufacturedPrimaryCount?: number | undefined;
+}
+
+/**
+ * An individual attack entry in a full attack sequence.
+ */
+export interface FullAttackSequenceEntry {
+  readonly attackSource: 'manufactured_primary' | 'manufactured_offhand' | 'natural_primary' | 'natural_secondary';
+  readonly attackBonus: number;
+  readonly weaponId?: string | undefined;
+  readonly naturalWeaponId?: string | undefined;
+}
+
+/**
+ * Descriptor for a natural weapon limb entry used when filtering out limbs occupied by manufactured weapons.
+ */
+export interface NaturalWeaponLimbEntry {
+  readonly id: string;
+  readonly isPrimary: boolean;
+  readonly count: number;
+  readonly limbGroupId?: string | undefined;
+}
+
+/**
+ * Builds the ordered attack bonus sequence for a `Full-Round Attack` combining:
+ * 1. **Pure Natural Routine** (`isPureNaturalRoutine === true`): Primary natural weapons at full `BAB`
+ *    (`attackSource: 'natural_primary'`) + secondary natural weapons at `BAB + secondaryNaturalPenalty`
+ *    (`attackSource: 'natural_secondary'`).
+ * 2. **Combined Manufactured + Natural Routine** (default): Primary manufactured weapon executes full
+ *    iterative `BAB` sequence (plus any off-hand weapon attacks across extra limbs), while all natural
+ *    weapons whose `limbGroupId` is NOT occupied by a manufactured weapon (`occupiedLimbGroupIds`)
+ *    are automatically demoted to secondary natural attacks (`-5` baseline, `-2` with *Multiattack*)
+ *    without imposing TWF penalties on the primary manufactured weapon.
  *
- * @param options Full attack configuration.
- * @returns `{ primaryAttacks: ReadonlyArray<number>, offHandAttacks: ReadonlyArray<number>, naturalAttacks: ReadonlyArray<number> }`.
+ * @param options Full attack configuration with optional declarative overrides.
+ * @returns Object with primaryAttacks, offHandAttacks, naturalAttacks, and entries.
  */
 export function buildFullAttackSequence(options: {
   readonly totalBab: number;
   readonly baseAttackModifier: number;
-  readonly hasOffHandWeapon?: boolean;
-  readonly offHandIsLight?: boolean;
-  readonly hasTwoWeaponFightingFeat?: boolean;
-  readonly secondaryNaturalCount?: number;
-  readonly hasMultiattackFeat?: boolean;
+  readonly isPureNaturalRoutine?: boolean | undefined;
+  readonly primaryNaturalCount?: number | undefined;
+  readonly primaryNaturalIds?: ReadonlyArray<string> | undefined;
+  readonly hasOffHandWeapon?: boolean | undefined;
+  readonly offHandIsLight?: boolean | undefined;
+  readonly hasTwoWeaponFightingFeat?: boolean | undefined;
+  readonly secondaryNaturalCount?: number | undefined;
+  readonly hasMultiattackFeat?: boolean | undefined;
+  readonly overrides?: CombatRuleOverrides | undefined;
+  readonly weaponId?: string | undefined;
+  readonly offHandWeaponId?: string | undefined;
+  readonly secondaryNaturalIds?: ReadonlyArray<string> | undefined;
+  readonly naturalWeaponLimbs?: ReadonlyArray<NaturalWeaponLimbEntry> | undefined;
+  readonly occupiedLimbGroupIds?: ReadonlyArray<string> | undefined;
 }): {
   readonly primaryAttacks: ReadonlyArray<number>;
   readonly offHandAttacks: ReadonlyArray<number>;
   readonly naturalAttacks: ReadonlyArray<number>;
+  readonly entries: ReadonlyArray<FullAttackSequenceEntry>;
 } {
+  const nonBabMod = options.baseAttackModifier - options.totalBab;
+
+  let natPenalty = SECONDARY_NATURAL_PENALTY;
+  if (options.overrides?.secondaryNaturalPenalty !== undefined) {
+    natPenalty = options.overrides.secondaryNaturalPenalty;
+  } else if (options.hasMultiattackFeat === true) {
+    natPenalty = MULTIATTACK_SECONDARY_PENALTY;
+  }
+
+  // Filter limb-mapped natural weapons if provided
+  const occupiedSet = new Set<string>(options.occupiedLimbGroupIds ?? []);
+  const unblockedNaturalLimbs = (options.naturalWeaponLimbs ?? []).filter(
+    (nw) => nw.limbGroupId === undefined || !occupiedSet.has(nw.limbGroupId)
+  );
+
+  // Branch 1: Pure Natural Attack Routine (no manufactured weapon wielded)
+  if (options.isPureNaturalRoutine === true) {
+    const primaryAttacks: number[] = [];
+    const naturalAttacks: number[] = [];
+    const entries: FullAttackSequenceEntry[] = [];
+
+    if (unblockedNaturalLimbs.length > 0) {
+      for (const nw of unblockedNaturalLimbs) {
+        for (let i = 0; i < nw.count; i++) {
+          if (nw.isPrimary) {
+            const bonus = options.totalBab + nonBabMod;
+            primaryAttacks.push(bonus);
+            entries.push({
+              attackSource: 'natural_primary',
+              attackBonus: bonus,
+              naturalWeaponId: nw.id
+            });
+          } else {
+            const bonus = options.totalBab + nonBabMod + natPenalty;
+            naturalAttacks.push(bonus);
+            entries.push({
+              attackSource: 'natural_secondary',
+              attackBonus: bonus,
+              naturalWeaponId: nw.id
+            });
+          }
+        }
+      }
+    } else {
+      const primCount = options.primaryNaturalCount ?? 1;
+      for (let i = 0; i < primCount; i++) {
+        const bonus = options.totalBab + nonBabMod;
+        primaryAttacks.push(bonus);
+        entries.push({
+          attackSource: 'natural_primary',
+          attackBonus: bonus,
+          naturalWeaponId: options.primaryNaturalIds?.[i]
+        });
+      }
+      const secCount = options.secondaryNaturalCount ?? 0;
+      for (let i = 0; i < secCount; i++) {
+        const bonus = options.totalBab + nonBabMod + natPenalty;
+        naturalAttacks.push(bonus);
+        entries.push({
+          attackSource: 'natural_secondary',
+          attackBonus: bonus,
+          naturalWeaponId: options.secondaryNaturalIds?.[i]
+        });
+      }
+    }
+
+    return {
+      primaryAttacks,
+      offHandAttacks: [],
+      naturalAttacks,
+      entries
+    };
+  }
+
+  // Branch 2: Manufactured Weapon + Demoted Secondary Natural Weapons
   const iterBabs = getIterativeBabSequence(options.totalBab);
   let twfPrimaryPenalty = 0;
   let twfOffHandPenalty = 0;
 
-  if (options.hasOffHandWeapon === true) {
+  if (options.overrides?.twfPrimaryPenalty !== undefined) {
+    twfPrimaryPenalty = options.overrides.twfPrimaryPenalty;
+  } else if (options.hasOffHandWeapon === true) {
     if (options.hasTwoWeaponFightingFeat === true) {
       twfPrimaryPenalty = options.offHandIsLight === true ? -2 : -4;
-      twfOffHandPenalty = options.offHandIsLight === true ? -2 : -4;
     } else {
       twfPrimaryPenalty = options.offHandIsLight === true ? -4 : -6;
+    }
+  }
+
+  if (options.overrides?.twfOffHandPenalty !== undefined) {
+    twfOffHandPenalty = options.overrides.twfOffHandPenalty;
+  } else if (options.hasOffHandWeapon === true) {
+    if (options.hasTwoWeaponFightingFeat === true) {
+      twfOffHandPenalty = options.offHandIsLight === true ? -2 : -4;
+    } else {
       twfOffHandPenalty = options.offHandIsLight === true ? -8 : -10;
     }
   }
 
-  const nonBabMod = options.baseAttackModifier - options.totalBab;
   const primaryAttacks = iterBabs.map((b) => b + nonBabMod + twfPrimaryPenalty);
-  const offHandAttacks = options.hasOffHandWeapon === true ? [options.totalBab + nonBabMod + twfOffHandPenalty] : [];
 
-  const natPenalty = options.hasMultiattackFeat === true ? MULTIATTACK_SECONDARY_PENALTY : SECONDARY_NATURAL_PENALTY;
+  const offHandCount =
+    options.hasOffHandWeapon === true ? 1 + (options.overrides?.extraOffHandAttacks ?? 0) : 0;
+  const offHandAttacks: number[] = [];
+  for (let i = 0; i < offHandCount; i++) {
+    const offHandBabPenalty = i * 5;
+    offHandAttacks.push(Math.max(1, options.totalBab - offHandBabPenalty) + nonBabMod + twfOffHandPenalty);
+  }
+
   const naturalAttacks: number[] = [];
-  for (let i = 0; i < (options.secondaryNaturalCount ?? 0); i++) {
-    naturalAttacks.push(options.totalBab + nonBabMod + natPenalty);
+  const resolvedSecondaryNaturalIds: (string | undefined)[] = [];
+
+  if (unblockedNaturalLimbs.length > 0) {
+    // All unblocked natural weapons (even normally primary ones) are demoted to secondary natural attacks
+    for (const nw of unblockedNaturalLimbs) {
+      for (let i = 0; i < nw.count; i++) {
+        naturalAttacks.push(options.totalBab + nonBabMod + natPenalty);
+        resolvedSecondaryNaturalIds.push(nw.id);
+      }
+    }
+  } else {
+    const natCount = options.secondaryNaturalCount ?? 0;
+    for (let i = 0; i < natCount; i++) {
+      naturalAttacks.push(options.totalBab + nonBabMod + natPenalty);
+      resolvedSecondaryNaturalIds.push(options.secondaryNaturalIds?.[i]);
+    }
+  }
+
+  // Construct itemized entries
+  const entries: FullAttackSequenceEntry[] = [];
+  for (const atk of primaryAttacks) {
+    entries.push({
+      attackSource: 'manufactured_primary',
+      attackBonus: atk,
+      weaponId: options.weaponId
+    });
+  }
+  for (const atk of offHandAttacks) {
+    entries.push({
+      attackSource: 'manufactured_offhand',
+      attackBonus: atk,
+      weaponId: options.offHandWeaponId
+    });
+  }
+  for (let i = 0; i < naturalAttacks.length; i++) {
+    const atk = naturalAttacks[i]!;
+    entries.push({
+      attackSource: 'natural_secondary',
+      attackBonus: atk,
+      naturalWeaponId: resolvedSecondaryNaturalIds[i]
+    });
   }
 
   return {
     primaryAttacks,
     offHandAttacks,
-    naturalAttacks
+    naturalAttacks,
+    entries
   };
+}
+
+/** Minimum whole ranks in Tumble required for enhanced defensive fighting (+3 / +6 Dodge AC). */
+const TUMBLE_SYNERGY_MIN_RANKS = 5;
+
+/**
+ * Evaluates attack roll and damage/AC adjustments resulting from active tactical doctrines
+ * (Power Attack, Combat Expertise, Fighting Defensively, Total Defense), including 5-rank
+ * Tumble synergy (`+3` Dodge AC when Fighting Defensively, `+6` Dodge AC in Total Defense).
+ */
+export function evaluateTacticalDoctrineModifiers(
+  doctrine: TacticalDoctrineComponent,
+  bab: number,
+  handedness: 'light' | 'one_handed' | 'two_handed',
+  tumbleRanks = 0
+): {
+  readonly attackPenalty: number;
+  readonly damageBonus: number;
+  readonly dodgeAcBonus: number;
+  readonly canAttack: boolean;
+} {
+  const hasTumbleSynergy = dndFloor(tumbleRanks) >= TUMBLE_SYNERGY_MIN_RANKS;
+
+  if (doctrine.totalDefense === true) {
+    return {
+      attackPenalty: 0,
+      damageBonus: 0,
+      dodgeAcBonus: hasTumbleSynergy ? 6 : 4,
+      canAttack: false
+    };
+  }
+
+  let attackPenalty = 0;
+  let damageBonus = 0;
+  let dodgeAcBonus = 0;
+
+  // Power Attack
+  if (doctrine.powerAttackAmount && doctrine.powerAttackAmount > 0) {
+    const clampedPower = Math.min(doctrine.powerAttackAmount, bab);
+    if (clampedPower > 0) {
+      if (handedness === 'light') {
+        // Light weapons suffer the attack penalty in 3.5e if used, or get 0 damage bonus
+      } else if (handedness === 'two_handed') {
+        attackPenalty += clampedPower;
+        damageBonus += clampedPower * 2;
+      } else {
+        attackPenalty += clampedPower;
+        damageBonus += clampedPower;
+      }
+    }
+  }
+
+  // Combat Expertise
+  if (doctrine.combatExpertiseAmount && doctrine.combatExpertiseAmount > 0) {
+    const clampedExpertise = Math.min(doctrine.combatExpertiseAmount, Math.min(5, bab));
+    if (clampedExpertise > 0) {
+      attackPenalty += clampedExpertise;
+      dodgeAcBonus += clampedExpertise;
+    }
+  }
+
+  // Fighting Defensively
+  if (doctrine.fightingDefensively === true) {
+    attackPenalty += 4;
+    dodgeAcBonus += hasTumbleSynergy ? 3 : 2;
+  }
+
+  return {
+    attackPenalty: -attackPenalty,
+    damageBonus,
+    dodgeAcBonus,
+    canAttack: true
+  };
+}
+
+/**
+ * Checks if a Cleave / Great Cleave follow-up attack is granted after dropping a foe to <= 0 HP.
+ */
+export function resolveCleaveFollowupEligibility(
+  droppedFoe: boolean,
+  cleavesUsedThisRound: number,
+  hasGreatCleave: boolean
+): boolean {
+  if (!droppedFoe) return false;
+  if (hasGreatCleave) return true;
+  return cleavesUsedThisRound === 0;
+}
+
+/**
+ * Resolves all eligible melee targets within reach for a Whirlwind Attack.
+ */
+export function resolveWhirlwindTargets(
+  attackerPos: { readonly x: number; readonly y: number },
+  reachFt: number,
+  potentialTargets: ReadonlyArray<{ readonly entityId: number; readonly pos: { readonly x: number; readonly y: number } }>
+): ReadonlyArray<number> {
+  const reachTiles = Math.max(1, Math.floor(reachFt / 5));
+  const validTargetIds: number[] = [];
+
+  for (const target of potentialTargets) {
+    const dx = Math.abs(attackerPos.x - target.pos.x);
+    const dy = Math.abs(attackerPos.y - target.pos.y);
+    const dist = Math.max(dx, dy);
+    if (dist <= reachTiles && (dx > 0 || dy > 0)) {
+      validTargetIds.push(target.entityId);
+    }
+  }
+
+  return validTargetIds;
 }
 
 /** Size multipliers for carrying capacity (bipedal). */

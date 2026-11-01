@@ -1,8 +1,15 @@
 import { addComponent, getComponent, removeComponent } from '../../core/ecs.ts';
 import { addFloatingText } from '../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
-import { ComponentType, type DamageComponent, type FighterComponent } from '../../types/components.types.ts';
+import {
+  ComponentType,
+  type DamageComponent,
+  type FighterComponent,
+  type PropertyOverlayComponent,
+  type TacticalDoctrineComponent
+} from '../../types/components.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
+import { resolveEffectiveEntityDataWithOverlays } from './wild_shape.ts';
 import type { CampaignData } from '../../types/campaign.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../types/intents/combat.intents.ts';
@@ -16,7 +23,7 @@ import type {
 } from '../../types/ruleset.types.ts';
 import { DnD35SystemContentSchema, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
-import { resolveAttackRoll } from './combat/attack_resolver.ts';
+import { evaluateTacticalDoctrineModifiers, resolveAttackRoll } from './combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from './combat/damage_vitality.ts';
 import { summarizeConditionEffects } from './combat/maneuvers_conditions.ts';
 import { computeEffectiveAC, DND35E_BASE_AC, SIZE_AC_AND_ATTACK_MODIFIERS } from './modifiers.ts';
@@ -52,7 +59,9 @@ export function computeDnD35eEffectiveStats(state: GameState, entityId: EntityId
     };
   }
 
-  const dndData = getDnD35EntityData(state, entityId);
+  const rawDndData = getDnD35EntityData(state, entityId);
+  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
+  const dndData = resolveEffectiveEntityDataWithOverlays(rawDndData, overlay);
   const condSummary = summarizeConditionEffects(dndData.conditions);
 
   const strScore = computeEffectiveAbilityScore({
@@ -71,6 +80,13 @@ export function computeDnD35eEffectiveStats(state: GameState, entityId: EntityId
 
   const chassis = aggregateProgressionChassis(dndData.tracks, conMod);
   const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
+  const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
+    | TacticalDoctrineComponent
+    | undefined;
+  const tumbleRanks = dndData.skillRanks['tumble'] ?? 0;
+  const doctrineMod = doctrine
+    ? evaluateTacticalDoctrineModifiers(doctrine, chassis.totalBab, 'one_handed', tumbleRanks)
+    : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
 
   const acModifiers: StatModifier[] = [
     {
@@ -92,6 +108,14 @@ export function computeDnD35eEffectiveStats(state: GameState, entityId: EntityId
       sourceId: 'natural_armor'
     }
   ];
+  if (doctrineMod.dodgeAcBonus > 0) {
+    acModifiers.push({
+      targetStat: 'ac',
+      value: doctrineMod.dodgeAcBonus,
+      bonusType: 'dodge',
+      sourceId: 'tactical_doctrine'
+    });
+  }
   if (condSummary.acPenalty !== 0) {
     acModifiers.push({
       targetStat: 'ac',
@@ -106,7 +130,13 @@ export function computeDnD35eEffectiveStats(state: GameState, entityId: EntityId
   });
 
   const sizeAtkMod = SIZE_AC_AND_ATTACK_MODIFIERS[dndData.sizeCategory];
-  const totalAttackBonus = chassis.totalBab + strMod + sizeAtkMod + equipAttackBonus + condSummary.meleeAttackPenalty;
+  const totalAttackBonus =
+    chassis.totalBab +
+    strMod +
+    sizeAtkMod +
+    equipAttackBonus +
+    condSummary.meleeAttackPenalty +
+    doctrineMod.attackPenalty;
 
   return {
     attack: totalAttackBonus,
@@ -133,13 +163,33 @@ function resolveDnD35eMeleeAttack(state: GameState, intent: MeleeAttackIntent): 
     return { state, success: false };
   }
 
-  const attackerData = getDnD35EntityData(state, attackerId);
+  const rawAttackerData = getDnD35EntityData(state, attackerId);
+  const attackerOverlay = getComponent(state, attackerId, ComponentType.PropertyOverlay) as
+    | PropertyOverlayComponent
+    | undefined;
+  const attackerData = resolveEffectiveEntityDataWithOverlays(rawAttackerData, attackerOverlay);
   const defenderData = getDnD35EntityData(state, defenderId);
   const attackerStats = computeDnD35eEffectiveStats(state, attackerId);
   const defenderStats = computeDnD35eEffectiveStats(state, defenderId);
 
   const strScore = computeEffectiveAbilityScore(attackerData.abilityScores.str);
   const strMod = computeAbilityModifier(strScore);
+  const conMod = computeAbilityModifier(computeEffectiveAbilityScore(attackerData.abilityScores.con));
+  const chassis = aggregateProgressionChassis(attackerData.tracks, conMod);
+  const doctrine = getComponent(state, attackerId, ComponentType.TacticalDoctrine) as
+    | TacticalDoctrineComponent
+    | undefined;
+  const doctrineMod = doctrine
+    ? evaluateTacticalDoctrineModifiers(doctrine, chassis.totalBab, 'one_handed', attackerData.skillRanks['tumble'] ?? 0)
+    : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
+
+  if (!doctrineMod.canAttack) {
+    return {
+      state: addMessage(state, 'Cannot attack while in Total Defense stance!', MessageLogCategory.CombatMiss),
+      success: false
+    };
+  }
+
   const targetAC = DND35E_BASE_AC + defenderStats.defense;
 
   const rollResult = resolveAttackRoll({
@@ -148,7 +198,7 @@ function resolveDnD35eMeleeAttack(state: GameState, intent: MeleeAttackIntent): 
     weaponDice: attackerData.weaponDice,
     strModifier: strMod,
     handedness: 'one_handed',
-    flatDamageBonus: 0,
+    flatDamageBonus: doctrineMod.damageBonus,
     critThreatMin: attackerData.weaponCritThreatMin,
     critMultiplier: attackerData.weaponCritMultiplier,
     targetImmuneToCrits: defenderData.abilityScores.con.base === null

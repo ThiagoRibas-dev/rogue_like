@@ -5,6 +5,7 @@ import type {
   StatModifier,
   StatQueryContext
 } from './types/dnd35e.types.ts';
+import { matchesEntityTagCondition } from '../../systems/reaction.system.ts';
 
 /** Base Armor Class before modifiers in D&D 3.5e (`10`). */
 export const DND35E_BASE_AC = 10;
@@ -94,6 +95,9 @@ export function resolveTypedModifiers(modifiers: ReadonlyArray<StatModifier>, co
     if (ignoreArmor && isArmorOrNaturalBonus(mod.bonusType)) {
       continue;
     }
+    if (mod.condition && !matchesEntityTagCondition(mod.condition, context?.targetTags, context?.effectTags)) {
+      continue;
+    }
 
     if (mod.value < 0) {
       penaltySum += mod.value;
@@ -159,6 +163,9 @@ export function resolveTypedModifiers(modifiers: ReadonlyArray<StatModifier>, co
 
   return nonStackingSum + dodgeSum + untypedSum + circumstanceSum + penaltySum;
 }
+
+/** Alias for resolveTypedModifiers. */
+export const resolveStatModifiers = resolveTypedModifiers;
 
 /**
  * Computes the Contextual Armor Class Triplet (`fullAC`, `touchAC`, `flatFootedAC`)
