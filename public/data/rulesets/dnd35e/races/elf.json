@@ -2,6 +2,7 @@
   "elf": {
     "id": "elf",
     "name": "Elf",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "elf"

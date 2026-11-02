@@ -5,7 +5,11 @@
     "keyAbility": "con",
     "trainedOnly": false,
     "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Maintaining focus through injury, harsh weather, distraction, or casting defensively in threatened squares.",
     "actions": [
       {
         "actionId": "cast_defensively",

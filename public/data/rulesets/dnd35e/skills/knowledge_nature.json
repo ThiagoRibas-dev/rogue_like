@@ -1,0 +1,37 @@
+{
+  "knowledge_nature": {
+    "id": "knowledge_nature",
+    "name": "Knowledge (Nature)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "survival"
+    ],
+    "synergyNotes": "5+ ranks in Survival gives +2 on Knowledge (nature) checks. 5+ ranks in Knowledge (nature) gives +2 on Survival checks in aboveground environments. Identifies Animals, Fey, Giants, Monstrous Humanoids, Plants, and Vermin.",
+    "actions": [
+      {
+        "actionId": "identify_wild_creature",
+        "name": "Identify Animal, Fey, Giant, Plant, or Vermin",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall natural habits, venom potency, seasonal migrations, and defense traits (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "predict_weather",
+        "name": "Predict Weather and Environmental Shifts",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Forecast sudden blizzards, flash floods, seasonal temperature drops, or poisonous spore seasons.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

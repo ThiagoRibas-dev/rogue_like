@@ -1,0 +1,33 @@
+{
+  "daze": {
+    "id": "daze",
+    "name": "Daze",
+    "description": "Cloud the mind of a humanoid creature with 4 or fewer Hit Dice so that it takes no actions for 1 round.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0,
+      "bard": 0
+    },
+    "levelByDomain": {},
+    "school": "enchantment",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "arcane",
+      "enchantment",
+      "mind_affecting"
+    ]
+  }
+}

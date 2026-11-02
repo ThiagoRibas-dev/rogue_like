@@ -1,0 +1,35 @@
+{
+  "disable_device": {
+    "id": "disable_device",
+    "name": "Disable Device",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "Disarming traps, jamming mechanical mechanisms, or sabotaging mechanical contraptions (Rogues required for magical traps).",
+    "actions": [
+      {
+        "actionId": "disarm_trap",
+        "name": "Disarm Mechanical or Magical Trap",
+        "actionCost": "full_round",
+        "dc": 20,
+        "description": "Deactivate a tripwire, blade scythe, needle poison, or magical trigger safely without detonating it.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "jam_mechanism",
+        "name": "Jam or Sabotage Mechanism",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Spike or wedge a locking tumbler, portcullis winch, or lever into a fixed jammed position.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

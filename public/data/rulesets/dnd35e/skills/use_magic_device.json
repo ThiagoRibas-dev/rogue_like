@@ -5,7 +5,14 @@
     "keyAbility": "cha",
     "trainedOnly": true,
     "acpMultiplier": 0,
-    "synergyFromSkills": [],
+    "retryAllowed": true,
+    "take10Allowed": false,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "spellcraft",
+      "decipher_script"
+    ],
+    "synergyNotes": "5+ ranks in Spellcraft or Decipher Script gives +2 each on Use Magic Device checks involving scrolls. You cannot Take 10 or Take 20 on Use Magic Device checks.",
     "actions": [
       {
         "actionId": "activate_wand",

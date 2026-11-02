@@ -12,12 +12,17 @@ import {
   calculatePointBuyCost,
   calculateSkillAllocationCost,
   collectActiveGrantedAndVirtualFeats,
+  computeFirstLevelFeatSlotBudget,
   computeNpcClassCrContribution,
   ELITE_ABILITY_ARRAY,
+  getEffectiveClassSkillIds,
   getSkillMaxRanks,
+  getSpellLevelForClass,
+  isSpellSelectableForDraft,
   NONELITE_ABILITY_ARRAY,
   POINT_BUY_PRESETS,
   rollAbilityScores4d6DropLowest,
+  sanitizeDraftOnRaceOrClassChange,
   validateSpecialistSchoolSelection
 } from '../src/rulesets/dnd35e/character_builder.ts';
 import { evaluatePrerequisiteAST } from '../src/rulesets/dnd35e/prerequisites.ts';
@@ -27,7 +32,12 @@ import {
   getClassLevelRow,
   resolveActiveClassFeatures
 } from '../src/rulesets/dnd35e/progression.ts';
-import { buildSkillRankThresholdModifiers } from '../src/rulesets/dnd35e/skills.ts';
+import {
+  buildSkillRankThresholdModifiers,
+  computeSkillSynergyBonus,
+  getSkillsGrantedSynergyBy,
+  resolveSkillCheck
+} from '../src/rulesets/dnd35e/skills.ts';
 import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType, type FighterComponent } from '../src/types/components.types.ts';
@@ -586,4 +596,115 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(tumbleAt5.length).toBe(1);
     expect(tumbleAt5[0]?.sourcePath).toBe('skill:tumble/threshold:5/tumble_5_ranks_fight_defensively_ac');
   });
+
+  it('validates Milestone 112.5: 14 playable races, all 42 SRD skills + synergies + Take 10/20 flags, spell class filtering, feat slot budgeting, and draft sanitization', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign);
+    expect(sys).not.toBeNull();
+    if (!sys) return;
+
+    // 1. 14 Playable Races tagged with isPlayableRace === true, while monstrous races default to false
+    const playableRaces = Object.values(sys.races).filter((r) => r.isPlayableRace);
+    expect(playableRaces.length).toBe(14);
+    expect(sys.races['human']?.isPlayableRace).toBe(true);
+    expect(sys.races['dwarf']?.isPlayableRace).toBe(true);
+    expect(sys.races['tiefling']?.isPlayableRace).toBe(true);
+    expect(sys.races['gelatinous_cube']?.isPlayableRace).toBe(false);
+    expect(sys.races['beholder']?.isPlayableRace).toBe(false);
+
+    // 2. All 42 SRD skills loaded with synergies, actions, and Take 10/20 flags
+    expect(Object.keys(sys.skills).length).toBe(42);
+    const bluffTargets = getSkillsGrantedSynergyBy('bluff', sys.skills);
+    expect(bluffTargets).toContain('diplomacy');
+    expect(bluffTargets).toContain('disguise');
+    expect(bluffTargets).toContain('intimidate');
+    expect(bluffTargets).toContain('sleight_of_hand');
+
+    // Diplomacy receives +6 when Bluff, Knowledge (nobility), and Sense Motive all have 5+ ranks
+    const dipDef = sys.skills['diplomacy']!;
+    expect(
+      computeSkillSynergyBonus(dipDef.synergyFromSkills, {
+        bluff: 5,
+        knowledge_nobility: 5,
+        sense_motive: 5
+      })
+    ).toBe(6);
+    // Epic synergy scaling: 25 ranks in Bluff grants +4 (+2 at 5, +2 at 25)
+    expect(computeSkillSynergyBonus(['bluff'], { bluff: 25 })).toBe(4);
+
+    // Appraise prohibits Take 20 via definition.take20Allowed === false
+    const appraiseDef = sys.skills['appraise']!;
+    const take20Appraise = resolveSkillCheck({
+      definition: {
+        skillId: appraiseDef.id,
+        keyAbility: appraiseDef.keyAbility,
+        trainedOnly: appraiseDef.trainedOnly,
+        acpMultiplier: appraiseDef.acpMultiplier,
+        synergyFromSkills: appraiseDef.synergyFromSkills,
+        take10Allowed: appraiseDef.take10Allowed,
+        take20Allowed: appraiseDef.take20Allowed
+      },
+      rawRanks: 4,
+      allSkillRanks: { appraise: 4 },
+      keyAbilityModifier: 2,
+      armorCheckPenalty: 0,
+      dc: 15,
+      takeMode: 'take20'
+    });
+    expect(take20Appraise.allowed).toBe(false);
+    expect(take20Appraise.blockedReason).toBe('take_20_prohibited');
+
+    // 3. Class spell-list and prohibited school filtering
+    const magicMissile = sys.spells['magic_missile']!;
+    const cureLight = sys.spells['cure_light_wounds']!;
+    const burningHands = sys.spells['burning_hands']!;
+
+    // Cleric cannot select Magic Missile
+    expect(isSpellSelectableForDraft(magicMissile, 'cleric', 1, [], []).selectable).toBe(false);
+    // Cleric can select Cure Light Wounds
+    expect(isSpellSelectableForDraft(cureLight, 'cleric', 1, [], []).selectable).toBe(true);
+    // Cleric with Fire domain can select Burning Hands
+    expect(isSpellSelectableForDraft(burningHands, 'cleric', 1, [], []).selectable).toBe(false);
+    expect(isSpellSelectableForDraft(burningHands, 'cleric', 1, [], ['fire']).selectable).toBe(true);
+    // Wizard with Evocation prohibited cannot select Magic Missile
+    expect(isSpellSelectableForDraft(magicMissile, 'wizard', 1, ['evocation'], []).selectable).toBe(false);
+    expect(getSpellLevelForClass(cureLight, 'paladin')).toBe(1);
+
+    // 4. First-level feat slot budgeting
+    expect(computeFirstLevelFeatSlotBudget(sys.races['human'], sys.classes['fighter']).totalSlots).toBe(3);
+    expect(computeFirstLevelFeatSlotBudget(sys.races['elf'], sys.classes['fighter']).totalSlots).toBe(2);
+    expect(computeFirstLevelFeatSlotBudget(sys.races['human'], sys.classes['wizard']).totalSlots).toBe(2);
+    expect(computeFirstLevelFeatSlotBudget(sys.races['elf'], sys.classes['wizard']).totalSlots).toBe(1);
+
+    // 5. Effective class skills & draft sanitization on class/race switch
+    const clericTrickerySkills = getEffectiveClassSkillIds(sys.classes['cleric'], ['trickery'], sys);
+    expect(clericTrickerySkills).toContain('bluff');
+    expect(clericTrickerySkills).toContain('disguise');
+    expect(clericTrickerySkills).toContain('hide');
+
+    const sanitized = sanitizeDraftOnRaceOrClassChange(
+      {
+        raceId: 'elf',
+        classId: 'cleric',
+        alignment: 'NG',
+        abilityMethod: 'point_buy',
+        pointBuyBudget: 28,
+        baseAbilityScores: { str: 12, dex: 14, con: 12, int: 10, wis: 16, cha: 12 },
+        selectedAcfs: ['dungeon_crasher'],
+        domains: ['healing', 'good', 'war'],
+        prohibitedSchools: ['evocation'],
+        skillRanks: { concentration: 4 },
+        selectedFeats: ['power_attack', 'cleave', 'toughness'],
+        knownSpells: ['magic_missile', 'cure_light_wounds'],
+        equipmentPackageId: 'divine_templar'
+      },
+      sys
+    );
+    expect(sanitized.domains.length).toBe(2);
+    expect(sanitized.selectedAcfs).toEqual([]);
+    expect(sanitized.prohibitedSchools).toEqual([]);
+    expect(sanitized.selectedFeats.length).toBe(1); // Elf Cleric gets 1 feat at level 1
+    expect(sanitized.knownSpells).toEqual(['cure_light_wounds']); // Magic Missile stripped for Cleric
+  });
 });
+

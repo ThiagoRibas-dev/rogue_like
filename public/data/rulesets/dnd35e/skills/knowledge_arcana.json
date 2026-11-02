@@ -1,0 +1,35 @@
+{
+  "knowledge_arcana": {
+    "id": "knowledge_arcana",
+    "name": "Knowledge (Arcana)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (arcana) gives +2 on Spellcraft checks. Identifies Constructs, Dragons, and Magical Beasts.",
+    "actions": [
+      {
+        "actionId": "identify_arcane_creature",
+        "name": "Identify Construct, Dragon, or Magical Beast",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall vulnerabilities, resistances, and special attacks of arcane beasts and constructs (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "recall_ancient_mysteries",
+        "name": "Recall Ancient Arcane Mysteries and Eldritch Lore",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Remember obscure arcane traditions, planar leyline connections, and lost spell formulas.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

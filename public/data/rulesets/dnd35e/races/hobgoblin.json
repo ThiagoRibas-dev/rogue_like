@@ -2,6 +2,7 @@
   "hobgoblin": {
     "id": "hobgoblin",
     "name": "Hobgoblin",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "goblinoid"

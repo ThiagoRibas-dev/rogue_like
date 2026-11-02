@@ -1,0 +1,46 @@
+{
+  "spellcraft": {
+    "id": "spellcraft",
+    "name": "Spellcraft",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "knowledge_arcana"
+    ],
+    "synergyNotes": "5+ ranks in Knowledge (arcana) gives +2 on Spellcraft checks. 5+ ranks in Spellcraft gives +2 on Use Magic Device checks involving scrolls.",
+    "actions": [
+      {
+        "actionId": "identify_spell_being_cast",
+        "name": "Identify Spell Being Cast",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recognize the somatic and verbal formula of a spell as it is cast (DC 15 + spell level).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "learn_spell_from_scroll",
+        "name": "Decipher and Learn Spell from Scroll or Book",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Copy a new spell into your wizard spellbook from a scroll or captured spellbook (DC 15 + spell level).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "identify_active_abjuration",
+        "name": "Identify Active Magical Aura or Ward",
+        "actionCost": "standard",
+        "dc": 20,
+        "description": "Analyze a glowing glyph, lingering aura, or ward in conjunction with Detect Magic.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

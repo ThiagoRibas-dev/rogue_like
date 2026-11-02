@@ -1,0 +1,37 @@
+{
+  "search": {
+    "id": "search",
+    "name": "Search",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [
+      "knowledge_nature"
+    ],
+    "synergyNotes": "5+ ranks in Search gives +2 on Survival checks when following tracks. Active tactile inspection of 5-ft squares.",
+    "actions": [
+      {
+        "actionId": "search_object_or_tile",
+        "name": "Inspect 5-Foot Square or Container",
+        "actionCost": "full_round",
+        "dc": 10,
+        "description": "Examine a chest, stone block, or floor tile for concealed compartments, hidden mechanisms, or traps.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "find_secret_door",
+        "name": "Detect Concealed or Secret Door",
+        "actionCost": "full_round",
+        "dc": 20,
+        "description": "Detect subtle seams, hidden hinges, or hollow mortar revealing a disguised passageway.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

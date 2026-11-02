@@ -2,6 +2,7 @@
   "halfling": {
     "id": "halfling",
     "name": "Halfling",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "halfling"

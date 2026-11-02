@@ -1,0 +1,35 @@
+{
+  "cure_minor_wounds": {
+    "id": "cure_minor_wounds",
+    "name": "Cure Minor Wounds",
+    "description": "Channels positive energy to cure 1 point of damage on a living creature touched.",
+    "level": 0,
+    "levelByClass": {
+      "cleric": 0,
+      "druid": 0
+    },
+    "levelByDomain": {},
+    "school": "conjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1",
+    "damageType": "positive",
+    "tags": [
+      "divine",
+      "conjuration",
+      "healing",
+      "cure"
+    ]
+  }
+}

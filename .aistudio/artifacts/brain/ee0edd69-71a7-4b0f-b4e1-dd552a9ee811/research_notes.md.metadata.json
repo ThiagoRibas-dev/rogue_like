@@ -1,5 +1,6 @@
 {
-  "summary": "Comprehensive research notes mapping the unification of D&D 3.5e Races & Archetypes, removal of dragon_families.json in favor of generic RHD/Tiered Racial Progression, addition of the 5 SRD NPC classes, and full modularization of Creature Types, Subtypes, Domains, and Skills.",
-  "updatedAt": "2026-11-02T14:52:28.680211526Z",
+  "summary": "Research Notes for Milestone 112.5: Full-Screen 2-Pane Character Creation & Level-Up UX Overhaul, Playable Race Filtering, Ability Score State Machine, Skill Rank Counter & Bonus Breakdown, Feat Slot Budgets, and Class/Domain Spell-List Tagging. Includes root-cause analysis and a 3-Axis Cascading Effects Matrix.",
+  "updatedAt": "2026-11-02T17:27:36.359947542Z",
+  "requestFeedback": true,
   "userFacing": true
 }

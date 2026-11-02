@@ -1,0 +1,29 @@
+{
+  "mage_hand": {
+    "id": "mage_hand",
+    "name": "Mage Hand",
+    "description": "Points at an unattended, nonmagical object weighing up to 5 pounds and moves it up to 15 feet per round.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0,
+      "bard": 0
+    },
+    "levelByDomain": {},
+    "school": "transmutation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "arcane",
+      "transmutation",
+      "telekinesis"
+    ]
+  }
+}

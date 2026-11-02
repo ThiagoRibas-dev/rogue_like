@@ -5,7 +5,13 @@
     "keyAbility": "str",
     "trainedOnly": false,
     "acpMultiplier": 1,
-    "synergyFromSkills": [],
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "use_rope"
+    ],
+    "synergyNotes": "5+ ranks in Use Rope gives +2 on Climb checks involving ropes.",
     "actions": [
       {
         "actionId": "climb_wall",

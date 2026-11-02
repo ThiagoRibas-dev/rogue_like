@@ -1,0 +1,37 @@
+{
+  "gather_information": {
+    "id": "gather_information",
+    "name": "Gather Information",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [
+      "knowledge_local"
+    ],
+    "synergyNotes": "5+ ranks in Knowledge (local) gives +2 on Gather Information checks.",
+    "actions": [
+      {
+        "actionId": "canvass_taverns_rumors",
+        "name": "Canvass Local Rumors and Gossip",
+        "actionCost": "none",
+        "dc": 10,
+        "description": "Spend several hours and a few coins in tavern taprooms to uncover common news and local gossip.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "uncover_hidden_rumor",
+        "name": "Investigate Specific Secret Rumor",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Probe discreetly into sensitive or guarded topics without tipping off local authorities or syndicates.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

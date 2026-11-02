@@ -1,0 +1,35 @@
+{
+  "handle_animal": {
+    "id": "handle_animal",
+    "name": "Handle Animal",
+    "keyAbility": "cha",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Handle Animal gives +2 on Ride checks and wild empathy checks with animals.",
+    "actions": [
+      {
+        "actionId": "handle_animal_trick",
+        "name": "Direct Animal to Perform Known Trick",
+        "actionCost": "move",
+        "dc": 10,
+        "description": "Command a domesticated or trained animal companion or mount to execute a known trick.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "push_animal",
+        "name": "Push Animal Beyond Normal Habits",
+        "actionCost": "full_round",
+        "dc": 25,
+        "description": "Urge an animal to perform a trick it does not know, or to face unnatural perils like fire or undead.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

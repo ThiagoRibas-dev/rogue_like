@@ -1,0 +1,34 @@
+{
+  "entangle": {
+    "id": "entangle",
+    "name": "Entangle",
+    "description": "Grasses, weeds, and vines entangle creatures within a 40-foot radius, anchoring them or halving movement.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {
+      "plant": 1
+    },
+    "school": "transmutation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "partial"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 40,
+    "tags": [
+      "divine",
+      "transmutation",
+      "entangle"
+    ]
+  }
+}

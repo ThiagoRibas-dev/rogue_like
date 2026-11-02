@@ -5,7 +5,11 @@
     "keyAbility": "dex",
     "trainedOnly": false,
     "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Stepping softly and dampening gear clatter while walking or creeping. Opposed by Listen.",
     "actions": [
       {
         "actionId": "sneak_quietly",

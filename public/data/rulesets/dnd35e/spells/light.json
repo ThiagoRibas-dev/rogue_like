@@ -1,0 +1,30 @@
+{
+  "light": {
+    "id": "light",
+    "name": "Light",
+    "description": "Object touched shines like a torch, shedding bright illumination in a 20-foot radius and shadowy illumination to 40 feet.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0,
+      "cleric": 0,
+      "druid": 0,
+      "bard": 0
+    },
+    "levelByDomain": {},
+    "school": "evocation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 20,
+    "tags": [
+      "evocation",
+      "light"
+    ]
+  }
+}

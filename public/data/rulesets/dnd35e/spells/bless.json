@@ -1,0 +1,28 @@
+{
+  "bless": {
+    "id": "bless",
+    "name": "Bless",
+    "description": "Fills your allies with courage, granting a +1 morale bonus on attack rolls and saves against fear effects.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "paladin": 1
+    },
+    "levelByDomain": {},
+    "school": "enchantment",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 50,
+    "tags": [
+      "divine",
+      "enchantment",
+      "morale"
+    ]
+  }
+}

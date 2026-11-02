@@ -5,7 +5,11 @@
     "keyAbility": "wis",
     "trainedOnly": false,
     "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Perceiving auditory cues, footsteps, whispering, and ambient environmental noises. Opposed by Move Silently.",
     "actions": [
       {
         "actionId": "listen_stealth",

@@ -1,0 +1,28 @@
+{
+  "disguise": {
+    "id": "disguise",
+    "name": "Disguise",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "bluff"
+    ],
+    "synergyNotes": "5+ ranks in Bluff gives +2 on Disguise checks when you know you're being observed and must act in character.",
+    "actions": [
+      {
+        "actionId": "don_disguise",
+        "name": "Don Impersonation Disguise",
+        "actionCost": "none",
+        "opposedBySkill": "spot",
+        "description": "Apply cosmetics, prosthetics, and costuming to alter perceived identity, age, or race.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

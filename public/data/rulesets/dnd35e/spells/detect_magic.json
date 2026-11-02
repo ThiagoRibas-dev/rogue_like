@@ -1,0 +1,30 @@
+{
+  "detect_magic": {
+    "id": "detect_magic",
+    "name": "Detect Magic",
+    "description": "Detects magical auras within a 60-foot cone, revealing their presence, number, and power.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0,
+      "cleric": 0,
+      "druid": 0,
+      "bard": 0
+    },
+    "levelByDomain": {},
+    "school": "divination",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "cone",
+    "aoeRadiusFt": 60,
+    "tags": [
+      "divination",
+      "detection"
+    ]
+  }
+}

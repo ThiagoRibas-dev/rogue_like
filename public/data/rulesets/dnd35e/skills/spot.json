@@ -5,7 +5,11 @@
     "keyAbility": "wis",
     "trainedOnly": false,
     "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Visual perception, noticing movement in periphery, discerning disguised figures, or reading lips. Opposed by Hide, Disguise, and Sleight of Hand.",
     "actions": [
       {
         "actionId": "spot_hidden",
@@ -13,6 +17,15 @@
         "actionCost": "none",
         "opposedBySkill": "hide",
         "description": "Reactive or active check to detect hidden creatures or concealed hazards.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "read_lips",
+        "name": "Read Lips from Afar",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Understand what someone is saying by watching mouth movements within 30 feet in clear line of sight.",
         "onSuccessModifiers": [],
         "onSuccessRuleOverrides": []
       }

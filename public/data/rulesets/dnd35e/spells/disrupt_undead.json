@@ -1,0 +1,31 @@
+{
+  "disrupt_undead": {
+    "id": "disrupt_undead",
+    "name": "Disrupt Undead",
+    "description": "Directs a ray of positive energy that deals 1d6 damage to an undead creature within 30 feet.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0
+    },
+    "levelByDomain": {},
+    "school": "necromancy",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6",
+    "damageType": "positive",
+    "tags": [
+      "arcane",
+      "necromancy",
+      "ray",
+      "positive_energy"
+    ]
+  }
+}

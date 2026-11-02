@@ -5,7 +5,13 @@
     "keyAbility": "cha",
     "trainedOnly": false,
     "acpMultiplier": 0,
-    "synergyFromSkills": [],
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "bluff"
+    ],
+    "synergyNotes": "5+ ranks in Bluff gives +2 on Intimidate checks.",
     "actions": [
       {
         "actionId": "demoralize_opponent",

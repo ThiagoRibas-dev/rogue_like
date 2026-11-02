@@ -20,6 +20,7 @@ import {
   collectActiveGrantedAndVirtualFeats,
   rebuildActorStateFromLevelHistory
 } from './level_ledger.ts';
+import { computeMaxSkillRankCap, SYNERGY_REQUIRED_RANKS } from './skills.ts';
 import type {
   AbilityId,
   AbilityScoresRecord,
@@ -30,7 +31,13 @@ import type {
   HitDieTrack
 } from './types/dnd35e.types.ts';
 import { ALL_ABILITY_IDS } from './types/dnd35e.types.ts';
-import { type DnD35ClassDefinition, getDnD35SystemContent } from './types/dnd35e_system.types.ts';
+import {
+  type DnD35ClassDefinition,
+  type DnD35RaceDefinition,
+  type DnD35SpellDefinition,
+  type DnD35SystemContent,
+  getDnD35SystemContent
+} from './types/dnd35e_system.types.ts';
 
 export {
   applyNegativeLevelsToActor,
@@ -76,7 +83,7 @@ const FIRST_LEVEL_SKILL_MULTIPLIER = 4;
 const MIN_SKILL_POINTS_PER_LEVEL = 1;
 
 /** Minimum ranks required in a source skill to unlock a +2 synergy bonus (`5`). */
-export const SYNERGY_RANK_THRESHOLD = 5;
+export const SYNERGY_RANK_THRESHOLD = SYNERGY_REQUIRED_RANKS;
 
 /** Curated starting equipment packages for character creation. */
 export interface StartingEquipmentPackage {
@@ -228,8 +235,7 @@ export function calculateLevelSkillPointBudget(
  * @returns Maximum rank cap.
  */
 export function getSkillMaxRanks(totalHd: number, isClassSkill: boolean): number {
-  const classCap = Math.max(1, dndFloor(totalHd)) + 3;
-  return isClassSkill ? classCap : classCap / 2;
+  return computeMaxSkillRankCap(totalHd, isClassSkill);
 }
 
 /**
@@ -573,5 +579,219 @@ export function applyLevelUpToActor(
       attack: nextChassis.totalBab
     }),
     success: true
+  };
+}
+
+/**
+ * Computes the 1st-level feat slot budget breakdown (`generalSlots`, `humanBonusSlots`, `fighterBonusSlots`, `totalSlots`).
+ *
+ * @param raceDef Selected 1st-level race definition.
+ * @param classDef Selected 1st-level class definition.
+ * @returns Breakdown of 1st-level feat slots.
+ */
+export function computeFirstLevelFeatSlotBudget(
+  raceDef: DnD35RaceDefinition | undefined,
+  classDef: DnD35ClassDefinition | undefined
+): {
+  readonly generalSlots: number;
+  readonly humanBonusSlots: number;
+  readonly fighterBonusSlots: number;
+  readonly totalSlots: number;
+} {
+  const generalSlots = 1;
+  const humanBonusSlots = raceDef?.bonusFeatAtFirstLevel === true ? 1 : 0;
+  const row1 = classDef?.progression.find((r) => r.level === 1);
+  const fighterBonusSlots = row1?.bonusFeatSlot === true ? 1 : 0;
+  return {
+    generalSlots,
+    humanBonusSlots,
+    fighterBonusSlots,
+    totalSlots: generalSlots + humanBonusSlots + fighterBonusSlots
+  };
+}
+
+/**
+ * Returns the spell level of a spell for a given class (or Cleric domain), or `null` if the spell is not on that class's spell list.
+ *
+ * @param spell Spell definition.
+ * @param classId Class identifier (`'wizard'`, `'cleric'`, etc.).
+ * @param domainIds Active Cleric domain IDs.
+ * @returns Effective spell level (`0..9`) or `null`.
+ */
+export function getSpellLevelForClass(
+  spell: DnD35SpellDefinition,
+  classId: string,
+  domainIds: ReadonlyArray<string> = []
+): number | null {
+  const classLevel = spell.levelByClass[classId];
+  if (classLevel !== undefined) {
+    return classLevel;
+  }
+  if (classId === 'cleric') {
+    for (const domId of domainIds) {
+      const domLvl = spell.levelByDomain[domId];
+      if (domLvl !== undefined) {
+        return domLvl;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Checks whether a spell is legal for a character creation draft or level-up given their class,
+ * maximum castable spell level, Cleric domains, and Wizard prohibited schools.
+ *
+ * @param spell Spell definition.
+ * @param classId Class identifier.
+ * @param maxCastableLevel Highest spell level the class can cast at this level (`0` or `1` at level 1).
+ * @param prohibitedSchools Wizard prohibited schools.
+ * @param domainIds Selected Cleric domains.
+ * @returns `{ selectable: boolean; effectiveLevel: number | null; reason?: string }`.
+ */
+export function isSpellSelectableForDraft(
+  spell: DnD35SpellDefinition,
+  classId: string,
+  maxCastableLevel: number,
+  prohibitedSchools: ReadonlyArray<DnD35SpellSchool> = [],
+  domainIds: ReadonlyArray<string> = []
+): { readonly selectable: boolean; readonly effectiveLevel: number | null; readonly reason?: string } {
+  const effectiveLevel = getSpellLevelForClass(spell, classId, domainIds);
+  if (effectiveLevel === null) {
+    return { selectable: false, effectiveLevel: null, reason: 'Not on class spell list' };
+  }
+  if (effectiveLevel > maxCastableLevel) {
+    return {
+      selectable: false,
+      effectiveLevel,
+      reason: `Requires spell level ${effectiveLevel} slots`
+    };
+  }
+  if (prohibitedSchools.includes(spell.school as DnD35SpellSchool)) {
+    return {
+      selectable: false,
+      effectiveLevel,
+      reason: `Prohibited school (${spell.school})`
+    };
+  }
+  return { selectable: true, effectiveLevel };
+}
+
+/**
+ * Computes the effective list of class skill IDs for a class + Cleric domains.
+ *
+ * @param classDef Class definition.
+ * @param domainIds Selected domain IDs.
+ * @param sysContent Loaded system content.
+ * @returns Deduplicated array of class skill IDs.
+ */
+export function getEffectiveClassSkillIds(
+  classDef: DnD35ClassDefinition | undefined,
+  domainIds: ReadonlyArray<string>,
+  sysContent: DnD35SystemContent
+): ReadonlyArray<string> {
+  if (!classDef) return [];
+  const skills = new Set<string>(classDef.classSkills);
+  for (const domId of domainIds) {
+    const dom = sysContent.domains[domId];
+    if (dom) {
+      for (const s of dom.classSkillsAdded) {
+        skills.add(s);
+      }
+    }
+  }
+  return Array.from(skills);
+}
+
+/**
+ * Sanitizes a `CharacterCreationDraft` whenever `raceId`, `classId`, `domains`, or `prohibitedSchools` changes,
+ * pruning invalid alignments, clamping or refunding skill ranks that exceed the new point budget,
+ * trimming excess feat selections, and removing spells not on the new class's spell list.
+ *
+ * @param draft Current draft.
+ * @param sysContent Loaded D&D 3.5e system content.
+ * @returns Sanitized `CharacterCreationDraft`.
+ */
+export function sanitizeDraftOnRaceOrClassChange(
+  draft: CharacterCreationDraft,
+  sysContent: DnD35SystemContent
+): CharacterCreationDraft {
+  const raceDef = sysContent.races[draft.raceId];
+  const classDef = sysContent.classes[draft.classId];
+  if (!raceDef || !classDef) return draft;
+
+  const allowedAlignments = classDef.allowedAlignments;
+  const alignment: DnD35Alignment =
+    allowedAlignments && allowedAlignments.length > 0 && !allowedAlignments.includes(draft.alignment)
+      ? allowedAlignments[0]!
+      : draft.alignment;
+
+  const domains = classDef.id === 'cleric' ? draft.domains.slice(0, 2) : [];
+  const arcaneSchool = classDef.id === 'wizard' ? (draft.arcaneSchool ?? 'universal') : undefined;
+  const prohibitedSchools = classDef.id === 'wizard' && arcaneSchool !== 'universal' ? draft.prohibitedSchools : [];
+
+  const validAcfs = new Set(classDef.acfSwaps.filter((a) => a.level === 1).map((a) => a.acfId));
+  const selectedAcfs = draft.selectedAcfs.filter((id) => validAcfs.has(id));
+
+  const classSkills = getEffectiveClassSkillIds(classDef, domains, sysContent);
+  const intAdj = raceDef.abilityAdjustments.int ?? 0;
+  const intMod = computeAbilityModifier(draft.baseAbilityScores.int + intAdj);
+  const totalHd = Math.max(1, (raceDef.rhdProgression?.baseHdCount ?? 0) + 1);
+  const budget = calculateLevelSkillPointBudget(
+    classDef.skillPointsPerLevel,
+    intMod,
+    true,
+    raceDef.extraSkillPointsFirstLevel,
+    raceDef.extraSkillPointsPerLevel
+  );
+
+  const clampedRanks: Record<string, number> = {};
+  for (const [skillId, ranks] of Object.entries(draft.skillRanks)) {
+    if (ranks <= 0) continue;
+    const isClass = classSkills.includes(skillId);
+    const maxCap = getSkillMaxRanks(totalHd, isClass);
+    const clamped = Math.min(ranks, maxCap);
+    const finalized = isClass ? Math.floor(clamped) : Math.floor(clamped * 2) / 2;
+    if (finalized > 0) {
+      clampedRanks[skillId] = finalized;
+    }
+  }
+  const newCost = calculateSkillAllocationCost(clampedRanks, classSkills);
+  const skillRanks = newCost <= budget ? clampedRanks : {};
+
+  const featBudget = computeFirstLevelFeatSlotBudget(raceDef, classDef);
+  const selectedFeats = draft.selectedFeats.slice(0, featBudget.totalSlots);
+
+  const row1 = classDef.progression.find((r) => r.level === 1);
+  let maxCastableLevel = -1;
+  if (classDef.castingMode !== 'none' && row1?.spellsPerDay) {
+    for (const [lvlKey, slots] of Object.entries(row1.spellsPerDay)) {
+      const lvl = Number(lvlKey);
+      if (!Number.isNaN(lvl) && slots >= 0 && lvl > maxCastableLevel) {
+        maxCastableLevel = lvl;
+      }
+    }
+  }
+
+  const knownSpells =
+    maxCastableLevel >= 0
+      ? draft.knownSpells.filter((spellId) => {
+          const spell = sysContent.spells[spellId];
+          if (!spell) return false;
+          return isSpellSelectableForDraft(spell, classDef.id, maxCastableLevel, prohibitedSchools, domains).selectable;
+        })
+      : [];
+
+  return {
+    ...draft,
+    alignment,
+    selectedAcfs,
+    domains,
+    arcaneSchool,
+    prohibitedSchools,
+    ...(classDef.id === 'ranger' ? { favoredEnemyType: draft.favoredEnemyType ?? 'undead' } : {}),
+    skillRanks,
+    selectedFeats,
+    knownSpells
   };
 }

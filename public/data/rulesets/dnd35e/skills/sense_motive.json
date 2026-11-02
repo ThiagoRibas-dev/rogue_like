@@ -1,0 +1,35 @@
+{
+  "sense_motive": {
+    "id": "sense_motive",
+    "name": "Sense Motive",
+    "keyAbility": "wis",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Sense Motive gives +2 on Diplomacy checks and opposes Bluff feints in combat.",
+    "actions": [
+      {
+        "actionId": "detect_hunch_gut_feeling",
+        "name": "Assess Gut Hunch on Trustworthiness",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Form an intuitive assessment of whether a person is trustworthy or harboring hostile intent.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "discern_hidden_message",
+        "name": "Discern Innuendo or Secret Message",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Detect subtle double entendres, cant, or encrypted hand signals passed between conspirators.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

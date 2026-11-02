@@ -2,6 +2,7 @@
   "aasimar": {
     "id": "aasimar",
     "name": "Aasimar",
+    "isPlayableRace": true,
     "creatureType": "outsider",
     "subtypes": [
       "native"

@@ -1,0 +1,35 @@
+{
+  "open_lock": {
+    "id": "open_lock",
+    "name": "Open Lock",
+    "keyAbility": "dex",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Picking mechanical locks with thieves' tools without tripping keyhole alarms.",
+    "actions": [
+      {
+        "actionId": "pick_simple_lock",
+        "name": "Pick Simple Lock",
+        "actionCost": "full_round",
+        "dc": 20,
+        "description": "Manipulate tumblers on a padlock, simple chest, or iron latch using thieves' tools.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "pick_masterwork_lock",
+        "name": "Pick Masterwork or Superior Lock",
+        "actionCost": "full_round",
+        "dc": 30,
+        "description": "Bypass a master-crafted vault or intricate dwarven lock mechanism without the owner's key.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

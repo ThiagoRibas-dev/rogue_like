@@ -1,0 +1,26 @@
+{
+  "perform": {
+    "id": "perform",
+    "name": "Perform",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "Entertaining audiences, earning coin through public artistry, and fueling Bardic Music performances.",
+    "actions": [
+      {
+        "actionId": "busk_performance",
+        "name": "Perform for an Audience or Patron",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recite epic ballads, pluck lutes, or dance in taverns and courts to earn lodging and admirers.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -2,6 +2,7 @@
   "gnome": {
     "id": "gnome",
     "name": "Gnome",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "gnome"

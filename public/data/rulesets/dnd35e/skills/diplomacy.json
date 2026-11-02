@@ -5,7 +5,15 @@
     "keyAbility": "cha",
     "trainedOnly": false,
     "acpMultiplier": 0,
-    "synergyFromSkills": [],
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "bluff",
+      "knowledge_nobility",
+      "sense_motive"
+    ],
+    "synergyNotes": "5+ ranks in Bluff, Knowledge (nobility and royalty), or Sense Motive gives +2 each on Diplomacy checks (up to +6 total).",
     "actions": [
       {
         "actionId": "influence_attitude",

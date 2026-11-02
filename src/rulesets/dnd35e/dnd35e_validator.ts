@@ -135,9 +135,19 @@ export function validateDnD35eSystemContentIntegrity(
         errors
       );
     }
+
+    for (const skillId of classDef.classSkills) {
+      if (skillId !== 'all' && !sys.skills[skillId]) {
+        errors.push({
+          path: `systemContent.classes.${classKey}.classSkills`,
+          message: `Class "${classKey}" references unknown classSkill "${skillId}".`,
+          severity: 'error'
+        });
+      }
+    }
   }
 
-  // 2. Validate Domains: ID parity
+  // 2. Validate Domains: ID parity & classSkillsAdded
   for (const [domKey, domDef] of Object.entries(sys.domains)) {
     if (domDef.id !== domKey) {
       errors.push({
@@ -145,6 +155,15 @@ export function validateDnD35eSystemContentIntegrity(
         message: `Domain key "${domKey}" does not match inner id "${domDef.id}".`,
         severity: 'error'
       });
+    }
+    for (const skillId of domDef.classSkillsAdded) {
+      if (!sys.skills[skillId]) {
+        errors.push({
+          path: `systemContent.domains.${domKey}.classSkillsAdded`,
+          message: `Domain "${domKey}" references unknown skill "${skillId}" in classSkillsAdded.`,
+          severity: 'error'
+        });
+      }
     }
   }
 
@@ -267,6 +286,24 @@ export function validateDnD35eSystemContentIntegrity(
         severity: 'error'
       });
     }
+    for (const classId of Object.keys(spellDef.levelByClass)) {
+      if (!sys.classes[classId]) {
+        errors.push({
+          path: `systemContent.spells.${spellKey}.levelByClass.${classId}`,
+          message: `Spell "${spellKey}" references unknown class "${classId}" in levelByClass.`,
+          severity: 'error'
+        });
+      }
+    }
+    for (const domId of Object.keys(spellDef.levelByDomain)) {
+      if (!sys.domains[domId]) {
+        errors.push({
+          path: `systemContent.spells.${spellKey}.levelByDomain.${domId}`,
+          message: `Spell "${spellKey}" references unknown domain "${domId}" in levelByDomain.`,
+          severity: 'error'
+        });
+      }
+    }
   }
 
   for (const [skillKey, skillDef] of Object.entries(sys.skills)) {
@@ -276,6 +313,24 @@ export function validateDnD35eSystemContentIntegrity(
         message: `Skill key "${skillKey}" does not match inner id "${skillDef.id}".`,
         severity: 'error'
       });
+    }
+    for (const synSkillId of skillDef.synergyFromSkills) {
+      if (!sys.skills[synSkillId]) {
+        errors.push({
+          path: `systemContent.skills.${skillKey}.synergyFromSkills`,
+          message: `Skill "${skillKey}" references unknown synergy source skill "${synSkillId}".`,
+          severity: 'error'
+        });
+      }
+    }
+    for (const action of skillDef.actions) {
+      if (action.opposedBySkill && !sys.skills[action.opposedBySkill]) {
+        errors.push({
+          path: `systemContent.skills.${skillKey}.actions.${action.actionId}.opposedBySkill`,
+          message: `Skill "${skillKey}" action "${action.actionId}" references unknown opposedBySkill "${action.opposedBySkill}".`,
+          severity: 'error'
+        });
+      }
     }
   }
 

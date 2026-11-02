@@ -7,22 +7,22 @@ import type { DnD35SkillDefinition } from './types/dnd35e_system.types.ts';
 import type { AttitudeTier } from '../../types/components.types.ts';
 
 /** Minimum whole ranks required in a source skill to grant a +2 Synergy bonus. */
-const SYNERGY_REQUIRED_RANKS = 5;
+export const SYNERGY_REQUIRED_RANKS = 5;
 
 /** Untyped bonus granted per qualifying 5-rank skill synergy (`+2`). */
-const SYNERGY_BONUS_AMOUNT = 2;
+export const SYNERGY_BONUS_AMOUNT = 2;
 
 /** Offset added to Total Hit Dice for maximum class skill ranks (`HD + 3`). */
-const CLASS_SKILL_RANK_CAP_OFFSET = 3;
+export const CLASS_SKILL_RANK_CAP_OFFSET = 3;
 
 /** Fixed d20 substitute value when Taking 10. */
-const TAKE_10_VALUE = 10;
+export const TAKE_10_VALUE = 10;
 
 /** Fixed d20 substitute value when Taking 20. */
-const TAKE_20_VALUE = 20;
+export const TAKE_20_VALUE = 20;
 
 /** Action duration multiplier when Taking 20 (`20x` standard duration). */
-const TAKE_20_DURATION_MULTIPLIER = 20;
+export const TAKE_20_DURATION_MULTIPLIER = 20;
 
 /** Declarative definition of a D&D 3.5e skill for check resolution. */
 export interface SkillCheckDefinition {
@@ -31,6 +31,8 @@ export interface SkillCheckDefinition {
   readonly trainedOnly: boolean;
   readonly acpMultiplier: 0 | 1 | 2;
   readonly synergyFromSkills: ReadonlyArray<string>;
+  readonly take10Allowed?: boolean;
+  readonly take20Allowed?: boolean;
 }
 
 /** Input parameters for `resolveSkillCheck`. */
@@ -89,11 +91,34 @@ export function computeSkillSynergyBonus(
   let bonus = 0;
   for (const sourceSkillId of synergyFromSkills) {
     const raw = allSkillRanks[sourceSkillId] ?? 0;
-    if (dndFloor(raw) >= SYNERGY_REQUIRED_RANKS) {
+    const whole = dndFloor(raw);
+    if (whole >= SYNERGY_REQUIRED_RANKS) {
       bonus += SYNERGY_BONUS_AMOUNT;
+      if (whole >= 25) {
+        bonus += Math.floor((whole - 5) / 20) * SYNERGY_BONUS_AMOUNT;
+      }
     }
   }
   return bonus;
+}
+
+/**
+ * Finds all skills in a skill registry that receive a synergy bonus from the specified source skill.
+ * @param sourceSkillId The source skill providing synergy.
+ * @param skillRegistry Loaded skill definitions map.
+ * @returns List of target skill IDs that list sourceSkillId in their synergyFromSkills.
+ */
+export function getSkillsGrantedSynergyBy(
+  sourceSkillId: string,
+  skillRegistry: Readonly<Record<string, DnD35SkillDefinition>>
+): ReadonlyArray<string> {
+  const results: string[] = [];
+  for (const [targetId, def] of Object.entries(skillRegistry)) {
+    if (def.synergyFromSkills.includes(sourceSkillId)) {
+      results.push(targetId);
+    }
+  }
+  return results;
 }
 
 /**
@@ -163,7 +188,11 @@ export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
 
   const takeMode = params.takeMode ?? 'roll';
   if (takeMode === 'take10') {
-    if (params.isThreatenedOrDistracted === true || params.definition.skillId === 'use_magic_device') {
+    if (
+      params.isThreatenedOrDistracted === true ||
+      params.definition.skillId === 'use_magic_device' ||
+      params.definition.take10Allowed === false
+    ) {
       return {
         allowed: false,
         blockedReason: 'take_10_prohibited',
@@ -182,7 +211,8 @@ export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
     if (
       params.isThreatenedOrDistracted === true ||
       params.carriesPenaltyOnFailure === true ||
-      params.definition.skillId === 'use_magic_device'
+      params.definition.skillId === 'use_magic_device' ||
+      params.definition.take20Allowed === false
     ) {
       return {
         allowed: false,

@@ -1,6 +1,6 @@
 {
-  "summary": "Updated the implementation plan to unify DnD35EffectBundleSchema across Feats, Class Features, Domain Granted Powers, Racial Traits, Creature Types, Subtypes, and Templates, explicitly supporting the 4-part anatomy of D&D 3.5e abilities: (1) Passive/Conditional Modifiers & Rule Overrides, (2) Structural Grants (including virtual feat grants that bypass prerequisites and respect runtime activation conditions like armor/load), (3) Activated/Toggled/SLA Abilities & Resource Pools, and (4) Nested Child Bundles with atomic suppression/trading via suppressedBundleIds.",
-  "updatedAt": "2026-11-02T15:41:15.754253305Z",
+  "summary": "Updated Milestone 112.5 implementation plan with an explicit Existing Engine Primitives & Zero-Duplication Reuse Map showing how existing schemas, skill resolvers, Effect Provider evaluators, and shared UI inspector builders are reused without reinventing any functionality.",
+  "updatedAt": "2026-11-02T17:47:27.510587045Z",
   "requestFeedback": true,
   "userFacing": true
 }

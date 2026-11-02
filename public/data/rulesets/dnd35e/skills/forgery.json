@@ -1,0 +1,26 @@
+{
+  "forgery": {
+    "id": "forgery",
+    "name": "Forgery",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "Creating fake documents, signatures, royal decrees, or passing off forged seals.",
+    "actions": [
+      {
+        "actionId": "forge_document",
+        "name": "Forge Official Document or Signature",
+        "actionCost": "none",
+        "opposedBySkill": "forgery",
+        "description": "Produce a counterfeit warrant, letter, or passport that fools scrutiny unless inspected with opposing Forgery.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

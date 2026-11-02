@@ -1,0 +1,31 @@
+{
+  "produce_flame": {
+    "id": "produce_flame",
+    "name": "Produce Flame",
+    "description": "Flames in your palm shed light like a torch and deal 1d6+1 fire damage in melee touch attacks or as ranged missile attacks up to 120 feet.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1
+    },
+    "levelByDomain": {
+      "fire": 2
+    },
+    "school": "evocation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6+1",
+    "damageType": "fire",
+    "tags": [
+      "divine",
+      "evocation",
+      "fire"
+    ]
+  }
+}

@@ -606,6 +606,7 @@ export type DnD35RhdProgression = z.infer<typeof DnD35RhdProgressionSchema>;
 export const DnD35RaceDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  isPlayableRace: z.boolean().default(false),
   creatureType: z.string().default('humanoid'),
   subtypes: z.array(z.string()).default([]),
   alignment: z.string().optional(),
@@ -836,13 +837,19 @@ export const DnD35SkillDefinitionSchema = z.object({
   keyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
   trainedOnly: z.boolean().default(false),
   acpMultiplier: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
+  retryAllowed: z.boolean().default(true),
+  take10Allowed: z.boolean().default(true),
+  take20Allowed: z.boolean().default(true),
   synergyFromSkills: z.array(z.string()).default([]),
+  synergyNotes: z.string().optional(),
   actions: z.array(DnD35SkillActionDescriptorSchema).default([]),
   rankThresholdModifiers: z
     .array(
       z.object({
         minRanks: z.number().int().positive(),
-        modifiers: z.array(DnD35DeclarativeModifierSchema)
+        name: z.string().optional(),
+        modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+        ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([])
       })
     )
     .default([])
@@ -869,7 +876,10 @@ export type DnD35FeatDefinition = z.infer<typeof DnD35FeatDefinitionSchema>;
 export const DnD35SpellDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string().default(''),
   level: z.number().int().min(0).max(9),
+  levelByClass: z.record(z.string(), z.number().int().min(0).max(9)).default({}),
+  levelByDomain: z.record(z.string(), z.number().int().min(1).max(9)).default({}),
   school: z.string(),
   classification: z.enum(['spell', 'ex', 'sp', 'su']).default('spell'),
   components: z.object({

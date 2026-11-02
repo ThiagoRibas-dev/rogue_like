@@ -2,6 +2,7 @@
   "drow": {
     "id": "drow",
     "name": "Drow (Dark Elf)",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "elf"

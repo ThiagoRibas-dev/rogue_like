@@ -1,0 +1,46 @@
+{
+  "ride": {
+    "id": "ride",
+    "name": "Ride",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "handle_animal"
+    ],
+    "synergyNotes": "5+ ranks in Handle Animal gives +2 on Ride checks.",
+    "actions": [
+      {
+        "actionId": "guide_with_knees",
+        "name": "Guide Mount with Knees",
+        "actionCost": "free",
+        "dc": 5,
+        "description": "Steer your horse or warbeast using only your legs, keeping both hands free for bows or shields.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "stay_in_saddle",
+        "name": "Stay in Saddle When Hit or Rearing",
+        "actionCost": "none",
+        "dc": 5,
+        "description": "Prevent being thrown or unseated when your mount takes lethal damage or rears in fright.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "fast_mount_dismount",
+        "name": "Fast Mount or Dismount",
+        "actionCost": "free",
+        "dc": 20,
+        "description": "Vault onto or off your steed as a free action instead of spending a move action.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "knowledge_planes": {
+    "id": "knowledge_planes",
+    "name": "Knowledge (The Planes)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (the planes) gives +2 on Survival checks on other planes. Identifies Outsiders and Elementals.",
+    "actions": [
+      {
+        "actionId": "identify_planar_entity",
+        "name": "Identify Outsider or Elemental",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall true names, damage reductions, planar alignments, and elemental vulnerabilities (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "identify_planar_portal",
+        "name": "Identify Planar Portal or Astral Rift",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Determine the destination plane, planar traits, gravity mechanics, and key required to open an interdimensional gate.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

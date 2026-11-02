@@ -1,0 +1,35 @@
+{
+  "knowledge_local": {
+    "id": "knowledge_local",
+    "name": "Knowledge (Local)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (local) gives +2 on Gather Information checks. Identifies Humanoids.",
+    "actions": [
+      {
+        "actionId": "identify_humanoid_lore",
+        "name": "Identify Humanoid Traits and Cultures",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall customs, racial vulnerabilities, and military hierarchies of regional humanoid tribes (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "recall_local_factions",
+        "name": "Know Local Laws, Underworld Rings, and Factions",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recognize prominent local magistrates, guildmasters, smuggling routes, and legal ordinances.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "cause_fear": {
+    "id": "cause_fear",
+    "name": "Cause Fear",
+    "description": "Inspires chilling terror in a creature of 5 or fewer Hit Dice, causing it to flee as frightened for 1d4 rounds (or shaken for 1 round on save).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {
+      "death": 1
+    },
+    "school": "necromancy",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "partial"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "necromancy",
+      "fear",
+      "mind_affecting"
+    ]
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "heal": {
+    "id": "heal",
+    "name": "Heal",
+    "keyAbility": "wis",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "Providing battlefield stabilization, treating lethal caltrop wounds, and countering poisons or diseases.",
+    "actions": [
+      {
+        "actionId": "first_aid_stabilize",
+        "name": "First Aid (Stabilize Dying Ally)",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Bandage and compress wounds on a creature reduced to negative hit points to immediately stabilize them.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "treat_poison",
+        "name": "Treat Poison",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Administer antitoxin or suck poison from a wound before the secondary damage takes effect.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "long_term_care",
+        "name": "Provide Long-Term Medical Care",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Tend to a convalescing patient over 24 hours to double their natural healing rate for hit points and ability damage.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -2,7 +2,13 @@
   "fireball": {
     "id": "fireball",
     "name": "Fireball",
+    "description": "A 20-foot-radius detonation of roaring flame dealing 1d6 fire damage per caster level (max 10d6).",
     "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
     "school": "evocation",
     "classification": "spell",
     "components": {
@@ -15,9 +21,9 @@
       "saveType": "ref",
       "effect": "half"
     },
-    "aoeShape": "spread",
+    "aoeShape": "burst",
     "aoeRadiusFt": 20,
-    "damageDice": "5d6",
+    "damageDice": "1d6",
     "damageType": "fire",
     "tags": [
       "arcane",

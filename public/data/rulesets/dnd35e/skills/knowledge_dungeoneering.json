@@ -1,0 +1,35 @@
+{
+  "knowledge_dungeoneering": {
+    "id": "knowledge_dungeoneering",
+    "name": "Knowledge (Dungeoneering)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (dungeoneering) gives +2 on Survival checks in underground environments. Identifies Aberrations and Oozes.",
+    "actions": [
+      {
+        "actionId": "identify_dungeon_creature",
+        "name": "Identify Aberration or Ooze",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall lore on subterranean aberrations, oozes, and mind flayers (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "assess_subterranean_hazards",
+        "name": "Assess Subterranean Geology and Cave Hazards",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recognize unstable cavern ceilings, poisonous pockets of gas, and natural subterranean sinkholes.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "bluff": {
+    "id": "bluff",
+    "name": "Bluff",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Bluff gives +2 on Diplomacy, Disguise, Intimidate checks, and Sleight of Hand checks to palm small objects.",
+    "actions": [
+      {
+        "actionId": "feint_in_combat",
+        "name": "Feint in Combat",
+        "actionCost": "standard",
+        "opposedBySkill": "sense_motive",
+        "description": "Misdirect a foe in melee combat; success renders target flat-footed against your next melee attack.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "lie_and_deceive",
+        "name": "Fabricate Falsehood or Fast-Talk",
+        "actionCost": "standard",
+        "opposedBySkill": "sense_motive",
+        "description": "Convey false information or convince a target of an unlikely assertion.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "create_distraction_to_hide",
+        "name": "Create Distraction to Hide",
+        "actionCost": "standard",
+        "opposedBySkill": "sense_motive",
+        "description": "Momentarily draw attention away to allow an immediate Hide check even while observed.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

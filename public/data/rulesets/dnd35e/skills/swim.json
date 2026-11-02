@@ -5,7 +5,11 @@
     "keyAbility": "str",
     "trainedOnly": false,
     "acpMultiplier": 2,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Traversing water surfaces and strong currents. Armor check penalty is doubled on Swim checks.",
     "actions": [
       {
         "actionId": "swim_calm_water",
@@ -13,6 +17,15 @@
         "actionCost": "move",
         "dc": 10,
         "description": "Swim at one-quarter speed as a move action or one-half speed as a full-round action.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "swim_rough_water",
+        "name": "Swim in Rough Water or Rapids",
+        "actionCost": "move",
+        "dc": 15,
+        "description": "Navigate turbulent river rapids or choppy waves without being pulled under.",
         "onSuccessModifiers": [],
         "onSuccessRuleOverrides": []
       }

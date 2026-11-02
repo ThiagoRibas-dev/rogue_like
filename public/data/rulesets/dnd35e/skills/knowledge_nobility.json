@@ -1,0 +1,26 @@
+{
+  "knowledge_nobility": {
+    "id": "knowledge_nobility",
+    "name": "Knowledge (Nobility and Royalty)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (nobility and royalty) gives +2 on Diplomacy checks.",
+    "actions": [
+      {
+        "actionId": "recall_lineage_and_heraldry",
+        "name": "Recall Lineage, Heraldry, and Feudal Protocols",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Identify crests, blazons, claims to peerage, coronation laws, and proper court titles of nobility.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

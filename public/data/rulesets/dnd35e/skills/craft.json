@@ -1,0 +1,26 @@
+{
+  "craft": {
+    "id": "craft",
+    "name": "Craft",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Practicing an artisan trade to fabricate items, weapons, armor, or alchemical goods over downtime.",
+    "actions": [
+      {
+        "actionId": "craft_item",
+        "name": "Craft Mundane Item",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Spend dedicated downtime days and raw materials to forge, stitch, or sculpt an item.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -5,7 +5,11 @@
     "keyAbility": "dex",
     "trainedOnly": false,
     "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [],
+    "synergyNotes": "Concealing oneself from visual detection in shadows, foliage, or behind barriers. Opposed by Spot.",
     "actions": [
       {
         "actionId": "hide_in_shadows",

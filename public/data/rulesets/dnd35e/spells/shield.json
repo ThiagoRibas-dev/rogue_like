@@ -1,0 +1,28 @@
+{
+  "shield": {
+    "id": "shield",
+    "name": "Shield",
+    "description": "Creates an invisible mobile shield of force hovering in front of you, granting a +4 shield AC bonus and negating Magic Missile attacks.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "school": "abjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "arcane",
+      "abjuration",
+      "force"
+    ]
+  }
+}

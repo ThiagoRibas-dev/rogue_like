@@ -1,0 +1,26 @@
+{
+  "profession": {
+    "id": "profession",
+    "name": "Profession",
+    "keyAbility": "wis",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Practicing a specialized trade, maritime sailing, farming, mining, or accounting to earn a stable weekly living.",
+    "actions": [
+      {
+        "actionId": "earn_living_weekly",
+        "name": "Earn a Living Through Dedicated Trade",
+        "actionCost": "none",
+        "dc": 10,
+        "description": "Work a regular job over a full week to earn approximately half your check result in gold pieces.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

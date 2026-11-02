@@ -1,0 +1,45 @@
+{
+  "escape_artist": {
+    "id": "escape_artist",
+    "name": "Escape Artist",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [
+      "use_rope"
+    ],
+    "synergyNotes": "5+ ranks in Use Rope gives +2 on Escape Artist checks when escaping from rope bonds.",
+    "actions": [
+      {
+        "actionId": "escape_grapple",
+        "name": "Wriggle Free from Grapple",
+        "actionCost": "standard",
+        "description": "Make an Escape Artist check in place of an opposed grapple check to break free from a hold or pin.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "escape_bonds_manacles",
+        "name": "Slip Ropes or Manacles",
+        "actionCost": "full_round",
+        "dc": 20,
+        "description": "Slip hands or torso out of bindings, manacles, or tight constrictors.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "squeeze_tight_space",
+        "name": "Squeeze Through Tight Space",
+        "actionCost": "part_of_movement",
+        "dc": 30,
+        "description": "Wriggle through a narrow chute or opening where your head fits but your shoulders wouldn't normally.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

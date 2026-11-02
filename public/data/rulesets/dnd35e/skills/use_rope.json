@@ -1,0 +1,35 @@
+{
+  "use_rope": {
+    "id": "use_rope",
+    "name": "Use Rope",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Use Rope gives +2 on Climb checks and Escape Artist checks involving ropes.",
+    "actions": [
+      {
+        "actionId": "tie_secure_knot",
+        "name": "Tie Firm Knot or Binding",
+        "actionCost": "standard",
+        "dc": 10,
+        "description": "Tie a slip-proof knot or securely bind a captive with hempen or silk rope.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "secure_grappling_hook",
+        "name": "Throw and Secure Grappling Hook",
+        "actionCost": "standard",
+        "dc": 10,
+        "description": "Toss a grappling hook up a wall, parapet, or tree limb to anchor a climb line.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

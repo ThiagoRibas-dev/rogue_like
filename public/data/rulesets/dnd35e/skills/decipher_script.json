@@ -1,0 +1,26 @@
+{
+  "decipher_script": {
+    "id": "decipher_script",
+    "name": "Decipher Script",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Decipher Script gives +2 on Use Magic Device checks involving scrolls.",
+    "actions": [
+      {
+        "actionId": "decipher_archaic_writing",
+        "name": "Decipher Archaic Writing or Cipher",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Interpret a single page of text written in an unfamiliar or ancient dialect, or solve a coded cipher.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

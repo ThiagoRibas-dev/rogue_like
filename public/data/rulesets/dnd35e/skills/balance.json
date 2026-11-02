@@ -1,0 +1,51 @@
+{
+  "balance": {
+    "id": "balance",
+    "name": "Balance",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "tumble"
+    ],
+    "synergyNotes": "5+ ranks in Tumble gives +2 on Balance checks. 5+ ranks in Balance prevents being flat-footed while balancing.",
+    "actions": [
+      {
+        "actionId": "walk_narrow_surface",
+        "name": "Walk Narrow Ledge or Tightrope",
+        "actionCost": "part_of_movement",
+        "dc": 15,
+        "description": "Move at half speed across a narrow ledge (7-11 inches wide) or beam.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "walk_slippery_surface",
+        "name": "Traverse Icy or Precarious Floor",
+        "actionCost": "part_of_movement",
+        "dc": 10,
+        "description": "Cross an icy, slick, or uneven surface without falling prone.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": [
+      {
+        "minRanks": 5,
+        "name": "Balanced Defense",
+        "modifiers": [],
+        "ruleOverrides": [
+          {
+            "id": "balance_retain_dex_to_ac",
+            "ruleKey": "retain_dex_to_ac_while_balancing",
+            "value": true,
+            "priority": 15
+          }
+        ]
+      }
+    ]
+  }
+}

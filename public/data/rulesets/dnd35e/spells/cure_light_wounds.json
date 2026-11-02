@@ -2,7 +2,18 @@
   "cure_light_wounds": {
     "id": "cure_light_wounds",
     "name": "Cure Light Wounds",
+    "description": "Channels positive energy to cure 1d8+1 points of damage (max +5) on a living touched creature.",
     "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "druid": 1,
+      "bard": 1,
+      "paladin": 1,
+      "ranger": 2
+    },
+    "levelByDomain": {
+      "healing": 1
+    },
     "school": "conjuration",
     "classification": "spell",
     "components": {

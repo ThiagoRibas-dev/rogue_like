@@ -2,6 +2,7 @@
   "tiefling": {
     "id": "tiefling",
     "name": "Tiefling",
+    "isPlayableRace": true,
     "creatureType": "outsider",
     "subtypes": [
       "native"

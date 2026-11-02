@@ -2,6 +2,7 @@
   "orc": {
     "id": "orc",
     "name": "Orc",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "orc"

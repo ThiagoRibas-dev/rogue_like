@@ -5,9 +5,13 @@
     "keyAbility": "dex",
     "trainedOnly": true,
     "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [
       "jump"
     ],
+    "synergyNotes": "5+ ranks in Jump gives +2 on Tumble checks. 5+ ranks in Tumble gives +2 on Balance and Jump checks, and +1 dodge AC when fighting defensively or in total defense.",
     "actions": [
       {
         "actionId": "tumble_avoid_aoo",
@@ -51,6 +55,7 @@
     "rankThresholdModifiers": [
       {
         "minRanks": 5,
+        "name": "Acrobatic Defense",
         "modifiers": [
           {
             "id": "tumble_5_ranks_fight_defensively_ac",
@@ -64,7 +69,8 @@
               ]
             }
           }
-        ]
+        ],
+        "ruleOverrides": []
       }
     ]
   }

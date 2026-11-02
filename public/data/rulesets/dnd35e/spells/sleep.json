@@ -1,0 +1,33 @@
+{
+  "sleep": {
+    "id": "sleep",
+    "name": "Sleep",
+    "description": "Causes a magical slumber to come upon 4 Hit Dice of living creatures in a 10-foot-radius burst.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "school": "enchantment",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 10,
+    "tags": [
+      "arcane",
+      "enchantment",
+      "mind_affecting"
+    ]
+  }
+}

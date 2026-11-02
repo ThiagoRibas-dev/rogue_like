@@ -1,0 +1,39 @@
+{
+  "sleight_of_hand": {
+    "id": "sleight_of_hand",
+    "name": "Sleight of Hand",
+    "keyAbility": "dex",
+    "trainedOnly": true,
+    "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "bluff"
+    ],
+    "synergyNotes": "5+ ranks in Bluff gives +2 on Sleight of Hand checks to palm small objects.",
+    "actions": [
+      {
+        "actionId": "pick_pocket_or_cut_purse",
+        "name": "Pick Pocket or Cut Purse",
+        "actionCost": "standard",
+        "dc": 20,
+        "opposedBySkill": "spot",
+        "description": "Lift a coin pouch or small bauble off an unaware target without them realizing the theft.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "palm_small_object",
+        "name": "Palm Small Object or Dagger",
+        "actionCost": "free",
+        "dc": 10,
+        "opposedBySkill": "spot",
+        "description": "Slip a coin, key, or concealed light blade up a sleeve or behind a palm.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "speak_language": {
+    "id": "speak_language",
+    "name": "Speak Language",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Unlike other skills, investing 1 rank in Speak Language grants fluency in a new language without roll requirements.",
+    "actions": [
+      {
+        "actionId": "communicate_in_language",
+        "name": "Fluent Communication in Learned Language",
+        "actionCost": "none",
+        "dc": 0,
+        "description": "Speak, read, and comprehend a chosen language granted by rank investment.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

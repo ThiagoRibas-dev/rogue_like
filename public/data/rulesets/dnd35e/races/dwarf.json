@@ -2,6 +2,7 @@
   "dwarf": {
     "id": "dwarf",
     "name": "Dwarf",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "dwarf"

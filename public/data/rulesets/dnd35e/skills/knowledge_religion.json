@@ -1,0 +1,35 @@
+{
+  "knowledge_religion": {
+    "id": "knowledge_religion",
+    "name": "Knowledge (Religion)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (religion) gives +2 on turning checks against undead. Identifies Undead.",
+    "actions": [
+      {
+        "actionId": "identify_undead_entity",
+        "name": "Identify Undead Monster",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recall vulnerabilities to positive energy, holy water, silver/bludgeoning bypasses, and spawn rules (DC 15 + creature HD).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "recall_sacred_rites",
+        "name": "Recall Divine Pantheons, Holy Symbols, and Liturgy",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Recognize patron deities, consecrated altars, holy relics, taboos, and ancient ecclesiastical heresies.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

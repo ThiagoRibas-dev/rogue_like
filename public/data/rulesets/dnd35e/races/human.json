@@ -2,6 +2,7 @@
   "human": {
     "id": "human",
     "name": "Human",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "human"

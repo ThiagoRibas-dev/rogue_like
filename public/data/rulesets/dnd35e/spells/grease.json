@@ -1,0 +1,33 @@
+{
+  "grease": {
+    "id": "grease",
+    "name": "Grease",
+    "description": "Covers a solid surface with slippery grease, requiring creatures moving across it to succeed on a DC 10 Balance check or fall prone.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "school": "conjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "partial"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 10,
+    "tags": [
+      "arcane",
+      "conjuration",
+      "slippery"
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "mage_armor": {
+    "id": "mage_armor",
+    "name": "Mage Armor",
+    "description": "An invisible, tangible field of force surrounds the touched creature, providing a +4 armor AC bonus with no armor check penalty.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "school": "conjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "arcane",
+      "conjuration",
+      "force",
+      "armor"
+    ]
+  }
+}

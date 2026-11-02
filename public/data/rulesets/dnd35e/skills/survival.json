@@ -1,0 +1,49 @@
+{
+  "survival": {
+    "id": "survival",
+    "name": "Survival",
+    "keyAbility": "wis",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [
+      "search",
+      "knowledge_nature",
+      "knowledge_dungeoneering",
+      "knowledge_planes"
+    ],
+    "synergyNotes": "5+ ranks in Search gives +2 to follow tracks. 5+ ranks in Knowledge (nature/dungeoneering/the planes) gives +2 in respective environments.",
+    "actions": [
+      {
+        "actionId": "forage_and_subsist",
+        "name": "Forage for Food and Fresh Water",
+        "actionCost": "none",
+        "dc": 10,
+        "description": "Feed and water yourself in wilderness terrain over a day without expending rations.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "track_quarry",
+        "name": "Follow Tracks and Trail Spoor",
+        "actionCost": "part_of_movement",
+        "dc": 15,
+        "description": "Discern hoofprints, bent twigs, and scents to track quarry across rugged terrain (requires Track feat).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "weather_hazard_survival",
+        "name": "Survive Severe Weather and Environmental Hazards",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Shelter allies against hypothermia, sandstorms, thin air, or scorching heat.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

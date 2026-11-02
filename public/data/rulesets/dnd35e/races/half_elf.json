@@ -2,6 +2,7 @@
   "half_elf": {
     "id": "half_elf",
     "name": "Half-Elf",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "elf",

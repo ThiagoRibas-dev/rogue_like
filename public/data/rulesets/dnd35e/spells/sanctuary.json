@@ -1,0 +1,33 @@
+{
+  "sanctuary": {
+    "id": "sanctuary",
+    "name": "Sanctuary",
+    "description": "Any opponent attempting to directly strike or target the warded creature must succeed on a Will save or redirect the attack.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1
+    },
+    "levelByDomain": {
+      "protection": 1
+    },
+    "school": "abjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "divine",
+      "abjuration",
+      "ward"
+    ]
+  }
+}

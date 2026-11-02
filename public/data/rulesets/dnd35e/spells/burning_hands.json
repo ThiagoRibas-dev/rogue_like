@@ -2,7 +2,15 @@
   "burning_hands": {
     "id": "burning_hands",
     "name": "Burning Hands",
+    "description": "A 15-foot cone of searing flame deals 1d4 fire damage per caster level (max 5d4).",
     "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {
+      "fire": 1
+    },
     "school": "evocation",
     "classification": "spell",
     "components": {

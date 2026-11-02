@@ -2,6 +2,7 @@
   "kobold": {
     "id": "kobold",
     "name": "Kobold",
+    "isPlayableRace": true,
     "creatureType": "humanoid",
     "subtypes": [
       "reptilian"

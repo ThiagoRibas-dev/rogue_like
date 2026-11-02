@@ -1,0 +1,32 @@
+{
+  "read_magic": {
+    "id": "read_magic",
+    "name": "Read Magic",
+    "description": "Allows reading of magical scrolls, books, glyphs, and spell symbols that would otherwise be unintelligible.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0,
+      "cleric": 0,
+      "druid": 0,
+      "bard": 0,
+      "paladin": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {},
+    "school": "divination",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "universal",
+      "divination"
+    ]
+  }
+}

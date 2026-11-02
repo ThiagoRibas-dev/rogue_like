@@ -5,9 +5,13 @@
     "keyAbility": "str",
     "trainedOnly": false,
     "acpMultiplier": 1,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": false,
     "synergyFromSkills": [
       "tumble"
     ],
+    "synergyNotes": "5+ ranks in Tumble gives +2 on Jump checks. 5+ ranks in Jump gives +2 on Tumble checks.",
     "actions": [
       {
         "actionId": "long_jump",

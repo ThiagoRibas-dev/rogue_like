@@ -2,7 +2,13 @@
   "ray_of_enfeeblement": {
     "id": "ray_of_enfeeblement",
     "name": "Ray of Enfeeblement",
+    "description": "A ray of coruscating shadowy energy reduces target's Strength by 1d6+1 points (max +5).",
     "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
     "school": "necromancy",
     "classification": "spell",
     "components": {
@@ -13,9 +19,12 @@
     "allowsSpellResistance": true,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "damageDice": "1d6+1",
+    "damageType": "untyped",
     "tags": [
       "arcane",
-      "necromancy"
+      "necromancy",
+      "ray"
     ]
   }
 }

@@ -1,0 +1,35 @@
+{
+  "appraise": {
+    "id": "appraise",
+    "name": "Appraise",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "Appraise common items (DC 12) or rare/exotic items (DC 15-20) to determine monetary value.",
+    "actions": [
+      {
+        "actionId": "appraise_common_item",
+        "name": "Appraise Common Item",
+        "actionCost": "standard",
+        "dc": 12,
+        "description": "Examine a common item to ascertain its approximate market value.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "appraise_rare_item",
+        "name": "Appraise Rare or Exotic Item",
+        "actionCost": "standard",
+        "dc": 20,
+        "description": "Examine a rare, exotic, or antique item to determine its exact market value or authenticity.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}
