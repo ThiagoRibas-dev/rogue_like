@@ -1,0 +1,62 @@
+{
+  "zombie": {
+    "templateId": "zombie",
+    "name": "Zombie",
+    "kind": "acquired",
+    "targetCreatureTypes": [
+      "humanoid",
+      "monstrous_humanoid",
+      "animal",
+      "dragon",
+      "magical_beast",
+      "giant"
+    ],
+    "resultCreatureType": "undead",
+    "addSubtypes": [],
+    "abilityScoreModifiers": {
+      "str": 2,
+      "dex": -2
+    },
+    "stripNaturalArmor": true,
+    "sizeTieredNaturalArmor": {
+      "tiny": 0,
+      "small": 1,
+      "medium": 2,
+      "large": 3,
+      "huge": 4,
+      "gargantuan": 5,
+      "colossal": 7
+    },
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "slashing"
+      ]
+    },
+    "energyResistances": {},
+    "immunities": [],
+    "grantedFeats": [
+      "toughness"
+    ],
+    "grantedNaturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "grantedTags": [
+      "undead",
+      "single_actions_only",
+      "mindless",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 0
+  }
+}

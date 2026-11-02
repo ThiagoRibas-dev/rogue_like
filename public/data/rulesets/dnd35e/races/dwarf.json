@@ -1,0 +1,60 @@
+{
+  "dwarf": {
+    "id": "dwarf",
+    "name": "Dwarf",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "dwarf"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 20,
+    "unencumberedSpeedInHeavyArmor": true,
+    "abilityAdjustments": {
+      "con": 2,
+      "cha": -2
+    },
+    "darkvisionFt": 60,
+    "favoredClass": "fighter",
+    "saveBonuses": {
+      "fort": 2,
+      "ref": 2,
+      "will": 2
+    },
+    "conditionalModifiers": [
+      {
+        "id": "dodge_vs_giants",
+        "target": "ac",
+        "value": 4,
+        "type": "dodge",
+        "condition": {
+          "targetTagsAny": [
+            "type:giant",
+            "giant"
+          ]
+        }
+      },
+      {
+        "id": "attack_vs_orcs_goblinoids",
+        "target": "attack",
+        "value": 1,
+        "type": "racial",
+        "condition": {
+          "targetTagsAny": [
+            "subtype:orc",
+            "orc",
+            "subtype:goblinoid",
+            "goblinoid"
+          ]
+        }
+      }
+    ],
+    "weaponFamiliarityIds": [
+      "dwarven_waraxe",
+      "dwarven_urgrosh"
+    ],
+    "automaticLanguages": [
+      "common",
+      "dwarven"
+    ]
+  }
+}

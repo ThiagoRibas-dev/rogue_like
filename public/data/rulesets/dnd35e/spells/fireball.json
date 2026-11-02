@@ -1,0 +1,27 @@
+{
+  "fireball": {
+    "id": "fireball",
+    "name": "Fireball",
+    "level": 3,
+    "school": "evocation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "damageDice": "5d6",
+    "damageType": "fire",
+    "tags": [
+      "arcane",
+      "fire"
+    ]
+  }
+}

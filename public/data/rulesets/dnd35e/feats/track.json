@@ -1,0 +1,8 @@
+{
+  "track": {
+    "id": "track",
+    "name": "Track",
+    "description": "Use Survival checks to follow tracks.",
+    "isFighterBonusFeat": false
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "kobold": {
+    "archetypeId": "kobold",
+    "sizeCategory": "small",
+    "abilityScores": {
+      "str": 9,
+      "dex": 13,
+      "con": 10,
+      "int": 10,
+      "wis": 9,
+      "cha": 8
+    },
+    "tracks": [
+      {
+        "trackId": "warrior",
+        "levels": 1,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 1,
+    "creatureType": "humanoid",
+    "subtypes": [
+      "reptilian"
+    ],
+    "feats": [
+      "alertness"
+    ],
+    "skillRanks": {
+      "hide": 4,
+      "listen": 2,
+      "spot": 2
+    },
+    "cr": 0.25
+  }
+}

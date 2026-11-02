@@ -1,0 +1,74 @@
+{
+  "wolf": {
+    "archetypeId": "wolf",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 13,
+      "dex": 15,
+      "con": 15,
+      "int": 2,
+      "wis": 12,
+      "cha": 6
+    },
+    "tracks": [
+      {
+        "trackId": "animal",
+        "levels": 2,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 2,
+    "creatureType": "animal",
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "advancementRanges": [
+      {
+        "minHd": 3,
+        "maxHd": 3,
+        "sizeCategory": "medium",
+        "crAdjustment": 0
+      },
+      {
+        "minHd": 4,
+        "maxHd": 6,
+        "sizeCategory": "large",
+        "crAdjustment": 1
+      }
+    ],
+    "feats": [
+      "track",
+      "weapon_focus_bite"
+    ],
+    "skillRanks": {
+      "listen": 3,
+      "spot": 3,
+      "survival": 4
+    },
+    "cr": 1
+  }
+}

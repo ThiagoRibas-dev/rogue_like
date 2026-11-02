@@ -1,0 +1,33 @@
+{
+  "ghost": {
+    "templateId": "ghost",
+    "name": "Ghost",
+    "kind": "acquired",
+    "targetCreatureTypes": [
+      "humanoid",
+      "monstrous_humanoid",
+      "giant"
+    ],
+    "resultCreatureType": "undead",
+    "addSubtypes": [
+      "incorporeal",
+      "augmented_humanoid"
+    ],
+    "abilityScoreModifiers": {
+      "cha": 4
+    },
+    "stripNaturalArmor": true,
+    "deflectionBonusFromChaMinOne": true,
+    "energyResistances": {},
+    "immunities": [],
+    "grantedTags": [
+      "undead",
+      "incorporeal",
+      "manifestation",
+      "corrupting_touch",
+      "frightful_moan",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 5
+  }
+}

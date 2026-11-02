@@ -1,0 +1,20 @@
+{
+  "human": {
+    "id": "human",
+    "name": "Human",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "human"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {},
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": true,
+    "extraSkillPointsFirstLevel": 4,
+    "extraSkillPointsPerLevel": 1,
+    "automaticLanguages": [
+      "common"
+    ]
+  }
+}

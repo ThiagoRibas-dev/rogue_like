@@ -1,0 +1,8 @@
+{
+  "alertness": {
+    "id": "alertness",
+    "name": "Alertness",
+    "description": "+2 bonus on Listen and Spot checks.",
+    "isFighterBonusFeat": false
+  }
+}

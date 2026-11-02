@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for refactoring D&D 3.5e Class Definitions to the Rulebook-Faithful Class Header + Level-by-Level Progression Table (`progression: ReadonlyArray<DnD35ClassLevelRow>`) and adding the Chronological Actor Level Ledger (`levelHistory`) + Permanent Level Drain & Negative Levels engine, along with permanent documentation in DECISIONS.md and MILESTONES.md.",
-  "updatedAt":  "2026-11-02T13:01:16.381776566Z",
-  "requestFeedback":  true,
-  "userFacing":  true
+  "summary": "Step-by-step Implementation Plan for the Pluggable Ruleset-Specific Validator Architecture (checkBase, checkClassicRuleset, checkDnD35eRuleset, and Disk-to-Descriptor Parity Validator), including Cascading Effects Matrix, exact code implementations, and dedicated unit tests.",
+  "updatedAt": "2026-11-02T13:54:25.590421151Z",
+  "requestFeedback": true,
+  "userFacing": true
 }

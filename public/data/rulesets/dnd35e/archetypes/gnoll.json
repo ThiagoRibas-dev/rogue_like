@@ -1,0 +1,48 @@
+{
+  "gnoll": {
+    "archetypeId": "gnoll",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 15,
+      "dex": 10,
+      "con": 13,
+      "int": 8,
+      "wis": 11,
+      "cha": 8
+    },
+    "tracks": [
+      {
+        "trackId": "racial_humanoid",
+        "levels": 2,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 1,
+    "naturalArmorBonus": 1,
+    "creatureType": "humanoid",
+    "subtypes": [
+      "gnoll"
+    ],
+    "feats": [
+      "power_attack"
+    ],
+    "skillRanks": {
+      "listen": 2,
+      "spot": 2
+    },
+    "cr": 1
+  }
+}

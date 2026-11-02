@@ -1,0 +1,23 @@
+{
+  "hobgoblin": {
+    "id": "hobgoblin",
+    "name": "Hobgoblin",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "goblinoid"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "con": 2
+    },
+    "darkvisionFt": 60,
+    "levelAdjustment": 1,
+    "favoredClass": "fighter",
+    "automaticLanguages": [
+      "common",
+      "goblin"
+    ]
+  }
+}

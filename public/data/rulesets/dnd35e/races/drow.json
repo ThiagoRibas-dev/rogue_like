@@ -1,0 +1,38 @@
+{
+  "drow": {
+    "id": "drow",
+    "name": "Drow (Dark Elf)",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "elf"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "con": -2,
+      "int": 2,
+      "cha": 2
+    },
+    "darkvisionFt": 120,
+    "levelAdjustment": 2,
+    "favoredClass": "wizard",
+    "spellResistanceFormula": {
+      "base": 11,
+      "perHitDie": 1
+    },
+    "saveBonuses": {
+      "will": 2
+    },
+    "weaponFamiliarityIds": [
+      "hand_crossbow",
+      "rapier",
+      "short_sword"
+    ],
+    "automaticLanguages": [
+      "common",
+      "elven",
+      "undercommon"
+    ]
+  }
+}

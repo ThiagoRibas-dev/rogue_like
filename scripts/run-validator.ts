@@ -461,6 +461,74 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
   };
 }
 
+/**
+ * Validates on-disk file hygiene for all modular ruleset registries in `public/data/rulesets/<rulesetId>/`.
+ * Ensures every file declared in `getSystemContentFiles()` exists on disk, no unreferenced orphan files
+ * exist in modular subdirectories, and each modular file has exact key/id/filename parity.
+ */
+function validateRulesetDiskParity(): { readonly errors: ReadonlyArray<string>; readonly checkedFiles: number } {
+  const errors: string[] = [];
+  let checkedFiles = 0;
+  const rulesetsDir = join(PROJECT_ROOT, 'public', 'data', 'rulesets');
+  if (!existsSync(rulesetsDir)) return { errors, checkedFiles };
+
+  const rulesetEntries = readdirSync(rulesetsDir).filter((e) => statSync(join(rulesetsDir, e)).isDirectory());
+  for (const rulesetId of rulesetEntries) {
+    const ruleset = getRuleset(rulesetId as RulesetId);
+    const descriptors = ruleset.getSystemContentFiles?.() ?? [];
+    const declaredFiles = new Set(descriptors.map((d) => d.filename));
+
+    // 1. Verify every declared descriptor file exists on disk
+    const rulesetPath = join(rulesetsDir, rulesetId);
+    for (const desc of descriptors) {
+      const fullPath = join(rulesetPath, desc.filename);
+      if (!existsSync(fullPath)) {
+        errors.push(`Ruleset "${rulesetId}" declares descriptor "${desc.filename}", but file is missing on disk.`);
+      }
+    }
+
+    // 2. Scan every modular subdirectory on disk and verify no orphans, plus key/id parity
+    const subdirs = readdirSync(rulesetPath).filter((e) => statSync(join(rulesetPath, e)).isDirectory());
+    for (const sub of subdirs) {
+      const subPath = join(rulesetPath, sub);
+      const jsonFiles = readdirSync(subPath).filter((f) => f.endsWith('.json'));
+      for (const file of jsonFiles) {
+        checkedFiles++;
+        const relFilename = `${sub}/${file}`;
+        if (!declaredFiles.has(relFilename)) {
+          errors.push(
+            `Ruleset "${rulesetId}" has file "${relFilename}" on disk not declared in getSystemContentFiles().`
+          );
+        }
+        const stem = file.replace(/\.json$/, '');
+        try {
+          const raw = JSON.parse(readFileSync(join(subPath, file), 'utf-8')) as Record<string, unknown>;
+          const keys = Object.keys(raw);
+          if (keys.length !== 1 || keys[0] !== stem) {
+            errors.push(
+              `Ruleset "${rulesetId}" file "${relFilename}" must have a single top-level key matching "${stem}" (got ${JSON.stringify(keys)}).`
+            );
+          } else {
+            const inner = raw[stem] as Record<string, unknown>;
+            const innerId = inner['id'] ?? inner['archetypeId'] ?? inner['templateId'] ?? inner['typeId'];
+            if (innerId !== stem) {
+              errors.push(
+                `Ruleset "${rulesetId}" file "${relFilename}" inner identifier (${String(innerId)}) does not match filename stem "${stem}".`
+              );
+            }
+          }
+        } catch (err) {
+          errors.push(
+            `Ruleset "${rulesetId}" file "${relFilename}" failed to parse as JSON: ${(err as Error).message}`
+          );
+        }
+      }
+    }
+  }
+
+  return { errors, checkedFiles };
+}
+
 // ──────────────────────────────────────────────
 // Main
 // ──────────────────────────────────────────────
@@ -517,6 +585,18 @@ async function main() {
       results.push(result);
     }
 
+    // Ruleset System Content Disk Parity
+    console.log('');
+    console.log('─── Ruleset System Content Disk Parity ───');
+    const rulesetParity = validateRulesetDiskParity();
+    if (rulesetParity.errors.length > 0) {
+      for (const err of rulesetParity.errors) console.error(`  ❌ ${err}`);
+    } else {
+      console.log(
+        `  ✅ Validated ${rulesetParity.checkedFiles} modular ruleset file(s) on disk (zero orphans, 100% key parity)`
+      );
+    }
+
     // ai-prompt-kit parity (generated artifact mirror of the default campaign)
     console.log('');
     console.log('─── ai-prompt-kit parity ───');
@@ -539,7 +619,7 @@ async function main() {
     console.log('═══════════════════════════════════════════');
     console.log('              SUMMARY');
     console.log('═══════════════════════════════════════════');
-    let totalErrors = parityErrors;
+    let totalErrors = parityErrors + rulesetParity.errors.length;
     let totalWarnings = 0;
     for (const r of results) {
       const errCount = r.zodErrors + r.crossErrors;
@@ -547,6 +627,9 @@ async function main() {
       console.log(`  ${status} ${r.campaignName} (${r.campaignId}): ${errCount} error(s), ${r.warnings} warning(s)`);
       totalErrors += errCount;
       totalWarnings += r.warnings;
+    }
+    if (rulesetParity.errors.length > 0) {
+      console.log(`  ❌ Ruleset disk parity: ${rulesetParity.errors.length} error(s)`);
     }
     if (parityErrors > 0) {
       console.log(`  ❌ ai-prompt-kit: ${parityErrors} parity error(s)`);
@@ -563,3 +646,4 @@ main().catch((err: Error) => {
   console.error(err.stack);
   process.exit(2);
 });
+

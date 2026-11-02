@@ -1,0 +1,8 @@
+{
+  "combat_reflexes": {
+    "id": "combat_reflexes",
+    "name": "Combat Reflexes",
+    "description": "Make additional Attacks of Opportunity equal to your DEX modifier and make AoOs while flat-footed.",
+    "isFighterBonusFeat": true
+  }
+}

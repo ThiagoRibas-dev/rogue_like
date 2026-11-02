@@ -1,0 +1,62 @@
+{
+  "minotaur": {
+    "archetypeId": "minotaur",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 19,
+      "dex": 10,
+      "con": 15,
+      "int": 7,
+      "wis": 10,
+      "cha": 8
+    },
+    "tracks": [
+      {
+        "trackId": "monstrous_humanoid",
+        "levels": 6,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "poor",
+        "refCurve": "good",
+        "willCurve": "good",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "3d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 5,
+    "creatureType": "monstrous_humanoid",
+    "naturalWeapons": [
+      {
+        "id": "gore",
+        "name": "Gore",
+        "naturalType": "gore",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "power_attack",
+      "great_cleave",
+      "track"
+    ],
+    "skillRanks": {
+      "intimidate": 5,
+      "listen": 7,
+      "spot": 7,
+      "search": 8
+    },
+    "cr": 4
+  }
+}

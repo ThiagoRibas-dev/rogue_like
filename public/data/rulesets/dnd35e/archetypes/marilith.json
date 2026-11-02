@@ -1,0 +1,96 @@
+{
+  "marilith": {
+    "archetypeId": "marilith",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 29,
+      "dex": 19,
+      "con": 29,
+      "int": 18,
+      "wis": 18,
+      "cha": 24
+    },
+    "tracks": [
+      {
+        "trackId": "outsider",
+        "levels": 16,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "good",
+        "skillPointsPerLevel": 8
+      }
+    ],
+    "weaponDice": "2d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing",
+      "evil",
+      "chaotic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 16,
+    "damageReduction": {
+      "amount": 10,
+      "bypassTags": [
+        "good",
+        "cold_iron"
+      ],
+      "requireAllTags": true
+    },
+    "energyResistance": {
+      "acid": 10,
+      "cold": 10,
+      "fire": 10
+    },
+    "immunities": [
+      "electricity",
+      "poison"
+    ],
+    "spellResistance": 25,
+    "creatureType": "outsider",
+    "subtypes": [
+      "chaotic",
+      "evil",
+      "extraplanar",
+      "tanar_ri"
+    ],
+    "anatomyBodyPlan": "marilith_6arm",
+    "naturalWeapons": [
+      {
+        "id": "tail_slam",
+        "name": "Tail Slam",
+        "naturalType": "slam",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "4d6",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "combat_expertise",
+      "combat_reflexes",
+      "multiattack",
+      "multiweapon_fighting",
+      "power_attack",
+      "weapon_focus_longsword"
+    ],
+    "skillRanks": {
+      "concentration": 19,
+      "diplomacy": 19,
+      "hide": 19,
+      "listen": 19,
+      "move_silently": 19,
+      "search": 19,
+      "sense_motive": 19,
+      "spot": 19
+    },
+    "cr": 17
+  }
+}

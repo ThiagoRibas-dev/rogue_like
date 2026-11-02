@@ -1,0 +1,56 @@
+{
+  "giant_fire_beetle": {
+    "archetypeId": "giant_fire_beetle",
+    "sizeCategory": "small",
+    "abilityScores": {
+      "str": 10,
+      "dex": 11,
+      "con": 11,
+      "int": null,
+      "wis": 10,
+      "cha": 7
+    },
+    "tracks": [
+      {
+        "trackId": "racial_vermin",
+        "levels": 1,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 0
+      }
+    ],
+    "weaponDice": "2d4",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 5,
+    "immunities": [
+      "mind_affecting"
+    ],
+    "creatureType": "vermin",
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "2d4",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [],
+    "skillRanks": {},
+    "cr": 0.33
+  }
+}

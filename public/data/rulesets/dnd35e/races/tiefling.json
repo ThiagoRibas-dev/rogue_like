@@ -1,0 +1,29 @@
+{
+  "tiefling": {
+    "id": "tiefling",
+    "name": "Tiefling",
+    "creatureType": "outsider",
+    "subtypes": [
+      "native"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "int": 2,
+      "cha": -2
+    },
+    "darkvisionFt": 60,
+    "levelAdjustment": 1,
+    "favoredClass": "rogue",
+    "energyResistances": {
+      "cold": 5,
+      "electricity": 5,
+      "fire": 5
+    },
+    "automaticLanguages": [
+      "common",
+      "infernal"
+    ]
+  }
+}

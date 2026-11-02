@@ -1,0 +1,28 @@
+{
+  "cure_light_wounds": {
+    "id": "cure_light_wounds",
+    "name": "Cure Light Wounds",
+    "level": 1,
+    "school": "conjuration",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d8+1",
+    "damageType": "positive",
+    "tags": [
+      "divine",
+      "healing",
+      "cure"
+    ]
+  }
+}

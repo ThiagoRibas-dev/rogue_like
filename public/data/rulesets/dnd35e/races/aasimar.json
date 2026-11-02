@@ -1,0 +1,28 @@
+{
+  "aasimar": {
+    "id": "aasimar",
+    "name": "Aasimar",
+    "creatureType": "outsider",
+    "subtypes": [
+      "native"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "wis": 2,
+      "cha": 2
+    },
+    "darkvisionFt": 60,
+    "levelAdjustment": 1,
+    "favoredClass": "paladin",
+    "energyResistances": {
+      "acid": 5,
+      "cold": 5,
+      "electricity": 5
+    },
+    "automaticLanguages": [
+      "common",
+      "celestial"
+    ]
+  }
+}

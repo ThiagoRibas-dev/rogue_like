@@ -10,7 +10,6 @@ import {
 } from '../../types/components.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from './wild_shape.ts';
-import type { CampaignData } from '../../types/campaign.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../types/intents/combat.intents.ts';
 import type {
@@ -18,14 +17,11 @@ import type {
   HudVitalsDTO,
   RulesetContract,
   RulesetSystemFileDescriptor,
-  ValidationError,
   ViewGroup
 } from '../../types/ruleset.types.ts';
-import {
-  DnD35SystemContentSchema,
-  getDnD35SystemContent,
-  parseDnD35SystemContent
-} from './types/dnd35e_system.types.ts';
+import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
+import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
+import { checkDnD35eRuleset } from './dnd35e_validator.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
 import { evaluateTacticalDoctrineModifiers, resolveAttackRoll } from './combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from './combat/damage_vitality.ts';
@@ -536,74 +532,10 @@ export const dnd35eRulesetContract: RulesetContract = {
     return baseGroups;
   },
   getSystemContentFiles(): ReadonlyArray<RulesetSystemFileDescriptor> {
-    return [
-      { key: 'archetypes', filename: 'archetypes.json' },
-      { key: 'classes', filename: 'classes.json' },
-      { key: 'classes', filename: 'classes/barbarian.json' },
-      { key: 'classes', filename: 'classes/bard.json' },
-      { key: 'classes', filename: 'classes/cleric.json' },
-      { key: 'classes', filename: 'classes/druid.json' },
-      { key: 'classes', filename: 'classes/fighter.json' },
-      { key: 'classes', filename: 'classes/monk.json' },
-      { key: 'classes', filename: 'classes/paladin.json' },
-      { key: 'classes', filename: 'classes/ranger.json' },
-      { key: 'classes', filename: 'classes/rogue.json' },
-      { key: 'classes', filename: 'classes/sorcerer.json' },
-      { key: 'classes', filename: 'classes/wizard.json' },
-      { key: 'classes', filename: 'classes/arcane_archer.json' },
-      { key: 'classes', filename: 'classes/assassin.json' },
-      { key: 'classes', filename: 'classes/blackguard.json' },
-      { key: 'classes', filename: 'classes/dragon_disciple.json' },
-      { key: 'classes', filename: 'classes/duelist.json' },
-      { key: 'classes', filename: 'classes/dwarven_defender.json' },
-      { key: 'classes', filename: 'classes/eldritch_knight.json' },
-      { key: 'classes', filename: 'classes/loremaster.json' },
-      { key: 'classes', filename: 'classes/mystic_theurge.json' },
-      { key: 'classes', filename: 'classes/shadowdancer.json' },
-      { key: 'domains', filename: 'domains.json' },
-      { key: 'skills', filename: 'skills.json' },
-      { key: 'feats', filename: 'feats.json' },
-      { key: 'spells', filename: 'spells.json' },
-      { key: 'templates', filename: 'templates.json' },
-      { key: 'races', filename: 'races.json' },
-      { key: 'creatureTypes', filename: 'creature_types.json' },
-      { key: 'dragonFamilies', filename: 'dragon_families.json' }
-    ];
+    return DND35E_SYSTEM_CONTENT_FILES;
   },
   parseSystemContent(raw: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
     return parseDnD35SystemContent(raw) as unknown as Readonly<Record<string, unknown>>;
   },
-  validateCampaignRuleset(campaign: Readonly<CampaignData>): ReadonlyArray<ValidationError> {
-    const errors: ValidationError[] = [];
-    if (!campaign.systemContent) {
-      errors.push({
-        path: 'campaign.systemContent',
-        message: 'D&D 3.5e campaign requires systemContent (loaded from public/data/rulesets/dnd35e/)',
-        severity: 'error'
-      });
-      return errors;
-    }
-    const parseRes = DnD35SystemContentSchema.safeParse(campaign.systemContent);
-    if (!parseRes.success) {
-      for (const issue of parseRes.error.issues) {
-        errors.push({
-          path: `systemContent.${issue.path.join('.')}`,
-          message: issue.message,
-          severity: 'error'
-        });
-      }
-      return errors;
-    }
-    const archetypes = parseRes.data.archetypes;
-    for (const [entityId, entity] of Object.entries(campaign.entities)) {
-      if (entity.archetypeId && !archetypes[entity.archetypeId]) {
-        errors.push({
-          path: `entities.${entityId}.archetypeId`,
-          message: `Entity template "${entityId}" references unknown system archetype "${entity.archetypeId}"`,
-          severity: 'error'
-        });
-      }
-    }
-    return errors;
-  }
+  validateCampaignRuleset: checkDnD35eRuleset
 };

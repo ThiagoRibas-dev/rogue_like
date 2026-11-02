@@ -1,0 +1,31 @@
+{
+  "elf": {
+    "id": "elf",
+    "name": "Elf",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "elf"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "con": -2
+    },
+    "lowLightVision": true,
+    "favoredClass": "wizard",
+    "saveBonuses": {
+      "will": 2
+    },
+    "weaponFamiliarityIds": [
+      "longsword",
+      "rapier",
+      "longbow",
+      "shortbow"
+    ],
+    "automaticLanguages": [
+      "common",
+      "elven"
+    ]
+  }
+}

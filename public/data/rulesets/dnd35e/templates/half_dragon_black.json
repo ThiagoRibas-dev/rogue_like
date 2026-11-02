@@ -1,0 +1,52 @@
+{
+  "half_dragon_black": {
+    "templateId": "half_dragon_black",
+    "name": "Half-Dragon (Black)",
+    "kind": "inherited",
+    "resultCreatureType": "dragon",
+    "addSubtypes": [],
+    "abilityScoreModifiers": {
+      "str": 8,
+      "con": 2,
+      "int": 2,
+      "cha": 2
+    },
+    "naturalArmorBonusDelta": 4,
+    "immunities": [
+      "acid",
+      "sleep",
+      "paralysis"
+    ],
+    "grantedNaturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "grantedTags": [
+      "half_dragon",
+      "breath_weapon_acid_line_6d8",
+      "low_light_vision",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 3
+  }
+}

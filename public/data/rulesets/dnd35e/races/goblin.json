@@ -1,0 +1,23 @@
+{
+  "goblin": {
+    "id": "goblin",
+    "name": "Goblin",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "goblinoid"
+    ],
+    "size": "small",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "str": -2,
+      "cha": -2
+    },
+    "darkvisionFt": 60,
+    "favoredClass": "rogue",
+    "automaticLanguages": [
+      "common",
+      "goblin"
+    ]
+  }
+}

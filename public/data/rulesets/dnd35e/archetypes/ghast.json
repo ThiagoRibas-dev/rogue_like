@@ -1,0 +1,84 @@
+{
+  "ghast": {
+    "archetypeId": "ghast",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 17,
+      "dex": 17,
+      "con": null,
+      "int": 13,
+      "wis": 14,
+      "cha": 16
+    },
+    "tracks": [
+      {
+        "trackId": "racial_undead",
+        "levels": 4,
+        "hitDieSides": 12,
+        "babCurve": "half",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good",
+        "skillPointsPerLevel": 4
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 4,
+    "creatureType": "undead",
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "ghast_paralysis",
+            "type": "paralysis",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 15,
+            "initialEffectDescription": "Paralyzed 1d4+1 rounds"
+          }
+        ]
+      },
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "multiattack",
+      "toughness"
+    ],
+    "skillRanks": {
+      "balance": 6,
+      "climb": 6,
+      "hide": 6,
+      "jump": 6,
+      "move_silently": 6,
+      "spot": 7
+    },
+    "cr": 3
+  }
+}

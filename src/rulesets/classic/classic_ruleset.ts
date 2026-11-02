@@ -1,6 +1,7 @@
 import type { RulesetContract, ViewGroup } from '../../types/ruleset.types.ts';
 import { computeClassicEffectiveStats, projectClassicHudVitals } from './classic_stats.ts';
 import { grantClassicXp, processClassicDamage, resolveClassicMeleeAttack } from './classic_combat.ts';
+import { checkClassicRuleset } from './classic_validator.ts';
 
 /**
  * The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics.
@@ -32,5 +33,6 @@ export const classicRulesetContract: RulesetContract = {
   },
   getSystemContentFiles() {
     return [];
-  }
+  },
+  validateCampaignRuleset: checkClassicRuleset
 };

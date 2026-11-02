@@ -1,0 +1,70 @@
+{
+  "half_fiend": {
+    "templateId": "half_fiend",
+    "name": "Half-Fiend",
+    "kind": "inherited",
+    "resultCreatureType": "outsider",
+    "addSubtypes": [
+      "native",
+      "evil"
+    ],
+    "abilityScoreModifiers": {
+      "str": 4,
+      "dex": 4,
+      "con": 2,
+      "int": 4,
+      "cha": 2
+    },
+    "naturalArmorBonusDelta": 1,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "magic"
+      ]
+    },
+    "energyResistances": {
+      "acid": 10,
+      "cold": 10,
+      "electricity": 10,
+      "fire": 10
+    },
+    "immunities": [
+      "poison"
+    ],
+    "spellResistanceFormula": {
+      "base": 10,
+      "perHitDie": 1,
+      "max": 35
+    },
+    "grantedNaturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "grantedTags": [
+      "half_fiend",
+      "smite_good",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 4
+  }
+}

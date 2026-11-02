@@ -1,0 +1,127 @@
+{
+  "pit_fiend": {
+    "archetypeId": "pit_fiend",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 37,
+      "dex": 27,
+      "con": 27,
+      "int": 26,
+      "wis": 26,
+      "cha": 26
+    },
+    "tracks": [
+      {
+        "trackId": "outsider",
+        "levels": 18,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "good",
+        "skillPointsPerLevel": 8
+      }
+    ],
+    "weaponDice": "2d6",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning",
+      "evil",
+      "lawful"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 23,
+    "damageReduction": {
+      "amount": 15,
+      "bypassTags": [
+        "good",
+        "silver"
+      ],
+      "requireAllTags": true
+    },
+    "energyResistance": {
+      "acid": 10,
+      "cold": 10
+    },
+    "immunities": [
+      "fire",
+      "poison"
+    ],
+    "spellResistance": 32,
+    "creatureType": "outsider",
+    "subtypes": [
+      "lawful",
+      "evil",
+      "extraplanar",
+      "baatezu"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "4d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "2d8",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "wings",
+        "name": "Wing",
+        "naturalType": "wings",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "2d6",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "tail_slap",
+        "name": "Tail Slap",
+        "naturalType": "tail_slap",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "2d8",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "cleave",
+      "great_cleave",
+      "improved_initiative",
+      "iron_will",
+      "multiattack",
+      "power_attack"
+    ],
+    "skillRanks": {
+      "concentration": 21,
+      "diplomacy": 21,
+      "hide": 21,
+      "intimidate": 21,
+      "listen": 21,
+      "move_silently": 21,
+      "search": 21,
+      "spot": 21
+    },
+    "cr": 20
+  }
+}

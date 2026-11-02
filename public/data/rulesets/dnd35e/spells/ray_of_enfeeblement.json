@@ -1,0 +1,21 @@
+{
+  "ray_of_enfeeblement": {
+    "id": "ray_of_enfeeblement",
+    "name": "Ray of Enfeeblement",
+    "level": 1,
+    "school": "necromancy",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "tags": [
+      "arcane",
+      "necromancy"
+    ]
+  }
+}

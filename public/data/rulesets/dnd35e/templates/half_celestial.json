@@ -1,0 +1,48 @@
+{
+  "half_celestial": {
+    "templateId": "half_celestial",
+    "name": "Half-Celestial",
+    "kind": "inherited",
+    "resultCreatureType": "outsider",
+    "addSubtypes": [
+      "native",
+      "good"
+    ],
+    "abilityScoreModifiers": {
+      "str": 4,
+      "dex": 2,
+      "con": 4,
+      "int": 2,
+      "wis": 4,
+      "cha": 4
+    },
+    "naturalArmorBonusDelta": 1,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "magic"
+      ]
+    },
+    "energyResistances": {
+      "acid": 10,
+      "cold": 10,
+      "electricity": 10
+    },
+    "immunities": [
+      "disease"
+    ],
+    "spellResistanceFormula": {
+      "base": 10,
+      "perHitDie": 1,
+      "max": 35
+    },
+    "grantedTags": [
+      "half_celestial",
+      "smite_evil",
+      "daylight",
+      "low_light_vision",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 4
+  }
+}

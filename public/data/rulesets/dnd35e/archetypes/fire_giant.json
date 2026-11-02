@@ -1,0 +1,62 @@
+{
+  "fire_giant": {
+    "archetypeId": "fire_giant",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 31,
+      "dex": 9,
+      "con": 21,
+      "int": 10,
+      "wis": 14,
+      "cha": 11
+    },
+    "tracks": [
+      {
+        "trackId": "racial_giant",
+        "levels": 15,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "3d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 6,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 8,
+    "immunities": [
+      "fire"
+    ],
+    "vulnerabilities": [
+      "cold"
+    ],
+    "creatureType": "giant",
+    "subtypes": [
+      "fire"
+    ],
+    "feats": [
+      "cleave",
+      "great_cleave",
+      "improved_overrun",
+      "improved_sunder",
+      "iron_will",
+      "power_attack"
+    ],
+    "skillRanks": {
+      "climb": 9,
+      "craft": 6,
+      "intimidate": 6,
+      "jump": 9,
+      "spot": 12
+    },
+    "cr": 10
+  }
+}

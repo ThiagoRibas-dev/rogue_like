@@ -1,0 +1,8 @@
+{
+  "toughness": {
+    "id": "toughness",
+    "name": "Toughness",
+    "description": "+3 hit points.",
+    "isFighterBonusFeat": false
+  }
+}

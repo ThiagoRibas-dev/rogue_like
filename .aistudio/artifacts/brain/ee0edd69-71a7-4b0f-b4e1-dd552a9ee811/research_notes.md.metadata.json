@@ -1,5 +1,5 @@
 {
-  "summary":  "Research notes for refactoring D&D 3.5e Class Definitions to a Rulebook-faithful Header + Level-by-Level Progression Table (progression[]) and Actor Chronological Level Ledger (levelHistory[]) for interleaved multiclassing and permanent level drain.",
-  "updatedAt":  "2026-11-02T12:54:48.500473450Z",
-  "userFacing":  true
+  "summary": "Research notes for the Pluggable Ruleset-Specific Validator Architecture (checkBaseCampaign, checkClassicRuleset, checkDnD35eRuleset, and Disk-to-Descriptor Synchronization). Maps the 3-Tier architecture, existing cross-reference findings, and Cascading Effects Matrix.",
+  "updatedAt": "2026-11-02T13:53:23.674977056Z",
+  "userFacing": true
 }

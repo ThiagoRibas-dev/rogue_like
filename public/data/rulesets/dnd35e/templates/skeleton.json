@@ -1,0 +1,49 @@
+{
+  "skeleton": {
+    "templateId": "skeleton",
+    "name": "Skeleton",
+    "kind": "acquired",
+    "targetCreatureTypes": [
+      "humanoid",
+      "monstrous_humanoid",
+      "animal",
+      "dragon",
+      "magical_beast",
+      "giant"
+    ],
+    "resultCreatureType": "undead",
+    "addSubtypes": [],
+    "abilityScoreModifiers": {
+      "dex": 2
+    },
+    "stripNaturalArmor": true,
+    "sizeTieredNaturalArmor": {
+      "tiny": 0,
+      "small": 1,
+      "medium": 2,
+      "large": 3,
+      "huge": 4,
+      "gargantuan": 6,
+      "colossal": 10
+    },
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "bludgeoning"
+      ]
+    },
+    "energyResistances": {},
+    "immunities": [
+      "cold"
+    ],
+    "grantedFeats": [
+      "improved_initiative"
+    ],
+    "grantedTags": [
+      "undead",
+      "mindless",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 0
+  }
+}

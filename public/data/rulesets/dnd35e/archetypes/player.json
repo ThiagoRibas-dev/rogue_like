@@ -1,0 +1,51 @@
+{
+  "player": {
+    "archetypeId": "player",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 16,
+      "dex": 14,
+      "con": 14,
+      "int": 12,
+      "wis": 12,
+      "cha": 10
+    },
+    "tracks": [
+      {
+        "trackId": "fighter",
+        "levels": 1,
+        "hitDieSides": 10,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 4,
+    "shieldBonus": 2,
+    "naturalArmorBonus": 0,
+    "energyResistance": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "feats": [
+      "power_attack",
+      "cleave",
+      "combat_reflexes"
+    ],
+    "skillRanks": {
+      "tumble": 4,
+      "jump": 4,
+      "intimidate": 4,
+      "spot": 2
+    },
+    "cr": 1
+  }
+}

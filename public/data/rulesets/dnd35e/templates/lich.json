@@ -1,0 +1,42 @@
+{
+  "lich": {
+    "templateId": "lich",
+    "name": "Lich",
+    "kind": "acquired",
+    "targetCreatureTypes": [
+      "humanoid"
+    ],
+    "resultCreatureType": "undead",
+    "addSubtypes": [
+      "augmented_humanoid"
+    ],
+    "abilityScoreModifiers": {
+      "int": 2,
+      "wis": 2,
+      "cha": 2
+    },
+    "naturalArmorBonusDelta": 5,
+    "damageReduction": {
+      "amount": 15,
+      "bypassTags": [
+        "bludgeoning",
+        "magic"
+      ],
+      "requireAllTags": true
+    },
+    "energyResistances": {},
+    "immunities": [
+      "cold",
+      "electricity"
+    ],
+    "spellResistanceBonus": 15,
+    "grantedFeats": [],
+    "grantedTags": [
+      "undead",
+      "fear_aura",
+      "paralyzing_touch",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 4
+  }
+}

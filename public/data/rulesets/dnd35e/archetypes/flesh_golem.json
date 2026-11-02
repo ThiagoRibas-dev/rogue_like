@@ -1,0 +1,59 @@
+{
+  "flesh_golem": {
+    "archetypeId": "flesh_golem",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 21,
+      "dex": 9,
+      "con": null,
+      "int": null,
+      "wis": 11,
+      "cha": 1
+    },
+    "tracks": [
+      {
+        "trackId": "construct",
+        "levels": 9,
+        "hitDieSides": 10,
+        "babCurve": "three_quarters",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 0
+      }
+    ],
+    "weaponDice": "2d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 10,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "adamantine"
+      ]
+    },
+    "creatureType": "construct",
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "2d8",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [],
+    "skillRanks": {},
+    "cr": 7
+  }
+}

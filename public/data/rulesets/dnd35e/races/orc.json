@@ -1,0 +1,24 @@
+{
+  "orc": {
+    "id": "orc",
+    "name": "Orc",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "orc"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "str": 4,
+      "int": -2,
+      "wis": -2,
+      "cha": -2
+    },
+    "darkvisionFt": 60,
+    "favoredClass": "barbarian",
+    "automaticLanguages": [
+      "common",
+      "orc"
+    ]
+  }
+}

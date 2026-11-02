@@ -1,0 +1,74 @@
+{
+  "vampire": {
+    "templateId": "vampire",
+    "name": "Vampire",
+    "kind": "acquired",
+    "targetCreatureTypes": [
+      "humanoid",
+      "monstrous_humanoid"
+    ],
+    "resultCreatureType": "undead",
+    "addSubtypes": [
+      "augmented_humanoid"
+    ],
+    "abilityScoreModifiers": {
+      "str": 6,
+      "dex": 4,
+      "int": 2,
+      "wis": 2,
+      "cha": 4
+    },
+    "naturalArmorBonusDelta": 6,
+    "damageReduction": {
+      "amount": 10,
+      "bypassTags": [
+        "silver",
+        "magic"
+      ],
+      "requireAllTags": true
+    },
+    "energyResistances": {
+      "cold": 10,
+      "electricity": 10
+    },
+    "immunities": [],
+    "grantedFeats": [
+      "alertness",
+      "combat_reflexes",
+      "dodge",
+      "improved_initiative",
+      "lightning_reflexes"
+    ],
+    "grantedNaturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "energy_drain",
+            "type": "energy_drain",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 15,
+            "initialEffectDescription": "Bestows 2 negative levels on hit"
+          }
+        ]
+      }
+    ],
+    "grantedTags": [
+      "undead",
+      "blood_drain",
+      "dominate_gaze",
+      "fast_healing_5",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 8
+  }
+}

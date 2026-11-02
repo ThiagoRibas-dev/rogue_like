@@ -1,0 +1,45 @@
+{
+  "svirfneblin": {
+    "id": "svirfneblin",
+    "name": "Svirfneblin (Deep Gnome)",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "gnome"
+    ],
+    "size": "small",
+    "baseLandSpeedFt": 20,
+    "abilityAdjustments": {
+      "dex": 2,
+      "wis": 2,
+      "str": -2,
+      "cha": -4
+    },
+    "darkvisionFt": 120,
+    "naturalArmorBonus": 4,
+    "levelAdjustment": 3,
+    "favoredClass": "rogue",
+    "spellResistanceFormula": {
+      "base": 11,
+      "perHitDie": 1
+    },
+    "saveBonuses": {
+      "fort": 2,
+      "ref": 2,
+      "will": 2
+    },
+    "conditionalModifiers": [
+      {
+        "id": "dodge_vs_creatures",
+        "target": "ac",
+        "value": 4,
+        "type": "dodge",
+        "condition": {}
+      }
+    ],
+    "automaticLanguages": [
+      "common",
+      "gnome",
+      "undercommon"
+    ]
+  }
+}

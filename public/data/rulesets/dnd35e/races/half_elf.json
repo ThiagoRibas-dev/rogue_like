@@ -1,0 +1,23 @@
+{
+  "half_elf": {
+    "id": "half_elf",
+    "name": "Half-Elf",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "elf",
+      "human"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {},
+    "lowLightVision": true,
+    "favoredClass": "any",
+    "saveBonuses": {
+      "will": 2
+    },
+    "automaticLanguages": [
+      "common",
+      "elven"
+    ]
+  }
+}

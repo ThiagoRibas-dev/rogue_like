@@ -1,0 +1,48 @@
+{
+  "hobgoblin": {
+    "archetypeId": "hobgoblin",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 13,
+      "dex": 13,
+      "con": 14,
+      "int": 10,
+      "wis": 9,
+      "cha": 8
+    },
+    "tracks": [
+      {
+        "trackId": "warrior",
+        "levels": 1,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 3,
+    "shieldBonus": 1,
+    "naturalArmorBonus": 0,
+    "creatureType": "humanoid",
+    "subtypes": [
+      "goblinoid"
+    ],
+    "feats": [
+      "alertness"
+    ],
+    "skillRanks": {
+      "move_silently": 3,
+      "spot": 2
+    },
+    "cr": 0.5
+  }
+}

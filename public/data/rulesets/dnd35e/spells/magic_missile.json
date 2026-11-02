@@ -1,0 +1,23 @@
+{
+  "magic_missile": {
+    "id": "magic_missile",
+    "name": "Magic Missile",
+    "level": 1,
+    "school": "evocation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d4+1",
+    "damageType": "force",
+    "tags": [
+      "arcane",
+      "force"
+    ]
+  }
+}

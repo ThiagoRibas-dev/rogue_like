@@ -1,55 +1,64 @@
-# Research Notes — Granular Level-by-Level Class Progression Tables & Chronological Multiclass/Level-Drain Ledger
+# Research Notes: Ruleset-Specific Content & Cartridge Validators (`checkBase`, `checkClassic`, `checkDnD35e`)
 
-## 1. Architectural Rules & Standards Reiterated
-Per `AGENTS.md` and `docs/ARCHITECTURE.md`:
-1. **Strict TypeScript (`exactOptionalPropertyTypes: true`):** Zero `any` types, explicit return types on all functions, and no `undefined` assigned directly to optional properties without explicit union typing.
-2. **Pure Serializable ECS Data:** All structures inside `DnD35EntityData` (`RulesetDataComponent`) and JSON registries must be plain JSON-serializable arrays and records (no `Map` or `Set`).
-3. **Three-Tier Placement Heuristic (Rule 16):**
-   - **Tier 1 (Console):** Generic ECS & UI rendering primitives.
-   - **Tier 2 (`src/rulesets/dnd35e/`):** Pure D&D 3.5e progression table evaluators, chronological level-history reducers, negative level / permanent level drain resolvers, and Zod schemas.
-   - **Tier 3 (`public/data/rulesets/dnd35e/classes/*.json`):** Declarative rulebook-faithful class definitions (Invariant Class Header + 1-to-`maxLevel` Level-by-Level Progression Table).
-4. **Unified Effect Providers & Hierarchical Provenance (`sourcePath`, Rule 19):** Every modifier emitted by a class feature, ACF, domain, or negative level must carry a slash-delimited `sourcePath` (`"class:cleric/feature:turn_or_rebuke_undead/..."`, `"condition:negative_level/..."`).
+## 1. Context & Architectural Goal
+
+The user proposed:
+> "We could create specific validators for the rule system specific content since not every system will have feats or domains, etc. So a Check base, check classic, checkdnd35, check shadowofthedemonlord, etc"
+
+In our **Three-Tier Architecture** (`AGENTS.md` Rule 16):
+- **Tier 1 — Core Console Engine (`src/editor/campaign_validator.ts` — `checkBaseCampaign`)**:
+  Validates ruleset-agnostic campaign structures shared by every RPG ruleset: map reachability, quests, triggers, tags, reactions, items, encounters, areas, dialogues, entity spawn references, AI personality facets, trigger templates, and the headless 5-seed fuzzer smoke test.
+- **Tier 2 — Ruleset Cartridge Validators (`RulesetContract.validateCampaignRuleset`)**:
+  Each ruleset cartridge owns its own domain validator because tabletop systems have fundamentally different schemas and invariants:
+  - **`checkClassicRuleset` (`src/rulesets/classic/classic_validator.ts`)**:
+    Validates Classic roguelike invariants:
+    1. Classic campaigns must have empty `systemContent` (`{}` — no leaked foreign D&D 3.5e registries).
+    2. `advancement.levelThresholds` must be strictly increasing (`levelThresholds[i] > levelThresholds[i - 1]`).
+    3. Actor entities with `fighter` components must have positive `hp` and non-negative `attack`/`defense`.
+    4. Consumable food/satiation items with `nutrition` effects have positive values.
+  - **`checkDnD35eRuleset` (`src/rulesets/dnd35e/dnd35e_validator.ts`)**:
+    Validates D&D 3.5e System Content (`systemContent`) and campaign-to-ruleset links:
+    1. **Zod Schema Compliance**: `DnD35SystemContentSchema.safeParse(campaign.systemContent)`.
+    2. **Inner-ID vs. Dictionary-Key Parity**: Every entry across `classes`, `domains`, `races`, `templates`, `archetypes`, `feats`, `spells`, `skills`, and `creatureTypes` must have its inner ID (`id`, `archetypeId`, `templateId`, `typeId`) match its outer dictionary key.
+    3. **Class Progression Table Invariants (`level: 1..maxLevel`)**:
+       - `classDef.progression.length === classDef.maxLevel`.
+       - Every row at index `i` has `row.level === i + 1`.
+       - Monotonically non-decreasing `bab`, `fortSave`, `refSave`, and `willSave` across levels `1..maxLevel`.
+    4. **Alternate Class Feature (ACF) & Progression Integrity**:
+       - Every `acf.replacesFeature` in `classDef.acfSwaps` must exist in the set of features actually granted by `classDef.progression[].features`.
+       - `acf.level` must be within `1..classDef.maxLevel`.
+    5. **Cross-Registry Referential Integrity**:
+       - `race.favoredClass` (when not `'any'`) must reference a valid class ID in `systemContent.classes`.
+       - `race.creatureType` must reference a valid creature type in `systemContent.creatureTypes`.
+       - `template.targetCreatureTypes` and `convertTypeMap` keys/values must reference valid creature types in `systemContent.creatureTypes`.
+       - `archetype.creatureType` (when defined) must reference a valid creature type in `systemContent.creatureTypes`.
+       - `prerequisite` ASTs (`PrerequisiteNode`) on Prestige Classes and Feats:
+         - `race_in` entries must reference valid race IDs in `systemContent.races`.
+       - Campaign `entities[id].archetypeId` must resolve in `systemContent.archetypes` (or synthesized dragon/elemental family).
+- **Tier 3 — Disk-to-Descriptor Synchronization (`scripts/run-validator.ts` — `validateRulesetDiskParity`)**:
+  Validates on-disk file hygiene for `public/data/rulesets/<rulesetId>/`:
+  1. Every descriptor in `ruleset.getSystemContentFiles()` must exist on disk.
+  2. For every modular subdirectory (`archetypes/`, `classes/`, `feats/`, `spells/`, `templates/`, `races/`), every `.json` file on disk must be registered in `ruleset.getSystemContentFiles()` (no orphan files silently ignored at runtime).
+  3. Every modular file `<category>/<stem>.json` must have a single top-level key equal to `<stem>` and an inner ID (`id` / `archetypeId` / `templateId`) equal to `<stem>`.
 
 ---
 
-## 2. Problem Analysis: Rulebook Class Tables vs. Implicit Curve Split
+## 2. Audit of Current Data Against Proposed Checks
 
-### 2.1 Class Definition Granularity (Rulebook Header + Level Table)
-In D&D 3.5e rulebooks (e.g., *PHB* **Table: The Cleric** and *Complete Champion* **Table: The Ordained Champion**), a class is structured in two parts:
-1. **Class Header (Level-Invariant Properties):**
-   - `id`, `name`, `isPrestige`, `maxLevel`, `hitDieSides`, `skillPointsPerLevel`, `classSkills`
-   - `castingMode`, `castingTradition`, `castingKeyAbility`
-   - `allowedAlignments`, `prerequisites`, `proficiencies`
-   - `featureDetails` (encyclopedia of features granted by the table) and `acfSwaps`
-2. **Class Table (`progression: ReadonlyArray<DnD35ClassLevelRow>`):**
-   - Currently, class progression is fragmented across 5 separate fields (`babCurve`/`fortCurve`/`refCurve`/`willCurve`, `featuresByLevel`, `bonusFeatLevels`, `spellsPerDayTable`, `spellsKnownTable`, and `advancesExistingSpellcasting`).
-   - Replacing those scattered maps with an explicit level-by-level `progression` array (`level: 1 .. maxLevel`) where each row contains:
-     - `level`: `1..maxLevel`
-     - `bab`: cumulative Base Attack Bonus at this class level (`+0`, `+1`, `+2`, ...)
-     - `fortSave`, `refSave`, `willSave`: cumulative base saving throws at this class level
-     - `features`: array of feature IDs gained at this exact class level (`special` column)
-     - `bonusFeatSlot`: optional boolean (`true` on Fighter 1, 2, 4... or Wizard 5, 10, 15, 20)
-     - `spellsPerDay`: optional map of spell level `"0".."9"` to base daily slots at this class level
-     - `domainSpellSlots`: optional map of spell level `"1".."9"` to domain bonus slots (the `+1` in Cleric's `1+1`, `2+1` table cells)
-     - `spellsKnown`: optional map of spell level `"0".."9"` to known spells at this class level (Bard, Sorcerer)
-     - `advancesSpellcasting`: optional `'arcane' | 'divine' | 'both' | 'any'` for Prestige Classes on the exact levels that grant `+1 level of existing spellcasting class` (e.g., Ordained Champion at levels 2, 3, and 5; Mystic Theurge at 1..10)
-     - `scalingValues`: optional key-value map for class-specific scaling table columns (e.g., Monk `unarmed_damage_dice`, `unarmored_ac_bonus`, `unarmored_speed_bonus`; Rogue `sneak_attack_d6`; Barbarian `rage_uses_per_day`)
-   - **Result:** Querying *"What does Level $L$ of Class $X$ look like?"* becomes an $O(1)$ lookup (`getClassLevelSnapshot(classDef, L)`), and computing the exact delta between Level $L-1$ and Level $L$ is a simple row subtraction.
-
-### 2.2 Actor Multiclassing Interleaving & Permanent Level Drain (`levelHistory`)
-When a character interleaves classes (e.g., `Fighter 1–4 → Rogue 1–2 → Fighter 5`) and then suffers **Permanent Level Drain** (failing a 24-hour Fortitude save against a negative level), collapsed `tracks` (`fighter: 5, rogue: 2`) lose chronological ordering and per-level choices.
-- By storing an append-only chronological ledger `levelHistory: ReadonlyArray<DnD35CharacterLevelRecord>` on `DnD35EntityData`:
-  - Each record stores `{ characterLevel, classId, classLevel, hpRolled, abilityScoreIncrease?, addedSkillRanks, selectedFeats, selectedAcfs, learnedSpells }`.
-  - **On-the-Fly Derivation:** `tracks`, `maxHp` (including retroactive Constitution modifier changes per PHB p. 171), `skillRanks`, `feats`, `abilityScores`, and `statModifiers` are deterministically derived from `levelHistory` + racial base tracks.
-  - **Permanent Level Drain (`applyPermanentLevelDrainToActor`):** Pops the last $N$ records from `levelHistory` and re-runs the pure derivation function, cleanly unwinding the exact class level (`Fighter 5 → Fighter 4`), HP roll, skill ranks, 4th-HD ability bump, and feats gained at the lost level.
-  - **Temporary Negative Levels (`negativeLevels`):** Stored on `DnD35EntityData` and emitted as Unified Effect Provider `StatModifier`s (`-1` attack, `-1` saves, `-5` max HP per negative level) with `sourcePath: "condition:negative_level"`.
+We executed a programmatic audit script against `public/data/rulesets/dnd35e/` and all 4 campaigns:
+- **Disk-to-Descriptor Synchronization**: 100% match across all 6 subdirectories (`archetypes`: 51, `classes`: 21, `feats`: 11, `spells`: 5, `templates`: 13, `races`: 17).
+- **Filename === Outer Key === Inner ID**: 100% match across all 118 modular files + `domains.json` + `skills.json` + `creature_types.json`.
+- **Class Progression Tables**: All 21 classes have exact `1..maxLevel` contiguous rows and monotonically non-decreasing `bab`, `fortSave`, `refSave`, and `willSave`.
+- **ACF Swaps**: All 11 ACFs across base classes reference valid `replacesFeature` IDs granted in `progression[].features`.
+- **Races, Templates & Creature Types**: All 17 races, 13 templates, and 51 archetypes reference valid `creatureTypes` and `favoredClass` IDs.
+- **Note on Phase 24 Skills & Feats**: Because `skills.json` (currently 12 core skills) and `feats/` (currently 11 core feats) are scheduled for full SRD expansion in Phase 24 (Milestones 113–114), classes and monster archetypes already reference upcoming Phase 24 skill/feat IDs (e.g., `survival`, `craft`, `dodge`, `multiattack`). Those two specific cross-checks (`classSkills -> skills.json` and `archetype.feats -> feats/`) can either emit informational diagnostics or be promoted to hard errors once Milestones 113–114 are completed. All other checks above can be enforced as **strict `severity: 'error'` checks immediately today**.
 
 ---
 
 ## 3. Cascading Effects Matrix (Rule 15)
 
-| Change | Upstream (Callers / Producers / JSON Data) | Downstream (Consumers / Validators / UI / Tests) | Lateral (Sibling Configs / Docs / Classic Cartridge) |
+| Change | Upstream (Callers / Entry Points) | Downstream (Consumers / Reporters) | Lateral (Mirrors / Tests / Docs) |
 | :--- | :--- | :--- | :--- |
-| **`DnD35ClassLevelRowSchema` & `progression` array on `DnD35ClassDefinitionSchema`** (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`) | All 21 split class JSONs (`public/data/rulesets/dnd35e/classes/*.json`) | `progression.ts` (`getClassLevelRow`, `collectClassFeaturesUpToLevel`), `character_builder.ts`, `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts`, `scripts/validate-campaign.ts` | Classic cartridge (`classic`) is 100% unaffected. Monster Racial HD (`creature_types.json`, `races.json`, `archetypes.json`) retain `babCurve`/`fortCurve` for arbitrary monster HD scaling. |
-| **Explicit `bab` / `baseSaves` on `HitDieTrack`** (`src/rulesets/dnd35e/types/dnd35e.types.ts`) | `character_builder.ts` (hydrates class tracks from `classDef.progression[level - 1]`) | `aggregateProgressionChassis` in `progression.ts` & `evaluateDnD35ActorStatDAG` in `modifiers.ts` (uses explicit row `bab`/`fort`/`ref`/`will` when present on a class track, or curve formula for Racial HD tracks) | Existing monster archetypes in `archetypes.json` continue to work without modification. |
-| **Actor `levelHistory` & `applyPermanentLevelDrainToActor`** (`src/rulesets/dnd35e/character_builder.ts`, `dnd35e.types.ts`) | `applyCharacterCreationToPlayer` (initializes `levelHistory[0]`), `applyLevelUpToActor` (appends `levelHistory[k]`) | `tests/dnd35e_classes_builder.test.ts` (tests interleaved `Fighter 4 -> Rogue 2 -> Fighter 5` + permanent level drain rollback) | `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DND_35E_PYRAMID_ARCHITECTURE.md`, `docs/MILESTONES.md` |
+| **1. Extract `checkClassicRuleset` (`src/rulesets/classic/classic_validator.ts`)** | Wired into `classicRulesetContract.validateCampaignRuleset` in `src/rulesets/classic/classic_ruleset.ts`. Invoked by `validateCampaign` (`src/editor/campaign_validator.ts`). | Surfaces `ValidationError[]` in Campaign Editor Validator Modal and CLI `scripts/run-validator.ts`. | `default`, `megacampaign`, and `shroudgarde` campaigns validated by `checkClassicRuleset` during `verify.sh`. |
+| **2. Extract `checkDnD35eRuleset` (`src/rulesets/dnd35e/dnd35e_validator.ts`)** | Wired into `dnd35eRulesetContract.validateCampaignRuleset` in `src/rulesets/dnd35e/dnd35e_ruleset.ts`. Invoked by `validateCampaign`. | Surfaces `ValidationError[]` for schema, ID parity, progression table continuity, monotonicity, ACF swaps, race/template/creatureType links, Prerequisite AST race references, and campaign `archetypeId` links. | `dnd35e-crypt` campaign validated by `checkDnD35eRuleset` during `verify.sh`. Unit tests in `tests/ruleset_validators.test.ts`. |
+| **3. Add `validateRulesetDiskParity` (`scripts/run-validator.ts`)** | Invoked in `scripts/run-validator.ts` before/during campaign validation for each active ruleset with files on disk. | Fails `verify.sh` if any `.json` file in `public/data/rulesets/<id>/<category>/` is orphaned, missing, or has mismatched filename/outer-key/inner-ID. | Protects all future content milestones (Phase 24–26) from accidental copy-paste ID errors or forgotten descriptor registrations. |

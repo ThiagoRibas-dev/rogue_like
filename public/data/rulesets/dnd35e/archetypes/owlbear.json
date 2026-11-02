@@ -1,0 +1,84 @@
+{
+  "owlbear": {
+    "archetypeId": "owlbear",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 21,
+      "dex": 12,
+      "con": 21,
+      "int": 2,
+      "wis": 12,
+      "cha": 10
+    },
+    "tracks": [
+      {
+        "trackId": "magical_beast",
+        "levels": 5,
+        "hitDieSides": 10,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 5,
+    "creatureType": "magical_beast",
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d6",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "advancementRanges": [
+      {
+        "minHd": 6,
+        "maxHd": 8,
+        "sizeCategory": "large",
+        "crAdjustment": 0
+      },
+      {
+        "minHd": 9,
+        "maxHd": 15,
+        "sizeCategory": "huge",
+        "crAdjustment": 2
+      }
+    ],
+    "feats": [
+      "alertness",
+      "track"
+    ],
+    "skillRanks": {
+      "listen": 8,
+      "spot": 5
+    },
+    "cr": 4
+  }
+}

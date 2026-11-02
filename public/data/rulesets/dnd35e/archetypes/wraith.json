@@ -1,0 +1,69 @@
+{
+  "wraith": {
+    "archetypeId": "wraith",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": null,
+      "dex": 16,
+      "con": null,
+      "int": 14,
+      "wis": 14,
+      "cha": 15
+    },
+    "tracks": [
+      {
+        "trackId": "racial_undead",
+        "levels": 5,
+        "hitDieSides": 12,
+        "babCurve": "half",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good",
+        "skillPointsPerLevel": 4
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "negative",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "magic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 0,
+    "creatureType": "undead",
+    "subtypes": [
+      "incorporeal"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "incorporeal_touch",
+        "name": "Incorporeal Touch",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "negative",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "alertness",
+      "blind_fight",
+      "combat_reflexes",
+      "improved_initiative"
+    ],
+    "skillRanks": {
+      "diplomacy": 6,
+      "hide": 8,
+      "intimidate": 8,
+      "listen": 10,
+      "search": 8,
+      "sense_motive": 8,
+      "spot": 10
+    },
+    "cr": 5
+  }
+}

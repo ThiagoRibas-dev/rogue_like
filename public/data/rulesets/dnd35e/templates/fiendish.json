@@ -1,0 +1,71 @@
+{
+  "fiendish": {
+    "templateId": "fiendish",
+    "name": "Fiendish Creature",
+    "kind": "inherited",
+    "targetCreatureTypes": [
+      "animal",
+      "vermin",
+      "magical_beast",
+      "humanoid",
+      "monstrous_humanoid"
+    ],
+    "convertTypeMap": {
+      "animal": "magical_beast",
+      "vermin": "magical_beast"
+    },
+    "addSubtypes": [
+      "extraplanar",
+      "evil"
+    ],
+    "minimumIntelligence": 3,
+    "hdTieredScaling": [
+      {
+        "minHd": 1,
+        "maxHd": 3,
+        "energyResistances": {
+          "cold": 5,
+          "fire": 5
+        }
+      },
+      {
+        "minHd": 4,
+        "maxHd": 7,
+        "damageReduction": {
+          "amount": 5,
+          "bypassTags": [
+            "magic"
+          ]
+        },
+        "energyResistances": {
+          "cold": 5,
+          "fire": 5
+        }
+      },
+      {
+        "minHd": 8,
+        "damageReduction": {
+          "amount": 10,
+          "bypassTags": [
+            "magic"
+          ]
+        },
+        "energyResistances": {
+          "cold": 10,
+          "fire": 10
+        }
+      }
+    ],
+    "spellResistanceFormula": {
+      "base": 5,
+      "perHitDie": 1,
+      "max": 25
+    },
+    "grantedTags": [
+      "fiendish",
+      "smite_good",
+      "darkvision_60"
+    ],
+    "levelAdjustmentDelta": 2
+  }
+}

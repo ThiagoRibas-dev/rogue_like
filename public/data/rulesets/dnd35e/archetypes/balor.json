@@ -1,0 +1,80 @@
+{
+  "balor": {
+    "archetypeId": "balor",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 35,
+      "dex": 25,
+      "con": 31,
+      "int": 24,
+      "wis": 24,
+      "cha": 26
+    },
+    "tracks": [
+      {
+        "trackId": "outsider",
+        "levels": 20,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "good",
+        "skillPointsPerLevel": 8
+      }
+    ],
+    "weaponDice": "2d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing",
+      "evil",
+      "chaotic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 19,
+    "damageReduction": {
+      "amount": 15,
+      "bypassTags": [
+        "good",
+        "cold_iron"
+      ],
+      "requireAllTags": true
+    },
+    "energyResistance": {
+      "acid": 10,
+      "cold": 10
+    },
+    "immunities": [
+      "fire",
+      "electricity",
+      "poison"
+    ],
+    "spellResistance": 28,
+    "creatureType": "outsider",
+    "subtypes": [
+      "chaotic",
+      "evil",
+      "extraplanar",
+      "tanar_ri"
+    ],
+    "feats": [
+      "cleave",
+      "improved_initiative",
+      "power_attack",
+      "two_weapon_fighting",
+      "weapon_focus_longsword"
+    ],
+    "skillRanks": {
+      "concentration": 23,
+      "diplomacy": 23,
+      "intimidate": 23,
+      "listen": 23,
+      "search": 23,
+      "sense_motive": 23,
+      "spot": 23
+    },
+    "cr": 20
+  }
+}

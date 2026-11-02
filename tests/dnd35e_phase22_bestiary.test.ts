@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { applyRaceToActorChassis } from '../src/rulesets/dnd35e/races.ts';
 import { applyCreatureTemplate } from '../src/rulesets/dnd35e/templates.ts';
@@ -34,23 +34,30 @@ import {
 } from '../src/rulesets/dnd35e/modifiers.ts';
 import type { StatModifier } from '../src/rulesets/dnd35e/types/dnd35e.types.ts';
 
+function loadModularRulesetRegistry(category: string): Record<string, unknown> {
+  const baseDir = resolve(process.cwd(), 'public/data/rulesets/dnd35e');
+  const rootJson = JSON.parse(readFileSync(resolve(baseDir, `${category}.json`), 'utf-8')) as Record<string, unknown>;
+  const subDir = resolve(baseDir, category);
+  const merged: Record<string, unknown> = { ...rootJson };
+  for (const file of readdirSync(subDir).sort()) {
+    if (!file.endsWith('.json')) continue;
+    const entry = JSON.parse(readFileSync(resolve(subDir, file), 'utf-8')) as Record<string, unknown>;
+    Object.assign(merged, entry);
+  }
+  return merged;
+}
+
 describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () => {
   // Load raw JSON files
-  const racesRaw = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/races.json'), 'utf-8')
-  );
-  const templatesRaw = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/templates.json'), 'utf-8')
-  );
+  const racesRaw = loadModularRulesetRegistry('races');
+  const templatesRaw = loadModularRulesetRegistry('templates');
   const creatureTypesRaw = JSON.parse(
     readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/creature_types.json'), 'utf-8')
   );
   const dragonFamiliesRaw = JSON.parse(
     readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/dragon_families.json'), 'utf-8')
   );
-  const archetypesRaw = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/archetypes.json'), 'utf-8')
-  );
+  const archetypesRaw = loadModularRulesetRegistry('archetypes');
 
   const mockSystemContent = {
     races: racesRaw,

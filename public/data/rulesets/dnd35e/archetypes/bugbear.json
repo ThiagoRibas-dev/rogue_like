@@ -1,0 +1,50 @@
+{
+  "bugbear": {
+    "archetypeId": "bugbear",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 15,
+      "dex": 12,
+      "con": 13,
+      "int": 10,
+      "wis": 10,
+      "cha": 9
+    },
+    "tracks": [
+      {
+        "trackId": "humanoid",
+        "levels": 3,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "poor",
+        "refCurve": "good",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 1,
+    "naturalArmorBonus": 3,
+    "creatureType": "humanoid",
+    "subtypes": [
+      "goblinoid"
+    ],
+    "feats": [
+      "alertness",
+      "weapon_focus_morningstar"
+    ],
+    "skillRanks": {
+      "hide": 4,
+      "move_silently": 6,
+      "spot": 4
+    },
+    "cr": 2
+  }
+}

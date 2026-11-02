@@ -1,0 +1,24 @@
+{
+  "half_orc": {
+    "id": "half_orc",
+    "name": "Half-Orc",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "orc",
+      "human"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "str": 2,
+      "int": -2,
+      "cha": -2
+    },
+    "darkvisionFt": 60,
+    "favoredClass": "barbarian",
+    "automaticLanguages": [
+      "common",
+      "orc"
+    ]
+  }
+}

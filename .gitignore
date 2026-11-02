@@ -56,6 +56,7 @@ references/
 *.pdf
 scratch/
 vite.config.ts.timestamp-*
+*.tsbuildinfo
 
 # Generated AI prompt kit (regenerate with: bun scripts/generate-ai-prompt-kit.ts)
 ai-prompt-kit/

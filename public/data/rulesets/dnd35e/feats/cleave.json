@@ -1,0 +1,22 @@
+{
+  "cleave": {
+    "id": "cleave",
+    "name": "Cleave",
+    "description": "Take an immediate extra melee attack after dropping a foe to 0 HP or below.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "str",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "power_attack"
+        }
+      ]
+    }
+  }
+}

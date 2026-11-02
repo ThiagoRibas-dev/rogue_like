@@ -1,0 +1,59 @@
+{
+  "iron_golem": {
+    "archetypeId": "iron_golem",
+    "sizeCategory": "large",
+    "abilityScores": {
+      "str": 33,
+      "dex": 9,
+      "con": null,
+      "int": null,
+      "wis": 11,
+      "cha": 1
+    },
+    "tracks": [
+      {
+        "trackId": "construct",
+        "levels": 18,
+        "hitDieSides": 10,
+        "babCurve": "three_quarters",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 0
+      }
+    ],
+    "weaponDice": "2d10",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 22,
+    "damageReduction": {
+      "amount": 15,
+      "bypassTags": [
+        "adamantine"
+      ]
+    },
+    "creatureType": "construct",
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "2d10",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [],
+    "skillRanks": {},
+    "cr": 13
+  }
+}

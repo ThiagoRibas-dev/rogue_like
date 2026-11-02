@@ -1,0 +1,92 @@
+{
+  "gargoyle": {
+    "archetypeId": "gargoyle",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 15,
+      "dex": 14,
+      "con": 18,
+      "int": 6,
+      "wis": 11,
+      "cha": 7
+    },
+    "tracks": [
+      {
+        "trackId": "racial_monstrous_humanoid",
+        "levels": 4,
+        "hitDieSides": 8,
+        "babCurve": "full",
+        "fortCurve": "poor",
+        "refCurve": "good",
+        "willCurve": "good",
+        "skillPointsPerLevel": 2
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing",
+      "magic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 4,
+    "damageReduction": {
+      "amount": 10,
+      "bypassTags": [
+        "magic"
+      ]
+    },
+    "creatureType": "monstrous_humanoid",
+    "subtypes": [
+      "earth"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "gore",
+        "name": "Gore",
+        "naturalType": "gore",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "feats": [
+      "multiattack",
+      "toughness"
+    ],
+    "skillRanks": {
+      "hide": 7,
+      "listen": 4,
+      "spot": 4
+    },
+    "cr": 4
+  }
+}

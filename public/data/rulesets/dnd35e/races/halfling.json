@@ -1,0 +1,40 @@
+{
+  "halfling": {
+    "id": "halfling",
+    "name": "Halfling",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "halfling"
+    ],
+    "size": "small",
+    "baseLandSpeedFt": 20,
+    "abilityAdjustments": {
+      "dex": 2,
+      "str": -2
+    },
+    "favoredClass": "rogue",
+    "saveBonuses": {
+      "fort": 1,
+      "ref": 1,
+      "will": 1
+    },
+    "conditionalModifiers": [
+      {
+        "id": "attack_thrown_weapons",
+        "target": "attack",
+        "value": 1,
+        "type": "racial",
+        "condition": {
+          "effectTagsAny": [
+            "thrown",
+            "sling"
+          ]
+        }
+      }
+    ],
+    "automaticLanguages": [
+      "common",
+      "halfling"
+    ]
+  }
+}

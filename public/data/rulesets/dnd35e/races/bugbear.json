@@ -1,0 +1,35 @@
+{
+  "bugbear": {
+    "id": "bugbear",
+    "name": "Bugbear",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "goblinoid"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "str": 4,
+      "dex": 2,
+      "con": 2,
+      "cha": -2
+    },
+    "naturalArmorBonus": 3,
+    "darkvisionFt": 60,
+    "racialHitDice": {
+      "count": 3,
+      "hitDieSides": 8,
+      "babCurve": "three_quarters",
+      "fortCurve": "poor",
+      "refCurve": "good",
+      "willCurve": "poor",
+      "skillPointsPerLevel": 2
+    },
+    "levelAdjustment": 1,
+    "favoredClass": "rogue",
+    "automaticLanguages": [
+      "common",
+      "goblin"
+    ]
+  }
+}

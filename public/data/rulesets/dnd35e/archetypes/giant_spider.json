@@ -1,0 +1,73 @@
+{
+  "giant_spider": {
+    "archetypeId": "giant_spider",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 11,
+      "dex": 17,
+      "con": 12,
+      "int": null,
+      "wis": 10,
+      "cha": 2
+    },
+    "tracks": [
+      {
+        "trackId": "racial_vermin",
+        "levels": 2,
+        "hitDieSides": 8,
+        "babCurve": "three_quarters",
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor",
+        "skillPointsPerLevel": 0
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 1,
+    "immunities": [
+      "mind_affecting"
+    ],
+    "creatureType": "vermin",
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "spider_venom",
+            "type": "poison",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 14,
+            "initialEffectDescription": "1d4 Str",
+            "secondaryEffectDescription": "1d4 Str"
+          }
+        ]
+      }
+    ],
+    "feats": [
+      "weapon_finesse"
+    ],
+    "skillRanks": {
+      "climb": 8,
+      "hide": 7,
+      "spot": 4
+    },
+    "cr": 1
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "burning_hands": {
+    "id": "burning_hands",
+    "name": "Burning Hands",
+    "level": 1,
+    "school": "evocation",
+    "classification": "spell",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "cone",
+    "aoeRadiusFt": 15,
+    "damageDice": "1d4",
+    "damageType": "fire",
+    "tags": [
+      "arcane",
+      "fire"
+    ]
+  }
+}

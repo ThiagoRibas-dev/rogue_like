@@ -1,0 +1,71 @@
+{
+  "wight": {
+    "archetypeId": "wight",
+    "sizeCategory": "medium",
+    "abilityScores": {
+      "str": 12,
+      "dex": 12,
+      "con": null,
+      "int": 11,
+      "wis": 13,
+      "cha": 15
+    },
+    "tracks": [
+      {
+        "trackId": "racial_undead",
+        "levels": 4,
+        "hitDieSides": 12,
+        "babCurve": "half",
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good",
+        "skillPointsPerLevel": 4
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "naturalArmorBonus": 4,
+    "creatureType": "undead",
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "wight_energy_drain",
+            "type": "energy_drain",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 14,
+            "initialEffectDescription": "1 negative level"
+          }
+        ]
+      }
+    ],
+    "feats": [
+      "alertness",
+      "blind_fight"
+    ],
+    "skillRanks": {
+      "hide": 8,
+      "listen": 8,
+      "move_silently": 15,
+      "spot": 8
+    },
+    "cr": 3
+  }
+}

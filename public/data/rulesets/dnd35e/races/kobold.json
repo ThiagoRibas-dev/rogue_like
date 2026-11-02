@@ -1,0 +1,24 @@
+{
+  "kobold": {
+    "id": "kobold",
+    "name": "Kobold",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "reptilian"
+    ],
+    "size": "small",
+    "baseLandSpeedFt": 30,
+    "abilityAdjustments": {
+      "dex": 2,
+      "str": -4,
+      "con": -2
+    },
+    "naturalArmorBonus": 1,
+    "darkvisionFt": 60,
+    "favoredClass": "sorcerer",
+    "automaticLanguages": [
+      "common",
+      "draconic"
+    ]
+  }
+}
