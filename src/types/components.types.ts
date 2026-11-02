@@ -752,4 +752,3 @@ export type Component =
   | ControllerLinkComponent
   | ResourcePoolComponent
   | TacticalDoctrineComponent;
-

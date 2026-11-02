@@ -79,14 +79,7 @@ export type BonusType =
  * Does NOT alter D&D 3.5e `BonusType` stacking rules; used for UI breakdown columns
  * and bulk layer suppression (e.g., suppressing `'equipment'` when gear melds into a Wild Shape form).
  */
-export type OriginLayer =
-  | 'base'
-  | 'racial'
-  | 'progression'
-  | 'form'
-  | 'equipment'
-  | 'temporary'
-  | 'environment';
+export type OriginLayer = 'base' | 'racial' | 'progression' | 'form' | 'equipment' | 'temporary' | 'environment';
 
 /** Source origin tag used for dynamic Antimagic Field suppression. */
 export type ModifierSourceOrigin = 'ex' | 'su' | 'sp' | 'spell' | 'magical' | 'mundane';
@@ -151,11 +144,7 @@ export interface StatQueryContext {
 
 /** Reason why a modifier was completely excluded prior to bonus-type competition. */
 export type ModifierSuppressionReason =
-  | 'antimagic'
-  | 'tag_condition'
-  | 'touch_attack'
-  | 'flat_footed'
-  | 'origin_suppressed';
+  'antimagic' | 'tag_condition' | 'touch_attack' | 'flat_footed' | 'origin_suppressed';
 
 /** Record of a modifier that passed filtering but lost same-type bonus competition. */
 export interface ShadowedModifierEntry {
@@ -360,17 +349,7 @@ export interface NaturalWeaponDescriptor {
   readonly id: string;
   readonly name: string;
   readonly naturalType:
-    | 'bite'
-    | 'claw'
-    | 'gore'
-    | 'slam'
-    | 'sting'
-    | 'tentacle'
-    | 'talon'
-    | 'tail_slap'
-    | 'wings'
-    | 'crush'
-    | 'tail_sweep';
+    'bite' | 'claw' | 'gore' | 'slam' | 'sting' | 'tentacle' | 'talon' | 'tail_slap' | 'wings' | 'crush' | 'tail_sweep';
   readonly isPrimary: boolean;
   readonly count: number;
   readonly damageDice: string;
@@ -417,4 +396,3 @@ export interface DnD35EntityData {
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
   readonly anatomyBodyPlan?: 'humanoid_biped' | 'quadruped' | 'marilith_6arm' | 'avian' | 'serpentine' | undefined;
 }
-

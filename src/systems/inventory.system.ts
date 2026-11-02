@@ -229,7 +229,11 @@ export function processEquipItemIntent(
   const matchingSlots = equipment.slots.filter((s) => s.slotType === slotType && s.suppressed !== true);
   if (matchingSlots.length === 0) {
     return {
-      state: addMessage(state, `You have no available ${slotType} slot to equip the ${itemName}.`, MessageLogCategory.System),
+      state: addMessage(
+        state,
+        `You have no available ${slotType} slot to equip the ${itemName}.`,
+        MessageLogCategory.System
+      ),
       success: false
     };
   }

@@ -133,7 +133,6 @@ export function matchesEntityTagCondition(
   return true;
 }
 
-
 /**
  * Helper to evaluate a specific target against a matcher definition.
  */

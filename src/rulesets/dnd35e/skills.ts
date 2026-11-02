@@ -259,10 +259,7 @@ export interface DiplomacyResult {
  * @param checkRollTotal Total Diplomacy skill check roll.
  * @returns Resulting DiplomacyResult with updated AttitudeTier.
  */
-export function resolveDiplomacyCheck(
-  initialAttitude: AttitudeTier,
-  checkRollTotal: number
-): DiplomacyResult {
+export function resolveDiplomacyCheck(initialAttitude: AttitudeTier, checkRollTotal: number): DiplomacyResult {
   const normalizedInitial: 'hostile' | 'unfriendly' | 'indifferent' | 'friendly' | 'helpful' =
     initialAttitude === 'neutral' ? 'indifferent' : initialAttitude;
 

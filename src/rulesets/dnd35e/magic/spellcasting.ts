@@ -409,10 +409,7 @@ export function maintainOrDisruptConcentration(params: {
   readonly dc: number;
   readonly rollTotal: number;
 } {
-  const dc =
-    params.isVigorouslyActive === true
-      ? 10 + params.spellLevel
-      : 10 + params.damageTaken + params.spellLevel;
+  const dc = params.isVigorouslyActive === true ? 10 + params.spellLevel : 10 + params.damageTaken + params.spellLevel;
 
   const roll = rollD20('skill_check', params.concentrationModifier, params.forcedRoll);
   return {
@@ -501,4 +498,3 @@ export function resolveCounterspellAttempt(
 
   return false;
 }
-

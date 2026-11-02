@@ -604,8 +604,7 @@ export function collectOwnedEntityIds(state: GameState, rootEntityId: EntityId):
     for (const candidateId of state.entities) {
       if (visited.has(candidateId)) continue;
       const link = getComponent(state, candidateId, ComponentType.ControllerLink) as
-        | ControllerLinkComponent
-        | undefined;
+        ControllerLinkComponent | undefined;
       if (link && link.controllerEntityId === currentId) {
         queue.push(candidateId);
       }
@@ -629,8 +628,7 @@ export function tickControllerLinksAndOverlays(state: GameState): GameState {
   for (const entityId of nextState.entities) {
     // Tick property overlay
     const overlay = getComponent(nextState, entityId, ComponentType.PropertyOverlay) as
-      | PropertyOverlayComponent
-      | undefined;
+      PropertyOverlayComponent | undefined;
     if (overlay && overlay.durationTurns !== undefined) {
       const nextDuration = overlay.durationTurns - 1;
       if (nextDuration <= 0) {
@@ -657,9 +655,7 @@ export function tickControllerLinksAndOverlays(state: GameState): GameState {
     }
 
     // Check controller link expiration
-    const link = getComponent(nextState, entityId, ComponentType.ControllerLink) as
-      | ControllerLinkComponent
-      | undefined;
+    const link = getComponent(nextState, entityId, ComponentType.ControllerLink) as ControllerLinkComponent | undefined;
     if (link) {
       const controllerExists = nextState.entities.includes(link.controllerEntityId);
       const isExpired = link.expirationTurn !== undefined && nextState.globalTurn >= link.expirationTurn;
@@ -716,11 +712,7 @@ export function consumeResourcePool(
  * @param cycle Refresh cycle trigger ('round' | 'encounter' | 'short_rest' | 'rest_8h').
  * @returns Updated GameState.
  */
-export function refreshResourcePools(
-  state: GameState,
-  entityId: EntityId,
-  cycle: ResourceRefreshCycle
-): GameState {
+export function refreshResourcePools(state: GameState, entityId: EntityId, cycle: ResourceRefreshCycle): GameState {
   const poolComp = getComponent(state, entityId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined;
   if (!poolComp) return state;
 
@@ -728,8 +720,7 @@ export function refreshResourcePools(
   let changed = false;
 
   for (const [poolId, entry] of Object.entries(poolComp.pools)) {
-    const matchesCycle =
-      entry.refreshCycle === cycle || (cycle === 'rest_8h' && entry.resetOnRest === true);
+    const matchesCycle = entry.refreshCycle === cycle || (cycle === 'rest_8h' && entry.resetOnRest === true);
     if (matchesCycle && entry.current !== entry.max) {
       nextPools[poolId] = { ...entry, current: entry.max };
       changed = true;

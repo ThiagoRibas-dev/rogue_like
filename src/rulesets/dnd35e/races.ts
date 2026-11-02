@@ -23,11 +23,11 @@ const MIN_SENTIENT_INT = 3;
  * @param race SRD Race definition.
  * @returns AppliedRaceResult with updated DnD35EntityData, StatModifiers, and ECL.
  */
-export function applyRaceToActorChassis(
-  base: DnD35EntityData,
-  race: DnD35RaceDefinition
-): AppliedRaceResult {
-  const nextScores: Record<string, { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }> = {};
+export function applyRaceToActorChassis(base: DnD35EntityData, race: DnD35RaceDefinition): AppliedRaceResult {
+  const nextScores: Record<
+    string,
+    { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }
+  > = {};
   const stats = ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const;
 
   for (const s of stats) {
@@ -80,10 +80,7 @@ export function applyRaceToActorChassis(
   }
 
   // Sensory Profile
-  const darkvisionRangeFt = Math.max(
-    base.senses?.darkvisionRangeFt ?? 0,
-    race.darkvisionFt ?? 0
-  );
+  const darkvisionRangeFt = Math.max(base.senses?.darkvisionRangeFt ?? 0, race.darkvisionFt ?? 0);
   const lowLightVision = (base.senses?.lowLightVision ?? false) || (race.lowLightVision ?? false);
   const senses = {
     lowLightVision,

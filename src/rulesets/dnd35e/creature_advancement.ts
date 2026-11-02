@@ -21,15 +21,15 @@ interface SizeStatRow {
  * Gargantuan -> Colossal: STR +8, DEX +0, CON +4, NA +5
  */
 const CUMULATIVE_SIZE_OFFSETS: Readonly<Record<CreatureSizeCategory, SizeStatRow>> = {
-  fine:       { str: -10, dex: 8,  con: -4, naturalArmor: 0 },
-  diminutive: { str: -8,  dex: 6,  con: -4, naturalArmor: 0 },
-  tiny:       { str: -6,  dex: 4,  con: -2, naturalArmor: 0 },
-  small:      { str: -4,  dex: 2,  con: -2, naturalArmor: 0 },
-  medium:     { str: 0,   dex: 0,  con: 0,  naturalArmor: 0 },
-  large:      { str: 8,   dex: -2, con: 4,  naturalArmor: 2 },
-  huge:       { str: 16,  dex: -4, con: 8,  naturalArmor: 5 },
-  gargantuan: { str: 24,  dex: -4, con: 12, naturalArmor: 9 },
-  colossal:   { str: 32,  dex: -4, con: 16, naturalArmor: 14 }
+  fine: { str: -10, dex: 8, con: -4, naturalArmor: 0 },
+  diminutive: { str: -8, dex: 6, con: -4, naturalArmor: 0 },
+  tiny: { str: -6, dex: 4, con: -2, naturalArmor: 0 },
+  small: { str: -4, dex: 2, con: -2, naturalArmor: 0 },
+  medium: { str: 0, dex: 0, con: 0, naturalArmor: 0 },
+  large: { str: 8, dex: -2, con: 4, naturalArmor: 2 },
+  huge: { str: 16, dex: -4, con: 8, naturalArmor: 5 },
+  gargantuan: { str: 24, dex: -4, con: 12, naturalArmor: 9 },
+  colossal: { str: 32, dex: -4, con: 16, naturalArmor: 14 }
 };
 
 /**
@@ -42,10 +42,7 @@ const CUMULATIVE_SIZE_OFFSETS: Readonly<Record<CreatureSizeCategory, SizeStatRow
  * @param targetHitDice New target racial Hit Dice count.
  * @returns Advanced DnD35Archetype.
  */
-export function advanceMonsterByHitDice(
-  archetype: DnD35Archetype,
-  targetHitDice: number
-): DnD35Archetype {
+export function advanceMonsterByHitDice(archetype: DnD35Archetype, targetHitDice: number): DnD35Archetype {
   const currentHd = archetype.tracks.reduce((sum, t) => sum + t.levels, 0);
   const clampedTargetHd = Math.max(1, targetHitDice);
   const additionalHd = Math.max(0, clampedTargetHd - currentHd);
@@ -133,10 +130,7 @@ export function advanceMonsterByHitDice(
 
   // 7. CR adjustment (+1 per size category step up, +1 per 2-4 HD added depending on type)
   const baseCr = archetype.cr ?? 1;
-  const sizeStepUp = Math.max(
-    0,
-    SIZE_METRICS[targetSize].rankIndex - SIZE_METRICS[archetype.sizeCategory].rankIndex
-  );
+  const sizeStepUp = Math.max(0, SIZE_METRICS[targetSize].rankIndex - SIZE_METRICS[archetype.sizeCategory].rankIndex);
   const hdCrDivisor = archetype.creatureType === 'dragon' || archetype.creatureType === 'outsider' ? 2 : 3;
   const hdCrBonus = dndFloor(additionalHd / hdCrDivisor);
   const computedCr = baseCr + sizeStepUp + hdCrBonus + rangeCrAdjustment;

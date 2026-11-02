@@ -301,12 +301,12 @@ const ELEMENTAL_STEP_MODIFIERS: Readonly<
     }
   >
 > = {
-  small:   { strDelta: 0,  dexDelta: 0,  conDelta: 0, naturalArmorDelta: 0, slamCount: 1, drAmount: 0 },
-  medium:  { strDelta: 2,  dexDelta: 4,  conDelta: 2, naturalArmorDelta: 1, slamCount: 1, drAmount: 0 },
-  large:   { strDelta: 6,  dexDelta: 8,  conDelta: 4, naturalArmorDelta: 2, slamCount: 2, drAmount: 5 },
-  huge:    { strDelta: 10, dexDelta: 12, conDelta: 6, naturalArmorDelta: 3, slamCount: 2, drAmount: 5 },
+  small: { strDelta: 0, dexDelta: 0, conDelta: 0, naturalArmorDelta: 0, slamCount: 1, drAmount: 0 },
+  medium: { strDelta: 2, dexDelta: 4, conDelta: 2, naturalArmorDelta: 1, slamCount: 1, drAmount: 0 },
+  large: { strDelta: 6, dexDelta: 8, conDelta: 4, naturalArmorDelta: 2, slamCount: 2, drAmount: 5 },
+  huge: { strDelta: 10, dexDelta: 12, conDelta: 6, naturalArmorDelta: 3, slamCount: 2, drAmount: 5 },
   greater: { strDelta: 12, dexDelta: 14, conDelta: 6, naturalArmorDelta: 5, slamCount: 2, drAmount: 10 },
-  elder:   { strDelta: 14, dexDelta: 16, conDelta: 6, naturalArmorDelta: 6, slamCount: 2, drAmount: 10 }
+  elder: { strDelta: 14, dexDelta: 16, conDelta: 6, naturalArmorDelta: 6, slamCount: 2, drAmount: 10 }
 };
 
 /**
@@ -324,10 +324,13 @@ export function synthesizeElementalArchetype(
     throw new Error(`Unknown elemental step: ${stepId}`);
   }
 
-  const baseStats: Record<string, { str: number; dex: number; con: number; int: number; wis: number; cha: number; baseNatArmor: number }> = {
-    air:   { str: 10, dex: 17, con: 10, int: 4, wis: 11, cha: 11, baseNatArmor: 3 },
-    earth: { str: 17, dex: 8,  con: 13, int: 4, wis: 11, cha: 11, baseNatArmor: 7 },
-    fire:  { str: 10, dex: 13, con: 10, int: 4, wis: 11, cha: 11, baseNatArmor: 3 },
+  const baseStats: Record<
+    string,
+    { str: number; dex: number; con: number; int: number; wis: number; cha: number; baseNatArmor: number }
+  > = {
+    air: { str: 10, dex: 17, con: 10, int: 4, wis: 11, cha: 11, baseNatArmor: 3 },
+    earth: { str: 17, dex: 8, con: 13, int: 4, wis: 11, cha: 11, baseNatArmor: 7 },
+    fire: { str: 10, dex: 13, con: 10, int: 4, wis: 11, cha: 11, baseNatArmor: 3 },
     water: { str: 14, dex: 10, con: 13, int: 4, wis: 11, cha: 11, baseNatArmor: 6 }
   };
 

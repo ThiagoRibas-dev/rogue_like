@@ -28,7 +28,7 @@ import type {
 } from './types/dnd35e.types.ts';
 
 /** Canonical SRD Construct Bonus HP by Size emitted by the `type:construct` Effect Provider. */
-export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly< Partial<Record<CreatureSizeCategory, number>> > = {
+export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly<Partial<Record<CreatureSizeCategory, number>>> = {
   small: 10,
   medium: 20,
   large: 30,
@@ -259,10 +259,7 @@ export function getDnD35EntityData(state: GameState, entityId: EntityId): DnD35E
   if (explicitArchetypeKey) {
     const resolvedArchetype = getDnD35Archetype(state.campaign.systemContent, explicitArchetypeKey);
     if (resolvedArchetype !== undefined) {
-      const baseData = hydrateArchetypeData(
-        resolvedArchetype,
-        isPlayer ? Math.max(1, fighter?.level ?? 1) : undefined
-      );
+      const baseData = hydrateArchetypeData(resolvedArchetype, isPlayer ? Math.max(1, fighter?.level ?? 1) : undefined);
       if (entityTemplate?.rulesetData) {
         return {
           ...baseData,

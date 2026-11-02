@@ -1,6 +1,12 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
 import { buildCreatureTypeAndSubtypeModifiers } from './srd_registry.ts';
-import type { AbilityId, AbilityScoresRecord, DnD35EntityData, HitDieTrack, StatModifier } from './types/dnd35e.types.ts';
+import type {
+  AbilityId,
+  AbilityScoresRecord,
+  DnD35EntityData,
+  HitDieTrack,
+  StatModifier
+} from './types/dnd35e.types.ts';
 import type { DnD35Template } from './types/dnd35e_system.types.ts';
 
 /** Undead Hit Die sides (`d12`). */
@@ -45,10 +51,11 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
 
   // 3. Ability Scores (including Undead CON: null and Mindless INT: null / WIS: 10 / CHA: 1)
   const isMindlessTemplate =
-    template.grantedTags.includes('mindless') ||
-    template.templateId === 'skeleton' ||
-    template.templateId === 'zombie';
-  const nextScores: Record<string, { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }> = {};
+    template.grantedTags.includes('mindless') || template.templateId === 'skeleton' || template.templateId === 'zombie';
+  const nextScores: Record<
+    string,
+    { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }
+  > = {};
   const stats: ReadonlyArray<AbilityId> = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
   const abilityMods = template.abilityScoreModifiers ?? {};
@@ -208,9 +215,8 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   let spellResistance = base.spellResistance;
   if (template.spellResistanceFormula) {
     const rawSr = template.spellResistanceFormula.base + template.spellResistanceFormula.perHitDie * effectiveTotalHd;
-    const cappedSr = template.spellResistanceFormula.max !== undefined
-      ? Math.min(template.spellResistanceFormula.max, rawSr)
-      : rawSr;
+    const cappedSr =
+      template.spellResistanceFormula.max !== undefined ? Math.min(template.spellResistanceFormula.max, rawSr) : rawSr;
     spellResistance = Math.max(spellResistance ?? 0, cappedSr);
   } else if (template.spellResistanceBonus !== undefined) {
     spellResistance = Math.max(spellResistance ?? 0, template.spellResistanceBonus);
@@ -236,12 +242,7 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   const resolvedAbilityScores = nextScores as unknown as AbilityScoresRecord;
   const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(resolvedAbilityScores.cha));
   const templateRootPath = `template:${template.templateId}`;
-  const providerMods = buildCreatureTypeAndSubtypeModifiers(
-    creatureType,
-    mergedSubtypes,
-    chaMod,
-    templateRootPath
-  );
+  const providerMods = buildCreatureTypeAndSubtypeModifiers(creatureType, mergedSubtypes, chaMod, templateRootPath);
   const nextStatModifiers: StatModifier[] = [...(base.statModifiers ?? []), ...providerMods];
 
   if (template.deflectionBonusFromChaMinOne && !mergedSubtypes.includes('incorporeal')) {

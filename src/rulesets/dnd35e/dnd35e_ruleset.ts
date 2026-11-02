@@ -26,10 +26,7 @@ import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilitie
 import { evaluateTacticalDoctrineModifiers, resolveAttackRoll } from './combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from './combat/damage_vitality.ts';
 import { summarizeConditionEffects } from './combat/maneuvers_conditions.ts';
-import {
-  DND35E_BASE_AC,
-  evaluateDnD35ActorStatDAG
-} from './modifiers.ts';
+import { DND35E_BASE_AC, evaluateDnD35ActorStatDAG } from './modifiers.ts';
 import { aggregateProgressionChassis, computeXpThresholdForLevel } from './progression.ts';
 import {
   getDnD35EntityData,
@@ -38,12 +35,7 @@ import {
   resolveDamageTypeFromTags,
   setDnD35EntityData
 } from './srd_registry.ts';
-import type {
-  DnD35EntityData,
-  DnD35ResolvedActorStats,
-  StatModifier,
-  StatQueryContext
-} from './types/dnd35e.types.ts';
+import type { DnD35EntityData, DnD35ResolvedActorStats, StatModifier, StatQueryContext } from './types/dnd35e.types.ts';
 
 /** Default movement speed for uninitialized entities. */
 const DND35E_DEFAULT_SPEED = 100;
@@ -91,8 +83,7 @@ export function evaluateDnD35eEntityDAG(
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
   const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
-    | TacticalDoctrineComponent
-    | undefined;
+    TacticalDoctrineComponent | undefined;
   const tumbleRanks = dndData.skillRanks['tumble'] ?? 0;
   const doctrineMod = doctrine
     ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, 'one_handed', tumbleRanks)

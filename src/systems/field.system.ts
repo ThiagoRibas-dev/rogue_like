@@ -79,8 +79,7 @@ export function processFieldsTick(state: GameState): GameState {
     // 0. Synchronize mobile emanations anchored to an entity
     if (fieldCmp.anchorEntityId !== undefined) {
       const anchorPos = getComponent(nextState, fieldCmp.anchorEntityId, ComponentType.Position) as
-        | PositionComponent
-        | undefined;
+        PositionComponent | undefined;
       if (anchorPos && (anchorPos.x !== pos.x || anchorPos.y !== pos.y)) {
         nextState = addComponent(nextState, entityId, {
           type: ComponentType.Position,
@@ -205,4 +204,3 @@ export function queryActiveFieldsAtPosition(
 
   return results;
 }
-

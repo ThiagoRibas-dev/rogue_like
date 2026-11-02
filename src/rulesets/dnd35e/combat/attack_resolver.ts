@@ -356,8 +356,7 @@ export function buildFullAttackSequence(options: {
 
   const primaryAttacks = iterBabs.map((b) => b + nonBabMod + twfPrimaryPenalty);
 
-  const offHandCount =
-    options.hasOffHandWeapon === true ? 1 + (options.overrides?.extraOffHandAttacks ?? 0) : 0;
+  const offHandCount = options.hasOffHandWeapon === true ? 1 + (options.overrides?.extraOffHandAttacks ?? 0) : 0;
   const offHandAttacks: number[] = [];
   for (let i = 0; i < offHandCount; i++) {
     const offHandBabPenalty = i * 5;
@@ -508,7 +507,10 @@ export function resolveCleaveFollowupEligibility(
 export function resolveWhirlwindTargets(
   attackerPos: { readonly x: number; readonly y: number },
   reachFt: number,
-  potentialTargets: ReadonlyArray<{ readonly entityId: number; readonly pos: { readonly x: number; readonly y: number } }>
+  potentialTargets: ReadonlyArray<{
+    readonly entityId: number;
+    readonly pos: { readonly x: number; readonly y: number };
+  }>
 ): ReadonlyArray<number> {
   const reachTiles = Math.max(1, Math.floor(reachFt / 5));
   const validTargetIds: number[] = [];
