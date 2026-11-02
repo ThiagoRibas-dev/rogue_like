@@ -46,16 +46,18 @@ export interface D20RollResult {
   readonly isAutoFailure: boolean;
 }
 
-/** Canonical D&D 3.5e bonus types (including compound enhancement targets). */
+/** Canonical D&D 3.5e bonus types (including compound enhancement targets and DAG sub-stat step types). */
 export type BonusType =
   | 'alchemical'
   | 'armor'
   | 'armor_enhancement'
+  | 'base'
   | 'circumstance'
   | 'competence'
   | 'deflection'
   | 'dodge'
   | 'enhancement'
+  | 'form_override'
   | 'inherent'
   | 'insight'
   | 'luck'
@@ -69,7 +71,22 @@ export type BonusType =
   | 'shield'
   | 'shield_enhancement'
   | 'size'
+  | 'size_step'
   | 'untyped';
+
+/**
+ * Orthogonal lifecycle/UI classification derived from the root segment of `sourcePath`.
+ * Does NOT alter D&D 3.5e `BonusType` stacking rules; used for UI breakdown columns
+ * and bulk layer suppression (e.g., suppressing `'equipment'` when gear melds into a Wild Shape form).
+ */
+export type OriginLayer =
+  | 'base'
+  | 'racial'
+  | 'progression'
+  | 'form'
+  | 'equipment'
+  | 'temporary'
+  | 'environment';
 
 /** Source origin tag used for dynamic Antimagic Field suppression. */
 export type ModifierSourceOrigin = 'ex' | 'su' | 'sp' | 'spell' | 'magical' | 'mundane';
@@ -78,20 +95,40 @@ export type ModifierSourceOrigin = 'ex' | 'su' | 'sp' | 'spell' | 'magical' | 'm
  * Tag-based condition required for a conditional stat modifier to apply.
  */
 export interface StatModifierCondition {
+  readonly selfTagsAll?: ReadonlyArray<string> | undefined;
+  readonly selfTagsAny?: ReadonlyArray<string> | undefined;
+  readonly selfTagsNone?: ReadonlyArray<string> | undefined;
   readonly targetTagsAll?: ReadonlyArray<string> | undefined;
   readonly targetTagsAny?: ReadonlyArray<string> | undefined;
   readonly targetTagsNone?: ReadonlyArray<string> | undefined;
   readonly effectTagsAny?: ReadonlyArray<string> | undefined;
 }
 
-/** A single typed stat modifier entry evaluated at query time. */
+/**
+ * A single typed stat modifier entry evaluated at query time.
+ * `sourcePath` records the slash-delimited causal lineage (e.g., `"template:ghost/subtype:incorporeal/deflection_ac"`
+ * or `"type:construct/trait:construct_bonus_hp"`) for fast prefix revocation, suppression, and UI breadcrumbs.
+ */
 export interface StatModifier {
   readonly targetStat: string;
   readonly value: number;
   readonly bonusType: BonusType;
   readonly sourceId: string;
+  readonly sourcePath?: string | undefined;
   readonly origin?: ModifierSourceOrigin | undefined;
+  /** Optional descriptor tags on the effect itself (e.g. `['force']` on Mage Armor / Shield spells). */
+  readonly effectTags?: ReadonlyArray<string> | undefined;
   readonly condition?: StatModifierCondition | undefined;
+}
+
+/**
+ * Runtime lookup index mapping hierarchical `sourcePath` lineages and target stats
+ * to their active `StatModifier` entries.
+ */
+export interface EffectProvenanceIndex {
+  readonly byPathPrefix: Readonly<Record<string, ReadonlyArray<StatModifier>>>;
+  readonly byNode: Readonly<Record<string, ReadonlyArray<StatModifier>>>;
+  readonly byTargetStat: Readonly<Record<string, ReadonlyArray<StatModifier>>>;
 }
 
 /** Contextual flags passed when resolving typed modifiers or Armor Class. */
@@ -99,9 +136,67 @@ export interface StatQueryContext {
   readonly inAntimagicField?: boolean | undefined;
   readonly ignoreArmorAndNatural?: boolean | undefined;
   readonly ignorePositiveDexAndDodge?: boolean | undefined;
+  /**
+   * When true alongside `ignoreArmorAndNatural: true`, armor/shield modifiers carrying
+   * `effectTags: ['force']` (such as Mage Armor or Shield) remain active against incorporeal touch attacks.
+   */
+  readonly againstIncorporealTouch?: boolean | undefined;
   readonly maxDexBonus?: number | undefined;
+  readonly selfTags?: ReadonlyArray<string> | undefined;
   readonly targetTags?: ReadonlyArray<string> | undefined;
   readonly effectTags?: ReadonlyArray<string> | undefined;
+  /** Optional set of `OriginLayer`s to suppress during evaluation (e.g. melded equipment). */
+  readonly suppressedOriginLayers?: ReadonlyArray<OriginLayer> | undefined;
+}
+
+/** Reason why a modifier was completely excluded prior to bonus-type competition. */
+export type ModifierSuppressionReason =
+  | 'antimagic'
+  | 'tag_condition'
+  | 'touch_attack'
+  | 'flat_footed'
+  | 'origin_suppressed';
+
+/** Record of a modifier that passed filtering but lost same-type bonus competition. */
+export interface ShadowedModifierEntry {
+  readonly modifier: StatModifier;
+  readonly shadowedBySourcePath: string;
+}
+
+/** Record of a modifier that was suppressed by context rules before bonus competition. */
+export interface SuppressedModifierEntry {
+  readonly modifier: StatModifier;
+  readonly reason: ModifierSuppressionReason;
+}
+
+/** Full diagnostic and UI breakdown of a resolved stat or sub-stat node. */
+export interface StatResolutionBreakdown {
+  readonly total: number;
+  readonly activeModifiers: ReadonlyArray<StatModifier>;
+  readonly shadowedModifiers: ReadonlyArray<ShadowedModifierEntry>;
+  readonly suppressedModifiers: ReadonlyArray<SuppressedModifierEntry>;
+  readonly byOriginLayer: Readonly<Record<OriginLayer, number>>;
+}
+
+/** Complete resolved state of an actor across the 4-Stage Sub-Stat DAG. */
+export interface DnD35ResolvedActorStats {
+  readonly effectiveSize: CreatureSizeCategory;
+  readonly sizeRankIndex: number;
+  readonly sizeWinningSourcePath: string;
+  readonly effectiveAbilities: AbilityScoresRecord;
+  readonly effectiveAbilityModifiers: Readonly<Record<AbilityId, number>>;
+  readonly naturalArmorBreakdown: StatResolutionBreakdown;
+  readonly wornArmorBreakdown: StatResolutionBreakdown;
+  readonly wornShieldBreakdown: StatResolutionBreakdown;
+  readonly acBreakdown: ACBreakdownDTO;
+  readonly acResolution: StatResolutionBreakdown;
+  readonly touchAcResolution: StatResolutionBreakdown;
+  readonly flatFootedAcResolution: StatResolutionBreakdown;
+  readonly attackBonus: number;
+  readonly damageBonus: number;
+  readonly maxHp: number;
+  readonly saves: Readonly<Record<SaveType, number>>;
+  readonly speed: number;
 }
 
 /** Itemized Armor Class triplet and breakdown DTO. */
@@ -264,7 +359,18 @@ export interface OnHitRiderDescriptor {
 export interface NaturalWeaponDescriptor {
   readonly id: string;
   readonly name: string;
-  readonly naturalType: 'bite' | 'claw' | 'gore' | 'slam' | 'sting' | 'tentacle' | 'talon' | 'tail_slap';
+  readonly naturalType:
+    | 'bite'
+    | 'claw'
+    | 'gore'
+    | 'slam'
+    | 'sting'
+    | 'tentacle'
+    | 'talon'
+    | 'tail_slap'
+    | 'wings'
+    | 'crush'
+    | 'tail_sweep';
   readonly isPrimary: boolean;
   readonly count: number;
   readonly damageDice: string;
@@ -308,5 +414,7 @@ export interface DnD35EntityData {
   readonly naturalWeapons?: ReadonlyArray<NaturalWeaponDescriptor> | undefined;
   readonly hasPounce?: boolean | undefined;
   readonly singleActionsOnly?: boolean | undefined;
+  readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
+  readonly anatomyBodyPlan?: 'humanoid_biped' | 'quadruped' | 'marilith_6arm' | 'avian' | 'serpentine' | undefined;
 }
 

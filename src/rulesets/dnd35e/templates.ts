@@ -1,4 +1,6 @@
-import type { AbilityId, AbilityScoresRecord, DnD35EntityData, HitDieTrack } from './types/dnd35e.types.ts';
+import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
+import { buildCreatureTypeAndSubtypeModifiers } from './srd_registry.ts';
+import type { AbilityId, AbilityScoresRecord, DnD35EntityData, HitDieTrack, StatModifier } from './types/dnd35e.types.ts';
 import type { DnD35Template } from './types/dnd35e_system.types.ts';
 
 /** Undead Hit Die sides (`d12`). */
@@ -31,7 +33,10 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   }
 
   // 1. Creature Type and Subtypes
-  const creatureType = template.resultCreatureType ?? base.creatureType;
+  let creatureType = template.resultCreatureType ?? base.creatureType;
+  if (template.convertTypeMap && base.creatureType && template.convertTypeMap[base.creatureType]) {
+    creatureType = template.convertTypeMap[base.creatureType]!;
+  }
   const existingSubtypes = base.subtypes ?? [];
   const mergedSubtypes = Array.from(new Set([...existingSubtypes, ...template.addSubtypes]));
 
@@ -46,9 +51,10 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   const nextScores: Record<string, { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }> = {};
   const stats: ReadonlyArray<AbilityId> = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 
+  const abilityMods = template.abilityScoreModifiers ?? {};
   for (const s of stats) {
     const current = base.abilityScores[s];
-    const delta = template.abilityScoreModifiers[s] ?? 0;
+    const delta = abilityMods[s] ?? 0;
 
     if (creatureType === 'undead' && s === 'con') {
       nextScores[s] = {
@@ -91,21 +97,47 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     if (current.base === null) {
       nextScores[s] = { ...current };
     } else {
+      let finalBase = current.base + delta;
+      if (s === 'int' && template.minimumIntelligence !== undefined) {
+        finalBase = Math.max(template.minimumIntelligence, finalBase);
+      } else {
+        finalBase = Math.max(1, finalBase);
+      }
       nextScores[s] = {
         ...current,
-        base: Math.max(1, current.base + delta)
+        base: finalBase
       };
     }
   }
 
   // 4. Hit Die Track Rebuilding for Acquired Undead Templates (PRIM-1.6)
+  // SRD Skeleton & Zombie drop class HD and retain only racial HD (or 1 HD if the creature only had class levels).
+  const pcClassIds: ReadonlyArray<string> = [
+    'barbarian',
+    'bard',
+    'cleric',
+    'druid',
+    'fighter',
+    'monk',
+    'paladin',
+    'ranger',
+    'rogue',
+    'sorcerer',
+    'wizard'
+  ];
+  const racialTracks = base.tracks.filter((t) => !pcClassIds.includes(t.trackId));
+  const baseRacialLevels =
+    racialTracks.length > 0
+      ? Math.max(
+          1,
+          racialTracks.reduce((sum, t) => sum + t.levels, 0)
+        )
+      : 1;
   let nextTracks: ReadonlyArray<HitDieTrack> = base.tracks;
   if (template.templateId === 'skeleton' || template.templateId === 'zombie') {
-    const totalBaseLevels = Math.max(
-      1,
-      base.tracks.reduce((sum, t) => sum + t.levels, 0)
-    );
-    const undeadHd = template.templateId === 'zombie' ? totalBaseLevels * 2 : totalBaseLevels;
+    const hdMult = template.hdMultiplier ?? (template.templateId === 'zombie' ? 2 : 1);
+    const bonusHd = template.bonusHitDice ?? 0;
+    const undeadHd = Math.max(1, Math.floor(baseRacialLevels * hdMult) + bonusHd);
     nextTracks = [
       {
         trackId: 'undead',
@@ -125,10 +157,20 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     }));
   }
 
-  // 5. Natural Armor
-  const naturalArmorBonus = Math.max(0, base.naturalArmorBonus + template.naturalArmorBonusDelta);
+  const effectiveTotalHd = nextTracks.reduce((sum, t) => sum + t.levels, 0);
 
-  // 6. Damage Reduction
+  // 5. Natural Armor
+  let naturalArmorBonus = base.naturalArmorBonus;
+  if (template.stripNaturalArmor) {
+    naturalArmorBonus = 0;
+  }
+  if (template.sizeTieredNaturalArmor && template.sizeTieredNaturalArmor[sizeCategory] !== undefined) {
+    naturalArmorBonus = Math.max(naturalArmorBonus, template.sizeTieredNaturalArmor[sizeCategory]!);
+  } else {
+    naturalArmorBonus = Math.max(0, naturalArmorBonus + (template.naturalArmorBonusDelta ?? 0));
+  }
+
+  // 6. Damage Reduction (including HD-tiered scaling)
   let damageReduction = base.damageReduction;
   if (template.damageReduction) {
     if (!damageReduction || template.damageReduction.amount >= damageReduction.amount) {
@@ -136,37 +178,89 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     }
   }
 
-  // 7. Energy Resistances
+  // 7. Energy Resistances (including HD-tiered scaling)
   const energyResistance: Record<string, number> = { ...base.energyResistance };
-  for (const [key, val] of Object.entries(template.energyResistance)) {
+  const baseTemplateResistances = { ...(template.energyResistance ?? {}), ...(template.energyResistances ?? {}) };
+  for (const [key, val] of Object.entries(baseTemplateResistances)) {
     energyResistance[key] = Math.max(energyResistance[key] ?? 0, val);
   }
 
-  // 8. Immunities
-  const immunities = Array.from(new Set([...base.immunities, ...template.immunities]));
+  if (template.hdTieredScaling) {
+    for (const tier of template.hdTieredScaling) {
+      if (effectiveTotalHd >= tier.minHd && (tier.maxHd === undefined || effectiveTotalHd <= tier.maxHd)) {
+        if (tier.damageReduction) {
+          if (!damageReduction || tier.damageReduction.amount >= damageReduction.amount) {
+            damageReduction = tier.damageReduction;
+          }
+        }
+        const tierResistances = { ...(tier.energyResistance ?? {}), ...(tier.energyResistances ?? {}) };
+        for (const [key, val] of Object.entries(tierResistances)) {
+          energyResistance[key] = Math.max(energyResistance[key] ?? 0, typeof val === 'number' ? val : 0);
+        }
+      }
+    }
+  }
 
-  // 9. Spell Resistance
+  // 8. Immunities
+  const immunities = Array.from(new Set([...(base.immunities ?? []), ...(template.immunities ?? [])]));
+
+  // 9. Spell Resistance (formula or bonus)
   let spellResistance = base.spellResistance;
-  if (template.spellResistanceBonus !== undefined) {
+  if (template.spellResistanceFormula) {
+    const rawSr = template.spellResistanceFormula.base + template.spellResistanceFormula.perHitDie * effectiveTotalHd;
+    const cappedSr = template.spellResistanceFormula.max !== undefined
+      ? Math.min(template.spellResistanceFormula.max, rawSr)
+      : rawSr;
+    spellResistance = Math.max(spellResistance ?? 0, cappedSr);
+  } else if (template.spellResistanceBonus !== undefined) {
     spellResistance = Math.max(spellResistance ?? 0, template.spellResistanceBonus);
   }
 
   // 10. Feats
-  const feats = Array.from(new Set([...base.feats, ...template.grantedFeats]));
+  const feats = Array.from(new Set([...(base.feats ?? []), ...(template.grantedFeats ?? [])]));
 
-  // 11. Level Adjustment
-  const levelAdjustment = (base.levelAdjustment ?? 0) + template.levelAdjustmentDelta;
+  // 11. Natural Weapons (e.g. Claws/Bites granted by Half-Dragon / Vampire)
+  const naturalWeapons = template.grantedNaturalWeapons
+    ? [...(base.naturalWeapons ?? []), ...template.grantedNaturalWeapons]
+    : base.naturalWeapons;
 
-  // 12. Single actions only (Zombies)
-  const isZombie = template.templateId === 'zombie' || template.grantedTags.includes('single_actions_only');
+  // 12. Level Adjustment
+  const levelAdjustment = (base.levelAdjustment ?? 0) + (template.levelAdjustmentDelta ?? 0);
+
+  // 13. Single actions only (Zombies)
+  const grantedTags = template.grantedTags ?? [];
+  const isZombie = template.templateId === 'zombie' || grantedTags.includes('single_actions_only');
   const singleActionsOnly = isZombie ? true : (base.singleActionsOnly ?? false);
+
+  // 14. Emit Effect Provider StatModifiers with hierarchical sourcePath
+  const resolvedAbilityScores = nextScores as unknown as AbilityScoresRecord;
+  const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(resolvedAbilityScores.cha));
+  const templateRootPath = `template:${template.templateId}`;
+  const providerMods = buildCreatureTypeAndSubtypeModifiers(
+    creatureType,
+    mergedSubtypes,
+    chaMod,
+    templateRootPath
+  );
+  const nextStatModifiers: StatModifier[] = [...(base.statModifiers ?? []), ...providerMods];
+
+  if (template.deflectionBonusFromChaMinOne && !mergedSubtypes.includes('incorporeal')) {
+    nextStatModifiers.push({
+      targetStat: 'ac',
+      value: Math.max(1, chaMod),
+      bonusType: 'deflection',
+      sourceId: `template:${template.templateId}:deflection_ac`,
+      sourcePath: `${templateRootPath}/trait:deflection_ac`,
+      origin: 'su'
+    });
+  }
 
   return {
     ...base,
     creatureType,
     subtypes: mergedSubtypes,
     sizeCategory,
-    abilityScores: nextScores as unknown as AbilityScoresRecord,
+    abilityScores: resolvedAbilityScores,
     tracks: nextTracks,
     naturalArmorBonus,
     damageReduction,
@@ -174,8 +268,10 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     immunities,
     spellResistance,
     feats,
+    naturalWeapons,
     levelAdjustment,
-    singleActionsOnly
+    singleActionsOnly,
+    statModifiers: nextStatModifiers
   };
 }
 

@@ -507,5 +507,65 @@ In strict accordance with **AGENTS.md Rule 16** (Three-Tier Placement Heuristic)
    - **Metamagic, Concentration & Dispel Mechanics (`src/rulesets/dnd35e/magic/spellcasting.ts`)**: Runtime metamagic damage calculation (`evaluateMetamagicDamage`), spontaneous casting action adjustments, Concentration maintenance, Dispel Magic d20 checks, and readied Counterspell reactions.
    - **Special Material Physics & Sizing (`src/rulesets/dnd35e/equipment_physics.ts`)**: Applies material adjustments (Mithral category shift, Adamantine DR, Silver damage penalty, Cold Iron, Darkwood) and 9-size weapon damage dice scaling (`scaleWeaponDamageDice`).
 
+### 9.5 System Content Pillar 1, Unified Effect Providers & Hierarchical Provenance (Phase 22, Milestones 106–109)
+
+Phase 22 implemented the first foundational content pillar of the D&D 3.5e ruleset alongside the **Unified Effect Provider** and **Hierarchical Provenance (`sourcePath`)** architecture:
+
+1. **Unified Effect Provider Architecture & Self-Tag Conditions (`src/systems/reaction.system.ts`, `src/rulesets/dnd35e/srd_registry.ts`, `src/rulesets/dnd35e/modifiers.ts`)**:
+   - Every actor building block (`Size`, `CreatureType`, `Subtype`, `Race`, `Template`, `Class`, `Feat`, `Condition`, `Load/Armor`, `TacticalStance`) operates as a declarative **Effect Provider**:
+     - Projects semantic self-tags (`size:<category>`, `type:<creatureType>`, `subtype:<subtype>`, `trait:unencumbered_speed`) via `projectDnD35ActorSemanticTags`.
+     - Emits declarative `StatModifier`s conditioned on `selfTagsAll` / `selfTagsAny` / `selfTagsNone`, `targetTagsAll` / `targetTagsAny` / `targetTagsNone`, and `effectTagsAny` (evaluated by `matchesEntityTagCondition` in `src/systems/reaction.system.ts`).
+   - For example, the `construct` Creature Type Provider (`buildCreatureTypeAndSubtypeModifiers`) emits `max_hp` modifiers conditioned on `selfTagsAll: ['type:construct', 'size:<size>']` (`+10` Small through `+80` Colossal), and the `incorporeal` Subtype Provider emits a `deflection` AC modifier (`Math.max(1, chaMod)`) conditioned on `selfTagsAll: ['subtype:incorporeal']`.
+
+2. **Hierarchical Effect Provenance (`sourcePath`) & Fast Runtime Index (`src/rulesets/dnd35e/modifiers.ts`)**:
+   - Because an Effect Bundle can be temporary or nested (granted by a parent Effect Bundle), every `StatModifier` carries an optional slash-delimited `sourcePath` recording its full causal chain (e.g., `"archetype:iron_golem/type:construct/trait:construct_bonus_hp"`, `"template:ghost/subtype:incorporeal/deflection_ac"`, `"race:dwarf/trait:dodge_vs_giants"`).
+   - `appendSourcePath(parentPath, segment)` chains child provider paths onto parent bundle paths.
+   - `revokeModifiersByPathPrefix(modifiers, pathPrefix)` removes an entire causal subtree in one pass when a parent spell, template, or item expires or is dispelled.
+   - `buildEffectProvenanceIndex(modifiers)` builds an `EffectProvenanceIndex` (`{ byPathPrefix, byNode, byTargetStat }`) for $O(1)$ prefix queries, node inspection, and UI tooltip breadcrumbs.
+
+3. **SRD Playable & Monstrous Races (`public/data/rulesets/dnd35e/races.json`, `src/rulesets/dnd35e/races.ts`)**:
+   - Authored all 17 SRD races (`human`, `dwarf`, `elf`, `gnome`, `half_elf`, `half_orc`, `halfling`, `drow`, `duergar`, `svirfneblin`, `tiefling`, `aasimar`, `goblin`, `kobold`, `orc`, `hobgoblin`, `bugbear`).
+   - `applyRaceToActorChassis` applies base ability score adjustments (enforcing minimum INT 3 for sentient humanoids), size, land speed, `trait:unencumbered_speed` for Dwarves, vision modes (Darkvision, Low-Light Vision), racial HD tracks, spell resistance formulas (`11 + HD`), energy resistances, and persisted `statModifiers` with `race:<id>/...` provenance paths evaluated in live combat (`computeDnD35eEffectiveStats` and `resolveDnD35eMeleeAttack`).
+
+4. **Expanded Inherited & Acquired Templates (`public/data/rulesets/dnd35e/templates.json`, `src/rulesets/dnd35e/templates.ts`)**:
+   - Extended `applyCreatureTemplate` to support 13 SRD templates (`celestial`, `fiendish`, `half_dragon_red`, `half_dragon_black`, `half_dragon_gold`, `half_dragon_silver`, `half_fiend`, `half_celestial`, `skeleton`, `zombie`, `lich`, `vampire`, `ghost`).
+   - Supports declarative size-tiered natural armor, HD-tiered scaling for damage reduction and energy resistances, spell resistance formulas (`min(25, HD + 5)`), Ghost/Incorporeal deflection AC (`max(1, CHA_mod)`), Undead hit dice conversion (stripping class HD tracks and converting racial HD to `d12` for Skeletons, doubling racial HD for Zombies), and ability score overrides/nullification (`CON: null`, `INT: null`).
+
+5. **15 SRD Creature Type Engines, Parametric Advancement & Family Synthesis (`public/data/rulesets/dnd35e/creature_types.json`, `dragon_families.json`, `src/rulesets/dnd35e/creature_advancement.ts`, `family_synthesizer.ts`)**:
+   - **`creature_types.json`**: Decomposed all 15 SRD creature types into data-driven progression tracks (`d6` to `d12`, BAB curves, good/poor save maps, skill multipliers, Construct bonus HP by size, and immunities).
+   - **`advanceMonsterByHitDice`**: Applies canonical SRD *Changes to Statistics by Size* (`Fine` through `Colossal`), natural weapon die scaling, every-4th-HD ability score increases to the highest ability score, and CR scaling.
+   - **True Dragon 12-Age-Category Engine (`synthesizeTrueDragonArchetype`)**: Synthesizes all 10 Chromatic and Metallic dragon varieties across 12 age categories (`Wyrmling` to `Great Wyrm`), unlocking size-gated natural weapons (`wings` $\ge \text{Medium}$, `tail_slap` $\ge \text{Large}$, `crush` $\ge \text{Huge}$, `tail_sweep` $\ge \text{Gargantuan}$) and populating senses (`darkvision 120 ft`, `blindsense 60 ft`) and fly speeds.
+   - **Elemental & Golem Engines (`synthesizeElementalArchetype`, `evaluateGolemMagicInteraction`)**: Scales Air, Earth, Fire, and Water Elementals across all 6 steps (`Small` to `Elder`) with element-specific stat growth, natural armor, slam counts, DR (`5/-` at Large, `10/-` at Greater/Elder), and Good Save curves (Ref for Air/Fire, Fort for Earth/Water), plus Golem magic immunity/elemental interaction rules.
+
+6. **SRD Bestiary Expansion (`public/data/rulesets/dnd35e/archetypes.json`, `src/rulesets/dnd35e/srd_registry.ts`)**:
+   - Comprehensive 50+ archetype bestiary across Low-CR (Kobold, Goblin, Orc, Hobgoblin, Gnoll, Bugbear, Dire Rat, Giant Fire Beetle, Wolf, Black Bear, Dire Wolf, Giant Spider, Giant Centipede, Stirge, Skeleton, Zombie, Ghoul, Ghast, Wight, Shadow, Gelatinous Cube), Mid-CR (Owlbear, Rust Monster, Gargoyle, Displacer Beast, Basilisk, Medusa, Manticore, Ogre, Minotaur, Troll, Ettin, Hill Giant, Wraith, Mummy, Flesh Golem, Mind Flayer), and High-CR (Stone/Frost/Fire Giants, Clay/Stone/Iron Golems, Beholder, 6-Armed Marilith with `anatomyBodyPlan: 'marilith_6arm'`, Balor, Pit Fiend).
+   - `getDnD35EntityData` and `getDnD35Archetype` seamlessly resolve both static `archetypes.json` entries and dynamically synthesized `dragon_<variety>_<age>` / `elemental_<element>_<step>` archetypes at runtime.
+
+---
+
+### 9.6 4-Stage Topological Sub-Stat DAG, Size Effect Provider & Provenance Breakdown
+
+To eliminate compound bonus folding bugs and passive size/ability score gaps, stat evaluation in `src/rulesets/dnd35e/modifiers.ts`, `src/rulesets/dnd35e/wild_shape.ts`, and `src/rulesets/dnd35e/dnd35e_ruleset.ts` executes as a **4-Stage Topological Sub-Stat DAG** with single-pass $O(N)$ `targetStat` bucket partitioning:
+
+1. **Stage 1 (`'size'`)**:
+   - `resolveEffectiveSizeCategory` resolves size from `baseSize` (from race), `form_override` (emitted by `resolveEffectiveEntityDataWithOverlays` in `wild_shape.ts` with `'form'` `OriginLayer` provenance), and non-stacking `size_step` deltas (`[-4..+4]`).
+   - Dynamically mutates `stageContext.selfTags` (`size:<baseSize>` $\to$ `size:<effectiveSize>`) so downstream Stage 4 conditional modifiers (such as Construct Bonus HP scaled by size) evaluate against the actor's true post-Stage-1 size.
+   - `buildSizeEffectProviderModifiers` emits declarative `'size'` modifiers to `'ac'`, `'attack'`, `'grapple'`, and `'hide'` with hierarchical `sourcePath`s.
+2. **Stage 2 (`'str'..'cha'`)**:
+   - Evaluates typed ability modifiers targeting `'str'`, `'dex'`, `'con'`, `'int'`, `'wis'`, and `'cha'`, feeding `typedBonusNet` into `computeEffectiveAbilityScore`, synchronizing `effectiveAbilities[abId].base = effScore`, and updating ability modifiers before downstream consumption (cascading into CON HP, DEX AC capped by `maxDexBonus`, CHA Incorporeal Deflection, and STR attack/damage).
+3. **Stage 3 (Compound Defenses)**:
+   - Evaluates intermediate sub-stats: `'natural_armor'` (`base + form_override + untyped deltas + max(enhancement)`), `'worn_armor_bonus'` (`base + max(enhancement)`), and `'worn_shield_bonus'` (`base + max(enhancement)`).
+   - `buildStage3CompoundEmittedModifier` propagates surviving `effectTags` (such as `'magical'` or `'force'`) into Stage 4, while `refineStage4AcBreakdownOriginLayers` decomposes multi-layer compound totals (e.g. `'racial'` base + `'progression'` feat + `'temporary'` spell enhancement) into accurate per-layer contributions in `acResolution.byOriginLayer`.
+4. **Stage 4 (Terminal Combat Stats & Target-Conditional Evaluation)**:
+   - Synchronizes dynamic CHA Incorporeal Deflection (`Math.max(1, chaMod)` replacing static hydration values on `subtype:incorporeal:deflection_ac`), resolves the AC triplet (`fullAC`, `touchAC`, `flatFootedAC`) with armor/load `maxDexBonus` capping and single-pass breakdown deduplication, and computes `attackBonus`, `damageBonus`, saves, and `maxHp`.
+   - `resolveTypedModifiersWithBreakdown` returns `{ total, activeModifiers, shadowedModifiers, suppressedModifiers, byOriginLayer }`, classifying modifiers into orthogonal `OriginLayer`s (`'base'`, `'racial'`, `'progression'`, `'form'`, `'equipment'`, `'temporary'`, `'environment'`) and preserving `[Force]` armor effects against incorporeal touch attacks.
+   - `evaluateDnD35eEntityDAG(state, entityId, contextOverride)` powers both `computeDnD35eEffectiveStats` and `resolveDnD35eMeleeAttack` (passing mutual `targetTags` for attacker and defender so conditional modifiers like Dwarf `+1` attack vs. Orcs, `+4` Dodge AC vs. Giants, and Ranger Favored Enemy damage resolve through the full 4-Stage DAG).
+
+---
+
+## 10. Key Design Decisions
+
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+
+
 

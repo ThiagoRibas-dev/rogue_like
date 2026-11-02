@@ -96,7 +96,19 @@ export type OnHitRiderDescriptor = z.infer<typeof OnHitRiderDescriptorSchema>;
 export const NaturalWeaponDescriptorSchema = z.object({
   id: z.string(),
   name: z.string(),
-  naturalType: z.enum(['bite', 'claw', 'gore', 'slam', 'sting', 'tentacle', 'talon', 'tail_slap']),
+  naturalType: z.enum([
+    'bite',
+    'claw',
+    'gore',
+    'slam',
+    'sting',
+    'tentacle',
+    'talon',
+    'tail_slap',
+    'wings',
+    'crush',
+    'tail_sweep'
+  ]),
   isPrimary: z.boolean().default(false),
   count: z.number().int().positive().default(1),
   damageDice: z.string(),
@@ -107,6 +119,35 @@ export const NaturalWeaponDescriptorSchema = z.object({
   riders: z.array(OnHitRiderDescriptorSchema).optional()
 });
 export type NaturalWeaponDescriptor = z.infer<typeof NaturalWeaponDescriptorSchema>;
+
+/** Zod schema for an SRD monster advancement size/HD range. */
+export const DnD35AdvancementRangeSchema = z.object({
+  minHd: z.number().int().positive(),
+  maxHd: z.number().int().positive(),
+  sizeCategory: SizeCategorySchema,
+  crAdjustment: z.number().default(0)
+});
+export type DnD35AdvancementRange = z.infer<typeof DnD35AdvancementRangeSchema>;
+
+/** Zod schema for sensory profile on an archetype. */
+export const DnD35SensoryProfileSchema = z.object({
+  lowLightVision: z.boolean().default(false),
+  darkvisionRangeFt: z.number().int().nonnegative().default(0),
+  blindsenseRangeFt: z.number().int().nonnegative().default(0),
+  blindsightRangeFt: z.number().int().nonnegative().default(0),
+  tremorsenseRangeFt: z.number().int().nonnegative().default(0),
+  scentRangeFt: z.number().int().nonnegative().default(0)
+});
+
+/** Zod schema for multi-mode movement speeds on an archetype. */
+export const DnD35MovementModesSchema = z.object({
+  land: z.number().int().nonnegative().default(30),
+  burrow: z.number().int().nonnegative().optional(),
+  climb: z.number().int().nonnegative().optional(),
+  fly: z.number().int().nonnegative().optional(),
+  swim: z.number().int().nonnegative().optional(),
+  maneuverability: z.enum(['clumsy', 'poor', 'average', 'good', 'perfect']).optional()
+});
 
 /** Zod schema for a declarative System Content creature/character archetype (`archetypes.json`). */
 export const DnD35ArchetypeSchema = z.object({
@@ -124,17 +165,22 @@ export const DnD35ArchetypeSchema = z.object({
   naturalArmorBonus: z.number().int().nonnegative(),
   damageReduction: DnD35DamageReductionSchema.optional(),
   energyResistance: z.record(z.string(), z.number().int().nonnegative()).default({}),
-  immunities: z.array(DnD35DamageTypeSchema).default([]),
-  vulnerabilities: z.array(DnD35DamageTypeSchema).default([]),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([]),
   spellResistance: z.number().int().nonnegative().optional(),
   feats: z.array(z.string()).default([]),
   skillRanks: z.record(z.string(), z.number().nonnegative()).default({}),
   creatureType: z.string().optional(),
   subtypes: z.array(z.string()).default([]),
   levelAdjustment: z.number().int().nonnegative().default(0),
+  senses: DnD35SensoryProfileSchema.optional(),
+  movementModes: DnD35MovementModesSchema.optional(),
+  anatomyBodyPlan: z.enum(['humanoid_biped', 'quadruped', 'marilith_6arm', 'avian', 'serpentine']).optional(),
   naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
   hasPounce: z.boolean().default(false),
-  singleActionsOnly: z.boolean().default(false)
+  singleActionsOnly: z.boolean().default(false),
+  advancementRanges: z.array(DnD35AdvancementRangeSchema).default([]),
+  cr: z.number().optional()
 });
 /** Inferred type for a declarative System Content archetype. */
 export type DnD35Archetype = z.infer<typeof DnD35ArchetypeSchema>;
@@ -167,6 +213,17 @@ export const DnD35ClassDefinitionSchema = z.object({
 /** Inferred type for a declarative class definition. */
 export type DnD35ClassDefinition = z.infer<typeof DnD35ClassDefinitionSchema>;
 
+/** Zod schema for HD-tiered scaling on templates (e.g., Celestial/Fiendish DR & energy resistance). */
+export const DnD35TemplateHdTierSchema = z.object({
+  minHd: z.number().int().positive(),
+  maxHd: z.number().int().positive().optional(),
+  damageReduction: DnD35DamageReductionSchema.optional(),
+  energyResistance: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  energyResistances: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  crAdjustment: z.number().optional()
+});
+export type DnD35TemplateHdTier = z.infer<typeof DnD35TemplateHdTierSchema>;
+
 /** Zod schema for an inherited or acquired template definition (`templates.json`). */
 export const DnD35TemplateSchema = z.object({
   templateId: z.string(),
@@ -174,8 +231,12 @@ export const DnD35TemplateSchema = z.object({
   kind: z.enum(['inherited', 'acquired']),
   targetCreatureTypes: z.array(z.string()).optional(),
   resultCreatureType: z.string().optional(),
+  convertTypeMap: z.record(z.string(), z.string()).optional(),
   addSubtypes: z.array(z.string()).default([]),
   sizeCategoryChange: SizeCategorySchema.optional(),
+  hitDieOverride: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]).optional(),
+  hdMultiplier: z.number().positive().optional(),
+  bonusHitDice: z.number().int().nonnegative().optional(),
   abilityScoreModifiers: z
     .object({
       str: z.number().int().optional(),
@@ -186,16 +247,209 @@ export const DnD35TemplateSchema = z.object({
       cha: z.number().int().optional()
     })
     .default({}),
+  minimumIntelligence: z.number().int().positive().optional(),
   naturalArmorBonusDelta: z.number().int().default(0),
+  sizeTieredNaturalArmor: z.record(SizeCategorySchema, z.number().int().nonnegative()).optional(),
   damageReduction: DnD35DamageReductionSchema.optional(),
   energyResistance: z.record(z.string(), z.number().int().nonnegative()).default({}),
-  immunities: z.array(DnD35DamageTypeSchema).default([]),
+  energyResistances: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  hdTieredScaling: z.array(DnD35TemplateHdTierSchema).optional(),
+  spellResistanceFormula: z
+    .object({
+      base: z.number().int().nonnegative(),
+      perHitDie: z.number().int().nonnegative(),
+      max: z.number().int().positive().optional()
+    })
+    .optional(),
+  immunities: z.array(z.string()).default([]),
   spellResistanceBonus: z.number().int().nonnegative().optional(),
   grantedFeats: z.array(z.string()).default([]),
   grantedTags: z.array(z.string()).default([]),
+  grantedNaturalWeapons: z.array(NaturalWeaponDescriptorSchema).optional(),
+  stripNaturalArmor: z.boolean().optional(),
+  deflectionBonusFromChaMinOne: z.boolean().optional(),
   levelAdjustmentDelta: z.number().int().default(0)
 });
 export type DnD35Template = z.infer<typeof DnD35TemplateSchema>;
+
+/** Zod schema for a racial conditional modifier (e.g. +4 dodge vs giants). */
+export const DnD35RacialConditionalModifierSchema = z.object({
+  id: z.string(),
+  target: z.string(),
+  value: z.number(),
+  type: z.enum([
+    'alchemical',
+    'armor',
+    'base',
+    'circumstance',
+    'competence',
+    'deflection',
+    'dodge',
+    'enhancement',
+    'form_override',
+    'inherent',
+    'insight',
+    'luck',
+    'morale',
+    'natural_armor',
+    'profane',
+    'racial',
+    'resistance',
+    'sacred',
+    'shield',
+    'size',
+    'size_step',
+    'untyped'
+  ]),
+  condition: z.object({
+    selfTagsAll: z.array(z.string()).optional(),
+    selfTagsAny: z.array(z.string()).optional(),
+    selfTagsNone: z.array(z.string()).optional(),
+    targetTagsAll: z.array(z.string()).optional(),
+    targetTagsAny: z.array(z.string()).optional(),
+    targetTagsNone: z.array(z.string()).optional(),
+    effectTagsAny: z.array(z.string()).optional()
+  })
+});
+export type DnD35RacialConditionalModifier = z.infer<typeof DnD35RacialConditionalModifierSchema>;
+
+/** Zod schema for a playable or monstrous race definition (`races.json`). */
+export const DnD35RaceDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  creatureType: z.string().default('humanoid'),
+  subtypes: z.array(z.string()).default([]),
+  size: SizeCategorySchema.default('medium'),
+  baseLandSpeedFt: z.number().int().positive().default(30),
+  unencumberedSpeedInHeavyArmor: z.boolean().default(false),
+  abilityAdjustments: z
+    .object({
+      str: z.number().int().default(0),
+      dex: z.number().int().default(0),
+      con: z.number().int().default(0),
+      int: z.number().int().default(0),
+      wis: z.number().int().default(0),
+      cha: z.number().int().default(0)
+    })
+    .default({}),
+  darkvisionFt: z.number().int().nonnegative().optional(),
+  lowLightVision: z.boolean().optional(),
+  naturalArmorBonus: z.number().int().nonnegative().optional(),
+  racialHitDice: z
+    .object({
+      count: z.number().int().positive(),
+      hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
+      babCurve: BabCurveIdSchema,
+      fortCurve: SaveCurveIdSchema,
+      refCurve: SaveCurveIdSchema,
+      willCurve: SaveCurveIdSchema,
+      skillPointsPerLevel: z.number().int().nonnegative()
+    })
+    .optional(),
+  levelAdjustment: z.number().int().nonnegative().default(0),
+  favoredClass: z.string().default('fighter'),
+  bonusFeatAtFirstLevel: z.boolean().default(false),
+  extraSkillPointsFirstLevel: z.number().int().nonnegative().default(0),
+  extraSkillPointsPerLevel: z.number().int().nonnegative().default(0),
+  spellResistanceFormula: z
+    .object({
+      base: z.number().int().nonnegative(),
+      perHitDie: z.number().int().nonnegative()
+    })
+    .optional(),
+  energyResistances: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  saveBonuses: z
+    .object({
+      fort: z.number().int().optional(),
+      ref: z.number().int().optional(),
+      will: z.number().int().optional()
+    })
+    .optional(),
+  conditionalModifiers: z.array(DnD35RacialConditionalModifierSchema).default([]),
+  weaponFamiliarityIds: z.array(z.string()).default([]),
+  automaticLanguages: z.array(z.string()).default(['common'])
+});
+export type DnD35RaceDefinition = z.infer<typeof DnD35RaceDefinitionSchema>;
+
+/** Zod schema for one of the 15 SRD Creature Type Racial HD engines (`creature_types.json`). */
+export const DnD35CreatureTypeEngineSchema = z.object({
+  typeId: z.string(),
+  name: z.string(),
+  hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
+  babCurve: BabCurveIdSchema,
+  fortCurve: SaveCurveIdSchema,
+  refCurve: SaveCurveIdSchema,
+  willCurve: SaveCurveIdSchema,
+  skillPointsPerLevel: z.number().int().nonnegative(),
+  defaultTraits: z.array(z.string()).default([]),
+  immunities: z.array(z.string()).default([]),
+  hasConstitutionScore: z.boolean().default(true),
+  hasIntelligenceScore: z.boolean().default(true),
+  constructBonusHpBySize: z.record(SizeCategorySchema, z.number().int().nonnegative()).optional()
+});
+export type DnD35CreatureTypeEngine = z.infer<typeof DnD35CreatureTypeEngineSchema>;
+
+/** Zod schema for True Dragon 12 age categories and varieties (`dragon_families.json`). */
+export const DnD35DragonAgeCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  ageIndex: z.number().int().min(1).max(12),
+  hdDeltaFromWyrmling: z.number().int().nonnegative(),
+  strDelta: z.number().int().nonnegative(),
+  dexDelta: z.number().int(),
+  conDelta: z.number().int().nonnegative(),
+  intDelta: z.number().int().nonnegative(),
+  wisDelta: z.number().int().nonnegative(),
+  chaDelta: z.number().int().nonnegative(),
+  naturalArmorDelta: z.number().int().nonnegative(),
+  breathDiceCount: z.number().int().positive(),
+  frightfulPresence: z.boolean().default(false),
+  spellResistance: z.number().int().nonnegative().optional(),
+  cr: z.number().positive()
+});
+export type DnD35DragonAgeCategory = z.infer<typeof DnD35DragonAgeCategorySchema>;
+
+export const DnD35DragonVarietySchema = z.object({
+  varietyId: z.string(),
+  name: z.string(),
+  alignment: z.string(),
+  subtypes: z.array(z.string()).default([]),
+  wyrmlingBase: z.object({
+    sizeCategory: SizeCategorySchema,
+    hitDice: z.number().int().positive(),
+    abilityScores: RawAbilityScoresSchema,
+    naturalArmorBonus: z.number().int().nonnegative(),
+    flySpeedFt: z.number().int().positive(),
+    cr: z.number().positive()
+  }),
+  sizeProgression: z.record(z.string(), SizeCategorySchema),
+  breathWeapon: z.object({
+    shape: z.enum(['cone', 'line']),
+    rangeFtAtMedium: z.number().int().positive(),
+    damageType: DnD35DamageTypeSchema,
+    dieType: z.union([z.literal('d4'), z.literal('d6'), z.literal('d8'), z.literal('d10')]),
+    saveType: z.enum(['fort', 'ref', 'will'])
+  }),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([])
+});
+export type DnD35DragonVariety = z.infer<typeof DnD35DragonVarietySchema>;
+
+export const DnD35ElementalStepSchema = z.object({
+  stepId: z.string(),
+  name: z.string(),
+  hitDice: z.number().int().positive(),
+  sizeCategory: SizeCategorySchema,
+  cr: z.number().positive()
+});
+export type DnD35ElementalStep = z.infer<typeof DnD35ElementalStepSchema>;
+
+export const DnD35DragonFamiliesDataSchema = z.object({
+  ageCategories: z.record(z.string(), DnD35DragonAgeCategorySchema),
+  varieties: z.record(z.string(), DnD35DragonVarietySchema),
+  elementalSteps: z.record(z.string(), DnD35ElementalStepSchema)
+});
+export type DnD35DragonFamiliesData = z.infer<typeof DnD35DragonFamiliesDataSchema>;
 
 /** Zod schema for a declarative skill definition (`skills.json`). */
 export const DnD35SkillDefinitionSchema = z.object({
@@ -258,7 +512,10 @@ export const DnD35SystemContentSchema = z.object({
   skills: z.record(z.string(), DnD35SkillDefinitionSchema).default({}),
   feats: z.record(z.string(), DnD35FeatDefinitionSchema).default({}),
   spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({}),
-  templates: z.record(z.string(), DnD35TemplateSchema).default({})
+  templates: z.record(z.string(), DnD35TemplateSchema).default({}),
+  races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),
+  creatureTypes: z.record(z.string(), DnD35CreatureTypeEngineSchema).default({}),
+  dragonFamilies: DnD35DragonFamiliesDataSchema.optional()
 });
 /** Inferred type for D&D 3.5e System Content registries. */
 export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;

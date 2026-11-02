@@ -12,8 +12,10 @@ import { addComponent, getComponent, removeComponent } from '../../core/ecs.ts';
 import type {
   CreatureSizeCategory,
   DnD35EntityData,
-  NaturalWeaponDescriptor
+  NaturalWeaponDescriptor,
+  StatModifier
 } from './types/dnd35e.types.ts';
+import { SIZE_METRICS } from './spatial/grid_geometry.ts';
 
 /** Number of combat rounds in 1 hour (`600`). */
 const ROUNDS_PER_HOUR = 600;
@@ -213,6 +215,7 @@ export function resolveEffectiveEntityDataWithOverlays(
   let sizeCategory = baseData.sizeCategory;
   let creatureType = baseData.creatureType;
   let movementModes = baseData.movementModes;
+  const overlayModifiers: StatModifier[] = [...(baseData.statModifiers ?? [])];
 
   for (const layer of layersToApply) {
     const overrides = layer.statOverrides;
@@ -227,11 +230,27 @@ export function resolveEffectiveEntityDataWithOverlays(
       }
       if (overrides['naturalArmorBonus'] !== undefined) {
         naturalArmorBonus = overrides['naturalArmorBonus']!;
+        overlayModifiers.push({
+          targetStat: 'natural_armor',
+          value: naturalArmorBonus,
+          bonusType: 'form_override',
+          sourceId: `${layer.source}:natural_armor`,
+          sourcePath: `${layer.source}/natural_armor`,
+          origin: 'ex'
+        });
       }
     }
 
     if (layer.sizeCategoryOverride !== undefined) {
       sizeCategory = layer.sizeCategoryOverride as CreatureSizeCategory;
+      overlayModifiers.push({
+        targetStat: 'size',
+        value: SIZE_METRICS[sizeCategory].rankIndex,
+        bonusType: 'form_override',
+        sourceId: `${layer.source}:size`,
+        sourcePath: `${layer.source}/size:${sizeCategory}`,
+        origin: 'su'
+      });
     }
     if (layer.creatureTypeOverride !== undefined) {
       creatureType = layer.creatureTypeOverride;
@@ -246,6 +265,7 @@ export function resolveEffectiveEntityDataWithOverlays(
     abilityScores: nextScores,
     naturalArmorBonus,
     sizeCategory,
+    statModifiers: overlayModifiers,
     ...(creatureType !== undefined ? { creatureType } : {}),
     ...(movementModes !== undefined ? { movementModes } : {})
   };

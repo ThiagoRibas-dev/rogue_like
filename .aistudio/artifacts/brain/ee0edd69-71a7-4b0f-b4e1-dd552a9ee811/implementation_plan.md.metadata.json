@@ -1,6 +1,6 @@
 {
-  "summary":  "Comprehensive implementation plan to upgrade the Campaign Editor for full 2-tier / 3-tier ruleset integration: ruleset-aware 'New Campaign' modal, bundled campaign browser on the splash screen, dynamic viewgroup resolution in sidebar/workspace, archetypeId dropdown resolution in forms, and ruleset system content hydration.",
-  "updatedAt":  "2026-10-31T17:44:50.330318196Z",
+  "summary":  "Enhanced implementation plan for the D&D 3.5e 4-Stage Sub-Stat DAG (size -> ability_scores -> compound_defenses -> combat_stats), Size as a Stage 1 Sub-Stat and Effect Provider, Orthogonal OriginLayer Classification, and Winner/Shadowed/Suppressed Provenance Breakdown. Includes the full Cascading Effects Matrix and exact code snippets/diffs.",
+  "updatedAt":  "2026-11-02T00:31:36.125671964Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

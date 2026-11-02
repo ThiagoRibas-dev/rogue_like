@@ -1,5 +1,11 @@
 import { addComponent, getComponent } from '../../core/ecs.ts';
-import type { DnD35Archetype } from './types/dnd35e_system.types.ts';
+import type {
+  DnD35Archetype,
+  DnD35CreatureTypeEngine,
+  DnD35DragonFamiliesData,
+  DnD35RaceDefinition,
+  DnD35Template
+} from './types/dnd35e_system.types.ts';
 import {
   ComponentType,
   type EquipmentComponent,
@@ -10,8 +16,83 @@ import {
   type TemplateComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { createAbilityScoreState } from './abilities.ts';
-import type { AbilityScoresRecord, DnD35DamageType, DnD35EntityData } from './types/dnd35e.types.ts';
+import { computeAbilityModifier, computeEffectiveAbilityScore, createAbilityScoreState } from './abilities.ts';
+import { synthesizeElementalArchetype, synthesizeTrueDragonArchetype } from './family_synthesizer.ts';
+import { appendSourcePath } from './modifiers.ts';
+import type {
+  AbilityScoresRecord,
+  CreatureSizeCategory,
+  DnD35DamageType,
+  DnD35EntityData,
+  StatModifier
+} from './types/dnd35e.types.ts';
+
+/** Canonical SRD Construct Bonus HP by Size emitted by the `type:construct` Effect Provider. */
+export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly< Partial<Record<CreatureSizeCategory, number>> > = {
+  small: 10,
+  medium: 20,
+  large: 30,
+  huge: 40,
+  gargantuan: 60,
+  colossal: 80
+};
+
+/**
+ * Emits declarative `StatModifier` entries for an actor's Creature Type (`type:construct` bonus HP by size)
+ * and Subtypes (`subtype:incorporeal` Charisma deflection AC bonus, min +1), tagging each modifier with its
+ * hierarchical `sourcePath` lineage.
+ *
+ * @param creatureType Optional creature type ID (`'construct'`, `'undead'`, etc.).
+ * @param subtypes Optional array of creature subtypes (`'incorporeal'`, etc.).
+ * @param chaModifier Resolved Charisma modifier of the actor.
+ * @param parentSourcePath Optional parent provenance path (e.g. `'template:ghost'` or `'archetype:iron_golem'`).
+ * @returns Array of declarative `StatModifier` entries.
+ */
+export function buildCreatureTypeAndSubtypeModifiers(
+  creatureType: string | undefined,
+  subtypes: ReadonlyArray<string> | undefined,
+  chaModifier = 0,
+  parentSourcePath?: string
+): ReadonlyArray<StatModifier> {
+  const mods: StatModifier[] = [];
+
+  if (creatureType === 'construct') {
+    const typePath = appendSourcePath(parentSourcePath, 'type:construct/trait:construct_bonus_hp');
+    for (const [sizeKey, bonusHp] of Object.entries(CONSTRUCT_BONUS_HP_BY_SIZE)) {
+      if (bonusHp !== undefined && bonusHp > 0) {
+        mods.push({
+          targetStat: 'max_hp',
+          value: bonusHp,
+          bonusType: 'untyped',
+          sourceId: `type:construct:bonus_hp:${sizeKey}`,
+          sourcePath: typePath,
+          origin: 'ex',
+          condition: {
+            selfTagsAll: ['type:construct', `size:${sizeKey}`]
+          }
+        });
+      }
+    }
+  }
+
+  if (subtypes && subtypes.includes('incorporeal')) {
+    const incorporealDeflection = Math.max(1, chaModifier);
+    const subtypePath = appendSourcePath(parentSourcePath, 'subtype:incorporeal/deflection_ac');
+    mods.push({
+      targetStat: 'ac',
+      value: incorporealDeflection,
+      bonusType: 'deflection',
+      sourceId: 'subtype:incorporeal:deflection_ac',
+      sourcePath: subtypePath,
+      origin: 'su',
+      condition: {
+        selfTagsAll: ['subtype:incorporeal']
+      }
+    });
+  }
+
+  return mods;
+}
 
 /**
  * Helper to construct a 6-Ability Score record from raw base scores (`number | null`).
@@ -62,10 +143,20 @@ export function hydrateArchetypeData(archetype: DnD35Archetype, levelOverride?: 
         }
       : undefined;
 
+  const abilityScores = buildAbilityScoresRecord(archetype.abilityScores);
+  const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(abilityScores.cha));
+  const subtypes = archetype.subtypes ?? [];
+  const providerMods = buildCreatureTypeAndSubtypeModifiers(
+    archetype.creatureType,
+    subtypes,
+    chaMod,
+    `archetype:${archetype.archetypeId}`
+  );
+
   return {
     archetypeId: archetype.archetypeId,
     sizeCategory: archetype.sizeCategory,
-    abilityScores: buildAbilityScoresRecord(archetype.abilityScores),
+    abilityScores,
     tracks,
     weaponDice: archetype.weaponDice,
     weaponDamageType: archetype.weaponDamageType,
@@ -87,11 +178,28 @@ export function hydrateArchetypeData(archetype: DnD35Archetype, levelOverride?: 
     feats: archetype.feats,
     skillRanks: archetype.skillRanks,
     ...(archetype.creatureType !== undefined ? { creatureType: archetype.creatureType } : {}),
-    subtypes: archetype.subtypes ?? [],
+    subtypes,
     levelAdjustment: archetype.levelAdjustment ?? 0,
+    ...(archetype.senses !== undefined ? { senses: archetype.senses } : {}),
+    ...(archetype.movementModes !== undefined
+      ? {
+          movementModes: {
+            land: archetype.movementModes.land,
+            ...(archetype.movementModes.burrow !== undefined ? { burrow: archetype.movementModes.burrow } : {}),
+            ...(archetype.movementModes.climb !== undefined ? { climb: archetype.movementModes.climb } : {}),
+            ...(archetype.movementModes.fly !== undefined ? { fly: archetype.movementModes.fly } : {}),
+            ...(archetype.movementModes.swim !== undefined ? { swim: archetype.movementModes.swim } : {}),
+            ...(archetype.movementModes.maneuverability !== undefined
+              ? { maneuverability: archetype.movementModes.maneuverability }
+              : {})
+          }
+        }
+      : {}),
+    ...(archetype.anatomyBodyPlan !== undefined ? { anatomyBodyPlan: archetype.anatomyBodyPlan } : {}),
     naturalWeapons: archetype.naturalWeapons ?? [],
     hasPounce: archetype.hasPounce ?? false,
-    singleActionsOnly: archetype.singleActionsOnly ?? false
+    singleActionsOnly: archetype.singleActionsOnly ?? false,
+    statModifiers: providerMods
   };
 }
 
@@ -125,7 +233,7 @@ export function projectDnD35ActorSemanticTags(
  * Retrieves or deterministically hydrates `DnD35EntityData` for an entity from:
  * 1. Its live `ComponentType.RulesetData` slice (`rulesetId === 'dnd35e'`),
  * 2. Its campaign `EntityTemplate` (`archetypeId` / `id` + optional `rulesetData` override)
- *    looked up in `state.campaign.systemContent?.archetypes` (`public/data/rulesets/dnd35e/archetypes.json`),
+ *    looked up via `getDnD35Archetype` (supporting both `archetypes.json` and synthesized Dragons/Elementals),
  * 3. Its `IdentityComponent` name matching a registered system archetype key, or
  * 4. Dynamic derivation from its `FighterComponent`.
  *
@@ -148,18 +256,21 @@ export function getDnD35EntityData(state: GameState, entityId: EntityId): DnD35E
   const entityTemplate = templateComp ? state.campaign.entities[templateComp.templateId] : undefined;
   const explicitArchetypeKey = entityTemplate?.archetypeId ?? (isPlayer ? 'player' : entityTemplate?.id);
 
-  if (explicitArchetypeKey && systemArchetypes[explicitArchetypeKey] !== undefined) {
-    const baseData = hydrateArchetypeData(
-      systemArchetypes[explicitArchetypeKey]!,
-      isPlayer ? Math.max(1, fighter?.level ?? 1) : undefined
-    );
-    if (entityTemplate?.rulesetData) {
-      return {
-        ...baseData,
-        ...(entityTemplate.rulesetData as Partial<DnD35EntityData>)
-      };
+  if (explicitArchetypeKey) {
+    const resolvedArchetype = getDnD35Archetype(state.campaign.systemContent, explicitArchetypeKey);
+    if (resolvedArchetype !== undefined) {
+      const baseData = hydrateArchetypeData(
+        resolvedArchetype,
+        isPlayer ? Math.max(1, fighter?.level ?? 1) : undefined
+      );
+      if (entityTemplate?.rulesetData) {
+        return {
+          ...baseData,
+          ...(entityTemplate.rulesetData as Partial<DnD35EntityData>)
+        };
+      }
+      return baseData;
     }
-    return baseData;
   }
 
   const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
@@ -287,4 +398,81 @@ export function resolveDamageTypeFromTags(tags: ReadonlyArray<string>): DnD35Dam
     if (tags.includes(t)) return t;
   }
   return tags.includes('physical') ? 'slashing' : 'untyped';
+}
+
+/**
+ * Resolves an SRD race definition from campaign system content.
+ */
+export function getDnD35Race(
+  systemContent: Record<string, unknown> | undefined,
+  raceId: string
+): DnD35RaceDefinition | undefined {
+  const races = systemContent?.['races'] as Record<string, DnD35RaceDefinition> | undefined;
+  return races?.[raceId];
+}
+
+/**
+ * Resolves an SRD creature template from campaign system content.
+ */
+export function getDnD35Template(
+  systemContent: Record<string, unknown> | undefined,
+  templateId: string
+): DnD35Template | undefined {
+  const templates = systemContent?.['templates'] as Record<string, DnD35Template> | undefined;
+  return templates?.[templateId];
+}
+
+/**
+ * Resolves an SRD creature type engine definition from campaign system content.
+ */
+export function getDnD35CreatureTypeEngine(
+  systemContent: Record<string, unknown> | undefined,
+  typeId: string
+): DnD35CreatureTypeEngine | undefined {
+  const types = systemContent?.['creatureTypes'] as Record<string, DnD35CreatureTypeEngine> | undefined;
+  return types?.[typeId];
+}
+
+/**
+ * Resolves a DnD35Archetype by ID, automatically synthesizing True Dragons
+ * (`dragon_<variety>_<age>`) or Elementals (`elemental_<element>_<step>`) if not explicitly pre-authored.
+ */
+export function getDnD35Archetype(
+  systemContent: Record<string, unknown> | undefined,
+  archetypeId: string
+): DnD35Archetype | undefined {
+  const archetypes = systemContent?.['archetypes'] as Record<string, DnD35Archetype> | undefined;
+  if (archetypes?.[archetypeId]) {
+    return archetypes[archetypeId];
+  }
+
+  const dragonFamilies = systemContent?.['dragonFamilies'] as DnD35DragonFamiliesData | undefined;
+
+  if (dragonFamilies) {
+    if (archetypeId.startsWith('dragon_')) {
+      const parts = archetypeId.split('_');
+      // Format: dragon_<variety>_<age...>
+      if (parts.length >= 3) {
+        const varietyId = parts[1]!;
+        const ageCategoryId = parts.slice(2).join('_');
+        if (dragonFamilies.varieties[varietyId] && dragonFamilies.ageCategories[ageCategoryId]) {
+          return synthesizeTrueDragonArchetype(dragonFamilies, varietyId, ageCategoryId);
+        }
+      }
+    }
+
+    if (archetypeId.startsWith('elemental_')) {
+      const parts = archetypeId.split('_');
+      // Format: elemental_<element>_<step>
+      if (parts.length >= 3) {
+        const elementId = parts[1] as 'air' | 'earth' | 'fire' | 'water';
+        const stepId = parts.slice(2).join('_');
+        if (dragonFamilies.elementalSteps[stepId]) {
+          return synthesizeElementalArchetype(dragonFamilies, elementId, stepId);
+        }
+      }
+    }
+  }
+
+  return undefined;
 }

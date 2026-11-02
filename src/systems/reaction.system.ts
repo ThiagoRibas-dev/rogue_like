@@ -34,8 +34,13 @@ export function getEntityMatcherData(state: GameState, entityId: EntityId): Enti
 
 /**
  * Condition specification for tag-based matching on an entity or combat context.
+ * Supports self-tags (actor's own size/type/subtype/stance/load tags), target-tags (opponent tags),
+ * and effect-tags (spell/damage/save descriptor tags).
  */
 export interface EntityTagCondition {
+  readonly selfTagsAll?: ReadonlyArray<string> | undefined;
+  readonly selfTagsAny?: ReadonlyArray<string> | undefined;
+  readonly selfTagsNone?: ReadonlyArray<string> | undefined;
   readonly targetTagsAll?: ReadonlyArray<string> | undefined;
   readonly targetTagsAny?: ReadonlyArray<string> | undefined;
   readonly targetTagsNone?: ReadonlyArray<string> | undefined;
@@ -44,14 +49,48 @@ export interface EntityTagCondition {
 }
 
 /**
- * Checks if target tags and effect tags satisfy an EntityTagCondition.
- * Evaluates targetTagsAll (conjunction), targetTagsAny (disjunction), targetTagsNone (negation), and effectTagsAny.
+ * Checks if self tags, target tags, and effect tags satisfy an EntityTagCondition.
+ * Evaluates selfTagsAll/Any/None, targetTagsAll/Any/None, and effectTagsAny.
+ *
+ * @param condition The tag condition to evaluate.
+ * @param targetTags Optional tags of the opponent/target entity.
+ * @param effectTags Optional tags of the incoming/outgoing effect or attack.
+ * @param selfTags Optional tags of the subject entity itself (e.g., `size:large`, `type:construct`).
+ * @returns True if all specified conditions are satisfied.
  */
 export function matchesEntityTagCondition(
   condition: EntityTagCondition,
   targetTags?: ReadonlyArray<string> | undefined,
-  effectTags?: ReadonlyArray<string> | undefined
+  effectTags?: ReadonlyArray<string> | undefined,
+  selfTags?: ReadonlyArray<string> | undefined
 ): boolean {
+  if (condition.selfTagsAll && condition.selfTagsAll.length > 0) {
+    if (!selfTags) return false;
+    for (const tag of condition.selfTagsAll) {
+      if (!selfTags.includes(tag)) return false;
+    }
+  }
+
+  if (condition.selfTagsAny && condition.selfTagsAny.length > 0) {
+    if (!selfTags) return false;
+    let match = false;
+    for (const tag of condition.selfTagsAny) {
+      if (selfTags.includes(tag)) {
+        match = true;
+        break;
+      }
+    }
+    if (!match) return false;
+  }
+
+  if (condition.selfTagsNone && condition.selfTagsNone.length > 0) {
+    if (selfTags) {
+      for (const tag of condition.selfTagsNone) {
+        if (selfTags.includes(tag)) return false;
+      }
+    }
+  }
+
   if (condition.targetTagsAll && condition.targetTagsAll.length > 0) {
     if (!targetTags) return false;
     for (const tag of condition.targetTagsAll) {

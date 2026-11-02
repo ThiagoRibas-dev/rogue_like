@@ -66,6 +66,7 @@
   "orc": {
     "spriteId": "monster_orc",
     "id": "orc",
+    "archetypeId": "orc",
     "name": "Orc",
     "glyph": "o",
     "fg": "#2ecc71",
@@ -92,6 +93,7 @@
   "goblin": {
     "spriteId": "monster_goblin",
     "id": "goblin",
+    "archetypeId": "goblin",
     "name": "Goblin",
     "glyph": "g",
     "fg": "#84e6ad",
