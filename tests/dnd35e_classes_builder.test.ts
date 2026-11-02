@@ -11,8 +11,11 @@ import {
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
   calculateSkillAllocationCost,
+  collectActiveGrantedAndVirtualFeats,
+  computeNpcClassCrContribution,
   ELITE_ABILITY_ARRAY,
   getSkillMaxRanks,
+  NONELITE_ABILITY_ARRAY,
   POINT_BUY_PRESETS,
   rollAbilityScores4d6DropLowest,
   validateSpecialistSchoolSelection
@@ -24,19 +27,21 @@ import {
   getClassLevelRow,
   resolveActiveClassFeatures
 } from '../src/rulesets/dnd35e/progression.ts';
+import { buildSkillRankThresholdModifiers } from '../src/rulesets/dnd35e/skills.ts';
 import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType, type FighterComponent } from '../src/types/components.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
-describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & Character Builder', () => {
-  it('loads and validates all 11 Base Classes, 10 Prestige Classes, and 22 Cleric Domains via split JSONs', () => {
+describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, ACFs, Domains & Character Builder', () => {
+  it('loads and validates all 11 Base PC Classes, 5 NPC Classes, 10 Prestige Classes, and 22 Cleric Domains via split JSONs', () => {
     const campaign = loadCampaignFromDisk('dnd35e-crypt');
     const sys = getDnD35SystemContent(campaign);
     expect(sys).not.toBeNull();
     if (!sys) return;
 
-    const baseClasses = Object.values(sys.classes).filter((c) => !c.isPrestige);
+    const baseClasses = Object.values(sys.classes).filter((c) => !c.isPrestige && !c.isNpcClass);
+    const npcClasses = Object.values(sys.classes).filter((c) => c.isNpcClass);
     const prestigeClasses = Object.values(sys.classes).filter((c) => c.isPrestige);
 
     expect(baseClasses.map((c) => c.id).sort()).toEqual([
@@ -53,6 +58,14 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & 
       'wizard'
     ]);
 
+    expect(npcClasses.map((c) => c.id).sort()).toEqual([
+      'adept',
+      'aristocrat',
+      'commoner',
+      'expert',
+      'warrior'
+    ]);
+
     expect(prestigeClasses.map((c) => c.id).sort()).toEqual([
       'arcane_archer',
       'assassin',
@@ -67,9 +80,13 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & 
     ]);
 
     expect(Object.keys(sys.domains).length).toBe(22);
+    for (const dom of Object.values(sys.domains)) {
+      expect(dom.grantedPowerBundle).toBeDefined();
+      expect(dom.grantedPowerBundle?.bundleId).toBe(`domain_power_${dom.id}`);
+    }
 
-    // Every base class has maxLevel 20 and progression array with 20 rows
-    for (const cls of baseClasses) {
+    // Every base PC and NPC class has maxLevel 20 and progression array with 20 rows
+    for (const cls of [...baseClasses, ...npcClasses]) {
       expect(cls.maxLevel).toBe(20);
       expect(cls.progression).toBeDefined();
       expect(cls.progression.length).toBe(20);
@@ -459,5 +476,114 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & 
     const postDrainFighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
     expect(postDrainFighter.level).toBe(5);
     expect(postDrainFighter.attack).toBe(4); // Fighter 4 (4) + Rogue 1 (0) = 4
+  });
+
+  it('evaluates NPC Class CR scaling, Domain grantedPowerBundle atomic suppression, Ranger virtualFeatGrants with activationCondition, and Skill rankThresholdModifiers', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign);
+    expect(sys).not.toBeNull();
+    if (!sys) return;
+
+    // 1. NPC Class CR scaling & Nonelite Ability Array
+    expect(NONELITE_ABILITY_ARRAY).toEqual([13, 12, 11, 10, 9, 8]);
+    expect(computeNpcClassCrContribution(1, false)).toBe(0.5);
+    expect(computeNpcClassCrContribution(3, false)).toBe(2);
+    expect(computeNpcClassCrContribution(2, true)).toBe(1.0); // +0.5 CR per level on monsters with RHD
+
+    // 2. Domain grantedPowerBundle atomic suppression (e.g. Ordained Champion trading War domain power for a Fighter feat)
+    const clericTrack = {
+      trackId: 'cleric',
+      trackCategory: 'pc' as const,
+      levels: 1,
+      hitDieSides: 8 as const,
+      babCurve: 'three_quarters' as const,
+      fortCurve: 'good' as const,
+      refCurve: 'poor' as const,
+      willCurve: 'good' as const,
+      skillPointsPerLevel: 2
+    };
+    const warFeatsActive = collectActiveGrantedAndVirtualFeats(
+      [clericTrack],
+      [],
+      ['war'],
+      sys.classes,
+      sys.domains,
+      []
+    );
+    expect(warFeatsActive).toContain('weapon_focus');
+
+    const warFeatsSuppressed = collectActiveGrantedAndVirtualFeats(
+      [clericTrack],
+      [],
+      ['war'],
+      sys.classes,
+      sys.domains,
+      ['domain_power_war']
+    );
+    expect(warFeatsSuppressed).not.toContain('weapon_focus');
+
+    const chaosModsActive = buildClassAndDomainEffectModifiers(
+      [clericTrack],
+      [],
+      ['chaos'],
+      sys.classes,
+      sys.domains,
+      []
+    );
+    expect(chaosModsActive.length).toBeGreaterThan(0);
+
+    const chaosModsSuppressed = buildClassAndDomainEffectModifiers(
+      [clericTrack],
+      [],
+      ['chaos'],
+      sys.classes,
+      sys.domains,
+      ['domain_power_chaos']
+    );
+    expect(chaosModsSuppressed.length).toBe(0);
+
+    // 3. Ranger combat_style_1 virtualFeatGrants (ignorePrerequisites: true) & activationCondition (deactivates in medium/heavy armor)
+    const rangerTrack = {
+      trackId: 'ranger',
+      trackCategory: 'pc' as const,
+      levels: 2,
+      hitDieSides: 8 as const,
+      babCurve: 'full' as const,
+      fortCurve: 'good' as const,
+      refCurve: 'good' as const,
+      willCurve: 'poor' as const,
+      skillPointsPerLevel: 6
+    };
+    const rangerLightArmorFeats = collectActiveGrantedAndVirtualFeats(
+      [rangerTrack],
+      [],
+      [],
+      sys.classes,
+      sys.domains,
+      [],
+      ['armor:light']
+    );
+    expect(rangerLightArmorFeats).toContain('track');
+    expect(rangerLightArmorFeats).toContain('two_weapon_fighting');
+
+    const rangerHeavyArmorFeats = collectActiveGrantedAndVirtualFeats(
+      [rangerTrack],
+      [],
+      [],
+      sys.classes,
+      sys.domains,
+      [],
+      ['armor:heavy']
+    );
+    expect(rangerHeavyArmorFeats).toContain('track');
+    expect(rangerHeavyArmorFeats).not.toContain('two_weapon_fighting');
+
+    // 4. Skill actions & rankThresholdModifiers (5+ ranks in Tumble unlocks +1 dodge AC when fighting defensively)
+    expect(sys.skills['tumble']?.actions.length).toBeGreaterThanOrEqual(2);
+    const tumbleBelow5 = buildSkillRankThresholdModifiers({ tumble: 4 }, sys.skills);
+    expect(tumbleBelow5.length).toBe(0);
+    const tumbleAt5 = buildSkillRankThresholdModifiers({ tumble: 5 }, sys.skills);
+    expect(tumbleAt5.length).toBe(1);
+    expect(tumbleAt5[0]?.sourcePath).toBe('skill:tumble/threshold:5/tumble_5_ranks_fight_defensively_ac');
   });
 });

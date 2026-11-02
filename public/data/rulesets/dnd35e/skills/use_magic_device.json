@@ -1,0 +1,31 @@
+{
+  "use_magic_device": {
+    "id": "use_magic_device",
+    "name": "Use Magic Device",
+    "keyAbility": "cha",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "activate_wand",
+        "name": "Use a Wand",
+        "actionCost": "standard",
+        "dc": 20,
+        "description": "Activate a wand or other spell trigger item as if its spell were on your class spell list.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "use_scroll",
+        "name": "Use a Scroll",
+        "actionCost": "standard",
+        "dc": 21,
+        "description": "Activate a spell completion scroll (DC 20 + caster level).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

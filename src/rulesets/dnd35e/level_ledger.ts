@@ -9,7 +9,13 @@ import {
   collectClassFeaturesUpToLevel,
   computeXpThresholdForLevel
 } from './progression.ts';
-import { getDnD35EntityData, setDnD35EntityData } from './srd_registry.ts';
+import {
+  evaluateEffectBundle,
+  getDnD35EntityData,
+  isActivationConditionMet,
+  projectDnD35ActorSemanticTags,
+  setDnD35EntityData
+} from './srd_registry.ts';
 import type {
   AbilityScoresRecord,
   DnD35CharacterLevelRecord,
@@ -72,6 +78,76 @@ export function buildNegativeLevelModifiers(negativeLevels: number): ReadonlyArr
 }
 
 /**
+ * Collects all active granted and virtual feats from class features and domain granted power bundles,
+ * respecting `suppressedBundleIds` and `activationCondition` tag checks (e.g. Ranger Combat Style in light/no armor).
+ *
+ * @param tracks The actor's HitDieTrack array.
+ * @param selectedAcfs Selected ACF IDs.
+ * @param domains Selected domain IDs.
+ * @param classRegistry Full class registry.
+ * @param domainRegistry Full domain registry.
+ * @param suppressedBundleIds Optional list of suppressed bundle or feature IDs.
+ * @param activeSelfTags Optional semantic self-tags projected by the actor.
+ * @returns Deduplicated array of granted feat IDs.
+ */
+export function collectActiveGrantedAndVirtualFeats(
+  tracks: ReadonlyArray<HitDieTrack>,
+  selectedAcfs: ReadonlyArray<string>,
+  domains: ReadonlyArray<string>,
+  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>,
+  domainRegistry: Readonly<Record<string, DnD35DomainDefinition>>,
+  suppressedBundleIds: ReadonlyArray<string> = [],
+  activeSelfTags?: ReadonlyArray<string>
+): ReadonlyArray<string> {
+  const granted = new Set<string>();
+
+  for (const track of tracks) {
+    const classDef = classRegistry[track.trackId];
+    if (!classDef) continue;
+    const activeFeatures = collectClassFeaturesUpToLevel(classDef, track.levels, selectedAcfs);
+    for (const featId of activeFeatures) {
+      if (suppressedBundleIds.includes(featId)) continue;
+      const detail = classDef.featureDetails[featId];
+      if (!detail) continue;
+      if (!isActivationConditionMet(detail.activationCondition, activeSelfTags)) continue;
+
+      for (const gf of detail.grantedFeats ?? []) {
+        granted.add(gf);
+      }
+      for (const vf of detail.virtualFeatGrants ?? []) {
+        granted.add(vf.featId);
+      }
+    }
+  }
+
+  for (const domainId of domains) {
+    const domainDef = domainRegistry[domainId];
+    if (!domainDef) continue;
+    if (domainDef.grantedPowerBundle) {
+      if (suppressedBundleIds.includes(domainDef.grantedPowerBundle.bundleId)) continue;
+      const evalRes = evaluateEffectBundle(
+        domainDef.grantedPowerBundle,
+        appendSourcePath('class:cleric', `domain:${domainDef.id}`),
+        suppressedBundleIds,
+        activeSelfTags
+      );
+      for (const gf of evalRes.grantedFeats) {
+        granted.add(gf);
+      }
+      for (const f of domainDef.featGrants) {
+        granted.add(f);
+      }
+    } else {
+      for (const f of domainDef.featGrants) {
+        granted.add(f);
+      }
+    }
+  }
+
+  return Array.from(granted);
+}
+
+/**
  * Builds class and domain Effect Provider StatModifiers with hierarchical sourcePath provenance.
  *
  * @param tracks The actor's HitDieTrack array.
@@ -79,6 +155,8 @@ export function buildNegativeLevelModifiers(negativeLevels: number): ReadonlyArr
  * @param domains Selected domain IDs.
  * @param classRegistry Full class registry.
  * @param domainRegistry Full domain registry.
+ * @param suppressedBundleIds Optional list of suppressed bundle or feature IDs.
+ * @param activeSelfTags Optional semantic self-tags projected by the actor.
  * @returns Array of synthesized StatModifier instances.
  */
 export function buildClassAndDomainEffectModifiers(
@@ -86,7 +164,9 @@ export function buildClassAndDomainEffectModifiers(
   selectedAcfs: ReadonlyArray<string>,
   domains: ReadonlyArray<string>,
   classRegistry: Readonly<Record<string, DnD35ClassDefinition>>,
-  domainRegistry: Readonly<Record<string, DnD35DomainDefinition>>
+  domainRegistry: Readonly<Record<string, DnD35DomainDefinition>>,
+  suppressedBundleIds: ReadonlyArray<string> = [],
+  activeSelfTags?: ReadonlyArray<string>
 ): ReadonlyArray<StatModifier> {
   const modifiers: StatModifier[] = [];
 
@@ -95,10 +175,17 @@ export function buildClassAndDomainEffectModifiers(
     if (!classDef) continue;
     const activeFeatures = collectClassFeaturesUpToLevel(classDef, track.levels, selectedAcfs);
     for (const featId of activeFeatures) {
+      if (suppressedBundleIds.includes(featId)) continue;
       const detail = classDef.featureDetails[featId];
-      if (!detail || detail.modifiers.length === 0) continue;
+      if (!detail) continue;
+      if (!isActivationConditionMet(detail.activationCondition, activeSelfTags)) continue;
+
       const featureRoot = appendSourcePath(`class:${classDef.id}`, `feature:${featId}`);
       for (const mod of detail.modifiers) {
+        const mergedCondition =
+          detail.activationCondition !== undefined && mod.condition !== undefined
+            ? { ...detail.activationCondition, ...mod.condition }
+            : (detail.activationCondition ?? mod.condition);
         modifiers.push({
           targetStat: mod.target,
           value: mod.value,
@@ -106,7 +193,7 @@ export function buildClassAndDomainEffectModifiers(
           sourceId: `class:${classDef.id}:${mod.id}`,
           sourcePath: appendSourcePath(featureRoot, mod.id),
           origin: detail.category === 'su' ? 'su' : detail.category === 'sp' ? 'sp' : 'ex',
-          ...(mod.condition !== undefined ? { condition: mod.condition } : {})
+          ...(mergedCondition !== undefined ? { condition: mergedCondition } : {})
         });
       }
     }
@@ -114,18 +201,28 @@ export function buildClassAndDomainEffectModifiers(
 
   for (const domainId of domains) {
     const domainDef = domainRegistry[domainId];
-    if (!domainDef || domainDef.modifiers.length === 0) continue;
+    if (!domainDef) continue;
     const domainRoot = appendSourcePath('class:cleric', `domain:${domainDef.id}`);
-    for (const mod of domainDef.modifiers) {
-      modifiers.push({
-        targetStat: mod.target,
-        value: mod.value,
-        bonusType: mod.type,
-        sourceId: `domain:${domainDef.id}:${mod.id}`,
-        sourcePath: appendSourcePath(domainRoot, mod.id),
-        origin: 'su',
-        ...(mod.condition !== undefined ? { condition: mod.condition } : {})
-      });
+    if (domainDef.grantedPowerBundle) {
+      const evalRes = evaluateEffectBundle(
+        domainDef.grantedPowerBundle,
+        domainRoot,
+        suppressedBundleIds,
+        activeSelfTags
+      );
+      modifiers.push(...evalRes.statModifiers);
+    } else {
+      for (const mod of domainDef.modifiers) {
+        modifiers.push({
+          targetStat: mod.target,
+          value: mod.value,
+          bonusType: mod.type,
+          sourceId: `domain:${domainDef.id}:${mod.id}`,
+          sourcePath: appendSourcePath(domainRoot, mod.id),
+          origin: 'su',
+          ...(mod.condition !== undefined ? { condition: mod.condition } : {})
+        });
+      }
     }
   }
 
@@ -171,8 +268,6 @@ export function rebuildActorStateFromLevelHistory(
 
   // Replay ability score increases from history
   const baseAbilities: AbilityScoresRecord = currentData.abilityScores;
-  // Clear any existing level-based ability increases by starting from base or replaying
-  // (In our system, AbilityScoreState.base is stored; we add 1 for each recorded increase in levelHistory)
   const abilityIncreases: Record<string, number> = { str: 0, dex: 0, con: 0, int: 0, wis: 0, cha: 0 };
   for (const rec of levelHistory) {
     if (rec.abilityScoreIncrease) {
@@ -195,12 +290,21 @@ export function rebuildActorStateFromLevelHistory(
     for (const sp of rec.learnedSpells) spellsSet.add(sp);
   }
 
-  // Add domain granted feats
-  for (const domId of currentData.domains ?? []) {
-    const dom = sysContent.domains[domId];
-    if (dom) {
-      for (const f of dom.featGrants) featsSet.add(f);
-    }
+  const selectedAcfs = Array.from(acfsSet);
+  const suppressedIds = currentData.suppressedBundleIds ?? [];
+  const activeTags = projectDnD35ActorSemanticTags(currentData);
+
+  const bundleGrantedFeats = collectActiveGrantedAndVirtualFeats(
+    nextTracks,
+    selectedAcfs,
+    currentData.domains ?? [],
+    sysContent.classes,
+    sysContent.domains,
+    suppressedIds,
+    activeTags
+  );
+  for (const f of bundleGrantedFeats) {
+    featsSet.add(f);
   }
 
   // Strip old class, domain, and negative-level modifiers and rebuild
@@ -209,13 +313,14 @@ export function rebuildActorStateFromLevelHistory(
     return !sp.startsWith('class:') && !sp.startsWith('domain:') && !sp.startsWith('condition:negative_level');
   });
 
-  const selectedAcfs = Array.from(acfsSet);
   const classAndDomainMods = buildClassAndDomainEffectModifiers(
     nextTracks,
     selectedAcfs,
     currentData.domains ?? [],
     sysContent.classes,
-    sysContent.domains
+    sysContent.domains,
+    suppressedIds,
+    activeTags
   );
   const negMods = buildNegativeLevelModifiers(currentData.negativeLevels ?? 0);
 

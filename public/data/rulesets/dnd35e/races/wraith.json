@@ -1,0 +1,95 @@
+{
+  "wraith": {
+    "id": "wraith",
+    "name": "Wraith",
+    "creatureType": "undead",
+    "subtypes": [
+      "incorporeal"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": null,
+      "dex": 6,
+      "con": null,
+      "int": 4,
+      "wis": 4,
+      "cha": 4
+    },
+    "defaultAbilityScores": {
+      "str": null,
+      "dex": 16,
+      "con": null,
+      "int": 14,
+      "wis": 14,
+      "cha": 15
+    },
+    "naturalArmorBonus": 0,
+    "rhdProgression": {
+      "baseHdCount": 5,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "incorporeal_touch",
+        "name": "Incorporeal Touch",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "negative",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "negative",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "magic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "blind_fight",
+      "combat_reflexes",
+      "improved_initiative"
+    ],
+    "skillRanks": {
+      "diplomacy": 6,
+      "hide": 8,
+      "intimidate": 8,
+      "listen": 10,
+      "search": 8,
+      "sense_motive": 8,
+      "spot": 10
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 5
+  }
+}

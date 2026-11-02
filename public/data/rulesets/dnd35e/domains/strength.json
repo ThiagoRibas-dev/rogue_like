@@ -1,0 +1,57 @@
+{
+  "strength": {
+    "id": "strength",
+    "name": "Strength",
+    "grantedPowerDescription": "Feat of Strength 1/day: gain an enhancement bonus to Strength equal to your cleric level for 1 round as a free action.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_strength",
+      "name": "Strength Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Feat of Strength 1/day: gain an enhancement bonus to Strength equal to your cleric level for 1 round as a free action.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:strength"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_strength_power",
+          "name": "Strength Granted Power",
+          "actionCost": "free",
+          "usageLimitPoolId": "domain_feat_of_strength"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_feat_of_strength",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_feat_of_strength",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "enlarge_person",
+      "2": "bulls_strength",
+      "3": "magic_vestment",
+      "4": "spell_immunity",
+      "5": "righteous_might",
+      "6": "stoneskin",
+      "7": "grasping_hand",
+      "8": "clenched_fist",
+      "9": "crushing_hand"
+    }
+  }
+}

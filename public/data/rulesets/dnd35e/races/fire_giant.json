@@ -1,0 +1,87 @@
+{
+  "fire_giant": {
+    "id": "fire_giant",
+    "name": "Fire Giant",
+    "creatureType": "giant",
+    "subtypes": [
+      "fire"
+    ],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 20,
+      "dex": -2,
+      "con": 10,
+      "int": 0,
+      "wis": 4,
+      "cha": 0
+    },
+    "defaultAbilityScores": {
+      "str": 31,
+      "dex": 9,
+      "con": 21,
+      "int": 10,
+      "wis": 14,
+      "cha": 11
+    },
+    "naturalArmorBonus": 8,
+    "rhdProgression": {
+      "baseHdCount": 15,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [
+      "fire"
+    ],
+    "vulnerabilities": [
+      "cold"
+    ],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "3d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 6,
+    "shieldBonus": 0,
+    "feats": [
+      "cleave",
+      "great_cleave",
+      "improved_overrun",
+      "improved_sunder",
+      "iron_will",
+      "power_attack"
+    ],
+    "skillRanks": {
+      "climb": 9,
+      "craft": 6,
+      "intimidate": 6,
+      "jump": 9,
+      "spot": 12
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 10
+  }
+}

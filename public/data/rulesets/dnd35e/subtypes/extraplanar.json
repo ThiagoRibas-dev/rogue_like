@@ -1,0 +1,15 @@
+{
+  "extraplanar": {
+    "subtypeId": "extraplanar",
+    "name": "Extraplanar Subtype",
+    "description": "Creature is native to another plane of existence and subject to banishment/dismissal.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:extraplanar"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

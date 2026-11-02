@@ -1,0 +1,29 @@
+{
+  "concentration": {
+    "id": "concentration",
+    "name": "Concentration",
+    "keyAbility": "con",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "cast_defensively",
+        "name": "Cast Defensively",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Cast a spell or use a spell-like ability without provoking attacks of opportunity (DC 15 + spell level).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": [
+          {
+            "id": "cast_defensively_no_aoo",
+            "ruleKey": "provokes_cast_aoo",
+            "value": false,
+            "priority": 20
+          }
+        ]
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

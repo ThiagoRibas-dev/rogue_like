@@ -1,0 +1,15 @@
+{
+  "goblinoid": {
+    "subtypeId": "goblinoid",
+    "name": "Goblinoid Subtype",
+    "description": "Stealthy humanoid of the goblin, hobgoblin, or bugbear kin.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:goblinoid"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

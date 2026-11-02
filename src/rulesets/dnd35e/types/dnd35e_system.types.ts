@@ -66,7 +66,8 @@ export const DnD35ProgressionTrackSchema = z.object({
   fortCurve: SaveCurveIdSchema,
   refCurve: SaveCurveIdSchema,
   willCurve: SaveCurveIdSchema,
-  skillPointsPerLevel: z.number().int().nonnegative()
+  skillPointsPerLevel: z.number().int().nonnegative(),
+  trackCategory: z.enum(['racial_hd', 'pc', 'npc', 'prestige']).optional()
 });
 /** Inferred type for a declarative progression track. */
 export type DnD35ProgressionTrack = z.infer<typeof DnD35ProgressionTrackSchema>;
@@ -130,7 +131,7 @@ export const DnD35AdvancementRangeSchema = z.object({
 });
 export type DnD35AdvancementRange = z.infer<typeof DnD35AdvancementRangeSchema>;
 
-/** Zod schema for sensory profile on an archetype. */
+/** Zod schema for sensory profile on an archetype or race. */
 export const DnD35SensoryProfileSchema = z.object({
   lowLightVision: z.boolean().default(false),
   darkvisionRangeFt: z.number().int().nonnegative().default(0),
@@ -139,8 +140,9 @@ export const DnD35SensoryProfileSchema = z.object({
   tremorsenseRangeFt: z.number().int().nonnegative().default(0),
   scentRangeFt: z.number().int().nonnegative().default(0)
 });
+export type DnD35SensoryProfile = z.infer<typeof DnD35SensoryProfileSchema>;
 
-/** Zod schema for multi-mode movement speeds on an archetype. */
+/** Zod schema for multi-mode movement speeds on an archetype or race. */
 export const DnD35MovementModesSchema = z.object({
   land: z.number().int().nonnegative().default(30),
   burrow: z.number().int().nonnegative().optional(),
@@ -149,8 +151,9 @@ export const DnD35MovementModesSchema = z.object({
   swim: z.number().int().nonnegative().optional(),
   maneuverability: z.enum(['clumsy', 'poor', 'average', 'good', 'perfect']).optional()
 });
+export type DnD35MovementModes = z.infer<typeof DnD35MovementModesSchema>;
 
-/** Zod schema for a declarative System Content creature/character archetype (`archetypes.json`). */
+/** Zod schema for a declarative System Content creature/character archetype (`archetypes.json` or hydrated from `races/<id>.json`). */
 export const DnD35ArchetypeSchema = z.object({
   archetypeId: z.string(),
   sizeCategory: SizeCategorySchema,
@@ -190,7 +193,7 @@ export type DnD35Archetype = z.infer<typeof DnD35ArchetypeSchema>;
 export const DnD35AlignmentSchema = z.enum(['LG', 'NG', 'CG', 'LN', 'N', 'CN', 'LE', 'NE', 'CE']);
 export type DnD35AlignmentSchemaType = z.infer<typeof DnD35AlignmentSchema>;
 
-/** Zod schema for a declarative Effect Provider modifier entry on a class feature, domain, or race. */
+/** Zod schema for a declarative Effect Provider modifier entry on a class feature, domain, feat, or race. */
 export const DnD35DeclarativeModifierSchema = z.object({
   id: z.string(),
   target: z.string(),
@@ -233,6 +236,88 @@ export const DnD35DeclarativeModifierSchema = z.object({
 });
 export type DnD35DeclarativeModifier = z.infer<typeof DnD35DeclarativeModifierSchema>;
 
+/** Zod schema for a declarative Rule Override entry inside an Effect Bundle. */
+export const DnD35RuleOverrideEntrySchema = z.object({
+  id: z.string(),
+  ruleKey: z.string(),
+  value: z.union([z.boolean(), z.number(), z.string()]),
+  priority: z.number().int().default(10)
+});
+export type DnD35RuleOverrideEntry = z.infer<typeof DnD35RuleOverrideEntrySchema>;
+
+/** Zod schema for a structured or virtual feat grant (e.g., Ranger Combat Style or Monk Bonus Feats that bypass prerequisites). */
+export const DnD35FeatGrantDescriptorSchema = z.object({
+  featId: z.string(),
+  ignorePrerequisites: z.boolean().default(false)
+});
+export type DnD35FeatGrantDescriptor = z.infer<typeof DnD35FeatGrantDescriptorSchema>;
+
+/** Zod schema for an activated, toggled, variable-dial, or spell-like ability granted by an Effect Bundle. */
+export const DnD35ActivatedAbilityDescriptorSchema = z.object({
+  abilityId: z.string(),
+  name: z.string(),
+  actionCost: z.enum(['standard', 'move', 'full_round', 'swift', 'immediate', 'free', 'none']).default('standard'),
+  usageLimitPoolId: z.string().optional(),
+  spellLikeSpellId: z.string().optional(),
+  casterLevelFormula: z.enum(['character_level', 'class_level', 'racial_hd', 'half_class_level', 'fixed_1']).optional(),
+  variableDial: z
+    .object({
+      min: z.number().int().nonnegative().default(0),
+      maxCapRule: z.enum(['bab', 'fixed_5', 'class_level']),
+      attackDeltaPerPoint: z.number().default(0),
+      damageDeltaPerPoint: z.number().default(0),
+      acDeltaPerPoint: z.number().default(0)
+    })
+    .optional()
+});
+export type DnD35ActivatedAbilityDescriptor = z.infer<typeof DnD35ActivatedAbilityDescriptorSchema>;
+
+/**
+ * Universal Zod schema for a named, atomic Effect Bundle (`DnD35EffectBundleSchema`).
+ * Reusable across Feats, Class Features, ACFs, Domain Granted Powers, Racial Traits,
+ * Creature Types, Subtypes, and Templates.
+ */
+export const DnD35EffectBundleSchema = z.object({
+  bundleId: z.string(),
+  name: z.string(),
+  category: z
+    .enum(['ex', 'su', 'sp', 'trait', 'domain_power', 'feat', 'class_feature', 'acf', 'proficiency'])
+    .default('trait'),
+  usageMode: z.enum(['passive', 'activated', 'toggle', 'variable_dial', 'spell_like', 'triggered']).default('passive'),
+  description: z.string().optional(),
+  activationCondition: z
+    .object({
+      selfTagsAll: z.array(z.string()).optional(),
+      selfTagsAny: z.array(z.string()).optional(),
+      selfTagsNone: z.array(z.string()).optional()
+    })
+    .optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  grantedTags: z.array(z.string()).default([]),
+  grantedFeats: z.array(z.string()).default([]),
+  virtualFeatGrants: z.array(DnD35FeatGrantDescriptorSchema).default([]),
+  bonusFeatPool: z.array(z.string()).optional(),
+  classSkillsAdded: z.array(z.string()).default([]),
+  grantedSenses: DnD35SensoryProfileSchema.optional(),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([]),
+  energyResistances: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  damageReduction: DnD35DamageReductionSchema.optional(),
+  spellResistance: z.number().int().nonnegative().optional(),
+  activatedAbilities: z.array(DnD35ActivatedAbilityDescriptorSchema).default([]),
+  resourcePool: z
+    .object({
+      poolId: z.string(),
+      maxBase: z.number().int().nonnegative(),
+      perClassLevel: z.number().nonnegative().optional(),
+      abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+    })
+    .optional()
+});
+export type DnD35EffectBundle = z.infer<typeof DnD35EffectBundleSchema>;
+
 /** Recursive Zod schema for PrerequisiteNode ASTs (`prerequisites.ts`). */
 export const PrerequisiteNodeSchema: z.ZodType<PrerequisiteNode> = z.lazy(() =>
   z.discriminatedUnion('type', [
@@ -265,8 +350,20 @@ export const DnD35ClassFeatureDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
   category: z.enum(['ex', 'su', 'sp', 'bonus_feat', 'proficiency', 'caster_advancement']).default('ex'),
+  usageMode: z.enum(['passive', 'activated', 'toggle', 'variable_dial', 'spell_like', 'triggered']).default('passive'),
   description: z.string().optional(),
+  activationCondition: z
+    .object({
+      selfTagsAll: z.array(z.string()).optional(),
+      selfTagsAny: z.array(z.string()).optional(),
+      selfTagsNone: z.array(z.string()).optional()
+    })
+    .optional(),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  grantedFeats: z.array(z.string()).default([]),
+  virtualFeatGrants: z.array(DnD35FeatGrantDescriptorSchema).default([]),
+  activatedAbilities: z.array(DnD35ActivatedAbilityDescriptorSchema).default([]),
   resourcePool: z
     .object({
       poolId: z.string(),
@@ -288,15 +385,17 @@ export const DnD35AcfSwapSchema = z.object({
   grantedFeature: z.string(),
   level: z.number().int().positive(),
   description: z.string().optional(),
-  modifiers: z.array(DnD35DeclarativeModifierSchema).default([])
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  effectBundle: DnD35EffectBundleSchema.optional()
 });
 export type DnD35AcfSwap = z.infer<typeof DnD35AcfSwapSchema>;
 
-/** Zod schema for a Cleric Domain definition (`domains.json`). */
+/** Zod schema for a Cleric Domain definition (`domains.json` & `domains/<id>.json`). */
 export const DnD35DomainDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   grantedPowerDescription: z.string(),
+  grantedPowerBundle: DnD35EffectBundleSchema.optional(),
   classSkillsAdded: z.array(z.string()).default([]),
   featGrants: z.array(z.string()).default([]),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
@@ -335,6 +434,7 @@ export const DnD35ClassDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   isPrestige: z.boolean().default(false),
+  isNpcClass: z.boolean().default(false),
   maxLevel: z.number().int().positive().default(20),
   hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
   skillPointsPerLevel: z.number().int().nonnegative(),
@@ -382,6 +482,7 @@ export const DnD35TemplateSchema = z.object({
   hitDieOverride: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]).optional(),
   hdMultiplier: z.number().positive().optional(),
   bonusHitDice: z.number().int().nonnegative().optional(),
+  stripClassLevels: z.boolean().optional(),
   abilityScoreModifiers: z
     .object({
       str: z.number().int().optional(),
@@ -411,6 +512,7 @@ export const DnD35TemplateSchema = z.object({
   grantedFeats: z.array(z.string()).default([]),
   grantedTags: z.array(z.string()).default([]),
   grantedNaturalWeapons: z.array(NaturalWeaponDescriptorSchema).optional(),
+  specialQualityBundles: z.array(DnD35EffectBundleSchema).default([]),
   stripNaturalArmor: z.boolean().optional(),
   deflectionBonusFromChaMinOne: z.boolean().optional(),
   levelAdjustmentDelta: z.number().int().default(0)
@@ -458,16 +560,14 @@ export const DnD35RacialConditionalModifierSchema = z.object({
 });
 export type DnD35RacialConditionalModifier = z.infer<typeof DnD35RacialConditionalModifierSchema>;
 
-/** Zod schema for a playable or monstrous race definition (`races.json`). */
-export const DnD35RaceDefinitionSchema = z.object({
-  id: z.string(),
+/** Zod schema for a single tier in a race's RHD progression ladder (e.g. Dragon age category or Elemental size step). */
+export const DnD35ProgressionTierSchema = z.object({
+  tierId: z.string(),
   name: z.string(),
-  creatureType: z.string().default('humanoid'),
-  subtypes: z.array(z.string()).default([]),
-  size: SizeCategorySchema.default('medium'),
-  baseLandSpeedFt: z.number().int().positive().default(30),
-  unencumberedSpeedInHeavyArmor: z.boolean().default(false),
-  abilityAdjustments: z
+  tierIndex: z.number().int().positive(),
+  hitDice: z.number().int().positive(),
+  sizeCategory: SizeCategorySchema,
+  abilityAdjustmentsDelta: z
     .object({
       str: z.number().int().default(0),
       dex: z.number().int().default(0),
@@ -477,9 +577,58 @@ export const DnD35RaceDefinitionSchema = z.object({
       cha: z.number().int().default(0)
     })
     .default({}),
+  naturalArmorBonusDelta: z.number().int().default(0),
+  breathDiceCount: z.number().int().positive().optional(),
+  frightfulPresence: z.boolean().default(false),
+  spellResistance: z.number().int().nonnegative().optional(),
+  damageReduction: DnD35DamageReductionSchema.optional(),
+  unlockedNaturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  cr: z.number().positive()
+});
+export type DnD35ProgressionTier = z.infer<typeof DnD35ProgressionTierSchema>;
+
+/** Zod schema for a creature's Racial Hit Dice (RHD) progression track (`rhdProgression` on `DnD35RaceDefinitionSchema`). */
+export const DnD35RhdProgressionSchema = z.object({
+  baseHdCount: z.number().int().nonnegative().default(0),
+  saveCurveOverrides: z
+    .object({
+      fortCurve: SaveCurveIdSchema.optional(),
+      refCurve: SaveCurveIdSchema.optional(),
+      willCurve: SaveCurveIdSchema.optional()
+    })
+    .optional(),
+  advancementRanges: z.array(DnD35AdvancementRangeSchema).default([]),
+  tiers: z.array(DnD35ProgressionTierSchema).default([])
+});
+export type DnD35RhdProgression = z.infer<typeof DnD35RhdProgressionSchema>;
+
+/** Zod schema for a unified playable or monstrous race definition (`races/<id>.json`). */
+export const DnD35RaceDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  creatureType: z.string().default('humanoid'),
+  subtypes: z.array(z.string()).default([]),
+  alignment: z.string().optional(),
+  size: SizeCategorySchema.default('medium'),
+  baseLandSpeedFt: z.number().int().nonnegative().default(30),
+  movementModes: DnD35MovementModesSchema.optional(),
+  unencumberedSpeedInHeavyArmor: z.boolean().default(false),
+  abilityAdjustments: z
+    .object({
+      str: z.number().int().nullable().default(0),
+      dex: z.number().int().nullable().default(0),
+      con: z.number().int().nullable().default(0),
+      int: z.number().int().nullable().default(0),
+      wis: z.number().int().nullable().default(0),
+      cha: z.number().int().nullable().default(0)
+    })
+    .default({}),
+  defaultAbilityScores: RawAbilityScoresSchema.optional(),
+  senses: DnD35SensoryProfileSchema.optional(),
   darkvisionFt: z.number().int().nonnegative().optional(),
   lowLightVision: z.boolean().optional(),
   naturalArmorBonus: z.number().int().nonnegative().optional(),
+  rhdProgression: DnD35RhdProgressionSchema.default({}),
   racialHitDice: z
     .object({
       count: z.number().int().positive(),
@@ -491,6 +640,14 @@ export const DnD35RaceDefinitionSchema = z.object({
       skillPointsPerLevel: z.number().int().nonnegative()
     })
     .optional(),
+  defaultClassLevels: z
+    .array(
+      z.object({
+        classId: z.string(),
+        levels: z.number().int().positive()
+      })
+    )
+    .default([]),
   levelAdjustment: z.number().int().nonnegative().default(0),
   favoredClass: z.string().default('fighter'),
   bonusFeatAtFirstLevel: z.boolean().default(false),
@@ -502,7 +659,11 @@ export const DnD35RaceDefinitionSchema = z.object({
       perHitDie: z.number().int().nonnegative()
     })
     .optional(),
+  spellResistance: z.number().int().nonnegative().optional(),
+  damageReduction: DnD35DamageReductionSchema.optional(),
   energyResistances: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([]),
   saveBonuses: z
     .object({
       fort: z.number().int().optional(),
@@ -511,12 +672,36 @@ export const DnD35RaceDefinitionSchema = z.object({
     })
     .optional(),
   conditionalModifiers: z.array(DnD35RacialConditionalModifierSchema).default([]),
+  traitBundles: z.array(DnD35EffectBundleSchema).default([]),
   weaponFamiliarityIds: z.array(z.string()).default([]),
-  automaticLanguages: z.array(z.string()).default(['common'])
+  automaticLanguages: z.array(z.string()).default(['common']),
+  anatomyBodyPlan: z.enum(['humanoid_biped', 'quadruped', 'marilith_6arm', 'avian', 'serpentine']).optional(),
+  naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  weaponDice: z.string().optional(),
+  weaponDamageType: DnD35DamageTypeSchema.optional(),
+  weaponCritThreatMin: z.number().int().min(1).max(20).optional(),
+  weaponCritMultiplier: z.number().int().min(2).max(4).optional(),
+  weaponBypassTags: z.array(z.string()).optional(),
+  armorBonus: z.number().int().nonnegative().optional(),
+  shieldBonus: z.number().int().nonnegative().optional(),
+  feats: z.array(z.string()).default([]),
+  skillRanks: z.record(z.string(), z.number().nonnegative()).default({}),
+  hasPounce: z.boolean().default(false),
+  singleActionsOnly: z.boolean().default(false),
+  breathWeapon: z
+    .object({
+      shape: z.enum(['cone', 'line']),
+      rangeFtAtMedium: z.number().int().positive(),
+      damageType: DnD35DamageTypeSchema,
+      dieType: z.union([z.literal('d4'), z.literal('d6'), z.literal('d8'), z.literal('d10')]),
+      saveType: z.enum(['fort', 'ref', 'will'])
+    })
+    .optional(),
+  cr: z.number().optional()
 });
 export type DnD35RaceDefinition = z.infer<typeof DnD35RaceDefinitionSchema>;
 
-/** Zod schema for one of the 15 SRD Creature Type Racial HD engines (`creature_types.json`). */
+/** Zod schema for one of the 15 SRD Creature Type Racial HD engines (`creature_types/<id>.json`). */
 export const DnD35CreatureTypeEngineSchema = z.object({
   typeId: z.string(),
   name: z.string(),
@@ -525,14 +710,49 @@ export const DnD35CreatureTypeEngineSchema = z.object({
   fortCurve: SaveCurveIdSchema,
   refCurve: SaveCurveIdSchema,
   willCurve: SaveCurveIdSchema,
+  goodSaveBySubtype: z
+    .record(
+      z.string(),
+      z.object({
+        fortCurve: SaveCurveIdSchema,
+        refCurve: SaveCurveIdSchema,
+        willCurve: SaveCurveIdSchema
+      })
+    )
+    .optional(),
   skillPointsPerLevel: z.number().int().nonnegative(),
   defaultTraits: z.array(z.string()).default([]),
   immunities: z.array(z.string()).default([]),
   hasConstitutionScore: z.boolean().default(true),
   hasIntelligenceScore: z.boolean().default(true),
+  nonabilities: z.array(z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha'])).default([]),
+  weaponProficiencies: z.array(z.string()).default(['natural']),
+  armorProficiencies: z.array(z.string()).default([]),
+  physiology: z
+    .object({
+      eats: z.boolean().default(true),
+      breathes: z.boolean().default(true),
+      sleeps: z.boolean().default(true)
+    })
+    .default({}),
+  traitBundles: z.array(DnD35EffectBundleSchema).default([]),
   constructBonusHpBySize: z.record(SizeCategorySchema, z.number().int().nonnegative()).optional()
 });
 export type DnD35CreatureTypeEngine = z.infer<typeof DnD35CreatureTypeEngineSchema>;
+
+/** Zod schema for a modular Creature Subtype definition (`subtypes/<id>.json`). */
+export const DnD35SubtypeDefinitionSchema = z.object({
+  subtypeId: z.string(),
+  name: z.string(),
+  description: z.string(),
+  immunities: z.array(z.string()).default([]),
+  vulnerabilities: z.array(z.string()).default([]),
+  grantedTags: z.array(z.string()).default([]),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  traitBundles: z.array(DnD35EffectBundleSchema).default([])
+});
+export type DnD35SubtypeDefinition = z.infer<typeof DnD35SubtypeDefinitionSchema>;
 
 /** Zod schema for True Dragon 12 age categories and varieties (`dragon_families.json`). */
 export const DnD35DragonAgeCategorySchema = z.object({
@@ -596,25 +816,51 @@ export const DnD35DragonFamiliesDataSchema = z.object({
 });
 export type DnD35DragonFamiliesData = z.infer<typeof DnD35DragonFamiliesDataSchema>;
 
-/** Zod schema for a declarative skill definition (`skills.json`). */
+/** Zod schema for a declarative Skill Action inside a skill definition (`skills/<id>.json`). */
+export const DnD35SkillActionDescriptorSchema = z.object({
+  actionId: z.string(),
+  name: z.string(),
+  actionCost: z.enum(['none', 'free', 'move', 'standard', 'full_round', 'part_of_movement']),
+  dc: z.number().int().optional(),
+  opposedBySkill: z.string().optional(),
+  description: z.string(),
+  onSuccessModifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  onSuccessRuleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([])
+});
+export type DnD35SkillActionDescriptor = z.infer<typeof DnD35SkillActionDescriptorSchema>;
+
+/** Zod schema for a declarative skill definition (`skills/<id>.json`). */
 export const DnD35SkillDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   keyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
   trainedOnly: z.boolean().default(false),
   acpMultiplier: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
-  synergyFromSkills: z.array(z.string()).default([])
+  synergyFromSkills: z.array(z.string()).default([]),
+  actions: z.array(DnD35SkillActionDescriptorSchema).default([]),
+  rankThresholdModifiers: z
+    .array(
+      z.object({
+        minRanks: z.number().int().positive(),
+        modifiers: z.array(DnD35DeclarativeModifierSchema)
+      })
+    )
+    .default([])
 });
 /** Inferred type for a declarative skill definition. */
 export type DnD35SkillDefinition = z.infer<typeof DnD35SkillDefinitionSchema>;
 
-/** Zod schema for a declarative feat definition (`feats.json`). */
+/** Zod schema for a declarative feat definition (`feats.json` & `feats/<id>.json`). */
 export const DnD35FeatDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
   isFighterBonusFeat: z.boolean().default(false),
-  prerequisites: PrerequisiteNodeSchema.optional()
+  prerequisites: PrerequisiteNodeSchema.optional(),
+  effectBundle: DnD35EffectBundleSchema.optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  activatedAbilities: z.array(DnD35ActivatedAbilityDescriptorSchema).default([])
 });
 /** Inferred type for a declarative feat definition. */
 export type DnD35FeatDefinition = z.infer<typeof DnD35FeatDefinitionSchema>;
@@ -661,6 +907,7 @@ export const DnD35SystemContentSchema = z.object({
   templates: z.record(z.string(), DnD35TemplateSchema).default({}),
   races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),
   creatureTypes: z.record(z.string(), DnD35CreatureTypeEngineSchema).default({}),
+  subtypes: z.record(z.string(), DnD35SubtypeDefinitionSchema).default({}),
   dragonFamilies: DnD35DragonFamiliesDataSchema.optional()
 });
 /** Inferred type for D&D 3.5e System Content registries. */

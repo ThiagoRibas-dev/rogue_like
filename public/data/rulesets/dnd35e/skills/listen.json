@@ -1,0 +1,22 @@
+{
+  "listen": {
+    "id": "listen",
+    "name": "Listen",
+    "keyAbility": "wis",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "listen_stealth",
+        "name": "Listen for Approaching Footsteps",
+        "actionCost": "none",
+        "opposedBySkill": "move_silently",
+        "description": "Reactive or active check to hear creatures moving silently.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

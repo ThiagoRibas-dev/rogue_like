@@ -5,6 +5,7 @@ import type {
   DnD35Archetype,
   DnD35DamageType,
   DnD35DragonFamiliesData,
+  DnD35RaceDefinition,
   NaturalWeaponDescriptor
 } from './types/dnd35e_system.types.ts';
 
@@ -26,7 +27,7 @@ export interface GolemMagicInteractionResult {
  * - Stone Golem: Stone to Flesh bypasses; Rock to Mud slows 1 round.
  * - Iron Golem: Fire heals 1 HP per 3 damage; Rusting Grasp affects normally; Electricity slows 3 rounds.
  *
- * @param golemArchetypeId Golem archetype ID ('flesh_golem', 'clay_golem', 'stone_golem', 'iron_golem').
+ * @param golemArchetypeId Golem race/archetype ID ('flesh_golem', 'clay_golem', 'stone_golem', 'iron_golem').
  * @param spellTags Array of spell tags (e.g. ['fire', 'electricity', 'acid', 'cold', 'earth']).
  * @param spellDamageAmount Potential incoming magic damage before immunity check.
  * @returns GolemMagicInteractionResult.
@@ -104,25 +105,250 @@ export function evaluateGolemMagicInteraction(
 }
 
 /**
- * Synthesizes a canonical SRD True Dragon Archetype from a variety and age category.
- * Unlocks size-gated natural weapons (`wings` >= Medium, `tail_slap` >= Large,
- * `crush` >= Huge, `tail_sweep` >= Gargantuan) and populates multi-mode movement and senses.
+ * Synthesizes a True Dragon `DnD35Archetype` directly from a unified `DnD35RaceDefinition` (`dragon_<variety>`)
+ * and one of its 12 `rhdProgression.tiers` (`wyrmling`..`great_wyrm`), unlocking the tier's
+ * creature-specific `unlockedNaturalWeapons`.
  *
- * @param familiesData Loaded `dragon_families.json` content.
+ * @param dragonRace Unified Dragon race definition (`dragon_red`, `dragon_gold`, etc.).
+ * @param ageCategoryId Age category tier ID (`wyrmling` through `great_wyrm`).
+ * @returns Synthesized `DnD35Archetype`.
+ */
+export function synthesizeDragonFromRaceTier(dragonRace: DnD35RaceDefinition, ageCategoryId: string): DnD35Archetype {
+  const tier = dragonRace.rhdProgression.tiers.find((t) => t.tierId === ageCategoryId);
+  if (!tier) {
+    throw new Error(`Unknown dragon age category "${ageCategoryId}" on race "${dragonRace.id}".`);
+  }
+
+  const targetSize: CreatureSizeCategory = tier.sizeCategory;
+  const sizeRank = SIZE_METRICS[targetSize].rankIndex;
+  const totalHd = tier.hitDice;
+
+  const baseScores = dragonRace.defaultAbilityScores ?? {
+    str: 10 + (dragonRace.abilityAdjustments.str ?? 0),
+    dex: 10 + (dragonRace.abilityAdjustments.dex ?? 0),
+    con: 10 + (dragonRace.abilityAdjustments.con ?? 0),
+    int: 10 + (dragonRace.abilityAdjustments.int ?? 0),
+    wis: 10 + (dragonRace.abilityAdjustments.wis ?? 0),
+    cha: 10 + (dragonRace.abilityAdjustments.cha ?? 0)
+  };
+
+  const abilityScores = {
+    str: (baseScores.str ?? 10) + tier.abilityAdjustmentsDelta.str,
+    dex: Math.max(1, (baseScores.dex ?? 10) + tier.abilityAdjustmentsDelta.dex),
+    con: (baseScores.con ?? 10) + tier.abilityAdjustmentsDelta.con,
+    int: (baseScores.int ?? 10) + tier.abilityAdjustmentsDelta.int,
+    wis: (baseScores.wis ?? 10) + tier.abilityAdjustmentsDelta.wis,
+    cha: (baseScores.cha ?? 10) + tier.abilityAdjustmentsDelta.cha
+  };
+
+  const naturalArmor = (dragonRace.naturalArmorBonus ?? 0) + tier.naturalArmorBonusDelta;
+  const biteDice = scaleWeaponDamageDice('1d8', 'medium', targetSize);
+  const clawDice = scaleWeaponDamageDice('1d6', 'medium', targetSize);
+
+  const scaledBaseWeapons: NaturalWeaponDescriptor[] = [
+    {
+      id: 'bite',
+      name: 'Bite',
+      naturalType: 'bite',
+      isPrimary: true,
+      count: 1,
+      damageDice: biteDice,
+      damageType: 'piercing' as DnD35DamageType,
+      critThreatMin: 20,
+      critMultiplier: 2
+    },
+    {
+      id: 'claw',
+      name: 'Claw',
+      naturalType: 'claw',
+      isPrimary: false,
+      count: 2,
+      damageDice: clawDice,
+      damageType: 'slashing' as DnD35DamageType,
+      critThreatMin: 20,
+      critMultiplier: 2
+    }
+  ];
+
+  const naturalWeapons: NaturalWeaponDescriptor[] = [...scaledBaseWeapons, ...tier.unlockedNaturalWeapons];
+
+  const varietyShortId = dragonRace.id.replace(/^dragon_/, '');
+
+  return {
+    archetypeId: `dragon_${varietyShortId}_${ageCategoryId}`,
+    sizeCategory: targetSize,
+    abilityScores,
+    tracks: [
+      {
+        trackId: 'racial_dragon',
+        levels: totalHd,
+        hitDieSides: 12,
+        babCurve: 'full',
+        fortCurve: 'good',
+        refCurve: 'good',
+        willCurve: 'good',
+        skillPointsPerLevel: 6,
+        trackCategory: 'racial_hd'
+      }
+    ],
+    weaponDice: biteDice,
+    weaponDamageType: 'piercing',
+    weaponCritThreatMin: 20,
+    weaponCritMultiplier: 2,
+    weaponBypassTags: ['magic'],
+    armorBonus: 0,
+    shieldBonus: 0,
+    naturalArmorBonus: naturalArmor,
+    damageReduction: tier.damageReduction,
+    energyResistance: dragonRace.energyResistances ?? {},
+    immunities: dragonRace.immunities,
+    vulnerabilities: dragonRace.vulnerabilities,
+    spellResistance: tier.spellResistance,
+    feats: dragonRace.feats.length > 0 ? dragonRace.feats : ['hover', 'flyby_attack', 'power_attack', 'cleave'],
+    skillRanks: { search: totalHd, spot: totalHd, listen: totalHd },
+    creatureType: 'dragon',
+    subtypes: dragonRace.subtypes,
+    levelAdjustment: 0,
+    senses: dragonRace.senses ?? {
+      lowLightVision: true,
+      darkvisionRangeFt: 120,
+      blindsenseRangeFt: 60,
+      blindsightRangeFt: 0,
+      tremorsenseRangeFt: 0,
+      scentRangeFt: 0
+    },
+    movementModes: {
+      land: dragonRace.movementModes?.land ?? 40,
+      fly: dragonRace.movementModes?.fly ?? 150,
+      maneuverability: sizeRank >= SIZE_METRICS.gargantuan.rankIndex ? 'clumsy' : 'poor'
+    },
+    naturalWeapons,
+    hasPounce: false,
+    singleActionsOnly: false,
+    advancementRanges: [],
+    cr: tier.cr
+  };
+}
+
+/**
+ * Synthesizes an Elemental `DnD35Archetype` directly from a unified `DnD35RaceDefinition` (`elemental_<element>`)
+ * and one of its 6 `rhdProgression.tiers` (`small`, `medium`, `large`, `huge`, `greater`, `elder`).
+ *
+ * @param elementalRace Unified Elemental race definition (`elemental_air`, `elemental_earth`, etc.).
+ * @param stepId Step tier ID (`small` through `elder`).
+ * @returns Synthesized `DnD35Archetype`.
+ */
+export function synthesizeElementalFromRaceTier(elementalRace: DnD35RaceDefinition, stepId: string): DnD35Archetype {
+  const tier = elementalRace.rhdProgression.tiers.find((t) => t.tierId === stepId);
+  if (!tier) {
+    throw new Error(`Unknown elemental step "${stepId}" on race "${elementalRace.id}".`);
+  }
+
+  const baseScores = elementalRace.defaultAbilityScores ?? {
+    str: 10 + (elementalRace.abilityAdjustments.str ?? 0),
+    dex: 10 + (elementalRace.abilityAdjustments.dex ?? 0),
+    con: 10 + (elementalRace.abilityAdjustments.con ?? 0),
+    int: 10 + (elementalRace.abilityAdjustments.int ?? 0),
+    wis: 10 + (elementalRace.abilityAdjustments.wis ?? 0),
+    cha: 10 + (elementalRace.abilityAdjustments.cha ?? 0)
+  };
+
+  const scaledScores = {
+    str: (baseScores.str ?? 10) + tier.abilityAdjustmentsDelta.str,
+    dex: Math.max(1, (baseScores.dex ?? 10) + tier.abilityAdjustmentsDelta.dex),
+    con: (baseScores.con ?? 10) + tier.abilityAdjustmentsDelta.con,
+    int: (baseScores.int ?? 4) + tier.abilityAdjustmentsDelta.int,
+    wis: (baseScores.wis ?? 11) + tier.abilityAdjustmentsDelta.wis,
+    cha: (baseScores.cha ?? 11) + tier.abilityAdjustmentsDelta.cha
+  };
+
+  const elementId = elementalRace.id.replace(/^elemental_/, '');
+  const isHeavyElement = elementId === 'earth' || elementId === 'water';
+  const fortCurve = elementalRace.rhdProgression.saveCurveOverrides?.fortCurve ?? (isHeavyElement ? 'good' : 'poor');
+  const refCurve = elementalRace.rhdProgression.saveCurveOverrides?.refCurve ?? (isHeavyElement ? 'poor' : 'good');
+  const willCurve = elementalRace.rhdProgression.saveCurveOverrides?.willCurve ?? 'poor';
+  const slamWeapon = tier.unlockedNaturalWeapons[0] ?? elementalRace.naturalWeapons[0]!;
+
+  return {
+    archetypeId: `elemental_${elementId}_${stepId}`,
+    sizeCategory: tier.sizeCategory,
+    abilityScores: scaledScores,
+    tracks: [
+      {
+        trackId: 'racial_elemental',
+        levels: tier.hitDice,
+        hitDieSides: 8,
+        babCurve: 'three_quarters',
+        fortCurve,
+        refCurve,
+        willCurve,
+        skillPointsPerLevel: 2,
+        trackCategory: 'racial_hd'
+      }
+    ],
+    weaponDice: slamWeapon.damageDice,
+    weaponDamageType: 'bludgeoning',
+    weaponCritThreatMin: 20,
+    weaponCritMultiplier: 2,
+    weaponBypassTags: ['bludgeoning'],
+    armorBonus: 0,
+    shieldBonus: 0,
+    naturalArmorBonus: (elementalRace.naturalArmorBonus ?? 3) + tier.naturalArmorBonusDelta,
+    damageReduction: tier.damageReduction,
+    energyResistance: elementalRace.energyResistances ?? {},
+    immunities: elementalRace.immunities,
+    vulnerabilities: elementalRace.vulnerabilities,
+    feats: elementalRace.feats.length > 0 ? elementalRace.feats : ['dodge', 'improved_initiative'],
+    skillRanks: { listen: tier.hitDice, spot: tier.hitDice },
+    creatureType: 'elemental',
+    subtypes: elementalRace.subtypes,
+    levelAdjustment: 0,
+    senses: elementalRace.senses ?? {
+      lowLightVision: false,
+      darkvisionRangeFt: 60,
+      blindsenseRangeFt: 0,
+      blindsightRangeFt: 0,
+      tremorsenseRangeFt: elementId === 'earth' ? 60 : 0,
+      scentRangeFt: 0
+    },
+    naturalWeapons: tier.unlockedNaturalWeapons.length > 0 ? tier.unlockedNaturalWeapons : elementalRace.naturalWeapons,
+    hasPounce: false,
+    singleActionsOnly: false,
+    advancementRanges: [],
+    cr: tier.cr
+  };
+}
+
+/**
+ * Synthesizes a canonical SRD True Dragon Archetype from either a unified `races` registry (`Record<string, DnD35RaceDefinition>`)
+ * or legacy `DnD35DragonFamiliesData`.
+ *
+ * @param familiesOrRaces Either `Record<string, DnD35RaceDefinition>`, `{ races: ... }`, or legacy `DnD35DragonFamiliesData`.
  * @param varietyId Dragon variety ID ('red', 'black', 'blue', 'green', 'white', 'gold', 'silver', 'brass', 'bronze', 'copper').
  * @param ageCategoryId Age category ID ('wyrmling' through 'great_wyrm').
  * @returns Synthesized DnD35Archetype.
  */
 export function synthesizeTrueDragonArchetype(
-  familiesData: DnD35DragonFamiliesData,
+  familiesOrRaces: DnD35DragonFamiliesData | Record<string, unknown>,
   varietyId: string,
   ageCategoryId: string
 ): DnD35Archetype {
-  const variety = familiesData.varieties[varietyId];
+  const asRecord = familiesOrRaces as Record<string, unknown>;
+  const racesMap =
+    (asRecord['races'] as Record<string, DnD35RaceDefinition> | undefined) ??
+    (asRecord[`dragon_${varietyId}`] !== undefined ? (asRecord as Record<string, DnD35RaceDefinition>) : undefined);
+
+  const dragonRace = racesMap?.[`dragon_${varietyId}`];
+  if (dragonRace && dragonRace.rhdProgression?.tiers?.length > 0) {
+    return synthesizeDragonFromRaceTier(dragonRace, ageCategoryId);
+  }
+
+  const familiesData = familiesOrRaces as DnD35DragonFamiliesData;
+  const variety = familiesData.varieties?.[varietyId];
   if (!variety) {
     throw new Error(`Unknown dragon variety: ${varietyId}`);
   }
-  const age = familiesData.ageCategories[ageCategoryId];
+  const age = familiesData.ageCategories?.[ageCategoryId];
   if (!age) {
     throw new Error(`Unknown dragon age category: ${ageCategoryId}`);
   }
@@ -141,7 +367,6 @@ export function synthesizeTrueDragonArchetype(
   };
 
   const naturalArmor = variety.wyrmlingBase.naturalArmorBonus + age.naturalArmorDelta;
-
   const biteDice = scaleWeaponDamageDice('1d8', 'medium', targetSize);
   const clawDice = scaleWeaponDamageDice('1d6', 'medium', targetSize);
 
@@ -171,59 +396,52 @@ export function synthesizeTrueDragonArchetype(
   ];
 
   if (sizeRank >= SIZE_METRICS.medium.rankIndex) {
-    const wingDice = scaleWeaponDamageDice('1d4', 'medium', targetSize);
     naturalWeapons.push({
       id: 'wings',
       name: 'Wing',
       naturalType: 'wings',
       isPrimary: false,
       count: 2,
-      damageDice: wingDice,
+      damageDice: scaleWeaponDamageDice('1d4', 'medium', targetSize),
       damageType: 'bludgeoning' as DnD35DamageType,
       critThreatMin: 20,
       critMultiplier: 2
     });
   }
-
   if (sizeRank >= SIZE_METRICS.large.rankIndex) {
-    const tailSlapDice = scaleWeaponDamageDice('1d8', 'large', targetSize);
     naturalWeapons.push({
       id: 'tail_slap',
       name: 'Tail Slap',
       naturalType: 'tail_slap',
       isPrimary: false,
       count: 1,
-      damageDice: tailSlapDice,
+      damageDice: scaleWeaponDamageDice('1d8', 'large', targetSize),
       damageType: 'bludgeoning' as DnD35DamageType,
       critThreatMin: 20,
       critMultiplier: 2
     });
   }
-
   if (sizeRank >= SIZE_METRICS.huge.rankIndex) {
-    const crushDice = scaleWeaponDamageDice('2d8', 'huge', targetSize);
     naturalWeapons.push({
       id: 'crush',
       name: 'Crush',
       naturalType: 'crush',
       isPrimary: false,
       count: 1,
-      damageDice: crushDice,
+      damageDice: scaleWeaponDamageDice('2d8', 'huge', targetSize),
       damageType: 'bludgeoning' as DnD35DamageType,
       critThreatMin: 20,
       critMultiplier: 2
     });
   }
-
   if (sizeRank >= SIZE_METRICS.gargantuan.rankIndex) {
-    const tailSweepDice = scaleWeaponDamageDice('2d6', 'gargantuan', targetSize);
     naturalWeapons.push({
       id: 'tail_sweep',
       name: 'Tail Sweep',
       naturalType: 'tail_sweep',
       isPrimary: false,
       count: 1,
-      damageDice: tailSweepDice,
+      damageDice: scaleWeaponDamageDice('2d6', 'gargantuan', targetSize),
       damageType: 'bludgeoning' as DnD35DamageType,
       critThreatMin: 20,
       critMultiplier: 2
@@ -243,7 +461,8 @@ export function synthesizeTrueDragonArchetype(
         fortCurve: 'good',
         refCurve: 'good',
         willCurve: 'good',
-        skillPointsPerLevel: 6
+        skillPointsPerLevel: 6,
+        trackCategory: 'racial_hd'
       }
     ],
     weaponDice: biteDice,
@@ -310,16 +529,26 @@ const ELEMENTAL_STEP_MODIFIERS: Readonly<
 };
 
 /**
- * Synthesizes an SRD Elemental Archetype from element type ('air', 'earth', 'fire', 'water')
- * and step ('small', 'medium', 'large', 'huge', 'greater', 'elder'), applying full 6-step
- * ability score, natural armor, slam count, DR, and element-specific Good Save curves.
+ * Synthesizes an SRD Elemental Archetype from either a unified `races` registry (`Record<string, DnD35RaceDefinition>`)
+ * or legacy `DnD35DragonFamiliesData`.
  */
 export function synthesizeElementalArchetype(
-  familiesData: DnD35DragonFamiliesData,
+  familiesOrRaces: DnD35DragonFamiliesData | Record<string, unknown>,
   elementId: 'air' | 'earth' | 'fire' | 'water',
   stepId: string
 ): DnD35Archetype {
-  const step = familiesData.elementalSteps[stepId];
+  const asRecord = familiesOrRaces as Record<string, unknown>;
+  const racesMap =
+    (asRecord['races'] as Record<string, DnD35RaceDefinition> | undefined) ??
+    (asRecord[`elemental_${elementId}`] !== undefined ? (asRecord as Record<string, DnD35RaceDefinition>) : undefined);
+
+  const elementalRace = racesMap?.[`elemental_${elementId}`];
+  if (elementalRace && elementalRace.rhdProgression?.tiers?.length > 0) {
+    return synthesizeElementalFromRaceTier(elementalRace, stepId);
+  }
+
+  const familiesData = familiesOrRaces as DnD35DragonFamiliesData;
+  const step = familiesData.elementalSteps?.[stepId];
   if (!step) {
     throw new Error(`Unknown elemental step: ${stepId}`);
   }
@@ -337,7 +566,6 @@ export function synthesizeElementalArchetype(
   const stat = baseStats[elementId] ?? { str: 10, dex: 10, con: 10, int: 4, wis: 11, cha: 11, baseNatArmor: 3 };
   const stepMod = ELEMENTAL_STEP_MODIFIERS[stepId] ?? ELEMENTAL_STEP_MODIFIERS['small']!;
 
-  // Earth and Water Elementals gain higher STR/CON growth, Air/Fire gain higher DEX growth
   const isHeavyElement = elementId === 'earth' || elementId === 'water';
   const scaledScores = {
     str: stat.str + (isHeavyElement ? stepMod.dexDelta : stepMod.strDelta),
@@ -365,7 +593,8 @@ export function synthesizeElementalArchetype(
         fortCurve,
         refCurve,
         willCurve: 'poor',
-        skillPointsPerLevel: 2
+        skillPointsPerLevel: 2,
+        trackCategory: 'racial_hd'
       }
     ],
     weaponDice: slamDice,

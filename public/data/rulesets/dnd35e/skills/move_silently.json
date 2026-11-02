@@ -1,0 +1,22 @@
+{
+  "move_silently": {
+    "id": "move_silently",
+    "name": "Move Silently",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "sneak_quietly",
+        "name": "Move Silently",
+        "actionCost": "part_of_movement",
+        "opposedBySkill": "listen",
+        "description": "Move without making noise as part of normal movement.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

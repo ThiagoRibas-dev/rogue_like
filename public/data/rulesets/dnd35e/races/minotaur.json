@@ -1,0 +1,89 @@
+{
+  "minotaur": {
+    "id": "minotaur",
+    "name": "Minotaur",
+    "creatureType": "monstrous_humanoid",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 8,
+      "dex": 0,
+      "con": 4,
+      "int": -4,
+      "wis": 0,
+      "cha": -2
+    },
+    "defaultAbilityScores": {
+      "str": 19,
+      "dex": 10,
+      "con": 15,
+      "int": 7,
+      "wis": 10,
+      "cha": 8
+    },
+    "naturalArmorBonus": 5,
+    "rhdProgression": {
+      "baseHdCount": 6,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "good",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "gore",
+        "name": "Gore",
+        "naturalType": "gore",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "3d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "power_attack",
+      "great_cleave",
+      "track"
+    ],
+    "skillRanks": {
+      "intimidate": 5,
+      "listen": 7,
+      "spot": 7,
+      "search": 8
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 4
+  }
+}

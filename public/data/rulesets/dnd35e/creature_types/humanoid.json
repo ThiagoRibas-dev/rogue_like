@@ -1,0 +1,30 @@
+{
+  "humanoid": {
+    "typeId": "humanoid",
+    "name": "Humanoid",
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [],
+    "immunities": [],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural",
+      "simple"
+    ],
+    "armorProficiencies": [
+      "light"
+    ],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": []
+  }
+}

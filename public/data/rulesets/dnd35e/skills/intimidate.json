@@ -1,0 +1,22 @@
+{
+  "intimidate": {
+    "id": "intimidate",
+    "name": "Intimidate",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "demoralize_opponent",
+        "name": "Demoralize Opponent",
+        "actionCost": "standard",
+        "dc": 10,
+        "description": "Make an opponent shaken for 1 round in melee combat (DC 10 + target Hit Dice + target Wisdom modifier).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

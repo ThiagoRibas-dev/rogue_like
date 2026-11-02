@@ -1,8 +1,9 @@
 import { rng } from '../../core/rng.ts';
 import { rollD20 } from './math/dice.ts';
 import { dndFloor } from './math/multipliers.ts';
-import { resolveTypedModifiers } from './modifiers.ts';
+import { appendSourcePath, resolveTypedModifiers } from './modifiers.ts';
 import type { AbilityId, StatModifier } from './types/dnd35e.types.ts';
+import type { DnD35SkillDefinition } from './types/dnd35e_system.types.ts';
 import type { AttitudeTier } from '../../types/components.types.ts';
 
 /** Minimum whole ranks required in a source skill to grant a +2 Synergy bonus. */
@@ -93,6 +94,43 @@ export function computeSkillSynergyBonus(
     }
   }
   return bonus;
+}
+
+/**
+ * Builds passive/conditional StatModifiers unlocked by skill rank thresholds (e.g. 5+ ranks in Tumble
+ * granting +1 dodge AC when fighting defensively or using total defense).
+ *
+ * @param allSkillRanks Entity's skill rank map.
+ * @param skillRegistry Loaded D&D 3.5e skill definitions.
+ * @returns Array of unlocked `StatModifier` entries with `sourcePath: "skill:<id>/threshold:<minRanks>/<modId>"`.
+ */
+export function buildSkillRankThresholdModifiers(
+  allSkillRanks: Readonly<Record<string, number>>,
+  skillRegistry: Readonly<Record<string, DnD35SkillDefinition>>
+): ReadonlyArray<StatModifier> {
+  const modifiers: StatModifier[] = [];
+  for (const [skillId, rawRanks] of Object.entries(allSkillRanks)) {
+    const wholeRanks = dndFloor(Math.max(0, rawRanks));
+    if (wholeRanks < 1) continue;
+    const skillDef = skillRegistry[skillId];
+    if (!skillDef || skillDef.rankThresholdModifiers.length === 0) continue;
+    for (const entry of skillDef.rankThresholdModifiers) {
+      if (wholeRanks < entry.minRanks) continue;
+      const rootPath = appendSourcePath(`skill:${skillDef.id}`, `threshold:${entry.minRanks}`);
+      for (const mod of entry.modifiers) {
+        modifiers.push({
+          targetStat: mod.target,
+          value: mod.value,
+          bonusType: mod.type,
+          sourceId: `skill:${skillDef.id}:${mod.id}`,
+          sourcePath: appendSourcePath(rootPath, mod.id),
+          origin: 'ex',
+          ...(mod.condition !== undefined ? { condition: mod.condition } : {})
+        });
+      }
+    }
+  }
+  return modifiers;
 }
 
 /**

@@ -576,14 +576,39 @@ Phase 23 expanded the D&D 3.5e class architecture into a modular, per-class JSON
 3. **Multiclass XP Penalty & Prestige Exemption (`src/rulesets/dnd35e/progression.ts`)**:
    - `calculateMulticlassXpMultiplier` ignores Racial HD (`racial_*`), all Prestige Classes (`isPrestige === true`), and the race's `favoredClass` (or highest-level base class when `favoredClass === 'any'`), applying `-20%` per remaining base class more than 1 level below the highest remaining base class (floored at `0.2`), gated by `enforceMulticlassXpPenalty`.
 4. **Pure Character Builder & UI Modals (`src/rulesets/dnd35e/character_builder.ts`, `src/rendering/ui/dnd35e_char_builder.ui.ts`, `dnd35e_char_builder_steps.ui.ts`, `dnd35e_level_up.ui.ts`)**:
-   - `character_builder.ts` provides pure headless helpers for 25/28/32 Point-Buy, Elite Array, deterministic `4d6kh3` rolling, skill rank caps/costs, Wizard specialist school validation, `applyCharacterCreationToPlayer`, and `applyLevelUpToActor`, re-exported via `src/rulesets/registry.ts` to preserve strict `.dependency-cruiser.cjs` cartridge isolation.
+   - `character_builder.ts` provides pure headless helpers for 25/28/32 Point-Buy, Elite Array, Nonelite Array, deterministic `4d6kh3` rolling, skill rank caps/costs, Wizard specialist school validation, `applyCharacterCreationToPlayer`, and `applyLevelUpToActor`, re-exported via `src/rulesets/registry.ts` to preserve strict `.dependency-cruiser.cjs` cartridge isolation.
+
+### 9.8 Universal Effect Bundles (`DnD35EffectBundleSchema`), Unified Races (`races/<id>.json`), Modular Subtypes/Skills/Domains & 5 SRD NPC Classes
+
+To complete Universal Actor Symmetry (**AGENTS.md Rule 18**) and Unified Effect Providers (**Rule 19**), the D&D 3.5e System Content registries and evaluators were unified around a single composable mechanical bundle and a single unified Race + RHD progression architecture:
+
+1. **Universal `DnD35EffectBundleSchema` (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`, `srd_registry.ts`, `level_ledger.ts`)**:
+   - Reused across Feats (`effectBundle`), Class Features & ACFs (`effectBundle` / `virtualFeatGrants` / `activationCondition`), Cleric Domains (`grantedPowerBundle`), Racial Traits (`traitBundles`), Creature Types (`traitBundle`), Subtypes (`traitBundle`), and Templates (`specialQualityBundles`).
+   - Supports 6 usage modes (`'passive' | 'activated' | 'toggle' | 'variable_dial' | 'spell_like' | 'triggered'`), passive/conditional `modifiers`, `ruleOverrides`, `grantedFeats` (`ignorePrerequisites: boolean` for virtual feats like Ranger *Two-Weapon Fighting*), `grantedClassSkills`, `senseGrants`, `immunities`, `vulnerabilities`, `energyResistances`, `activatedAbilities` (including `variableDial` for *Power Attack* / *Combat Expertise* and `spellLikeSpellId` for SLA bundles), and `activationCondition` self-tag gating (e.g., `selfTagsNone: ['armor:medium', 'armor:heavy']` disabling Ranger Combat Style in medium/heavy armor).
+   - **Atomic Bundle Identity & Suppression (`suppressedBundleIds`)**: Every bundle has a named `bundleId` (e.g., `"domain_power_war"`) emitted in its provenance path (`"<provider>:<id>/bundle:<bundleId>/<effectId>"`). Class features or prestige classes (such as *Ordained Champion* trading a Domain's granted power for a Fighter bonus feat) can suppress an entire bundle atomically by adding its `bundleId` to `DnD35EntityData.suppressedBundleIds`.
+
+2. **Unified `races/<id>.json` with Explicit Race Chassis vs. `rhdProgression` Separation (`public/data/rulesets/dnd35e/races/*.json`)**:
+   - Merged playable races, monster archetypes, True Dragon families, and Elemental ladders into 75 modular files under `public/data/rulesets/dnd35e/races/<id>.json` (eliminating the separate `archetypes/` folder and `dragon_families.json`).
+   - Each race definition cleanly separates intrinsic **Race Chassis** properties (`size`, `creatureType`, `subtypes`, `abilityAdjustments`, `defaultAbilityScores`, `landSpeed`, `movementModes`, `naturalArmorBonus`, `senses`, `naturalWeapons`, `traitBundles`, `favoredClass`, `levelAdjustment`, `defaultClassLevels`, `defaultFeats`, `defaultSkillRanks`) from its **Racial Hit Dice Progression (`rhdProgression`)**:
+     - `baseHdCount`: `0` for 1-HD humanoids whose racial HD is replaced by their first class level (`human`, `dwarf`, `elf`, `orc`, `goblin`, `kobold`, `hobgoblin`), or $\ge 1$ for creatures with intrinsic Racial Hit Dice (`ogre`, `minotaur`, `bugbear`, `skeleton`, `dragon_red`, etc.).
+     - `saveCurveOverrides`: Optional per-race overrides to the Creature Type's default good/poor saves (e.g., Air/Fire Elementals overriding Elemental saves to `ref: 'good'`; Earth/Water Elementals overriding to `fort: 'good'`).
+     - `advancementRanges`: Standard Monster Manual HD-to-Size advancement brackets.
+     - `tiers`: Multi-tier RHD progression tables (`DnD35ProgressionTierSchema`) powering True Dragon 12-Age-Category synthesis (`wyrmling` through `great_wyrm` with creature-specific `unlockedNaturalWeapons` on each tier) and Elemental 6-Step size synthesis (`small` through `elder`).
+
+3. **5 SRD NPC Classes (`warrior`, `expert`, `adept`, `aristocrat`, `commoner`)**:
+   - Authored all 5 SRD NPC Classes (`isNpcClass: true`, levels 1–20) under `public/data/rulesets/dnd35e/classes/`.
+   - Encodes the 5 mechanical ruleset distinctions between NPC classes and PC classes:
+     1. `HitDieTrack.trackCategory`: Distinguishes `'racial_hd' | 'pc' | 'npc' | 'prestige'`.
+     2. **CR Scaling (`computeNpcClassCrContribution`)**: $+0.5\text{ CR}$ at NPC level 1 ($\text{Level} - 1$ at $\ge 2$) for creatures with no Racial HD, and $+0.5\text{ CR}$ per nonassociated NPC level for monsters with Racial HD.
+     3. **Default Ability Arrays**: `NONELITE_ABILITY_ARRAY` (`[13, 12, 11, 10, 9, 8]`) vs. `ELITE_ABILITY_ARRAY` (`[15, 14, 13, 12, 10, 8]`).
+     4. **1-HD Humanoid Replacement**: Races with `rhdProgression.baseHdCount === 0` replace their racial HD with their 1st class level (defaulting to `warrior` 1 for standard monster manual Orc/Goblin/Kobold/Hobgoblin statblocks).
+     5. **Template Class-Level Stripping (`stripClassLevels: true`)**: *Skeleton* and *Zombie* templates strip all `'pc' | 'npc' | 'prestige'` tracks while retaining `'racial_hd'` tracks (dropping 0-RHD creatures to 1 base racial HD before Undead conversion/doubling).
+
+4. **Fully Modularized `creature_types/`, `subtypes/`, `domains/`, and `skills/` Registries**:
+   - `creature_types/<id>.json` (15 files), `subtypes/<id>.json` (20 files with `traitBundle`), `domains/<id>.json` (22 files with `grantedPowerBundle`), and `skills/<id>.json` (12 files with `actions` and `rankThresholdModifiers` evaluated via `buildSkillRankThresholdModifiers`).
 
 ---
 
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
-
-
-
-

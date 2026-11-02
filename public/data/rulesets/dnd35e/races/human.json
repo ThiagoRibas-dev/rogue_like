@@ -8,13 +8,39 @@
     ],
     "size": "medium",
     "baseLandSpeedFt": 30,
-    "abilityAdjustments": {},
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 0,
+      "dex": 0,
+      "con": 0,
+      "int": 0,
+      "wis": 0,
+      "cha": 0
+    },
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
     "favoredClass": "any",
     "bonusFeatAtFirstLevel": true,
     "extraSkillPointsFirstLevel": 4,
     "extraSkillPointsPerLevel": 1,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common"
-    ]
+    ],
+    "naturalWeapons": [],
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false
   }
 }

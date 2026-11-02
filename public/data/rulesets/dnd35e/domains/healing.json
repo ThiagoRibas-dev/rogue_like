@@ -1,0 +1,64 @@
+{
+  "healing": {
+    "id": "healing",
+    "name": "Healing",
+    "grantedPowerDescription": "You cast healing spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_healing",
+      "name": "Healing Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "You cast healing spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_healing_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "healing"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:healing"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_healing_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "healing"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "cure_light_wounds",
+      "2": "cure_moderate_wounds",
+      "3": "cure_serious_wounds",
+      "4": "cure_critical_wounds",
+      "5": "cure_light_wounds_mass",
+      "6": "heal",
+      "7": "regenerate",
+      "8": "cure_critical_wounds_mass",
+      "9": "heal_mass"
+    }
+  }
+}

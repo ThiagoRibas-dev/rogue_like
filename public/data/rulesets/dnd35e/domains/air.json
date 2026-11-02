@@ -1,0 +1,59 @@
+{
+  "air": {
+    "id": "air",
+    "name": "Air",
+    "grantedPowerDescription": "Turn or destroy earth creatures as a good cleric turns undead. Rebuke, command, or bolster air creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_air",
+      "name": "Air Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Turn or destroy earth creatures as a good cleric turns undead. Rebuke, command, or bolster air creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:air"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_air_power",
+          "name": "Air Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_turn_air"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_turn_air",
+        "maxBase": 3,
+        "abilityModStat": "cha",
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_turn_air",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "obscuring_mist",
+      "2": "wind_wall",
+      "3": "gaseous_form",
+      "4": "air_walk",
+      "5": "control_winds",
+      "6": "chain_lightning",
+      "7": "control_weather",
+      "8": "whirlwind",
+      "9": "elemental_swarm"
+    }
+  }
+}

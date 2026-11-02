@@ -13,6 +13,9 @@
     ],
     "resultCreatureType": "undead",
     "addSubtypes": [],
+    "hitDieOverride": 12,
+    "hdMultiplier": 2,
+    "stripClassLevels": true,
     "abilityScoreModifiers": {
       "str": 2,
       "dex": -2

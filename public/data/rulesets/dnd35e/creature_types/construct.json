@@ -1,0 +1,88 @@
+{
+  "construct": {
+    "typeId": "construct",
+    "name": "Construct",
+    "hitDieSides": 10,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "darkvision_60",
+      "low_light_vision"
+    ],
+    "immunities": [
+      "poison",
+      "sleep",
+      "paralysis",
+      "stun",
+      "disease",
+      "death_effects",
+      "necromancy",
+      "mind_affecting",
+      "critical_hits"
+    ],
+    "hasConstitutionScore": false,
+    "hasIntelligenceScore": false,
+    "nonabilities": [
+      "con"
+    ],
+    "weaponProficiencies": [
+      "natural"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": false,
+      "breathes": false,
+      "sleeps": false
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_construct_traits",
+        "name": "Construct Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": true,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [
+          "poison",
+          "sleep",
+          "paralysis",
+          "stun",
+          "disease",
+          "death_effects",
+          "necromancy",
+          "mind_affecting",
+          "critical_hits"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ],
+    "constructBonusHpBySize": {
+      "fine": 0,
+      "diminutive": 0,
+      "tiny": 0,
+      "small": 10,
+      "medium": 20,
+      "large": 30,
+      "huge": 40,
+      "gargantuan": 60,
+      "colossal": 80
+    }
+  }
+}

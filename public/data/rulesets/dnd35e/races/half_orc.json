@@ -9,16 +9,41 @@
     ],
     "size": "medium",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
       "str": 2,
+      "dex": 0,
+      "con": 0,
       "int": -2,
+      "wis": 0,
       "cha": -2
     },
     "darkvisionFt": 60,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
     "favoredClass": "barbarian",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "orc"
-    ]
+    ],
+    "naturalWeapons": [],
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false
   }
 }

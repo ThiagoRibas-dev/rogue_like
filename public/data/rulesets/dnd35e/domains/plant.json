@@ -1,0 +1,63 @@
+{
+  "plant": {
+    "id": "plant",
+    "name": "Plant",
+    "grantedPowerDescription": "Rebuke or command plant creatures as an evil cleric rebukes or commands undead (3 + CHA mod/day). Add Knowledge (nature) to your cleric class skills.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_plant",
+      "name": "Plant Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Rebuke or command plant creatures as an evil cleric rebukes or commands undead (3 + CHA mod/day). Add Knowledge (nature) to your cleric class skills.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:plant"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [
+        "knowledge_nature"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_plant_power",
+          "name": "Plant Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_rebuke_plant"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_rebuke_plant",
+        "maxBase": 3,
+        "abilityModStat": "cha",
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [
+      "knowledge_nature"
+    ],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_rebuke_plant",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "entangle",
+      "2": "barkskin",
+      "3": "plant_growth",
+      "4": "command_plants",
+      "5": "wall_of_thorns",
+      "6": "repel_wood",
+      "7": "animate_plants",
+      "8": "control_plants",
+      "9": "shambler"
+    }
+  }
+}

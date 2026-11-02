@@ -1,0 +1,59 @@
+{
+  "water": {
+    "id": "water",
+    "name": "Water",
+    "grantedPowerDescription": "Turn or destroy fire creatures as a good cleric turns undead. Rebuke, command, or bolster water creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_water",
+      "name": "Water Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Turn or destroy fire creatures as a good cleric turns undead. Rebuke, command, or bolster water creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:water"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_water_power",
+          "name": "Water Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_turn_water"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_turn_water",
+        "maxBase": 3,
+        "abilityModStat": "cha",
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_turn_water",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "obscuring_mist",
+      "2": "fog_cloud",
+      "3": "water_breathing",
+      "4": "control_water",
+      "5": "ice_storm",
+      "6": "cone_of_cold",
+      "7": "acid_fog",
+      "8": "horrid_wilting",
+      "9": "elemental_swarm"
+    }
+  }
+}

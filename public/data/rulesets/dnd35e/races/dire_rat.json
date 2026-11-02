@@ -1,0 +1,96 @@
+{
+  "dire_rat": {
+    "id": "dire_rat",
+    "name": "Dire Rat",
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "small",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 0,
+      "dex": 6,
+      "con": 2,
+      "int": -10,
+      "wis": 2,
+      "cha": -6
+    },
+    "defaultAbilityScores": {
+      "str": 10,
+      "dex": 17,
+      "con": 12,
+      "int": 1,
+      "wis": 12,
+      "cha": 4
+    },
+    "naturalArmorBonus": 1,
+    "rhdProgression": {
+      "baseHdCount": 1,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "filth_fever",
+            "type": "disease",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 12,
+            "initialEffectDescription": "Filth Fever (1d3 Dex, 1d3 Con damage)"
+          }
+        ]
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness"
+    ],
+    "skillRanks": {
+      "listen": 4,
+      "spot": 4,
+      "hide": 8
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 0.33
+  }
+}

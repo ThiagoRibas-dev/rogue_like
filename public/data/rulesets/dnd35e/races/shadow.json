@@ -1,0 +1,90 @@
+{
+  "shadow": {
+    "id": "shadow",
+    "name": "Shadow",
+    "creatureType": "undead",
+    "subtypes": [
+      "incorporeal"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": null,
+      "dex": 4,
+      "con": null,
+      "int": -4,
+      "wis": 2,
+      "cha": 2
+    },
+    "defaultAbilityScores": {
+      "str": null,
+      "dex": 14,
+      "con": null,
+      "int": 6,
+      "wis": 12,
+      "cha": 13
+    },
+    "naturalArmorBonus": 0,
+    "rhdProgression": {
+      "baseHdCount": 3,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "incorporeal_touch",
+        "name": "Incorporeal Touch",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "negative",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "negative",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "magic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "dodge"
+    ],
+    "skillRanks": {
+      "hide": 8,
+      "listen": 7,
+      "search": 4,
+      "spot": 7
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 3
+  }
+}

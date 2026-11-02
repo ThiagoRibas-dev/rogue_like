@@ -8,17 +8,71 @@
     ],
     "size": "small",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
-      "dex": 2,
       "str": -4,
-      "con": -2
+      "dex": 2,
+      "con": -2,
+      "int": 0,
+      "wis": 0,
+      "cha": 0
     },
-    "naturalArmorBonus": 1,
+    "defaultAbilityScores": {
+      "str": 9,
+      "dex": 13,
+      "con": 10,
+      "int": 10,
+      "wis": 9,
+      "cha": 8
+    },
     "darkvisionFt": 60,
+    "naturalArmorBonus": 1,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [
+      {
+        "classId": "warrior",
+        "levels": 1
+      }
+    ],
+    "levelAdjustment": 0,
     "favoredClass": "sorcerer",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "draconic"
-    ]
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness"
+    ],
+    "skillRanks": {
+      "hide": 4,
+      "listen": 2,
+      "spot": 2
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 0.25
   }
 }

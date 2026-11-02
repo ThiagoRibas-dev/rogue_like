@@ -1,0 +1,60 @@
+{
+  "vermin": {
+    "typeId": "vermin",
+    "name": "Vermin",
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "darkvision_60"
+    ],
+    "immunities": [
+      "mind_affecting"
+    ],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": false,
+    "nonabilities": [
+      "int"
+    ],
+    "weaponProficiencies": [
+      "natural"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_vermin_traits",
+        "name": "Vermin Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": false,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [
+          "mind_affecting"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

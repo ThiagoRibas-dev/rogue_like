@@ -1,0 +1,22 @@
+{
+  "spot": {
+    "id": "spot",
+    "name": "Spot",
+    "keyAbility": "wis",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "spot_hidden",
+        "name": "Spot Hidden Creature or Hazard",
+        "actionCost": "none",
+        "opposedBySkill": "hide",
+        "description": "Reactive or active check to detect hidden creatures or concealed hazards.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

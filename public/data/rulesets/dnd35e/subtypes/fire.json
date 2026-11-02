@@ -1,0 +1,40 @@
+{
+  "fire": {
+    "subtypeId": "fire",
+    "name": "Fire Subtype",
+    "description": "Immunity to fire; vulnerability to cold (+50% damage from cold).",
+    "immunities": [
+      "fire"
+    ],
+    "vulnerabilities": [
+      "cold"
+    ],
+    "grantedTags": [
+      "subtype:fire"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": [
+      {
+        "bundleId": "subtype_fire_traits",
+        "name": "Fire Subtype Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "immunities": [
+          "fire"
+        ],
+        "vulnerabilities": [
+          "cold"
+        ],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

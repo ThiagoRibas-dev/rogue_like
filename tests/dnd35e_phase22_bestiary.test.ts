@@ -13,14 +13,14 @@ import {
   getDnD35Archetype,
   getDnD35CreatureTypeEngine,
   getDnD35Race,
+  getDnD35Subtype,
   getDnD35Template,
   hydrateArchetypeData
 } from '../src/rulesets/dnd35e/srd_registry.ts';
 import {
-  DnD35ArchetypeSchema,
   DnD35CreatureTypeEngineSchema,
-  DnD35DragonFamiliesDataSchema,
   DnD35RaceDefinitionSchema,
+  DnD35SubtypeDefinitionSchema,
   DnD35TemplateSchema
 } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import {
@@ -48,30 +48,24 @@ function loadModularRulesetRegistry(category: string): Record<string, unknown> {
 }
 
 describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () => {
-  // Load raw JSON files
+  // Load modular JSON registries
   const racesRaw = loadModularRulesetRegistry('races');
   const templatesRaw = loadModularRulesetRegistry('templates');
-  const creatureTypesRaw = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/creature_types.json'), 'utf-8')
-  );
-  const dragonFamiliesRaw = JSON.parse(
-    readFileSync(resolve(process.cwd(), 'public/data/rulesets/dnd35e/dragon_families.json'), 'utf-8')
-  );
-  const archetypesRaw = loadModularRulesetRegistry('archetypes');
+  const creatureTypesRaw = loadModularRulesetRegistry('creature_types');
+  const subtypesRaw = loadModularRulesetRegistry('subtypes');
 
   const mockSystemContent = {
     races: racesRaw,
     templates: templatesRaw,
     creatureTypes: creatureTypesRaw,
-    dragonFamilies: dragonFamiliesRaw,
-    archetypes: archetypesRaw
+    subtypes: subtypesRaw
   };
 
-  describe('Milestone 106: Playable Races & Subraces (races.json & races.ts)', () => {
-    it('validates all 17 SRD races against DnD35RaceDefinitionSchema', () => {
+  describe('Milestone 106: Unified Playable & Monster Races (races/ & races.ts)', () => {
+    it('validates all 75 unified SRD races (17 playable, 44 bestiary monsters, 10 True Dragons, 4 Elementals) against DnD35RaceDefinitionSchema', () => {
       const raceIds = Object.keys(racesRaw);
-      expect(raceIds.length).toBe(17);
-      for (const [id, race] of Object.entries(racesRaw)) {
+      expect(raceIds.length).toBe(75);
+      for (const [, race] of Object.entries(racesRaw)) {
         const parsed = DnD35RaceDefinitionSchema.safeParse(race);
         expect(parsed.success).toBe(true);
       }
@@ -81,7 +75,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       const dwarfDef = getDnD35Race(mockSystemContent, 'dwarf')!;
       expect(dwarfDef).toBeDefined();
 
-      const basePlayerArchetype = archetypesRaw['player'];
+      const basePlayerArchetype = getDnD35Archetype(mockSystemContent, 'player')!;
       const baseEntityData = hydrateArchetypeData(basePlayerArchetype);
 
       const result = applyRaceToActorChassis(baseEntityData, dwarfDef);
@@ -109,14 +103,15 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       const drowDef = getDnD35Race(mockSystemContent, 'drow')!;
       const bugbearDef = getDnD35Race(mockSystemContent, 'bugbear')!;
 
-      const basePlayerArchetype = archetypesRaw['player'];
+      const basePlayerArchetype = getDnD35Archetype(mockSystemContent, 'player')!;
       const baseEntityData = hydrateArchetypeData(basePlayerArchetype);
 
       const drowResult = applyRaceToActorChassis(baseEntityData, drowDef);
       expect(drowResult.entityData.spellResistance).toBe(12); // 11 + 1 HD = 12 SR
       expect(drowResult.ecl).toBe(3); // 1 HD + 2 LA = 3 ECL
 
-      const bugbearResult = applyRaceToActorChassis(baseEntityData, bugbearDef);
+      const humanoidEngine = getDnD35CreatureTypeEngine(mockSystemContent, 'humanoid');
+      const bugbearResult = applyRaceToActorChassis(baseEntityData, bugbearDef, humanoidEngine);
       expect(bugbearResult.entityData.tracks[0]?.levels).toBe(3);
       // basePlayer has 1 fighter HD + 3 Bugbear RHD + 1 LA = 5 ECL
       expect(bugbearResult.ecl).toBe(5);
@@ -124,7 +119,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
     });
   });
 
-  describe('Milestone 107: Inherited & Acquired Creature Templates (templates.json & templates.ts)', () => {
+  describe('Milestone 107: Inherited & Acquired Creature Templates (templates/ & templates.ts)', () => {
     it('validates all 13 SRD templates against DnD35TemplateSchema', () => {
       const templateIds = Object.keys(templatesRaw);
       expect(templateIds.length).toBe(13);
@@ -136,7 +131,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
 
     it('transforms an Animal into a Magical Beast with Celestial/Fiendish HD-tiered scaling', () => {
       const fiendishTemplate = getDnD35Template(mockSystemContent, 'fiendish')!;
-      const direRatArchetype = archetypesRaw['dire_rat'];
+      const direRatArchetype = getDnD35Archetype(mockSystemContent, 'dire_rat')!;
       const direRatData = hydrateArchetypeData(direRatArchetype);
 
       const fiendishDireRat = applyCreatureTemplate(direRatData, fiendishTemplate);
@@ -147,9 +142,9 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(fiendishDireRat.spellResistance).toBe(6);            // min(25, 5 + 1 HD) = 6
     });
 
-    it('applies the Zombie template accurately (doubled racial HD, strips class HD when no racial HD, single actions only)', () => {
+    it('applies the Zombie template accurately (doubled racial HD, strips PC/NPC class HD while keeping racial HD, single actions only)', () => {
       const zombieTemplate = getDnD35Template(mockSystemContent, 'zombie')!;
-      const ogreArchetype = archetypesRaw['ogre'];
+      const ogreArchetype = getDnD35Archetype(mockSystemContent, 'ogre')!;
       const ogreData = hydrateArchetypeData(ogreArchetype);
 
       const zombieOgre = applyCreatureTemplate(ogreData, zombieTemplate);
@@ -163,15 +158,37 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(zombieOgre.damageReduction?.bypassTags).toEqual(['slashing']);
       expect(zombieOgre.naturalWeapons?.some((w) => w.naturalType === 'slam')).toBe(true);
 
+      // Verify Ogre with 4 Giant RHD + 2 Warrior NPC class levels strips Warrior levels and doubles only the 4 Giant RHD -> 8 Zombie HD
+      const ogreWarriorData = {
+        ...ogreData,
+        tracks: [
+          ...ogreData.tracks,
+          {
+            trackId: 'warrior',
+            trackCategory: 'npc' as const,
+            levels: 2,
+            hitDieSides: 8 as const,
+            babCurve: 'full' as const,
+            fortCurve: 'good' as const,
+            refCurve: 'poor' as const,
+            willCurve: 'poor' as const,
+            skillPointsPerLevel: 2
+          }
+        ]
+      };
+      const zombieOgreWarrior = applyCreatureTemplate(ogreWarriorData, zombieTemplate);
+      expect(zombieOgreWarrior.tracks.length).toBe(1);
+      expect(zombieOgreWarrior.tracks[0]?.levels).toBe(8);
+
       // Verify class-HD creature (5th-level Fighter with no racial HD) drops class levels to 1 base HD -> 2 Zombie HD
-      const fighter5Data = hydrateArchetypeData(archetypesRaw['player'], 5);
+      const fighter5Data = hydrateArchetypeData(getDnD35Archetype(mockSystemContent, 'player')!, 5);
       const zombieFighter = applyCreatureTemplate(fighter5Data, zombieTemplate);
       expect(zombieFighter.tracks[0]?.levels).toBe(2);
     });
 
     it('applies the Ghost template and emits subtype:incorporeal deflection AC with hierarchical sourcePath', () => {
       const ghostTemplate = getDnD35Template(mockSystemContent, 'ghost')!;
-      const playerArchetype = archetypesRaw['player'];
+      const playerArchetype = getDnD35Archetype(mockSystemContent, 'player')!;
       const playerData = hydrateArchetypeData(playerArchetype);
 
       const ghostPlayer = applyCreatureTemplate(playerData, ghostTemplate);
@@ -188,7 +205,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
 
     it('applies the Half-Dragon (Red) template (Dragon type, STR +8, CON +2, NA +4, Claws/Bite, Fire immunity)', () => {
       const halfDragonTemplate = getDnD35Template(mockSystemContent, 'half_dragon_red')!;
-      const minotaurArchetype = archetypesRaw['minotaur'];
+      const minotaurArchetype = getDnD35Archetype(mockSystemContent, 'minotaur')!;
       const minotaurData = hydrateArchetypeData(minotaurArchetype);
 
       const halfDragonMinotaur = applyCreatureTemplate(minotaurData, halfDragonTemplate);
@@ -203,10 +220,20 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
     });
   });
 
-  describe('Milestone 108: Creature Family Progression Engines & Unified Effect Providers', () => {
-    it('validates all 15 SRD creature type engines and Construct size bonus HP Effect Provider', () => {
-      const parsed = DnD35CreatureTypeEngineSchema.array().safeParse(Object.values(creatureTypesRaw));
-      expect(parsed.success).toBe(true);
+  describe('Milestone 108: Creature Family Progression Engines, Subtypes & Unified Effect Providers', () => {
+    it('validates all 15 SRD creature type engines, 20 SRD subtypes, and Construct size bonus HP Effect Provider', () => {
+      const parsedTypes = DnD35CreatureTypeEngineSchema.array().safeParse(Object.values(creatureTypesRaw));
+      expect(parsedTypes.success).toBe(true);
+      expect(Object.keys(creatureTypesRaw).length).toBe(15);
+
+      const parsedSubtypes = DnD35SubtypeDefinitionSchema.array().safeParse(Object.values(subtypesRaw));
+      expect(parsedSubtypes.success).toBe(true);
+      expect(Object.keys(subtypesRaw).length).toBe(20);
+
+      const fireSub = getDnD35Subtype(mockSystemContent, 'fire')!;
+      expect(fireSub.immunities).toContain('fire');
+      expect(fireSub.vulnerabilities).toContain('cold');
+      expect(fireSub.traitBundles[0]?.immunities).toContain('fire');
 
       const construct = getDnD35CreatureTypeEngine(mockSystemContent, 'construct')!;
       expect(construct.constructBonusHpBySize?.['medium']).toBe(20);
@@ -214,7 +241,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(construct.constructBonusHpBySize?.['huge']).toBe(40);
 
       // Hydrate Iron Golem (Large Construct) and verify Construct Effect Provider modifiers
-      const ironGolemData = hydrateArchetypeData(archetypesRaw['iron_golem']);
+      const ironGolemData = hydrateArchetypeData(getDnD35Archetype(mockSystemContent, 'iron_golem')!);
       const largeHpMod = ironGolemData.statModifiers?.find(
         (m) => m.sourceId === 'type:construct:bonus_hp:large'
       );
@@ -234,7 +261,10 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       const shapechangePath = appendSourcePath('spell:shapechange', 'form:iron_golem');
       const constructMods = buildCreatureTypeAndSubtypeModifiers('construct', [], 0, shapechangePath);
       const dwarfDef = getDnD35Race(mockSystemContent, 'dwarf')!;
-      const dwarfApplied = applyRaceToActorChassis(hydrateArchetypeData(archetypesRaw['player']), dwarfDef);
+      const dwarfApplied = applyRaceToActorChassis(
+        hydrateArchetypeData(getDnD35Archetype(mockSystemContent, 'player')!),
+        dwarfDef
+      );
 
       const allMods = [...dwarfApplied.statModifiers, ...constructMods];
       const index = buildEffectProvenanceIndex(allMods);
@@ -265,7 +295,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
     });
 
     it('advances a Wolf from 2 HD Medium to 4 HD Large with size deltas and +1 4th-HD ability increase', () => {
-      const wolfArchetype = archetypesRaw['wolf'];
+      const wolfArchetype = getDnD35Archetype(mockSystemContent, 'wolf')!;
       const advancedWolf = advanceMonsterByHitDice(wolfArchetype, 4);
 
       expect(advancedWolf.sizeCategory).toBe('large');
@@ -279,8 +309,8 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(advancedWolf.cr).toBeGreaterThanOrEqual(2);
     });
 
-    it('synthesizes Red Dragon Wyrmling, Adult, and Great Wyrm with size-gated natural weapons and senses', () => {
-      const wyrmling = synthesizeTrueDragonArchetype(dragonFamiliesRaw, 'red', 'wyrmling');
+    it('synthesizes Red Dragon Wyrmling, Adult, and Great Wyrm from unified races/dragon_red.json rhdProgression.tiers with creature-specific unlockedNaturalWeapons', () => {
+      const wyrmling = synthesizeTrueDragonArchetype(mockSystemContent, 'red', 'wyrmling');
       expect(wyrmling.archetypeId).toBe('dragon_red_wyrmling');
       expect(wyrmling.sizeCategory).toBe('medium');
       expect(wyrmling.tracks[0]?.levels).toBe(7);
@@ -290,24 +320,24 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(wyrmling.senses?.blindsenseRangeFt).toBe(60);
       expect(wyrmling.movementModes?.fly).toBe(150);
 
-      const adult = synthesizeTrueDragonArchetype(dragonFamiliesRaw, 'red', 'adult');
+      const adult = synthesizeTrueDragonArchetype(mockSystemContent, 'red', 'adult');
       expect(adult.archetypeId).toBe('dragon_red_adult');
       expect(adult.sizeCategory).toBe('huge');
       expect(adult.tracks[0]?.levels).toBe(22); // 7 + 15
       expect(adult.abilityScores.str).toBe(31);  // 17 + 14
       expect(adult.naturalArmorBonus).toBe(21); // 6 + 15
       expect(adult.spellResistance).toBe(21);
-      // Huge dragon unlocks tail_slap and crush
+      // Huge dragon unlocks tail_slap and crush via tier unlockedNaturalWeapons
       expect(adult.naturalWeapons.map((w) => w.id)).toEqual(['bite', 'claw', 'wings', 'tail_slap', 'crush']);
 
-      const greatWyrm = synthesizeTrueDragonArchetype(dragonFamiliesRaw, 'red', 'great_wyrm');
+      const greatWyrm = synthesizeTrueDragonArchetype(mockSystemContent, 'red', 'great_wyrm');
       expect(greatWyrm.sizeCategory).toBe('colossal');
       // Colossal dragon unlocks tail_sweep as well
       expect(greatWyrm.naturalWeapons.map((w) => w.id)).toContain('tail_sweep');
     });
 
-    it('synthesizes 6-step Elementals with subtype good saves and evaluates Golem Magic interactions', () => {
-      const elderFire = synthesizeElementalArchetype(dragonFamiliesRaw, 'fire', 'elder');
+    it('synthesizes 6-step Elementals from unified races/elemental_*.json with saveCurveOverrides and evaluates Golem Magic interactions', () => {
+      const elderFire = synthesizeElementalArchetype(mockSystemContent, 'fire', 'elder');
       expect(elderFire.archetypeId).toBe('elemental_fire_elder');
       expect(elderFire.tracks[0]?.levels).toBe(24);
       expect(elderFire.tracks[0]?.refCurve).toBe('good');
@@ -316,7 +346,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(elderFire.damageReduction?.amount).toBe(10); // DR 10/- at Greater/Elder
       expect(elderFire.naturalWeapons[0]?.count).toBe(2); // 2 slams at Large+
 
-      const hugeEarth = synthesizeElementalArchetype(dragonFamiliesRaw, 'earth', 'huge');
+      const hugeEarth = synthesizeElementalArchetype(mockSystemContent, 'earth', 'huge');
       expect(hugeEarth.tracks[0]?.fortCurve).toBe('good');
       expect(hugeEarth.tracks[0]?.refCurve).toBe('poor');
       expect(hugeEarth.abilityScores.str).toBe(29); // 17 + 12
@@ -337,15 +367,8 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
   });
 
   describe('Milestone 109: Bestiary Expansion & Dynamic Registry Lookup', () => {
-    it('validates all 50+ Bestiary archetypes in archetypes.json including 6-armed Marilith, Beholder, and Giants', () => {
-      const keys = Object.keys(archetypesRaw);
-      expect(keys.length).toBeGreaterThanOrEqual(50);
-      for (const [, arch] of Object.entries(archetypesRaw)) {
-        const parsed = DnD35ArchetypeSchema.safeParse(arch);
-        expect(parsed.success).toBe(true);
-      }
-
-      const marilith = archetypesRaw['marilith'];
+    it('hydrates all Bestiary races via getDnD35Archetype including 6-armed Marilith, Beholder, and Giants', () => {
+      const marilith = getDnD35Archetype(mockSystemContent, 'marilith')!;
       expect(marilith.archetypeId).toBe('marilith');
       expect(marilith.sizeCategory).toBe('large');
       expect(marilith.anatomyBodyPlan).toBe('marilith_6arm');
@@ -355,9 +378,9 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(marilith.spellResistance).toBe(25);
       expect(marilith.feats).toContain('multiweapon_fighting');
 
-      expect(archetypesRaw['beholder']).toBeDefined();
-      expect(archetypesRaw['gelatinous_cube']).toBeDefined();
-      expect(archetypesRaw['fire_giant']).toBeDefined();
+      expect(getDnD35Archetype(mockSystemContent, 'beholder')).toBeDefined();
+      expect(getDnD35Archetype(mockSystemContent, 'gelatinous_cube')).toBeDefined();
+      expect(getDnD35Archetype(mockSystemContent, 'fire_giant')).toBeDefined();
     });
 
     it('dynamically synthesizes dragons and elementals when queried via getDnD35Archetype', () => {
@@ -772,7 +795,7 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(penalizedGhost.acBreakdown.touchAC).toBe(10 + 2 + 1); // Base 10 + Dex 2 + Deflection 1 = 13
 
       // 3. Wild Shape overlay emits form_override for size and natural_armor with 'form' OriginLayer provenance
-      const baseDruid = hydrateArchetypeData(archetypesRaw['player']);
+      const baseDruid = hydrateArchetypeData(getDnD35Archetype(mockSystemContent, 'player')!);
       const wildShapedDruid = resolveEffectiveEntityDataWithOverlays(baseDruid, {
         type: ComponentType.PropertyOverlay,
         source: 'wild_shape:dire_bear',

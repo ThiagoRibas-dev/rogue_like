@@ -1,5 +1,5 @@
 {
-  "summary": "Research notes for the Pluggable Ruleset-Specific Validator Architecture (checkBaseCampaign, checkClassicRuleset, checkDnD35eRuleset, and Disk-to-Descriptor Synchronization). Maps the 3-Tier architecture, existing cross-reference findings, and Cascading Effects Matrix.",
-  "updatedAt": "2026-11-02T13:53:23.674977056Z",
+  "summary": "Comprehensive research notes mapping the unification of D&D 3.5e Races & Archetypes, removal of dragon_families.json in favor of generic RHD/Tiered Racial Progression, addition of the 5 SRD NPC classes, and full modularization of Creature Types, Subtypes, Domains, and Skills.",
+  "updatedAt": "2026-11-02T14:52:28.680211526Z",
   "userFacing": true
 }

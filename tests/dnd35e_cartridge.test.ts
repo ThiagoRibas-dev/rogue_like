@@ -73,6 +73,7 @@ import {
 } from '../src/rulesets/dnd35e/magic/aoe_rest.ts';
 import {
   buildAbilityScoresRecord,
+  getDnD35Archetype,
   getDnD35EntityData,
   hydrateArchetypeData
 } from '../src/rulesets/dnd35e/srd_registry.ts';
@@ -117,9 +118,9 @@ describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Ver
   });
 
   test('Layer 1 (M86): 6-Ability Score model, Nonabilities (null), penalty floor 1, and collapse states', () => {
-    // Nonability (CON: null on Undead hydrated from declarative public/data/rulesets/dnd35e/archetypes.json)
+    // Nonability (CON: null on Undead hydrated from declarative public/data/rulesets/dnd35e/races/skeleton.json)
     const dndCampaign = loadCampaignFromDisk('dnd35e-crypt');
-    const skeletonArchetype = dndCampaign.systemContent!.archetypes['skeleton']!;
+    const skeletonArchetype = getDnD35Archetype(dndCampaign.systemContent, 'skeleton')!;
     const undeadScores = hydrateArchetypeData(skeletonArchetype).abilityScores;
     expect(computeEffectiveAbilityScore(undeadScores.con)).toBeNull();
     expect(computeAbilityModifier(null)).toBe(0);
@@ -580,9 +581,9 @@ describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Ver
     const sysContent = getDnD35SystemContent(dndCampaign);
     expect(sysContent).not.toBeNull();
     expect(Object.keys(sysContent!.classes)).toEqual(
-      expect.arrayContaining(['fighter', 'rogue', 'cleric', 'wizard'])
+      expect.arrayContaining(['fighter', 'rogue', 'cleric', 'wizard', 'warrior', 'expert', 'adept', 'aristocrat', 'commoner'])
     );
-    expect(Object.keys(sysContent!.classes).length).toBe(21);
+    expect(Object.keys(sysContent!.classes).length).toBe(26);
     expect(sysContent!.classes['cleric']?.progression[0]?.bab).toBe(0);
     expect(sysContent!.classes['cleric']?.progression[1]?.bab).toBe(1);
     expect(sysContent!.skills['swim']?.acpMultiplier).toBe(2);

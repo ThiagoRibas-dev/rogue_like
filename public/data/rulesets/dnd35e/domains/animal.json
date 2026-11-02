@@ -1,0 +1,61 @@
+{
+  "animal": {
+    "id": "animal",
+    "name": "Animal",
+    "grantedPowerDescription": "Use speak with animals 1/day as a spell-like ability. Add Knowledge (nature) to your list of cleric class skills.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_animal",
+      "name": "Animal Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Use speak with animals 1/day as a spell-like ability. Add Knowledge (nature) to your list of cleric class skills.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:animal"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [
+        "knowledge_nature"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_animal_power",
+          "name": "Animal Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_speak_with_animals"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_speak_with_animals",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [
+      "knowledge_nature"
+    ],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_speak_with_animals",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "calm_animals",
+      "2": "hold_animal",
+      "3": "dominate_animal",
+      "4": "summon_natures_ally_iv",
+      "5": "commune_with_nature",
+      "6": "antilife_shell",
+      "7": "animal_shapes",
+      "8": "summon_natures_ally_viii",
+      "9": "shapechange"
+    }
+  }
+}

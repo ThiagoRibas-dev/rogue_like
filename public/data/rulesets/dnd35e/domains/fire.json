@@ -1,0 +1,59 @@
+{
+  "fire": {
+    "id": "fire",
+    "name": "Fire",
+    "grantedPowerDescription": "Turn or destroy water creatures as a good cleric turns undead. Rebuke, command, or bolster fire creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_fire",
+      "name": "Fire Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Turn or destroy water creatures as a good cleric turns undead. Rebuke, command, or bolster fire creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:fire"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_fire_power",
+          "name": "Fire Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_turn_fire"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_turn_fire",
+        "maxBase": 3,
+        "abilityModStat": "cha",
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_turn_fire",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "burning_hands",
+      "2": "produce_flame",
+      "3": "resist_energy",
+      "4": "wall_of_fire",
+      "5": "fire_shield",
+      "6": "fire_seeds",
+      "7": "fire_storm",
+      "8": "incendiary_cloud",
+      "9": "elemental_swarm"
+    }
+  }
+}

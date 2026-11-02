@@ -1,0 +1,77 @@
+{
+  "ettin": {
+    "id": "ettin",
+    "name": "Ettin",
+    "creatureType": "giant",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 12,
+      "dex": -2,
+      "con": 4,
+      "int": -4,
+      "wis": 0,
+      "cha": 0
+    },
+    "defaultAbilityScores": {
+      "str": 23,
+      "dex": 8,
+      "con": 15,
+      "int": 6,
+      "wis": 10,
+      "cha": 11
+    },
+    "naturalArmorBonus": 7,
+    "rhdProgression": {
+      "baseHdCount": 10,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "2d6",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "iron_will",
+      "power_attack",
+      "improved_overrun"
+    ],
+    "skillRanks": {
+      "listen": 7,
+      "spot": 7,
+      "search": 5
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 6
+  }
+}

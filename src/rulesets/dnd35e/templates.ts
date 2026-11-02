@@ -118,8 +118,9 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   }
 
   // 4. Hit Die Track Rebuilding for Acquired Undead Templates (PRIM-1.6)
-  // SRD Skeleton & Zombie drop class HD and retain only racial HD (or 1 HD if the creature only had class levels).
-  const pcClassIds: ReadonlyArray<string> = [
+  // SRD Skeleton & Zombie (or any template with stripClassLevels: true) drop all PC, NPC, and Prestige class HD
+  // and retain only racial HD (or 1 HD if the creature only had class levels).
+  const allClassIds: ReadonlyArray<string> = [
     'barbarian',
     'bard',
     'cleric',
@@ -130,9 +131,30 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     'ranger',
     'rogue',
     'sorcerer',
-    'wizard'
+    'wizard',
+    'warrior',
+    'expert',
+    'adept',
+    'aristocrat',
+    'commoner',
+    'arcane_archer',
+    'assassin',
+    'blackguard',
+    'dragon_disciple',
+    'duelist',
+    'dwarven_defender',
+    'eldritch_knight',
+    'loremaster',
+    'mystic_theurge',
+    'shadowdancer'
   ];
-  const racialTracks = base.tracks.filter((t) => !pcClassIds.includes(t.trackId));
+  const isClassTrack = (t: HitDieTrack): boolean =>
+    t.trackCategory === 'pc' ||
+    t.trackCategory === 'npc' ||
+    t.trackCategory === 'prestige' ||
+    allClassIds.includes(t.trackId);
+
+  const racialTracks = base.tracks.filter((t) => !isClassTrack(t));
   const baseRacialLevels =
     racialTracks.length > 0
       ? Math.max(
@@ -141,7 +163,10 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
         )
       : 1;
   let nextTracks: ReadonlyArray<HitDieTrack> = base.tracks;
-  if (template.templateId === 'skeleton' || template.templateId === 'zombie') {
+  const shouldStripClassLevels =
+    template.stripClassLevels === true || template.templateId === 'skeleton' || template.templateId === 'zombie';
+
+  if (shouldStripClassLevels) {
     const hdMult = template.hdMultiplier ?? (template.templateId === 'zombie' ? 2 : 1);
     const bonusHd = template.bonusHitDice ?? 0;
     const undeadHd = Math.max(1, Math.floor(baseRacialLevels * hdMult) + bonusHd);
@@ -149,18 +174,19 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
       {
         trackId: 'undead',
         levels: undeadHd,
-        hitDieSides: UNDEAD_HIT_DIE_SIDES,
+        hitDieSides: template.hitDieOverride ?? UNDEAD_HIT_DIE_SIDES,
         babCurve: 'half',
         fortCurve: 'poor',
         refCurve: 'poor',
         willCurve: 'good',
-        skillPointsPerLevel: 0
+        skillPointsPerLevel: 0,
+        trackCategory: 'racial_hd'
       }
     ];
   } else if (creatureType === 'undead') {
     nextTracks = base.tracks.map((track) => ({
       ...track,
-      hitDieSides: UNDEAD_HIT_DIE_SIDES
+      hitDieSides: template.hitDieOverride ?? UNDEAD_HIT_DIE_SIDES
     }));
   }
 
@@ -304,6 +330,7 @@ export const CELESTIAL_TEMPLATE: DnD35Template = {
   spellResistanceBonus: 10,
   grantedFeats: [],
   grantedTags: ['celestial', 'smite_evil'],
+  specialQualityBundles: [],
   levelAdjustmentDelta: 2
 };
 
@@ -328,6 +355,7 @@ export const FIENDISH_TEMPLATE: DnD35Template = {
   spellResistanceBonus: 10,
   grantedFeats: [],
   grantedTags: ['fiendish', 'smite_good'],
+  specialQualityBundles: [],
   levelAdjustmentDelta: 2
 };
 
@@ -339,6 +367,8 @@ export const SKELETON_TEMPLATE: DnD35Template = {
   targetCreatureTypes: ['humanoid', 'monstrous_humanoid', 'animal', 'dragon', 'magical_beast', 'giant'],
   resultCreatureType: 'undead',
   addSubtypes: [],
+  hitDieOverride: 12,
+  stripClassLevels: true,
   abilityScoreModifiers: {
     dex: 2
   },
@@ -351,6 +381,7 @@ export const SKELETON_TEMPLATE: DnD35Template = {
   immunities: ['cold'],
   grantedFeats: ['improved_initiative'],
   grantedTags: ['undead', 'mindless'],
+  specialQualityBundles: [],
   levelAdjustmentDelta: 0
 };
 
@@ -362,6 +393,9 @@ export const ZOMBIE_TEMPLATE: DnD35Template = {
   targetCreatureTypes: ['humanoid', 'monstrous_humanoid', 'animal', 'dragon', 'magical_beast', 'giant'],
   resultCreatureType: 'undead',
   addSubtypes: [],
+  hitDieOverride: 12,
+  hdMultiplier: 2,
+  stripClassLevels: true,
   abilityScoreModifiers: {
     str: 2,
     dex: -2
@@ -375,6 +409,7 @@ export const ZOMBIE_TEMPLATE: DnD35Template = {
   immunities: [],
   grantedFeats: ['toughness'],
   grantedTags: ['undead', 'single_actions_only'],
+  specialQualityBundles: [],
   levelAdjustmentDelta: 0
 };
 
@@ -402,5 +437,6 @@ export const LICH_TEMPLATE: DnD35Template = {
   spellResistanceBonus: 15,
   grantedFeats: [],
   grantedTags: ['undead', 'fear_aura', 'paralyzing_touch'],
+  specialQualityBundles: [],
   levelAdjustmentDelta: 4
 };

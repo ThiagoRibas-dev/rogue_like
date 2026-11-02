@@ -222,6 +222,7 @@ export interface HitDieTrack {
   readonly explicitFort?: number | undefined;
   readonly explicitRef?: number | undefined;
   readonly explicitWill?: number | undefined;
+  readonly trackCategory?: 'racial_hd' | 'pc' | 'npc' | 'prestige' | undefined;
 }
 
 /**
@@ -444,4 +445,5 @@ export interface DnD35EntityData {
   readonly enforceMulticlassXpPenalty?: boolean | undefined;
   readonly levelHistory?: ReadonlyArray<DnD35CharacterLevelRecord> | undefined;
   readonly negativeLevels?: number | undefined;
+  readonly suppressedBundleIds?: ReadonlyArray<string> | undefined;
 }

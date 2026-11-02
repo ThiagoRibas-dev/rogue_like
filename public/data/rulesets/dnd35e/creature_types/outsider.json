@@ -1,0 +1,56 @@
+{
+  "outsider": {
+    "typeId": "outsider",
+    "name": "Outsider",
+    "hitDieSides": 8,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "good",
+    "skillPointsPerLevel": 8,
+    "defaultTraits": [
+      "darkvision_60"
+    ],
+    "immunities": [],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural",
+      "simple",
+      "martial"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": false,
+      "breathes": true,
+      "sleeps": false
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_outsider_traits",
+        "name": "Outsider Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": false,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

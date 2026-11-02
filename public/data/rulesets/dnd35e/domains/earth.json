@@ -1,0 +1,59 @@
+{
+  "earth": {
+    "id": "earth",
+    "name": "Earth",
+    "grantedPowerDescription": "Turn or destroy air creatures as a good cleric turns undead. Rebuke, command, or bolster earth creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_earth",
+      "name": "Earth Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Turn or destroy air creatures as a good cleric turns undead. Rebuke, command, or bolster earth creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:earth"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_earth_power",
+          "name": "Earth Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_turn_earth"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_turn_earth",
+        "maxBase": 3,
+        "abilityModStat": "cha",
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_turn_earth",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "magic_stone",
+      "2": "soften_earth_and_stone",
+      "3": "stone_shape",
+      "4": "spike_stones",
+      "5": "wall_of_stone",
+      "6": "stoneskin",
+      "7": "earthquake",
+      "8": "iron_body",
+      "9": "elemental_swarm"
+    }
+  }
+}

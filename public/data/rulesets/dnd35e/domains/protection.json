@@ -1,0 +1,57 @@
+{
+  "protection": {
+    "id": "protection",
+    "name": "Protection",
+    "grantedPowerDescription": "Protective Ward 1/day: grant someone you touch a resistance bonus equal to your cleric level on their next saving throw.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_protection",
+      "name": "Protection Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Protective Ward 1/day: grant someone you touch a resistance bonus equal to your cleric level on their next saving throw.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:protection"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_protection_power",
+          "name": "Protection Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_protective_ward"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_protective_ward",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_protective_ward",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "sanctuary",
+      "2": "shield_other",
+      "3": "protection_from_energy",
+      "4": "spell_immunity",
+      "5": "spell_resistance",
+      "6": "antimagic_field",
+      "7": "repulsion",
+      "8": "mind_blank",
+      "9": "prismatic_sphere"
+    }
+  }
+}

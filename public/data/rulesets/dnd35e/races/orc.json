@@ -8,17 +8,69 @@
     ],
     "size": "medium",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
       "str": 4,
+      "dex": 0,
+      "con": 0,
       "int": -2,
       "wis": -2,
       "cha": -2
     },
+    "defaultAbilityScores": {
+      "str": 17,
+      "dex": 11,
+      "con": 12,
+      "int": 8,
+      "wis": 7,
+      "cha": 6
+    },
     "darkvisionFt": 60,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [
+      {
+        "classId": "warrior",
+        "levels": 1
+      }
+    ],
+    "levelAdjustment": 0,
     "favoredClass": "barbarian",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "orc"
-    ]
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d12",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 3,
+    "shieldBonus": 0,
+    "feats": [
+      "weapon_focus_greataxe"
+    ],
+    "skillRanks": {
+      "spot": 1,
+      "listen": 1
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 0.5
   }
 }

@@ -8,14 +8,35 @@
     ],
     "size": "medium",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
       "str": 4,
       "dex": 2,
       "con": 2,
+      "int": 0,
+      "wis": 0,
       "cha": -2
     },
-    "naturalArmorBonus": 3,
+    "defaultAbilityScores": {
+      "str": 15,
+      "dex": 12,
+      "con": 13,
+      "int": 10,
+      "wis": 10,
+      "cha": 9
+    },
     "darkvisionFt": 60,
+    "naturalArmorBonus": 3,
+    "rhdProgression": {
+      "baseHdCount": 3,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "good",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
     "racialHitDice": {
       "count": 3,
       "hitDieSides": 8,
@@ -25,11 +46,43 @@
       "willCurve": "poor",
       "skillPointsPerLevel": 2
     },
+    "defaultClassLevels": [],
     "levelAdjustment": 1,
     "favoredClass": "rogue",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "goblin"
-    ]
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 1,
+    "feats": [
+      "alertness",
+      "weapon_focus_morningstar"
+    ],
+    "skillRanks": {
+      "hide": 4,
+      "move_silently": 6,
+      "spot": 4
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 2
   }
 }

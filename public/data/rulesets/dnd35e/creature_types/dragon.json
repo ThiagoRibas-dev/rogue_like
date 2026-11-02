@@ -1,0 +1,61 @@
+{
+  "dragon": {
+    "typeId": "dragon",
+    "name": "Dragon",
+    "hitDieSides": 12,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "good",
+    "skillPointsPerLevel": 6,
+    "defaultTraits": [
+      "darkvision_60",
+      "low_light_vision"
+    ],
+    "immunities": [
+      "sleep",
+      "paralysis"
+    ],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_dragon_traits",
+        "name": "Dragon Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": true,
+          "darkvisionRangeFt": 120,
+          "blindsenseRangeFt": 60,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [
+          "sleep",
+          "paralysis"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

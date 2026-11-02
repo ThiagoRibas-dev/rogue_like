@@ -8,16 +8,70 @@
     ],
     "size": "small",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
-      "dex": 2,
       "str": -2,
+      "dex": 2,
+      "con": 0,
+      "int": 0,
+      "wis": 0,
       "cha": -2
     },
+    "defaultAbilityScores": {
+      "str": 11,
+      "dex": 13,
+      "con": 12,
+      "int": 10,
+      "wis": 9,
+      "cha": 6
+    },
     "darkvisionFt": 60,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [
+      {
+        "classId": "warrior",
+        "levels": 1
+      }
+    ],
+    "levelAdjustment": 0,
     "favoredClass": "rogue",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "goblin"
-    ]
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d4",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 19,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 1,
+    "feats": [
+      "alertness"
+    ],
+    "skillRanks": {
+      "hide": 4,
+      "move_silently": 4,
+      "spot": 2
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 0.33
   }
 }

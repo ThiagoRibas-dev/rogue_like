@@ -1,6 +1,7 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import type { ValidationError } from '../../types/ruleset.types.ts';
 import type { PrerequisiteNode } from './prerequisites.ts';
+import { getDnD35Archetype } from './srd_registry.ts';
 import { DnD35SystemContentSchema, type DnD35SystemContent } from './types/dnd35e_system.types.ts';
 
 /**
@@ -147,7 +148,7 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
-  // 3. Validate Races: ID parity, favoredClass reference, creatureType reference
+  // 3. Validate Races: ID parity, favoredClass reference, creatureType reference, defaultClassLevels, rhdProgression tiers
   for (const [raceKey, raceDef] of Object.entries(sys.races)) {
     if (raceDef.id !== raceKey) {
       errors.push({
@@ -169,6 +170,26 @@ export function validateDnD35eSystemContentIntegrity(
         message: `Race "${raceKey}" references unknown creatureType "${raceDef.creatureType}".`,
         severity: 'error'
       });
+    }
+    for (const cl of raceDef.defaultClassLevels) {
+      if (!sys.classes[cl.classId]) {
+        errors.push({
+          path: `systemContent.races.${raceKey}.defaultClassLevels`,
+          message: `Race "${raceKey}" references unknown class "${cl.classId}" in defaultClassLevels.`,
+          severity: 'error'
+        });
+      }
+    }
+    const tiers = raceDef.rhdProgression?.tiers ?? [];
+    for (let i = 0; i < tiers.length; i++) {
+      const tier = tiers[i]!;
+      if (tier.tierIndex !== i + 1) {
+        errors.push({
+          path: `systemContent.races.${raceKey}.rhdProgression.tiers[${i}].tierIndex`,
+          message: `Race "${raceKey}" progression tier at index ${i} must have tierIndex ${i + 1} (got ${tier.tierIndex}).`,
+          severity: 'error'
+        });
+      }
     }
   }
 
@@ -201,7 +222,7 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
-  // 5. Validate Archetypes: ID parity, creatureType reference
+  // 5. Validate Archetypes (legacy/optional): ID parity, creatureType reference
   for (const [archKey, archDef] of Object.entries(sys.archetypes)) {
     if (archDef.archetypeId !== archKey) {
       errors.push({
@@ -219,7 +240,7 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
-  // 6. Validate Feats, Spells, Skills & CreatureTypes: ID parity & Prerequisite AST
+  // 6. Validate Feats, Spells, Skills, CreatureTypes & Subtypes: ID parity & Prerequisite AST
   for (const [featKey, featDef] of Object.entries(sys.feats)) {
     if (featDef.id !== featKey) {
       errors.push({
@@ -268,6 +289,16 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
+  for (const [subKey, subDef] of Object.entries(sys.subtypes)) {
+    if (subDef.subtypeId !== subKey) {
+      errors.push({
+        path: `systemContent.subtypes.${subKey}.subtypeId`,
+        message: `Subtype key "${subKey}" does not match inner subtypeId "${subDef.subtypeId}".`,
+        severity: 'error'
+      });
+    }
+  }
+
   return errors;
 }
 
@@ -304,7 +335,7 @@ export function checkDnD35eRuleset(campaign: Readonly<CampaignData>): ReadonlyAr
   errors.push(...validateDnD35eSystemContentIntegrity(sys));
 
   for (const [entityId, entity] of Object.entries(campaign.entities)) {
-    if (entity.archetypeId && !sys.archetypes[entity.archetypeId]) {
+    if (entity.archetypeId && !getDnD35Archetype(sys, entity.archetypeId)) {
       errors.push({
         path: `entities.${entityId}.archetypeId`,
         message: `Entity template "${entityId}" references unknown system archetype "${entity.archetypeId}"`,

@@ -1,0 +1,48 @@
+{
+  "trickery": {
+    "id": "trickery",
+    "name": "Trickery",
+    "grantedPowerDescription": "Add Bluff, Disguise, and Hide to your list of cleric class skills.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_trickery",
+      "name": "Trickery Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "Add Bluff, Disguise, and Hide to your list of cleric class skills.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:trickery"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [
+        "bluff",
+        "disguise",
+        "hide"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [
+      "bluff",
+      "disguise",
+      "hide"
+    ],
+    "featGrants": [],
+    "modifiers": [],
+    "domainSpells": {
+      "1": "disguise_self",
+      "2": "invisibility",
+      "3": "nondetection",
+      "4": "confusion",
+      "5": "false_vision",
+      "6": "mislead",
+      "7": "screen",
+      "8": "polymorph_any_object",
+      "9": "time_stop"
+    }
+  }
+}

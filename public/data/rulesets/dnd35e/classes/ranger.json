@@ -68,13 +68,28 @@
         "id": "track",
         "name": "Track",
         "category": "bonus_feat",
-        "description": "Gain Track as a bonus feat."
+        "description": "Gain Track as a bonus feat.",
+        "grantedFeats": [
+          "track"
+        ]
       },
       "combat_style": {
         "id": "combat_style",
         "name": "Combat Style (Archery or Two-Weapon)",
         "category": "ex",
-        "description": "Gain Rapid Shot (Archery) or Two-Weapon Fighting (Two-Weapon) while wearing light or no armor."
+        "description": "Gain Rapid Shot (Archery) or Two-Weapon Fighting (Two-Weapon) while wearing light or no armor.",
+        "activationCondition": {
+          "selfTagsNone": [
+            "armor:medium",
+            "armor:heavy"
+          ]
+        },
+        "virtualFeatGrants": [
+          {
+            "featId": "two_weapon_fighting",
+            "ignorePrerequisites": true
+          }
+        ]
       },
       "animal_companion_ranger": {
         "id": "animal_companion_ranger",
@@ -86,7 +101,13 @@
         "id": "evasion",
         "name": "Evasion",
         "category": "ex",
-        "description": "Take no damage instead of half damage on a successful Reflex saving throw in light or no armor."
+        "description": "Take no damage instead of half damage on a successful Reflex saving throw in light or no armor.",
+        "activationCondition": {
+          "selfTagsNone": [
+            "armor:medium",
+            "armor:heavy"
+          ]
+        }
       },
       "hide_in_plain_sight_natural": {
         "id": "hide_in_plain_sight_natural",

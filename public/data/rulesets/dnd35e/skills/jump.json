@@ -1,0 +1,33 @@
+{
+  "jump": {
+    "id": "jump",
+    "name": "Jump",
+    "keyAbility": "str",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "synergyFromSkills": [
+      "tumble"
+    ],
+    "actions": [
+      {
+        "actionId": "long_jump",
+        "name": "Long Jump",
+        "actionCost": "part_of_movement",
+        "dc": 10,
+        "description": "Horizontal jump across a gap or obstacle as part of movement (DC = distance in feet).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      },
+      {
+        "actionId": "high_jump",
+        "name": "High Jump",
+        "actionCost": "part_of_movement",
+        "dc": 16,
+        "description": "Vertical jump to reach a ledge (DC = 4 x height in feet).",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

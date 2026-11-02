@@ -1,0 +1,60 @@
+{
+  "giant": {
+    "typeId": "giant",
+    "name": "Giant",
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "low_light_vision"
+    ],
+    "immunities": [],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural",
+      "simple",
+      "martial"
+    ],
+    "armorProficiencies": [
+      "light",
+      "medium",
+      "shields"
+    ],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_giant_traits",
+        "name": "Giant Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": true,
+          "darkvisionRangeFt": 0,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

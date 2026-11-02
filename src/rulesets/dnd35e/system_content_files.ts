@@ -1,10 +1,168 @@
 import type { RulesetSystemFileDescriptor } from '../../types/ruleset.types.ts';
 
-const ARCHETYPE_IDS: ReadonlyArray<string> = [
-  'player',
-  'default_creature',
-  'kobold',
+const CLASS_IDS: ReadonlyArray<string> = [
+  'barbarian',
+  'bard',
+  'cleric',
+  'druid',
+  'fighter',
+  'monk',
+  'paladin',
+  'ranger',
+  'rogue',
+  'sorcerer',
+  'wizard',
+  'warrior',
+  'expert',
+  'adept',
+  'aristocrat',
+  'commoner',
+  'arcane_archer',
+  'assassin',
+  'blackguard',
+  'dragon_disciple',
+  'duelist',
+  'dwarven_defender',
+  'eldritch_knight',
+  'loremaster',
+  'mystic_theurge',
+  'shadowdancer'
+];
+
+const DOMAIN_IDS: ReadonlyArray<string> = [
+  'air',
+  'animal',
+  'chaos',
+  'death',
+  'destruction',
+  'earth',
+  'evil',
+  'fire',
+  'good',
+  'healing',
+  'knowledge',
+  'law',
+  'luck',
+  'magic',
+  'plant',
+  'protection',
+  'strength',
+  'sun',
+  'travel',
+  'trickery',
+  'war',
+  'water'
+];
+
+const SKILL_IDS: ReadonlyArray<string> = [
+  'tumble',
+  'jump',
+  'swim',
+  'climb',
+  'spot',
+  'listen',
+  'hide',
+  'move_silently',
+  'concentration',
+  'use_magic_device',
+  'intimidate',
+  'diplomacy'
+];
+
+const FEAT_IDS: ReadonlyArray<string> = [
+  'power_attack',
+  'cleave',
+  'combat_reflexes',
+  'improved_initiative',
+  'blind_fight',
+  'weapon_focus_bite',
+  'weapon_focus_greatclub',
+  'toughness',
+  'iron_will',
+  'alertness',
+  'track'
+];
+
+const SPELL_IDS: ReadonlyArray<string> = [
+  'magic_missile',
+  'fireball',
+  'cure_light_wounds',
+  'ray_of_enfeeblement',
+  'burning_hands'
+];
+
+const TEMPLATE_IDS: ReadonlyArray<string> = [
+  'celestial',
+  'fiendish',
+  'half_dragon_red',
+  'half_dragon_black',
+  'half_dragon_gold',
+  'half_dragon_silver',
+  'half_fiend',
+  'half_celestial',
+  'skeleton',
+  'zombie',
+  'lich',
+  'vampire',
+  'ghost'
+];
+
+const CREATURE_TYPE_IDS: ReadonlyArray<string> = [
+  'aberration',
+  'animal',
+  'construct',
+  'dragon',
+  'elemental',
+  'fey',
+  'giant',
+  'humanoid',
+  'magical_beast',
+  'monstrous_humanoid',
+  'ooze',
+  'outsider',
+  'plant',
+  'undead',
+  'vermin'
+];
+
+const SUBTYPE_IDS: ReadonlyArray<string> = [
+  'air',
+  'aquatic',
+  'augmented',
+  'chaotic',
+  'cold',
+  'dwarf',
+  'earth',
+  'elf',
+  'evil',
+  'extraplanar',
+  'fire',
+  'goblinoid',
+  'good',
+  'halfling',
+  'human',
+  'incorporeal',
+  'lawful',
+  'orc',
+  'reptilian',
+  'water'
+];
+
+const RACE_IDS: ReadonlyArray<string> = [
+  'human',
+  'dwarf',
+  'elf',
+  'gnome',
+  'half_elf',
+  'half_orc',
+  'halfling',
+  'drow',
+  'duergar',
+  'svirfneblin',
+  'tiefling',
+  'aasimar',
   'goblin',
+  'kobold',
   'orc',
   'hobgoblin',
   'bugbear',
@@ -51,89 +209,21 @@ const ARCHETYPE_IDS: ReadonlyArray<string> = [
   'frost_giant',
   'fire_giant',
   'dire_bear',
-  'chimera'
-];
-
-const CLASS_IDS: ReadonlyArray<string> = [
-  'barbarian',
-  'bard',
-  'cleric',
-  'druid',
-  'fighter',
-  'monk',
-  'paladin',
-  'ranger',
-  'rogue',
-  'sorcerer',
-  'wizard',
-  'arcane_archer',
-  'assassin',
-  'blackguard',
-  'dragon_disciple',
-  'duelist',
-  'dwarven_defender',
-  'eldritch_knight',
-  'loremaster',
-  'mystic_theurge',
-  'shadowdancer'
-];
-
-const FEAT_IDS: ReadonlyArray<string> = [
-  'power_attack',
-  'cleave',
-  'combat_reflexes',
-  'improved_initiative',
-  'blind_fight',
-  'weapon_focus_bite',
-  'weapon_focus_greatclub',
-  'toughness',
-  'iron_will',
-  'alertness',
-  'track'
-];
-
-const SPELL_IDS: ReadonlyArray<string> = [
-  'magic_missile',
-  'fireball',
-  'cure_light_wounds',
-  'ray_of_enfeeblement',
-  'burning_hands'
-];
-
-const TEMPLATE_IDS: ReadonlyArray<string> = [
-  'celestial',
-  'fiendish',
-  'half_dragon_red',
-  'half_dragon_black',
-  'half_dragon_gold',
-  'half_dragon_silver',
-  'half_fiend',
-  'half_celestial',
-  'skeleton',
-  'zombie',
-  'lich',
-  'vampire',
-  'ghost'
-];
-
-const RACE_IDS: ReadonlyArray<string> = [
-  'human',
-  'dwarf',
-  'elf',
-  'gnome',
-  'half_elf',
-  'half_orc',
-  'halfling',
-  'drow',
-  'duergar',
-  'svirfneblin',
-  'tiefling',
-  'aasimar',
-  'goblin',
-  'kobold',
-  'orc',
-  'hobgoblin',
-  'bugbear'
+  'chimera',
+  'dragon_red',
+  'dragon_black',
+  'dragon_blue',
+  'dragon_green',
+  'dragon_white',
+  'dragon_gold',
+  'dragon_silver',
+  'dragon_bronze',
+  'dragon_copper',
+  'dragon_brass',
+  'elemental_air',
+  'elemental_earth',
+  'elemental_fire',
+  'elemental_water'
 ];
 
 /**
@@ -141,12 +231,12 @@ const RACE_IDS: ReadonlyArray<string> = [
  * Multiple descriptors sharing the same `key` are shallow-merged by `loader.ts`, `tests/helpers.ts`, and `run-validator.ts`.
  */
 export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescriptor> = [
-  { key: 'archetypes', filename: 'archetypes.json' },
-  ...ARCHETYPE_IDS.map((id) => ({ key: 'archetypes', filename: `archetypes/${id}.json` })),
   { key: 'classes', filename: 'classes.json' },
   ...CLASS_IDS.map((id) => ({ key: 'classes', filename: `classes/${id}.json` })),
   { key: 'domains', filename: 'domains.json' },
+  ...DOMAIN_IDS.map((id) => ({ key: 'domains', filename: `domains/${id}.json` })),
   { key: 'skills', filename: 'skills.json' },
+  ...SKILL_IDS.map((id) => ({ key: 'skills', filename: `skills/${id}.json` })),
   { key: 'feats', filename: 'feats.json' },
   ...FEAT_IDS.map((id) => ({ key: 'feats', filename: `feats/${id}.json` })),
   { key: 'spells', filename: 'spells.json' },
@@ -156,5 +246,7 @@ export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescrip
   { key: 'races', filename: 'races.json' },
   ...RACE_IDS.map((id) => ({ key: 'races', filename: `races/${id}.json` })),
   { key: 'creatureTypes', filename: 'creature_types.json' },
-  { key: 'dragonFamilies', filename: 'dragon_families.json' }
+  ...CREATURE_TYPE_IDS.map((id) => ({ key: 'creatureTypes', filename: `creature_types/${id}.json` })),
+  { key: 'subtypes', filename: 'subtypes.json' },
+  ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` }))
 ];

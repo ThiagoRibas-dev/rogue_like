@@ -1,0 +1,214 @@
+{
+  "warrior": {
+    "id": "warrior",
+    "name": "Warrior",
+    "isPrestige": false,
+    "isNpcClass": true,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "skillPointsPerLevel": 2,
+    "classSkills": [
+      "climb",
+      "intimidate",
+      "jump",
+      "swim"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "proficiencies": {
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "shields": [
+        "light",
+        "heavy",
+        "tower"
+      ]
+    },
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "weapon_and_armor_proficiency"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 0,
+        "willSave": 0,
+        "features": []
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 11,
+        "bab": 11,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 12,
+        "bab": 12,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 13,
+        "bab": 13,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 14,
+        "bab": 14,
+        "fortSave": 9,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 15,
+        "bab": 15,
+        "fortSave": 9,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 16,
+        "bab": 16,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 17,
+        "bab": 17,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 18,
+        "bab": 18,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 19,
+        "bab": 19,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 20,
+        "bab": 20,
+        "fortSave": 12,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      }
+    ],
+    "featureDetails": {
+      "weapon_and_armor_proficiency": {
+        "id": "weapon_and_armor_proficiency",
+        "name": "Weapon and Armor Proficiency",
+        "category": "proficiency",
+        "usageMode": "passive",
+        "description": "A warrior is proficient with all simple and martial weapons and with all armor and shields (including tower shields).",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "activatedAbilities": []
+      }
+    },
+    "acfSwaps": []
+  }
+}

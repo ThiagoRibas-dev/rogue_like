@@ -1,0 +1,215 @@
+{
+  "aristocrat": {
+    "id": "aristocrat",
+    "name": "Aristocrat",
+    "isPrestige": false,
+    "isNpcClass": true,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "skillPointsPerLevel": 4,
+    "classSkills": [
+      "diplomacy",
+      "intimidate",
+      "listen",
+      "spot",
+      "swim"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "proficiencies": {
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "shields": [
+        "light",
+        "heavy",
+        "tower"
+      ]
+    },
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 2,
+        "features": [
+          "weapon_and_armor_proficiency"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 3,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 4,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 5,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 6,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 7,
+        "bab": 5,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 8,
+        "bab": 6,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 9,
+        "bab": 6,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 10,
+        "bab": 7,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": []
+      },
+      {
+        "level": 11,
+        "bab": 8,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": []
+      },
+      {
+        "level": 12,
+        "bab": 9,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 8,
+        "features": []
+      },
+      {
+        "level": 13,
+        "bab": 9,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 8,
+        "features": []
+      },
+      {
+        "level": 14,
+        "bab": 10,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 9,
+        "features": []
+      },
+      {
+        "level": 15,
+        "bab": 11,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 9,
+        "features": []
+      },
+      {
+        "level": 16,
+        "bab": 12,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 10,
+        "features": []
+      },
+      {
+        "level": 17,
+        "bab": 12,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 10,
+        "features": []
+      },
+      {
+        "level": 18,
+        "bab": 13,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 11,
+        "features": []
+      },
+      {
+        "level": 19,
+        "bab": 14,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 11,
+        "features": []
+      },
+      {
+        "level": 20,
+        "bab": 15,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 12,
+        "features": []
+      }
+    ],
+    "featureDetails": {
+      "weapon_and_armor_proficiency": {
+        "id": "weapon_and_armor_proficiency",
+        "name": "Weapon and Armor Proficiency",
+        "category": "proficiency",
+        "usageMode": "passive",
+        "description": "An aristocrat is proficient with all simple and martial weapons and with all armor and shields.",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "activatedAbilities": []
+      }
+    },
+    "acfSwaps": []
+  }
+}

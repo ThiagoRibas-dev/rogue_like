@@ -1,0 +1,76 @@
+{
+  "ooze": {
+    "typeId": "ooze",
+    "name": "Ooze",
+    "hitDieSides": 10,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "blind",
+      "blindsight_60"
+    ],
+    "immunities": [
+      "poison",
+      "sleep",
+      "paralysis",
+      "stun",
+      "critical_hits",
+      "flanking",
+      "gaze_attacks",
+      "visual_illusions"
+    ],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": false,
+    "nonabilities": [
+      "int"
+    ],
+    "weaponProficiencies": [
+      "natural"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": false
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_ooze_traits",
+        "name": "Ooze Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": false,
+          "darkvisionRangeFt": 0,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 60,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [
+          "poison",
+          "sleep",
+          "paralysis",
+          "stun",
+          "critical_hits",
+          "flanking",
+          "gaze_attacks",
+          "visual_illusions",
+          "mind_affecting"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

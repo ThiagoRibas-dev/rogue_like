@@ -1,0 +1,22 @@
+{
+  "swim": {
+    "id": "swim",
+    "name": "Swim",
+    "keyAbility": "str",
+    "trainedOnly": false,
+    "acpMultiplier": 2,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "swim_calm_water",
+        "name": "Swim in Calm Water",
+        "actionCost": "move",
+        "dc": 10,
+        "description": "Swim at one-quarter speed as a move action or one-half speed as a full-round action.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

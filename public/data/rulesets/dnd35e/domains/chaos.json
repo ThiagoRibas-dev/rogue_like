@@ -1,0 +1,64 @@
+{
+  "chaos": {
+    "id": "chaos",
+    "name": "Chaos",
+    "grantedPowerDescription": "You cast chaos spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_chaos",
+      "name": "Chaos Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "You cast chaos spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_chaos_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "chaotic"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:chaos"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_chaos_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "chaotic"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_law",
+      "2": "shatter",
+      "3": "magic_circle_against_law",
+      "4": "chaos_hammer",
+      "5": "dispel_law",
+      "6": "animate_objects",
+      "7": "word_of_chaos",
+      "8": "cloak_of_chaos",
+      "9": "summon_monster_ix"
+    }
+  }
+}

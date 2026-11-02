@@ -8,22 +8,39 @@
     ],
     "size": "medium",
     "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
+      "str": 0,
       "dex": 2,
       "con": -2,
       "int": 2,
+      "wis": 0,
       "cha": 2
     },
     "darkvisionFt": 120,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
     "levelAdjustment": 2,
     "favoredClass": "wizard",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
     "spellResistanceFormula": {
       "base": 11,
       "perHitDie": 1
     },
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
     "saveBonuses": {
       "will": 2
     },
+    "conditionalModifiers": [],
+    "traitBundles": [],
     "weaponFamiliarityIds": [
       "hand_crossbow",
       "rapier",
@@ -33,6 +50,11 @@
       "common",
       "elven",
       "undercommon"
-    ]
+    ],
+    "naturalWeapons": [],
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false
   }
 }

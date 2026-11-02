@@ -142,6 +142,11 @@ export function getClassLevelRow(classDef: DnD35ClassDefinition, classLevel: num
 export function buildHitDieTrackFromClass(classDef: DnD35ClassDefinition, classLevel: number): HitDieTrack {
   const clamped = Math.max(1, Math.min(classDef.maxLevel, dndFloor(classLevel)));
   const row = getClassLevelRow(classDef, clamped) ?? classDef.progression[classDef.progression.length - 1]!;
+  const trackCategory: 'pc' | 'npc' | 'prestige' = classDef.isPrestige
+    ? 'prestige'
+    : classDef.isNpcClass
+      ? 'npc'
+      : 'pc';
   return {
     trackId: classDef.id,
     levels: clamped,
@@ -154,8 +159,33 @@ export function buildHitDieTrackFromClass(classDef: DnD35ClassDefinition, classL
     explicitBab: row.bab,
     explicitFort: row.fortSave,
     explicitRef: row.refSave,
-    explicitWill: row.willSave
+    explicitWill: row.willSave,
+    trackCategory
   };
+}
+
+/** CR contribution for a 1st-level NPC class character (`0.5` per DMG p. 38). */
+const NPC_CLASS_LEVEL_1_CR = 0.5;
+
+/** CR contribution per NPC class level when added to a monster with Racial HD (`0.5` per MM p. 294). */
+const MONSTER_NONASSOCIATED_NPC_CR_PER_LEVEL = 0.5;
+
+/**
+ * Computes the Challenge Rating (CR) contribution of NPC class levels per DMG p. 38 & MM p. 294:
+ * - For a standard NPC without Racial HD: Level 1 = CR 1/2 (`0.5`), Level >= 2 = `Level - 1`.
+ * - For a monster with Racial HD: NPC class levels are always nonassociated (`+0.5 CR` per level).
+ *
+ * @param npcClassLevels Total levels in NPC classes (`isNpcClass === true`).
+ * @param hasMonsterRacialHd True if the creature also has >= 1 Racial Hit Dice.
+ * @returns CR contribution from the NPC class levels.
+ */
+export function computeNpcClassCrContribution(npcClassLevels: number, hasMonsterRacialHd = false): number {
+  const safeLevels = Math.max(0, dndFloor(npcClassLevels));
+  if (safeLevels === 0) return 0;
+  if (hasMonsterRacialHd) {
+    return safeLevels * MONSTER_NONASSOCIATED_NPC_CR_PER_LEVEL;
+  }
+  return safeLevels === 1 ? NPC_CLASS_LEVEL_1_CR : safeLevels - 1;
 }
 
 /**

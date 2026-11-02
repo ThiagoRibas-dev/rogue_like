@@ -1,0 +1,57 @@
+{
+  "sun": {
+    "id": "sun",
+    "name": "Sun",
+    "grantedPowerDescription": "Greater Turning 1/day: perform a greater turning against undead in place of a regular turning; undead that would be turned are destroyed instead.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_sun",
+      "name": "Sun Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Greater Turning 1/day: perform a greater turning against undead in place of a regular turning; undead that would be turned are destroyed instead.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:sun"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_sun_power",
+          "name": "Sun Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_greater_turning"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_greater_turning",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_greater_turning",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "endure_elements",
+      "2": "heat_metal",
+      "3": "searing_light",
+      "4": "fire_shield",
+      "5": "flame_strike",
+      "6": "fire_seeds",
+      "7": "sunbeam",
+      "8": "sunburst",
+      "9": "prismatic_sphere"
+    }
+  }
+}

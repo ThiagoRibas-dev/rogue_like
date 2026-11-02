@@ -1,0 +1,86 @@
+{
+  "frost_giant": {
+    "id": "frost_giant",
+    "name": "Frost Giant",
+    "creatureType": "giant",
+    "subtypes": [
+      "cold"
+    ],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 18,
+      "dex": -2,
+      "con": 10,
+      "int": 0,
+      "wis": 4,
+      "cha": 0
+    },
+    "defaultAbilityScores": {
+      "str": 29,
+      "dex": 9,
+      "con": 21,
+      "int": 10,
+      "wis": 14,
+      "cha": 11
+    },
+    "naturalArmorBonus": 9,
+    "rhdProgression": {
+      "baseHdCount": 14,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [
+      "cold"
+    ],
+    "vulnerabilities": [
+      "fire"
+    ],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "3d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 4,
+    "shieldBonus": 0,
+    "feats": [
+      "cleave",
+      "great_cleave",
+      "improved_overrun",
+      "improved_sunder",
+      "power_attack"
+    ],
+    "skillRanks": {
+      "climb": 7,
+      "craft": 6,
+      "intimidate": 6,
+      "jump": 7,
+      "spot": 12
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 9
+  }
+}

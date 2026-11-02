@@ -1,0 +1,78 @@
+{
+  "skeleton": {
+    "id": "skeleton",
+    "name": "Skeleton",
+    "creatureType": "undead",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 2,
+      "dex": 2,
+      "con": null,
+      "int": null,
+      "wis": 0,
+      "cha": -10
+    },
+    "defaultAbilityScores": {
+      "str": 13,
+      "dex": 13,
+      "con": null,
+      "int": null,
+      "wis": 10,
+      "cha": 1
+    },
+    "naturalArmorBonus": 2,
+    "rhdProgression": {
+      "baseHdCount": 1,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "bludgeoning"
+      ]
+    },
+    "energyResistances": {},
+    "immunities": [
+      "cold"
+    ],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d6",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 18,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 1,
+    "feats": [
+      "improved_initiative"
+    ],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 0.33
+  }
+}

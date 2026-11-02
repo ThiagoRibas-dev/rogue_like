@@ -1,0 +1,15 @@
+{
+  "augmented": {
+    "subtypeId": "augmented",
+    "name": "Augmented Subtype",
+    "description": "Retains original creature features while using new creature type traits.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:augmented"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

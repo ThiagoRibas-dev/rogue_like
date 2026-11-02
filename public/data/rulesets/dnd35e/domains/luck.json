@@ -1,0 +1,57 @@
+{
+  "luck": {
+    "id": "luck",
+    "name": "Luck",
+    "grantedPowerDescription": "Good Fortune 1/day: reroll one roll that you have just made before the DM declares whether the roll results in success or failure.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_luck",
+      "name": "Luck Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Good Fortune 1/day: reroll one roll that you have just made before the DM declares whether the roll results in success or failure.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:luck"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_luck_power",
+          "name": "Luck Granted Power",
+          "actionCost": "free",
+          "usageLimitPoolId": "domain_good_fortune"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_good_fortune",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_good_fortune",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "entropic_shield",
+      "2": "aid",
+      "3": "protection_from_energy",
+      "4": "freedom_of_movement",
+      "5": "break_enchantment",
+      "6": "mislead",
+      "7": "spell_turning",
+      "8": "moment_of_prescience",
+      "9": "miracle"
+    }
+  }
+}

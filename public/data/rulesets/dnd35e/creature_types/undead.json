@@ -1,0 +1,80 @@
+{
+  "undead": {
+    "typeId": "undead",
+    "name": "Undead",
+    "hitDieSides": 12,
+    "babCurve": "half",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 4,
+    "defaultTraits": [
+      "darkvision_60"
+    ],
+    "immunities": [
+      "poison",
+      "sleep",
+      "paralysis",
+      "stun",
+      "disease",
+      "death_effects",
+      "critical_hits",
+      "nonlethal_damage",
+      "ability_drain",
+      "energy_drain"
+    ],
+    "hasConstitutionScore": false,
+    "hasIntelligenceScore": true,
+    "nonabilities": [
+      "con"
+    ],
+    "weaponProficiencies": [
+      "natural",
+      "simple"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": false,
+      "breathes": false,
+      "sleeps": false
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_undead_traits",
+        "name": "Undead Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": false,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [
+          "poison",
+          "sleep",
+          "paralysis",
+          "stun",
+          "disease",
+          "death_effects",
+          "critical_hits",
+          "nonlethal_damage",
+          "ability_drain",
+          "energy_drain",
+          "mind_affecting"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

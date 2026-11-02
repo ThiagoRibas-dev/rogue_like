@@ -1,0 +1,91 @@
+{
+  "mind_flayer": {
+    "id": "mind_flayer",
+    "name": "Mind Flayer",
+    "creatureType": "aberration",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 2,
+      "dex": 4,
+      "con": 2,
+      "int": 8,
+      "wis": 6,
+      "cha": 6
+    },
+    "defaultAbilityScores": {
+      "str": 12,
+      "dex": 14,
+      "con": 12,
+      "int": 19,
+      "wis": 17,
+      "cha": 17
+    },
+    "naturalArmorBonus": 3,
+    "rhdProgression": {
+      "baseHdCount": 8,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "spellResistance": 25,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "tentacle",
+        "name": "Tentacle",
+        "naturalType": "tentacle",
+        "isPrimary": true,
+        "count": 4,
+        "damageDice": "1d4",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "combat_casting",
+      "dodge",
+      "weapon_finesse"
+    ],
+    "skillRanks": {
+      "concentration": 11,
+      "hide": 10,
+      "listen": 11,
+      "move_silently": 10,
+      "spot": 11
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 8
+  }
+}

@@ -510,7 +510,8 @@ function validateRulesetDiskParity(): { readonly errors: ReadonlyArray<string>; 
             );
           } else {
             const inner = raw[stem] as Record<string, unknown>;
-            const innerId = inner['id'] ?? inner['archetypeId'] ?? inner['templateId'] ?? inner['typeId'];
+            const innerId =
+              inner['id'] ?? inner['archetypeId'] ?? inner['templateId'] ?? inner['typeId'] ?? inner['subtypeId'];
             if (innerId !== stem) {
               errors.push(
                 `Ruleset "${rulesetId}" file "${relFilename}" inner identifier (${String(innerId)}) does not match filename stem "${stem}".`

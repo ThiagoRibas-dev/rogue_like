@@ -1,0 +1,22 @@
+{
+  "water": {
+    "subtypeId": "water",
+    "name": "Water Subtype",
+    "description": "Creatures of elemental water always have a swim speed and can breathe underwater.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:water"
+    ],
+    "modifiers": [
+      {
+        "id": "subtype_water_swim",
+        "target": "skill_swim",
+        "value": 8,
+        "type": "racial"
+      }
+    ],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "chaotic": {
+    "subtypeId": "chaotic",
+    "name": "Chaotic Subtype",
+    "description": "Natural and wielded weapons are treated as chaotic-aligned for overcoming damage reduction.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:chaotic",
+      "weapons_chaotic_aligned"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

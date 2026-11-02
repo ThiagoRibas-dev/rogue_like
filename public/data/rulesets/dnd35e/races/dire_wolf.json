@@ -1,0 +1,88 @@
+{
+  "dire_wolf": {
+    "id": "dire_wolf",
+    "name": "Dire Wolf",
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 14,
+      "dex": 4,
+      "con": 6,
+      "int": -8,
+      "wis": 2,
+      "cha": 0
+    },
+    "defaultAbilityScores": {
+      "str": 25,
+      "dex": 15,
+      "con": 17,
+      "int": 2,
+      "wis": 12,
+      "cha": 10
+    },
+    "naturalArmorBonus": 3,
+    "rhdProgression": {
+      "baseHdCount": 6,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "1d8",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "run",
+      "weapon_focus_bite"
+    ],
+    "skillRanks": {
+      "listen": 7,
+      "spot": 7,
+      "survival": 5
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 3
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "tumble": {
+    "id": "tumble",
+    "name": "Tumble",
+    "keyAbility": "dex",
+    "trainedOnly": true,
+    "acpMultiplier": 1,
+    "synergyFromSkills": [
+      "jump"
+    ],
+    "actions": [
+      {
+        "actionId": "tumble_avoid_aoo",
+        "name": "Tumble Past Opponent (Half Speed)",
+        "actionCost": "part_of_movement",
+        "dc": 15,
+        "description": "Tumble at one-half speed as part of normal movement, provoking no attacks of opportunity while doing so.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": [
+          {
+            "id": "tumble_no_aoo",
+            "ruleKey": "provokes_movement_aoo",
+            "value": false,
+            "priority": 20
+          }
+        ]
+      },
+      {
+        "actionId": "tumble_through_enemy_square",
+        "name": "Tumble Through Occupied Square",
+        "actionCost": "part_of_movement",
+        "dc": 25,
+        "description": "Tumble at one-half speed through an area occupied by an enemy.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": [
+          {
+            "id": "tumble_through_enemy",
+            "ruleKey": "can_move_through_enemy_square",
+            "value": true,
+            "priority": 20
+          },
+          {
+            "id": "tumble_through_no_aoo",
+            "ruleKey": "provokes_movement_aoo",
+            "value": false,
+            "priority": 20
+          }
+        ]
+      }
+    ],
+    "rankThresholdModifiers": [
+      {
+        "minRanks": 5,
+        "modifiers": [
+          {
+            "id": "tumble_5_ranks_fight_defensively_ac",
+            "target": "ac",
+            "value": 1,
+            "type": "dodge",
+            "condition": {
+              "selfTagsAny": [
+                "stance:fighting_defensively",
+                "stance:total_defense"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

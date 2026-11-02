@@ -1,0 +1,16 @@
+{
+  "good": {
+    "subtypeId": "good",
+    "name": "Good Subtype",
+    "description": "Natural and wielded weapons are treated as good-aligned for overcoming damage reduction.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:good",
+      "weapons_good_aligned"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

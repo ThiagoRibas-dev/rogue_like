@@ -1,0 +1,22 @@
+{
+  "hide": {
+    "id": "hide",
+    "name": "Hide",
+    "keyAbility": "dex",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "hide_in_shadows",
+        "name": "Hide in Cover or Concealment",
+        "actionCost": "part_of_movement",
+        "opposedBySkill": "spot",
+        "description": "Conceal yourself from observation as part of movement when you have cover or concealment.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

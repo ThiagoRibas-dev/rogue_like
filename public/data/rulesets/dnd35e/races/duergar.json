@@ -10,12 +10,28 @@
     "baseLandSpeedFt": 20,
     "unencumberedSpeedInHeavyArmor": true,
     "abilityAdjustments": {
+      "str": 0,
+      "dex": 0,
       "con": 2,
+      "int": 0,
+      "wis": 0,
       "cha": -4
     },
     "darkvisionFt": 120,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
     "levelAdjustment": 1,
     "favoredClass": "fighter",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
     "saveBonuses": {
       "fort": 2,
       "ref": 2,
@@ -49,6 +65,7 @@
         }
       }
     ],
+    "traitBundles": [],
     "weaponFamiliarityIds": [
       "dwarven_waraxe",
       "dwarven_urgrosh"
@@ -57,6 +74,11 @@
       "common",
       "dwarven",
       "undercommon"
-    ]
+    ],
+    "naturalWeapons": [],
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false
   }
 }

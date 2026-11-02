@@ -1,0 +1,63 @@
+{
+  "war": {
+    "id": "war",
+    "name": "War",
+    "grantedPowerDescription": "Free Martial Weapon Proficiency with deity's favored weapon (if necessary) and Weapon Focus with the deity's favored weapon.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_war",
+      "name": "War Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "Free Martial Weapon Proficiency with deity's favored weapon (if necessary) and Weapon Focus with the deity's favored weapon.",
+      "modifiers": [
+        {
+          "id": "domain_war_weapon_focus",
+          "target": "attack",
+          "value": 1,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:war"
+      ],
+      "grantedFeats": [
+        "weapon_focus"
+      ],
+      "virtualFeatGrants": [
+        {
+          "featId": "weapon_focus",
+          "ignorePrerequisites": true
+        }
+      ],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [
+      "weapon_focus"
+    ],
+    "modifiers": [
+      {
+        "id": "domain_war_weapon_focus",
+        "target": "attack",
+        "value": 1,
+        "type": "untyped"
+      }
+    ],
+    "domainSpells": {
+      "1": "magic_weapon",
+      "2": "spiritual_weapon",
+      "3": "magic_vestment",
+      "4": "divine_power",
+      "5": "flame_strike",
+      "6": "blade_barrier",
+      "7": "power_word_blind",
+      "8": "power_word_stun",
+      "9": "power_word_kill"
+    }
+  }
+}

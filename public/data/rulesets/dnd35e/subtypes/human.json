@@ -1,0 +1,15 @@
+{
+  "human": {
+    "subtypeId": "human",
+    "name": "Human Subtype",
+    "description": "Humanoid of human heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:human"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

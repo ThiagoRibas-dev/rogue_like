@@ -1,0 +1,98 @@
+{
+  "manticore": {
+    "id": "manticore",
+    "name": "Manticore",
+    "creatureType": "magical_beast",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 10,
+      "dex": 4,
+      "con": 8,
+      "int": -4,
+      "wis": 2,
+      "cha": -2
+    },
+    "defaultAbilityScores": {
+      "str": 20,
+      "dex": 15,
+      "con": 19,
+      "int": 7,
+      "wis": 12,
+      "cha": 9
+    },
+    "naturalArmorBonus": 6,
+    "rhdProgression": {
+      "baseHdCount": 6,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "2d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "2d4",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "flyby_attack",
+      "multiattack",
+      "weapon_focus_spikes"
+    ],
+    "skillRanks": {
+      "listen": 5,
+      "spot": 9
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 5
+  }
+}

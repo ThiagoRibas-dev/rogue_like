@@ -1,0 +1,15 @@
+{
+  "halfling": {
+    "subtypeId": "halfling",
+    "name": "Halfling Subtype",
+    "description": "Humanoid of halfling heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:halfling"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

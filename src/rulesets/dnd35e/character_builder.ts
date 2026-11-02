@@ -8,7 +8,8 @@ import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from './prerequ
 import {
   aggregateProgressionChassis,
   buildHitDieTrackFromClass,
-  collectClassFeaturesUpToLevel
+  collectClassFeaturesUpToLevel,
+  computeNpcClassCrContribution
 } from './progression.ts';
 import { applyRaceToActorChassis } from './races.ts';
 import { getDnD35EntityData, projectDnD35ActorSemanticTags, setDnD35EntityData } from './srd_registry.ts';
@@ -16,6 +17,7 @@ import {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
   buildClassAndDomainEffectModifiers,
+  collectActiveGrantedAndVirtualFeats,
   rebuildActorStateFromLevelHistory
 } from './level_ledger.ts';
 import type {
@@ -34,6 +36,8 @@ export {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
   buildClassAndDomainEffectModifiers,
+  collectActiveGrantedAndVirtualFeats,
+  computeNpcClassCrContribution,
   rebuildActorStateFromLevelHistory
 };
 
@@ -55,8 +59,11 @@ export const POINT_BUY_COST_TABLE: Readonly<Record<number, number>> = {
 /** Standard Point-Buy budget presets (`25` Standard, `28` High-Powered, `32` Elite). */
 export const POINT_BUY_PRESETS: ReadonlyArray<number> = [25, 28, 32];
 
-/** Standard D&D 3.5e Elite Array ability scores. */
+/** Standard D&D 3.5e Elite Array ability scores (PCs, Monsters with PC classes, Heroic NPCs). */
 export const ELITE_ABILITY_ARRAY: ReadonlyArray<number> = [15, 14, 13, 12, 10, 8];
+
+/** Standard D&D 3.5e Nonelite Array ability scores (creatures with only NPC class levels, DMG p. 110). */
+export const NONELITE_ABILITY_ARRAY: ReadonlyArray<number> = [13, 12, 11, 10, 9, 8];
 
 /** Minimum and maximum base ability scores allowed in Point-Buy. */
 export const POINT_BUY_MIN_SCORE = 8;
@@ -378,16 +385,21 @@ export function applyCharacterCreationToPlayer(
     tracks: []
   };
 
-  const withRaceResult = applyRaceToActorChassis(withBaseAbilities, raceDef);
+  const creatureTypeEngine = sysContent.creatureTypes[raceDef.creatureType];
+  const withRaceResult = applyRaceToActorChassis(withBaseAbilities, raceDef, creatureTypeEngine);
   const withRace = withRaceResult.entityData;
   const levelOneTrack = buildHitDieTrackFromClass(classDef, 1);
   const nextTracks: ReadonlyArray<HitDieTrack> = [...withRace.tracks, levelOneTrack];
+  const suppressedIds = currentData.suppressedBundleIds ?? [];
+  const activeTags = projectDnD35ActorSemanticTags(withRace);
   const classAndDomainMods = buildClassAndDomainEffectModifiers(
     nextTracks,
     draft.selectedAcfs,
     draft.domains,
     sysContent.classes,
-    sysContent.domains
+    sysContent.domains,
+    suppressedIds,
+    activeTags
   );
 
   const equipPkg =
@@ -396,16 +408,16 @@ export function applyCharacterCreationToPlayer(
   const activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, draft.selectedAcfs);
   const hasPounce = activeFeatures.includes('pounce') || withRace.hasPounce === true;
 
-  const domainFeats: string[] = [];
-  for (const domId of draft.domains) {
-    const dom = sysContent.domains[domId];
-    if (dom) {
-      for (const f of dom.featGrants) {
-        if (!domainFeats.includes(f)) domainFeats.push(f);
-      }
-    }
-  }
-  const mergedFeats = Array.from(new Set([...draft.selectedFeats, ...domainFeats]));
+  const grantedFeats = collectActiveGrantedAndVirtualFeats(
+    nextTracks,
+    draft.selectedAcfs,
+    draft.domains,
+    sysContent.classes,
+    sysContent.domains,
+    suppressedIds,
+    activeTags
+  );
+  const mergedFeats = Array.from(new Set([...withRace.feats, ...draft.selectedFeats, ...grantedFeats]));
 
   const levelOneRecord: DnD35CharacterLevelRecord = {
     characterLevel: 1,

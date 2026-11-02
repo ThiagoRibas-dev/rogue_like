@@ -1,0 +1,59 @@
+{
+  "incorporeal": {
+    "subtypeId": "incorporeal",
+    "name": "Incorporeal Subtype",
+    "description": "No physical body (STR nonability), harmed only by magic/force/ghost touch (50% miss chance from corporeal magic), deflection bonus to AC equal to Charisma modifier (min +1).",
+    "immunities": [
+      "nonmagical_attacks",
+      "critical_hits",
+      "grapple",
+      "trip"
+    ],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:incorporeal",
+      "ignore_natural_armor"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [
+      {
+        "id": "incorporeal_corporeal_miss_chance",
+        "ruleKey": "corporeal_magic_miss_chance_pct",
+        "value": 50,
+        "priority": 20
+      },
+      {
+        "id": "incorporeal_silent_move",
+        "ruleKey": "auto_succeed_move_silently",
+        "value": true,
+        "priority": 20
+      }
+    ],
+    "traitBundles": [
+      {
+        "bundleId": "subtype_incorporeal_traits",
+        "name": "Incorporeal Subtype Traits",
+        "category": "su",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [
+          "subtype:incorporeal",
+          "ignore_natural_armor"
+        ],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "immunities": [
+          "nonmagical_attacks",
+          "critical_hits",
+          "grapple",
+          "trip"
+        ],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

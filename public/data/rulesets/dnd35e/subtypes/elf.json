@@ -1,0 +1,15 @@
+{
+  "elf": {
+    "subtypeId": "elf",
+    "name": "Elf Subtype",
+    "description": "Humanoid of elven heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:elf"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

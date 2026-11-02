@@ -1,0 +1,86 @@
+{
+  "flesh_golem": {
+    "id": "flesh_golem",
+    "name": "Flesh Golem",
+    "creatureType": "construct",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 10,
+      "dex": -2,
+      "con": null,
+      "int": null,
+      "wis": 0,
+      "cha": -10
+    },
+    "defaultAbilityScores": {
+      "str": 21,
+      "dex": 9,
+      "con": null,
+      "int": null,
+      "wis": 11,
+      "cha": 1
+    },
+    "naturalArmorBonus": 10,
+    "rhdProgression": {
+      "baseHdCount": 9,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "damageReduction": {
+      "amount": 5,
+      "bypassTags": [
+        "adamantine"
+      ]
+    },
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "2d8",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "2d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 7
+  }
+}

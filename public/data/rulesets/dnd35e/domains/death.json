@@ -1,0 +1,57 @@
+{
+  "death": {
+    "id": "death",
+    "name": "Death",
+    "grantedPowerDescription": "Death Touch 1/day: make a melee touch attack; if you roll at least as high on 1d6 per cleric level as target's current HP, it dies (supernatural ability).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_death",
+      "name": "Death Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Death Touch 1/day: make a melee touch attack; if you roll at least as high on 1d6 per cleric level as target's current HP, it dies (supernatural ability).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:death"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_death_power",
+          "name": "Death Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_death_touch"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_death_touch",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_death_touch",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "cause_fear",
+      "2": "death_knell",
+      "3": "animate_dead",
+      "4": "death_ward",
+      "5": "slay_living",
+      "6": "create_undead",
+      "7": "destruction",
+      "8": "create_greater_undead",
+      "9": "wail_of_the_banshee"
+    }
+  }
+}

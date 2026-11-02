@@ -1,0 +1,206 @@
+{
+  "commoner": {
+    "id": "commoner",
+    "name": "Commoner",
+    "isPrestige": false,
+    "isNpcClass": true,
+    "maxLevel": 20,
+    "hitDieSides": 4,
+    "skillPointsPerLevel": 2,
+    "classSkills": [
+      "climb",
+      "jump",
+      "listen",
+      "spot",
+      "swim"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "proficiencies": {
+      "weapons": [
+        "simple_one"
+      ],
+      "armor": [],
+      "shields": []
+    },
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "weapon_and_armor_proficiency"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 0,
+        "features": []
+      },
+      {
+        "level": 3,
+        "bab": 1,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 4,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 5,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 6,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 7,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 8,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 9,
+        "bab": 4,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 10,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 11,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 12,
+        "bab": 6,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 13,
+        "bab": 6,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 14,
+        "bab": 7,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 15,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 16,
+        "bab": 8,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 17,
+        "bab": 8,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 18,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 19,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 20,
+        "bab": 10,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      }
+    ],
+    "featureDetails": {
+      "weapon_and_armor_proficiency": {
+        "id": "weapon_and_armor_proficiency",
+        "name": "Weapon and Armor Proficiency",
+        "category": "proficiency",
+        "usageMode": "passive",
+        "description": "A commoner is proficient with one simple weapon. He is not proficient with any other weapons, nor is he proficient with any type of armor or shields.",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "activatedAbilities": []
+      }
+    },
+    "acfSwaps": []
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "travel": {
+    "id": "travel",
+    "name": "Travel",
+    "grantedPowerDescription": "For a total time per day of 1 round per cleric level, act normally regardless of magical effects that impede movement (as freedom of movement). Add Survival to your cleric class skills.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_travel",
+      "name": "Travel Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "For a total time per day of 1 round per cleric level, act normally regardless of magical effects that impede movement (as freedom of movement). Add Survival to your cleric class skills.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:travel"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [
+        "survival"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_travel_power",
+          "name": "Travel Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_freedom_of_movement"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_freedom_of_movement",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [
+      "survival"
+    ],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_freedom_of_movement",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "longstrider",
+      "2": "locate_object",
+      "3": "fly",
+      "4": "dimension_door",
+      "5": "teleport",
+      "6": "find_the_path",
+      "7": "greater_teleport",
+      "8": "phase_door",
+      "9": "astral_projection"
+    }
+  }
+}

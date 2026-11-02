@@ -1,0 +1,15 @@
+{
+  "reptilian": {
+    "subtypeId": "reptilian",
+    "name": "Reptilian Subtype",
+    "description": "Scaly humanoid of reptilian or draconic heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:reptilian"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

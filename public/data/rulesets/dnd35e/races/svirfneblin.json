@@ -8,20 +8,35 @@
     ],
     "size": "small",
     "baseLandSpeedFt": 20,
+    "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
-      "dex": 2,
-      "wis": 2,
       "str": -2,
+      "dex": 2,
+      "con": 0,
+      "int": 0,
+      "wis": 2,
       "cha": -4
     },
     "darkvisionFt": 120,
     "naturalArmorBonus": 4,
+    "rhdProgression": {
+      "baseHdCount": 0,
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
     "levelAdjustment": 3,
     "favoredClass": "rogue",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
     "spellResistanceFormula": {
       "base": 11,
       "perHitDie": 1
     },
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
     "saveBonuses": {
       "fort": 2,
       "ref": 2,
@@ -36,10 +51,17 @@
         "condition": {}
       }
     ],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
     "automaticLanguages": [
       "common",
       "gnome",
       "undercommon"
-    ]
+    ],
+    "naturalWeapons": [],
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false
   }
 }

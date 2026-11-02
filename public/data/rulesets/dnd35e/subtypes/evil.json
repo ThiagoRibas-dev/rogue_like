@@ -1,0 +1,16 @@
+{
+  "evil": {
+    "subtypeId": "evil",
+    "name": "Evil Subtype",
+    "description": "Natural and wielded weapons are treated as evil-aligned for overcoming damage reduction.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:evil",
+      "weapons_evil_aligned"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

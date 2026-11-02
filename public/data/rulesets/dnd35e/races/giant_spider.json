@@ -1,0 +1,99 @@
+{
+  "giant_spider": {
+    "id": "giant_spider",
+    "name": "Giant Spider",
+    "creatureType": "vermin",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 0,
+      "dex": 6,
+      "con": 2,
+      "int": null,
+      "wis": 0,
+      "cha": -8
+    },
+    "defaultAbilityScores": {
+      "str": 11,
+      "dex": 17,
+      "con": 12,
+      "int": null,
+      "wis": 10,
+      "cha": 2
+    },
+    "naturalArmorBonus": 1,
+    "rhdProgression": {
+      "baseHdCount": 2,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [
+      "mind_affecting"
+    ],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "spider_venom",
+            "type": "poison",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 14,
+            "initialEffectDescription": "1d4 Str",
+            "secondaryEffectDescription": "1d4 Str"
+          }
+        ]
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "piercing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "weapon_finesse"
+    ],
+    "skillRanks": {
+      "climb": 8,
+      "hide": 7,
+      "spot": 4
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 1
+  }
+}

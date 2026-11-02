@@ -1,0 +1,76 @@
+{
+  "knowledge": {
+    "id": "knowledge",
+    "name": "Knowledge",
+    "grantedPowerDescription": "Add all Knowledge skills to your list of cleric class skills. You cast divination spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_knowledge",
+      "name": "Knowledge Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "Add all Knowledge skills to your list of cleric class skills. You cast divination spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_knowledge_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "divination"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:knowledge"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [
+        "knowledge_arcana",
+        "knowledge_nature",
+        "knowledge_religion",
+        "knowledge_dungeoneering",
+        "knowledge_planes"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [
+      "knowledge_arcana",
+      "knowledge_nature",
+      "knowledge_religion",
+      "knowledge_dungeoneering",
+      "knowledge_planes"
+    ],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_knowledge_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "divination"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "detect_secret_doors",
+      "2": "detect_thoughts",
+      "3": "clairaudience_clairvoyance",
+      "4": "divination",
+      "5": "true_seeing",
+      "6": "find_the_path",
+      "7": "legend_lore",
+      "8": "discern_location",
+      "9": "foresight"
+    }
+  }
+}

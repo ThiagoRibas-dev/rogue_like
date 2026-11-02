@@ -1,0 +1,57 @@
+{
+  "destruction": {
+    "id": "destruction",
+    "name": "Destruction",
+    "grantedPowerDescription": "Smite 1/day: make a single melee attack with a +4 profane/sacred bonus on attack rolls and a bonus on damage rolls equal to your cleric level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_destruction",
+      "name": "Destruction Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "activated",
+      "description": "Smite 1/day: make a single melee attack with a +4 profane/sacred bonus on attack rolls and a bonus on damage rolls equal to your cleric level.",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:destruction"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [
+        {
+          "abilityId": "domain_destruction_power",
+          "name": "Destruction Granted Power",
+          "actionCost": "standard",
+          "usageLimitPoolId": "domain_destruction_smite"
+        }
+      ],
+      "resourcePool": {
+        "poolId": "domain_destruction_smite",
+        "maxBase": 1,
+        "refreshCycle": "rest_8h"
+      }
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "resourcePool": {
+      "poolId": "domain_destruction_smite",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "inflict_light_wounds",
+      "2": "shatter",
+      "3": "contagion",
+      "4": "inflict_critical_wounds",
+      "5": "inflict_light_wounds_mass",
+      "6": "harm",
+      "7": "disintegrate",
+      "8": "earthquake",
+      "9": "implosion"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "orc": {
+    "subtypeId": "orc",
+    "name": "Orc Subtype",
+    "description": "Humanoid of orc heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:orc"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

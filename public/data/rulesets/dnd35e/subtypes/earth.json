@@ -1,0 +1,15 @@
+{
+  "earth": {
+    "subtypeId": "earth",
+    "name": "Earth Subtype",
+    "description": "Creatures of elemental earth usually have burrow speeds and tremorsense.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:earth"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

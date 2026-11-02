@@ -1,0 +1,22 @@
+{
+  "climb": {
+    "id": "climb",
+    "name": "Climb",
+    "keyAbility": "str",
+    "trainedOnly": false,
+    "acpMultiplier": 1,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "climb_wall",
+        "name": "Climb Surface",
+        "actionCost": "move",
+        "dc": 15,
+        "description": "Advance up, down, or across a slope or wall at one-quarter speed.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

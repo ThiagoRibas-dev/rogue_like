@@ -1,0 +1,64 @@
+{
+  "good": {
+    "id": "good",
+    "name": "Good",
+    "grantedPowerDescription": "You cast good spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_good",
+      "name": "Good Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "You cast good spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_good_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "good"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:good"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_good_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "good"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_evil",
+      "2": "aid",
+      "3": "magic_circle_against_evil",
+      "4": "holy_smite",
+      "5": "dispel_evil",
+      "6": "blade_barrier",
+      "7": "holy_word",
+      "8": "holy_aura",
+      "9": "summon_monster_ix"
+    }
+  }
+}

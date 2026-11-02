@@ -223,5 +223,37 @@ describe('Ruleset-Specific Content & Cartridge Validators', () => {
       const errors = checkDnD35eRuleset(mutatedCampaign);
       expect(errors.some((e) => e.path === 'entities.phantom_ghost.archetypeId')).toBe(true);
     });
+
+    test('detects subtype inner ID mismatch and non-sequential race rhdProgression tierIndex', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+      const redDragon = sys.races['dragon_red']!;
+      const mutatedTiers = [...(redDragon.rhdProgression?.tiers ?? [])];
+      mutatedTiers[1] = { ...mutatedTiers[1]!, tierIndex: 99 };
+
+      const mutatedSys: DnD35SystemContent = {
+        ...sys,
+        subtypes: {
+          ...sys.subtypes,
+          fire: {
+            ...sys.subtypes['fire']!,
+            subtypeId: 'wrong_subtype_id'
+          }
+        },
+        races: {
+          ...sys.races,
+          dragon_red: {
+            ...redDragon,
+            rhdProgression: {
+              ...redDragon.rhdProgression!,
+              tiers: mutatedTiers
+            }
+          }
+        }
+      };
+      const errors = validateDnD35eSystemContentIntegrity(mutatedSys);
+      expect(errors.some((e) => e.path.includes('systemContent.subtypes.fire.subtypeId'))).toBe(true);
+      expect(errors.some((e) => e.path.includes('systemContent.races.dragon_red.rhdProgression.tiers[1].tierIndex'))).toBe(true);
+    });
   });
 });

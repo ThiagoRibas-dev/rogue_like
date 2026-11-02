@@ -1,0 +1,726 @@
+{
+  "dragon_black": {
+    "id": "dragon_black",
+    "name": "Black Dragon",
+    "creatureType": "dragon",
+    "subtypes": [
+      "water"
+    ],
+    "alignment": "chaotic_evil",
+    "size": "tiny",
+    "baseLandSpeedFt": 40,
+    "movementModes": {
+      "land": 40,
+      "fly": 100,
+      "maneuverability": "poor"
+    },
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 0,
+      "dex": 0,
+      "con": 2,
+      "int": -2,
+      "wis": 0,
+      "cha": -2
+    },
+    "defaultAbilityScores": {
+      "str": 11,
+      "dex": 10,
+      "con": 13,
+      "int": 8,
+      "wis": 11,
+      "cha": 8
+    },
+    "senses": {
+      "lowLightVision": true,
+      "darkvisionRangeFt": 120,
+      "blindsenseRangeFt": 60,
+      "blindsightRangeFt": 0,
+      "tremorsenseRangeFt": 0,
+      "scentRangeFt": 0
+    },
+    "naturalArmorBonus": 3,
+    "rhdProgression": {
+      "baseHdCount": 4,
+      "advancementRanges": [],
+      "tiers": [
+        {
+          "tierId": "wyrmling",
+          "name": "Wyrmling",
+          "tierIndex": 1,
+          "hitDice": 4,
+          "sizeCategory": "tiny",
+          "abilityAdjustmentsDelta": {
+            "str": 0,
+            "dex": 0,
+            "con": 0,
+            "int": 0,
+            "wis": 0,
+            "cha": 0
+          },
+          "naturalArmorBonusDelta": 0,
+          "breathDiceCount": 2,
+          "frightfulPresence": false,
+          "unlockedNaturalWeapons": [],
+          "cr": 3
+        },
+        {
+          "tierId": "very_young",
+          "name": "Very Young",
+          "tierIndex": 2,
+          "hitDice": 7,
+          "sizeCategory": "small",
+          "abilityAdjustmentsDelta": {
+            "str": 2,
+            "dex": 0,
+            "con": 2,
+            "int": 2,
+            "wis": 2,
+            "cha": 2
+          },
+          "naturalArmorBonusDelta": 3,
+          "breathDiceCount": 4,
+          "frightfulPresence": false,
+          "unlockedNaturalWeapons": [],
+          "cr": 4
+        },
+        {
+          "tierId": "young",
+          "name": "Young",
+          "tierIndex": 3,
+          "hitDice": 10,
+          "sizeCategory": "medium",
+          "abilityAdjustmentsDelta": {
+            "str": 4,
+            "dex": 0,
+            "con": 2,
+            "int": 2,
+            "wis": 2,
+            "cha": 2
+          },
+          "naturalArmorBonusDelta": 6,
+          "breathDiceCount": 6,
+          "frightfulPresence": false,
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d4",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 6
+        },
+        {
+          "tierId": "juvenile",
+          "name": "Juvenile",
+          "tierIndex": 4,
+          "hitDice": 13,
+          "sizeCategory": "medium",
+          "abilityAdjustmentsDelta": {
+            "str": 8,
+            "dex": 0,
+            "con": 4,
+            "int": 4,
+            "wis": 4,
+            "cha": 4
+          },
+          "naturalArmorBonusDelta": 9,
+          "breathDiceCount": 8,
+          "frightfulPresence": false,
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d4",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 8
+        },
+        {
+          "tierId": "young_adult",
+          "name": "Young Adult",
+          "tierIndex": 5,
+          "hitDice": 16,
+          "sizeCategory": "large",
+          "abilityAdjustmentsDelta": {
+            "str": 10,
+            "dex": 0,
+            "con": 4,
+            "int": 4,
+            "wis": 4,
+            "cha": 4
+          },
+          "naturalArmorBonusDelta": 12,
+          "breathDiceCount": 10,
+          "frightfulPresence": true,
+          "spellResistance": 19,
+          "damageReduction": {
+            "amount": 5,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "1d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 11
+        },
+        {
+          "tierId": "adult",
+          "name": "Adult",
+          "tierIndex": 6,
+          "hitDice": 19,
+          "sizeCategory": "large",
+          "abilityAdjustmentsDelta": {
+            "str": 14,
+            "dex": 0,
+            "con": 6,
+            "int": 6,
+            "wis": 6,
+            "cha": 6
+          },
+          "naturalArmorBonusDelta": 15,
+          "breathDiceCount": 12,
+          "frightfulPresence": true,
+          "spellResistance": 21,
+          "damageReduction": {
+            "amount": 10,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "1d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 14
+        },
+        {
+          "tierId": "mature_adult",
+          "name": "Mature Adult",
+          "tierIndex": 7,
+          "hitDice": 22,
+          "sizeCategory": "huge",
+          "abilityAdjustmentsDelta": {
+            "str": 16,
+            "dex": 0,
+            "con": 6,
+            "int": 6,
+            "wis": 6,
+            "cha": 6
+          },
+          "naturalArmorBonusDelta": 18,
+          "breathDiceCount": 14,
+          "frightfulPresence": true,
+          "spellResistance": 23,
+          "damageReduction": {
+            "amount": 15,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 16
+        },
+        {
+          "tierId": "old",
+          "name": "Old",
+          "tierIndex": 8,
+          "hitDice": 25,
+          "sizeCategory": "huge",
+          "abilityAdjustmentsDelta": {
+            "str": 18,
+            "dex": 0,
+            "con": 8,
+            "int": 8,
+            "wis": 8,
+            "cha": 8
+          },
+          "naturalArmorBonusDelta": 21,
+          "breathDiceCount": 16,
+          "frightfulPresence": true,
+          "spellResistance": 24,
+          "damageReduction": {
+            "amount": 20,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 18
+        },
+        {
+          "tierId": "very_old",
+          "name": "Very Old",
+          "tierIndex": 9,
+          "hitDice": 28,
+          "sizeCategory": "huge",
+          "abilityAdjustmentsDelta": {
+            "str": 20,
+            "dex": 0,
+            "con": 8,
+            "int": 8,
+            "wis": 8,
+            "cha": 8
+          },
+          "naturalArmorBonusDelta": 24,
+          "breathDiceCount": 18,
+          "frightfulPresence": true,
+          "spellResistance": 26,
+          "damageReduction": {
+            "amount": 25,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "1d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 19
+        },
+        {
+          "tierId": "ancient",
+          "name": "Ancient",
+          "tierIndex": 10,
+          "hitDice": 31,
+          "sizeCategory": "gargantuan",
+          "abilityAdjustmentsDelta": {
+            "str": 22,
+            "dex": 0,
+            "con": 10,
+            "int": 10,
+            "wis": 10,
+            "cha": 10
+          },
+          "naturalArmorBonusDelta": 27,
+          "breathDiceCount": 20,
+          "frightfulPresence": true,
+          "spellResistance": 28,
+          "damageReduction": {
+            "amount": 30,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_sweep",
+              "name": "Tail Sweep",
+              "naturalType": "tail_sweep",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 21
+        },
+        {
+          "tierId": "wyrm",
+          "name": "Wyrm",
+          "tierIndex": 11,
+          "hitDice": 34,
+          "sizeCategory": "gargantuan",
+          "abilityAdjustmentsDelta": {
+            "str": 24,
+            "dex": 0,
+            "con": 10,
+            "int": 10,
+            "wis": 10,
+            "cha": 10
+          },
+          "naturalArmorBonusDelta": 30,
+          "breathDiceCount": 22,
+          "frightfulPresence": true,
+          "spellResistance": 29,
+          "damageReduction": {
+            "amount": 35,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_sweep",
+              "name": "Tail Sweep",
+              "naturalType": "tail_sweep",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 23
+        },
+        {
+          "tierId": "great_wyrm",
+          "name": "Great Wyrm",
+          "tierIndex": 12,
+          "hitDice": 37,
+          "sizeCategory": "gargantuan",
+          "abilityAdjustmentsDelta": {
+            "str": 26,
+            "dex": 0,
+            "con": 12,
+            "int": 12,
+            "wis": 12,
+            "cha": 12
+          },
+          "naturalArmorBonusDelta": 33,
+          "breathDiceCount": 24,
+          "frightfulPresence": true,
+          "spellResistance": 31,
+          "damageReduction": {
+            "amount": 40,
+            "bypassTags": [
+              "magic"
+            ]
+          },
+          "unlockedNaturalWeapons": [
+            {
+              "id": "wings",
+              "name": "Wing",
+              "naturalType": "wings",
+              "isPrimary": false,
+              "count": 2,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_slap",
+              "name": "Tail Slap",
+              "naturalType": "tail_slap",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "crush",
+              "name": "Crush",
+              "naturalType": "crush",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d8",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            },
+            {
+              "id": "tail_sweep",
+              "name": "Tail Sweep",
+              "naturalType": "tail_sweep",
+              "isPrimary": false,
+              "count": 1,
+              "damageDice": "2d6",
+              "damageType": "bludgeoning",
+              "critThreatMin": 20,
+              "critMultiplier": 2
+            }
+          ],
+          "cr": 25
+        }
+      ]
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "sorcerer",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [
+      "acid",
+      "sleep",
+      "paralysis"
+    ],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": false,
+        "count": 2,
+        "damageDice": "1d3",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "piercing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "magic"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "hover",
+      "flyby_attack",
+      "power_attack",
+      "cleave"
+    ],
+    "skillRanks": {
+      "search": 4,
+      "spot": 4,
+      "listen": 4
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "breathWeapon": {
+      "shape": "line",
+      "rangeFtAtMedium": 60,
+      "damageType": "acid",
+      "dieType": "d4",
+      "saveType": "ref"
+    },
+    "cr": 3
+  }
+}

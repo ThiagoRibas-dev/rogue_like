@@ -1,0 +1,101 @@
+{
+  "gelatinous_cube": {
+    "id": "gelatinous_cube",
+    "name": "Gelatinous Cube",
+    "creatureType": "ooze",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 0,
+      "dex": -10,
+      "con": 16,
+      "int": null,
+      "wis": -10,
+      "cha": -10
+    },
+    "defaultAbilityScores": {
+      "str": 10,
+      "dex": 1,
+      "con": 26,
+      "int": null,
+      "wis": 1,
+      "cha": 1
+    },
+    "naturalArmorBonus": 0,
+    "rhdProgression": {
+      "baseHdCount": 4,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [
+      "electricity",
+      "mind_affecting",
+      "poison",
+      "sleep",
+      "paralysis",
+      "stunning",
+      "polymorph",
+      "critical_hits",
+      "flanking"
+    ],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "cube_paralysis",
+            "type": "paralysis",
+            "delivery": "contact",
+            "saveType": "fort",
+            "dc": 20,
+            "initialEffectDescription": "Paralyzed 3d6 rounds"
+          }
+        ]
+      }
+    ],
+    "weaponDice": "1d6",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning",
+      "acid"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [],
+    "skillRanks": {},
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 3
+  }
+}

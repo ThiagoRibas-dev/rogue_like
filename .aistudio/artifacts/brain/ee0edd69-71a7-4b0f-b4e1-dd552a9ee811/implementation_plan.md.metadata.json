@@ -1,6 +1,6 @@
 {
-  "summary": "Step-by-step Implementation Plan for the Pluggable Ruleset-Specific Validator Architecture (checkBase, checkClassicRuleset, checkDnD35eRuleset, and Disk-to-Descriptor Parity Validator), including Cascading Effects Matrix, exact code implementations, and dedicated unit tests.",
-  "updatedAt": "2026-11-02T13:54:25.590421151Z",
+  "summary": "Updated the implementation plan to unify DnD35EffectBundleSchema across Feats, Class Features, Domain Granted Powers, Racial Traits, Creature Types, Subtypes, and Templates, explicitly supporting the 4-part anatomy of D&D 3.5e abilities: (1) Passive/Conditional Modifiers & Rule Overrides, (2) Structural Grants (including virtual feat grants that bypass prerequisites and respect runtime activation conditions like armor/load), (3) Activated/Toggled/SLA Abilities & Resource Pools, and (4) Nested Child Bundles with atomic suppression/trading via suppressedBundleIds.",
+  "updatedAt": "2026-11-02T15:41:15.754253305Z",
   "requestFeedback": true,
   "userFacing": true
 }

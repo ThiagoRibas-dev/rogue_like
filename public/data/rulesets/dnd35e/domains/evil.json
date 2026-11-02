@@ -1,0 +1,64 @@
+{
+  "evil": {
+    "id": "evil",
+    "name": "Evil",
+    "grantedPowerDescription": "You cast evil spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_evil",
+      "name": "Evil Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "You cast evil spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_evil_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "evil"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:evil"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_evil_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "evil"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_good",
+      "2": "desecrate",
+      "3": "magic_circle_against_good",
+      "4": "unholy_blight",
+      "5": "dispel_good",
+      "6": "create_undead",
+      "7": "blasphemy",
+      "8": "unholy_aura",
+      "9": "summon_monster_ix"
+    }
+  }
+}

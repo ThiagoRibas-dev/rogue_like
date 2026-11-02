@@ -1,0 +1,34 @@
+{
+  "air": {
+    "subtypeId": "air",
+    "name": "Air Subtype",
+    "description": "Creatures of elemental air always have a fly speed with perfect maneuverability.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:air"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": [
+      {
+        "bundleId": "subtype_air_traits",
+        "name": "Air Subtype Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [
+          "subtype:air"
+        ],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "immunities": [],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

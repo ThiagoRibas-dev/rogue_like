@@ -1,0 +1,98 @@
+{
+  "wight": {
+    "id": "wight",
+    "name": "Wight",
+    "creatureType": "undead",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 2,
+      "dex": 2,
+      "con": null,
+      "int": 0,
+      "wis": 2,
+      "cha": 4
+    },
+    "defaultAbilityScores": {
+      "str": 12,
+      "dex": 12,
+      "con": null,
+      "int": 11,
+      "wis": 13,
+      "cha": 15
+    },
+    "naturalArmorBonus": 4,
+    "rhdProgression": {
+      "baseHdCount": 4,
+      "saveCurveOverrides": {
+        "fortCurve": "poor",
+        "refCurve": "poor",
+        "willCurve": "good"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2,
+        "riders": [
+          {
+            "riderId": "wight_energy_drain",
+            "type": "energy_drain",
+            "delivery": "injury",
+            "saveType": "fort",
+            "dc": 14,
+            "initialEffectDescription": "1 negative level"
+          }
+        ]
+      }
+    ],
+    "weaponDice": "1d4",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "blind_fight"
+    ],
+    "skillRanks": {
+      "hide": 8,
+      "listen": 8,
+      "move_silently": 15,
+      "spot": 8
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 3
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "lawful": {
+    "subtypeId": "lawful",
+    "name": "Lawful Subtype",
+    "description": "Natural and wielded weapons are treated as lawful-aligned for overcoming damage reduction.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:lawful",
+      "weapons_lawful_aligned"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "magical_beast": {
+    "typeId": "magical_beast",
+    "name": "Magical Beast",
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "darkvision_60",
+      "low_light_vision"
+    ],
+    "immunities": [],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_magical_beast_traits",
+        "name": "Magical Beast Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": true,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

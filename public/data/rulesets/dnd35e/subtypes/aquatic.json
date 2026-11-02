@@ -1,0 +1,23 @@
+{
+  "aquatic": {
+    "subtypeId": "aquatic",
+    "name": "Aquatic Subtype",
+    "description": "Aquatic creatures always have a swim speed (+8 racial bonus on Swim checks) and can breathe underwater.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:aquatic",
+      "amphibious_or_water_breathing"
+    ],
+    "modifiers": [
+      {
+        "id": "subtype_aquatic_swim",
+        "target": "skill_swim",
+        "value": 8,
+        "type": "racial"
+      }
+    ],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "dwarf": {
+    "subtypeId": "dwarf",
+    "name": "Dwarf Subtype",
+    "description": "Humanoid of dwarven heritage.",
+    "immunities": [],
+    "vulnerabilities": [],
+    "grantedTags": [
+      "subtype:dwarf"
+    ],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "traitBundles": []
+  }
+}

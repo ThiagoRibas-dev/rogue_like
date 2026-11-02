@@ -1,0 +1,40 @@
+{
+  "magic": {
+    "id": "magic",
+    "name": "Magic",
+    "grantedPowerDescription": "Use spell completion and spell trigger devices as a wizard of one-half your cleric level (minimum 1st level).",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_magic",
+      "name": "Magic Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "Use spell completion and spell trigger devices as a wizard of one-half your cleric level (minimum 1st level).",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:magic"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [],
+    "domainSpells": {
+      "1": "magic_aura",
+      "2": "identify",
+      "3": "dispel_magic",
+      "4": "imbue_with_spell_ability",
+      "5": "spell_resistance",
+      "6": "antimagic_field",
+      "7": "spell_turning",
+      "8": "protection_from_spells",
+      "9": "mages_disjunction"
+    }
+  }
+}

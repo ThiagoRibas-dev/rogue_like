@@ -8,6 +8,27 @@
       "type": "min_ability",
       "ability": "str",
       "minScore": 13
+    },
+    "effectBundle": {
+      "bundleId": "feat_power_attack",
+      "name": "Power Attack",
+      "category": "feat",
+      "usageMode": "variable_dial",
+      "description": "Trade melee attack bonus for melee damage (1:1 one-handed, 1:2 two-handed).",
+      "activatedAbilities": [
+        {
+          "abilityId": "power_attack_dial",
+          "name": "Power Attack Dial",
+          "actionCost": "free",
+          "variableDial": {
+            "min": 0,
+            "maxCapRule": "bab",
+            "attackDeltaPerPoint": -1,
+            "damageDeltaPerPoint": 1,
+            "acDeltaPerPoint": 0
+          }
+        }
+      ]
     }
   }
 }

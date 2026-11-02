@@ -1,0 +1,64 @@
+{
+  "law": {
+    "id": "law",
+    "name": "Law",
+    "grantedPowerDescription": "You cast law spells at +1 caster level.",
+    "grantedPowerBundle": {
+      "bundleId": "domain_power_law",
+      "name": "Law Domain Granted Power",
+      "category": "domain_power",
+      "usageMode": "passive",
+      "description": "You cast law spells at +1 caster level.",
+      "modifiers": [
+        {
+          "id": "domain_law_cl",
+          "target": "caster_level",
+          "value": 1,
+          "type": "untyped",
+          "condition": {
+            "effectTagsAny": [
+              "lawful"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "domain:law"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "classSkillsAdded": [],
+    "featGrants": [],
+    "modifiers": [
+      {
+        "id": "domain_law_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": [
+            "lawful"
+          ]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_chaos",
+      "2": "calm_emotions",
+      "3": "magic_circle_against_chaos",
+      "4": "order_s_wrath",
+      "5": "dispel_chaos",
+      "6": "hold_monster",
+      "7": "dictum",
+      "8": "shield_of_law",
+      "9": "summon_monster_ix"
+    }
+  }
+}

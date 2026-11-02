@@ -1,0 +1,55 @@
+{
+  "aberration": {
+    "typeId": "aberration",
+    "name": "Aberration",
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "defaultTraits": [
+      "darkvision_60"
+    ],
+    "immunities": [],
+    "hasConstitutionScore": true,
+    "hasIntelligenceScore": true,
+    "nonabilities": [],
+    "weaponProficiencies": [
+      "natural",
+      "simple_ mentioned"
+    ],
+    "armorProficiencies": [],
+    "physiology": {
+      "eats": true,
+      "breathes": true,
+      "sleeps": true
+    },
+    "traitBundles": [
+      {
+        "bundleId": "type_aberration_traits",
+        "name": "Aberration Traits",
+        "category": "trait",
+        "usageMode": "passive",
+        "modifiers": [],
+        "ruleOverrides": [],
+        "grantedTags": [],
+        "grantedFeats": [],
+        "virtualFeatGrants": [],
+        "classSkillsAdded": [],
+        "grantedSenses": {
+          "lowLightVision": false,
+          "darkvisionRangeFt": 60,
+          "blindsenseRangeFt": 0,
+          "blindsightRangeFt": 0,
+          "tremorsenseRangeFt": 0,
+          "scentRangeFt": 0
+        },
+        "immunities": [],
+        "vulnerabilities": [],
+        "energyResistances": {},
+        "activatedAbilities": []
+      }
+    ]
+  }
+}

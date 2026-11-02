@@ -1,0 +1,101 @@
+{
+  "dire_bear": {
+    "id": "dire_bear",
+    "name": "Dire Bear",
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 20,
+      "dex": 2,
+      "con": 8,
+      "int": -8,
+      "wis": 2,
+      "cha": 0
+    },
+    "defaultAbilityScores": {
+      "str": 31,
+      "dex": 13,
+      "con": 19,
+      "int": 2,
+      "wis": 12,
+      "cha": 10
+    },
+    "naturalArmorBonus": 7,
+    "rhdProgression": {
+      "baseHdCount": 12,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "good",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "2d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "2d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "weaponDice": "2d4",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 0,
+    "shieldBonus": 0,
+    "feats": [
+      "alertness",
+      "endurance",
+      "run",
+      "toughness",
+      "weapon_focus_claw"
+    ],
+    "skillRanks": {
+      "listen": 7,
+      "spot": 7,
+      "swim": 3
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 7
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "gnoll": {
+    "id": "gnoll",
+    "name": "Gnoll",
+    "creatureType": "humanoid",
+    "subtypes": [
+      "gnoll"
+    ],
+    "size": "medium",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 4,
+      "dex": 0,
+      "con": 2,
+      "int": -2,
+      "wis": 0,
+      "cha": -2
+    },
+    "defaultAbilityScores": {
+      "str": 15,
+      "dex": 10,
+      "con": 13,
+      "int": 8,
+      "wis": 11,
+      "cha": 8
+    },
+    "naturalArmorBonus": 1,
+    "rhdProgression": {
+      "baseHdCount": 2,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "1d8",
+    "weaponDamageType": "slashing",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 3,
+    "weaponBypassTags": [
+      "slashing"
+    ],
+    "armorBonus": 2,
+    "shieldBonus": 1,
+    "feats": [
+      "power_attack"
+    ],
+    "skillRanks": {
+      "listen": 2,
+      "spot": 2
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 1
+  }
+}

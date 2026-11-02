@@ -1,0 +1,22 @@
+{
+  "diplomacy": {
+    "id": "diplomacy",
+    "name": "Diplomacy",
+    "keyAbility": "cha",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "synergyFromSkills": [],
+    "actions": [
+      {
+        "actionId": "influence_attitude",
+        "name": "Influence NPC Attitude",
+        "actionCost": "full_round",
+        "dc": 15,
+        "description": "Shift a nonplayer character attitude by one or more steps.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "ogre": {
+    "id": "ogre",
+    "name": "Ogre",
+    "creatureType": "giant",
+    "subtypes": [],
+    "size": "large",
+    "baseLandSpeedFt": 30,
+    "unencumberedSpeedInHeavyArmor": false,
+    "abilityAdjustments": {
+      "str": 10,
+      "dex": -2,
+      "con": 4,
+      "int": -4,
+      "wis": 0,
+      "cha": -4
+    },
+    "defaultAbilityScores": {
+      "str": 21,
+      "dex": 8,
+      "con": 15,
+      "int": 6,
+      "wis": 10,
+      "cha": 7
+    },
+    "naturalArmorBonus": 5,
+    "rhdProgression": {
+      "baseHdCount": 4,
+      "saveCurveOverrides": {
+        "fortCurve": "good",
+        "refCurve": "poor",
+        "willCurve": "poor"
+      },
+      "advancementRanges": [
+        {
+          "minHd": 5,
+          "maxHd": 7,
+          "sizeCategory": "large",
+          "crAdjustment": 1
+        },
+        {
+          "minHd": 8,
+          "maxHd": 12,
+          "sizeCategory": "huge",
+          "crAdjustment": 2
+        }
+      ],
+      "tiers": []
+    },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "bonusFeatAtFirstLevel": false,
+    "extraSkillPointsFirstLevel": 0,
+    "extraSkillPointsPerLevel": 0,
+    "energyResistances": {},
+    "immunities": [],
+    "vulnerabilities": [],
+    "conditionalModifiers": [],
+    "traitBundles": [],
+    "weaponFamiliarityIds": [],
+    "automaticLanguages": [
+      "common"
+    ],
+    "naturalWeapons": [],
+    "weaponDice": "2d8",
+    "weaponDamageType": "bludgeoning",
+    "weaponCritThreatMin": 20,
+    "weaponCritMultiplier": 2,
+    "weaponBypassTags": [
+      "bludgeoning"
+    ],
+    "armorBonus": 3,
+    "shieldBonus": 0,
+    "feats": [
+      "toughness",
+      "weapon_focus_greatclub"
+    ],
+    "skillRanks": {
+      "climb": 4,
+      "listen": 2,
+      "spot": 2
+    },
+    "hasPounce": false,
+    "singleActionsOnly": false,
+    "cr": 3
+  }
+}
