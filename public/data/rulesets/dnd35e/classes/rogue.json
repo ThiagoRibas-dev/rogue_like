@@ -5,10 +5,6 @@
     "isPrestige": false,
     "maxLevel": 20,
     "hitDieSides": 6,
-    "babCurve": "three_quarters",
-    "fortCurve": "poor",
-    "refCurve": "good",
-    "willCurve": "poor",
     "skillPointsPerLevel": 8,
     "classSkills": [
       "appraise",
@@ -42,29 +38,18 @@
     "castingMode": "none",
     "castingTradition": "none",
     "proficiencies": {
-      "weapons": ["simple", "hand_crossbow", "rapier", "sap", "shortbow", "short_sword"],
-      "armor": ["light"],
+      "weapons": [
+        "simple",
+        "hand_crossbow",
+        "rapier",
+        "sap",
+        "shortbow",
+        "short_sword"
+      ],
+      "armor": [
+        "light"
+      ],
       "shields": []
-    },
-    "featuresByLevel": {
-      "1": ["sneak_attack_1d6", "trapfinding"],
-      "2": ["evasion"],
-      "3": ["sneak_attack_2d6", "trap_sense_1"],
-      "4": ["uncanny_dodge"],
-      "5": ["sneak_attack_3d6"],
-      "6": ["trap_sense_2"],
-      "7": ["sneak_attack_4d6"],
-      "8": ["improved_uncanny_dodge"],
-      "9": ["sneak_attack_5d6", "trap_sense_3"],
-      "10": ["rogue_special_ability_1"],
-      "11": ["sneak_attack_6d6"],
-      "12": ["trap_sense_4"],
-      "13": ["rogue_special_ability_2", "sneak_attack_7d6"],
-      "15": ["sneak_attack_8d6", "trap_sense_5"],
-      "16": ["rogue_special_ability_3"],
-      "17": ["sneak_attack_9d6"],
-      "18": ["trap_sense_6"],
-      "19": ["rogue_special_ability_4", "sneak_attack_10d6"]
     },
     "featureDetails": {
       "sneak_attack_1d6": {
@@ -106,6 +91,210 @@
         "grantedFeature": "penetrating_strike",
         "level": 3,
         "description": "Replaces Trap Sense: whenever you flank a creature that is immune to extra damage from sneak attacks, you still deal extra damage equal to half your normal sneak attack dice."
+      }
+    ],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 2,
+        "willSave": 0,
+        "features": [
+          "sneak_attack_1d6",
+          "trapfinding"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 3,
+        "willSave": 0,
+        "features": [
+          "evasion"
+        ]
+      },
+      {
+        "level": 3,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 3,
+        "willSave": 1,
+        "features": [
+          "sneak_attack_2d6",
+          "trap_sense_1"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "uncanny_dodge"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "sneak_attack_3d6"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "trap_sense_2"
+        ]
+      },
+      {
+        "level": 7,
+        "bab": 5,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "sneak_attack_4d6"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 6,
+        "fortSave": 2,
+        "refSave": 6,
+        "willSave": 2,
+        "features": [
+          "improved_uncanny_dodge"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 6,
+        "fortSave": 3,
+        "refSave": 6,
+        "willSave": 3,
+        "features": [
+          "sneak_attack_5d6",
+          "trap_sense_3"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 7,
+        "fortSave": 3,
+        "refSave": 7,
+        "willSave": 3,
+        "features": [
+          "rogue_special_ability_1"
+        ]
+      },
+      {
+        "level": 11,
+        "bab": 8,
+        "fortSave": 3,
+        "refSave": 7,
+        "willSave": 3,
+        "features": [
+          "sneak_attack_6d6"
+        ]
+      },
+      {
+        "level": 12,
+        "bab": 9,
+        "fortSave": 4,
+        "refSave": 8,
+        "willSave": 4,
+        "features": [
+          "trap_sense_4"
+        ]
+      },
+      {
+        "level": 13,
+        "bab": 9,
+        "fortSave": 4,
+        "refSave": 8,
+        "willSave": 4,
+        "features": [
+          "rogue_special_ability_2",
+          "sneak_attack_7d6"
+        ]
+      },
+      {
+        "level": 14,
+        "bab": 10,
+        "fortSave": 4,
+        "refSave": 9,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 15,
+        "bab": 11,
+        "fortSave": 5,
+        "refSave": 9,
+        "willSave": 5,
+        "features": [
+          "sneak_attack_8d6",
+          "trap_sense_5"
+        ]
+      },
+      {
+        "level": 16,
+        "bab": 12,
+        "fortSave": 5,
+        "refSave": 10,
+        "willSave": 5,
+        "features": [
+          "rogue_special_ability_3"
+        ]
+      },
+      {
+        "level": 17,
+        "bab": 12,
+        "fortSave": 5,
+        "refSave": 10,
+        "willSave": 5,
+        "features": [
+          "sneak_attack_9d6"
+        ]
+      },
+      {
+        "level": 18,
+        "bab": 13,
+        "fortSave": 6,
+        "refSave": 11,
+        "willSave": 6,
+        "features": [
+          "trap_sense_6"
+        ]
+      },
+      {
+        "level": 19,
+        "bab": 14,
+        "fortSave": 6,
+        "refSave": 11,
+        "willSave": 6,
+        "features": [
+          "rogue_special_ability_4",
+          "sneak_attack_10d6"
+        ]
+      },
+      {
+        "level": 20,
+        "bab": 15,
+        "fortSave": 6,
+        "refSave": 12,
+        "willSave": 6,
+        "features": []
       }
     ]
   }

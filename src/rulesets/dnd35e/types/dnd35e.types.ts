@@ -218,6 +218,26 @@ export interface HitDieTrack {
   readonly refCurve: SaveCurveType;
   readonly willCurve: SaveCurveType;
   readonly skillPointsPerLevel: number;
+  readonly explicitBab?: number | undefined;
+  readonly explicitFort?: number | undefined;
+  readonly explicitRef?: number | undefined;
+  readonly explicitWill?: number | undefined;
+}
+
+/**
+ * Chronological ledger entry for a single Character Level (1..20) on an actor.
+ * Enables exact multiclass interleaving, retroactive CON HP recalculation, and O(1) permanent level drain rollback.
+ */
+export interface DnD35CharacterLevelRecord {
+  readonly characterLevel: number;
+  readonly classId: string;
+  readonly classLevel: number;
+  readonly hpRolled: number;
+  readonly abilityScoreIncrease?: AbilityId | undefined;
+  readonly addedSkillRanks: Readonly<Record<string, number>>;
+  readonly selectedFeats: ReadonlyArray<string>;
+  readonly selectedAcfs: ReadonlyArray<string>;
+  readonly learnedSpells: ReadonlyArray<string>;
 }
 
 /** Aggregated progression chassis computed across all racial HD and class tracks. */
@@ -422,4 +442,6 @@ export interface DnD35EntityData {
   readonly knownSpells?: ReadonlyArray<string> | undefined;
   readonly preparedSpells?: ReadonlyArray<string> | undefined;
   readonly enforceMulticlassXpPenalty?: boolean | undefined;
+  readonly levelHistory?: ReadonlyArray<DnD35CharacterLevelRecord> | undefined;
+  readonly negativeLevels?: number | undefined;
 }

@@ -5,32 +5,32 @@
     "isPrestige": false,
     "maxLevel": 20,
     "hitDieSides": 10,
-    "babCurve": "full",
-    "fortCurve": "good",
-    "refCurve": "poor",
-    "willCurve": "poor",
     "skillPointsPerLevel": 2,
-    "classSkills": ["climb", "craft", "handle_animal", "intimidate", "jump", "ride", "swim"],
+    "classSkills": [
+      "climb",
+      "craft",
+      "handle_animal",
+      "intimidate",
+      "jump",
+      "ride",
+      "swim"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
     "proficiencies": {
-      "weapons": ["simple", "martial"],
-      "armor": ["light", "medium", "heavy"],
-      "shields": ["shields", "tower_shields"]
-    },
-    "bonusFeatLevels": [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
-    "featuresByLevel": {
-      "1": ["fighter_bonus_feat_1"],
-      "2": ["fighter_bonus_feat_2"],
-      "4": ["fighter_bonus_feat_4"],
-      "6": ["fighter_bonus_feat_6"],
-      "8": ["fighter_bonus_feat_8"],
-      "10": ["fighter_bonus_feat_10"],
-      "12": ["fighter_bonus_feat_12"],
-      "14": ["fighter_bonus_feat_14"],
-      "16": ["fighter_bonus_feat_16"],
-      "18": ["fighter_bonus_feat_18"],
-      "20": ["fighter_bonus_feat_20"]
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "shields": [
+        "shields",
+        "tower_shields"
+      ]
     },
     "featureDetails": {
       "fighter_bonus_feat_1": {
@@ -48,6 +48,201 @@
         "grantedFeature": "dungeon_crasher_1",
         "level": 2,
         "description": "Replaces 2nd-level Fighter Bonus Feat with +2 competence bonus on saves/AC vs traps and 4d6 + 2x STR damage when bull rushing foes into solid walls."
+      }
+    ],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "fighter_bonus_feat_1"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "fighter_bonus_feat_2"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "fighter_bonus_feat_4"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": []
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "fighter_bonus_feat_6"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": []
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "fighter_bonus_feat_8"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "fighter_bonus_feat_10"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 11,
+        "bab": 11,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": []
+      },
+      {
+        "level": 12,
+        "bab": 12,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "fighter_bonus_feat_12"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 13,
+        "bab": 13,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": []
+      },
+      {
+        "level": 14,
+        "bab": 14,
+        "fortSave": 9,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "fighter_bonus_feat_14"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 15,
+        "bab": 15,
+        "fortSave": 9,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 16,
+        "bab": 16,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "fighter_bonus_feat_16"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 17,
+        "bab": 17,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": []
+      },
+      {
+        "level": 18,
+        "bab": 18,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "fighter_bonus_feat_18"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 19,
+        "bab": 19,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": []
+      },
+      {
+        "level": 20,
+        "bab": 20,
+        "fortSave": 12,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "fighter_bonus_feat_20"
+        ],
+        "bonusFeatSlot": true
       }
     ]
   }

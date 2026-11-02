@@ -5,42 +5,70 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 12,
-    "babCurve": "full",
-    "fortCurve": "good",
-    "refCurve": "poor",
-    "willCurve": "good",
     "skillPointsPerLevel": 2,
-    "classSkills": ["craft", "listen", "sense_motive", "spot"],
+    "classSkills": [
+      "craft",
+      "listen",
+      "sense_motive",
+      "spot"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
-    "allowedAlignments": ["LG", "LN", "LE"],
+    "allowedAlignments": [
+      "LG",
+      "LN",
+      "LE"
+    ],
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "race_in", "allowedRaces": ["dwarf", "duergar"] },
-        { "type": "alignment_in", "allowedAlignments": ["LG", "LN", "LE"] },
-        { "type": "min_bab", "minBab": 7 },
-        { "type": "has_feat", "featId": "dodge" },
-        { "type": "has_feat", "featId": "endurance" },
-        { "type": "has_feat", "featId": "toughness" }
+        {
+          "type": "race_in",
+          "allowedRaces": [
+            "dwarf",
+            "duergar"
+          ]
+        },
+        {
+          "type": "alignment_in",
+          "allowedAlignments": [
+            "LG",
+            "LN",
+            "LE"
+          ]
+        },
+        {
+          "type": "min_bab",
+          "minBab": 7
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        },
+        {
+          "type": "has_feat",
+          "featId": "endurance"
+        },
+        {
+          "type": "has_feat",
+          "featId": "toughness"
+        }
       ]
     },
     "proficiencies": {
-      "weapons": ["simple", "martial"],
-      "armor": ["light", "medium", "heavy"],
-      "shields": ["shields", "tower_shields"]
-    },
-    "featuresByLevel": {
-      "1": ["dd_ac_bonus_1", "defensive_stance_1"],
-      "2": ["uncanny_dodge"],
-      "3": ["defensive_stance_2"],
-      "4": ["dd_ac_bonus_2", "trap_sense_1"],
-      "5": ["defensive_stance_3"],
-      "6": ["damage_reduction_3", "improved_uncanny_dodge"],
-      "7": ["dd_ac_bonus_3", "defensive_stance_4"],
-      "8": ["mobile_defense", "trap_sense_2"],
-      "9": ["defensive_stance_5"],
-      "10": ["damage_reduction_6", "dd_ac_bonus_4"]
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium",
+        "heavy"
+      ],
+      "shields": [
+        "shields",
+        "tower_shields"
+      ]
     },
     "featureDetails": {
       "dd_ac_bonus_1": {
@@ -75,6 +103,114 @@
         "description": "Take one 5-foot step each round while in a defensive stance without losing the benefit of the stance."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 0,
+        "willSave": 2,
+        "features": [
+          "dd_ac_bonus_1",
+          "defensive_stance_1"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 0,
+        "willSave": 3,
+        "features": [
+          "uncanny_dodge"
+        ]
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 1,
+        "willSave": 3,
+        "features": [
+          "defensive_stance_2"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "dd_ac_bonus_2",
+          "trap_sense_1"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "defensive_stance_3"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "damage_reduction_3",
+          "improved_uncanny_dodge"
+        ]
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "dd_ac_bonus_3",
+          "defensive_stance_4"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 2,
+        "willSave": 6,
+        "features": [
+          "mobile_defense",
+          "trap_sense_2"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 3,
+        "willSave": 6,
+        "features": [
+          "defensive_stance_5"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 7,
+        "features": [
+          "damage_reduction_6",
+          "dd_ac_bonus_4"
+        ]
+      }
+    ]
   }
 }

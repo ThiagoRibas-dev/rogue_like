@@ -10,10 +10,12 @@ import {
   aggregateProgressionChassis,
   ALL_ABILITY_IDS,
   applyLevelUpToActor,
+  buildHitDieTrackFromClass,
   buildPrerequisiteContextForActor,
   calculateMulticlassXpMultiplier,
   computeXpThresholdForLevel,
   evaluatePrerequisiteAST,
+  getClassLevelRow,
   getDnD35EntityData,
   getDnD35SystemContent,
   type LevelUpChoice
@@ -97,21 +99,10 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
 
     // Preview multiclass XP multiplier if this class were advanced
     const existingTrack = dndData.tracks.find((t) => t.trackId === cls.id);
+    const nextClassLevel = (existingTrack ? existingTrack.levels : 0) + 1;
     const previewTracks = existingTrack
-      ? dndData.tracks.map((t) => (t.trackId === cls.id ? { ...t, levels: t.levels + 1 } : t))
-      : [
-          ...dndData.tracks,
-          {
-            trackId: cls.id,
-            levels: 1,
-            hitDieSides: cls.hitDieSides,
-            babCurve: cls.babCurve,
-            fortCurve: cls.fortCurve,
-            refCurve: cls.refCurve,
-            willCurve: cls.willCurve,
-            skillPointsPerLevel: cls.skillPointsPerLevel
-          }
-        ];
+      ? dndData.tracks.map((t) => (t.trackId === cls.id ? buildHitDieTrackFromClass(cls, nextClassLevel) : t))
+      : [...dndData.tracks, buildHitDieTrackFromClass(cls, 1)];
     const xpMult = calculateMulticlassXpMultiplier(
       previewTracks,
       sys.classes,
@@ -119,6 +110,7 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
       dndData.enforceMulticlassXpPenalty ?? true
     );
 
+    const nextRow = getClassLevelRow(cls, nextClassLevel) ?? cls.progression[cls.progression.length - 1]!;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'modal-btn';
@@ -126,7 +118,8 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     btn.style.borderColor = levelUpDraft.classId === cls.id ? '#f1c40f' : eligible ? '#2ecc71' : '#e74c3c';
     const tag = cls.isPrestige ? '[Prestige]' : '[Base]';
     const xpNote = xpMult < 1 ? ` ⚠ Multiclass XP: ${Math.round(xpMult * 100)}%` : '';
-    btn.textContent = `${eligible ? '🟢' : '🔴'} ${tag} ${cls.name} (d${cls.hitDieSides})${xpNote}`;
+    const featsStr = nextRow.features.length > 0 ? ` [${nextRow.features.join(', ')}]` : '';
+    btn.textContent = `${eligible ? '🟢' : '🔴'} ${tag} ${cls.name} (Lv ${nextClassLevel}, d${cls.hitDieSides}, BAB +${nextRow.bab})${featsStr}${xpNote}`;
     btn.addEventListener('click', () => {
       if (!eligible) return;
       levelUpDraft = { ...levelUpDraft, classId: cls.id };

@@ -5,10 +5,6 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 6,
-    "babCurve": "three_quarters",
-    "fortCurve": "poor",
-    "refCurve": "good",
-    "willCurve": "poor",
     "skillPointsPerLevel": 4,
     "classSkills": [
       "balance",
@@ -40,32 +36,55 @@
     "castingMode": "spontaneous",
     "castingTradition": "arcane",
     "castingKeyAbility": "int",
-    "allowedAlignments": ["LE", "NE", "CE"],
+    "allowedAlignments": [
+      "LE",
+      "NE",
+      "CE"
+    ],
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "alignment_in", "allowedAlignments": ["LE", "NE", "CE"] },
-        { "type": "min_skill_ranks", "skillId": "disguise", "minRanks": 4 },
-        { "type": "min_skill_ranks", "skillId": "hide", "minRanks": 8 },
-        { "type": "min_skill_ranks", "skillId": "move_silently", "minRanks": 8 }
+        {
+          "type": "alignment_in",
+          "allowedAlignments": [
+            "LE",
+            "NE",
+            "CE"
+          ]
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "disguise",
+          "minRanks": 4
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "hide",
+          "minRanks": 8
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "move_silently",
+          "minRanks": 8
+        }
       ]
     },
     "proficiencies": {
-      "weapons": ["crossbow_hand", "crossbow_light", "crossbow_heavy", "dagger", "dart", "rapier", "sap", "shortbow", "short_sword"],
-      "armor": ["light"],
+      "weapons": [
+        "crossbow_hand",
+        "crossbow_light",
+        "crossbow_heavy",
+        "dagger",
+        "dart",
+        "rapier",
+        "sap",
+        "shortbow",
+        "short_sword"
+      ],
+      "armor": [
+        "light"
+      ],
       "shields": []
-    },
-    "featuresByLevel": {
-      "1": ["sneak_attack_1d6", "death_attack", "poison_use"],
-      "2": ["save_bonus_against_poison_1", "uncanny_dodge"],
-      "3": ["sneak_attack_2d6"],
-      "4": ["save_bonus_against_poison_2"],
-      "5": ["improved_uncanny_dodge", "sneak_attack_3d6"],
-      "6": ["save_bonus_against_poison_3"],
-      "7": ["sneak_attack_4d6"],
-      "8": ["hide_in_plain_sight_shadow", "save_bonus_against_poison_4"],
-      "9": ["sneak_attack_5d6"],
-      "10": ["save_bonus_against_poison_5"]
     },
     "featureDetails": {
       "death_attack": {
@@ -87,30 +106,209 @@
         "description": "Use the Hide skill even while being observed, as long as within 10 feet of some sort of shadow."
       }
     },
-    "spellsPerDayTable": {
-      "1": { "1": 0 },
-      "2": { "1": 1 },
-      "3": { "1": 2, "2": 0 },
-      "4": { "1": 3, "2": 1 },
-      "5": { "1": 3, "2": 2, "3": 0 },
-      "6": { "1": 3, "2": 3, "3": 1 },
-      "7": { "1": 3, "2": 3, "3": 2, "4": 0 },
-      "8": { "1": 3, "2": 3, "3": 3, "4": 1 },
-      "9": { "1": 3, "2": 3, "3": 3, "4": 2 },
-      "10": { "1": 3, "2": 3, "3": 3, "4": 3 }
-    },
-    "spellsKnownTable": {
-      "1": { "1": 2 },
-      "2": { "1": 3 },
-      "3": { "1": 3, "2": 2 },
-      "4": { "1": 4, "2": 3 },
-      "5": { "1": 4, "2": 3, "3": 2 },
-      "6": { "1": 4, "2": 4, "3": 3 },
-      "7": { "1": 4, "2": 4, "3": 3, "4": 2 },
-      "8": { "1": 4, "2": 4, "3": 4, "4": 3 },
-      "9": { "1": 4, "2": 4, "3": 4, "4": 3 },
-      "10": { "1": 4, "2": 4, "3": 4, "4": 4 }
-    },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 2,
+        "willSave": 0,
+        "features": [
+          "sneak_attack_1d6",
+          "death_attack",
+          "poison_use"
+        ],
+        "spellsPerDay": {
+          "1": 0
+        },
+        "spellsKnown": {
+          "1": 2
+        }
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 3,
+        "willSave": 0,
+        "features": [
+          "save_bonus_against_poison_1",
+          "uncanny_dodge"
+        ],
+        "spellsPerDay": {
+          "1": 1
+        },
+        "spellsKnown": {
+          "1": 3
+        }
+      },
+      {
+        "level": 3,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 3,
+        "willSave": 1,
+        "features": [
+          "sneak_attack_2d6"
+        ],
+        "spellsPerDay": {
+          "1": 2,
+          "2": 0
+        },
+        "spellsKnown": {
+          "1": 3,
+          "2": 2
+        }
+      },
+      {
+        "level": 4,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "save_bonus_against_poison_2"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 1
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 3
+        }
+      },
+      {
+        "level": 5,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "improved_uncanny_dodge",
+          "sneak_attack_3d6"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 2,
+          "3": 0
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 3,
+          "3": 2
+        }
+      },
+      {
+        "level": 6,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "save_bonus_against_poison_3"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 3,
+          "3": 1
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 4,
+          "3": 3
+        }
+      },
+      {
+        "level": 7,
+        "bab": 5,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "sneak_attack_4d6"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 3,
+          "3": 2,
+          "4": 0
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 4,
+          "3": 3,
+          "4": 2
+        }
+      },
+      {
+        "level": 8,
+        "bab": 6,
+        "fortSave": 2,
+        "refSave": 6,
+        "willSave": 2,
+        "features": [
+          "hide_in_plain_sight_shadow",
+          "save_bonus_against_poison_4"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 1
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 3
+        }
+      },
+      {
+        "level": 9,
+        "bab": 6,
+        "fortSave": 3,
+        "refSave": 6,
+        "willSave": 3,
+        "features": [
+          "sneak_attack_5d6"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 2
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 3
+        }
+      },
+      {
+        "level": 10,
+        "bab": 7,
+        "fortSave": 3,
+        "refSave": 7,
+        "willSave": 3,
+        "features": [
+          "save_bonus_against_poison_5"
+        ],
+        "spellsPerDay": {
+          "1": 3,
+          "2": 3,
+          "3": 3,
+          "4": 3
+        },
+        "spellsKnown": {
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4
+        }
+      }
+    ]
   }
 }

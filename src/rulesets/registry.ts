@@ -55,6 +55,8 @@ export function getActiveRuleset(state: GameState): RulesetContract {
 export {
   applyCharacterCreationToPlayer,
   applyLevelUpToActor,
+  applyNegativeLevelsToActor,
+  applyPermanentLevelDrainToActor,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
@@ -66,6 +68,7 @@ export {
   POINT_BUY_MAX_SCORE,
   POINT_BUY_MIN_SCORE,
   POINT_BUY_PRESETS,
+  rebuildActorStateFromLevelHistory,
   rollAbilityScores4d6DropLowest,
   STARTING_EQUIPMENT_PACKAGES,
   validateSpecialistSchoolSelection
@@ -73,8 +76,11 @@ export {
 export { evaluatePrerequisiteAST } from './dnd35e/prerequisites.ts';
 export {
   aggregateProgressionChassis,
+  buildHitDieTrackFromClass,
   calculateMulticlassXpMultiplier,
-  computeXpThresholdForLevel
+  computeEffectiveClassCastingLevel,
+  computeXpThresholdForLevel,
+  getClassLevelRow
 } from './dnd35e/progression.ts';
 export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
 export { ALL_ABILITY_IDS, type DnD35Alignment, type DnD35SpellSchool } from './dnd35e/types/dnd35e.types.ts';

@@ -5,10 +5,6 @@
     "isPrestige": false,
     "maxLevel": 20,
     "hitDieSides": 8,
-    "babCurve": "three_quarters",
-    "fortCurve": "good",
-    "refCurve": "good",
-    "willCurve": "good",
     "skillPointsPerLevel": 4,
     "classSkills": [
       "balance",
@@ -31,34 +27,29 @@
     ],
     "castingMode": "none",
     "castingTradition": "none",
-    "allowedAlignments": ["LG", "LN", "LE"],
+    "allowedAlignments": [
+      "LG",
+      "LN",
+      "LE"
+    ],
     "proficiencies": {
-      "weapons": ["club", "crossbow_light", "crossbow_heavy", "dagger", "handaxe", "javelin", "kama", "nunchaku", "quarterstaff", "sai", "shuriken", "siangham", "sling"],
+      "weapons": [
+        "club",
+        "crossbow_light",
+        "crossbow_heavy",
+        "dagger",
+        "handaxe",
+        "javelin",
+        "kama",
+        "nunchaku",
+        "quarterstaff",
+        "sai",
+        "shuriken",
+        "siangham",
+        "sling"
+      ],
       "armor": [],
       "shields": []
-    },
-    "bonusFeatLevels": [1, 2, 6],
-    "featuresByLevel": {
-      "1": ["monk_ac_bonus", "flurry_of_blows", "unarmed_strike", "monk_bonus_feat_1"],
-      "2": ["evasion", "monk_bonus_feat_2"],
-      "3": ["fast_movement_monk_1", "still_mind"],
-      "4": ["ki_strike_magic", "slow_fall_20"],
-      "5": ["monk_ac_bonus_1", "purity_of_body"],
-      "6": ["fast_movement_monk_2", "monk_bonus_feat_6", "slow_fall_30"],
-      "7": ["wholeness_of_body"],
-      "8": ["slow_fall_40"],
-      "9": ["fast_movement_monk_3", "improved_evasion"],
-      "10": ["ki_strike_lawful", "monk_ac_bonus_2", "slow_fall_50"],
-      "11": ["diamond_body", "greater_flurry"],
-      "12": ["abundant_step", "fast_movement_monk_4", "slow_fall_60"],
-      "13": ["diamond_soul"],
-      "14": ["slow_fall_70"],
-      "15": ["fast_movement_monk_5", "monk_ac_bonus_3", "quivering_palm"],
-      "16": ["ki_strike_adamantine", "slow_fall_80"],
-      "17": ["timeless_body", "tongue_of_the_sun_and_moon"],
-      "18": ["fast_movement_monk_6", "slow_fall_90"],
-      "19": ["empty_body"],
-      "20": ["monk_ac_bonus_4", "perfect_self", "slow_fall_any"]
     },
     "featureDetails": {
       "monk_ac_bonus": {
@@ -73,7 +64,11 @@
             "value": 1,
             "type": "untyped",
             "condition": {
-              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+              "selfTagsNone": [
+                "armor:light",
+                "armor:medium",
+                "armor:heavy"
+              ]
             }
           }
         ]
@@ -149,6 +144,233 @@
         "grantedFeature": "invisible_fist",
         "level": 2,
         "description": "Replaces Evasion: turn invisible for 1 round as an immediate action every 3 rounds."
+      }
+    ],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "monk_ac_bonus",
+          "flurry_of_blows",
+          "unarmed_strike",
+          "monk_bonus_feat_1"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "evasion",
+          "monk_bonus_feat_2"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 3,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "fast_movement_monk_1",
+          "still_mind"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 3,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "ki_strike_magic",
+          "slow_fall_20"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 3,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "monk_ac_bonus_1",
+          "purity_of_body"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 4,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "fast_movement_monk_2",
+          "monk_bonus_feat_6",
+          "slow_fall_30"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 7,
+        "bab": 5,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "wholeness_of_body"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 6,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "slow_fall_40"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 6,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "fast_movement_monk_3",
+          "improved_evasion"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 7,
+        "fortSave": 7,
+        "refSave": 7,
+        "willSave": 7,
+        "features": [
+          "ki_strike_lawful",
+          "monk_ac_bonus_2",
+          "slow_fall_50"
+        ]
+      },
+      {
+        "level": 11,
+        "bab": 8,
+        "fortSave": 7,
+        "refSave": 7,
+        "willSave": 7,
+        "features": [
+          "diamond_body",
+          "greater_flurry"
+        ]
+      },
+      {
+        "level": 12,
+        "bab": 9,
+        "fortSave": 8,
+        "refSave": 8,
+        "willSave": 8,
+        "features": [
+          "abundant_step",
+          "fast_movement_monk_4",
+          "slow_fall_60"
+        ]
+      },
+      {
+        "level": 13,
+        "bab": 9,
+        "fortSave": 8,
+        "refSave": 8,
+        "willSave": 8,
+        "features": [
+          "diamond_soul"
+        ]
+      },
+      {
+        "level": 14,
+        "bab": 10,
+        "fortSave": 9,
+        "refSave": 9,
+        "willSave": 9,
+        "features": [
+          "slow_fall_70"
+        ]
+      },
+      {
+        "level": 15,
+        "bab": 11,
+        "fortSave": 9,
+        "refSave": 9,
+        "willSave": 9,
+        "features": [
+          "fast_movement_monk_5",
+          "monk_ac_bonus_3",
+          "quivering_palm"
+        ]
+      },
+      {
+        "level": 16,
+        "bab": 12,
+        "fortSave": 10,
+        "refSave": 10,
+        "willSave": 10,
+        "features": [
+          "ki_strike_adamantine",
+          "slow_fall_80"
+        ]
+      },
+      {
+        "level": 17,
+        "bab": 12,
+        "fortSave": 10,
+        "refSave": 10,
+        "willSave": 10,
+        "features": [
+          "timeless_body",
+          "tongue_of_the_sun_and_moon"
+        ]
+      },
+      {
+        "level": 18,
+        "bab": 13,
+        "fortSave": 11,
+        "refSave": 11,
+        "willSave": 11,
+        "features": [
+          "fast_movement_monk_6",
+          "slow_fall_90"
+        ]
+      },
+      {
+        "level": 19,
+        "bab": 14,
+        "fortSave": 11,
+        "refSave": 11,
+        "willSave": 11,
+        "features": [
+          "empty_body"
+        ]
+      },
+      {
+        "level": 20,
+        "bab": 15,
+        "fortSave": 12,
+        "refSave": 12,
+        "willSave": 12,
+        "features": [
+          "monk_ac_bonus_4",
+          "perfect_self",
+          "slow_fall_any"
+        ]
       }
     ]
   }

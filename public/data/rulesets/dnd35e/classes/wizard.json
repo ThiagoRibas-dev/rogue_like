@@ -5,10 +5,6 @@
     "isPrestige": false,
     "maxLevel": 20,
     "hitDieSides": 4,
-    "babCurve": "half",
-    "fortCurve": "poor",
-    "refCurve": "poor",
-    "willCurve": "good",
     "skillPointsPerLevel": 2,
     "classSkills": [
       "concentration",
@@ -25,17 +21,15 @@
     "castingTradition": "arcane",
     "castingKeyAbility": "int",
     "proficiencies": {
-      "weapons": ["club", "dagger", "crossbow_heavy", "crossbow_light", "quarterstaff"],
+      "weapons": [
+        "club",
+        "dagger",
+        "crossbow_heavy",
+        "crossbow_light",
+        "quarterstaff"
+      ],
       "armor": [],
       "shields": []
-    },
-    "bonusFeatLevels": [5, 10, 15, 20],
-    "featuresByLevel": {
-      "1": ["summon_familiar", "scribe_scroll", "arcane_school_specialization"],
-      "5": ["wizard_bonus_feat_5"],
-      "10": ["wizard_bonus_feat_10"],
-      "15": ["wizard_bonus_feat_15"],
-      "20": ["wizard_bonus_feat_20"]
     },
     "featureDetails": {
       "summon_familiar": {
@@ -63,28 +57,6 @@
         "description": "Gain a bonus metamagic feat, item creation feat, or Spell Mastery."
       }
     },
-    "spellsPerDayTable": {
-      "1": { "0": 3, "1": 1 },
-      "2": { "0": 4, "1": 2 },
-      "3": { "0": 4, "1": 2, "2": 1 },
-      "4": { "0": 4, "1": 3, "2": 2 },
-      "5": { "0": 4, "1": 3, "2": 2, "3": 1 },
-      "6": { "0": 4, "1": 3, "2": 3, "3": 2 },
-      "7": { "0": 4, "1": 4, "2": 3, "3": 2, "4": 1 },
-      "8": { "0": 4, "1": 4, "2": 3, "3": 3, "4": 2 },
-      "9": { "0": 4, "1": 4, "2": 4, "3": 3, "4": 2, "5": 1 },
-      "10": { "0": 4, "1": 4, "2": 4, "3": 3, "4": 3, "5": 2 },
-      "11": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 3, "5": 2, "6": 1 },
-      "12": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 3, "5": 3, "6": 2 },
-      "13": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 3, "6": 2, "7": 1 },
-      "14": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 3, "6": 3, "7": 2 },
-      "15": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 3, "7": 2, "8": 1 },
-      "16": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 2 },
-      "17": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 3, "8": 2, "9": 1 },
-      "18": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 3, "8": 3, "9": 2 },
-      "19": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3 },
-      "20": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4 }
-    },
     "acfSwaps": [
       {
         "acfId": "wizard_abrupt_jaunt_1",
@@ -93,6 +65,352 @@
         "grantedFeature": "abrupt_jaunt",
         "level": 1,
         "description": "Replaces Summon Familiar (Conjurer specialist): teleport up to 10 ft as an immediate action INT bonus times per day."
+      }
+    ],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 2,
+        "features": [
+          "summon_familiar",
+          "scribe_scroll",
+          "arcane_school_specialization"
+        ],
+        "spellsPerDay": {
+          "0": 3,
+          "1": 1
+        }
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 3,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 2
+        }
+      },
+      {
+        "level": 3,
+        "bab": 1,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 3,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 2,
+          "2": 1
+        }
+      },
+      {
+        "level": 4,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 3,
+          "2": 2
+        }
+      },
+      {
+        "level": 5,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "wizard_bonus_feat_5"
+        ],
+        "bonusFeatSlot": true,
+        "spellsPerDay": {
+          "0": 4,
+          "1": 3,
+          "2": 2,
+          "3": 1
+        }
+      },
+      {
+        "level": 6,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 3,
+          "2": 3,
+          "3": 2
+        }
+      },
+      {
+        "level": 7,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 3,
+          "3": 2,
+          "4": 1
+        }
+      },
+      {
+        "level": 8,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 6,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 3,
+          "3": 3,
+          "4": 2
+        }
+      },
+      {
+        "level": 9,
+        "bab": 4,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 6,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 3,
+          "4": 2,
+          "5": 1
+        }
+      },
+      {
+        "level": 10,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": [
+          "wizard_bonus_feat_10"
+        ],
+        "bonusFeatSlot": true,
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 3,
+          "4": 3,
+          "5": 2
+        }
+      },
+      {
+        "level": 11,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 3,
+          "5": 2,
+          "6": 1
+        }
+      },
+      {
+        "level": 12,
+        "bab": 6,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 8,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 3,
+          "5": 3,
+          "6": 2
+        }
+      },
+      {
+        "level": 13,
+        "bab": 6,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 8,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 3,
+          "6": 2,
+          "7": 1
+        }
+      },
+      {
+        "level": 14,
+        "bab": 7,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 9,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 3,
+          "6": 3,
+          "7": 2
+        }
+      },
+      {
+        "level": 15,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 9,
+        "features": [
+          "wizard_bonus_feat_15"
+        ],
+        "bonusFeatSlot": true,
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 3,
+          "7": 2,
+          "8": 1
+        }
+      },
+      {
+        "level": 16,
+        "bab": 8,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 10,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 3,
+          "7": 3,
+          "8": 2
+        }
+      },
+      {
+        "level": 17,
+        "bab": 8,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 10,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 3,
+          "8": 2,
+          "9": 1
+        }
+      },
+      {
+        "level": 18,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 11,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 3,
+          "8": 3,
+          "9": 2
+        }
+      },
+      {
+        "level": 19,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 11,
+        "features": [],
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 3,
+          "9": 3
+        }
+      },
+      {
+        "level": 20,
+        "bab": 10,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 12,
+        "features": [
+          "wizard_bonus_feat_20"
+        ],
+        "bonusFeatSlot": true,
+        "spellsPerDay": {
+          "0": 4,
+          "1": 4,
+          "2": 4,
+          "3": 4,
+          "4": 4,
+          "5": 4,
+          "6": 4,
+          "7": 4,
+          "8": 4,
+          "9": 4
+        }
       }
     ]
   }

@@ -5,41 +5,65 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 8,
-    "babCurve": "full",
-    "fortCurve": "good",
-    "refCurve": "good",
-    "willCurve": "poor",
     "skillPointsPerLevel": 4,
-    "classSkills": ["craft", "hide", "listen", "move_silently", "ride", "spot", "survival", "use_rope"],
+    "classSkills": [
+      "craft",
+      "hide",
+      "listen",
+      "move_silently",
+      "ride",
+      "spot",
+      "survival",
+      "use_rope"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "race_in", "allowedRaces": ["elf", "half_elf", "drow"] },
-        { "type": "min_bab", "minBab": 6 },
-        { "type": "has_feat", "featId": "point_blank_shot" },
-        { "type": "has_feat", "featId": "precise_shot" },
-        { "type": "has_feat", "featId": "weapon_focus" },
-        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 1 }
+        {
+          "type": "race_in",
+          "allowedRaces": [
+            "elf",
+            "half_elf",
+            "drow"
+          ]
+        },
+        {
+          "type": "min_bab",
+          "minBab": 6
+        },
+        {
+          "type": "has_feat",
+          "featId": "point_blank_shot"
+        },
+        {
+          "type": "has_feat",
+          "featId": "precise_shot"
+        },
+        {
+          "type": "has_feat",
+          "featId": "weapon_focus"
+        },
+        {
+          "type": "min_spell_level",
+          "tradition": "arcane",
+          "minSpellLevel": 1
+        }
       ]
     },
     "proficiencies": {
-      "weapons": ["simple", "martial"],
-      "armor": ["light", "medium"],
-      "shields": ["shields"]
-    },
-    "featuresByLevel": {
-      "1": ["enhance_arrow_1"],
-      "2": ["imbue_arrow"],
-      "3": ["enhance_arrow_2"],
-      "4": ["seeker_arrow"],
-      "5": ["enhance_arrow_3"],
-      "6": ["phase_arrow"],
-      "7": ["enhance_arrow_4"],
-      "8": ["hail_of_arrows"],
-      "9": ["enhance_arrow_5"],
-      "10": ["arrow_of_death"]
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium"
+      ],
+      "shields": [
+        "shields"
+      ]
     },
     "featureDetails": {
       "enhance_arrow_1": {
@@ -93,6 +117,108 @@
         "description": "Create an arrow of death that forces the target, if damaged by the arrow, to make a DC 20 Fortitude save or be slain immediately."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 0,
+        "features": [
+          "enhance_arrow_1"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 0,
+        "features": [
+          "imbue_arrow"
+        ]
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 1,
+        "features": [
+          "enhance_arrow_2"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "seeker_arrow"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "enhance_arrow_3"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "phase_arrow"
+        ]
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "enhance_arrow_4"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 2,
+        "features": [
+          "hail_of_arrows"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 6,
+        "willSave": 3,
+        "features": [
+          "enhance_arrow_5"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 7,
+        "willSave": 3,
+        "features": [
+          "arrow_of_death"
+        ]
+      }
+    ]
   }
 }

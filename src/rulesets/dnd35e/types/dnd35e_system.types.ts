@@ -312,6 +312,24 @@ export const DnD35DomainDefinitionSchema = z.object({
 });
 export type DnD35DomainDefinition = z.infer<typeof DnD35DomainDefinitionSchema>;
 
+/** Zod schema for a single row in a class's level-by-level progression table (levels 1..maxLevel). */
+export const DnD35ClassLevelRowSchema = z.object({
+  level: z.number().int().positive(),
+  bab: z.number().int().nonnegative(),
+  fortSave: z.number().int().nonnegative(),
+  refSave: z.number().int().nonnegative(),
+  willSave: z.number().int().nonnegative(),
+  features: z.array(z.string()).default([]),
+  bonusFeatSlot: z.boolean().optional(),
+  spellsPerDay: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  domainSpellSlots: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  spellsKnown: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  advancesSpellcasting: z.enum(['arcane', 'divine', 'both', 'any']).optional(),
+  scalingValues: z.record(z.string(), z.union([z.number(), z.string()])).optional()
+});
+/** Inferred type for a single class level progression row. */
+export type DnD35ClassLevelRow = z.infer<typeof DnD35ClassLevelRowSchema>;
+
 /** Zod schema for a declarative character class definition (`classes.json` & `classes/<id>.json`). */
 export const DnD35ClassDefinitionSchema = z.object({
   id: z.string(),
@@ -319,10 +337,6 @@ export const DnD35ClassDefinitionSchema = z.object({
   isPrestige: z.boolean().default(false),
   maxLevel: z.number().int().positive().default(20),
   hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
-  babCurve: BabCurveIdSchema,
-  fortCurve: SaveCurveIdSchema,
-  refCurve: SaveCurveIdSchema,
-  willCurve: SaveCurveIdSchema,
   skillPointsPerLevel: z.number().int().nonnegative(),
   classSkills: z.array(z.string()).default([]),
   castingMode: z.enum(['none', 'prepared', 'spontaneous']).default('none'),
@@ -337,17 +351,8 @@ export const DnD35ClassDefinitionSchema = z.object({
       shields: z.array(z.string()).default([])
     })
     .optional(),
-  featuresByLevel: z.record(z.string(), z.array(z.string())).default({}),
+  progression: z.array(DnD35ClassLevelRowSchema).min(1),
   featureDetails: z.record(z.string(), DnD35ClassFeatureDetailSchema).default({}),
-  bonusFeatLevels: z.array(z.number().int().positive()).default([]),
-  spellsPerDayTable: z.record(z.string(), z.record(z.string(), z.number().int().nonnegative())).optional(),
-  spellsKnownTable: z.record(z.string(), z.record(z.string(), z.number().int().nonnegative())).optional(),
-  advancesExistingSpellcasting: z
-    .object({
-      tradition: z.enum(['arcane', 'divine', 'both', 'any']),
-      atLevels: z.array(z.number().int().positive())
-    })
-    .optional(),
   acfSwaps: z.array(DnD35AcfSwapSchema).default([])
 });
 /** Inferred type for a declarative class definition. */

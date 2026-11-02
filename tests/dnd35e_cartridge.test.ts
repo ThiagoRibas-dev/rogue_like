@@ -583,7 +583,8 @@ describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Ver
       expect.arrayContaining(['fighter', 'rogue', 'cleric', 'wizard'])
     );
     expect(Object.keys(sysContent!.classes).length).toBe(21);
-    expect(sysContent!.classes['cleric']?.babCurve).toBe('three_quarters');
+    expect(sysContent!.classes['cleric']?.progression[0]?.bab).toBe(0);
+    expect(sysContent!.classes['cleric']?.progression[1]?.bab).toBe(1);
     expect(sysContent!.skills['swim']?.acpMultiplier).toBe(2);
     expect(sysContent!.feats['power_attack']?.isFighterBonusFeat).toBe(true);
     expect(sysContent!.spells['fireball']?.aoeRadiusFt).toBe(20);

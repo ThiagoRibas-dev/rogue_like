@@ -5,10 +5,6 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 4,
-    "babCurve": "half",
-    "fortCurve": "poor",
-    "refCurve": "poor",
-    "willCurve": "good",
     "skillPointsPerLevel": 4,
     "classSkills": [
       "appraise",
@@ -32,24 +28,21 @@
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "min_skill_ranks", "skillId": "knowledge_arcana", "minRanks": 10 },
-        { "type": "has_feat", "featId": "skill_focus" },
-        { "type": "min_spell_level", "tradition": "any", "minSpellLevel": 3 }
+        {
+          "type": "min_skill_ranks",
+          "skillId": "knowledge_arcana",
+          "minRanks": 10
+        },
+        {
+          "type": "has_feat",
+          "featId": "skill_focus"
+        },
+        {
+          "type": "min_spell_level",
+          "tradition": "any",
+          "minSpellLevel": 3
+        }
       ]
-    },
-    "advancesExistingSpellcasting": {
-      "tradition": "any",
-      "atLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    },
-    "featuresByLevel": {
-      "1": ["loremaster_secret_1", "loremaster_spellcasting_1"],
-      "2": ["lore"],
-      "3": ["loremaster_secret_2"],
-      "5": ["loremaster_secret_3"],
-      "6": ["greater_lore"],
-      "7": ["loremaster_secret_4"],
-      "9": ["loremaster_secret_5"],
-      "10": ["true_lore"]
     },
     "featureDetails": {
       "loremaster_secret_1": {
@@ -85,6 +78,115 @@
         "description": "1/day use knowledge to gain the effect of a legend lore or analyze dweomer spell."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 2,
+        "features": [
+          "loremaster_secret_1",
+          "loremaster_spellcasting_1"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 3,
+        "features": [
+          "lore"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 3,
+        "bab": 1,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 3,
+        "features": [
+          "loremaster_secret_2"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 4,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 5,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "loremaster_secret_3"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 6,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "greater_lore"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 7,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "loremaster_secret_4"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 8,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 6,
+        "features": [],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 9,
+        "bab": 4,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 6,
+        "features": [
+          "loremaster_secret_5"
+        ],
+        "advancesSpellcasting": "any"
+      },
+      {
+        "level": 10,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": [
+          "true_lore"
+        ],
+        "advancesSpellcasting": "any"
+      }
+    ]
   }
 }

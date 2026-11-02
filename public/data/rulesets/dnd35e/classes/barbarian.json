@@ -5,41 +5,40 @@
     "isPrestige": false,
     "maxLevel": 20,
     "hitDieSides": 12,
-    "babCurve": "full",
-    "fortCurve": "good",
-    "refCurve": "poor",
-    "willCurve": "poor",
     "skillPointsPerLevel": 4,
-    "classSkills": ["climb", "craft", "handle_animal", "intimidate", "jump", "listen", "ride", "survival", "swim"],
+    "classSkills": [
+      "climb",
+      "craft",
+      "handle_animal",
+      "intimidate",
+      "jump",
+      "listen",
+      "ride",
+      "survival",
+      "swim"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
-    "allowedAlignments": ["NG", "CG", "N", "CN", "NE", "CE"],
+    "allowedAlignments": [
+      "NG",
+      "CG",
+      "N",
+      "CN",
+      "NE",
+      "CE"
+    ],
     "proficiencies": {
-      "weapons": ["simple", "martial"],
-      "armor": ["light", "medium"],
-      "shields": ["shields"]
-    },
-    "featuresByLevel": {
-      "1": ["fast_movement", "illiteracy", "rage_1"],
-      "2": ["uncanny_dodge"],
-      "3": ["trap_sense_1"],
-      "4": ["rage_2"],
-      "5": ["improved_uncanny_dodge"],
-      "6": ["trap_sense_2"],
-      "7": ["damage_reduction_1"],
-      "8": ["rage_3"],
-      "9": ["trap_sense_3"],
-      "10": ["damage_reduction_2"],
-      "11": ["greater_rage"],
-      "12": ["rage_4", "trap_sense_4"],
-      "13": ["damage_reduction_3"],
-      "14": ["indomitable_will"],
-      "15": ["trap_sense_5"],
-      "16": ["damage_reduction_4", "rage_5"],
-      "17": ["tireless_rage"],
-      "18": ["trap_sense_6"],
-      "19": ["damage_reduction_5"],
-      "20": ["mighty_rage", "rage_6"]
+      "weapons": [
+        "simple",
+        "martial"
+      ],
+      "armor": [
+        "light",
+        "medium"
+      ],
+      "shields": [
+        "shields"
+      ]
     },
     "featureDetails": {
       "fast_movement": {
@@ -54,7 +53,10 @@
             "value": 10,
             "type": "untyped",
             "condition": {
-              "selfTagsNone": ["armor:heavy", "load:heavy"]
+              "selfTagsNone": [
+                "armor:heavy",
+                "load:heavy"
+              ]
             }
           }
         ]
@@ -137,6 +139,213 @@
         "grantedFeature": "improved_trip",
         "level": 2,
         "description": "Replaces Uncanny Dodge with Improved Trip as a bonus feat without needing Combat Expertise."
+      }
+    ],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "fast_movement",
+          "illiteracy",
+          "rage_1"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "uncanny_dodge"
+        ]
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "trap_sense_1"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "rage_2"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "improved_uncanny_dodge"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "trap_sense_2"
+        ]
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "damage_reduction_1"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "rage_3"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "trap_sense_3"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "damage_reduction_2"
+        ]
+      },
+      {
+        "level": 11,
+        "bab": 11,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "greater_rage"
+        ]
+      },
+      {
+        "level": 12,
+        "bab": 12,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "rage_4",
+          "trap_sense_4"
+        ]
+      },
+      {
+        "level": 13,
+        "bab": 13,
+        "fortSave": 8,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "damage_reduction_3"
+        ]
+      },
+      {
+        "level": 14,
+        "bab": 14,
+        "fortSave": 9,
+        "refSave": 4,
+        "willSave": 4,
+        "features": [
+          "indomitable_will"
+        ]
+      },
+      {
+        "level": 15,
+        "bab": 15,
+        "fortSave": 9,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "trap_sense_5"
+        ]
+      },
+      {
+        "level": 16,
+        "bab": 16,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "damage_reduction_4",
+          "rage_5"
+        ]
+      },
+      {
+        "level": 17,
+        "bab": 17,
+        "fortSave": 10,
+        "refSave": 5,
+        "willSave": 5,
+        "features": [
+          "tireless_rage"
+        ]
+      },
+      {
+        "level": 18,
+        "bab": 18,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "trap_sense_6"
+        ]
+      },
+      {
+        "level": 19,
+        "bab": 19,
+        "fortSave": 11,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "damage_reduction_5"
+        ]
+      },
+      {
+        "level": 20,
+        "bab": 20,
+        "fortSave": 12,
+        "refSave": 6,
+        "willSave": 6,
+        "features": [
+          "mighty_rage",
+          "rage_6"
+        ]
       }
     ]
   }

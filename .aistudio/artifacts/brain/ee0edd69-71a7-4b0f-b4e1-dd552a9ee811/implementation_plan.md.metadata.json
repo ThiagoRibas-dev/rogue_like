@@ -1,6 +1,6 @@
 {
-  "summary":  "Enhanced implementation plan for the D&D 3.5e 4-Stage Sub-Stat DAG (size -> ability_scores -> compound_defenses -> combat_stats), Size as a Stage 1 Sub-Stat and Effect Provider, Orthogonal OriginLayer Classification, and Winner/Shadowed/Suppressed Provenance Breakdown. Includes the full Cascading Effects Matrix and exact code snippets/diffs.",
-  "updatedAt":  "2026-11-02T00:31:36.125671964Z",
+  "summary":  "Implementation plan for refactoring D&D 3.5e Class Definitions to the Rulebook-Faithful Class Header + Level-by-Level Progression Table (`progression: ReadonlyArray<DnD35ClassLevelRow>`) and adding the Chronological Actor Level Ledger (`levelHistory`) + Permanent Level Drain & Negative Levels engine, along with permanent documentation in DECISIONS.md and MILESTONES.md.",
+  "updatedAt":  "2026-11-02T13:01:16.381776566Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

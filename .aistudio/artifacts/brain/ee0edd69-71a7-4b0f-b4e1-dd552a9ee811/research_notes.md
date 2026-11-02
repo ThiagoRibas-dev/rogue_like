@@ -1,94 +1,55 @@
-# Research Notes — Unified Effect Providers, Sub-Stat DAG & Origin-Layer Resolution
+# Research Notes — Granular Level-by-Level Class Progression Tables & Chronological Multiclass/Level-Drain Ledger
 
-## 1. Standards & Architectural Rules Reiterated (Step 1)
-
-1. **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16 & `DECISIONS.md` #10):**
-   - **Tier 1 (Console Engine — `src/core/`, `src/systems/`, `src/types/`):** Generic tag-condition matching (`matchesEntityTagCondition`), `PropertyOverlayComponent`, anatomical `EquipmentSlotInstance[]` suppression, and hierarchical `sourcePath` provenance indexing.
-   - **Tier 2 (Ruleset Cartridge — `src/rulesets/dnd35e/`):** Pure tabletop mathematical laws: the 4-Stage Topological Sub-Stat DAG (`size -> ability_scores -> compound_defenses -> combat_stats`), 18-type bonus stacking, Origin-Layer suppression filters, and provenance breakdown DTOs.
-   - **Tier 3 (System Content — `public/data/rulesets/dnd35e/*.json`):** Declarative JSON definitions emitting `StatModifier`s and `RuleOverride`s.
-2. **Baseline Rules + Declarative Overrides (`AGENTS.md` Rule 17 & `DECISIONS.md` #11):**
-   - Zero hardcoded `if (hasFeat(...))` or `if (spell === 'barkskin')` branches in resolvers.
-3. **Universal Actor Symmetry (`AGENTS.md` Rule 18 & `DECISIONS.md` #12):**
-   - Every actor (PC, NPC, monster, construct, dragon) resolves stats through the exact same pipeline.
-4. **Unified Effect Providers & Hierarchical Provenance (`AGENTS.md` Rule 19 & `DECISIONS.md` #13):**
-   - Every structural building block (`Size`, `CreatureType`, `Subtype`, `Race`, `Template`, `Class`, `Feat`, `Equipment`, `Spell/Buff`, `Condition`, `TacticalStance`, `SpatialField`) is an Effect Provider that projects semantic self-tags (`size:*`, `type:*`, `subtype:*`, `trait:*`) and emits `StatModifier`s with a slash-delimited `sourcePath`.
-5. **Strict TypeScript & ECS Purity (`AGENTS.md` §§3–4):**
-   - Zero `any`, zero magic numbers, `exactOptionalPropertyTypes: true`, explicit return types, exhaustive switches, and 100% JSON-serializable ECS components (no `Map` or `Set` in components).
+## 1. Architectural Rules & Standards Reiterated
+Per `AGENTS.md` and `docs/ARCHITECTURE.md`:
+1. **Strict TypeScript (`exactOptionalPropertyTypes: true`):** Zero `any` types, explicit return types on all functions, and no `undefined` assigned directly to optional properties without explicit union typing.
+2. **Pure Serializable ECS Data:** All structures inside `DnD35EntityData` (`RulesetDataComponent`) and JSON registries must be plain JSON-serializable arrays and records (no `Map` or `Set`).
+3. **Three-Tier Placement Heuristic (Rule 16):**
+   - **Tier 1 (Console):** Generic ECS & UI rendering primitives.
+   - **Tier 2 (`src/rulesets/dnd35e/`):** Pure D&D 3.5e progression table evaluators, chronological level-history reducers, negative level / permanent level drain resolvers, and Zod schemas.
+   - **Tier 3 (`public/data/rulesets/dnd35e/classes/*.json`):** Declarative rulebook-faithful class definitions (Invariant Class Header + 1-to-`maxLevel` Level-by-Level Progression Table).
+4. **Unified Effect Providers & Hierarchical Provenance (`sourcePath`, Rule 19):** Every modifier emitted by a class feature, ACF, domain, or negative level must carry a slash-delimited `sourcePath` (`"class:cleric/feature:turn_or_rebuke_undead/..."`, `"condition:negative_level/..."`).
 
 ---
 
-## 2. Codebase Audit & Gaps Discovered in Current Implementation (Step 2)
+## 2. Problem Analysis: Rulebook Class Tables vs. Implicit Curve Split
 
-Cross-referencing `src/rulesets/dnd35e/modifiers.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`, `src/rulesets/dnd35e/abilities.ts`, `src/rulesets/dnd35e/srd_registry.ts`, and `src/rulesets/dnd35e/wild_shape.ts` revealed **five concrete architectural gaps** that our post-Phase 22 design discussions directly solve:
+### 2.1 Class Definition Granularity (Rulebook Header + Level Table)
+In D&D 3.5e rulebooks (e.g., *PHB* **Table: The Cleric** and *Complete Champion* **Table: The Ordained Champion**), a class is structured in two parts:
+1. **Class Header (Level-Invariant Properties):**
+   - `id`, `name`, `isPrestige`, `maxLevel`, `hitDieSides`, `skillPointsPerLevel`, `classSkills`
+   - `castingMode`, `castingTradition`, `castingKeyAbility`
+   - `allowedAlignments`, `prerequisites`, `proficiencies`
+   - `featureDetails` (encyclopedia of features granted by the table) and `acfSwaps`
+2. **Class Table (`progression: ReadonlyArray<DnD35ClassLevelRow>`):**
+   - Currently, class progression is fragmented across 5 separate fields (`babCurve`/`fortCurve`/`refCurve`/`willCurve`, `featuresByLevel`, `bonusFeatLevels`, `spellsPerDayTable`, `spellsKnownTable`, and `advancesExistingSpellcasting`).
+   - Replacing those scattered maps with an explicit level-by-level `progression` array (`level: 1 .. maxLevel`) where each row contains:
+     - `level`: `1..maxLevel`
+     - `bab`: cumulative Base Attack Bonus at this class level (`+0`, `+1`, `+2`, ...)
+     - `fortSave`, `refSave`, `willSave`: cumulative base saving throws at this class level
+     - `features`: array of feature IDs gained at this exact class level (`special` column)
+     - `bonusFeatSlot`: optional boolean (`true` on Fighter 1, 2, 4... or Wizard 5, 10, 15, 20)
+     - `spellsPerDay`: optional map of spell level `"0".."9"` to base daily slots at this class level
+     - `domainSpellSlots`: optional map of spell level `"1".."9"` to domain bonus slots (the `+1` in Cleric's `1+1`, `2+1` table cells)
+     - `spellsKnown`: optional map of spell level `"0".."9"` to known spells at this class level (Bard, Sorcerer)
+     - `advancesSpellcasting`: optional `'arcane' | 'divine' | 'both' | 'any'` for Prestige Classes on the exact levels that grant `+1 level of existing spellcasting class` (e.g., Ordained Champion at levels 2, 3, and 5; Mystic Theurge at 1..10)
+     - `scalingValues`: optional key-value map for class-specific scaling table columns (e.g., Monk `unarmed_damage_dice`, `unarmored_ac_bonus`, `unarmored_speed_bonus`; Rogue `sneak_attack_d6`; Barbarian `rage_uses_per_day`)
+   - **Result:** Querying *"What does Level $L$ of Class $X$ look like?"* becomes an $O(1)$ lookup (`getClassLevelSnapshot(classDef, L)`), and computing the exact delta between Level $L-1$ and Level $L$ is a simple row subtraction.
 
-### Gap 1: Flat Compound-Bonus Folding Bug (`Worn Armor + Enhancement` vs. `Mage Armor`)
-- **Current Code (`src/rulesets/dnd35e/modifiers.ts:230–235`):**
-  ```ts
-  const armorTotal = (maxByNonStackingType.armor ?? 0) + (maxByNonStackingType.armor_enhancement ?? 0);
-  const shieldTotal = (maxByNonStackingType.shield ?? 0) + (maxByNonStackingType.shield_enhancement ?? 0);
-  const naturalTotal =
-    (maxByNonStackingType.natural_armor ?? 0) + (maxByNonStackingType.natural_armor_enhancement ?? 0);
-  ```
-- **The Problem:**
-  1. If an actor wears Padded Armor (`+1` base, `+2` enhancement = `+3` total) **and** casts *Mage Armor* (`+4` armor bonus), `modifiers.ts` takes `max(armor: 1, 4) = 4` and adds `max(armor_enhancement: 2) = 2` for a total of **`+6` Armor**, which violates D&D 3.5e rules! Enhancement to armor enhances the *suit of armor* (`1 + 2 = 3`), which then competes against *Mage Armor* (`max(3, 4) = 4`).
-  2. Incorporeal touch attacks ignore physical armor, shields, and natural armor, **except** `[Force]` effects like *Mage Armor* and *Shield* (`effectTags: ['force']`). Currently, `ignoreArmorAndNatural` blindly strips all `armor` and `shield` bonuses even when `effectTags` includes `'force'`.
-
-### Gap 2: Natural Armor "Bonus to a Bonus" (Base + Untyped Class/Feat Increase + Enhancement)
-- **Current Code (`src/rulesets/dnd35e/dnd35e_ruleset.ts:116–121`):**
-  Emits a single `{ targetStat: 'ac', value: dndData.naturalArmorBonus, bonusType: 'natural_armor' }`.
-- **The Problem:**
-  In D&D 3.5e, an actor can simultaneously have:
-  - Base racial/form Natural Armor (e.g., Lizardfolk `+5` or Bear form `+5`, `bonusType: 'base'` on `natural_armor`),
-  - Additive Natural Armor increases (e.g., *Improved Natural Armor* feat `+1`, *Dragon Disciple* class `+1..+4`, or Template `+2` delta, which are `bonusType: 'untyped'` on `natural_armor` and stack with base natural armor),
-  - Competing Enhancement bonuses to Natural Armor (e.g., *Amulet of Natural Armor +2* vs. *Barkskin +3*, which are `bonusType: 'enhancement'` on `natural_armor` and take `max(2, 3) = 3`).
-  - All of these sum into the actor's effective **Natural Armor Bonus** (`5 + 1 + 3 = +9`), which then applies to `Full AC` and `Flat-Footed AC` as `bonusType: 'natural_armor'`, and is **excluded as a unit from `Touch AC`**.
-  - Modeling `natural_armor`, `worn_armor_bonus`, and `worn_shield_bonus` as **Stage 3 Sub-Stat Nodes** in the DAG solves both Natural Armor and Worn Armor/Shield with **zero** special-case `if` statements in `resolveTypedModifiers` (while retaining backward compatibility for legacy `armor_enhancement`, `shield_enhancement`, and `natural_armor_enhancement` modifiers).
-
-### Gap 3: `Size` Is Still a Passive Field Rather Than a Stage 1 Sub-Stat & Effect Provider
-- **Current Code (`src/rulesets/dnd35e/modifiers.ts:287`, `dnd35e_ruleset.ts:146`):**
-  `SIZE_AC_AND_ATTACK_MODIFIERS[sizeCategory]` is manually added inside `computeEffectiveAC` and `computeDnD35eEffectiveStats`.
-- **The Problem:**
-  1. Magical size increases (*Enlarge Person* `+1` step, *Righteous Might* `+1` step) do **not** stack with each other in D&D 3.5e (`bonusType: 'size_step'` takes `max`), whereas polymorphed base size (`bonusType: 'form_override'`) replaces `base` size.
-  2. Per **Rule 19**, once Effective Size is resolved in **Stage 1** of the DAG, the **Size Effect Provider** (`buildSizeEffectProviderModifiers(sizeCategory, parentSourcePath)`) should project `size:<category>` and emit standard `bonusType: 'size'` modifiers to `'ac'`, `'attack'`, `'grapple'`, and `'hide'` with full `sourcePath` provenance (e.g., `"race:gnome/size:small/ac_size_mod"` or `"spell:enlarge_person/size:large/grapple_size_mod"`).
-
-### Gap 4: Ability Score `StatModifier`s Are Not Wired Into `computeDnD35eEffectiveStats`
-- **Current Code (`src/rulesets/dnd35e/dnd35e_ruleset.ts:74–86`):**
-  Calls `computeEffectiveAbilityScore(dndData.abilityScores.str)` without passing `typedBonusNet` from `dndData.statModifiers` targeting `'str' | 'dex' | 'con' | 'int' | 'wis' | 'cha'`!
-- **The Problem:**
-  Modifiers targeting ability scores (such as *Belt of Giant Strength +4* `{ targetStat: 'str', bonusType: 'enhancement', value: 4 }`, *Barbarian Rage* `{ targetStat: 'str', bonusType: 'morale', value: 4 }`, or *Enlarge Person* `{ targetStat: 'str', bonusType: 'size', value: 2 }`) are currently ignored when computing `strMod`, `dexMod`, `conMod`, `attack`, `ac`, and `maxHp` in `computeDnD35eEffectiveStats` and `resolveDnD35eMeleeAttack`!
-  Evaluating Ability Scores in **Stage 2** of the DAG (after Stage 1 Size tags are projected) ensures every typed ability bonus/penalty flows into `strMod..chaMod` and downstream into Stage 3/4 stats (including dynamic `chaMod` for `subtype:incorporeal` deflection AC and `conMod * totalHD` for `maxHp`!).
-
-### Gap 5: Orthogonal Origin-Layer Classification & Winner/Shadowed Breakdown for UI & Suppression
-- **Current Code (`src/rulesets/dnd35e/modifiers.ts`):**
-  `resolveTypedModifiers` returns only a bare `number`, discarding which modifiers won, which were shadowed by a higher same-type bonus (e.g., *Barkskin +1* shadowed by *Amulet of Natural Armor +2*), and which were suppressed (by *Antimagic Field*, tag conditions, or Form Overlays).
-- **The Solution (Inspired by *Incursion*'s `Attr[Stat][Origin]` Readout Without Its Conflated Enum):**
-  - Keep `BonusType` strictly for **stacking rules** (`base`, `form_override`, `size_step`, `enhancement`, `dodge`, `untyped`, etc.).
-  - Derive an orthogonal **`OriginLayer`** (`'base' | 'racial' | 'progression' | 'form' | 'equipment' | 'temporary' | 'environment'`) from the root segment of `sourcePath` (`race:*`, `class:*`/`feat:*`/`template:*`, `form:*`/`wild_shape:*`, `item:*`/`equip:*`, `spell:*`/`condition:*`, `field:*`).
-  - Provide `resolveTypedModifiersWithBreakdown(modifiers, context)` returning:
-    - `total: number`
-    - `activeModifiers: ReadonlyArray<StatModifier>` (the winners contributing to `total`)
-    - `shadowedModifiers: ReadonlyArray<{ modifier: StatModifier; shadowedBySourcePath: string }>` (losers of non-stacking `Math.max` competition)
-    - `suppressedModifiers: ReadonlyArray<{ modifier: StatModifier; reason: 'antimagic' | 'tag_condition' | 'touch_attack' | 'flat_footed' | 'origin_suppressed' }>`
-    - `byOriginLayer: Readonly<Record<OriginLayer, number>>` (net contribution per origin layer for Character Sheet / Tooltip display).
+### 2.2 Actor Multiclassing Interleaving & Permanent Level Drain (`levelHistory`)
+When a character interleaves classes (e.g., `Fighter 1–4 → Rogue 1–2 → Fighter 5`) and then suffers **Permanent Level Drain** (failing a 24-hour Fortitude save against a negative level), collapsed `tracks` (`fighter: 5, rogue: 2`) lose chronological ordering and per-level choices.
+- By storing an append-only chronological ledger `levelHistory: ReadonlyArray<DnD35CharacterLevelRecord>` on `DnD35EntityData`:
+  - Each record stores `{ characterLevel, classId, classLevel, hpRolled, abilityScoreIncrease?, addedSkillRanks, selectedFeats, selectedAcfs, learnedSpells }`.
+  - **On-the-Fly Derivation:** `tracks`, `maxHp` (including retroactive Constitution modifier changes per PHB p. 171), `skillRanks`, `feats`, `abilityScores`, and `statModifiers` are deterministically derived from `levelHistory` + racial base tracks.
+  - **Permanent Level Drain (`applyPermanentLevelDrainToActor`):** Pops the last $N$ records from `levelHistory` and re-runs the pure derivation function, cleanly unwinding the exact class level (`Fighter 5 → Fighter 4`), HP roll, skill ranks, 4th-HD ability bump, and feats gained at the lost level.
+  - **Temporary Negative Levels (`negativeLevels`):** Stored on `DnD35EntityData` and emitted as Unified Effect Provider `StatModifier`s (`-1` attack, `-1` saves, `-5` max HP per negative level) with `sourcePath: "condition:negative_level"`.
 
 ---
 
-## 3. Proposed 4-Stage Topological Sub-Stat DAG Architecture
+## 3. Cascading Effects Matrix (Rule 15)
 
-| Stage | Target Stats Resolved | Inputs | Emits Downstream |
+| Change | Upstream (Callers / Producers / JSON Data) | Downstream (Consumers / Validators / UI / Tests) | Lateral (Sibling Configs / Docs / Classic Cartridge) |
 | :--- | :--- | :--- | :--- |
-| **Stage 1: Effective Size & Self-Tags** | `'size'` (`rankIndex: -4..+4`) | Base race/archetype size (`bonusType: 'base'`), Form Overlay size (`bonusType: 'form_override'`), Magical size steps (`bonusType: 'size_step'`, non-stacking `max`/`min`) | Resolved `CreatureSizeCategory`, projects `size:<category>` self-tag, and emits Size Effect Provider modifiers (`ac`, `attack`, `grapple`, `hide`, and triggers `type:construct` size HP condition). |
-| **Stage 2: Effective Ability Scores** | `'str'`, `'dex'`, `'con'`, `'int'`, `'wis'`, `'cha'` | Base/Form ability score + `inherent` + resolved typed modifiers (`enhancement`, `morale`, `alchemical`, `size`, `racial`, `sacred`, `profane`, `untyped`, penalties) + `drain`/`damage` | Effective scores (`number \| null`) and modifiers (`strMod..chaMod`) feeding Stage 3 & Stage 4. |
-| **Stage 3: Compound Defense Sub-Stats** | `'natural_armor'`, `'worn_armor_bonus'`, `'worn_shield_bonus'` | `base` (racial/form NA, physical worn armor/shield) + `untyped` increases (Dragon Disciple, Improved Natural Armor) + `max(enhancement)` (*Amulet of Natural Armor*, *Barkskin*, *Magic Vestment*, `+1..+5` armor/shield) | Emits consolidated `{ targetStat: 'ac', bonusType: 'natural_armor' }`, `{ targetStat: 'ac', bonusType: 'armor' }`, and `{ targetStat: 'ac', bonusType: 'shield' }` into Stage 4. |
-| **Stage 4: Derived Combat & Check Stats** | `'ac'`, `'touch_ac'`, `'flat_footed_ac'`, `'attack'`, `'damage'`, `'save_fort'`, `'save_ref'`, `'save_will'`, `'max_hp'`, `'speed'`, `'initiative'`, `'grapple'`, `'hide'` | Stage 1 Size mods + Stage 2 Ability mods + Stage 3 Compound Defense outputs + direct Stage 4 modifiers (*Mage Armor* `bonusType: 'armor', effectTags: ['force']`, *Shield of Faith* `deflection`, *Haste* `dodge`, Dwarf `+4 dodge vs giant`, etc.) | Final `DnD35ResolvedActorStats` & `EffectiveStats` + full provenance & origin-layer breakdowns. |
-
----
-
-## 4. Cascading Effects Matrix (`Rule 15`: Upstream / Downstream / Lateral)
-
-| Change | Upstream (Callers / Producers / Data) | Downstream (Consumers / Validators / UI) | Lateral (Sibling Modules / Tests / Docs) |
-| :--- | :--- | :--- | :--- |
-| **1. `BonusType`, `OriginLayer`, `StatModifier` (`effectTags`, `'base'`, `'form_override'`, `'size_step'`) & `StatResolutionBreakdown` in `src/rulesets/dnd35e/types/dnd35e.types.ts`** | Produced by `races.ts`, `templates.ts`, `srd_registry.ts`, `wild_shape.ts`, `dnd35e_ruleset.ts`, and `races.json` (`DnD35ConditionalModifierSchema`). | Consumed by `modifiers.ts`, `dnd35e_ruleset.ts`, and future Character Sheet UI (`Phase 26`). | Mirror new `BonusType` literals (`'base'`, `'form_override'`, `'size_step'`) in `DnD35BonusTypeSchema` in `src/rulesets/dnd35e/types/dnd35e_system.types.ts`. |
-| **2. Origin-Layer Classifier & `resolveTypedModifiersWithBreakdown` in `src/rulesets/dnd35e/modifiers.ts`** | Called by `resolveTypedModifiers`, `computeEffectiveAC`, and the 4-stage DAG evaluator. | Preserves exact signature and return type (`number`) of `resolveTypedModifiers` for all existing callers while exposing rich breakdown DTOs and `ignoreArmorAndNatural` `[Force]` exemption (`effectTags: ['force']` against ` againstIncorporealTouch: true`). | Backward-compatible with existing tests in `tests/dnd35e_cartridge.test.ts` and `tests/dnd35e_phase22_bestiary.test.ts`. |
-| **3. Size Effect Provider (`buildSizeEffectProviderModifiers` & `resolveEffectiveSizeCategory`) in `src/rulesets/dnd35e/modifiers.ts`** | Consumes `SIZE_METRICS` from `src/rulesets/dnd35e/spatial/grid_geometry.ts` and `size` sub-stat modifiers. | Emits `size` modifiers to `'ac'`, `'attack'`, `'grapple'`, and `'hide'` with `sourcePath: "<parent>/size:<category>/<stat>_size_mod"`. Avoids double-counting size AC/attack in `computeEffectiveAC` when size provider mods are present. | Aligns with `buildCreatureTypeAndSubtypeModifiers` in `srd_registry.ts`. |
-| **4. 4-Stage Topological Actor Stat DAG Evaluator (`evaluateDnD35ActorStatDAG`) in `src/rulesets/dnd35e/modifiers.ts` & `dnd35e_ruleset.ts`** | Called by `computeDnD35eEffectiveStats` and `resolveDnD35eMeleeAttack` in `src/rulesets/dnd35e/dnd35e_ruleset.ts`. | Drives `EffectiveStats` (`attack`, `defense`, `maxHp`, `speed`), `ACBreakdownDTO`, and melee attack/damage rolls (`strMod` from Stage 2, `conMod` HP deltas from Stage 2, `chaMod` incorporeal deflection from Stage 2, and `natural_armor` / `worn_armor_bonus` / `worn_shield_bonus` from Stage 3). | Updates `docs/ARCHITECTURE.md` (§9.5) and `docs/DECISIONS.md` (#14) and adds unit tests in `tests/dnd35e_phase22_bestiary.test.ts` (or dedicated test suite). |
+| **`DnD35ClassLevelRowSchema` & `progression` array on `DnD35ClassDefinitionSchema`** (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`) | All 21 split class JSONs (`public/data/rulesets/dnd35e/classes/*.json`) | `progression.ts` (`getClassLevelRow`, `collectClassFeaturesUpToLevel`), `character_builder.ts`, `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts`, `scripts/validate-campaign.ts` | Classic cartridge (`classic`) is 100% unaffected. Monster Racial HD (`creature_types.json`, `races.json`, `archetypes.json`) retain `babCurve`/`fortCurve` for arbitrary monster HD scaling. |
+| **Explicit `bab` / `baseSaves` on `HitDieTrack`** (`src/rulesets/dnd35e/types/dnd35e.types.ts`) | `character_builder.ts` (hydrates class tracks from `classDef.progression[level - 1]`) | `aggregateProgressionChassis` in `progression.ts` & `evaluateDnD35ActorStatDAG` in `modifiers.ts` (uses explicit row `bab`/`fort`/`ref`/`will` when present on a class track, or curve formula for Racial HD tracks) | Existing monster archetypes in `archetypes.json` continue to work without modification. |
+| **Actor `levelHistory` & `applyPermanentLevelDrainToActor`** (`src/rulesets/dnd35e/character_builder.ts`, `dnd35e.types.ts`) | `applyCharacterCreationToPlayer` (initializes `levelHistory[0]`), `applyLevelUpToActor` (appends `levelHistory[k]`) | `tests/dnd35e_classes_builder.test.ts` (tests interleaved `Fighter 4 -> Rogue 2 -> Fighter 5` + permanent level drain rollback) | `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/DND_35E_PYRAMID_ARCHITECTURE.md`, `docs/MILESTONES.md` |

@@ -1,5 +1,5 @@
 {
-  "summary":  "Research notes for the Unified Effect Provider, Sub-Stat DAG, Origin-Layer Suppression, and Provenance Breakdown architecture (Phase 22.5 / Architectural Refinement).",
-  "updatedAt":  "2026-11-02T00:02:16.976047117Z",
+  "summary":  "Research notes for refactoring D&D 3.5e Class Definitions to a Rulebook-faithful Header + Level-by-Level Progression Table (progression[]) and Actor Chronological Level Ledger (levelHistory[]) for interleaved multiclassing and permanent level drain.",
+  "updatedAt":  "2026-11-02T12:54:48.500473450Z",
   "userFacing":  true
 }

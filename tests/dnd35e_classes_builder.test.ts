@@ -4,6 +4,8 @@ import { initRNG } from '../src/core/rng.ts';
 import {
   applyCharacterCreationToPlayer,
   applyLevelUpToActor,
+  applyNegativeLevelsToActor,
+  applyPermanentLevelDrainToActor,
   buildClassAndDomainEffectModifiers,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
@@ -19,6 +21,7 @@ import { evaluatePrerequisiteAST } from '../src/rulesets/dnd35e/prerequisites.ts
 import {
   calculateMulticlassXpMultiplier,
   collectClassFeaturesUpToLevel,
+  getClassLevelRow,
   resolveActiveClassFeatures
 } from '../src/rulesets/dnd35e/progression.ts';
 import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
@@ -65,10 +68,19 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & 
 
     expect(Object.keys(sys.domains).length).toBe(22);
 
-    // Every base class has maxLevel 20 and featuresByLevel defined
+    // Every base class has maxLevel 20 and progression array with 20 rows
     for (const cls of baseClasses) {
       expect(cls.maxLevel).toBe(20);
-      expect(cls.featuresByLevel).toBeDefined();
+      expect(cls.progression).toBeDefined();
+      expect(cls.progression.length).toBe(20);
+      expect(cls.progression[0]?.level).toBe(1);
+      expect(cls.progression[19]?.level).toBe(20);
+    }
+
+    // Every prestige class has progression array matching maxLevel
+    for (const cls of prestigeClasses) {
+      expect(cls.progression).toBeDefined();
+      expect(cls.progression.length).toBe(cls.maxLevel);
     }
   });
 
@@ -304,5 +316,148 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, Prestige Classes, ACFs, Domains & 
 
     const prereqCtx = buildPrerequisiteContextForActor(leveledDnd, sys.classes);
     expect(prereqCtx.maxDivineSpellLevel).toBeGreaterThanOrEqual(1);
+  });
+
+  it('queries direct level rows from progression and verifies Cleric domain slots and Prestige advancesSpellcasting', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign);
+    expect(sys).not.toBeNull();
+    if (!sys) return;
+
+    const cleric = sys.classes['cleric']!;
+    const row3 = getClassLevelRow(cleric, 3);
+    expect(row3).toBeDefined();
+    expect(row3?.level).toBe(3);
+    expect(row3?.bab).toBe(2);
+    expect(row3?.fortSave).toBe(3);
+    expect(row3?.refSave).toBe(1);
+    expect(row3?.willSave).toBe(3);
+    expect(row3?.spellsPerDay?.['2']).toBe(1);
+    expect(row3?.domainSpellSlots?.['2']).toBe(1);
+
+    const eldritchKnight = sys.classes['eldritch_knight']!;
+    const ekRow1 = getClassLevelRow(eldritchKnight, 1);
+    const ekRow2 = getClassLevelRow(eldritchKnight, 2);
+    expect(ekRow1?.advancesSpellcasting).toBeUndefined();
+    expect(ekRow2?.advancesSpellcasting).toBe('arcane');
+
+    const mysticTheurge = sys.classes['mystic_theurge']!;
+    const mtRow1 = getClassLevelRow(mysticTheurge, 1);
+    expect(mtRow1?.advancesSpellcasting).toBe('both');
+  });
+
+  it('supports chronological multiclassing (Fighter 4 -> Rogue 2 -> Fighter 5), negative levels, and permanent level drain rollback', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign);
+    expect(sys).not.toBeNull();
+    if (!sys) return;
+
+    let state = buildGameState(campaign);
+    const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+
+    // 1. Level 1 Human Fighter
+    state = applyCharacterCreationToPlayer(state, playerId, {
+      raceId: 'human',
+      classId: 'fighter',
+      alignment: 'LN',
+      selectedAcfs: [],
+      domains: [],
+      prohibitedSchools: [],
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 28,
+      baseAbilityScores: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
+      skillRanks: { jump: 4, climb: 4 },
+      selectedFeats: ['power_attack', 'cleave', 'weapon_focus_longsword'],
+      knownSpells: [],
+      equipmentPackageId: 'martial_vanguard'
+    });
+
+    let dnd = getDnD35EntityData(state, playerId);
+    expect(dnd.tracks.length).toBe(1);
+    expect(dnd.tracks[0]?.trackId).toBe('fighter');
+    expect(dnd.tracks[0]?.levels).toBe(1);
+    expect(dnd.levelHistory?.length).toBe(1);
+
+    // 2. Advance to Fighter 4 (Level 2, 3, 4 with +1 STR at Level 4)
+    for (let lvl = 2; lvl <= 4; lvl++) {
+      const res = applyLevelUpToActor(state, playerId, {
+        classId: 'fighter',
+        hpMethod: 'average',
+        addedSkillRanks: { jump: 1 },
+        selectedFeats: lvl === 2 ? ['combat_reflexes'] : [],
+        abilityScoreIncrease: lvl === 4 ? 'str' : undefined
+      });
+      expect(res.success).toBe(true);
+      state = res.state;
+    }
+
+    dnd = getDnD35EntityData(state, playerId);
+    expect(dnd.tracks[0]?.levels).toBe(4);
+    expect(dnd.abilityScores.str.base).toBe(17);
+    expect(dnd.levelHistory?.length).toBe(4);
+
+    // 3. Multiclass into Rogue 1 and Rogue 2
+    for (let rLvl = 1; rLvl <= 2; rLvl++) {
+      const res = applyLevelUpToActor(state, playerId, {
+        classId: 'rogue',
+        hpMethod: 'average',
+        addedSkillRanks: { tumble: 4, search: 4 },
+        selectedFeats: []
+      });
+      expect(res.success).toBe(true);
+      state = res.state;
+    }
+
+    dnd = getDnD35EntityData(state, playerId);
+    expect(dnd.tracks.length).toBe(2);
+    expect(dnd.tracks.find((t) => t.trackId === 'fighter')?.levels).toBe(4);
+    expect(dnd.tracks.find((t) => t.trackId === 'rogue')?.levels).toBe(2);
+    expect(dnd.levelHistory?.length).toBe(6);
+
+    // 4. Return to Fighter for Fighter 5 (Character Level 7)
+    const resF5 = applyLevelUpToActor(state, playerId, {
+      classId: 'fighter',
+      hpMethod: 'average',
+      addedSkillRanks: { jump: 1 },
+      selectedFeats: []
+    });
+    expect(resF5.success).toBe(true);
+    state = resF5.state;
+
+    dnd = getDnD35EntityData(state, playerId);
+    const fTrack = dnd.tracks.find((t) => t.trackId === 'fighter')!;
+    const rTrack = dnd.tracks.find((t) => t.trackId === 'rogue')!;
+    expect(fTrack.levels).toBe(5);
+    expect(rTrack.levels).toBe(2);
+    expect(dnd.levelHistory?.length).toBe(7);
+    expect(fTrack.explicitBab).toBe(5);
+    expect(rTrack.explicitBab).toBe(1);
+
+    const fighterComp = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
+    expect(fighterComp.level).toBe(7);
+    expect(fighterComp.attack).toBe(6); // 5 + 1
+
+    // 5. Apply 1 Temporary Negative Level
+    state = applyNegativeLevelsToActor(state, playerId, 1);
+    dnd = getDnD35EntityData(state, playerId);
+    expect(dnd.negativeLevels).toBe(1);
+    const negMods = (dnd.statModifiers ?? []).filter((m) => m.sourcePath?.startsWith('condition:negative_level'));
+    expect(negMods.length).toBe(5);
+    expect(negMods.find((m) => m.targetStat === 'attack')?.value).toBe(-1);
+
+    // 6. Apply 2 Permanent Levels Drained (rolls back Fighter 5 and Rogue 2 in LIFO order)
+    const drainResult = applyPermanentLevelDrainToActor(state, playerId, 2);
+    expect(drainResult.success).toBe(true);
+    state = drainResult.state;
+
+    dnd = getDnD35EntityData(state, playerId);
+    expect(dnd.levelHistory?.length).toBe(5);
+    const rolledBackF = dnd.tracks.find((t) => t.trackId === 'fighter')!;
+    const rolledBackR = dnd.tracks.find((t) => t.trackId === 'rogue')!;
+    expect(rolledBackF.levels).toBe(4);
+    expect(rolledBackR.levels).toBe(1);
+    const postDrainFighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
+    expect(postDrainFighter.level).toBe(5);
+    expect(postDrainFighter.attack).toBe(4); // Fighter 4 (4) + Rogue 1 (0) = 4
   });
 });

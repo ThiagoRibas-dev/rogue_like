@@ -5,36 +5,29 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 6,
-    "babCurve": "full",
-    "fortCurve": "good",
-    "refCurve": "poor",
-    "willCurve": "poor",
     "skillPointsPerLevel": 2,
-    "classSkills": ["concentration", "craft", "decipher_script", "jump", "knowledge_arcana", "ride", "sense_motive", "spellcraft", "swim"],
+    "classSkills": [
+      "concentration",
+      "craft",
+      "decipher_script",
+      "jump",
+      "knowledge_arcana",
+      "ride",
+      "sense_motive",
+      "spellcraft",
+      "swim"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 3 }
+        {
+          "type": "min_spell_level",
+          "tradition": "arcane",
+          "minSpellLevel": 3
+        }
       ]
-    },
-    "bonusFeatLevels": [1],
-    "advancesExistingSpellcasting": {
-      "tradition": "arcane",
-      "atLevels": [2, 3, 4, 5, 6, 7, 8, 9, 10]
-    },
-    "featuresByLevel": {
-      "1": ["ek_bonus_fighter_feat"],
-      "2": ["ek_arcane_spellcasting_1"],
-      "3": ["ek_arcane_spellcasting_2"],
-      "4": ["ek_arcane_spellcasting_3"],
-      "5": ["ek_arcane_spellcasting_4"],
-      "6": ["ek_arcane_spellcasting_5"],
-      "7": ["ek_arcane_spellcasting_6"],
-      "8": ["ek_arcane_spellcasting_7"],
-      "9": ["ek_arcane_spellcasting_8"],
-      "10": ["ek_arcane_spellcasting_9"]
     },
     "featureDetails": {
       "ek_bonus_fighter_feat": {
@@ -50,6 +43,118 @@
         "description": "From 2nd through 10th level, gain new spells per day and caster level as if also gaining a level in an arcane spellcasting class."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 2,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "ek_bonus_fighter_feat"
+        ],
+        "bonusFeatSlot": true
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 3,
+        "refSave": 0,
+        "willSave": 0,
+        "features": [
+          "ek_arcane_spellcasting_1"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 3,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "ek_arcane_spellcasting_2"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "ek_arcane_spellcasting_3"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 4,
+        "refSave": 1,
+        "willSave": 1,
+        "features": [
+          "ek_arcane_spellcasting_4"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "ek_arcane_spellcasting_5"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 5,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "ek_arcane_spellcasting_6"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 6,
+        "refSave": 2,
+        "willSave": 2,
+        "features": [
+          "ek_arcane_spellcasting_7"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 6,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "ek_arcane_spellcasting_8"
+        ],
+        "advancesSpellcasting": "arcane"
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 7,
+        "refSave": 3,
+        "willSave": 3,
+        "features": [
+          "ek_arcane_spellcasting_9"
+        ],
+        "advancesSpellcasting": "arcane"
+      }
+    ]
   }
 }

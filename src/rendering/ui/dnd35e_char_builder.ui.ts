@@ -250,12 +250,13 @@ function renderClassStep(container: HTMLElement, state: GameState): void {
 
   const baseClasses = Object.values(sys.classes).filter((c) => !c.isPrestige);
   for (const cls of baseClasses) {
+    const row1 = cls.progression[0] ?? { bab: 0, fortSave: 0, refSave: 0, willSave: 0 };
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'modal-btn';
     btn.style.textAlign = 'left';
     btn.style.borderColor = draftState.classId === cls.id ? '#f1c40f' : 'var(--border-color)';
-    btn.textContent = `${cls.name} — d${cls.hitDieSides} HD, ${cls.babCurve.toUpperCase()} BAB, ${cls.skillPointsPerLevel}+INT Skills`;
+    btn.textContent = `${cls.name} — d${cls.hitDieSides} HD, Lv 1 BAB +${row1.bab}, Fort +${row1.fortSave}, Ref +${row1.refSave}, Will +${row1.willSave}, ${cls.skillPointsPerLevel}+INT Skills`;
     btn.addEventListener('click', () => {
       const validAlignment = cls.allowedAlignments?.[0] ?? draftState.alignment;
       draftState = {
@@ -272,6 +273,32 @@ function renderClassStep(container: HTMLElement, state: GameState): void {
 
   const activeCls = sys.classes[draftState.classId];
   if (!activeCls) return;
+
+  // Render a compact Table Preview of levels 1..5 for the active class
+  const tablePreview = document.createElement('div');
+  tablePreview.style.fontSize = '11px';
+  tablePreview.style.padding = '6px';
+  tablePreview.style.background = 'rgba(0,0,0,0.3)';
+  tablePreview.style.border = '1px solid var(--border-color)';
+  tablePreview.style.borderRadius = '4px';
+  tablePreview.style.margin = '6px 0';
+  const tableTitle = document.createElement('strong');
+  tableTitle.textContent = `Table: ${activeCls.name} (Levels 1–5 Preview):`;
+  tablePreview.appendChild(tableTitle);
+
+  const previewRows = activeCls.progression.slice(0, 5);
+  for (const row of previewRows) {
+    const rDiv = document.createElement('div');
+    const featsStr = row.features.length > 0 ? ` [${row.features.join(', ')}]` : '';
+    const spStr = row.spellsPerDay
+      ? ` | Slots: ${Object.entries(row.spellsPerDay)
+          .map(([lvl, s]) => `${lvl}: ${s}`)
+          .join(', ')}`
+      : '';
+    rDiv.textContent = `Lvl ${row.level}: BAB +${row.bab} | Saves: +${row.fortSave}/+${row.refSave}/+${row.willSave}${featsStr}${spStr}`;
+    tablePreview.appendChild(rDiv);
+  }
+  container.appendChild(tablePreview);
 
   const alignRow = document.createElement('div');
   const alignTitle = document.createElement('strong');

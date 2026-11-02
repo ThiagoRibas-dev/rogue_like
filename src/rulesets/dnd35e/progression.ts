@@ -1,6 +1,6 @@
 import { dndFloor } from './math/multipliers.ts';
 import type { AggregatedChassis, BabCurveType, HitDieTrack, SaveCurveType } from './types/dnd35e.types.ts';
-import type { DnD35ClassDefinition } from './types/dnd35e_system.types.ts';
+import type { DnD35ClassDefinition, DnD35ClassLevelRow } from './types/dnd35e_system.types.ts';
 
 /** Multiplier for the Three-Quarters (0.75) BAB progression curve. */
 const BAB_THREE_QUARTERS_RATIO = 0.75;
@@ -119,6 +119,85 @@ export function computeXpThresholdForLevel(ecl: number): number {
 }
 
 /**
+ * Looks up the exact progression row for a class at `classLevel` (1..maxLevel).
+ *
+ * @param classDef Class definition from System Content.
+ * @param classLevel Target class level (1-indexed).
+ * @returns The matching `DnD35ClassLevelRow`, or `undefined` if out of bounds.
+ */
+export function getClassLevelRow(classDef: DnD35ClassDefinition, classLevel: number): DnD35ClassLevelRow | undefined {
+  const clamped = dndFloor(classLevel);
+  if (clamped < 1) return undefined;
+  return classDef.progression.find((row) => row.level === clamped);
+}
+
+/**
+ * Builds a `HitDieTrack` for a character class at `classLevel`, reading exact BAB and base saves
+ * from the class's level-by-level progression table.
+ *
+ * @param classDef Class definition from System Content.
+ * @param classLevel Class level achieved (>= 1).
+ * @returns Populated `HitDieTrack` with explicit table BAB and saves.
+ */
+export function buildHitDieTrackFromClass(classDef: DnD35ClassDefinition, classLevel: number): HitDieTrack {
+  const clamped = Math.max(1, Math.min(classDef.maxLevel, dndFloor(classLevel)));
+  const row = getClassLevelRow(classDef, clamped) ?? classDef.progression[classDef.progression.length - 1]!;
+  return {
+    trackId: classDef.id,
+    levels: clamped,
+    hitDieSides: classDef.hitDieSides,
+    babCurve: 'half',
+    fortCurve: 'poor',
+    refCurve: 'poor',
+    willCurve: 'poor',
+    skillPointsPerLevel: classDef.skillPointsPerLevel,
+    explicitBab: row.bab,
+    explicitFort: row.fortSave,
+    explicitRef: row.refSave,
+    explicitWill: row.willSave
+  };
+}
+
+/**
+ * Computes the effective class casting level for a base casting class across all tracks,
+ * adding base class levels plus any levels in Prestige Classes that advance this tradition.
+ *
+ * @param tracks All active tracks on the actor.
+ * @param baseClassDef The base casting class definition.
+ * @param classRegistry The full class registry.
+ * @returns Total effective caster level in this class's spell progression.
+ */
+export function computeEffectiveClassCastingLevel(
+  tracks: ReadonlyArray<HitDieTrack>,
+  baseClassDef: DnD35ClassDefinition,
+  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>
+): number {
+  if (baseClassDef.castingTradition === 'none' || baseClassDef.castingMode === 'none') {
+    return 0;
+  }
+  let effectiveLevel = 0;
+  for (const track of tracks) {
+    if (track.trackId === baseClassDef.id) {
+      effectiveLevel += track.levels;
+      continue;
+    }
+    const prcDef = classRegistry[track.trackId];
+    if (!prcDef || !prcDef.isPrestige) continue;
+    for (let lvl = 1; lvl <= track.levels; lvl++) {
+      const row = getClassLevelRow(prcDef, lvl);
+      if (
+        row?.advancesSpellcasting === baseClassDef.castingTradition ||
+        row?.advancesSpellcasting === 'both' ||
+        row?.advancesSpellcasting === 'any'
+      ) {
+        effectiveLevel += 1;
+      }
+    }
+  }
+  return effectiveLevel;
+}
+
+/**
  * Aggregates multi-source Hit Dice / Class Level tracks (`racialHitDice` + `classLevels`)
  * into a unified `AggregatedChassis` containing total HD, ECL, XP thresholds, BAB,
  * iterative sequence, base saves, feat/ability entitlements, and Hit Points.
@@ -148,10 +227,10 @@ export function aggregateProgressionChassis(
     if (levels === 0) continue;
 
     totalHD += levels;
-    totalBab += evaluateBabCurve(track.babCurve, levels);
-    fortSave += evaluateSaveCurve(track.fortCurve, levels);
-    refSave += evaluateSaveCurve(track.refCurve, levels);
-    willSave += evaluateSaveCurve(track.willCurve, levels);
+    totalBab += track.explicitBab !== undefined ? track.explicitBab : evaluateBabCurve(track.babCurve, levels);
+    fortSave += track.explicitFort !== undefined ? track.explicitFort : evaluateSaveCurve(track.fortCurve, levels);
+    refSave += track.explicitRef !== undefined ? track.explicitRef : evaluateSaveCurve(track.refCurve, levels);
+    willSave += track.explicitWill !== undefined ? track.explicitWill : evaluateSaveCurve(track.willCurve, levels);
 
     const avgRollPerSubsequentDie = dndFloor(track.hitDieSides / 2) + 1;
     for (let i = 0; i < levels; i++) {
@@ -240,13 +319,11 @@ export function collectClassFeaturesUpToLevel(
 ): ReadonlyArray<string> {
   const baseFeatures: string[] = [];
   const clampedLevel = Math.max(0, dndFloor(maxReachedLevel));
-  for (let lvl = 1; lvl <= clampedLevel; lvl++) {
-    const atLevel = classDef.featuresByLevel[String(lvl)];
-    if (atLevel) {
-      for (const featId of atLevel) {
-        if (!baseFeatures.includes(featId)) {
-          baseFeatures.push(featId);
-        }
+  for (const row of classDef.progression) {
+    if (row.level > clampedLevel) continue;
+    for (const featId of row.features) {
+      if (!baseFeatures.includes(featId)) {
+        baseFeatures.push(featId);
       }
     }
   }

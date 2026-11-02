@@ -5,41 +5,58 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 10,
-    "babCurve": "full",
-    "fortCurve": "poor",
-    "refCurve": "good",
-    "willCurve": "poor",
     "skillPointsPerLevel": 4,
-    "classSkills": ["balance", "bluff", "escape_artist", "jump", "listen", "perform", "sense_motive", "spot", "tumble"],
+    "classSkills": [
+      "balance",
+      "bluff",
+      "escape_artist",
+      "jump",
+      "listen",
+      "perform",
+      "sense_motive",
+      "spot",
+      "tumble"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "min_bab", "minBab": 6 },
-        { "type": "min_skill_ranks", "skillId": "perform", "minRanks": 3 },
-        { "type": "min_skill_ranks", "skillId": "tumble", "minRanks": 5 },
-        { "type": "has_feat", "featId": "dodge" },
-        { "type": "has_feat", "featId": "mobility" },
-        { "type": "has_feat", "featId": "weapon_finesse" }
+        {
+          "type": "min_bab",
+          "minBab": 6
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "perform",
+          "minRanks": 3
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "tumble",
+          "minRanks": 5
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        },
+        {
+          "type": "has_feat",
+          "featId": "mobility"
+        },
+        {
+          "type": "has_feat",
+          "featId": "weapon_finesse"
+        }
       ]
     },
     "proficiencies": {
-      "weapons": ["simple", "martial"],
+      "weapons": [
+        "simple",
+        "martial"
+      ],
       "armor": [],
       "shields": []
-    },
-    "featuresByLevel": {
-      "1": ["canny_defense"],
-      "2": ["improved_reaction_2"],
-      "3": ["enhanced_mobility"],
-      "4": ["grace"],
-      "5": ["precise_strike_1d6"],
-      "6": ["acrobatic_charge"],
-      "7": ["elaborate_parry"],
-      "8": ["improved_reaction_4"],
-      "9": ["deflect_arrows_duelist"],
-      "10": ["precise_strike_2d6"]
     },
     "featureDetails": {
       "canny_defense": {
@@ -54,7 +71,11 @@
             "value": 2,
             "type": "dodge",
             "condition": {
-              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+              "selfTagsNone": [
+                "armor:light",
+                "armor:medium",
+                "armor:heavy"
+              ]
             }
           }
         ]
@@ -77,7 +98,11 @@
             "value": 2,
             "type": "competence",
             "condition": {
-              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+              "selfTagsNone": [
+                "armor:light",
+                "armor:medium",
+                "armor:heavy"
+              ]
             }
           }
         ]
@@ -89,6 +114,108 @@
         "description": "Gain the ability to strike precisely with a light or one-handed piercing weapon, adding +1d6 damage (+2d6 at 10th level)."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 2,
+        "willSave": 0,
+        "features": [
+          "canny_defense"
+        ]
+      },
+      {
+        "level": 2,
+        "bab": 2,
+        "fortSave": 0,
+        "refSave": 3,
+        "willSave": 0,
+        "features": [
+          "improved_reaction_2"
+        ]
+      },
+      {
+        "level": 3,
+        "bab": 3,
+        "fortSave": 1,
+        "refSave": 3,
+        "willSave": 1,
+        "features": [
+          "enhanced_mobility"
+        ]
+      },
+      {
+        "level": 4,
+        "bab": 4,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "grace"
+        ]
+      },
+      {
+        "level": 5,
+        "bab": 5,
+        "fortSave": 1,
+        "refSave": 4,
+        "willSave": 1,
+        "features": [
+          "precise_strike_1d6"
+        ]
+      },
+      {
+        "level": 6,
+        "bab": 6,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "acrobatic_charge"
+        ]
+      },
+      {
+        "level": 7,
+        "bab": 7,
+        "fortSave": 2,
+        "refSave": 5,
+        "willSave": 2,
+        "features": [
+          "elaborate_parry"
+        ]
+      },
+      {
+        "level": 8,
+        "bab": 8,
+        "fortSave": 2,
+        "refSave": 6,
+        "willSave": 2,
+        "features": [
+          "improved_reaction_4"
+        ]
+      },
+      {
+        "level": 9,
+        "bab": 9,
+        "fortSave": 3,
+        "refSave": 6,
+        "willSave": 3,
+        "features": [
+          "deflect_arrows_duelist"
+        ]
+      },
+      {
+        "level": 10,
+        "bab": 10,
+        "fortSave": 3,
+        "refSave": 7,
+        "willSave": 3,
+        "features": [
+          "precise_strike_2d6"
+        ]
+      }
+    ]
   }
 }

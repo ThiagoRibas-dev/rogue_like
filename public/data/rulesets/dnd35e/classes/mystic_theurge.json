@@ -5,38 +5,42 @@
     "isPrestige": true,
     "maxLevel": 10,
     "hitDieSides": 4,
-    "babCurve": "half",
-    "fortCurve": "poor",
-    "refCurve": "poor",
-    "willCurve": "good",
     "skillPointsPerLevel": 2,
-    "classSkills": ["concentration", "craft", "decipher_script", "knowledge_arcana", "knowledge_religion", "sense_motive", "spellcraft"],
+    "classSkills": [
+      "concentration",
+      "craft",
+      "decipher_script",
+      "knowledge_arcana",
+      "knowledge_religion",
+      "sense_motive",
+      "spellcraft"
+    ],
     "castingMode": "none",
     "castingTradition": "none",
     "prerequisites": {
       "type": "and",
       "children": [
-        { "type": "min_skill_ranks", "skillId": "knowledge_arcana", "minRanks": 6 },
-        { "type": "min_skill_ranks", "skillId": "knowledge_religion", "minRanks": 6 },
-        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 2 },
-        { "type": "min_spell_level", "tradition": "divine", "minSpellLevel": 2 }
+        {
+          "type": "min_skill_ranks",
+          "skillId": "knowledge_arcana",
+          "minRanks": 6
+        },
+        {
+          "type": "min_skill_ranks",
+          "skillId": "knowledge_religion",
+          "minRanks": 6
+        },
+        {
+          "type": "min_spell_level",
+          "tradition": "arcane",
+          "minSpellLevel": 2
+        },
+        {
+          "type": "min_spell_level",
+          "tradition": "divine",
+          "minSpellLevel": 2
+        }
       ]
-    },
-    "advancesExistingSpellcasting": {
-      "tradition": "both",
-      "atLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    },
-    "featuresByLevel": {
-      "1": ["mt_dual_spellcasting_1"],
-      "2": ["mt_dual_spellcasting_2"],
-      "3": ["mt_dual_spellcasting_3"],
-      "4": ["mt_dual_spellcasting_4"],
-      "5": ["mt_dual_spellcasting_5"],
-      "6": ["mt_dual_spellcasting_6"],
-      "7": ["mt_dual_spellcasting_7"],
-      "8": ["mt_dual_spellcasting_8"],
-      "9": ["mt_dual_spellcasting_9"],
-      "10": ["mt_dual_spellcasting_10"]
     },
     "featureDetails": {
       "mt_dual_spellcasting_1": {
@@ -46,6 +50,118 @@
         "description": "When a new Mystic Theurge level is gained, gain new spells per day and caster level in both an existing arcane spellcasting class and an existing divine spellcasting class."
       }
     },
-    "acfSwaps": []
+    "acfSwaps": [],
+    "progression": [
+      {
+        "level": 1,
+        "bab": 0,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 2,
+        "features": [
+          "mt_dual_spellcasting_1"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 2,
+        "bab": 1,
+        "fortSave": 0,
+        "refSave": 0,
+        "willSave": 3,
+        "features": [
+          "mt_dual_spellcasting_2"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 3,
+        "bab": 1,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 3,
+        "features": [
+          "mt_dual_spellcasting_3"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 4,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "mt_dual_spellcasting_4"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 5,
+        "bab": 2,
+        "fortSave": 1,
+        "refSave": 1,
+        "willSave": 4,
+        "features": [
+          "mt_dual_spellcasting_5"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 6,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "mt_dual_spellcasting_6"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 7,
+        "bab": 3,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 5,
+        "features": [
+          "mt_dual_spellcasting_7"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 8,
+        "bab": 4,
+        "fortSave": 2,
+        "refSave": 2,
+        "willSave": 6,
+        "features": [
+          "mt_dual_spellcasting_8"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 9,
+        "bab": 4,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 6,
+        "features": [
+          "mt_dual_spellcasting_9"
+        ],
+        "advancesSpellcasting": "both"
+      },
+      {
+        "level": 10,
+        "bab": 5,
+        "fortSave": 3,
+        "refSave": 3,
+        "willSave": 7,
+        "features": [
+          "mt_dual_spellcasting_10"
+        ],
+        "advancesSpellcasting": "both"
+      }
+    ]
   }
 }

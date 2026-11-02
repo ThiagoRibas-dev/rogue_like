@@ -4,26 +4,38 @@ import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
 import { evaluateDiceExpression } from './math/dice.ts';
 import { dndFloor } from './math/multipliers.ts';
-import { appendSourcePath } from './modifiers.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from './prerequisites.ts';
-import { aggregateProgressionChassis, collectClassFeaturesUpToLevel } from './progression.ts';
+import {
+  aggregateProgressionChassis,
+  buildHitDieTrackFromClass,
+  collectClassFeaturesUpToLevel
+} from './progression.ts';
 import { applyRaceToActorChassis } from './races.ts';
 import { getDnD35EntityData, projectDnD35ActorSemanticTags, setDnD35EntityData } from './srd_registry.ts';
+import {
+  applyNegativeLevelsToActor,
+  applyPermanentLevelDrainToActor,
+  buildClassAndDomainEffectModifiers,
+  rebuildActorStateFromLevelHistory
+} from './level_ledger.ts';
 import type {
   AbilityId,
   AbilityScoresRecord,
   DnD35Alignment,
+  DnD35CharacterLevelRecord,
   DnD35EntityData,
   DnD35SpellSchool,
-  HitDieTrack,
-  StatModifier
+  HitDieTrack
 } from './types/dnd35e.types.ts';
 import { ALL_ABILITY_IDS } from './types/dnd35e.types.ts';
-import {
-  type DnD35ClassDefinition,
-  type DnD35DomainDefinition,
-  getDnD35SystemContent
-} from './types/dnd35e_system.types.ts';
+import { type DnD35ClassDefinition, getDnD35SystemContent } from './types/dnd35e_system.types.ts';
+
+export {
+  applyNegativeLevelsToActor,
+  applyPermanentLevelDrainToActor,
+  buildClassAndDomainEffectModifiers,
+  rebuildActorStateFromLevelHistory
+};
 
 /** Standard D&D 3.5e DMG Point-Buy cost table (scores 8 through 18). */
 export const POINT_BUY_COST_TABLE: Readonly<Record<number, number>> = {
@@ -302,10 +314,10 @@ export function buildPrerequisiteContextForActor(
     const classDef = classRegistry[track.trackId];
     if (!classDef || classDef.castingMode === 'none') continue;
     totalCasterLevel += track.levels;
-    const tableAtLevel = classDef.spellsPerDayTable?.[String(track.levels)];
-    if (!tableAtLevel) continue;
+    const row = classDef.progression.find((r) => r.level === track.levels);
+    if (!row || !row.spellsPerDay) continue;
     let highestSlot = 0;
-    for (const [lvlKey, slots] of Object.entries(tableAtLevel)) {
+    for (const [lvlKey, slots] of Object.entries(row.spellsPerDay)) {
       const spellLvl = Number(lvlKey);
       if (!Number.isNaN(spellLvl) && slots >= 0 && spellLvl > highestSlot) {
         highestSlot = spellLvl;
@@ -331,61 +343,6 @@ export function buildPrerequisiteContextForActor(
     maxArcaneSpellLevel,
     maxDivineSpellLevel
   };
-}
-
-/**
- * Synthesizes Unified Effect Provider `StatModifier`s from an actor's class levels, active ACFs,
- * and Cleric Domains with hierarchical `sourcePath` provenance.
- */
-export function buildClassAndDomainEffectModifiers(
-  tracks: ReadonlyArray<HitDieTrack>,
-  selectedAcfs: ReadonlyArray<string>,
-  domains: ReadonlyArray<string>,
-  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>,
-  domainRegistry: Readonly<Record<string, DnD35DomainDefinition>>
-): ReadonlyArray<StatModifier> {
-  const modifiers: StatModifier[] = [];
-
-  for (const track of tracks) {
-    const classDef = classRegistry[track.trackId];
-    if (!classDef) continue;
-    const activeFeatures = collectClassFeaturesUpToLevel(classDef, track.levels, selectedAcfs);
-    for (const featId of activeFeatures) {
-      const detail = classDef.featureDetails[featId];
-      if (!detail || detail.modifiers.length === 0) continue;
-      const featureRoot = appendSourcePath(`class:${classDef.id}`, `feature:${featId}`);
-      for (const mod of detail.modifiers) {
-        modifiers.push({
-          targetStat: mod.target,
-          value: mod.value,
-          bonusType: mod.type,
-          sourceId: `class:${classDef.id}:${mod.id}`,
-          sourcePath: appendSourcePath(featureRoot, mod.id),
-          origin: detail.category === 'su' ? 'su' : detail.category === 'sp' ? 'sp' : 'ex',
-          ...(mod.condition !== undefined ? { condition: mod.condition } : {})
-        });
-      }
-    }
-  }
-
-  for (const domainId of domains) {
-    const domainDef = domainRegistry[domainId];
-    if (!domainDef || domainDef.modifiers.length === 0) continue;
-    const domainRoot = appendSourcePath('class:cleric', `domain:${domainDef.id}`);
-    for (const mod of domainDef.modifiers) {
-      modifiers.push({
-        targetStat: mod.target,
-        value: mod.value,
-        bonusType: mod.type,
-        sourceId: `domain:${domainDef.id}:${mod.id}`,
-        sourcePath: appendSourcePath(domainRoot, mod.id),
-        origin: 'su',
-        ...(mod.condition !== undefined ? { condition: mod.condition } : {})
-      });
-    }
-  }
-
-  return modifiers;
 }
 
 /**
@@ -423,17 +380,7 @@ export function applyCharacterCreationToPlayer(
 
   const withRaceResult = applyRaceToActorChassis(withBaseAbilities, raceDef);
   const withRace = withRaceResult.entityData;
-  const levelOneTrack: HitDieTrack = {
-    trackId: classDef.id,
-    levels: 1,
-    hitDieSides: classDef.hitDieSides,
-    babCurve: classDef.babCurve,
-    fortCurve: classDef.fortCurve,
-    refCurve: classDef.refCurve,
-    willCurve: classDef.willCurve,
-    skillPointsPerLevel: classDef.skillPointsPerLevel
-  };
-
+  const levelOneTrack = buildHitDieTrackFromClass(classDef, 1);
   const nextTracks: ReadonlyArray<HitDieTrack> = [...withRace.tracks, levelOneTrack];
   const classAndDomainMods = buildClassAndDomainEffectModifiers(
     nextTracks,
@@ -460,6 +407,17 @@ export function applyCharacterCreationToPlayer(
   }
   const mergedFeats = Array.from(new Set([...draft.selectedFeats, ...domainFeats]));
 
+  const levelOneRecord: DnD35CharacterLevelRecord = {
+    characterLevel: 1,
+    classId: classDef.id,
+    classLevel: 1,
+    hpRolled: classDef.hitDieSides,
+    addedSkillRanks: draft.skillRanks,
+    selectedFeats: draft.selectedFeats,
+    selectedAcfs: draft.selectedAcfs,
+    learnedSpells: draft.knownSpells
+  };
+
   const updatedData: DnD35EntityData = {
     ...withRace,
     raceId: raceDef.id,
@@ -483,6 +441,7 @@ export function applyCharacterCreationToPlayer(
     armorBonus: equipPkg.armorBonus,
     shieldBonus: equipPkg.shieldBonus,
     hasPounce,
+    levelHistory: [levelOneRecord],
     statModifiers: [...withRaceResult.statModifiers, ...classAndDomainMods]
   };
 
@@ -524,6 +483,16 @@ export function applyLevelUpToActor(
   }
 
   const dndData = getDnD35EntityData(state, entityId);
+  const existingTrack = dndData.tracks.find((t) => t.trackId === classDef.id);
+  const nextClassLevel = (existingTrack ? existingTrack.levels : 0) + 1;
+  if (nextClassLevel > classDef.maxLevel) {
+    return {
+      state,
+      success: false,
+      errorReason: `Cannot exceed maximum level ${classDef.maxLevel} in ${classDef.name}.`
+    };
+  }
+
   if (classDef.prerequisites) {
     const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes);
     if (!evaluatePrerequisiteAST(classDef.prerequisites, prereqCtx)) {
@@ -531,75 +500,51 @@ export function applyLevelUpToActor(
     }
   }
 
-  let updatedAbilities = dndData.abilityScores;
+  const conMod = computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.con));
+  const prevChassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0);
+  const nextCharLevel = prevChassis.totalHD + 1;
+
+  const rawRoll =
+    choice.hpMethod === 'roll'
+      ? evaluateDiceExpression(`1d${classDef.hitDieSides}`).total
+      : dndFloor(classDef.hitDieSides / 2) + 1;
+
+  const newRecord: DnD35CharacterLevelRecord = {
+    characterLevel: nextCharLevel,
+    classId: classDef.id,
+    classLevel: nextClassLevel,
+    hpRolled: rawRoll,
+    ...(choice.abilityScoreIncrease !== undefined ? { abilityScoreIncrease: choice.abilityScoreIncrease } : {}),
+    addedSkillRanks: choice.addedSkillRanks,
+    selectedFeats: choice.selectedFeats,
+    selectedAcfs: choice.selectedAcfs ?? [],
+    learnedSpells: choice.learnedSpells ?? []
+  };
+
+  const prevHistory = dndData.levelHistory ?? [];
+  const updatedHistory = [...prevHistory, newRecord];
+
+  let baseAbilities = dndData.abilityScores;
   if (choice.abilityScoreIncrease !== undefined) {
     const abId = choice.abilityScoreIncrease;
-    const prev = updatedAbilities[abId];
+    const prev = baseAbilities[abId];
     if (prev.base !== null) {
-      updatedAbilities = {
-        ...updatedAbilities,
+      baseAbilities = {
+        ...baseAbilities,
         [abId]: { ...prev, base: prev.base + 1 }
       };
     }
   }
 
-  const existingIdx = dndData.tracks.findIndex((t) => t.trackId === classDef.id);
-  const nextTracks: HitDieTrack[] =
-    existingIdx >= 0
-      ? dndData.tracks.map((t, idx) => (idx === existingIdx ? { ...t, levels: t.levels + 1 } : t))
-      : [
-          ...dndData.tracks,
-          {
-            trackId: classDef.id,
-            levels: 1,
-            hitDieSides: classDef.hitDieSides,
-            babCurve: classDef.babCurve,
-            fortCurve: classDef.fortCurve,
-            refCurve: classDef.refCurve,
-            willCurve: classDef.willCurve,
-            skillPointsPerLevel: classDef.skillPointsPerLevel
-          }
-        ];
-
-  const mergedSkillRanks: Record<string, number> = { ...dndData.skillRanks };
-  for (const [skillId, delta] of Object.entries(choice.addedSkillRanks)) {
-    if (delta > 0) {
-      mergedSkillRanks[skillId] = (mergedSkillRanks[skillId] ?? 0) + delta;
-    }
-  }
-
-  const mergedFeats = Array.from(new Set([...dndData.feats, ...choice.selectedFeats]));
-  const mergedAcfs = Array.from(new Set([...(dndData.selectedAcfs ?? []), ...(choice.selectedAcfs ?? [])]));
-  const mergedSpells = Array.from(new Set([...(dndData.knownSpells ?? []), ...(choice.learnedSpells ?? [])]));
-
-  // Strip old class/domain modifiers and rebuild for updated tracks
-  const nonClassMods = (dndData.statModifiers ?? []).filter((m) => !(m.sourcePath ?? '').startsWith('class:'));
-  const newClassMods = buildClassAndDomainEffectModifiers(
-    nextTracks,
-    mergedAcfs,
-    dndData.domains ?? [],
-    sysContent.classes,
-    sysContent.domains
+  const updatedData = rebuildActorStateFromLevelHistory(
+    { ...dndData, abilityScores: baseAbilities },
+    updatedHistory,
+    sysContent
   );
 
-  const conMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedAbilities.con));
-  const rawRoll =
-    choice.hpMethod === 'roll'
-      ? evaluateDiceExpression(`1d${classDef.hitDieSides}`).total
-      : dndFloor(classDef.hitDieSides / 2) + 1;
-  const hpGain = Math.max(1, rawRoll + conMod);
-  const nextChassis = aggregateProgressionChassis(nextTracks, conMod, dndData.levelAdjustment ?? 0);
-
-  const updatedData: DnD35EntityData = {
-    ...dndData,
-    abilityScores: updatedAbilities,
-    tracks: nextTracks,
-    skillRanks: mergedSkillRanks,
-    feats: mergedFeats,
-    selectedAcfs: mergedAcfs,
-    knownSpells: mergedSpells,
-    statModifiers: [...nonClassMods, ...newClassMods]
-  };
+  const nextConMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedData.abilityScores.con));
+  const hpGain = Math.max(1, rawRoll + nextConMod);
+  const nextChassis = aggregateProgressionChassis(updatedData.tracks, nextConMod, updatedData.levelAdjustment ?? 0);
 
   const nextState = setDnD35EntityData(state, entityId, updatedData);
   const fighter = getComponent(nextState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
