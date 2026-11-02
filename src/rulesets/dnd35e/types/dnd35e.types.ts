@@ -360,6 +360,21 @@ export interface NaturalWeaponDescriptor {
   readonly riders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;
 }
 
+/** The nine canonical D&D 3.5e alignment codes. */
+export type DnD35Alignment = 'LG' | 'NG' | 'CG' | 'LN' | 'N' | 'CN' | 'LE' | 'NE' | 'CE';
+
+/** The eight canonical D&D 3.5e arcane schools plus universal. */
+export type DnD35SpellSchool =
+  | 'abjuration'
+  | 'conjuration'
+  | 'divination'
+  | 'enchantment'
+  | 'evocation'
+  | 'illusion'
+  | 'necromancy'
+  | 'transmutation'
+  | 'universal';
+
 /** Serializable D&D 3.5e entity payload stored inside `RulesetDataComponent.payload`. */
 export interface DnD35EntityData {
   readonly archetypeId: string;
@@ -395,4 +410,16 @@ export interface DnD35EntityData {
   readonly singleActionsOnly?: boolean | undefined;
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
   readonly anatomyBodyPlan?: 'humanoid_biped' | 'quadruped' | 'marilith_6arm' | 'avian' | 'serpentine' | undefined;
+  readonly raceId?: string | undefined;
+  readonly alignment?: DnD35Alignment | undefined;
+  readonly favoredClass?: string | undefined;
+  readonly selectedAcfs?: ReadonlyArray<string> | undefined;
+  readonly domains?: ReadonlyArray<string> | undefined;
+  readonly arcaneSchool?: DnD35SpellSchool | undefined;
+  readonly prohibitedSchools?: ReadonlyArray<DnD35SpellSchool> | undefined;
+  readonly favoredEnemies?: ReadonlyArray<{ readonly creatureType: string; readonly bonus: number }> | undefined;
+  readonly combatStyle?: 'archery' | 'two_weapon' | undefined;
+  readonly knownSpells?: ReadonlyArray<string> | undefined;
+  readonly preparedSpells?: ReadonlyArray<string> | undefined;
+  readonly enforceMulticlassXpPenalty?: boolean | undefined;
 }

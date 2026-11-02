@@ -1,0 +1,54 @@
+{
+  "fighter": {
+    "id": "fighter",
+    "name": "Fighter",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["climb", "craft", "handle_animal", "intimidate", "jump", "ride", "swim"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium", "heavy"],
+      "shields": ["shields", "tower_shields"]
+    },
+    "bonusFeatLevels": [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+    "featuresByLevel": {
+      "1": ["fighter_bonus_feat_1"],
+      "2": ["fighter_bonus_feat_2"],
+      "4": ["fighter_bonus_feat_4"],
+      "6": ["fighter_bonus_feat_6"],
+      "8": ["fighter_bonus_feat_8"],
+      "10": ["fighter_bonus_feat_10"],
+      "12": ["fighter_bonus_feat_12"],
+      "14": ["fighter_bonus_feat_14"],
+      "16": ["fighter_bonus_feat_16"],
+      "18": ["fighter_bonus_feat_18"],
+      "20": ["fighter_bonus_feat_20"]
+    },
+    "featureDetails": {
+      "fighter_bonus_feat_1": {
+        "id": "fighter_bonus_feat_1",
+        "name": "Fighter Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "fighter_dungeon_crasher_2",
+        "name": "Dungeon Crasher",
+        "replacesFeature": "fighter_bonus_feat_2",
+        "grantedFeature": "dungeon_crasher_1",
+        "level": 2,
+        "description": "Replaces 2nd-level Fighter Bonus Feat with +2 competence bonus on saves/AC vs traps and 4d6 + 2x STR damage when bull rushing foes into solid walls."
+      }
+    ]
+  }
+}

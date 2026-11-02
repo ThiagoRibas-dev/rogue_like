@@ -21,13 +21,21 @@ import type {
   ValidationError,
   ViewGroup
 } from '../../types/ruleset.types.ts';
-import { DnD35SystemContentSchema, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
+import {
+  DnD35SystemContentSchema,
+  getDnD35SystemContent,
+  parseDnD35SystemContent
+} from './types/dnd35e_system.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
 import { evaluateTacticalDoctrineModifiers, resolveAttackRoll } from './combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from './combat/damage_vitality.ts';
 import { summarizeConditionEffects } from './combat/maneuvers_conditions.ts';
 import { DND35E_BASE_AC, evaluateDnD35ActorStatDAG } from './modifiers.ts';
-import { aggregateProgressionChassis, computeXpThresholdForLevel } from './progression.ts';
+import {
+  aggregateProgressionChassis,
+  calculateMulticlassXpMultiplier,
+  computeXpThresholdForLevel
+} from './progression.ts';
 import {
   getDnD35EntityData,
   getEquippedItemBonuses,
@@ -421,12 +429,23 @@ function grantDnD35eXp(state: GameState, entityId: EntityId, amount: number): Ga
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (!fighter || amount <= 0) return state;
 
-  const newXp = fighter.xp + amount;
+  const dndData = getDnD35EntityData(state, entityId);
+  const sysContent = getDnD35SystemContent(state.campaign);
+  const xpMultiplier = sysContent
+    ? calculateMulticlassXpMultiplier(
+        dndData.tracks,
+        sysContent.classes,
+        dndData.favoredClass ?? 'any',
+        dndData.enforceMulticlassXpPenalty ?? true
+      )
+    : 1.0;
+  const adjustedAmount = Math.max(0, Math.floor(amount * xpMultiplier));
+
+  const newXp = fighter.xp + adjustedAmount;
   const nextLevel = fighter.level + 1;
   const nextThreshold = computeXpThresholdForLevel(nextLevel);
 
   if (newXp >= nextThreshold) {
-    const dndData = getDnD35EntityData(state, entityId);
     const primaryTrack = dndData.tracks[0];
     const nextTracks = primaryTrack
       ? [{ ...primaryTrack, levels: nextLevel }, ...dndData.tracks.slice(1)]
@@ -520,6 +539,28 @@ export const dnd35eRulesetContract: RulesetContract = {
     return [
       { key: 'archetypes', filename: 'archetypes.json' },
       { key: 'classes', filename: 'classes.json' },
+      { key: 'classes', filename: 'classes/barbarian.json' },
+      { key: 'classes', filename: 'classes/bard.json' },
+      { key: 'classes', filename: 'classes/cleric.json' },
+      { key: 'classes', filename: 'classes/druid.json' },
+      { key: 'classes', filename: 'classes/fighter.json' },
+      { key: 'classes', filename: 'classes/monk.json' },
+      { key: 'classes', filename: 'classes/paladin.json' },
+      { key: 'classes', filename: 'classes/ranger.json' },
+      { key: 'classes', filename: 'classes/rogue.json' },
+      { key: 'classes', filename: 'classes/sorcerer.json' },
+      { key: 'classes', filename: 'classes/wizard.json' },
+      { key: 'classes', filename: 'classes/arcane_archer.json' },
+      { key: 'classes', filename: 'classes/assassin.json' },
+      { key: 'classes', filename: 'classes/blackguard.json' },
+      { key: 'classes', filename: 'classes/dragon_disciple.json' },
+      { key: 'classes', filename: 'classes/duelist.json' },
+      { key: 'classes', filename: 'classes/dwarven_defender.json' },
+      { key: 'classes', filename: 'classes/eldritch_knight.json' },
+      { key: 'classes', filename: 'classes/loremaster.json' },
+      { key: 'classes', filename: 'classes/mystic_theurge.json' },
+      { key: 'classes', filename: 'classes/shadowdancer.json' },
+      { key: 'domains', filename: 'domains.json' },
       { key: 'skills', filename: 'skills.json' },
       { key: 'feats', filename: 'feats.json' },
       { key: 'spells', filename: 'spells.json' },

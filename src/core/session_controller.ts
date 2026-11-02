@@ -26,7 +26,8 @@ import {
   renderSettingsMenu,
   populateRulesetList,
   populateCampaignList,
-  renderMenus
+  renderMenus,
+  resetDnD35eCharBuilderDraft
 } from '../rendering/ui.ts';
 import type { RulesetId } from '../types/ruleset.types.ts';
 import { getAllRulesets, getRuleset } from '../rulesets/registry.ts';
@@ -252,7 +253,12 @@ export function bindDOMControls(display: ROT.Display): void {
 
       setTimeout(() => {
         startNewGame(selectedCampaignId!, getGameState(), display, (newState) => {
-          setGameState(newState);
+          if (newState.campaign.manifest.rulesetId === 'dnd35e') {
+            resetDnD35eCharBuilderDraft(newState);
+            setGameState({ ...newState, uiMode: UIMode.CharCreation });
+          } else {
+            setGameState(newState);
+          }
         }).finally(() => {
           btn.textContent = originalText;
           btn.disabled = false;
@@ -567,6 +573,10 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
         targetEl = document.getElementById('ruleset-selection-overlay');
       } else if (newState.uiMode === UIMode.CampaignSelect) {
         targetEl = document.getElementById('campaign-selection-overlay');
+      } else if (newState.uiMode === UIMode.CharCreation) {
+        targetEl = document.getElementById('char-creation-overlay');
+      } else if (newState.uiMode === UIMode.LevelUp) {
+        targetEl = document.getElementById('level-up-overlay');
       } else if (newState.uiMode === UIMode.GameOver) {
         targetEl = document.getElementById('game-over-screen');
       }

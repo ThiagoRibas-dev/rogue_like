@@ -124,11 +124,20 @@ export function handleKeyDown(
     return;
   }
 
+  if (currentState.uiMode === UIMode.LevelUp) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setGameState({ ...currentState, uiMode: UIMode.Game });
+    }
+    return;
+  }
+
   if (
     currentState.uiMode === UIMode.MainMenu ||
     currentState.uiMode === UIMode.RulesetSelect ||
     currentState.uiMode === UIMode.GameOver ||
     currentState.uiMode === UIMode.CampaignSelect ||
+    currentState.uiMode === UIMode.CharCreation ||
     currentState.uiMode === UIMode.Editor
   ) {
     return; // Menu buttons and editor forms handle their own input

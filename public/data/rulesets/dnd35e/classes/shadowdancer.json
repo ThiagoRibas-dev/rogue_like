@@ -1,0 +1,105 @@
+{
+  "shadowdancer": {
+    "id": "shadowdancer",
+    "name": "Shadowdancer",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 6,
+    "classSkills": [
+      "balance",
+      "bluff",
+      "decipher_script",
+      "diplomacy",
+      "disguise",
+      "escape_artist",
+      "hide",
+      "jump",
+      "listen",
+      "move_silently",
+      "perform",
+      "search",
+      "sleight_of_hand",
+      "spot",
+      "tumble",
+      "use_rope"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_skill_ranks", "skillId": "move_silently", "minRanks": 8 },
+        { "type": "min_skill_ranks", "skillId": "hide", "minRanks": 10 },
+        { "type": "min_skill_ranks", "skillId": "perform", "minRanks": 5 },
+        { "type": "has_feat", "featId": "combat_reflexes" },
+        { "type": "has_feat", "featId": "dodge" },
+        { "type": "has_feat", "featId": "mobility" }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["club", "crossbow_hand", "crossbow_light", "Crossbow_heavy", "dagger", "dart", "mace_light", "morningstar", "quarterstaff", "rapier", "sap", "shortbow", "short_sword"],
+      "armor": ["light"],
+      "shields": []
+    },
+    "featuresByLevel": {
+      "1": ["hide_in_plain_sight_shadow"],
+      "2": ["darkvision_60", "evasion", "uncanny_dodge"],
+      "3": ["shadow_illusion", "summon_shadow"],
+      "4": ["shadow_jump_20"],
+      "5": ["defensive_roll", "improved_uncanny_dodge"],
+      "6": ["shadow_jump_40"],
+      "7": ["slippery_mind"],
+      "8": ["shadow_jump_80"],
+      "10": ["improved_evasion", "shadow_jump_160", "shadow_master"]
+    },
+    "featureDetails": {
+      "hide_in_plain_sight_shadow": {
+        "id": "hide_in_plain_sight_shadow",
+        "name": "Hide in Plain Sight",
+        "category": "su",
+        "description": "Use the Hide skill even while being observed, as long as within 10 feet of some sort of shadow."
+      },
+      "shadow_illusion": {
+        "id": "shadow_illusion",
+        "name": "Shadow Illusion",
+        "category": "sp",
+        "description": "Create visual illusions (as silent image) 1/day."
+      },
+      "summon_shadow": {
+        "id": "summon_shadow",
+        "name": "Summon Shadow",
+        "category": "su",
+        "description": "Summon a loyal undead shadow companion matching alignment."
+      },
+      "shadow_jump_20": {
+        "id": "shadow_jump_20",
+        "name": "Shadow Jump",
+        "category": "su",
+        "description": "Travel between shadows as if by means of a dimension door spell (20 ft/day at 4th, 40 ft at 6th, 80 ft at 8th, 160 ft at 10th).",
+        "resourcePool": {
+          "poolId": "shadow_jump_ft",
+          "maxBase": 20,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "defensive_roll": {
+        "id": "defensive_roll",
+        "name": "Defensive Roll",
+        "category": "ex",
+        "description": "1/day roll with a potentially lethal blow to take half damage (Reflex save DC = damage dealt)."
+      },
+      "slippery_mind": {
+        "id": "slippery_mind",
+        "name": "Slippery Mind",
+        "category": "ex",
+        "description": "If affected by an enchantment and fails saving throw, attempt it again 1 round later at the same DC."
+      }
+    },
+    "acfSwaps": []
+  }
+}

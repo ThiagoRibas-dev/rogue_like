@@ -1,0 +1,129 @@
+{
+  "druid": {
+    "id": "druid",
+    "name": "Druid",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 4,
+    "classSkills": [
+      "concentration",
+      "craft",
+      "diplomacy",
+      "handle_animal",
+      "heal",
+      "knowledge_nature",
+      "listen",
+      "ride",
+      "spellcraft",
+      "spot",
+      "survival",
+      "swim"
+    ],
+    "castingMode": "prepared",
+    "castingTradition": "divine",
+    "castingKeyAbility": "wis",
+    "allowedAlignments": ["NG", "LN", "N", "CN", "NE"],
+    "proficiencies": {
+      "weapons": ["club", "dagger", "dart", "quarterstaff", "scimitar", "sickle", "shortspear", "sling", "spear"],
+      "armor": ["light", "medium"],
+      "shields": ["wooden_shields"]
+    },
+    "featuresByLevel": {
+      "1": ["animal_companion", "nature_sense", "spontaneous_summon_natures_ally", "wild_empathy"],
+      "2": ["woodland_stride"],
+      "3": ["trackless_step"],
+      "4": ["resist_natures_lure"],
+      "5": ["wild_shape_1"],
+      "6": ["wild_shape_2"],
+      "7": ["wild_shape_3"],
+      "8": ["wild_shape_large"],
+      "9": ["venom_immunity"],
+      "10": ["wild_shape_4"],
+      "11": ["wild_shape_tiny"],
+      "12": ["wild_shape_plant"],
+      "13": ["a_thousand_faces"],
+      "14": ["wild_shape_5"],
+      "15": ["timeless_body", "wild_shape_huge"],
+      "16": ["wild_shape_elemental_1"],
+      "18": ["wild_shape_6", "wild_shape_elemental_2"],
+      "20": ["wild_shape_elemental_3_huge"]
+    },
+    "featureDetails": {
+      "animal_companion": {
+        "id": "animal_companion",
+        "name": "Animal Companion",
+        "category": "ex",
+        "description": "Bond with a loyal animal companion that scales in bonus HD, natural armor, and STR/DEX."
+      },
+      "nature_sense": {
+        "id": "nature_sense",
+        "name": "Nature Sense",
+        "category": "ex",
+        "description": "+2 bonus on Knowledge (nature) and Survival checks."
+      },
+      "woodland_stride": {
+        "id": "woodland_stride",
+        "name": "Woodland Stride",
+        "category": "ex",
+        "description": "Move through natural thorns, briars, and overgrown areas at normal speed without taking damage."
+      },
+      "trackless_step": {
+        "id": "trackless_step",
+        "name": "Trackless Step",
+        "category": "ex",
+        "description": "Leaves no trail in natural surroundings and cannot be tracked."
+      },
+      "resist_natures_lure": {
+        "id": "resist_natures_lure",
+        "name": "Resist Nature's Lure",
+        "category": "ex",
+        "description": "+4 bonus on saving throws against the spell-like abilities of fey."
+      },
+      "wild_shape_1": {
+        "id": "wild_shape_1",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Turn into a Small or Medium animal and back again (scales to Large at 8th, Tiny at 11th, Plant at 12th, Huge at 15th, Elemental at 16th).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "venom_immunity": {
+        "id": "venom_immunity",
+        "name": "Venom Immunity",
+        "category": "ex",
+        "description": "Immunity to all organic poisons."
+      }
+    },
+    "spellsPerDayTable": {
+      "1": { "0": 3, "1": 1 },
+      "2": { "0": 4, "1": 2 },
+      "3": { "0": 4, "1": 2, "2": 1 },
+      "4": { "0": 5, "1": 3, "2": 2 },
+      "5": { "0": 5, "1": 3, "2": 2, "3": 1 },
+      "6": { "0": 5, "1": 3, "2": 3, "3": 2 },
+      "7": { "0": 6, "1": 4, "2": 3, "3": 2, "4": 1 },
+      "8": { "0": 6, "1": 4, "2": 3, "3": 3, "4": 2 },
+      "9": { "0": 6, "1": 4, "2": 4, "3": 3, "4": 2, "5": 1 },
+      "10": { "0": 6, "1": 4, "2": 4, "3": 3, "4": 3, "5": 2 },
+      "11": { "0": 6, "1": 5, "2": 4, "3": 4, "4": 3, "5": 2, "6": 1 },
+      "12": { "0": 6, "1": 5, "2": 4, "3": 4, "4": 3, "5": 3, "6": 2 },
+      "13": { "0": 6, "1": 5, "2": 5, "3": 4, "4": 4, "5": 3, "6": 2, "7": 1 },
+      "14": { "0": 6, "1": 5, "2": 5, "3": 4, "4": 4, "5": 3, "6": 3, "7": 2 },
+      "15": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 4, "5": 4, "6": 3, "7": 2, "8": 1 },
+      "16": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 4, "5": 4, "6": 3, "7": 3, "8": 2 },
+      "17": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 4, "6": 4, "7": 3, "8": 2, "9": 1 },
+      "18": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 4, "6": 4, "7": 3, "8": 3, "9": 2 },
+      "19": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4, "7": 4, "8": 3, "9": 3 },
+      "20": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4, "7": 4, "8": 4, "9": 4 }
+    },
+    "acfSwaps": []
+  }
+}

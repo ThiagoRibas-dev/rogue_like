@@ -1397,53 +1397,53 @@ Populate the concrete D&D 3.5e creature registry across all 15 SRD Creature Type
 
 ---
 
-# 🚀 Phase 23: D&D 3.5e System Content Pillar 2 — Core 11 Classes, Prestige Classes, ACFs & Character Builder _(Branch: `DND35`)_
+# 🚀 Phase 23: D&D 3.5e System Content Pillar 2 — Core 11 Classes, Prestige Classes, ACFs & Character Builder _(Branch: `DND35` — Completed)_
 
-**Goal:** Author all 11 SRD Base Classes, Cleric Domains, Prestige Classes, and Alternate Class Features in `public/data/rulesets/dnd35e/classes.json`, and build the full interactive D&D 3.5e Character Creation & Level-Up Advancement UI.
+**Goal:** Author all 11 SRD Base Classes, Cleric Domains, Prestige Classes, and Alternate Class Features across `public/data/rulesets/dnd35e/classes.json`, per-class `public/data/rulesets/dnd35e/classes/<classId>.json` files, and `public/data/rulesets/dnd35e/domains.json` (shallow-merged into `systemContent.classes` and `systemContent.domains` at load time), and build the full interactive D&D 3.5e Character Creation & Level-Up Advancement UI.
 
-## ⚪ Milestone 110: Complete 11 SRD Base Classes, Cleric Domains & Alternate Class Features (`public/data/rulesets/dnd35e/classes.json`)
+## ✅ Milestone 110: Complete 11 SRD Base Classes, Cleric Domains & Alternate Class Features (`public/data/rulesets/dnd35e/classes.json`, `classes/<classId>.json` & `domains.json`) _(Completed)_
 
-Expand `classes.json` from the 4 starter classes to the full 11 Player's Handbook classes (levels 1–20) with their resource pools, capabilities, spell tables, and ACF swaps.
+Expand the class registry from the 4 starter classes in `classes.json` to modular per-class definitions in `public/data/rulesets/dnd35e/classes/<classId>.json` for all 11 Player's Handbook classes (levels 1–20) plus `public/data/rulesets/dnd35e/domains.json` for all 22 SRD Cleric Domains, complete with resource pools, capabilities, spell tables, and ACF swaps.
 
-- [ ] **Martial & Hybrid Base Classes (`Barbarian`, `Fighter`, `Monk`, `Paladin`, `Ranger`, `Rogue`)**:
+- [x] **Martial & Hybrid Base Classes (`Barbarian`, `Fighter`, `Monk`, `Paladin`, `Ranger`, `Rogue`)**:
   - **Barbarian**: `d12`, Full BAB, Fast Movement (`+10 ft`), Illiteracy, Rage / Greater Rage / Mighty Rage (`ResourcePoolComponent`), Tireless Rage, Uncanny Dodge, Improved Uncanny Dodge, Trap Sense (`+1..+6`), Indomitable Will, `DR 1/-..5/-`.
   - **Fighter**: `d10`, Full BAB, Fighter Bonus Feat progression at 1st and every even level (`2, 4, 6..20`).
   - **Monk**: `d8`, 3/4 BAB, all Good saves, Unarmored AC Bonus (`WIS mod + floor(level/5)`), Unarmed Strike scaling (`1d6 -> 2d10`), Flurry of Blows (`-2/-2 -> -1/-1 -> +0/+0` + Greater Flurry), Fast Movement (`+10..+60 ft`), Evasion / Improved Evasion, Still Mind, Ki Strike (`magic`, `lawful`, `adamantine`), Purity of Body, Wholeness of Body, Diamond Body, Abundant Step, Diamond Soul (`SR 10 + level`), Quivering Palm, Perfect Self.
   - **Paladin**: `d10`, Full BAB, `LG` alignment, Aura of Good, *Detect Evil* at will, Smite Evil (`1..5/day`, `+CHA` atk, `+level` dmg vs. `alignment:evil`), Divine Grace (`+CHA` to all saves), Lay on Hands (`level × CHA mod` HP pool), Aura of Courage (10-ft fear immunity/bonus field), Divine Health, Turn Undead (`level - 3`), 1st–4th level prepared Divine casting from 4th level.
   - **Ranger**: `d8`, Full BAB, Good Fort/Ref, 6 skill pts, Favored Enemy progression (1st, 5th, 10th, 15th, 20th using `PRIM-1.7` tag modifiers), Track, Combat Style track (`Archery`: *Rapid Shot* $\to$ *Manyshot* $\to$ *Improved Precise Shot* OR `Two-Weapon`: *TWF* $\to$ *Improved TWF* $\to$ *Greater TWF* in light/no armor), Endurance, Woodland Stride, Evasion, Camouflage, Hide in Plain Sight, 1st–4th level prepared Divine casting.
   - **Rogue**: `d6`, 3/4 BAB, Good Ref, 8 skill pts, Sneak Attack (`+1d6` to `+10d6`), Trapfinding, Evasion, Trap Sense, Uncanny Dodge / Improved Uncanny Dodge, and 10th+ level Rogue Special Abilities (*Crippling Strike* `2 STR` dmg, *Defensive Roll*, *Improved Evasion*, *Opportunist* AoO, *Slippery Mind*, *Skill Mastery*).
-- [ ] **Arcane & Divine Full/Spontaneous Casters (`Bard`, `Cleric`, `Druid`, `Sorcerer`, `Wizard`)**:
+- [x] **Arcane & Divine Full/Spontaneous Casters (`Bard`, `Cleric`, `Druid`, `Sorcerer`, `Wizard`)**:
   - **Bard**: `d6`, 3/4 BAB, Good Ref/Will, 6 skill pts, 0th–6th spontaneous Arcane casting (no ASF in light armor), Bardic Knowledge (`level + INT`), and Bardic Music (`ResourcePoolComponent`: *Inspire Courage* `+1..+4` morale save vs. fear and competence atk/dmg, *Countersong*, *Fascinate*, *Inspire Competence* `+2` skill, *Suggestion*, *Inspire Greatness*, *Song of Freedom*, *Inspire Heroics*).
   - **Cleric & SRD Deity Domains**: `d8`, 3/4 BAB, Good Fort/Will, 0th–9th prepared Divine casting + `+1` Domain slot per spell level (1–9), Spontaneous *Cure* (Good) or *Inflict* (Evil) conversion, Turn/Rebuke Undead (`3 + CHA mod/day`, $1\text{d}20 + \text{CHA}$ check for max HD turned and $2\text{d}6 + \text{level} + \text{CHA}$ total HD affected, destroying undead with $\text{HD} \le \text{level}/2$), and all 22 SRD Domains (`Air`, `Animal`, `Chaos`, `Death`, `Destruction`, `Earth`, `Evil`, `Fire`, `Good`, `Healing`, `Knowledge`, `Law`, `Luck`, `Magic`, `Plant`, `Protection`, `Strength`, `Sun`, `Travel`, `Trickery`, `War`, `Water`).
   - **Druid**: `d8`, 3/4 BAB, Good Fort/Will, 0th–9th prepared Divine casting + spontaneous *Summon Nature's Ally*, Nature Sense, Woodland Stride, Trackless Step, Resist Nature's Lure (`+4` save vs. `type:fey`), Venom Immunity, Wild Shape (`PRIM-2.3`: Small/Medium Animal at 5th $\to$ Large at 8th $\to$ Tiny at 11th $\to$ Plant at 12th $\to$ Huge at 15th $\to$ Elemental at 16th–20th), and Animal Companion progression.
   - **Sorcerer**: `d4`, 1/2 BAB, Good Will, 0th–9th high-volume spontaneous Arcane casting (`spellsPerDay` & `spellsKnown` tables), Summon Familiar.
   - **Wizard & School Specializations**: `d4`, 1/2 BAB, Good Will, 0th–9th prepared Spellbook Arcane casting, Scribe Scroll, Wizard Bonus Feats (`5, 10, 15, 20`), and Specialist Wizard options (Abjurer, Conjurer, Diviner, Enchanter, Evoker, Illusionist, Necromancer, Transmuter: `+1` school slot/level, `+2` Spellcraft on specialty, 2 prohibited schools).
-- [ ] **Alternate Class Features (`acfSwaps` via `PRIM-2.1`)**: Author *Whirling Frenzy* (Barbarian), *Lion Spirit Totem Pounce* (Barbarian), *Wolf Totem Improved Trip* (Barbarian), *Decisive Strike* (Monk), *Invisible Fist* (Monk), *Charging Smite* (Paladin), *Distracting Attack* (Ranger), *Penetrating Strike* (Rogue: half sneak attack dice vs. crit-immune targets when flanking), *Domain Spontaneity* (Cleric), and *Immediate Magic / Abrupt Jaunt* (Specialist Wizard).
+- [x] **Alternate Class Features (`acfSwaps` via `PRIM-2.1`)**: Author *Whirling Frenzy* (Barbarian), *Lion Spirit Totem Pounce* (Barbarian), *Wolf Totem Improved Trip* (Barbarian), *Dungeon Crasher* (Fighter), *Decisive Strike* (Monk), *Invisible Fist* (Monk), *Charging Smite* (Paladin), *Distracting Attack* (Ranger), *Penetrating Strike* (Rogue: half sneak attack dice vs. crit-immune targets when flanking), *Domain Spontaneity* (Cleric), and *Immediate Magic / Abrupt Jaunt* (Specialist Wizard).
 
-## ⚪ Milestone 111: SRD Prestige Classes & Multiclassing Rules (`public/data/rulesets/dnd35e/classes.json`)
+## ✅ Milestone 111: SRD Prestige Classes & Multiclassing Rules (`public/data/rulesets/dnd35e/classes/<classId>.json`) _(Completed)_
 
-Author iconic SRD Prestige Classes validated automatically through `evaluatePrerequisiteAST()` (`src/rulesets/dnd35e/prerequisites.ts`).
+Author iconic SRD Prestige Classes in modular per-class JSON files (`public/data/rulesets/dnd35e/classes/<classId>.json`, merged into `systemContent.classes`) validated automatically through `evaluatePrerequisiteAST()` (`src/rulesets/dnd35e/prerequisites.ts`).
 
-- [ ] **SRD Prestige Class Registry (`classes.json`)**:
+- [x] **SRD Prestige Class Registry (`classes/<classId>.json`)**:
   - **Arcane Archer** (`BAB +6`, Elf/Half-Elf, *Point Blank Shot*, *Precise Shot*, *Weapon Focus (bow)*, 1st-level arcane casting $\to$ Enhance Arrow `+1..+5`, Imbue Arrow AoE, Seeker Arrow, Phase Arrow, Hail of Arrows, Arrow of Death).
   - **Assassin** (`Evil` alignment, `Hide 8`, `Move Silently 8`, `Disguise 4` $\to$ Sneak Attack `+1d6..+5d6`, Death Attack 3-round study Fort save, Poison Use, `+1..+5` save vs. poison, Uncanny Dodge, Hide in Plain Sight, Assassin spell list).
   - **Blackguard** (`BAB +6`, `Evil`, `Hide 5`, *Cleave*, *Power Attack*, *Improved Sunder* $\to$ Aura of Evil, *Detect Good*, Poison Use, Dark Blessing `+CHA` to saves, Smite Good, Aura of Despair `-2` save aura within 10 ft, Command Undead, Sneak Attack, Blackguard spell list).
   - **Dragon Disciple**, **Duelist** (Canny Defense `+INT` Dodge AC, Precise Strike `+1d6..+2d6`), **Dwarven Defender** (`Defensive Stance`: `+2 STR, +4 CON, +2 resistance saves, +4 dodge AC` while stationary), **Eldritch Knight** (`Full BAB` + 9/10 arcane caster level advancement), **Loremaster**, **Mystic Theurge** (simultaneous Arcane + Divine caster level advancement), and **Shadowdancer** (*Hide in Plain Sight*, *Shadow Jump* dimension door pool, *Summon Shadow*).
-- [ ] **Multiclass XP Penalty & Prestige Class Exemption (`src/rulesets/dnd35e/progression.ts`)**: Enforce that base classes remain within 1 level of each other (ignoring the race's `favoredClass` and all Prestige Classes) or incur a `-20%` XP penalty per uneven base class, with a campaign rule toggle to enable/disable multiclass XP penalties.
+- [x] **Multiclass XP Penalty & Prestige Class Exemption (`src/rulesets/dnd35e/progression.ts`)**: Enforce that base classes remain within 1 level of each other (ignoring the race's `favoredClass` and all Prestige Classes) or incur a `-20%` XP penalty per uneven base class, with a campaign rule toggle to enable/disable multiclass XP penalties.
 
-## ⚪ Milestone 112: Interactive D&D 3.5e Character Creation Wizard & Level-Up Advancement UI
+## ✅ Milestone 112: Interactive D&D 3.5e Character Creation Wizard & Level-Up Advancement UI _(Completed)_
 
-Build a dedicated CRPG character creation and level-up workflow (`src/rendering/ui/dnd35e_char_builder.ui.ts`) when starting or advancing in a `dnd35e` campaign.
+Build a dedicated CRPG character creation and level-up workflow (`src/rendering/ui/dnd35e_char_builder.ui.ts`, `dnd35e_char_builder_steps.ui.ts`, `dnd35e_level_up.ui.ts`, and `src/rulesets/dnd35e/character_builder.ts`) when starting or advancing in a `dnd35e` campaign.
 
-- [ ] **7-Step Character Creation Wizard**:
+- [x] **7-Step Character Creation Wizard**:
   1. **Race Selection**: Browse playable races (`races.json`) with live previews of ability modifiers, size/speed, vision modes, racial traits, and favored class.
-  2. **Class & ACF Selection**: Choose starting base class (`classes.json`), optional Specialist Wizard school or Cleric Domains (2 domains), Ranger Favored Enemy, and optional Alternate Class Feature swaps (`PRIM-2.1`).
+  2. **Class & ACF Selection**: Choose starting base class (`classes/<classId>.json`), optional Specialist Wizard school or Cleric Domains (2 domains), Ranger Favored Enemy, and optional Alternate Class Feature swaps (`PRIM-2.1`).
   3. **Ability Score Allocation**: Toggle between **Standard 25/28/32-Point Buy**, **Standard Elite Array (`15, 14, 13, 12, 10, 8`)**, and **Seeded `4d6kh3` Roll** with live modifier, carrying capacity, and bonus spell slot previews.
   4. **Skill Point Allocation**: Spend `(classPoints + INT mod) × 4` (+4 for Human) across `skills.json` with `1 pt = 1 rank` for class skills (max `HD + 3`) and `1 pt = 0.5 rank` for cross-class skills (max `(HD + 3)/2`), highlighting 5-rank synergies.
   5. **Feat Selection**: Pick general feats (+1 Human bonus feat, +1 Fighter bonus feat) with live AST prerequisite filtering (`evaluatePrerequisiteAST` showing green/red requirement badges).
   6. **Starting Spells / Domains**: Select starting Wizard spellbook / Sorcerer or Bard known spells / Cleric Domains.
   7. **Starting Equipment Package**: Select a curated class equipment kit or spend starting gold (`gp`) in a pre-game outfitter.
-- [ ] **Interactive Level-Up Modal**: When `grantDnD35eXp` crosses the next `ECL` triangular XP threshold, trigger a level-up notification banner allowing the player to choose their next class level (Base Class or eligible Prestige Class), roll/take-average Hit Die + `CON` mod (min 1), allocate skill points, select every-4th-HD ability score increases, pick earned General/Class Bonus Feats, and learn new spells.
+- [x] **Interactive Level-Up Modal**: When `grantDnD35eXp` crosses the next `ECL` triangular XP threshold, trigger a level-up notification banner allowing the player to choose their next class level (Base Class or eligible Prestige Class), roll/take-average Hit Die + `CON` mod (min 1), allocate skill points, select every-4th-HD ability score increases, pick earned General/Class Bonus Feats, and learn new spells.
 
 ---
 

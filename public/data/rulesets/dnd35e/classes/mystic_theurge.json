@@ -1,0 +1,51 @@
+{
+  "mystic_theurge": {
+    "id": "mystic_theurge",
+    "name": "Mystic Theurge",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 4,
+    "babCurve": "half",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "decipher_script", "knowledge_arcana", "knowledge_religion", "sense_motive", "spellcraft"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_skill_ranks", "skillId": "knowledge_arcana", "minRanks": 6 },
+        { "type": "min_skill_ranks", "skillId": "knowledge_religion", "minRanks": 6 },
+        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 2 },
+        { "type": "min_spell_level", "tradition": "divine", "minSpellLevel": 2 }
+      ]
+    },
+    "advancesExistingSpellcasting": {
+      "tradition": "both",
+      "atLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "featuresByLevel": {
+      "1": ["mt_dual_spellcasting_1"],
+      "2": ["mt_dual_spellcasting_2"],
+      "3": ["mt_dual_spellcasting_3"],
+      "4": ["mt_dual_spellcasting_4"],
+      "5": ["mt_dual_spellcasting_5"],
+      "6": ["mt_dual_spellcasting_6"],
+      "7": ["mt_dual_spellcasting_7"],
+      "8": ["mt_dual_spellcasting_8"],
+      "9": ["mt_dual_spellcasting_9"],
+      "10": ["mt_dual_spellcasting_10"]
+    },
+    "featureDetails": {
+      "mt_dual_spellcasting_1": {
+        "id": "mt_dual_spellcasting_1",
+        "name": "+1 Arcane & +1 Divine Spellcasting Class",
+        "category": "caster_advancement",
+        "description": "When a new Mystic Theurge level is gained, gain new spells per day and caster level in both an existing arcane spellcasting class and an existing divine spellcasting class."
+      }
+    },
+    "acfSwaps": []
+  }
+}

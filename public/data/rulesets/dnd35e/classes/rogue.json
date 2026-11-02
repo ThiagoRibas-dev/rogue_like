@@ -1,0 +1,112 @@
+{
+  "rogue": {
+    "id": "rogue",
+    "name": "Rogue",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 6,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 8,
+    "classSkills": [
+      "appraise",
+      "balance",
+      "bluff",
+      "climb",
+      "craft",
+      "decipher_script",
+      "diplomacy",
+      "disable_device",
+      "disguise",
+      "escape_artist",
+      "forgery",
+      "gather_information",
+      "hide",
+      "intimidate",
+      "jump",
+      "listen",
+      "move_silently",
+      "open_lock",
+      "perform",
+      "search",
+      "sense_motive",
+      "sleight_of_hand",
+      "spot",
+      "swim",
+      "tumble",
+      "use_magic_device",
+      "use_rope"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "proficiencies": {
+      "weapons": ["simple", "hand_crossbow", "rapier", "sap", "shortbow", "short_sword"],
+      "armor": ["light"],
+      "shields": []
+    },
+    "featuresByLevel": {
+      "1": ["sneak_attack_1d6", "trapfinding"],
+      "2": ["evasion"],
+      "3": ["sneak_attack_2d6", "trap_sense_1"],
+      "4": ["uncanny_dodge"],
+      "5": ["sneak_attack_3d6"],
+      "6": ["trap_sense_2"],
+      "7": ["sneak_attack_4d6"],
+      "8": ["improved_uncanny_dodge"],
+      "9": ["sneak_attack_5d6", "trap_sense_3"],
+      "10": ["rogue_special_ability_1"],
+      "11": ["sneak_attack_6d6"],
+      "12": ["trap_sense_4"],
+      "13": ["rogue_special_ability_2", "sneak_attack_7d6"],
+      "15": ["sneak_attack_8d6", "trap_sense_5"],
+      "16": ["rogue_special_ability_3"],
+      "17": ["sneak_attack_9d6"],
+      "18": ["trap_sense_6"],
+      "19": ["rogue_special_ability_4", "sneak_attack_10d6"]
+    },
+    "featureDetails": {
+      "sneak_attack_1d6": {
+        "id": "sneak_attack_1d6",
+        "name": "Sneak Attack",
+        "category": "ex",
+        "description": "Deal extra precision damage (+1d6 at 1st level, increasing by +1d6 every two rogue levels) when target is flanked or denied DEX bonus to AC."
+      },
+      "trapfinding": {
+        "id": "trapfinding",
+        "name": "Trapfinding",
+        "category": "ex",
+        "description": "Use the Search skill to locate traps with DC > 20 and Disable Device to disarm magic traps."
+      },
+      "evasion": {
+        "id": "evasion",
+        "name": "Evasion",
+        "category": "ex",
+        "description": "Take no damage instead of half damage on a successful Reflex saving throw."
+      },
+      "uncanny_dodge": {
+        "id": "uncanny_dodge",
+        "name": "Uncanny Dodge",
+        "category": "ex",
+        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker."
+      },
+      "rogue_special_ability_1": {
+        "id": "rogue_special_ability_1",
+        "name": "Rogue Special Ability",
+        "category": "ex",
+        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind."
+      }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "rogue_penetrating_strike_3",
+        "name": "Penetrating Strike",
+        "replacesFeature": "trap_sense_1",
+        "grantedFeature": "penetrating_strike",
+        "level": 3,
+        "description": "Replaces Trap Sense: whenever you flank a creature that is immune to extra damage from sneak attacks, you still deal extra damage equal to half your normal sneak attack dice."
+      }
+    ]
+  }
+}

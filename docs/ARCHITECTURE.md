@@ -466,12 +466,12 @@ Every ruleset follows a strict **3-Tier Separation** between mechanical laws, ru
    - Contains **zero** hardcoded classes, creature statblocks, feat tables, skill lists, or spell definitions in `.ts` files.
 2. **Tier 2 — System Content ("Core Rulebooks" — `public/data/rulesets/<rulesetId>/`)**:
    - Declarative JSON registries shared across all campaigns that use `<rulesetId>`:
-     - For `dnd35e`: `archetypes.json` (SRD statblocks), `classes.json` (progression curves and HD), `skills.json` (key abilities and ACP), `feats.json` (AST prerequisite trees), and `spells.json` (Vancian spell definitions).
-     - For other cartridges (e.g. `classic`): Cartridge-specific registries declared via `RulesetContract.getSystemContentFiles()` without fabricating dummy files for foreign concepts like feats or spells.
+     - For `dnd35e`: `archetypes.json` (SRD statblocks), `classes.json` + modular per-class `classes/<classId>.json` files (progression curves, HD, class features, ACFs, and Prestige Classes shallow-merged under `key: 'classes'`), `domains.json` (22 SRD Cleric Domains), `skills.json` (key abilities and ACP), `feats.json` (AST prerequisite trees), and `spells.json` (Vancian spell definitions).
+     - For other cartridges (e.g. `classic`): Cartridge-specific registries declared via `RulesetContract.getSystemContentFiles()` without fabricating dummy files for foreign concepts like feats or spells (`classic` returns `[]`).
      - Optional base `items.json`, `entities.json`, `status.json`, and `effects.json` shared across all campaigns of that ruleset.
 3. **Tier 3 — Campaign Content ("Adventure Modules" — `public/data/campaigns/<campaignId>/`)**:
    - Adventure-specific maps (`areas.json`, `tiles.json`), creature & loot placement (`spawn_pools.json`, `encounter_profiles.json`, `rules.json`), factions, villains, schemes, quests, dialogues, triggers, and campaign-specific entity/item overrides.
-   - During campaign loading (`src/core/loader.ts`, `tests/helpers.ts`, `scripts/run-validator.ts`), the loader reads `manifest.rulesetId`, delegates to `RulesetContract.getSystemContentFiles()` to fetch the cartridge's system files into `campaign.systemContent`, calls `RulesetContract.parseSystemContent()` to validate them with the cartridge's schemas, and merges any base system records beneath the campaign's records (`{ ...systemRecord, ...campaignRecord }`).
+   - During campaign loading (`src/core/loader.ts`, `tests/helpers.ts`, `scripts/run-validator.ts`), the loader reads `manifest.rulesetId`, delegates to `RulesetContract.getSystemContentFiles()` to fetch the cartridge's system files into `campaign.systemContent` (shallow-merging multiple file descriptors that share the same `key`), calls `RulesetContract.parseSystemContent()` to validate them with the cartridge's schemas, and merges any base system records beneath the campaign's records (`{ ...systemRecord, ...campaignRecord }`).
 
 ### 9.3 Cartridge Isolation for System Content Schemas
 
@@ -563,9 +563,27 @@ To eliminate compound bonus folding bugs and passive size/ability score gaps, st
 
 ---
 
+### 9.7 System Content Pillar 2: Core 11 Classes, Prestige Classes, ACFs, Domains & Character Builder (Phase 23, Milestones 110–112)
+
+Phase 23 expanded the D&D 3.5e class architecture into a modular, per-class JSON layout and built the interactive Character Creation Wizard and Level-Up Advancement flow:
+
+1. **Multi-File Shallow Merge for System Content (`src/core/loader.ts`, `tests/helpers.ts`, `scripts/run-validator.ts`)**:
+   - Multiple `RulesetSystemFileDescriptor` entries sharing the same `key` (such as `key: 'classes'` across `classes.json` and `classes/<classId>.json`) are shallow-merged in declaration order into `systemContent.classes` before Zod validation (`parseDnD35SystemContent`).
+2. **11 Base Classes, 10 Prestige Classes & 22 Cleric Domains (`public/data/rulesets/dnd35e/classes/*.json`, `domains.json`)**:
+   - Authored full 20-level progressions (`featuresByLevel`, `featureDetails`, `spellsPerDayTable`, `spellsKnownTable`, `bonusFeatLevels`, `proficiencies`, `allowedAlignments`) and 11 Alternate Class Features (`acfSwaps` evaluated via `collectClassFeaturesUpToLevel` and `resolveActiveClassFeatures`) across `barbarian`, `bard`, `cleric`, `druid`, `fighter`, `monk`, `paladin`, `ranger`, `rogue`, `sorcerer`, and `wizard`.
+   - Authored 10 Prestige Classes (`arcane_archer`, `assassin`, `blackguard`, `dragon_disciple`, `duelist`, `dwarven_defender`, `eldritch_knight`, `loremaster`, `mystic_theurge`, `shadowdancer`) gated by recursive `PrerequisiteNode` ASTs (`alignment_in`, `min_spell_level`, `race_in`, `min_bab`, `min_skill_ranks`, `has_feat`).
+   - Authored all 22 SRD Cleric Domains (`domains.json`) with level 1–9 domain spell lists, resource pools, and Unified Effect Provider `StatModifier`s (`sourcePath: "class:cleric/domain:<id>/<modId>"`).
+3. **Multiclass XP Penalty & Prestige Exemption (`src/rulesets/dnd35e/progression.ts`)**:
+   - `calculateMulticlassXpMultiplier` ignores Racial HD (`racial_*`), all Prestige Classes (`isPrestige === true`), and the race's `favoredClass` (or highest-level base class when `favoredClass === 'any'`), applying `-20%` per remaining base class more than 1 level below the highest remaining base class (floored at `0.2`), gated by `enforceMulticlassXpPenalty`.
+4. **Pure Character Builder & UI Modals (`src/rulesets/dnd35e/character_builder.ts`, `src/rendering/ui/dnd35e_char_builder.ui.ts`, `dnd35e_char_builder_steps.ui.ts`, `dnd35e_level_up.ui.ts`)**:
+   - `character_builder.ts` provides pure headless helpers for 25/28/32 Point-Buy, Elite Array, deterministic `4d6kh3` rolling, skill rank caps/costs, Wizard specialist school validation, `applyCharacterCreationToPlayer`, and `applyLevelUpToActor`, re-exported via `src/rulesets/registry.ts` to preserve strict `.dependency-cruiser.cjs` cartridge isolation.
+
+---
+
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+
 
 
 

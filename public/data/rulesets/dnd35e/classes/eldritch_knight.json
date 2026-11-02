@@ -1,0 +1,55 @@
+{
+  "eldritch_knight": {
+    "id": "eldritch_knight",
+    "name": "Eldritch Knight",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 6,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "decipher_script", "jump", "knowledge_arcana", "ride", "sense_motive", "spellcraft", "swim"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 3 }
+      ]
+    },
+    "bonusFeatLevels": [1],
+    "advancesExistingSpellcasting": {
+      "tradition": "arcane",
+      "atLevels": [2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "featuresByLevel": {
+      "1": ["ek_bonus_fighter_feat"],
+      "2": ["ek_arcane_spellcasting_1"],
+      "3": ["ek_arcane_spellcasting_2"],
+      "4": ["ek_arcane_spellcasting_3"],
+      "5": ["ek_arcane_spellcasting_4"],
+      "6": ["ek_arcane_spellcasting_5"],
+      "7": ["ek_arcane_spellcasting_6"],
+      "8": ["ek_arcane_spellcasting_7"],
+      "9": ["ek_arcane_spellcasting_8"],
+      "10": ["ek_arcane_spellcasting_9"]
+    },
+    "featureDetails": {
+      "ek_bonus_fighter_feat": {
+        "id": "ek_bonus_fighter_feat",
+        "name": "Bonus Fighter Feat",
+        "category": "bonus_feat",
+        "description": "Choose a bonus feat from the Fighter bonus feat list at 1st level."
+      },
+      "ek_arcane_spellcasting_1": {
+        "id": "ek_arcane_spellcasting_1",
+        "name": "+1 Existing Arcane Spellcasting Class",
+        "category": "caster_advancement",
+        "description": "From 2nd through 10th level, gain new spells per day and caster level as if also gaining a level in an arcane spellcasting class."
+      }
+    },
+    "acfSwaps": []
+  }
+}

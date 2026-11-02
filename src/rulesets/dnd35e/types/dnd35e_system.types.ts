@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { CampaignData } from '../../../types/campaign.types.ts';
+import type { PrerequisiteNode } from '../prerequisites.ts';
 
 /** Zod schema for a 6-ability score map where `null` represents a Nonability (`—`). */
 export const RawAbilityScoresSchema = z.object({
@@ -185,20 +186,138 @@ export const DnD35ArchetypeSchema = z.object({
 /** Inferred type for a declarative System Content archetype. */
 export type DnD35Archetype = z.infer<typeof DnD35ArchetypeSchema>;
 
+/** Zod schema for the 9 canonical D&D 3.5e alignments. */
+export const DnD35AlignmentSchema = z.enum(['LG', 'NG', 'CG', 'LN', 'N', 'CN', 'LE', 'NE', 'CE']);
+export type DnD35AlignmentSchemaType = z.infer<typeof DnD35AlignmentSchema>;
+
+/** Zod schema for a declarative Effect Provider modifier entry on a class feature, domain, or race. */
+export const DnD35DeclarativeModifierSchema = z.object({
+  id: z.string(),
+  target: z.string(),
+  value: z.number(),
+  type: z.enum([
+    'alchemical',
+    'armor',
+    'base',
+    'circumstance',
+    'competence',
+    'deflection',
+    'dodge',
+    'enhancement',
+    'form_override',
+    'inherent',
+    'insight',
+    'luck',
+    'morale',
+    'natural_armor',
+    'profane',
+    'racial',
+    'resistance',
+    'sacred',
+    'shield',
+    'size',
+    'size_step',
+    'untyped'
+  ]),
+  condition: z
+    .object({
+      selfTagsAll: z.array(z.string()).optional(),
+      selfTagsAny: z.array(z.string()).optional(),
+      selfTagsNone: z.array(z.string()).optional(),
+      targetTagsAll: z.array(z.string()).optional(),
+      targetTagsAny: z.array(z.string()).optional(),
+      targetTagsNone: z.array(z.string()).optional(),
+      effectTagsAny: z.array(z.string()).optional()
+    })
+    .optional()
+});
+export type DnD35DeclarativeModifier = z.infer<typeof DnD35DeclarativeModifierSchema>;
+
+/** Recursive Zod schema for PrerequisiteNode ASTs (`prerequisites.ts`). */
+export const PrerequisiteNodeSchema: z.ZodType<PrerequisiteNode> = z.lazy(() =>
+  z.discriminatedUnion('type', [
+    z.object({ type: z.literal('and'), children: z.array(PrerequisiteNodeSchema) }),
+    z.object({ type: z.literal('or'), children: z.array(PrerequisiteNodeSchema) }),
+    z.object({ type: z.literal('not'), child: PrerequisiteNodeSchema }),
+    z.object({
+      type: z.literal('min_ability'),
+      ability: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
+      minScore: z.number().int()
+    }),
+    z.object({ type: z.literal('min_bab'), minBab: z.number().int() }),
+    z.object({ type: z.literal('min_skill_ranks'), skillId: z.string(), minRanks: z.number() }),
+    z.object({ type: z.literal('has_feat'), featId: z.string() }),
+    z.object({ type: z.literal('has_tag'), tag: z.string() }),
+    z.object({ type: z.literal('min_caster_level'), minCasterLevel: z.number().int() }),
+    z.object({ type: z.literal('size_in'), allowedSizes: z.array(SizeCategorySchema) }),
+    z.object({ type: z.literal('alignment_in'), allowedAlignments: z.array(DnD35AlignmentSchema) }),
+    z.object({
+      type: z.literal('min_spell_level'),
+      tradition: z.enum(['arcane', 'divine', 'any']),
+      minSpellLevel: z.number().int().min(0).max(9)
+    }),
+    z.object({ type: z.literal('race_in'), allowedRaces: z.array(z.string()) })
+  ])
+);
+
+/** Zod schema for a structured class feature definition. */
+export const DnD35ClassFeatureDetailSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.enum(['ex', 'su', 'sp', 'bonus_feat', 'proficiency', 'caster_advancement']).default('ex'),
+  description: z.string().optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  resourcePool: z
+    .object({
+      poolId: z.string(),
+      maxBase: z.number().int().nonnegative(),
+      perClassLevel: z.number().nonnegative().optional(),
+      abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+    })
+    .optional(),
+  bonusFeatPool: z.array(z.string()).optional()
+});
+export type DnD35ClassFeatureDetail = z.infer<typeof DnD35ClassFeatureDetailSchema>;
+
 /** Zod schema for an Alternate Class Feature (ACF) swap. */
 export const DnD35AcfSwapSchema = z.object({
   acfId: z.string(),
   name: z.string(),
   replacesFeature: z.string(),
   grantedFeature: z.string(),
-  level: z.number().int().positive()
+  level: z.number().int().positive(),
+  description: z.string().optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([])
 });
 export type DnD35AcfSwap = z.infer<typeof DnD35AcfSwapSchema>;
 
-/** Zod schema for a declarative character class definition (`classes.json`). */
+/** Zod schema for a Cleric Domain definition (`domains.json`). */
+export const DnD35DomainDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  grantedPowerDescription: z.string(),
+  classSkillsAdded: z.array(z.string()).default([]),
+  featGrants: z.array(z.string()).default([]),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  resourcePool: z
+    .object({
+      poolId: z.string(),
+      maxBase: z.number().int().nonnegative(),
+      abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+    })
+    .optional(),
+  domainSpells: z.record(z.string(), z.string()).default({})
+});
+export type DnD35DomainDefinition = z.infer<typeof DnD35DomainDefinitionSchema>;
+
+/** Zod schema for a declarative character class definition (`classes.json` & `classes/<id>.json`). */
 export const DnD35ClassDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  isPrestige: z.boolean().default(false),
+  maxLevel: z.number().int().positive().default(20),
   hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
   babCurve: BabCurveIdSchema,
   fortCurve: SaveCurveIdSchema,
@@ -207,7 +326,28 @@ export const DnD35ClassDefinitionSchema = z.object({
   skillPointsPerLevel: z.number().int().nonnegative(),
   classSkills: z.array(z.string()).default([]),
   castingMode: z.enum(['none', 'prepared', 'spontaneous']).default('none'),
+  castingTradition: z.enum(['none', 'arcane', 'divine']).default('none'),
   castingKeyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
+  allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
+  prerequisites: PrerequisiteNodeSchema.optional(),
+  proficiencies: z
+    .object({
+      weapons: z.array(z.string()).default([]),
+      armor: z.array(z.string()).default([]),
+      shields: z.array(z.string()).default([])
+    })
+    .optional(),
+  featuresByLevel: z.record(z.string(), z.array(z.string())).default({}),
+  featureDetails: z.record(z.string(), DnD35ClassFeatureDetailSchema).default({}),
+  bonusFeatLevels: z.array(z.number().int().positive()).default([]),
+  spellsPerDayTable: z.record(z.string(), z.record(z.string(), z.number().int().nonnegative())).optional(),
+  spellsKnownTable: z.record(z.string(), z.record(z.string(), z.number().int().nonnegative())).optional(),
+  advancesExistingSpellcasting: z
+    .object({
+      tradition: z.enum(['arcane', 'divine', 'both', 'any']),
+      atLevels: z.array(z.number().int().positive())
+    })
+    .optional(),
   acfSwaps: z.array(DnD35AcfSwapSchema).default([])
 });
 /** Inferred type for a declarative class definition. */
@@ -469,7 +609,7 @@ export const DnD35FeatDefinitionSchema = z.object({
   name: z.string(),
   description: z.string(),
   isFighterBonusFeat: z.boolean().default(false),
-  prerequisites: z.record(z.string(), z.unknown()).optional()
+  prerequisites: PrerequisiteNodeSchema.optional()
 });
 /** Inferred type for a declarative feat definition. */
 export type DnD35FeatDefinition = z.infer<typeof DnD35FeatDefinitionSchema>;
@@ -509,6 +649,7 @@ export type DnD35SpellDefinition = z.infer<typeof DnD35SpellDefinitionSchema>;
 export const DnD35SystemContentSchema = z.object({
   archetypes: z.record(z.string(), DnD35ArchetypeSchema).default({}),
   classes: z.record(z.string(), DnD35ClassDefinitionSchema).default({}),
+  domains: z.record(z.string(), DnD35DomainDefinitionSchema).default({}),
   skills: z.record(z.string(), DnD35SkillDefinitionSchema).default({}),
   feats: z.record(z.string(), DnD35FeatDefinitionSchema).default({}),
   spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({}),

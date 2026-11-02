@@ -1,0 +1,108 @@
+{
+  "blackguard": {
+    "id": "blackguard",
+    "name": "Blackguard",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "diplomacy", "handle_animal", "heal", "hide", "intimidate", "knowledge_religion", "ride"],
+    "castingMode": "prepared",
+    "castingTradition": "divine",
+    "castingKeyAbility": "wis",
+    "allowedAlignments": ["LE", "NE", "CE"],
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "alignment_in", "allowedAlignments": ["LE", "NE", "CE"] },
+        { "type": "min_bab", "minBab": 6 },
+        { "type": "min_skill_ranks", "skillId": "hide", "minRanks": 5 },
+        { "type": "has_feat", "featId": "power_attack" },
+        { "type": "has_feat", "featId": "cleave" },
+        { "type": "has_feat", "featId": "improved_sunder" }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium", "heavy"],
+      "shields": ["shields"]
+    },
+    "featuresByLevel": {
+      "1": ["aura_of_evil", "detect_good", "poison_use"],
+      "2": ["dark_blessing", "smite_good_1"],
+      "3": ["aura_of_despair", "command_undead"],
+      "4": ["sneak_attack_1d6"],
+      "5": ["fiendish_servant", "smite_good_2"],
+      "7": ["sneak_attack_2d6"],
+      "10": ["smite_good_3", "sneak_attack_3d6"]
+    },
+    "featureDetails": {
+      "aura_of_evil": {
+        "id": "aura_of_evil",
+        "name": "Aura of Evil",
+        "category": "ex",
+        "description": "Projects an aura of evil with power equal to blackguard class level + any cleric levels."
+      },
+      "dark_blessing": {
+        "id": "dark_blessing",
+        "name": "Dark Blessing",
+        "category": "su",
+        "description": "Applies Charisma modifier (if positive) as a bonus on all saving throws.",
+        "modifiers": [
+          {
+            "id": "blackguard_dark_blessing_fort",
+            "target": "fort",
+            "value": 2,
+            "type": "untyped"
+          },
+          {
+            "id": "blackguard_dark_blessing_ref",
+            "target": "ref",
+            "value": 2,
+            "type": "untyped"
+          },
+          {
+            "id": "blackguard_dark_blessing_will",
+            "target": "will",
+            "value": 2,
+            "type": "untyped"
+          }
+        ]
+      },
+      "smite_good_1": {
+        "id": "smite_good_1",
+        "name": "Smite Good",
+        "category": "su",
+        "description": "Add CHA bonus to attack roll and blackguard level to damage roll against a good foe.",
+        "resourcePool": {
+          "poolId": "smite_good",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "aura_of_despair": {
+        "id": "aura_of_despair",
+        "name": "Aura of Despair",
+        "category": "su",
+        "description": "Radiate a malign aura that causes enemies within 10 feet to take a -2 penalty on all saving throws."
+      }
+    },
+    "spellsPerDayTable": {
+      "1": { "1": 0 },
+      "2": { "1": 1 },
+      "3": { "1": 1, "2": 0 },
+      "4": { "1": 1, "2": 1 },
+      "5": { "1": 1, "2": 1, "3": 0 },
+      "6": { "1": 1, "2": 1, "3": 1 },
+      "7": { "1": 2, "2": 1, "3": 1, "4": 0 },
+      "8": { "1": 2, "2": 1, "3": 1, "4": 1 },
+      "9": { "1": 2, "2": 2, "3": 1, "4": 1 },
+      "10": { "1": 2, "2": 2, "3": 2, "4": 1 }
+    },
+    "acfSwaps": []
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "assassin": {
+    "id": "assassin",
+    "name": "Assassin",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 6,
+    "babCurve": "three_quarters",
+    "fortCurve": "poor",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 4,
+    "classSkills": [
+      "balance",
+      "bluff",
+      "climb",
+      "craft",
+      "decipher_script",
+      "diplomacy",
+      "disable_device",
+      "disguise",
+      "escape_artist",
+      "forgery",
+      "gather_information",
+      "hide",
+      "intimidate",
+      "jump",
+      "listen",
+      "move_silently",
+      "open_lock",
+      "search",
+      "sense_motive",
+      "sleight_of_hand",
+      "spot",
+      "swim",
+      "tumble",
+      "use_magic_device",
+      "use_rope"
+    ],
+    "castingMode": "spontaneous",
+    "castingTradition": "arcane",
+    "castingKeyAbility": "int",
+    "allowedAlignments": ["LE", "NE", "CE"],
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "alignment_in", "allowedAlignments": ["LE", "NE", "CE"] },
+        { "type": "min_skill_ranks", "skillId": "disguise", "minRanks": 4 },
+        { "type": "min_skill_ranks", "skillId": "hide", "minRanks": 8 },
+        { "type": "min_skill_ranks", "skillId": "move_silently", "minRanks": 8 }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["crossbow_hand", "crossbow_light", "crossbow_heavy", "dagger", "dart", "rapier", "sap", "shortbow", "short_sword"],
+      "armor": ["light"],
+      "shields": []
+    },
+    "featuresByLevel": {
+      "1": ["sneak_attack_1d6", "death_attack", "poison_use"],
+      "2": ["save_bonus_against_poison_1", "uncanny_dodge"],
+      "3": ["sneak_attack_2d6"],
+      "4": ["save_bonus_against_poison_2"],
+      "5": ["improved_uncanny_dodge", "sneak_attack_3d6"],
+      "6": ["save_bonus_against_poison_3"],
+      "7": ["sneak_attack_4d6"],
+      "8": ["hide_in_plain_sight_shadow", "save_bonus_against_poison_4"],
+      "9": ["sneak_attack_5d6"],
+      "10": ["save_bonus_against_poison_5"]
+    },
+    "featureDetails": {
+      "death_attack": {
+        "id": "death_attack",
+        "name": "Death Attack",
+        "category": "ex",
+        "description": "After studying a victim for 3 rounds, a sneak attack with a melee weapon can paralyze or kill the target (Fortitude DC 10 + assassin level + INT mod)."
+      },
+      "poison_use": {
+        "id": "poison_use",
+        "name": "Poison Use",
+        "category": "ex",
+        "description": "Trained in the use of poison and never at risk of accidentally poisoning oneself when applying poison to a blade."
+      },
+      "hide_in_plain_sight_shadow": {
+        "id": "hide_in_plain_sight_shadow",
+        "name": "Hide in Plain Sight",
+        "category": "su",
+        "description": "Use the Hide skill even while being observed, as long as within 10 feet of some sort of shadow."
+      }
+    },
+    "spellsPerDayTable": {
+      "1": { "1": 0 },
+      "2": { "1": 1 },
+      "3": { "1": 2, "2": 0 },
+      "4": { "1": 3, "2": 1 },
+      "5": { "1": 3, "2": 2, "3": 0 },
+      "6": { "1": 3, "2": 3, "3": 1 },
+      "7": { "1": 3, "2": 3, "3": 2, "4": 0 },
+      "8": { "1": 3, "2": 3, "3": 3, "4": 1 },
+      "9": { "1": 3, "2": 3, "3": 3, "4": 2 },
+      "10": { "1": 3, "2": 3, "3": 3, "4": 3 }
+    },
+    "spellsKnownTable": {
+      "1": { "1": 2 },
+      "2": { "1": 3 },
+      "3": { "1": 3, "2": 2 },
+      "4": { "1": 4, "2": 3 },
+      "5": { "1": 4, "2": 3, "3": 2 },
+      "6": { "1": 4, "2": 4, "3": 3 },
+      "7": { "1": 4, "2": 4, "3": 3, "4": 2 },
+      "8": { "1": 4, "2": 4, "3": 4, "4": 3 },
+      "9": { "1": 4, "2": 4, "3": 4, "4": 3 },
+      "10": { "1": 4, "2": 4, "3": 4, "4": 4 }
+    },
+    "acfSwaps": []
+  }
+}

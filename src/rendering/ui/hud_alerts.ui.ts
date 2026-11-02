@@ -6,9 +6,10 @@
 import { createToggleQuestsAction } from '../../actions/core.actions.ts';
 import { ALERT_CRITICAL_HP_RATIO, ALERT_LOW_HP_RATIO } from '../../constants/ui.constants.ts';
 import { getComponent } from '../../core/ecs.ts';
-import { queuePlayerIntent } from '../../core/game-loop.ts';
+import { queuePlayerIntent, setGameState } from '../../core/game-loop.ts';
 import { setHoveredTile } from '../../core/hover_state.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
+import { canPlayerLevelUpDnD35e } from './dnd35e_level_up.ui.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
 import {
   ComponentType,
@@ -20,7 +21,7 @@ import {
   type QuestLogComponent,
   type StatusEffectsComponent
 } from '../../types/components.types.ts';
-import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import { isHostile } from '../../utils/faction.ts';
 import { coordToIndex } from '../../utils/grid.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
@@ -164,6 +165,18 @@ export function renderHudAlerts(state: GameState): void {
       severity: 'info',
       onClick: () => {
         queuePlayerIntent(createToggleQuestsAction(playerEntityId));
+      }
+    });
+  }
+
+  // 6. D&D 3.5e Level-Up Available Ribbon
+  if (canPlayerLevelUpDnD35e(state, playerEntityId)) {
+    alerts.push({
+      label: 'Level Up Available!',
+      detail: 'Click to advance class level',
+      severity: 'info',
+      onClick: () => {
+        setGameState({ ...state, uiMode: UIMode.LevelUp });
       }
     });
   }

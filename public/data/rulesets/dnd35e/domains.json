@@ -1,0 +1,504 @@
+{
+  "air": {
+    "id": "air",
+    "name": "Air",
+    "grantedPowerDescription": "Turn or destroy earth creatures as a good cleric turns undead. Rebuke, command, or bolster air creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "resourcePool": {
+      "poolId": "domain_turn_air",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "obscuring_mist",
+      "2": "wind_wall",
+      "3": "gaseous_form",
+      "4": "air_walk",
+      "5": "control_winds",
+      "6": "chain_lightning",
+      "7": "control_weather",
+      "8": "whirlwind",
+      "9": "elemental_swarm"
+    }
+  },
+  "animal": {
+    "id": "animal",
+    "name": "Animal",
+    "grantedPowerDescription": "Use speak with animals 1/day as a spell-like ability. Add Knowledge (nature) to your list of cleric class skills.",
+    "classSkillsAdded": ["knowledge_nature"],
+    "resourcePool": {
+      "poolId": "domain_speak_with_animals",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "calm_animals",
+      "2": "hold_animal",
+      "3": "dominate_animal",
+      "4": "summon_natures_ally_iv",
+      "5": "commune_with_nature",
+      "6": "antilife_shell",
+      "7": "animal_shapes",
+      "8": "summon_natures_ally_viii",
+      "9": "shapechange"
+    }
+  },
+  "chaos": {
+    "id": "chaos",
+    "name": "Chaos",
+    "grantedPowerDescription": "You cast chaos spells at +1 caster level.",
+    "modifiers": [
+      {
+        "id": "domain_chaos_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["chaotic"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_law",
+      "2": "shatter",
+      "3": "magic_circle_against_law",
+      "4": "chaos_hammer",
+      "5": "dispel_law",
+      "6": "animate_objects",
+      "7": "word_of_chaos",
+      "8": "cloak_of_chaos",
+      "9": "summon_monster_ix"
+    }
+  },
+  "death": {
+    "id": "death",
+    "name": "Death",
+    "grantedPowerDescription": "Death Touch 1/day: make a melee touch attack; if you roll at least as high on 1d6 per cleric level as target's current HP, it dies (supernatural ability).",
+    "resourcePool": {
+      "poolId": "domain_death_touch",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "cause_fear",
+      "2": "death_knell",
+      "3": "animate_dead",
+      "4": "death_ward",
+      "5": "slay_living",
+      "6": "create_undead",
+      "7": "destruction",
+      "8": "create_greater_undead",
+      "9": "wail_of_the_banshee"
+    }
+  },
+  "destruction": {
+    "id": "destruction",
+    "name": "Destruction",
+    "grantedPowerDescription": "Smite 1/day: make a single melee attack with a +4 profane/sacred bonus on attack rolls and a bonus on damage rolls equal to your cleric level.",
+    "resourcePool": {
+      "poolId": "domain_destruction_smite",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "inflict_light_wounds",
+      "2": "shatter",
+      "3": "contagion",
+      "4": "inflict_critical_wounds",
+      "5": "inflict_light_wounds_mass",
+      "6": "harm",
+      "7": "disintegrate",
+      "8": "earthquake",
+      "9": "implosion"
+    }
+  },
+  "earth": {
+    "id": "earth",
+    "name": "Earth",
+    "grantedPowerDescription": "Turn or destroy air creatures as a good cleric turns undead. Rebuke, command, or bolster earth creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "resourcePool": {
+      "poolId": "domain_turn_earth",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "magic_stone",
+      "2": "soften_earth_and_stone",
+      "3": "stone_shape",
+      "4": "spike_stones",
+      "5": "wall_of_stone",
+      "6": "stoneskin",
+      "7": "earthquake",
+      "8": "iron_body",
+      "9": "elemental_swarm"
+    }
+  },
+  "evil": {
+    "id": "evil",
+    "name": "Evil",
+    "grantedPowerDescription": "You cast evil spells at +1 caster level.",
+    "modifiers": [
+      {
+        "id": "domain_evil_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["evil"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_good",
+      "2": "desecrate",
+      "3": "magic_circle_against_good",
+      "4": "unholy_blight",
+      "5": "dispel_good",
+      "6": "create_undead",
+      "7": "blasphemy",
+      "8": "unholy_aura",
+      "9": "summon_monster_ix"
+    }
+  },
+  "fire": {
+    "id": "fire",
+    "name": "Fire",
+    "grantedPowerDescription": "Turn or destroy water creatures as a good cleric turns undead. Rebuke, command, or bolster fire creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "resourcePool": {
+      "poolId": "domain_turn_fire",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "burning_hands",
+      "2": "produce_flame",
+      "3": "resist_energy",
+      "4": "wall_of_fire",
+      "5": "fire_shield",
+      "6": "fire_seeds",
+      "7": "fire_storm",
+      "8": "incendiary_cloud",
+      "9": "elemental_swarm"
+    }
+  },
+  "good": {
+    "id": "good",
+    "name": "Good",
+    "grantedPowerDescription": "You cast good spells at +1 caster level.",
+    "modifiers": [
+      {
+        "id": "domain_good_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["good"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_evil",
+      "2": "aid",
+      "3": "magic_circle_against_evil",
+      "4": "holy_smite",
+      "5": "dispel_evil",
+      "6": "blade_barrier",
+      "7": "holy_word",
+      "8": "holy_aura",
+      "9": "summon_monster_ix"
+    }
+  },
+  "healing": {
+    "id": "healing",
+    "name": "Healing",
+    "grantedPowerDescription": "You cast healing spells at +1 caster level.",
+    "modifiers": [
+      {
+        "id": "domain_healing_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["healing"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "cure_light_wounds",
+      "2": "cure_moderate_wounds",
+      "3": "cure_serious_wounds",
+      "4": "cure_critical_wounds",
+      "5": "cure_light_wounds_mass",
+      "6": "heal",
+      "7": "regenerate",
+      "8": "cure_critical_wounds_mass",
+      "9": "heal_mass"
+    }
+  },
+  "knowledge": {
+    "id": "knowledge",
+    "name": "Knowledge",
+    "grantedPowerDescription": "Add all Knowledge skills to your list of cleric class skills. You cast divination spells at +1 caster level.",
+    "classSkillsAdded": ["knowledge_arcana", "knowledge_nature", "knowledge_religion", "knowledge_dungeoneering", "knowledge_planes"],
+    "modifiers": [
+      {
+        "id": "domain_knowledge_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["divination"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "detect_secret_doors",
+      "2": "detect_thoughts",
+      "3": "clairaudience_clairvoyance",
+      "4": "divination",
+      "5": "true_seeing",
+      "6": "find_the_path",
+      "7": "legend_lore",
+      "8": "discern_location",
+      "9": "foresight"
+    }
+  },
+  "law": {
+    "id": "law",
+    "name": "Law",
+    "grantedPowerDescription": "You cast law spells at +1 caster level.",
+    "modifiers": [
+      {
+        "id": "domain_law_cl",
+        "target": "caster_level",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["lawful"]
+        }
+      }
+    ],
+    "domainSpells": {
+      "1": "protection_from_chaos",
+      "2": "calm_emotions",
+      "3": "magic_circle_against_chaos",
+      "4": "order_s_wrath",
+      "5": "dispel_chaos",
+      "6": "hold_monster",
+      "7": "dictum",
+      "8": "shield_of_law",
+      "9": "summon_monster_ix"
+    }
+  },
+  "luck": {
+    "id": "luck",
+    "name": "Luck",
+    "grantedPowerDescription": "Good Fortune 1/day: reroll one roll that you have just made before the DM declares whether the roll results in success or failure.",
+    "resourcePool": {
+      "poolId": "domain_good_fortune",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "entropic_shield",
+      "2": "aid",
+      "3": "protection_from_energy",
+      "4": "freedom_of_movement",
+      "5": "break_enchantment",
+      "6": "mislead",
+      "7": "spell_turning",
+      "8": "moment_of_prescience",
+      "9": "miracle"
+    }
+  },
+  "magic": {
+    "id": "magic",
+    "name": "Magic",
+    "grantedPowerDescription": "Use spell completion and spell trigger devices as a wizard of one-half your cleric level (minimum 1st level).",
+    "domainSpells": {
+      "1": "magic_aura",
+      "2": "identify",
+      "3": "dispel_magic",
+      "4": "imbue_with_spell_ability",
+      "5": "spell_resistance",
+      "6": "antimagic_field",
+      "7": "spell_turning",
+      "8": "protection_from_spells",
+      "9": "mages_disjunction"
+    }
+  },
+  "plant": {
+    "id": "plant",
+    "name": "Plant",
+    "grantedPowerDescription": "Rebuke or command plant creatures as an evil cleric rebukes or commands undead (3 + CHA mod/day). Add Knowledge (nature) to your cleric class skills.",
+    "classSkillsAdded": ["knowledge_nature"],
+    "resourcePool": {
+      "poolId": "domain_rebuke_plant",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "entangle",
+      "2": "barkskin",
+      "3": "plant_growth",
+      "4": "command_plants",
+      "5": "wall_of_thorns",
+      "6": "repel_wood",
+      "7": "animate_plants",
+      "8": "control_plants",
+      "9": "shambler"
+    }
+  },
+  "protection": {
+    "id": "protection",
+    "name": "Protection",
+    "grantedPowerDescription": "Protective Ward 1/day: grant someone you touch a resistance bonus equal to your cleric level on their next saving throw.",
+    "resourcePool": {
+      "poolId": "domain_protective_ward",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "sanctuary",
+      "2": "shield_other",
+      "3": "protection_from_energy",
+      "4": "spell_immunity",
+      "5": "spell_resistance",
+      "6": "antimagic_field",
+      "7": "repulsion",
+      "8": "mind_blank",
+      "9": "prismatic_sphere"
+    }
+  },
+  "strength": {
+    "id": "strength",
+    "name": "Strength",
+    "grantedPowerDescription": "Feat of Strength 1/day: gain an enhancement bonus to Strength equal to your cleric level for 1 round as a free action.",
+    "resourcePool": {
+      "poolId": "domain_feat_of_strength",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "enlarge_person",
+      "2": "bulls_strength",
+      "3": "magic_vestment",
+      "4": "spell_immunity",
+      "5": "righteous_might",
+      "6": "stoneskin",
+      "7": "grasping_hand",
+      "8": "clenched_fist",
+      "9": "crushing_hand"
+    }
+  },
+  "sun": {
+    "id": "sun",
+    "name": "Sun",
+    "grantedPowerDescription": "Greater Turning 1/day: perform a greater turning against undead in place of a regular turning; undead that would be turned are destroyed instead.",
+    "resourcePool": {
+      "poolId": "domain_greater_turning",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "endure_elements",
+      "2": "heat_metal",
+      "3": "searing_light",
+      "4": "fire_shield",
+      "5": "flame_strike",
+      "6": "fire_seeds",
+      "7": "sunbeam",
+      "8": "sunburst",
+      "9": "prismatic_sphere"
+    }
+  },
+  "travel": {
+    "id": "travel",
+    "name": "Travel",
+    "grantedPowerDescription": "For a total time per day of 1 round per cleric level, act normally regardless of magical effects that impede movement (as freedom of movement). Add Survival to your cleric class skills.",
+    "classSkillsAdded": ["survival"],
+    "resourcePool": {
+      "poolId": "domain_freedom_of_movement",
+      "maxBase": 1,
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "longstrider",
+      "2": "locate_object",
+      "3": "fly",
+      "4": "dimension_door",
+      "5": "teleport",
+      "6": "find_the_path",
+      "7": "greater_teleport",
+      "8": "phase_door",
+      "9": "astral_projection"
+    }
+  },
+  "trickery": {
+    "id": "trickery",
+    "name": "Trickery",
+    "grantedPowerDescription": "Add Bluff, Disguise, and Hide to your list of cleric class skills.",
+    "classSkillsAdded": ["bluff", "disguise", "hide"],
+    "domainSpells": {
+      "1": "disguise_self",
+      "2": "invisibility",
+      "3": "nondetection",
+      "4": "confusion",
+      "5": "false_vision",
+      "6": "mislead",
+      "7": "screen",
+      "8": "polymorph_any_object",
+      "9": "time_stop"
+    }
+  },
+  "war": {
+    "id": "war",
+    "name": "War",
+    "grantedPowerDescription": "Free Martial Weapon Proficiency with deity's favored weapon (if necessary) and Weapon Focus with the deity's favored weapon.",
+    "featGrants": ["weapon_focus"],
+    "modifiers": [
+      {
+        "id": "domain_war_weapon_focus",
+        "target": "attack",
+        "value": 1,
+        "type": "untyped"
+      }
+    ],
+    "domainSpells": {
+      "1": "magic_weapon",
+      "2": "spiritual_weapon",
+      "3": "magic_vestment",
+      "4": "divine_power",
+      "5": "flame_strike",
+      "6": "blade_barrier",
+      "7": "power_word_blind",
+      "8": "power_word_stun",
+      "9": "power_word_kill"
+    }
+  },
+  "water": {
+    "id": "water",
+    "name": "Water",
+    "grantedPowerDescription": "Turn or destroy fire creatures as a good cleric turns undead. Rebuke, command, or bolster water creatures as an evil cleric rebukes undead (3 + CHA mod/day).",
+    "resourcePool": {
+      "poolId": "domain_turn_water",
+      "maxBase": 3,
+      "abilityModStat": "cha",
+      "refreshCycle": "rest_8h"
+    },
+    "domainSpells": {
+      "1": "obscuring_mist",
+      "2": "fog_cloud",
+      "3": "water_breathing",
+      "4": "control_water",
+      "5": "ice_storm",
+      "6": "cone_of_cold",
+      "7": "acid_fog",
+      "8": "horrid_wilting",
+      "9": "elemental_swarm"
+    }
+  }
+}

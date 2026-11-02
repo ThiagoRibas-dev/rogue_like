@@ -1,0 +1,90 @@
+{
+  "loremaster": {
+    "id": "loremaster",
+    "name": "Loremaster",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 4,
+    "babCurve": "half",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 4,
+    "classSkills": [
+      "appraise",
+      "concentration",
+      "craft",
+      "decipher_script",
+      "gather_information",
+      "handle_animal",
+      "heal",
+      "knowledge_arcana",
+      "knowledge_dungeoneering",
+      "knowledge_nature",
+      "knowledge_planes",
+      "knowledge_religion",
+      "perform",
+      "spellcraft",
+      "use_magic_device"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_skill_ranks", "skillId": "knowledge_arcana", "minRanks": 10 },
+        { "type": "has_feat", "featId": "skill_focus" },
+        { "type": "min_spell_level", "tradition": "any", "minSpellLevel": 3 }
+      ]
+    },
+    "advancesExistingSpellcasting": {
+      "tradition": "any",
+      "atLevels": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+    "featuresByLevel": {
+      "1": ["loremaster_secret_1", "loremaster_spellcasting_1"],
+      "2": ["lore"],
+      "3": ["loremaster_secret_2"],
+      "5": ["loremaster_secret_3"],
+      "6": ["greater_lore"],
+      "7": ["loremaster_secret_4"],
+      "9": ["loremaster_secret_5"],
+      "10": ["true_lore"]
+    },
+    "featureDetails": {
+      "loremaster_secret_1": {
+        "id": "loremaster_secret_1",
+        "name": "Secret",
+        "category": "ex",
+        "description": "Choose one secret from the Loremaster Secret table (based on loremaster level + INT modifier), granting bonus ranks, HP, dodge AC, save bonuses, or a bonus feat.",
+        "modifiers": [
+          {
+            "id": "loremaster_secret_dodge",
+            "target": "ac",
+            "value": 1,
+            "type": "dodge"
+          }
+        ]
+      },
+      "lore": {
+        "id": "lore",
+        "name": "Lore",
+        "category": "ex",
+        "description": "Know legends or information regarding various topics with a check of 1d20 + loremaster level + INT modifier."
+      },
+      "greater_lore": {
+        "id": "greater_lore",
+        "name": "Greater Lore",
+        "category": "ex",
+        "description": "Understand magic items as with the identify spell."
+      },
+      "true_lore": {
+        "id": "true_lore",
+        "name": "True Lore",
+        "category": "ex",
+        "description": "1/day use knowledge to gain the effect of a legend lore or analyze dweomer spell."
+      }
+    },
+    "acfSwaps": []
+  }
+}

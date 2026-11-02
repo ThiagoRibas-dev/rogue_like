@@ -1,5 +1,5 @@
 import { dndFloor } from './math/multipliers.ts';
-import type { AbilityId, CreatureSizeCategory } from './types/dnd35e.types.ts';
+import type { AbilityId, CreatureSizeCategory, DnD35Alignment } from './types/dnd35e.types.ts';
 
 /**
  * Recursive AST node representing a declarative D&D 3.5e prerequisite requirement
@@ -18,6 +18,19 @@ export type PrerequisiteNode =
   | {
       readonly type: 'size_in';
       readonly allowedSizes: ReadonlyArray<CreatureSizeCategory>;
+    }
+  | {
+      readonly type: 'alignment_in';
+      readonly allowedAlignments: ReadonlyArray<DnD35Alignment>;
+    }
+  | {
+      readonly type: 'min_spell_level';
+      readonly tradition: 'arcane' | 'divine' | 'any';
+      readonly minSpellLevel: number;
+    }
+  | {
+      readonly type: 'race_in';
+      readonly allowedRaces: ReadonlyArray<string>;
     };
 
 /** Snapshot of an entity's stats used to evaluate a `PrerequisiteNode` AST. */
@@ -29,6 +42,10 @@ export interface PrerequisiteEvalContext {
   readonly tags: ReadonlyArray<string>;
   readonly casterLevel: number;
   readonly sizeCategory: CreatureSizeCategory;
+  readonly alignment?: DnD35Alignment | undefined;
+  readonly raceId?: string | undefined;
+  readonly maxArcaneSpellLevel?: number | undefined;
+  readonly maxDivineSpellLevel?: number | undefined;
 }
 
 /**
@@ -65,5 +82,20 @@ export function evaluatePrerequisiteAST(node: PrerequisiteNode, context: Prerequ
       return context.casterLevel >= node.minCasterLevel;
     case 'size_in':
       return node.allowedSizes.includes(context.sizeCategory);
+    case 'alignment_in':
+      return context.alignment !== undefined && node.allowedAlignments.includes(context.alignment);
+    case 'min_spell_level': {
+      const arcaneMax = context.maxArcaneSpellLevel ?? 0;
+      const divineMax = context.maxDivineSpellLevel ?? 0;
+      if (node.tradition === 'arcane') {
+        return arcaneMax >= node.minSpellLevel;
+      }
+      if (node.tradition === 'divine') {
+        return divineMax >= node.minSpellLevel;
+      }
+      return Math.max(arcaneMax, divineMax) >= node.minSpellLevel;
+    }
+    case 'race_in':
+      return context.raceId !== undefined && node.allowedRaces.includes(context.raceId);
   }
 }

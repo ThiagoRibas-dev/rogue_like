@@ -24,6 +24,8 @@ import { renderDebugOverlay } from './ui/debug.ui.ts';
 import { renderVerbMenu } from './ui/verb_menu.ui.ts';
 import { renderDossierUI } from './ui/dossier.ui.ts';
 import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
+import { renderDnD35eCharBuilderModal } from './ui/dnd35e_char_builder.ui.ts';
+import { renderDnD35eLevelUpModal } from './ui/dnd35e_level_up.ui.ts';
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
@@ -169,6 +171,8 @@ export function renderPresenterFrame(
     renderInvestigationBoard(state);
     renderDossierUI(state);
     renderHudDock(state);
+    renderDnD35eCharBuilderModal(state);
+    renderDnD35eLevelUpModal(state);
   }
 
   // Debug Overlays

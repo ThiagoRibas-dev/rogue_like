@@ -1,0 +1,84 @@
+{
+  "dragon_disciple": {
+    "id": "dragon_disciple",
+    "name": "Dragon Disciple",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 12,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "diplomacy", "escape_artist", "gather_information", "knowledge_arcana", "listen", "search", "spellcraft", "spot"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_skill_ranks", "skillId": "knowledge_arcana", "minRanks": 8 },
+        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 1 }
+      ]
+    },
+    "proficiencies": {
+      "weapons": [],
+      "armor": [],
+      "shields": []
+    },
+    "featuresByLevel": {
+      "1": ["dd_natural_armor_1"],
+      "2": ["dd_ability_boost_str_2", "dd_claws_and_bite"],
+      "3": ["dd_breath_weapon_2d8"],
+      "4": ["dd_ability_boost_str_4", "dd_natural_armor_2"],
+      "5": ["dd_blindsense_30"],
+      "6": ["dd_ability_boost_con_2"],
+      "7": ["dd_breath_weapon_4d8", "dd_natural_armor_3"],
+      "8": ["dd_ability_boost_int_2"],
+      "9": ["dd_wings"],
+      "10": ["dd_blindsense_60", "dd_dragon_apotheosis"]
+    },
+    "featureDetails": {
+      "dd_natural_armor_1": {
+        "id": "dd_natural_armor_1",
+        "name": "Natural Armor Increase",
+        "category": "ex",
+        "description": "Gains an increase to the character's existing natural armor (+1 at 1st, +2 at 4th, +3 at 7th, +4 at 10th).",
+        "modifiers": [
+          {
+            "id": "dd_nat_armor_1",
+            "target": "natural_armor",
+            "value": 1,
+            "type": "untyped"
+          }
+        ]
+      },
+      "dd_ability_boost_str_2": {
+        "id": "dd_ability_boost_str_2",
+        "name": "Ability Boost (STR +2)",
+        "category": "ex",
+        "description": "Strength score increases by +2.",
+        "modifiers": [
+          {
+            "id": "dd_str_boost_2",
+            "target": "str",
+            "value": 2,
+            "type": "untyped"
+          }
+        ]
+      },
+      "dd_claws_and_bite": {
+        "id": "dd_claws_and_bite",
+        "name": "Claws and Bite",
+        "category": "ex",
+        "description": "Gain bite and claw natural weapons."
+      },
+      "dd_dragon_apotheosis": {
+        "id": "dd_dragon_apotheosis",
+        "name": "Dragon Apotheosis",
+        "category": "ex",
+        "description": "Takes on the Half-Dragon template: +4 STR, +2 CHA, +4 natural armor, 6d8 breath weapon, darkvision 60 ft, low-light vision, immunity to sleep, paralysis, and draconic energy type."
+      }
+    },
+    "acfSwaps": []
+  }
+}

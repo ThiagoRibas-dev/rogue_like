@@ -39,7 +39,9 @@ export const enum UIMode {
   Dossier = 'dossier',
   Trade = 'trade',
   Services = 'services',
-  Ledger = 'ledger'
+  Ledger = 'ledger',
+  CharCreation = 'char_creation',
+  LevelUp = 'level_up'
 }
 
 /**

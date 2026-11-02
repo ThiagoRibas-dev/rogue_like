@@ -1,0 +1,155 @@
+{
+  "monk": {
+    "id": "monk",
+    "name": "Monk",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "good",
+    "skillPointsPerLevel": 4,
+    "classSkills": [
+      "balance",
+      "climb",
+      "concentration",
+      "craft",
+      "diplomacy",
+      "escape_artist",
+      "hide",
+      "jump",
+      "knowledge_arcana",
+      "knowledge_religion",
+      "listen",
+      "move_silently",
+      "perform",
+      "sense_motive",
+      "spot",
+      "swim",
+      "tumble"
+    ],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "allowedAlignments": ["LG", "LN", "LE"],
+    "proficiencies": {
+      "weapons": ["club", "crossbow_light", "crossbow_heavy", "dagger", "handaxe", "javelin", "kama", "nunchaku", "quarterstaff", "sai", "shuriken", "siangham", "sling"],
+      "armor": [],
+      "shields": []
+    },
+    "bonusFeatLevels": [1, 2, 6],
+    "featuresByLevel": {
+      "1": ["monk_ac_bonus", "flurry_of_blows", "unarmed_strike", "monk_bonus_feat_1"],
+      "2": ["evasion", "monk_bonus_feat_2"],
+      "3": ["fast_movement_monk_1", "still_mind"],
+      "4": ["ki_strike_magic", "slow_fall_20"],
+      "5": ["monk_ac_bonus_1", "purity_of_body"],
+      "6": ["fast_movement_monk_2", "monk_bonus_feat_6", "slow_fall_30"],
+      "7": ["wholeness_of_body"],
+      "8": ["slow_fall_40"],
+      "9": ["fast_movement_monk_3", "improved_evasion"],
+      "10": ["ki_strike_lawful", "monk_ac_bonus_2", "slow_fall_50"],
+      "11": ["diamond_body", "greater_flurry"],
+      "12": ["abundant_step", "fast_movement_monk_4", "slow_fall_60"],
+      "13": ["diamond_soul"],
+      "14": ["slow_fall_70"],
+      "15": ["fast_movement_monk_5", "monk_ac_bonus_3", "quivering_palm"],
+      "16": ["ki_strike_adamantine", "slow_fall_80"],
+      "17": ["timeless_body", "tongue_of_the_sun_and_moon"],
+      "18": ["fast_movement_monk_6", "slow_fall_90"],
+      "19": ["empty_body"],
+      "20": ["monk_ac_bonus_4", "perfect_self", "slow_fall_any"]
+    },
+    "featureDetails": {
+      "monk_ac_bonus": {
+        "id": "monk_ac_bonus",
+        "name": "Monk AC Bonus",
+        "category": "ex",
+        "description": "When unarmored and unencumbered, add Wisdom bonus (if positive) + 1 per 5 monk levels to AC (applies even against touch attacks or when flat-footed).",
+        "modifiers": [
+          {
+            "id": "monk_unarmored_ac_base",
+            "target": "ac",
+            "value": 1,
+            "type": "untyped",
+            "condition": {
+              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+            }
+          }
+        ]
+      },
+      "flurry_of_blows": {
+        "id": "flurry_of_blows",
+        "name": "Flurry of Blows",
+        "category": "ex",
+        "description": "Strike with a flurry of blows at the expense of accuracy (-2/-2 at 1st, -1/-1 at 5th, +0/+0 at 9th, two extra attacks at 11th)."
+      },
+      "unarmed_strike": {
+        "id": "unarmed_strike",
+        "name": "Unarmed Strike",
+        "category": "ex",
+        "description": "Gain Improved Unarmed Strike as a bonus feat; unarmed damage scales from 1d6 at 1st to 2d10 at 20th level."
+      },
+      "evasion": {
+        "id": "evasion",
+        "name": "Evasion",
+        "category": "ex",
+        "description": "Take no damage instead of half damage on a successful Reflex saving throw."
+      },
+      "still_mind": {
+        "id": "still_mind",
+        "name": "Still Mind",
+        "category": "ex",
+        "description": "+2 bonus on saving throws against spells and effects from the school of enchantment."
+      },
+      "wholeness_of_body": {
+        "id": "wholeness_of_body",
+        "name": "Wholeness of Body",
+        "category": "su",
+        "description": "Heal your own wounds up to twice your current monk level in hit points each day.",
+        "resourcePool": {
+          "poolId": "wholeness_of_body",
+          "maxBase": 0,
+          "perClassLevel": 2,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "diamond_soul": {
+        "id": "diamond_soul",
+        "name": "Diamond Soul",
+        "category": "ex",
+        "description": "Gain Spell Resistance equal to current monk level + 10."
+      },
+      "quivering_palm": {
+        "id": "quivering_palm",
+        "name": "Quivering Palm",
+        "category": "su",
+        "description": "Set up fatal vibrations within the body of another creature 1/week (Fortitude save DC 10 + 1/2 monk level + WIS mod or die)."
+      },
+      "perfect_self": {
+        "id": "perfect_self",
+        "name": "Perfect Self",
+        "category": "su",
+        "description": "Become a magical creature (Outsider [native]) and gain Damage Reduction 10/magic."
+      }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "monk_decisive_strike_1",
+        "name": "Decisive Strike",
+        "replacesFeature": "flurry_of_blows",
+        "grantedFeature": "decisive_strike",
+        "level": 1,
+        "description": "Replaces Flurry of Blows: make one unarmed or special monk weapon attack as a full-round action at -2 that deals double damage (including any AoOs before your next turn)."
+      },
+      {
+        "acfId": "monk_invisible_fist_2",
+        "name": "Invisible Fist",
+        "replacesFeature": "evasion",
+        "grantedFeature": "invisible_fist",
+        "level": 2,
+        "description": "Replaces Evasion: turn invisible for 1 round as an immediate action every 3 rounds."
+      }
+    ]
+  }
+}

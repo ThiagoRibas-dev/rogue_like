@@ -1,0 +1,99 @@
+{
+  "wizard": {
+    "id": "wizard",
+    "name": "Wizard",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 4,
+    "babCurve": "half",
+    "fortCurve": "poor",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": [
+      "concentration",
+      "craft",
+      "decipher_script",
+      "knowledge_arcana",
+      "knowledge_dungeoneering",
+      "knowledge_nature",
+      "knowledge_planes",
+      "knowledge_religion",
+      "spellcraft"
+    ],
+    "castingMode": "prepared",
+    "castingTradition": "arcane",
+    "castingKeyAbility": "int",
+    "proficiencies": {
+      "weapons": ["club", "dagger", "crossbow_heavy", "crossbow_light", "quarterstaff"],
+      "armor": [],
+      "shields": []
+    },
+    "bonusFeatLevels": [5, 10, 15, 20],
+    "featuresByLevel": {
+      "1": ["summon_familiar", "scribe_scroll", "arcane_school_specialization"],
+      "5": ["wizard_bonus_feat_5"],
+      "10": ["wizard_bonus_feat_10"],
+      "15": ["wizard_bonus_feat_15"],
+      "20": ["wizard_bonus_feat_20"]
+    },
+    "featureDetails": {
+      "summon_familiar": {
+        "id": "summon_familiar",
+        "name": "Summon Familiar",
+        "category": "ex",
+        "description": "Obtain a magical beast companion that grants special bonuses to its master."
+      },
+      "scribe_scroll": {
+        "id": "scribe_scroll",
+        "name": "Scribe Scroll",
+        "category": "bonus_feat",
+        "description": "Gain Scribe Scroll as a bonus feat at 1st level."
+      },
+      "arcane_school_specialization": {
+        "id": "arcane_school_specialization",
+        "name": "School Specialization",
+        "category": "ex",
+        "description": "Optionally specialize in one of the eight schools of magic (+1 slot/level, +2 Spellcraft on school, 2 prohibited schools; 1 for Divination)."
+      },
+      "wizard_bonus_feat_5": {
+        "id": "wizard_bonus_feat_5",
+        "name": "Wizard Bonus Feat",
+        "category": "bonus_feat",
+        "description": "Gain a bonus metamagic feat, item creation feat, or Spell Mastery."
+      }
+    },
+    "spellsPerDayTable": {
+      "1": { "0": 3, "1": 1 },
+      "2": { "0": 4, "1": 2 },
+      "3": { "0": 4, "1": 2, "2": 1 },
+      "4": { "0": 4, "1": 3, "2": 2 },
+      "5": { "0": 4, "1": 3, "2": 2, "3": 1 },
+      "6": { "0": 4, "1": 3, "2": 3, "3": 2 },
+      "7": { "0": 4, "1": 4, "2": 3, "3": 2, "4": 1 },
+      "8": { "0": 4, "1": 4, "2": 3, "3": 3, "4": 2 },
+      "9": { "0": 4, "1": 4, "2": 4, "3": 3, "4": 2, "5": 1 },
+      "10": { "0": 4, "1": 4, "2": 4, "3": 3, "4": 3, "5": 2 },
+      "11": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 3, "5": 2, "6": 1 },
+      "12": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 3, "5": 3, "6": 2 },
+      "13": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 3, "6": 2, "7": 1 },
+      "14": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 3, "6": 3, "7": 2 },
+      "15": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 3, "7": 2, "8": 1 },
+      "16": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 3, "7": 3, "8": 2 },
+      "17": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 3, "8": 2, "9": 1 },
+      "18": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 3, "8": 3, "9": 2 },
+      "19": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 3, "9": 3 },
+      "20": { "0": 4, "1": 4, "2": 4, "3": 4, "4": 4, "5": 4, "6": 4, "7": 4, "8": 4, "9": 4 }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "wizard_abrupt_jaunt_1",
+        "name": "Immediate Magic: Abrupt Jaunt",
+        "replacesFeature": "summon_familiar",
+        "grantedFeature": "abrupt_jaunt",
+        "level": 1,
+        "description": "Replaces Summon Familiar (Conjurer specialist): teleport up to 10 ft as an immediate action INT bonus times per day."
+      }
+    ]
+  }
+}

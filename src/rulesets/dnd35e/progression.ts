@@ -214,3 +214,121 @@ export function resolveActiveClassFeatures(
 
   return active;
 }
+
+/** Multiclass XP penalty per uneven non-favored base class (20% per offending class). */
+export const MULTICLASS_XP_PENALTY_PER_CLASS = 0.2;
+
+/** Minimum XP multiplier floor when multiple base classes are uneven. */
+export const MIN_MULTICLASS_XP_MULTIPLIER = 0.2;
+
+/** Maximum allowed level difference between non-favored base classes before XP penalty applies. */
+export const MAX_UNPENALIZED_BASE_CLASS_GAP = 1;
+
+/**
+ * Collects all baseline feature IDs granted by a class from level 1 through `maxReachedLevel`,
+ * applying any active ACF swaps at or below `maxReachedLevel`.
+ *
+ * @param classDef Class definition from System Content.
+ * @param maxReachedLevel Current class level reached ($\ge 1$).
+ * @param activeAcfIds Selected ACF swap IDs on the character.
+ * @returns Ordered array of active class feature IDs.
+ */
+export function collectClassFeaturesUpToLevel(
+  classDef: DnD35ClassDefinition,
+  maxReachedLevel: number,
+  activeAcfIds: ReadonlyArray<string> = []
+): ReadonlyArray<string> {
+  const baseFeatures: string[] = [];
+  const clampedLevel = Math.max(0, dndFloor(maxReachedLevel));
+  for (let lvl = 1; lvl <= clampedLevel; lvl++) {
+    const atLevel = classDef.featuresByLevel[String(lvl)];
+    if (atLevel) {
+      for (const featId of atLevel) {
+        if (!baseFeatures.includes(featId)) {
+          baseFeatures.push(featId);
+        }
+      }
+    }
+  }
+  const eligibleAcfs = activeAcfIds.filter((acfId) => {
+    const swap = classDef.acfSwaps.find((s) => s.acfId === acfId);
+    return swap !== undefined && swap.level <= clampedLevel;
+  });
+  return resolveActiveClassFeatures(baseFeatures, eligibleAcfs, classDef);
+}
+
+/**
+ * Computes the D&D 3.5e multiclass XP multiplier (`1.0` = no penalty, `0.8` = `-20%`, etc.).
+ * - Ignores all Prestige Classes (`isPrestige === true`) and Racial HD tracks.
+ * - Ignores the actor's `favoredClass` (or the highest-level base class when `favoredClass === 'any'`).
+ * - Applies `-0.20` for each remaining base class that is more than 1 level below the highest remaining base class.
+ *
+ * @param tracks The actor's HitDieTrack or class level array (`trackId` / `levels`).
+ * @param classRegistry The loaded D&D 3.5e class definitions dictionary.
+ * @param favoredClass The actor's racial favored class ID or `'any'` (e.g. Human / Half-Elf).
+ * @param enforcePenalty Campaign rule toggle to enable/disable multiclass XP penalties.
+ * @returns The XP multiplier in the range `[0.2, 1.0]`.
+ */
+export function calculateMulticlassXpMultiplier(
+  tracks: ReadonlyArray<{ readonly trackId: string; readonly levels: number }>,
+  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>,
+  favoredClass: string = 'any',
+  enforcePenalty: boolean = true
+): number {
+  if (!enforcePenalty) {
+    return 1.0;
+  }
+
+  // Filter strictly to base classes (Prestige Classes and non-class racial HD tracks are exempt per PHB p. 60)
+  const baseClassEntries = tracks.filter((entry) => {
+    if (entry.levels <= 0) return false;
+    const def = classRegistry[entry.trackId];
+    return def !== undefined && !def.isPrestige;
+  });
+
+  if (baseClassEntries.length <= 1) {
+    return 1.0;
+  }
+
+  let remainingBaseClasses: ReadonlyArray<{ readonly trackId: string; readonly levels: number }>;
+  if (favoredClass === 'any') {
+    let maxIdx = 0;
+    for (let i = 1; i < baseClassEntries.length; i++) {
+      const current = baseClassEntries[i];
+      const best = baseClassEntries[maxIdx];
+      if (current !== undefined && best !== undefined && current.levels > best.levels) {
+        maxIdx = i;
+      }
+    }
+    remainingBaseClasses = baseClassEntries.filter((_, idx) => idx !== maxIdx);
+  } else {
+    remainingBaseClasses = baseClassEntries.filter((entry) => entry.trackId !== favoredClass);
+  }
+
+  if (remainingBaseClasses.length <= 1) {
+    return 1.0;
+  }
+
+  let highestRemainingLevel = 0;
+  for (const entry of remainingBaseClasses) {
+    if (entry.levels > highestRemainingLevel) {
+      highestRemainingLevel = entry.levels;
+    }
+  }
+
+  let offendingClasses = 0;
+  for (const entry of remainingBaseClasses) {
+    if (highestRemainingLevel - entry.levels > MAX_UNPENALIZED_BASE_CLASS_GAP) {
+      offendingClasses += 1;
+    }
+  }
+
+  if (offendingClasses === 0) {
+    return 1.0;
+  }
+
+  return Math.max(
+    MIN_MULTICLASS_XP_MULTIPLIER,
+    Number((1.0 - offendingClasses * MULTICLASS_XP_PENALTY_PER_CLASS).toFixed(2))
+  );
+}

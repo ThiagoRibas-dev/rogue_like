@@ -394,6 +394,31 @@ async function fetchOptionalJson(url: string): Promise<Record<string, unknown>> 
 }
 
 /**
+ * Merges a loaded system content payload into the target dictionary key.
+ * If both the existing entry and the incoming payload are plain objects, shallow-merges them.
+ *
+ * @param target The target raw system content dictionary.
+ * @param key The system content category key (e.g. 'classes').
+ * @param incoming The parsed JSON object from disk/fetch.
+ */
+function mergeSystemContentEntry(
+  target: Record<string, Record<string, unknown>>,
+  key: string,
+  incoming: Record<string, unknown>
+): void {
+  const normalizedIncoming =
+    typeof incoming['id'] === 'string' && typeof incoming['name'] === 'string'
+      ? { [incoming['id']]: incoming }
+      : incoming;
+  const existing = target[key];
+  if (existing !== undefined) {
+    target[key] = { ...existing, ...normalizedIncoming };
+    return;
+  }
+  target[key] = normalizedIncoming;
+}
+
+/**
  * Loads and parses Tier 2 System Content for a given ruleset.
  * @param rulesetId The ID of the ruleset.
  * @returns A promise resolving to the parsed system content map.
@@ -408,7 +433,10 @@ export async function loadRulesetSystemContent(rulesetId: RulesetId): Promise<Re
       return [desc.key, content] as const;
     })
   );
-  const rawSystemContent: Record<string, Record<string, unknown>> = Object.fromEntries(systemContentEntries);
+  const rawSystemContent: Record<string, Record<string, unknown>> = {};
+  for (const [key, content] of systemContentEntries) {
+    mergeSystemContentEntry(rawSystemContent, key, content);
+  }
   return ruleset.parseSystemContent
     ? (ruleset.parseSystemContent(rawSystemContent) as unknown as Record<string, Record<string, unknown>>)
     : rawSystemContent;

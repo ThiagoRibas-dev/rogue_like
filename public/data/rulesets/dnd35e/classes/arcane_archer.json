@@ -1,0 +1,98 @@
+{
+  "arcane_archer": {
+    "id": "arcane_archer",
+    "name": "Arcane Archer",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 8,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 4,
+    "classSkills": ["craft", "hide", "listen", "move_silently", "ride", "spot", "survival", "use_rope"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "race_in", "allowedRaces": ["elf", "half_elf", "drow"] },
+        { "type": "min_bab", "minBab": 6 },
+        { "type": "has_feat", "featId": "point_blank_shot" },
+        { "type": "has_feat", "featId": "precise_shot" },
+        { "type": "has_feat", "featId": "weapon_focus" },
+        { "type": "min_spell_level", "tradition": "arcane", "minSpellLevel": 1 }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium"],
+      "shields": ["shields"]
+    },
+    "featuresByLevel": {
+      "1": ["enhance_arrow_1"],
+      "2": ["imbue_arrow"],
+      "3": ["enhance_arrow_2"],
+      "4": ["seeker_arrow"],
+      "5": ["enhance_arrow_3"],
+      "6": ["phase_arrow"],
+      "7": ["enhance_arrow_4"],
+      "8": ["hail_of_arrows"],
+      "9": ["enhance_arrow_5"],
+      "10": ["arrow_of_death"]
+    },
+    "featureDetails": {
+      "enhance_arrow_1": {
+        "id": "enhance_arrow_1",
+        "name": "Enhance Arrow +1",
+        "category": "su",
+        "description": "Every nonmagical arrow nocked gains a +1 enhancement bonus (+2 at 3rd, +3 at 5th, +4 at 7th, +5 at 9th).",
+        "modifiers": [
+          {
+            "id": "arcane_archer_enhance_arrow_atk",
+            "target": "attack",
+            "value": 1,
+            "type": "enhancement"
+          },
+          {
+            "id": "arcane_archer_enhance_arrow_dmg",
+            "target": "damage",
+            "value": 1,
+            "type": "enhancement"
+          }
+        ]
+      },
+      "imbue_arrow": {
+        "id": "imbue_arrow",
+        "name": "Imbue Arrow",
+        "category": "sp",
+        "description": "Place an area spell upon an arrow so that the spell's area is centered on where the arrow lands."
+      },
+      "seeker_arrow": {
+        "id": "seeker_arrow",
+        "name": "Seeker Arrow",
+        "category": "sp",
+        "description": "Launch an arrow 1/day that travels to a known target, negating cover and concealment modifiers."
+      },
+      "phase_arrow": {
+        "id": "phase_arrow",
+        "name": "Phase Arrow",
+        "category": "sp",
+        "description": "Launch an arrow 1/day that travels in a straight path, passing through nonmagical barriers/walls (negates cover, concealment, and armor/shield)."
+      },
+      "hail_of_arrows": {
+        "id": "hail_of_arrows",
+        "name": "Hail of Arrows",
+        "category": "sp",
+        "description": "In lieu of regular attacks, fire an arrow at each and every target within range 1/day (up to 1 target per arcane archer level)."
+      },
+      "arrow_of_death": {
+        "id": "arrow_of_death",
+        "name": "Arrow of Death",
+        "category": "sp",
+        "description": "Create an arrow of death that forces the target, if damaged by the arrow, to make a DC 20 Fortitude save or be slain immediately."
+      }
+    },
+    "acfSwaps": []
+  }
+}

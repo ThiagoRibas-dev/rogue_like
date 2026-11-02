@@ -326,9 +326,15 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
   };
 
   const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
-  const rawSystemContent: Record<string, unknown> = {};
+  const rawSystemContent: Record<string, Record<string, unknown>> = {};
   for (const desc of systemDescriptors) {
-    rawSystemContent[desc.key] = readRulesetJson(desc.filename);
+    const incoming = readRulesetJson(desc.filename);
+    const normalizedIncoming =
+      typeof incoming['id'] === 'string' && typeof incoming['name'] === 'string'
+        ? { [incoming['id']]: incoming }
+        : incoming;
+    const existing = rawSystemContent[desc.key];
+    rawSystemContent[desc.key] = existing !== undefined ? { ...existing, ...normalizedIncoming } : normalizedIncoming;
   }
   campaignData['systemContent'] = ruleset.parseSystemContent
     ? ruleset.parseSystemContent(rawSystemContent)

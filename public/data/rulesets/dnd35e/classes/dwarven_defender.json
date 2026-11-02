@@ -1,0 +1,80 @@
+{
+  "dwarven_defender": {
+    "id": "dwarven_defender",
+    "name": "Dwarven Defender",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 12,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["craft", "listen", "sense_motive", "spot"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "allowedAlignments": ["LG", "LN", "LE"],
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "race_in", "allowedRaces": ["dwarf", "duergar"] },
+        { "type": "alignment_in", "allowedAlignments": ["LG", "LN", "LE"] },
+        { "type": "min_bab", "minBab": 7 },
+        { "type": "has_feat", "featId": "dodge" },
+        { "type": "has_feat", "featId": "endurance" },
+        { "type": "has_feat", "featId": "toughness" }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium", "heavy"],
+      "shields": ["shields", "tower_shields"]
+    },
+    "featuresByLevel": {
+      "1": ["dd_ac_bonus_1", "defensive_stance_1"],
+      "2": ["uncanny_dodge"],
+      "3": ["defensive_stance_2"],
+      "4": ["dd_ac_bonus_2", "trap_sense_1"],
+      "5": ["defensive_stance_3"],
+      "6": ["damage_reduction_3", "improved_uncanny_dodge"],
+      "7": ["dd_ac_bonus_3", "defensive_stance_4"],
+      "8": ["mobile_defense", "trap_sense_2"],
+      "9": ["defensive_stance_5"],
+      "10": ["damage_reduction_6", "dd_ac_bonus_4"]
+    },
+    "featureDetails": {
+      "dd_ac_bonus_1": {
+        "id": "dd_ac_bonus_1",
+        "name": "AC Bonus +1",
+        "category": "ex",
+        "description": "Gain a +1 dodge bonus to Armor Class (+2 at 4th, +3 at 7th, +4 at 10th level).",
+        "modifiers": [
+          {
+            "id": "dwarven_defender_ac_dodge",
+            "target": "ac",
+            "value": 1,
+            "type": "dodge"
+          }
+        ]
+      },
+      "defensive_stance_1": {
+        "id": "defensive_stance_1",
+        "name": "Defensive Stance",
+        "category": "ex",
+        "description": "Become a bastion of defense (+2 STR, +4 CON, +2 resistance bonus on all saves, +4 dodge bonus to AC while stationary).",
+        "resourcePool": {
+          "poolId": "defensive_stance",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "mobile_defense": {
+        "id": "mobile_defense",
+        "name": "Mobile Defense",
+        "category": "ex",
+        "description": "Take one 5-foot step each round while in a defensive stance without losing the benefit of the stance."
+      }
+    },
+    "acfSwaps": []
+  }
+}

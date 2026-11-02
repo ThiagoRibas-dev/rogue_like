@@ -1,0 +1,90 @@
+{
+  "cleric": {
+    "id": "cleric",
+    "name": "Cleric",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "babCurve": "three_quarters",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "good",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "diplomacy", "heal", "knowledge_arcana", "knowledge_religion", "knowledge_planes", "spellcraft"],
+    "castingMode": "prepared",
+    "castingTradition": "divine",
+    "castingKeyAbility": "wis",
+    "proficiencies": {
+      "weapons": ["simple"],
+      "armor": ["light", "medium", "heavy"],
+      "shields": ["shields"]
+    },
+    "featuresByLevel": {
+      "1": ["aura", "deity_domains", "spontaneous_casting", "turn_or_rebuke_undead"]
+    },
+    "featureDetails": {
+      "aura": {
+        "id": "aura",
+        "name": "Aura",
+        "category": "ex",
+        "description": "Projects an aura of Chaos, Evil, Good, or Law corresponding to deity alignment."
+      },
+      "deity_domains": {
+        "id": "deity_domains",
+        "name": "Deity Domains (2)",
+        "category": "su",
+        "description": "Choose two deity domains, gaining their granted powers and +1 domain spell slot per spell level (1st-9th)."
+      },
+      "spontaneous_casting": {
+        "id": "spontaneous_casting",
+        "name": "Spontaneous Cure / Inflict",
+        "category": "su",
+        "description": "Convert any prepared non-domain spell into a Cure (or Inflict) spell of the same spell level."
+      },
+      "turn_or_rebuke_undead": {
+        "id": "turn_or_rebuke_undead",
+        "name": "Turn or Rebuke Undead",
+        "category": "su",
+        "description": "Channel positive or negative energy to turn, destroy, rebuke, or command undead (3 + CHA mod/day).",
+        "resourcePool": {
+          "poolId": "turn_undead",
+          "maxBase": 3,
+          "abilityModStat": "cha",
+          "refreshCycle": "rest_8h"
+        }
+      }
+    },
+    "spellsPerDayTable": {
+      "1": { "0": 3, "1": 1 },
+      "2": { "0": 4, "1": 2 },
+      "3": { "0": 4, "1": 2, "2": 1 },
+      "4": { "0": 5, "1": 3, "2": 2 },
+      "5": { "0": 5, "1": 3, "2": 2, "3": 1 },
+      "6": { "0": 5, "1": 3, "2": 3, "3": 2 },
+      "7": { "0": 6, "1": 4, "2": 3, "3": 2, "4": 1 },
+      "8": { "0": 6, "1": 4, "2": 3, "3": 3, "4": 2 },
+      "9": { "0": 6, "1": 4, "2": 4, "3": 3, "4": 2, "5": 1 },
+      "10": { "0": 6, "1": 4, "2": 4, "3": 3, "4": 3, "5": 2 },
+      "11": { "0": 6, "1": 5, "2": 4, "3": 4, "4": 3, "5": 2, "6": 1 },
+      "12": { "0": 6, "1": 5, "2": 4, "3": 4, "4": 3, "5": 3, "6": 2 },
+      "13": { "0": 6, "1": 5, "2": 5, "3": 4, "4": 4, "5": 3, "6": 2, "7": 1 },
+      "14": { "0": 6, "1": 5, "2": 5, "3": 4, "4": 4, "5": 3, "6": 3, "7": 2 },
+      "15": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 4, "5": 4, "6": 3, "7": 2, "8": 1 },
+      "16": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 4, "5": 4, "6": 3, "7": 3, "8": 2 },
+      "17": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 4, "6": 4, "7": 3, "8": 2, "9": 1 },
+      "18": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 4, "6": 4, "7": 3, "8": 3, "9": 2 },
+      "19": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4, "7": 4, "8": 3, "9": 3 },
+      "20": { "0": 6, "1": 5, "2": 5, "3": 5, "4": 5, "5": 5, "6": 4, "7": 4, "8": 4, "9": 4 }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "cleric_domain_spontaneity_1",
+        "name": "Domain Spontaneity",
+        "replacesFeature": "spontaneous_casting",
+        "grantedFeature": "domain_spontaneity",
+        "level": 1,
+        "description": "Expend a Turn/Rebuke Undead attempt to spontaneously convert any prepared spell into a domain spell of the same level."
+      }
+    ]
+  }
+}

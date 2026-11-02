@@ -51,3 +51,31 @@ export function getActiveRuleset(state: GameState): RulesetContract {
   const rulesetId = state.campaign?.manifest?.rulesetId;
   return getRuleset(rulesetId);
 }
+
+export {
+  applyCharacterCreationToPlayer,
+  applyLevelUpToActor,
+  buildPrerequisiteContextForActor,
+  calculateLevelSkillPointBudget,
+  calculatePointBuyCost,
+  calculateSkillAllocationCost,
+  type CharacterCreationDraft,
+  ELITE_ABILITY_ARRAY,
+  getSkillMaxRanks,
+  type LevelUpChoice,
+  POINT_BUY_MAX_SCORE,
+  POINT_BUY_MIN_SCORE,
+  POINT_BUY_PRESETS,
+  rollAbilityScores4d6DropLowest,
+  STARTING_EQUIPMENT_PACKAGES,
+  validateSpecialistSchoolSelection
+} from './dnd35e/character_builder.ts';
+export { evaluatePrerequisiteAST } from './dnd35e/prerequisites.ts';
+export {
+  aggregateProgressionChassis,
+  calculateMulticlassXpMultiplier,
+  computeXpThresholdForLevel
+} from './dnd35e/progression.ts';
+export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
+export { ALL_ABILITY_IDS, type DnD35Alignment, type DnD35SpellSchool } from './dnd35e/types/dnd35e.types.ts';
+export { getDnD35SystemContent } from './dnd35e/types/dnd35e_system.types.ts';

@@ -1,0 +1,143 @@
+{
+  "barbarian": {
+    "id": "barbarian",
+    "name": "Barbarian",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 12,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 4,
+    "classSkills": ["climb", "craft", "handle_animal", "intimidate", "jump", "listen", "ride", "survival", "swim"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "allowedAlignments": ["NG", "CG", "N", "CN", "NE", "CE"],
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium"],
+      "shields": ["shields"]
+    },
+    "featuresByLevel": {
+      "1": ["fast_movement", "illiteracy", "rage_1"],
+      "2": ["uncanny_dodge"],
+      "3": ["trap_sense_1"],
+      "4": ["rage_2"],
+      "5": ["improved_uncanny_dodge"],
+      "6": ["trap_sense_2"],
+      "7": ["damage_reduction_1"],
+      "8": ["rage_3"],
+      "9": ["trap_sense_3"],
+      "10": ["damage_reduction_2"],
+      "11": ["greater_rage"],
+      "12": ["rage_4", "trap_sense_4"],
+      "13": ["damage_reduction_3"],
+      "14": ["indomitable_will"],
+      "15": ["trap_sense_5"],
+      "16": ["damage_reduction_4", "rage_5"],
+      "17": ["tireless_rage"],
+      "18": ["trap_sense_6"],
+      "19": ["damage_reduction_5"],
+      "20": ["mighty_rage", "rage_6"]
+    },
+    "featureDetails": {
+      "fast_movement": {
+        "id": "fast_movement",
+        "name": "Fast Movement",
+        "category": "ex",
+        "description": "+10 ft to base land speed when wearing no armor, light armor, or medium armor and not carrying a heavy load.",
+        "modifiers": [
+          {
+            "id": "barbarian_fast_movement",
+            "target": "speed",
+            "value": 10,
+            "type": "untyped",
+            "condition": {
+              "selfTagsNone": ["armor:heavy", "load:heavy"]
+            }
+          }
+        ]
+      },
+      "illiteracy": {
+        "id": "illiteracy",
+        "name": "Illiteracy",
+        "category": "ex",
+        "description": "Cannot read or write unless 2 skill points are spent or a level in another class is gained."
+      },
+      "rage_1": {
+        "id": "rage_1",
+        "name": "Rage",
+        "category": "ex",
+        "description": "+4 STR, +4 CON, +2 morale bonus on Will saves, -2 AC penalty while raging.",
+        "resourcePool": {
+          "poolId": "rage",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "uncanny_dodge": {
+        "id": "uncanny_dodge",
+        "name": "Uncanny Dodge",
+        "category": "ex",
+        "description": "Retains Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker."
+      },
+      "improved_uncanny_dodge": {
+        "id": "improved_uncanny_dodge",
+        "name": "Improved Uncanny Dodge",
+        "category": "ex",
+        "description": "Cannot be flanked except by a rogue of at least 4 levels higher."
+      },
+      "greater_rage": {
+        "id": "greater_rage",
+        "name": "Greater Rage",
+        "category": "ex",
+        "description": "Rage bonuses increase to +6 STR, +6 CON, and +3 morale bonus on Will saves."
+      },
+      "indomitable_will": {
+        "id": "indomitable_will",
+        "name": "Indomitable Will",
+        "category": "ex",
+        "description": "+4 bonus on Will saves to resist enchantment spells while in a rage."
+      },
+      "tireless_rage": {
+        "id": "tireless_rage",
+        "name": "Tireless Rage",
+        "category": "ex",
+        "description": "No longer becomes fatigued at the end of a rage."
+      },
+      "mighty_rage": {
+        "id": "mighty_rage",
+        "name": "Mighty Rage",
+        "category": "ex",
+        "description": "Rage bonuses increase to +8 STR, +8 CON, and +4 morale bonus on Will saves."
+      }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "barbarian_whirling_frenzy_1",
+        "name": "Whirling Frenzy",
+        "replacesFeature": "rage_1",
+        "grantedFeature": "whirling_frenzy",
+        "level": 1,
+        "description": "Replaces standard Rage with Whirling Frenzy (+4 STR, +2 dodge bonus to AC and Reflex saves, and 1 extra attack at highest BAB with -2 penalty)."
+      },
+      {
+        "acfId": "barbarian_lion_spirit_totem_1",
+        "name": "Lion Spirit Totem (Pounce)",
+        "replacesFeature": "fast_movement",
+        "grantedFeature": "pounce",
+        "level": 1,
+        "description": "Replaces Fast Movement with Pounce, allowing a full attack at the end of a charge."
+      },
+      {
+        "acfId": "barbarian_wolf_totem_2",
+        "name": "Wolf Totem (Improved Trip)",
+        "replacesFeature": "uncanny_dodge",
+        "grantedFeature": "improved_trip",
+        "level": 2,
+        "description": "Replaces Uncanny Dodge with Improved Trip as a bonus feat without needing Combat Expertise."
+      }
+    ]
+  }
+}

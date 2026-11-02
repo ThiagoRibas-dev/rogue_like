@@ -1,0 +1,137 @@
+{
+  "ranger": {
+    "id": "ranger",
+    "name": "Ranger",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 8,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 6,
+    "classSkills": [
+      "climb",
+      "concentration",
+      "craft",
+      "handle_animal",
+      "heal",
+      "hide",
+      "jump",
+      "knowledge_dungeoneering",
+      "knowledge_nature",
+      "listen",
+      "move_silently",
+      "ride",
+      "search",
+      "spot",
+      "survival",
+      "swim",
+      "use_rope"
+    ],
+    "castingMode": "prepared",
+    "castingTradition": "divine",
+    "castingKeyAbility": "wis",
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light"],
+      "shields": ["shields"]
+    },
+    "bonusFeatLevels": [2, 6, 11],
+    "featuresByLevel": {
+      "1": ["favored_enemy_1", "track", "wild_empathy"],
+      "2": ["combat_style"],
+      "3": ["endurance"],
+      "4": ["animal_companion_ranger"],
+      "5": ["favored_enemy_2"],
+      "6": ["improved_combat_style"],
+      "7": ["woodland_stride"],
+      "8": ["swift_tracker"],
+      "9": ["evasion"],
+      "10": ["favored_enemy_3"],
+      "11": ["combat_style_mastery"],
+      "13": ["camouflage"],
+      "15": ["favored_enemy_4"],
+      "17": ["hide_in_plain_sight_natural"],
+      "20": ["favored_enemy_5"]
+    },
+    "featureDetails": {
+      "favored_enemy_1": {
+        "id": "favored_enemy_1",
+        "name": "Favored Enemy",
+        "category": "ex",
+        "description": "+2 bonus on Bluff, Listen, Sense Motive, Spot, Survival, and weapon damage rolls against a chosen creature type (+2 at 5th, 10th, 15th, 20th).",
+        "modifiers": [
+          {
+            "id": "ranger_favored_enemy_dmg",
+            "target": "damage",
+            "value": 2,
+            "type": "untyped",
+            "condition": {
+              "targetTagsAny": ["subtype:orc", "subtype:goblinoid", "type:undead", "type:magical_beast", "type:dragon"]
+            }
+          }
+        ]
+      },
+      "track": {
+        "id": "track",
+        "name": "Track",
+        "category": "bonus_feat",
+        "description": "Gain Track as a bonus feat."
+      },
+      "combat_style": {
+        "id": "combat_style",
+        "name": "Combat Style (Archery or Two-Weapon)",
+        "category": "ex",
+        "description": "Gain Rapid Shot (Archery) or Two-Weapon Fighting (Two-Weapon) while wearing light or no armor."
+      },
+      "animal_companion_ranger": {
+        "id": "animal_companion_ranger",
+        "name": "Animal Companion",
+        "category": "ex",
+        "description": "Bond with an animal companion at effective druid level equal to 1/2 ranger level."
+      },
+      "evasion": {
+        "id": "evasion",
+        "name": "Evasion",
+        "category": "ex",
+        "description": "Take no damage instead of half damage on a successful Reflex saving throw in light or no armor."
+      },
+      "hide_in_plain_sight_natural": {
+        "id": "hide_in_plain_sight_natural",
+        "name": "Hide in Plain Sight",
+        "category": "ex",
+        "description": "Use the Hide skill in any sort of natural terrain, even while being observed."
+      }
+    },
+    "spellsPerDayTable": {
+      "4": { "1": 0 },
+      "5": { "1": 0 },
+      "6": { "1": 1 },
+      "7": { "1": 1 },
+      "8": { "1": 1, "2": 0 },
+      "9": { "1": 1, "2": 0 },
+      "10": { "1": 1, "2": 1 },
+      "11": { "1": 1, "2": 1, "3": 0 },
+      "12": { "1": 1, "2": 1, "3": 1 },
+      "13": { "1": 1, "2": 1, "3": 1 },
+      "14": { "1": 2, "2": 1, "3": 1, "4": 0 },
+      "15": { "1": 2, "2": 1, "3": 1, "4": 1 },
+      "16": { "1": 2, "2": 2, "3": 1, "4": 1 },
+      "17": { "1": 2, "2": 2, "3": 2, "4": 1 },
+      "18": { "1": 3, "2": 2, "3": 2, "4": 1 },
+      "19": { "1": 3, "2": 3, "3": 3, "4": 2 },
+      "20": { "1": 3, "2": 3, "3": 3, "4": 3 }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "ranger_distracting_attack_4",
+        "name": "Distracting Attack",
+        "replacesFeature": "animal_companion_ranger",
+        "grantedFeature": "distracting_attack",
+        "level": 4,
+        "description": "Replaces Animal Companion: whenever you hit an enemy with a weapon attack, that enemy is treated as flanked by your allies until the start of your next turn."
+      }
+    ]
+  }
+}

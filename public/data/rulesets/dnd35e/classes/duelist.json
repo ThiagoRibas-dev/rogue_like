@@ -1,0 +1,94 @@
+{
+  "duelist": {
+    "id": "duelist",
+    "name": "Duelist",
+    "isPrestige": true,
+    "maxLevel": 10,
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "poor",
+    "refCurve": "good",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 4,
+    "classSkills": ["balance", "bluff", "escape_artist", "jump", "listen", "perform", "sense_motive", "spot", "tumble"],
+    "castingMode": "none",
+    "castingTradition": "none",
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        { "type": "min_bab", "minBab": 6 },
+        { "type": "min_skill_ranks", "skillId": "perform", "minRanks": 3 },
+        { "type": "min_skill_ranks", "skillId": "tumble", "minRanks": 5 },
+        { "type": "has_feat", "featId": "dodge" },
+        { "type": "has_feat", "featId": "mobility" },
+        { "type": "has_feat", "featId": "weapon_finesse" }
+      ]
+    },
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": [],
+      "shields": []
+    },
+    "featuresByLevel": {
+      "1": ["canny_defense"],
+      "2": ["improved_reaction_2"],
+      "3": ["enhanced_mobility"],
+      "4": ["grace"],
+      "5": ["precise_strike_1d6"],
+      "6": ["acrobatic_charge"],
+      "7": ["elaborate_parry"],
+      "8": ["improved_reaction_4"],
+      "9": ["deflect_arrows_duelist"],
+      "10": ["precise_strike_2d6"]
+    },
+    "featureDetails": {
+      "canny_defense": {
+        "id": "canny_defense",
+        "name": "Canny Defense",
+        "category": "ex",
+        "description": "When not wearing armor or using a shield, add 1 point of Intelligence bonus (if any) per duelist class level as a dodge bonus to Armor Class while wielding a melee weapon.",
+        "modifiers": [
+          {
+            "id": "duelist_canny_defense",
+            "target": "ac",
+            "value": 2,
+            "type": "dodge",
+            "condition": {
+              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+            }
+          }
+        ]
+      },
+      "improved_reaction_2": {
+        "id": "improved_reaction_2",
+        "name": "Improved Reaction",
+        "category": "ex",
+        "description": "+2 bonus on initiative checks (+4 at 8th level)."
+      },
+      "grace": {
+        "id": "grace",
+        "name": "Grace",
+        "category": "ex",
+        "description": "+2 competence bonus on all Reflex saving throws when wearing no armor and not using a shield.",
+        "modifiers": [
+          {
+            "id": "duelist_grace_ref",
+            "target": "ref",
+            "value": 2,
+            "type": "competence",
+            "condition": {
+              "selfTagsNone": ["armor:light", "armor:medium", "armor:heavy"]
+            }
+          }
+        ]
+      },
+      "precise_strike_1d6": {
+        "id": "precise_strike_1d6",
+        "name": "Precise Strike +1d6",
+        "category": "ex",
+        "description": "Gain the ability to strike precisely with a light or one-handed piercing weapon, adding +1d6 damage (+2d6 at 10th level)."
+      }
+    },
+    "acfSwaps": []
+  }
+}

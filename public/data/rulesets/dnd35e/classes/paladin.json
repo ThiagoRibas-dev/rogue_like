@@ -1,0 +1,149 @@
+{
+  "paladin": {
+    "id": "paladin",
+    "name": "Paladin",
+    "isPrestige": false,
+    "maxLevel": 20,
+    "hitDieSides": 10,
+    "babCurve": "full",
+    "fortCurve": "good",
+    "refCurve": "poor",
+    "willCurve": "poor",
+    "skillPointsPerLevel": 2,
+    "classSkills": ["concentration", "craft", "diplomacy", "handle_animal", "heal", "knowledge_religion", "ride", "sense_motive"],
+    "castingMode": "prepared",
+    "castingTradition": "divine",
+    "castingKeyAbility": "wis",
+    "allowedAlignments": ["LG"],
+    "proficiencies": {
+      "weapons": ["simple", "martial"],
+      "armor": ["light", "medium", "heavy"],
+      "shields": ["shields"]
+    },
+    "featuresByLevel": {
+      "1": ["aura_of_good", "detect_evil", "smite_evil_1"],
+      "2": ["divine_grace", "lay_on_hands"],
+      "3": ["aura_of_courage", "divine_health"],
+      "4": ["turn_undead_paladin"],
+      "5": ["smite_evil_2", "special_mount"],
+      "6": ["remove_disease_1"],
+      "9": ["remove_disease_2"],
+      "10": ["smite_evil_3"],
+      "12": ["remove_disease_3"],
+      "15": ["remove_disease_4", "smite_evil_4"],
+      "18": ["remove_disease_5"],
+      "20": ["smite_evil_5"]
+    },
+    "featureDetails": {
+      "aura_of_good": {
+        "id": "aura_of_good",
+        "name": "Aura of Good",
+        "category": "ex",
+        "description": "Power of a paladin's aura of good (see the detect good spell) is equal to paladin level."
+      },
+      "detect_evil": {
+        "id": "detect_evil",
+        "name": "Detect Evil",
+        "category": "sp",
+        "description": "At will, a paladin can use detect evil, as the spell."
+      },
+      "smite_evil_1": {
+        "id": "smite_evil_1",
+        "name": "Smite Evil",
+        "category": "su",
+        "description": "Add CHA bonus to attack roll and paladin level to damage roll against an evil foe (1/day at 1st, +1/day every 5 levels).",
+        "resourcePool": {
+          "poolId": "smite_evil",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "divine_grace": {
+        "id": "divine_grace",
+        "name": "Divine Grace",
+        "category": "su",
+        "description": "Gain a bonus equal to Charisma bonus (if any) on all saving throws.",
+        "modifiers": [
+          {
+            "id": "paladin_divine_grace_fort",
+            "target": "fort",
+            "value": 2,
+            "type": "untyped"
+          },
+          {
+            "id": "paladin_divine_grace_ref",
+            "target": "ref",
+            "value": 2,
+            "type": "untyped"
+          },
+          {
+            "id": "paladin_divine_grace_will",
+            "target": "will",
+            "value": 2,
+            "type": "untyped"
+          }
+        ]
+      },
+      "lay_on_hands": {
+        "id": "lay_on_hands",
+        "name": "Lay on Hands",
+        "category": "su",
+        "description": "Heal wounds equal to paladin level x CHA bonus per day.",
+        "resourcePool": {
+          "poolId": "lay_on_hands",
+          "maxBase": 2,
+          "perClassLevel": 2,
+          "abilityModStat": "cha",
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "aura_of_courage": {
+        "id": "aura_of_courage",
+        "name": "Aura of Courage",
+        "category": "su",
+        "description": "Immune to fear; allies within 10 ft gain +4 morale bonus on saving throws against fear effects."
+      },
+      "divine_health": {
+        "id": "divine_health",
+        "name": "Divine Health",
+        "category": "ex",
+        "description": "Immune to all diseases, including supernatural and magical diseases."
+      },
+      "special_mount": {
+        "id": "special_mount",
+        "name": "Special Mount",
+        "category": "sp",
+        "description": "Call an unusually intelligent, strong, and loyal mount to serve in crusade against evil."
+      }
+    },
+    "spellsPerDayTable": {
+      "4": { "1": 0 },
+      "5": { "1": 0 },
+      "6": { "1": 1 },
+      "7": { "1": 1 },
+      "8": { "1": 1, "2": 0 },
+      "9": { "1": 1, "2": 0 },
+      "10": { "1": 1, "2": 1 },
+      "11": { "1": 1, "2": 1, "3": 0 },
+      "12": { "1": 1, "2": 1, "3": 1 },
+      "13": { "1": 1, "2": 1, "3": 1 },
+      "14": { "1": 2, "2": 1, "3": 1, "4": 0 },
+      "15": { "1": 2, "2": 1, "3": 1, "4": 1 },
+      "16": { "1": 2, "2": 2, "3": 1, "4": 1 },
+      "17": { "1": 2, "2": 2, "3": 2, "4": 1 },
+      "18": { "1": 3, "2": 2, "3": 2, "4": 1 },
+      "19": { "1": 3, "2": 3, "3": 3, "4": 2 },
+      "20": { "1": 3, "2": 3, "3": 3, "4": 3 }
+    },
+    "acfSwaps": [
+      {
+        "acfId": "paladin_charging_smite_5",
+        "name": "Charging Smite",
+        "replacesFeature": "special_mount",
+        "grantedFeature": "charging_smite",
+        "level": 5,
+        "description": "Replaces Special Mount: when smiting evil on a charge attack, deal an extra 2 points of damage per paladin level (+3 total per level); if the attack misses, the smite attempt is not wasted."
+      }
+    ]
+  }
+}
