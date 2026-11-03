@@ -1,13 +1,14 @@
 /**
- * @file D&D 3.5e Interactive Level-Up Modal (Milestone 112.5).
- * Full-screen 2-pane layout with locked prior skill ranks, `[ - ] [ +delta ] [ + ]` steppers,
- * feat & prestige class prerequisite inspection, and scroll preservation.
+ * @file D&D 3.5e Interactive Level-Up Modal (Milestone 112.9).
+ * Reuses shared 2-pane Skills, Feats, and Per-Class Spell step renderers with multiclass skill caps,
+ * Prestige Class spellcasting target selectors, isolated per-class spell tabs, and mandatory step gating.
  */
 
 import { getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import {
+  type AbilityId,
   aggregateProgressionChassis,
   ALL_ABILITY_IDS,
   applyLevelUpToActor,
@@ -16,20 +17,29 @@ import {
   calculateLevelSkillPointBudget,
   calculateMulticlassXpMultiplier,
   calculateSkillAllocationCost,
+  type ClassSpellSelectionBudget,
   computeAbilityModifier,
+  computeClassSpellSelectionBudget,
+  computeEffectiveClassCastingLevel,
   computeXpThresholdForLevel,
   evaluatePrerequisiteAST,
+  getActorEverClassSkillIds,
   getClassLevelRow,
   getDnD35EntityData,
   getDnD35SystemContent,
   getEffectiveClassSkillIds,
-  getSkillMaxRanks,
-  type LevelUpChoice
+  getEligibleBaseCastingClassesForPrestige,
+  type LevelUpChoice,
+  validateLevelUpStep
 } from '../../rulesets/registry.ts';
 import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import { captureScrollPositions, restoreScrollPositions } from './dnd35e_char_builder.ui.ts';
-import { renderFeatInspector, renderSkillInspector } from './dnd35e_inspector.ui.ts';
+import {
+  renderSharedClassSpellStep,
+  renderSharedFeatsStep,
+  renderSharedSkillsStep
+} from './dnd35e_char_builder_steps.ui.ts';
 
 /** Hit Dice interval for ability score increases (`4`). */
 const ABILITY_INCREASE_HD_STEP = 4;
@@ -37,16 +47,16 @@ const ABILITY_INCREASE_HD_STEP = 4;
 /** Hit Dice interval for general feat slots (`3`). */
 const GENERAL_FEAT_HD_STEP = 3;
 
-let levelUpTab: 'class' | 'skills' | 'feats' = 'class';
-let inspectedSkillId = 'tumble';
-let inspectedFeatId = 'power_attack';
+let levelUpTab: 'class' | 'skills' | 'feats' | `spells:${string}` = 'class';
 
 let levelUpDraft: LevelUpChoice = {
   classId: 'fighter',
   hpMethod: 'average',
   addedSkillRanks: {},
   selectedFeats: [],
-  learnedSpells: []
+  learnedSpells: [],
+  advancedSpellcastingClassIds: [],
+  learnedSpellsByClass: {}
 };
 
 /**
@@ -105,51 +115,158 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     0,
     raceDef?.extraSkillPointsPerLevel ?? 0
   );
-  const classSkillIds = getEffectiveClassSkillIds(activeCls, dndData.domains ?? [], sys);
-  const skillSpent = calculateSkillAllocationCost(levelUpDraft.addedSkillRanks, classSkillIds);
+  const activeLevelClassSkillIds = getEffectiveClassSkillIds(activeCls, dndData.domains ?? [], sys);
+  const everClassSkillIds = getActorEverClassSkillIds(dndData, activeCls.id, dndData.domains ?? [], sys);
+  const literacyCost = levelUpDraft.spendSkillPointsForLiteracy === true ? 2 : 0;
+  const skillSpent =
+    calculateSkillAllocationCost(levelUpDraft.addedSkillRanks, activeLevelClassSkillIds) + literacyCost;
   const skillRemaining = Math.max(0, Math.round((skillBudget - skillSpent) * 100) / 100);
 
   const generalFeatEarned = nextCharLevel % GENERAL_FEAT_HD_STEP === 0 ? 1 : 0;
   const bonusFeatEarned = nextRow?.bonusFeatSlot === true ? 1 : 0;
   const totalFeatSlots = generalFeatEarned + bonusFeatEarned;
 
-  // Sub-step navigation bar
-  const tabBar = document.createElement('div');
-  tabBar.style.display = 'flex';
-  tabBar.style.gap = '6px';
-  const tabs: ReadonlyArray<{ readonly id: typeof levelUpTab; readonly label: string }> = [
+  // Determine advanced spellcasting classes at this level (either base class itself or prestige class targets)
+  const prestigeSlots = getEligibleBaseCastingClassesForPrestige(
+    dndData.tracks,
+    activeCls,
+    nextClassLevel,
+    sys.classes
+  );
+
+  // Auto-populate default prestige targets if not yet chosen
+  let effectivePrestigeTargets = [...(levelUpDraft.advancedSpellcastingClassIds ?? [])];
+  if (prestigeSlots.length > 0 && effectivePrestigeTargets.length === 0) {
+    effectivePrestigeTargets = prestigeSlots
+      .map((slot) => slot.eligibleClassIds[0])
+      .filter((id): id is string => id !== undefined);
+    if (effectivePrestigeTargets.length > 0) {
+      levelUpDraft = { ...levelUpDraft, advancedSpellcastingClassIds: effectivePrestigeTargets };
+    }
+  }
+
+  const advancedCastingClassIds: string[] = [];
+  if (activeCls.castingMode !== 'none' && !activeCls.isPrestige) {
+    advancedCastingClassIds.push(activeCls.id);
+  }
+  for (const targetId of effectivePrestigeTargets) {
+    if (targetId && !advancedCastingClassIds.includes(targetId)) {
+      advancedCastingClassIds.push(targetId);
+    }
+  }
+
+  const spellTabs: Array<{
+    readonly tabId: `spells:${string}`;
+    readonly classId: string;
+    readonly className: string;
+    readonly castingTradition: string;
+    readonly budget: ClassSpellSelectionBudget;
+  }> = [];
+
+  for (const targetClassId of advancedCastingClassIds) {
+    const targetCls = sys.classes[targetClassId];
+    if (!targetCls) continue;
+    const prevEffLvl = computeEffectiveClassCastingLevel(dndData.tracks, targetCls, sys.classes, dndData.levelHistory);
+    const nextEffLvl = prevEffLvl + 1;
+    const existingKnown =
+      dndData.spellbooksByClass?.[targetClassId]?.knownSpellIds ??
+      (targetClassId === dndData.tracks[0]?.trackId ? (dndData.knownSpells ?? []) : []);
+    const spBudget = computeClassSpellSelectionBudget(
+      targetCls,
+      prevEffLvl,
+      nextEffLvl,
+      intMod,
+      dndData.prohibitedSchools ?? [],
+      dndData.domains ?? [],
+      existingKnown,
+      sys
+    );
+    if (spBudget.requiresManualSelection) {
+      spellTabs.push({
+        tabId: `spells:${targetClassId}`,
+        classId: targetClassId,
+        className: targetCls.name,
+        castingTradition: targetCls.castingTradition,
+        budget: spBudget
+      });
+    }
+  }
+
+  const tabs: Array<{ readonly id: typeof levelUpTab; readonly label: string }> = [
     { id: 'class', label: `1. Class & HP (HD ${nextCharLevel})` },
     { id: 'skills', label: `2. Skills (${skillRemaining}/${skillBudget} pts)` },
     { id: 'feats', label: `3. Feats (${levelUpDraft.selectedFeats.length}/${totalFeatSlots})` }
   ];
-  for (const t of tabs) {
+  spellTabs.forEach((st, idx) => {
+    const pickedCount =
+      levelUpDraft.learnedSpellsByClass?.[st.classId]?.length ??
+      (st.classId === activeCls.id ? (levelUpDraft.learnedSpells ?? []).length : 0);
+    tabs.push({
+      id: st.tabId,
+      label: `${4 + idx}. ${st.className} Spells (${pickedCount})`
+    });
+  });
+
+  if (!tabs.some((t) => t.id === levelUpTab)) {
+    levelUpTab = 'class';
+  }
+  const activeTabIndex = tabs.findIndex((t) => t.id === levelUpTab);
+  const currentTabCheck = validateLevelUpStep(dndData, levelUpDraft, levelUpTab, sys);
+
+  const canNavigateToTab = (targetIdx: number): boolean => {
+    if (targetIdx <= activeTabIndex) return true;
+    for (let i = 0; i < targetIdx; i++) {
+      const tb = tabs[i];
+      if (tb && !validateLevelUpStep(dndData, levelUpDraft, tb.id, sys).valid) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  // Sub-step navigation bar
+  const tabBar = document.createElement('div');
+  tabBar.style.display = 'flex';
+  tabBar.style.flexWrap = 'wrap';
+  tabBar.style.gap = '6px';
+  tabs.forEach((t, idx) => {
     const tBtn = document.createElement('button');
     tBtn.type = 'button';
     tBtn.className = 'modal-btn';
     tBtn.style.padding = '6px 12px';
     tBtn.style.fontSize = '0.8rem';
-    tBtn.style.borderColor = levelUpTab === t.id ? '#2ecc71' : 'var(--border-color)';
+    const tabValid = validateLevelUpStep(dndData, levelUpDraft, t.id, sys).valid;
+    tBtn.style.borderColor = levelUpTab === t.id ? '#2ecc71' : tabValid ? 'var(--border-color)' : '#e67e22';
     tBtn.textContent = t.label;
+    tBtn.disabled = !canNavigateToTab(idx);
     tBtn.addEventListener('click', () => {
+      if (!canNavigateToTab(idx)) return;
       levelUpTab = t.id;
       renderDnD35eLevelUpModal(state);
     });
     tabBar.appendChild(tBtn);
-  }
+  });
   content.appendChild(tabBar);
 
-  const stage = document.createElement('div');
-  stage.className = 'dnd35-two-pane-stage';
-
-  const leftPane = document.createElement('div');
-  leftPane.className = 'dnd35-pane-left';
-  leftPane.dataset['scrollId'] = `lvlup-${levelUpTab}-left`;
-
-  const rightPane = document.createElement('div');
-  rightPane.className = 'dnd35-pane-right';
-  rightPane.dataset['scrollId'] = `lvlup-${levelUpTab}-right`;
+  const stageHost = document.createElement('div');
+  stageHost.style.flex = '1';
+  stageHost.style.minHeight = '0';
+  stageHost.style.display = 'flex';
+  stageHost.style.flexDirection = 'column';
+  stageHost.style.overflow = 'hidden';
 
   if (levelUpTab === 'class') {
+    const stage = document.createElement('div');
+    stage.className = 'dnd35-two-pane-stage';
+
+    const leftPane = document.createElement('div');
+    leftPane.className = 'dnd35-pane-left';
+    leftPane.dataset['scrollId'] = 'lvlup-class-left';
+
+    const rightPane = document.createElement('div');
+    rightPane.className = 'dnd35-pane-right';
+    rightPane.dataset['scrollId'] = 'lvlup-class-right';
+
     for (const cls of Object.values(sys.classes).filter((c) => !c.isNpcClass)) {
       const meetsPrereqs = cls.prerequisites ? evaluatePrerequisiteAST(cls.prerequisites, prereqCtx) : true;
       const alignOk = cls.allowedAlignments ? cls.allowedAlignments.includes(dndData.alignment ?? 'N') : true;
@@ -176,13 +293,21 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
       row.textContent = `${eligible ? '🟢' : '🔴'} ${tag} ${cls.name} (Lv ${nxtLvl}, d${cls.hitDieSides}, BAB +${rRow.bab})${xpNote}`;
       row.addEventListener('click', () => {
         if (!eligible) return;
-        levelUpDraft = { ...levelUpDraft, classId: cls.id, addedSkillRanks: {}, selectedFeats: [] };
+        levelUpDraft = {
+          ...levelUpDraft,
+          classId: cls.id,
+          addedSkillRanks: {},
+          selectedFeats: [],
+          learnedSpells: [],
+          advancedSpellcastingClassIds: [],
+          learnedSpellsByClass: {}
+        };
         renderDnD35eLevelUpModal(state);
       });
       leftPane.appendChild(row);
     }
 
-    // Right pane: HP method, 4th-HD ability increase, and class progression preview
+    // Right pane: HP method, 4th-HD ability increase, Prestige spellcasting target selectors
     const rTitle = document.createElement('h3');
     rTitle.style.margin = '0 0 6px 0';
     rTitle.style.color = '#2ecc71';
@@ -233,150 +358,164 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
       }
       rightPane.appendChild(abWrap);
     }
-  } else if (levelUpTab === 'skills') {
-    const allSkills = Object.values(sys.skills).sort((a, b) => a.name.localeCompare(b.name));
-    for (const skill of allSkills) {
-      const isClass = classSkillIds.includes(skill.id);
-      const baseRanks = dndData.skillRanks[skill.id] ?? 0;
-      const addedDelta = levelUpDraft.addedSkillRanks[skill.id] ?? 0;
-      const totalRanks = baseRanks + addedDelta;
-      const maxRanks = getSkillMaxRanks(nextCharLevel, isClass);
-      const rankStep = isClass ? 1 : 0.5;
-      const abMod = computeAbilityModifier(dndData.abilityScores[skill.keyAbility].base ?? 10);
 
-      const row = document.createElement('div');
-      row.className = `dnd35-list-item${addedDelta > 0 ? ' selected' : ''}${inspectedSkillId === skill.id ? ' inspected' : ''}`;
-      row.addEventListener('click', () => {
-        inspectedSkillId = skill.id;
-        const mergedRanks = { ...dndData.skillRanks };
-        for (const [k, v] of Object.entries(levelUpDraft.addedSkillRanks)) {
-          mergedRanks[k] = (mergedRanks[k] ?? 0) + v;
+    // Prestige Class +1 Existing Spellcasting Class target selectors
+    if (prestigeSlots.length > 0) {
+      prestigeSlots.forEach((slot, slotIdx) => {
+        const slotHeader = document.createElement('strong');
+        slotHeader.style.color = '#58a6ff';
+        slotHeader.textContent = `${slot.label}:`;
+        rightPane.appendChild(slotHeader);
+
+        const slotWrap = document.createElement('div');
+        slotWrap.style.display = 'flex';
+        slotWrap.style.flexWrap = 'wrap';
+        slotWrap.style.gap = '6px';
+        const curTarget = effectivePrestigeTargets[slotIdx];
+        for (const candId of slot.eligibleClassIds) {
+          const candCls = sys.classes[candId];
+          const cBtn = document.createElement('button');
+          cBtn.type = 'button';
+          cBtn.className = 'modal-btn';
+          cBtn.style.padding = '4px 8px';
+          cBtn.style.borderColor = curTarget === candId ? '#2ecc71' : 'var(--border-color)';
+          cBtn.textContent = candCls?.name ?? candId;
+          cBtn.addEventListener('click', () => {
+            const nextTargets = [...effectivePrestigeTargets];
+            nextTargets[slotIdx] = candId;
+            levelUpDraft = {
+              ...levelUpDraft,
+              advancedSpellcastingClassIds: nextTargets
+            };
+            renderDnD35eLevelUpModal(state);
+          });
+          slotWrap.appendChild(cBtn);
         }
-        renderSkillInspector(rightPane, skill, totalRanks, mergedRanks, abMod, 0, isClass, maxRanks, sys);
+        rightPane.appendChild(slotWrap);
       });
+    }
 
-      const lbl = document.createElement('span');
-      lbl.textContent = `${skill.name} (${skill.keyAbility.toUpperCase()}) [${isClass ? 'Class' : 'Cross'}] — Prior: ${baseRanks}`;
+    stage.appendChild(leftPane);
+    stage.appendChild(rightPane);
+    stageHost.appendChild(stage);
+  } else if (levelUpTab === 'skills') {
+    const abilityModifiers: Record<AbilityId, number> = {
+      str: computeAbilityModifier(
+        (dndData.abilityScores.str.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'str' ? 1 : 0)
+      ),
+      dex: computeAbilityModifier(
+        (dndData.abilityScores.dex.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'dex' ? 1 : 0)
+      ),
+      con: computeAbilityModifier(
+        (dndData.abilityScores.con.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'con' ? 1 : 0)
+      ),
+      int: intMod,
+      wis: computeAbilityModifier(
+        (dndData.abilityScores.wis.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'wis' ? 1 : 0)
+      ),
+      cha: computeAbilityModifier(
+        (dndData.abilityScores.cha.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'cha' ? 1 : 0)
+      )
+    };
 
-      const counter = document.createElement('div');
-      counter.className = 'dnd35-counter-group';
+    const miscSkillBonuses: Record<string, number> = {};
+    for (const mod of dndData.statModifiers ?? []) {
+      if (mod.targetStat.startsWith('skill:')) {
+        const skId = mod.targetStat.slice('skill:'.length);
+        miscSkillBonuses[skId] = (miscSkillBonuses[skId] ?? 0) + mod.value;
+      }
+    }
 
-      const btnMinus = document.createElement('button');
-      btnMinus.type = 'button';
-      btnMinus.className = 'modal-btn dnd35-counter-btn';
-      btnMinus.textContent = '−';
-      btnMinus.disabled = addedDelta <= 0;
-      btnMinus.addEventListener('click', (e) => {
-        e.stopPropagation();
-        inspectedSkillId = skill.id;
-        const nextDelta = Math.max(0, Math.round((addedDelta - rankStep) * 10) / 10);
-        const nextAdded = { ...levelUpDraft.addedSkillRanks };
-        if (nextDelta <= 0) delete nextAdded[skill.id];
-        else nextAdded[skill.id] = nextDelta;
+    renderSharedSkillsStep(stageHost, sys, {
+      scrollPrefix: 'lvlup',
+      totalHd: nextCharLevel,
+      budget: Math.max(0, skillBudget - literacyCost),
+      activeLevelClassSkillIds,
+      everClassSkillIds,
+      priorSkillRanks: dndData.skillRanks,
+      addedSkillRanks: levelUpDraft.addedSkillRanks,
+      abilityModifiers,
+      miscSkillBonuses,
+      onUpdateAddedRanks: (nextAdded) => {
         levelUpDraft = { ...levelUpDraft, addedSkillRanks: nextAdded };
         renderDnD35eLevelUpModal(state);
-      });
+      },
+      onRefresh: () => renderDnD35eLevelUpModal(state)
+    });
+  } else if (levelUpTab === 'feats') {
+    const parts: string[] = [];
+    if (generalFeatEarned > 0) parts.push(`${generalFeatEarned} General`);
+    if (bonusFeatEarned > 0) parts.push(`${bonusFeatEarned} Class Bonus`);
+    const summaryLabel =
+      totalFeatSlots > 0
+        ? `Feats Selected: ${levelUpDraft.selectedFeats.length} / ${totalFeatSlots} (${parts.join(' + ')})`
+        : 'No new feat slots earned at this Hit Die (General feats gained at HD 3, 6, 9, 12, 15, 18)';
 
-      const valSpan = document.createElement('span');
-      valSpan.className = 'dnd35-counter-val';
-      valSpan.textContent = `+${addedDelta} (${totalRanks}/${maxRanks})`;
-
-      const btnPlus = document.createElement('button');
-      btnPlus.type = 'button';
-      btnPlus.className = 'modal-btn dnd35-counter-btn';
-      btnPlus.textContent = '+';
-      btnPlus.disabled = totalRanks + rankStep > maxRanks || skillRemaining < 1;
-      btnPlus.addEventListener('click', (e) => {
-        e.stopPropagation();
-        inspectedSkillId = skill.id;
-        const nextDelta = Math.round((addedDelta + rankStep) * 10) / 10;
-        levelUpDraft = {
-          ...levelUpDraft,
-          addedSkillRanks: { ...levelUpDraft.addedSkillRanks, [skill.id]: nextDelta }
-        };
-        renderDnD35eLevelUpModal(state);
-      });
-
-      counter.appendChild(btnMinus);
-      counter.appendChild(valSpan);
-      counter.appendChild(btnPlus);
-      row.appendChild(lbl);
-      row.appendChild(counter);
-      leftPane.appendChild(row);
-    }
-
-    const activeSkill = sys.skills[inspectedSkillId] ?? allSkills[0];
-    if (activeSkill) {
-      const isClass = classSkillIds.includes(activeSkill.id);
-      const maxRanks = getSkillMaxRanks(nextCharLevel, isClass);
-      const mergedRanks = { ...dndData.skillRanks };
-      for (const [k, v] of Object.entries(levelUpDraft.addedSkillRanks)) {
-        mergedRanks[k] = (mergedRanks[k] ?? 0) + v;
-      }
-      const abMod = computeAbilityModifier(dndData.abilityScores[activeSkill.keyAbility].base ?? 10);
-      renderSkillInspector(
-        rightPane,
-        activeSkill,
-        mergedRanks[activeSkill.id] ?? 0,
-        mergedRanks,
-        abMod,
-        0,
-        isClass,
-        maxRanks,
-        sys
-      );
-    }
-  } else {
-    const allFeats = Object.values(sys.feats);
-    for (const feat of allFeats) {
-      const alreadyOwned = dndData.feats.includes(feat.id);
-      const meets = feat.prerequisites ? evaluatePrerequisiteAST(feat.prerequisites, prereqCtx) : true;
-      const isSelected = levelUpDraft.selectedFeats.includes(feat.id);
-      const canToggle = isSelected || (!alreadyOwned && meets && levelUpDraft.selectedFeats.length < totalFeatSlots);
-
-      const row = document.createElement('div');
-      row.className = `dnd35-list-item${isSelected ? ' selected' : ''}${inspectedFeatId === feat.id ? ' inspected' : ''}`;
-      row.addEventListener('click', () => {
-        inspectedFeatId = feat.id;
-        renderFeatInspector(rightPane, feat, prereqCtx);
-      });
-
-      const lbl = document.createElement('span');
-      lbl.textContent = `${alreadyOwned ? '✔ [Owned]' : isSelected ? '☑' : meets ? '🟢' : '🔴'} ${feat.name}`;
-
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'modal-btn';
-      btn.style.padding = '3px 8px';
-      btn.style.fontSize = '0.74rem';
-      btn.textContent = isSelected ? 'Remove' : 'Select';
-      btn.disabled = !canToggle;
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        inspectedFeatId = feat.id;
-        const nextFeats = isSelected
-          ? levelUpDraft.selectedFeats.filter((id) => id !== feat.id)
-          : [...levelUpDraft.selectedFeats, feat.id];
+    renderSharedFeatsStep(stageHost, sys, {
+      scrollPrefix: 'lvlup',
+      slotSummaryLabel: summaryLabel,
+      totalSlots: totalFeatSlots,
+      alreadyOwnedFeatIds: dndData.feats,
+      selectedFeatIds: levelUpDraft.selectedFeats,
+      prereqCtx,
+      onUpdateSelectedFeats: (nextFeats) => {
         levelUpDraft = { ...levelUpDraft, selectedFeats: nextFeats };
         renderDnD35eLevelUpModal(state);
+      },
+      onRefresh: () => renderDnD35eLevelUpModal(state)
+    });
+  } else if (levelUpTab.startsWith('spells:')) {
+    const targetClassId = levelUpTab.slice('spells:'.length);
+    const spellTabEntry = spellTabs.find((st) => st.classId === targetClassId);
+    if (spellTabEntry) {
+      const priorClassSpells: ReadonlyArray<string> =
+        dndData.spellbooksByClass?.[targetClassId]?.knownSpellIds ??
+        (targetClassId === dndData.tracks[0]?.trackId ? (dndData.knownSpells ?? []) : []);
+      const curClassPicks: ReadonlyArray<string> =
+        levelUpDraft.learnedSpellsByClass?.[targetClassId] ??
+        (targetClassId === activeCls.id ? (levelUpDraft.learnedSpells ?? []) : []);
+
+      renderSharedClassSpellStep(stageHost, sys, {
+        scrollPrefix: 'lvlup',
+        classId: spellTabEntry.classId,
+        className: spellTabEntry.className,
+        castingTradition: spellTabEntry.castingTradition,
+        budget: spellTabEntry.budget,
+        priorKnownSpells: priorClassSpells,
+        selectedSpells: curClassPicks,
+        prohibitedSchools: dndData.prohibitedSchools ?? [],
+        domains: dndData.domains ?? [],
+        onUpdateSelectedSpells: (nextSpells) => {
+          const nextByClass = {
+            ...(levelUpDraft.learnedSpellsByClass ?? {}),
+            [targetClassId]: nextSpells
+          };
+          levelUpDraft = {
+            ...levelUpDraft,
+            learnedSpells: targetClassId === activeCls.id ? nextSpells : (levelUpDraft.learnedSpells ?? []),
+            learnedSpellsByClass: nextByClass
+          };
+          renderDnD35eLevelUpModal(state);
+        },
+        onRefresh: () => renderDnD35eLevelUpModal(state)
       });
-
-      row.appendChild(lbl);
-      row.appendChild(btn);
-      leftPane.appendChild(row);
-    }
-
-    const activeFeat = sys.feats[inspectedFeatId] ?? allFeats[0];
-    if (activeFeat) {
-      renderFeatInspector(rightPane, activeFeat, prereqCtx);
     }
   }
 
-  stage.appendChild(leftPane);
-  stage.appendChild(rightPane);
-  content.appendChild(stage);
+  content.appendChild(stageHost);
 
-  // Footer commit / cancel
+  if (!currentTabCheck.valid && currentTabCheck.reason) {
+    const gateBanner = document.createElement('div');
+    gateBanner.style.padding = '5px 10px';
+    gateBanner.style.fontSize = '0.78rem';
+    gateBanner.style.color = '#f39c12';
+    gateBanner.style.border = '1px solid #e67e22';
+    gateBanner.style.background = 'rgba(230, 126, 34, 0.12)';
+    gateBanner.textContent = `⚠ Required before proceeding: ${currentTabCheck.reason}`;
+    content.appendChild(gateBanner);
+  }
+
+  // Footer commit / navigation
   const footer = document.createElement('div');
   footer.style.display = 'flex';
   footer.style.justifyContent = 'space-between';
@@ -392,19 +531,59 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     markAllDomainsDirty();
   });
 
+  const navRight = document.createElement('div');
+  navRight.style.display = 'flex';
+  navRight.style.gap = '8px';
+
+  if (activeTabIndex > 0) {
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'modal-btn';
+    prevBtn.textContent = '← Previous';
+    prevBtn.addEventListener('click', () => {
+      const prevTab = tabs[activeTabIndex - 1];
+      if (prevTab) {
+        levelUpTab = prevTab.id;
+        renderDnD35eLevelUpModal(state);
+      }
+    });
+    navRight.appendChild(prevBtn);
+  }
+
+  if (activeTabIndex < tabs.length - 1) {
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'modal-btn';
+    nextBtn.textContent = 'Next Step →';
+    nextBtn.disabled = !currentTabCheck.valid;
+    nextBtn.addEventListener('click', () => {
+      if (!currentTabCheck.valid) return;
+      const nextTab = tabs[activeTabIndex + 1];
+      if (nextTab) {
+        levelUpTab = nextTab.id;
+        renderDnD35eLevelUpModal(state);
+      }
+    });
+    navRight.appendChild(nextBtn);
+  }
+
+  const allTabsValid = tabs.every((tb) => validateLevelUpStep(dndData, levelUpDraft, tb.id, sys).valid);
   const confirmBtn = document.createElement('button');
   confirmBtn.type = 'button';
   confirmBtn.className = 'modal-btn';
-  confirmBtn.style.borderColor = '#2ecc71';
+  confirmBtn.style.borderColor = allTabsValid ? '#2ecc71' : 'var(--border-color)';
   confirmBtn.textContent = '✔ Confirm Level Up';
+  confirmBtn.disabled = !allTabsValid;
   confirmBtn.addEventListener('click', () => {
+    if (!allTabsValid) return;
     const result = applyLevelUpToActor(state, playerId, levelUpDraft);
     setGameState({ ...result.state, uiMode: UIMode.Game });
     markAllDomainsDirty();
   });
+  navRight.appendChild(confirmBtn);
 
   footer.appendChild(cancelBtn);
-  footer.appendChild(confirmBtn);
+  footer.appendChild(navRight);
   content.appendChild(footer);
 
   restoreScrollPositions(content, savedScrolls);

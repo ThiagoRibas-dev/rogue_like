@@ -18,6 +18,7 @@
     ],
     "castingMode": "prepared",
     "castingTradition": "divine",
+    "spellAcquisitionMode": "prayerbook_full_list",
     "castingKeyAbility": "wis",
     "allowedAlignments": [
       "LG"
@@ -116,6 +117,24 @@
         "name": "Special Mount",
         "category": "sp",
         "description": "Call an unusually intelligent, strong, and loyal mount to serve in crusade against evil."
+      },
+      "turn_undead_paladin": {
+        "id": "turn_undead_paladin",
+        "name": "Turn Undead",
+        "category": "su",
+        "description": "Channel positive energy to turn or destroy undead as a cleric of three levels lower (3 + CHA mod/day).",
+        "scalingPoolContribution": {
+          "poolId": "turn_undead_effective_level",
+          "multiplier": 1,
+          "offset": -3,
+          "minClassLevel": 4
+        },
+        "resourcePool": {
+          "poolId": "turn_undead",
+          "maxBase": 3,
+          "abilityModStat": "cha",
+          "refreshCycle": "rest_8h"
+        }
       }
     },
     "acfSwaps": [

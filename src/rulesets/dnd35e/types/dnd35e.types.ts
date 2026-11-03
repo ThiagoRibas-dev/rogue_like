@@ -239,6 +239,23 @@ export interface DnD35CharacterLevelRecord {
   readonly selectedFeats: ReadonlyArray<string>;
   readonly selectedAcfs: ReadonlyArray<string>;
   readonly learnedSpells: ReadonlyArray<string>;
+  readonly advancedSpellcastingClassIds?: ReadonlyArray<string> | undefined;
+  readonly learnedSpellsByClass?: Readonly<Record<string, ReadonlyArray<string>>> | undefined;
+}
+
+/** Per-class isolated spellbook / spellcasting state for multiclass casters. */
+export interface DnD35ClassSpellbookState {
+  readonly classId: string;
+  readonly castingMode: 'prepared' | 'spontaneous';
+  readonly castingTradition: 'arcane' | 'divine';
+  readonly spellAcquisitionMode: 'spellbook_scribed' | 'spontaneous_known' | 'prayerbook_full_list';
+  readonly governingAbility: AbilityId;
+  readonly effectiveCasterLevel: number;
+  readonly maxCastableSpellLevel: number;
+  readonly knownSpellIds: ReadonlyArray<string>;
+  readonly preparedSpellIds: ReadonlyArray<string>;
+  readonly spellsPerDay: Readonly<Record<string, number>>;
+  readonly domainSpellSlots?: Readonly<Record<string, number>> | undefined;
 }
 
 /** Aggregated progression chassis computed across all racial HD and class tracks. */
@@ -442,6 +459,10 @@ export interface DnD35EntityData {
   readonly combatStyle?: 'archery' | 'two_weapon' | undefined;
   readonly knownSpells?: ReadonlyArray<string> | undefined;
   readonly preparedSpells?: ReadonlyArray<string> | undefined;
+  readonly spellbooksByClass?: Readonly<Record<string, DnD35ClassSpellbookState>> | undefined;
+  readonly scalingPools?: Readonly<Record<string, number>> | undefined;
+  readonly activeClassFeatures?: ReadonlyArray<string> | undefined;
+  readonly spentLiteracySkillPoints?: boolean | undefined;
   readonly enforceMulticlassXpPenalty?: boolean | undefined;
   readonly levelHistory?: ReadonlyArray<DnD35CharacterLevelRecord> | undefined;
   readonly negativeLevels?: number | undefined;

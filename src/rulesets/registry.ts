@@ -62,8 +62,11 @@ export {
   calculatePointBuyCost,
   calculateSkillAllocationCost,
   type CharacterCreationDraft,
+  type ClassSpellSelectionBudget,
+  computeClassSpellSelectionBudget,
   computeFirstLevelFeatSlotBudget,
   ELITE_ABILITY_ARRAY,
+  getActorEverClassSkillIds,
   getEffectiveClassSkillIds,
   getSkillMaxRanks,
   getSpellLevelForClass,
@@ -73,12 +76,17 @@ export {
   POINT_BUY_MIN_SCORE,
   POINT_BUY_PRESETS,
   rebuildActorStateFromLevelHistory,
+  resolveClassSpellAcquisitionMode,
   rollAbilityScores4d6DropLowest,
   sanitizeDraftOnRaceOrClassChange,
   STARTING_EQUIPMENT_PACKAGES,
   SYNERGY_RANK_THRESHOLD,
+  validateCharacterCreationStep,
+  validateClassSpellSelection,
+  validateLevelUpStep,
   validateSpecialistSchoolSelection
 } from './dnd35e/character_builder.ts';
+export { buildActorSpellbooksByClass, collectActiveClassFeaturesAndPools } from './dnd35e/level_ledger.ts';
 export {
   resolveEquippedWeaponProfile,
   resolveAllEquippedWeaponProfiles,
@@ -103,7 +111,9 @@ export {
   calculateMulticlassXpMultiplier,
   computeEffectiveClassCastingLevel,
   computeXpThresholdForLevel,
-  getClassLevelRow
+  getClassLevelRow,
+  getEligibleBaseCastingClassesForPrestige,
+  type PrestigeSpellcastingAdvancementSlot
 } from './dnd35e/progression.ts';
 export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
 export {

@@ -7,7 +7,8 @@ import {
   type EquipmentComponent,
   type FighterComponent,
   type PropertyOverlayComponent,
-  type TacticalDoctrineComponent
+  type TacticalDoctrineComponent,
+  type TagsComponent
 } from '../../types/components.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from './wild_shape.ts';
@@ -49,7 +50,8 @@ import {
   getDnD35EntityData,
   getEquippedItemBonuses,
   projectDnD35ActorSemanticTags,
-  resolveDamageTypeFromTags
+  resolveDamageTypeFromTags,
+  resolveEntitySituationalTagContext
 } from './srd_registry.ts';
 import type { DnD35EntityData, DnD35ResolvedActorStats, StatModifier, StatQueryContext } from './types/dnd35e.types.ts';
 
@@ -95,7 +97,9 @@ export function evaluateDnD35eEntityDAG(
       getDnD35EntityData(state, entityId),
       getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
     );
-  const selfTags = prehydrated?.selfTags ?? projectDnD35ActorSemanticTags(dndData);
+  const existingTags = (getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
+  const situationalContext = resolveEntitySituationalTagContext(state, entityId, dndData);
+  const selfTags = prehydrated?.selfTags ?? projectDnD35ActorSemanticTags(dndData, existingTags, situationalContext);
   const condSummary = summarizeConditionEffects(dndData.conditions);
 
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
@@ -200,7 +204,7 @@ export function evaluateDnD35eEntityDAG(
     baseMaxHp: fighter.maxHp > 0 ? fighter.maxHp : undefined,
     baseSpeed: actor?.speed ?? DND35E_DEFAULT_SPEED,
     isIncorporeal,
-    hasUncannyDodge: !condSummary.losesDexToAC,
+    hasUncannyDodge: !condSummary.losesDexToAC || mergedSelfTags.includes('feature:uncanny_dodge'),
     statModifiers: extraModifiers,
     context: {
       ...contextOverride,

@@ -17,6 +17,7 @@
       "survival",
       "swim"
     ],
+    "grantsLiteracy": false,
     "castingMode": "none",
     "castingTradition": "none",
     "allowedAlignments": [
@@ -65,7 +66,15 @@
         "id": "illiteracy",
         "name": "Illiteracy",
         "category": "ex",
-        "description": "Cannot read or write unless 2 skill points are spent or a level in another class is gained."
+        "description": "Cannot read or write unless 2 skill points are spent or a level in another class is gained.",
+        "activationCondition": {
+          "selfTagsNone": [
+            "trait:literate"
+          ]
+        },
+        "grantedTags": [
+          "trait:illiterate"
+        ]
       },
       "rage_1": {
         "id": "rage_1",
@@ -82,7 +91,14 @@
         "id": "uncanny_dodge",
         "name": "Uncanny Dodge",
         "category": "ex",
-        "description": "Retains Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker."
+        "description": "Retains Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker.",
+        "upgradeOnDuplicateFeatureId": "improved_uncanny_dodge",
+        "scalingPoolContribution": {
+          "poolId": "uncanny_dodge_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 2
+        }
       },
       "improved_uncanny_dodge": {
         "id": "improved_uncanny_dodge",

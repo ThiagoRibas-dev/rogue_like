@@ -1160,7 +1160,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const baseHp = input.baseMaxHp !== undefined && input.baseMaxHp > 0 ? input.baseMaxHp : chassis.maxHp;
   const maxHp = baseHp + maxHpBonus;
 
-  const speedMods = modsByStat['speed'] ?? [];
+  const speedMods = [...(modsByStat['speed'] ?? []), ...(modsByStat['land_speed'] ?? [])];
   const speedBonus = resolveTypedModifiers(speedMods, stageContext);
   const speed = (input.baseSpeed ?? 30) + speedBonus;
 

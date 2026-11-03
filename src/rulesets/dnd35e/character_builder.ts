@@ -14,14 +14,18 @@ import {
   aggregateProgressionChassis,
   buildHitDieTrackFromClass,
   collectClassFeaturesUpToLevel,
-  computeNpcClassCrContribution
+  computeEffectiveClassCastingLevel,
+  computeNpcClassCrContribution,
+  getEligibleBaseCastingClassesForPrestige
 } from './progression.ts';
 import { applyRaceToActorChassis } from './races.ts';
 import { getDnD35EntityData, projectDnD35ActorSemanticTags, setDnD35EntityData } from './srd_registry.ts';
 import {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
+  buildActorSpellbooksByClass,
   buildClassAndDomainEffectModifiers,
+  collectActiveClassFeaturesAndPools,
   collectActiveGrantedAndVirtualFeats,
   rebuildActorStateFromLevelHistory
 } from './level_ledger.ts';
@@ -47,7 +51,9 @@ import {
 export {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
+  buildActorSpellbooksByClass,
   buildClassAndDomainEffectModifiers,
+  collectActiveClassFeaturesAndPools,
   collectActiveGrantedAndVirtualFeats,
   computeNpcClassCrContribution,
   rebuildActorStateFromLevelHistory
@@ -198,9 +204,12 @@ export interface LevelUpChoice {
   readonly hpMethod: 'average' | 'roll';
   readonly abilityScoreIncrease?: AbilityId | undefined;
   readonly addedSkillRanks: Readonly<Record<string, number>>;
+  readonly spendSkillPointsForLiteracy?: boolean | undefined;
   readonly selectedFeats: ReadonlyArray<string>;
   readonly selectedAcfs?: ReadonlyArray<string> | undefined;
   readonly learnedSpells?: ReadonlyArray<string> | undefined;
+  readonly advancedSpellcastingClassIds?: ReadonlyArray<string> | undefined;
+  readonly learnedSpellsByClass?: Readonly<Record<string, ReadonlyArray<string>>> | undefined;
 }
 
 /**
@@ -469,10 +478,11 @@ export function applyCharacterCreationToPlayer(
     addedSkillRanks: draft.skillRanks,
     selectedFeats: draft.selectedFeats,
     selectedAcfs: draft.selectedAcfs,
-    learnedSpells: draft.knownSpells
+    learnedSpells: draft.knownSpells,
+    learnedSpellsByClass: { [classDef.id]: draft.knownSpells }
   };
 
-  const updatedData: DnD35EntityData = {
+  const basePreRebuildData: DnD35EntityData = {
     ...withRace,
     raceId: raceDef.id,
     alignment: draft.alignment,
@@ -497,6 +507,13 @@ export function applyCharacterCreationToPlayer(
     hasPounce,
     levelHistory: [levelOneRecord],
     statModifiers: [...withRaceResult.statModifiers, ...classAndDomainMods]
+  };
+
+  const rebuiltData = rebuildActorStateFromLevelHistory(basePreRebuildData, [levelOneRecord], sysContent);
+  const updatedData: DnD35EntityData = {
+    ...rebuiltData,
+    feats: Array.from(new Set([...withRace.feats, ...rebuiltData.feats])),
+    preparedSpells: rebuiltData.knownSpells
   };
 
   const conMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedData.abilityScores.con));
@@ -613,6 +630,15 @@ export function applyLevelUpToActor(
       ? evaluateDiceExpression(`1d${classDef.hitDieSides}`).total
       : dndFloor(classDef.hitDieSides / 2) + 1;
 
+  const flatLearnedSpells = new Set<string>(choice.learnedSpells ?? []);
+  if (choice.learnedSpellsByClass) {
+    for (const spList of Object.values(choice.learnedSpellsByClass)) {
+      for (const spId of spList) {
+        flatLearnedSpells.add(spId);
+      }
+    }
+  }
+
   const newRecord: DnD35CharacterLevelRecord = {
     characterLevel: nextCharLevel,
     classId: classDef.id,
@@ -622,7 +648,11 @@ export function applyLevelUpToActor(
     addedSkillRanks: choice.addedSkillRanks,
     selectedFeats: choice.selectedFeats,
     selectedAcfs: choice.selectedAcfs ?? [],
-    learnedSpells: choice.learnedSpells ?? []
+    learnedSpells: Array.from(flatLearnedSpells),
+    ...(choice.advancedSpellcastingClassIds !== undefined
+      ? { advancedSpellcastingClassIds: choice.advancedSpellcastingClassIds }
+      : {}),
+    ...(choice.learnedSpellsByClass !== undefined ? { learnedSpellsByClass: choice.learnedSpellsByClass } : {})
   };
 
   let prevHistory = dndData.levelHistory ?? [];
@@ -662,7 +692,13 @@ export function applyLevelUpToActor(
   }
 
   const updatedData = rebuildActorStateFromLevelHistory(
-    { ...dndData, abilityScores: baseAbilities },
+    {
+      ...dndData,
+      abilityScores: baseAbilities,
+      ...(dndData.spentLiteracySkillPoints === true || choice.spendSkillPointsForLiteracy === true
+        ? { spentLiteracySkillPoints: true }
+        : {})
+    },
     updatedHistory,
     sysContent
   );
@@ -811,6 +847,576 @@ export function getEffectiveClassSkillIds(
 }
 
 /**
+ * Computes the union of all class skill IDs across EVERY class the actor has ever taken
+ * (plus the currently advancing class and Cleric domains).
+ * Per D&D 3.5e Multiclass Skill Rules (PHB p. 62):
+ * - If a skill is a class skill for ANY of a multiclass character's classes, max rank is `TotalHD + 3`.
+ * - Point purchase cost (`1.0` vs `0.5` rank/point) still uses `getEffectiveClassSkillIds` for the currently advancing class.
+ *
+ * @param dndData Optional existing `DnD35EntityData` of the actor.
+ * @param advancingClassId Class ID being advanced at the current level.
+ * @param domainIds Active Cleric domain IDs.
+ * @param sysContent Loaded system content.
+ * @returns Deduplicated array of all ever-class skill IDs.
+ */
+export function getActorEverClassSkillIds(
+  dndData: DnD35EntityData | undefined,
+  advancingClassId: string,
+  domainIds: ReadonlyArray<string>,
+  sysContent: DnD35SystemContent
+): ReadonlyArray<string> {
+  const skills = new Set<string>();
+  const addFromClass = (cId: string): void => {
+    const cDef = sysContent.classes[cId];
+    if (!cDef) return;
+    for (const sId of cDef.classSkills) {
+      skills.add(sId);
+    }
+  };
+
+  if (dndData) {
+    for (const track of dndData.tracks) {
+      if (track.levels > 0) {
+        addFromClass(track.trackId);
+      }
+    }
+    for (const rec of dndData.levelHistory ?? []) {
+      addFromClass(rec.classId);
+    }
+  }
+  addFromClass(advancingClassId);
+
+  for (const domId of domainIds) {
+    const dom = sysContent.domains[domId];
+    if (dom) {
+      for (const s of dom.classSkillsAdded) {
+        skills.add(s);
+      }
+    }
+  }
+
+  return Array.from(skills);
+}
+
+/**
+ * Resolves the canonical spell acquisition mode for a class (`'none' | 'spellbook_scribed' | 'spontaneous_known' | 'prayerbook_full_list'`).
+ *
+ * @param classDef Class definition.
+ * @returns Resolved spell acquisition mode.
+ */
+export function resolveClassSpellAcquisitionMode(
+  classDef: DnD35ClassDefinition | undefined
+): 'none' | 'spellbook_scribed' | 'spontaneous_known' | 'prayerbook_full_list' {
+  if (!classDef || classDef.castingMode === 'none' || classDef.castingTradition === 'none') {
+    return 'none';
+  }
+  if (classDef.spellAcquisitionMode) {
+    return classDef.spellAcquisitionMode;
+  }
+  if (classDef.castingTradition === 'divine' && classDef.castingMode === 'prepared') {
+    return 'prayerbook_full_list';
+  }
+  if (classDef.castingMode === 'spontaneous') {
+    return 'spontaneous_known';
+  }
+  return 'spellbook_scribed';
+}
+
+/** Per-class spell selection budget for a Character Creation or Level-Up step. */
+export interface ClassSpellSelectionBudget {
+  readonly classId: string;
+  readonly className: string;
+  readonly spellAcquisitionMode: 'none' | 'spellbook_scribed' | 'spontaneous_known' | 'prayerbook_full_list';
+  readonly requiresManualSelection: boolean;
+  readonly prevEffectiveCasterLevel: number;
+  readonly nextEffectiveCasterLevel: number;
+  readonly maxCastableLevel: number;
+  readonly autoGrantedCantripIds: ReadonlyArray<string>;
+  /** Free-pick spell count across any castable spell level 1..maxCastableLevel (e.g. Wizard +2 spells at Lv 2+). */
+  readonly freePickCount: number;
+  /** Exact new spells to pick per spell level (e.g. Sorcerer/Bard/Assassin spellsKnown delta, or Wizard 3+INT Lv1 spells). */
+  readonly requiredBySpellLevel: Readonly<Record<number, number>>;
+}
+
+/**
+ * Computes the exact spell selection budget for a class advancing from `prevEffectiveCasterLevel`
+ * to `nextEffectiveCasterLevel`.
+ * - Divine Prayerbook casters (`cleric`, `druid`, `paladin`, `ranger`, `blackguard`, `adept`) have
+ *   `requiresManualSelection: false` because they automatically know their full class + domain list.
+ * - Wizards (`spellbook_scribed`) auto-learn all 0-level cantrips (excluding prohibited schools) plus
+ *   `3 + max(0, intMod)` 1st-level spells at effective caster level 1, and `+2` spells of any castable
+ *   level `1..maxCastableLevel` at each subsequent effective caster level.
+ * - Spontaneous casters (`sorcerer`, `bard`, `assassin`) select the exact delta in their `spellsKnown` table.
+ */
+export function computeClassSpellSelectionBudget(
+  classDef: DnD35ClassDefinition | undefined,
+  prevEffectiveCasterLevel: number,
+  nextEffectiveCasterLevel: number,
+  intModifier: number,
+  prohibitedSchools: ReadonlyArray<DnD35SpellSchool>,
+  domainIds: ReadonlyArray<string>,
+  alreadyKnownSpellIds: ReadonlyArray<string>,
+  sysContent: DnD35SystemContent
+): ClassSpellSelectionBudget {
+  const mode = resolveClassSpellAcquisitionMode(classDef);
+  if (
+    !classDef ||
+    mode === 'none' ||
+    nextEffectiveCasterLevel <= prevEffectiveCasterLevel ||
+    nextEffectiveCasterLevel <= 0
+  ) {
+    return {
+      classId: classDef?.id ?? '',
+      className: classDef?.name ?? '',
+      spellAcquisitionMode: mode,
+      requiresManualSelection: false,
+      prevEffectiveCasterLevel,
+      nextEffectiveCasterLevel,
+      maxCastableLevel: -1,
+      autoGrantedCantripIds: [],
+      freePickCount: 0,
+      requiredBySpellLevel: {}
+    };
+  }
+
+  const clampedNow = Math.min(classDef.maxLevel, nextEffectiveCasterLevel);
+  const rowNow = classDef.progression.find((r) => r.level === clampedNow);
+  let maxCastableLevel = -1;
+  if (rowNow?.spellsPerDay) {
+    for (const [lvlKey, slots] of Object.entries(rowNow.spellsPerDay)) {
+      const lvl = Number(lvlKey);
+      if (!Number.isNaN(lvl) && slots >= 0 && lvl > maxCastableLevel) {
+        maxCastableLevel = lvl;
+      }
+    }
+  }
+
+  if (maxCastableLevel < 0 || mode === 'prayerbook_full_list') {
+    return {
+      classId: classDef.id,
+      className: classDef.name,
+      spellAcquisitionMode: mode,
+      requiresManualSelection: false,
+      prevEffectiveCasterLevel,
+      nextEffectiveCasterLevel,
+      maxCastableLevel,
+      autoGrantedCantripIds: [],
+      freePickCount: 0,
+      requiredBySpellLevel: {}
+    };
+  }
+
+  const getUnlearnedSelectableAtLevel = (lvl: number): ReadonlyArray<DnD35SpellDefinition> =>
+    Object.values(sysContent.spells).filter(
+      (sp) =>
+        !alreadyKnownSpellIds.includes(sp.id) &&
+        isSpellSelectableForDraft(sp, classDef.id, maxCastableLevel, prohibitedSchools, domainIds).selectable &&
+        getSpellLevelForClass(sp, classDef.id, domainIds) === lvl
+    );
+
+  if (mode === 'spellbook_scribed') {
+    if (prevEffectiveCasterLevel === 0) {
+      const autoGrantedCantripIds = getUnlearnedSelectableAtLevel(0).map((s) => s.id);
+      const availLvl1 = getUnlearnedSelectableAtLevel(1).length;
+      const targetLvl1 = Math.min(availLvl1, Math.max(1, 3 + Math.max(0, intModifier)));
+      const requiredBySpellLevel: Record<number, number> = targetLvl1 > 0 ? { 1: targetLvl1 } : {};
+      return {
+        classId: classDef.id,
+        className: classDef.name,
+        spellAcquisitionMode: mode,
+        requiresManualSelection: targetLvl1 > 0,
+        prevEffectiveCasterLevel,
+        nextEffectiveCasterLevel,
+        maxCastableLevel,
+        autoGrantedCantripIds,
+        freePickCount: 0,
+        requiredBySpellLevel
+      };
+    }
+
+    let totalUnlearned = 0;
+    for (let l = 1; l <= maxCastableLevel; l++) {
+      totalUnlearned += getUnlearnedSelectableAtLevel(l).length;
+    }
+    const levelDelta = Math.max(1, nextEffectiveCasterLevel - prevEffectiveCasterLevel);
+    const freePickCount = Math.min(totalUnlearned, 2 * levelDelta);
+    return {
+      classId: classDef.id,
+      className: classDef.name,
+      spellAcquisitionMode: mode,
+      requiresManualSelection: freePickCount > 0,
+      prevEffectiveCasterLevel,
+      nextEffectiveCasterLevel,
+      maxCastableLevel,
+      autoGrantedCantripIds: [],
+      freePickCount,
+      requiredBySpellLevel: {}
+    };
+  }
+
+  // spontaneous_known
+  const clampedPrev = prevEffectiveCasterLevel > 0 ? Math.min(classDef.maxLevel, prevEffectiveCasterLevel) : 0;
+  const rowPrev = clampedPrev > 0 ? classDef.progression.find((r) => r.level === clampedPrev) : undefined;
+  const requiredBySpellLevel: Record<number, number> = {};
+  let totalRequired = 0;
+
+  for (let lvl = 0; lvl <= maxCastableLevel; lvl++) {
+    const nowKnown = rowNow?.spellsKnown?.[String(lvl)] ?? 0;
+    const prevKnown = rowPrev?.spellsKnown?.[String(lvl)] ?? 0;
+    const delta = Math.max(0, nowKnown - prevKnown);
+    if (delta > 0) {
+      const avail = getUnlearnedSelectableAtLevel(lvl).length;
+      const clamped = Math.min(delta, avail);
+      if (clamped > 0) {
+        requiredBySpellLevel[lvl] = clamped;
+        totalRequired += clamped;
+      }
+    }
+  }
+
+  return {
+    classId: classDef.id,
+    className: classDef.name,
+    spellAcquisitionMode: mode,
+    requiresManualSelection: totalRequired > 0,
+    prevEffectiveCasterLevel,
+    nextEffectiveCasterLevel,
+    maxCastableLevel,
+    autoGrantedCantripIds: [],
+    freePickCount: 0,
+    requiredBySpellLevel
+  };
+}
+
+/**
+ * Validates that a set of selected spell IDs for a class satisfies its `ClassSpellSelectionBudget`.
+ */
+export function validateClassSpellSelection(
+  selectedSpellIds: ReadonlyArray<string>,
+  budget: ClassSpellSelectionBudget,
+  prohibitedSchools: ReadonlyArray<DnD35SpellSchool>,
+  domainIds: ReadonlyArray<string>,
+  sysContent: DnD35SystemContent
+): { readonly valid: boolean; readonly reason?: string } {
+  if (!budget.requiresManualSelection) {
+    return { valid: true };
+  }
+
+  // Filter out auto-granted cantrips if included in selectedSpellIds
+  const manualPicks = selectedSpellIds.filter((id) => !budget.autoGrantedCantripIds.includes(id));
+
+  for (const spId of manualPicks) {
+    const sp = sysContent.spells[spId];
+    if (!sp) {
+      return { valid: false, reason: `Unknown spell "${spId}".` };
+    }
+    const sel = isSpellSelectableForDraft(sp, budget.classId, budget.maxCastableLevel, prohibitedSchools, domainIds);
+    if (!sel.selectable) {
+      return { valid: false, reason: `${sp.name}: ${sel.reason ?? 'Not selectable'}` };
+    }
+  }
+
+  if (budget.freePickCount > 0) {
+    const validLvlPicks = manualPicks.filter((spId) => {
+      const sp = sysContent.spells[spId];
+      const lvl = sp ? getSpellLevelForClass(sp, budget.classId, domainIds) : null;
+      return lvl !== null && lvl >= 1 && lvl <= budget.maxCastableLevel;
+    });
+    if (validLvlPicks.length !== budget.freePickCount) {
+      return {
+        valid: false,
+        reason: `Select ${budget.freePickCount} new spell(s) for ${budget.className} (${validLvlPicks.length}/${budget.freePickCount} selected).`
+      };
+    }
+    return { valid: true };
+  }
+
+  const countsByLevel: Record<number, number> = {};
+  for (const spId of manualPicks) {
+    const sp = sysContent.spells[spId];
+    if (!sp) continue;
+    const lvl = getSpellLevelForClass(sp, budget.classId, domainIds);
+    if (lvl !== null) {
+      countsByLevel[lvl] = (countsByLevel[lvl] ?? 0) + 1;
+    }
+  }
+
+  for (const [lvlKey, reqCount] of Object.entries(budget.requiredBySpellLevel)) {
+    const lvl = Number(lvlKey);
+    const actual = countsByLevel[lvl] ?? 0;
+    if (actual !== reqCount) {
+      return {
+        valid: false,
+        reason: `Select ${reqCount} level-${lvl} spell(s) for ${budget.className} (${actual}/${reqCount} selected).`
+      };
+    }
+  }
+
+  for (const [lvlKey, actual] of Object.entries(countsByLevel)) {
+    const lvl = Number(lvlKey);
+    const reqCount = budget.requiredBySpellLevel[lvl] ?? 0;
+    if (actual > reqCount) {
+      return {
+        valid: false,
+        reason: `Too many level-${lvl} spells selected for ${budget.className} (${actual}/${reqCount}).`
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates a specific step of the Character Creation draft (`race`, `class`, `abilities`, `skills`, `feats`, `spells`, `equipment`).
+ */
+export function validateCharacterCreationStep(
+  draft: CharacterCreationDraft,
+  stepId: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment',
+  sysContent: DnD35SystemContent
+): { readonly valid: boolean; readonly reason?: string } {
+  const raceDef = sysContent.races[draft.raceId];
+  const classDef = sysContent.classes[draft.classId];
+
+  if (stepId === 'race') {
+    if (!raceDef) return { valid: false, reason: 'Please select a valid race.' };
+    return { valid: true };
+  }
+
+  if (stepId === 'class') {
+    if (!classDef) return { valid: false, reason: 'Please select a valid class.' };
+    if (classDef.allowedAlignments && classDef.allowedAlignments.length > 0) {
+      if (!classDef.allowedAlignments.includes(draft.alignment)) {
+        return {
+          valid: false,
+          reason: `${classDef.name} requires alignment in: ${classDef.allowedAlignments.join(', ')}.`
+        };
+      }
+    }
+    if (classDef.id === 'cleric' && draft.domains.length !== 2) {
+      return { valid: false, reason: 'Clerics must select exactly 2 deity domains.' };
+    }
+    if (classDef.id === 'wizard') {
+      const schoolCheck = validateSpecialistSchoolSelection(draft.arcaneSchool ?? 'universal', draft.prohibitedSchools);
+      if (!schoolCheck.valid) return schoolCheck;
+    }
+    if (classDef.id === 'ranger' && !draft.favoredEnemyType) {
+      return { valid: false, reason: 'Rangers must select a 1st-level Favored Enemy.' };
+    }
+    return { valid: true };
+  }
+
+  if (stepId === 'abilities') {
+    if (draft.abilityMethod === 'point_buy') {
+      const spent = calculatePointBuyCost(draft.baseAbilityScores);
+      if (spent !== draft.pointBuyBudget) {
+        return {
+          valid: false,
+          reason: `Spend all Point-Buy points before continuing (${spent}/${draft.pointBuyBudget} spent).`
+        };
+      }
+    }
+    return { valid: true };
+  }
+
+  if (stepId === 'skills') {
+    if (!raceDef || !classDef) return { valid: false, reason: 'Select race and class first.' };
+    const intMod = computeAbilityModifier(draft.baseAbilityScores.int + (raceDef.abilityAdjustments.int ?? 0));
+    const budget = calculateLevelSkillPointBudget(
+      classDef.skillPointsPerLevel,
+      intMod,
+      true,
+      raceDef.extraSkillPointsFirstLevel,
+      raceDef.extraSkillPointsPerLevel
+    );
+    const classSkills = getEffectiveClassSkillIds(classDef, draft.domains, sysContent);
+    const spent = calculateSkillAllocationCost(draft.skillRanks, classSkills);
+    if (spent > budget) {
+      return { valid: false, reason: `Skill points overspent (${spent}/${budget}).` };
+    }
+    if (spent < budget) {
+      return { valid: false, reason: `Allocate all remaining skill points (${spent}/${budget} spent).` };
+    }
+    return { valid: true };
+  }
+
+  if (stepId === 'feats') {
+    const featBudget = computeFirstLevelFeatSlotBudget(raceDef, classDef);
+    if (draft.selectedFeats.length !== featBudget.totalSlots) {
+      return {
+        valid: false,
+        reason: `Select ${featBudget.totalSlots} feat(s) before continuing (${draft.selectedFeats.length}/${featBudget.totalSlots} selected).`
+      };
+    }
+    return { valid: true };
+  }
+
+  if (stepId === 'spells') {
+    if (!classDef || !raceDef) return { valid: true };
+    const intMod = computeAbilityModifier(draft.baseAbilityScores.int + (raceDef.abilityAdjustments.int ?? 0));
+    const spellBudget = computeClassSpellSelectionBudget(
+      classDef,
+      0,
+      1,
+      intMod,
+      draft.prohibitedSchools,
+      draft.domains,
+      [],
+      sysContent
+    );
+    return validateClassSpellSelection(
+      draft.knownSpells,
+      spellBudget,
+      draft.prohibitedSchools,
+      draft.domains,
+      sysContent
+    );
+  }
+
+  if (stepId === 'equipment') {
+    const pkg = STARTING_EQUIPMENT_PACKAGES.find((p) => p.id === draft.equipmentPackageId);
+    if (!pkg) return { valid: false, reason: 'Please select a starting equipment package.' };
+    return { valid: true };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validates a specific step of the Level-Up modal (`class`, `skills`, `feats`, or `spells:<classId>`).
+ */
+export function validateLevelUpStep(
+  dndData: DnD35EntityData,
+  choice: LevelUpChoice,
+  stepKey: string,
+  sysContent: DnD35SystemContent
+): { readonly valid: boolean; readonly reason?: string } {
+  const classDef = sysContent.classes[choice.classId];
+  if (!classDef) {
+    return { valid: false, reason: 'Please select a valid class to advance.' };
+  }
+
+  const conMod = computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.con));
+  const prevChassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0);
+  const newTotalHd = prevChassis.totalHD + 1;
+  const existingTrack = dndData.tracks.find((t) => t.trackId === classDef.id);
+  const nextClassLevel = (existingTrack ? existingTrack.levels : 0) + 1;
+
+  if (stepKey === 'class') {
+    if (nextClassLevel > classDef.maxLevel) {
+      return { valid: false, reason: `Already at maximum level (${classDef.maxLevel}) for ${classDef.name}.` };
+    }
+    if (classDef.prerequisites) {
+      const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes);
+      if (!evaluatePrerequisiteAST(classDef.prerequisites, prereqCtx)) {
+        return { valid: false, reason: `Prerequisites not met for ${classDef.name}.` };
+      }
+    }
+    if (newTotalHd % 4 === 0 && !choice.abilityScoreIncrease) {
+      return { valid: false, reason: `Select a +1 Ability Score Increase for reaching HD ${newTotalHd}.` };
+    }
+    const prcSlots = getEligibleBaseCastingClassesForPrestige(
+      dndData.tracks,
+      classDef,
+      nextClassLevel,
+      sysContent.classes
+    );
+    const nonEmptySlots = prcSlots.filter((s) => s.eligibleClassIds.length > 0);
+    if (nonEmptySlots.length > 0) {
+      const chosen = choice.advancedSpellcastingClassIds ?? [];
+      if (chosen.length < nonEmptySlots.length || chosen.some((c) => !c)) {
+        return {
+          valid: false,
+          reason: `Select which base spellcasting class(es) ${classDef.name} advances.`
+        };
+      }
+    }
+    return { valid: true };
+  }
+
+  if (stepKey === 'skills') {
+    const raceDef = dndData.raceId ? sysContent.races[dndData.raceId] : undefined;
+    let effInt = computeEffectiveAbilityScore(dndData.abilityScores.int);
+    if (choice.abilityScoreIncrease === 'int' && effInt !== null) {
+      effInt += 1;
+    }
+    const intMod = computeAbilityModifier(effInt);
+    const budget = calculateLevelSkillPointBudget(
+      classDef.skillPointsPerLevel,
+      intMod,
+      false,
+      0,
+      raceDef?.extraSkillPointsPerLevel ?? 0
+    );
+    const activeLevelClassSkills = getEffectiveClassSkillIds(classDef, dndData.domains ?? [], sysContent);
+    const literacyCost = choice.spendSkillPointsForLiteracy === true ? 2 : 0;
+    const spent = calculateSkillAllocationCost(choice.addedSkillRanks, activeLevelClassSkills) + literacyCost;
+    if (spent > budget) {
+      return { valid: false, reason: `Skill points overspent (${spent}/${budget}).` };
+    }
+    if (spent < budget) {
+      return { valid: false, reason: `Allocate all remaining skill points (${spent}/${budget} spent).` };
+    }
+    return { valid: true };
+  }
+
+  if (stepKey === 'feats') {
+    const gainsGeneralFeat = newTotalHd % 3 === 0;
+    const row = classDef.progression.find((r) => r.level === nextClassLevel);
+    const gainsBonusFeat = row?.bonusFeatSlot === true;
+    const totalFeatSlots = (gainsGeneralFeat ? 1 : 0) + (gainsBonusFeat ? 1 : 0);
+    if (choice.selectedFeats.length !== totalFeatSlots) {
+      return {
+        valid: false,
+        reason: `Select ${totalFeatSlots} feat(s) before continuing (${choice.selectedFeats.length}/${totalFeatSlots} selected).`
+      };
+    }
+    return { valid: true };
+  }
+
+  if (stepKey.startsWith('spells:')) {
+    const targetClassId = stepKey.slice('spells:'.length);
+    const targetClassDef = sysContent.classes[targetClassId];
+    if (!targetClassDef) return { valid: true };
+
+    const prevCasterLvl = computeEffectiveClassCastingLevel(
+      dndData.tracks,
+      targetClassDef,
+      sysContent.classes,
+      dndData.levelHistory
+    );
+    const nextCasterLvl = prevCasterLvl + 1;
+    let effInt = computeEffectiveAbilityScore(dndData.abilityScores.int);
+    if (choice.abilityScoreIncrease === 'int' && effInt !== null) {
+      effInt += 1;
+    }
+    const intMod = computeAbilityModifier(effInt);
+    const existingKnown = dndData.spellbooksByClass?.[targetClassId]?.knownSpellIds ?? dndData.knownSpells ?? [];
+    const budget = computeClassSpellSelectionBudget(
+      targetClassDef,
+      prevCasterLvl,
+      nextCasterLvl,
+      intMod,
+      dndData.prohibitedSchools ?? [],
+      dndData.domains ?? [],
+      existingKnown,
+      sysContent
+    );
+    const selectedForClass =
+      choice.learnedSpellsByClass?.[targetClassId] ??
+      (choice.classId === targetClassId ? (choice.learnedSpells ?? []) : []);
+    return validateClassSpellSelection(
+      selectedForClass,
+      budget,
+      dndData.prohibitedSchools ?? [],
+      dndData.domains ?? [],
+      sysContent
+    );
+  }
+
+  return { valid: true };
+}
+
+/**
  * Sanitizes a `CharacterCreationDraft` whenever `raceId`, `classId`, `domains`, or `prohibitedSchools` changes,
  * pruning invalid alignments, clamping or refunding skill ranks that exceed the new point budget,
  * trimming excess feat selections, and removing spells not on the new class's spell list.
@@ -869,23 +1475,24 @@ export function sanitizeDraftOnRaceOrClassChange(
   const featBudget = computeFirstLevelFeatSlotBudget(raceDef, classDef);
   const selectedFeats = draft.selectedFeats.slice(0, featBudget.totalSlots);
 
-  const row1 = classDef.progression.find((r) => r.level === 1);
-  let maxCastableLevel = -1;
-  if (classDef.castingMode !== 'none' && row1?.spellsPerDay) {
-    for (const [lvlKey, slots] of Object.entries(row1.spellsPerDay)) {
-      const lvl = Number(lvlKey);
-      if (!Number.isNaN(lvl) && slots >= 0 && lvl > maxCastableLevel) {
-        maxCastableLevel = lvl;
-      }
-    }
-  }
+  const spellBudget = computeClassSpellSelectionBudget(
+    classDef,
+    0,
+    1,
+    intMod,
+    prohibitedSchools,
+    domains,
+    [],
+    sysContent
+  );
 
   const knownSpells =
-    maxCastableLevel >= 0
+    spellBudget.maxCastableLevel >= 0
       ? draft.knownSpells.filter((spellId) => {
           const spell = sysContent.spells[spellId];
           if (!spell) return false;
-          return isSpellSelectableForDraft(spell, classDef.id, maxCastableLevel, prohibitedSchools, domains).selectable;
+          return isSpellSelectableForDraft(spell, classDef.id, spellBudget.maxCastableLevel, prohibitedSchools, domains)
+            .selectable;
         })
       : [];
 

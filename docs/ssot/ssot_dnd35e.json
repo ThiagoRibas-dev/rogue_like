@@ -20,7 +20,7 @@
   "src/rendering/ui/dnd35e_char_builder_steps.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Full-screen 2-pane layout with strict rank-vs-bonus separation, class spell-list filtering, and live right-pane inspector.",
+    "responsibility": "Single Source of Truth for reusable, parameterized 2-pane step views (Skills, Feats, Class Spells, Equipment) shared across Character Creation and Level-Up modals.",
     "canonicalEntryPoints": [
       "renderCharBuilderSkillsStep",
       "renderCharBuilderFeatsStep",
@@ -28,17 +28,18 @@
       "renderCharBuilderEquipmentStep"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_steps.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "2-pane master/detail step rendering for Skills, Feats, per-class Spells, and Starting Equipment with filter chips and live inspector binding.",
+      "excludes": "Modal shell framing, step-tab bar navigation, and state commit orchestration (owned by dnd35e_char_builder.ui.ts and dnd35e_level_up.ui.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_steps.ui.ts."
+      "Never duplicate inline Skills, Feats, or Spell step DOM rendering inside dnd35e_level_up.ui.ts or dnd35e_char_builder.ui.ts.",
+      "Never mix multiple classes' spellbooks into a single spell selection step."
     ]
   },
   "src/rendering/ui/dnd35e_inspector.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Reusable across Character Creation and Level-Up modals. Built with pure DOM manipulation.",
+    "responsibility": "Single Source of Truth for right-pane detail inspectors (Race, Skill, Feat, Spell) reusable across Character Creation, Level-Up, and Character Sheet modals.",
     "canonicalEntryPoints": [
       "renderRaceInspector",
       "renderSkillInspector",
@@ -46,8 +47,8 @@
       "renderSpellInspector"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_inspector.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Pure DOM detail cards for inspecting D&D 3.5e races, skills (with synergies), feats (with AST prerequisites), and spells.",
+      "excludes": "Left-pane selection lists or draft state mutations."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_inspector.ui.ts."
@@ -56,17 +57,17 @@
   "src/rendering/ui/dnd35e_level_up.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Full-screen 2-pane layout with locked prior skill ranks, `[ - ] [ +delta ] [ + ]` steppers,",
+    "responsibility": "Orchestrates the interactive Level-Up modal shell, dynamic per-class step tabs, and level advancement commit.",
     "canonicalEntryPoints": [
       "canPlayerLevelUpDnD35e",
       "renderDnD35eLevelUpModal"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Level-Up modal framing, dynamic tab bar generation (including per-class spellbook tabs for multiclass/prestige advancement), and applyLevelUpToActor dispatch.",
+      "excludes": "Reusable Skills, Feats, and Spell selection step views (must delegate to dnd35e_char_builder_steps.ui.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up.ui.ts."
+      "Never maintain separate inline Skills or Feats step implementations in dnd35e_level_up.ui.ts; always reuse the parameterized step components from dnd35e_char_builder_steps.ui.ts."
     ]
   },
   "src/rulesets/dnd35e/abilities.ts": {
@@ -297,7 +298,7 @@
   "src/rulesets/dnd35e/level_ledger.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
-    "responsibility": "Flat HP penalty per negative level (-5 HP per PHB p. 308).",
+    "responsibility": "Single Source of Truth for Horizon 2 deterministic actor progression rebuilds from chronological levelHistory, declarative cross-class feature upgrades (upgradeOnDuplicateFeatureId), scalingPool aggregation, per-class spellbooksByClass reconstruction, and negative level / level drain lifecycle.",
     "canonicalEntryPoints": [
       "HP_PENALTY_PER_NEGATIVE_LEVEL",
       "buildNegativeLevelModifiers",
@@ -308,11 +309,12 @@
       "applyNegativeLevelsToActor"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/level_ledger.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Rebuilding tracks, skillRanks, permanent feats, scalingPools (Turn Undead, Uncanny Dodge, Familiar effective levels), spellbooksByClass, and preserving conditional EffectBundle modifiers for Horizon 3 DAG evaluation.",
+      "excludes": "Horizon 1 interactive character builder / level-up draft validation (owned by character_builder.ts); Horizon 3 live situational equipment/load/stance tag projection and Stat DAG evaluation (owned by srd_registry.ts and modifiers.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/level_ledger.ts."
+      "Never hardcode class names (e.g. if (classId === 'barbarian')) for illiteracy or cross-class feature stacking; evaluate declarative grantsLiteracy, upgradeOnDuplicateFeatureId, and scalingPoolContribution fields instead.",
+      "Never pre-filter conditional modifiers based on transient equipment or encumbrance during Horizon 2 rebuilds; emit modifiers with their condition intact so Horizon 3 DAG evaluation can toggle them dynamically."
     ]
   },
   "src/rulesets/dnd35e/magic/aoe_rest.ts": {
@@ -538,22 +540,24 @@
   "src/rulesets/dnd35e/srd_registry.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
-    "responsibility": "Canonical SRD Construct Bonus HP by Size emitted by the `type:construct` Effect Provider.",
+    "responsibility": "Single Source of Truth for EffectBundle evaluation, Creature Type/Subtype Effect Providers, archetype hydration, and Horizon 3 live semantic self-tag projection (projectDnD35ActorSemanticTags).",
     "canonicalEntryPoints": [
       "CONSTRUCT_BONUS_HP_BY_SIZE",
       "EvaluatedEffectBundleResult",
       "isActivationConditionMet",
       "evaluateEffectBundle",
       "buildCreatureTypeAndSubtypeModifiers",
+      "projectDnD35ActorSemanticTags",
       "buildAbilityScoresRecord",
       "hydrateRaceAsArchetype",
       "hydrateArchetypeData"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/srd_registry.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Evaluating DnD35EffectBundle modifiers/overrides with hierarchical sourcePath provenance, projecting live semantic self-tags (size, creatureType, subtype, literacy, equipped armor/shield category & material, encumbrance load, active stances/conditions), and hydrating archetypes.",
+      "excludes": "Stage 1-4 topological bonus stacking math (owned by modifiers.ts); chronological levelHistory rebuilds (owned by level_ledger.ts)."
     },
     "antiPatterns": [
+      "Never mutate persistent DnD35EntityData or levelHistory when projecting situational equipment/load/stance tags.",
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/srd_registry.ts."
     ]
   },

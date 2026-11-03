@@ -22,6 +22,7 @@
     ],
     "castingMode": "prepared",
     "castingTradition": "divine",
+    "spellAcquisitionMode": "prayerbook_full_list",
     "castingKeyAbility": "wis",
     "allowedAlignments": [
       "NG",

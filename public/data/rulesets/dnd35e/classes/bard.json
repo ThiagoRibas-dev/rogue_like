@@ -37,6 +37,7 @@
     ],
     "castingMode": "spontaneous",
     "castingTradition": "arcane",
+    "spellAcquisitionMode": "spontaneous_known",
     "castingKeyAbility": "cha",
     "allowedAlignments": [
       "NG",

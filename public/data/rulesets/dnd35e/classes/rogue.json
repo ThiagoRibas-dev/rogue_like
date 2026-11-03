@@ -74,7 +74,14 @@
         "id": "uncanny_dodge",
         "name": "Uncanny Dodge",
         "category": "ex",
-        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker."
+        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker.",
+        "upgradeOnDuplicateFeatureId": "improved_uncanny_dodge",
+        "scalingPoolContribution": {
+          "poolId": "uncanny_dodge_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 4
+        }
       },
       "rogue_special_ability_1": {
         "id": "rogue_special_ability_1",

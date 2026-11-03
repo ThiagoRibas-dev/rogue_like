@@ -14,15 +14,19 @@ import {
   calculatePointBuyCost,
   type CharacterCreationDraft,
   computeAbilityModifier,
+  computeClassSpellSelectionBudget,
   type DnD35Alignment,
   type DnD35SpellSchool,
+  type DnD35SystemContent,
   ELITE_ABILITY_ARRAY,
   getDnD35SystemContent,
   POINT_BUY_MAX_SCORE,
   POINT_BUY_MIN_SCORE,
   POINT_BUY_PRESETS,
+  resolveClassSpellAcquisitionMode,
   rollAbilityScores4d6DropLowest,
   sanitizeDraftOnRaceOrClassChange,
+  validateCharacterCreationStep,
   validateSpecialistSchoolSelection
 } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
@@ -35,15 +39,41 @@ import {
 } from './dnd35e_char_builder_steps.ui.ts';
 import { renderRaceInspector } from './dnd35e_inspector.ui.ts';
 
-const WIZARD_STEPS: ReadonlyArray<string> = [
-  '1. Race',
-  '2. Class & Paths',
-  '3. Ability Scores',
-  '4. Skills',
-  '5. Feats',
-  '6. Spells',
-  '7. Equipment'
-];
+interface WizardStepDescriptor {
+  readonly id: 'race' | 'class' | 'abilities' | 'skills' | 'feats' | 'spells' | 'equipment';
+  readonly label: string;
+}
+
+function getActiveWizardSteps(
+  draft: CharacterCreationDraft,
+  sys: DnD35SystemContent
+): ReadonlyArray<WizardStepDescriptor> {
+  const cls = sys.classes[draft.classId];
+  const race = sys.races[draft.raceId];
+  const intMod = computeAbilityModifier((draft.baseAbilityScores.int ?? 10) + (race?.abilityAdjustments.int ?? 0));
+  const spellBudget = cls
+    ? computeClassSpellSelectionBudget(cls, 0, 1, intMod, draft.prohibitedSchools, draft.domains, [], sys)
+    : undefined;
+  const includeSpells = spellBudget?.requiresManualSelection === true;
+
+  const baseSteps: WizardStepDescriptor[] = [
+    { id: 'race', label: '1. Race' },
+    { id: 'class', label: '2. Class & Paths' },
+    { id: 'abilities', label: '3. Ability Scores' },
+    { id: 'skills', label: '4. Skills' },
+    { id: 'feats', label: '5. Feats' }
+  ];
+  if (includeSpells) {
+    baseSteps.push({
+      id: 'spells',
+      label: `6. ${cls?.name ?? ''} Spells`.trim()
+    });
+    baseSteps.push({ id: 'equipment', label: '7. Equipment' });
+  } else {
+    baseSteps.push({ id: 'equipment', label: '6. Equipment' });
+  }
+  return baseSteps;
+}
 
 const SPELL_SCHOOLS: ReadonlyArray<DnD35SpellSchool> = [
   'abjuration',
@@ -84,7 +114,7 @@ function createDefaultDraft(): CharacterCreationDraft {
     prohibitedSchools: [],
     abilityMethod: 'point_buy',
     pointBuyBudget: 28,
-    baseAbilityScores: { str: 15, dex: 13, con: 14, int: 10, wis: 12, cha: 10 },
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 12, cha: 10 },
     skillRanks: { climb: 4, jump: 4, intimidate: 4 },
     selectedFeats: ['power_attack', 'cleave', 'improved_initiative'],
     knownSpells: [],
@@ -157,20 +187,42 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     return;
   }
 
+  const activeSteps = getActiveWizardSteps(draftState, sys);
+  if (currentStepIndex >= activeSteps.length) {
+    currentStepIndex = activeSteps.length - 1;
+  }
+  const activeStep = activeSteps[currentStepIndex] ?? activeSteps[0]!;
+  const currentStepCheck = validateCharacterCreationStep(draftState, activeStep.id, sys);
+
+  // Check if all prior steps up to a target index are valid
+  const canNavigateToStep = (targetIdx: number): boolean => {
+    if (targetIdx <= currentStepIndex) return true;
+    for (let i = 0; i < targetIdx; i++) {
+      const st = activeSteps[i];
+      if (st && !validateCharacterCreationStep(draftState, st.id, sys).valid) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   // Step tabs bar
   const stepBar = document.createElement('div');
   stepBar.style.display = 'flex';
   stepBar.style.gap = '6px';
   stepBar.style.flexWrap = 'wrap';
-  WIZARD_STEPS.forEach((label, idx) => {
+  activeSteps.forEach((stepDesc, idx) => {
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.className = 'modal-btn';
     tab.style.padding = '6px 12px';
     tab.style.fontSize = '0.8rem';
-    tab.style.borderColor = idx === currentStepIndex ? '#f1c40f' : 'var(--border-color)';
-    tab.textContent = label;
+    const stepValid = validateCharacterCreationStep(draftState, stepDesc.id, sys).valid;
+    tab.style.borderColor = idx === currentStepIndex ? '#f1c40f' : stepValid ? 'var(--border-color)' : '#e67e22';
+    tab.textContent = stepDesc.label;
+    tab.disabled = !canNavigateToStep(idx);
     tab.addEventListener('click', () => {
+      if (!canNavigateToStep(idx)) return;
       currentStepIndex = idx;
       renderDnD35eCharBuilderModal(state);
     });
@@ -190,15 +242,27 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     renderDnD35eCharBuilderModal(state);
   };
 
-  if (currentStepIndex === 0) renderRaceStep(stageHost, state, updateDraft);
-  else if (currentStepIndex === 1) renderClassStep(stageHost, state, updateDraft);
-  else if (currentStepIndex === 2) renderAbilityStep(stageHost, state, updateDraft);
-  else if (currentStepIndex === 3) renderCharBuilderSkillsStep(stageHost, state, draftState, updateDraft);
-  else if (currentStepIndex === 4) renderCharBuilderFeatsStep(stageHost, state, draftState, updateDraft);
-  else if (currentStepIndex === 5) renderCharBuilderSpellsStep(stageHost, state, draftState, updateDraft);
-  else renderCharBuilderEquipmentStep(stageHost, draftState, updateDraft);
+  if (activeStep.id === 'race') renderRaceStep(stageHost, state, updateDraft);
+  else if (activeStep.id === 'class') renderClassStep(stageHost, state, updateDraft);
+  else if (activeStep.id === 'abilities') renderAbilityStep(stageHost, state, updateDraft);
+  else if (activeStep.id === 'skills') renderCharBuilderSkillsStep(stageHost, state, draftState, updateDraft);
+  else if (activeStep.id === 'feats') renderCharBuilderFeatsStep(stageHost, state, draftState, updateDraft);
+  else if (activeStep.id === 'spells') renderCharBuilderSpellsStep(stageHost, state, draftState, updateDraft);
+  else renderCharBuilderEquipmentStep(stageHost, draftState, updateDraft, sys);
 
   content.appendChild(stageHost);
+
+  // Validation status banner
+  if (!currentStepCheck.valid && currentStepCheck.reason) {
+    const gateBanner = document.createElement('div');
+    gateBanner.style.padding = '5px 10px';
+    gateBanner.style.fontSize = '0.78rem';
+    gateBanner.style.color = '#f39c12';
+    gateBanner.style.border = '1px solid #e67e22';
+    gateBanner.style.background = 'rgba(230, 126, 34, 0.12)';
+    gateBanner.textContent = `⚠ Required before proceeding: ${currentStepCheck.reason}`;
+    content.appendChild(gateBanner);
+  }
 
   // Footer navigation
   const footer = document.createElement('div');
@@ -234,23 +298,28 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     navRight.appendChild(prevBtn);
   }
 
-  if (currentStepIndex < WIZARD_STEPS.length - 1) {
+  if (currentStepIndex < activeSteps.length - 1) {
     const nextBtn = document.createElement('button');
     nextBtn.type = 'button';
     nextBtn.className = 'modal-btn';
     nextBtn.textContent = 'Next Step →';
+    nextBtn.disabled = !currentStepCheck.valid;
     nextBtn.addEventListener('click', () => {
+      if (!currentStepCheck.valid) return;
       currentStepIndex++;
       renderDnD35eCharBuilderModal(state);
     });
     navRight.appendChild(nextBtn);
   } else {
+    const allStepsValid = activeSteps.every((st) => validateCharacterCreationStep(draftState, st.id, sys).valid);
     const finishBtn = document.createElement('button');
     finishBtn.type = 'button';
     finishBtn.className = 'modal-btn';
-    finishBtn.style.borderColor = '#2ecc71';
+    finishBtn.style.borderColor = allStepsValid ? '#2ecc71' : 'var(--border-color)';
     finishBtn.textContent = '✔ Embark into the Dungeon';
+    finishBtn.disabled = !allStepsValid;
     finishBtn.addEventListener('click', () => {
+      if (!allStepsValid) return;
       const nextState = applyCharacterCreationToPlayer(state, playerId, draftState);
       setGameState({ ...nextState, uiMode: UIMode.Game });
       markAllDomainsDirty();
@@ -429,6 +498,17 @@ function renderClassStep(
       tablePreview.appendChild(rDiv);
     }
     rightPane.appendChild(tablePreview);
+
+    if (resolveClassSpellAcquisitionMode(activeCls) === 'prayerbook_full_list') {
+      const prayerBanner = document.createElement('div');
+      prayerBanner.style.fontSize = '0.78rem';
+      prayerBanner.style.padding = '6px 8px';
+      prayerBanner.style.color = '#2ecc71';
+      prayerBanner.style.background = 'rgba(46, 204, 113, 0.1)';
+      prayerBanner.style.border = '1px solid #2ecc71';
+      prayerBanner.textContent = ` Divine Prayerbook Rule: ${activeCls.name} automatically knows the full ${activeCls.name} spell list (plus domain spells) for all castable levels; no manual spell learning step required.`;
+      rightPane.appendChild(prayerBanner);
+    }
 
     // Alignment
     const alignRow = document.createElement('div');

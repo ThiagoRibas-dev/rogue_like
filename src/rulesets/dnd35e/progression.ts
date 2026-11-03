@@ -1,5 +1,11 @@
 import { dndFloor } from './math/multipliers.ts';
-import type { AggregatedChassis, BabCurveType, HitDieTrack, SaveCurveType } from './types/dnd35e.types.ts';
+import type {
+  AggregatedChassis,
+  BabCurveType,
+  DnD35CharacterLevelRecord,
+  HitDieTrack,
+  SaveCurveType
+} from './types/dnd35e.types.ts';
 import type { DnD35ClassDefinition, DnD35ClassLevelRow } from './types/dnd35e_system.types.ts';
 
 /** Multiplier for the Three-Quarters (0.75) BAB progression curve. */
@@ -188,19 +194,100 @@ export function computeNpcClassCrContribution(npcClassLevels: number, hasMonster
   return safeLevels === 1 ? NPC_CLASS_LEVEL_1_CR : safeLevels - 1;
 }
 
+/** Describes a spellcasting advancement choice slot required when taking a Prestige Class level. */
+export interface PrestigeSpellcastingAdvancementSlot {
+  readonly slotKey: 'arcane' | 'divine' | 'any';
+  readonly label: string;
+  readonly eligibleClassIds: ReadonlyArray<string>;
+}
+
+/**
+ * Resolves the required base spellcasting class selection slots for a Prestige Class at `nextPrcLevel`.
+ *
+ * @param tracks Owned HitDieTracks on the actor prior to or including the level.
+ * @param prcDef Prestige Class definition.
+ * @param nextPrcLevel Target class level in the Prestige Class (1..maxLevel).
+ * @param classRegistry Full class registry.
+ * @returns Array of advancement slots requiring a target base class.
+ */
+export function getEligibleBaseCastingClassesForPrestige(
+  tracks: ReadonlyArray<{ readonly trackId: string; readonly levels: number }>,
+  prcDef: DnD35ClassDefinition,
+  nextPrcLevel: number,
+  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>
+): ReadonlyArray<PrestigeSpellcastingAdvancementSlot> {
+  if (!prcDef.isPrestige) return [];
+  const row = getClassLevelRow(prcDef, nextPrcLevel);
+  const mode = row?.advancesSpellcasting;
+  if (!mode) return [];
+
+  const ownedBaseCasters = tracks
+    .filter((t) => t.levels > 0)
+    .map((t) => classRegistry[t.trackId])
+    .filter(
+      (c): c is DnD35ClassDefinition =>
+        c !== undefined && !c.isPrestige && c.castingMode !== 'none' && c.castingTradition !== 'none'
+    );
+
+  if (mode === 'arcane') {
+    return [
+      {
+        slotKey: 'arcane',
+        label: 'Arcane Spellcasting Class (+1 Effective Level)',
+        eligibleClassIds: ownedBaseCasters.filter((c) => c.castingTradition === 'arcane').map((c) => c.id)
+      }
+    ];
+  }
+  if (mode === 'divine') {
+    return [
+      {
+        slotKey: 'divine',
+        label: 'Divine Spellcasting Class (+1 Effective Level)',
+        eligibleClassIds: ownedBaseCasters.filter((c) => c.castingTradition === 'divine').map((c) => c.id)
+      }
+    ];
+  }
+  if (mode === 'both') {
+    return [
+      {
+        slotKey: 'arcane',
+        label: 'Arcane Spellcasting Class (+1 Effective Level)',
+        eligibleClassIds: ownedBaseCasters.filter((c) => c.castingTradition === 'arcane').map((c) => c.id)
+      },
+      {
+        slotKey: 'divine',
+        label: 'Divine Spellcasting Class (+1 Effective Level)',
+        eligibleClassIds: ownedBaseCasters.filter((c) => c.castingTradition === 'divine').map((c) => c.id)
+      }
+    ];
+  }
+  return [
+    {
+      slotKey: 'any',
+      label: 'Spellcasting Class (+1 Effective Level)',
+      eligibleClassIds: ownedBaseCasters.map((c) => c.id)
+    }
+  ];
+}
+
 /**
  * Computes the effective class casting level for a base casting class across all tracks,
- * adding base class levels plus any levels in Prestige Classes that advance this tradition.
+ * adding base class levels plus any levels in Prestige Classes that advance this class.
+ * When `levelHistory` contains explicit `advancedSpellcastingClassIds` for a Prestige Class level,
+ * only the explicitly chosen base casting class(es) are advanced; otherwise falls back to the first
+ * owned base casting class matching the Prestige Class row's `advancesSpellcasting` tradition.
  *
  * @param tracks All active tracks on the actor.
  * @param baseClassDef The base casting class definition.
  * @param classRegistry The full class registry.
+ * @param levelHistory Optional chronological level history with explicit Prestige target choices.
  * @returns Total effective caster level in this class's spell progression.
  */
 export function computeEffectiveClassCastingLevel(
   tracks: ReadonlyArray<HitDieTrack>,
   baseClassDef: DnD35ClassDefinition,
-  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>
+  classRegistry: Readonly<Record<string, DnD35ClassDefinition>>,
+  levelHistory?: ReadonlyArray<DnD35CharacterLevelRecord>
 ): number {
   if (baseClassDef.castingTradition === 'none' || baseClassDef.castingMode === 'none') {
     return 0;
@@ -211,16 +298,26 @@ export function computeEffectiveClassCastingLevel(
       effectiveLevel += track.levels;
       continue;
     }
+    if (baseClassDef.isPrestige) continue;
     const prcDef = classRegistry[track.trackId];
     if (!prcDef || !prcDef.isPrestige) continue;
     for (let lvl = 1; lvl <= track.levels; lvl++) {
       const row = getClassLevelRow(prcDef, lvl);
-      if (
-        row?.advancesSpellcasting === baseClassDef.castingTradition ||
-        row?.advancesSpellcasting === 'both' ||
-        row?.advancesSpellcasting === 'any'
-      ) {
-        effectiveLevel += 1;
+      if (!row?.advancesSpellcasting) continue;
+
+      const explicitRec = levelHistory?.find((rec) => rec.classId === prcDef.id && rec.classLevel === lvl);
+      if (explicitRec?.advancedSpellcastingClassIds && explicitRec.advancedSpellcastingClassIds.length > 0) {
+        if (explicitRec.advancedSpellcastingClassIds.includes(baseClassDef.id)) {
+          effectiveLevel += 1;
+        }
+        continue;
+      }
+
+      const slots = getEligibleBaseCastingClassesForPrestige(tracks, prcDef, lvl, classRegistry);
+      for (const slot of slots) {
+        if (slot.eligibleClassIds[0] === baseClassDef.id) {
+          effectiveLevel += 1;
+        }
       }
     }
   }

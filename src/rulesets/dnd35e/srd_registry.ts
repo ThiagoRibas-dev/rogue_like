@@ -583,18 +583,37 @@ export function hydrateArchetypeData(
   };
 }
 
+/** Live situational equipment and encumbrance context for Horizon 3 semantic tag projection. */
+export interface SituationalTagContext {
+  readonly armorCategory?: 'none' | 'light' | 'medium' | 'heavy' | undefined;
+  readonly hasShield?: boolean | undefined;
+  readonly isMetalArmorOrShield?: boolean | undefined;
+  readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
+}
+
+/** Minimum armor bonus threshold heuristic for Heavy Armor when no item tag is present. */
+const HEAVY_ARMOR_BONUS_THRESHOLD = 6;
+
+/** Minimum armor bonus threshold heuristic for Medium Armor when no item tag is present. */
+const MEDIUM_ARMOR_BONUS_THRESHOLD = 4;
+
 /**
- * Projects semantic creature type, subtype, and size tags (`type:<creatureType>`,
- * `subtype:<subtype>`, `size:<sizeCategory>`) from `DnD35EntityData` (`PRIM-1.1`),
- * merging them deduplicated with any existing tags on the entity.
+ * Projects semantic creature type, subtype, size, literacy, active class feature, and situational
+ * equipment/load tags (`type:<creatureType>`, `subtype:<subtype>`, `size:<sizeCategory>`,
+ * `trait:literate`, `trait:illiterate`, `feature:<id>`, `armor:<category>`, `load:<category>`)
+ * from `DnD35EntityData`, merging them deduplicated with any existing tags on the entity.
  *
  * @param dndData Resolved `DnD35EntityData` of the actor.
  * @param existingTags Optional existing tags from `TagsComponent`.
+ * @param situationalContext Optional live equipment/load context for Horizon 3 evaluation.
+ * @param classRegistry Optional class registry to inspect declarative `grantsLiteracy`.
  * @returns Deduplicated array of semantic tags for `matchesEntityTagCondition`.
  */
 export function projectDnD35ActorSemanticTags(
   dndData: DnD35EntityData,
-  existingTags: ReadonlyArray<string> = []
+  existingTags: ReadonlyArray<string> = [],
+  situationalContext?: SituationalTagContext,
+  classRegistry?: Readonly<Record<string, DnD35ClassDefinition>>
 ): ReadonlyArray<string> {
   const tags = new Set<string>(existingTags);
   tags.add(`size:${dndData.sizeCategory}`);
@@ -606,7 +625,156 @@ export function projectDnD35ActorSemanticTags(
     tags.add(subtype);
     tags.add(`subtype:${subtype}`);
   }
+
+  // Literacy projection (PHB p. 25 / Multiclass rules: any class with grantsLiteracy !== false or 2 skill points grants permanent literacy)
+  const hasClassTracks = dndData.tracks.some((t) => t.levels > 0 && t.trackCategory !== 'racial_hd');
+  const hasLiterateClass = dndData.tracks.some((t) => {
+    if (t.levels <= 0 || t.trackCategory === 'racial_hd') return false;
+    if (classRegistry && classRegistry[t.trackId]) {
+      return classRegistry[t.trackId]!.grantsLiteracy !== false;
+    }
+    return t.trackId !== 'barbarian';
+  });
+
+  if (dndData.spentLiteracySkillPoints === true || hasLiterateClass || !hasClassTracks) {
+    tags.add('trait:literate');
+  }
+
+  for (const featId of dndData.activeClassFeatures ?? []) {
+    if (featId === 'illiteracy' && tags.has('trait:literate')) {
+      continue;
+    }
+    tags.add(`feature:${featId}`);
+    if (featId === 'illiteracy') {
+      tags.add('trait:illiterate');
+    }
+  }
+
+  if (!tags.has('trait:literate') && dndData.tracks.some((t) => t.trackId === 'barbarian' && t.levels > 0)) {
+    tags.add('feature:illiteracy');
+    tags.add('trait:illiterate');
+  }
+
+  // Situational armor / shield / load tags (only project defaults if not already overridden in existingTags)
+  const hasExplicitArmorTag = Array.from(tags).some((t) => t.startsWith('armor:'));
+  if (!hasExplicitArmorTag) {
+    const armorCat =
+      situationalContext?.armorCategory ??
+      (dndData.armorBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
+        ? 'heavy'
+        : dndData.armorBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
+          ? 'medium'
+          : dndData.armorBonus >= 1
+            ? 'light'
+            : 'none');
+    tags.add(`armor:${armorCat}`);
+  }
+
+  const hasExplicitShieldTag = Array.from(tags).some((t) => t.startsWith('shield:'));
+  if (!hasExplicitShieldTag) {
+    const hasShield = situationalContext?.hasShield ?? dndData.shieldBonus > 0;
+    tags.add(hasShield ? 'shield:any' : 'shield:none');
+  }
+
+  if (situationalContext?.isMetalArmorOrShield) {
+    tags.add('armor_material:metal');
+  }
+
+  const hasExplicitLoadTag = Array.from(tags).some((t) => t.startsWith('load:'));
+  if (!hasExplicitLoadTag) {
+    const loadCat = situationalContext?.loadCategory ?? 'light';
+    tags.add(`load:${loadCat}`);
+  }
+
   return Array.from(tags);
+}
+
+/**
+ * Inspects an entity's equipped items in `GameState` to derive live Horizon 3 `SituationalTagContext`
+ * (`armorCategory`, `hasShield`, `isMetalArmorOrShield`, `loadCategory`).
+ *
+ * @param state The current GameState.
+ * @param entityId The target entity ID.
+ * @param dndData Resolved `DnD35EntityData`.
+ * @returns Resolved `SituationalTagContext`.
+ */
+export function resolveEntitySituationalTagContext(
+  state: GameState,
+  entityId: EntityId,
+  dndData: DnD35EntityData
+): SituationalTagContext {
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  let armorCategory: 'none' | 'light' | 'medium' | 'heavy' | undefined;
+  let hasShield = dndData.shieldBonus > 0;
+  let isMetalArmorOrShield = false;
+
+  if (equipment) {
+    for (const slot of equipment.slots) {
+      if (slot.equippedItem === null || slot.suppressed === true) continue;
+      const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
+      const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+      if (!itemDef) continue;
+      const itemTags = itemDef.tags ?? [];
+      const lowerId = itemDef.id.toLowerCase();
+      if (
+        itemTags.includes('metal') ||
+        lowerId.includes('chain') ||
+        lowerId.includes('plate') ||
+        lowerId.includes('scale')
+      ) {
+        isMetalArmorOrShield = true;
+      }
+      if (slot.slotType === 'off_hand' || itemTags.includes('shield')) {
+        if ((itemDef.equippable?.defenseBonus ?? 0) > 0 || itemTags.includes('shield')) {
+          hasShield = true;
+        }
+      }
+      if (slot.slotType === 'torso' || slot.slotType === 'body' || (itemDef.equippable?.defenseBonus ?? 0) > 0) {
+        const defBonus = itemDef.equippable?.defenseBonus ?? 0;
+        if (
+          itemTags.includes('armor:heavy') ||
+          itemTags.includes('heavy_armor') ||
+          lowerId.includes('full_plate') ||
+          lowerId.includes('half_plate') ||
+          lowerId.includes('splint') ||
+          lowerId.includes('banded') ||
+          defBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
+        ) {
+          armorCategory = 'heavy';
+        } else if (
+          itemTags.includes('armor:medium') ||
+          itemTags.includes('medium_armor') ||
+          lowerId.includes('breastplate') ||
+          lowerId.includes('chainmail') ||
+          lowerId.includes('scale_mail') ||
+          lowerId.includes('hide') ||
+          defBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
+        ) {
+          if (armorCategory !== 'heavy') armorCategory = 'medium';
+        } else if (defBonus >= 1 || itemTags.includes('armor:light') || itemTags.includes('light_armor')) {
+          if (!armorCategory) armorCategory = 'light';
+        }
+      }
+    }
+  }
+
+  if (!armorCategory) {
+    armorCategory =
+      dndData.armorBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
+        ? 'heavy'
+        : dndData.armorBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
+          ? 'medium'
+          : dndData.armorBonus >= 1
+            ? 'light'
+            : 'none';
+  }
+
+  return {
+    armorCategory,
+    hasShield,
+    isMetalArmorOrShield,
+    loadCategory: 'light'
+  };
 }
 
 /**

@@ -35,6 +35,7 @@
     ],
     "castingMode": "spontaneous",
     "castingTradition": "arcane",
+    "spellAcquisitionMode": "spontaneous_known",
     "castingKeyAbility": "int",
     "allowedAlignments": [
       "LE",
@@ -98,6 +99,19 @@
         "name": "Poison Use",
         "category": "ex",
         "description": "Trained in the use of poison and never at risk of accidentally poisoning oneself when applying poison to a blade."
+      },
+      "uncanny_dodge": {
+        "id": "uncanny_dodge",
+        "name": "Uncanny Dodge",
+        "category": "ex",
+        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker.",
+        "upgradeOnDuplicateFeatureId": "improved_uncanny_dodge",
+        "scalingPoolContribution": {
+          "poolId": "uncanny_dodge_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 2
+        }
       },
       "hide_in_plain_sight_shadow": {
         "id": "hide_in_plain_sight_shadow",

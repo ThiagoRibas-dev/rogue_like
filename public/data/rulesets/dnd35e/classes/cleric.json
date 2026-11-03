@@ -18,6 +18,7 @@
     ],
     "castingMode": "prepared",
     "castingTradition": "divine",
+    "spellAcquisitionMode": "prayerbook_full_list",
     "castingKeyAbility": "wis",
     "proficiencies": {
       "weapons": [
@@ -56,6 +57,12 @@
         "name": "Turn or Rebuke Undead",
         "category": "su",
         "description": "Channel positive or negative energy to turn, destroy, rebuke, or command undead (3 + CHA mod/day).",
+        "scalingPoolContribution": {
+          "poolId": "turn_undead_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 1
+        },
         "resourcePool": {
           "poolId": "turn_undead",
           "maxBase": 3,

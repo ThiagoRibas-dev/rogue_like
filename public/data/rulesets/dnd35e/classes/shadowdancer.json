@@ -120,6 +120,19 @@
         "name": "Slippery Mind",
         "category": "ex",
         "description": "If affected by an enchantment and fails saving throw, attempt it again 1 round later at the same DC."
+      },
+      "uncanny_dodge": {
+        "id": "uncanny_dodge",
+        "name": "Uncanny Dodge",
+        "category": "ex",
+        "description": "Retain Dexterity bonus to AC even if caught flat-footed or struck by an invisible attacker.",
+        "upgradeOnDuplicateFeatureId": "improved_uncanny_dodge",
+        "scalingPoolContribution": {
+          "poolId": "uncanny_dodge_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 2
+        }
       }
     },
     "acfSwaps": [],

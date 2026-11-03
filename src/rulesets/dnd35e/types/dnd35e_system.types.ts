@@ -345,6 +345,15 @@ export const PrerequisiteNodeSchema: z.ZodType<PrerequisiteNode> = z.lazy(() =>
   ])
 );
 
+/** Zod schema for cross-class scaling pool contributions (e.g. Uncanny Dodge, Turn Undead, Familiar master level). */
+export const DnD35ScalingPoolContributionSchema = z.object({
+  poolId: z.string(),
+  multiplier: z.number().default(1),
+  offset: z.number().int().default(0),
+  minClassLevel: z.number().int().positive().default(1)
+});
+export type DnD35ScalingPoolContribution = z.infer<typeof DnD35ScalingPoolContributionSchema>;
+
 /** Zod schema for a structured class feature definition. */
 export const DnD35ClassFeatureDetailSchema = z.object({
   id: z.string(),
@@ -361,9 +370,12 @@ export const DnD35ClassFeatureDetailSchema = z.object({
     .optional(),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
   ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  grantedTags: z.array(z.string()).default([]),
   grantedFeats: z.array(z.string()).default([]),
   virtualFeatGrants: z.array(DnD35FeatGrantDescriptorSchema).default([]),
   activatedAbilities: z.array(DnD35ActivatedAbilityDescriptorSchema).default([]),
+  upgradeOnDuplicateFeatureId: z.string().optional(),
+  scalingPoolContribution: DnD35ScalingPoolContributionSchema.optional(),
   resourcePool: z
     .object({
       poolId: z.string(),
@@ -439,8 +451,10 @@ export const DnD35ClassDefinitionSchema = z.object({
   hitDieSides: z.union([z.literal(4), z.literal(6), z.literal(8), z.literal(10), z.literal(12)]),
   skillPointsPerLevel: z.number().int().nonnegative(),
   classSkills: z.array(z.string()).default([]),
+  grantsLiteracy: z.boolean().default(true),
   castingMode: z.enum(['none', 'prepared', 'spontaneous']).default('none'),
   castingTradition: z.enum(['none', 'arcane', 'divine']).default('none'),
+  spellAcquisitionMode: z.enum(['none', 'spellbook_scribed', 'spontaneous_known', 'prayerbook_full_list']).optional(),
   castingKeyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
   allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
   prerequisites: PrerequisiteNodeSchema.optional(),

@@ -15,6 +15,7 @@
     ],
     "castingMode": "spontaneous",
     "castingTradition": "arcane",
+    "spellAcquisitionMode": "spontaneous_known",
     "castingKeyAbility": "cha",
     "proficiencies": {
       "weapons": [
@@ -28,7 +29,13 @@
         "id": "summon_familiar",
         "name": "Summon Familiar",
         "category": "ex",
-        "description": "Obtain a magical beast companion that grants special bonuses to its master."
+        "description": "Obtain a magical beast companion that grants special bonuses to its master.",
+        "scalingPoolContribution": {
+          "poolId": "familiar_master_effective_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 1
+        }
       }
     },
     "acfSwaps": [],
