@@ -6,6 +6,7 @@ echo ====================================
 echo Running type check and build verification...
 echo ====================================
 set NODE_OPTIONS=--max-old-space-size=4096
+set KNIP_DISABLE_RAW_TRANSFER=1
 
 echo [1/8] Running type check (tsc --noEmit)...
 for /f %%a in ('powershell -NoProfile -Command "(Get-Date).Ticks"') do set T1=%%a

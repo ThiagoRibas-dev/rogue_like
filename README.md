@@ -1,168 +1,171 @@
-# Roguelike Template
+# Roguelike Engine & D&D 3.5e Tactical CRPG
 
-A modern, highly-extensible, browser-based traditional roguelike engine featuring both **Turn-Based** and **Real-Time with Pause (RTwP)** modes,  **Systemic Narrative** systems, and a  **Data-Driven** architecture. Built with **TypeScript**, **Vite**, and **ROT.js**. 
+A modern, highly-extensible, browser-based traditional roguelike and tactical CRPG engine featuring **Turn-Based** and **Real-Time with Pause (RTwP)** modes, a **Three-Tier Pluggable Ruleset Cartridge Architecture**, a full **D&D 3.5e SRD Cartridge**, **Systemic Narrative** simulation, and a **Data-Driven** JSON architecture. Built with **TypeScript (strict mode)**, **Vite**, and **ROT.js**.
+
+---
 
 ## ✨ Current Features
 
-### 🎮 Core Gameplay
-- **Dual-Mode Engine** — Play as a traditional **turn-based** roguelike or toggle into **Real-Time with Pause (RTwP)** mode with speed controls (1×, 2×, 4×) and command queuing
-- **Seeded Determinism** — Every run is reproducible with the same seed via a shared RNG wrapper
-- **Save/Load** — Auto-saves to `localStorage`; manual export/import of save files
-- **Permadeath** — Game Over screen with contextual death message and cause
-- **Full Input Rebinding** — Customize every keyboard control
-- **Accessibility** — UI/font scaling, high-contrast mode, animation reduction
+### 🎮 Core Console Engine (Tier 1)
+- **Dual-Mode Engine** — Play as a traditional **turn-based** roguelike or toggle into **Real-Time with Pause (RTwP)** mode with speed controls (1×, 2×, 4×) and command queuing.
+- **Pluggable Ruleset Strategy (`RulesetStrategy`)** — Decouples the Core Console Engine from tabletop math. Supports both the lightweight `classic` roguelike ruleset and the deep `dnd35e` (D&D 3.5e SRD) ruleset cartridge.
+- **Web Worker Concurrency** — Heavy procedural dungeon generation (`map.worker.ts`) and headless campaign fuzzing (`fuzzer.worker.ts`) run off the main UI thread.
+- **Seeded Determinism** — Every run is 100% reproducible from its seed via an encapsulated RNG wrapper (`src/core/rng.ts`) and deterministic entity counters.
+- **Save/Load & Cold Storage** — Auto-saves to `localStorage` with manual JSON save export/import; cross-floor Sleep/Wake component serialization preserves persistent entities across maps.
+- **Full Input Rebinding & Accessibility** — Customize every keyboard control; UI/font scaling, high-contrast palettes, and animation reduction.
 
-### 🗺️ Exploration & Map
-- **Procedural Generation** — `ROT.Map.Digger` room-and-corridor dungeons, plus cellular automata (caves) and BSP (urban/village) biome generators
-- **Field of View & Fog of War** — Precise shadowcasting; explored-but-not-visible tiles are dimmed; player-centered camera with viewport scrolling
-- **Interconnected World** — Multi-level dungeons, lateral transitions (walk off map edges, enter buildings), and hand-crafted static hubs (taverns, camps)
-- **Encounter Director** — Procedurally generates tactical combat rooms by spending Challenge Rating (CR) budgets across objectives, advantages, hazards, and chaos
-- **Interactive Terrain** — Open/close doors (block FOV), hidden traps (damage, poison, teleport), shallow water (2× movement cost), fountains, altars/shrines, and locked containers
+### 🐉 D&D 3.5e SRD Cartridge (`src/rulesets/dnd35e/` — Tier 2 & Tier 3)
+- **4-Stage Stat Evaluation DAG (`evaluateDnD35eEntityDAG`)**:
+  - **Stage 1 (Structural & Identity)** — Evaluates size category (`Fine` to `Colossal`), creature type/subtypes, polymorph/wild shape overlays, and structural equipment slots.
+  - **Stage 2 (Ability Scores & Encumbrance)** — Computes 6 ability scores (`STR`, `DEX`, `CON`, `INT`, `WIS`, `CHA`), weight/load thresholds, and armor max-DEX / speed caps.
+  - **Stage 3 (Combat & Defenses)** — Resolves 18-type bonus stacking (`enhancement`, `deflection`, `natural_armor`, `dodge`, `morale`, `sacred`, etc.) with transparent provenance breakdowns for Full/Touch/Flat-Footed AC, Fort/Ref/Will saves, BAB, Grapple, and Initiative.
+  - **Stage 4 (Full-Attack & Wielding Routine)** — Automatically synthesizes the complete `attackRoutine` whenever size, strength, limbs, or grip stances change.
+- **Universal Actor Symmetry & Composable Creature Synthesis**:
+  - **14 Playable Races** — Human, Dwarf, Elf (High/Wood), Gnome, Half-Elf, Half-Orc, Halfling, Tiefling, Aasimar, Goblin, Kobold, Orc, Hobgoblin.
+  - **15 Creature Type Racial HD Engines** — Aberration, Animal, Construct, Dragon, Elemental, Fey, Giant, Humanoid, Magical Beast, Monstrous Humanoid, Ooze, Outsider, Plant, Undead, Vermin.
+  - **Composable Templates & Parametric Ladders** — Acquired and inherited templates (*Skeleton*, *Zombie*, *Celestial*, *Fiendish*, *Half-Dragon*, *Ghost*, *Lich*, *Vampire*, *Lycanthrope*), Dragon 12-Age-Category progressions, Elemental size ladders, and non-destructive `WildShapeOverlay` layers.
+- **Classes, Chronological Multiclassing & Character Builder**:
+  - **11 Core Classes (Levels 1–20)** — Barbarian, Bard, Cleric, Druid, Fighter, Monk, Paladin, Ranger, Rogue, Sorcerer, Wizard.
+  - **5 NPC Classes & Prestige Classes** — Adept, Aristocrat, Commoner, Expert, Warrior, plus Prestige Classes (*Arcane Trickster*, *Archmage*, *Assassin*, *Blackguard*, *Dragon Disciple*, *Duelist*, *Dwarven Defender*, *Eldritch Knight*, *Loremaster*, *Mystic Theurge*, *Shadowdancer*) with recursive AST prerequisite validation.
+  - **Alternate Class Features (ACFs) & Cleric Domains** — Declarative level feature swaps and domain granted powers + bonus spell lists.
+  - **Chronological Level Ledger (`levelHistory`)** — Tracks per-level class choice, HP roll, skill ranks (class vs. cross-class, 42 SRD skills + 5-rank synergies), feats, and supports reversible negative levels / level drain.
+  - **Interactive 8-Step Character Builder & 7-Tab Character Sheet** — Point-buy (25/28/32-pt) or 4d6-drop-lowest ability generation, starting equipment package materialization, interactive level-up wizard (`L`), 7-tab Character Sheet (`C`), and Knowledge-gated Monster Dossier (`I`).
+- **Tactical Grid, Action Economy & Combat Maneuvers**:
+  - **6-Second Combat Rounds** — Standard, Move, Full-Round, Swift/Immediate, and Free actions + 5-foot step tracking (`distanceMovedThisRoundFt`).
+  - **Inappropriately Sized Weapons & Grip Modes** — 3-step effort ladder (`light` $\leftrightarrow$ `one_handed` $\leftrightarrow$ `two_handed`) with $-2$ penalty per size step difference; toggleable `1H` / `2H` ($1.5\times \text{STR}$, $1:2$ Power Attack, Rapier & Bastard Sword rules) and `Double Weapon TWF` modes.
+  - **Multi-Limb & Natural Weapon Sequencing** — Supports $N$-armed actors (*Marilith*), limb occupation tracking, armed natural weapon demotion to secondary (`-5` or `-2` with *Multiattack*), and per-strike Power Attack multipliers.
+  - **Attacks of Opportunity & 9 Combat Maneuvers** — Movement/casting/ranged AoO triggers (*Combat Reflexes*, *Mobility*, *Tumble*), plus Grapple, Trip, Bull Rush, Disarm, Sunder, Feint, Overrun, Aid Another, and Mounted Combat.
+- **Vancian Magic & Spell Engine**:
+  - **Prepared & Spontaneous Casting** — Per-class spell slots, bonus slots from high ability scores, Cleric Spontaneous Cure/Inflict conversion, and Arcane Spell Failure.
+  - **Spellbook & Preparation Modal (`B`)** — Prepare daily spells, apply Metamagic feats (*Empower*, *Maximize*, *Quicken*, *Silent*, *Still*, *Extend*, *Widen*), and Rest (`R`) for 8-hour recovery.
+  - **Spell Resolution** — Saving throws (*Evasion* / *Mettle*), Spell Resistance checks, Concentration checks (defensive casting, damage/grapple interruption), Counterspelling, and persistent spatial spell zones (*Grease*, *Web*, *Silence*, *Cloudkill*).
 
-### 🧟 Combat & AI
-- **Bump-to-Attack** — Walk into enemies to melee; full stat system (HP, attack, defense, speed)
-- **Unified Damage Pipeline** — Melee, traps, spells, and fields all produce damage instances with semantic tags processed by a centralized damage system
-- **Death System** — XP rewards, item drops, death messages, and player permadeath
-- **Floating Combat Text** — Damage numbers, blocks, and effects animate over entities on the map
-- **Composable AI** — Entities use data-driven profiles mixing hunt, wander, flee, ranged, and spell-casting behaviors
-- **Faction System** — Hostility matrix determines who attacks whom; view faction standings in the UI
-- **Status Effects** — Poison (DoT), Haste (speed+), Weakness (atk-), Stun (skip turn), Confusion (random move), Regeneration; all displayed in the HUD with remaining duration
+### 🗺️ Exploration, World & Map
+- **Procedural & Static Map Generation** — `ROT.Map.Digger` dungeons, cellular automata caves, BSP urban/village generators, and hand-crafted static hubs.
+- **Multi-Mode Terrain Traversal** — Land, Climb, Swim, Fly (with maneuverability grades), and Burrow movement speeds allow flying/swimming actors to cross chasms, pits, and deep water.
+- **Field of View, Vision Modes & Stealth** — Shadowcasting FOV, Low-Light Vision, Darkvision, Blindsense/Blindsight, Tremorsense, Concealment miss chances, and opposed Hide/Move Silently vs. Spot/Listen detection.
+- **Encounter Director** — Spends Challenge Rating (CR) budgets across tactical objectives, hazards, and monster groups.
+- **4 Built-in Campaigns**:
+  - **Descent (`default`)** — Classic systemic roguelike showcase campaign.
+  - **The Sunless Reliquary (`dnd35e-crypt`)** — Full D&D 3.5e SRD tactical dungeon crawl.
+  - **The Shroudgarde Borderlands (`shroudgarde`)** — Open-ended borderlands investigation and faction campaign.
+  - **The Megadungeon (`megacampaign`)** — Multi-branch deep dungeon crawl.
 
-### 🎒 Items & Inventory
-- **Full Inventory System** — Pick up (`G`), drop, equip/unequip items; weight-based capacity
-- **Equipment Slots** — Paper-doll panel supporting arbitrary limb configurations (head, torso, hands, fingers, etc.) with dynamic stat calculation
-- **Consumables** — Health potions, scrolls of confusion, scrolls of identify, food items
-- **Identification** — Unidentified items show randomized placeholder names; identify via Scroll of Identify or identify-on-use
-- **Throwing** — Throw items at targets (rocks, knives, potions, bombs) with projectile resolution
-- **Item Coatings** — Dip weapons in poison/fire for finite on-hit charges
-- **Wands & Zapping** — Fire wands with beam, bolt, or cone AoE patterns
-- **Containers** — Open chests and containers with dedicated UI panel; traps and locks on containers
+### 💬 Systemic Narrative, Rivalry & Villains
+- **Rivalry & Nemesis Ecosystem (`N`)** — Enemies that defeat or escape the player are promoted into persistent Rivals with procedural titles, scars, grudges, traits, and ambush behaviors, tracked on a hierarchical Nemesis Pyramid.
+- **Villain Masterminds & Investigation Board (`V`)** — Background schemes tick independently on the scheduler; defeating agents drops clues linked on an interactive conspiracy board.
+- **Knowledge & Rumor Propagation** — World events physically propagate as rumors between NPCs; players broker secrets via branching dialogues, `gossip`, and `ask_about`.
+- **Combinatorial Reactions & 12 Interaction Verbs** — `apply`, `throw`, `kick`, `open`, `close`, `lock`, `unlock`, `dip`, `zap`, `ignite`, `read`, `eat` resolved via tag-driven JSON reaction matrices and spreadable environmental fields (fire, smoke, poison gas).
 
-### 🔥 Environmental Fields
-- **Spreadable Fields** — Fire, smoke, and poison gas persist on tiles, tick each turn, decay, and spread
-- **Field Interactions** — Smoke blocks FOV, poison gas applies poison, fire ignites flammable tags, water extinguishes fire — all resolved through the reaction system
-- **Data-Driven Definitions** — Fields are defined in JSON with configurable intensity, duration, damage, status effects, and sight-blocking
+### 🛠️ Built-in Campaign Editor & Simulation Suite
+- **Visual Authoring Workspace** — World area graph, 2D faction hostility matrix, dialogue tree editor, tile grid painter, and Zod-driven schema forms with RFC 6902 JSON Patch undo/redo.
+- **Simulation Tools** — **AI Arena** (headless combat simulator with telemetry), **Encounter Director Sandbox**, **Scheme Accelerator**, and **Knowledge Propagation Simulator**.
+- **Playtest Round-Trip & ZIP Export** — One-click playtest preserves editor state; IndexedDB storage and `.zip` mod export/import.
 
-### 💬 Dialogue, Personality & Social
-- **Branching Dialogue** — Tree-based conversation modal with gated options
-- **Personality & Memory** — NPCs possess personality facets and core memories, remembering past interactions, grudges, and faction standing to drive reactions
-- **Knowledge Brokering** — NPCs dynamically learn rumors and facts about world events, which can be acquired via `gossip` and `ask_about`
-- **Declarative Quests** — JSON-defined objectives (kill, gather, talk) with quest journal UI
-- **Procedural Quests** — Randomized bounties generated at runtime from JSON templates
-- **In-Context Wiki** — Clickable highlighted keywords in dialogue/quests for encyclopedia-style tooltips
-
-### 💰 Trade & Economics
-- **Dynamic Pricing** — Item prices scale with faction standing, NPC personality (greedy vs generous), and temporary social states
-- **Barter System** — Trade items directly with NPCs to offset gold costs
-- **Procedural Restocking** — Merchants dynamically generate fetch quests when their supply of requested goods is depleted
-
-### 🦹 Villains & Investigation
-- **Background Schemes** — Villain masterminds tick on the scheduler independently, pursuing goals without player input
-- **Minion Recruitment** — Villains dispatch agreements and agents across areas
-- **Clue Generation** — Defeating minions drops randomized clues tied to active schemes
-- **Investigation Board** — `V` key opens a conspiracy board showing known suspects and discovered clues
-- **Token Pools** — Bag pattern ensures unique villains and items cannot be duplicated
-
-### 🔐 Interaction Verbs & Reactions
-- **12 Canonical Verbs** — `apply`, `throw`, `kick`, `open`, `close`, `lock`, `unlock`, `dip`, `zap`, `ignite`, `read`, `eat`
-- **Combinatorial Reaction System** — All interactions are resolved by matching verb + source tags + target tags against declarative JSON reactions. New mechanics (dipping, sacrificing, alchemy) can be authored entirely in data without writing code
-
-### 📦 Campaign System
-- **Campaign Selection** — Choose from multiple campaigns on New Game
-- **Mod Loading** — Install `.zip` campaigns from the Main Menu; validated against Zod schemas
-- **Themes & Spritesheets** — Per-campaign ASCII glyphs, multi-layered tiled sprite rendering support, color palettes, and message log templates
-- **Hybrid Loader** — Merges built-in (`public/`) and installed (IndexedDB) campaigns into a single list
-
-### 🛠️ Built-in Campaign Editor
-- **Workspace** — Toggle from Main Menu with editor state preserved across playtest round-trips
-- **Zod-Driven Forms** — Auto-generated JSON editors with reference dropdowns and live validation
-- **Undo/Redo** — `Ctrl+Z`/`Ctrl+Shift+Z` using JSON Patch (RFC 6902) deltas
-- **Drag-and-Drop** — Reorder arrays, drag items from sidebar to link IDs
-- **Visual Tools** — World area graph (node-link), faction matrix (2D data-grid), dialogue tree editor, tile grid painter, live map previews
-- **Encounter Director Sandbox** — Preview procedural encounter generation with budget breakdowns
-- **AI Arena** — Headless simulation of entity combat with telemetry
-- **Scheme Accelerator** — Fast-forward villain schemes to test investigation flow
-- **Campaign Validator** — Full integrity audit (reachability, cross-references, trigger loops); blocks export on fatal errors
-- **Playtest Mode** — One-click playtest serializes the campaign and launches the game; editor restores exact state on return
-- **IndexedDB Storage** — Workspaces saved to browser database; ZIP export/import for sharing
+---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [Bun](https://bun.sh/) (Fast all-in-one JavaScript runtime and package manager)
+- [Bun](https://bun.sh/) (v1.1+ recommended)
 
-### Installation
-1. Clone the repository.
-2. Install dependencies:
+### Installation & Development
+1. Clone the repository and install dependencies:
    ```bash
    bun install
    ```
-3. Start the development server:
+2. Start the development server:
    ```bash
    bun run dev
    ```
-4. Open the local URL (usually `http://localhost:5173`) in your browser to play.
+3. Open `http://localhost:3000` (or the port printed by Vite) in your browser.
 
 ### Building for Production
+- **Standard Web Build**:
+  ```bash
+  bun run build
+  ```
+- **itch.io Embedded Browser Build** (relative `./` base path):
+  ```bash
+  bun run build:itch
+  ```
 
-To build the project for deployment:
+---
 
-#### GitHub Pages
-1. Set the environment variable `GITHUB_PAGES=true` (this ensures the asset paths resolve correctly with the base path `/rogue_like/`).
-2. Run:
-   ```bash
-   bun run build
-   ```
-3. Deploy the generated `dist/` directory.
+## 🏗️ Architectural Governance & Single Source of Truth (SSOT)
 
-#### itch.io
-1. Build the production package with a relative base path (suitable for itch.io's offline/embedded browser format):
-   ```bash
-   bun run build:itch
-   ```
-2. Zip the contents of the `dist/` directory.
-3. Upload the ZIP file to itch.io and select **"This file will be played in the browser"**.
+This codebase enforces strict architectural guardrails verified automatically on every build:
 
-## 🏗️ Architecture Highlights
+- **Three-Tier Placement Heuristic**:
+  - **Tier 1 — Core Console Engine (`src/core/`, `src/systems/`, `src/types/`)**: Reusable RPG simulation primitives (ECS state, anatomical `EquipmentSlotInstance[]` body graphs, layered stat overlays, tag-conditional modifiers, spatial fields, AI, and UI views).
+  - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`)**: Pure mathematical laws of the tabletop system (4-stage stat DAG, 18-type bonus stacking, full-attack & maneuver resolvers, Vancian spellcasting).
+  - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: 248 modular JSON files parameterizing races, classes, racial HD tracks, templates, feats, skills, spells, equipment, and monsters.
+- **Unified Effect Providers & Hierarchical Provenance (`sourcePath`)**: Every mechanical emitter (size, creature type, subtype, race, template, class, feat, condition, armor/load, tactical stance, spatial field) projects semantic tags and emits `StatModifier`s / `RuleOverride`s carrying a slash-delimited `sourcePath` for atomic revocation.
+- **Programmatic SSOT Registries & Continuous Parity**:
+  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (251 files) or `docs/ssot/ssot_dnd35e.json` (33 files) with its primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
+  - Human-readable maps (`docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`) are generated programmatically via `bun run map:ssot` and verified for 100% disk and export parity by `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`.
 
-This codebase enforces very strict architectural rules and heavily leans into several established software design patterns to ensure long-term maintainability:
-
-- **Entity-Component-System (ECS-lite)**: Logic is entirely decoupled from data. Entities are simply branded numeric IDs. Components are plain data interfaces. Systems are pure functions.
-- **Data-Driven Design (Registry/Prefab Pattern)**: Campaigns, entities, items, and map features are defined entirely in Zod-validated JSON schemas, allowing for trivial modding without touching core logic or relying on Object-Oriented inheritance.
-- **The Command Pattern (Intent System)**: UI events and Keypresses do not execute logic directly. Instead, they push declarative `Intents` to a queue, which the engine processes later. This decouples input from simulation, making RTwP modes possible.
-- **Combinatorial Reactions & Triggers**: An event-reactive engine evaluates tag-based and verb-based conditions to deterministically resolve complex interactions (like dipping, zapping, or burning) and spawn consequences entirely from JSON schemas.
-- **Strict Immutable State Management**: The `GameState` object is an immutable snapshot of a single turn. Systems take the current state and return a brand new state object, making saving, loading, and time-travel debugging trivial.
-- **Model-View-Controller (MVC) UI Separation**: The UI is strictly layered. The DOM acts purely as a dumb View (`src/rendering/ui/`), the Controller handles user input and dispatches intents (`src/core/input_handler.ts`), and the ECS acts as the Model.
-- **The "Token Pool" (Bag) Pattern**: Used for global spawn limits and probability distribution (e.g., ensuring a "Unique Boss" only spawns once) without requiring expensive `O(N)` entity loops.
-- **Sleep/Wake Boundary (Persistence)**: Handling level transitions by archiving components to a global memory pool when unloading areas, and injecting them back when the area reloads, allowing persistent NPCs to exist decoupled from specific maps.
-- **JSON Patch (RFC 6902)**: Used exclusively in the Editor tools to compute state deltas and provide undo/redo functionality over the data-driven JSON registries.
-- **Subsystem Encapsulation**: Third-party libraries like `ROT.js` are never called directly by game logic. They are wrapped in `src/core/` modules (e.g., `rng.ts`, `scheduler.ts`) to ensure deterministic behavior.
+---
 
 ## 📁 Repository Structure
 
 ```text
-├── AGENTS.md               # Strict rules and guidelines for development
-├── docs/                   # Architectural documentation and Milestones
-├── src/
-│   ├── constants/          # All magic numbers, keybinds, and color configs
-│   ├── core/               # Wrappers for ROT.js (ECS, RNG, Scheduling)
-│   ├── map/                # Tile definitions, procedural generation, FOV
-│   ├── rendering/          # Canvas drawing and HTML HUD updates
-│   ├── systems/            # Pure logic functions (Combat, Movement, AI)
-│   ├── types/              # Interfaces and generic type unions
-│   └── utils/              # Helper functions (Grid math, assertions)
-├── index.html              # The premium retro-modern console UI wrapper
-└── main.ts                 # The bootstrap entry point
+├── AGENTS.md                   # Coding standards, Golden Rules, and 6-Step Workflow
+├── verify.sh / verify.bat      # 8-stage verification pipeline (TS, Format, Lint, Arch, Knip, Test, Build, Validator)
+├── docs/
+│   ├── ARCHITECTURE.md         # Comprehensive subsystem architecture reference
+│   ├── DECISIONS.md            # Architectural Decision Records (ADRs)
+│   ├── MILESTONES.md           # Project roadmap and completed milestones
+│   ├── SSOT_CONSOLE.md         # Auto-generated Core Console SSOT responsibility map
+│   ├── SSOT_DND35E.md          # Auto-generated D&D 3.5e Cartridge SSOT responsibility map
+│   ├── ssot/                   # Authoritative JSON SSOT registries (ssot_console.json, ssot_dnd35e.json)
+│   ├── dnd35e/                 # D&D 3.5e SRD domain reference specs
+│   ├── guides/                 # Campaign authoring and ruleset developer guides
+│   └── archive/                # Historical audits and design scratchpads
+├── public/data/
+│   ├── campaigns/              # Built-in campaigns (default, dnd35e-crypt, megacampaign, shroudgarde)
+│   └── rulesets/dnd35e/        # 248 modular D&D 3.5e SRD JSON data files
+├── scripts/                    # Campaign validator, SSOT parity engine, and codebase mapper
+├── tests/                      # Bun regression test suites (111 tests across 18 suites)
+└── src/
+    ├── actions/                # Action handlers and verb dispatch registry
+    ├── constants/              # Engine constants, keybinds, and palettes
+    ├── core/                   # ECS state, session controller, loader, RNG, scheduler, input
+    ├── editor/                 # Built-in Campaign Editor, AI Arena, and workspace services
+    ├── map/                    # Procedural map generators, FOV wrapper, and Encounter Director
+    ├── rendering/              # ROT.js display manager, viewport snapshots, and DOM UI views
+    ├── rulesets/               # Ruleset registry, classic strategy, and dnd35e/ cartridge
+    ├── systems/                # Pure ECS systems (combat, movement, effects, AI, rivalry, quests)
+    ├── types/                  # Branded IDs, ECS component schemas, and Zod campaign types
+    ├── utils/                  # Grid math, pathfinding, text parsing, and stat helpers
+    ├── worker/                 # Off-thread Web Workers (map generation and fuzzer)
+    └── main.ts                 # Application bootstrap entry point
 ```
+
+---
 
 ## 📖 Documentation
 
-For a deep dive into how the engine is built and how to extend it, please refer to:
-- `docs/ARCHITECTURE.md`: High-level system design and decision logs.
-- `docs/MILESTONES.md`: The roadmap from a MVP to a systemic engine with narrative and adversarial layers.
-- `AGENTS.md`: The core tenets of how code must be written for this project.
+- **[`AGENTS.md`](./AGENTS.md)** — Golden Rules, TypeScript strictness standards, and development workflow.
+- **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** — Deep-dive system design and data flow across all engine subsystems.
+- **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21).
+- **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and upcoming phases.
+- **[`docs/SSOT_CONSOLE.md`](./docs/SSOT_CONSOLE.md)** & **[`docs/SSOT_DND35E.md`](./docs/SSOT_DND35E.md)** — Canonical file ownership and entry-point maps.
+- **[`docs/guides/CAMPAIGN_AUTHORING.md`](./docs/guides/CAMPAIGN_AUTHORING.md)** — Guide to creating custom campaigns and JSON mods.
 
-## 🛠️ Scripts
-- `bun run dev`: Starts the Vite hot-reloading development server.
-- `bun run build`: Runs the TypeScript compiler and builds the production bundle.
-- `bun scripts/map-codebase.ts`: Generates a quick-reference summary of all exported functions and types in the codebase.
+---
+
+## 🛠️ Verification & Utility Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `./verify.sh` / `.\verify.bat` | Runs the complete 8-stage verification pipeline (Typecheck, Format, ESLint, Dependency Cruiser, Knip Dead-Code, Bun Tests, Production Build, and Campaign/SSOT Validator). |
+| `bun run dev` | Starts the Vite development server. |
+| `bun run build` | Type-checks and builds the production bundle into `dist/`. |
+| `bun test` | Runs all unit and integration regression test suites (`tests/`). |
+| `bun run validate:campaigns` | Validates all campaigns, modular ruleset files, and SSOT registry parity (`scripts/run-validator.ts`). |
+| `bun run map:ssot` | Regenerates `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` from `docs/ssot/*.json` (`scripts/map-codebase.ts`). |
+| `bun run lint` | Runs ESLint across `src/`. |
+| `bun run lint:arch` | Verifies downward dependency layering via `dependency-cruiser`. |
+| `bun run lint:deadcode` | Scans for unused files, exports, and dependencies via `knip`. |
+| `bun run format` | Formats source files with Prettier. |

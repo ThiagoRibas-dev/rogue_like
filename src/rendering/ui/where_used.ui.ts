@@ -4,7 +4,7 @@
  * Driven by the cached `ReferenceIndex` (`WeakMap`) built by `reference_index.ts`.
  * Zero `.innerHTML`. Every row is a native `<button>` with `textContent`.
  *
- * @see docs/research_notes.md §10.3 — §10.4
+ * @see docs/archive/research_notes.md §10.3 — §10.4
  * @see docs/DECISIONS.md — Milestone 76, Decision D1
  */
 import type { ReferenceIndex } from '../../editor/reference_index';

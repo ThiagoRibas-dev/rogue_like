@@ -1,5 +1,10 @@
-import { addComponent, getComponent } from '../../core/ecs.ts';
-import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
+import { addComponent, getComponent, removeComponent, spawnItem } from '../../core/ecs.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type FighterComponent,
+  type InventoryComponent
+} from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
 import { evaluateDiceExpression } from './math/dice.ts';
@@ -90,6 +95,10 @@ export interface StartingEquipmentPackage {
   readonly id: string;
   readonly name: string;
   readonly description: string;
+  readonly items: ReadonlyArray<{
+    readonly itemId: string;
+    readonly equipSlot?: 'main_hand' | 'off_hand' | 'torso' | 'body' | 'hand' | undefined;
+  }>;
   readonly weaponDice: string;
   readonly weaponDamageType: 'slashing' | 'piercing' | 'bludgeoning';
   readonly armorBonus: number;
@@ -102,6 +111,13 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     id: 'martial_vanguard',
     name: 'Martial Vanguard Kit',
     description: 'Longsword (1d8 slashing), Scale Mail (+4 armor), Heavy Wooden Shield (+2 shield), Explorer Pack.',
+    items: [
+      { itemId: 'longsword', equipSlot: 'main_hand' },
+      { itemId: 'scale_mail', equipSlot: 'torso' },
+      { itemId: 'heavy_wooden_shield', equipSlot: 'off_hand' },
+      { itemId: 'backpack' },
+      { itemId: 'health_potion' }
+    ],
     weaponDice: '1d8',
     weaponDamageType: 'slashing',
     armorBonus: 4,
@@ -110,7 +126,14 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
   {
     id: 'skirmisher_scout',
     name: 'Skirmisher & Scout Kit',
-    description: 'Shortsword (1d6 piercing), Studded Leather (+3 armor), Thieves Tools, Shortbow & 20 Arrows.',
+    description: 'Shortsword (1d6 piercing), Leather Armor (+3 armor), Thieves Tools, Backpack.',
+    items: [
+      { itemId: 'short_sword', equipSlot: 'main_hand' },
+      { itemId: 'leather_armor', equipSlot: 'torso' },
+      { itemId: 'lockpick' },
+      { itemId: 'backpack' },
+      { itemId: 'health_potion' }
+    ],
     weaponDice: '1d6',
     weaponDamageType: 'piercing',
     armorBonus: 3,
@@ -120,6 +143,13 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     id: 'divine_templar',
     name: 'Divine Templar Kit',
     description: 'Heavy Mace (1d8 bludgeoning), Chainmail (+5 armor), Heavy Shield (+2 shield), Wooden Holy Symbol.',
+    items: [
+      { itemId: 'heavy_mace', equipSlot: 'main_hand' },
+      { itemId: 'chainmail', equipSlot: 'torso' },
+      { itemId: 'heavy_wooden_shield', equipSlot: 'off_hand' },
+      { itemId: 'backpack' },
+      { itemId: 'health_potion' }
+    ],
     weaponDice: '1d8',
     weaponDamageType: 'bludgeoning',
     armorBonus: 5,
@@ -128,7 +158,13 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
   {
     id: 'arcane_scholar',
     name: 'Arcane Scholar & Monk Kit',
-    description: 'Quarterstaff (1d6 bludgeoning), Unarmored (+0 armor), Spell Component Pouch & Scholar Robes.',
+    description: 'Quarterstaff (1d6 bludgeoning), Scholar Robes (+0 armor), Backpack, Health Potion.',
+    items: [
+      { itemId: 'quarterstaff', equipSlot: 'main_hand' },
+      { itemId: 'scholar_robes', equipSlot: 'torso' },
+      { itemId: 'backpack' },
+      { itemId: 'health_potion' }
+    ],
     weaponDice: '1d6',
     weaponDamageType: 'bludgeoning',
     armorBonus: 0,
@@ -466,11 +502,61 @@ export function applyCharacterCreationToPlayer(
   const conMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedData.abilityScores.con));
   const chassis = aggregateProgressionChassis(updatedData.tracks, conMod, updatedData.levelAdjustment ?? 0);
 
-  const nextState = setDnD35EntityData(state, entityId, updatedData);
-  const fighter = getComponent(nextState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
-  if (!fighter) return nextState;
+  let runningState = setDnD35EntityData(state, entityId, updatedData);
 
-  return addComponent(nextState, entityId, {
+  // Materialize starting equipment into Inventory and Equipment slots
+  const inventory = getComponent(runningState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const equipment = getComponent(runningState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+
+  if (inventory && equipPkg.items) {
+    const spawnedItemIds: EntityId[] = [];
+    const updatedSlots = equipment ? equipment.slots.map((s) => ({ ...s })) : [];
+
+    for (const itemEntry of equipPkg.items) {
+      if (runningState.campaign.items[itemEntry.itemId]) {
+        let itemEntityId: EntityId;
+        [runningState, itemEntityId] = spawnItem(runningState, itemEntry.itemId, 0, 0);
+        runningState = removeComponent(runningState, itemEntityId, ComponentType.Position);
+        spawnedItemIds.push(itemEntityId);
+
+        if (itemEntry.equipSlot && updatedSlots.length > 0) {
+          const targetSlotType = itemEntry.equipSlot;
+          const slot = updatedSlots.find((s) => {
+            if (s.equippedItem !== null) return false;
+            if (targetSlotType === 'main_hand' || targetSlotType === 'off_hand') {
+              return s.slotType === targetSlotType || s.slotType === 'hand' || s.slotType === 'held';
+            }
+            if (targetSlotType === 'torso') {
+              return s.slotType === 'torso' || s.slotType === 'body';
+            }
+            return s.slotType === targetSlotType;
+          });
+          if (slot) {
+            (slot as { equippedItem: EntityId | null }).equippedItem = itemEntityId;
+          }
+        }
+      }
+    }
+
+    if (spawnedItemIds.length > 0) {
+      runningState = addComponent(runningState, entityId, {
+        ...inventory,
+        items: [...inventory.items, ...spawnedItemIds]
+      });
+    }
+
+    if (equipment && updatedSlots.length > 0) {
+      runningState = addComponent(runningState, entityId, {
+        ...equipment,
+        slots: updatedSlots
+      });
+    }
+  }
+
+  const fighter = getComponent(runningState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
+  if (!fighter) return runningState;
+
+  return addComponent(runningState, entityId, {
     ...fighter,
     level: chassis.ecl,
     hp: chassis.maxHp,
@@ -539,7 +625,28 @@ export function applyLevelUpToActor(
     learnedSpells: choice.learnedSpells ?? []
   };
 
-  const prevHistory = dndData.levelHistory ?? [];
+  let prevHistory = dndData.levelHistory ?? [];
+  if (prevHistory.length === 0) {
+    let charLvl = 1;
+    const synthesized: DnD35CharacterLevelRecord[] = [];
+    for (const track of dndData.tracks) {
+      if (sysContent.classes[track.trackId]) {
+        for (let l = 1; l <= track.levels; l++) {
+          synthesized.push({
+            characterLevel: charLvl++,
+            classId: track.trackId,
+            classLevel: l,
+            hpRolled: track.hitDieSides,
+            addedSkillRanks: {},
+            selectedFeats: [],
+            selectedAcfs: [],
+            learnedSpells: []
+          });
+        }
+      }
+    }
+    prevHistory = synthesized;
+  }
   const updatedHistory = [...prevHistory, newRecord];
 
   let baseAbilities = dndData.abilityScores;

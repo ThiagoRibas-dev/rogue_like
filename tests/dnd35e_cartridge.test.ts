@@ -85,6 +85,8 @@ import { processMeleeAttackIntent } from '../src/systems/combat.system.ts';
 import { processDamageSystem } from '../src/systems/damage.system.ts';
 import { grantXp } from '../src/systems/death.system.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
+import { applyLevelUpToActor } from '../src/rulesets/dnd35e/character_builder.ts';
+import { canPlayerLevelUpDnD35e } from '../src/rendering/ui/dnd35e_level_up.ui.ts';
 
 describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Verification (Milestones 85–100)', () => {
   test('Layer 1 (M85): Seeded dice expression evaluator, d20 bounds, and abstract multiplier math', () => {
@@ -619,6 +621,18 @@ describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Ver
     // Grant 1000 XP -> reaches Level 2 under D&D 3.5e triangular progression
     state = grantXp(state, playerId, 1000);
     const fighterAfterXp = getComponent(state, playerId, ComponentType.Fighter)!;
-    expect(fighterAfterXp.level).toBe(2);
+    expect(fighterAfterXp.xp).toBe(1000);
+    expect(canPlayerLevelUpDnD35e(state, playerId)).toBe(true);
+
+    const levelUpRes = applyLevelUpToActor(state, playerId, {
+      classId: 'fighter',
+      hpMethod: 'average',
+      addedSkillRanks: {},
+      selectedFeats: []
+    });
+    expect(levelUpRes.success).toBe(true);
+    state = levelUpRes.state;
+    const fighterAfterLevelUp = getComponent(state, playerId, ComponentType.Fighter)!;
+    expect(fighterAfterLevelUp.level).toBe(2);
   });
 });

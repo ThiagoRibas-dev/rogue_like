@@ -132,7 +132,7 @@ export function computeAoEAffectedSquares(
 }
 
 /**
- * Resolves an 8-Hour Roguelike Rest and Daily Spell Slot Refresh per `/docs/rules/magic/preparing-wizard-spells.md`:
+ * Resolves an 8-Hour Roguelike Rest and Daily Spell Slot Refresh per `/docs/dnd35e/rules/magic/preparing-wizard-spells.md`:
  * - **8-Hour Recent Cast Limit**: Any spell slot expended within the last 8 hours
  *   (`restEndTurn - castTimestampTurn < 4800` rounds) counts against the caster's daily limit
  *   and CANNOT be refreshed during this rest.

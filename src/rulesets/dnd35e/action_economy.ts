@@ -163,7 +163,7 @@ export function takeFiveFootStep(
 }
 
 /**
- * Uses a `Swift` or `Immediate` action per `/docs/rules/actions/action-types.md`:
+ * Uses a `Swift` or `Immediate` action per `/docs/dnd35e/rules/actions/action-types.md`:
  * - Cannot use an `Immediate` action while `isFlatFooted === true`.
  * - Using an `Immediate` action on-turn consumes `swiftRemaining`.
  * - Using an `Immediate` action off-turn sets `immediateUsedOffTurn = true`, which will

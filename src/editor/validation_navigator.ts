@@ -5,7 +5,7 @@
  * Accordion open-state is preserved in a module-level `Set<string>` so that
  * workspace DOM replacements (`renderWorkspace`) do not reset user toggles.
  *
- * @see docs/research_notes.md §10.2 — §10.4
+ * @see docs/archive/research_notes.md §10.2 — §10.4
  * @see docs/DECISIONS.md — Milestone 76, Decision D3 (accordion persistence)
  */
 import { isPathPrefix, ancestorPaths } from './validation_path';

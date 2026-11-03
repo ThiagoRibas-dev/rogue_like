@@ -608,6 +608,71 @@ To complete Universal Actor Symmetry (**AGENTS.md Rule 18**) and Unified Effect 
 4. **Fully Modularized `creature_types/`, `subtypes/`, `domains/`, `skills/` (42 SRD Skills), and `spells/` Registries**:
    - `creature_types/<id>.json` (15 files), `subtypes/<id>.json` (20 files with `traitBundle`), `domains/<id>.json` (22 files with `grantedPowerBundle`), `skills/<id>.json` (all 42 SRD skills with `actions`, `synergyFromSkills`, `synergyNotes`, `retryAllowed` / `take10Allowed` / `take20Allowed` flags, and `rankThresholdModifiers` evaluated via `buildSkillRankThresholdModifiers`), and `spells/<id>.json` (with `levelByClass` and `levelByDomain` class/domain spell-list tagging validated in `dnd35e_validator.ts`).
 
+### 9.9 Combat Sequence & Inventory Wiring, Declarative Doctrine Descriptors, Level-Up Decoupling & Multi-Mode Floor Traversal (Milestone 112.6)
+
+Milestone 112.6 bridged the foundational integration gaps between Phase 21/22/23 ruleset primitives and the live gameplay loops:
+
+1. **Equipped Weapon Profile Resolution (`src/rulesets/dnd35e/equipment_physics.ts`)**:
+   - `resolveEquippedWeaponProfile(state, entityId, slotType)` inspects `EquipmentComponent.slots` to resolve the equipped item entity, material physics, base weapon dice, size scaling (`scaleWeaponDamageDice`), damage type, threat range, crit multiplier, handedness, and DR bypass tags (`bypass:*`, `material:*`).
+   - If unarmed, it computes canonical SRD Unarmed Strike parameters scaled by size (`1d3` Medium, `1d2` Small, `1d4` Large, bludgeoning, 20/x2, light).
+
+2. **Full-Round Attack Sequencing & 5-Foot Step Invariants (`src/rulesets/dnd35e/dnd35e_ruleset.ts`)**:
+   - `resolveDnD35eMeleeAttack` queries `distanceMovedThisRoundFt`: if the actor has not moved or took at most a 5-foot step (`<= 5` ft), a Full Attack is executed using `buildFullAttackSequence`, combining primary manufactured iteratives, off-hand weapons, and secondary natural weapons.
+   - If the actor has moved $> 5$ ft, the attack downgrades to a single Standard Attack.
+   - Each swing rolls attack and damage independently, confirms critical threats, checks DR / energy resistance / incorporeal miss chance, and emits structured combat log messages.
+
+3. **Starting Equipment Physical Materialization (`src/rulesets/dnd35e/character_builder.ts`)**:
+   - `applyCharacterCreationToPlayer` instantiates physical item entities into the player's `InventoryComponent` based on `StartingEquipmentPackage` data and equips primary weapons, shields, and armor into `EquipmentComponent.slots`.
+
+4. **Decoupled Interactive Level-Up Progression (`src/rulesets/dnd35e/dnd35e_ruleset.ts`, `src/rendering/ui/dnd35e_level_up.ui.ts`)**:
+   - `grantDnD35eXp` strictly increments experience points and emits level-up notifications without mutating `tracks` or HP in the background.
+   - `applyLevelUpToActor` remains the sole authority on level advancement, guaranteeing 100% integrity across `levelHistory`, skill points, feat allocations, and HP calculations.
+
+5. **Declarative Tactical Doctrine Descriptors (`src/rulesets/dnd35e/combat/attack_resolver.ts`)**:
+   - `evaluateTacticalDoctrineModifiers` evaluates `TacticalDialDescriptor`s on active `DnD35EffectBundle`s rather than hardcoded feat string checks. Feats like *Power Attack* and *Combat Expertise* declaratively specify their penalty formulas, handedness scaling (1:1 one-handed, 1:2 two-handed, 1:0 light), and granted bonus types (`untyped` damage vs `dodge` AC).
+
+6. **Multi-Mode Floor Traversal (`src/systems/movement.system.ts`, `src/types/campaign/world.ts`)**:
+   - Added `traversableBy?: ReadonlyArray<string>` to `TileDefinitionSchema`.
+   - `canTraverseTile(tileDef, movementModes)` enables actors with `fly > 0` or `swim > 0` to traverse chasms, pits, and liquid hazards without collision blocking.
+
+### 9.10 Stage 4 DAG Attack Routine, Inappropriately Sized Weapon Effort Ladder, Grip Mode Toggles & Multi-Limb Sequencing (Milestone 112.7)
+
+To ensure that weapon handedness, size penalties, limb occupation, and per-strike Power Attack / Strength multipliers react automatically whenever an actor changes size (*Enlarge Person*, *Polymorph*), changes strength (*Bull's Strength*, *Rage*), grows extra limbs, or toggles grip stances, the actor's complete **`attackRoutine: DnD35ResolvedAttackRoutine`** is evaluated as **Stage 4 of `evaluateDnD35eEntityDAG`**:
+
+1. **Stage 1 $\to$ Stage 4 Weapon Size vs. Wielder Size Effort Ladder (`evaluateWeaponWieldingProfile`)**:
+   - Consumes post-Stage-1 `dagResult.effectiveSize` (`wielderSize`) and compares it against the weapon's `weaponSize` along the 3-step effort ladder `['light', 'one_handed', 'two_handed']`:
+     $$\text{Index}_{\text{eff}} = \text{Index}_{\text{base}} + (\text{Rank}(\text{WeaponSize}) - \text{Rank}(\text{WielderSize}))$$
+   - Wieldable if and only if $0 \le \text{Index}_{\text{eff}} \le 2$, applying a $-2 \times |\Delta\text{Size}|$ attack roll penalty per size step difference while scaling weapon damage dice from `weaponSize`.
+
+2. **Two-Stage Effort $\to$ Grip Handedness Pipeline (`TacticalDoctrineComponent.gripMode`)**:
+   - Supports `gripMode: 'one_handed' | 'two_handed' | 'double_weapon_twf'`.
+   - **Effective `'one_handed'` Weapon + Free Hand**: Toggling `gripMode: 'two_handed'` occupies the free hand's `limbGroupId` and upgrades effective `handedness` to `'two_handed'` ($1.5\times \text{STR}$, $1:2$ Power Attack), while enforcing the SRD **Rapier exception** (`cannot_two_hand_str`: stays $1.0\times \text{STR}$ and $1:1$ Power Attack) and **Bastard Sword / Dwarven Waraxe** (`1H Exotic` vs. `2H Martial`).
+   - **Effective `'light'` Weapon**: Always remains `'light'` ($1.0\times \text{STR}$, $0\times$ Power Attack) even if gripped with two hands.
+   - **Double Weapons (*Quarterstaff*, *Orc Double Axe*, etc.)**: Toggleable between single-end `'two_handed'` mode ($1.5\times \text{STR}$, $0$ TWF penalty) and `'double_weapon_twf'` mode (`one_handed` primary head + `light` off-hand head).
+
+3. **Multi-Limb Occupation, Armed Natural Weapon Demotion & Per-Strike Power Attack (`resolveActorAttackRoutine`)**:
+   - Inspects all `held` / `hand` slots across $1..N$ limbs, collecting `occupiedLimbGroupIds` for hands holding weapons, shields, or the second hand of a two-handed grip.
+   - Suppresses natural weapons (`Claws`, `Slams`) on occupied `limbGroupId`s and automatically demotes all remaining unblocked natural weapons (including normally primary ones like `Bite` or `Gore`) to `natural_secondary` (`-5` penalty, or `-2` with *Multiattack*, and $0.5\times \text{STR}$ damage) when armed with a manufactured weapon.
+   - Computes Power Attack damage **per strike** (`computeStrikeDoctrineDamageBonus`): $2\times$ for `'two_handed'` strikes, $1\times$ for `'one_handed'`, `'primary_natural_sole'`, unarmed, and natural strikes, and $0\times$ for manufactured `'light'` or manufactured `'off_hand'` weapons.
+
+### 9.11 Single Source of Truth (SSOT) Architecture & Continuous Parity Engine (Milestone 112.8)
+
+To eliminate "split-brain" architecture risks, duplicate implementations, and architectural drift across 284+ source files, the codebase is governed by machine-readable Single Source of Truth (SSOT) registries and automated parity enforcement:
+
+1. **Two-Tier SSOT Registries (`docs/ssot/`)**:
+   - `docs/ssot/ssot_console.json`: Maps 251 Core Console files across actions, app wiring, editor, constants, ECS systems, engine types, map generation, rendering/UI views, and utility helpers.
+   - `docs/ssot/ssot_dnd35e.json`: Maps 33 D&D 3.5e Cartridge files across core progression, math/multipliers, 4-stage stat DAG, spatial geometry, combat maneuvers, Vancian magic, and tactical UI.
+   - Every file entry defines its domain, tier (`tier1_console`, `tier1_types`, `tier2_cartridge`, `tier2_ui`), primary responsibility, canonical entry points, explicit ownership boundary (`includes` / `excludes`), and forbidden anti-patterns.
+
+2. **Automated Markdown Projection (`scripts/map-codebase.ts`)**:
+   - `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are 100% generated from the JSON registries (`bun run map:ssot`), providing human-readable navigation tables without manual documentation drift.
+
+3. **Continuous Parity Enforcement (`scripts/ssot_parity.ts`, `scripts/run-validator.ts`, `tests/ssot_registry_parity.test.ts`)**:
+   - Validates that every TypeScript source file on disk is registered in exactly one registry (disjoint partition, zero orphans).
+   - Verifies that every declared `canonicalEntryPoint` is actively exported by the underlying TypeScript file.
+   - Verifies that `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are in sync with the JSON registries.
+   - Enforced automatically in `scripts/run-validator.ts` and automated test suites.
+
 ---
 
 ## 10. Key Design Decisions

@@ -381,5 +381,153 @@
     "category": "tool",
     "weight": 1,
     "tags": ["bones", "quest_item"]
+  },
+  "longsword": {
+    "spriteId": "item_long_sword",
+    "id": "longsword",
+    "name": "Longsword",
+    "unidentifiedName": "Longsword",
+    "description": "A versatile one-handed steel blade with keen edges and a sharp point.",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "tags": ["weapon", "slashing", "one_handed", "weaponDice:1d8", "critThreatMin:19", "critMultiplier:2"],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "scale_mail": {
+    "spriteId": "item_scale_mail",
+    "id": "scale_mail",
+    "name": "Scale Mail",
+    "unidentifiedName": "Scale Armor",
+    "description": "A coat of overlapping metal scales fastened to a leather backing.",
+    "glyph": "[",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 30,
+    "tags": ["armor", "medium", "armorBonus:4", "acp:4"],
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 4,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "heavy_wooden_shield": {
+    "spriteId": "item_round_shield",
+    "id": "heavy_wooden_shield",
+    "name": "Heavy Wooden Shield",
+    "unidentifiedName": "Wooden Shield",
+    "description": "A broad shield strapped to the forearm to deflect incoming blows.",
+    "glyph": ")",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 10,
+    "tags": ["shield", "shieldBonus:2", "acp:2"],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "heavy_mace": {
+    "spriteId": "item_mace_1",
+    "id": "heavy_mace",
+    "name": "Heavy Mace",
+    "unidentifiedName": "Flanged Mace",
+    "description": "A heavy metal shaft crowned with radiating steel flanges.",
+    "glyph": "\\",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 8,
+    "tags": ["weapon", "bludgeoning", "one_handed", "weaponDice:1d8", "critThreatMin:20", "critMultiplier:2"],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "chainmail": {
+    "spriteId": "item_chain_mail",
+    "id": "chainmail",
+    "name": "Chainmail",
+    "unidentifiedName": "Ring Armor",
+    "description": "Interlocking metal rings woven over a padded gambeson.",
+    "glyph": "[",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 40,
+    "tags": ["armor", "heavy", "armorBonus:5", "acp:5"],
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 5,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "quarterstaff": {
+    "spriteId": "item_druid_staff",
+    "id": "quarterstaff",
+    "name": "Quarterstaff",
+    "unidentifiedName": "Wooden Staff",
+    "description": "A sturdy length of hardwood balanced for defense and bludgeoning strikes.",
+    "glyph": "\\",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "tags": [
+      "weapon",
+      "bludgeoning",
+      "two_handed",
+      "double_weapon",
+      "weaponDice:1d6",
+      "critThreatMin:20",
+      "critMultiplier:2"
+    ],
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
+  },
+  "scholar_robes": {
+    "spriteId": "item_cloth_armor",
+    "id": "scholar_robes",
+    "name": "Scholar Robes",
+    "unidentifiedName": "Plain Robes",
+    "description": "Flowing woven vestments with deep pockets suited for reagents and manuscripts.",
+    "glyph": "[",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "tags": ["armor", "light", "armorBonus:0", "acp:0"],
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    }
   }
 }

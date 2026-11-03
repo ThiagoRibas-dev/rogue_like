@@ -4,6 +4,7 @@ set -e
 export TMPDIR=/tmp
 export BUN_TMPDIR=/tmp
 export NODE_OPTIONS="--max-old-space-size=4096"
+export KNIP_DISABLE_RAW_TRANSFER=1
 
 echo "===================================="
 echo "Running type check and build verification..."

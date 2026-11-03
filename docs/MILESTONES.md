@@ -1468,21 +1468,55 @@ Refine the Character Creation Wizard (`dnd35e_char_builder.ui.ts`, `dnd35e_char_
   - Enforce exact feat slot budgets in Step 5 (`computeFirstLevelFeatSlotBudget`: `1 General Feat` + `1 Human Bonus Feat` if Human + `1 Fighter Bonus Feat` restricted to `[Fighter Bonus Feat]` tagged feats if Fighter 1), with a right-hand Feat Inspector displaying the full prerequisite AST check (`evaluatePrerequisiteAST`) and `effectBundle` description.
   - Add `levelByClass: z.record(z.string(), z.number().int().min(0).max(9))` and `levelByDomain: z.record(z.string(), z.number().int().min(1).max(9))` to `DnD35SpellDefinitionSchema` across 23 starter 0th/1st-level spells in `public/data/rulesets/dnd35e/spells/<id>.json`, and filter Step 6 (`renderSpellsStep`) and Level-Up spell selection strictly via `isSpellSelectableForDraft` (checking `spell.levelByClass[classId]` and prohibited school exclusions) so divine casters and arcane casters only see spells belonging to their class spell list.
 
-## ⚪ Milestone 112.6: Combat Sequence & Inventory Wiring, Declarative Doctrine Descriptors, Level-Up Decoupling & Multi-Mode Floor Traversal
+## 🟢 Milestone 112.6: Combat Sequence & Inventory Wiring, Declarative Doctrine Descriptors, Level-Up Decoupling & Multi-Mode Floor Traversal
 
 Bridge foundational integration gaps between Phase 21/22/23 primitives and live gameplay loops prior to Phase 24 content expansion.
 
-- [ ] **Full-Round Attack Routine & Equipped Weapon Resolution (`dnd35e_ruleset.ts`, `attack_resolver.ts`)**:
+- [x] **Full-Round Attack Routine & Equipped Weapon Resolution (`dnd35e_ruleset.ts`, `attack_resolver.ts`)**:
   - Wire `buildFullAttackSequence` into `resolveDnD35eMeleeAttack` for full-round attack actions, sequencing iterative attacks, off-hand weapons, and secondary natural attacks.
   - Dynamically derive attack parameters (weapon dice, threat range, crit multiplier, damage type, and material properties) from the actual item entities equipped in the actor's `held` hand slots instead of falling back to flat baseline properties on `DnD35EntityData`.
-- [ ] **Character Creation Starting Equipment Physical Materialization (`character_builder.ts`)**:
+- [x] **Character Creation Starting Equipment Physical Materialization (`character_builder.ts`)**:
   - Update `commitCharacterCreation` so selected starting equipment packages instantiate actual item entities in the player's `InventoryComponent` and equip starting armaments into `EquipmentComponent.slots`.
-- [ ] **Decoupled Interactive Level-Up Progression (`dnd35e_ruleset.ts`, `dnd35e_level_up.ui.ts`)**:
+- [x] **Decoupled Interactive Level-Up Progression (`dnd35e_ruleset.ts`, `dnd35e_level_up.ui.ts`)**:
   - Refactor `grantDnD35eXp` so crossing an XP threshold does not automatically mutate `tracks` and HP in the background; preserve the XP threshold trigger strictly for the interactive Level-Up HUD alert and `applyLevelUpToActor()`, maintaining 100% fidelity with `levelHistory`.
-- [ ] **Declarative Doctrine Descriptors (`doctrineDescriptor` in `attack_resolver.ts` & `feats/*.json`)**:
+- [x] **Declarative Doctrine Descriptors (`doctrineDescriptor` in `attack_resolver.ts` & `feats/*.json`)**:
   - Refactor `evaluateTacticalDoctrineModifiers` to consume declarative `doctrineDescriptor` trade-off configurations from active `DnD35EffectBundle`s (scaling attack penalties into damage or dodge AC based on handedness and dial values) instead of hardcoding feat-specific keys in Cartridge code.
-- [ ] **Lightweight Multi-Mode Traversal (`movement.system.ts`, `grid.ts`)**:
+- [x] **Lightweight Multi-Mode Traversal (`movement.system.ts`, `grid.ts`)**:
   - Extend `processMoveIntent` to check `movementModes` against non-solid impassable terrain (chasms, liquid, pits) allowing actors with `fly > 0` or `swim > 0` to pass without requiring a full 3D Z-axis console overhaul.
+
+## 🟢 Milestone 112.7: Inappropriately Sized Weapon Effort Ladder, Two-Handed Grip & Double-Weapon Toggles, Multi-Limb / Natural Demotion & Per-Strike Power Attack Handedness (Complete)
+
+Complete the SRD 3.5e weapon-wielding physics, grip mode state machine, multi-limb attack sequencing, and per-strike handedness resolution across manufactured, double, and natural weapons.
+
+- [x] **Inappropriately Sized Weapon Effort Ladder & Attack Penalties (`equipment_physics.ts`)**:
+  - Fix `evaluateWeaponWieldingProfile` to compute effective effort via the exact 3-step ladder $\text{Index}_{\text{eff}} = \text{Index}_{\text{base}} + (\text{Rank}(\text{WeaponSize}) - \text{Rank}(\text{WielderSize})) \in [0, 2]$ (`0: light`, `1: one_handed`, `2: two_handed`), properly rejecting out-of-bounds shifts (such as a Medium creature attempting to wield a Small Light weapon where $\text{Index}_{\text{eff}} = -1$) while permitting valid $\pm 2$-step shifts (such as a Large creature wielding a Small Two-Handed weapon as `'light'` at `-4` attack penalty).
+  - Resolve `weaponSize` from item tags (`weaponSize:<size>`, defaulting to `'medium'`) so damage dice scale strictly from `weaponSize` while `wielderSize` determines effort shift and the $-2 \times |\Delta\text{Size}|$ attack roll penalty.
+- [x] **Two-Handed Grip Toggle, Double-Weapon Mode & Weapon Exceptions (`components.types.ts`, `equipment_physics.ts`, `dnd35e_ruleset.ts`)**:
+  - Add `gripMode?: 'one_handed' | 'two_handed' | 'double_weapon_twf'` (or `wieldTwoHanded?: boolean`) to `TacticalDoctrineComponent`.
+  - When an actor wields an effective `'one_handed'` weapon and has a free hand (an unoccupied `held` / `hand` slot with no shield or off-hand weapon), allow toggling into `'two_handed'` grip ($1.5\times \text{STR}$ damage, $1:2$ Power Attack, and occupying the free hand's `limbGroupId` for the round), while enforcing the SRD **Rapier exception** (`cannot_two_hand_str`: cannot be wielded two-handed for $1.5\times \text{STR}$ or $2\times$ Power Attack) and **Light weapon rule** (two-handing an effective `'light'` weapon grants no $1.5\times \text{STR}$ or $2\times$ Power Attack benefit).
+  - Support **Bastard Sword / Dwarven Waraxe** handedness-dependent proficiency (`1H Exotic` vs. `2H Martial`, with Dwarves treating Dwarven Waraxes as Martial in 1H) and **Double Weapons** (e.g., *Quarterstaff*, *Orc Double Axe*, *Dire Flail*, *Two-Bladed Sword*: toggleable between single-end `'two_handed'` mode with $1.5\times \text{STR}$ / $0$ TWF penalty and `'double_weapon_twf'` mode treated as `one_handed` primary + `light` off-hand).
+- [x] **Limb Occupation Filtering, Primary-to-Secondary Natural Demotion & Multi-Armed (`3+` Hands) Sequencing (`dnd35e_ruleset.ts`, `attack_resolver.ts`)**:
+  - Populate `naturalWeaponLimbs` and `occupiedLimbGroupIds` from the actor's equipped/two-handed `EquipmentComponent.slots` when calling `buildFullAttackSequence` in `resolveDnD35eMeleeAttack`, so natural weapons on occupied limbs (e.g., a `Claw` on a hand holding a sword, shield, or two-handed grip) are suppressed and all remaining unblocked natural weapons (even normally primary ones like `Bite` or `Gore`) are automatically demoted to `natural_secondary` (`-5` penalty, or `-2` with *Multiattack*, and $0.5\times \text{STR}$ damage) without imposing TWF penalties on the manufactured weapon.
+  - Extend `resolveEquippedWeaponProfile` and `buildFullAttackSequence` to support multi-armed creatures ($3+$ `held` hand slots, e.g., 6-armed Marilith) with `1` primary hand and $N-1$ off-hand weapons.
+- [x] **Per-Strike Power Attack Handedness Resolution (`attack_resolver.ts`, `dnd35e_ruleset.ts`)**:
+  - Decouple Power Attack's damage bonus from the actor-wide flat `dagResult.damageBonus` during full-attack execution so each individual strike in a mixed routine computes its own Power Attack damage multiplier from that strike's effective handedness (`2x` for `'two_handed'`, `1x` for `'one_handed'`, `'primary_natural_sole'`, or natural weapons, and `0x` for `'light'` weapons—preventing main-hand Power Attack damage from bleeding onto a light off-hand weapon).
+
+## 🟢 Milestone 112.8: Programmatic SSOT Responsibility Registries, Parity Validator, Markdown Generator & Docs Reorganization
+
+Reorganize `/docs`, establish canonical Single Source of Truth (SSOT) responsibility maps for the Console Engine and D&D 3.5e Cartridge, and enforce 100% architectural coverage and export parity programmatically via continuous validation.
+
+- [x] **Documentation Reorganization (`docs/`)**:
+  - Restructure `/docs` into clean subfolders (`ssot/`, `dnd35e/`, `guides/`, `archive/`), preserving only living core references at the root (`ARCHITECTURE.md`, `DECISIONS.md`, `MILESTONES.md`, `SSOT_CONSOLE.md`, `SSOT_DND35E.md`).
+  - Update all `@see /docs/...` JSDoc links in source code to reference new clean paths.
+- [x] **SSOT Responsibility Registries (`docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json`)**:
+  - Author comprehensive JSON registries covering 100% of TypeScript source files (251 Console Engine files and 33 D&D 3.5e files).
+  - Explicitly define domain, architectural tier, responsibility, canonical entry points, ownership boundaries (includes/excludes), and forbidden anti-patterns for every module.
+- [x] **SSOT Parity Engine & Markdown Generator (`scripts/ssot_parity.ts`, `scripts/map-codebase.ts`)**:
+  - Implement `validateSsotRegistries` enforcing complete partition, zero orphan files, live AST export validation, and synchronized markdown maps.
+  - Upgrade `scripts/map-codebase.ts` to generate `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` and support `--check` mode (`bun run map:ssot`).
+- [x] **Continuous Verification & Process Integration (`scripts/run-validator.ts`, `tests/`, `AGENTS.md`)**:
+  - Wire SSOT parity verification directly into `scripts/run-validator.ts` and author unit test suite `tests/ssot_registry_parity.test.ts`.
+  - Update `AGENTS.md` Kickoff Step 4 (SSOT verification and old-brain eviction) and After Writing Code Step 11 (SSOT registry maintenance).
 
 ---
 

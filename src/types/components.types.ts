@@ -691,8 +691,16 @@ export interface ResourcePoolComponent {
 }
 
 /**
+ * Combat weapon grip modes for armed actors:
+ * - 'one_handed': Wields a 1H weapon in 1 hand (or off-hand).
+ * - 'two_handed': Wields a 1H weapon in 2 hands (if a free hand is available) or a 2H weapon in 2 hands.
+ * - 'double_weapon_twf': Wields a double weapon using both ends as TWF (one-handed primary + light off-hand).
+ */
+export type WeaponGripMode = 'one_handed' | 'two_handed' | 'double_weapon_twf';
+
+/**
  * Component storing active tactical stances and combat trade-offs (Power Attack, Combat Expertise, Fighting Defensively)
- * as well as data-driven doctrine settings.
+ * as well as data-driven doctrine settings and weapon grip mode.
  */
 export interface TacticalDoctrineComponent {
   readonly type: ComponentType.TacticalDoctrine;
@@ -700,6 +708,7 @@ export interface TacticalDoctrineComponent {
   readonly combatExpertiseAmount?: number | undefined;
   readonly fightingDefensively?: boolean | undefined;
   readonly totalDefense?: boolean | undefined;
+  readonly gripMode?: WeaponGripMode | undefined;
   readonly settings?: Readonly<Record<string, boolean | number | string>> | undefined;
 }
 

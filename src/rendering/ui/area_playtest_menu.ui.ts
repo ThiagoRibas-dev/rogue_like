@@ -6,7 +6,7 @@
  *
  * Zero `.innerHTML`. All nodes created with `document.createElement`.
  *
- * @see docs/research_notes.md §10.5 — §10.6
+ * @see docs/archive/research_notes.md §10.5 — §10.6
  * @see docs/DECISIONS.md — Milestone 76, Decision D5
  */
 

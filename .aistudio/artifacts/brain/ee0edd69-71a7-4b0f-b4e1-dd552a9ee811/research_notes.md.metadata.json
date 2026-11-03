@@ -1,6 +1,6 @@
 {
-  "summary": "Research Notes for Milestone 112.5: Full-Screen 2-Pane Character Creation & Level-Up UX Overhaul, Playable Race Filtering, Ability Score State Machine, Skill Rank Counter & Bonus Breakdown, Feat Slot Budgets, and Class/Domain Spell-List Tagging. Includes root-cause analysis and a 3-Axis Cascading Effects Matrix.",
-  "updatedAt": "2026-11-02T17:27:36.359947542Z",
+  "summary": "Research Notes for Milestone 112.8: Programmatic SSOT Responsibility Registries (ssot_console.json & ssot_dnd35e.json), 4-Way Parity Validator, Markdown SSOT Map Generator, docs/ Folder Reorganization, and AGENTS.md Workflow Integration.",
+  "updatedAt": "2026-11-03T16:13:25.981145075Z",
   "requestFeedback": true,
   "userFacing": true
 }

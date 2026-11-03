@@ -3,7 +3,9 @@ import { evaluateDiceExpression, rollD20 } from '../math/dice.ts';
 import { combineAbstractMultipliers, dndFloor } from '../math/multipliers.ts';
 import { getIterativeBabSequence } from '../progression.ts';
 import type { CreatureSizeCategory } from '../types/dnd35e.types.ts';
-import type { TacticalDoctrineComponent } from '../../../types/components.types.ts';
+import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
+import type { TacticalDoctrineComponent, WeaponGripMode } from '../../../types/components.types.ts';
+import type { ResolvedActorWeapons } from '../equipment_physics.ts';
 
 /** Percentage roll modulus (`100`). */
 const PERCENT_ROLL_MODULUS = 100;
@@ -216,6 +218,11 @@ export interface NaturalWeaponLimbEntry {
   readonly isPrimary: boolean;
   readonly count: number;
   readonly limbGroupId?: string | undefined;
+  readonly name?: string | undefined;
+  readonly dice?: string | undefined;
+  readonly damageType?: DnD35DamageType | undefined;
+  readonly critThreatMin?: number | undefined;
+  readonly critMultiplier?: number | undefined;
 }
 
 /**
@@ -246,6 +253,7 @@ export function buildFullAttackSequence(options: {
   readonly overrides?: CombatRuleOverrides | undefined;
   readonly weaponId?: string | undefined;
   readonly offHandWeaponId?: string | undefined;
+  readonly offHandWeaponIds?: ReadonlyArray<string | undefined> | undefined;
   readonly secondaryNaturalIds?: ReadonlyArray<string> | undefined;
   readonly naturalWeaponLimbs?: ReadonlyArray<NaturalWeaponLimbEntry> | undefined;
   readonly occupiedLimbGroupIds?: ReadonlyArray<string> | undefined;
@@ -356,10 +364,15 @@ export function buildFullAttackSequence(options: {
 
   const primaryAttacks = iterBabs.map((b) => b + nonBabMod + twfPrimaryPenalty);
 
-  const offHandCount = options.hasOffHandWeapon === true ? 1 + (options.overrides?.extraOffHandAttacks ?? 0) : 0;
+  const offHandCount =
+    options.offHandWeaponIds && options.offHandWeaponIds.length > 0
+      ? options.offHandWeaponIds.length + (options.overrides?.extraOffHandAttacks ?? 0)
+      : options.hasOffHandWeapon === true
+        ? 1 + (options.overrides?.extraOffHandAttacks ?? 0)
+        : 0;
   const offHandAttacks: number[] = [];
   for (let i = 0; i < offHandCount; i++) {
-    const offHandBabPenalty = i * 5;
+    const offHandBabPenalty = options.offHandWeaponIds && i < options.offHandWeaponIds.length ? 0 : i * 5;
     offHandAttacks.push(Math.max(1, options.totalBab - offHandBabPenalty) + nonBabMod + twfOffHandPenalty);
   }
 
@@ -391,11 +404,13 @@ export function buildFullAttackSequence(options: {
       weaponId: options.weaponId
     });
   }
-  for (const atk of offHandAttacks) {
+  for (let i = 0; i < offHandAttacks.length; i++) {
+    const atk = offHandAttacks[i]!;
+    const wId = options.offHandWeaponIds?.[i] ?? options.offHandWeaponId;
     entries.push({
       attackSource: 'manufactured_offhand',
       attackBonus: atk,
-      weaponId: options.offHandWeaponId
+      weaponId: wId
     });
   }
   for (let i = 0; i < naturalAttacks.length; i++) {
@@ -419,6 +434,48 @@ export function buildFullAttackSequence(options: {
 const TUMBLE_SYNERGY_MIN_RANKS = 5;
 
 /**
+ * Declarative descriptor for a variable doctrine dial (e.g., Power Attack, Combat Expertise).
+ */
+export interface TacticalDialDescriptor {
+  readonly abilityId: string;
+  readonly name?: string | undefined;
+  readonly min: number;
+  readonly maxCapRule: 'bab' | 'fixed_5' | 'class_level';
+  readonly attackDeltaPerPoint: number;
+  readonly damageDeltaPerPoint: number;
+  readonly acDeltaPerPoint: number;
+  readonly twoHandedMultiplier?: number | undefined;
+  readonly legacyPropertyKey?: 'powerAttackAmount' | 'combatExpertiseAmount' | undefined;
+}
+
+/** Canonical fallback doctrine dials for SRD feats. */
+export const CANONICAL_TACTICAL_DIALS: ReadonlyArray<TacticalDialDescriptor> = [
+  {
+    abilityId: 'power_attack',
+    name: 'Power Attack',
+    min: 0,
+    maxCapRule: 'bab',
+    attackDeltaPerPoint: -1,
+    damageDeltaPerPoint: 1,
+    acDeltaPerPoint: 0,
+    twoHandedMultiplier: 2,
+    legacyPropertyKey: 'powerAttackAmount'
+  },
+  {
+    abilityId: 'combat_expertise',
+    name: 'Combat Expertise',
+    min: 0,
+    maxCapRule: 'fixed_5',
+    attackDeltaPerPoint: -1,
+    damageDeltaPerPoint: 0,
+    acDeltaPerPoint: 1,
+    legacyPropertyKey: 'combatExpertiseAmount'
+  }
+];
+
+const FIXED_CAP_FIVE = 5;
+
+/**
  * Evaluates attack roll and damage/AC adjustments resulting from active tactical doctrines
  * (Power Attack, Combat Expertise, Fighting Defensively, Total Defense), including 5-rank
  * Tumble synergy (`+3` Dodge AC when Fighting Defensively, `+6` Dodge AC in Total Defense).
@@ -427,7 +484,8 @@ export function evaluateTacticalDoctrineModifiers(
   doctrine: TacticalDoctrineComponent,
   bab: number,
   handedness: 'light' | 'one_handed' | 'two_handed',
-  tumbleRanks = 0
+  tumbleRanks = 0,
+  customDials?: ReadonlyArray<TacticalDialDescriptor>
 ): {
   readonly attackPenalty: number;
   readonly damageBonus: number;
@@ -449,28 +507,47 @@ export function evaluateTacticalDoctrineModifiers(
   let damageBonus = 0;
   let dodgeAcBonus = 0;
 
-  // Power Attack
-  if (doctrine.powerAttackAmount && doctrine.powerAttackAmount > 0) {
-    const clampedPower = Math.min(doctrine.powerAttackAmount, bab);
-    if (clampedPower > 0) {
-      if (handedness === 'light') {
-        // Light weapons suffer the attack penalty in 3.5e if used, or get 0 damage bonus
-      } else if (handedness === 'two_handed') {
-        attackPenalty += clampedPower;
-        damageBonus += clampedPower * 2;
-      } else {
-        attackPenalty += clampedPower;
-        damageBonus += clampedPower;
+  const dials = customDials ?? CANONICAL_TACTICAL_DIALS;
+  for (const dial of dials) {
+    // Read dial value from settings or declarative legacyPropertyKey
+    let dialValue = 0;
+    if (doctrine.settings) {
+      const settingVal = doctrine.settings[dial.abilityId] ?? doctrine.settings[`${dial.abilityId}_dial`];
+      if (typeof settingVal === 'number') {
+        dialValue = settingVal;
       }
     }
-  }
+    if (dialValue === 0 && dial.legacyPropertyKey !== undefined) {
+      const legacyVal = doctrine[dial.legacyPropertyKey];
+      if (typeof legacyVal === 'number') {
+        dialValue = legacyVal;
+      }
+    }
 
-  // Combat Expertise
-  if (doctrine.combatExpertiseAmount && doctrine.combatExpertiseAmount > 0) {
-    const clampedExpertise = Math.min(doctrine.combatExpertiseAmount, Math.min(5, bab));
-    if (clampedExpertise > 0) {
-      attackPenalty += clampedExpertise;
-      dodgeAcBonus += clampedExpertise;
+    if (dialValue > 0) {
+      let maxCap = bab;
+      if (dial.maxCapRule === 'fixed_5') {
+        maxCap = Math.min(FIXED_CAP_FIVE, bab);
+      }
+      const clamped = Math.max(dial.min, Math.min(dialValue, maxCap));
+      if (clamped > 0) {
+        if (dial.attackDeltaPerPoint !== 0) {
+          attackPenalty += clamped * Math.abs(dial.attackDeltaPerPoint);
+        }
+        if (dial.acDeltaPerPoint > 0) {
+          dodgeAcBonus += clamped * dial.acDeltaPerPoint;
+        }
+        if (dial.damageDeltaPerPoint > 0) {
+          if (handedness === 'light') {
+            // Light weapons get 0 damage bonus from Power Attack per PHB p. 98
+          } else if (handedness === 'two_handed') {
+            const mult = dial.twoHandedMultiplier ?? 2;
+            damageBonus += clamped * dial.damageDeltaPerPoint * mult;
+          } else {
+            damageBonus += clamped * dial.damageDeltaPerPoint;
+          }
+        }
+      }
     }
   }
 
@@ -485,6 +562,283 @@ export function evaluateTacticalDoctrineModifiers(
     damageBonus,
     dodgeAcBonus,
     canAttack: true
+  };
+}
+
+/**
+ * Computes the doctrine damage bonus (e.g., Power Attack) specifically for an individual strike
+ * based on its handedness and whether it is a manufactured vs. natural/unarmed attack.
+ * - Manufactured Light or Off-Hand weapons get 0 from Power Attack (PHB p. 98).
+ * - Manufactured Two-Handed weapons get 2x Power Attack ratio (unless cannotTwoHandStr is true).
+ * - Manufactured One-Handed weapons get 1x Power Attack ratio.
+ * - Unarmed strikes and natural attacks get 1x Power Attack ratio (or 2x for sole primary natural weapon).
+ */
+export function computeStrikeDoctrineDamageBonus(
+  doctrine: TacticalDoctrineComponent | undefined,
+  bab: number,
+  strikeHandedness: AttackRollParams['handedness'],
+  isNaturalOrUnarmed: boolean,
+  cannotTwoHandStr?: boolean,
+  customDials?: ReadonlyArray<TacticalDialDescriptor>
+): number {
+  if (!doctrine) return 0;
+  const dials = customDials ?? CANONICAL_TACTICAL_DIALS;
+  let totalDmgBonus = 0;
+
+  for (const dial of dials) {
+    if (dial.damageDeltaPerPoint <= 0) continue;
+    let dialValue = 0;
+    if (doctrine.settings) {
+      const settingVal = doctrine.settings[dial.abilityId] ?? doctrine.settings[`${dial.abilityId}_dial`];
+      if (typeof settingVal === 'number') dialValue = settingVal;
+    }
+    if (dialValue === 0 && dial.legacyPropertyKey !== undefined) {
+      const legacyVal = doctrine[dial.legacyPropertyKey];
+      if (typeof legacyVal === 'number') dialValue = legacyVal;
+    }
+    if (dialValue <= 0) continue;
+
+    let maxCap = bab;
+    if (dial.maxCapRule === 'fixed_5') {
+      maxCap = Math.min(FIXED_CAP_FIVE, bab);
+    }
+    const clamped = Math.max(dial.min, Math.min(dialValue, maxCap));
+    if (clamped <= 0) continue;
+
+    // Per-strike handedness evaluation for damage bonus
+    if (!isNaturalOrUnarmed && (strikeHandedness === 'light' || strikeHandedness === 'off_hand')) {
+      // Light and off-hand manufactured weapons get 0 from Power Attack per PHB p. 98
+      continue;
+    }
+
+    if (strikeHandedness === 'two_handed' || strikeHandedness === 'primary_natural_sole') {
+      if (cannotTwoHandStr) {
+        totalDmgBonus += clamped * dial.damageDeltaPerPoint;
+      } else {
+        const mult = dial.twoHandedMultiplier ?? 2;
+        totalDmgBonus += clamped * dial.damageDeltaPerPoint * mult;
+      }
+    } else {
+      totalDmgBonus += clamped * dial.damageDeltaPerPoint;
+    }
+  }
+
+  return totalDmgBonus;
+}
+
+/**
+ * Resolved profile for an individual attack strike within an actor's attack routine.
+ */
+export interface DnD35ResolvedStrikeProfile {
+  readonly index: number;
+  readonly label: string;
+  readonly attackSource: 'manufactured_primary' | 'manufactured_offhand' | 'natural_primary' | 'natural_secondary';
+  readonly handedness: AttackRollParams['handedness'];
+  readonly isNaturalOrUnarmed: boolean;
+  readonly attackBonus: number;
+  readonly weaponDice: string;
+  readonly weaponDamageType: DnD35DamageType;
+  readonly strDamageBonus: number;
+  readonly doctrineDamageBonus: number;
+  readonly flatDamageBonus: number;
+  readonly critThreatMin: number;
+  readonly critMultiplier: number;
+  readonly bypassTags: ReadonlyArray<string>;
+  readonly weaponId?: string | undefined;
+  readonly naturalWeaponId?: string | undefined;
+}
+
+/**
+ * Full resolved attack routine for an actor synthesized by Stage 4 of the Topological Stat DAG.
+ */
+export interface DnD35ResolvedAttackRoutine {
+  readonly isPureNaturalRoutine: boolean;
+  readonly gripMode: WeaponGripMode;
+  readonly occupiedLimbGroupIds: ReadonlyArray<string>;
+  readonly strikes: ReadonlyArray<DnD35ResolvedStrikeProfile>;
+}
+
+/**
+ * Stage 4 Stat DAG routine synthesizer: Combines resolved manufactured weapons, grip mode,
+ * occupied limbs, and demoted natural weapons into a complete ordered attack routine with
+ * per-strike attack bonuses, STR damage, and Power Attack multipliers.
+ *
+ * @param params Attack routine resolution parameters.
+ * @returns Fully synthesized DnD35ResolvedAttackRoutine.
+ */
+export function resolveActorAttackRoutine(params: {
+  readonly resolvedWeapons: ResolvedActorWeapons;
+  readonly naturalWeapons?: ReadonlyArray<NaturalWeaponLimbEntry> | undefined;
+  readonly totalBab: number;
+  readonly baseAttackModifier: number;
+  readonly strModifier: number;
+  readonly doctrine?: TacticalDoctrineComponent | undefined;
+  readonly flatDamageBonus: number;
+  readonly hasTwoWeaponFightingFeat?: boolean | undefined;
+  readonly hasMultiattackFeat?: boolean | undefined;
+  readonly overrides?: CombatRuleOverrides | undefined;
+}): DnD35ResolvedAttackRoutine {
+  const primary = params.resolvedWeapons.primaryWeapon;
+  const offHands = params.resolvedWeapons.offHandWeapons;
+  const isPureNaturalRoutine = !primary.isArmed && (params.naturalWeapons ?? []).length > 0;
+
+  const hasOffHand = offHands.length > 0;
+  const offHandIsLight = hasOffHand && offHands.every((w) => w.handedness === 'light');
+  const offHandWeaponIds = offHands.map((w) => w.weaponItemId);
+
+  // Doctrine attack penalty (e.g. Power Attack, Fighting Defensively)
+  let doctrineAtkPenalty = 0;
+  if (params.doctrine) {
+    const doctrineEval = evaluateTacticalDoctrineModifiers(params.doctrine, params.totalBab, primary.handedness, 0);
+    doctrineAtkPenalty = doctrineEval.attackPenalty;
+  }
+
+  const seq = buildFullAttackSequence({
+    totalBab: params.totalBab,
+    baseAttackModifier: params.baseAttackModifier + doctrineAtkPenalty,
+    isPureNaturalRoutine,
+    hasOffHandWeapon: hasOffHand,
+    offHandIsLight,
+    hasTwoWeaponFightingFeat: params.hasTwoWeaponFightingFeat,
+    hasMultiattackFeat: params.hasMultiattackFeat,
+    overrides: params.overrides,
+    weaponId: primary.weaponItemId,
+    offHandWeaponId: offHands[0]?.weaponItemId,
+    offHandWeaponIds,
+    naturalWeaponLimbs: params.naturalWeapons,
+    occupiedLimbGroupIds: params.resolvedWeapons.occupiedLimbGroupIds
+  });
+
+  const strikes: DnD35ResolvedStrikeProfile[] = [];
+  let offHandCounter = 0;
+
+  for (let i = 0; i < seq.entries.length; i++) {
+    const entry = seq.entries[i]!;
+
+    if (entry.attackSource === 'manufactured_primary') {
+      const strikeHandedness = primary.handedness;
+      const isNaturalOrUnarmed = !primary.isArmed;
+      const strDmg =
+        primary.cannotTwoHandStr && strikeHandedness === 'two_handed'
+          ? computeHandednessStrDamage(params.strModifier, 'one_handed')
+          : computeHandednessStrDamage(params.strModifier, strikeHandedness);
+      const doctrineDmg = computeStrikeDoctrineDamageBonus(
+        params.doctrine,
+        params.totalBab,
+        strikeHandedness,
+        isNaturalOrUnarmed,
+        primary.cannotTwoHandStr
+      );
+
+      strikes.push({
+        index: i,
+        label: primary.weaponName,
+        attackSource: 'manufactured_primary',
+        handedness: strikeHandedness,
+        isNaturalOrUnarmed,
+        attackBonus:
+          entry.attackBonus + primary.attackBonus + primary.sizeAttackPenalty + primary.nonproficiencyPenalty,
+        weaponDice: primary.weaponDice,
+        weaponDamageType: primary.weaponDamageType,
+        strDamageBonus: strDmg,
+        doctrineDamageBonus: doctrineDmg,
+        flatDamageBonus: params.flatDamageBonus + primary.damageBonus,
+        critThreatMin: primary.critThreatMin,
+        critMultiplier: primary.critMultiplier,
+        bypassTags: primary.bypassTags,
+        weaponId: primary.weaponItemId
+      });
+    } else if (entry.attackSource === 'manufactured_offhand') {
+      const offWeapon =
+        offHands.find((w) => w.weaponItemId === entry.weaponId) ??
+        offHands[offHandCounter % Math.max(1, offHands.length)] ??
+        primary;
+      offHandCounter++;
+
+      const strikeHandedness: AttackRollParams['handedness'] = 'off_hand';
+      const isNaturalOrUnarmed = !offWeapon.isArmed;
+      const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
+      const doctrineDmg = computeStrikeDoctrineDamageBonus(
+        params.doctrine,
+        params.totalBab,
+        strikeHandedness,
+        isNaturalOrUnarmed,
+        offWeapon.cannotTwoHandStr
+      );
+
+      strikes.push({
+        index: i,
+        label: offWeapon.weaponName,
+        attackSource: 'manufactured_offhand',
+        handedness: strikeHandedness,
+        isNaturalOrUnarmed,
+        attackBonus:
+          entry.attackBonus + offWeapon.attackBonus + offWeapon.sizeAttackPenalty + offWeapon.nonproficiencyPenalty,
+        weaponDice: offWeapon.weaponDice,
+        weaponDamageType: offWeapon.weaponDamageType,
+        strDamageBonus: strDmg,
+        doctrineDamageBonus: doctrineDmg,
+        flatDamageBonus: params.flatDamageBonus + offWeapon.damageBonus,
+        critThreatMin: offWeapon.critThreatMin,
+        critMultiplier: offWeapon.critMultiplier,
+        bypassTags: offWeapon.bypassTags,
+        weaponId: offWeapon.weaponItemId
+      });
+    } else if (entry.attackSource === 'natural_primary') {
+      const natLimb = params.naturalWeapons?.find((nw) => nw.id === entry.naturalWeaponId);
+      const isSole = (params.naturalWeapons?.length ?? 0) === 1 && (params.naturalWeapons?.[0]?.count ?? 0) === 1;
+      const strikeHandedness: AttackRollParams['handedness'] = isSole ? 'primary_natural_sole' : 'one_handed';
+      const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
+      const doctrineDmg = computeStrikeDoctrineDamageBonus(params.doctrine, params.totalBab, strikeHandedness, true);
+
+      strikes.push({
+        index: i,
+        label: natLimb?.name ?? entry.naturalWeaponId ?? 'Primary Natural Attack',
+        attackSource: 'natural_primary',
+        handedness: strikeHandedness,
+        isNaturalOrUnarmed: true,
+        attackBonus: entry.attackBonus,
+        weaponDice: natLimb?.dice ?? '1d4',
+        weaponDamageType: natLimb?.damageType ?? 'slashing',
+        strDamageBonus: strDmg,
+        doctrineDamageBonus: doctrineDmg,
+        flatDamageBonus: params.flatDamageBonus,
+        critThreatMin: natLimb?.critThreatMin ?? 20,
+        critMultiplier: natLimb?.critMultiplier ?? 2,
+        bypassTags: [natLimb?.damageType ?? 'slashing'],
+        naturalWeaponId: entry.naturalWeaponId
+      });
+    } else if (entry.attackSource === 'natural_secondary') {
+      const natLimb = params.naturalWeapons?.find((nw) => nw.id === entry.naturalWeaponId);
+      const strikeHandedness: AttackRollParams['handedness'] = 'off_hand';
+      const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
+      const doctrineDmg = computeStrikeDoctrineDamageBonus(params.doctrine, params.totalBab, strikeHandedness, true);
+
+      strikes.push({
+        index: i,
+        label: natLimb?.name ?? entry.naturalWeaponId ?? 'Secondary Natural Attack',
+        attackSource: 'natural_secondary',
+        handedness: strikeHandedness,
+        isNaturalOrUnarmed: true,
+        attackBonus: entry.attackBonus,
+        weaponDice: natLimb?.dice ?? '1d4',
+        weaponDamageType: natLimb?.damageType ?? 'slashing',
+        strDamageBonus: strDmg,
+        doctrineDamageBonus: doctrineDmg,
+        flatDamageBonus: params.flatDamageBonus,
+        critThreatMin: natLimb?.critThreatMin ?? 20,
+        critMultiplier: natLimb?.critMultiplier ?? 2,
+        bypassTags: [natLimb?.damageType ?? 'slashing'],
+        naturalWeaponId: entry.naturalWeaponId
+      });
+    }
+  }
+
+  return {
+    isPureNaturalRoutine,
+    gripMode: params.resolvedWeapons.gripMode,
+    occupiedLimbGroupIds: params.resolvedWeapons.occupiedLimbGroupIds,
+    strikes
   };
 }
 

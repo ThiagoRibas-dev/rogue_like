@@ -101,6 +101,7 @@ const SKILL_IDS: ReadonlyArray<string> = [
 
 const FEAT_IDS: ReadonlyArray<string> = [
   'power_attack',
+  'combat_expertise',
   'cleave',
   'combat_reflexes',
   'improved_initiative',

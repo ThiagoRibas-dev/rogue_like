@@ -7,7 +7,7 @@
  * Cached by document identity (`WeakMap`) so the index is rebuilt only when
  * `controller.getDocument()` returns a new object.
  *
- * @see docs/research_notes.md §10.3 — §10.4
+ * @see docs/archive/research_notes.md §10.3 — §10.4
  * @see docs/DECISIONS.md — Milestone 76, Decision D1 (global workspace drawer)
  */
 import type { CampaignData } from '../types/campaign.types';

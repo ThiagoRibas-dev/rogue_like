@@ -15,6 +15,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" --cache",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache",
     "validate:campaigns": "bun scripts/run-validator.ts",
+    "map:ssot": "bun scripts/map-codebase.ts",
     "test": "bun test"
   },
   "dependencies": {

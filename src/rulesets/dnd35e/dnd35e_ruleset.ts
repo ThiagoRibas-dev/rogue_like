@@ -4,6 +4,7 @@ import { addMessage, MessageLogCategory } from '../../systems/message.system.ts'
 import {
   ComponentType,
   type DamageComponent,
+  type EquipmentComponent,
   type FighterComponent,
   type PropertyOverlayComponent,
   type TacticalDoctrineComponent
@@ -22,9 +23,21 @@ import type {
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
-import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
-import { evaluateTacticalDoctrineModifiers, resolveAttackRoll } from './combat/attack_resolver.ts';
+import {
+  type DnD35ResolvedAttackRoutine,
+  type NaturalWeaponLimbEntry,
+  evaluateTacticalDoctrineModifiers,
+  resolveActorAttackRoutine,
+  resolveAttackRoll,
+  resolveCleaveFollowupEligibility
+} from './combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from './combat/damage_vitality.ts';
+import {
+  type ResolvedActorWeapons,
+  resolveAllEquippedWeaponProfiles,
+  resolveEquippedWeaponProfile,
+  scaleWeaponDamageDice
+} from './equipment_physics.ts';
 import { summarizeConditionEffects } from './combat/maneuvers_conditions.ts';
 import { DND35E_BASE_AC, evaluateDnD35ActorStatDAG } from './modifiers.ts';
 import {
@@ -36,8 +49,7 @@ import {
   getDnD35EntityData,
   getEquippedItemBonuses,
   projectDnD35ActorSemanticTags,
-  resolveDamageTypeFromTags,
-  setDnD35EntityData
+  resolveDamageTypeFromTags
 } from './srd_registry.ts';
 import type { DnD35EntityData, DnD35ResolvedActorStats, StatModifier, StatQueryContext } from './types/dnd35e.types.ts';
 
@@ -50,6 +62,8 @@ export interface DnD35EntityDAGResult {
   readonly dagResult: DnD35ResolvedActorStats;
   readonly selfTags: ReadonlyArray<string>;
   readonly canAttack: boolean;
+  readonly resolvedWeapons: ResolvedActorWeapons;
+  readonly attackRoutine: DnD35ResolvedAttackRoutine;
 }
 
 /**
@@ -89,8 +103,9 @@ export function evaluateDnD35eEntityDAG(
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
   const tumbleRanks = dndData.skillRanks['tumble'] ?? 0;
+  const mainHandProfile = resolveEquippedWeaponProfile(state, entityId, 'main_hand');
   const doctrineMod = doctrine
-    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, 'one_handed', tumbleRanks)
+    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, mainHandProfile.handedness, tumbleRanks)
     : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
 
   const extraModifiers: StatModifier[] = [...(dndData.statModifiers ?? [])];
@@ -193,11 +208,92 @@ export function evaluateDnD35eEntityDAG(
     }
   });
 
+  // Stage 4 DAG: Resolve equipped weapons, grip mode, occupied limbs, and complete attack routine
+  const resolvedWeapons = resolveAllEquippedWeaponProfiles(state, entityId, dagResult.effectiveSize);
+
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  const handSlotLimbGroups: string[] = [];
+  for (const s of equipment?.slots ?? []) {
+    if (
+      s.suppressed !== true &&
+      s.limbGroupId !== undefined &&
+      (s.slotType === 'held' ||
+        s.slotType === 'hand' ||
+        s.slotType === 'main_hand' ||
+        s.slotType === 'off_hand' ||
+        s.id.startsWith('hand_') ||
+        s.id.startsWith('main_hand') ||
+        s.id.startsWith('off_hand')) &&
+      !handSlotLimbGroups.includes(s.limbGroupId)
+    ) {
+      handSlotLimbGroups.push(s.limbGroupId);
+    }
+  }
+  const availableHandLimbs = handSlotLimbGroups.length > 0 ? handSlotLimbGroups : ['hand_main', 'hand_off'];
+
+  const naturalLimbs: NaturalWeaponLimbEntry[] = [];
+  for (const nw of dndData.naturalWeapons ?? []) {
+    const scaledDice = scaleWeaponDamageDice(nw.damageDice, dndData.sizeCategory, dagResult.effectiveSize);
+    if ((nw.naturalType === 'claw' || nw.naturalType === 'slam') && nw.count > 1) {
+      for (let cIdx = 0; cIdx < nw.count; cIdx++) {
+        const limbGroupId = availableHandLimbs[cIdx] ?? (cIdx === 0 ? 'hand_main' : `hand_off_${cIdx}`);
+        naturalLimbs.push({
+          id: nw.id,
+          name: nw.name,
+          isPrimary: nw.isPrimary,
+          count: 1,
+          limbGroupId,
+          dice: scaledDice,
+          damageType: nw.damageType,
+          critThreatMin: nw.critThreatMin,
+          critMultiplier: nw.critMultiplier
+        });
+      }
+      continue;
+    }
+
+    let limbGroupId: string | undefined;
+    if (nw.naturalType === 'claw' || nw.naturalType === 'slam') {
+      limbGroupId = availableHandLimbs[0] ?? 'hand_main';
+    } else if (nw.naturalType === 'bite' || nw.naturalType === 'gore') {
+      limbGroupId = 'head';
+    }
+    naturalLimbs.push({
+      id: nw.id,
+      name: nw.name,
+      isPrimary: nw.isPrimary,
+      count: nw.count,
+      limbGroupId,
+      dice: scaledDice,
+      damageType: nw.damageType,
+      critThreatMin: nw.critThreatMin,
+      critMultiplier: nw.critMultiplier
+    });
+  }
+
+  const strMod = dagResult.effectiveAbilityModifiers.str;
+  const baseActorAttackBonus = dagResult.attackBonus - equipAttackBonus - doctrineMod.attackPenalty;
+  const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - doctrineMod.damageBonus;
+
+  const attackRoutine = resolveActorAttackRoutine({
+    resolvedWeapons,
+    naturalWeapons: naturalLimbs,
+    totalBab: rawChassis.totalBab,
+    baseAttackModifier: baseActorAttackBonus,
+    strModifier: strMod,
+    doctrine,
+    flatDamageBonus: nonStrNonDoctrineFlatDamage,
+    hasTwoWeaponFightingFeat: dndData.feats?.includes('two_weapon_fighting') === true,
+    hasMultiattackFeat: dndData.feats?.includes('multiattack') === true
+  });
+
   return {
     dndData,
     dagResult,
     selfTags: mergedSelfTags,
-    canAttack: doctrineMod.canAttack
+    canAttack: doctrineMod.canAttack,
+    resolvedWeapons,
+    attackRoutine
   };
 }
 
@@ -289,55 +385,100 @@ function resolveDnD35eMeleeAttack(state: GameState, intent: MeleeAttackIntent): 
     };
   }
 
-  const effectiveAttackBonus = attackerEval.dagResult.attackBonus;
   const targetAC = defenderEval.dagResult.acBreakdown.fullAC;
-  const strMod = attackerEval.dagResult.effectiveAbilityModifiers.str;
-  const flatDamageBonus = attackerEval.dagResult.damageBonus - strMod;
 
-  const rollResult = resolveAttackRoll({
-    attackBonus: effectiveAttackBonus,
-    targetAC,
-    weaponDice: attackerData.weaponDice,
-    strModifier: strMod,
-    handedness: 'one_handed',
-    flatDamageBonus,
-    critThreatMin: attackerData.weaponCritThreatMin,
-    critMultiplier: attackerData.weaponCritMultiplier,
-    targetImmuneToCrits: defenderData.abilityScores.con.base === null
-  });
+  // Check 5-foot step / movement action economy rule (PHB p. 144)
+  const FIVE_FOOT_STEP_MAX_DISTANCE_FT = 5;
+  const actionBudget = (attackerData as { actionBudget?: { distanceMovedThisRoundFt?: number } }).actionBudget;
+  const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
+  const isFullAttack = distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT;
 
-  if (!rollResult.hit) {
-    return {
-      state: addMessage(
-        state,
-        `[d20: ${rollResult.naturalAttackRoll} + ${effectiveAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}] Melee attack misses!`,
-        MessageLogCategory.CombatMiss
-      ),
-      success: true
-    };
+  const strikes = isFullAttack ? attackerEval.attackRoutine.strikes : attackerEval.attackRoutine.strikes.slice(0, 1);
+
+  if (strikes.length === 0) {
+    return { state, success: false };
   }
 
-  const existingDamage = getComponent(state, defenderId, ComponentType.Damage) as DamageComponent | undefined;
-  const instance = {
-    amount: rollResult.totalDamage,
-    sourceEntityId: attackerId,
-    tags: ['melee', 'physical', attackerData.weaponDamageType, ...attackerData.weaponBypassTags]
-  };
-  const nextInstances = existingDamage ? [...existingDamage.instances, instance] : [instance];
+  let runningState = state;
+  let anyStrikeAttempted = false;
+  let defenderHpRemaining = targetFighter.hp;
 
-  const nextState = addComponent(state, defenderId, {
-    type: ComponentType.Damage,
-    instances: nextInstances
-  });
+  for (let sIdx = 0; sIdx < strikes.length; sIdx++) {
+    const strike = strikes[sIdx]!;
+    anyStrikeAttempted = true;
 
-  const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';
-  return {
-    state: addMessage(
-      nextState,
-      `[d20: ${rollResult.naturalAttackRoll} + ${effectiveAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} Deals ${rollResult.totalDamage} ${attackerData.weaponDamageType} damage!`,
+    let strikeLabel = strike.label;
+    if (strikes.length > 1 && strike.attackSource === 'manufactured_primary') {
+      strikeLabel = `${strikeLabel} (Iterative ${sIdx + 1})`;
+    }
+
+    const weaponDamageType = strike.weaponDamageType;
+    const bypassTags = strike.bypassTags;
+
+    const rollResult = resolveAttackRoll({
+      attackBonus: strike.attackBonus,
+      targetAC,
+      weaponDice: strike.weaponDice,
+      strModifier: 0,
+      handedness: 'one_handed',
+      flatDamageBonus: strike.strDamageBonus + strike.doctrineDamageBonus + strike.flatDamageBonus,
+      critThreatMin: strike.critThreatMin,
+      critMultiplier: strike.critMultiplier,
+      targetImmuneToCrits: defenderData.abilityScores.con.base === null
+    });
+
+    if (!rollResult.hit) {
+      runningState = addMessage(
+        runningState,
+        `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}] ${strikeLabel} misses!`,
+        MessageLogCategory.CombatMiss
+      );
+      continue;
+    }
+
+    const existingDamage = getComponent(runningState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
+    const instance = {
+      amount: rollResult.totalDamage,
+      sourceEntityId: attackerId,
+      tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
+    };
+    const nextInstances = existingDamage ? [...existingDamage.instances, instance] : [instance];
+
+    runningState = addComponent(runningState, defenderId, {
+      type: ComponentType.Damage,
+      instances: nextInstances
+    });
+
+    defenderHpRemaining -= rollResult.totalDamage;
+
+    const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';
+    runningState = addMessage(
+      runningState,
+      `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType} damage!`,
       MessageLogCategory.CombatHit
-    ),
-    success: true
+    );
+
+    // If defender drops to 0 or fewer HP mid-sequence, cease remaining attacks
+    if (defenderHpRemaining <= 0) {
+      const hasCleave = attackerData.feats?.includes('cleave') === true;
+      const hasGreatCleave = attackerData.feats?.includes('great_cleave') === true;
+      if (hasCleave) {
+        const eligible = resolveCleaveFollowupEligibility(true, 0, hasGreatCleave);
+        if (eligible) {
+          runningState = addMessage(
+            runningState,
+            `[Cleave] Dropped foe grants a free follow-up melee strike!`,
+            MessageLogCategory.CombatHit
+          );
+        }
+      }
+      break;
+    }
+  }
+
+  return {
+    state: runningState,
+    success: anyStrikeAttempted
   };
 }
 
@@ -441,31 +582,17 @@ function grantDnD35eXp(state: GameState, entityId: EntityId, amount: number): Ga
   const nextLevel = fighter.level + 1;
   const nextThreshold = computeXpThresholdForLevel(nextLevel);
 
+  let nextState = addComponent(state, entityId, { ...fighter, xp: newXp });
+
   if (newXp >= nextThreshold) {
-    const primaryTrack = dndData.tracks[0];
-    const nextTracks = primaryTrack
-      ? [{ ...primaryTrack, levels: nextLevel }, ...dndData.tracks.slice(1)]
-      : dndData.tracks;
-    const conMod = computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.con));
-    const nextChassis = aggregateProgressionChassis(nextTracks, conMod);
-    const hpGain = Math.max(1, Math.floor((primaryTrack?.hitDieSides ?? 10) / 2) + 1 + conMod);
-
-    const withRuleset = setDnD35EntityData(state, entityId, {
-      ...dndData,
-      tracks: nextTracks
-    });
-
-    return addComponent(withRuleset, entityId, {
-      ...fighter,
-      xp: newXp,
-      level: nextLevel,
-      attack: nextChassis.totalBab,
-      maxHp: fighter.maxHp + hpGain,
-      hp: fighter.hp + hpGain
-    });
+    nextState = addMessage(
+      nextState,
+      '[D&D 3.5e] Level Up Available! Press [L] or click the ribbon to advance your character.',
+      MessageLogCategory.System
+    );
   }
 
-  return addComponent(state, entityId, { ...fighter, xp: newXp });
+  return nextState;
 }
 
 /**

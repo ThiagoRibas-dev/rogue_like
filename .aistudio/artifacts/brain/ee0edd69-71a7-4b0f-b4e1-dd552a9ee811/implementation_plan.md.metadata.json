@@ -1,6 +1,6 @@
 {
-  "summary": "Updated Milestone 112.5 implementation plan with an explicit Existing Engine Primitives & Zero-Duplication Reuse Map showing how existing schemas, skill resolvers, Effect Provider evaluators, and shared UI inspector builders are reused without reinventing any functionality.",
-  "updatedAt": "2026-11-02T17:47:27.510587045Z",
+  "summary": "Implementation plan for Milestone 112.8: Programmatic SSOT Responsibility Registries (ssot_console.json & ssot_dnd35e.json), 5-Point Parity Validator, Markdown Generator, docs/ Folder Reorganization, and AGENTS.md Workflow Integration.",
+  "updatedAt": "2026-11-03T16:16:30.014014614Z",
   "requestFeedback": true,
   "userFacing": true
 }

@@ -1,0 +1,34 @@
+{
+  "combat_expertise": {
+    "id": "combat_expertise",
+    "name": "Combat Expertise",
+    "description": "Trade melee attack bonus for dodge bonus to Armor Class (up to -5 attack / +5 AC).",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "int",
+      "minScore": 13
+    },
+    "effectBundle": {
+      "bundleId": "feat_combat_expertise",
+      "name": "Combat Expertise",
+      "category": "feat",
+      "usageMode": "variable_dial",
+      "description": "Trade melee attack bonus for dodge bonus to Armor Class (up to -5 attack / +5 AC).",
+      "activatedAbilities": [
+        {
+          "abilityId": "combat_expertise_dial",
+          "name": "Combat Expertise Dial",
+          "actionCost": "free",
+          "variableDial": {
+            "min": 0,
+            "maxCapRule": "fixed_5",
+            "attackDeltaPerPoint": -1,
+            "damageDeltaPerPoint": 0,
+            "acDeltaPerPoint": 1
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,200 +1,159 @@
-# Implementation Plan — Milestone 112.5: Full-Screen 2-Pane Character Creation & Level-Up UX Overhaul, Playable Race Filtering, Full 42-Skill SRD Specifics & Class Spell-List Tagging
-
-## 1. Architectural Rules & Standards Reiteration (`AGENTS.md` & `docs/ARCHITECTURE.md`)
-- **Three-Tier Placement Heuristic (Rule 16):**
-  - **Tier 2 (`src/rulesets/dnd35e/`):** Reuse and extend existing `DnD35RaceDefinitionSchema`, `DnD35SpellDefinitionSchema`, `DnD35SkillDefinitionSchema`, `skills.ts`, `character_builder.ts`, `dnd35e_validator.ts`, and `system_content_files.ts`.
-  - **Tier 3 (`public/data/rulesets/dnd35e/`):** `"isPlayableRace": true` on playable race JSONs, all 42 PHB skill JSONs in `skills/*.json` (30 new + 12 existing backfilled with complete SRD `synergyFromSkills`, `synergyNotes`, `actions`, `rankThresholdModifiers`, and `take10Allowed`/`take20Allowed`), and `levelByClass` / `levelByDomain` / `description` on spell JSONs in `spells/*.json` (plus starter 0th/1st-level spells for Wizard/Sorcerer, Cleric, Druid, and Bard).
-  - **UI & View Layer (`index.html`, `src/rendering/ui/dnd35e_inspector.ui.ts`, `src/rendering/ui/dnd35e_char_builder.ui.ts`, `src/rendering/ui/dnd35e_char_builder_steps.ui.ts`, `src/rendering/ui/dnd35e_level_up.ui.ts`):** Pure DOM construction via `document.createElement()` (no `.innerHTML`), persistent 2-pane split layout, scroll position (`scrollTop`) preservation across re-renders, and a single shared `dnd35e_inspector.ui.ts` module used by both Character Creation and Level-Up modals (keeping each file modular and under the ~250-line guideline).
-- **TypeScript Strictness:** Zero `any`, `exactOptionalPropertyTypes: true`, explicit return types on all functions, `readonly` arrays/records, no magic numbers.
+# Milestone 112.8 Implementation Plan: Programmatic SSOT Responsibility Registries, Parity Validator, Markdown Generator & `docs/` Reorganization
 
 ---
 
-## 2. Existing Engine Primitives & Zero-Duplication Reuse Map
+## 1. Reiteration of Rules & Standards (`AGENTS.md` & `docs/ARCHITECTURE.md`)
 
-To guarantee we **never reinvent the wheel**, every part of Milestone 112.5 builds directly on existing schemas, resolvers, and Effect Provider pipelines already in `src/rulesets/dnd35e/`:
-
-| Existing Module | Existing Exports Reused As-Is | Consolidation / Deduplication Applied |
-| :--- | :--- | :--- |
-| **`src/rulesets/dnd35e/types/dnd35e_system.types.ts`** | `DnD35SkillDefinitionSchema` (`id`, `name`, `keyAbility`, `trainedOnly`, `acpMultiplier`, `synergyFromSkills`, `actions`, `rankThresholdModifiers`), `DnD35SkillActionDescriptorSchema` (`actionId`, `name`, `actionCost`, `dc`, `opposedBySkill`, `description`, `onSuccessModifiers`, `onSuccessRuleOverrides`), `DnD35DeclarativeModifierSchema`, `DnD35RuleOverrideEntrySchema`. | Only add missing SRD fields (`take10Allowed`, `take20Allowed`, `retryAllowed`, `synergyNotes`, and `ruleOverrides` on `rankThresholdModifiers`; `isPlayableRace` on `DnD35RaceDefinitionSchema`; `levelByClass`, `levelByDomain`, `description` on `DnD35SpellDefinitionSchema`). |
-| **`src/rulesets/dnd35e/skills.ts`** | `SYNERGY_REQUIRED_RANKS`, `SYNERGY_BONUS_AMOUNT`, `computeMaxSkillRankCap`, `computeSkillSynergyBonus`, `buildSkillRankThresholdModifiers`, `resolveSkillCheck`, `resolveOpposedCheck`, `resolveDiplomacyCheck`. | Upgrade `computeSkillSynergyBonus` in place for epic `+2` per +20 ranks; use `definition.take10Allowed` / `take20Allowed` inside `resolveSkillCheck` instead of hardcoding `skillId === 'use_magic_device'`; add `getSkillsGrantedSynergyBy` helper. |
-| **`src/rulesets/dnd35e/character_builder.ts`** | `POINT_BUY_COST_TABLE`, `POINT_BUY_PRESETS`, `ELITE_ABILITY_ARRAY`, `POINT_BUY_MIN_SCORE`, `POINT_BUY_MAX_SCORE`, `calculatePointBuyCost`, `rollAbilityScores4d6DropLowest`, `calculateLevelSkillPointBudget`, `calculateSkillAllocationCost`, `validateSpecialistSchoolSelection`, `buildPrerequisiteContextForActor`. | Deduplicate `getSkillMaxRanks` to delegate directly to `computeMaxSkillRankCap` from `skills.ts`, and re-export `SYNERGY_REQUIRED_RANKS as SYNERGY_RANK_THRESHOLD` from `skills.ts` instead of redefining `5`. |
-| **`src/rulesets/dnd35e/races.ts`, `level_ledger.ts` & `modifiers.ts`** | `applyRaceToActorChassis`, `buildClassAndDomainEffectModifiers`, `collectActiveGrantedAndVirtualFeats`, `evaluateEffectBundle`, `resolveTypedModifiers`. | Reuse `applyRaceToActorChassis` + `buildClassAndDomainEffectModifiers` + `resolveTypedModifiers` to compute racial/domain/feat `skill:<id>` bonuses in the UI rather than writing a separate UI stat calculator. |
-| **`src/rendering/ui/dnd35e_inspector.ui.ts` (Shared View Helper)** | Shared DOM card/badge builders across Character Creation and Level-Up modals. | Extract Race, Class, Skill (with Synergy & Action tables), Feat, and Spell right-pane DOM inspectors into `dnd35e_inspector.ui.ts` so `dnd35e_char_builder_steps.ui.ts` and `dnd35e_level_up.ui.ts` share 100% of their inspector rendering code. |
+- **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16):**
+  - **Tier 1 (Core Console Engine & Shared Systems):** Tracked in `docs/ssot/ssot_console.json` (`251` files covering `src/core/`, `src/actions/`, `src/systems/`, `src/map/`, `src/rendering/` [non-D&D], `src/editor/`, `src/rulesets/registry.ts`, `src/rulesets/classic/`, `src/types/`, `src/constants/`, `src/utils/`, `src/main.ts`, `src/input_handler.ts`, `src/vite-env.d.ts`).
+  - **Tier 2 (Ruleset Cartridge & Ruleset UI):** Tracked in `docs/ssot/ssot_dnd35e.json` (`33` files covering `src/rulesets/dnd35e/**/*.ts` and `src/rendering/ui/dnd35e_*.ts`).
+- **Data-Driven & JSON Rules (`AGENTS.md` Rule 5):**
+  - All SSOT registry files conform to a strict Zod schema (`SsotFileEntrySchema` / `SsotRegistrySchema`).
+- **No Unreferenced Code & TypeScript Strictness (`AGENTS.md` Rules 10–14):**
+  - Strictest TS config, explicit return types on every function, zero `any`.
+  - Scripts covered by `tsconfig.scripts.json` and `knip.json`.
+- **Workflow & Process Rules (`AGENTS.md` Workflow):**
+  - Reorganize `docs/` cleanly into `docs/ssot/`, `docs/dnd35e/`, `docs/guides/`, and `docs/archive/` while keeping only the 5 living core docs at the root of `docs/`.
+  - Update `AGENTS.md` Step 4 of *Before Writing Code* and Step 11 of *After Writing Code* to mandate consulting and maintaining the SSOT registries.
 
 ---
 
-## 3. Cascading Effects Matrix (Rule 15)
+## 2. Canonical Single Source of Truth (SSOT) Dispatch Table
 
-| Change | Upstream (Callers / Producers / Data) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling JSONs / Tests / Docs) |
+| Capability / Domain | Canonical Single Point of Entry | Call Sites & Consumers | Disallowed Anti-Patterns |
 | :--- | :--- | :--- | :--- |
-| **1. `DnD35RaceDefinitionSchema` (`isPlayableRace`)** | `public/data/rulesets/dnd35e/races/*.json` (14 playable races set `"isPlayableRace": true`; monstrous races omit and default to `false`). | `dnd35e_char_builder.ui.ts` (Step 1 filters by `isPlayableRace` unless `showMonstrousRaces` toggle is enabled), `dnd35e_validator.ts` (verifies core PHB races have `isPlayableRace: true`). | `tests/dnd35e_classes_builder.test.ts`, `tests/ruleset_validators.test.ts`. |
-| **2. `DnD35SpellDefinitionSchema` (`levelByClass`, `levelByDomain`, `description`)** | `public/data/rulesets/dnd35e/spells/*.json` & `SPELL_IDS` in `src/rulesets/dnd35e/system_content_files.ts`. | `dnd35e_char_builder_steps.ui.ts` (Step 6 filters spells via `getSpellLevelForClass` and excludes `prohibitedSchools`), `dnd35e_level_up.ui.ts` (filters new spells by class/domain), `dnd35e_validator.ts` (checks class/domain references in `levelByClass` / `levelByDomain`). | `tests/dnd35e_classes_builder.test.ts`, `tests/ruleset_validators.test.ts`. |
-| **3. `SKILL_IDS`, `DnD35SkillDefinitionSchema`, `skills.ts` & `public/data/rulesets/dnd35e/skills/*.json` (Full 42-Skill SRD Specifics)** | `src/rulesets/dnd35e/system_content_files.ts` (`SKILL_IDS` expanded from 12 to 42 skills), 30 new `public/data/rulesets/dnd35e/skills/<id>.json` files, and 12 existing skill JSONs backfilled with complete synergies & actions. | `src/rulesets/dnd35e/skills.ts` (`computeSkillSynergyBonus`, `resolveSkillCheck`, `getSkillsGrantedSynergyBy`), `dnd35e_inspector.ui.ts` & `dnd35e_char_builder_steps.ui.ts` (Step 4 computes live synergy/racial bonuses and renders Skill Actions & Synergies in Right Pane Inspector), `dnd35e_validator.ts` (validates `classSkills`, `synergyFromSkills`, and `opposedBySkill` references against `sys.skills`). | `public/data/rulesets/dnd35e/classes/*.json` (`classSkills` arrays now 100% backed by `sys.skills`), `tests/dnd35e_cartridge.test.ts`, `tests/dnd35e_classes_builder.test.ts`. |
-| **4. `character_builder.ts` (`computeFirstLevelFeatSlotBudget`, `sanitizeDraftOnRaceOrClassChange`, `getSpellLevelForClass`)** | Called by `dnd35e_char_builder.ui.ts`, `dnd35e_char_builder_steps.ui.ts`, `dnd35e_level_up.ui.ts`, and `validateCharacterCreationDraft`. | Prevents invalid default feat (`'weapon_focus'` -> `'power_attack'`), enforces feat slot budget (`1 General + 1 Human Bonus + 1 Fighter Bonus`), resets stale domains/schools/spells/over-budget skills on class/race switch. | `tests/dnd35e_classes_builder.test.ts`. |
-| **5. 2-Pane Modal Layout, Shared Inspector & Scroll Preservation (`index.html`, `dnd35e_inspector.ui.ts`, `dnd35e_char_builder.ui.ts`, `dnd35e_char_builder_steps.ui.ts`, `dnd35e_level_up.ui.ts`)** | Triggered by `showDnD35CharacterCreationModal()` and `showDnD35LevelUpModal()`. | Renders persistent 2-pane split (`Left Selection List` + `Right Live Inspector`), preserves `scrollTop` across re-renders, fixes Ability Method state machine and Specialist Wizard prohibited school selection. | `docs/ARCHITECTURE.md`, `docs/MILESTONES.md`. |
+| **SSOT Registries** | `docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json` | `scripts/map-codebase.ts`, `scripts/run-validator.ts`, `tests/ssot_registry_parity.test.ts` | Never leave a `src/**/*.ts` file unmapped or register a file in both JSONs. |
+| **SSOT Validation Logic** | `validateSsotRegistries` in `scripts/ssot_parity.ts` (or `scripts/map-codebase.ts`) | `scripts/run-validator.ts`, `tests/ssot_registry_parity.test.ts` | Never duplicate disk scanning or export validation logic across multiple scripts. |
+| **SSOT Markdown Documentation** | `docs/SSOT_CONSOLE.md` & `docs/SSOT_DND35E.md` | Developers, AI agents during Kickoff Step 4 planning | Never edit `SSOT_CONSOLE.md` or `SSOT_DND35E.md` manually; regenerate via `bun scripts/map-codebase.ts`. |
 
 ---
 
-## 4. Step-by-Step Implementation Plan & Code Snippets
+## 3. Step-by-Step Implementation Tasks & Code Snippets
 
-### Step 1: Targeted Schema Extensions (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`)
-Reuse existing `DnD35SkillDefinitionSchema`, `DnD35SkillActionDescriptorSchema`, `DnD35RaceDefinitionSchema`, and `DnD35SpellDefinitionSchema`, adding only the missing fields:
-1. `isPlayableRace: z.boolean().default(false)` on `DnD35RaceDefinitionSchema`.
-2. `levelByClass`, `levelByDomain`, and `description` on `DnD35SpellDefinitionSchema`.
-3. `retryAllowed: z.boolean().default(true)`, `take10Allowed: z.boolean().default(true)`, `take20Allowed: z.boolean().default(true)`, `synergyNotes: z.array(z.string()).default([])`, and `ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([])` inside `rankThresholdModifiers` on `DnD35SkillDefinitionSchema`.
+### Step 1: `docs/` Folder Reorganization & JSDoc Reference Updates
+**Goal**: Reorganize `/docs` into clean subfolders, keeping only living core documents at `/docs` root.
+
+1. Create target directories:
+   - `docs/ssot/`
+   - `docs/dnd35e/`
+   - `docs/guides/`
+   - `docs/archive/`
+2. Move files via `move`:
+   - `docs/AI-CAMPAIGN-GENERATION.md` -> `docs/guides/AI-CAMPAIGN-GENERATION.md`
+   - `docs/CAMPAIGN-INTEGRATION-GUIDE.md` -> `docs/guides/CAMPAIGN-INTEGRATION-GUIDE.md`
+   - `docs/CREATOR_GUIDE.md` -> `docs/guides/CREATOR_GUIDE.md`
+   - `docs/MODDING.md` -> `docs/guides/MODDING.md`
+   - `docs/DND_35E_PYRAMID_ARCHITECTURE.md` -> `docs/dnd35e/DND_35E_PYRAMID_ARCHITECTURE.md`
+   - `docs/rules/` -> `docs/dnd35e/rules/`
+   - `docs/audits/` -> `docs/archive/audits/`
+   - `docs/HANDOFF_SOCIAL_AND_V2_ENGINE.md` -> `docs/archive/HANDOFF_SOCIAL_AND_V2_ENGINE.md`
+   - `docs/comparison_spd_vs_our_roguelike.md` -> `docs/archive/comparison_spd_vs_our_roguelike.md`
+   - `docs/implementation_plan.md` -> `docs/archive/implementation_plan.md`
+   - `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `docs/scratchpad.md` -> `docs/archive/scratchpad.md`
+3. Update JSDoc `@see` comment paths in:
+   - `src/rulesets/dnd35e/magic/aoe_rest.ts`: `/docs/rules/` -> `/docs/dnd35e/rules/`
+   - `src/rulesets/dnd35e/math/multipliers.ts`: `/docs/rules/` -> `/docs/dnd35e/rules/`
+   - `src/rulesets/dnd35e/action_economy.ts`: `/docs/rules/` -> `/docs/dnd35e/rules/`
+   - `src/editor/validation_path.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `src/editor/validation_navigator.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `src/editor/reference_index.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `src/rendering/ui/where_used.ui.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `src/rendering/ui/area_playtest_menu.ui.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+   - `src/rendering/ui/validation_panel.ui.ts`: `docs/research_notes.md` -> `docs/archive/research_notes.md`
+
+---
+
+### Step 2: SSOT Zod Schema & Core Parity Engine (`scripts/ssot_parity.ts`)
+**Goal**: Build a typed module that parses `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json`, scans `src/**/*.ts`, validates 5-point parity, and renders deterministic Markdown.
 
 ```ts
-// In src/rulesets/dnd35e/types/dnd35e_system.types.ts:
+import { z } from 'zod';
+import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
-// Inside DnD35RaceDefinitionSchema:
-  favoredClass: z.string().default('fighter'),
-  isPlayableRace: z.boolean().default(false),
-  bonusFeatAtFirstLevel: z.boolean().default(false),
-
-// Inside DnD35SkillDefinitionSchema:
-export const DnD35SkillDefinitionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  keyAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']),
-  trainedOnly: z.boolean().default(false),
-  acpMultiplier: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(0),
-  retryAllowed: z.boolean().default(true),
-  take10Allowed: z.boolean().default(true),
-  take20Allowed: z.boolean().default(true),
-  synergyFromSkills: z.array(z.string()).default([]),
-  synergyNotes: z.array(z.string()).default([]),
-  actions: z.array(DnD35SkillActionDescriptorSchema).default([]),
-  rankThresholdModifiers: z
-    .array(
-      z.object({
-        minRanks: z.number().int().positive(),
-        modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
-        ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([])
-      })
-    )
-    .default([])
+export const SsotFileEntrySchema = z.object({
+  domain: z.string().min(1),
+  tier: z.enum(['tier1_console', 'tier1_types', 'tier2_cartridge', 'tier2_ui']),
+  responsibility: z.string().min(1),
+  canonicalEntryPoints: z.array(z.string()),
+  ownershipBoundary: z.object({
+    includes: z.string().min(1),
+    excludes: z.string().min(1)
+  }),
+  antiPatterns: z.array(z.string())
 });
+export type SsotFileEntry = z.infer<typeof SsotFileEntrySchema>;
 
-// Inside DnD35SpellDefinitionSchema:
-  id: z.string(),
-  name: z.string(),
-  level: z.number().int().min(0).max(9),
-  levelByClass: z.record(z.string(), z.number().int().min(0).max(9)).default({}),
-  levelByDomain: z.record(z.string(), z.number().int().min(1).max(9)).default({}),
-  description: z.string().default(''),
-  school: z.string(),
-```
+export const SsotRegistrySchema = z.record(z.string(), SsotFileEntrySchema);
+export type SsotRegistry = z.infer<typeof SsotRegistrySchema>;
 
----
-
-### Step 2: Playable Race Tagging (`public/data/rulesets/dnd35e/races/*.json`)
-Update the 7 core PHB races (`human`, `dwarf`, `elf`, `gnome`, `half_elf`, `half_orc`, `halfling`) and 7 iconic LA/humanoid playable options (`aasimar`, `tiefling`, `drow`, `goblin`, `hobgoblin`, `kobold`, `orc`) to include `"isPlayableRace": true`. All other monstrous/animal/vermin/undead/dragon/construct racial files default to `false` via Zod.
-
----
-
-### Step 3: Full 42-Skill SRD Roster, Synergies, Actions & Rank Thresholds (`src/rulesets/dnd35e/skills.ts`, `src/rulesets/dnd35e/system_content_files.ts` & `public/data/rulesets/dnd35e/skills/*.json`)
-
-#### 3A. Enhance Existing `src/rulesets/dnd35e/skills.ts` (Zero Duplication)
-1. Export `SYNERGY_REQUIRED_RANKS` from `skills.ts` and re-export it as `SYNERGY_RANK_THRESHOLD` in `character_builder.ts`.
-2. Upgrade `computeSkillSynergyBonus` in place to support the SRD epic scaling rule (`+2` at 5 ranks, plus `+2` per additional 20 whole ranks).
-3. Update `SkillCheckDefinition` & `resolveSkillCheck` so `take10Allowed` and `take20Allowed` from `DnD35SkillDefinition` drive Take 10 / Take 20 eligibility declaratively (alongside the existing `'use_magic_device'` fallback for backward compatibility with existing tests).
-4. Add `getSkillsGrantedSynergyBy(sourceSkillId, skillRegistry)` for reverse synergy lookup in the UI inspector.
-
-```ts
-// In src/rulesets/dnd35e/skills.ts:
-
-/** Minimum whole ranks required in a source skill to grant an initial +2 Synergy bonus. */
-export const SYNERGY_REQUIRED_RANKS = 5;
-
-/** Additional whole ranks interval per extra +2 Synergy tier (25 ranks = +4, 45 ranks = +6). */
-const SYNERGY_EPIC_RANK_INTERVAL = 20;
-
-/** Untyped bonus granted per qualifying 5-rank skill synergy (`+2`). */
-const SYNERGY_BONUS_AMOUNT = 2;
-
-export function computeSkillSynergyBonus(
-  synergyFromSkills: ReadonlyArray<string>,
-  allSkillRanks: Readonly<Record<string, number>>
-): number {
-  let bonus = 0;
-  for (const sourceSkillId of synergyFromSkills) {
-    const wholeRanks = dndFloor(Math.max(0, allSkillRanks[sourceSkillId] ?? 0));
-    if (wholeRanks >= SYNERGY_REQUIRED_RANKS) {
-      const tiers = 1 + dndFloor((wholeRanks - SYNERGY_REQUIRED_RANKS) / SYNERGY_EPIC_RANK_INTERVAL);
-      bonus += tiers * SYNERGY_BONUS_AMOUNT;
-    }
-  }
-  return bonus;
+export interface SsotParityReport {
+  readonly checkedFiles: number;
+  readonly errors: ReadonlyArray<string>;
+  readonly warnings: ReadonlyArray<string>;
 }
 
-export function getSkillsGrantedSynergyBy(
-  sourceSkillId: string,
-  skillRegistry: Readonly<Record<string, DnD35SkillDefinition>>
-): ReadonlyArray<string> {
-  const targets: string[] = [];
-  for (const skill of Object.values(skillRegistry)) {
-    if (skill.synergyFromSkills.includes(sourceSkillId)) {
-      targets.push(skill.id);
-    }
-  }
-  return targets.sort();
+export function validateSsotRegistries(projectRoot: string): SsotParityReport {
+  // 1. Check all src/**/*.ts files against console + dnd35e registries
+  // 2. Enforce strict disjoint partition (src/rulesets/dnd35e/** & src/rendering/ui/dnd35e_*.ts must be in dnd35e)
+  // 3. Ensure no ghost files in JSON
+  // 4. Ensure canonicalEntryPoints are exported on disk
+  // 5. Ensure docs/SSOT_CONSOLE.md & docs/SSOT_DND35E.md are in sync with JSON
+}
+
+export function generateSsotMarkdown(registry: SsotRegistry, title: string, description: string): string {
+  // Groups by domain, renders Table of Contents, Domain Responsibility Table, Entry Points, and Boundaries
 }
 ```
 
-#### 3B. Backfilling the 12 Existing Skills (`public/data/rulesets/dnd35e/skills/*.json`)
-Update the 12 existing skill JSONs (`climb`, `concentration`, `diplomacy`, `hide`, `intimidate`, `jump`, `listen`, `move_silently`, `spot`, `swim`, `tumble`, `use_magic_device`) so their `synergyFromSkills`, `synergyNotes`, `take10Allowed`/`take20Allowed`, and `actions` are complete now that all 42 PHB skills exist in `sys.skills`.
+---
 
-#### 3C. Authoring the 30 Missing PHB Skills (`public/data/rulesets/dnd35e/skills/*.json` & `SKILL_IDS`)
-Create the 30 missing skill JSON files (`appraise`, `balance`, `bluff`, `craft`, `decipher_script`, `disable_device`, `disguise`, `escape_artist`, `forgery`, `gather_information`, `handle_animal`, `heal`, `knowledge_arcana`, `knowledge_dungeoneering`, `knowledge_local`, `knowledge_nature`, `knowledge_nobility`, `knowledge_planes`, `knowledge_religion`, `open_lock`, `perform`, `profession`, `ride`, `search`, `sense_motive`, `sleight_of_hand`, `speak_language`, `spellcraft`, `survival`, `use_rope`) using the existing `DnD35SkillDefinitionSchema` and `DnD35SkillActionDescriptorSchema` shapes, and register all 42 IDs in `SKILL_IDS`.
+### Step 3: Populate Full JSON Registries (`docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json`)
+**Goal**: Comprehensively catalog all 284 source files across `docs/ssot/ssot_console.json` (251 files) and `docs/ssot/ssot_dnd35e.json` (33 files) with precise domain, tier, responsibility, canonical entry points, ownership boundaries, and anti-patterns.
+
+- D&D 3.5e registry covers:
+  - Math & Dice (`math/dice.ts`, `math/multipliers.ts`)
+  - Abilities & Stacking (`abilities.ts`, `modifiers.ts`, `wild_shape.ts`)
+  - Progression & Classes (`progression.ts`, `character_builder.ts`, `level_ledger.ts`, `family_synthesizer.ts`, `templates.ts`, `srd_registry.ts`)
+  - Spatial & Geometry (`spatial/grid_geometry.ts`, `spatial/reach_deadzones.ts`, `spatial/cover_flanking.ts`, `spatial/senses_lighting.ts`)
+  - Action Economy & AoO (`action_economy.ts`, `attacks_of_opportunity.ts`)
+  - Combat & Physics (`combat/attack_resolver.ts`, `combat/damage_vitality.ts`, `combat/maneuvers_conditions.ts`, `equipment_physics.ts`)
+  - Magic & Spells (`magic/spellcasting.ts`, `magic/aoe_rest.ts`)
+  - Pipeline & Contracts (`dnd35e_ruleset.ts`, `dnd35e_validator.ts`, `system_content_files.ts`, types)
+  - UI Views (`rendering/ui/dnd35e_*.ts`)
+- Console registry covers all core engine systems, actions, ECS, map generation, rendering, UI views, campaign editor, and shared types.
 
 ---
 
-### Step 4: Spell Class/Domain Tagging & Starter Spell Roster (`public/data/rulesets/dnd35e/spells/*.json` & `src/rulesets/dnd35e/system_content_files.ts`)
-Update the 5 existing spells (`burning_hands`, `cure_light_wounds`, `fireball`, `magic_missile`, `ray_of_enfeeblement`) and add 18 starter 0th/1st-level spells (`acid_splash`, `ray_of_frost`, `daze`, `detect_magic`, `light`, `resistance`, `mage_armor`, `shield`, `sleep`, `grease`, `bless`, `shield_of_faith`, `divine_favor`, `entangle`, `produce_flame`, `shillelagh`, `summon_monster_i`, `summon_natures_ally_i`) with `levelByClass`, `levelByDomain`, and `description`, and register them in `SPELL_IDS`.
+### Step 4: Upgrade `scripts/map-codebase.ts` & Add NPM Script
+**Goal**: Integrate the generator into `scripts/map-codebase.ts` and add `"map:ssot": "bun scripts/map-codebase.ts"` to `package.json`.
+- Running `bun scripts/map-codebase.ts` regenerates `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`.
+- Running with `--check` validates parity without writing.
 
 ---
 
-### Step 5: Character Builder Helpers, Feat Slot Budget & Validator (`src/rulesets/dnd35e/character_builder.ts` & `src/rulesets/dnd35e/dnd35e_validator.ts`)
-1. In `src/rulesets/dnd35e/character_builder.ts`:
-   - Re-export `SYNERGY_REQUIRED_RANKS as SYNERGY_RANK_THRESHOLD` and delegate `getSkillMaxRanks` to `computeMaxSkillRankCap` from `./skills.ts`.
-   - Add `computeFirstLevelFeatSlotBudget(race, cls, selectedAcfs)` to compute `{ totalSlots, generalSlots, racialBonusSlots, fighterBonusSlots }`.
-   - Add `getSpellLevelForClass(spell, classId, domains)` and `isSpellSelectableForDraft(spell, classId, domains, arcaneSchool, prohibitedSchools, maxSpellLevel)` to centralize spell filtering for both Character Creation and Level-Up.
-   - Add `getEffectiveClassSkillIds(cls, domains, domainRegistry)` to combine `cls.classSkills` with any `classSkillsAdded` from active Cleric domain `grantedPowerBundle`s (e.g. Knowledge/Trickery domains).
-   - Add `sanitizeDraftOnRaceOrClassChange(draft, sys)` so changing `raceId` or `classId` automatically prunes invalid `selectedAcfs`, resets `domains` (if non-Cleric), resets `arcaneSchool` / `prohibitedSchools` (if non-Wizard), prunes `knownSpells` not on the new class list, and clamps/resets `skillRanks` and `selectedFeats` if they exceed the new budget.
-   - Fix `createDefaultDraft()` in `dnd35e_char_builder.ui.ts` to use `'power_attack'` instead of `'weapon_focus'`, and update `validateCharacterCreationDraft()` to validate feat count against `computeFirstLevelFeatSlotBudget()`.
-2. In `src/rulesets/dnd35e/dnd35e_validator.ts`:
-   - Verify every `classSkillId` in `classDef.classSkills` exists in `sys.skills`.
-   - Verify every `sourceSkillId` in `skillDef.synergyFromSkills` and every `opposedBySkill` in `skillDef.actions` exists in `sys.skills`.
-   - Verify every class ID in `spellDef.levelByClass` exists in `sys.classes` and every domain ID in `spellDef.levelByDomain` exists in `sys.domains`.
+### Step 5: Wire Parity Check into `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`
+**Goal**: Ensure `run-validator.ts` and `bun test` verify SSOT registry parity automatically.
+- In `scripts/run-validator.ts`, add a `─── SSOT Registry Parity ───` check stage.
+- In `tests/ssot_registry_parity.test.ts`, assert `report.errors.length === 0`.
 
 ---
 
-### Step 6: Full-Screen 2-Pane CSS Layout (`index.html`)
-Expand `#char-creation-overlay .modal-content` and `#level-up-overlay .modal-content` in `index.html` and add `.dnd35-two-pane-stage`, `.dnd35-pane-left`, `.dnd35-pane-right`, `.dnd35-counter-group`, and `.dnd35-filter-bar` styles.
+### Step 6: Update `AGENTS.md` and `docs/MILESTONES.md`
+**Goal**: Wire the new SSOT requirements into the agent lifecycle rules and document Milestone 112.8 completion.
+- In `AGENTS.md` §1 (Workflow):
+  - **Before Writing Code — Step 4 (`Implementation Plan Draft`)**: Add requirement to consult `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` to identify canonical entry points, verify ownership boundaries, and check for old-brain eviction.
+  - **After Writing Code — Step 11 (`Update Documentation`)**: Add requirement to create or update relevant entries in `docs/ssot/ssot_console.json` and/or `docs/ssot/ssot_dnd35e.json`, run `bun scripts/map-codebase.ts` to regenerate the markdown maps, and verify parity via `bun run scripts/run-validator.ts`.
+- In `docs/MILESTONES.md`: Add and check off Milestone 112.8.
 
 ---
 
-### Step 7: Shared Right-Pane Inspector Module (`src/rendering/ui/dnd35e_inspector.ui.ts`)
-Create a concise, reusable pure-DOM inspector module used by both `dnd35e_char_builder_steps.ui.ts` and `dnd35e_level_up.ui.ts`:
-- `renderRaceInspector(pane, race)` — Ability adjustments, size, speed, senses, favored class, bonus feat/skill points, languages, weapon familiarities, save/conditional modifiers, RHD/LA.
-- `renderSkillInspector(pane, skill, allSkillRanks, abilityMod, miscBonus, sys)` — Key ability, Trained Only, ACP multiplier, Take 10/Take 20/Retry badges, full modifier breakdown (`Whole Ranks + Ability Mod + Synergy + Misc = Total`), **Synergies Received From** (with live `[ACTIVE +2]` status), **Synergies Granted To** (via `getSkillsGrantedSynergyBy` + `synergyNotes`), **Skill Actions Table** (`actionCost`, `DC / Opposed Skill`, `description`, `onSuccessRuleOverrides`), and **Rank Threshold Unlocks** (`rankThresholdModifiers`).
-- `renderFeatInspector(pane, feat, prereqPassed, isGranted)` — Benefit description, Fighter Bonus badge, Prerequisite status.
-- `renderSpellInspector(pane, spell, spellLevel)` — School, Level, Components, Range, Target/Area, Duration, Saving Throw, Spell Resistance, Description.
+## 4. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
----
-
-### Step 8: Character Creation & Level-Up Modal Overhaul (`src/rendering/ui/dnd35e_char_builder.ui.ts`, `src/rendering/ui/dnd35e_char_builder_steps.ui.ts`, `src/rendering/ui/dnd35e_level_up.ui.ts`)
-1. **Scroll Position Preservation:** Capture `scrollTop` of `.dnd35-pane-left` and `.dnd35-pane-right` before re-rendering and restore immediately after DOM insertion so clicking `[+]`/`[−]` or selecting options never jumps the scroll position.
-2. **Step 1 (Race):** Playable race filter (`isPlayableRace: true` by default + `"Show Monstrous / Savage Species (RHD / LA)"` checkbox) on the left; `renderRaceInspector` on the right.
-3. **Step 2 (Class, Alignment, ACFs, Domains & Specialist School):** Base PC class filter (`isPC` by default + `"Show DMG NPC Classes"` checkbox) on the left; Class Inspector + Alignment, ACFs, Cleric Domains, and **Wizard Specialist Prohibited Schools Picker** (using existing `validateSpecialistSchoolSelection`) on the right.
-4. **Step 3 (Ability Scores):** Strict branch on `draft.abilityMethod` (`'point_buy'` shows `Point-Buy Cost: X / 28 pts` + `[−]`/`[+]`; `'elite_array'` and `'rolled_4d6kh3'` show `[↑]`/`[↓]` swap buttons + `[Re-Roll]` for rolled) on the left; live derived combat/save/HP preview on the right.
-5. **Step 4 (Skills):** Filter toggle (`All Skills (42)` vs `Class Skills Only`) + `[−] Ranks [+]` counter steppers with separate `Ranks`, `Abil + Syn`, and `Total` columns on the left; `renderSkillInspector` on the right.
-6. **Step 5 (Feats):** Enforced `computeFirstLevelFeatSlotBudget` counter (`1 General + 1 Human Bonus + 1 Fighter Bonus`) on the left; `renderFeatInspector` on the right.
-7. **Step 6 (Spells & Gear):** Class/domain/prohibited-school filtered 0th & 1st-level spells (`isSpellSelectableForDraft`) on the left; `renderSpellInspector` + Starting Equipment selector on the right.
-8. **Level-Up Modal (`dnd35e_level_up.ui.ts`):** Upgraded to `.dnd35-two-pane-stage` with scroll preservation, `[−]`/`[+]` skill rank steppers, live 5-rank Synergy unlock indicators, class-filtered spell selection, and shared `dnd35e_inspector.ui.ts` right-pane views.
-
----
-
-### Step 9: Verification & Regression Tests
-1. Run `bun test` and `compile_applet` / `lint_applet` to verify all TypeScript types, Zod schemas, and unit tests pass with 0 errors.
-2. Add unit test coverage in `tests/dnd35e_classes_builder.test.ts` and `tests/ruleset_validators.test.ts` for playable race filtering, all 42 PHB skills (synergies, actions, rank thresholds, validator integrity), spell class/domain filtering, feat slot budgets, and draft sanitization.
+| Change | Upstream (Callers / Emitters / Data Authors) | Downstream (Consumers / Renderers / Validators / Saves) | Lateral (Sibling Campaigns / Docs / Tests) |
+| :--- | :--- | :--- | :--- |
+| **1. `docs/ssot/*.json` Registries** | Authored whenever files or responsibilities change. | Read by `scripts/map-codebase.ts`, `scripts/run-validator.ts`, `tests/ssot_parity.test.ts`. | Generates `docs/SSOT_CONSOLE.md` & `docs/SSOT_DND35E.md`. |
+| **2. `scripts/ssot_parity.ts` & `scripts/map-codebase.ts`** | Called by CLI (`bun run map:ssot`) and validator runners. | Writes Markdown files; feeds error counts to `run-validator.ts` and test runner. | Registered in `package.json` scripts and `tsconfig.scripts.json`. |
+| **3. `docs/` Reorganization** | Moved files into `docs/ssot/`, `docs/dnd35e/`, `docs/guides/`, `docs/archive/`. | Keeps root `docs/` clean with only living core docs (`ARCHITECTURE.md`, `DECISIONS.md`, `MILESTONES.md`, `SSOT_CONSOLE.md`, `SSOT_DND35E.md`). | JSDoc `@see` comments updated across 9 source files. |
+| **4. `AGENTS.md` Workflow Updates** | Step 4 (*Before Writing Code*) & Step 11 (*After Writing Code*). | Governs all future agent planning, code writing, and documentation maintenance turns. | Aligns with `docs/MILESTONES.md` (Milestone 112.8). |

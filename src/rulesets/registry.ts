@@ -79,6 +79,17 @@ export {
   SYNERGY_RANK_THRESHOLD,
   validateSpecialistSchoolSelection
 } from './dnd35e/character_builder.ts';
+export {
+  resolveEquippedWeaponProfile,
+  resolveAllEquippedWeaponProfiles,
+  type EquippedWeaponProfile,
+  type ResolvedActorWeapons
+} from './dnd35e/equipment_physics.ts';
+export {
+  resolveActorAttackRoutine,
+  type DnD35ResolvedAttackRoutine,
+  type DnD35ResolvedStrikeProfile
+} from './dnd35e/combat/attack_resolver.ts';
 export { computeAbilityModifier } from './dnd35e/abilities.ts';
 export { computeSkillSynergyBonus, getSkillsGrantedSynergyBy } from './dnd35e/skills.ts';
 export {

@@ -28,6 +28,7 @@ import { validateCampaign } from '../src/editor/campaign_validator.ts';
 import { collectMissingSpriteMappings } from '../src/rendering/sprite_keys.ts';
 import { getRuleset } from '../src/rulesets/registry.ts';
 import type { RulesetId } from '../src/types/ruleset.types.ts';
+import { validateSsotRegistries } from './ssot_parity.ts';
 
 // ──────────────────────────────────────────────
 // Helpers
@@ -615,13 +616,26 @@ async function main() {
       parityErrors = parity.errors.length;
     }
 
+    // SSOT Registry & Markdown Parity
+    console.log('');
+    console.log('─── SSOT Registry Parity ───');
+    const ssotParity = validateSsotRegistries(PROJECT_ROOT);
+    for (const warn of ssotParity.warnings) console.log(`  ⚠ ${warn}`);
+    if (ssotParity.errors.length > 0) {
+      for (const err of ssotParity.errors) console.error(`  ❌ ${err}`);
+    } else {
+      console.log(
+        `  ✅ Validated ${ssotParity.checkedFiles} source file(s) across SSOT registries & docs (100% architectural coverage)`
+      );
+    }
+
     // Summary
     console.log('');
     console.log('═══════════════════════════════════════════');
     console.log('              SUMMARY');
     console.log('═══════════════════════════════════════════');
-    let totalErrors = parityErrors + rulesetParity.errors.length;
-    let totalWarnings = 0;
+    let totalErrors = parityErrors + rulesetParity.errors.length + ssotParity.errors.length;
+    let totalWarnings = ssotParity.warnings.length;
     for (const r of results) {
       const errCount = r.zodErrors + r.crossErrors;
       const status = r.passed ? '✅' : '❌';
@@ -634,6 +648,9 @@ async function main() {
     }
     if (parityErrors > 0) {
       console.log(`  ❌ ai-prompt-kit: ${parityErrors} parity error(s)`);
+    }
+    if (ssotParity.errors.length > 0) {
+      console.log(`  ❌ SSOT registry parity: ${ssotParity.errors.length} error(s)`);
     }
     console.log('');
     console.log(`Total: ${results.length} campaign(s), ${totalErrors} error(s), ${totalWarnings} warning(s)`);

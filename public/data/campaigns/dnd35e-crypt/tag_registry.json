@@ -238,5 +238,140 @@
     "category": "item",
     "color": "#bdc3c7",
     "description": "A book of records."
+  },
+  "weapon": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "A martial or simple weapon."
+  },
+  "armor": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Protective body armor."
+  },
+  "shield": {
+    "category": "item",
+    "color": "#a67c52",
+    "description": "A defensive shield."
+  },
+  "slashing": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Deals slashing damage."
+  },
+  "bludgeoning": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Deals bludgeoning damage."
+  },
+  "piercing": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Deals piercing damage."
+  },
+  "light": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "Light weapon or armor."
+  },
+  "medium": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Medium armor."
+  },
+  "heavy": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Heavy armor."
+  },
+  "one_handed": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "One-handed weapon."
+  },
+  "two_handed": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Two-handed weapon."
+  },
+  "weaponDice:1d6": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Base weapon damage 1d6."
+  },
+  "weaponDice:1d8": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Base weapon damage 1d8."
+  },
+  "critThreatMin:19": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical threat range 19-20."
+  },
+  "critThreatMin:20": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical threat range 20."
+  },
+  "critMultiplier:2": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical damage multiplier x2."
+  },
+  "armorBonus:0": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +0."
+  },
+  "armorBonus:4": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +4."
+  },
+  "armorBonus:5": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +5."
+  },
+  "shieldBonus:2": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Shield bonus +2."
+  },
+  "acp:0": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty 0."
+  },
+  "acp:2": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -2."
+  },
+  "acp:4": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -4."
+  },
+  "acp:5": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -5."
+  },
+  "double_weapon": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Double weapon capable of being wielded two-handed or as one-handed primary + light off-hand."
+  },
+  "cannot_two_hand_str": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Cannot apply 1.5x Strength or 2x Power Attack damage bonus when wielded in two hands."
+  },
+  "exotic_1h_martial_2h": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Requires Exotic Weapon Proficiency in one hand (-4 penalty without) or Martial Weapon Proficiency in two hands."
   }
 }

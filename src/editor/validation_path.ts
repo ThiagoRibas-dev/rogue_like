@@ -3,7 +3,7 @@
  * Unifies slash-leading (`/a/b`), dot (`a.b`), and bracket (`a[0]`) dialects
  * into a single canonical form used by navigators, form renderers, and error matchers.
  *
- * @see docs/research_notes.md §10.1 — §10.4
+ * @see docs/archive/research_notes.md §10.1 — §10.4
  * @see docs/DECISIONS.md — Milestone 76, Decision D4
  */
 

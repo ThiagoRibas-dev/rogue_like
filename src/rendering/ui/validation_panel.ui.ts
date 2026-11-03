@@ -4,7 +4,7 @@
  *
  * Zero `.innerHTML` usage (Golden Rule 7 / Decision D6).
  *
- * @see docs/research_notes.md §10.1 — §10.4
+ * @see docs/archive/research_notes.md §10.1 — §10.4
  * @see docs/DECISIONS.md — Milestone 76, Decision D2
  */
 import { revealField } from '../../editor/validation_navigator';

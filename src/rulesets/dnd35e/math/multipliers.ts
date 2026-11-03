@@ -1,5 +1,5 @@
 /**
- * D&D 3.5e rounding and abstract vs. real-world multiplier combinators (`/docs/rules/combat/multiplying.md`).
+ * D&D 3.5e rounding and abstract vs. real-world multiplier combinators (`/docs/dnd35e/rules/combat/multiplying.md`).
  */
 
 /** Base identity multiplier for D&D 3.5e multiplier math. */

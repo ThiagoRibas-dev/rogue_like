@@ -1,5 +1,12 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
-import { ComponentType, type PositionComponent, type TagsComponent } from '../types/components.types.ts';
+import {
+  ComponentType,
+  type MovementModes,
+  type PositionComponent,
+  type PropertyOverlayComponent,
+  type TagsComponent
+} from '../types/components.types.ts';
+import type { TileDefinition } from '../types/campaign/world.ts';
 import { GameEventType } from '../types/events.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 
@@ -14,8 +21,75 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processInteractIntent } from './intent.system.ts';
 
 /**
+ * Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.
+ */
+function getEntityMovementModes(state: GameState, entityId: EntityId): MovementModes | undefined {
+  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
+  if (overlay?.movementModesOverride) {
+    return overlay.movementModesOverride;
+  }
+  const rulesetComp = getComponent(state, entityId, ComponentType.RulesetData);
+  if (rulesetComp && rulesetComp.rulesetId === 'dnd35e' && rulesetComp.payload) {
+    const dndData = rulesetComp.payload as { movementModes?: MovementModes };
+    if (dndData.movementModes) {
+      return dndData.movementModes;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Canonical Single Source of Truth for tile traversal validation across movement modes.
+ * Walking creatures can traverse walkable tiles.
+ * Flying creatures (fly > 0) can traverse chasms, pits, and tiles marked traversable by 'fly'.
+ * Swimming creatures (swim > 0) can traverse water, liquid, and tiles marked traversable by 'swim'.
+ * Burrowing creatures (burrow > 0) can traverse burrowable tiles.
+ *
+ * @param tileDef TileDefinition of the target tile.
+ * @param movementModes Optional MovementModes of the moving entity.
+ * @returns True if the entity can traverse the tile.
+ */
+export function canTraverseTile(
+  tileDef: TileDefinition | undefined,
+  movementModes?: MovementModes | undefined
+): boolean {
+  if (!tileDef) return false;
+  if (tileDef.walkable) return true;
+
+  const tags = tileDef.tags ?? [];
+  const traversableBy = tileDef.traversableBy ?? [];
+
+  if (
+    (tags.includes('chasm') || tags.includes('pit') || traversableBy.includes('fly')) &&
+    movementModes?.fly !== undefined &&
+    movementModes.fly > 0
+  ) {
+    return true;
+  }
+
+  if (
+    (tags.includes('water') || tags.includes('liquid') || traversableBy.includes('swim')) &&
+    movementModes?.swim !== undefined &&
+    movementModes.swim > 0
+  ) {
+    return true;
+  }
+
+  if (
+    (tags.includes('burrowable') || traversableBy.includes('burrow')) &&
+    movementModes?.burrow !== undefined &&
+    movementModes.burrow > 0
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Processes a MoveIntent.
- * Checks for collision against walls and entities using the spatial index.
+ * Checks for collision against walls, hazard tiles (accounting for multi-mode movement modes),
+ * and entities using the spatial index.
  * Returns updated GameState if movement was successful, or the original GameState (plus a message) if blocked.
  * @param state The current GameState.
  * @param intent The MoveIntent to process.
@@ -45,9 +119,12 @@ export function processMoveIntent(
     return { state, success: false };
   }
 
-  // 1. Wall Collision
+  // 1. Tile Traversal & Obstacle Collision
   const tileDef = state.campaign.tiles[targetTile.tileId];
-  if (tileDef === undefined || !tileDef.walkable) {
+  const movementModes = getEntityMovementModes(state, entityId);
+  const isTraversable = canTraverseTile(tileDef, movementModes);
+
+  if (!isTraversable) {
     const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
     if (tileDef?.bumpTransition) {
       // Bump to transition (e.g., open door)
@@ -63,8 +140,14 @@ export function processMoveIntent(
     }
 
     if (isPlayer) {
+      const obstacleName =
+        tileDef?.tags?.includes('chasm') || tileDef?.tags?.includes('pit')
+          ? 'a deep chasm'
+          : tileDef?.tags?.includes('liquid') || tileDef?.tags?.includes('water')
+            ? 'deep water'
+            : 'a wall';
       return {
-        state: addMessage(state, 'Ouch! You bumped into a wall.', MessageLogCategory.CombatHit),
+        state: addMessage(state, `Ouch! You bumped into ${obstacleName}.`, MessageLogCategory.CombatHit),
         success: false
       };
     }

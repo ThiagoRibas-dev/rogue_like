@@ -17,7 +17,8 @@ export const TileDefinitionSchema = z.object({
   bumpTransition: z.string().optional(),
   interactTransition: z.string().optional(),
   interactMessage: z.string().optional(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
+  traversableBy: z.array(z.enum(['fly', 'swim', 'burrow', 'climb'])).optional()
 });
 /** Inferred type for a tile definition. */
 export type TileDefinition = z.infer<typeof TileDefinitionSchema>;

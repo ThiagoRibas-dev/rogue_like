@@ -637,11 +637,15 @@ describe('Milestone 105: Tier 1 & Tier 2 Anatomical Equipment & Special Material
 
     // Large two-handed weapon in Medium hands: cannot be wielded!
     const largeGreatsword = evaluateWeaponWieldingProfile('large', 'two_handed', 'medium');
-    expect(largeGreatsword.wieldable).toBe(false);
+    // Weapon shifting beyond effort ladder ([0..2]) cannot be wielded
+    const hugeSword = evaluateWeaponWieldingProfile('huge', 'one_handed', 'medium');
+    expect(hugeSword.wieldable).toBe(false);
 
-    // Weapon 2 sizes larger: cannot be wielded
+    // Huge light weapon shifts 2 steps (0 + 2 = 2): becomes two-handed with -4 penalty
     const hugeDagger = evaluateWeaponWieldingProfile('huge', 'light', 'medium');
-    expect(hugeDagger.wieldable).toBe(false);
+    expect(hugeDagger.wieldable).toBe(true);
+    expect(hugeDagger.effectiveHandedness).toBe('two_handed');
+    expect(hugeDagger.attackPenalty).toBe(-4);
   });
 
   test('resolveMagicItemActivation respects use_activated, spell_trigger, and UMD DC checks', () => {
