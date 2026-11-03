@@ -1468,6 +1468,22 @@ Refine the Character Creation Wizard (`dnd35e_char_builder.ui.ts`, `dnd35e_char_
   - Enforce exact feat slot budgets in Step 5 (`computeFirstLevelFeatSlotBudget`: `1 General Feat` + `1 Human Bonus Feat` if Human + `1 Fighter Bonus Feat` restricted to `[Fighter Bonus Feat]` tagged feats if Fighter 1), with a right-hand Feat Inspector displaying the full prerequisite AST check (`evaluatePrerequisiteAST`) and `effectBundle` description.
   - Add `levelByClass: z.record(z.string(), z.number().int().min(0).max(9))` and `levelByDomain: z.record(z.string(), z.number().int().min(1).max(9))` to `DnD35SpellDefinitionSchema` across 23 starter 0th/1st-level spells in `public/data/rulesets/dnd35e/spells/<id>.json`, and filter Step 6 (`renderSpellsStep`) and Level-Up spell selection strictly via `isSpellSelectableForDraft` (checking `spell.levelByClass[classId]` and prohibited school exclusions) so divine casters and arcane casters only see spells belonging to their class spell list.
 
+## ⚪ Milestone 112.6: Combat Sequence & Inventory Wiring, Declarative Doctrine Descriptors, Level-Up Decoupling & Multi-Mode Floor Traversal
+
+Bridge foundational integration gaps between Phase 21/22/23 primitives and live gameplay loops prior to Phase 24 content expansion.
+
+- [ ] **Full-Round Attack Routine & Equipped Weapon Resolution (`dnd35e_ruleset.ts`, `attack_resolver.ts`)**:
+  - Wire `buildFullAttackSequence` into `resolveDnD35eMeleeAttack` for full-round attack actions, sequencing iterative attacks, off-hand weapons, and secondary natural attacks.
+  - Dynamically derive attack parameters (weapon dice, threat range, crit multiplier, damage type, and material properties) from the actual item entities equipped in the actor's `held` hand slots instead of falling back to flat baseline properties on `DnD35EntityData`.
+- [ ] **Character Creation Starting Equipment Physical Materialization (`character_builder.ts`)**:
+  - Update `commitCharacterCreation` so selected starting equipment packages instantiate actual item entities in the player's `InventoryComponent` and equip starting armaments into `EquipmentComponent.slots`.
+- [ ] **Decoupled Interactive Level-Up Progression (`dnd35e_ruleset.ts`, `dnd35e_level_up.ui.ts`)**:
+  - Refactor `grantDnD35eXp` so crossing an XP threshold does not automatically mutate `tracks` and HP in the background; preserve the XP threshold trigger strictly for the interactive Level-Up HUD alert and `applyLevelUpToActor()`, maintaining 100% fidelity with `levelHistory`.
+- [ ] **Declarative Doctrine Descriptors (`doctrineDescriptor` in `attack_resolver.ts` & `feats/*.json`)**:
+  - Refactor `evaluateTacticalDoctrineModifiers` to consume declarative `doctrineDescriptor` trade-off configurations from active `DnD35EffectBundle`s (scaling attack penalties into damage or dodge AC based on handedness and dial values) instead of hardcoding feat-specific keys in Cartridge code.
+- [ ] **Lightweight Multi-Mode Traversal (`movement.system.ts`, `grid.ts`)**:
+  - Extend `processMoveIntent` to check `movementModes` against non-solid impassable terrain (chasms, liquid, pits) allowing actors with `fly > 0` or `swim > 0` to pass without requiring a full 3D Z-axis console overhaul.
+
 ---
 
 # 🚀 Phase 24: D&D 3.5e System Content Pillars 3 & 5 — Complete SRD Skills, Feats, Weapons, Armor & Magic Items _(Branch: `DND35`)_
