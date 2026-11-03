@@ -321,6 +321,23 @@ This document records architectural decisions whose rationale is **non-obvious o
           3. **Continuous Parity Verification**: `validateSsotRegistries` in `scripts/ssot_parity.ts` enforces 100% file coverage, disjoint partitioning, live TypeScript export validation (verifying every canonical entry point actually exists in the file's exports), and markdown synchronization. This is permanently wired into `scripts/run-validator.ts` and verified via `tests/ssot_registry_parity.test.ts`.
           4. **Process Integration in AGENTS.md**: Step 4 of the Kickoff Flow mandates checking `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` and providing an SSOT Ownership & Old-Brain Eviction Table when replacing legacy logic. Step 11 of After Writing Code mandates updating the SSOT registries, regenerating markdown maps, and ensuring 0 parity errors.
 
+---
 
+### Milestone 112.9: Declarative Multiclassing, 3-Horizon Stat Pipeline & Per-Class Spellbooks
 
+- **Decision: 3-Horizon Stat Computation Boundary**:
+  - Structured the character stat and feature evaluation pipeline into three explicit computation horizons (`src/rulesets/dnd35e/level_ledger.ts` & `src/rulesets/dnd35e/progression.ts`):
+    - **Horizon 1 (Level History Ledger)**: Calculates permanent, immutable choices made at each Hit Die step (`levelHistory`: HD gain, class chosen, ability score increases, permanent skill point investments based on INT modifier at time of gain).
+    - **Horizon 2 (Aggregated Progression Layers)**: Rebuilds structural progression aggregates from level history (`tracks`, `feats`, `skillRanks`, `scalingPools`, `spellbooksByClass`, and base save/BAB tracks). Crucially, conditional stat modifiers (e.g. `condition: 'self:armor:heavy'`) are preserved in component state rather than dropped during aggregation.
+    - **Horizon 3 (Live Equipment & Tag Projection)**: Projects situational semantic tags (`armor:heavy`, `load:heavy`, `trait:literate`, `trait:unencumbered_speed`) dynamically from active inventory and encumbrance without invalidating or re-evaluating `levelHistory`.
+  - *Rationale*: Rebuilding the entire character DAG from scratch on every equipment change or buff update causes unnecessary re-calculation of permanent skill point budgets and breaks temporary effect tracking. Separating permanent history (Horizon 1), aggregated structure (Horizon 2), and live situational tags (Horizon 3) enforces strict data isolation and performance efficiency.
 
+- **Decision: Zero Hardcoded Class Behavior (Declarative JSON Schema Driven)**:
+  - Extended `ClassDefinition` schema (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`) with declarative parameters: `grantsLiteracy`, `spellAcquisitionMode` (`known_and_prepared`, `prayerbook_prepared`, `spontaneous_known`), `upgradeOnDuplicateFeatureId`, `scalingPoolContribution`, and `grantedTags`.
+  - Class-specific exceptions (e.g. Barbarian illiteracy, Cleric/Paladin Turn Undead stacking pools, Rogue/Barbarian Uncanny Dodge duplicate feature promotions to Improved Uncanny Dodge) are declared entirely in class JSONs (`public/data/rulesets/dnd35e/classes/*.json`) without hardcoded `if (classId === 'barbarian')` or `if (hasFeat('multiattack'))` branches in baseline engine loops.
+  - *Rationale*: Preserves Rule 16 & Rule 17 of `AGENTS.md` (Leverage Generic Console Systems and Baseline Rules + Declarative Overrides). Any custom homebrew or modded class can define literacy rules, spellbook styles, or scaling pool contributions using standard JSON attributes without modifying TypeScript engine code.
+
+- **Decision: Per-Class Spellbook State Isolation**:
+  - Isolated spellcasting state by class using `spellbooksByClass: Record<string, SpellbookState>` and `learnedSpellsByClass: Record<string, string[]>` on `Dnd35eProgressionComponent`.
+  - Step validation (`validateCharacterCreationStep` & `validateLevelUpStep`) automatically bypasses manual spell steps for `prayerbook_prepared` casters (Clerics, Paladins, Druids) while spawning dynamic per-class spell tabs for Arcane casters (Wizards, Bards, Sorcerers).
+  - *Rationale*: Multiclass spellcasters in D&D 3.5e keep distinct spell lists, caster levels, and preparation slots per class. Mixing learned spells into a single unified array creates ambiguous spell DC calculations and breaks preparation UI gating.
