@@ -4,6 +4,7 @@
 
 import { getComponent } from '../core/ecs.ts';
 import { getHoverState } from '../core/hover_state.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
   ComponentType,
   type IdentityComponent,
@@ -394,6 +395,18 @@ function buildInspectTooltip(
             type: 'desc',
             value: `${rankDef.displayName} (Tier ${nemesis.tier})`,
             color: '#f1c40f'
+          });
+        }
+      }
+
+      // Ruleset-projected Monster Lore inspection lines
+      const activeRuleset = getActiveRuleset(state);
+      if (activeRuleset.projectInspectLoreLines) {
+        for (const loreLine of activeRuleset.projectInspectLoreLines(state, entityId)) {
+          sections.push({
+            type: 'desc',
+            value: loreLine.value,
+            color: loreLine.color
           });
         }
       }

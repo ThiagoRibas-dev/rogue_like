@@ -10,6 +10,7 @@ import { processReactions, getValidReactionsForTarget } from './reaction.system.
 import { VERBS, type Verb } from '../constants/verbs.constants.ts';
 import { ComponentType, type ItemComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import type { EntityId } from '../types/game-state.types.ts';
 import type { ApplyIntentTarget, VerbOption } from '../types/intents/interaction.intents.ts';
 /**
@@ -32,8 +33,16 @@ export function processApplyIntent(
     return processWandZap(state, intent);
   }
 
-  if (intent.verb === 'intimidate' || intent.verb === 'persuade') {
+  if (intent.verb === 'intimidate' || intent.verb === 'persuade' || intent.verb === 'feint') {
     return processSocialIntent(state, intent);
+  }
+
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.resolveSkillVerb) {
+    const rulesetOutcome = activeRuleset.resolveSkillVerb(state, intent);
+    if (rulesetOutcome !== null) {
+      return rulesetOutcome;
+    }
   }
 
   const result = processReactions(state, intent.verb, intent.entityId, intent.target, intent.toolEntityId);
@@ -101,6 +110,14 @@ export function getValidVerbsForTarget(
 
     const matches = getValidReactionsForTarget(state, verb, sourceEntityId, target, toolEntityId);
     if (matches.length > 0) {
+      validVerbs.add(verb);
+    }
+  }
+
+  // 3. Add ruleset-provided context verbs
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.getValidRulesetVerbsForTarget) {
+    for (const verb of activeRuleset.getValidRulesetVerbsForTarget(state, sourceEntityId, target)) {
       validVerbs.add(verb);
     }
   }

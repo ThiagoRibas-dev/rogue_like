@@ -1,0 +1,26 @@
+{
+  "craft_weaponsmithing": {
+    "id": "craft_weaponsmithing",
+    "name": "Craft (Weaponsmithing)",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Forge standard and masterwork martial and simple melee weapons.",
+    "actions": [
+      {
+        "actionId": "forge_blade_or_hafted_weapon",
+        "name": "Forge Blade or Hafted Weapon",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Smelt, hammer, temper, and whet swords, daggers, maces, halberds, and greataxes.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

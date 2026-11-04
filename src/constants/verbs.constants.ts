@@ -9,6 +9,10 @@ export type Verb =
   | 'close'
   | 'lock'
   | 'unlock'
+  | 'search'
+  | 'disarm'
+  | 'feint'
+  | 'heal'
   | 'dip'
   | 'zap'
   | 'ignite'
@@ -39,6 +43,10 @@ export const VERBS: ReadonlyArray<Verb> = [
   'close',
   'lock',
   'unlock',
+  'search',
+  'disarm',
+  'feint',
+  'heal',
   'dip',
   'zap',
   'ignite',

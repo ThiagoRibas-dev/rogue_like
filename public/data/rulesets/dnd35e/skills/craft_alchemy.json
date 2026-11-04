@@ -1,0 +1,26 @@
+{
+  "craft_alchemy": {
+    "id": "craft_alchemy",
+    "name": "Craft (Alchemy)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Requires spellcaster status or specialized alchemy kit to brew alchemical items such as alchemist's fire, acid, and antitoxin.",
+    "actions": [
+      {
+        "actionId": "brew_alchemical_item",
+        "name": "Brew Alchemical Concoction",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Formulate acids, alchemical pyrotechnics, smokesticks, sunrods, and antitoxins.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

@@ -9,6 +9,12 @@ export const EIGHT_HOURS_IN_ROUNDS = 4800;
 /** Number of 6-second combat rounds required to prepare a spell into an open slot (`15 min = 150` rounds). */
 export const OPEN_SLOT_PREPARATION_ROUNDS = 150;
 
+/** Natural HP and ability damage recovery multiplier (`1`) during standard 8-hour rest. */
+export const STANDARD_NATURAL_HEAL_MULTIPLIER = 1;
+
+/** Natural HP and ability damage recovery multiplier (`2`) under Heal skill Long-Term Care (PHB p. 75). */
+export const LONG_TERM_CARE_HEAL_MULTIPLIER = 2;
+
 /** Supported Area-of-Effect geometric templates in D&D 3.5e. */
 export type AoETemplateShape = 'burst' | 'spread' | 'cone' | 'line';
 
@@ -146,6 +152,7 @@ export function resolveEightHourRest(options: {
   readonly restCompletionTurn: number;
   readonly characterLevel: number;
   readonly isThreatened: boolean;
+  readonly hasLongTermCare?: boolean;
 }): {
   readonly restSucceeded: boolean;
   readonly refreshedSlots: ReadonlyArray<PreparedSpellSlot>;
@@ -184,12 +191,15 @@ export function resolveEightHourRest(options: {
     };
   });
 
+  const healMultiplier =
+    options.hasLongTermCare === true ? LONG_TERM_CARE_HEAL_MULTIPLIER : STANDARD_NATURAL_HEAL_MULTIPLIER;
+
   return {
     restSucceeded: true,
     refreshedSlots,
     retainedRecentCastCount,
-    naturalHpHealed: Math.max(1, dndFloor(options.characterLevel)),
-    abilityDamageHealedPerStat: 1
+    naturalHpHealed: Math.max(1, dndFloor(options.characterLevel)) * healMultiplier,
+    abilityDamageHealedPerStat: healMultiplier
   };
 }
 

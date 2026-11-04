@@ -350,6 +350,7 @@ export type DnD35ConditionId =
   | 'entangled'
   | 'exhausted'
   | 'fatigued'
+  | 'flat_footed'
   | 'frightened'
   | 'grappled'
   | 'helpless'

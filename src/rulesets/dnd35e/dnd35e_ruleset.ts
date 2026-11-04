@@ -46,13 +46,14 @@ import {
   calculateMulticlassXpMultiplier,
   computeXpThresholdForLevel
 } from './progression.ts';
+import { getDnD35EntityData, getEquippedItemBonuses, resolveDamageTypeFromTags } from './srd_registry.ts';
+import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from './semantic_tags.ts';
 import {
-  getDnD35EntityData,
-  getEquippedItemBonuses,
-  projectDnD35ActorSemanticTags,
-  resolveDamageTypeFromTags,
-  resolveEntitySituationalTagContext
-} from './srd_registry.ts';
+  getDnD35eValidVerbsForTarget,
+  projectDnD35eInspectLoreLines,
+  resolveDnD35eSkillVerb,
+  validateDnD35eWandActivation
+} from './skill_verbs.ts';
 import type { DnD35EntityData, DnD35ResolvedActorStats, StatModifier, StatQueryContext } from './types/dnd35e.types.ts';
 
 /** Default movement speed for uninitialized entities. */
@@ -99,17 +100,21 @@ export function evaluateDnD35eEntityDAG(
     );
   const existingTags = (getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
   const situationalContext = resolveEntitySituationalTagContext(state, entityId, dndData);
-  const selfTags = prehydrated?.selfTags ?? projectDnD35ActorSemanticTags(dndData, existingTags, situationalContext);
+  const sysContent = getDnD35SystemContent(state.campaign);
+  const selfTags =
+    prehydrated?.selfTags ??
+    projectDnD35ActorSemanticTags(dndData, existingTags, situationalContext, sysContent?.classes, sysContent?.skills);
   const condSummary = summarizeConditionEffects(dndData.conditions);
 
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
   const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
-  const tumbleRanks = dndData.skillRanks['tumble'] ?? 0;
+  const hasSkillTumbleMod = (dndData.statModifiers ?? []).some((m) => (m.sourcePath ?? '').startsWith('skill:tumble'));
+  const effectiveTumbleRanks = hasSkillTumbleMod ? 0 : (dndData.skillRanks['tumble'] ?? 0);
   const mainHandProfile = resolveEquippedWeaponProfile(state, entityId, 'main_hand');
   const doctrineMod = doctrine
-    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, mainHandProfile.handedness, tumbleRanks)
+    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, mainHandProfile.handedness, effectiveTumbleRanks)
     : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
 
   const extraModifiers: StatModifier[] = [...(dndData.statModifiers ?? [])];
@@ -176,10 +181,13 @@ export function evaluateDnD35eEntityDAG(
   }
 
   const isIncorporeal = dndData.subtypes?.includes('incorporeal') === true;
-  const mergedSelfTags =
-    contextOverride?.selfTags !== undefined
-      ? Array.from(new Set([...selfTags, ...contextOverride.selfTags]))
-      : selfTags;
+  const stanceTags: string[] = [];
+  if (doctrine?.totalDefense === true) {
+    stanceTags.push('stance:total_defense');
+  } else if (doctrine?.fightingDefensively === true) {
+    stanceTags.push('stance:fighting_defensively');
+  }
+  const mergedSelfTags = Array.from(new Set([...selfTags, ...stanceTags, ...(contextOverride?.selfTags ?? [])]));
 
   const dagResult = evaluateDnD35ActorStatDAG({
     baseSize: dndData.sizeCategory,
@@ -204,7 +212,10 @@ export function evaluateDnD35eEntityDAG(
     baseMaxHp: fighter.maxHp > 0 ? fighter.maxHp : undefined,
     baseSpeed: actor?.speed ?? DND35E_DEFAULT_SPEED,
     isIncorporeal,
-    hasUncannyDodge: !condSummary.losesDexToAC || mergedSelfTags.includes('feature:uncanny_dodge'),
+    hasUncannyDodge:
+      (!condSummary.losesDexToAC &&
+        (!mergedSelfTags.includes('self:balancing') || mergedSelfTags.includes('trait:balance_uncanny_flat_footed'))) ||
+      mergedSelfTags.includes('feature:uncanny_dodge'),
     statModifiers: extraModifiers,
     context: {
       ...contextOverride,
@@ -668,5 +679,9 @@ export const dnd35eRulesetContract: RulesetContract = {
   parseSystemContent(raw: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
     return parseDnD35SystemContent(raw) as unknown as Readonly<Record<string, unknown>>;
   },
-  validateCampaignRuleset: checkDnD35eRuleset
+  validateCampaignRuleset: checkDnD35eRuleset,
+  resolveSkillVerb: resolveDnD35eSkillVerb,
+  getValidRulesetVerbsForTarget: getDnD35eValidVerbsForTarget,
+  validateWandActivation: validateDnD35eWandActivation,
+  projectInspectLoreLines: projectDnD35eInspectLoreLines
 };

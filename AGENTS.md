@@ -115,14 +115,14 @@ When starting a new milestone or major feature, you MUST execute the following f
 
 ### After Writing Code
 8. **Execute Verification Pipeline (`verify.sh` / `verify.bat`):** Run `./verify.sh` (or `.\verify.bat` on Windows) to execute the complete 8-stage verification pipeline:
-   - `[1/8]` Format check (`bun run format`)
-   - `[2/8]` Lint check (`bun run lint --fix`)
-   - `[3/8]` Strict TypeScript check (`bun x tsc --noEmit`)
-   - `[4/8]` Campaign, ruleset, & SSOT parity validation (`bun run scripts/run-validator.ts`)
-   - `[5/8]` Production build check (`bun run build`)
-   - `[6/8]` Architectural dependency check (`bun run lint:arch`)
-   - `[7/8]` Dead-code & unused export check (`bun run lint:deadcode`)
-   - `[8/8]` Regression test suite (`bun test`)
+   - `[1/8]` Strict TypeScript check (`bun x tsc --noEmit`)
+   - `[2/8]` Format check (`bun run format`)
+   - `[3/8]` Lint check (`bun run lint --fix`)
+   - `[4/8]` Architectural dependency check (`bun run lint:arch`)
+   - `[5/8]` Dead-code & unused export check (`bun run lint:deadcode`)
+   - `[6/8]` Regression test suite (`bun test`)
+   - `[7/8]` Production build check (`bun run build`)
+   - `[8/8]` Campaign, ruleset, & SSOT parity validation (`bun run scripts/run-validator.ts`)
    Ensure all 8 stages pass with 0 errors before proceeding.
 9. **Re-verify cascading effects.** Update the plan's Cascading Effects Matrix with anything discovered while implementing. Confirm no upstream caller (call sites, emitters, data authors, mocks), downstream consumer (renderers, validators, serializers, ledger/telemetry, save schemas), or lateral mirror (sibling campaign JSONs, editor forms, kits, docs) was missed, and present those changes too.
 10. **Audit Architecture Compliance.** Audit changes against `ARCHITECTURE.md` and `AGENTS.md` and provide a report on compliance.

@@ -1,0 +1,26 @@
+{
+  "craft_trapmaking": {
+    "id": "craft_trapmaking",
+    "name": "Craft (Trapmaking)",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Construct mechanical deadfalls, scything blades, pit traps, and tripwire triggers.",
+    "actions": [
+      {
+        "actionId": "build_mechanical_trap",
+        "name": "Assemble Mechanical Trap Mechanism",
+        "actionCost": "none",
+        "dc": 20,
+        "description": "Assemble weighted counterbalances, pressure plates, spring-loaded darts, or disguised pit doors.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

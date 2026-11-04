@@ -9,7 +9,8 @@
     "take10Allowed": true,
     "take20Allowed": true,
     "synergyFromSkills": [
-      "knowledge_nature"
+      "knowledge_nature",
+      "knowledge_architecture"
     ],
     "synergyNotes": "5+ ranks in Search gives +2 on Survival checks when following tracks. Active tactile inspection of 5-ft squares.",
     "actions": [

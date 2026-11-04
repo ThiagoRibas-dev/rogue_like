@@ -19,7 +19,8 @@ import {
   getEligibleBaseCastingClassesForPrestige
 } from './progression.ts';
 import { applyRaceToActorChassis } from './races.ts';
-import { getDnD35EntityData, projectDnD35ActorSemanticTags, setDnD35EntityData } from './srd_registry.ts';
+import { getDnD35EntityData, setDnD35EntityData } from './srd_registry.ts';
+import { projectDnD35ActorSemanticTags } from './semantic_tags.ts';
 import {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
@@ -834,12 +835,26 @@ export function getEffectiveClassSkillIds(
   sysContent: DnD35SystemContent
 ): ReadonlyArray<string> {
   if (!classDef) return [];
-  const skills = new Set<string>(classDef.classSkills);
+  const skills = new Set<string>();
+  const addSkillWithSubskills = (sId: string): void => {
+    skills.add(sId);
+    if (sId === 'craft' && sysContent.skills) {
+      for (const k of Object.keys(sysContent.skills)) {
+        if (k.startsWith('craft_')) {
+          skills.add(k);
+        }
+      }
+    }
+  };
+
+  for (const s of classDef.classSkills) {
+    addSkillWithSubskills(s);
+  }
   for (const domId of domainIds) {
     const dom = sysContent.domains[domId];
     if (dom) {
       for (const s of dom.classSkillsAdded) {
-        skills.add(s);
+        addSkillWithSubskills(s);
       }
     }
   }
@@ -866,11 +881,22 @@ export function getActorEverClassSkillIds(
   sysContent: DnD35SystemContent
 ): ReadonlyArray<string> {
   const skills = new Set<string>();
+  const addSkillWithSubskills = (sId: string): void => {
+    skills.add(sId);
+    if (sId === 'craft' && sysContent.skills) {
+      for (const k of Object.keys(sysContent.skills)) {
+        if (k.startsWith('craft_')) {
+          skills.add(k);
+        }
+      }
+    }
+  };
+
   const addFromClass = (cId: string): void => {
     const cDef = sysContent.classes[cId];
     if (!cDef) return;
     for (const sId of cDef.classSkills) {
-      skills.add(sId);
+      addSkillWithSubskills(sId);
     }
   };
 
@@ -890,7 +916,7 @@ export function getActorEverClassSkillIds(
     const dom = sysContent.domains[domId];
     if (dom) {
       for (const s of dom.classSkillsAdded) {
-        skills.add(s);
+        addSkillWithSubskills(s);
       }
     }
   }

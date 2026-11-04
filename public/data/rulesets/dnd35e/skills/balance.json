@@ -44,6 +44,9 @@
             "value": true,
             "priority": 15
           }
+        ],
+        "grantedTags": [
+          "trait:balance_uncanny_flat_footed"
         ]
       }
     ]

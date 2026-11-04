@@ -844,6 +844,17 @@ export const DnD35SkillActionDescriptorSchema = z.object({
 });
 export type DnD35SkillActionDescriptor = z.infer<typeof DnD35SkillActionDescriptorSchema>;
 
+/** Zod schema for a skill rank threshold grant (e.g. at 5 ranks unlock Dodge AC or grantedTags). */
+export const DnD35SkillRankThresholdGrantSchema = z.object({
+  minRanks: z.number().int().positive(),
+  name: z.string().optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  grantedTags: z.array(z.string()).default([]),
+  effectBundle: DnD35EffectBundleSchema.optional()
+});
+export type DnD35SkillRankThresholdGrant = z.infer<typeof DnD35SkillRankThresholdGrantSchema>;
+
 /** Zod schema for a declarative skill definition (`skills/<id>.json`). */
 export const DnD35SkillDefinitionSchema = z.object({
   id: z.string(),
@@ -857,16 +868,8 @@ export const DnD35SkillDefinitionSchema = z.object({
   synergyFromSkills: z.array(z.string()).default([]),
   synergyNotes: z.string().optional(),
   actions: z.array(DnD35SkillActionDescriptorSchema).default([]),
-  rankThresholdModifiers: z
-    .array(
-      z.object({
-        minRanks: z.number().int().positive(),
-        name: z.string().optional(),
-        modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
-        ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([])
-      })
-    )
-    .default([])
+  rankThresholdModifiers: z.array(DnD35SkillRankThresholdGrantSchema).default([]),
+  effectBundle: DnD35EffectBundleSchema.optional()
 });
 /** Inferred type for a declarative skill definition. */
 export type DnD35SkillDefinition = z.infer<typeof DnD35SkillDefinitionSchema>;

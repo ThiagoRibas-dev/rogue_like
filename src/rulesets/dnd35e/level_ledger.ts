@@ -11,6 +11,7 @@ import {
   computeXpThresholdForLevel,
   getClassLevelRow
 } from './progression.ts';
+import { buildSkillRankThresholdModifiers } from './skills.ts';
 import {
   evaluateEffectBundle,
   getDnD35EntityData,
@@ -584,10 +585,15 @@ export function rebuildActorStateFromLevelHistory(
     }
   }
 
-  // Strip old class, domain, and negative-level modifiers and rebuild
+  // Strip old class, domain, skill threshold, and negative-level modifiers and rebuild
   const nonClassMods = (currentData.statModifiers ?? []).filter((m) => {
     const sp = m.sourcePath ?? '';
-    return !sp.startsWith('class:') && !sp.startsWith('domain:') && !sp.startsWith('condition:negative_level');
+    return (
+      !sp.startsWith('class:') &&
+      !sp.startsWith('domain:') &&
+      !sp.startsWith('condition:negative_level') &&
+      !sp.startsWith('skill:')
+    );
   });
 
   const classAndDomainMods = buildClassAndDomainEffectModifiers(
@@ -599,6 +605,7 @@ export function rebuildActorStateFromLevelHistory(
     suppressedIds,
     activeTags
   );
+  const skillThresholdMods = sysContent.skills ? buildSkillRankThresholdModifiers(skillRanks, sysContent.skills) : [];
   const negMods = buildNegativeLevelModifiers(currentData.negativeLevels ?? 0);
 
   return {
@@ -613,7 +620,7 @@ export function rebuildActorStateFromLevelHistory(
     scalingPools: featurePoolSummary.scalingPools,
     activeClassFeatures: featurePoolSummary.activeFeatureIds,
     levelHistory,
-    statModifiers: [...nonClassMods, ...classAndDomainMods, ...negMods]
+    statModifiers: [...nonClassMods, ...classAndDomainMods, ...skillThresholdMods, ...negMods]
   };
 }
 

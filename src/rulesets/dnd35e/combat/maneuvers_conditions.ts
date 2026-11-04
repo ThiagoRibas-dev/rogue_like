@@ -287,6 +287,9 @@ export function summarizeConditionEffects(conditions: ReadonlyArray<DnD35Conditi
         losesDexToAC = true;
         canTakeActions = false;
         break;
+      case 'flat_footed':
+        losesDexToAC = true;
+        break;
       case 'deafened':
       case 'grappled':
       case 'nauseated':

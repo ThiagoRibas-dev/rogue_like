@@ -30,10 +30,15 @@
       "virtualFeatGrants": [],
       "classSkillsAdded": [
         "knowledge_arcana",
-        "knowledge_nature",
-        "knowledge_religion",
+        "knowledge_architecture",
         "knowledge_dungeoneering",
-        "knowledge_planes"
+        "knowledge_geography",
+        "knowledge_history",
+        "knowledge_local",
+        "knowledge_nature",
+        "knowledge_nobility",
+        "knowledge_planes",
+        "knowledge_religion"
       ],
       "immunities": [],
       "vulnerabilities": [],
@@ -42,10 +47,15 @@
     },
     "classSkillsAdded": [
       "knowledge_arcana",
-      "knowledge_nature",
-      "knowledge_religion",
+      "knowledge_architecture",
       "knowledge_dungeoneering",
-      "knowledge_planes"
+      "knowledge_geography",
+      "knowledge_history",
+      "knowledge_local",
+      "knowledge_nature",
+      "knowledge_nobility",
+      "knowledge_planes",
+      "knowledge_religion"
     ],
     "featGrants": [],
     "modifiers": [

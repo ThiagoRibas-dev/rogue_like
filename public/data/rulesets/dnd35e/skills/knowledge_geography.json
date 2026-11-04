@@ -1,0 +1,26 @@
+{
+  "knowledge_geography": {
+    "id": "knowledge_geography",
+    "name": "Knowledge (Geography)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (geography) grants a +2 synergy bonus on Survival checks made to keep from getting lost or for natural hazard avoidance.",
+    "actions": [
+      {
+        "actionId": "cartographic_recall",
+        "name": "Recall Topography and Terrestrial Features",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Recall regional terrain, climate bands, major river basins, trade pathways, and cartographic settlements.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

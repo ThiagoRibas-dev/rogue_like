@@ -1,6 +1,7 @@
 import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { getComponent, addComponent } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import { ComponentType } from '../types/components.types.ts';
 import type { MemoryComponent, FactionComponent, TraitsComponent } from '../types/components.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -9,8 +10,8 @@ import { GameEventType, type ApplyResolvedEvent, type GameEvent } from '../types
 import { rng } from '../core/rng.ts';
 
 /**
- * Intercepts 'intimidate' and 'persuade' verbs from ApplyIntent
- * to resolve a personality-weighted social contest.
+ * Intercepts 'intimidate', 'persuade', and 'feint' verbs from ApplyIntent
+ * to resolve either a ruleset-specific skill check or a personality-weighted social contest.
  */
 export function processSocialIntent(
   state: GameState,
@@ -21,6 +22,14 @@ export function processSocialIntent(
       state: addMessage(state, 'You can only do that to a creature.', MessageLogCategory.System),
       success: false
     };
+  }
+
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.resolveSkillVerb) {
+    const rulesetOutcome = activeRuleset.resolveSkillVerb(state, intent);
+    if (rulesetOutcome !== null) {
+      return rulesetOutcome;
+    }
   }
 
   const npcId = intent.target.entityId;

@@ -1,7 +1,7 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import type { ValidationError } from '../../types/ruleset.types.ts';
 import type { PrerequisiteNode } from './prerequisites.ts';
-import { getDnD35Archetype } from './srd_registry.ts';
+import { getDnD35Archetype } from './archetype_resolver.ts';
 import { DnD35SystemContentSchema, type DnD35SystemContent } from './types/dnd35e_system.types.ts';
 
 /**
@@ -39,9 +39,17 @@ function validatePrerequisiteNodeReferences(
         }
       }
       return;
+    case 'min_skill_ranks':
+      if (!sys.skills[node.skillId]) {
+        errors.push({
+          path: `${basePath}.skillId`,
+          message: `Prerequisite references unknown skill "${node.skillId}".`,
+          severity: 'error'
+        });
+      }
+      return;
     case 'min_ability':
     case 'min_bab':
-    case 'min_skill_ranks':
     case 'has_feat':
     case 'has_tag':
     case 'min_caster_level':

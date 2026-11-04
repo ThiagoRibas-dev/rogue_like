@@ -1,5 +1,5 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
-import { buildCreatureTypeAndSubtypeModifiers } from './srd_registry.ts';
+import { buildCreatureTypeAndSubtypeModifiers } from './semantic_tags.ts';
 import type {
   AbilityId,
   AbilityScoresRecord,

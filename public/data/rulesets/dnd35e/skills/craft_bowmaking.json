@@ -1,0 +1,26 @@
+{
+  "craft_bowmaking": {
+    "id": "craft_bowmaking",
+    "name": "Craft (Bowmaking)",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Craft composite bows, longbows, shortbows, and arrows or crossbow bolts.",
+    "actions": [
+      {
+        "actionId": "craft_bow_or_ammunition",
+        "name": "Craft Bow or Ammunition",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Till yew stave, fletch arrows, or calibrate high-pull composite recurve bows.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

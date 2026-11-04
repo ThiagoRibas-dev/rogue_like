@@ -1,115 +1,117 @@
-# Research Notes — Milestone 112.8: Programmatic SSOT Responsibility Registries, Parity Validator, Markdown Generator & `docs/` Reorganization
+# Research Notes: SRD Registry Decomposition & Verification File Length Warning Check
 
----
-
-## 1. Reiteration of Rules & Standards (`AGENTS.md` & `docs/ARCHITECTURE.md`)
-
+## 1. Reiteration of Architectural Rules & Standards (Step 1)
+Per `AGENTS.md` and `docs/ARCHITECTURE.md`:
+- **File Organization & Line Length Discipline (`AGENTS.md` Rule 8):**
+  - "One concern per file. Split files if they handle multiple responsibilities or exceed ~250 lines."
+  - "Barrel files (`index.ts`) are BANNED. Use direct imports."
+  - `src/rulesets/dnd35e/srd_registry.ts` is currently **1,154 lines**, conflating 5 distinct architectural responsibilities (Effect Bundle evaluation, creature type/subtype effect providers, archetype hydration & dragon/elemental delegation, live Horizon 3 situational tag projection, and entity data persistence).
 - **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16):**
-  - Shared/Console code (`src/core/`, `src/systems/`, `src/actions/`, `src/map/`, `src/rendering/` [non-D&D], `src/editor/`, `src/types/`, `src/constants/`, `src/utils/`, `src/rulesets/classic/`, `src/rulesets/registry.ts`, `src/main.ts`, `src/input_handler.ts`) is tracked in **`docs/ssot/ssot_console.json`** (`251` `.ts` files).
-  - D&D 3.5e Cartridge & D&D 3.5e UI code (`src/rulesets/dnd35e/**` and `src/rendering/ui/dnd35e_*.ts`) is tracked in **`docs/ssot/ssot_dnd35e.json`** (`33` `.ts` files).
-- **TypeScript Strictness (`AGENTS.md` Rules 10–14):**
-  - Zero `any`, explicit return types on all functions, `exactOptionalPropertyTypes: true` compliance, and Zod validation for all JSON schemas.
-- **No Unreferenced Files (`knip.json` & `tsconfig.scripts.json`):**
-  - Any new script in `scripts/*.ts` is automatically covered by `knip.json` (`"entry": ["tests/**/*.test.ts", "scripts/**/*.ts"]`) and typechecked by `npm run lint:scripts` (`tsc -p tsconfig.scripts.json --noEmit`).
+  - All four decomposed modules belong to **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`)**, operating purely on declarative D&D 3.5e mechanics, system content schemas, and ECS components without hardcoding monster/character silos.
+- **Unified Effect Providers & Hierarchical Provenance (`AGENTS.md` Rule 19):**
+  - Effect bundles and creature types/subtypes emit `StatModifier`s with hierarchical `sourcePath`s (e.g. `"<parent>/bundle:<id>/<modId>"`, `"type:construct/trait:construct_bonus_hp"`, `"subtype:incorporeal/deflection_ac"`).
+- **Three-Horizon Computation Boundaries (`AGENTS.md` Rule 20):**
+  - Semantic tag projection (`projectDnD35ActorSemanticTags`) and live situational context (`resolveEntitySituationalTagContext`) operate strictly at **Horizon 3** without mutating persistent `levelHistory` or component state.
+- **Verification Pipeline Integrity (`AGENTS.md` Rule 8 & Step 8):**
+  - The verification pipeline must warn when TypeScript files in `src/` exceed 300 lines without breaking the build, maintaining 100% green status across all existing stages.
 
 ---
 
-## 2. Current State & Codebase Inventory
+## 2. Codebase Audit of `src/rulesets/dnd35e/srd_registry.ts` (Step 2)
 
-### 2.1 `src/` Source File Partition (`284` Total `.ts` Files)
-1. **Shared / Console Engine (`251` files -> `docs/ssot/ssot_console.json`)**:
-   - `src/main.ts`, `src/input_handler.ts`, `src/vite-env.d.ts` (3 files)
-   - `src/core/*.ts` (16 files)
-   - `src/actions/**/*.ts` (22 files)
-   - `src/systems/**/*.ts` (37 files)
-   - `src/map/**/*.ts` (17 files)
-   - `src/rendering/**/*.ts` excluding `dnd35e_*.ts` (66 files)
-   - `src/editor/**/*.ts` (34 files)
-   - `src/rulesets/registry.ts` & `src/rulesets/classic/*.ts` (2 files)
-   - `src/types/**/*.ts` (36 files)
-   - `src/constants/**/*.ts` (6 files)
-   - `src/utils/**/*.ts` (12 files)
-2. **D&D 3.5e Cartridge & UI (`33` files -> `docs/ssot/ssot_dnd35e.json`)**:
-   - `src/rulesets/dnd35e/**/*.ts` (28 files)
-   - `src/rendering/ui/dnd35e_*.ts` (5 files)
+Currently `src/rulesets/dnd35e/srd_registry.ts` (1,154 lines) contains the following distinct logical sections:
 
-### 2.2 Existing `docs/` Directory Structure & Code References
-Currently, `/docs` contains 13 root files and 2 subdirectories (`audits/`, `rules/`):
-- **Living Root Docs (Keep at `/docs` root):**
-  - `docs/ARCHITECTURE.md`
-  - `docs/DECISIONS.md`
-  - `docs/MILESTONES.md`
-  - `docs/SSOT_CONSOLE.md` *(New — generated from `docs/ssot/ssot_console.json`)*
-  - `docs/SSOT_DND35E.md` *(New — generated from `docs/ssot/ssot_dnd35e.json`)*
-- **Guides (`docs/guides/`):**
-  - `AI-CAMPAIGN-GENERATION.md` -> `docs/guides/AI-CAMPAIGN-GENERATION.md`
-  - `CAMPAIGN-INTEGRATION-GUIDE.md` -> `docs/guides/CAMPAIGN-INTEGRATION-GUIDE.md`
-  - `CREATOR_GUIDE.md` -> `docs/guides/CREATOR_GUIDE.md`
-  - `MODDING.md` -> `docs/guides/MODDING.md`
-- **D&D 3.5e Architecture & Rules (`docs/dnd35e/`):**
-  - `DND_35E_PYRAMID_ARCHITECTURE.md` -> `docs/dnd35e/DND_35E_PYRAMID_ARCHITECTURE.md`
-  - `rules/**` -> `docs/dnd35e/rules/**`
-- **Historical Archive & Audits (`docs/archive/`):**
-  - `audits/**` -> `docs/archive/audits/**`
-  - `HANDOFF_SOCIAL_AND_V2_ENGINE.md` -> `docs/archive/HANDOFF_SOCIAL_AND_V2_ENGINE.md`
-  - `comparison_spd_vs_our_roguelike.md` -> `docs/archive/comparison_spd_vs_our_roguelike.md`
-  - `implementation_plan.md` -> `docs/archive/implementation_plan.md`
-  - `research_notes.md` -> `docs/archive/research_notes.md`
-  - `scratchpad.md` -> `docs/archive/scratchpad.md`
+### 2.1. Effect Bundle Evaluation (Lines 55–209, ~155 lines)
+- **Exports:**
+  - `EvaluatedEffectBundleResult` (interface)
+  - `isActivationConditionMet` (function)
+  - `evaluateEffectBundle` (function)
+- **Responsibilities:** Gating on `activationCondition` (`selfTagsAll`, `selfTagsAny`, `selfTagsNone`), checking atomic bundle suppression (`suppressedBundleIds`), tagging emitted modifiers with `sourcePath` provenance (`"<parent>/bundle:<id>/<modId>"`), and extracting granted tags, feats, class skills, immunities, vulnerabilities, and abilities.
+- **Dependencies:** `appendSourcePath` (`modifiers.ts`), `DnD35EffectBundle`, `StatModifier`.
+- **Target File:** `src/rulesets/dnd35e/effect_bundle.ts`.
 
-**Cross-Reference Check (`grep -rn "docs/" src/ scripts/ tests/ verify.sh`):**
-- Zero runtime or script `readFileSync` calls depend on the moved `docs/` paths.
-- Only JSDoc `@see` comments in 9 source files (`src/rulesets/dnd35e/magic/aoe_rest.ts`, `src/rulesets/dnd35e/math/multipliers.ts`, `src/rulesets/dnd35e/action_economy.ts`, `src/editor/validation_path.ts`, `src/editor/validation_navigator.ts`, `src/editor/reference_index.ts`, `src/rendering/ui/where_used.ui.ts`, `src/rendering/ui/area_playtest_menu.ui.ts`, `src/rendering/ui/validation_panel.ui.ts`) reference `docs/rules/...` or `docs/research_notes.md`; we will update those JSDoc comments to match the new paths (`docs/dnd35e/rules/...` and `docs/archive/research_notes.md`).
+### 2.2. Semantic Tags & Creature Type/Subtype Effect Providers (Lines 45–53, 210–294, 587–812, ~315 lines)
+- **Exports:**
+  - `CONSTRUCT_BONUS_HP_BY_SIZE` (constant)
+  - `buildCreatureTypeAndSubtypeModifiers` (function)
+  - `SituationalTagContext` (interface)
+  - `HEAVY_ARMOR_BONUS_THRESHOLD`, `MEDIUM_ARMOR_BONUS_THRESHOLD`, `DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS` (constants)
+  - `projectDnD35ActorSemanticTags` (function)
+  - `resolveEntitySituationalTagContext` (function)
+- **Responsibilities:**
+  - Emitting declarative construct bonus HP and incorporeal deflection AC modifiers.
+  - Projecting semantic tags (`type:*`, `subtype:*`, `size:*`, `trait:literate`, `trait:illiterate`, `feature:*`, `armor:*`, `shield:*`, `armor_material:*`, `load:*`, and skill rank threshold tags).
+  - Inspecting live equipment slots to derive `SituationalTagContext`.
+- **Dependencies:** `appendSourcePath` (`modifiers.ts`), `evaluateEffectBundle` (`effect_bundle.ts`), ECS getters (`ecs.ts`), component types (`components.types.ts`), `DnD35EntityData`, `StatModifier`.
+- **Target File:** `src/rulesets/dnd35e/semantic_tags.ts`.
 
----
+### 2.3. Archetype Synthesis, Resolution & Hydration (Lines 302–585, 1014–1153, ~420 lines)
+- **Exports:**
+  - `buildAbilityScoresRecord` (function)
+  - `hydrateRaceAsArchetype` (function)
+  - `hydrateArchetypeData` (function)
+  - `DEFAULT_PLAYER_ARCHETYPE`, `DEFAULT_CREATURE_ARCHETYPE` (constants)
+  - `getDnD35Archetype` (function)
+- **Responsibilities:**
+  - Deriving `DnD35Archetype` from unified `races/<id>.json`, delegating dragon varieties and elemental size steps to `family_synthesizer.ts`.
+  - Computing racial HD tracks and class tracks.
+  - Hydrating runtime `DnD35EntityData` with base ability scores, tracks, natural weapons, senses, movement modes, and provider modifiers.
+- **Dependencies:** `family_synthesizer.ts`, `progression.ts`, `abilities.ts`, `buildCreatureTypeAndSubtypeModifiers` (`semantic_tags.ts`), system content types.
+- **Target File:** `src/rulesets/dnd35e/archetype_resolver.ts`.
 
-## 3. Architecture of the Programmatic SSOT Pipeline
-
-### 3.1 JSON Schema (`SsotFileEntrySchema`)
-Each file entry in `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json` is keyed by its workspace-relative path (`"src/..."`) and validated against a Zod schema:
-- `domain` (`string`): Logical subsystem or Pyramid Layer grouping (used to organize sections in the generated `.md` files).
-- `tier` (`'tier1_console' | 'tier1_types' | 'tier2_cartridge' | 'tier2_ui'`).
-- `responsibility` (`string`): Authoritative description of what this module is the Single Source of Truth for.
-- `canonicalEntryPoints` (`readonly string[]`): Primary exported functions, constants, interfaces, or types that external callers must use (empty array `[]` allowed for `.d.ts` ambient files).
-- `ownershipBoundary`:
-  - `includes` (`string`): What this file computes, owns, or guarantees.
-  - `excludes` (`string`): What this file deliberately does *not* compute and delegates to another SSOT owner.
-- `antiPatterns` (`readonly string[]`): Explicit "two-brain" anti-patterns forbidden across the codebase.
-
-### 3.2 4-Way Parity Validator (`scripts/run-validator.ts` & `tests/ssot_registry_parity.test.ts`)
-We will create a shared validator/generator utility in `scripts/ssot_map.ts` (and invoke it in both `scripts/run-validator.ts` and a dedicated unit test `tests/ssot_registry_parity.test.ts`) that enforces:
-1. **100% Disk-to-JSON Coverage:** Every `.ts` file under `src/**` must be registered in either `ssot_console.json` or `ssot_dnd35e.json`. Any unmapped file fails validation with an actionable error message.
-2. **Strict Partition & Disjointness:**
-   - Files matching `src/rulesets/dnd35e/**` or `src/rendering/ui/dnd35e_*.ts` MUST reside in `ssot_dnd35e.json`.
-   - All other `src/**/*.ts` files MUST reside in `ssot_console.json`.
-   - Zero duplicate keys between the two registries.
-3. **Zero Ghost Files:** Every file path key in both JSONs must exist on disk.
-4. **Live Export Verification:** Every symbol in `canonicalEntryPoints` must be an actual exported identifier in that `.ts` file on disk.
-5. **Markdown Freshness Check:** Verifies that `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` on disk match the deterministic Markdown output rendered from `ssot_console.json` and `ssot_dnd35e.json` (instructing the developer to run `bun scripts/map-codebase.ts` if stale).
-
-### 3.3 Markdown Generator (`scripts/map-codebase.ts`)
-We will upgrade `scripts/map-codebase.ts` (and add `"map:ssot": "bun scripts/map-codebase.ts"` to `package.json`) so that running `bun scripts/map-codebase.ts`:
-1. Reads `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json` + scans `src/**/*.ts` exports and JSDoc summaries.
-2. Generates **`docs/SSOT_CONSOLE.md`** and **`docs/SSOT_DND35E.md`** with:
-   - A Table of Contents by Domain.
-   - A Summary Responsibility & Boundary Table per Domain (`File | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Forbidden Anti-Patterns`).
-   - Detailed per-file export signatures & JSDoc summaries.
-
-### 3.4 `AGENTS.md` Workflow Updates
-Per your instruction:
-1. **Before Writing Code — Step 4 (`Implementation Plan Draft`):**
-   - Explicitly require consulting `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` ( in addition to `utils/`, `constants/`, and `types/`) to verify canonical entry points, ownership boundaries, and old-brain eviction before proposing any new function or modifying an existing pipeline.
-2. **After Writing Code — Step 11 (`Update Documentation`, the 4th step of the After Writing Code flow):**
-   - Explicitly require creating or updating the relevant entries in `docs/ssot/ssot_console.json` and/or `docs/ssot/ssot_dnd35e.json`, running `bun scripts/map-codebase.ts` to regenerate `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`, and verifying parity via `bun run scripts/run-validator.ts` whenever files, responsibilities, or canonical entry points are added or modified.
+### 2.4. Entity Data Access, Persistence & System Content Registry (Lines 814–1012, ~200 lines)
+- **Exports:**
+  - `getDnD35EntityData` (function)
+  - `setDnD35EntityData` (function)
+  - `getEquippedItemBonuses` (function)
+  - `resolveDamageTypeFromTags` (function)
+  - `getDnD35Race` (function)
+  - `getDnD35Template` (function)
+  - `getDnD35CreatureTypeEngine` (function)
+  - `getDnD35Subtype` (function)
+- **Responsibilities:**
+  - Fetching or hydrating entity ruleset data from `RulesetDataComponent`, `TemplateComponent`, or `IdentityComponent`.
+  - Persisting `DnD35EntityData` back into ECS.
+  - Calculating raw equipped attack/defense item bonuses.
+  - Extracting damage types and looking up system content definitions.
+- **Target File:** Retained in `src/rulesets/dnd35e/srd_registry.ts` (slimmer, focused entity data & lookup facade, ~170 lines, well under the 300-line ceiling).
 
 ---
 
-## 4. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 3. Verify Scripts File Length Warning Check Design
 
-| Change | Upstream (Callers / Emitters / Data Authors) | Downstream (Consumers / Renderers / Validators / Saves) | Lateral (Sibling Campaigns / Docs / Tests) |
+### 3.1. Requirements
+1. Add a dedicated script: `scripts/check-file-length.ts`.
+2. Scan all `.ts` files under `src/` (excluding `.d.ts`).
+3. Count lines for each file.
+4. Warn (with yellow/amber formatting) for any file exceeding 300 lines:
+   `[WARN] src/foo/bar.ts has 345 lines (exceeds 300-line recommendation)`
+5. Summarize total files scanned, total files exceeding 300 lines, and longest files.
+6. Return exit code `0` so existing codebase files over 300 lines produce actionable warnings without failing the verification pipeline.
+7. Add `"lint:filelength": "bun scripts/check-file-length.ts"` to `package.json`.
+8. Integrate into `verify.sh` and `verify.bat` as an explicit check.
+
+---
+
+## 4. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Emitters / Tests) | Downstream (Consumers / Validators / Serializers) | Lateral (SSOT Registries / Docs / Sibling Files) |
 | :--- | :--- | :--- | :--- |
-| **1. `docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json`** | Authored/updated whenever `src/**/*.ts` files or responsibilities change. | Consumed by `scripts/map-codebase.ts`, `scripts/run-validator.ts`, and `tests/ssot_registry_parity.test.ts`. | Renders `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`. |
-| **2. `scripts/map-codebase.ts` Upgrade** | Reads `docs/ssot/*.json` and `src/**/*.ts` AST/regex exports + JSDocs. | Writes `docs/SSOT_CONSOLE.md` & `docs/SSOT_DND35E.md`; exports `validateSsotRegistries()` for `run-validator.ts` and tests. | Referenced in `AGENTS.md` §1 & §8 and `package.json`. |
-| **3. `scripts/run-validator.ts` & `tests/ssot_registry_parity.test.ts`** | Invoked by `verify.sh`, `verify.bat`, `bun test`, and `bun run validate:campaigns`. | Enforces 100% file parity, disjoint partition, export existence, and `.md` sync. | Prevents unmapped `.ts` files or stale SSOT docs from passing verification. |
-| **4. `docs/` Reorganization (`ssot/`, `dnd35e/`, `guides/`, `archive/`)** | Moves non-root docs into categorized subdirectories. | Keeps root `docs/` clean with only the 5 living docs (`ARCHITECTURE.md`, `DECISIONS.md`, `MILESTONES.md`, `SSOT_CONSOLE.md`, `SSOT_DND35E.md`). | JSDoc `@see` paths updated in 9 `src/` files and `AGENTS.md`. |
-| **5. `AGENTS.md` Workflow Updates** | Step 4 of *Before Writing Code* and Step 11 (4th step of *After Writing Code*). | Guides all future planning and post-implementation documentation steps. | Aligns with `docs/MILESTONES.md` (Milestone 112.8). |
+| **1. Create `src/rulesets/dnd35e/effect_bundle.ts`** | `skills.ts`, `races.ts`, `templates.ts`, `archetype_resolver.ts`, `semantic_tags.ts`. | `evaluateEffectBundle`, `isActivationConditionMet`, `EvaluatedEffectBundleResult`. | Update `docs/ssot/ssot_dnd35e.json` with new entry; regenerate `docs/SSOT_DND35E.md`. |
+| **2. Create `src/rulesets/dnd35e/semantic_tags.ts`** | `dnd35e_ruleset.ts`, `character_builder.ts`, `skill_verbs.ts`, `templates.ts`, `tests/dnd35e_phase21_primitives.test.ts`, `tests/dnd35e_skills_matrix.test.ts`. | `projectDnD35ActorSemanticTags`, `buildCreatureTypeAndSubtypeModifiers`, `resolveEntitySituationalTagContext`, `CONSTRUCT_BONUS_HP_BY_SIZE`. | Update `docs/ssot/ssot_dnd35e.json` with new entry; regenerate `docs/SSOT_DND35E.md`. |
+| **3. Create `src/rulesets/dnd35e/archetype_resolver.ts`** | `dnd35e_ruleset.ts`, `dnd35e_validator.ts`, `srd_registry.ts`, `tests/dnd35e_cartridge.test.ts`, `tests/dnd35e_phase22_bestiary.test.ts`. | `hydrateArchetypeData`, `hydrateRaceAsArchetype`, `getDnD35Archetype`, `buildAbilityScoresRecord`. | Update `docs/ssot/ssot_dnd35e.json` with new entry; regenerate `docs/SSOT_DND35E.md`. |
+| **4. Streamline `src/rulesets/dnd35e/srd_registry.ts`** | `character_builder.ts`, `level_ledger.ts`, `skill_verbs.ts`, `src/rulesets/registry.ts`, `tests/dnd35e_classes_builder.test.ts`, `tests/dnd35e_combat_traversal_wiring.test.ts`. | `getDnD35EntityData`, `setDnD35EntityData`, `getEquippedItemBonuses`, `resolveDamageTypeFromTags`, `getDnD35Race`, `getDnD35Template`. | Update `docs/ssot/ssot_dnd35e.json` responsibility and canonical entry points for `srd_registry.ts`. |
+| **5. Add `scripts/check-file-length.ts` and update `verify.sh` & `verify.bat`** | `package.json` (`"lint:filelength"`), `verify.sh`, `verify.bat`. | All developers and CI runs will receive warnings for files > 300 lines. | `tsconfig.scripts.json` checks script compilation; `AGENTS.md` Rule 8 compliance. |
+
+---
+
+## 5. Architectural Alignment & Anti-Patterns to Prevent
+
+1. **Anti-Pattern: Barrel Files:** Do not create `index.ts` re-export hubs (`AGENTS.md` Rule 8). Direct imports must be used everywhere.
+2. **Anti-Pattern: Circular Dependencies:**
+   - `effect_bundle.ts` imports from `modifiers.ts` and `dnd35e_system.types.ts`.
+   - `semantic_tags.ts` imports from `effect_bundle.ts`, `modifiers.ts`, `ecs.ts`, `components.types.ts`.
+   - `archetype_resolver.ts` imports from `semantic_tags.ts`, `family_synthesizer.ts`, `progression.ts`, `abilities.ts`.
+   - `srd_registry.ts` imports from `archetype_resolver.ts`, `semantic_tags.ts`, `ecs.ts`.
+   - The dependency graph flows strictly unidirectionally without cycles, passing `bun run lint:arch` with 0 violations.
+3. **SSOT Parity:** `docs/ssot/ssot_dnd35e.json` must be updated with the 3 new files and the trimmed `srd_registry.ts`. `bun run scripts/run-validator.ts` will verify 100% SSOT parity.

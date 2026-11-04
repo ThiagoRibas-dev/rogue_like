@@ -1,0 +1,26 @@
+{
+  "craft_armorsmithing": {
+    "id": "craft_armorsmithing",
+    "name": "Craft (Armorsmithing)",
+    "keyAbility": "int",
+    "trainedOnly": false,
+    "acpMultiplier": 0,
+    "retryAllowed": true,
+    "take10Allowed": true,
+    "take20Allowed": true,
+    "synergyFromSkills": [],
+    "synergyNotes": "Fabricate and repair suits of leather, mail, and plate armor and shields.",
+    "actions": [
+      {
+        "actionId": "forge_armor_or_shield",
+        "name": "Forge Suit of Armor or Shield",
+        "actionCost": "none",
+        "dc": 15,
+        "description": "Shape iron plate, rivet chain links, or cure boiled leather into protective armor suites.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

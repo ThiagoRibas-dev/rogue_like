@@ -64,13 +64,26 @@
             "type": "dodge",
             "condition": {
               "selfTagsAny": [
-                "stance:fighting_defensively",
+                "stance:fighting_defensively"
+              ]
+            }
+          },
+          {
+            "id": "tumble_5_ranks_total_defense_ac",
+            "target": "ac",
+            "value": 2,
+            "type": "dodge",
+            "condition": {
+              "selfTagsAny": [
                 "stance:total_defense"
               ]
             }
           }
         ],
-        "ruleOverrides": []
+        "ruleOverrides": [],
+        "grantedTags": [
+          "trait:tumble_acrobatic_defense"
+        ]
       }
     ]
   }

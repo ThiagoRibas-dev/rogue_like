@@ -1,6 +1,6 @@
 {
-  "summary": "Implementation plan for Milestone 112.8: Programmatic SSOT Responsibility Registries (ssot_console.json & ssot_dnd35e.json), 5-Point Parity Validator, Markdown Generator, docs/ Folder Reorganization, and AGENTS.md Workflow Integration.",
-  "updatedAt": "2026-11-03T16:16:30.014014614Z",
+  "summary": "Implementation plan for decomposing `src/rulesets/dnd35e/srd_registry.ts` (1,154 lines) into four single-concern modules (`effect_bundle.ts`, `semantic_tags.ts`, `archetype_resolver.ts`, `srd_registry.ts`) and adding a non-fatal 300-line warning check (`scripts/check-file-length.ts`) to `package.json`, `verify.sh`, and `verify.bat`. Includes SSOT ownership table, Cascading Effects Matrix, code diffs, and verification steps.",
+  "updatedAt": "2026-11-04T14:58:41.633419830Z",
   "requestFeedback": true,
   "userFacing": true
 }

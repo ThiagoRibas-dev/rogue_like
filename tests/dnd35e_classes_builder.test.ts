@@ -593,8 +593,13 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     const tumbleBelow5 = buildSkillRankThresholdModifiers({ tumble: 4 }, sys.skills);
     expect(tumbleBelow5.length).toBe(0);
     const tumbleAt5 = buildSkillRankThresholdModifiers({ tumble: 5 }, sys.skills);
-    expect(tumbleAt5.length).toBe(1);
-    expect(tumbleAt5[0]?.sourcePath).toBe('skill:tumble/threshold:5/tumble_5_ranks_fight_defensively_ac');
+    expect(tumbleAt5.length).toBe(2);
+    expect(tumbleAt5.map((m) => m.sourcePath)).toContain(
+      'skill:tumble/threshold:5/tumble_5_ranks_fight_defensively_ac'
+    );
+    expect(tumbleAt5.map((m) => m.sourcePath)).toContain(
+      'skill:tumble/threshold:5/tumble_5_ranks_total_defense_ac'
+    );
   });
 
   it('validates Milestone 112.5: 14 playable races, all 42 SRD skills + synergies + Take 10/20 flags, spell class filtering, feat slot budgeting, and draft sanitization', () => {
@@ -612,8 +617,8 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(sys.races['gelatinous_cube']?.isPlayableRace).toBe(false);
     expect(sys.races['beholder']?.isPlayableRace).toBe(false);
 
-    // 2. All 42 SRD skills loaded with synergies, actions, and Take 10/20 flags
-    expect(Object.keys(sys.skills).length).toBe(42);
+    // 2. All 50 SRD skills loaded with synergies, actions, and Take 10/20 flags
+    expect(Object.keys(sys.skills).length).toBe(50);
     const bluffTargets = getSkillsGrantedSynergyBy('bluff', sys.skills);
     expect(bluffTargets).toContain('diplomacy');
     expect(bluffTargets).toContain('disguise');

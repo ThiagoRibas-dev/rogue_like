@@ -2,6 +2,7 @@ import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { ComponentType, type ItemComponent, type PositionComponent } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
 import { applyItemEffect } from './effects.system.ts';
@@ -23,6 +24,14 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
   if (!itemDef || !itemDef.zappable) return { state, success: false };
 
   const zappable = itemDef.zappable;
+
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.validateWandActivation) {
+    const wandValidation = activeRuleset.validateWandActivation(state, intent.entityId);
+    if (!wandValidation.allowed) {
+      return { state: wandValidation.state, success: false };
+    }
+  }
 
   const userPos = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
   if (!userPos) return { state, success: false };

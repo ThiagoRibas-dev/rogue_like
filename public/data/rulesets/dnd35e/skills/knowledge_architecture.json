@@ -1,0 +1,26 @@
+{
+  "knowledge_architecture": {
+    "id": "knowledge_architecture",
+    "name": "Knowledge (Architecture and Engineering)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (architecture and engineering) grants a +2 synergy bonus on Search checks made to detect secret doors and compartments.",
+    "actions": [
+      {
+        "actionId": "structural_inspection",
+        "name": "Analyze Architectural Weakness or Layout",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Discern structural load points, masonry styles, aqueducts, fortification defenses, or architectural age.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}

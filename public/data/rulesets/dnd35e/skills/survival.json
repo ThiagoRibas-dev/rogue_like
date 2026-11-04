@@ -12,7 +12,8 @@
       "search",
       "knowledge_nature",
       "knowledge_dungeoneering",
-      "knowledge_planes"
+      "knowledge_planes",
+      "knowledge_geography"
     ],
     "synergyNotes": "5+ ranks in Search gives +2 to follow tracks. 5+ ranks in Knowledge (nature/dungeoneering/the planes) gives +2 in respective environments.",
     "actions": [

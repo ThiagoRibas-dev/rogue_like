@@ -1,0 +1,26 @@
+{
+  "knowledge_history": {
+    "id": "knowledge_history",
+    "name": "Knowledge (History)",
+    "keyAbility": "int",
+    "trainedOnly": true,
+    "acpMultiplier": 0,
+    "retryAllowed": false,
+    "take10Allowed": true,
+    "take20Allowed": false,
+    "synergyFromSkills": [],
+    "synergyNotes": "5+ ranks in Knowledge (history) grants a +2 synergy bonus on bardic knowledge checks.",
+    "actions": [
+      {
+        "actionId": "historical_recall",
+        "name": "Recall Epochs, Dynasties, and Antiquity",
+        "actionCost": "standard",
+        "dc": 15,
+        "description": "Recall dates, forgotten wars, heraldic lineages, fallen kingdoms, and historical lore.",
+        "onSuccessModifiers": [],
+        "onSuccessRuleOverrides": []
+      }
+    ],
+    "rankThresholdModifiers": []
+  }
+}
