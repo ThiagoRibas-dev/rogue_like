@@ -12,7 +12,7 @@
     "lint:arch": "depcruise src --config .dependency-cruiser.cjs",
     "lint:deadcode": "knip --files --dependencies",
     "lint:scripts": "tsc -p tsconfig.scripts.json --noEmit",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" --cache",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,html}\" --cache --log-level warn",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,html}\" --cache",
     "validate:campaigns": "bun scripts/run-validator.ts",
     "map:ssot": "bun scripts/map-codebase.ts",

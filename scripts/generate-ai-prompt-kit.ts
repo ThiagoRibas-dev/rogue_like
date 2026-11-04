@@ -851,7 +851,7 @@ function main() {
 
   // --- Heuristic Synchronization Check ---
   const expectedXrefFiles = categoryKeys
-    .filter((k) => k !== 'triggerBuckets') // Runtime generated
+    .filter((k) => k !== 'triggerBuckets' && k !== 'systemContent') // Runtime generated / ruleset-loaded
     .map((k) => resolveCategoryFilename(k));
 
   const missingDocs = expectedXrefFiles.filter((file) => !xrefMd.includes(`\`${file}\``));
