@@ -1,5 +1,4 @@
 import * as ROT from 'rot-js';
-import type { CampaignData } from '../types/campaign.types.ts';
 import { generateArea } from '../map/generator.ts';
 import { syncDisplayLayout, configureDisplayForCampaign } from '../rendering/display.ts';
 import { updateExploredTiles } from '../systems/map.system.ts';
@@ -12,177 +11,26 @@ import {
   type PortalComponent,
   type PositionComponent,
   type RenderableComponent,
-  type TagsComponent,
-  type IdentityComponent,
-  type InteractionScoreComponent,
-  type DirectorBudgetComponent,
-  type ChronicleComponent,
-  type MemoryComponent
+  type TagsComponent
 } from '../types/components.types.ts';
-import { type EntityId, type GameState, UIMode, type PersistentEntityRecord } from '../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { addComponent, createEntity, getComponent, spawnEntity, spawnItem } from './ecs.ts';
 import { loadCampaign } from './loader.ts';
 import { compilePhases } from '../systems/scheme_compiler.ts';
-import { rng, initRNG } from './rng.ts';
+import { initRNG } from './rng.ts';
 import { startRecording } from './replay.ts';
-import { deleteSave, loadGame } from './save.ts';
+import { deleteSave } from './save.ts';
 import { setTelemetryStore } from './telemetry.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from './scheduler.ts';
 import { DEFAULT_GLOBAL_DRAMA_BUDGET } from '../constants/pacing.constants.ts';
+import {
+  type InitialCampaignWorldEntities,
+  initializeCampaignWorldEntities,
+  continueGame
+} from './bootstrap/world_entities_bootstrap.ts';
 
-const POTION_DESCRIPTORS = [
-  'Red',
-  'Blue',
-  'Green',
-  'Yellow',
-  'Purple',
-  'Murky',
-  'Bubbling',
-  'Clear',
-  'Swirling',
-  'Thick'
-];
-const SCROLL_DESCRIPTORS = ['Scorched', 'Runed', 'Faded', 'Tattered', 'Glowing', 'Crumbling', 'Blood-Stained', 'Dusty'];
-
-/**
- * Deterministically shuffles an array using Fisher-Yates and the global RNG.
- *
- * @param array The array to shuffle.
- * @returns A new shuffled array.
- */
-function shuffle<T>(array: ReadonlyArray<T>): T[] {
-  const result = [...array];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(rng.getUniform() * (i + 1)) as number;
-    const temp = result[i]!;
-    result[i] = result[j]!;
-    result[j] = temp;
-  }
-  return result;
-}
-
-export interface InitialCampaignWorldEntities {
-  readonly itemUnidentifiedNames: Map<string, string>;
-  readonly factionEntityIds: Record<string, EntityId>;
-  readonly areaEntityIds: Record<string, EntityId>;
-  readonly initialPersistentEntities: Map<EntityId, PersistentEntityRecord>;
-  readonly nextEntityId: EntityId;
-}
-
-/**
- * Initializes unidentified item descriptions and registers faction/area
- * world-level persistent entities for a new campaign instance.
- *
- * @param campaign The campaign definition to initialize world entities from.
- * @param startEntityId The starting entity ID counter.
- * @returns Initialized world entity mappings and incremented nextEntityId.
- */
-export function initializeCampaignWorldEntities(
-  campaign: CampaignData,
-  startEntityId: number = 1
-): InitialCampaignWorldEntities {
-  const itemUnidentifiedNames = new Map<string, string>();
-  const potionDesc = shuffle(POTION_DESCRIPTORS);
-  const scrollDesc = shuffle(SCROLL_DESCRIPTORS);
-
-  let pIdx = 0;
-  let sIdx = 0;
-
-  for (const [id, def] of Object.entries(campaign.items)) {
-    if (def.category === 'consumable') {
-      if (def.id.includes('potion')) {
-        itemUnidentifiedNames.set(id, `${potionDesc[pIdx++ % potionDesc.length]} Potion`);
-      } else if (def.id.includes('scroll')) {
-        itemUnidentifiedNames.set(id, `${scrollDesc[sIdx++ % scrollDesc.length]} Scroll`);
-      }
-    }
-  }
-
-  let nextEntityId = startEntityId;
-  const factionEntityIds: Record<string, EntityId> = {};
-  const areaEntityIds: Record<string, EntityId> = {};
-  const initialPersistentEntities = new Map<EntityId, PersistentEntityRecord>();
-
-  for (const factionId of Object.keys(campaign.factions)) {
-    const id = nextEntityId++ as EntityId;
-    factionEntityIds[factionId] = id;
-    initialPersistentEntities.set(id, {
-      areaId: 'world',
-      components: {
-        [ComponentType.Identity]: {
-          type: ComponentType.Identity,
-          name: factionId,
-          mannerisms: []
-        } as IdentityComponent,
-        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['faction'] } as TagsComponent,
-        [ComponentType.InteractionScore]: {
-          type: ComponentType.InteractionScore,
-          score: 0
-        } as InteractionScoreComponent,
-        [ComponentType.Chronicle]: {
-          type: ComponentType.Chronicle,
-          pis: 0,
-          scars: [],
-          coreMemories: [],
-          eventExcerpts: []
-        } as ChronicleComponent,
-        [ComponentType.Memory]: {
-          type: ComponentType.Memory,
-          grudges: [],
-          factionStandings: {},
-          facts: [],
-          knowledge: {}
-        } as MemoryComponent
-      }
-    });
-  }
-
-  for (const [areaId, def] of Object.entries(campaign.areas)) {
-    const id = nextEntityId++ as EntityId;
-    areaEntityIds[areaId] = id;
-    initialPersistentEntities.set(id, {
-      areaId: 'world',
-      components: {
-        [ComponentType.Identity]: {
-          type: ComponentType.Identity,
-          name: def.name || areaId,
-          mannerisms: []
-        } as IdentityComponent,
-        [ComponentType.Tags]: { type: ComponentType.Tags, tags: ['area', ...(def.tags || [])] } as TagsComponent,
-        [ComponentType.InteractionScore]: {
-          type: ComponentType.InteractionScore,
-          score: 0
-        } as InteractionScoreComponent,
-        [ComponentType.DirectorBudget]: {
-          type: ComponentType.DirectorBudget,
-          budgetModifier: 0
-        } as DirectorBudgetComponent,
-        [ComponentType.Chronicle]: {
-          type: ComponentType.Chronicle,
-          pis: 0,
-          scars: [],
-          coreMemories: [],
-          eventExcerpts: []
-        } as ChronicleComponent,
-        [ComponentType.Memory]: {
-          type: ComponentType.Memory,
-          grudges: [],
-          factionStandings: {},
-          facts: [],
-          knowledge: {}
-        } as MemoryComponent
-      }
-    });
-  }
-
-  return {
-    itemUnidentifiedNames,
-    factionEntityIds,
-    areaEntityIds,
-    initialPersistentEntities,
-    nextEntityId: nextEntityId as EntityId
-  };
-}
+export type { InitialCampaignWorldEntities };
+export { initializeCampaignWorldEntities, continueGame };
 
 export interface SpawnOverride {
   readonly areaId: string;
@@ -201,7 +49,6 @@ export async function startNewGame(
   const finalSeed = initRNG(seed);
   startRecording(campaignId, finalSeed);
 
-  // Fresh run: discard transient modal nesting and sighting memory.
   clearModals();
   resetAutoPauseTracking();
 
@@ -285,13 +132,11 @@ export async function startNewGame(
     }
   };
 
-  // Spawn the player entity (respect spawn override from contextual playtest)
   const spawnX = spawnOverride?.x ?? startPos.x;
   const spawnY = spawnOverride?.y ?? startPos.y;
   const [stateAfterPlayerSpawn] = spawnEntity(state, 'player', spawnX, spawnY);
   state = stateAfterPlayerSpawn;
 
-  // Pre-seed the MVP Mastermind (Bandit King)
   const mastermindId = state.nextEntityId as EntityId;
   state = { ...state, nextEntityId: state.nextEntityId + 1 };
   const schemeComp: SchemeComponent = {
@@ -323,7 +168,6 @@ export async function startNewGame(
     ])
   };
 
-  // Spawn monsters in rooms
   for (let i = 1; i < rooms.length; i++) {
     const room = rooms[i];
     if (!room) continue;
@@ -337,7 +181,6 @@ export async function startNewGame(
       [state] = spawnEntity(state, template, mx, my);
     }
 
-    // Spawn items in this room
     const numItems = ROT.RNG.getUniformInt(0, state.campaign.rules.spawning.maxItemsPerRoom);
     for (let n = 0; n < numItems; n++) {
       const ix = ROT.RNG.getUniformInt(room.left + 1, room.right - 1);
@@ -348,7 +191,6 @@ export async function startNewGame(
     }
   }
 
-  // Spawn the portals for the first floor
   for (const portal of portals) {
     let stairId: EntityId;
     [state, stairId] = createEntity(state);
@@ -412,34 +254,4 @@ export async function startNewGame(
   setTelemetryStore(state.telemetry);
   setGlobalState(state);
   startEngine();
-}
-
-export async function continueGame(setGlobalState: (s: GameState) => void): Promise<void> {
-  const loadedState = await loadGame();
-  if (loadedState) {
-    const state = { ...loadedState, playerCommandQueue: [] };
-
-    // Loaded session: the modal stack is transient, so it cannot survive a save.
-    clearModals();
-    resetAutoPauseTracking();
-
-    clearScheduler();
-    initEngine();
-
-    for (const id of state.entities) {
-      const actor = getComponent(state, id, ComponentType.Actor);
-      if (actor) {
-        addActor(id);
-      }
-    }
-
-    for (const [id, record] of state.persistentEntities.entries()) {
-      if (record.components[ComponentType.Actor]) {
-        addActor(id);
-      }
-    }
-
-    setGlobalState(state);
-    startEngine();
-  }
 }

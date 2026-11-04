@@ -1,10 +1,7 @@
-import { dispatchAction } from '../actions/action.registry.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
-import { IntentType } from '../types/intents/intent.enum.ts';
-import { type ActionResult, type Intent } from '../types/intents/intent.union.ts';
-import { addComponent, getComponent, tickControllerLinksAndOverlays } from './ecs.ts';
-import { pushTelemetryEvents } from './telemetry.ts';
+import type { Intent } from '../types/intents/intent.union.ts';
+import { addComponent, getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
 import { perfTracker } from './performance.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
@@ -12,22 +9,15 @@ import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from
 import { markDirtyFromStateDiff } from './presentation_queue.ts';
 import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
-import type { GameEvent } from '../types/events.types.ts';
-
 import { processHungerTick } from '../systems/hunger.system.ts';
 import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
-import { updateExploredTiles } from '../systems/map.system.ts';
-import { evaluateAutoPause } from './auto_pause.ts';
 import { processAITurn } from '../systems/ai.system.ts';
-import { coordToIndex } from '../utils/grid.ts';
-import { processTraps } from '../systems/trigger.system.ts';
 import { resolveStateStabilization } from './state_stabilizer.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
-import { processInvestigationEvents } from '../systems/investigation.system.ts';
-import { processFieldsTick } from '../systems/field.system.ts';
-import { processTier2LocalCadence, processTier3GlobalCadence } from './simulation_cadence.ts';
-import { processLedgerSystem } from '../systems/ledger.system.ts';
+import { applyIntentWithCost } from './loop/intent_cost_resolver.ts';
+
+export { applyIntentWithCost };
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
@@ -58,16 +48,13 @@ function updateState(newState: GameState): void {
   const prevState = currentState;
   currentState = newState;
 
-  // Mark dirty domains for the 60Hz presenter pass
   markDirtyFromStateDiff(prevState, newState);
 
-  // Checkpoint on Game Over or Area Transition
   if (newState.isGameOver && prevState && !prevState.isGameOver) {
     checkpointGameOver(newState);
   } else if (prevState && prevState.currentAreaId !== newState.currentAreaId) {
     saveCheckpoint(newState);
   } else if (newState.uiMode === UIMode.Game) {
-    // Debounce save for continuous gameplay mutations, avoiding saves when only visual effects expire
     const onlyVfxChanged =
       prevState !== null &&
       prevState.components === newState.components &&
@@ -93,7 +80,6 @@ export function queuePlayerIntent(intent: Intent): void {
   const state = getGameState();
   if (state.isGameOver) return;
 
-  // Record this player action for deterministic replays
   recordIntent(intent);
 
   const isImmediate = 'isImmediate' in intent && intent.isImmediate;
@@ -105,11 +91,9 @@ export function queuePlayerIntent(intent: Intent): void {
   }
 
   if (state.engineMode === EngineMode.RTwP && !state.rtwpState.paused) {
-    // Unpaused override
     clearInputQueue();
     enqueueIntent(intent);
   } else {
-    // Append to queue
     enqueueIntent(intent);
   }
 
@@ -136,10 +120,8 @@ export function processTurn(entityId: EntityId): void {
     state = stateAfterTick;
   }
 
-  // If the entity died from DoT (like poison), end their turn
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
   if (!fighter && getComponent(state, entityId, ComponentType.Actor)) {
-    // Wait, if they are dead, they might have been removed. But just in case:
     setTurnDuration(100);
     if (
       getComponent(state, entityId, ComponentType.Player) !== undefined &&
@@ -152,7 +134,6 @@ export function processTurn(entityId: EntityId): void {
 
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
 
-  // Check if any active effect requires this entity to skip its turn
   if (shouldSkipTurn(state, entityId)) {
     if (isPlayer) {
       updateState(addMessage(state, `You are unable to act and skip your turn!`, MessageLogCategory.System));
@@ -181,7 +162,6 @@ export function processTurn(entityId: EntityId): void {
 
           if (nextState !== state) {
             updateState(nextState);
-            // Checkpoint persistence at player turn settlement
             saveCheckpoint(nextState);
           }
         } catch (e) {
@@ -202,7 +182,6 @@ export function processTurn(entityId: EntityId): void {
       return;
     }
   } else {
-    // Scheme Simulator
     if (getComponent(state, entityId, ComponentType.Scheme)) {
       try {
         const nextState = processSchemeTurn(state, entityId);
@@ -210,7 +189,6 @@ export function processTurn(entityId: EntityId): void {
           updateState(nextState);
         }
 
-        // Scheme actions take time relative to the mastermind's speed
         const stats = getEffectiveStats(state, entityId);
         const speed = Math.max(1, stats.speed);
         setTurnDuration(Math.max(1, Math.round(10000 / speed)));
@@ -221,7 +199,6 @@ export function processTurn(entityId: EntityId): void {
       return;
     }
 
-    // AI Turn
     let aiTurnState = state;
     const aiComponent = getComponent(aiTurnState, entityId, ComponentType.AI);
     if (aiComponent && aiComponent.cooldowns) {
@@ -255,15 +232,12 @@ export function processTurn(entityId: EntityId): void {
           nextState = processHungerTick(nextState, entityId, result.energyCost);
           setTurnDuration(result.energyCost);
         } else {
-          // AI failed to execute its intended action (e.g., bumped into a friendly unit).
-          // Force a turn duration to prevent an infinite 0-energy loop.
           setTurnDuration(100);
         }
         if (nextState !== state) {
           updateState(nextState);
         }
       } else {
-        // AI waited / skipped turn
         const nextState = processHungerTick(state, entityId, 100);
         if (nextState !== state) {
           updateState(nextState);
@@ -275,106 +249,4 @@ export function processTurn(entityId: EntityId): void {
       setTurnDuration(100);
     }
   }
-}
-
-/**
- * Executes an intent and computes its energy cost based on success, ticking systemic narrative side effects.
- *
- * @param state The current game state.
- * @param intent The intent to execute.
- * @returns The updated state, success status, and calculated energy cost.
- */
-export function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
-  const turnTime0 = performance.now();
-  const result = applyIntent(state, intent);
-  let nextState = result.state;
-
-  let energyCost = 100; // default cost
-
-  if (!result.success) {
-    energyCost = 0;
-  } else if (intent.type === IntentType.Move) {
-    const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
-    if (posAfter) {
-      const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-      const tile = state.map.tiles[tileIdx];
-      if (tile) {
-        energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
-      }
-    }
-    nextState = processTraps(nextState, intent.entityId);
-  } else if ('isImmediate' in intent && intent.isImmediate) {
-    energyCost = 0; // UI/Debug actions take no time
-  }
-
-  // Scale cost by actor speed
-  if (energyCost > 0) {
-    const actor = getComponent(state, intent.entityId, ComponentType.Actor);
-    if (actor) {
-      const stats = getEffectiveStats(state, intent.entityId);
-      const speed = Math.max(1, stats.speed);
-      energyCost = Math.max(1, Math.round((energyCost * 100) / speed));
-    }
-  }
-
-  if (result.events && result.events.length > 0) {
-    nextState = { ...nextState, events: [...nextState.events, ...result.events] };
-  }
-
-  // Run bounded stabilization pipeline (damage, death reactions, and reactive triggers)
-  nextState = resolveStateStabilization(nextState);
-
-  const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
-
-  // Tick fields
-  nextState = processFieldsTick(nextState);
-
-  // Investigation system consumes events
-  nextState = processInvestigationEvents(nextState);
-
-  const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
-
-  if (didGlobalTurnAdvance) {
-    nextState = tickControllerLinksAndOverlays(nextState);
-  }
-
-  // Tier 2: Local Narrative Cadence (Knowledge, Rumors, Personality)
-  nextState = processTier2LocalCadence(nextState, didGlobalTurnAdvance);
-
-  // Tier 3: Off-Screen Macro-Simulation (Global turn, Nemesis, Rivalries, World Events)
-  nextState = processTier3GlobalCadence(nextState, didGlobalTurnAdvance);
-
-  // Filter high/normal events into historicalLedger and decay PIS
-  nextState = processLedgerSystem(nextState, didGlobalTurnAdvance);
-
-  // Refresh FOV and explored tiles before the event drain so perception events are
-  // ledgered, presented, and acted upon in the same turn they occur.
-  nextState = updateExploredTiles(nextState);
-
-  // Configurable RTwP auto-pause, driven by the drained event queue plus perception.
-  nextState = evaluateAutoPause(state, nextState, intent.entityId);
-
-  // Clear events at the end of the intent tick so they don't persist
-  const eventsToReturn = [...nextState.events];
-  pushTelemetryEvents(eventsToReturn);
-  nextState = { ...nextState, events: [] };
-
-  perfTracker.lastTurnTimeMs = performance.now() - turnTime0;
-
-  return {
-    ...finalResult,
-    state: nextState,
-    events: eventsToReturn as ReadonlyArray<GameEvent>
-  };
-}
-
-/**
- * Dispatches an intent to the appropriate system for validation and execution.
- */
-function applyIntent(
-  state: GameState,
-  intent: Intent
-): { state: GameState; success: boolean; events?: readonly GameEvent[] } {
-  return dispatchAction(state, intent);
 }

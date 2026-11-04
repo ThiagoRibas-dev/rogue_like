@@ -1,6 +1,6 @@
 {
-  "summary": "Comprehensive research notes detailing the decomposition of src/rulesets/dnd35e/srd_registry.ts (1,154 lines) into four single-concern modules (effect_bundle.ts, semantic_tags.ts, archetype_resolver.ts, and srd_registry.ts) and adding a file length warning check script (> 300 lines) integrated into verify.sh and verify.bat. Includes a complete Cascading Effects Matrix and SSOT registry mappings.",
-  "updatedAt": "2026-11-04T14:55:37.550448356Z",
+  "summary": "Comprehensive architectural research document for modularizing all 50 files exceeding the 300-line threshold (AGENTS.md Rule 8). Organizes the entire codebase into 5 phased execution batches (Types, Core Console, D&D 3.5e Rules Engine, Editor Tools, and Tactical UI), detailing downstream/upstream dependencies and cascading effects.",
+  "updatedAt": "2026-11-04T15:35:02.879408652Z",
   "requestFeedback": true,
   "userFacing": true
 }

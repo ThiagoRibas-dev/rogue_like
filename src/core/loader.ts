@@ -1,14 +1,42 @@
 import type { TriggerDefinition } from '../types/trigger.types.ts';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
-import {
-  type CampaignData,
-  CampaignDataSchema,
-  type CampaignRegistry,
-  CampaignRegistrySchema
-} from '../types/campaign.types.ts';
-import { getInstalledCampaign, listInstalledCampaigns } from './campaign_store.ts';
-import { getRuleset } from '../rulesets/registry.ts';
+import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
+import { getInstalledCampaign } from './campaign_store.ts';
 import type { RulesetId } from '../types/ruleset.types.ts';
+import {
+  loadCampaignRegistry,
+  loadRulesetSystemContent,
+  loadRulesetBaseContent
+} from './loader/system_content_loader.ts';
+
+export { loadCampaignRegistry, loadRulesetSystemContent, loadRulesetBaseContent };
+
+/**
+ * Builds O(1) trigger routing buckets from the trigger dictionary.
+ */
+function buildTriggerBuckets(triggers: Record<string, TriggerDefinition>): Record<string, TriggerDefinition[]> {
+  const triggerBuckets: Record<string, TriggerDefinition[]> = {};
+  for (const trigger of Object.values(triggers)) {
+    if (!triggerBuckets[trigger.eventType]) {
+      triggerBuckets[trigger.eventType] = [];
+    }
+    triggerBuckets[trigger.eventType]!.push(trigger);
+  }
+  return triggerBuckets;
+}
+
+/**
+ * Parses an optional JSON response, returning the fallback value if not ok or invalid JSON.
+ */
+async function parseOptionalResponse<T>(res: Response, filename: string, fallback: T): Promise<T> {
+  if (!res.ok) return fallback;
+  try {
+    return (await res.json()) as T;
+  } catch (err) {
+    console.warn(`Failed to parse ${filename}`, err);
+    return fallback;
+  }
+}
 
 /**
  * Loads and validates all JSON files for a given campaign ID.
@@ -16,7 +44,6 @@ import type { RulesetId } from '../types/ruleset.types.ts';
  * @returns A promise that resolves to the fully populated and validated CampaignData
  */
 export async function loadCampaign(campaignId: string): Promise<CampaignData> {
-  // Playtest interceptor
   const editorDoc = sessionStorage.getItem('editor_active_document');
   if (editorDoc) {
     try {
@@ -31,7 +58,6 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
     }
   }
 
-  // Check if it's an installed campaign in IDB first
   const installedCampaign = await getInstalledCampaign(campaignId);
   if (installedCampaign) {
     if (installedCampaign.manifest.schemaVersion !== CURRENT_SCHEMA_VERSION) {
@@ -40,123 +66,56 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
           `but the engine expects v${CURRENT_SCHEMA_VERSION}. It loaded successfully, but some features may not work.`
       );
     }
-
-    // Build the O(1) trigger routing buckets
-    const triggerBuckets: Record<string, TriggerDefinition[]> = {};
-    for (const trigger of Object.values(installedCampaign.triggers)) {
-      if (!triggerBuckets[trigger.eventType]) {
-        triggerBuckets[trigger.eventType] = [];
-      }
-      triggerBuckets[trigger.eventType]!.push(trigger);
-    }
-    installedCampaign.triggerBuckets = triggerBuckets;
-
+    installedCampaign.triggerBuckets = buildTriggerBuckets(installedCampaign.triggers);
     return installedCampaign;
   }
 
   const basePath = `${import.meta.env.BASE_URL}data/campaigns/${campaignId}`;
+  const requiredFilenames = [
+    'manifest.json',
+    'rules.json',
+    'theme.json',
+    'advancement.json',
+    'items.json',
+    'effects.json',
+    'entities.json',
+    'status.json',
+    'tiles.json',
+    'factions.json',
+    'ai.json',
+    'areas.json',
+    'dialogues.json',
+    'quests.json',
+    'quest_templates.json',
+    'villains.json',
+    'schemes.json',
+    'phase_blocks.json',
+    'agreements.json',
+    'triggers.json',
+    'tag_registry.json',
+    'reactions.json',
+    'fields.json',
+    'spawn_pools.json',
+    'encounter_profiles.json',
+    'trait_registry.json',
+    'identity_generation.json'
+  ] as const;
+
+  const optionalFilenames = [
+    'knowledge_propagation.json',
+    'rumor_propagation.json',
+    'nemesis_hierarchies.json',
+    'relationship_thresholds.json',
+    'trigger_templates.json'
+  ] as const;
 
   try {
-    const [
-      manifestRes,
-      rulesRes,
-      themeRes,
-      advancementRes,
-      itemsRes,
-      effectsRes,
-      entitiesRes,
-      statusRes,
-      tilesRes,
-      factionsRes,
-      aiRes,
-      areasRes,
-      dialoguesRes,
-      questsRes,
-      questTemplatesRes,
-      villainsRes,
-      schemesRes,
-      phaseBlocksRes,
-      agreementsRes,
-      triggersRes,
-      tagRegistryRes,
-      reactionsRes,
-      fieldsRes,
-      spawnPoolsRes,
-      encounterProfilesRes,
-      traitRegistryRes,
-      identityGenerationRes,
-      knowledgePropagationRes,
-      rumorPropagationRes,
-      nemesisHierarchiesRes,
-      relationshipThresholdsRes,
-      triggerTemplatesRes
-    ] = await Promise.all([
-      fetch(`${basePath}/manifest.json`),
-      fetch(`${basePath}/rules.json`),
-      fetch(`${basePath}/theme.json`),
-      fetch(`${basePath}/advancement.json`),
-      fetch(`${basePath}/items.json`),
-      fetch(`${basePath}/effects.json`),
-      fetch(`${basePath}/entities.json`),
-      fetch(`${basePath}/status.json`),
-      fetch(`${basePath}/tiles.json`),
-      fetch(`${basePath}/factions.json`),
-      fetch(`${basePath}/ai.json`),
-      fetch(`${basePath}/areas.json`),
-      fetch(`${basePath}/dialogues.json`),
-      fetch(`${basePath}/quests.json`),
-      fetch(`${basePath}/quest_templates.json`),
-      fetch(`${basePath}/villains.json`),
-      fetch(`${basePath}/schemes.json`),
-      fetch(`${basePath}/phase_blocks.json`),
-      fetch(`${basePath}/agreements.json`),
-      fetch(`${basePath}/triggers.json`),
-      fetch(`${basePath}/tag_registry.json`),
-      fetch(`${basePath}/reactions.json`),
-      fetch(`${basePath}/fields.json`),
-      fetch(`${basePath}/spawn_pools.json`),
-      fetch(`${basePath}/encounter_profiles.json`),
-      fetch(`${basePath}/trait_registry.json`),
-      fetch(`${basePath}/identity_generation.json`),
-      fetch(`${basePath}/knowledge_propagation.json`),
-      fetch(`${basePath}/rumor_propagation.json`),
-      fetch(`${basePath}/nemesis_hierarchies.json`),
-      fetch(`${basePath}/relationship_thresholds.json`),
-      fetch(`${basePath}/trigger_templates.json`)
+    const [requiredResponses, optionalResponses] = await Promise.all([
+      Promise.all(requiredFilenames.map((file) => fetch(`${basePath}/${file}`))),
+      Promise.all(optionalFilenames.map((file) => fetch(`${basePath}/${file}`)))
     ]);
 
-    // Check if any requests failed (e.g., 404)
-    const responses = [
-      manifestRes,
-      rulesRes,
-      themeRes,
-      advancementRes,
-      itemsRes,
-      effectsRes,
-      entitiesRes,
-      statusRes,
-      tilesRes,
-      factionsRes,
-      aiRes,
-      areasRes,
-      dialoguesRes,
-      questsRes,
-      questTemplatesRes,
-      villainsRes,
-      schemesRes,
-      phaseBlocksRes,
-      agreementsRes,
-      triggersRes,
-      tagRegistryRes,
-      reactionsRes,
-      fieldsRes,
-      spawnPoolsRes,
-      encounterProfilesRes,
-      traitRegistryRes,
-      identityGenerationRes
-    ];
-
-    for (const res of responses) {
+    for (const res of requiredResponses) {
       if (!res.ok) {
         throw new Error(`Failed to fetch ${res.url}: ${res.status} ${res.statusText}`);
       }
@@ -167,7 +126,6 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       rules,
       theme,
       advancement,
-      areas,
       items,
       effects,
       entities,
@@ -175,6 +133,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       tiles,
       factions,
       ai,
+      areas,
       dialogues,
       quests,
       questTemplates,
@@ -190,80 +149,16 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       encounterProfiles,
       traitRegistry,
       identityGeneration
-    ] = await Promise.all([
-      manifestRes.json(),
-      rulesRes.json(),
-      themeRes.json(),
-      advancementRes.json(),
-      areasRes.json(),
-      itemsRes.json(),
-      effectsRes.json(),
-      entitiesRes.json(),
-      statusRes.json(),
-      tilesRes.json(),
-      factionsRes.json(),
-      aiRes.json(),
-      dialoguesRes.json(),
-      questsRes.json(),
-      questTemplatesRes.json(),
-      villainsRes.json(),
-      schemesRes.json(),
-      phaseBlocksRes.json(),
-      agreementsRes.json(),
-      triggersRes.json(),
-      tagRegistryRes.json(),
-      reactionsRes.json(),
-      fieldsRes.json(),
-      spawnPoolsRes.json(),
-      encounterProfilesRes.json(),
-      traitRegistryRes.json(),
-      identityGenerationRes.json()
-    ]);
+    ] = await Promise.all(requiredResponses.map((res) => res.json()));
 
-    let knowledgePropagation = [];
-    if (knowledgePropagationRes.ok) {
-      try {
-        knowledgePropagation = await knowledgePropagationRes.json();
-      } catch (err) {
-        console.warn('Failed to parse knowledge_propagation.json', err);
-      }
-    }
-
-    let rumorPropagation = [];
-    if (rumorPropagationRes.ok) {
-      try {
-        rumorPropagation = await rumorPropagationRes.json();
-      } catch (err) {
-        console.warn('Failed to parse rumor_propagation.json', err);
-      }
-    }
-
-    let nemesisHierarchies = {};
-    if (nemesisHierarchiesRes.ok) {
-      try {
-        nemesisHierarchies = await nemesisHierarchiesRes.json();
-      } catch (err) {
-        console.warn('Failed to parse nemesis_hierarchies.json', err);
-      }
-    }
-
-    let relationshipThresholds = [];
-    if (relationshipThresholdsRes.ok) {
-      try {
-        relationshipThresholds = await relationshipThresholdsRes.json();
-      } catch (err) {
-        console.warn('Failed to parse relationship_thresholds.json', err);
-      }
-    }
-
-    let triggerTemplates = {};
-    if (triggerTemplatesRes.ok) {
-      try {
-        triggerTemplates = await triggerTemplatesRes.json();
-      } catch (err) {
-        console.warn('Failed to parse trigger_templates.json', err);
-      }
-    }
+    const [knowledgePropagation, rumorPropagation, nemesisHierarchies, relationshipThresholds, triggerTemplates] =
+      await Promise.all([
+        parseOptionalResponse(optionalResponses[0]!, 'knowledge_propagation.json', []),
+        parseOptionalResponse(optionalResponses[1]!, 'rumor_propagation.json', []),
+        parseOptionalResponse(optionalResponses[2]!, 'nemesis_hierarchies.json', {}),
+        parseOptionalResponse(optionalResponses[3]!, 'relationship_thresholds.json', []),
+        parseOptionalResponse(optionalResponses[4]!, 'trigger_templates.json', {})
+      ]);
 
     const rulesetId =
       typeof (manifest as Record<string, unknown>)['rulesetId'] === 'string'
@@ -319,7 +214,6 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
 
     const campaignData = result.data;
 
-    // Check schema version compatibility (non-blocking)
     if (campaignData.manifest.schemaVersion !== CURRENT_SCHEMA_VERSION) {
       console.warn(
         `Campaign "${campaignData.manifest.name}" was built with schema v${campaignData.manifest.schemaVersion}, ` +
@@ -327,139 +221,10 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       );
     }
 
-    // Build the O(1) trigger routing buckets
-    const triggerBuckets: Record<string, TriggerDefinition[]> = {};
-    for (const trigger of Object.values(campaignData.triggers)) {
-      if (!triggerBuckets[trigger.eventType]) {
-        triggerBuckets[trigger.eventType] = [];
-      }
-      triggerBuckets[trigger.eventType]!.push(trigger);
-    }
-    campaignData.triggerBuckets = triggerBuckets;
-
+    campaignData.triggerBuckets = buildTriggerBuckets(campaignData.triggers);
     return campaignData;
   } catch (error) {
     console.error(`Error loading campaign ${campaignId}:`, error);
     throw error;
   }
-}
-
-/**
- * Loads the campaign registry containing all available campaigns.
- * @returns A promise resolving to the CampaignRegistry
- */
-export async function loadCampaignRegistry(): Promise<CampaignRegistry> {
-  try {
-    const res = await fetch(`${import.meta.env.BASE_URL}data/campaigns.json`);
-    if (!res.ok) {
-      throw new Error(`Failed to fetch campaigns.json: ${res.status} ${res.statusText}`);
-    }
-    const data = await res.json();
-    const result = CampaignRegistrySchema.safeParse(data);
-    if (!result.success) {
-      console.error('Campaign Registry Validation Failed:', result.error);
-      throw new Error(`Failed to validate campaign registry: ${result.error.message}`);
-    }
-
-    const registry = result.data;
-
-    // Merge installed campaigns from IndexedDB
-    const installed = await listInstalledCampaigns();
-    for (const campaign of installed) {
-      // Remove any existing entry with the same ID so IDB overrides builtin
-      registry.campaigns = registry.campaigns.filter((c) => c.id !== campaign.id);
-      registry.campaigns.push(campaign);
-    }
-
-    return registry;
-  } catch (error) {
-    console.error('Error loading campaign registry:', error);
-    throw error;
-  }
-}
-
-/**
- * Fetches optional JSON resource from a given URL without throwing.
- * @param url The resource URL.
- * @returns Parsed JSON object, or empty object if fetch fails.
- */
-async function fetchOptionalJson(url: string): Promise<Record<string, unknown>> {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return {};
-    return (await res.json()) as Record<string, unknown>;
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Merges a loaded system content payload into the target dictionary key.
- * If both the existing entry and the incoming payload are plain objects, shallow-merges them.
- *
- * @param target The target raw system content dictionary.
- * @param key The system content category key (e.g. 'classes').
- * @param incoming The parsed JSON object from disk/fetch.
- */
-function mergeSystemContentEntry(
-  target: Record<string, Record<string, unknown>>,
-  key: string,
-  incoming: Record<string, unknown>
-): void {
-  const normalizedIncoming =
-    typeof incoming['id'] === 'string' && typeof incoming['name'] === 'string'
-      ? { [incoming['id']]: incoming }
-      : incoming;
-  const existing = target[key];
-  if (existing !== undefined) {
-    target[key] = { ...existing, ...normalizedIncoming };
-    return;
-  }
-  target[key] = normalizedIncoming;
-}
-
-/**
- * Loads and parses Tier 2 System Content for a given ruleset.
- * @param rulesetId The ID of the ruleset.
- * @returns A promise resolving to the parsed system content map.
- */
-export async function loadRulesetSystemContent(rulesetId: RulesetId): Promise<Record<string, Record<string, unknown>>> {
-  const ruleset = getRuleset(rulesetId);
-  const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
-  const systemDescriptors = ruleset.getSystemContentFiles?.() ?? [];
-  const systemContentEntries = await Promise.all(
-    systemDescriptors.map(async (desc) => {
-      const content = await fetchOptionalJson(`${rulesetBasePath}/${desc.filename}`);
-      return [desc.key, content] as const;
-    })
-  );
-  const rawSystemContent: Record<string, Record<string, unknown>> = {};
-  for (const [key, content] of systemContentEntries) {
-    mergeSystemContentEntry(rawSystemContent, key, content);
-  }
-  return ruleset.parseSystemContent
-    ? (ruleset.parseSystemContent(rawSystemContent) as unknown as Record<string, Record<string, unknown>>)
-    : rawSystemContent;
-}
-
-/**
- * Loads base items, entities, status effects, and effects provided by the ruleset cartridge.
- * @param rulesetId The ID of the ruleset.
- * @returns A promise resolving to the base ruleset items, entities, status, and effects.
- */
-export async function loadRulesetBaseContent(rulesetId: RulesetId): Promise<{
-  readonly items: Record<string, unknown>;
-  readonly entities: Record<string, unknown>;
-  readonly status: Record<string, unknown>;
-  readonly effects: Record<string, unknown>;
-}> {
-  const ruleset = getRuleset(rulesetId);
-  const rulesetBasePath = `${import.meta.env.BASE_URL}data/rulesets/${ruleset.id}`;
-  const [items, entities, status, effects] = await Promise.all([
-    fetchOptionalJson(`${rulesetBasePath}/items.json`),
-    fetchOptionalJson(`${rulesetBasePath}/entities.json`),
-    fetchOptionalJson(`${rulesetBasePath}/status.json`),
-    fetchOptionalJson(`${rulesetBasePath}/effects.json`)
-  ]);
-  return { items, entities, status, effects };
 }

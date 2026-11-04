@@ -9,6 +9,8 @@ import type {
 } from './types/dnd35e.types.ts';
 import type { DnD35Template } from './types/dnd35e_system.types.ts';
 
+export * from './templates/srd_templates.ts';
+
 /** Undead Hit Die sides (`d12`). */
 const UNDEAD_HIT_DIE_SIDES = 12;
 
@@ -38,18 +40,14 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     );
   }
 
-  // 1. Creature Type and Subtypes
   let creatureType = template.resultCreatureType ?? base.creatureType;
   if (template.convertTypeMap && base.creatureType && template.convertTypeMap[base.creatureType]) {
     creatureType = template.convertTypeMap[base.creatureType]!;
   }
   const existingSubtypes = base.subtypes ?? [];
   const mergedSubtypes = Array.from(new Set([...existingSubtypes, ...template.addSubtypes]));
-
-  // 2. Size category
   const sizeCategory = template.sizeCategoryChange ?? base.sizeCategory;
 
-  // 3. Ability Scores (including Undead CON: null and Mindless INT: null / WIS: 10 / CHA: 1)
   const isMindlessTemplate =
     template.grantedTags.includes('mindless') || template.templateId === 'skeleton' || template.templateId === 'zombie';
   const nextScores: Record<
@@ -64,40 +62,22 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     const delta = abilityMods[s] ?? 0;
 
     if (creatureType === 'undead' && s === 'con') {
-      nextScores[s] = {
-        base: null,
-        inherentBonus: 0,
-        damage: 0,
-        drain: 0,
-        tempPenalty: 0
-      };
+      nextScores[s] = { base: null, inherentBonus: 0, damage: 0, drain: 0, tempPenalty: 0 };
       continue;
     }
 
     if (isMindlessTemplate && s === 'int') {
-      nextScores[s] = {
-        base: null,
-        inherentBonus: 0,
-        damage: 0,
-        drain: 0,
-        tempPenalty: 0
-      };
+      nextScores[s] = { base: null, inherentBonus: 0, damage: 0, drain: 0, tempPenalty: 0 };
       continue;
     }
 
     if (isMindlessTemplate && s === 'wis') {
-      nextScores[s] = {
-        ...current,
-        base: MINDLESS_UNDEAD_WIS
-      };
+      nextScores[s] = { ...current, base: MINDLESS_UNDEAD_WIS };
       continue;
     }
 
     if (isMindlessTemplate && s === 'cha') {
-      nextScores[s] = {
-        ...current,
-        base: MINDLESS_UNDEAD_CHA
-      };
+      nextScores[s] = { ...current, base: MINDLESS_UNDEAD_CHA };
       continue;
     }
 
@@ -110,16 +90,10 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
       } else {
         finalBase = Math.max(1, finalBase);
       }
-      nextScores[s] = {
-        ...current,
-        base: finalBase
-      };
+      nextScores[s] = { ...current, base: finalBase };
     }
   }
 
-  // 4. Hit Die Track Rebuilding for Acquired Undead Templates (PRIM-1.6)
-  // SRD Skeleton & Zombie (or any template with stripClassLevels: true) drop all PC, NPC, and Prestige class HD
-  // and retain only racial HD (or 1 HD if the creature only had class levels).
   const allClassIds: ReadonlyArray<string> = [
     'barbarian',
     'bard',
@@ -192,7 +166,6 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
 
   const effectiveTotalHd = nextTracks.reduce((sum, t) => sum + t.levels, 0);
 
-  // 5. Natural Armor
   let naturalArmorBonus = base.naturalArmorBonus;
   if (template.stripNaturalArmor) {
     naturalArmorBonus = 0;
@@ -203,7 +176,6 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     naturalArmorBonus = Math.max(0, naturalArmorBonus + (template.naturalArmorBonusDelta ?? 0));
   }
 
-  // 6. Damage Reduction (including HD-tiered scaling)
   let damageReduction = base.damageReduction;
   if (template.damageReduction) {
     if (!damageReduction || template.damageReduction.amount >= damageReduction.amount) {
@@ -211,7 +183,6 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     }
   }
 
-  // 7. Energy Resistances (including HD-tiered scaling)
   const energyResistance: Record<string, number> = { ...base.energyResistance };
   const baseTemplateResistances = { ...(template.energyResistance ?? {}), ...(template.energyResistances ?? {}) };
   for (const [key, val] of Object.entries(baseTemplateResistances)) {
@@ -234,10 +205,8 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     }
   }
 
-  // 8. Immunities
   const immunities = Array.from(new Set([...(base.immunities ?? []), ...(template.immunities ?? [])]));
 
-  // 9. Spell Resistance (formula or bonus)
   let spellResistance = base.spellResistance;
   if (template.spellResistanceFormula) {
     const rawSr = template.spellResistanceFormula.base + template.spellResistanceFormula.perHitDie * effectiveTotalHd;
@@ -248,23 +217,16 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     spellResistance = Math.max(spellResistance ?? 0, template.spellResistanceBonus);
   }
 
-  // 10. Feats
   const feats = Array.from(new Set([...(base.feats ?? []), ...(template.grantedFeats ?? [])]));
-
-  // 11. Natural Weapons (e.g. Claws/Bites granted by Half-Dragon / Vampire)
   const naturalWeapons = template.grantedNaturalWeapons
     ? [...(base.naturalWeapons ?? []), ...template.grantedNaturalWeapons]
     : base.naturalWeapons;
-
-  // 12. Level Adjustment
   const levelAdjustment = (base.levelAdjustment ?? 0) + (template.levelAdjustmentDelta ?? 0);
 
-  // 13. Single actions only (Zombies)
   const grantedTags = template.grantedTags ?? [];
   const isZombie = template.templateId === 'zombie' || grantedTags.includes('single_actions_only');
   const singleActionsOnly = isZombie ? true : (base.singleActionsOnly ?? false);
 
-  // 14. Emit Effect Provider StatModifiers with hierarchical sourcePath
   const resolvedAbilityScores = nextScores as unknown as AbilityScoresRecord;
   const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(resolvedAbilityScores.cha));
   const templateRootPath = `template:${template.templateId}`;
@@ -307,136 +269,3 @@ export const applyInheritedTemplate = applyCreatureTemplate;
 
 /** Alias for applying an acquired template (`PRIM-1.6`). */
 export const applyAcquiredTemplate = applyCreatureTemplate;
-
-/** Canonical SRD Celestial Creature template (inherited). */
-export const CELESTIAL_TEMPLATE: DnD35Template = {
-  templateId: 'celestial',
-  name: 'Celestial Creature',
-  kind: 'inherited',
-  resultCreatureType: 'magical_beast',
-  addSubtypes: ['extraplanar', 'good'],
-  abilityScoreModifiers: {},
-  naturalArmorBonusDelta: 0,
-  damageReduction: {
-    amount: 5,
-    bypassTags: ['magic']
-  },
-  energyResistance: {
-    acid: 5,
-    cold: 5,
-    electricity: 5
-  },
-  immunities: [],
-  spellResistanceBonus: 10,
-  grantedFeats: [],
-  grantedTags: ['celestial', 'smite_evil'],
-  specialQualityBundles: [],
-  levelAdjustmentDelta: 2
-};
-
-/** Canonical SRD Fiendish Creature template (inherited). */
-export const FIENDISH_TEMPLATE: DnD35Template = {
-  templateId: 'fiendish',
-  name: 'Fiendish Creature',
-  kind: 'inherited',
-  resultCreatureType: 'magical_beast',
-  addSubtypes: ['extraplanar', 'evil'],
-  abilityScoreModifiers: {},
-  naturalArmorBonusDelta: 0,
-  damageReduction: {
-    amount: 5,
-    bypassTags: ['magic']
-  },
-  energyResistance: {
-    cold: 5,
-    fire: 5
-  },
-  immunities: [],
-  spellResistanceBonus: 10,
-  grantedFeats: [],
-  grantedTags: ['fiendish', 'smite_good'],
-  specialQualityBundles: [],
-  levelAdjustmentDelta: 2
-};
-
-/** Canonical SRD Skeleton template (acquired). */
-export const SKELETON_TEMPLATE: DnD35Template = {
-  templateId: 'skeleton',
-  name: 'Skeleton',
-  kind: 'acquired',
-  targetCreatureTypes: ['humanoid', 'monstrous_humanoid', 'animal', 'dragon', 'magical_beast', 'giant'],
-  resultCreatureType: 'undead',
-  addSubtypes: [],
-  hitDieOverride: 12,
-  stripClassLevels: true,
-  abilityScoreModifiers: {
-    dex: 2
-  },
-  naturalArmorBonusDelta: 2,
-  damageReduction: {
-    amount: 5,
-    bypassTags: ['bludgeoning']
-  },
-  energyResistance: {},
-  immunities: ['cold'],
-  grantedFeats: ['improved_initiative'],
-  grantedTags: ['undead', 'mindless'],
-  specialQualityBundles: [],
-  levelAdjustmentDelta: 0
-};
-
-/** Canonical SRD Zombie template (acquired). */
-export const ZOMBIE_TEMPLATE: DnD35Template = {
-  templateId: 'zombie',
-  name: 'Zombie',
-  kind: 'acquired',
-  targetCreatureTypes: ['humanoid', 'monstrous_humanoid', 'animal', 'dragon', 'magical_beast', 'giant'],
-  resultCreatureType: 'undead',
-  addSubtypes: [],
-  hitDieOverride: 12,
-  hdMultiplier: 2,
-  stripClassLevels: true,
-  abilityScoreModifiers: {
-    str: 2,
-    dex: -2
-  },
-  naturalArmorBonusDelta: 2,
-  damageReduction: {
-    amount: 5,
-    bypassTags: ['slashing']
-  },
-  energyResistance: {},
-  immunities: [],
-  grantedFeats: ['toughness'],
-  grantedTags: ['undead', 'single_actions_only'],
-  specialQualityBundles: [],
-  levelAdjustmentDelta: 0
-};
-
-/** Canonical SRD Lich template (acquired). */
-export const LICH_TEMPLATE: DnD35Template = {
-  templateId: 'lich',
-  name: 'Lich',
-  kind: 'acquired',
-  targetCreatureTypes: ['humanoid'],
-  resultCreatureType: 'undead',
-  addSubtypes: ['augmented_humanoid'],
-  abilityScoreModifiers: {
-    int: 2,
-    wis: 2,
-    cha: 2
-  },
-  naturalArmorBonusDelta: 5,
-  damageReduction: {
-    amount: 15,
-    bypassTags: ['bludgeoning', 'magic'],
-    requireAllTags: true
-  },
-  energyResistance: {},
-  immunities: ['cold', 'electricity'],
-  spellResistanceBonus: 15,
-  grantedFeats: [],
-  grantedTags: ['undead', 'fear_aura', 'paralyzing_touch'],
-  specialQualityBundles: [],
-  levelAdjustmentDelta: 4
-};

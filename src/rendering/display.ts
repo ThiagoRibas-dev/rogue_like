@@ -1,9 +1,12 @@
 import * as ROT from 'rot-js';
 import { type GameState } from '../types/game-state.types.ts';
 import { GAME_ASPECT_RATIO } from '../constants/display.constants.ts';
-import { type CampaignData, type SpriteSheetSource } from '../types/campaign.types.ts';
+import { type CampaignData } from '../types/campaign.types.ts';
 import { recordDrawCommand } from './render_debug.ts';
 import { buildProceduralSpriteAtlas, isEffectiveSpriteMode } from './procedural_sprites.ts';
+import { compositeAtlas, mountDisplayWithFogOverlay } from './sprite_atlas.ts';
+
+export * from './sprite_atlas.ts';
 
 /**
  * Internal interface representing a ROT.js rectangular layout backend
@@ -30,90 +33,6 @@ function isRectBackend(obj: unknown): obj is RectBackend {
     '_spacingY' in obj &&
     typeof (obj as { readonly _spacingY: unknown })._spacingY === 'number'
   );
-}
-
-/**
- * Loads all spritesheet images and composites them into one atlas canvas + merged tileMap.
- */
-async function compositeAtlas(
-  sheets: Record<string, SpriteSheetSource>,
-  basePath: string
-): Promise<{
-  readonly atlas: HTMLCanvasElement;
-  readonly mergedTileMap: Record<string, [number, number]>;
-  readonly tileWidth: number;
-  readonly tileHeight: number;
-}> {
-  const entries = Object.entries(sheets);
-  const firstEntry = entries[0];
-  if (!firstEntry) {
-    throw new Error('No spritesheets provided');
-  }
-
-  const images = await Promise.all(
-    entries.map(([_, sheet]) => {
-      return new Promise<HTMLImageElement>((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Failed to load spritesheet: ${sheet.src}`));
-        img.src = `${basePath}/${sheet.src}`;
-      });
-    })
-  );
-
-  const tileWidth = firstEntry[1].tileWidth;
-  const tileHeight = firstEntry[1].tileHeight;
-
-  const totalHeight = images.reduce((sum, img) => sum + img.height, 0) + tileHeight;
-  const maxWidth = Math.max(tileWidth, ...images.map((img) => img.width));
-
-  const atlas = document.createElement('canvas');
-  atlas.width = maxWidth;
-  atlas.height = totalHeight;
-  const ctx = atlas.getContext('2d');
-  if (!ctx) {
-    throw new Error('Failed to get 2d context for spritesheet atlas composition');
-  }
-
-  const mergedTileMap: Record<string, [number, number]> = {};
-  let yOffset = 0;
-
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
-    if (!entry) continue;
-    const [_, sheet] = entry;
-    const img = images[i];
-    if (!img) continue;
-    ctx.drawImage(img, 0, yOffset);
-
-    for (const [spriteId, mapping] of Object.entries(sheet.tileMap)) {
-      if (Array.isArray(mapping)) {
-        mergedTileMap[spriteId] = [mapping[0], mapping[1] + yOffset];
-      } else {
-        mergedTileMap[spriteId] = [mapping.default[0], mapping.default[1] + yOffset];
-        if (mapping.commonAlts) {
-          mapping.commonAlts.forEach((alt, idx) => {
-            mergedTileMap[`${spriteId}__alt_${idx}`] = [alt[0], alt[1] + yOffset];
-          });
-        }
-        if (mapping.rareAlts) {
-          mapping.rareAlts.forEach((alt, idx) => {
-            mergedTileMap[`${spriteId}__rare_${idx}`] = [alt[0], alt[1] + yOffset];
-          });
-        }
-      }
-    }
-    yOffset += img.height;
-  }
-
-  // Neutral placeholder for art that has no resolvable sprite. Deliberately not
-  // magenta: missing art is surfaced by the validator and __renderDebug.missingSprites,
-  // and the ASCII glyph fallback is painted on the overlay canvas.
-  ctx.fillStyle = '#0b0b0b';
-  ctx.fillRect(0, yOffset, tileWidth, tileHeight);
-  mergedTileMap['__fallback__'] = [0, yOffset];
-
-  return { atlas, mergedTileMap, tileWidth, tileHeight };
 }
 
 /**
@@ -162,7 +81,6 @@ export async function configureDisplayForCampaign(
     return true;
   }
 
-  // ASCII fallback / reset
   display.setOptions({
     layout: 'rect',
     fontSize: campaign.theme.ui.fontSize,
@@ -215,7 +133,7 @@ export function drawCell(
 
     const getSprite = (id: string | undefined, glyph: string): string => {
       if (id && tileMap?.[id]) return id;
-      if (tileMap?.[glyph]) return glyph; // In case the designer mapped the ASCII char directly
+      if (tileMap?.[glyph]) return glyph;
       return '__fallback__';
     };
 
@@ -232,10 +150,6 @@ export function drawCell(
     recordDrawCommand(x, y, String(chars[0] ?? ''), true);
   } else {
     const top = entities.length > 0 ? (entities[entities.length - 1] ?? baseTile) : baseTile;
-
-    // 'transparent' is a valid CSS colour (rgba(0,0,0,0)), so ROT's rect backend
-    // would clear the cell with an invisible rect and leave the previous glyph
-    // underneath. Resolve an opaque background so dirty-cell redraws actually clear.
     const candidateBg = top.bg && top.bg !== 'transparent' ? top.bg : baseTile.bg;
     const bg = candidateBg && candidateBg !== 'transparent' ? candidateBg : '#000000';
 
@@ -311,68 +225,4 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
     width: finalCols,
     height: finalRows
   });
-}
-
-/**
- * Mounts the ROT.Display container element and initializes the fog overlay canvas if required.
- *
- * @param display The ROT.js display instance to mount.
- * @param campaign The campaign data determining whether sprite sheets and fog overlay are active.
- */
-export function mountDisplayWithFogOverlay(display: ROT.Display, campaign: CampaignData): void {
-  const container = document.getElementById('game-canvas-wrapper');
-  if (!container) {
-    console.error("Failed to find '#game-canvas-wrapper' element in the DOM.");
-    return;
-  }
-
-  const canvasElement = display.getContainer() as HTMLCanvasElement | null;
-  if (!canvasElement) return;
-
-  for (const existing of Array.from(container.querySelectorAll('canvas'))) {
-    if (existing !== canvasElement && existing.id !== 'fog-overlay' && existing.id !== 'tactical-overlay') {
-      existing.remove();
-    }
-  }
-
-  if (canvasElement.parentElement !== container) {
-    const fogCanvas = document.getElementById('fog-overlay');
-    if (fogCanvas && fogCanvas.parentElement === container) {
-      container.insertBefore(canvasElement, fogCanvas);
-    } else {
-      container.appendChild(canvasElement);
-    }
-  }
-
-  syncFogOverlayCanvas(campaign);
-}
-
-/**
- * Synchronizes the existence of the fog overlay canvas based on whether sprite mode is enabled.
- *
- * @param campaign The active campaign data.
- */
-export function syncFogOverlayCanvas(campaign: CampaignData): void {
-  const container = document.getElementById('game-canvas-wrapper');
-  if (!container) return;
-
-  let fogCanvas = document.getElementById('fog-overlay') as HTMLCanvasElement | null;
-  const hasSpriteSheets = isEffectiveSpriteMode(campaign);
-
-  if (hasSpriteSheets) {
-    if (!fogCanvas) {
-      fogCanvas = document.createElement('canvas');
-      fogCanvas.id = 'fog-overlay';
-      fogCanvas.style.position = 'absolute';
-      fogCanvas.style.top = '0';
-      fogCanvas.style.left = '0';
-      fogCanvas.style.width = '100%';
-      fogCanvas.style.height = '100%';
-      fogCanvas.style.pointerEvents = 'none';
-      container.style.position = 'relative';
-      container.appendChild(fogCanvas);
-    }
-  } else if (fogCanvas) {
-    fogCanvas.remove();
-  }
 }

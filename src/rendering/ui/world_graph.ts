@@ -1,22 +1,8 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { rng } from '../../core/rng.ts';
+import { drawWorldGraph, type GraphEdge, type GraphNode, stepWorldGraphSimulation } from './world_graph_canvas.ts';
 
-interface GraphNode {
-  id: string;
-  name: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  isStart: boolean;
-  isReachable: boolean;
-  radius: number;
-}
-
-interface GraphEdge {
-  source: GraphNode;
-  target: GraphNode;
-}
+export * from './world_graph_canvas.ts';
 
 /**
  * Renders an interactive node-link visualization of the areas in the campaign.
@@ -52,7 +38,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Sync canvas internal resolution with display size
   const updateCanvasSize = (): void => {
     const rect = wrapper.getBoundingClientRect();
     canvas.width = rect.width;
@@ -63,7 +48,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   const areas = doc.areas;
   const startId = doc.rules.map.startingAreaId;
 
-  // 1. Calculate Reachability via BFS
   const reachable = new Set<string>();
   if (areas[startId]) {
     const queue = [startId];
@@ -82,7 +66,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     }
   }
 
-  // 2. Initialize Nodes
   const nodes: Record<string, GraphNode> = {};
   Object.keys(areas).forEach((id) => {
     nodes[id] = {
@@ -98,7 +81,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     };
   });
 
-  // 3. Initialize Edges
   const edges: GraphEdge[] = [];
   Object.keys(areas).forEach((id) => {
     const area = areas[id];
@@ -116,10 +98,10 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     }
   });
 
-  // 4. Force-directed layout simulation
   let animationFrameId: number;
   let isDragging = false;
   let draggedNode: GraphNode | null = null;
+  let hoveredNode: GraphNode | null = null;
   let mouseX = 0;
   let mouseY = 0;
   let showSocialGraph = false;
@@ -128,226 +110,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
   toggleCheckbox?.addEventListener('change', (e) => {
     showSocialGraph = (e.target as HTMLInputElement).checked;
   });
-
-  const k = 0.1; // Spring constant
-  const idealLength = 150;
-  const repulsion = 5000;
-  const damping = 0.8;
-
-  const stepSimulation = (): void => {
-    // Apply repulsion between all node pairs
-    const nodeArray = Object.values(nodes);
-    for (let i = 0; i < nodeArray.length; i++) {
-      for (let j = i + 1; j < nodeArray.length; j++) {
-        const n1 = nodeArray[i];
-        const n2 = nodeArray[j];
-        if (!n1 || !n2) continue;
-        const dx = n1.x - n2.x;
-        const dy = n1.y - n2.y;
-        const distSq = dx * dx + dy * dy || 1; // avoid division by zero
-        const dist = Math.sqrt(distSq);
-        const force = repulsion / distSq;
-
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-
-        n1.vx += fx;
-        n1.vy += fy;
-        n2.vx -= fx;
-        n2.vy -= fy;
-      }
-    }
-
-    // Apply spring forces along edges
-    for (const edge of edges) {
-      const dx = edge.target.x - edge.source.x;
-      const dy = edge.target.y - edge.source.y;
-      const dist = Math.sqrt(dx * dx + dy * dy || 1);
-
-      const displacement = dist - idealLength;
-      const force = k * displacement;
-
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-
-      edge.source.vx += fx;
-      edge.source.vy += fy;
-      edge.target.vx -= fx;
-      edge.target.vy -= fy;
-    }
-
-    // Central gravity to keep it centered
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    for (const n of nodeArray) {
-      n.vx += (centerX - n.x) * 0.01;
-      n.vy += (centerY - n.y) * 0.01;
-
-      n.vx *= damping;
-      n.vy *= damping;
-
-      n.x += n.vx;
-      n.y += n.vy;
-    }
-  };
-
-  const draw = (): void => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Edges
-    ctx.lineWidth = 2;
-    for (const edge of edges) {
-      ctx.beginPath();
-      ctx.moveTo(edge.source.x, edge.source.y);
-      ctx.lineTo(edge.target.x, edge.target.y);
-
-      // Calculate angle for arrowhead
-      const angle = Math.atan2(edge.target.y - edge.source.y, edge.target.x - edge.source.x);
-      const targetRadius = edge.target.radius;
-      const targetX = edge.target.x - Math.cos(angle) * targetRadius;
-      const targetY = edge.target.y - Math.sin(angle) * targetRadius;
-
-      // Create gradient for directed lines
-      const grad = ctx.createLinearGradient(edge.source.x, edge.source.y, targetX, targetY);
-      grad.addColorStop(0, 'rgba(100, 100, 100, 0.4)');
-      grad.addColorStop(1, 'rgba(200, 200, 200, 0.8)');
-      ctx.strokeStyle = grad;
-      ctx.stroke();
-
-      // Draw Arrowhead
-      ctx.beginPath();
-      ctx.moveTo(targetX, targetY);
-      ctx.lineTo(targetX - 8 * Math.cos(angle - Math.PI / 6), targetY - 8 * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(targetX - 8 * Math.cos(angle + Math.PI / 6), targetY - 8 * Math.sin(angle + Math.PI / 6));
-      ctx.fillStyle = 'rgba(200, 200, 200, 0.8)';
-      ctx.fill();
-    }
-
-    // Draw Social Graph Overlay
-    if (showSocialGraph) {
-      ctx.save();
-      ctx.setLineDash([5, 5]);
-      ctx.strokeStyle = 'rgba(155, 89, 182, 0.75)'; // Purple for trade/rumors
-      ctx.lineWidth = 2;
-
-      const nodeArray = Object.values(nodes);
-      for (let i = 0; i < nodeArray.length; i++) {
-        for (let j = i + 1; j < nodeArray.length; j++) {
-          const n1 = nodeArray[i]!;
-          const n2 = nodeArray[j]!;
-          const area1 = doc.areas[n1.id];
-          const area2 = doc.areas[n2.id];
-          if (!area1 || !area2) continue;
-
-          const hasMerchant1 = area1.placedEntities?.some((pe) => doc.entities[pe.templateId]?.shop) ?? false;
-          const hasMerchant2 = area2.placedEntities?.some((pe) => doc.entities[pe.templateId]?.shop) ?? false;
-          const hasNpc1 = area1.placedEntities?.some((pe) => doc.entities[pe.templateId]?.memory) ?? false;
-          const hasNpc2 = area2.placedEntities?.some((pe) => doc.entities[pe.templateId]?.memory) ?? false;
-
-          let shouldDraw = false;
-          if ((hasMerchant1 && hasNpc2) || (hasMerchant2 && hasNpc1)) {
-            const connected =
-              area1.connections?.some((c) => c.targetAreaId === n2.id) ||
-              area2.connections?.some((c) => c.targetAreaId === n1.id);
-            if (connected) shouldDraw = true;
-          }
-
-          const rules = doc.rumorPropagation || [];
-          for (const rule of rules) {
-            const p1Matches =
-              area1.placedEntities?.some((pe) => {
-                const ent = doc.entities[pe.templateId];
-                if (!ent || !ent.memory) return false;
-                if (rule.eligibleFactions?.length > 0 && !rule.eligibleFactions.includes(ent.faction || ''))
-                  return false;
-                if (rule.eligibleTags?.length > 0 && !rule.eligibleTags.some((t) => ent.tags?.includes(t)))
-                  return false;
-                return true;
-              }) ?? false;
-
-            const p2Matches =
-              area2.placedEntities?.some((pe) => {
-                const ent = doc.entities[pe.templateId];
-                if (!ent || !ent.memory) return false;
-                if (rule.eligibleFactions?.length > 0 && !rule.eligibleFactions.includes(ent.faction || ''))
-                  return false;
-                if (rule.eligibleTags?.length > 0 && !rule.eligibleTags.some((t) => ent.tags?.includes(t)))
-                  return false;
-                return true;
-              }) ?? false;
-
-            if (p1Matches && p2Matches) {
-              if (!rule.requireAreaProximity) {
-                shouldDraw = true;
-                break;
-              } else {
-                const connected =
-                  area1.connections?.some((c) => c.targetAreaId === n2.id) ||
-                  area2.connections?.some((c) => c.targetAreaId === n1.id);
-                if (connected) {
-                  shouldDraw = true;
-                  break;
-                }
-              }
-            }
-          }
-
-          if (shouldDraw) {
-            ctx.beginPath();
-            const midX = (n1.x + n2.x) / 2;
-            const midY = (n1.y + n2.y) / 2;
-            const dx = n2.x - n1.x;
-            const dy = n2.y - n1.y;
-            const len = Math.sqrt(dx * dx + dy * dy || 1);
-            const offsetX = (-dy / len) * 25;
-            const offsetY = (dx / len) * 25;
-            ctx.moveTo(n1.x, n1.y);
-            ctx.quadraticCurveTo(midX + offsetX, midY + offsetY, n2.x, n2.y);
-            ctx.stroke();
-          }
-        }
-      }
-      ctx.restore();
-    }
-
-    // Draw Nodes
-    const nodeArray = Object.values(nodes);
-    for (const n of nodeArray) {
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-
-      if (n.isStart) {
-        ctx.fillStyle = '#10b981'; // Green for start
-        ctx.strokeStyle = '#059669';
-      } else if (!n.isReachable) {
-        ctx.fillStyle = '#ef4444'; // Red for unreachable
-        ctx.strokeStyle = '#b91c1c';
-      } else {
-        ctx.fillStyle = '#3b82f6'; // Blue for normal
-        ctx.strokeStyle = '#2563eb';
-      }
-
-      // Highlight if hovered/dragged
-      if (n === hoveredNode || n === draggedNode) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-      } else {
-        ctx.lineWidth = 2;
-      }
-
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw label
-      ctx.fillStyle = '#ffffff';
-      ctx.font = '12px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(n.name, n.x, n.y + n.radius + 15);
-    }
-  };
-
-  let hoveredNode: GraphNode | null = null;
 
   const getNodeAt = (x: number, y: number): GraphNode | null => {
     const nodeArray = Object.values(nodes);
@@ -365,20 +127,18 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
 
   const animate = (): void => {
     if (!isDragging) {
-      stepSimulation();
+      stepWorldGraphSimulation(nodes, edges, canvas.width, canvas.height);
     } else if (draggedNode) {
-      // Pin dragged node to mouse
       draggedNode.x = mouseX;
       draggedNode.y = mouseY;
       draggedNode.vx = 0;
       draggedNode.vy = 0;
-      stepSimulation(); // Let others react
+      stepWorldGraphSimulation(nodes, edges, canvas.width, canvas.height);
     }
-    draw();
+    drawWorldGraph(ctx, canvas, doc, nodes, edges, showSocialGraph, hoveredNode, draggedNode);
     animationFrameId = requestAnimationFrame(animate);
   };
 
-  // Event Listeners
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
@@ -409,7 +169,6 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
       isDragging = false;
       draggedNode = null;
     } else {
-      // Click without drag
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -426,17 +185,13 @@ export function renderWorldGraph(doc: CampaignData, container: HTMLElement, onSe
     hoveredNode = null;
   });
 
-  // Handle resizing
   const resizeObserver = new ResizeObserver(() => {
     updateCanvasSize();
   });
   resizeObserver.observe(wrapper);
 
-  // Start loop
   animate();
 
-  // Cleanup mechanism attached to container removal
-  // A bit hacky but works without React hooks
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.removedNodes.forEach((node) => {

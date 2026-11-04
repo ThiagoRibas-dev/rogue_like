@@ -1,14 +1,11 @@
-import type { GameState, EntityId } from '../types/game-state.types.ts';
+import type { GameState } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
 import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { assertNever } from '../utils/assert.ts';
 import { closeTopModal, getCurrentModal, openModal, toggleModal } from '../core/modal_manager.ts';
-
-// Handlers
-import { getComponent, spawnEntity, removeComponent, addComponent } from '../core/ecs.ts';
-import { addActor, switchEngineMode } from '../core/scheduler.ts';
+import { switchEngineMode } from '../core/scheduler.ts';
 import { processMeleeAttackIntent } from '../systems/combat.system.ts';
 import { processUseAbilityIntent } from '../systems/effects.system.ts';
 import { processMoveInspectIntent, processToggleInspectIntent } from '../systems/inspect.system.ts';
@@ -26,9 +23,6 @@ import {
   processMoveTargetIntent,
   processToggleTargetingIntent
 } from '../systems/targeting.system.ts';
-import { processSchemeTurn } from '../systems/scheme.system.ts';
-import { processRivalries } from '../systems/rivalry.system.ts';
-import { promoteEntity } from '../systems/chronicle.system.ts';
 import { processApplyIntent } from '../systems/apply.system.ts';
 import {
   processCloseDialogueIntent,
@@ -39,15 +33,15 @@ import {
 } from './dialogue.actions.ts';
 import { processInteractIntent } from '../systems/intent.system.ts';
 import { processSayIntent } from './say.action.ts';
-import { ComponentType, type GodModeComponent, type SchemeComponent } from '../types/components.types.ts';
-import { EngineMode, UIMode } from '../types/game-state.types.ts';
 import {
-  GameEventType,
-  type ClueDiscoveredEvent,
-  type GameEvent,
-  type SchemeMutatedAreaEvent
-} from '../types/events.types.ts';
-import { coordToIndex } from '../utils/grid.ts';
+  processDebugRevealMap,
+  processDebugGodMode,
+  processDebugSpawnEntity,
+  processDebugFastForwardSchemes,
+  processDebugPromote
+} from './debug_handlers.actions.ts';
+import { EngineMode, UIMode } from '../types/game-state.types.ts';
+import type { GameEvent } from '../types/events.types.ts';
 
 /**
  * Processes an intent of a specific type against the current GameState, returning the updated state.
@@ -77,7 +71,6 @@ export function dispatchAction(
     case IntentType.Apply:
       return processApplyIntent(state, intent);
 
-    // --- TARGETING INTENTS ---
     case IntentType.ToggleTargeting:
       return processToggleTargetingIntent(state, intent);
     case IntentType.MoveTarget:
@@ -85,13 +78,11 @@ export function dispatchAction(
     case IntentType.FireAimed:
       return processFireAimedIntent(state, intent);
 
-    // --- INSPECT INTENTS ---
     case IntentType.ToggleInspect:
       return processToggleInspectIntent(state, intent);
     case IntentType.MoveInspect:
       return processMoveInspectIntent(state, intent);
 
-    // --- INVENTORY INTENTS ---
     case IntentType.PickUp:
       return processPickUpIntent(state, intent.entityId);
     case IntentType.Drop:
@@ -112,7 +103,6 @@ export function dispatchAction(
 
       const closed = closeTopModal(state);
       const isGameStarted = state.entities.length > 0;
-      // Settings opened before a run starts returns to the main menu, not gameplay.
       return { state: isGameStarted ? closed : { ...closed, uiMode: UIMode.MainMenu }, success: false };
     }
     case IntentType.ToggleQuests:
@@ -126,189 +116,16 @@ export function dispatchAction(
     case IntentType.ToggleLedger:
       return { state: toggleModal(state, UIMode.Ledger), success: false };
 
-    // --- DEBUG INTENTS ---
-    case IntentType.DebugRevealMap: {
-      const nextMap = { ...state.map, isFullyExplored: !state.map.isFullyExplored };
-      const msg = nextMap.isFullyExplored ? '[DEBUG] Map Revealed.' : '[DEBUG] Map Hidden.';
-      return { state: addMessage({ ...state, map: nextMap }, msg, MessageLogCategory.System), success: false };
-    }
-
-    case IntentType.DebugGodMode: {
-      const { entityId } = intent;
-      const hasGodMode = getComponent(state, entityId, ComponentType.GodMode) !== undefined;
-
-      if (hasGodMode) {
-        return {
-          state: addMessage(
-            removeComponent(state, entityId, ComponentType.GodMode),
-            '[DEBUG] God Mode Disabled.',
-            MessageLogCategory.System
-          ),
-          success: false
-        };
-      } else {
-        const godCmp: GodModeComponent = { type: ComponentType.GodMode };
-        return {
-          state: addMessage(
-            addComponent(state, entityId, godCmp),
-            '[DEBUG] God Mode Enabled.',
-            MessageLogCategory.System
-          ),
-          success: false
-        };
-      }
-    }
-
-    case IntentType.DebugSpawnEntity: {
-      const pos = getComponent(state, intent.entityId, ComponentType.Position);
-      if (!pos) return { state, success: false };
-
-      const neighbors = [
-        { x: pos.x + 1, y: pos.y },
-        { x: pos.x - 1, y: pos.y },
-        { x: pos.x, y: pos.y + 1 },
-        { x: pos.x, y: pos.y - 1 }
-      ];
-
-      let spawnX = -1;
-      let spawnY = -1;
-
-      for (const n of neighbors) {
-        const idx = coordToIndex(n.x, n.y, state.map.width);
-        const tile = state.map.tiles[idx];
-        if (tile && state.campaign.tiles[tile.tileId]?.walkable) {
-          const entitiesAt = state.spatialIndex.get(`${n.x},${n.y}`);
-          if (!entitiesAt || entitiesAt.length === 0) {
-            spawnX = n.x;
-            spawnY = n.y;
-            break;
-          }
-        }
-      }
-
-      if (spawnX === -1) {
-        return {
-          state: addMessage(state, '[DEBUG] No room to spawn entity.', MessageLogCategory.System),
-          success: false
-        };
-      }
-
-      const [stateAfterSpawn, newEntityId] = spawnEntity(state, 'orc', spawnX, spawnY);
-      const nextState = stateAfterSpawn;
-      const actor = getComponent(nextState, newEntityId, ComponentType.Actor);
-      if (actor) {
-        addActor(newEntityId);
-      }
-
-      return {
-        state: addMessage(nextState, `[DEBUG] Spawned dummy Orc at ${spawnX}, ${spawnY}.`, MessageLogCategory.System),
-        success: false
-      };
-    }
-
-    case IntentType.DebugFastForwardSchemes: {
-      const intentFF = intent as DebugFastForwardSchemesIntent;
-      let nextState = state;
-
-      // Find all masterminds
-      const masterminds: EntityId[] = [];
-      for (const id of state.entities) {
-        if (getComponent(state, id, ComponentType.Scheme)) masterminds.push(id);
-      }
-      for (const [id, record] of state.persistentEntities.entries()) {
-        if (record.components[ComponentType.Scheme]) masterminds.push(id);
-      }
-
-      if (masterminds.length === 0) {
-        return {
-          state: addMessage(state, '[DEBUG] No masterminds found to fast-forward.', MessageLogCategory.System),
-          success: false
-        };
-      }
-
-      // Fast-forward loop
-      const startEventCount = nextState.events.length;
-      for (let i = 0; i < intentFF.iterations; i++) {
-        nextState = { ...nextState, globalTurn: nextState.globalTurn + 1 };
-        for (const mastermindId of masterminds) {
-          nextState = processSchemeTurn(nextState, mastermindId);
-        }
-        nextState = processRivalries(nextState);
-      }
-
-      // Output receipts for area mutations that occurred during this fast-forward
-      const newEvents = nextState.events.slice(startEventCount);
-      const schemeMutations = newEvents.filter(
-        (e) => e.type === GameEventType.SchemeMutatedArea
-      ) as SchemeMutatedAreaEvent[];
-      for (const mut of schemeMutations) {
-        nextState = addMessage(
-          nextState,
-          `[SIM-RECEIPT] Area mutated: ${mut.areaId} -> tags added: [${mut.tagsAdded.join(', ')}], budget mod: +${mut.budgetModifier}`,
-          MessageLogCategory.System
-        );
-      }
-
-      // Artificially inject clues for recently recruited minions
-      let cluesInjected = 0;
-      for (const mastermindId of masterminds) {
-        const schemeComp = getComponent(nextState, mastermindId, ComponentType.Scheme) as SchemeComponent | undefined;
-        if (!schemeComp) continue;
-
-        for (const minionId of schemeComp.activeMinions) {
-          // For the sake of the simulation, we'll just force a clue to drop if they have a minion
-          const clueEvent: ClueDiscoveredEvent = {
-            type: GameEventType.ClueDiscovered,
-            clueId: `simulated_clue_${minionId}`,
-            sourceEntityId: minionId,
-            implicatesEntityId: mastermindId
-          };
-          nextState = { ...nextState, events: [...nextState.events, clueEvent] };
-          cluesInjected++;
-        }
-      }
-
-      nextState = addMessage(
-        nextState,
-        `[DEBUG] Fast-forwarded schemes ${intentFF.iterations} turns. Injected ${cluesInjected} simulated clues.`,
-        MessageLogCategory.System
-      );
-
-      return { state: nextState, success: false };
-    }
-
-    case IntentType.DebugPromote: {
-      const pos = getComponent(state, intent.entityId, ComponentType.Position);
-      if (!pos) return { state, success: false };
-
-      let targetEntityId: EntityId | undefined;
-      for (const eId of state.entities) {
-        if (eId === intent.entityId) continue;
-        const eActor = getComponent(state, eId, ComponentType.Actor);
-        const ePos = getComponent(state, eId, ComponentType.Position);
-        if (eActor && ePos) {
-          targetEntityId = eId;
-          break;
-        }
-      }
-
-      if (targetEntityId) {
-        const nextState = promoteEntity(state, targetEntityId);
-        return {
-          state: addMessage(
-            nextState,
-            `[DEBUG] Promoted entity ${targetEntityId} to a notable character.`,
-            MessageLogCategory.System
-          ),
-          success: false
-        };
-      }
-
-      return {
-        state: addMessage(state, `[DEBUG] No actors available to promote.`, MessageLogCategory.System),
-        success: false
-      };
-    }
+    case IntentType.DebugRevealMap:
+      return processDebugRevealMap(state);
+    case IntentType.DebugGodMode:
+      return processDebugGodMode(state, intent.entityId);
+    case IntentType.DebugSpawnEntity:
+      return processDebugSpawnEntity(state, intent.entityId);
+    case IntentType.DebugFastForwardSchemes:
+      return processDebugFastForwardSchemes(state, intent as DebugFastForwardSchemesIntent);
+    case IntentType.DebugPromote:
+      return processDebugPromote(state, intent.entityId);
 
     case IntentType.ToggleEngineMode: {
       const nextMode = state.engineMode === EngineMode.TurnBased ? EngineMode.RTwP : EngineMode.TurnBased;
@@ -321,26 +138,23 @@ export function dispatchAction(
       return { state: { ...state, rtwpState: { ...state.rtwpState, paused: nextPaused } }, success: false };
     }
 
-    case IntentType.SetRTwPSpeed: {
+    case IntentType.SetRTwPSpeed:
       return {
         state: { ...state, rtwpState: { ...state.rtwpState, speedMultiplier: intent.speedMultiplier } },
         success: false
       };
-    }
 
-    case IntentType.ToggleRotated: {
+    case IntentType.ToggleRotated:
       return {
         state: { ...state, isRotated: !state.isRotated },
         success: false
       };
-    }
 
-    case IntentType.Toggle3D: {
+    case IntentType.Toggle3D:
       return {
         state: { ...state, is3D: !state.is3D },
         success: false
       };
-    }
 
     case IntentType.SetZoomLevel: {
       const nextZoom = Math.max(0.5, Math.min(3.0, state.zoomLevel + intent.zoomDelta));

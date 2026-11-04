@@ -6,40 +6,15 @@
 import {
   ALL_ABILITY_IDS,
   computeSkillSynergyBonus,
-  type DnD35FeatDefinition,
   type DnD35RaceDefinition,
   type DnD35SkillDefinition,
-  type DnD35SpellDefinition,
   type DnD35SystemContent,
-  evaluatePrerequisiteAST,
   getSkillsGrantedSynergyBy,
-  getSpellLevelForClass,
-  type PrerequisiteEvalContext,
-  type PrerequisiteNode,
   SYNERGY_RANK_THRESHOLD
 } from '../../rulesets/registry.ts';
+import { createInspectorBadge, createInspectorSectionTitle } from './dnd35e_feat_spell_inspector.ui.ts';
 
-function createSectionTitle(text: string): HTMLElement {
-  const el = document.createElement('div');
-  el.style.fontWeight = '700';
-  el.style.color = '#f1c40f';
-  el.style.fontSize = '0.82rem';
-  el.style.textTransform = 'uppercase';
-  el.style.letterSpacing = '0.06em';
-  el.style.borderBottom = '1px solid #333947';
-  el.style.paddingBottom = '3px';
-  el.style.marginTop = '6px';
-  el.textContent = text;
-  return el;
-}
-
-function createBadge(text: string, color = '#c9d1d9'): HTMLElement {
-  const span = document.createElement('span');
-  span.className = 'dnd35-badge';
-  span.style.color = color;
-  span.textContent = text;
-  return span;
-}
+export * from './dnd35e_feat_spell_inspector.ui.ts';
 
 /**
  * Renders the detailed right-pane inspector for a D&D 3.5e Race definition.
@@ -57,22 +32,22 @@ export function renderRaceInspector(pane: HTMLElement, race: DnD35RaceDefinition
   badgeRow.style.display = 'flex';
   badgeRow.style.flexWrap = 'wrap';
   badgeRow.style.gap = '6px';
-  badgeRow.appendChild(createBadge(`Size: ${race.size.toUpperCase()}`));
-  badgeRow.appendChild(createBadge(`Type: ${race.creatureType}`));
+  badgeRow.appendChild(createInspectorBadge(`Size: ${race.size.toUpperCase()}`));
+  badgeRow.appendChild(createInspectorBadge(`Type: ${race.creatureType}`));
   if (race.subtypes.length > 0) {
-    badgeRow.appendChild(createBadge(`Subtypes: ${race.subtypes.join(', ')}`));
+    badgeRow.appendChild(createInspectorBadge(`Subtypes: ${race.subtypes.join(', ')}`));
   }
-  badgeRow.appendChild(createBadge(`Speed: ${race.baseLandSpeedFt} ft`));
-  badgeRow.appendChild(createBadge(`Favored Class: ${race.favoredClass}`));
+  badgeRow.appendChild(createInspectorBadge(`Speed: ${race.baseLandSpeedFt} ft`));
+  badgeRow.appendChild(createInspectorBadge(`Favored Class: ${race.favoredClass}`));
   if (race.levelAdjustment > 0) {
-    badgeRow.appendChild(createBadge(`LA +${race.levelAdjustment}`, '#e67e22'));
+    badgeRow.appendChild(createInspectorBadge(`LA +${race.levelAdjustment}`, '#e67e22'));
   }
   if ((race.rhdProgression?.baseHdCount ?? 0) > 0) {
-    badgeRow.appendChild(createBadge(`Racial HD: ${race.rhdProgression.baseHdCount}`, '#e67e22'));
+    badgeRow.appendChild(createInspectorBadge(`Racial HD: ${race.rhdProgression.baseHdCount}`, '#e67e22'));
   }
   pane.appendChild(badgeRow);
 
-  pane.appendChild(createSectionTitle('Ability Score Adjustments'));
+  pane.appendChild(createInspectorSectionTitle('Ability Score Adjustments'));
   const abGrid = document.createElement('div');
   abGrid.style.display = 'flex';
   abGrid.style.flexWrap = 'wrap';
@@ -81,11 +56,11 @@ export function renderRaceInspector(pane: HTMLElement, race: DnD35RaceDefinition
     const adj = race.abilityAdjustments[ab] ?? 0;
     const sign = adj > 0 ? `+${adj}` : `${adj}`;
     const col = adj > 0 ? '#2ecc71' : adj < 0 ? '#e74c3c' : '#8b949e';
-    abGrid.appendChild(createBadge(`${ab.toUpperCase()}: ${sign}`, col));
+    abGrid.appendChild(createInspectorBadge(`${ab.toUpperCase()}: ${sign}`, col));
   }
   pane.appendChild(abGrid);
 
-  pane.appendChild(createSectionTitle('Senses & Racial Qualities'));
+  pane.appendChild(createInspectorSectionTitle('Senses & Racial Qualities'));
   const traitsList = document.createElement('div');
   traitsList.style.display = 'flex';
   traitsList.style.flexDirection = 'column';
@@ -151,26 +126,29 @@ export function renderSkillInspector(
   metaRow.style.flexWrap = 'wrap';
   metaRow.style.gap = '6px';
   metaRow.appendChild(
-    createBadge(
+    createInspectorBadge(
       isClassSkill ? 'Class Skill (1 pt/rank)' : 'Cross-Class (2 pts/rank)',
       isClassSkill ? '#2ecc71' : '#f39c12'
     )
   );
   metaRow.appendChild(
-    createBadge(skill.trainedOnly ? 'Trained Only' : 'Usable Untrained', skill.trainedOnly ? '#e67e22' : '#58a6ff')
+    createInspectorBadge(
+      skill.trainedOnly ? 'Trained Only' : 'Usable Untrained',
+      skill.trainedOnly ? '#e67e22' : '#58a6ff'
+    )
   );
   if (skill.acpMultiplier > 0) {
-    metaRow.appendChild(createBadge(`Armor Check Penalty: ${skill.acpMultiplier}x`, '#e74c3c'));
+    metaRow.appendChild(createInspectorBadge(`Armor Check Penalty: ${skill.acpMultiplier}x`, '#e74c3c'));
   }
-  metaRow.appendChild(createBadge(`Take 10: ${skill.take10Allowed ? 'Yes' : 'No'}`));
-  metaRow.appendChild(createBadge(`Take 20: ${skill.take20Allowed ? 'Yes' : 'No'}`));
+  metaRow.appendChild(createInspectorBadge(`Take 10: ${skill.take10Allowed ? 'Yes' : 'No'}`));
+  metaRow.appendChild(createInspectorBadge(`Take 20: ${skill.take20Allowed ? 'Yes' : 'No'}`));
   pane.appendChild(metaRow);
 
   const wholeRanks = Math.floor(currentRanks);
   const synBonus = computeSkillSynergyBonus(skill.synergyFromSkills, allRanks);
   const totalMod = wholeRanks + abilityMod + synBonus + miscBonus;
 
-  pane.appendChild(createSectionTitle('Check Modifier Breakdown (Read-Only Bonuses vs Ranks)'));
+  pane.appendChild(createInspectorSectionTitle('Check Modifier Breakdown (Read-Only Bonuses vs Ranks)'));
   const breakdownBox = document.createElement('div');
   breakdownBox.style.display = 'grid';
   breakdownBox.style.gridTemplateColumns = '1fr auto';
@@ -198,7 +176,7 @@ export function renderSkillInspector(
   addBreakRow('Total Skill Check Modifier:', fmtSigned(totalMod), true);
   pane.appendChild(breakdownBox);
 
-  pane.appendChild(createSectionTitle('Skill Synergies (5+ Ranks = +2 Bonus)'));
+  pane.appendChild(createInspectorSectionTitle('Skill Synergies (5+ Ranks = +2 Bonus)'));
   const synBox = document.createElement('div');
   synBox.style.display = 'flex';
   synBox.style.flexDirection = 'column';
@@ -235,7 +213,7 @@ export function renderSkillInspector(
   pane.appendChild(synBox);
 
   if (skill.actions.length > 0) {
-    pane.appendChild(createSectionTitle('Skill Actions & Mechanics'));
+    pane.appendChild(createInspectorSectionTitle('Skill Actions & Mechanics'));
     for (const act of skill.actions) {
       const card = document.createElement('div');
       card.style.padding = '6px 8px';
@@ -254,127 +232,4 @@ export function renderSkillInspector(
       pane.appendChild(card);
     }
   }
-}
-
-function renderPrerequisiteNodeChecklist(
-  node: PrerequisiteNode,
-  ctx: PrerequisiteEvalContext,
-  container: HTMLElement
-): void {
-  if (node.type === 'and' || node.type === 'or') {
-    for (const child of node.children) {
-      renderPrerequisiteNodeChecklist(child, ctx, container);
-    }
-    return;
-  }
-  const met = evaluatePrerequisiteAST(node, ctx);
-  const row = document.createElement('div');
-  row.style.color = met ? '#2ecc71' : '#e74c3c';
-  row.style.fontSize = '0.82rem';
-  let label: string = node.type;
-  if (node.type === 'min_ability') label = `${node.ability.toUpperCase()} ${node.minScore}+`;
-  else if (node.type === 'min_bab') label = `Base Attack Bonus +${node.minBab}`;
-  else if (node.type === 'has_feat') label = `Feat: ${node.featId}`;
-  else if (node.type === 'min_skill_ranks') label = `Skill ${node.skillId}: ${node.minRanks}+ ranks`;
-  else if (node.type === 'min_caster_level') label = `Caster Level ${node.minCasterLevel}+`;
-  row.textContent = `${met ? '🟢' : '🔴'} Requires ${label}`;
-  container.appendChild(row);
-}
-
-/**
- * Renders the detailed right-pane inspector for a D&D 3.5e Feat definition.
- */
-export function renderFeatInspector(
-  pane: HTMLElement,
-  feat: DnD35FeatDefinition,
-  prereqCtx: PrerequisiteEvalContext
-): void {
-  pane.replaceChildren();
-  const title = document.createElement('h3');
-  title.style.margin = '0 0 4px 0';
-  title.style.color = '#f1c40f';
-  title.textContent = feat.name;
-  pane.appendChild(title);
-
-  const badges = document.createElement('div');
-  badges.style.display = 'flex';
-  badges.style.gap = '6px';
-  badges.appendChild(
-    createBadge(
-      feat.isFighterBonusFeat ? 'Fighter Bonus Feat' : 'General Feat',
-      feat.isFighterBonusFeat ? '#f39c12' : '#58a6ff'
-    )
-  );
-  pane.appendChild(badges);
-
-  const desc = document.createElement('p');
-  desc.style.fontSize = '0.88rem';
-  desc.style.lineHeight = '1.45';
-  desc.textContent = feat.description;
-  pane.appendChild(desc);
-
-  pane.appendChild(createSectionTitle('Prerequisites'));
-  const preBox = document.createElement('div');
-  if (!feat.prerequisites) {
-    preBox.style.color = '#2ecc71';
-    preBox.style.fontSize = '0.82rem';
-    preBox.textContent = '🟢 None (Available to any eligible character)';
-  } else {
-    renderPrerequisiteNodeChecklist(feat.prerequisites, prereqCtx, preBox);
-  }
-  pane.appendChild(preBox);
-}
-
-/**
- * Renders the detailed right-pane inspector for a D&D 3.5e Spell definition.
- */
-export function renderSpellInspector(
-  pane: HTMLElement,
-  spell: DnD35SpellDefinition,
-  classId: string,
-  domainIds: ReadonlyArray<string>
-): void {
-  pane.replaceChildren();
-  const title = document.createElement('h3');
-  title.style.margin = '0 0 4px 0';
-  title.style.color = '#f1c40f';
-  title.textContent = spell.name;
-  pane.appendChild(title);
-
-  const effLvl = getSpellLevelForClass(spell, classId, domainIds) ?? spell.level;
-  const badges = document.createElement('div');
-  badges.style.display = 'flex';
-  badges.style.flexWrap = 'wrap';
-  badges.style.gap = '6px';
-  badges.appendChild(createBadge(`School: ${spell.school.toUpperCase()}`, '#58a6ff'));
-  badges.appendChild(createBadge(`Level: ${effLvl}`));
-  const comps: string[] = [];
-  if (spell.components.verbal) comps.push('V');
-  if (spell.components.somatic) comps.push('S');
-  if (spell.components.material) comps.push('M');
-  badges.appendChild(createBadge(`Components: ${comps.join(', ') || 'None'}`));
-  badges.appendChild(createBadge(`SR: ${spell.allowsSpellResistance ? 'Yes' : 'No'}`));
-  if (spell.savingThrow) {
-    badges.appendChild(createBadge(`Save: ${spell.savingThrow.saveType.toUpperCase()} (${spell.savingThrow.effect})`));
-  }
-  if (spell.damageDice) {
-    badges.appendChild(createBadge(`Effect: ${spell.damageDice} ${spell.damageType ?? ''}`, '#e74c3c'));
-  }
-  pane.appendChild(badges);
-
-  if (spell.description) {
-    const desc = document.createElement('p');
-    desc.style.fontSize = '0.88rem';
-    desc.style.lineHeight = '1.45';
-    desc.textContent = spell.description;
-    pane.appendChild(desc);
-  }
-
-  pane.appendChild(createSectionTitle('Class & Domain Availability'));
-  const avail = document.createElement('div');
-  avail.style.fontSize = '0.82rem';
-  const clsEntries = Object.entries(spell.levelByClass).map(([c, l]) => `${c} ${l}`);
-  const domEntries = Object.entries(spell.levelByDomain).map(([d, l]) => `${d} domain ${l}`);
-  avail.textContent = [...clsEntries, ...domEntries].join(' • ') || `Level ${spell.level}`;
-  pane.appendChild(avail);
 }

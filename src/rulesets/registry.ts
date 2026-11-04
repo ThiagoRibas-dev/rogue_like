@@ -120,6 +120,7 @@ export {
   ALL_ABILITY_IDS,
   type AbilityId,
   type DnD35Alignment,
+  type DnD35EntityData,
   type DnD35SpellSchool
 } from './dnd35e/types/dnd35e.types.ts';
 export {

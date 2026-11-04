@@ -5,27 +5,12 @@ import type { GameEvent } from '../../types/events.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import type { ConsequenceAction, RunScriptConsequenceFn } from '../../types/trigger.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import type {
-  TrapComponent,
-  DamageComponent,
-  DamageInstance,
-  PortalComponent,
-  TagsComponent,
-  RenderableComponent,
-  LockComponent,
-  InteractableComponent,
-  PositionComponent
-} from '../../types/components.types.ts';
-import { getComponent, addComponent, removeEntity, spawnItem, spawnEntity } from '../../core/ecs.ts';
-import { addActor } from '../../core/scheduler.ts';
-import { applyStatusEffect } from '../status-effect.system.ts';
+import type { TrapComponent, DamageComponent, DamageInstance, PortalComponent } from '../../types/components.types.ts';
+import { getComponent, addComponent, removeEntity } from '../../core/ecs.ts';
 import { processChangeAreaIntent } from '../map.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
-import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
-import type { Verb } from '../../constants/verbs.constants.ts';
-import type { Intent } from '../../types/intents/intent.union.ts';
-import { compileScheme } from '../scheme_compiler.ts';
+import { systemicEntityConsequences } from './systemic_entity.ts';
 
 /**
  * Checks if the entity stepped on any physical traps.
@@ -48,11 +33,9 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
 
     const trap = getComponent(nextState, id, ComponentType.Trap) as TrapComponent | undefined;
     if (trap && !trap.triggered) {
-      // Trigger it!
       const nextTrap = { ...trap, triggered: true };
       nextState = addComponent(nextState, id, nextTrap);
 
-      // Add a RenderableComponent so the trap becomes visible (or update existing)
       const renderCmp = getComponent(nextState, id, ComponentType.Renderable);
       if (!renderCmp) {
         nextState = addComponent(nextState, id, {
@@ -68,7 +51,6 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
       const targetName = isPlayer ? 'You' : 'Something';
       nextState = addMessage(nextState, `${targetName} triggered a trap!`, MessageLogCategory.System);
 
-      // Push TrapTriggeredEvent instead of hardcoded damage
       nextState = {
         ...nextState,
         events: [
@@ -166,18 +148,15 @@ export const systemicConsequences = {
     };
 
     if (existingDamageComp) {
-      const newDamageComp = {
+      return addComponent(state, eId, {
         ...existingDamageComp,
         instances: [...existingDamageComp.instances, damageInstance]
-      };
-      return addComponent(state, eId, newDamageComp);
-    } else {
-      const newDamageComp: DamageComponent = {
-        type: ComponentType.Damage,
-        instances: [damageInstance]
-      };
-      return addComponent(state, eId, newDamageComp);
+      });
     }
+    return addComponent(state, eId, {
+      type: ComponentType.Damage,
+      instances: [damageInstance]
+    });
   },
 
   open_barter: (
@@ -294,319 +273,7 @@ export const systemicConsequences = {
     return nextState;
   },
 
-  modify_tags: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'modify_tags' }>
-  ): GameState => {
-    let eId: EntityId | undefined;
-    if (event.type === GameEventType.ReactionResolved) {
-      const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
-      if (targetPayload.type === 'entity') {
-        eId = targetPayload.entityId;
-      }
-    }
-    if (eId === undefined) return state;
-
-    const tagsCmp = getComponent(state, eId, ComponentType.Tags) as TagsComponent | undefined;
-    let newTags = [...(tagsCmp?.tags ?? [])];
-
-    let requiresFovUpdate = false;
-    if (consequence.remove) {
-      if (consequence.remove.includes('opaque')) requiresFovUpdate = true;
-      newTags = newTags.filter((t) => !consequence.remove!.includes(t));
-    }
-    if (consequence.add) {
-      if (consequence.add.includes('opaque')) requiresFovUpdate = true;
-      for (const t of consequence.add) {
-        if (!newTags.includes(t)) newTags.push(t);
-      }
-    }
-
-    let nextState = state;
-    if (tagsCmp) {
-      nextState = addComponent(state, eId, { ...tagsCmp, tags: newTags });
-    } else {
-      nextState = addComponent(state, eId, { type: ComponentType.Tags, tags: newTags });
-    }
-
-    if (requiresFovUpdate) {
-      nextState = { ...nextState, fovNeedsUpdate: true };
-    }
-    return nextState;
-  },
-
-  change_glyph: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'change_glyph' }>
-  ): GameState => {
-    let eId: EntityId | undefined;
-    if (event.type === GameEventType.ReactionResolved) {
-      const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
-      if (targetPayload.type === 'entity') {
-        eId = targetPayload.entityId;
-      }
-    }
-    if (eId === undefined) return state;
-
-    const rendCmp = getComponent(state, eId, ComponentType.Renderable) as RenderableComponent | undefined;
-    if (rendCmp) {
-      return addComponent(state, eId, { ...rendCmp, glyph: consequence.glyph });
-    }
-    return state;
-  },
-
-  set_lock_state: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'set_lock_state' }>
-  ): GameState => {
-    let eId: EntityId | undefined;
-    if (event.type === GameEventType.ReactionResolved) {
-      const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
-      if (targetPayload.type === 'entity') {
-        eId = targetPayload.entityId;
-      }
-    }
-    if (eId === undefined) return state;
-
-    const lockCmp = getComponent(state, eId, ComponentType.Lock) as LockComponent | undefined;
-    if (lockCmp) {
-      return addComponent(state, eId, { ...lockCmp, locked: consequence.locked });
-    }
-    return state;
-  },
-
-  change_intents: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'change_intents' }>
-  ): GameState => {
-    let eId: EntityId | undefined;
-    if (event.type === GameEventType.ReactionResolved) {
-      const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
-      if (targetPayload.type === 'entity') {
-        eId = targetPayload.entityId;
-      }
-    }
-    if (eId === undefined) return state;
-
-    const interactable = getComponent(state, eId, ComponentType.Interactable) as InteractableComponent | undefined;
-    if (interactable) {
-      const newIntents = consequence.intents.map(
-        (v) =>
-          ({
-            type: IntentType.Apply,
-            entityId: -1 as unknown as EntityId,
-            verb: v as Verb,
-            target: { type: 'self' } as const
-          }) as Intent
-      );
-      return addComponent(state, eId, { ...interactable, intents: newIntents });
-    }
-    return state;
-  },
-
-  spawn_entity: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'spawn_entity' }>
-  ): GameState => {
-    const templateId = consequence.entityTemplateId;
-    if (!templateId) return state;
-
-    let pos: PositionComponent | undefined;
-    let targetId: EntityId | undefined;
-
-    if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-      targetId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetId) {
-      targetId = parseInt(consequence.targetId) as EntityId;
-    } else {
-      if (event.type === GameEventType.ReactionResolved) {
-        const rxEvent = event as unknown as { target: ApplyIntentTarget };
-        if (rxEvent.target.type === 'entity') {
-          targetId = rxEvent.target.entityId;
-        } else if (rxEvent.target.type === 'item') {
-          targetId = rxEvent.target.itemEntityId;
-        } else if (rxEvent.target.type === 'tile') {
-          pos = { type: ComponentType.Position, x: rxEvent.target.x, y: rxEvent.target.y };
-        }
-      }
-    }
-
-    if (targetId !== undefined && !pos) {
-      pos = getComponent(state, targetId, ComponentType.Position) as PositionComponent | undefined;
-    }
-
-    if (pos) {
-      let nextState = state;
-      if (state.campaign.items[templateId]) {
-        const [stateAfterSpawn] = spawnItem(state, templateId, pos.x, pos.y);
-        nextState = stateAfterSpawn;
-      } else if (state.campaign.entities[templateId]) {
-        const [stateAfterSpawn, entityId] = spawnEntity(state, templateId, pos.x, pos.y);
-        if (getComponent(stateAfterSpawn, entityId, ComponentType.Actor)) {
-          addActor(entityId);
-        }
-        nextState = stateAfterSpawn;
-      } else {
-        console.warn(`Template ${templateId} not found in campaign items/entities during spawn_entity consequence.`);
-      }
-      return nextState;
-    }
-    return state;
-  },
-
-  damage_area: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'damage_area' }>
-  ): GameState => {
-    const radius = consequence.radius ?? 1;
-    const amount = consequence.amount ?? 0;
-    if (amount <= 0) return state;
-
-    let centerPos: PositionComponent | undefined;
-    let targetId: EntityId | undefined;
-
-    if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-      targetId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetId) {
-      targetId = parseInt(consequence.targetId) as EntityId;
-    } else {
-      if (event.type === GameEventType.ReactionResolved) {
-        const rxEvent = event as unknown as { target: ApplyIntentTarget };
-        if (rxEvent.target.type === 'entity') {
-          targetId = rxEvent.target.entityId;
-        } else if (rxEvent.target.type === 'item') {
-          targetId = rxEvent.target.itemEntityId;
-        } else if (rxEvent.target.type === 'tile') {
-          centerPos = { type: ComponentType.Position, x: rxEvent.target.x, y: rxEvent.target.y };
-        }
-      }
-    }
-
-    if (targetId !== undefined && !centerPos) {
-      centerPos = getComponent(state, targetId, ComponentType.Position) as PositionComponent | undefined;
-    }
-
-    if (!centerPos) return state;
-
-    let nextState = state;
-    for (const id of state.entities) {
-      const fighter = getComponent(state, id, ComponentType.Fighter);
-      const pos = getComponent(state, id, ComponentType.Position);
-      if (!fighter || !pos) continue;
-
-      const dist = Math.sqrt(Math.pow(pos.x - centerPos.x, 2) + Math.pow(pos.y - centerPos.y, 2));
-      if (dist <= radius) {
-        const existingDamageComp = getComponent(nextState, id, ComponentType.Damage) as DamageComponent | undefined;
-        const damageInstance: DamageInstance = {
-          amount,
-          tags: consequence.tags ?? ['trigger', 'area']
-        };
-
-        if (existingDamageComp) {
-          const newDamageComp = {
-            ...existingDamageComp,
-            instances: [...existingDamageComp.instances, damageInstance]
-          };
-          nextState = addComponent(nextState, id, newDamageComp);
-        } else {
-          const newDamageComp: DamageComponent = {
-            type: ComponentType.Damage,
-            instances: [damageInstance]
-          };
-          nextState = addComponent(nextState, id, newDamageComp);
-        }
-      }
-    }
-    return nextState;
-  },
-
-  apply_status: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'apply_status' }>
-  ): GameState => {
-    if (!consequence.statusId) return state;
-
-    let eId: EntityId | undefined;
-    if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-      eId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetId) {
-      eId = parseInt(consequence.targetId) as EntityId;
-    } else {
-      if (event.type === GameEventType.ReactionResolved) {
-        const rxEvent = event as unknown as { target: ApplyIntentTarget };
-        if (rxEvent.target.type === 'entity') {
-          eId = rxEvent.target.entityId;
-        } else if (rxEvent.target.type === 'item') {
-          eId = rxEvent.target.itemEntityId;
-        }
-      }
-    }
-
-    if (eId !== undefined) {
-      return applyStatusEffect(state, eId, consequence.statusId, consequence.duration ?? 10);
-    }
-    return state;
-  },
-
-  random_choice: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'random_choice' }>,
-    apply: (state: GameState, event: GameEvent, consequence: ConsequenceAction) => GameState
-  ): GameState => {
-    const choices = consequence.choices as unknown as ReadonlyArray<ReadonlyArray<ConsequenceAction>>;
-    if (!choices || choices.length === 0) return state;
-
-    let chosenIndex = 0;
-    const weights = consequence.weights;
-    if (weights && weights.length === choices.length) {
-      const weightMap: Record<string, number> = {};
-      for (let i = 0; i < weights.length; i++) {
-        weightMap[i.toString()] = weights[i]!;
-      }
-      const chosenStr = rng.getWeightedValue(weightMap);
-      chosenIndex = chosenStr !== undefined ? parseInt(chosenStr, 10) : 0;
-    } else {
-      chosenIndex = rng.getUniformInt(0, choices.length - 1);
-    }
-
-    const chosenConsequences = choices[chosenIndex];
-    let nextState = state;
-    if (chosenConsequences) {
-      for (const childCons of chosenConsequences) {
-        nextState = apply(nextState, event, childCons);
-      }
-    }
-    return nextState;
-  },
-
-  compile_scheme: (
-    state: GameState,
-    event: GameEvent,
-    consequence: Extract<ConsequenceAction, { type: 'compile_scheme' }>
-  ): GameState => {
-    let targetId: EntityId | undefined;
-    if (consequence.targetRef === 'event.entityId' && 'entityId' in event) {
-      targetId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetRef) {
-      const parsed = parseInt(consequence.targetRef, 10);
-      if (!isNaN(parsed)) {
-        targetId = parsed as EntityId;
-      }
-    }
-
-    if (targetId !== undefined) {
-      return compileScheme(state, consequence.recipeId, targetId);
-    }
-    return state;
-  }
+  ...systemicEntityConsequences
 } satisfies Partial<
   Record<
     ConsequenceAction['type'],

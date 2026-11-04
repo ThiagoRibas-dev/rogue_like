@@ -1,19 +1,20 @@
 import { z } from 'zod';
-import type { EditorController } from '../editor_ui.ts';
-import type { ValidationError } from '../../editor/validator/validator.types.ts';
 import { loadRulesetSystemContent } from '../../core/loader.ts';
+import type { ValidationError } from '../../editor/validator/validator.types.ts';
 import type { RulesetId } from '../../types/ruleset.types.ts';
-
+import type { EditorController } from '../editor_ui.ts';
+import { createSelectField } from './editor_forms.ts';
+import { renderArrayField, renderNestedObjectField } from './zod_form_containers.ts';
 import {
-  createStringField,
-  createNumberField,
-  createBooleanField,
-  createColorPickerField,
-  createSelectField,
-  createMultiSelectField
-} from './editor_forms.ts';
-import { getReferenceOptions } from './ui_utils.ts';
-import { isPathExpanded, togglePath } from '../../editor/validation_navigator';
+  renderBooleanField,
+  renderMultiSelectTagsField,
+  renderNumberField,
+  renderRawJsonField,
+  renderStringField
+} from './zod_form_primitives.ts';
+
+export * from './zod_form_containers.ts';
+export * from './zod_form_primitives.ts';
 
 /**
  * Renders a form dynamically based on a Zod schema.
@@ -26,7 +27,6 @@ export function renderFormForZodSchema(
   container: HTMLElement,
   errors?: ReadonlyArray<ValidationError>
 ): void {
-  // Unwrap optional/nullable types
   let isOptional = false;
   let innerSchema = schema;
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
@@ -36,10 +36,8 @@ export function renderFormForZodSchema(
     innerSchema = (schema as z.ZodDefault<z.ZodTypeAny>).removeDefault();
   }
 
-  // Determine if value exists
   const hasValue = obj !== undefined && obj !== null;
 
-  // Handle Optionals: If optional and no value exists, show an "Add" button
   if (isOptional && !hasValue) {
     const key = basePath.split('/').pop() || 'Field';
     const addBtn = document.createElement('button');
@@ -48,7 +46,6 @@ export function renderFormForZodSchema(
     addBtn.style.marginBottom = '8px';
     addBtn.textContent = `+ Add ${key.toUpperCase()}`;
     addBtn.addEventListener('click', () => {
-      // Create a default payload
       let defaultVal: unknown = {};
       if (innerSchema instanceof z.ZodArray) defaultVal = [];
       else if (innerSchema instanceof z.ZodString) defaultVal = '';
@@ -62,13 +59,11 @@ export function renderFormForZodSchema(
     return;
   }
 
-  // Handle Objects
   if (innerSchema instanceof z.ZodObject) {
     renderNestedObjectField(controller, innerSchema, obj, basePath, container, isOptional, errors);
     return;
   }
 
-  // Handle Arrays
   if (innerSchema instanceof z.ZodArray) {
     const key = basePath.split('/').pop() || 'Field';
     if (key.toLowerCase().includes('tag')) {
@@ -89,7 +84,6 @@ export function renderFormForZodSchema(
     return;
   }
 
-  // Primitives
   const key = basePath.split('/').pop() || 'Field';
   const val = hasValue ? obj : undefined;
   const label = innerSchema.description || key;
@@ -132,10 +126,8 @@ export function renderFormForZodSchema(
       })
     );
   } else if (innerSchema instanceof z.ZodRecord) {
-    // Fallback for Record<string, unknown>
     renderRawJsonField(controller, label, val, basePath, fieldContainer);
   } else {
-    // Fallback for custom schemas (e.g. unknown params)
     renderRawJsonField(controller, label, val, basePath, fieldContainer);
   }
 
@@ -156,7 +148,6 @@ export function renderFormForZodSchema(
 
   container.appendChild(wrapper);
 
-  // Render Inline Validation Errors
   if (errors) {
     const fieldErrors = errors.filter((e) => e.path === basePath);
     for (const err of fieldErrors) {
@@ -183,398 +174,4 @@ export function renderFormForZodSchema(
       }
     }
   }
-}
-
-function renderRawJsonField(
-  controller: EditorController,
-  labelStr: string,
-  val: unknown,
-  path: string,
-  container: HTMLElement
-): void {
-  const group = document.createElement('div');
-  group.className = 'form-group';
-
-  const label = document.createElement('label');
-  label.className = 'form-label';
-  label.textContent = labelStr;
-  group.appendChild(label);
-
-  const textarea = document.createElement('textarea');
-  textarea.className = 'editor-input';
-  textarea.style.fontFamily = 'monospace';
-  textarea.style.height = '100px';
-  textarea.value = JSON.stringify(val ?? {}, null, 2);
-
-  textarea.addEventListener('blur', () => {
-    try {
-      const parsed = JSON.parse(textarea.value);
-      controller.applyOperations([{ op: 'add', path, value: parsed }]);
-    } catch {
-      alert('Invalid JSON formatting.');
-    }
-  });
-
-  group.appendChild(textarea);
-  container.appendChild(group);
-}
-
-function renderStringField(
-  controller: EditorController,
-  key: string,
-  label: string,
-  val: string,
-  path: string,
-  container: HTMLElement,
-  schema?: z.ZodTypeAny
-): void {
-  const doc = controller.getDocument();
-  const onChange = (newVal: string): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-
-  let onBlur: ((v: string) => string | null | undefined) | undefined;
-  if (schema) {
-    onBlur = (newVal: string): string | null => {
-      const res = schema.safeParse(newVal);
-      if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
-      return null;
-    };
-  }
-
-  // Heuristics for specialized fields
-  const lowerKey = key.toLowerCase();
-  if (lowerKey.includes('color') || lowerKey.endsWith('fg') || lowerKey.endsWith('bg') || lowerKey === 'background') {
-    container.appendChild(createColorPickerField({ label, value: val, onChange }));
-    return;
-  }
-
-  const selectOptions = getReferenceOptions(key, doc);
-  if (selectOptions) {
-    if (onBlur) {
-      container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange, onBlur }));
-    } else {
-      container.appendChild(createSelectField({ label, value: val, options: selectOptions, onChange }));
-    }
-    return;
-  }
-
-  // Fallback to plain string
-  if (onBlur) {
-    container.appendChild(createStringField({ label, value: val, onChange, onBlur }));
-  } else {
-    container.appendChild(createStringField({ label, value: val, onChange }));
-  }
-}
-
-function renderNumberField(
-  controller: EditorController,
-  label: string,
-  val: number,
-  path: string,
-  container: HTMLElement,
-  schema?: z.ZodTypeAny
-): void {
-  const onChange = (newVal: number): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-
-  let onBlur: ((v: number) => string | null | undefined) | undefined;
-  if (schema) {
-    onBlur = (newVal: number): string | null => {
-      const res = schema.safeParse(newVal);
-      if (!res.success) return res.error.issues[0]?.message || 'Invalid value';
-      return null;
-    };
-  }
-
-  if (onBlur) {
-    container.appendChild(createNumberField({ label, value: val, onChange, onBlur }));
-  } else {
-    container.appendChild(createNumberField({ label, value: val, onChange }));
-  }
-}
-
-function renderBooleanField(
-  controller: EditorController,
-  label: string,
-  val: boolean,
-  path: string,
-  container: HTMLElement
-): void {
-  const onChange = (newVal: boolean): void => controller.applyOperations([{ op: 'add', path, value: newVal }], true);
-  container.appendChild(createBooleanField({ label, value: val, onChange }));
-}
-
-function renderMultiSelectTagsField(
-  controller: EditorController,
-  key: string,
-  label: string,
-  val: string[],
-  path: string,
-  container: HTMLElement
-): void {
-  const doc = controller.getDocument();
-  const options = getReferenceOptions(key, doc);
-  if (!options) return; // Fallback to array rendering if no options found
-
-  const onChange = (newVal: string[]): void =>
-    controller.applyOperations([{ op: 'replace', path, value: newVal }], true);
-  container.appendChild(createMultiSelectField({ label, value: val, options, onChange }));
-}
-
-function renderNestedObjectField(
-  controller: EditorController,
-  schema: z.ZodObject<z.ZodRawShape>,
-  obj: unknown,
-  basePath: string,
-  container: HTMLElement,
-  canBeRemoved: boolean,
-  errors?: ReadonlyArray<ValidationError>
-): void {
-  // Accordion: nested objects use <details>/<summary> with module-level persistence.
-  // First-level nested sections are open by default; deeper sections follow expandedPaths.
-  const isFirstLevel = basePath.split('/').filter((s) => s !== '').length <= 2;
-  const detailsOpen = isFirstLevel ? true : isPathExpanded(basePath);
-
-  const details = document.createElement('details');
-  details.className = 'form-group-accordion';
-  details.open = detailsOpen;
-  details.dataset.fieldPath = basePath;
-  details.style.border = '1px solid rgba(255,255,255,0.1)';
-  details.style.padding = '12px';
-  details.style.borderRadius = '6px';
-  details.style.position = 'relative';
-  details.style.marginBottom = '8px';
-
-  const summary = document.createElement('summary');
-  summary.className = 'form-label';
-  summary.style.cursor = 'pointer';
-  summary.style.fontWeight = 'bold';
-  summary.style.userSelect = 'none';
-  const titleText = basePath.split('/').pop()?.toUpperCase() || 'OBJECT';
-
-  // Descendant error badge for quick visibility
-  let descendantErrors = 0;
-  if (errors) {
-    descendantErrors = errors.filter((e) => {
-      const ePath = e.path || '';
-      return ePath.startsWith(basePath + '/') && ePath !== basePath;
-    }).length;
-  }
-  const badgeText = descendantErrors > 0 ? ` (${descendantErrors})` : '';
-  summary.textContent = titleText + badgeText;
-  details.appendChild(summary);
-
-  if (canBeRemoved) {
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'editor-btn editor-btn-danger';
-    removeBtn.textContent = '✖';
-    removeBtn.title = 'Remove Object';
-    removeBtn.style.position = 'absolute';
-    removeBtn.style.top = '-10px';
-    removeBtn.style.right = '10px';
-    removeBtn.style.padding = '2px 6px';
-    removeBtn.addEventListener('click', () => {
-      controller.applyOperations([{ op: 'remove', path: basePath }]);
-    });
-    details.appendChild(removeBtn);
-  }
-
-  // Sync module-level expandedPaths when user toggles
-  details.addEventListener('toggle', () => {
-    togglePath(basePath);
-  });
-
-  const safeObj = (obj as Record<string, unknown>) || {};
-  const shape = schema.shape;
-
-  // Inject glyph preview if the object has glyph+fg+bg fields
-  if ('glyph' in shape && 'fg' in shape && 'bg' in shape) {
-    const previewRow = document.createElement('div');
-    previewRow.style.display = 'flex';
-    previewRow.style.alignItems = 'center';
-    previewRow.style.gap = '12px';
-    previewRow.style.marginBottom = '12px';
-
-    const swatch = document.createElement('div');
-    swatch.className = 'glyph-preview-swatch';
-    swatch.textContent = (safeObj.glyph as string) || '?';
-    swatch.style.color = (safeObj.fg as string) || '#fff';
-    swatch.style.backgroundColor = (safeObj.bg as string) || '#000';
-    swatch.style.fontSize = '2.5rem';
-    swatch.style.width = '56px';
-    swatch.style.height = '56px';
-    swatch.style.display = 'flex';
-    swatch.style.alignItems = 'center';
-    swatch.style.justifyContent = 'center';
-    swatch.style.borderRadius = '6px';
-    swatch.style.border = '1px solid rgba(255,255,255,0.2)';
-    swatch.style.fontFamily = 'monospace';
-    swatch.style.flexShrink = '0';
-
-    const nameLabel = document.createElement('span');
-    nameLabel.style.fontSize = '1.1rem';
-    nameLabel.style.color = '#cdd6f4';
-    nameLabel.textContent = (safeObj.name as string) || (safeObj.id as string) || '';
-
-    previewRow.appendChild(swatch);
-    previewRow.appendChild(nameLabel);
-    details.appendChild(previewRow);
-  }
-
-  // Render all fields defined in the schema
-  for (const [key, propSchema] of Object.entries(shape)) {
-    const propPath = `${basePath}/${key}`;
-    renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, details, errors);
-  }
-
-  container.appendChild(details);
-}
-
-function renderArrayField(
-  controller: EditorController,
-  schema: z.ZodArray<z.ZodTypeAny>,
-  arr: unknown[] | undefined,
-  basePath: string,
-  container: HTMLElement,
-  canBeRemoved: boolean,
-  errors?: ReadonlyArray<ValidationError>
-): void {
-  const group = document.createElement('fieldset');
-  group.className = 'form-group';
-  group.dataset.fieldPath = basePath;
-  group.style.border = '1px dashed rgba(255,255,255,0.2)';
-  group.style.padding = '12px';
-  group.style.borderRadius = '6px';
-  group.style.position = 'relative';
-
-  const legend = document.createElement('legend');
-  legend.className = 'form-label';
-  legend.textContent = (basePath.split('/').pop()?.toUpperCase() || 'LIST') + ' (Array)';
-  group.appendChild(legend);
-
-  if (canBeRemoved) {
-    const removeObjBtn = document.createElement('button');
-    removeObjBtn.className = 'editor-btn editor-btn-danger';
-    removeObjBtn.textContent = '✖';
-    removeObjBtn.title = 'Remove List';
-    removeObjBtn.style.position = 'absolute';
-    removeObjBtn.style.top = '-10px';
-    removeObjBtn.style.right = '10px';
-    removeObjBtn.style.padding = '2px 6px';
-    removeObjBtn.addEventListener('click', () => {
-      controller.applyOperations([{ op: 'remove', path: basePath }]);
-    });
-    group.appendChild(removeObjBtn);
-  }
-
-  const safeArr = arr || [];
-
-  // Render each existing element
-  safeArr.forEach((item, index) => {
-    const itemContainer = document.createElement('div');
-    itemContainer.draggable = true;
-    itemContainer.dataset.index = String(index);
-    itemContainer.dataset.fieldPath = `${basePath}/${index}`;
-    itemContainer.style.display = 'flex';
-    itemContainer.style.gap = '8px';
-    itemContainer.style.alignItems = 'flex-start';
-    itemContainer.style.marginBottom = '8px';
-    itemContainer.style.cursor = 'grab';
-    itemContainer.style.transition = 'border-color 0.15s ease';
-
-    // Drag handle
-    const dragHandle = document.createElement('span');
-    dragHandle.textContent = '⠿';
-    dragHandle.style.cursor = 'grab';
-    dragHandle.style.color = 'rgba(255,255,255,0.3)';
-    dragHandle.style.fontSize = '1.2rem';
-    dragHandle.style.padding = '4px';
-    dragHandle.style.marginTop = '24px';
-    itemContainer.appendChild(dragHandle);
-
-    const fieldContainer = document.createElement('div');
-    fieldContainer.style.flexGrow = '1';
-
-    // We pass index as the path segment
-    renderFormForZodSchema(controller, schema.element, item, `${basePath}/${index}`, fieldContainer, errors);
-    itemContainer.appendChild(fieldContainer);
-
-    // Remove item button
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'editor-btn editor-btn-danger';
-    removeBtn.textContent = '✖';
-    removeBtn.style.padding = '4px 8px';
-    removeBtn.style.marginTop = '24px';
-    removeBtn.addEventListener('click', () => {
-      controller.applyOperations([{ op: 'remove', path: `${basePath}/${index}` }]);
-    });
-    itemContainer.appendChild(removeBtn);
-
-    group.appendChild(itemContainer);
-  });
-
-  // HTML5 Drag and Drop for array reordering
-  let dragSourceIndex: number | null = null;
-
-  group.addEventListener('dragstart', (e: DragEvent) => {
-    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
-    if (!target) return;
-    dragSourceIndex = parseInt(target.dataset.index ?? '-1', 10);
-    e.dataTransfer?.setData('text/plain', String(dragSourceIndex));
-    target.style.opacity = '0.4';
-  });
-
-  group.addEventListener('dragend', (e: DragEvent) => {
-    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
-    if (target) target.style.opacity = '1';
-    dragSourceIndex = null;
-  });
-
-  group.addEventListener('dragover', (e: DragEvent) => {
-    e.preventDefault(); // Allow drop
-    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
-    if (target) {
-      target.style.borderTop = '2px solid #89b4fa';
-    }
-  });
-
-  group.addEventListener('dragleave', (e: DragEvent) => {
-    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
-    if (target) {
-      target.style.borderTop = '';
-    }
-  });
-
-  group.addEventListener('drop', (e: DragEvent) => {
-    e.preventDefault();
-    const target = (e.target as HTMLElement).closest('[data-index]') as HTMLElement | null;
-    if (!target || dragSourceIndex === null) return;
-    target.style.borderTop = '';
-
-    const dropIndex = parseInt(target.dataset.index ?? '-1', 10);
-    if (dropIndex === dragSourceIndex || dropIndex < 0) return;
-
-    // Emit move as remove + add
-    const movedItem = safeArr[dragSourceIndex];
-    controller.applyOperations([
-      { op: 'remove', path: `${basePath}/${dragSourceIndex}` },
-      { op: 'add', path: `${basePath}/${dropIndex}`, value: movedItem }
-    ]);
-  });
-
-  // Add Item Button
-  const addBtn = document.createElement('button');
-  addBtn.className = 'editor-btn editor-btn-secondary';
-  addBtn.textContent = '+ Add Item';
-  addBtn.addEventListener('click', () => {
-    let defaultVal: unknown = {};
-    const inner = schema.element;
-    if (inner instanceof z.ZodString) defaultVal = '';
-    else if (inner instanceof z.ZodNumber) defaultVal = 0;
-    else if (inner instanceof z.ZodBoolean) defaultVal = false;
-    else if (inner instanceof z.ZodEnum) defaultVal = inner.options[0] ?? '';
-
-    controller.applyOperations([{ op: 'add', path: `${basePath}/-`, value: defaultVal }]);
-  });
-
-  group.appendChild(addBtn);
-  container.appendChild(group);
 }

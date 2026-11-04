@@ -73,10 +73,15 @@ export function isDnd35eFile(filePath: string): boolean {
 /**
  * Extracts exported identifier names from a TypeScript file.
  */
-export function extractExportedNames(content: string): Set<string> {
+export function extractExportedNames(content: string, filePath?: string, visited: Set<string> = new Set()): Set<string> {
   const exports = new Set<string>();
+  if (filePath) {
+    if (visited.has(filePath)) return exports;
+    visited.add(filePath);
+  }
+
   const exportRegex =
-    /export\s+(?:const|function|type|interface|enum|class)(?:\s+enum)?\s+([A-Za-z0-9_]+)/g;
+    /export\s+(?:let|const|async\s+function|function|type|interface|enum|class)(?:\s+enum)?\s+([A-Za-z0-9_]+)/g;
 
   let match;
   while ((match = exportRegex.exec(content)) !== null) {
@@ -85,8 +90,8 @@ export function extractExportedNames(content: string): Set<string> {
     }
   }
 
-  // Also support: export { a, b as c }
-  const namedExportsRegex = /export\s*\{([^}]+)\}/g;
+  // Also support: export { a, b as c } or export type { a, b as c }
+  const namedExportsRegex = /export\s+(?:type\s+)?\{([^}]+)\}/g;
   while ((match = namedExportsRegex.exec(content)) !== null) {
     if (match[1]) {
       const parts = match[1].split(',');
@@ -94,9 +99,29 @@ export function extractExportedNames(content: string): Set<string> {
         const trimmed = part.trim();
         if (trimmed) {
           const aliasParts = trimmed.split(/\s+as\s+/);
-          const exportedName = (aliasParts[1] ?? aliasParts[0])?.trim();
+          const rawName = aliasParts[1] ?? aliasParts[0];
+          // Strip possible leading 'type ' in 'export { type Foo }'
+          const exportedName = rawName?.replace(/^type\s+/, '').trim();
           if (exportedName) {
             exports.add(exportedName);
+          }
+        }
+      }
+    }
+  }
+
+  // Also support: export * from './path.ts'
+  if (filePath) {
+    const starExportRegex = /export\s+\*\s+from\s+['"]([^'"]+)['"]/g;
+    while ((match = starExportRegex.exec(content)) !== null) {
+      const relPath = match[1];
+      if (relPath) {
+        const targetPath = join(filePath, '..', relPath);
+        if (existsSync(targetPath)) {
+          const subContent = readFileSync(targetPath, 'utf-8');
+          const subExports = extractExportedNames(subContent, targetPath, visited);
+          for (const subEp of subExports) {
+            exports.add(subEp);
           }
         }
       }
@@ -284,7 +309,7 @@ export function validateSsotRegistries(projectRoot: string): SsotParityReport {
     const fullPath = join(projectRoot, file);
     if (!existsSync(fullPath)) continue;
     const content = readFileSync(fullPath, 'utf-8');
-    const exports = extractExportedNames(content);
+    const exports = extractExportedNames(content, fullPath);
 
     for (const ep of entry.canonicalEntryPoints) {
       if (!exports.has(ep)) {

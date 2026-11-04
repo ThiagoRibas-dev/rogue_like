@@ -1,13 +1,15 @@
 import * as ROT from 'rot-js';
-import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
-import { type PatchOperation, applyPatch, generateInversePatch } from '../utils/json-patch.ts';
-import { readCampaignFromZip, writeCampaignToZip } from './workspace_file_service.ts';
-import { saveEditorWorkspace, loadEditorWorkspace } from '../core/campaign_store.ts';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
-import { generateArea } from '../map/generator.ts';
+import { loadEditorWorkspace, saveEditorWorkspace } from '../core/campaign_store.ts';
 import { runEncounterDirector } from '../map/encounter_director.ts';
-
+import { generateArea } from '../map/generator.ts';
+import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
+import { applyPatch, generateInversePatch, type PatchOperation } from '../utils/json-patch.ts';
+import { auditCampaignLinks, getValueAtPath } from './campaign_link_auditor.ts';
 import type { ValidationError } from './validator/validator.types.ts';
+import { readCampaignFromZip, writeCampaignToZip } from './workspace_file_service.ts';
+
+export * from './campaign_link_auditor.ts';
 
 /**
  * Controller class coordinating active workspace document modifications and undo/redo stacks.
@@ -22,7 +24,6 @@ export class CampaignEditor {
   private lastEditedTime = 0;
   private coalescedOriginalValue: unknown = undefined;
 
-  // Listeners
   private onChangeListeners: Array<
     (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void
   > = [];
@@ -39,7 +40,6 @@ export class CampaignEditor {
     listener: (doc: CampaignData, errors: ReadonlyArray<ValidationError>, isCoalesced: boolean) => void
   ): void {
     this.onChangeListeners.push(listener);
-    // Trigger immediately with initial state
     listener(this.doc, this.validate(), false);
   }
 
@@ -76,11 +76,6 @@ export class CampaignEditor {
   /**
    * Generates a sandbox area with a specific seed and optional budget/profile overrides.
    * Saves and restores the global RNG state to avoid polluting the editor's RNG stream.
-   *
-   * @param areaId   The area ID to generate.
-   * @param seed     The RNG seed to use for deterministic generation.
-   * @param overrides Optional crBudget and/or encounterProfileId overrides.
-   * @returns The generated area result.
    */
   public generateSandboxAreaWithSeed(
     areaId: string,
@@ -96,8 +91,6 @@ export class CampaignEditor {
         throw new Error(`Area ${areaId} not found.`);
       }
 
-      // If overrides provided, we need to re-run the encounter director with an
-      // overridden area definition after normal generation
       if (overrides && (overrides.crBudget !== undefined || overrides.encounterProfileId !== undefined)) {
         const result = generateArea(this.doc, areaId);
         const effectiveAreaDef = {
@@ -173,7 +166,7 @@ export class CampaignEditor {
     try {
       const newDoc = await readCampaignFromZip(file);
       this.doc = newDoc;
-      this.workspaceId = null; // Detach from any previous IDB workspace
+      this.workspaceId = null;
       this.undoStack = [];
       this.redoStack = [];
       this.lastEditedPath = null;
@@ -189,10 +182,8 @@ export class CampaignEditor {
    * Exports the current campaign document as a ZIP blob and triggers a download.
    */
   public async exportZipWorkspace(): Promise<void> {
-    // 1. Stamp schema version
     this.doc.manifest.schemaVersion = CURRENT_SCHEMA_VERSION;
 
-    // 2. Run completeness validator
     const errors = this.validate();
     const hasErrors = errors.some((e) => e.severity === 'error');
     if (hasErrors) {
@@ -217,22 +208,17 @@ export class CampaignEditor {
 
   /**
    * Applies a series of patch operations to the document.
-   * Handles keystroke coalescing for text/number fields to group typing into single undo steps.
-   * @param ops The operations to apply.
-   * @param coalesce Whether to coalesce this operation with consecutive edits to the same path.
    */
   public applyOperations(ops: PatchOperation[], coalesce = false): void {
     if (ops.length === 0) return;
     this.isDirty = true;
 
-    const now = Date.now();
+    const now = performance.now();
     const primaryOp = ops[0];
     const path = primaryOp?.path ?? '';
 
-    // If coalescing is requested (e.g., character input)
     if (coalesce && primaryOp) {
       if (this.lastEditedPath === path && now - this.lastEditedTime < 800) {
-        // Just apply in-place, keeping the very first original value in our undo history
         try {
           this.doc = applyPatch(this.doc, ops);
           this.lastEditedTime = now;
@@ -243,16 +229,12 @@ export class CampaignEditor {
           return;
         }
       } else {
-        // Debounce window expired, or path changed. Finalize any ongoing coalesced edit.
         this.flushCoalescedEdit();
-
-        // Start new coalesced sequence. Find original value before application:
-        this.coalescedOriginalValue = this.getValueAtPath(this.doc, path);
+        this.coalescedOriginalValue = getValueAtPath(this.doc, path);
         this.lastEditedPath = path;
         this.lastEditedTime = now;
       }
     } else {
-      // Direct, non-coalesced operation (e.g. button click or blur). Finalize typing first.
       this.flushCoalescedEdit();
     }
 
@@ -261,7 +243,7 @@ export class CampaignEditor {
       this.doc = applyPatch(this.doc, ops);
 
       this.undoStack.push(inverse);
-      this.redoStack = []; // Clear redo stack on new operation
+      this.redoStack = [];
 
       this.emitChange();
     } catch (err) {
@@ -269,9 +251,7 @@ export class CampaignEditor {
     }
   }
 
-  /**
-   * Performs an Undo operation, reverting the last change.
-   */
+  /** Performs an Undo operation, reverting the last change. */
   public undo(): void {
     this.flushCoalescedEdit();
 
@@ -288,9 +268,7 @@ export class CampaignEditor {
     }
   }
 
-  /**
-   * Performs a Redo operation, re-applying a previously undone change.
-   */
+  /** Performs a Redo operation, re-applying a previously undone change. */
   public redo(): void {
     this.flushCoalescedEdit();
 
@@ -307,25 +285,17 @@ export class CampaignEditor {
     }
   }
 
-  /**
-   * Checks whether an undo operation is currently available.
-   * @returns True if undo stack is not empty.
-   */
+  /** Checks whether an undo operation is currently available. */
   public canUndo(): boolean {
     return this.undoStack.length > 0 || this.lastEditedPath !== null;
   }
 
-  /**
-   * Checks whether a redo operation is currently available.
-   * @returns True if redo stack is not empty.
-   */
+  /** Checks whether a redo operation is currently available. */
   public canRedo(): boolean {
     return this.redoStack.length > 0;
   }
 
-  /**
-   * Validates the current document against the Zod schema and returns any errors.
-   */
+  /** Validates the current document against the Zod schema and returns any errors. */
   public validate(): ReadonlyArray<ValidationError> {
     const errors: ValidationError[] = [];
     const result = CampaignDataSchema.safeParse(this.doc);
@@ -340,27 +310,21 @@ export class CampaignEditor {
       }
     }
 
-    // 2. Cross-Registry Link Auditing
-    this.auditLinks(errors);
+    auditCampaignLinks(this.doc, errors);
 
     return errors;
   }
 
-  /**
-   * Finalizes any ongoing debounced keystroke editing sequence and pushes the final aggregated undo step.
-   */
   private flushCoalescedEdit(): void {
     if (this.lastEditedPath === null) return;
 
     const path = this.lastEditedPath;
-    const finalValue = this.getValueAtPath(this.doc, path);
+    const finalValue = getValueAtPath(this.doc, path);
     const origValue = this.coalescedOriginalValue;
 
-    // Reset tracking state first to prevent recursion loops
     this.lastEditedPath = null;
     this.coalescedOriginalValue = undefined;
 
-    // If value actually changed, record the undo step
     if (JSON.stringify(origValue) !== JSON.stringify(finalValue)) {
       const undoOp: PatchOperation = {
         op: origValue === undefined ? 'remove' : 'replace',
@@ -368,169 +332,10 @@ export class CampaignEditor {
         value: origValue
       };
       this.undoStack.push([undoOp]);
-      this.redoStack = []; // Clear redo stack
+      this.redoStack = [];
     }
   }
 
-  /**
-   * Resolves a value inside a document structure using a pointer path.
-   */
-  private getValueAtPath(obj: unknown, path: string): unknown {
-    if (!path || path === '/') return obj;
-    const segments = path.split('/');
-    if (segments[0] === '') segments.shift();
-
-    let curr: unknown = obj;
-    for (const seg of segments) {
-      if (curr === null || typeof curr !== 'object') return undefined;
-      curr = (curr as Record<string, unknown>)[seg];
-    }
-    return curr;
-  }
-
-  /**
-   * Helper that checks all foreign key relationships in the CampaignData.
-   */
-  private auditLinks(errors: ValidationError[]): void {
-    const data = this.doc;
-
-    // Factions Registry cache
-    const factions = Object.keys(data.factions);
-    const effects = Object.keys(data.effects);
-    const dialogues = Object.keys(data.dialogues);
-    const aiProfiles = Object.keys(data.ai);
-    const items = Object.keys(data.items);
-    const statusEffects = Object.keys(data.status);
-    const areas = Object.keys(data.areas);
-
-    // Audit Entities (Actors)
-    for (const [id, entity] of Object.entries(data.entities)) {
-      if (entity.faction && !factions.includes(entity.faction)) {
-        errors.push({
-          path: `/entities/${id}/faction`,
-          message: `Entity '${entity.name}' references non-existent faction '${entity.faction}'.`,
-          severity: 'error'
-        });
-      }
-      if (entity.dialogueId && !dialogues.includes(entity.dialogueId)) {
-        errors.push({
-          path: `/entities/${id}/dialogueId`,
-          message: `Entity '${entity.name}' references non-existent dialogue '${entity.dialogueId}'.`,
-          severity: 'error'
-        });
-      }
-      if (entity.ai?.profileId && !aiProfiles.includes(entity.ai.profileId)) {
-        errors.push({
-          path: `/entities/${id}/ai/profileId`,
-          message: `Entity '${entity.name}' references non-existent AI profile '${entity.ai.profileId}'.`,
-          severity: 'error'
-        });
-      }
-    }
-
-    // Audit Items
-    for (const [id, item] of Object.entries(data.items)) {
-      if (item.consumable?.effectId && !effects.includes(item.consumable.effectId)) {
-        errors.push({
-          path: `/items/${id}/consumable/effectId`,
-          message: `Item '${item.name}' consumable references non-existent effect '${item.consumable.effectId}'.`,
-          severity: 'error'
-        });
-      }
-      if (item.equippable?.onHit?.statusId && !statusEffects.includes(item.equippable.onHit.statusId)) {
-        errors.push({
-          path: `/items/${id}/equippable/onHit/statusId`,
-          message: `Item '${item.name}' equippable on-hit references non-existent status effect '${item.equippable.onHit.statusId}'.`,
-          severity: 'error'
-        });
-      }
-    }
-
-    // Audit Item Effects
-    for (const [id, effect] of Object.entries(data.effects)) {
-      if (effect.statusId && !statusEffects.includes(effect.statusId)) {
-        errors.push({
-          path: `/effects/${id}/statusId`,
-          message: `Effect '${id}' references non-existent status effect '${effect.statusId}'.`,
-          severity: 'error'
-        });
-      }
-    }
-
-    // Audit Area connections
-    for (const [areaId, area] of Object.entries(data.areas)) {
-      if (area.connections) {
-        area.connections.forEach((conn, index) => {
-          if (!areas.includes(conn.targetAreaId)) {
-            errors.push({
-              path: `/areas/${areaId}/connections/${index}/targetAreaId`,
-              message: `Area '${area.name}' portal references non-existent target area '${conn.targetAreaId}'.`,
-              severity: 'error'
-            });
-          }
-        });
-      }
-    }
-
-    // Audit Rules Config
-    if (!areas.includes(data.rules.map.startingAreaId)) {
-      errors.push({
-        path: '/rules/map/startingAreaId',
-        message: `Rules configuration references invalid starting area ID: '${data.rules.map.startingAreaId}'.`,
-        severity: 'error'
-      });
-    }
-
-    // Audit Area Graph Reachability (BFS)
-    const startingArea = data.rules.map.startingAreaId;
-    if (areas.includes(startingArea)) {
-      const visited = new Set<string>([startingArea]);
-      const queue = [startingArea];
-      while (queue.length > 0) {
-        const curr = queue.shift()!;
-        const connections = data.areas[curr]?.connections || [];
-        for (const conn of connections) {
-          if (!visited.has(conn.targetAreaId) && areas.includes(conn.targetAreaId)) {
-            visited.add(conn.targetAreaId);
-            queue.push(conn.targetAreaId);
-          }
-        }
-      }
-      for (const areaId of areas) {
-        if (!visited.has(areaId)) {
-          errors.push({
-            path: `/areas/${areaId}`,
-            message: `Area '${data.areas[areaId]?.name}' is unreachable from the starting area.`,
-            severity: 'warning'
-          });
-        }
-      }
-    }
-
-    // Spawning lists checking
-    for (const entId of Object.keys(data.rules.spawning.spawnWeights)) {
-      if (!Object.keys(data.entities).includes(entId)) {
-        errors.push({
-          path: `/rules/spawning/spawnWeights/${entId}`,
-          message: `Spawn weight table references invalid entity template ID: '${entId}'.`,
-          severity: 'error'
-        });
-      }
-    }
-    for (const itemId of Object.keys(data.rules.spawning.lootTable)) {
-      if (!items.includes(itemId)) {
-        errors.push({
-          path: `/rules/spawning/lootTable/${itemId}`,
-          message: `Loot spawn table references invalid item definition ID: '${itemId}'.`,
-          severity: 'error'
-        });
-      }
-    }
-  }
-
-  /**
-   * Notifies listeners of changes in the campaign document.
-   */
   /** Returns whether the document has unsaved changes. */
   public hasUnsavedChanges(): boolean {
     return this.isDirty;

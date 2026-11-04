@@ -1,28 +1,15 @@
+import { rng } from '../../core/rng.ts';
 import type { RumorPropagationRule } from '../../types/campaign.types.ts';
 import type { EditorController } from '../editor_ui.ts';
-import { rng } from '../../core/rng.ts';
+import {
+  drawKnowledgeGraph,
+  getKnowledgeNodeAt,
+  type SimEdge,
+  type SimNode,
+  stepKnowledgePhysics
+} from './knowledge_sim_canvas.ts';
 
-interface SimNode {
-  id: string; // areaId_templateId_index
-  areaId: string;
-  templateId: string;
-  name: string;
-  tags: string[];
-  faction: string;
-  hasRumor: boolean;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  color?: string;
-}
-
-interface SimEdge {
-  source: SimNode;
-  target: SimNode;
-  type: 'portal' | 'propagation';
-}
+export * from './knowledge_sim_canvas.ts';
 
 /**
  * Renders the localized Knowledge & Rumor Simulator.
@@ -32,7 +19,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
 
   container.innerHTML = `
     <div style="display: flex; gap: 20px; height: 100%; width: 100%;">
-      <!-- Graph Canvas Pane -->
       <div style="flex: 2; display: flex; flex-direction: column; height: 100%;">
         <div class="workspace-header" style="margin-bottom: 10px;">
           <h2 class="workspace-title">Knowledge & Rumor Simulator</h2>
@@ -45,11 +31,9 @@ export function renderKnowledgeSimulator(controller: EditorController, container
         </div>
       </div>
 
-      <!-- Controls Panel -->
       <div style="flex: 1; min-width: 300px; max-width: 400px; border-left: 1px solid #333; padding-left: 20px; display: flex; flex-direction: column; height: 100%; overflow-y: auto;">
         <h3>Simulation Parameters</h3>
         
-        <!-- Rule Selection -->
         <div style="margin-top: 15px;">
           <label style="font-size: 0.8rem; color: #888; display: block; margin-bottom: 4px;">Propagation Rule:</label>
           <select id="sim-rule-select" style="width: 100%; background: #111; color: #fff; border: 1px solid #333; padding: 6px; border-radius: 4px;">
@@ -57,7 +41,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
           </select>
         </div>
 
-        <!-- Start NPC Selection -->
         <div style="margin-top: 15px;">
           <label style="font-size: 0.8rem; color: #888; display: block; margin-bottom: 4px;">Source NPC (Starts with Rumor):</label>
           <select id="sim-npc-select" style="width: 100%; background: #111; color: #fff; border: 1px solid #333; padding: 6px; border-radius: 4px;">
@@ -65,13 +48,11 @@ export function renderKnowledgeSimulator(controller: EditorController, container
           </select>
         </div>
 
-        <!-- Action Buttons -->
         <div style="margin-top: 20px; display: flex; gap: 10px;">
           <button class="editor-btn" id="sim-reset-btn" style="flex: 1; padding: 8px;">Reset</button>
           <button class="editor-btn" id="sim-step-btn" style="flex: 2; padding: 8px; font-weight: bold; background: #9b59b6; border-color: #8e44ad;">Step Propagation</button>
         </div>
 
-        <!-- Sim Info / Log -->
         <div style="margin-top: 25px; flex-grow: 1; display: flex; flex-direction: column;">
           <h4 style="margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: #aaa;">Simulation Log</h4>
           <div id="sim-log" style="flex-grow: 1; background: #111; border: 1px solid #222; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 0.8rem; color: #2ecc71; overflow-y: auto; max-height: 250px;">
@@ -102,7 +83,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
   };
   updateCanvasSize();
 
-  // 1. Populate Dropdowns
   const rules = doc.rumorPropagation || [];
   rules.forEach((rule) => {
     const opt = document.createElement('option');
@@ -111,7 +91,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     ruleSelect.appendChild(opt);
   });
 
-  // Collect placed NPCs that have memory components
   const nodes: SimNode[] = [];
   Object.entries(doc.areas).forEach(([areaId, area]) => {
     (area.placedEntities || []).forEach((pe, idx) => {
@@ -142,10 +121,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     npcSelect.appendChild(opt);
   });
 
-  // 2. Build Area Portals & Connections for the Physical Topology
   const edges: SimEdge[] = [];
-
-  // Link NPCs in the same area together (short springs)
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       if (nodes[i]!.areaId === nodes[j]!.areaId) {
@@ -158,7 +134,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     }
   }
 
-  // Link NPCs in adjacent areas (longer springs)
   Object.entries(doc.areas).forEach(([areaId, area]) => {
     (area.connections || []).forEach((conn) => {
       const sourceNPCs = nodes.filter((n) => n.areaId === areaId);
@@ -175,32 +150,26 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     });
   });
 
-  // Helper for logging
   const log = (msg: string, color = '#2ecc71'): void => {
     const div = document.createElement('div');
     div.style.color = color;
-    div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    div.textContent = `[Step] ${msg}`;
     logEl.appendChild(div);
     logEl.scrollTop = logEl.scrollHeight;
   };
 
-  // Eligibility matching
   const isEligible = (npc: SimNode, rule: RumorPropagationRule, sourceNpc: SimNode): boolean => {
-    // 1. check eligibleTags
     if (rule.eligibleTags && rule.eligibleTags.length > 0) {
       const hasTag = rule.eligibleTags.some((tag: string) => npc.tags.includes(tag));
       if (!hasTag) return false;
     }
-    // 2. check eligibleFactions
     if (rule.eligibleFactions && rule.eligibleFactions.length > 0) {
       if (!rule.eligibleFactions.includes(npc.faction)) return false;
     }
-    // 3. check requireAreaProximity
     if (rule.requireAreaProximity) {
       if (npc.areaId === sourceNpc.areaId) {
         return true;
       }
-      // Check if areas are connected
       const sourceArea = doc.areas[sourceNpc.areaId];
       const isConnected = sourceArea?.connections?.some((conn) => conn.targetAreaId === npc.areaId);
       if (!isConnected) return false;
@@ -208,7 +177,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     return true;
   };
 
-  // Simulation State
   let sourceNodeId: string | null = null;
   let propagationEdges: SimEdge[] = [];
 
@@ -240,7 +208,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     const rule = rules.find((r) => r.id === selectedRuleId);
     if (!rule) return;
 
-    // Initial step setup
     if (!sourceNodeId) {
       sourceNodeId = selectedNpcId;
       const srcNode = nodes.find((n) => n.id === sourceNodeId);
@@ -250,15 +217,11 @@ export function renderKnowledgeSimulator(controller: EditorController, container
       }
     }
 
-    // Find all NPCs that currently have the rumor
     const currentKnowers = nodes.filter((n) => n.hasRumor);
     const newlyInfected: SimNode[] = [];
 
-    // Propagate from each current knower to eligible neighbors
     nodes.forEach((targetNpc) => {
       if (targetNpc.hasRumor) return;
-
-      // Find if there's any knower that can transmit to this target NPC
       const transmitter = currentKnowers.find((knower) => isEligible(targetNpc, rule, knower));
       if (transmitter) {
         newlyInfected.push(targetNpc);
@@ -280,240 +243,27 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     }
   });
 
-  // 3. Force-directed physics parameters
-  const k = 0.08;
-  const idealLengthPortal = 140;
-  const idealLengthPropagation = 70;
-  const repulsion = 4000;
-  const damping = 0.75;
-
   let isDragging = false;
   let draggedNode: SimNode | null = null;
   let hoveredNode: SimNode | null = null;
   let mouseX = 0;
   let mouseY = 0;
-
-  const stepPhysics = (): void => {
-    // 1. Repulsion between all nodes
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        const n1 = nodes[i]!;
-        const n2 = nodes[j]!;
-        const dx = n1.x - n2.x;
-        const dy = n1.y - n2.y;
-        const distSq = dx * dx + dy * dy || 1;
-        const dist = Math.sqrt(distSq);
-        const force = repulsion / distSq;
-
-        const fx = (dx / dist) * force;
-        const fy = (dy / dist) * force;
-
-        n1.vx += fx;
-        n1.vy += fy;
-        n2.vx -= fx;
-        n2.vy -= fy;
-      }
-    }
-
-    // 2. Spring forces along portal/physical topology edges
-    edges.forEach((edge) => {
-      const dx = edge.target.x - edge.source.x;
-      const dy = edge.target.y - edge.source.y;
-      const dist = Math.sqrt(dx * dx + dy * dy || 1);
-      const ideal = edge.source.areaId === edge.target.areaId ? idealLengthPropagation : idealLengthPortal;
-      const displacement = dist - ideal;
-      const force = k * displacement;
-
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-
-      edge.source.vx += fx;
-      edge.source.vy += fy;
-      edge.target.vx -= fx;
-      edge.target.vy -= fy;
-    });
-
-    // 3. Spring forces along active rumor propagation edges (pulls rumor network together)
-    propagationEdges.forEach((edge) => {
-      const dx = edge.target.x - edge.source.x;
-      const dy = edge.target.y - edge.source.y;
-      const dist = Math.sqrt(dx * dx + dy * dy || 1);
-      const displacement = dist - idealLengthPropagation;
-      const force = k * displacement * 1.5; // Slightly stronger pull
-
-      const fx = (dx / dist) * force;
-      const fy = (dy / dist) * force;
-
-      edge.source.vx += fx;
-      edge.source.vy += fy;
-      edge.target.vx -= fx;
-      edge.target.vy -= fy;
-    });
-
-    // 4. Central gravity and movement updates
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    nodes.forEach((n) => {
-      n.vx += (centerX - n.x) * 0.015;
-      n.vy += (centerY - n.y) * 0.015;
-
-      n.vx *= damping;
-      n.vy *= damping;
-
-      n.x += n.vx;
-      n.y += n.vy;
-    });
-  };
-
-  const draw = (): void => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw area clusters (physical bounding circles / labels)
-    const areaNpcs = new Map<string, SimNode[]>();
-    nodes.forEach((n) => {
-      if (!areaNpcs.has(n.areaId)) areaNpcs.set(n.areaId, []);
-      areaNpcs.get(n.areaId)!.push(n);
-    });
-
-    ctx.save();
-    areaNpcs.forEach((npcs, areaId) => {
-      if (npcs.length === 0) return;
-      // Find bounding box / average center of area cluster
-      let cx = 0,
-        cy = 0;
-      npcs.forEach((n) => {
-        cx += n.x;
-        cy += n.y;
-      });
-      cx /= npcs.length;
-      cy /= npcs.length;
-
-      // Draw faint cluster background
-      ctx.beginPath();
-      ctx.arc(cx, cy, 70, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      // Draw area name label
-      ctx.fillStyle = '#666';
-      ctx.font = '10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText((doc.areas[areaId]?.name || areaId).toUpperCase(), cx, cy - 80);
-    });
-    ctx.restore();
-
-    // Draw portal/physical edges
-    ctx.save();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(80, 80, 80, 0.3)';
-    edges.forEach((edge) => {
-      ctx.beginPath();
-      ctx.moveTo(edge.source.x, edge.source.y);
-      ctx.lineTo(edge.target.x, edge.target.y);
-      ctx.stroke();
-    });
-    ctx.restore();
-
-    // Draw active propagation edges (purple glowing arrows)
-    ctx.save();
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = '#9b59b6';
-    ctx.shadowColor = '#8e44ad';
-    ctx.shadowBlur = 8;
-    propagationEdges.forEach((edge) => {
-      ctx.beginPath();
-      ctx.moveTo(edge.source.x, edge.source.y);
-      ctx.lineTo(edge.target.x, edge.target.y);
-      ctx.stroke();
-
-      // Arrowhead
-      const angle = Math.atan2(edge.target.y - edge.source.y, edge.target.x - edge.source.x);
-      const targetX = edge.target.x - Math.cos(angle) * edge.target.radius;
-      const targetY = edge.target.y - Math.sin(angle) * edge.target.radius;
-
-      ctx.beginPath();
-      ctx.moveTo(targetX, targetY);
-      ctx.lineTo(targetX - 10 * Math.cos(angle - Math.PI / 6), targetY - 10 * Math.sin(angle - Math.PI / 6));
-      ctx.lineTo(targetX - 10 * Math.cos(angle + Math.PI / 6), targetY - 10 * Math.sin(angle + Math.PI / 6));
-      ctx.fillStyle = '#9b59b6';
-      ctx.fill();
-    });
-    ctx.restore();
-
-    // Draw Nodes
-    nodes.forEach((n) => {
-      ctx.beginPath();
-      ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-
-      if (n.hasRumor) {
-        ctx.fillStyle = '#9b59b6'; // Purple for rumor infected
-        ctx.strokeStyle = '#8e44ad';
-      } else {
-        ctx.fillStyle = '#3498db'; // Blue for normal NPCs
-        ctx.strokeStyle = '#2980b9';
-      }
-
-      if (n === hoveredNode || n === draggedNode) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 3;
-      } else {
-        ctx.lineWidth = 2;
-      }
-
-      ctx.fill();
-      ctx.stroke();
-
-      // Draw NPC initials or emoji
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const initials = n.name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .substring(0, 2);
-      ctx.fillText(initials, n.x, n.y);
-
-      // Draw full NPC name below
-      ctx.fillStyle = n.hasRumor ? '#e0b0ff' : '#ffffff';
-      ctx.font = '10px sans-serif';
-      ctx.fillText(n.name, n.x, n.y + n.radius + 12);
-    });
-  };
-
-  const getNodeAt = (x: number, y: number): SimNode | null => {
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i]!;
-      const dx = x - n.x;
-      const dy = y - n.y;
-      if (dx * dx + dy * dy <= n.radius * n.radius) {
-        return n;
-      }
-    }
-    return null;
-  };
-
   let animationFrameId: number;
 
   const animate = (): void => {
     if (!isDragging) {
-      stepPhysics();
+      stepKnowledgePhysics(nodes, edges, propagationEdges, canvas.width, canvas.height);
     } else if (draggedNode) {
       draggedNode.x = mouseX;
       draggedNode.y = mouseY;
       draggedNode.vx = 0;
       draggedNode.vy = 0;
-      stepPhysics();
+      stepKnowledgePhysics(nodes, edges, propagationEdges, canvas.width, canvas.height);
     }
-    draw();
+    drawKnowledgeGraph(ctx, canvas.width, canvas.height, doc, nodes, edges, propagationEdges, hoveredNode, draggedNode);
     animationFrameId = requestAnimationFrame(animate);
   };
 
-  // Canvas Mouse events
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
@@ -523,7 +273,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
       draggedNode.x = mouseX;
       draggedNode.y = mouseY;
     } else {
-      hoveredNode = getNodeAt(mouseX, mouseY);
+      hoveredNode = getKnowledgeNodeAt(nodes, mouseX, mouseY);
       canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
     }
   });
@@ -533,7 +283,7 @@ export function renderKnowledgeSimulator(controller: EditorController, container
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    draggedNode = getNodeAt(x, y);
+    draggedNode = getKnowledgeNodeAt(nodes, x, y);
     if (draggedNode) {
       isDragging = true;
     }
@@ -557,7 +307,6 @@ export function renderKnowledgeSimulator(controller: EditorController, container
 
   animate();
 
-  // Cleanup
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       mutation.removedNodes.forEach((node) => {

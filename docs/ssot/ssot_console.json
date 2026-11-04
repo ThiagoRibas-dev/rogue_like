@@ -37,6 +37,25 @@
       "Do not duplicate or bypass exports from src/actions/core.actions.ts."
     ]
   },
+  "src/actions/debug_handlers.actions.ts": {
+    "domain": "Core Console: Action Pipeline & Commands",
+    "tier": "tier1_console",
+    "responsibility": "Executes debug intents (reveal map, god mode, spawn entity, fast-forward schemes, promote entity).",
+    "canonicalEntryPoints": [
+      "processDebugRevealMap",
+      "processDebugGodMode",
+      "processDebugSpawnEntity",
+      "processDebugFastForwardSchemes",
+      "processDebugPromote"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/actions/debug_handlers.actions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/actions/debug_handlers.actions.ts."
+    ]
+  },
   "src/actions/debug.actions.ts": {
     "domain": "Core Console: Action Pipeline & Commands",
     "tier": "tier1_console",
@@ -295,21 +314,6 @@
       "Do not duplicate or bypass exports from src/constants/display.constants.ts."
     ]
   },
-  "src/constants/investigation.constants.ts": {
-    "domain": "Core Console: Constants & Dictionaries",
-    "tier": "tier1_console",
-    "responsibility": "Constants governing the procedural investigation and scheme system.",
-    "canonicalEntryPoints": [
-      "INVESTIGATION_STALL_THRESHOLD"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/constants/investigation.constants.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/constants/investigation.constants.ts."
-    ]
-  },
   "src/constants/investigation_filter.constants.ts": {
     "domain": "Core Console: Constants & Dictionaries",
     "tier": "tier1_console",
@@ -330,6 +334,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/constants/investigation_filter.constants.ts."
+    ]
+  },
+  "src/constants/investigation.constants.ts": {
+    "domain": "Core Console: Constants & Dictionaries",
+    "tier": "tier1_console",
+    "responsibility": "Constants governing the procedural investigation and scheme system.",
+    "canonicalEntryPoints": [
+      "INVESTIGATION_STALL_THRESHOLD"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/constants/investigation.constants.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/constants/investigation.constants.ts."
     ]
   },
   "src/constants/knowledge.constants.ts": {
@@ -544,6 +563,23 @@
       "Do not duplicate or bypass exports from src/constants/world_events.constants.ts."
     ]
   },
+  "src/core/auto_pause_signals.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Event types considered narrative/drama developments for auto-pause purposes.",
+    "canonicalEntryPoints": [
+      "AutoPauseSignalResult",
+      "resetAutoPauseTracking",
+      "detectAutoPauseSignals"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/auto_pause_signals.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/auto_pause_signals.ts."
+    ]
+  },
   "src/core/auto_pause.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
@@ -560,21 +596,19 @@
       "Do not duplicate or bypass exports from src/core/auto_pause.ts."
     ]
   },
-  "src/core/auto_pause_signals.ts": {
+  "src/core/bootstrap_sandbox.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "Event types considered narrative/drama developments for auto-pause purposes.",
+    "responsibility": "Bootstraps and starts a test encounter sandbox for the encounter director",
     "canonicalEntryPoints": [
-      "AutoPauseSignalResult",
-      "resetAutoPauseTracking",
-      "detectAutoPauseSignals"
+      "startSandboxEncounter"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/auto_pause_signals.ts.",
+      "includes": "Pure implementation and exports for src/core/bootstrap_sandbox.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/core/auto_pause_signals.ts."
+      "Do not duplicate or bypass exports from src/core/bootstrap_sandbox.ts."
     ]
   },
   "src/core/bootstrap.ts": {
@@ -594,17 +628,21 @@
       "Do not duplicate or bypass exports from src/core/bootstrap.ts."
     ]
   },
-  "src/core/bootstrap_sandbox.ts": {
+  "src/core/bootstrap/world_entities_bootstrap.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "Bootstraps and starts a test encounter sandbox for the encounter director",
-    "canonicalEntryPoints": [],
+    "responsibility": "Initializes unidentified item descriptions, registers faction/area persistent entities, and restores saved games.",
+    "canonicalEntryPoints": [
+      "InitialCampaignWorldEntities",
+      "initializeCampaignWorldEntities",
+      "continueGame"
+    ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/bootstrap_sandbox.ts.",
+      "includes": "Pure implementation and exports for src/core/bootstrap/world_entities_bootstrap.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/core/bootstrap_sandbox.ts."
+      "Do not duplicate or bypass exports from src/core/bootstrap/world_entities_bootstrap.ts."
     ]
   },
   "src/core/campaign_store.ts": {
@@ -626,7 +664,7 @@
   "src/core/ecs.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "Creates a new entity in the game state, returning the updated state and the new entity's ID.",
+    "responsibility": "Facade re-exporting ECS core primitives, spawning, lifecycle, and query systems.",
     "canonicalEntryPoints": [
       "createEntity",
       "addComponent",
@@ -643,6 +681,79 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/ecs.ts."
+    ]
+  },
+  "src/core/ecs/ecs_core.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Core entity lifecycle, component store, spatial index, and query operations.",
+    "canonicalEntryPoints": [
+      "createEntity",
+      "updateSpatialIndex",
+      "addComponent",
+      "removeComponent",
+      "getComponent",
+      "queryEntities",
+      "removeEntity"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/ecs/ecs_core.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_core.ts."
+    ]
+  },
+  "src/core/ecs/ecs_item_promoter.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Spawns item entities on the map and promotes generic entities to named persistent actors.",
+    "canonicalEntryPoints": [
+      "spawnItem",
+      "promoteEntity"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/ecs/ecs_item_promoter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_item_promoter.ts."
+    ]
+  },
+  "src/core/ecs/ecs_lifecycle.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Ownership traversal, limbo movement, controller link ticking, and resource pool management.",
+    "canonicalEntryPoints": [
+      "collectOwnedEntityIds",
+      "tickControllerLinksAndOverlays",
+      "consumeResourcePool",
+      "refreshResourcePools",
+      "moveToLimbo"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/ecs/ecs_lifecycle.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_lifecycle.ts."
+    ]
+  },
+  "src/core/ecs/ecs_spawner.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Template spawning, item instancing, and entity promotion logic.",
+    "canonicalEntryPoints": [
+      "spawnEntity",
+      "spawnItem",
+      "promoteEntity"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/ecs/ecs_spawner.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner.ts."
     ]
   },
   "src/core/game-loop.ts": {
@@ -682,6 +793,43 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/hover_state.ts."
+    ]
+  },
+  "src/core/input_handler.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Minimum milliseconds between accepted movement/wait inputs in turn-based mode.",
+    "canonicalEntryPoints": [
+      "handleKeyDown"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/input_handler.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/input_handler.ts."
+    ]
+  },
+  "src/core/input_queue.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Asynchronous FIFO queue for player inputs, decoupling UI and keypress",
+    "canonicalEntryPoints": [
+      "inputQueue",
+      "enqueueIntent",
+      "dequeueIntent",
+      "peekIntent",
+      "hasPendingIntents",
+      "clearInputQueue",
+      "loadInputQueue",
+      "getInputQueueSize"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/input_queue.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/input_queue.ts."
     ]
   },
   "src/core/input/inventory_input.ts": {
@@ -746,54 +894,55 @@
       "Do not duplicate or bypass exports from src/core/input/shortcut_input.ts."
     ]
   },
-  "src/core/input_handler.ts": {
-    "domain": "Core Console: ECS, Loop, RNG & Loader",
-    "tier": "tier1_console",
-    "responsibility": "Minimum milliseconds between accepted movement/wait inputs in turn-based mode.",
-    "canonicalEntryPoints": [
-      "handleKeyDown"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/input_handler.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/core/input_handler.ts."
-    ]
-  },
-  "src/core/input_queue.ts": {
-    "domain": "Core Console: ECS, Loop, RNG & Loader",
-    "tier": "tier1_console",
-    "responsibility": "Asynchronous FIFO queue for player inputs, decoupling UI and keypress",
-    "canonicalEntryPoints": [
-      "inputQueue",
-      "enqueueIntent",
-      "dequeueIntent",
-      "peekIntent",
-      "hasPendingIntents",
-      "clearInputQueue",
-      "loadInputQueue",
-      "getInputQueueSize"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/core/input_queue.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/core/input_queue.ts."
-    ]
-  },
   "src/core/loader.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
     "responsibility": "Loads and validates all JSON files for a given campaign ID.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "loadCampaign",
+      "loadCampaignRegistry",
+      "loadRulesetSystemContent",
+      "loadRulesetBaseContent"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/core/loader.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/loader.ts."
+    ]
+  },
+  "src/core/loader/system_content_loader.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Loads campaign registries, ruleset base content, and Tier 2 system content files.",
+    "canonicalEntryPoints": [
+      "loadCampaignRegistry",
+      "fetchOptionalJson",
+      "loadRulesetSystemContent",
+      "loadRulesetBaseContent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/loader/system_content_loader.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/loader/system_content_loader.ts."
+    ]
+  },
+  "src/core/loop/intent_cost_resolver.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Executes an intent, computes its energy cost, and ticks systemic narrative cadences.",
+    "canonicalEntryPoints": [
+      "applyIntentWithCost"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/loop/intent_cost_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/loop/intent_cost_resolver.ts."
     ]
   },
   "src/core/modal_manager.ts": {
@@ -965,12 +1114,9 @@
   "src/core/session_controller.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "Creates the initial default GameState in MainMenu mode.",
+    "responsibility": "Creates the initial default GameState in MainMenu mode and coordinates presentation loops.",
     "canonicalEntryPoints": [
       "createInitialMenuState",
-      "refreshRulesetList",
-      "bindDOMControls",
-      "bindSettingsControls",
       "bindStateSubscription",
       "startGlobalPresenterLoop",
       "applyViewportResize",
@@ -982,6 +1128,46 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/core/session_controller.ts."
+    ]
+  },
+  "src/core/session/session_dom.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Ruleset/campaign selectors, modal DOM wiring, and button intent dispatching.",
+    "canonicalEntryPoints": [
+      "selectedRulesetId",
+      "selectedCampaignId",
+      "setSelectedRulesetId",
+      "setSelectedCampaignId",
+      "getPlayerId",
+      "refreshRulesetList",
+      "refreshCampaignList",
+      "bindDOMControls"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/session/session_dom.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/session/session_dom.ts."
+    ]
+  },
+  "src/core/session/session_settings.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Settings panel inputs, key rebinding overlay, save import/export, and replay download.",
+    "canonicalEntryPoints": [
+      "rebindingAction",
+      "setRebindingAction",
+      "triggerReplayDownload",
+      "bindSettingsControls"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/session/session_settings.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/session/session_settings.ts."
     ]
   },
   "src/core/settings.ts": {
@@ -1071,6 +1257,21 @@
       "Do not duplicate or bypass exports from src/editor/balance_simulator.ts."
     ]
   },
+  "src/editor/blank_slate_campaign.ts": {
+    "domain": "Core Console: Campaign Editor Subsystem",
+    "tier": "tier1_console",
+    "responsibility": "Creates a minimal valid CampaignData blank-slate scaffold for a new campaign.",
+    "canonicalEntryPoints": [
+      "createBlankSlateCampaign"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/editor/blank_slate_campaign.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/editor/blank_slate_campaign.ts."
+    ]
+  },
   "src/editor/campaign_editor.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
@@ -1086,11 +1287,30 @@
       "Do not duplicate or bypass exports from src/editor/campaign_editor.ts."
     ]
   },
+  "src/editor/campaign_link_auditor.ts": {
+    "domain": "Core Console: Campaign Editor Subsystem",
+    "tier": "tier1_console",
+    "responsibility": "Audits broken cross-category references when deleting an item from CampaignData.",
+    "canonicalEntryPoints": [
+      "getValueAtPath",
+      "auditCampaignLinks"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/editor/campaign_link_auditor.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/editor/campaign_link_auditor.ts."
+    ]
+  },
   "src/editor/campaign_validator.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Headless state-diffing runner to validate that a campaign's triggers",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "runHeadlessSmokeTest",
+      "validateCampaign"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/campaign_validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1137,23 +1357,23 @@
       "Do not duplicate or bypass exports from src/editor/simulation/ai_arena.ts."
     ]
   },
-  "src/editor/simulation/fuzzer.types.ts": {
+  "src/editor/simulation/arena_state_factory.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
-    "responsibility": "Module implementation for src/editor/simulation/fuzzer.types.ts",
+    "responsibility": "Constructs isolated GameState arenas and spawns combatant templates for AI Arena simulations.",
     "canonicalEntryPoints": [
-      "FuzzerOptions",
-      "FuzzerErrorType",
-      "FuzzerError",
-      "FuzzerTelemetry",
-      "FuzzerReport"
+      "ArenaTelemetry",
+      "ArenaResult",
+      "ArenaOptions",
+      "createArenaMockState",
+      "runEncounterArena"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/simulation/fuzzer.types.ts.",
+      "includes": "Pure implementation and exports for src/editor/simulation/arena_state_factory.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/editor/simulation/fuzzer.types.ts."
+      "Do not duplicate or bypass exports from src/editor/simulation/arena_state_factory.ts."
     ]
   },
   "src/editor/simulation/fuzzer_invariants.ts": {
@@ -1210,6 +1430,40 @@
       "Do not duplicate or bypass exports from src/editor/simulation/fuzzer_telemetry.ts."
     ]
   },
+  "src/editor/simulation/fuzzer.types.ts": {
+    "domain": "Core Console: Campaign Editor Subsystem",
+    "tier": "tier1_console",
+    "responsibility": "Module implementation for src/editor/simulation/fuzzer.types.ts",
+    "canonicalEntryPoints": [
+      "FuzzerOptions",
+      "FuzzerErrorType",
+      "FuzzerError",
+      "FuzzerTelemetry",
+      "FuzzerReport"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/editor/simulation/fuzzer.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/editor/simulation/fuzzer.types.ts."
+    ]
+  },
+  "src/editor/simulation/narrative_fuzzer_async.ts": {
+    "domain": "Core Console: Campaign Editor Subsystem",
+    "tier": "tier1_console",
+    "responsibility": "Progress update emitted during async fuzzer batches.",
+    "canonicalEntryPoints": [
+      "FuzzerProgress"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/editor/simulation/narrative_fuzzer_async.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer_async.ts."
+    ]
+  },
   "src/editor/simulation/narrative_fuzzer.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
@@ -1230,21 +1484,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer.ts."
-    ]
-  },
-  "src/editor/simulation/narrative_fuzzer_async.ts": {
-    "domain": "Core Console: Campaign Editor Subsystem",
-    "tier": "tier1_console",
-    "responsibility": "Progress update emitted during async fuzzer batches.",
-    "canonicalEntryPoints": [
-      "FuzzerProgress"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/simulation/narrative_fuzzer_async.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer_async.ts."
     ]
   },
   "src/editor/validation_navigator.ts": {
@@ -1291,7 +1530,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Validates area definitions, particularly static map layouts and procedural connections.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateAreas"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/area.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1304,7 +1545,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Validates dialogue trees and their internal references.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateDialogues"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/dialogue.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1332,7 +1575,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Validates Entity definitions in the campaign.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateEntities"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/entity.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1345,7 +1590,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Validates Item definitions in the campaign.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateItems"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/item.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1358,7 +1605,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/editor/validator/quest.validator.ts",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateQuests"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/quest.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1371,7 +1620,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/editor/validator/reachability.validator.ts",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateReachability"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/reachability.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1384,7 +1635,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Validates the Reaction System definitions in the campaign.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateReactions"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/reaction.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1397,7 +1650,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/editor/validator/tag.validator.ts",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateTags"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/tag.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1410,7 +1665,9 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Helper to analyze and report a cycle. Only reports errors if the cycle lacks gating conditions.",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "validateTriggers"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/trigger.validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1423,7 +1680,10 @@
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/editor/validator/validator.types.ts",
-    "canonicalEntryPoints": [],
+    "canonicalEntryPoints": [
+      "ValidationError",
+      "ValidationReport"
+    ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/editor/validator/validator.types.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
@@ -1458,6 +1718,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/main.ts."
+    ]
+  },
+  "src/map/director/director_zone.ts": {
+    "domain": "Core Console: Map Generation & Spatial",
+    "tier": "tier1_console",
+    "responsibility": "Resolves CR budget axes, floor tile placement, and single-zone encounter director allocation.",
+    "canonicalEntryPoints": [
+      "resolveAxis",
+      "getRandomFloorTileInRoom",
+      "runForEncounterZone"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/map/director/director_zone.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/map/director/director_zone.ts."
     ]
   },
   "src/map/dla.ts": {
@@ -1505,22 +1782,6 @@
       "Do not duplicate or bypass exports from src/map/fov.ts."
     ]
   },
-  "src/map/generator.ts": {
-    "domain": "Core Console: Map Generation & Director",
-    "tier": "tier1_console",
-    "responsibility": "Output data resulting from map generation, containing tiles, portals, rooms, and entities.",
-    "canonicalEntryPoints": [
-      "GeneratedArea",
-      "generateArea"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/map/generator.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/map/generator.ts."
-    ]
-  },
   "src/map/generator_async.ts": {
     "domain": "Core Console: Map Generation & Director",
     "tier": "tier1_console",
@@ -1556,6 +1817,38 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/map/generator_stages.ts."
+    ]
+  },
+  "src/map/generator.ts": {
+    "domain": "Core Console: Map Generation & Director",
+    "tier": "tier1_console",
+    "responsibility": "Output data resulting from map generation, containing tiles, portals, rooms, and entities.",
+    "canonicalEntryPoints": [
+      "GeneratedArea",
+      "generateArea"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/map/generator.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/map/generator.ts."
+    ]
+  },
+  "src/map/stages/biome_dijkstra_stages.ts": {
+    "domain": "Core Console: Map Generation & Spatial",
+    "tier": "tier1_console",
+    "responsibility": "Partitions sub-biomes with Voronoi, culls non-bordering walls, scatters water, and computes Dijkstra hot paths.",
+    "canonicalEntryPoints": [
+      "applyBiomesAndCull",
+      "computeHotPathDijkstra"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/map/stages/biome_dijkstra_stages.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/map/stages/biome_dijkstra_stages.ts."
     ]
   },
   "src/map/static-parser.ts": {
@@ -1623,6 +1916,22 @@
       "Do not duplicate or bypass exports from src/rendering/display.ts."
     ]
   },
+  "src/rendering/editor_ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation.",
+    "canonicalEntryPoints": [
+      "EditorController",
+      "renderEditorUI"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/editor_ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/editor_ui.ts."
+    ]
+  },
   "src/rendering/editor/editor_config.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -1651,6 +1960,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/editor/editor_sidebar.ts."
+    ]
+  },
+  "src/rendering/editor/editor_splash.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders the initial Campaign Editor splash screen for selecting or creating workspaces.",
+    "canonicalEntryPoints": [
+      "renderEditorSplashScreen",
+      "renderSimulationLabSubTabs"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/editor/editor_splash.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/editor/editor_splash.ts."
     ]
   },
   "src/rendering/editor/editor_state.ts": {
@@ -1703,20 +2028,34 @@
       "Do not duplicate or bypass exports from src/rendering/editor/editor_workspace.ts."
     ]
   },
-  "src/rendering/editor_ui.ts": {
+  "src/rendering/editor/new_campaign_modal.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Controls operations in the Campaign Editor, handling workspace save/load, validation, undo/redo, and sandbox generation.",
+    "responsibility": "Renders the New Campaign wizard modal in the Campaign Editor.",
     "canonicalEntryPoints": [
-      "EditorController",
-      "renderEditorUI"
+      "showNewCampaignModal"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/editor_ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/editor/new_campaign_modal.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/editor_ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/editor/new_campaign_modal.ts."
+    ]
+  },
+  "src/rendering/inspect_tooltip.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Constructs structured InspectTooltipDTO payloads for hovered or inspected tiles and entities.",
+    "canonicalEntryPoints": [
+      "buildInspectTooltip"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/inspect_tooltip.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/inspect_tooltip.ts."
     ]
   },
   "src/rendering/presenter.ts": {
@@ -1749,6 +2088,26 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/procedural_sprites.ts."
+    ]
+  },
+  "src/rendering/render_debug_sampler.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Samples pixel alpha/luminance on the ROT.js canvas and attaches global debug diagnostics.",
+    "canonicalEntryPoints": [
+      "DisplayContainerSource",
+      "DrawCommandRecord",
+      "recordDrawCommand",
+      "getDrawLog",
+      "recordDisplayCanvas",
+      "sampleLiveCanvas"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/render_debug_sampler.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/render_debug_sampler.ts."
     ]
   },
   "src/rendering/render_debug.ts": {
@@ -1786,6 +2145,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/renderer.ts."
+    ]
+  },
+  "src/rendering/sprite_atlas.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Loads and caches 2D tile sprite sheets and procedural sprite atlases for ROT.Display.",
+    "canonicalEntryPoints": [
+      "compositeAtlas",
+      "mountDisplayWithFogOverlay",
+      "syncFogOverlayCanvas"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/sprite_atlas.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/sprite_atlas.ts."
     ]
   },
   "src/rendering/sprite_keys.ts": {
@@ -1891,6 +2267,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/area_playtest_menu.ui.ts."
     ]
   },
+  "src/rendering/ui/area_static_painter.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders the interactive ASCII/Tile Grid Painter for static area layouts in the Area Editor.",
+    "canonicalEntryPoints": [
+      "renderStaticAreaPainter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/area_static_painter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/area_static_painter.ts."
+    ]
+  },
   "src/rendering/ui/balance_lab.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -1922,6 +2313,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/controls.ui.ts."
     ]
   },
+  "src/rendering/ui/debug_ledger.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders the Debug Ledger UI panel.",
+    "canonicalEntryPoints": [
+      "renderDebugLedgerUI"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/debug_ledger.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/debug_ledger.ui.ts."
+    ]
+  },
   "src/rendering/ui/debug.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -1937,19 +2343,34 @@
       "Do not duplicate or bypass exports from src/rendering/ui/debug.ui.ts."
     ]
   },
-  "src/rendering/ui/debug_ledger.ui.ts": {
+  "src/rendering/ui/dialogue_editor.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Renders the Debug Ledger UI panel.",
+    "responsibility": "Renders a specialized tree-first editor for Dialogue Trees.",
     "canonicalEntryPoints": [
-      "renderDebugLedgerUI"
+      "renderDialogueTreeEditor"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/debug_ledger.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/dialogue_editor.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/debug_ledger.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/dialogue_editor.ts."
+    ]
+  },
+  "src/rendering/ui/dialogue_simulator_panel.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders the interactive dialogue tree test simulator panel inside the Dialogue Editor.",
+    "canonicalEntryPoints": [
+      "renderDialogueSimulatorPanel"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dialogue_simulator_panel.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dialogue_simulator_panel.ts."
     ]
   },
   "src/rendering/ui/dialogue.ui.ts": {
@@ -1967,19 +2388,26 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dialogue.ui.ts."
     ]
   },
-  "src/rendering/ui/dialogue_editor.ts": {
+  "src/rendering/ui/director_sandbox.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Renders a specialized tree-first editor for Dialogue Trees.",
+    "responsibility": "Renders the Encounter Director Sandbox panel.",
     "canonicalEntryPoints": [
-      "renderDialogueTreeEditor"
+      "renderDirectorSandbox",
+      "renderMiniMap",
+      "renderReceipt",
+      "updateJsonPreview",
+      "buildBakedStaticArea",
+      "getTileColor",
+      "getEntityDisplay",
+      "lightenColor"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dialogue_editor.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/director_sandbox.ui.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dialogue_editor.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/director_sandbox.ui.ts."
     ]
   },
   "src/rendering/ui/director/director_controls.ts": {
@@ -2023,26 +2451,19 @@
       "Do not duplicate or bypass exports from src/rendering/ui/director/director_telemetry_view.ts."
     ]
   },
-  "src/rendering/ui/director_sandbox.ui.ts": {
+  "src/rendering/ui/dossier_hierarchies.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Renders the Encounter Director Sandbox panel.",
+    "responsibility": "Renders the Nemesis Hierarchies and Active Gossip / Rumor sections of the Dossier UI.",
     "canonicalEntryPoints": [
-      "renderDirectorSandbox",
-      "renderMiniMap",
-      "renderReceipt",
-      "updateJsonPreview",
-      "buildBakedStaticArea",
-      "getTileColor",
-      "getEntityDisplay",
-      "lightenColor"
+      "renderDossierHierarchiesAndTimeline"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/director_sandbox.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/dossier_hierarchies.ui.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/director_sandbox.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/dossier_hierarchies.ui.ts."
     ]
   },
   "src/rendering/ui/dossier.ui.ts": {
@@ -2126,23 +2547,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/factions.ui.ts."
     ]
   },
-  "src/rendering/ui/hud.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Classifies a message log entry into a filter tab category based on its cssClass and text.",
-    "canonicalEntryPoints": [
-      "renderMessageLog",
-      "renderPlayerStats",
-      "updateHUD"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/hud.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/hud.ui.ts."
-    ]
-  },
   "src/rendering/ui/hud_alerts.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2192,6 +2596,23 @@
       "Do not duplicate or bypass exports from src/rendering/ui/hud_paperdoll.ui.ts."
     ]
   },
+  "src/rendering/ui/hud.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Classifies a message log entry into a filter tab category based on its cssClass and text.",
+    "canonicalEntryPoints": [
+      "renderMessageLog",
+      "renderPlayerStats",
+      "updateHUD"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/hud.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/hud.ui.ts."
+    ]
+  },
   "src/rendering/ui/inspect_view.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2223,6 +2644,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/inventory.ui.ts."
     ]
   },
+  "src/rendering/ui/investigation_filters.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders the investigation board filter chip toolbar.",
+    "canonicalEntryPoints": [
+      "renderInvestigationFilterBar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/investigation_filters.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/investigation_filters.ui.ts."
+    ]
+  },
   "src/rendering/ui/investigation.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2238,19 +2674,23 @@
       "Do not duplicate or bypass exports from src/rendering/ui/investigation.ui.ts."
     ]
   },
-  "src/rendering/ui/investigation_filters.ui.ts": {
+  "src/rendering/ui/knowledge_sim_canvas.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Renders the investigation board filter chip toolbar.",
+    "responsibility": "Renders the interactive canvas and node inspector for the Knowledge & Rumor Simulator.",
     "canonicalEntryPoints": [
-      "renderInvestigationFilterBar"
+      "SimNode",
+      "SimEdge",
+      "stepKnowledgePhysics",
+      "drawKnowledgeGraph",
+      "getKnowledgeNodeAt"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/investigation_filters.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/knowledge_sim_canvas.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/investigation_filters.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/knowledge_sim_canvas.ts."
     ]
   },
   "src/rendering/ui/knowledge_simulator.ui.ts": {
@@ -2505,6 +2945,24 @@
       "Do not duplicate or bypass exports from src/rendering/ui/where_used.ui.ts."
     ]
   },
+  "src/rendering/ui/world_graph_canvas.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Draws the node-link force-directed canvas and edge arrows for the World Graph Editor.",
+    "canonicalEntryPoints": [
+      "GraphNode",
+      "GraphEdge",
+      "stepWorldGraphSimulation",
+      "drawWorldGraph"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/world_graph_canvas.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/world_graph_canvas.ts."
+    ]
+  },
   "src/rendering/ui/world_graph.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2518,6 +2976,41 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/world_graph.ts."
+    ]
+  },
+  "src/rendering/ui/zod_form_containers.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders recursive ZodArray and ZodObject container sections for the dynamic Zod Form Renderer.",
+    "canonicalEntryPoints": [
+      "renderNestedObjectField",
+      "renderArrayField"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/zod_form_containers.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/zod_form_containers.ts."
+    ]
+  },
+  "src/rendering/ui/zod_form_primitives.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Schema unwrapping, label formatting, reference dropdown resolution, and primitive string field rendering for Zod forms.",
+    "canonicalEntryPoints": [
+      "renderRawJsonField",
+      "renderStringField",
+      "renderNumberField",
+      "renderBooleanField",
+      "renderMultiSelectTagsField"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/zod_form_primitives.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/zod_form_primitives.ts."
     ]
   },
   "src/rendering/ui/zod_form_renderer.ts": {
@@ -2786,6 +3279,24 @@
       "Do not duplicate or bypass exports from src/systems/effects.system.ts."
     ]
   },
+  "src/systems/effects/spatial_effects.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Evaluates item effect target filters and resolves nearest-target, PBAoE, and status item effects.",
+    "canonicalEntryPoints": [
+      "matchesTargetFilters",
+      "resolveDamageNearestEffect",
+      "resolveDamageAreaEffect",
+      "resolveApplyStatusEffect"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/effects/spatial_effects.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/effects/spatial_effects.ts."
+    ]
+  },
   "src/systems/field.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -2891,6 +3402,24 @@
       "Do not duplicate or bypass exports from src/systems/inventory.system.ts."
     ]
   },
+  "src/systems/inventory/equipment_slots.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Processes EquipItem/UnequipItem intents and builds anatomical EquipmentSlotInstance graphs.",
+    "canonicalEntryPoints": [
+      "processEquipItemIntent",
+      "processUnequipItemIntent",
+      "AnatomyBodyPlan",
+      "buildAnatomyEquipmentSlots"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/inventory/equipment_slots.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/inventory/equipment_slots.ts."
+    ]
+  },
   "src/systems/investigation.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -2924,21 +3453,6 @@
       "Do not duplicate or bypass exports from src/systems/knowledge.system.ts."
     ]
   },
-  "src/systems/ledger.system.ts": {
-    "domain": "Core Console: ECS Systems & Simulation",
-    "tier": "tier1_console",
-    "responsibility": "Processes transient events generated during a tick, filtering out high/normal importance",
-    "canonicalEntryPoints": [
-      "processLedgerSystem"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/ledger.system.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/systems/ledger.system.ts."
-    ]
-  },
   "src/systems/ledger_queries.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -2956,6 +3470,21 @@
       "Do not duplicate or bypass exports from src/systems/ledger_queries.ts."
     ]
   },
+  "src/systems/ledger.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Processes transient events generated during a tick, filtering out high/normal importance",
+    "canonicalEntryPoints": [
+      "processLedgerSystem"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/ledger.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/ledger.system.ts."
+    ]
+  },
   "src/systems/map.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -2971,6 +3500,38 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/map.system.ts."
+    ]
+  },
+  "src/systems/map/map_generation_spawner.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Generates a new area floor, runs the Encounter Director, and populates portals, items, and actors.",
+    "canonicalEntryPoints": [
+      "generateAndPopulateAreaFloor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/map/map_generation_spawner.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/map/map_generation_spawner.ts."
+    ]
+  },
+  "src/systems/map/map_wake_respawn.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Builds Encounter Director context and wakes saved area floors with trickle-respawn logic.",
+    "canonicalEntryPoints": [
+      "collectReservedTokensForArea",
+      "buildAreaDirectorContext",
+      "wakeSavedAreaFloor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/map/map_wake_respawn.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/map/map_wake_respawn.ts."
     ]
   },
   "src/systems/message.system.ts": {
@@ -3251,19 +3812,20 @@
       "Do not duplicate or bypass exports from src/systems/rivalry/resolve.ts."
     ]
   },
-  "src/systems/scheme.system.ts": {
+  "src/systems/rivalry/rivalry_scheduler.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Executes a mastermind's background scheme plot.",
+    "responsibility": "Generates periodic background rivalries and reactive event-driven rivalries.",
     "canonicalEntryPoints": [
-      "processSchemeTurn"
+      "processRivalryGeneration",
+      "generateEventDrivenRivalry"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/scheme.system.ts.",
+      "includes": "Pure implementation and exports for src/systems/rivalry/rivalry_scheduler.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/systems/scheme.system.ts."
+      "Do not duplicate or bypass exports from src/systems/rivalry/rivalry_scheduler.ts."
     ]
   },
   "src/systems/scheme_compiler.ts": {
@@ -3280,6 +3842,37 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/scheme_compiler.ts."
+    ]
+  },
+  "src/systems/scheme.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Executes a mastermind's background scheme plot.",
+    "canonicalEntryPoints": [
+      "processSchemeTurn"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/scheme.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/scheme.system.ts."
+    ]
+  },
+  "src/systems/scheme/scheme_recruitment.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Evaluates scheme minion morale/confession and recruits new minions using personality leverage.",
+    "canonicalEntryPoints": [
+      "evaluateMinionMoraleAndAwareness",
+      "recruitMinion"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/scheme/scheme_recruitment.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/scheme/scheme_recruitment.ts."
     ]
   },
   "src/systems/shop.system.ts": {
@@ -3414,6 +4007,21 @@
       "Do not duplicate or bypass exports from src/systems/trigger/quest.ts."
     ]
   },
+  "src/systems/trigger/social_consequences.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Consequence appliers specific to NPCs, social interactions, and memory.",
+    "canonicalEntryPoints": [
+      "socialConsequences"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/trigger/social_consequences.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/trigger/social_consequences.ts."
+    ]
+  },
   "src/systems/trigger/social.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3428,6 +4036,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/trigger/social.ts."
+    ]
+  },
+  "src/systems/trigger/systemic_entity.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Entity, spatial area, and scheme consequence appliers for the systemic trigger engine.",
+    "canonicalEntryPoints": [
+      "systemicEntityConsequences"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/trigger/systemic_entity.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/trigger/systemic_entity.ts."
     ]
   },
   "src/systems/trigger/systemic.ts": {
@@ -3644,13 +4267,7 @@
     "responsibility": "Enum defining the types of components available in the Entity-Component-System.",
     "canonicalEntryPoints": [
       "ComponentType",
-      "PositionComponent",
-      "RenderableComponent",
-      "PlayerComponent",
-      "FlightManeuverability",
-      "MovementModes",
-      "ActorComponent",
-      "ItemInstanceId"
+      "Component"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/types/components.types.ts.",
@@ -3658,6 +4275,111 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/types/components.types.ts."
+    ]
+  },
+  "src/types/components/actor_components.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Actor, AI, Player, Hunger, Faction, Identity, Attitude, Memory, Nemesis, and status components.",
+    "canonicalEntryPoints": [
+      "FlightManeuverability",
+      "MovementModes",
+      "PlayerComponent",
+      "ActorComponent",
+      "GodModeComponent",
+      "FighterComponent",
+      "AIComponent",
+      "HungerComponent",
+      "FactionComponent",
+      "ActiveStatusEffect",
+      "StatusEffectsComponent",
+      "AttitudeTier",
+      "AttitudeComponent",
+      "IdentityComponent",
+      "Thought",
+      "KnowledgeItem",
+      "RumorItem",
+      "MemoryComponent",
+      "ChronicleEvent",
+      "ChronicleComponent",
+      "NemesisComponent",
+      "InteractionScoreComponent",
+      "ControllerLinkComponent",
+      "ResourceRefreshCycle",
+      "ResourcePoolEntry",
+      "ResourcePoolComponent",
+      "WeaponGripMode",
+      "TacticalDoctrineComponent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/components/actor_components.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/components/actor_components.types.ts."
+    ]
+  },
+  "src/types/components/item_components.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Item, Inventory, Equipment, Coating, and PropertyOverlay components.",
+    "canonicalEntryPoints": [
+      "ItemInstanceId",
+      "toItemInstanceId",
+      "ItemComponent",
+      "CoatingComponent",
+      "InventoryComponent",
+      "EquipmentSlotInstance",
+      "EquipmentComponent",
+      "PropertyOverlayLayer",
+      "PropertyOverlayComponent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/components/item_components.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/components/item_components.types.ts."
+    ]
+  },
+  "src/types/components/world_components.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "World, spatial, narrative, transition, puzzle, and economic components.",
+    "canonicalEntryPoints": [
+      "PositionComponent",
+      "RenderableComponent",
+      "InteractableComponent",
+      "TrapComponent",
+      "TagsComponent",
+      "TraitsComponent",
+      "PortalComponent",
+      "EdgeTransitionComponent",
+      "PersistentComponent",
+      "TemplateComponent",
+      "LockComponent",
+      "QuestState",
+      "QuestLogComponent",
+      "DamageInstance",
+      "DamageComponent",
+      "DeathComponent",
+      "SchemeComponent",
+      "AgreementComponent",
+      "ClueComponent",
+      "FieldComponent",
+      "DialogueComponent",
+      "ShopComponent",
+      "ServiceDefinition",
+      "ServicesComponent",
+      "DirectorBudgetComponent",
+      "RulesetDataComponent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/components/world_components.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/components/world_components.types.ts."
     ]
   },
   "src/types/dialogue.types.ts": {
@@ -3710,12 +4432,7 @@
     "canonicalEntryPoints": [
       "GameEventType",
       "BaseGameEvent",
-      "EntityMovedEvent",
-      "EntityDamagedEvent",
-      "EntityDiedEvent",
-      "EntityHealedEvent",
-      "ItemPickedUpEvent",
-      "ItemDroppedEvent"
+      "GameEvent"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/types/events.types.ts.",
@@ -3723,6 +4440,72 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/types/events.types.ts."
+    ]
+  },
+  "src/types/events/combat_events.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Combat event shapes: damage, death, healing, status effects, and condition updates.",
+    "canonicalEntryPoints": [
+      "EntityDamagedEvent",
+      "EntityDiedEvent",
+      "EntityHealedEvent",
+      "ItemKillEvent",
+      "TrapTriggeredEvent",
+      "RivalryScheduledEvent",
+      "RivalryResolvedEvent",
+      "RivalryFailedEvent",
+      "NemesisPromotedEvent",
+      "NemesisVacancyEvent",
+      "NemesisCheatedDeathEvent",
+      "NemesisReturnedEvent",
+      "NemesisScarredEvent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/events/combat_events.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/events/combat_events.types.ts."
+    ]
+  },
+  "src/types/events/interaction_events.types.ts": {
+    "domain": "Core Console: Engine Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Interaction, movement, dialogue, item, trigger, and narrative event shapes.",
+    "canonicalEntryPoints": [
+      "EntityMovedEvent",
+      "ItemPickedUpEvent",
+      "ItemDroppedEvent",
+      "ItemUsedEvent",
+      "ItemEquippedEvent",
+      "ItemUnequippedEvent",
+      "ClueDiscoveredEvent",
+      "TileEnteredEvent",
+      "EntitySpottedEvent",
+      "DialogueSelectedEvent",
+      "QuestStageChangedEvent",
+      "QuestCompletedEvent",
+      "DebugTriggerTraceEvent",
+      "ApplyResolvedEvent",
+      "ApplyFailedEvent",
+      "ReactionResolvedEvent",
+      "SchemeMutatedAreaEvent",
+      "SayResolvedEvent",
+      "CoreValueViolatedEvent",
+      "SchemeAdvancedEvent",
+      "SchemeNodeDisruptedEvent",
+      "SchemeEscalatedEvent",
+      "AreaRespawnedEvent",
+      "InvestigationStalledEvent",
+      "WorldEventFiredEvent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/events/interaction_events.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/events/interaction_events.types.ts."
     ]
   },
   "src/types/fuzzer.types.ts": {
@@ -4265,6 +5048,21 @@
       "Do not duplicate or bypass exports from src/worker/map.worker.ts."
     ]
   },
+  "src/worker/worker_bridge.ts": {
+    "domain": "Core Console: App Entry & Wiring",
+    "tier": "tier1_console",
+    "responsibility": "Checks whether Web Workers are supported in the current runtime environment.",
+    "canonicalEntryPoints": [
+      "isWorkerAvailable"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/worker/worker_bridge.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/worker/worker_bridge.ts."
+    ]
+  },
   "src/worker/worker.types.ts": {
     "domain": "Core Console: App Entry & Wiring",
     "tier": "tier1_console",
@@ -4285,21 +5083,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/worker/worker.types.ts."
-    ]
-  },
-  "src/worker/worker_bridge.ts": {
-    "domain": "Core Console: App Entry & Wiring",
-    "tier": "tier1_console",
-    "responsibility": "Checks whether Web Workers are supported in the current runtime environment.",
-    "canonicalEntryPoints": [
-      "isWorkerAvailable"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/worker/worker_bridge.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/worker/worker_bridge.ts."
     ]
   }
 }

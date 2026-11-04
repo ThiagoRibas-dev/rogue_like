@@ -3,53 +3,22 @@ import {
   ComponentType,
   type FighterComponent,
   type InventoryComponent,
-  type ItemComponent
+  type ItemComponent,
+  type DamageComponent,
+  type DamageInstance
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { assertNever } from '../utils/assert.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
-import { applyStatusEffect } from './status-effect.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
-import type { DamageComponent, DamageInstance, TagsComponent } from '../types/components.types.ts';
 import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
-import type { ItemEffectDefinition } from '../types/campaign.types.ts';
-import { getFactionRelation } from '../utils/faction.ts';
-
-function matchesTargetFilters(
-  state: GameState,
-  sourceId: EntityId,
-  targetId: EntityId,
-  effectDef: ItemEffectDefinition
-): boolean {
-  const filters = effectDef.targetFilters;
-  if (!filters) return true;
-
-  if (filters.requireTags || filters.excludeTags) {
-    const targetTags = getComponent(state, targetId, ComponentType.Tags) as TagsComponent | undefined;
-    const tagsArray = targetTags?.tags || [];
-
-    if (filters.requireTags && filters.requireTags.length > 0) {
-      if (!filters.requireTags.every((tag) => tagsArray.includes(tag))) return false;
-    }
-
-    if (filters.excludeTags && filters.excludeTags.length > 0) {
-      if (filters.excludeTags.some((tag) => tagsArray.includes(tag))) return false;
-    }
-  }
-
-  if (filters.factions && filters.factions.length > 0) {
-    let relation: 'friendly' | 'neutral' | 'hostile' = 'neutral';
-    if (sourceId === targetId) {
-      relation = 'friendly';
-    } else {
-      relation = getFactionRelation(state, sourceId, targetId);
-    }
-    if (!filters.factions.includes(relation)) return false;
-  }
-
-  return true;
-}
+import {
+  matchesTargetFilters,
+  resolveDamageNearestEffect,
+  resolveDamageAreaEffect,
+  resolveApplyStatusEffect
+} from './effects/spatial_effects.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -132,187 +101,14 @@ export function applyItemEffect(
       }
     }
 
-    case 'damage_nearest': {
-      const userPos = getComponent(state, userId, ComponentType.Position);
-      if (!userPos) return state;
+    case 'damage_nearest':
+      return resolveDamageNearestEffect(state, userId, effectDef);
 
-      const range = effectDef.range ?? 8;
+    case 'damage_area':
+      return resolveDamageAreaEffect(state, userId, effectDef);
 
-      // Find the nearest visible enemy within range
-      let nearestId: EntityId | undefined;
-      let nearestDist = Infinity;
-
-      for (const id of state.entities) {
-        if (id === userId) continue;
-        const targetFighter = getComponent(state, id, ComponentType.Fighter);
-        const targetPos = getComponent(state, id, ComponentType.Position);
-        if (!targetFighter || !targetPos) continue;
-
-        if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
-
-        const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
-        if (dist <= range && dist < nearestDist) {
-          nearestDist = dist;
-          nearestId = id;
-        }
-      }
-
-      if (nearestId === undefined) {
-        return addMessage(state, 'The scroll crackles... but finds no target.', MessageLogCategory.System);
-      }
-
-      const targetFighter = getComponent(state, nearestId, ComponentType.Fighter);
-      if (!targetFighter) return state;
-
-      const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
-      const targetName = targetRenderable?.glyph ?? 'target';
-
-      const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
-      const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
-
-      // Attach DamageComponent
-      const existingDamageComp = getComponent(nextState, nearestId, ComponentType.Damage) as
-        DamageComponent | undefined;
-
-      const damageInstance: DamageInstance = {
-        amount: effectDef.value,
-        sourceEntityId: userId,
-        tags: ['spell', 'magic']
-      };
-
-      if (existingDamageComp) {
-        const newDamageComp = { ...existingDamageComp, instances: [...existingDamageComp.instances, damageInstance] };
-        return addComponent(nextState, nearestId, newDamageComp);
-      } else {
-        const newDamageComp: DamageComponent = {
-          type: ComponentType.Damage,
-          instances: [damageInstance]
-        };
-        return addComponent(nextState, nearestId, newDamageComp);
-      }
-    }
-
-    case 'damage_area': {
-      const userPos = getComponent(state, userId, ComponentType.Position);
-      if (!userPos) return state;
-
-      const radius = effectDef.radius ?? 3;
-      let nextState = state;
-      let hitSomeone = false;
-
-      for (const id of state.entities) {
-        if (id === userId) continue; // Assume PBAoE that doesn't hit caster for now
-        const targetFighter = getComponent(state, id, ComponentType.Fighter);
-        const targetPos = getComponent(state, id, ComponentType.Position);
-        if (!targetFighter || !targetPos) continue;
-
-        if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
-
-        const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
-        if (dist <= radius) {
-          hitSomeone = true;
-          const targetRenderable = getComponent(state, id, ComponentType.Renderable);
-          const targetName = targetRenderable?.glyph ?? 'target';
-          const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
-          nextState = addMessage(nextState, msg, MessageLogCategory.CombatHit);
-
-          // Attach DamageComponent
-          const existingDamageComp = getComponent(nextState, id, ComponentType.Damage) as DamageComponent | undefined;
-
-          const damageInstance: DamageInstance = {
-            amount: effectDef.value,
-            sourceEntityId: userId,
-            tags: ['spell', 'magic', 'aoe']
-          };
-
-          if (existingDamageComp) {
-            const newDamageComp = {
-              ...existingDamageComp,
-              instances: [...existingDamageComp.instances, damageInstance]
-            };
-            nextState = addComponent(nextState, id, newDamageComp);
-          } else {
-            const newDamageComp: DamageComponent = {
-              type: ComponentType.Damage,
-              instances: [damageInstance]
-            };
-            nextState = addComponent(nextState, id, newDamageComp);
-          }
-        }
-      }
-
-      if (!hitSomeone) {
-        nextState = addMessage(nextState, 'The area is blasted, but nothing was hit.', MessageLogCategory.System);
-      }
-      return nextState;
-    }
-
-    case 'apply_status': {
-      if (!effectDef.statusId || !effectDef.duration) return state;
-
-      if (explicitTargetId !== undefined) {
-        if (!matchesTargetFilters(state, userId, explicitTargetId, effectDef)) return state;
-
-        const targetRenderable = getComponent(state, explicitTargetId, ComponentType.Renderable);
-        const isPlayer = getComponent(state, explicitTargetId, ComponentType.Player) !== undefined;
-        const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
-        const msg = effectDef.message.replace('{target}', targetName);
-
-        let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
-        nextState = applyStatusEffect(nextState, explicitTargetId, effectDef.statusId, effectDef.duration, userId);
-        return nextState;
-      }
-
-      if (effectDef.range) {
-        // Hit nearest target
-        const userPos = getComponent(state, userId, ComponentType.Position);
-        if (!userPos) return state;
-
-        let nearestId: EntityId | undefined;
-        let nearestDist = Infinity;
-
-        for (const id of state.entities) {
-          if (id === userId) continue;
-          const targetFighter = getComponent(state, id, ComponentType.Fighter);
-          const targetPos = getComponent(state, id, ComponentType.Position);
-          if (!targetFighter || !targetPos) continue;
-
-          if (!matchesTargetFilters(state, userId, id, effectDef)) continue;
-
-          const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
-          if (dist <= effectDef.range && dist < nearestDist) {
-            nearestDist = dist;
-            nearestId = id;
-          }
-        }
-
-        if (nearestId === undefined) {
-          return addMessage(state, 'The magic crackles... but finds no target.', MessageLogCategory.System);
-        }
-
-        const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
-        const isPlayer = getComponent(state, nearestId, ComponentType.Player) !== undefined;
-        const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
-        const msg = effectDef.message.replace('{target}', targetName);
-
-        let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
-        nextState = applyStatusEffect(nextState, nearestId, effectDef.statusId, effectDef.duration, userId);
-        return nextState;
-      } else {
-        // Apply to self
-        if (!matchesTargetFilters(state, userId, userId, effectDef)) {
-          return addMessage(state, `The magic fizzles, having no effect on you.`, MessageLogCategory.System);
-        }
-        const isPlayer = getComponent(state, userId, ComponentType.Player) !== undefined;
-        const targetName = isPlayer
-          ? 'You'
-          : (getComponent(state, userId, ComponentType.Renderable)?.glyph ?? 'Something');
-        const msg = effectDef.message.replace('{item}', itemName).replace('{target}', targetName);
-        let nextState = addMessage(state, msg, MessageLogCategory.System);
-        nextState = applyStatusEffect(nextState, userId, effectDef.statusId, effectDef.duration, userId);
-        return nextState;
-      }
-    }
+    case 'apply_status':
+      return resolveApplyStatusEffect(state, userId, effectDef, itemName, explicitTargetId);
 
     case 'identify': {
       const inventory = getComponent(state, userId, ComponentType.Inventory);
@@ -385,7 +181,6 @@ export function processUseItemIntent(
     };
   }
 
-  // Identify on use
   let nextState = state;
   if (!isIdentified) {
     const newIdentifiedSet = new Set(nextState.identifiedItems);
@@ -405,11 +200,9 @@ export function processUseItemIntent(
 
   nextState = applyItemEffect(nextState, entityId, def.consumable.effectId, itemNameFinal);
 
-  // Remove item from inventory
   const remainingCharges = (itemComp.charges ?? 1) - 1;
 
   if (remainingCharges <= 0) {
-    // Remove item entity entirely
     const nextInventory: InventoryComponent = {
       ...inventory,
       items: inventory.items.filter((_, i) => i !== itemIndex)
@@ -417,7 +210,6 @@ export function processUseItemIntent(
     nextState = addComponent(nextState, entityId, nextInventory);
     nextState = removeEntity(nextState, itemEntityId);
   } else {
-    // Just decrement charges
     const nextItemComp: ItemComponent = { ...itemComp, charges: remainingCharges };
     nextState = addComponent(nextState, itemEntityId, nextItemComp);
   }
