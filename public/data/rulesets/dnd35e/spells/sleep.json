@@ -2,7 +2,7 @@
   "sleep": {
     "id": "sleep",
     "name": "Sleep",
-    "description": "Causes a magical slumber to come upon 4 Hit Dice of living creatures in a 10-foot-radius burst.",
+    "description": "A sleep spell causes a magical slumber to come upon 4 Hit Dice of creatures in a 10-foot radius burst, targeting the lowest Hit Dice creatures first.",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
@@ -10,24 +10,57 @@
       "bard": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting",
+      "sleep"
+    ],
     "classification": "spell",
+    "castingTime": "1_round",
+    "range": "medium",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
       "effect": "negates"
     },
+    "targeting": {
+      "mode": "area",
+      "totalHitDicePool": 4
+    },
     "aoeShape": "burst",
     "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "sleep_condition",
+        "targetRole": "area_occupant",
+        "conditionId": "asleep",
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
     "tags": [
       "arcane",
       "enchantment",
-      "mind_affecting"
+      "mind_affecting",
+      "sleep"
     ]
   }
 }

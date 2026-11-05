@@ -1,0 +1,75 @@
+{
+  "cats_grace": {
+    "id": "cats_grace",
+    "name": "Cat's Grace",
+    "description": "The affected creature gains a +4 enhancement bonus to Dexterity for 1 minute per level.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "druid": 2,
+      "bard": 2,
+      "ranger": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "cats_grace_bundle",
+      "name": "Cat's Grace",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "cats_grace_dex",
+          "target": "dex",
+          "value": 4,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "cats_grace_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "transmutation",
+      "ability_buff",
+      "dex"
+    ]
+  }
+}

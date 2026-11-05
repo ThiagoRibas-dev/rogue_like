@@ -1,0 +1,94 @@
+{
+  "divine_favor": {
+    "id": "divine_favor",
+    "name": "Divine Favor",
+    "description": "Calling upon the strength and wisdom of a deity, you gain a +1 luck bonus on attack and weapon damage rolls for every three caster levels (at least +1, maximum +3).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "paladin": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 minute",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "divine_favor_buff",
+        "targetRole": "caster",
+        "effectBundle": {
+          "bundleId": "divine_favor_bundle",
+          "name": "Divine Favor",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "divine_favor_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "luck"
+            },
+            {
+              "id": "divine_favor_dmg",
+              "target": "damage",
+              "value": 1,
+              "type": "luck"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "divine_favor_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        },
+        "statScalingRules": {
+          "attack": {
+            "baseValue": 0,
+            "perCL": 1,
+            "clStepInterval": 3,
+            "startAboveCL": 0,
+            "minCap": 1,
+            "maxCap": 3
+          },
+          "damage": {
+            "baseValue": 0,
+            "perCL": 1,
+            "clStepInterval": 3,
+            "startAboveCL": 0,
+            "minCap": 1,
+            "maxCap": 3
+          }
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "luck_buff"
+    ]
+  }
+}

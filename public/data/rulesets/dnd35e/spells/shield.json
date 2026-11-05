@@ -2,27 +2,76 @@
   "shield": {
     "id": "shield",
     "name": "Shield",
-    "description": "Creates an invisible mobile shield of force hovering in front of you, granting a +4 shield AC bonus and negating Magic Missile attacks.",
+    "description": "Shield creates an invisible, mobile disk of force that hovers in front of you, granting a +4 shield bonus to AC (applying against incorporeal touch attacks) and negating Magic Missile.",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
       "sorcerer": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "abjuration",
+    "descriptors": [
+      "force"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "shield_spell_bundle",
+      "name": "Shield",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "shield_spell_ac",
+          "target": "ac",
+          "value": 4,
+          "type": "shield",
+          "effectTags": [
+            "descriptor:force",
+            "force"
+          ]
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "shield_magic_missile",
+          "ruleKey": "immune_magic_missile",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "shield_spell_active",
+        "effect:force_shield"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
     "tags": [
       "arcane",
       "abjuration",
-      "force"
+      "force",
+      "shield_buff"
     ]
   }
 }

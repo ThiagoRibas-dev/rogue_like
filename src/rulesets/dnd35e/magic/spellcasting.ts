@@ -3,8 +3,8 @@ import { computeAbilityModifier } from '../abilities.ts';
 import { rollD20 } from '../math/dice.ts';
 import { dndFloor } from '../math/multipliers.ts';
 import type { CapabilityClassification } from '../types/dnd35e.types.ts';
-
 export * from './metamagic_dispel.ts';
+export * from './spell_effects.ts';
 
 /** Minimum ability score base (`10 + spellLevel`) required to cast a spell of that level. */
 const CASTING_ABILITY_BASE_THRESHOLD = 10;

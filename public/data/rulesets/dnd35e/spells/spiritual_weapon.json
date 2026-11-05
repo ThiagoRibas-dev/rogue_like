@@ -1,0 +1,70 @@
+{
+  "spiritual_weapon": {
+    "id": "spiritual_weapon",
+    "name": "Spiritual Weapon",
+    "description": "A weapon made of pure force appears and strikes foes at distance, using your base attack bonus + Wisdom modifier and dealing 1d8 force damage + 1 per 3 caster levels (max +5).",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2
+    },
+    "levelByDomain": {
+      "war": 2
+    },
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d8",
+    "damageType": "force",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "spiritual_weapon_strike",
+        "targetRole": "primary_target",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 3,
+          "startAboveCL": 0,
+          "minCap": 0,
+          "maxCap": 5
+        },
+        "damageType": "force",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "force",
+      "weapon"
+    ]
+  }
+}

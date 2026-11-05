@@ -1,0 +1,73 @@
+{
+  "displacement": {
+    "id": "displacement",
+    "name": "Displacement",
+    "description": "The subject of this spell appears to be about 2 feet away from its true location. The creature benefits from a 50% miss chance as if it had total concealment.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "displacement_bundle",
+      "name": "Displacement",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "displacement_concealment",
+          "ruleKey": "concealment_50_percent",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "displacement_active",
+        "concealment:50"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "illusion",
+      "glamer",
+      "concealment"
+    ]
+  }
+}

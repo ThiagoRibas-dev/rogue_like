@@ -1,0 +1,58 @@
+{
+  "sleet_storm": {
+    "id": "sleet_storm",
+    "name": "Sleet Storm",
+    "description": "Driving sleet and rain block all sight (providing total concealment) and coat the ground in slick ice, halving movement speed and requiring Balance checks.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "druid": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "cylinder",
+    "aoeRadiusFt": 40,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "sleet_field",
+        "fieldType": "field_sleet_storm",
+        "radiusFt": 40,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "conjuration",
+      "cold",
+      "difficult_terrain",
+      "obscurement"
+    ]
+  }
+}

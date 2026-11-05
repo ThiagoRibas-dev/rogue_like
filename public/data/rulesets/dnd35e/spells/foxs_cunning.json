@@ -1,0 +1,72 @@
+{
+  "foxs_cunning": {
+    "id": "foxs_cunning",
+    "name": "Fox's Cunning",
+    "description": "The affected creature gains a +4 enhancement bonus to Intelligence for 1 minute per level.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "foxs_cunning_bundle",
+      "name": "Fox's Cunning",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "foxs_cunning_int",
+          "target": "int",
+          "value": 4,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "foxs_cunning_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "ability_buff",
+      "int"
+    ]
+  }
+}

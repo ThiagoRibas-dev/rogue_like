@@ -2,27 +2,88 @@
   "bless": {
     "id": "bless",
     "name": "Bless",
-    "description": "Fills your allies with courage, granting a +1 morale bonus on attack rolls and saves against fear effects.",
+    "description": "Bless fills your allies with courage. Each ally gains a +1 morale bonus on attack rolls and on saving throws against fear effects.",
     "level": 1,
     "levelByClass": {
       "cleric": 1,
       "paladin": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "area"
+    },
     "aoeShape": "burst",
     "aoeRadiusFt": 50,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "bless_buff",
+        "targetRole": "secondary_ally",
+        "effectBundle": {
+          "bundleId": "bless_buff_bundle",
+          "name": "Bless",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "bless_atk_bonus",
+              "target": "attack",
+              "value": 1,
+              "type": "morale"
+            },
+            {
+              "id": "bless_fear_save_bonus",
+              "target": "saving_throw",
+              "value": 1,
+              "type": "morale",
+              "effectTags": [
+                "descriptor:fear"
+              ]
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "bless_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
     "tags": [
       "divine",
       "enchantment",
-      "morale"
+      "morale_buff"
     ]
   }
 }

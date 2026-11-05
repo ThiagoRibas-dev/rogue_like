@@ -1,0 +1,70 @@
+{
+  "true_strike": {
+    "id": "true_strike",
+    "name": "True Strike",
+    "description": "You gain temporary, intuitive insight into the immediate future during your next attack, granting a +20 insight bonus on your next single attack roll and ignoring concealment.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "see text",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "true_strike_bundle",
+      "name": "True Strike",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "true_strike_atk",
+          "target": "attack",
+          "value": 20,
+          "type": "insight"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "true_strike_concealment",
+          "ruleKey": "ignore_concealment",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "true_strike_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divination",
+      "attack_buff",
+      "insight"
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "invisibility_purge": {
+    "id": "invisibility_purge",
+    "name": "Invisibility Purge",
+    "description": "You surround yourself with a sphere of power that extends 5 feet per caster level from you, negating all forms of invisibility in the area.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 25,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "invis_purge_field",
+        "fieldType": "field_invisibility_purge",
+        "radiusFt": 25,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": [
+          "invisible"
+        ]
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "anti_invisibility"
+    ]
+  }
+}

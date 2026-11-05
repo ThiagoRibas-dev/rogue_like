@@ -1,0 +1,86 @@
+{
+  "faerie_fire": {
+    "id": "faerie_fire",
+    "name": "Faerie Fire",
+    "description": "A pale glow surrounds and outlines the subjects, negating concealment normally provided by darkness, blur, displacement, or invisibility.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "light"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "targeting": {
+      "mode": "area"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 5,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "faerie_fire_glow",
+        "targetRole": "area_occupant",
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "faerie_fire_debuff",
+          "name": "Faerie Fire",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "faerie_fire_hide_penalty",
+              "target": "skill_hide",
+              "value": -20,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "faerie_fire_negate_concealment",
+              "ruleKey": "negate_invisibility_concealment",
+              "value": true
+            }
+          ],
+          "grantedTags": [
+            "faerie_fire_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "light",
+      "anti_concealment"
+    ]
+  }
+}

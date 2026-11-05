@@ -1,0 +1,64 @@
+{
+  "see_invisibility": {
+    "id": "see_invisibility",
+    "name": "See Invisibility",
+    "description": "You can see any objects or beings that are invisible within your range of vision, as well as those that are ethereal.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "see_invisibility_bundle",
+      "name": "See Invisibility",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "see_invisibility_override",
+          "ruleKey": "see_invisibility_active",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "senses:see_invisibility"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divination",
+      "detection",
+      "senses"
+    ]
+  }
+}

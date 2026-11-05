@@ -1,0 +1,65 @@
+{
+  "blink": {
+    "id": "blink",
+    "name": "Blink",
+    "description": "You \"blink\" back and forth between the Material Plane and the Ethereal Plane, gaining a 50% miss chance, ignoring physical barriers, and taking half damage from area attacks.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "blink_bundle",
+      "name": "Blink",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "blink_ethereal_override",
+          "ruleKey": "blink_ethereal_active",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "blink_active",
+        "concealment:50"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "ethereal",
+      "defensive"
+    ]
+  }
+}

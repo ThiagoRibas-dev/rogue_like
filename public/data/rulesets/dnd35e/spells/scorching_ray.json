@@ -1,0 +1,70 @@
+{
+  "scorching_ray": {
+    "id": "scorching_ray",
+    "name": "Scorching Ray",
+    "description": "You blast your enemies with fiery rays. You may fire one ray, plus one additional ray for every four levels beyond 3rd (to a maximum of three rays at 11th level), dealing 4d6 fire each.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "ray"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "4d6",
+    "damageType": "fire",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "scorching_ray_strike",
+        "targetRole": "primary_target",
+        "dice": "4d6",
+        "projectileCountScaling": {
+          "baseValue": 1,
+          "perCL": 1,
+          "clStepInterval": 4,
+          "startAboveCL": 3,
+          "minCap": 1,
+          "maxCap": 3
+        },
+        "damageType": "fire",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "evocation",
+      "fire",
+      "ray",
+      "ranged_touch"
+    ]
+  }
+}

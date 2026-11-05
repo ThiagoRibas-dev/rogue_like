@@ -1,0 +1,102 @@
+{
+  "protection_from_evil": {
+    "id": "protection_from_evil",
+    "name": "Protection from Evil",
+    "description": "Wards a creature from evil sources (+2 deflection AC, +2 resistance on saves), blocking mental control and bodily contact by summoned evil creatures.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "wizard": 1,
+      "sorcerer": 1,
+      "paladin": 1
+    },
+    "levelByDomain": {
+      "good": 1
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "good"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "prot_evil_bundle",
+      "name": "Protection from Evil",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "prot_evil_ac",
+          "target": "ac",
+          "value": 2,
+          "type": "deflection",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:LE",
+              "alignment:NE",
+              "alignment:CE"
+            ]
+          }
+        },
+        {
+          "id": "prot_evil_save",
+          "target": "saving_throw",
+          "value": 2,
+          "type": "resistance",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:LE",
+              "alignment:NE",
+              "alignment:CE"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "prot_evil_mental_ctrl",
+          "ruleKey": "immune_mental_control_evil",
+          "value": true
+        },
+        {
+          "id": "prot_evil_summon_contact",
+          "ruleKey": "block_summoned_bodily_contact_evil",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "ward:protection_from_evil"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "good",
+      "alignment_ward"
+    ]
+  }
+}

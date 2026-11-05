@@ -1,0 +1,61 @@
+{
+  "ray_of_frost": {
+    "id": "ray_of_frost",
+    "name": "Ray of Frost",
+    "description": "A ray of freezing air and ice projects from your pointing finger dealing 1d3 points of cold damage on a ranged touch attack.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "ray"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d3",
+    "damageType": "cold",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "frost_damage",
+        "targetRole": "primary_target",
+        "dice": "1d3",
+        "damageType": "cold",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "evocation",
+      "cold",
+      "ranged_touch"
+    ]
+  }
+}

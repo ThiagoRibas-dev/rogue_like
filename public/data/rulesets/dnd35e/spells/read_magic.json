@@ -2,30 +2,39 @@
   "read_magic": {
     "id": "read_magic",
     "name": "Read Magic",
-    "description": "Allows reading of magical scrolls, books, glyphs, and spell symbols that would otherwise be unintelligible.",
+    "description": "By means of read magic, you can read magical inscriptions on scrolls, wands, books, and weapons.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
       "sorcerer": 0,
       "cleric": 0,
       "druid": 0,
-      "bard": 0,
-      "paladin": 1,
-      "ranger": 1
+      "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "divination",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
     "tags": [
-      "universal",
+      "arcane",
+      "divine",
       "divination"
     ]
   }

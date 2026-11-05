@@ -1,0 +1,90 @@
+{
+  "protection_from_good": {
+    "id": "protection_from_good",
+    "name": "Protection from Good",
+    "description": "Wards a creature from good sources (+2 deflection AC, +2 resistance on saves against good sources).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {
+      "evil": 1
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "prot_good_bundle",
+      "name": "Protection from Good",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "prot_good_ac",
+          "target": "ac",
+          "value": 2,
+          "type": "deflection",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:LG",
+              "alignment:NG",
+              "alignment:CG"
+            ]
+          }
+        },
+        {
+          "id": "prot_good_save",
+          "target": "saving_throw",
+          "value": 2,
+          "type": "resistance",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:LG",
+              "alignment:NG",
+              "alignment:CG"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "ward:protection_from_good"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "evil",
+      "alignment_ward"
+    ]
+  }
+}

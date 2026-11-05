@@ -1,0 +1,77 @@
+{
+  "cure_serious_wounds": {
+    "id": "cure_serious_wounds",
+    "name": "Cure Serious Wounds",
+    "description": "When laying your hand upon a living creature, you channel positive energy that cures 3d8 points of damage +1 point per caster level (maximum +15).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "druid": 4,
+      "bard": 3,
+      "paladin": 4,
+      "ranger": 4
+    },
+    "levelByDomain": {
+      "healing": 3
+    },
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "3d8",
+    "damageType": "positive",
+    "effectUnits": [
+      {
+        "type": "healing",
+        "unitId": "csw_heal",
+        "targetRole": "primary_target",
+        "dice": "3d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 15
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "positive"
+    ]
+  }
+}

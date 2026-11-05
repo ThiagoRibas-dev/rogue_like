@@ -1,0 +1,89 @@
+{
+  "barkskin": {
+    "id": "barkskin",
+    "name": "Barkskin",
+    "description": "Barkskin toughens the subject's skin, granting a +2 enhancement bonus to natural armor, increasing by +1 for every 3 caster levels above 3rd (maximum +5).",
+    "level": 2,
+    "levelByClass": {
+      "druid": 2,
+      "ranger": 2
+    },
+    "levelByDomain": {
+      "plant": 2
+    },
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "barkskin_na_unit",
+        "targetRole": "primary_target",
+        "effectBundle": {
+          "bundleId": "barkskin_bundle",
+          "name": "Barkskin",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "barkskin_na",
+              "target": "natural_armor",
+              "value": 2,
+              "type": "natural_armor_enhancement"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "barkskin_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        },
+        "statScalingRules": {
+          "natural_armor": {
+            "baseValue": 2,
+            "perCL": 1,
+            "clStepInterval": 3,
+            "startAboveCL": 3,
+            "minCap": 2,
+            "maxCap": 5
+          }
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "natural_armor_buff"
+    ]
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "expeditious_retreat": {
+    "id": "expeditious_retreat",
+    "name": "Expeditious Retreat",
+    "description": "This spell increases your base land speed by 30 feet as an enhancement bonus for 1 minute per level.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "expeditious_retreat_bundle",
+      "name": "Expeditious Retreat",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "expeditious_speed",
+          "target": "speed",
+          "value": 30,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "expeditious_retreat_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "speed_buff"
+    ]
+  }
+}

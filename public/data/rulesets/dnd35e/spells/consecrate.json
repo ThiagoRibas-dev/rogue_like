@@ -1,0 +1,59 @@
+{
+  "consecrate": {
+    "id": "consecrate",
+    "name": "Consecrate",
+    "description": "This spell blesses an area with positive energy in a 20-foot radius. Undead in the area take a -1 penalty on attack rolls, damage rolls, and saves, and Turning checks gain a +3 sacred bonus.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "good"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "2 hours/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 25,
+      "casterCosts": [
+        {
+          "costType": "material_gp",
+          "amountGp": 25,
+          "consumedItemTag": "holy_water"
+        }
+      ]
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "consecrate_field",
+        "fieldType": "field_consecrate",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "good",
+      "sacred_zone"
+    ]
+  }
+}

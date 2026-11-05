@@ -1,0 +1,77 @@
+{
+  "cure_moderate_wounds": {
+    "id": "cure_moderate_wounds",
+    "name": "Cure Moderate Wounds",
+    "description": "When laying your hand upon a living creature, you channel positive energy that cures 2d8 points of damage +1 point per caster level (maximum +10).",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2,
+      "druid": 3,
+      "bard": 2,
+      "paladin": 3,
+      "ranger": 3
+    },
+    "levelByDomain": {
+      "healing": 2
+    },
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "2d8",
+    "damageType": "positive",
+    "effectUnits": [
+      {
+        "type": "healing",
+        "unitId": "cmw_heal",
+        "targetRole": "primary_target",
+        "dice": "2d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "positive"
+    ]
+  }
+}

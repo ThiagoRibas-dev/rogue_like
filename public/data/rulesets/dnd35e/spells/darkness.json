@@ -1,0 +1,55 @@
+{
+  "darkness": {
+    "id": "darkness",
+    "name": "Darkness",
+    "description": "This spell causes an object to radiate shadowy illumination out to a 20-foot radius, granting 20% concealment against creatures without darkvision.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "darkness"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "darkness_field",
+        "fieldType": "field_darkness",
+        "radiusFt": 20,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "evocation",
+      "darkness"
+    ]
+  }
+}

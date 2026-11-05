@@ -1,0 +1,60 @@
+{
+  "silence": {
+    "id": "silence",
+    "name": "Silence",
+    "description": "Upon the casting of this spell, complete silence prevails in a 20-foot radius. Verbal casting is completely suppressed and sonic effects deal no damage.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "silence_zone",
+        "fieldType": "field_silence",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": [
+          "component:verbal",
+          "descriptor:sonic"
+        ]
+      }
+    ],
+    "tags": [
+      "divine",
+      "illusion",
+      "glamer",
+      "anti_magic",
+      "silence"
+    ]
+  }
+}

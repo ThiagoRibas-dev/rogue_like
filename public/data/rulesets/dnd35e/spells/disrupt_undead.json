@@ -2,30 +2,63 @@
   "disrupt_undead": {
     "id": "disrupt_undead",
     "name": "Disrupt Undead",
-    "description": "Directs a ray of positive energy that deals 1d6 damage to an undead creature within 30 feet.",
+    "description": "You direct a ray of positive energy that deals 1d6 points of damage to an undead creature.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
       "sorcerer": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "necromancy",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "ray"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
     "damageDice": "1d6",
     "damageType": "positive",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "disrupt_damage",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:undead"
+          ]
+        },
+        "dice": "1d6",
+        "damageType": "positive",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "arcane",
       "necromancy",
-      "ray",
-      "positive_energy"
+      "positive",
+      "anti_undead"
     ]
   }
 }

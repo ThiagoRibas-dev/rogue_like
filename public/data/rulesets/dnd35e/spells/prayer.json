@@ -1,0 +1,138 @@
+{
+  "prayer": {
+    "id": "prayer",
+    "name": "Prayer",
+    "description": "You bring special divine favor upon yourself and your allies (+1 luck bonus on attack rolls, weapon damage rolls, saves, and skill checks) and a -1 luck penalty to foes.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "paladin": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 40,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "prayer_ally_buff",
+        "targetRole": "secondary_ally",
+        "effectBundle": {
+          "bundleId": "prayer_ally_bundle",
+          "name": "Prayer (Allies)",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "prayer_ally_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_ally_dmg",
+              "target": "damage",
+              "value": 1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_ally_save",
+              "target": "saving_throw",
+              "value": 1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_ally_skill",
+              "target": "skill_check",
+              "value": 1,
+              "type": "luck"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "prayer_ally_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "prayer_enemy_debuff",
+        "targetRole": "secondary_enemy",
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "prayer_enemy_bundle",
+          "name": "Prayer (Foes)",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "prayer_foe_atk",
+              "target": "attack",
+              "value": -1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_foe_dmg",
+              "target": "damage",
+              "value": -1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_foe_save",
+              "target": "saving_throw",
+              "value": -1,
+              "type": "luck"
+            },
+            {
+              "id": "prayer_foe_skill",
+              "target": "skill_check",
+              "value": -1,
+              "type": "luck"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "prayer_foe_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "luck_buff",
+      "luck_debuff"
+    ]
+  }
+}

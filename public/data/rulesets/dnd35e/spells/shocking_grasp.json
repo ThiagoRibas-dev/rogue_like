@@ -1,0 +1,69 @@
+{
+  "shocking_grasp": {
+    "id": "shocking_grasp",
+    "name": "Shocking Grasp",
+    "description": "Your successful melee touch attack deals 1d6 points of electricity damage per caster level (maximum 5d6). When delivering the touch, you gain a +3 bonus on attack rolls if the opponent is wearing metal armor.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "electricity"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6",
+    "damageType": "electricity",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "shock_damage",
+        "targetRole": "primary_target",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "damageType": "electricity",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "evocation",
+      "electricity",
+      "melee_touch"
+    ]
+  }
+}

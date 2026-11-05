@@ -1,6 +1,7 @@
 import type { RulesetSystemFileDescriptor } from '../../types/ruleset.types.ts';
 import { FEAT_IDS } from './system_content_feat_ids.ts';
 import { ITEM_IDS } from './system_content_item_ids.ts';
+import { SPELL_IDS } from './system_content_spell_ids.ts';
 
 const CLASS_IDS: ReadonlyArray<string> = [
   'barbarian',
@@ -107,32 +108,6 @@ const SKILL_IDS: ReadonlyArray<string> = [
   'tumble',
   'use_magic_device',
   'use_rope'
-];
-
-const SPELL_IDS: ReadonlyArray<string> = [
-  'magic_missile',
-  'fireball',
-  'cure_light_wounds',
-  'ray_of_enfeeblement',
-  'burning_hands',
-  'read_magic',
-  'detect_magic',
-  'light',
-  'mage_hand',
-  'daze',
-  'disrupt_undead',
-  'resistance',
-  'guidance',
-  'shield',
-  'grease',
-  'mage_armor',
-  'sleep',
-  'bless',
-  'cure_minor_wounds',
-  'cause_fear',
-  'sanctuary',
-  'entangle',
-  'produce_flame'
 ];
 
 const TEMPLATE_IDS: ReadonlyArray<string> = [

@@ -1,0 +1,57 @@
+{
+  "dispel_magic": {
+    "id": "dispel_magic",
+    "name": "Dispel Magic",
+    "description": "You can use dispel magic to end ongoing spells that have been cast on a creature or object, to suppress the magical abilities of all spells in an area, or to counter an incoming spell.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "cleric": 3,
+      "bard": 3,
+      "paladin": 3,
+      "ranger": 4
+    },
+    "levelByDomain": {
+      "magic": 3
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "dispel",
+        "unitId": "dispel_magic_effect",
+        "targetRole": "primary_target",
+        "maxCasterLevelBonus": 10,
+        "revokesPathPrefix": "spell:"
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "dispel"
+    ]
+  }
+}

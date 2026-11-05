@@ -2,7 +2,7 @@
   "cure_light_wounds": {
     "id": "cure_light_wounds",
     "name": "Cure Light Wounds",
-    "description": "Channels positive energy to cure 1d8+1 points of damage (max +5) on a living touched creature.",
+    "description": "When laying your hand upon a living creature, you channel positive energy that cures 1d8 points of damage +1 point per caster level (maximum +5).",
     "level": 1,
     "levelByClass": {
       "cleric": 1,
@@ -14,26 +14,64 @@
     "levelByDomain": {
       "healing": 1
     },
+    "levelByAccessTag": {},
     "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
       "effect": "half"
     },
+    "targeting": {
+      "mode": "single_creature"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "damageDice": "1d8+1",
+    "damageDice": "1d8",
     "damageType": "positive",
+    "effectUnits": [
+      {
+        "type": "healing",
+        "unitId": "clw_heal",
+        "targetRole": "primary_target",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "divine",
       "healing",
-      "cure"
+      "positive"
     ]
   }
 }

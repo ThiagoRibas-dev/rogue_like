@@ -1,0 +1,68 @@
+{
+  "ghoul_touch": {
+    "id": "ghoul_touch",
+    "name": "Ghoul Touch",
+    "description": "Imbuing you with negative energy, your melee touch paralyzes a living target for 1d6+2 rounds (Fortitude negates) and makes it exude a carrion stench that sickens nearby foes.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1d6+2 rounds",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "ghoul_paralysis",
+        "targetRole": "primary_target",
+        "conditionId": "paralyzed",
+        "durationRoundsScaling": {
+          "baseValue": 3,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 3,
+          "maxCap": 8
+        },
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "necromancy",
+      "paralysis",
+      "melee_touch"
+    ]
+  }
+}

@@ -2,34 +2,63 @@
   "cure_minor_wounds": {
     "id": "cure_minor_wounds",
     "name": "Cure Minor Wounds",
-    "description": "Channels positive energy to cure 1 point of damage on a living creature touched.",
+    "description": "Channels positive energy to cure 1 point of damage in a touched living creature, or deals 1 point of damage to an undead creature.",
     "level": 0,
     "levelByClass": {
       "cleric": 0,
       "druid": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
       "effect": "half"
     },
+    "targeting": {
+      "mode": "single_creature"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
     "damageDice": "1",
     "damageType": "positive",
+    "effectUnits": [
+      {
+        "type": "healing",
+        "unitId": "minor_heal",
+        "targetRole": "primary_target",
+        "dice": "1",
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": false
+      }
+    ],
     "tags": [
       "divine",
-      "conjuration",
       "healing",
-      "cure"
+      "positive"
     ]
   }
 }

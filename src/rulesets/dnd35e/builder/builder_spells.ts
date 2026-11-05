@@ -12,7 +12,8 @@ import type { DnD35ClassDefinition, DnD35SpellDefinition, DnD35SystemContent } f
 export function getSpellLevelForClass(
   spell: DnD35SpellDefinition,
   classId: string,
-  domainIds: ReadonlyArray<string> = []
+  domainIds: ReadonlyArray<string> = [],
+  actorAccessTags: ReadonlyArray<string> = []
 ): number | null {
   const classLevel = spell.levelByClass[classId];
   if (classLevel !== undefined) {
@@ -20,10 +21,16 @@ export function getSpellLevelForClass(
   }
   if (domainIds.length > 0) {
     for (const domId of domainIds) {
-      const domLvl = spell.levelByDomain[domId];
-      if (domLvl !== undefined) {
-        return domLvl;
-      }
+      const domLvl = spell.levelByDomain[domId] ?? spell.levelByAccessTag?.[`domain:${domId}`];
+      if (domLvl !== undefined) return domLvl;
+    }
+  }
+  const classTagLvl = spell.levelByAccessTag?.[`class:${classId}`];
+  if (classTagLvl !== undefined) return classTagLvl;
+  if (actorAccessTags.length > 0 && spell.levelByAccessTag) {
+    for (const tag of actorAccessTags) {
+      const tagLvl = spell.levelByAccessTag[tag];
+      if (tagLvl !== undefined) return tagLvl;
     }
   }
   return null;

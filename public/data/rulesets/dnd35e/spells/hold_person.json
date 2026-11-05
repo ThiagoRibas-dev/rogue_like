@@ -1,0 +1,72 @@
+{
+  "hold_person": {
+    "id": "hold_person",
+    "name": "Hold Person",
+    "description": "The subject becomes paralyzed and freezes in place. Each round on its turn, the subject may attempt a new Will save to end the effect.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "hold_person_paralysis",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:humanoid"
+          ]
+        },
+        "conditionId": "paralyzed",
+        "eachRoundSaveRetry": true,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "enchantment",
+      "paralysis",
+      "humanoid_only"
+    ]
+  }
+}

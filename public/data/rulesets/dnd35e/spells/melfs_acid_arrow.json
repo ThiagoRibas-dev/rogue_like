@@ -1,0 +1,63 @@
+{
+  "melfs_acid_arrow": {
+    "id": "melfs_acid_arrow",
+    "name": "Melf's Acid Arrow",
+    "description": "A magical arrow of acid springs from your hand and speeds at its target. The arrow deals 2d4 points of acid damage with no splash, plus 2d4 acid each round for 1 round per 3 levels.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "acid"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 round + 1 round/3 levels",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "targeting": {
+      "mode": "ray"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "2d4",
+    "damageType": "acid",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "acid_arrow_primary",
+        "targetRole": "primary_target",
+        "dice": "2d4",
+        "damageType": "acid",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "conjuration",
+      "acid",
+      "ranged_touch",
+      "no_sr"
+    ]
+  }
+}

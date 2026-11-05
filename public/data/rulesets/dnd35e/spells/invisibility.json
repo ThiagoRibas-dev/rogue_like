@@ -1,0 +1,83 @@
+{
+  "invisibility": {
+    "id": "invisibility",
+    "name": "Invisibility",
+    "description": "The creature or object touched becomes invisible (+20/+40 Hide, total concealment), ending immediately if the subject attacks any creature.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {
+      "trickery": 2
+    },
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "invisibility_bundle",
+      "name": "Invisibility",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "invis_hide_bonus",
+          "target": "skill_hide",
+          "value": 20,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "invisibility_override",
+          "ruleKey": "invisible",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "invisible",
+        "concealment:total"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "illusion",
+      "glamer",
+      "stealth",
+      "invisibility"
+    ]
+  }
+}

@@ -77,6 +77,27 @@ export function validateDnD35eSystemContentIntegrity(
         });
       }
     }
+    for (const accessTag of Object.keys(spellDef.levelByAccessTag ?? {})) {
+      if (accessTag.startsWith('class:')) {
+        const clsId = accessTag.slice('class:'.length);
+        if (!sys.classes[clsId]) {
+          errors.push({
+            path: `systemContent.spells.${spellKey}.levelByAccessTag.${accessTag}`,
+            message: `Spell "${spellKey}" references unknown class "${clsId}" in levelByAccessTag.`,
+            severity: 'error'
+          });
+        }
+      } else if (accessTag.startsWith('domain:')) {
+        const domId = accessTag.slice('domain:'.length);
+        if (!sys.domains[domId]) {
+          errors.push({
+            path: `systemContent.spells.${spellKey}.levelByAccessTag.${accessTag}`,
+            message: `Spell "${spellKey}" references unknown domain "${domId}" in levelByAccessTag.`,
+            severity: 'error'
+          });
+        }
+      }
+    }
   }
 
   for (const [skillKey, skillDef] of Object.entries(sys.skills)) {

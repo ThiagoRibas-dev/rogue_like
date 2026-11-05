@@ -1,0 +1,74 @@
+{
+  "lightning_bolt": {
+    "id": "lightning_bolt",
+    "name": "Lightning Bolt",
+    "description": "A stroke of electrical energy deals 1d6 points of electricity damage per caster level (maximum 10d6) to each creature within its 120-foot line (Reflex half).",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "electricity"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "targeting": {
+      "mode": "area"
+    },
+    "aoeShape": "line",
+    "aoeRadiusFt": 120,
+    "damageDice": "1d6",
+    "damageType": "electricity",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "lightning_bolt_damage",
+        "targetRole": "area_occupant",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "damageType": "electricity",
+        "savingThrow": {
+          "saveType": "ref",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "evocation",
+      "electricity",
+      "line",
+      "aoe"
+    ]
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "searing_light": {
+    "id": "searing_light",
+    "name": "Searing Light",
+    "description": "Focusing divine power like a ray of sunlight, you project a blast of light dealing 1d8 per 2 CL to living creatures (max 5d8), 1d6 per CL to undead (max 10d6), or 1d8 per CL to light-vulnerable undead (max 10d8).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3
+    },
+    "levelByDomain": {
+      "sun": 3
+    },
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "ray"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d8",
+    "damageType": "untyped",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "searing_living_damage",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsNone": [
+            "type:undead",
+            "type:construct"
+          ]
+        },
+        "dice": "1d8",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 2,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "damageType": "untyped",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      },
+      {
+        "type": "damage",
+        "unitId": "searing_undead_damage",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:undead"
+          ],
+          "targetTagsNone": [
+            "vulnerability:light"
+          ]
+        },
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "damageType": "untyped",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      },
+      {
+        "type": "damage",
+        "unitId": "searing_vulnerable_undead_damage",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:undead",
+            "vulnerability:light"
+          ]
+        },
+        "dice": "1d8",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "damageType": "untyped",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "light",
+      "ray",
+      "anti_undead"
+    ]
+  }
+}

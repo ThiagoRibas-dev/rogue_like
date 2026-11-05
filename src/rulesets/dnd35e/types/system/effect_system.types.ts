@@ -7,6 +7,20 @@ import {
   SizeCategorySchema
 } from './base_system.types.ts';
 
+/** Zod schema for tag-matching conditions on declarative modifiers and effect units. */
+export const DnD35ModifierTagConditionSchema = z.object({
+  selfTagsAll: z.array(z.string()).optional(),
+  selfTagsAny: z.array(z.string()).optional(),
+  selfTagsNone: z.array(z.string()).optional(),
+  targetTagsAll: z.array(z.string()).optional(),
+  targetTagsAny: z.array(z.string()).optional(),
+  targetTagsNone: z.array(z.string()).optional(),
+  effectTagsAll: z.array(z.string()).optional(),
+  effectTagsAny: z.array(z.string()).optional(),
+  effectTagsNone: z.array(z.string()).optional()
+});
+export type DnD35ModifierTagCondition = z.infer<typeof DnD35ModifierTagConditionSchema>;
+
 /** Zod schema for a declarative Effect Provider modifier entry on a class feature, domain, feat, or race. */
 export const DnD35DeclarativeModifierSchema = z.object({
   id: z.string(),
@@ -41,17 +55,7 @@ export const DnD35DeclarativeModifierSchema = z.object({
     'untyped'
   ]),
   effectTags: z.array(z.string()).optional(),
-  condition: z
-    .object({
-      selfTagsAll: z.array(z.string()).optional(),
-      selfTagsAny: z.array(z.string()).optional(),
-      selfTagsNone: z.array(z.string()).optional(),
-      targetTagsAll: z.array(z.string()).optional(),
-      targetTagsAny: z.array(z.string()).optional(),
-      targetTagsNone: z.array(z.string()).optional(),
-      effectTagsAny: z.array(z.string()).optional()
-    })
-    .optional()
+  condition: DnD35ModifierTagConditionSchema.optional()
 });
 export type DnD35DeclarativeModifier = z.infer<typeof DnD35DeclarativeModifierSchema>;
 
@@ -275,14 +279,6 @@ export const DnD35RacialConditionalModifierSchema = z.object({
     'size_step',
     'untyped'
   ]),
-  condition: z.object({
-    selfTagsAll: z.array(z.string()).optional(),
-    selfTagsAny: z.array(z.string()).optional(),
-    selfTagsNone: z.array(z.string()).optional(),
-    targetTagsAll: z.array(z.string()).optional(),
-    targetTagsAny: z.array(z.string()).optional(),
-    targetTagsNone: z.array(z.string()).optional(),
-    effectTagsAny: z.array(z.string()).optional()
-  })
+  condition: DnD35ModifierTagConditionSchema
 });
 export type DnD35RacialConditionalModifier = z.infer<typeof DnD35RacialConditionalModifierSchema>;

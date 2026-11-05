@@ -2,34 +2,73 @@
   "resistance": {
     "id": "resistance",
     "name": "Resistance",
-    "description": "Imbues the subject with protective magical energy, granting a +1 resistance bonus on all saving throws.",
+    "description": "You imbue the subject with magical energy that grants a +1 resistance bonus on all saving throws for 1 minute.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
       "sorcerer": 0,
       "cleric": 0,
       "druid": 0,
-      "bard": 0,
-      "paladin": 1
+      "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "abjuration",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 minute",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
-      "effect": "negates"
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "resistance_buff",
+      "name": "Resistance",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "resistance_save_bonus",
+          "target": "saving_throw",
+          "value": 1,
+          "type": "resistance"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "resistance_buff"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
     "tags": [
+      "arcane",
+      "divine",
       "abjuration",
-      "protection"
+      "save_buff"
     ]
   }
 }

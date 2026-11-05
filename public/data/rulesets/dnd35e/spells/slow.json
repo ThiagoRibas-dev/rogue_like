@@ -1,0 +1,105 @@
+{
+  "slow": {
+    "id": "slow",
+    "name": "Slow",
+    "description": "An affected creature moves and attacks at a drastically slowed rate (staggered to a single move or standard action each round, -1 attack, -1 AC/Reflex, and half speed). Will negates.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "multi_creature",
+      "maxClusterSpanFt": 30
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "slow_debuff_unit",
+        "targetRole": "secondary_enemy",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "slow_bundle",
+          "name": "Slow",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "slow_atk_pen",
+              "target": "attack",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "slow_ac_pen",
+              "target": "ac",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "slow_ref_pen",
+              "target": "save_ref",
+              "value": -1,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "slow_staggered_override",
+              "ruleKey": "staggered_to_single_action",
+              "value": true
+            }
+          ],
+          "grantedTags": [
+            "slow_active",
+            "condition:staggered"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "arcane",
+      "transmutation",
+      "slow",
+      "debuff",
+      "staggered"
+    ]
+  }
+}

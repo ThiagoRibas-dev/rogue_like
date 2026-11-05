@@ -1,0 +1,77 @@
+{
+  "bulls_strength": {
+    "id": "bulls_strength",
+    "name": "Bull's Strength",
+    "description": "The affected creature gains a +4 enhancement bonus to Strength for 1 minute per level.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 2,
+      "druid": 2,
+      "paladin": 2
+    },
+    "levelByDomain": {
+      "strength": 2
+    },
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "bulls_strength_bundle",
+      "name": "Bull's Strength",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "bulls_strength_str",
+          "target": "str",
+          "value": 4,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "bulls_strength_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "transmutation",
+      "ability_buff",
+      "str"
+    ]
+  }
+}

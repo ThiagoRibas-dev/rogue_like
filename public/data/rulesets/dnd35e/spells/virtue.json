@@ -1,0 +1,61 @@
+{
+  "virtue": {
+    "id": "virtue",
+    "name": "Virtue",
+    "description": "With a touch, you infuse a subject with a tiny surge of life, granting 1 temporary hit point for 1 minute.",
+    "level": 0,
+    "levelByClass": {
+      "cleric": 0,
+      "druid": 0
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 minute",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "healing",
+        "unitId": "virtue_temp_hp",
+        "targetRole": "primary_target",
+        "dice": "1",
+        "invertsForUndead": false,
+        "isTemporaryHp": true,
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "harmless"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": false
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "temp_hp"
+    ]
+  }
+}

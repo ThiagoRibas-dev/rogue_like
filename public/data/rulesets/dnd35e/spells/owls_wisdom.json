@@ -1,0 +1,76 @@
+{
+  "owls_wisdom": {
+    "id": "owls_wisdom",
+    "name": "Owl's Wisdom",
+    "description": "The affected creature gains a +4 enhancement bonus to Wisdom for 1 minute per level.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 2,
+      "druid": 2,
+      "paladin": 2,
+      "ranger": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "owls_wisdom_bundle",
+      "name": "Owl's Wisdom",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "owls_wisdom_wis",
+          "target": "wis",
+          "value": 4,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "owls_wisdom_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "transmutation",
+      "ability_buff",
+      "wis"
+    ]
+  }
+}

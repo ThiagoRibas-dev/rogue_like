@@ -1,0 +1,57 @@
+{
+  "remove_curse": {
+    "id": "remove_curse",
+    "name": "Remove Curse",
+    "description": "Remove curse instantaneously removes all curses on an object or a creature.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "cleric": 3,
+      "bard": 3,
+      "paladin": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "cure_curse",
+        "targetRole": "primary_target",
+        "conditionId": "none",
+        "curesConditions": [
+          "cursed"
+        ],
+        "allowsSpellResistance": false
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "curative"
+    ]
+  }
+}

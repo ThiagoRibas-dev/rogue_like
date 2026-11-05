@@ -1,0 +1,180 @@
+{
+  "battletide": {
+    "id": "battletide",
+    "name": "Battletide",
+    "description": "You steal life energy from nearby foes. Each targeted enemy takes a -2 penalty on attack rolls, saving throws, and weapon damage rolls. While at least one enemy is affected, you gain a +1 bonus on attacks and Reflex saves, a +1 dodge bonus to AC, +30 ft enhancement speed, 1 extra full-attack strike (non-cumulative with haste), or can cast a prepared spell up to 5th level as a free action.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {
+      "evil": 5,
+      "war": 5
+    },
+    "levelByAccessTag": {
+      "feat:initiate_of_bane": 5
+    },
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "caster_and_multi_creature",
+      "maxClusterSpanFt": 30
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "enemy_energy_steal",
+        "targetRole": "secondary_enemy",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "emitsTetherTagToCaster": "tether:battletide:enemy_affected",
+        "effectBundle": {
+          "bundleId": "battletide_enemy_debuff_bundle",
+          "name": "Battletide Energy Drain",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "battletide_atk_pen",
+              "target": "attack",
+              "value": -2,
+              "type": "untyped"
+            },
+            {
+              "id": "battletide_dmg_pen",
+              "target": "damage",
+              "value": -2,
+              "type": "untyped"
+            },
+            {
+              "id": "battletide_save_pen",
+              "target": "saving_throw",
+              "value": -2,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "battletide_drained"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "caster_battletide_buff",
+        "targetRole": "caster",
+        "condition": {
+          "selfTagsAll": [
+            "tether:battletide:enemy_affected"
+          ]
+        },
+        "effectBundle": {
+          "bundleId": "battletide_caster_buff_bundle",
+          "name": "Battletide Surge",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "battletide_caster_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "untyped"
+            },
+            {
+              "id": "battletide_caster_ref",
+              "target": "save_ref",
+              "value": 1,
+              "type": "dodge"
+            },
+            {
+              "id": "battletide_caster_ac",
+              "target": "ac",
+              "value": 1,
+              "type": "dodge"
+            },
+            {
+              "id": "battletide_caster_speed",
+              "target": "speed",
+              "value": 30,
+              "type": "enhancement"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "battletide_extra_attack",
+              "ruleKey": "extra_full_attack_haste",
+              "value": true
+            }
+          ],
+          "grantedTags": [
+            "battletide_buff_active",
+            "effect_group:haste_extra_attack"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "quicken_cast_grant",
+        "unitId": "caster_battletide_quicken",
+        "targetRole": "caster",
+        "condition": {
+          "selfTagsAll": [
+            "tether:battletide:enemy_affected"
+          ]
+        },
+        "maxSpellLevelScaling": {
+          "baseValue": 1,
+          "perCL": 1,
+          "clStepInterval": 2,
+          "startAboveCL": 9,
+          "minCap": 1,
+          "maxCap": 5
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "multi_target",
+      "tethered_buff",
+      "extra_attack"
+    ]
+  }
+}

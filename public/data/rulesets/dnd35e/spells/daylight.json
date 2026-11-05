@@ -1,0 +1,56 @@
+{
+  "daylight": {
+    "id": "daylight",
+    "name": "Daylight",
+    "description": "The object touched sheds bright light in a 60-foot radius. It counters or dispels any darkness spell of equal or lower level.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "cleric": 3,
+      "druid": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "light"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 60,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "daylight_field",
+        "fieldType": "field_daylight",
+        "radiusFt": 60,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "evocation",
+      "light"
+    ]
+  }
+}

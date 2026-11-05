@@ -2,7 +2,7 @@
   "grease": {
     "id": "grease",
     "name": "Grease",
-    "description": "Covers a solid surface with slippery grease, requiring creatures moving across it to succeed on a DC 10 Balance check or fall prone.",
+    "description": "A grease spell covers a solid surface with a slippery coat of oil, forcing creatures in the area to make a Reflex save or fall prone.",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
@@ -10,24 +10,52 @@
       "bard": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "savingThrow": {
       "saveType": "ref",
       "effect": "partial"
     },
-    "aoeShape": "burst",
+    "targeting": {
+      "mode": "spatial_zone"
+    },
+    "aoeShape": "spread",
     "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "grease_field",
+        "fieldType": "field_grease",
+        "radiusFt": 10,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "arcane",
       "conjuration",
-      "slippery"
+      "hazard",
+      "prone"
     ]
   }
 }

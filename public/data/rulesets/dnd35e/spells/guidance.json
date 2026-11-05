@@ -2,30 +2,81 @@
   "guidance": {
     "id": "guidance",
     "name": "Guidance",
-    "description": "Bestows divine guidance upon a touched subject, granting a +1 competence bonus on a single attack roll, saving throw, or skill check.",
+    "description": "This spell imbues the subject with a +1 competence bonus on a single attack roll, saving throw, or skill check.",
     "level": 0,
     "levelByClass": {
       "cleric": 0,
       "druid": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "divination",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 minute or until discharged",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
-      "effect": "negates"
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "guidance_buff",
+      "name": "Guidance",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "guidance_atk",
+          "target": "attack",
+          "value": 1,
+          "type": "competence"
+        },
+        {
+          "id": "guidance_save",
+          "target": "saving_throw",
+          "value": 1,
+          "type": "competence"
+        },
+        {
+          "id": "guidance_skill",
+          "target": "skill_check",
+          "value": 1,
+          "type": "competence"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "guidance_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
     "tags": [
       "divine",
-      "divination"
+      "divination",
+      "competence_buff"
     ]
   }
 }

@@ -2,7 +2,7 @@
   "mage_hand": {
     "id": "mage_hand",
     "name": "Mage Hand",
-    "description": "Points at an unattended, nonmagical object weighing up to 5 pounds and moves it up to 15 feet per round.",
+    "description": "You point your finger at an object and lift it and move it at will from a distance of up to 5 pounds.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
@@ -10,12 +10,22 @@
       "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "transmutation",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "concentration",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "aoeShape": "single",

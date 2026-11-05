@@ -1,0 +1,96 @@
+{
+  "bane": {
+    "id": "bane",
+    "name": "Bane",
+    "description": "Bane fills your enemies with fear and doubt. Each affected creature takes a -1 penalty on attack rolls and a -1 penalty on saving throws against fear effects.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "fear",
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "area"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 50,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "bane_debuff",
+        "targetRole": "secondary_enemy",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "bane_debuff_bundle",
+          "name": "Bane",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "bane_atk_penalty",
+              "target": "attack",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "bane_fear_save_penalty",
+              "target": "saving_throw",
+              "value": -1,
+              "type": "untyped",
+              "effectTags": [
+                "descriptor:fear"
+              ]
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "bane_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "enchantment",
+      "fear",
+      "mind_affecting",
+      "debuff"
+    ]
+  }
+}

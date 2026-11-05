@@ -2,7 +2,7 @@
   "burning_hands": {
     "id": "burning_hands",
     "name": "Burning Hands",
-    "description": "A 15-foot cone of searing flame deals 1d4 fire damage per caster level (max 5d4).",
+    "description": "A cone of searing flame shoots from your fingertips, dealing 1d4 points of fire damage per caster level (maximum 5d4) to creatures in the area.",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
@@ -11,25 +11,65 @@
     "levelByDomain": {
       "fire": 1
     },
+    "levelByAccessTag": {},
     "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "ref",
       "effect": "half"
     },
+    "targeting": {
+      "mode": "area"
+    },
     "aoeShape": "cone",
     "aoeRadiusFt": 15,
     "damageDice": "1d4",
     "damageType": "fire",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "burning_hands_damage",
+        "targetRole": "area_occupant",
+        "dice": "1d4",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "damageType": "fire",
+        "savingThrow": {
+          "saveType": "ref",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "arcane",
-      "fire"
+      "evocation",
+      "fire",
+      "aoe"
     ]
   }
 }

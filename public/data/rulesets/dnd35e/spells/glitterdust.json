@@ -1,0 +1,93 @@
+{
+  "glitterdust": {
+    "id": "glitterdust",
+    "name": "Glitterdust",
+    "description": "A cloud of golden particles covers everything in a 10-foot radius spread, blinding creatures (Will negates with retry each round) and outlining invisible things for -40 Hide with no save.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "glitterdust_blindness",
+        "targetRole": "area_occupant",
+        "conditionId": "blinded",
+        "eachRoundSaveRetry": true,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": false
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "glitterdust_outline",
+        "targetRole": "area_occupant",
+        "allowsSpellResistance": false,
+        "effectBundle": {
+          "bundleId": "glitterdust_glimmer_bundle",
+          "name": "Glitterdust Outlined",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "glitterdust_hide_pen",
+              "target": "skill_hide",
+              "value": -40,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "glitterdust_negate_concealment",
+              "ruleKey": "negate_invisibility_concealment",
+              "value": true
+            }
+          ],
+          "grantedTags": [
+            "glitterdust_outlined"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "arcane",
+      "conjuration",
+      "blindness",
+      "anti_invisibility"
+    ]
+  }
+}

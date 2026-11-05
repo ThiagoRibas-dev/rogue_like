@@ -1,0 +1,63 @@
+{
+  "blindness_deafness": {
+    "id": "blindness_deafness",
+    "name": "Blindness/Deafness",
+    "description": "You call upon unholy or magical power to permanently blind or deafen a subject (Fortitude negates).",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 3,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "permanent",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "blindness_condition",
+        "targetRole": "primary_target",
+        "conditionId": "blinded",
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "necromancy",
+      "debuff",
+      "blindness"
+    ]
+  }
+}

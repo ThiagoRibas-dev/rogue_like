@@ -1,0 +1,80 @@
+{
+  "fly": {
+    "id": "fly",
+    "name": "Fly",
+    "description": "The subject can fly at a speed of 60 feet (or 40 feet if wearing medium or heavy armor, or carrying medium or heavy load) with good maneuverability.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {
+      "travel": 3
+    },
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "fly_bundle",
+      "name": "Fly",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "fly_speed_bonus",
+          "target": "speed",
+          "value": 60,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "fly_override",
+          "ruleKey": "can_fly",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "flight:good",
+        "fly_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "flight",
+      "mobility"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
   "sanctuary": {
     "id": "sanctuary",
     "name": "Sanctuary",
-    "description": "Any opponent attempting to directly strike or target the warded creature must succeed on a Will save or redirect the attack.",
+    "description": "Any opponent attempting to strike or directly attack the warded creature, even with a targeted spell, must make a Will save or take no action.",
     "level": 1,
     "levelByClass": {
       "cleric": 1
@@ -10,24 +10,61 @@
     "levelByDomain": {
       "protection": 1
     },
+    "levelByAccessTag": {},
     "school": "abjuration",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "savingThrow": {
       "saveType": "will",
-      "effect": "negates"
+      "effect": "none"
+    },
+    "targeting": {
+      "mode": "single_creature"
     },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "sanctuary_bundle",
+      "name": "Sanctuary",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "sanctuary_ward",
+          "ruleKey": "sanctuary_ward_active",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "sanctuary_ward"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
     "tags": [
       "divine",
       "abjuration",
-      "ward"
+      "protection"
     ]
   }
 }

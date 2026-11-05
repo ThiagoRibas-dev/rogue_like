@@ -1,0 +1,89 @@
+{
+  "protection_from_chaos": {
+    "id": "protection_from_chaos",
+    "name": "Protection from Chaos",
+    "description": "Wards a creature from chaotic creatures, granting +2 deflection to AC and +2 resistance on saves against chaotic sources.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {
+      "law": 1
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "lawful"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "prot_chaos_bundle",
+      "name": "Protection from Chaos",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "prot_chaos_ac",
+          "target": "ac",
+          "value": 2,
+          "type": "deflection",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:CE",
+              "alignment:CN",
+              "alignment:CG"
+            ]
+          }
+        },
+        {
+          "id": "prot_chaos_save",
+          "target": "saving_throw",
+          "value": 2,
+          "type": "resistance",
+          "condition": {
+            "targetTagsAny": [
+              "alignment:CE",
+              "alignment:CN",
+              "alignment:CG"
+            ]
+          }
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "ward:protection_from_chaos"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "alignment_ward"
+    ]
+  }
+}

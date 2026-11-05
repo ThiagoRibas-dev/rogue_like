@@ -1,0 +1,61 @@
+{
+  "inflict_minor_wounds": {
+    "id": "inflict_minor_wounds",
+    "name": "Inflict Minor Wounds",
+    "description": "When laying your hand upon a creature, you channel negative energy that deals 1 point of damage (Will negates).",
+    "level": 0,
+    "levelByClass": {
+      "cleric": 0
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1",
+    "damageType": "negative",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "inflict_minor",
+        "targetRole": "primary_target",
+        "dice": "1",
+        "damageType": "negative",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": false
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "negative"
+    ]
+  }
+}

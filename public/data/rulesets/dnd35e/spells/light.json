@@ -2,7 +2,7 @@
   "light": {
     "id": "light",
     "name": "Light",
-    "description": "Object touched shines like a torch, shedding bright illumination in a 20-foot radius and shadowy illumination to 40 feet.",
+    "description": "Causes an object to glow like a torch, shedding bright light in a 20-foot radius for 10 minutes per level.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
@@ -12,17 +12,43 @@
       "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "evocation",
+    "descriptors": [
+      "light"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
     "components": {
       "verbal": true,
-      "somatic": false,
-      "material": true
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
-    "aoeShape": "single",
+    "aoeShape": "burst",
     "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "light_aura",
+        "fieldType": "field_light",
+        "radiusFt": 20,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
+      "arcane",
+      "divine",
       "evocation",
       "light"
     ]

@@ -1,0 +1,74 @@
+{
+  "shillelagh": {
+    "id": "shillelagh",
+    "name": "Shillelagh",
+    "description": "Your nonmagical club or quarterstaff strikes as if it were a +1 magical weapon dealing 2d6 points of damage.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "shillelagh_bundle",
+      "name": "Shillelagh",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "shillelagh_atk",
+          "target": "attack",
+          "value": 1,
+          "type": "enhancement"
+        },
+        {
+          "id": "shillelagh_dmg",
+          "target": "damage",
+          "value": 1,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "shillelagh_damage",
+          "ruleKey": "shillelagh_2d6_damage",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "shillelagh_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "divine",
+      "transmutation",
+      "weapon_buff"
+    ]
+  }
+}

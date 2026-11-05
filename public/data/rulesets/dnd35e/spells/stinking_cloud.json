@@ -1,0 +1,61 @@
+{
+  "stinking_cloud": {
+    "id": "stinking_cloud",
+    "name": "Stinking Cloud",
+    "description": "Stinking cloud creates a bank of fog that billows out from the point you designate. Living creatures in the cloud become nauseated (Fortitude negates) and remain nauseated for 1d4+1 rounds after leaving.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "spatial_zone"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "stinking_cloud_field",
+        "fieldType": "field_stinking_cloud",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "arcane",
+      "conjuration",
+      "fog",
+      "nauseated",
+      "crowd_control"
+    ]
+  }
+}

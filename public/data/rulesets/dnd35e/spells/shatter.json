@@ -1,0 +1,84 @@
+{
+  "shatter": {
+    "id": "shatter",
+    "name": "Shatter",
+    "description": "A loud, ringing noise shatters nonmagical objects of glass, crystal, or metal, or deals 1d6 sonic/level (max 10d6) to a crystalline creature (Fortitude half).",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {
+      "chaos": 2,
+      "destruction": 2
+    },
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "sonic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "half"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6",
+    "damageType": "sonic",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "shatter_crystal_damage",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAny": [
+            "subtype:earth",
+            "material:crystalline"
+          ]
+        },
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "damageType": "sonic",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "divine",
+      "evocation",
+      "sonic"
+    ]
+  }
+}

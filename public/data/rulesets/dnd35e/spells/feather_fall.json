@@ -1,0 +1,70 @@
+{
+  "feather_fall": {
+    "id": "feather_fall",
+    "name": "Feather Fall",
+    "description": "The affected creatures or objects fall slowly through the air, completely negating falling damage.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "immediate",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "multi_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "feather_fall_bundle",
+      "name": "Feather Fall",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "feather_fall_immune",
+          "ruleKey": "immune_falling_damage",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "feather_fall_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "immediate_action"
+    ]
+  }
+}

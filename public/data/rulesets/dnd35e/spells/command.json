@@ -1,0 +1,63 @@
+{
+  "command": {
+    "id": "command",
+    "name": "Command",
+    "description": "You give the subject a single command, which it obeys to the best of its ability for 1 round (approach, drop, fall, flee, halt).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "language_dependent",
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "commanded_condition",
+        "targetRole": "primary_target",
+        "conditionId": "staggered",
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "enchantment",
+      "compulsion",
+      "language_dependent"
+    ]
+  }
+}

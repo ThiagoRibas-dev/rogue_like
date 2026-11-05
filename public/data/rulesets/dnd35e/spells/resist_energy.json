@@ -1,0 +1,76 @@
+{
+  "resist_energy": {
+    "id": "resist_energy",
+    "name": "Resist Energy",
+    "description": "This abjuration grants a creature resistance to one chosen energy type: 10 points at 1st-6th level, 20 points at 7th-10th level, and 30 points at 11th level and higher.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "cleric": 2,
+      "druid": 2,
+      "paladin": 2,
+      "ranger": 1
+    },
+    "levelByDomain": {
+      "fire": 3
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "resist_energy_bundle",
+      "name": "Resist Energy",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "resist_energy_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {
+        "fire": 10,
+        "cold": 10,
+        "electricity": 10,
+        "acid": 10,
+        "sonic": 10
+      },
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "energy_resistance"
+    ]
+  }
+}

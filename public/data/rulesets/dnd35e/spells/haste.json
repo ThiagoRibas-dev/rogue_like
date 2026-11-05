@@ -1,0 +1,106 @@
+{
+  "haste": {
+    "id": "haste",
+    "name": "Haste",
+    "description": "The transmuted creatures move and act more quickly, gaining +1 on attack rolls, +1 dodge to AC and Reflex saves, +30 ft enhancement speed, and 1 extra attack on a full attack action.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "multi_creature",
+      "maxClusterSpanFt": 30
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "haste_buff_unit",
+        "targetRole": "secondary_ally",
+        "effectBundle": {
+          "bundleId": "haste_bundle",
+          "name": "Haste",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "haste_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "untyped"
+            },
+            {
+              "id": "haste_ac_dodge",
+              "target": "ac",
+              "value": 1,
+              "type": "dodge"
+            },
+            {
+              "id": "haste_ref_dodge",
+              "target": "save_ref",
+              "value": 1,
+              "type": "dodge"
+            },
+            {
+              "id": "haste_speed",
+              "target": "speed",
+              "value": 30,
+              "type": "enhancement"
+            }
+          ],
+          "ruleOverrides": [
+            {
+              "id": "haste_extra_attack",
+              "ruleKey": "extra_full_attack_haste",
+              "value": true
+            }
+          ],
+          "grantedTags": [
+            "haste_active",
+            "effect_group:haste_extra_attack"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "arcane",
+      "transmutation",
+      "haste",
+      "speed_buff",
+      "extra_attack"
+    ]
+  }
+}

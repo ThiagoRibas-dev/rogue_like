@@ -1,0 +1,89 @@
+{
+  "color_spray": {
+    "id": "color_spray",
+    "name": "Color Spray",
+    "description": "A vivid cone of clashing colors springs forth, causing creatures of 2 or fewer HD to become unconscious, blinded, and stunned; 3-4 HD blinded and stunned; 5+ HD stunned.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "pattern",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "area"
+    },
+    "aoeShape": "cone",
+    "aoeRadiusFt": 15,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "color_spray_low_hd",
+        "targetRole": "area_occupant",
+        "conditionId": "unconscious",
+        "maxTargetHitDice": 2,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      },
+      {
+        "type": "condition",
+        "unitId": "color_spray_mid_hd",
+        "targetRole": "area_occupant",
+        "conditionId": "blinded",
+        "maxTargetHitDice": 4,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      },
+      {
+        "type": "condition",
+        "unitId": "color_spray_stun",
+        "targetRole": "area_occupant",
+        "conditionId": "stunned",
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "illusion",
+      "mind_affecting",
+      "crowd_control"
+    ]
+  }
+}

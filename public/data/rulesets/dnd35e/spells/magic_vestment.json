@@ -1,0 +1,81 @@
+{
+  "magic_vestment": {
+    "id": "magic_vestment",
+    "name": "Magic Vestment",
+    "description": "You imbue a suit of armor or a shield with an enhancement bonus of +1 per four caster levels (maximum +5).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3
+    },
+    "levelByDomain": {
+      "war": 3
+    },
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "magic_vestment_unit",
+        "targetRole": "primary_target",
+        "effectBundle": {
+          "bundleId": "magic_vestment_bundle",
+          "name": "Magic Vestment",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "magic_vestment_ac",
+              "target": "ac",
+              "value": 1,
+              "type": "armor_enhancement"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "magic_vestment_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        },
+        "statScalingRules": {
+          "ac": {
+            "baseValue": 0,
+            "perCL": 1,
+            "clStepInterval": 4,
+            "startAboveCL": 0,
+            "minCap": 1,
+            "maxCap": 5
+          }
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "armor_buff"
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "desecrate": {
+    "id": "desecrate",
+    "name": "Desecrate",
+    "description": "This spell imbues an area with negative energy in a 20-foot radius. Undead in the area gain a +1 profane bonus on attack rolls, damage rolls, and saves, and +1 hit point per HD.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2
+    },
+    "levelByDomain": {
+      "evil": 2
+    },
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "2 hours/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 25,
+      "casterCosts": [
+        {
+          "costType": "material_gp",
+          "amountGp": 25,
+          "consumedItemTag": "unholy_water"
+        }
+      ]
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "desecrate_field",
+        "fieldType": "field_desecrate",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "evil",
+      "profane_zone"
+    ]
+  }
+}

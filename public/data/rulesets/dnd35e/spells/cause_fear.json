@@ -2,32 +2,74 @@
   "cause_fear": {
     "id": "cause_fear",
     "name": "Cause Fear",
-    "description": "Inspires chilling terror in a creature of 5 or fewer Hit Dice, causing it to flee as frightened for 1d4 rounds (or shaken for 1 round on save).",
+    "description": "The affected creature of 5 or fewer Hit Dice becomes frightened for 1d4 rounds. If the subject succeeds on its Will save, it is shaken for 1 round.",
     "level": 1,
     "levelByClass": {
-      "cleric": 1,
       "wizard": 1,
       "sorcerer": 1,
+      "cleric": 1,
       "bard": 1
     },
     "levelByDomain": {
       "death": 1
     },
+    "levelByAccessTag": {},
     "school": "necromancy",
+    "descriptors": [
+      "fear",
+      "mind_affecting"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1d4 rounds or 1 round",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
       "effect": "partial"
     },
+    "targeting": {
+      "mode": "single_creature",
+      "maxTargetHitDice": 5
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "fear_condition",
+        "targetRole": "primary_target",
+        "conditionId": "frightened",
+        "durationRoundsScaling": {
+          "baseValue": 2,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 4
+        },
+        "maxTargetHitDice": 5,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "partial"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
     "tags": [
+      "arcane",
+      "divine",
       "necromancy",
       "fear",
       "mind_affecting"

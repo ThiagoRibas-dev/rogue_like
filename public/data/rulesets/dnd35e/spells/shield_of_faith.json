@@ -1,0 +1,86 @@
+{
+  "shield_of_faith": {
+    "id": "shield_of_faith",
+    "name": "Shield of Faith",
+    "description": "This spell surrounds the subject with a shimmering field of magical energy that grants a +2 deflection bonus to AC + 1 per six levels (maximum +5).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "sof_deflection_unit",
+        "targetRole": "primary_target",
+        "effectBundle": {
+          "bundleId": "sof_bundle",
+          "name": "Shield of Faith",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "sof_deflection_ac",
+              "target": "ac",
+              "value": 2,
+              "type": "deflection"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "shield_of_faith_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        },
+        "statScalingRules": {
+          "ac": {
+            "baseValue": 2,
+            "perCL": 1,
+            "clStepInterval": 6,
+            "startAboveCL": 0,
+            "minCap": 2,
+            "maxCap": 5
+          }
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "abjuration",
+      "deflection_buff"
+    ]
+  }
+}

@@ -2,28 +2,69 @@
   "magic_missile": {
     "id": "magic_missile",
     "name": "Magic Missile",
-    "description": "Fires unerring darts of magical force that strike targets for 1d4+1 damage.",
+    "description": "A missile of magical force darts from your fingertip and unerringly strikes its target for 1d4+1 points of force damage (up to 5 missiles at CL 9).",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
       "sorcerer": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "multi_creature"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
     "damageDice": "1d4+1",
     "damageType": "force",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "magic_missile_dart",
+        "targetRole": "primary_target",
+        "dice": "1d4+1",
+        "projectileCountScaling": {
+          "baseValue": 1,
+          "perCL": 1,
+          "clStepInterval": 2,
+          "startAboveCL": 1,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "damageType": "force",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "arcane",
-      "force"
+      "evocation",
+      "force",
+      "missile",
+      "unerring"
     ]
   }
 }

@@ -125,15 +125,34 @@ export function renderSpellInspector(
   badges.style.display = 'flex';
   badges.style.flexWrap = 'wrap';
   badges.style.gap = '6px';
-  badges.appendChild(createInspectorBadge(`School: ${spell.school.toUpperCase()}`, '#58a6ff'));
+  const schoolLabel = spell.subschool
+    ? `${spell.school.toUpperCase()} (${spell.subschool.toUpperCase()})`
+    : spell.school.toUpperCase();
+  badges.appendChild(createInspectorBadge(`School: ${schoolLabel}`, '#58a6ff'));
+  for (const descTag of spell.descriptors ?? []) {
+    badges.appendChild(createInspectorBadge(`[${descTag.toUpperCase()}]`, '#a371f7'));
+  }
   badges.appendChild(createInspectorBadge(`Level: ${effLvl}`));
+  if (spell.castingTime) {
+    badges.appendChild(createInspectorBadge(`Cast: ${spell.castingTime}`));
+  }
+  if (spell.range) {
+    badges.appendChild(createInspectorBadge(`Range: ${spell.range}`));
+  }
+  if (spell.duration) {
+    badges.appendChild(createInspectorBadge(`Duration: ${spell.duration}`));
+  }
   const comps: string[] = [];
   if (spell.components.verbal) comps.push('V');
   if (spell.components.somatic) comps.push('S');
   if (spell.components.material) comps.push('M');
+  if (spell.components.focus) comps.push('F');
+  if (spell.components.divineFocus) comps.push('DF');
+  if (spell.components.sacrifice) comps.push('Sacrifice');
+  if (spell.components.xpCost) comps.push(`XP (${spell.components.xpCost})`);
   badges.appendChild(createInspectorBadge(`Components: ${comps.join(', ') || 'None'}`));
   badges.appendChild(createInspectorBadge(`SR: ${spell.allowsSpellResistance ? 'Yes' : 'No'}`));
-  if (spell.savingThrow) {
+  if (spell.savingThrow && spell.savingThrow.saveType !== 'none') {
     badges.appendChild(
       createInspectorBadge(`Save: ${spell.savingThrow.saveType.toUpperCase()} (${spell.savingThrow.effect})`)
     );
@@ -151,11 +170,12 @@ export function renderSpellInspector(
     pane.appendChild(desc);
   }
 
-  pane.appendChild(createInspectorSectionTitle('Class & Domain Availability'));
+  pane.appendChild(createInspectorSectionTitle('Class, Domain & Tag Availability'));
   const avail = document.createElement('div');
   avail.style.fontSize = '0.82rem';
   const clsEntries = Object.entries(spell.levelByClass).map(([c, l]) => `${c} ${l}`);
   const domEntries = Object.entries(spell.levelByDomain).map(([d, l]) => `${d} domain ${l}`);
-  avail.textContent = [...clsEntries, ...domEntries].join(' • ') || `Level ${spell.level}`;
+  const tagEntries = Object.entries(spell.levelByAccessTag ?? {}).map(([t, l]) => `${t} ${l}`);
+  avail.textContent = [...clsEntries, ...domEntries, ...tagEntries].join(' • ') || `Level ${spell.level}`;
   pane.appendChild(avail);
 }

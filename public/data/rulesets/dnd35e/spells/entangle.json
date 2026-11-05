@@ -2,7 +2,7 @@
   "entangle": {
     "id": "entangle",
     "name": "Entangle",
-    "description": "Grasses, weeds, and vines entangle creatures within a 40-foot radius, anchoring them or halving movement.",
+    "description": "Grasses, weeds, bushes, and trees wrap around creatures in the area, entangling them and turning the terrain difficult.",
     "level": 1,
     "levelByClass": {
       "druid": 1,
@@ -11,23 +11,50 @@
     "levelByDomain": {
       "plant": 1
     },
+    "levelByAccessTag": {},
     "school": "transmutation",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "savingThrow": {
       "saveType": "ref",
       "effect": "partial"
     },
-    "aoeShape": "burst",
+    "targeting": {
+      "mode": "spatial_zone"
+    },
+    "aoeShape": "spread",
     "aoeRadiusFt": 40,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "entangle_zone",
+        "fieldType": "field_entangle",
+        "radiusFt": 40,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
     "tags": [
       "divine",
       "transmutation",
+      "difficult_terrain",
       "entangle"
     ]
   }

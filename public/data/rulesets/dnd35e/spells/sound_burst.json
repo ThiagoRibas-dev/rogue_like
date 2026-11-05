@@ -1,0 +1,85 @@
+{
+  "sound_burst": {
+    "id": "sound_burst",
+    "name": "Sound Burst",
+    "description": "You cause a deafening cacophony of sound to burst forth in a 10-foot radius spread, dealing 1d8 points of sonic damage and stunning creatures for 1 round (Fortitude negates stun).",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "sonic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "partial"
+    },
+    "targeting": {
+      "mode": "area"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 10,
+    "damageDice": "1d8",
+    "damageType": "sonic",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "sound_burst_damage",
+        "targetRole": "area_occupant",
+        "dice": "1d8",
+        "damageType": "sonic",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      },
+      {
+        "type": "condition",
+        "unitId": "sound_burst_stun",
+        "targetRole": "area_occupant",
+        "conditionId": "stunned",
+        "durationRoundsScaling": {
+          "baseValue": 1,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 1
+        },
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "sonic",
+      "stun"
+    ]
+  }
+}

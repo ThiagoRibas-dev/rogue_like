@@ -1,0 +1,59 @@
+{
+  "remove_blindness_deafness": {
+    "id": "remove_blindness_deafness",
+    "name": "Remove Blindness/Deafness",
+    "description": "Remove blindness/deafness cures blindness or deafness (your choice) in the creature touched.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "paladin": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "cure_blindness_deafness",
+        "targetRole": "primary_target",
+        "conditionId": "none",
+        "curesConditions": [
+          "blinded",
+          "deafened"
+        ],
+        "allowsSpellResistance": false
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "curative"
+    ]
+  }
+}

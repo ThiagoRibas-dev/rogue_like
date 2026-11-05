@@ -1,0 +1,61 @@
+{
+  "acid_splash": {
+    "id": "acid_splash",
+    "name": "Acid Splash",
+    "description": "Fires a small orb of acid that deals 1d3 points of acid damage as a ranged touch attack.",
+    "level": 0,
+    "levelByClass": {
+      "wizard": 0,
+      "sorcerer": 0
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "acid"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "targeting": {
+      "mode": "ray"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d3",
+    "damageType": "acid",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "acid_damage",
+        "targetRole": "primary_target",
+        "dice": "1d3",
+        "damageType": "acid",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "acid",
+      "ranged_touch"
+    ]
+  }
+}

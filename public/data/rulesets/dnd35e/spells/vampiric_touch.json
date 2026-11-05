@@ -1,0 +1,68 @@
+{
+  "vampiric_touch": {
+    "id": "vampiric_touch",
+    "name": "Vampiric Touch",
+    "description": "You must succeed on a melee touch attack. Your touch deals 1d6 points of damage per two caster levels (maximum 10d6). You gain temporary hit points equal to the damage dealt for 1 hour.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous / 1 hour",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6",
+    "damageType": "negative",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "vampiric_damage",
+        "targetRole": "primary_target",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 2,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 10
+        },
+        "damageType": "negative",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "arcane",
+      "necromancy",
+      "negative",
+      "melee_touch",
+      "life_drain"
+    ]
+  }
+}

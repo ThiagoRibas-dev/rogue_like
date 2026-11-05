@@ -1,0 +1,100 @@
+{
+  "reduce_person": {
+    "id": "reduce_person",
+    "name": "Reduce Person",
+    "description": "Causes a humanoid creature to shrink to half its normal size, reducing its size category by 1 step (-2 Str, +2 Dex, +1 size AC/attack).",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "reduce_bundle",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:humanoid"
+          ]
+        },
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "reduce_person_bundle",
+          "name": "Reduce Person",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "reduce_size_step",
+              "target": "size",
+              "value": -1,
+              "type": "size_step"
+            },
+            {
+              "id": "reduce_str",
+              "target": "str",
+              "value": -2,
+              "type": "size"
+            },
+            {
+              "id": "reduce_dex",
+              "target": "dex",
+              "value": 2,
+              "type": "size"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "reduced"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
+    "tags": [
+      "arcane",
+      "transmutation",
+      "size_change",
+      "humanoid_only"
+    ]
+  }
+}

@@ -2,7 +2,7 @@
   "daze": {
     "id": "daze",
     "name": "Daze",
-    "description": "Cloud the mind of a humanoid creature with 4 or fewer Hit Dice so that it takes no actions for 1 round.",
+    "description": "Clouds the mind of a humanoid creature with 4 or fewer Hit Dice so that it takes no actions for 1 round.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
@@ -10,24 +10,69 @@
       "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
     "savingThrow": {
       "saveType": "will",
       "effect": "negates"
     },
+    "targeting": {
+      "mode": "single_creature",
+      "maxTargetHitDice": 4
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "dazed_condition",
+        "targetRole": "primary_target",
+        "conditionId": "dazed",
+        "condition": {
+          "targetTagsAll": [
+            "type:humanoid"
+          ]
+        },
+        "durationRoundsScaling": {
+          "baseValue": 1,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 1
+        },
+        "maxTargetHitDice": 4,
+        "curesConditions": [],
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true
+      }
+    ],
     "tags": [
       "arcane",
       "enchantment",
-      "mind_affecting"
+      "mind_affecting",
+      "humanoid_only"
     ]
   }
 }

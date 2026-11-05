@@ -1,0 +1,61 @@
+{
+  "web": {
+    "id": "web",
+    "name": "Web",
+    "description": "Web creates a multilayered mass of strong, sticky strands in a 20-foot radius spread. Creatures in the area must make a Reflex save or be entangled and grappled; web is flammable.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "partial"
+    },
+    "targeting": {
+      "mode": "spatial_zone"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "web_field",
+        "fieldType": "field_web",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": true,
+        "movementCostMultiplier": 4,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "arcane",
+      "conjuration",
+      "entangle",
+      "flammable",
+      "web"
+    ]
+  }
+}

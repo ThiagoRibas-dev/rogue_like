@@ -2,7 +2,7 @@
   "detect_magic": {
     "id": "detect_magic",
     "name": "Detect Magic",
-    "description": "Detects magical auras within a 60-foot cone, revealing their presence, number, and power.",
+    "description": "You detect magical auras within a 60-foot cone emanation.",
     "level": 0,
     "levelByClass": {
       "wizard": 0,
@@ -12,17 +12,61 @@
       "bard": 0
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "divination",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "concentration, up to 1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "aoeShape": "cone",
     "aoeRadiusFt": 60,
+    "effectUnits": [
+      {
+        "type": "stat_bundle",
+        "unitId": "detect_magic_aura",
+        "targetRole": "caster",
+        "effectBundle": {
+          "bundleId": "detect_magic_buff",
+          "name": "Detect Magic",
+          "category": "trait",
+          "usageMode": "passive",
+          "grantedTags": [
+            "senses:detect_magic",
+            "detect_magic"
+          ],
+          "modifiers": [],
+          "ruleOverrides": [
+            {
+              "id": "detect_magic_rule",
+              "ruleKey": "detect_magic_active",
+              "value": true
+            }
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      }
+    ],
     "tags": [
+      "arcane",
+      "divine",
       "divination",
       "detection"
     ]

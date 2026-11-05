@@ -1,0 +1,59 @@
+{
+  "remove_disease": {
+    "id": "remove_disease",
+    "name": "Remove Disease",
+    "description": "Remove disease instantaneously cures all diseases that the subject is suffering from.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "druid": 3,
+      "ranger": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "type": "condition",
+        "unitId": "cure_disease",
+        "targetRole": "primary_target",
+        "conditionId": "none",
+        "curesConditions": [
+          "diseased"
+        ],
+        "allowsSpellResistance": false
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "curative"
+    ]
+  }
+}

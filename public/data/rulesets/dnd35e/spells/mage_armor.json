@@ -2,28 +2,71 @@
   "mage_armor": {
     "id": "mage_armor",
     "name": "Mage Armor",
-    "description": "An invisible, tangible field of force surrounds the touched creature, providing a +4 armor AC bonus with no armor check penalty.",
+    "description": "An invisible, tangible field of force surrounds the touched creature, providing a +4 armor AC bonus with no armor check penalty, applying against incorporeal touch attacks.",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
       "sorcerer": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "force"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 hour/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": true
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": false,
     "aoeShape": "single",
     "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "mage_armor_bundle",
+      "name": "Mage Armor",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "mage_armor_ac",
+          "target": "ac",
+          "value": 4,
+          "type": "armor",
+          "effectTags": [
+            "descriptor:force",
+            "force"
+          ]
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "mage_armor_active",
+        "effect:force_armor"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
     "tags": [
       "arcane",
       "conjuration",
       "force",
-      "armor"
+      "armor_buff"
     ]
   }
 }

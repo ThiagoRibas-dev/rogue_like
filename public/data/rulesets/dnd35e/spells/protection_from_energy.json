@@ -1,0 +1,75 @@
+{
+  "protection_from_energy": {
+    "id": "protection_from_energy",
+    "name": "Protection from Energy",
+    "description": "Protection from energy confers temporary invulnerability to the chosen energy type, absorbing up to 12 points of energy damage per caster level (maximum 120 points).",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "cleric": 3,
+      "druid": 3,
+      "ranger": 2
+    },
+    "levelByDomain": {
+      "luck": 3
+    },
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "prot_energy_bundle",
+      "name": "Protection from Energy",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "prot_energy_override",
+          "ruleKey": "absorb_energy_active",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "protection_from_energy_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "divine",
+      "abjuration",
+      "energy_absorption"
+    ]
+  }
+}

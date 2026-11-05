@@ -1,0 +1,65 @@
+{
+  "mirror_image": {
+    "id": "mirror_image",
+    "name": "Mirror Image",
+    "description": "Several illusory duplicates of you pop into being (1d4 images + 1 image per 3 caster levels, maximum 8), causing attacks to hit the duplicates instead of you.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "figment",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "mirror_image_bundle",
+      "name": "Mirror Image",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "mirror_image_override",
+          "ruleKey": "mirror_image_active",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "mirror_image_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "illusion",
+      "figment",
+      "defensive"
+    ]
+  }
+}

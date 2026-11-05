@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import type { CampaignData } from '../../../types/campaign.types.ts';
-import {
-  DnD35AlignmentSchema,
-  DnD35DamageTypeSchema,
-  DnD35DragonFamiliesDataSchema
-} from './system/base_system.types.ts';
+import { DnD35AlignmentSchema, DnD35DragonFamiliesDataSchema } from './system/base_system.types.ts';
 import {
   DnD35AcfSwapSchema,
   DnD35ActivatedAbilityDescriptorSchema,
@@ -35,6 +31,10 @@ export * from './system/creature_system.types.ts';
 
 // Re-export item types and schemas
 export * from './system/item_system.types.ts';
+
+// Re-export spell types and schemas
+export * from './system/spell_system.types.ts';
+import { DnD35SpellDefinitionSchema } from './system/spell_system.types.ts';
 
 /** Zod schema for a single row in a class's level-by-level progression table (levels 1..maxLevel). */
 export const DnD35ClassLevelRowSchema = z.object({
@@ -166,37 +166,6 @@ export const DnD35FeatDefinitionSchema = z.object({
 });
 /** Inferred type for a declarative feat definition. */
 export type DnD35FeatDefinition = z.infer<typeof DnD35FeatDefinitionSchema>;
-
-/** Zod schema for a declarative spell definition (`spells.json`). */
-export const DnD35SpellDefinitionSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().default(''),
-  level: z.number().int().min(0).max(9),
-  levelByClass: z.record(z.string(), z.number().int().min(0).max(9)).default({}),
-  levelByDomain: z.record(z.string(), z.number().int().min(1).max(9)).default({}),
-  school: z.string(),
-  classification: z.enum(['spell', 'ex', 'sp', 'su']).default('spell'),
-  components: z.object({
-    verbal: z.boolean().default(false),
-    somatic: z.boolean().default(false),
-    material: z.boolean().default(false)
-  }),
-  allowsSpellResistance: z.boolean().default(true),
-  savingThrow: z
-    .object({
-      saveType: z.enum(['fort', 'ref', 'will']),
-      effect: z.enum(['negates', 'half', 'partial'])
-    })
-    .optional(),
-  aoeShape: z.enum(['single', 'burst', 'spread', 'cone', 'line']).default('single'),
-  aoeRadiusFt: z.number().int().nonnegative().default(0),
-  damageDice: z.string().optional(),
-  damageType: DnD35DamageTypeSchema.optional(),
-  tags: z.array(z.string()).default([])
-});
-/** Inferred type for a declarative spell definition. */
-export type DnD35SpellDefinition = z.infer<typeof DnD35SpellDefinitionSchema>;
 
 /**
  * Zod schema for the D&D 3.5e System Content ("Core Rulebook") registries loaded from

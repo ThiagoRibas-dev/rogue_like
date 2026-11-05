@@ -2,7 +2,7 @@
   "produce_flame": {
     "id": "produce_flame",
     "name": "Produce Flame",
-    "description": "Flames in your palm shed light like a torch and deal 1d6+1 fire damage in melee touch attacks or as ranged missile attacks up to 120 feet.",
+    "description": "Flames as bright as a torch shimmer on your hand, dealing 1d6 + 1/level (max +5) fire damage in melee touch or ranged throw up to 120 ft.",
     "level": 1,
     "levelByClass": {
       "druid": 1
@@ -10,22 +10,61 @@
     "levelByDomain": {
       "fire": 2
     },
+    "levelByAccessTag": {},
     "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "single_creature"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "damageDice": "1d6+1",
+    "damageDice": "1d6",
     "damageType": "fire",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "produce_flame_strike",
+        "targetRole": "primary_target",
+        "dice": "1d6",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 5
+        },
+        "damageType": "fire",
+        "savingThrow": {
+          "saveType": "none",
+          "effect": "none"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "divine",
       "evocation",
-      "fire"
+      "fire",
+      "light"
     ]
   }
 }

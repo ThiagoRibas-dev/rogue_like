@@ -1,0 +1,71 @@
+{
+  "inflict_serious_wounds": {
+    "id": "inflict_serious_wounds",
+    "name": "Inflict Serious Wounds",
+    "description": "When laying your hand upon a creature, you channel negative energy that deals 3d8 points of damage +1 point per caster level (maximum +15).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3
+    },
+    "levelByDomain": {
+      "destruction": 3
+    },
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "targeting": {
+      "mode": "single_creature"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "3d8",
+    "damageType": "negative",
+    "effectUnits": [
+      {
+        "type": "damage",
+        "unitId": "isw_damage",
+        "targetRole": "primary_target",
+        "dice": "3d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "minCap": 1,
+          "maxCap": 15
+        },
+        "damageType": "negative",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "negative"
+    ]
+  }
+}

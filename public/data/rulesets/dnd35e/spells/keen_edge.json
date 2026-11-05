@@ -1,0 +1,70 @@
+{
+  "keen_edge": {
+    "id": "keen_edge",
+    "name": "Keen Edge",
+    "description": "This spell doubles the threat range of the weapon that is targeted, making critical hits twice as likely.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "keen_edge_bundle",
+      "name": "Keen Edge",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "keen_threat_expansion",
+          "target": "threat_range",
+          "value": 1,
+          "type": "threat_expansion"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "keen_edge_override",
+          "ruleKey": "keen_threat_doubled",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "keen_edge_active"
+      ],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": [],
+      "classSkillsAdded": [],
+      "grantedFeats": [],
+      "virtualFeatGrants": []
+    },
+    "tags": [
+      "arcane",
+      "transmutation",
+      "critical",
+      "weapon_buff"
+    ]
+  }
+}

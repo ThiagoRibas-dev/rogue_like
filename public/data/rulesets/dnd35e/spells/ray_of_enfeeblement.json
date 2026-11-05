@@ -2,29 +2,62 @@
   "ray_of_enfeeblement": {
     "id": "ray_of_enfeeblement",
     "name": "Ray of Enfeeblement",
-    "description": "A ray of coruscating shadowy energy reduces target's Strength by 1d6+1 points (max +5).",
+    "description": "A coruscating ray springs from your hand. The subject takes a penalty to Strength equal to 1d6 + 1 per 2 caster levels (maximum 1d6+5, min Str 1).",
     "level": 1,
     "levelByClass": {
       "wizard": 1,
       "sorcerer": 1
     },
     "levelByDomain": {},
+    "levelByAccessTag": {},
     "school": "necromancy",
+    "descriptors": [],
     "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 min/level",
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
     },
     "allowsSpellResistance": true,
+    "targeting": {
+      "mode": "ray"
+    },
     "aoeShape": "single",
     "aoeRadiusFt": 0,
-    "damageDice": "1d6+1",
-    "damageType": "untyped",
+    "effectUnits": [
+      {
+        "type": "ability_harm",
+        "unitId": "str_penalty",
+        "targetRole": "primary_target",
+        "ability": "str",
+        "harmKind": "penalty",
+        "dice": "1d6",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 2,
+          "startAboveCL": 0,
+          "minCap": 0,
+          "maxCap": 5
+        },
+        "minimumScore": 1,
+        "allowsSpellResistance": true,
+        "metamagicScalable": true
+      }
+    ],
     "tags": [
       "arcane",
       "necromancy",
-      "ray"
+      "ability_penalty",
+      "strength"
     ]
   }
 }
