@@ -1,0 +1,15 @@
+{
+  "flyby_attack": {
+    "id": "flyby_attack",
+    "name": "Flyby Attack",
+    "description": "When flying, take a move action and another standard action at any point during the move.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "flyby_split_move_standard",
+        "ruleKey": "flyby_split_move_standard",
+        "value": true
+      }
+    ]
+  }
+}

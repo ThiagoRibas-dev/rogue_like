@@ -1,0 +1,18 @@
+{
+  "extra_turning": {
+    "id": "extra_turning",
+    "name": "Extra Turning",
+    "description": "Turn or rebuke creatures four more times per day than normal. Can be taken multiple times; effects stack.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "stacking"
+    },
+    "ruleOverrides": [
+      {
+        "id": "extra_turn_attempts_per_day",
+        "ruleKey": "extra_turn_attempts_per_day",
+        "value": 4
+      }
+    ]
+  }
+}

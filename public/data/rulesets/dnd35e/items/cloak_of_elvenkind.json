@@ -1,0 +1,42 @@
+{
+  "cloak_of_elvenkind": {
+    "id": "cloak_of_elvenkind",
+    "name": "Cloak of Elvenkind",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+5 competence bonus on Hide checks.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 2500,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:back"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_cloak_of_elvenkind",
+      "name": "Cloak of Elvenkind",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+5 competence bonus on Hide checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:hide",
+          "value": 5,
+          "type": "competence"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "deflect_arrows": {
+    "id": "deflect_arrows",
+    "name": "Deflect Arrows",
+    "description": "Deflect one incoming ranged weapon attack per round when you have at least one hand free.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_unarmed_strike"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "deflect_ranged_once_per_round",
+        "ruleKey": "deflect_ranged_once_per_round",
+        "value": true
+      }
+    ]
+  }
+}

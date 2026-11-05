@@ -1,0 +1,12 @@
+{
+  "widen_spell": {
+    "id": "widen_spell",
+    "name": "Widen Spell",
+    "description": "Increases the area of a burst, emanation, line, or spread spell by 100%. A widened spell uses up a spell slot three levels higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 3,
+      "areaMultiplier": 2
+    }
+  }
+}

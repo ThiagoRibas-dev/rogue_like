@@ -12,8 +12,9 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts';
 import { resolveAttackRoll, resolveCleaveFollowupEligibility } from '../combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
-import { projectDnD35ActorSemanticTags } from '../semantic_tags.ts';
+import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
 import { getDnD35EntityData, resolveDamageTypeFromTags } from '../srd_registry.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
 
@@ -49,8 +50,24 @@ export function resolveDnD35eMeleeAttack(
     getComponent(state, defenderId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
   );
 
-  const attackerSelfTags = projectDnD35ActorSemanticTags(attackerData);
-  const defenderSelfTags = projectDnD35ActorSemanticTags(defenderData);
+  const sysContent = getDnD35SystemContent(state.campaign);
+  const attackerSituational = resolveEntitySituationalTagContext(state, attackerId, attackerData);
+  const defenderSituational = resolveEntitySituationalTagContext(state, defenderId, defenderData);
+
+  const attackerSelfTags = projectDnD35ActorSemanticTags(
+    attackerData,
+    [],
+    attackerSituational,
+    sysContent?.classes,
+    sysContent?.skills
+  );
+  const defenderSelfTags = projectDnD35ActorSemanticTags(
+    defenderData,
+    [],
+    defenderSituational,
+    sysContent?.classes,
+    sysContent?.skills
+  );
 
   const attackerEval = evaluateDnD35eEntityDAG(
     state,
@@ -148,10 +165,8 @@ export function resolveDnD35eMeleeAttack(
     );
 
     if (defenderHpRemaining <= 0) {
-      const hasCleave = attackerData.feats?.includes('cleave') === true;
-      const hasGreatCleave = attackerData.feats?.includes('great_cleave') === true;
-      if (hasCleave) {
-        const eligible = resolveCleaveFollowupEligibility(true, 0, hasGreatCleave);
+      if (attackerEval.hasCleave) {
+        const eligible = resolveCleaveFollowupEligibility(true, 0, attackerEval.hasGreatCleave);
         if (eligible) {
           runningState = addMessage(
             runningState,

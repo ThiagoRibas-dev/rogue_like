@@ -1,0 +1,25 @@
+{
+  "exotic_weapon_proficiency": {
+    "id": "exotic_weapon_proficiency",
+    "name": "Exotic Weapon Proficiency",
+    "description": "Make attack rolls with the chosen exotic weapon without the -4 nonproficiency penalty.",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    },
+    "effectBundle": {
+      "bundleId": "feat_exotic_weapon_proficiency",
+      "name": "Exotic Weapon Proficiency",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:weapon:exotic"
+      ]
+    }
+  }
+}

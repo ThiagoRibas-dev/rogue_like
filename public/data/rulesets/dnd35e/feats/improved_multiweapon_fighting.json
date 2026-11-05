@@ -1,0 +1,33 @@
+{
+  "improved_multiweapon_fighting": {
+    "id": "improved_multiweapon_fighting",
+    "name": "Improved Multiweapon Fighting",
+    "description": "Gain a second attack with each off-hand weapon at a -5 penalty.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 15
+        },
+        {
+          "type": "has_feat",
+          "featId": "multiweapon_fighting"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 9
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "extra_offhand_attacks",
+        "ruleKey": "extra_offhand_attacks",
+        "value": 1
+      }
+    ]
+  }
+}

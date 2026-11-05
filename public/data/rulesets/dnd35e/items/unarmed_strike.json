@@ -1,0 +1,40 @@
+{
+  "unarmed_strike": {
+    "id": "unarmed_strike",
+    "name": "Unarmed Strike",
+    "unidentifiedName": "Unarmed Strike",
+    "description": "Unarmed Strike (simple unarmed unarmed weapon, 1d3 bludgeoning).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 0,
+    "baseValue": 0,
+    "tags": [
+      "weapon",
+      "simple",
+      "unarmed",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "unarmed",
+      "effort": "light",
+      "damageDice": "1d3",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "isFinesseEligible": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

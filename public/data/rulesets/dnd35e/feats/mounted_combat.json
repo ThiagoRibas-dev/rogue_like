@@ -1,0 +1,20 @@
+{
+  "mounted_combat": {
+    "id": "mounted_combat",
+    "name": "Mounted Combat",
+    "description": "Once per round, make a Ride check to negate a hit on your mount.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_skill_ranks",
+      "skillId": "ride",
+      "minRanks": 1
+    },
+    "ruleOverrides": [
+      {
+        "id": "mounted_combat_ride_deflect",
+        "ruleKey": "mounted_combat_ride_deflect",
+        "value": true
+      }
+    ]
+  }
+}

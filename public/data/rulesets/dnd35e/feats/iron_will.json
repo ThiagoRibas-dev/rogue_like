@@ -2,7 +2,15 @@
   "iron_will": {
     "id": "iron_will",
     "name": "Iron Will",
-    "description": "+2 bonus on Will saving throws.",
-    "isFighterBonusFeat": false
+    "description": "+2 bonus on all Will saving throws.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "save_will",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
   }
 }

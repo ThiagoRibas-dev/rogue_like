@@ -1,0 +1,12 @@
+{
+  "brew_potion": {
+    "id": "brew_potion",
+    "name": "Brew Potion",
+    "description": "Create a potion of any 3rd-level or lower spell that you know and that targets one or more creatures.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 3
+    }
+  }
+}

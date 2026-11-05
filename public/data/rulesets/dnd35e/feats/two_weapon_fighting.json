@@ -1,0 +1,20 @@
+{
+  "two_weapon_fighting": {
+    "id": "two_weapon_fighting",
+    "name": "Two-Weapon Fighting",
+    "description": "Reduces primary hand penalty by 2 and off-hand penalty by 6 when fighting with two weapons.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "dex",
+      "minScore": 15
+    },
+    "ruleOverrides": [
+      {
+        "id": "twf_penalty_reduction",
+        "ruleKey": "twf_penalty_reduction",
+        "value": true
+      }
+    ]
+  }
+}

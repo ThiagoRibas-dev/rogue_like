@@ -52,12 +52,36 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
   const wornShieldExtraMods: StatModifier[] = [];
   const rawStandaloneAcMods: StatModifier[] = [];
 
+  const ALIAS_MAP: Readonly<Record<string, string>> = {
+    'ability:str': 'str',
+    'ability:dex': 'dex',
+    'ability:con': 'con',
+    'ability:int': 'int',
+    'ability:wis': 'wis',
+    'ability:cha': 'cha',
+    save_fort: 'fort',
+    'save:fort': 'fort',
+    save_ref: 'ref',
+    'save:ref': 'ref',
+    save_will: 'will',
+    'save:will': 'will',
+    save_all: 'saves',
+    'save:all': 'saves'
+  };
+
   for (const m of allModifiers) {
-    const statBucket = modsByStat[m.targetStat];
+    const canonicalStat =
+      ALIAS_MAP[m.targetStat] ?? (m.targetStat.startsWith('skill:') ? m.targetStat.slice(6) : m.targetStat);
+    const statBucket = modsByStat[canonicalStat];
     if (statBucket !== undefined) {
       statBucket.push(m);
     } else {
-      modsByStat[m.targetStat] = [m];
+      modsByStat[canonicalStat] = [m];
+    }
+    if (canonicalStat !== m.targetStat) {
+      const rawBucket = modsByStat[m.targetStat];
+      if (rawBucket !== undefined) rawBucket.push(m);
+      else modsByStat[m.targetStat] = [m];
     }
 
     if (m.targetStat === 'natural_armor' || m.bonusType === 'natural_armor_enhancement') {

@@ -1,0 +1,21 @@
+{
+  "martial_weapon_proficiency": {
+    "id": "martial_weapon_proficiency",
+    "name": "Martial Weapon Proficiency",
+    "description": "Make attack rolls with martial weapons without the -4 nonproficiency penalty.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "effectBundle": {
+      "bundleId": "feat_martial_weapon_proficiency",
+      "name": "Martial Weapon Proficiency",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:weapon:martial"
+      ]
+    }
+  }
+}

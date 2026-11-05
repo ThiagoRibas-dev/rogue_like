@@ -1,0 +1,22 @@
+{
+  "animal_affinity": {
+    "id": "animal_affinity",
+    "name": "Animal Affinity",
+    "description": "+2 bonus on all Handle Animal and Ride checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:handle_animal",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:ride",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

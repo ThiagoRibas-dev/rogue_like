@@ -1,0 +1,24 @@
+{
+  "improved_natural_armor": {
+    "id": "improved_natural_armor",
+    "name": "Improved Natural Armor",
+    "description": "Increases the creature's natural armor bonus by +1. Can be taken multiple times; effects stack.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "stacking"
+    },
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "con",
+      "minScore": 13
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "ac",
+        "value": 1,
+        "type": "untyped"
+      }
+    ]
+  }
+}

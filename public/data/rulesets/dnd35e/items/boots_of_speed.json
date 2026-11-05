@@ -1,0 +1,42 @@
+{
+  "boots_of_speed": {
+    "id": "boots_of_speed",
+    "name": "Boots of Speed",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Activating the boots as a free action grants the benefits of Haste for up to 10 rounds per day.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 12000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:foot"
+    ],
+    "equippable": {
+      "slot": "foot",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_boots_of_speed",
+      "name": "Boots of Speed",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Activating the boots as a free action grants the benefits of Haste for up to 10 rounds per day.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "speed",
+          "value": 10,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

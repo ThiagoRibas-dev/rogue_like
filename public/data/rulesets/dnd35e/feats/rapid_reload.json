@@ -1,0 +1,19 @@
+{
+  "rapid_reload": {
+    "id": "rapid_reload",
+    "name": "Rapid Reload",
+    "description": "Reduces the time required to reload a chosen crossbow (free action for hand/light crossbow, move action for heavy crossbow).",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "ruleOverrides": [
+      {
+        "id": "rapid_reload_crossbow",
+        "ruleKey": "rapid_reload_crossbow",
+        "value": true
+      }
+    ]
+  }
+}

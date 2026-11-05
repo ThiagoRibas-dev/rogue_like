@@ -1,0 +1,48 @@
+{
+  "boots_of_striding_and_springing": {
+    "id": "boots_of_striding_and_springing",
+    "name": "Boots of Striding and Springing",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+10 ft enhancement bonus to land speed and +5 competence bonus on Jump checks.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 5500,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:foot"
+    ],
+    "equippable": {
+      "slot": "foot",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_boots_of_striding_and_springing",
+      "name": "Boots of Striding and Springing",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+10 ft enhancement bonus to land speed and +5 competence bonus on Jump checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "speed",
+          "value": 10,
+          "type": "enhancement"
+        },
+        {
+          "id": "mod_1",
+          "target": "skill:jump",
+          "value": 5,
+          "type": "competence"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

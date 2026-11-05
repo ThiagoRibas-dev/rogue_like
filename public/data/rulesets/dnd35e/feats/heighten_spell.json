@@ -1,0 +1,12 @@
+{
+  "heighten_spell": {
+    "id": "heighten_spell",
+    "name": "Heighten Spell",
+    "description": "A heightened spell has a higher spell level than normal (up to a maximum of 9th level), increasing all level-dependent effects including save DCs.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 1,
+      "isVariableHeighten": true
+    }
+  }
+}

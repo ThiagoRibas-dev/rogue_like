@@ -138,6 +138,17 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 3,
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d6",
+      "damageType": "piercing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 3,
@@ -157,6 +168,16 @@
     "bg": "transparent",
     "category": "armor",
     "weight": 5,
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 2,
+      "maxDexBonus": 6,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 10,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,
@@ -195,6 +216,18 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 2,
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d4",
+      "damageType": "piercing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "rangeIncrementFt": 10,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 2,
@@ -218,7 +251,10 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 5,
-    "throwable": { "range": 4, "damage": 2 }
+    "throwable": {
+      "range": 4,
+      "damage": 2
+    }
   },
   "throwing_knife": {
     "spriteId": "item_kukri",
@@ -231,7 +267,10 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 1,
-    "throwable": { "range": 6, "damage": 3 }
+    "throwable": {
+      "range": 6,
+      "damage": 3
+    }
   },
   "potion_of_fire": {
     "spriteId": "item_orange_potion",
@@ -244,8 +283,14 @@
     "bg": "transparent",
     "category": "consumable",
     "weight": 1,
-    "tags": ["explosive", "flask"],
-    "throwable": { "range": 5, "destroyOnImpact": true }
+    "tags": [
+      "explosive",
+      "flask"
+    ],
+    "throwable": {
+      "range": 5,
+      "destroyOnImpact": true
+    }
   },
   "bronze_key": {
     "spriteId": "item_metal_key",
@@ -258,7 +303,9 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["key:bronze"]
+    "tags": [
+      "key:bronze"
+    ]
   },
   "lockpick": {
     "spriteId": "item_primitive_key",
@@ -271,7 +318,9 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["tool:lockpick"]
+    "tags": [
+      "tool:lockpick"
+    ]
   },
   "wand_of_lightning": {
     "spriteId": "item_blue_staff",
@@ -341,7 +390,10 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["sigil", "quest_item"]
+    "tags": [
+      "sigil",
+      "quest_item"
+    ]
   },
   "barkeeper_note": {
     "spriteId": "item_page",
@@ -354,7 +406,10 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["note", "quest_item"]
+    "tags": [
+      "note",
+      "quest_item"
+    ]
   },
   "scholar_journal": {
     "spriteId": "item_red_book",
@@ -367,7 +422,10 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["journal", "quest_item"]
+    "tags": [
+      "journal",
+      "quest_item"
+    ]
   },
   "bones": {
     "spriteId": "tile_bone_1",
@@ -380,7 +438,10 @@
     "bg": "transparent",
     "category": "tool",
     "weight": 1,
-    "tags": ["bones", "quest_item"]
+    "tags": [
+      "bones",
+      "quest_item"
+    ]
   },
   "longsword": {
     "spriteId": "item_long_sword",
@@ -393,7 +454,25 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 4,
-    "tags": ["weapon", "slashing", "one_handed", "weaponDice:1d8", "critThreatMin:19", "critMultiplier:2"],
+    "tags": [
+      "weapon",
+      "slashing",
+      "one_handed",
+      "weaponDice:1d8",
+      "critThreatMin:19",
+      "critMultiplier:2"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "one_handed",
+      "damageDice": "1d8",
+      "damageType": "slashing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,
@@ -413,7 +492,22 @@
     "bg": "transparent",
     "category": "armor",
     "weight": 30,
-    "tags": ["armor", "medium", "armorBonus:4", "acp:4"],
+    "tags": [
+      "armor",
+      "medium",
+      "armorBonus:4",
+      "acp:4"
+    ],
+    "armorStats": {
+      "armorCategory": "medium",
+      "armorBonus": 4,
+      "maxDexBonus": 3,
+      "armorCheckPenalty": -4,
+      "arcaneSpellFailure": 25,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": false
+    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,
@@ -433,7 +527,19 @@
     "bg": "transparent",
     "category": "armor",
     "weight": 10,
-    "tags": ["shield", "shieldBonus:2", "acp:2"],
+    "tags": [
+      "shield",
+      "shieldBonus:2",
+      "acp:2"
+    ],
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 2,
+      "maxDexBonus": null,
+      "armorCheckPenalty": -2,
+      "arcaneSpellFailure": 15,
+      "isMetal": false
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,
@@ -453,7 +559,25 @@
     "bg": "transparent",
     "category": "weapon",
     "weight": 8,
-    "tags": ["weapon", "bludgeoning", "one_handed", "weaponDice:1d8", "critThreatMin:20", "critMultiplier:2"],
+    "tags": [
+      "weapon",
+      "bludgeoning",
+      "one_handed",
+      "weaponDice:1d8",
+      "critThreatMin:20",
+      "critMultiplier:2"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "melee",
+      "effort": "one_handed",
+      "damageDice": "1d8",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,
@@ -473,7 +597,22 @@
     "bg": "transparent",
     "category": "armor",
     "weight": 40,
-    "tags": ["armor", "heavy", "armorBonus:5", "acp:5"],
+    "tags": [
+      "armor",
+      "heavy",
+      "armorBonus:5",
+      "acp:5"
+    ],
+    "armorStats": {
+      "armorCategory": "medium",
+      "armorBonus": 5,
+      "maxDexBonus": 2,
+      "armorCheckPenalty": -5,
+      "arcaneSpellFailure": 30,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": false
+    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,
@@ -502,6 +641,22 @@
       "critThreatMin:20",
       "critMultiplier:2"
     ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "melee",
+      "effort": "two_handed",
+      "damageDice": "1d6",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "isDoubleWeapon": true,
+      "offHandDamageDice": "1d6",
+      "offHandDamageType": "bludgeoning",
+      "offHandCritThreatMin": 20,
+      "offHandCritMultiplier": 2
+    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,
@@ -521,7 +676,22 @@
     "bg": "transparent",
     "category": "armor",
     "weight": 2,
-    "tags": ["armor", "light", "armorBonus:0", "acp:0"],
+    "tags": [
+      "armor",
+      "light",
+      "armorBonus:0",
+      "acp:0"
+    ],
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 0,
+      "maxDexBonus": null,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 0,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,

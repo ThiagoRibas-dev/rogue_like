@@ -1,0 +1,24 @@
+{
+  "diehard": {
+    "id": "diehard",
+    "name": "Diehard",
+    "description": "Automatically stabilize when reduced to between -1 and -9 hit points, and remain conscious (disabled) rather than dying.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "endurance"
+    },
+    "ruleOverrides": [
+      {
+        "id": "auto_stabilize_negative_hp",
+        "ruleKey": "auto_stabilize_negative_hp",
+        "value": true
+      },
+      {
+        "id": "act_while_negative_hp",
+        "ruleKey": "act_while_negative_hp",
+        "value": true
+      }
+    ]
+  }
+}

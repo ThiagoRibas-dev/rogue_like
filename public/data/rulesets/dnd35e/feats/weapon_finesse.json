@@ -1,0 +1,19 @@
+{
+  "weapon_finesse": {
+    "id": "weapon_finesse",
+    "name": "Weapon Finesse",
+    "description": "Use your Dexterity modifier instead of your Strength modifier on attack rolls with light weapons, natural weapons, and finesse-eligible weapons.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    },
+    "ruleOverrides": [
+      {
+        "id": "use_dex_for_light_finesse_melee_attack",
+        "ruleKey": "use_dex_for_light_finesse_melee_attack",
+        "value": true
+      }
+    ]
+  }
+}

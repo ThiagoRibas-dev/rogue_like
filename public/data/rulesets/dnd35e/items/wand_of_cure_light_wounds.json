@@ -1,0 +1,20 @@
+{
+  "wand_of_cure_light_wounds": {
+    "id": "wand_of_cure_light_wounds",
+    "name": "Wand of Cure Light Wounds",
+    "unidentifiedName": "Ivory Wand",
+    "description": "A slender ivory wand inscribed with healing prayers (CL 1st, Cure Light Wounds).",
+    "glyph": "/",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 750,
+    "tags": [
+      "magic",
+      "wand",
+      "spell:cure_light_wounds"
+    ],
+    "spriteId": "item_blue_staff"
+  }
+}

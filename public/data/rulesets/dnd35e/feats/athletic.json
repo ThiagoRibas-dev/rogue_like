@@ -1,0 +1,22 @@
+{
+  "athletic": {
+    "id": "athletic",
+    "name": "Athletic",
+    "description": "+2 bonus on all Climb and Swim checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:climb",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:swim",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

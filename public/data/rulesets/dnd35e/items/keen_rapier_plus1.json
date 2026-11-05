@@ -1,0 +1,48 @@
+{
+  "keen_rapier_plus1": {
+    "id": "keen_rapier_plus1",
+    "name": "+1 Keen Rapier",
+    "unidentifiedName": "+1 Keen Rapier",
+    "description": "+1 Keen Rapier (martial one-handed melee weapon, 1d6 piercing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 8320,
+    "tags": [
+      "weapon",
+      "martial",
+      "one_handed",
+      "piercing",
+      "magic",
+      "bypass:magic"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "one_handed",
+      "damageDice": "1d6",
+      "damageType": "piercing",
+      "critThreatMin": 18,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "isFinesseEligible": true,
+      "cannotTwoHandStr": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "magicalProperties": {
+      "enhancementBonus": 1,
+      "isMasterwork": true,
+      "keen": true
+    },
+    "spriteId": "item_short_sword"
+  }
+}

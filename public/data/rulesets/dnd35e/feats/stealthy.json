@@ -1,0 +1,22 @@
+{
+  "stealthy": {
+    "id": "stealthy",
+    "name": "Stealthy",
+    "description": "+2 bonus on all Hide and Move Silently checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:hide",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:move_silently",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

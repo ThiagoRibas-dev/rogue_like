@@ -1,6 +1,6 @@
 {
-  "summary": "Master implementation plan for modularizing all 50 files exceeding the 300-line threshold across 5 structured phases (Phase A: Types, Phase B: Console Engine, Phase C: D&D 3.5e Rules Engine, Phase D: Editor Tools, Phase E: Tactical UI). Includes SSOT ownership table, Cascading Effects Matrix, code diff previews, and verification checkpoints.",
-  "updatedAt": "2026-11-04T15:37:06.152268188Z",
+  "summary": "Step 4 & Step 5 Implementation Plan for Milestone 115.1 (Declarative Rule-Override Routing, Codified Crit Threat Expansion, Per-Strike Weapon-Scoped Modifiers & Data-Driven Cleanup) with SSOT Ownership & Old-Brain Eviction Table, Cascading Effects Matrix, and precise code snippets/diffs.",
+  "updatedAt": "2026-11-05T14:56:01.270507953Z",
   "requestFeedback": true,
   "userFacing": true
 }

@@ -1,0 +1,12 @@
+{
+  "maximize_spell": {
+    "id": "maximize_spell",
+    "name": "Maximize Spell",
+    "description": "All variable, numeric effects of a spell modified by this feat are maximized. A maximized spell uses up a spell slot three levels higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 3,
+      "maximizeVariableDice": true
+    }
+  }
+}

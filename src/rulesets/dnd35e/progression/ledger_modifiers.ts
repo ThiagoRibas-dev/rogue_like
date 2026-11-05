@@ -2,7 +2,12 @@ import { appendSourcePath } from '../modifiers.ts';
 import { collectClassFeaturesUpToLevel } from '../progression.ts';
 import { evaluateEffectBundle, isActivationConditionMet } from '../srd_registry.ts';
 import type { HitDieTrack, StatModifier, StatModifierCondition } from '../types/dnd35e.types.ts';
-import type { DnD35ClassDefinition, DnD35DomainDefinition } from '../types/dnd35e_system.types.ts';
+import type {
+  DnD35ClassDefinition,
+  DnD35DomainDefinition,
+  DnD35FeatDefinition,
+  DnD35RuleOverrideEntry
+} from '../types/dnd35e_system.types.ts';
 
 /**
  * Collects all active granted and virtual feats from class features and domain granted power bundles,
@@ -135,6 +140,7 @@ export function buildClassAndDomainEffectModifiers(
           sourceId: `class:${classDef.id}:${mod.id}`,
           sourcePath: appendSourcePath(featureRoot, mod.id),
           origin: detail.category === 'su' ? 'su' : detail.category === 'sp' ? 'sp' : 'ex',
+          ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
           ...(mergedCondition !== undefined ? { condition: mergedCondition } : {})
         });
       }
@@ -162,6 +168,7 @@ export function buildClassAndDomainEffectModifiers(
           sourceId: `domain:${domainDef.id}:${mod.id}`,
           sourcePath: appendSourcePath(domainRoot, mod.id),
           origin: 'su',
+          ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
           ...(mod.condition !== undefined ? { condition: mod.condition } : {})
         });
       }
@@ -169,4 +176,163 @@ export function buildClassAndDomainEffectModifiers(
   }
 
   return modifiers;
+}
+
+/**
+ * Builds passive and conditional `StatModifier` entries from an actor's acquired feats (`dndData.feats`),
+ * tagging each modifier with its hierarchical `sourcePath` (`feat:<featId>/...`).
+ * For stacking repeatable feats (e.g. Toughness taken multiple times), assigns indexed provenance
+ * (`feat:toughness#1/...`, `feat:toughness#2/...`) so each instance stacks without sourceId collision.
+ */
+export function buildFeatEffectModifiers(
+  featIds: ReadonlyArray<string>,
+  featRegistry: Readonly<Record<string, DnD35FeatDefinition>> | undefined,
+  suppressedBundleIds: ReadonlyArray<string> = [],
+  activeSelfTags?: ReadonlyArray<string>
+): ReadonlyArray<StatModifier> {
+  if (!featRegistry || featIds.length === 0) return [];
+  const modifiers: StatModifier[] = [];
+  const featOccurrences: Record<string, number> = {};
+
+  for (const rawFeatId of featIds) {
+    const baseFeatId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    const featDef = featRegistry[rawFeatId] ?? featRegistry[baseFeatId];
+    if (!featDef) continue;
+    if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(featDef.id)) continue;
+
+    const occurrence = (featOccurrences[rawFeatId] ?? 0) + 1;
+    featOccurrences[rawFeatId] = occurrence;
+    const instanceSuffix = featDef.repeatable?.mode === 'stacking' || occurrence > 1 ? `#${occurrence}` : '';
+    const featRoot = `feat:${rawFeatId}${instanceSuffix}`;
+
+    for (const mod of featDef.modifiers) {
+      modifiers.push({
+        targetStat: mod.target,
+        value: mod.value,
+        bonusType: mod.type,
+        sourceId: `${featRoot}:${mod.id}`,
+        sourcePath: appendSourcePath(featRoot, mod.id),
+        origin: 'ex',
+        ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
+        ...(mod.condition !== undefined ? { condition: mod.condition } : {})
+      });
+    }
+
+    if (featDef.effectBundle) {
+      const evalRes = evaluateEffectBundle(featDef.effectBundle, featRoot, suppressedBundleIds, activeSelfTags);
+      for (const sm of evalRes.statModifiers) {
+        modifiers.push({
+          ...sm,
+          sourceId: occurrence > 1 ? `${sm.sourceId}#${occurrence}` : sm.sourceId
+        });
+      }
+    }
+  }
+
+  return modifiers;
+}
+
+/**
+ * Collects declarative `DnD35RuleOverrideEntry` records from an actor's active feats.
+ */
+export function collectActiveFeatRuleOverrides(
+  featIds: ReadonlyArray<string>,
+  featRegistry: Readonly<Record<string, DnD35FeatDefinition>> | undefined,
+  suppressedBundleIds: ReadonlyArray<string> = [],
+  activeSelfTags?: ReadonlyArray<string>
+): ReadonlyArray<DnD35RuleOverrideEntry> {
+  if (!featRegistry || featIds.length === 0) return [];
+  const overrides: DnD35RuleOverrideEntry[] = [];
+
+  for (const rawFeatId of featIds) {
+    const baseFeatId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    const featDef = featRegistry[rawFeatId] ?? featRegistry[baseFeatId];
+    if (!featDef) continue;
+    if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(featDef.id)) continue;
+
+    overrides.push(...featDef.ruleOverrides);
+    if (featDef.effectBundle) {
+      const evalRes = evaluateEffectBundle(
+        featDef.effectBundle,
+        `feat:${rawFeatId}`,
+        suppressedBundleIds,
+        activeSelfTags
+      );
+      overrides.push(...evalRes.ruleOverrides);
+    }
+  }
+
+  return overrides;
+}
+
+/**
+ * Resolved combat behavioral flags and numerical penalty overrides derived purely from active `DnD35RuleOverrideEntry` records.
+ */
+export interface ResolvedActiveCombatRules {
+  readonly hasWeaponFinesse: boolean;
+  readonly hasCleave: boolean;
+  readonly hasGreatCleave: boolean;
+  readonly hasExoticWeaponProficiency: boolean;
+  readonly combatOverrides: {
+    readonly secondaryNaturalPenalty?: number | undefined;
+    readonly twfPrimaryPenalty?: number | undefined;
+    readonly twfOffHandPenalty?: number | undefined;
+    readonly extraOffHandAttacks?: number | undefined;
+  };
+}
+
+/**
+ * Derives `ResolvedActiveCombatRules` strictly from declarative `DnD35RuleOverrideEntry` records
+ * without inspecting feat IDs directly (`AGENTS.md` Rule 17).
+ */
+export function buildCombatRuleOverridesFromActiveRules(
+  ruleOverrides: ReadonlyArray<DnD35RuleOverrideEntry>,
+  offHandIsLight: boolean
+): ResolvedActiveCombatRules {
+  const hasWeaponFinesse = ruleOverrides.some(
+    (r) => r.ruleKey === 'use_dex_for_light_finesse_melee_attack' && r.value === true
+  );
+  const hasCleave = ruleOverrides.some((r) => r.ruleKey === 'cleave_followup_on_drop' && r.value === true);
+  const hasGreatCleave = ruleOverrides.some((r) => r.ruleKey === 'great_cleave_unlimited_on_drop' && r.value === true);
+  const hasExoticWeaponProficiency = ruleOverrides.some(
+    (r) => r.ruleKey === 'exotic_weapon_proficiency' && r.value === true
+  );
+
+  let secondaryNaturalPenalty: number | undefined;
+  let baseTwfPrimary: number | undefined;
+  let baseTwfOffHand: number | undefined;
+  let twfLightBonus = 0;
+  let extraOffHandAttacks = 0;
+
+  for (const r of ruleOverrides) {
+    if (r.ruleKey === 'secondary_natural_penalty' && typeof r.value === 'number') {
+      secondaryNaturalPenalty =
+        secondaryNaturalPenalty === undefined ? r.value : Math.max(secondaryNaturalPenalty, r.value);
+    } else if (r.ruleKey === 'twf_primary_penalty' && typeof r.value === 'number') {
+      baseTwfPrimary = baseTwfPrimary === undefined ? r.value : Math.max(baseTwfPrimary, r.value);
+    } else if (r.ruleKey === 'twf_offhand_penalty' && typeof r.value === 'number') {
+      baseTwfOffHand = baseTwfOffHand === undefined ? r.value : Math.max(baseTwfOffHand, r.value);
+    } else if (r.ruleKey === 'twf_light_offhand_bonus' && typeof r.value === 'number') {
+      twfLightBonus = Math.max(twfLightBonus, r.value);
+    } else if (r.ruleKey === 'extra_offhand_attacks' && typeof r.value === 'number') {
+      extraOffHandAttacks = Math.max(extraOffHandAttacks, r.value);
+    }
+  }
+
+  const lightBonus = offHandIsLight ? (twfLightBonus > 0 ? twfLightBonus : 2) : 0;
+  const twfPrimaryPenalty = baseTwfPrimary !== undefined ? baseTwfPrimary + lightBonus : undefined;
+  const twfOffHandPenalty = baseTwfOffHand !== undefined ? baseTwfOffHand + lightBonus : undefined;
+
+  return {
+    hasWeaponFinesse,
+    hasCleave,
+    hasGreatCleave,
+    hasExoticWeaponProficiency,
+    combatOverrides: {
+      ...(secondaryNaturalPenalty !== undefined ? { secondaryNaturalPenalty } : {}),
+      ...(twfPrimaryPenalty !== undefined ? { twfPrimaryPenalty } : {}),
+      ...(twfOffHandPenalty !== undefined ? { twfOffHandPenalty } : {}),
+      ...(extraOffHandAttacks > 0 ? { extraOffHandAttacks } : {})
+    }
+  };
 }

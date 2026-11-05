@@ -1,0 +1,37 @@
+{
+  "manyshot": {
+    "id": "manyshot",
+    "name": "Manyshot",
+    "description": "As a standard action, fire two or more arrows simultaneously at a single target within 30 feet.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 17
+        },
+        {
+          "type": "has_feat",
+          "featId": "point_blank_shot"
+        },
+        {
+          "type": "has_feat",
+          "featId": "rapid_shot"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 6
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "manyshot_standard_volley",
+        "ruleKey": "manyshot_standard_volley",
+        "value": true
+      }
+    ]
+  }
+}

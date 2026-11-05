@@ -1,0 +1,38 @@
+{
+  "darkwood_buckler": {
+    "id": "darkwood_buckler",
+    "name": "Darkwood Buckler",
+    "unidentifiedName": "Darkwood Buckler",
+    "description": "Darkwood Buckler (shield, +1 AC, ACP -0, ASF 5%).",
+    "glyph": ")",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "baseValue": 205,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 1,
+      "maxDexBonus": null,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 5,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "specialMaterial": "darkwood",
+    "tags": [
+      "shield",
+      "shield",
+      "material:darkwood"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

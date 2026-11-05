@@ -1,0 +1,39 @@
+{
+  "improved_trip": {
+    "id": "improved_trip",
+    "name": "Improved Trip",
+    "description": "Do not provoke an AoO when tripping unarmed, gain +4 on the trip check, and make an immediate melee attack on a successful trip.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "int",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "combat_expertise"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "trip_no_aoo",
+        "ruleKey": "trip_no_aoo",
+        "value": true
+      },
+      {
+        "id": "trip_check_bonus",
+        "ruleKey": "trip_check_bonus",
+        "value": 4
+      },
+      {
+        "id": "trip_followup_melee_attack",
+        "ruleKey": "trip_followup_melee_attack",
+        "value": true
+      }
+    ]
+  }
+}

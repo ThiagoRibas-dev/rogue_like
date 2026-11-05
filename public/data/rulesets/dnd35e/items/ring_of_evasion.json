@@ -1,0 +1,38 @@
+{
+  "ring_of_evasion": {
+    "id": "ring_of_evasion",
+    "name": "Ring of Evasion",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Grants the Evasion ability (take no damage on a successful Reflex save against area attacks).",
+    "glyph": "=",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 0,
+    "baseValue": 25000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:finger"
+    ],
+    "equippable": {
+      "slot": "finger",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_ring_of_evasion",
+      "name": "Ring of Evasion",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Grants the Evasion ability (take no damage on a successful Reflex save against area attacks).",
+      "modifiers": [],
+      "grantedTags": [
+        "feature:evasion"
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "buckler": {
+    "id": "buckler",
+    "name": "Buckler",
+    "unidentifiedName": "Buckler",
+    "description": "Buckler (shield, +1 AC, ACP -1, ASF 5%).",
+    "glyph": ")",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "baseValue": 15,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 1,
+      "maxDexBonus": null,
+      "armorCheckPenalty": -1,
+      "arcaneSpellFailure": 5,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "shield",
+      "shield",
+      "metal"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

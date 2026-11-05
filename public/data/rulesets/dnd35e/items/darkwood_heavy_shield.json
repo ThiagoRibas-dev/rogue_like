@@ -1,0 +1,38 @@
+{
+  "darkwood_heavy_shield": {
+    "id": "darkwood_heavy_shield",
+    "name": "Darkwood Heavy Shield",
+    "unidentifiedName": "Darkwood Heavy Shield",
+    "description": "Darkwood Heavy Shield (shield, +2 AC, ACP -0, ASF 15%).",
+    "glyph": ")",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "baseValue": 257,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 2,
+      "maxDexBonus": null,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 15,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "specialMaterial": "darkwood",
+    "tags": [
+      "shield",
+      "shield",
+      "material:darkwood"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "heavy_flail": {
+    "id": "heavy_flail",
+    "name": "Heavy Flail",
+    "unidentifiedName": "Heavy Flail",
+    "description": "Heavy Flail (martial two-handed melee weapon, 1d10 bludgeoning).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 10,
+    "baseValue": 15,
+    "tags": [
+      "weapon",
+      "martial",
+      "two_handed",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "two_handed",
+      "damageDice": "1d10",
+      "damageType": "bludgeoning",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "maneuverTags": [
+        "trip",
+        "disarm"
+      ]
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_mace_1"
+  }
+}

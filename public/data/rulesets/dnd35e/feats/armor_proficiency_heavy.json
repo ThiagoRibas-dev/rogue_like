@@ -1,0 +1,30 @@
+{
+  "armor_proficiency_heavy": {
+    "id": "armor_proficiency_heavy",
+    "name": "Armor Proficiency (Heavy)",
+    "description": "Wear heavy armor without applying its armor check penalty to attack rolls.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "has_feat",
+          "featId": "armor_proficiency_light"
+        },
+        {
+          "type": "has_feat",
+          "featId": "armor_proficiency_medium"
+        }
+      ]
+    },
+    "effectBundle": {
+      "bundleId": "feat_armor_proficiency_heavy",
+      "name": "Armor Proficiency (Heavy)",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:armor:heavy"
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "handy_haversack": {
+    "id": "handy_haversack",
+    "name": "Handy Haversack",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Extradimensional backpack that holds up to 120 lb. and makes retrieving any stored item a move action that does not provoke AoOs.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 5,
+    "baseValue": 2000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:back"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 12
+    },
+    "effectBundle": {
+      "bundleId": "item_handy_haversack",
+      "name": "Handy Haversack",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Extradimensional backpack that holds up to 120 lb. and makes retrieving any stored item a move action that does not provoke AoOs.",
+      "modifiers": []
+    },
+    "carryBonus": 12,
+    "spriteId": "tile_chest_closed"
+  }
+}

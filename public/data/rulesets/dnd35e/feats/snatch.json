@@ -1,0 +1,23 @@
+{
+  "snatch": {
+    "id": "snatch",
+    "name": "Snatch",
+    "description": "Start a grapple automatically when hitting with a claw or bite attack against a creature at least three size categories smaller.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "size_in",
+      "allowedSizes": [
+        "huge",
+        "gargantuan",
+        "colossal"
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "snatch_improved_grab",
+        "ruleKey": "snatch_improved_grab",
+        "value": true
+      }
+    ]
+  }
+}

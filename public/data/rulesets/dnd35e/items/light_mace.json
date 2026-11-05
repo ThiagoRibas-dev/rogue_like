@@ -1,0 +1,39 @@
+{
+  "light_mace": {
+    "id": "light_mace",
+    "name": "Light Mace",
+    "unidentifiedName": "Light Mace",
+    "description": "Light Mace (simple light melee weapon, 1d6 bludgeoning).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "baseValue": 5,
+    "tags": [
+      "weapon",
+      "simple",
+      "light",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d6",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_mace_1"
+  }
+}

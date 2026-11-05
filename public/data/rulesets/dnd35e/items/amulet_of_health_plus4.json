@@ -1,0 +1,42 @@
+{
+  "amulet_of_health_plus4": {
+    "id": "amulet_of_health_plus4",
+    "name": "Amulet of Health +4",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+4 enhancement bonus to Constitution.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 16000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:neck"
+    ],
+    "equippable": {
+      "slot": "neck",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_amulet_of_health_plus4",
+      "name": "Amulet of Health +4",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+4 enhancement bonus to Constitution.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ability:con",
+          "value": 4,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

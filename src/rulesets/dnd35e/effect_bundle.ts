@@ -144,6 +144,7 @@ export function evaluateEffectBundle(
       sourceId: `${bundle.bundleId}:${mod.id}`,
       sourcePath: appendSourcePath(bundlePath, mod.id),
       origin,
+      ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
       ...(mergedCondition !== undefined ? { condition: mergedCondition } : {})
     };
   });

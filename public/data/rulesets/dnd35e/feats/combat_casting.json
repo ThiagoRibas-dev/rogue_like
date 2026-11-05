@@ -1,0 +1,16 @@
+{
+  "combat_casting": {
+    "id": "combat_casting",
+    "name": "Combat Casting",
+    "description": "+4 bonus on Concentration checks made to cast a spell or use a spell-like ability while on the defensive or while grappling or pinned.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:concentration",
+        "value": 4,
+        "type": "untyped"
+      }
+    ]
+  }
+}

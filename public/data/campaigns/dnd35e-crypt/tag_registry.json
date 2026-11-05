@@ -373,5 +373,190 @@
     "category": "item",
     "color": "#f1c40f",
     "description": "Requires Exotic Weapon Proficiency in one hand (-4 penalty without) or Martial Weapon Proficiency in two hands."
+  },
+  "simple": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: simple."
+  },
+  "unarmed": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: unarmed."
+  },
+  "martial": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: martial."
+  },
+  "exotic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: exotic."
+  },
+  "bypass:cold_iron": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:cold_iron."
+  },
+  "bypass:silver": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:silver."
+  },
+  "bypass:adamantine": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:adamantine."
+  },
+  "bypass:hardness_20": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:hardness_20."
+  },
+  "magic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: magic."
+  },
+  "bypass:magic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:magic."
+  },
+  "ghost_touch": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: ghost_touch."
+  },
+  "metal": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metal."
+  },
+  "material:mithral": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:mithral."
+  },
+  "material:adamantine": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:adamantine."
+  },
+  "tower_shield": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: tower_shield."
+  },
+  "material:darkwood": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:darkwood."
+  },
+  "animated": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: animated."
+  },
+  "wondrous": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: wondrous."
+  },
+  "slot:torso": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:torso."
+  },
+  "slot:arm": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:arm."
+  },
+  "slot:neck": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:neck."
+  },
+  "slot:head": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:head."
+  },
+  "slot:back": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:back."
+  },
+  "slot:finger": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:finger."
+  },
+  "slot:foot": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:foot."
+  },
+  "rod": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: rod."
+  },
+  "metamagic_rod:empower": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:empower."
+  },
+  "metamagic_rod:extend": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:extend."
+  },
+  "metamagic_rod:quicken": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:quicken."
+  },
+  "staff": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: staff."
+  },
+  "wand": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: wand."
+  },
+  "spell:cure_light_wounds": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:cure_light_wounds."
+  },
+  "spell:magic_missile": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:magic_missile."
+  },
+  "potion": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: potion."
+  },
+  "spell:bulls_strength": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:bulls_strength."
+  },
+  "scroll": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: scroll."
+  },
+  "spell:mage_armor": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:mage_armor."
   }
 }

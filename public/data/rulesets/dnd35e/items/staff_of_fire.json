@@ -1,0 +1,26 @@
+{
+  "staff_of_fire": {
+    "id": "staff_of_fire",
+    "name": "Staff of Fire",
+    "unidentifiedName": "Charred Oak Staff",
+    "description": "A magic staff bound in brass that channels Burning Hands, Fireball, and Wall of Fire.",
+    "glyph": "\\",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 17750,
+    "tags": [
+      "magic",
+      "staff"
+    ],
+    "zappable": {
+      "effectId": "scroll_fireball",
+      "pattern": "bolt",
+      "range": 6,
+      "maxCharges": 50,
+      "currentCharges": 10
+    },
+    "spriteId": "item_blue_staff"
+  }
+}

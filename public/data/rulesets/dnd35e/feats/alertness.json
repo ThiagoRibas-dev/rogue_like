@@ -2,7 +2,21 @@
   "alertness": {
     "id": "alertness",
     "name": "Alertness",
-    "description": "+2 bonus on Listen and Spot checks.",
-    "isFighterBonusFeat": false
+    "description": "+2 bonus on all Listen and Spot checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:listen",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:spot",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
   }
 }

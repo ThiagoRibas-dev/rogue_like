@@ -1,0 +1,44 @@
+{
+  "animated_heavy_steel_shield_plus1": {
+    "id": "animated_heavy_steel_shield_plus1",
+    "name": "+1 Animated Heavy Steel Shield",
+    "unidentifiedName": "+1 Animated Heavy Steel Shield",
+    "description": "+1 Animated Heavy Steel Shield (shield, +2 AC, ACP -1, ASF 15%).",
+    "glyph": ")",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 15,
+    "baseValue": 9170,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 2,
+      "maxDexBonus": null,
+      "armorCheckPenalty": -1,
+      "arcaneSpellFailure": 15,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 3,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "magicalProperties": {
+      "enhancementBonus": 1,
+      "isMasterwork": true,
+      "animated": true
+    },
+    "tags": [
+      "shield",
+      "shield",
+      "metal",
+      "magic",
+      "animated"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

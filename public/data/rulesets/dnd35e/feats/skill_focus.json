@@ -1,0 +1,20 @@
+{
+  "skill_focus": {
+    "id": "skill_focus",
+    "name": "Skill Focus",
+    "description": "+3 bonus on all checks involving the chosen skill.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "skill"
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill_all",
+        "value": 3,
+        "type": "untyped"
+      }
+    ]
+  }
+}

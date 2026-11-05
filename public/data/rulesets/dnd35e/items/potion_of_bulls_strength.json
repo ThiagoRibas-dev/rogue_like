@@ -1,0 +1,24 @@
+{
+  "potion_of_bulls_strength": {
+    "id": "potion_of_bulls_strength",
+    "name": "Potion of Bull's Strength",
+    "unidentifiedName": "Amber Vial",
+    "description": "Grants a +4 enhancement bonus to Strength for 3 minutes.",
+    "glyph": "!",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "baseValue": 300,
+    "tags": [
+      "magic",
+      "potion",
+      "spell:bulls_strength"
+    ],
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    },
+    "spriteId": "item_red_potion"
+  }
+}

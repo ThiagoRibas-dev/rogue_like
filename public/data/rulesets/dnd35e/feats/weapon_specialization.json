@@ -1,0 +1,33 @@
+{
+  "weapon_specialization": {
+    "id": "weapon_specialization",
+    "name": "Weapon Specialization",
+    "description": "+2 bonus on all damage rolls you make using the selected weapon.",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "has_feat",
+          "featId": "weapon_focus"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "damage",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

@@ -1,4 +1,6 @@
 import type { RulesetSystemFileDescriptor } from '../../types/ruleset.types.ts';
+import { FEAT_IDS } from './system_content_feat_ids.ts';
+import { ITEM_IDS } from './system_content_item_ids.ts';
 
 const CLASS_IDS: ReadonlyArray<string> = [
   'barbarian',
@@ -105,21 +107,6 @@ const SKILL_IDS: ReadonlyArray<string> = [
   'tumble',
   'use_magic_device',
   'use_rope'
-];
-
-const FEAT_IDS: ReadonlyArray<string> = [
-  'power_attack',
-  'combat_expertise',
-  'cleave',
-  'combat_reflexes',
-  'improved_initiative',
-  'blind_fight',
-  'weapon_focus_bite',
-  'weapon_focus_greatclub',
-  'toughness',
-  'iron_will',
-  'alertness',
-  'track'
 ];
 
 const SPELL_IDS: ReadonlyArray<string> = [
@@ -305,5 +292,7 @@ export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescrip
   { key: 'creatureTypes', filename: 'creature_types.json' },
   ...CREATURE_TYPE_IDS.map((id) => ({ key: 'creatureTypes', filename: `creature_types/${id}.json` })),
   { key: 'subtypes', filename: 'subtypes.json' },
-  ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` }))
+  ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` })),
+  { key: 'items', filename: 'items.json' },
+  ...ITEM_IDS.map((id) => ({ key: 'items', filename: `items/${id}.json` }))
 ];

@@ -1,0 +1,29 @@
+{
+  "improved_feint": {
+    "id": "improved_feint",
+    "name": "Improved Feint",
+    "description": "Feint in combat as a move action rather than a standard action.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "int",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "combat_expertise"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "feint_as_move_action",
+        "ruleKey": "feint_as_move_action",
+        "value": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "spring_attack": {
+    "id": "spring_attack",
+    "name": "Spring Attack",
+    "description": "Move both before and after a single melee attack without provoking an AoO from the defender.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        },
+        {
+          "type": "has_feat",
+          "featId": "mobility"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "spring_attack_split_move",
+        "ruleKey": "spring_attack_split_move",
+        "value": true
+      }
+    ]
+  }
+}

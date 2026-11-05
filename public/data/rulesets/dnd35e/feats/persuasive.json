@@ -1,0 +1,22 @@
+{
+  "persuasive": {
+    "id": "persuasive",
+    "name": "Persuasive",
+    "description": "+2 bonus on all Bluff and Intimidate checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:bluff",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:intimidate",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

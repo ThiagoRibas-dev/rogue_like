@@ -1,0 +1,24 @@
+{
+  "weapon_focus": {
+    "id": "weapon_focus",
+    "name": "Weapon Focus",
+    "description": "+1 bonus on all attack rolls you make using the selected weapon.",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "attack",
+        "value": 1,
+        "type": "untyped"
+      }
+    ]
+  }
+}

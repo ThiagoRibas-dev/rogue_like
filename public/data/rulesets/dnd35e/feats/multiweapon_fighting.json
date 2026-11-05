@@ -1,0 +1,20 @@
+{
+  "multiweapon_fighting": {
+    "id": "multiweapon_fighting",
+    "name": "Multiweapon Fighting",
+    "description": "Penalties for fighting with multiple weapons are reduced by 2 with the primary hand and reduced by 6 with off hands.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "dex",
+      "minScore": 13
+    },
+    "ruleOverrides": [
+      {
+        "id": "twf_penalty_reduction",
+        "ruleKey": "twf_penalty_reduction",
+        "value": true
+      }
+    ]
+  }
+}

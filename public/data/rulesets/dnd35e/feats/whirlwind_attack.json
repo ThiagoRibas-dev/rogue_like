@@ -1,0 +1,50 @@
+{
+  "whirlwind_attack": {
+    "id": "whirlwind_attack",
+    "name": "Whirlwind Attack",
+    "description": "Give up regular attacks during a full attack to make one melee attack at full BAB against each opponent within reach.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "min_ability",
+          "ability": "int",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "combat_expertise"
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        },
+        {
+          "type": "has_feat",
+          "featId": "mobility"
+        },
+        {
+          "type": "has_feat",
+          "featId": "spring_attack"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "whirlwind_full_attack",
+        "ruleKey": "whirlwind_full_attack",
+        "value": true
+      }
+    ]
+  }
+}

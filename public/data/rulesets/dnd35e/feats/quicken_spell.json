@@ -1,0 +1,12 @@
+{
+  "quicken_spell": {
+    "id": "quicken_spell",
+    "name": "Quicken Spell",
+    "description": "Casting a quickened spell is a swift action and does not provoke an Attack of Opportunity. A quickened spell uses up a spell slot four levels higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 4,
+      "actionTimeOverride": "swift"
+    }
+  }
+}

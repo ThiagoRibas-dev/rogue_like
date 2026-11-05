@@ -1,0 +1,17 @@
+{
+  "simple_weapon_proficiency": {
+    "id": "simple_weapon_proficiency",
+    "name": "Simple Weapon Proficiency",
+    "description": "Make attack rolls with all simple weapons without the -4 nonproficiency penalty.",
+    "isFighterBonusFeat": false,
+    "effectBundle": {
+      "bundleId": "feat_simple_weapon_proficiency",
+      "name": "Simple Weapon Proficiency",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:weapon:simple"
+      ]
+    }
+  }
+}

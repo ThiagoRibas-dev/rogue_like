@@ -1,0 +1,40 @@
+{
+  "hand_crossbow": {
+    "id": "hand_crossbow",
+    "name": "Hand Crossbow",
+    "unidentifiedName": "Hand Crossbow",
+    "description": "Hand Crossbow (exotic light ranged weapon, 1d4 piercing).",
+    "glyph": "}",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 100,
+    "tags": [
+      "weapon",
+      "exotic",
+      "light",
+      "piercing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "exotic",
+      "weaponCategory": "ranged",
+      "effort": "light",
+      "damageDice": "1d4",
+      "damageType": "piercing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "rangeIncrementFt": 30,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

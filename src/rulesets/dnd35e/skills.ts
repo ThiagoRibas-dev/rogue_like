@@ -46,11 +46,7 @@ export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
 
   const takeMode = params.takeMode ?? 'roll';
   if (takeMode === 'take10') {
-    if (
-      params.isThreatenedOrDistracted === true ||
-      params.definition.skillId === 'use_magic_device' ||
-      params.definition.take10Allowed === false
-    ) {
+    if (params.isThreatenedOrDistracted === true || params.definition.take10Allowed === false) {
       return {
         allowed: false,
         blockedReason: 'take_10_prohibited',
@@ -69,7 +65,6 @@ export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
     if (
       params.isThreatenedOrDistracted === true ||
       params.carriesPenaltyOnFailure === true ||
-      params.definition.skillId === 'use_magic_device' ||
       params.definition.take20Allowed === false
     ) {
       return {
@@ -88,12 +83,12 @@ export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
     }
   }
 
-  const synergyBonus = computeSkillSynergyBonus(params.definition.synergyFromSkills, params.allSkillRanks);
-  const acpPenaltyMagnitude = Math.abs(params.armorCheckPenalty) * params.definition.acpMultiplier;
+  const synergyBonus = computeSkillSynergyBonus(params.definition.synergyFromSkills ?? [], params.allSkillRanks ?? {});
+  const acpPenaltyMagnitude = Math.abs(params.armorCheckPenalty ?? 0) * (params.definition.acpMultiplier ?? 0);
   const acpApplied = -acpPenaltyMagnitude;
   const typedBonusSum = params.modifiers ? resolveTypedModifiers(params.modifiers) : 0;
 
-  const totalModifier = wholeRanks + params.keyAbilityModifier + synergyBonus + typedBonusSum + acpApplied;
+  const totalModifier = wholeRanks + (params.keyAbilityModifier ?? 0) + synergyBonus + typedBonusSum + acpApplied;
 
   let naturalRoll: number;
   let durationMultiplier = 1;

@@ -1,0 +1,15 @@
+{
+  "eschew_materials": {
+    "id": "eschew_materials",
+    "name": "Eschew Materials",
+    "description": "Cast any spell that has a material component costing 1 gp or less without needing that component.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "ignore_cheap_material_components",
+        "ruleKey": "ignore_cheap_material_components",
+        "value": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "sap": {
+    "id": "sap",
+    "name": "Sap",
+    "unidentifiedName": "Sap",
+    "description": "Sap (martial light melee weapon, 1d6 bludgeoning).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 1,
+    "tags": [
+      "weapon",
+      "martial",
+      "light",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d6",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_mace_1"
+  }
+}

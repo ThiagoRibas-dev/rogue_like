@@ -1,0 +1,19 @@
+{
+  "augment_summoning": {
+    "id": "augment_summoning",
+    "name": "Augment Summoning",
+    "description": "Each creature you conjure with any summon spell gains a +4 enhancement bonus to Strength and Constitution for the duration of the spell.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "spell_focus"
+    },
+    "ruleOverrides": [
+      {
+        "id": "summoned_creature_str_con_enhancement",
+        "ruleKey": "summoned_creature_str_con_enhancement",
+        "value": 4
+      }
+    ]
+  }
+}

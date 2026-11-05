@@ -1,0 +1,41 @@
+{
+  "shot_on_the_run": {
+    "id": "shot_on_the_run",
+    "name": "Shot on the Run",
+    "description": "Move both before and after making a ranged weapon attack.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        },
+        {
+          "type": "has_feat",
+          "featId": "mobility"
+        },
+        {
+          "type": "has_feat",
+          "featId": "point_blank_shot"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "shot_on_the_run_split_move",
+        "ruleKey": "shot_on_the_run_split_move",
+        "value": true
+      }
+    ]
+  }
+}

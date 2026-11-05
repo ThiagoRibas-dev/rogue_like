@@ -1,0 +1,17 @@
+{
+  "shield_proficiency": {
+    "id": "shield_proficiency",
+    "name": "Shield Proficiency",
+    "description": "Use a buckler, small shield, or heavy shield without applying its armor check penalty to attack rolls.",
+    "isFighterBonusFeat": false,
+    "effectBundle": {
+      "bundleId": "feat_shield_proficiency",
+      "name": "Shield Proficiency",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:shield:any"
+      ]
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "ring_of_feather_falling": {
+    "id": "ring_of_feather_falling",
+    "name": "Ring of Feather Falling",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Automatically activates Feather Fall whenever the wearer falls more than 5 feet.",
+    "glyph": "=",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 0,
+    "baseValue": 2200,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:finger"
+    ],
+    "equippable": {
+      "slot": "finger",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_ring_of_feather_falling",
+      "name": "Ring of Feather Falling",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Automatically activates Feather Fall whenever the wearer falls more than 5 feet.",
+      "modifiers": [],
+      "grantedTags": [
+        "trait:feather_fall"
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

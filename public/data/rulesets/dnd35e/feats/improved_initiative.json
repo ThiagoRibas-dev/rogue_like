@@ -3,6 +3,14 @@
     "id": "improved_initiative",
     "name": "Improved Initiative",
     "description": "+4 bonus on initiative checks.",
-    "isFighterBonusFeat": true
+    "isFighterBonusFeat": true,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "initiative",
+        "value": 4,
+        "type": "untyped"
+      }
+    ]
   }
 }

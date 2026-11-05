@@ -1,0 +1,12 @@
+{
+  "silent_spell": {
+    "id": "silent_spell",
+    "name": "Silent Spell",
+    "description": "A silent spell can be cast with no verbal components. A silent spell uses up a spell slot one level higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 1,
+      "suppressVerbalComponent": true
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "wand_of_magic_missile": {
+    "id": "wand_of_magic_missile",
+    "name": "Wand of Magic Missile",
+    "unidentifiedName": "Silver-Tipped Wand",
+    "description": "A wand that fires unerring bolts of arcane force (CL 1st, Magic Missile).",
+    "glyph": "/",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 1,
+    "baseValue": 750,
+    "tags": [
+      "magic",
+      "wand",
+      "spell:magic_missile"
+    ],
+    "zappable": {
+      "effectId": "damage_5_cold",
+      "pattern": "bolt",
+      "range": 6,
+      "maxCharges": 50,
+      "currentCharges": 15
+    },
+    "spriteId": "item_blue_staff"
+  }
+}

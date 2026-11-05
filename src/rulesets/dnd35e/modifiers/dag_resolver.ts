@@ -229,10 +229,13 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   };
 
   const rawAcResolution = resolveTypedModifiersWithBreakdown(allAcModifiers, stageContext);
+  const isAgainstIncorporealTouch =
+    stageContext.againstIncorporealTouch === true ||
+    stageContext.effectTags?.includes('attack:incorporeal_touch') === true;
   const rawTouchAcResolution = resolveTypedModifiersWithBreakdown(allAcModifiers, {
     ...stageContext,
     ignoreArmorAndNatural: true,
-    ...(stageContext.againstIncorporealTouch === true ? { againstIncorporealTouch: true } : {})
+    ...(isAgainstIncorporealTouch ? { againstIncorporealTouch: true } : {})
   });
   const rawFlatFootedAcResolution = resolveTypedModifiersWithBreakdown(allAcModifiers, {
     ...stageContext,

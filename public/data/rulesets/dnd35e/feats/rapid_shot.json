@@ -1,0 +1,29 @@
+{
+  "rapid_shot": {
+    "id": "rapid_shot",
+    "name": "Rapid Shot",
+    "description": "Gain one extra ranged attack per round at your highest bonus, but all ranged attacks in the round take a -2 penalty.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "point_blank_shot"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "rapid_shot_extra_ranged_attack",
+        "ruleKey": "rapid_shot_extra_ranged_attack",
+        "value": true
+      }
+    ]
+  }
+}

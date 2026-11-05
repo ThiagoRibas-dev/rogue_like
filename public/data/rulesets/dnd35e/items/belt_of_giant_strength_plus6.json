@@ -1,0 +1,42 @@
+{
+  "belt_of_giant_strength_plus6": {
+    "id": "belt_of_giant_strength_plus6",
+    "name": "Belt of Giant Strength +6",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+6 enhancement bonus to Strength.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 36000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:torso"
+    ],
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_belt_of_giant_strength_plus6",
+      "name": "Belt of Giant Strength +6",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+6 enhancement bonus to Strength.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ability:str",
+          "value": 6,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "studded_leather_armor": {
+    "id": "studded_leather_armor",
+    "name": "Studded Leather Armor",
+    "unidentifiedName": "Studded Leather Armor",
+    "description": "Studded Leather Armor (light, +3 AC, ACP -1, ASF 15%).",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 20,
+    "baseValue": 25,
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 3,
+      "maxDexBonus": 5,
+      "armorCheckPenalty": -1,
+      "arcaneSpellFailure": 15,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 3,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "light"
+    ],
+    "spriteId": "item_leather_armor"
+  }
+}

@@ -35,7 +35,7 @@ export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 export const ItemDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
-  unidentifiedName: z.string(),
+  unidentifiedName: z.string().default('Unidentified Item'),
   description: z.string(),
   glyph: z.string().length(1),
   fg: z.string(),
@@ -43,9 +43,14 @@ export const ItemDefinitionSchema = z.object({
   spriteId: z.string().optional(),
   category: ItemCategoryEnum,
   tags: z.array(z.string()).default([]),
-  weight: z.number().int().nonnegative(),
-  baseValue: z.number().int().nonnegative().default(0),
+  weight: z.number().nonnegative(),
+  baseValue: z.number().nonnegative().default(0),
   isArtifact: z.boolean().optional(),
+  weaponStats: z.unknown().optional(),
+  armorStats: z.unknown().optional(),
+  specialMaterial: z.unknown().optional(),
+  magicalProperties: z.unknown().optional(),
+  effectBundle: z.unknown().optional(),
   consumable: z
     .object({
       effectId: z.string(),

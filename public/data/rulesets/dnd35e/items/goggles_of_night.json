@@ -1,0 +1,38 @@
+{
+  "goggles_of_night": {
+    "id": "goggles_of_night",
+    "name": "Goggles of Night",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Grants 60-foot darkvision.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 0,
+    "baseValue": 12000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:head"
+    ],
+    "equippable": {
+      "slot": "head",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_goggles_of_night",
+      "name": "Goggles of Night",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Grants 60-foot darkvision.",
+      "modifiers": [],
+      "grantedSenses": {
+        "darkvisionFt": 60
+      }
+    },
+    "spriteId": "item_ankh"
+  }
+}

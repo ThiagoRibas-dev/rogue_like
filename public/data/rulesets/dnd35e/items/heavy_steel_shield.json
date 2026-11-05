@@ -1,0 +1,37 @@
+{
+  "heavy_steel_shield": {
+    "id": "heavy_steel_shield",
+    "name": "Heavy Steel Shield",
+    "unidentifiedName": "Heavy Steel Shield",
+    "description": "Heavy Steel Shield (shield, +2 AC, ACP -2, ASF 15%).",
+    "glyph": ")",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 15,
+    "baseValue": 20,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 2,
+      "maxDexBonus": null,
+      "armorCheckPenalty": -2,
+      "arcaneSpellFailure": 15,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "shield",
+      "shield",
+      "metal"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

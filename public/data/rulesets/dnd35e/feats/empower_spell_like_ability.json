@@ -1,0 +1,15 @@
+{
+  "empower_spell_like_ability": {
+    "id": "empower_spell_like_ability",
+    "name": "Empower Spell-Like Ability",
+    "description": "Use a chosen spell-like ability as an empowered spell-like ability (+50% variable numeric effects) three times per day.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "empower_sla_3_per_day",
+        "ruleKey": "empower_sla_3_per_day",
+        "value": true
+      }
+    ]
+  }
+}

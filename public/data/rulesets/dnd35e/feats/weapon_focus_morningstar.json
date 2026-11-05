@@ -1,0 +1,12 @@
+{
+  "weapon_focus_morningstar": {
+    "id": "weapon_focus_morningstar",
+    "name": "Weapon Focus (Morningstar)",
+    "description": "+1 bonus on attack rolls with a morningstar.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    }
+  }
+}

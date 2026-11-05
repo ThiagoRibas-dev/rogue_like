@@ -1,0 +1,22 @@
+{
+  "agile": {
+    "id": "agile",
+    "name": "Agile",
+    "description": "+2 bonus on all Balance and Escape Artist checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:balance",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:escape_artist",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

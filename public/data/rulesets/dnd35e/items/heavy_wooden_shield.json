@@ -1,0 +1,36 @@
+{
+  "heavy_wooden_shield": {
+    "id": "heavy_wooden_shield",
+    "name": "Heavy Wooden Shield",
+    "unidentifiedName": "Heavy Wooden Shield",
+    "description": "Heavy Wooden Shield (shield, +2 AC, ACP -2, ASF 15%).",
+    "glyph": ")",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 10,
+    "baseValue": 7,
+    "armorStats": {
+      "armorCategory": "shield",
+      "armorBonus": 2,
+      "maxDexBonus": null,
+      "armorCheckPenalty": -2,
+      "arcaneSpellFailure": 15,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "shield",
+      "shield"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

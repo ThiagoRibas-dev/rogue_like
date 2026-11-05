@@ -11,7 +11,11 @@ import {
 } from './progression/ledger_features_spells.ts';
 import {
   buildClassAndDomainEffectModifiers,
-  collectActiveGrantedAndVirtualFeats
+  buildCombatRuleOverridesFromActiveRules,
+  buildFeatEffectModifiers,
+  collectActiveFeatRuleOverrides,
+  collectActiveGrantedAndVirtualFeats,
+  type ResolvedActiveCombatRules
 } from './progression/ledger_modifiers.ts';
 import { buildSkillRankThresholdModifiers } from './skills.ts';
 import { getDnD35EntityData, projectDnD35ActorSemanticTags, setDnD35EntityData } from './srd_registry.ts';
@@ -65,7 +69,7 @@ export function rebuildActorStateFromLevelHistory(
   }
 
   const skillRanks: Record<string, number> = {};
-  const featsSet = new Set<string>();
+  const rebuiltFeats: string[] = [];
   const acfsSet = new Set<string>();
   const spellsSet = new Set<string>();
 
@@ -73,7 +77,14 @@ export function rebuildActorStateFromLevelHistory(
     for (const [sId, delta] of Object.entries(rec.addedSkillRanks)) {
       skillRanks[sId] = (skillRanks[sId] ?? 0) + delta;
     }
-    for (const f of rec.selectedFeats) featsSet.add(f);
+    for (const f of rec.selectedFeats) {
+      const baseId = f.includes(':') ? f.split(':')[0]! : f;
+      const featDef = sysContent.feats?.[f] ?? sysContent.feats?.[baseId];
+      const isStacking = featDef?.repeatable?.mode === 'stacking' || f === 'toughness' || f === 'extra_turning';
+      if (isStacking || !rebuiltFeats.includes(f)) {
+        rebuiltFeats.push(f);
+      }
+    }
     for (const a of rec.selectedAcfs) acfsSet.add(a);
     for (const sp of rec.learnedSpells) spellsSet.add(sp);
   }
@@ -112,7 +123,9 @@ export function rebuildActorStateFromLevelHistory(
     activeTags
   );
   for (const f of bundleGrantedFeats) {
-    featsSet.add(f);
+    if (!rebuiltFeats.includes(f)) {
+      rebuiltFeats.push(f);
+    }
   }
 
   const spellbooksByClass = buildActorSpellbooksByClass(
@@ -134,7 +147,8 @@ export function rebuildActorStateFromLevelHistory(
       !sp.startsWith('class:') &&
       !sp.startsWith('domain:') &&
       !sp.startsWith('condition:negative_level') &&
-      !sp.startsWith('skill:')
+      !sp.startsWith('skill:') &&
+      !sp.startsWith('feat:')
     );
   });
 
@@ -147,6 +161,7 @@ export function rebuildActorStateFromLevelHistory(
     suppressedIds,
     activeTags
   );
+  const featMods = buildFeatEffectModifiers(rebuiltFeats, sysContent.feats, suppressedIds, activeTags);
   const skillThresholdMods = sysContent.skills ? buildSkillRankThresholdModifiers(skillRanks, sysContent.skills) : [];
   const negMods = buildNegativeLevelModifiers(currentData.negativeLevels ?? 0);
 
@@ -155,14 +170,14 @@ export function rebuildActorStateFromLevelHistory(
     abilityScores: baseAbilities,
     tracks: nextTracks,
     skillRanks,
-    feats: Array.from(featsSet),
+    feats: rebuiltFeats,
     selectedAcfs,
     knownSpells: Array.from(spellsSet),
     spellbooksByClass,
     scalingPools: featurePoolSummary.scalingPools,
     activeClassFeatures: featurePoolSummary.activeFeatureIds,
     levelHistory,
-    statModifiers: [...nonClassMods, ...classAndDomainMods, ...skillThresholdMods, ...negMods]
+    statModifiers: [...nonClassMods, ...classAndDomainMods, ...featMods, ...skillThresholdMods, ...negMods]
   };
 }
 
@@ -249,3 +264,5 @@ export function applyNegativeLevelsToActor(state: GameState, entityId: EntityId,
     attack: Math.max(0, chassis.totalBab - count)
   });
 }
+
+export { buildCombatRuleOverridesFromActiveRules, collectActiveFeatRuleOverrides, type ResolvedActiveCombatRules };

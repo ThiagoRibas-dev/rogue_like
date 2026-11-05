@@ -1,0 +1,36 @@
+{
+  "padded_armor": {
+    "id": "padded_armor",
+    "name": "Padded Armor",
+    "unidentifiedName": "Padded Armor",
+    "description": "Padded Armor (light, +1 AC, ACP -0, ASF 5%).",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 10,
+    "baseValue": 5,
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 1,
+      "maxDexBonus": 8,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 5,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 1,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "light"
+    ],
+    "spriteId": "item_leather_armor"
+  }
+}

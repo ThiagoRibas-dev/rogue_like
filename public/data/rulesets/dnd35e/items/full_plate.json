@@ -1,0 +1,37 @@
+{
+  "full_plate": {
+    "id": "full_plate",
+    "name": "Full Plate",
+    "unidentifiedName": "Full Plate",
+    "description": "Full Plate (heavy, +8 AC, ACP -6, ASF 35%).",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 50,
+    "baseValue": 1500,
+    "armorStats": {
+      "armorCategory": "heavy",
+      "armorBonus": 8,
+      "maxDexBonus": 1,
+      "armorCheckPenalty": -6,
+      "arcaneSpellFailure": 35,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 8,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "heavy",
+      "metal"
+    ],
+    "spriteId": "item_chain_mail"
+  }
+}

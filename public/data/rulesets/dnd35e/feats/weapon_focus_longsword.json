@@ -1,0 +1,23 @@
+{
+  "weapon_focus_longsword": {
+    "id": "weapon_focus_longsword",
+    "name": "Weapon Focus (Longsword)",
+    "description": "+1 bonus on attack rolls with a longsword.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    },
+    "modifiers": [
+      {
+        "id": "weapon_focus_longsword_atk",
+        "target": "strike_attack",
+        "value": 1,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAny": ["weapon:longsword"]
+        }
+      }
+    ]
+  }
+}

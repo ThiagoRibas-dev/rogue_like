@@ -1,0 +1,39 @@
+{
+  "adamantine_full_plate": {
+    "id": "adamantine_full_plate",
+    "name": "Adamantine Full Plate",
+    "unidentifiedName": "Adamantine Full Plate",
+    "description": "Adamantine Full Plate (heavy, +8 AC, ACP -6, ASF 35%).",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 50,
+    "baseValue": 16500,
+    "armorStats": {
+      "armorCategory": "heavy",
+      "armorBonus": 8,
+      "maxDexBonus": 1,
+      "armorCheckPenalty": -6,
+      "arcaneSpellFailure": 35,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 8,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "specialMaterial": "adamantine",
+    "tags": [
+      "armor",
+      "heavy",
+      "metal",
+      "material:adamantine"
+    ],
+    "spriteId": "item_chain_mail"
+  }
+}

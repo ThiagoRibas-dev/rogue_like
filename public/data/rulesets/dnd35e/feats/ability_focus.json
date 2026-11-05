@@ -1,0 +1,19 @@
+{
+  "ability_focus": {
+    "id": "ability_focus",
+    "name": "Ability Focus",
+    "description": "Add +2 to the DC for all saving throws against one selected special attack.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "ability"
+    },
+    "ruleOverrides": [
+      {
+        "id": "special_ability_save_dc_bonus",
+        "ruleKey": "special_ability_save_dc_bonus",
+        "value": 2
+      }
+    ]
+  }
+}

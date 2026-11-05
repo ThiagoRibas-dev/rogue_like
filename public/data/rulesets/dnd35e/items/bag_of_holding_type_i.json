@@ -1,0 +1,36 @@
+{
+  "bag_of_holding_type_i": {
+    "id": "bag_of_holding_type_i",
+    "name": "Bag of Holding (Type I)",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "Extradimensional sack capable of holding up to 250 lb. of equipment.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 15,
+    "baseValue": 2500,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:back"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 20
+    },
+    "effectBundle": {
+      "bundleId": "item_bag_of_holding_type_i",
+      "name": "Bag of Holding (Type I)",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "Extradimensional sack capable of holding up to 250 lb. of equipment.",
+      "modifiers": []
+    },
+    "carryBonus": 20,
+    "spriteId": "tile_chest_closed"
+  }
+}

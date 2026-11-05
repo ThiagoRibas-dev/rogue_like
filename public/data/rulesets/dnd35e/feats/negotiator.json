@@ -1,0 +1,22 @@
+{
+  "negotiator": {
+    "id": "negotiator",
+    "name": "Negotiator",
+    "description": "+2 bonus on all Diplomacy and Sense Motive checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:diplomacy",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:sense_motive",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

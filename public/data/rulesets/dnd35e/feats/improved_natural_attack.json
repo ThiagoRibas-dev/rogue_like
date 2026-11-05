@@ -1,0 +1,23 @@
+{
+  "improved_natural_attack": {
+    "id": "improved_natural_attack",
+    "name": "Improved Natural Attack",
+    "description": "The damage for one of the creature's natural attack forms increases by one size step.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 4
+    },
+    "ruleOverrides": [
+      {
+        "id": "natural_weapon_damage_step_up",
+        "ruleKey": "natural_weapon_damage_step_up",
+        "value": 1
+      }
+    ]
+  }
+}

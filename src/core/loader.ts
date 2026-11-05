@@ -175,7 +175,11 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       theme,
       advancement,
       areas,
-      items: { ...rulesetBase.items, ...(items as Record<string, unknown>) },
+      items: {
+        ...rulesetBase.items,
+        ...((parsedSystemContent['items'] as Record<string, unknown> | undefined) ?? {}),
+        ...(items as Record<string, unknown>)
+      },
       effects: { ...rulesetBase.effects, ...(effects as Record<string, unknown>) },
       entities: { ...rulesetBase.entities, ...(entities as Record<string, unknown>) },
       status: { ...rulesetBase.status, ...(status as Record<string, unknown>) },

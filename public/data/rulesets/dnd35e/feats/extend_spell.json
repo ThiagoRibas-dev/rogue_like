@@ -1,0 +1,12 @@
+{
+  "extend_spell": {
+    "id": "extend_spell",
+    "name": "Extend Spell",
+    "description": "An extended spell lasts twice as long as normal. An extended spell uses up a spell slot one level higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 1,
+      "durationMultiplier": 2
+    }
+  }
+}

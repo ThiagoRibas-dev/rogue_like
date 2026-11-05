@@ -1,0 +1,33 @@
+{
+  "greater_weapon_focus": {
+    "id": "greater_weapon_focus",
+    "name": "Greater Weapon Focus",
+    "description": "Additional +1 bonus on all attack rolls you make using the selected weapon.",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "has_feat",
+          "featId": "weapon_focus"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 8
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "attack",
+        "value": 1,
+        "type": "untyped"
+      }
+    ]
+  }
+}

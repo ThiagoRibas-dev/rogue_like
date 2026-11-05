@@ -1,0 +1,42 @@
+{
+  "awesome_blow": {
+    "id": "awesome_blow",
+    "name": "Awesome Blow",
+    "description": "Subtract 4 from melee attack roll to send smaller corporeal opponent flying 10 feet and prone.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "str",
+          "minScore": 25
+        },
+        {
+          "type": "has_feat",
+          "featId": "power_attack"
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_bull_rush"
+        },
+        {
+          "type": "size_in",
+          "allowedSizes": [
+            "large",
+            "huge",
+            "gargantuan",
+            "colossal"
+          ]
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "awesome_blow_maneuver",
+        "ruleKey": "awesome_blow_maneuver",
+        "value": true
+      }
+    ]
+  }
+}

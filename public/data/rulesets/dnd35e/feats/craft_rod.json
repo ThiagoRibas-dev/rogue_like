@@ -1,0 +1,12 @@
+{
+  "craft_rod": {
+    "id": "craft_rod",
+    "name": "Craft Rod",
+    "description": "Create any rod whose prerequisites you meet.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 9
+    }
+  }
+}

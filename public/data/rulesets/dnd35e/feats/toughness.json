@@ -2,7 +2,18 @@
   "toughness": {
     "id": "toughness",
     "name": "Toughness",
-    "description": "+3 hit points.",
-    "isFighterBonusFeat": false
+    "description": "+3 hit points. A character may gain this feat multiple times; its effects stack.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "stacking"
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "max_hp",
+        "value": 3,
+        "type": "untyped"
+      }
+    ]
   }
 }

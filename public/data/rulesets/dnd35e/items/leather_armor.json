@@ -1,0 +1,36 @@
+{
+  "leather_armor": {
+    "id": "leather_armor",
+    "name": "Leather Armor",
+    "unidentifiedName": "Leather Armor",
+    "description": "Leather Armor (light, +2 AC, ACP -0, ASF 10%).",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 15,
+    "baseValue": 10,
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 2,
+      "maxDexBonus": 6,
+      "armorCheckPenalty": 0,
+      "arcaneSpellFailure": 10,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 2,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "light"
+    ],
+    "spriteId": "item_leather_armor"
+  }
+}

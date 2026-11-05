@@ -1,0 +1,41 @@
+{
+  "greater_weapon_specialization": {
+    "id": "greater_weapon_specialization",
+    "name": "Greater Weapon Specialization",
+    "description": "Additional +2 bonus on all damage rolls you make using the selected weapon.",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "has_feat",
+          "featId": "weapon_focus"
+        },
+        {
+          "type": "has_feat",
+          "featId": "weapon_specialization"
+        },
+        {
+          "type": "has_feat",
+          "featId": "greater_weapon_focus"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 12
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "damage",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

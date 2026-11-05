@@ -1,0 +1,15 @@
+{
+  "point_blank_shot": {
+    "id": "point_blank_shot",
+    "name": "Point Blank Shot",
+    "description": "+1 bonus on attack and damage rolls with ranged weapons at ranges of up to 30 feet.",
+    "isFighterBonusFeat": true,
+    "ruleOverrides": [
+      {
+        "id": "point_blank_shot_bonus",
+        "ruleKey": "point_blank_shot_bonus",
+        "value": 1
+      }
+    ]
+  }
+}

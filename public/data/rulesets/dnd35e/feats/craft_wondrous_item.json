@@ -1,0 +1,12 @@
+{
+  "craft_wondrous_item": {
+    "id": "craft_wondrous_item",
+    "name": "Craft Wondrous Item",
+    "description": "Create any wondrous item whose prerequisites you meet.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 3
+    }
+  }
+}

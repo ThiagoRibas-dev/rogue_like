@@ -1,0 +1,38 @@
+{
+  "stunning_fist": {
+    "id": "stunning_fist",
+    "name": "Stunning Fist",
+    "description": "Force a foe damaged by your unarmed strike to make a Fortitude save (DC 10 + 1/2 level + WIS mod) or be stunned for 1 round.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "min_ability",
+          "ability": "wis",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_unarmed_strike"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 8
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "stunning_fist_attack",
+        "ruleKey": "stunning_fist_attack",
+        "value": true
+      }
+    ]
+  }
+}

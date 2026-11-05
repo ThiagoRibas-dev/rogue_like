@@ -1,0 +1,22 @@
+{
+  "deceitful": {
+    "id": "deceitful",
+    "name": "Deceitful",
+    "description": "+2 bonus on all Disguise and Forgery checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:disguise",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:forgery",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

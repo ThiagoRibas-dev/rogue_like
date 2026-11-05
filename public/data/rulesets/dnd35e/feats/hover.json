@@ -1,0 +1,15 @@
+{
+  "hover": {
+    "id": "hover",
+    "name": "Hover",
+    "description": "Halt forward momentum while flying and hover in place regardless of maneuverability.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "fly_hover_in_place",
+        "ruleKey": "fly_hover_in_place",
+        "value": true
+      }
+    ]
+  }
+}

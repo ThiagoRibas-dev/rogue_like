@@ -1,239 +1,87 @@
-# Research Notes: Comprehensive Codebase Modularity & File Decomposition
+# Research Notes — Milestone 115.1: Declarative Rule-Override Routing, Codified Crit Threat Expansion, Per-Strike Weapon-Scoped Modifiers & Data-Driven Cleanup
 
-## 1. Reiteration of Architectural Rules & Standards (Step 1)
+## 1. Architectural Rules & Standards Reiteration (`AGENTS.md` & `docs/ARCHITECTURE.md`)
 
-Per `AGENTS.md` and `docs/ARCHITECTURE.md`:
-1. **Modularity & File Boundaries (`AGENTS.md` Rule 8):**
-   - "One concern per file. Split files if they handle multiple responsibilities or exceed ~250 lines."
-   - "Barrel files (`index.ts`) are BANNED. Use direct imports."
-   - "No circular imports. The dependency graph flows DOWN: `main → core → systems → map/rendering → types/constants/utils`."
-2. **Type Strictness (`AGENTS.md` Rule 11):**
-   - "NEVER use `any`. There are zero acceptable uses of `any`. Use `unknown` + type narrowing, generics, or branded types."
-   - All function signatures must have explicit return types.
-3. **No Magic Literals (`AGENTS.md` Rule 12):**
-   - Every literal affecting gameplay, limits, or configurations must be a named constant or enum member.
-4. **Three-Tier Placement Heuristic (`AGENTS.md` Rule 16):**
-   - **Tier 1 — Core Console Engine (`src/core/`, `src/systems/`, `src/types/`):** Generic ECS primitives, turn scheduling, item persistence, spatial index, narrative triggers. Reusable across any ruleset.
-   - **Tier 2 — Ruleset Cartridge (`src/rulesets/<id>/`):** Pure baseline mathematical and mechanical laws of the tabletop system (D&D 3.5e 4-stage DAG, 18-bonus stacking, attack routines, skill verbs).
-   - **Tier 3 — System Content (`public/data/rulesets/<id>/*.json`):** Modular JSON data (races, classes, feats, spells, items).
-5. **Cascading Effects in All Three Directions (`AGENTS.md` Rule 15):**
-   - Every decomposition must explicitly track:
-     - **Upstream:** Call sites, intent producers, event emitters.
-     - **Downstream:** Validators, serializers, renderers, test suites.
-     - **Lateral:** Sibling campaign JSONs, editor forms, SSOT registries.
-6. **Backward-Compatible Facade Pattern:**
-   - In each decomposed file, retain the primary public API entry points with re-exports from the new single-concern sub-modules during transition, guaranteeing 0 regression test breakage while enabling incremental call-site migration.
+- **Rule 11 (Zero `any`):** Every type, helper, and schema extension must be strictly typed (`exactOptionalPropertyTypes: true`).
+- **Rule 12 (Zero Magic Values):** Every gameplay constant must be a named constant or defined in declarative JSON registries.
+- **Rule 15 (Cascading Effects Matrix):** Map **Upstream**, **Downstream**, and **Lateral** effects across all call sites, schemas, validators, and tests.
+- **Rule 16 (Three-Tier Placement Heuristic):** Keep generic stat stacking, rule overrides, and per-strike tag filtering in Tier 2 (`src/rulesets/dnd35e/`), parameterized by Tier 3 data (`public/data/rulesets/dnd35e/{feats,items,skills,classes}/*.json`).
+- **Rule 17 (Baseline Rules + Declarative Overrides & Modifiers — No Feat/Content Spaghetti):** Baseline resolvers (`evaluateDnD35eEntityDAG`, `resolveActorAttackRoutine`, `resolveDnD35eMeleeAttack`, `evaluateNonproficiencyPenalty`, `evaluateTacticalDoctrineModifiers`) must never hardcode `if (feats.includes('...'))` or `if (skillId === '...')`. They must consume declarative `StatModifier`s (filtered via `selfTags*`, `targetTags*`, `effectTags*`) and `RuleOverride`s (`collectActiveFeatRuleOverrides`).
+- **Rule 19 (Unified Effect Providers & Hierarchical Provenance `sourcePath`):** Every emitted modifier must carry a slash-delimited `sourcePath` (e.g., `"item:keen_rapier_plus1/keen"`, `"feat:improved_critical/threat_expansion"`, `"feat:weapon_focus_longsword/atk_bonus"`) so `resolveTypedModifiersWithBreakdown` records active winners, shadowed losers (`shadowedModifiers`), and suppressed modifiers (`suppressedModifiers`).
+- **Rule 20 (Three-Horizon Computation Boundaries):** Preserve conditional weapon/stance modifiers in Horizon 2 (`level_ledger.ts`) and evaluate them dynamically against active weapon/stance tags in Horizon 3 (`evaluateDnD35eEntityDAG` and `resolveActorAttackRoutine`).
 
 ---
 
-## 2. Global Dependency Order & 5-Phase Execution Architecture (Step 2)
+## 2. SSOT Ownership & Old-Brain Eviction Table (`docs/SSOT_DND35E.md` Audit)
 
-To maintain a pristine downward dependency graph and prevent split-brain imports or compilation circularity, the decomposition must proceed in strict dependency order:
+Per Kickoff Step 4, we audited `docs/SSOT_DND35E.md` and `docs/ssot/ssot_dnd35e.json` to map every responsibility to its canonical owner and evict remaining hardcoded "old-brain" branches:
 
-```mermaid
-flowchart TD
-    P1["Phase A: Types & Schema Primitives<br/>(components.types, events.types, dnd35e_system.types, dnd35e.types)"]
-    P2["Phase B: Core Console Engine & Systems<br/>(ecs, session_controller, loader, bootstrap, map.system, triggers)"]
-    P3["Phase C: D&D 3.5e Ruleset Engine Sub-Resolvers<br/>(modifiers, equipment_physics, attack_resolver, skills, character_builder)"]
-    P4["Phase D: Editor, Simulation & Diagnostic Tools<br/>(zod_form_renderer, campaign_editor, area_editor, ai_arena)"]
-    P5["Phase E: Tactical UI, Character Sheet & Viewport<br/>(dnd35e_char_builder.ui, dnd35e_char_builder_steps.ui, dnd35e_level_up.ui)"]
-
-    P1 --> P2
-    P1 --> P3
-    P2 --> P3
-    P2 --> P4
-    P3 --> P5
-    P4 --> P5
-```
+| Responsibility | Canonical SSOT Owner (`docs/SSOT_DND35E.md`) | Old-Brain / Split-Brain Code to Evict |
+| :--- | :--- | :--- |
+| **Non-stacking critical threat expansion (`'threat_expansion'`)** | `src/rulesets/dnd35e/modifiers/stacking_engine.ts` (`resolveTypedModifiersWithBreakdown`) + `src/rulesets/dnd35e/types/stats.types.ts` (`BonusType`) | Evict `feats.some(f => f === 'improved_critical' ...)` and boolean `isKeen \|\| hasImprovedCrit` from `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`. |
+| **Combat rule overrides (`twf_primary_penalty`, `twf_offhand_penalty`, `secondary_natural_penalty`, `extra_offhand_attacks`, `use_dex_for_light_finesse_melee_attack`, `cleave_followup_on_drop`, `great_cleave_unlimited_on_drop`)** | `src/rulesets/dnd35e/progression/ledger_modifiers.ts` (`collectActiveFeatRuleOverrides`, `buildCombatRuleOverridesFromActiveRules`) | Evict `dndData.feats?.includes('weapon_finesse' \| 'two_weapon_fighting' \| 'multiweapon_fighting' \| 'multiattack')` from `dnd35e_dag_adapter.ts` and `attackerData.feats?.includes('cleave' \| 'great_cleave')` from `dnd35e_combat_adapter.ts`. |
+| **Per-strike weapon-scoped attack, damage & crit threat modifiers (`strike_attack`, `strike_damage`, `crit_threat_doubling`)** | `src/rulesets/dnd35e/combat/attack_routine.ts` (`resolveActorAttackRoutine`) | Evict unscoped `target: 'attack'` on `weapon_focus_*.json` that bled onto non-matching weapons (`docs/SSOT_DND35E.md` anti-pattern: *"Never fold per-weapon enhancement or main-hand doctrine modifiers into the actor-wide stat modifier pool"*). |
+| **Tactical Doctrine Dials & Defensive Stance Modifiers** | `src/rulesets/dnd35e/combat/tactical_doctrine.ts` (`extractActorTacticalDials`, `evaluateTacticalDoctrineModifiers`) + `public/data/rulesets/dnd35e/skills/tumble.json` | Evict `hasTumbleSynergy` duplicate branch in `dnd35e_dag_adapter.ts` (`effectiveTumbleRanks` workaround) and extract `TacticalDialDescriptor[]` dynamically from `featDef.effectBundle.activatedAbilities[].variableDial`. |
+| **Monster Class Track Curves (`babCurve`, `fortCurve`, `refCurve`, `willCurve`)** | `src/rulesets/dnd35e/archetype/race_hydrator.ts` (`hydrateRaceAsArchetype`) reading `sysContent.classes[cl.classId]` | Evict hardcoded `cl.classId === 'warrior' \|\| cl.classId === 'fighter' \|\| cl.classId === 'barbarian'` ternaries when `clsDef` is present. |
+| **Horizon 3 Literacy & Situational Tag Projection** | `src/rulesets/dnd35e/semantic_tags.ts` (`projectDnD35ActorSemanticTags`) | Evict `t.trackId === 'barbarian'` string check in `semantic_tags.ts` (`docs/SSOT_DND35E.md` anti-pattern: *"Never hardcode class names (e.g. if (classId === 'barbarian')) for illiteracy"*). |
+| **Domain Spell List Eligibility & Skill Take-10/20 Gating** | `src/rulesets/dnd35e/builder/builder_spells.ts` (`getSpellLevelForClass`) & `src/rulesets/dnd35e/skills.ts` (`resolveSkillCheck`) | Evict `if (classId === 'cleric')` in `builder_spells.ts` and `params.definition.skillId === 'use_magic_device'` in `skills.ts`. |
+| **UI Feat Category Filter Classification** | `src/rendering/ui/dnd35e_char_builder_feats.ui.ts` (`classifyFeatCategory`) | Evict hardcoded `COMBAT_FEAT_IDS` list and 17 `idLower.includes(...)` substring checks in favor of declarative inspection of `feat.isFighterBonusFeat`, `feat.metamagicDescriptor`, `feat.prerequisites`, and `feat.effectBundle`. |
 
 ---
 
-## 3. Phase-by-Phase File Inventory & Decomposition Blueprint
+## 3. Detailed Task Research & Codebase Mapping
 
-### Phase A: Foundational Types & Schemas (4 files)
+### Task 1: Codified Non-Stacking Critical Threat Range Expansion (`BonusType: 'threat_expansion'`)
+- Add `'threat_expansion'` to `BonusType` (`src/rulesets/dnd35e/types/stats.types.ts`) and `DnD35BonusTypeSchema` (`src/rulesets/dnd35e/types/dnd35e_system.types.ts`).
+- Update `computeExpandedCritThreatMin(baseCritThreatMin: number, expandThreatRange: boolean | number)` in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` so `expandThreatRange` accepts either a boolean or a numeric expansion multiplier count (`steps >= 1`), where `1` step doubles the threat span (`span * 2`) and `steps` stacks additively per SRD multiplier rules (`span * (1 + steps)`).
+- In `collectEquippedItemDAGContributions` (`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`), when an equipped weapon has `magicalProperties?.keen === true` or `itemTags.includes('keen')`, emit:
+  ```ts
+  {
+    targetStat: 'crit_threat_doubling',
+    value: 1,
+    bonusType: 'threat_expansion',
+    sourceId: `${itemRoot}:keen`,
+    sourcePath: `${itemRoot}/keen`,
+    origin: 'magical',
+    condition: { effectTagsAny: [`weapon:${itemDef.id}`] }
+  }
+  ```
+- In `public/data/rulesets/dnd35e/feats/improved_critical.json`, add a declarative modifier `{ id: 'improved_crit_threat_expansion', target: 'crit_threat_doubling', value: 1, type: 'threat_expansion' }`.
+- In `buildFeatEffectModifiers` (`src/rulesets/dnd35e/progression/ledger_modifiers.ts`), support weapon-parameterized feat IDs (`improved_critical:longsword`, `improved_critical_longsword`, `weapon_focus:longsword`, `weapon_specialization:longsword`, etc.) by extracting the target weapon ID when a repeatable `choiceCategory === 'weapon'` feat has a `:weaponId` or `_weaponId` suffix and attaching `condition: { effectTagsAny: [\`weapon:\${weaponId}\`] }` to its emitted modifiers.
+- In `parseEquippedItem` (`weapon_profile_parser.ts`) and `resolveActorAttackRoutine` (`attack_routine.ts`), resolve `crit_threat_doubling` via `resolveTypedModifiersWithBreakdown` with `effectTags: [\`weapon:\${weaponId}\`, ...]` and record `critThreatBreakdown?: StatResolutionBreakdown` on `DnD35ResolvedStrikeProfile`.
 
-#### A.1 `src/types/components.types.ts` (764 lines)
-- **Domain:** Tier 1 Console (`Core Console: Types`)
-- **Current Responsibilities:** Defines 35+ ECS component interfaces, component payloads, and the central `ComponentType` enum.
-- **Decomposition Target:**
-  - `src/types/components/actor_components.types.ts` (~250 lines): `FighterComponent`, `PlayerComponent`, `IdentityComponent`, `FactionComponent`, `MemoryComponent`, `AttitudeComponent`.
-  - `src/types/components/world_components.types.ts` (~250 lines): `PositionComponent`, `AreaComponent`, `DoorComponent`, `LockComponent`, `TrapComponent`, `HazardComponent`, `SpatialFieldComponent`.
-  - `src/types/components/item_components.types.ts` (~200 lines): `ItemComponent`, `InventoryComponent`, `EquipmentComponent`, `PropertyOverlayComponent`.
-  - `src/types/components.types.ts` (< 150 lines): `ComponentType` enum and re-exports of all component interfaces.
+### Task 2: Pure Declarative `featRuleOverrides` Routing (`dnd35e_dag_adapter.ts`, `dnd35e_combat_adapter.ts`, `weapon_profile_parser.ts`)
+- Add `buildCombatRuleOverridesFromActiveRules(ruleOverrides: ReadonlyArray<DnD35RuleOverrideEntry>, offHandIsLight: boolean)` in `src/rulesets/dnd35e/progression/ledger_modifiers.ts` (and export via `level_ledger.ts`) that derives:
+  - `hasWeaponFinesse`: `ruleOverrides.some(r => r.ruleKey === 'use_dex_for_light_finesse_melee_attack' && r.value === true)`
+  - `hasCleave`: `ruleOverrides.some(r => r.ruleKey === 'cleave_followup_on_drop' && r.value === true)`
+  - `hasGreatCleave`: `ruleOverrides.some(r => r.ruleKey === 'great_cleave_unlimited_on_drop' && r.value === true)`
+  - `combatOverrides: CombatRuleOverrides`: computes `twfPrimaryPenalty`, `twfOffHandPenalty`, `secondaryNaturalPenalty`, and `extraOffHandAttacks` from `twf_primary_penalty`, `twf_offhand_penalty`, `twf_light_offhand_bonus`, `secondary_natural_penalty`, and `extra_offhand_attacks` `ruleOverrides`.
+- Wire `buildCombatRuleOverridesFromActiveRules` into `evaluateDnD35eEntityDAG` (`dnd35e_dag_adapter.ts`) and expose `hasCleave` / `hasGreatCleave` on `DnD35EntityDAGResult` so `resolveDnD35eMeleeAttack` (`dnd35e_combat_adapter.ts`) has zero `feats.includes(...)` checks.
+- Update `evaluateNonproficiencyPenalty` (`weapon_profile_parser.ts`) to remove `weaponItemId.includes('dwarven')` and check `familiaritySubtypes` + `ruleOverrides` / `selfTags` (`proficiency:exotic`, `proficiency:weapon:<id>`).
 
-#### A.2 `src/types/events.types.ts` (397 lines)
-- **Domain:** Tier 1 Console (`Core Console: Types`)
-- **Current Responsibilities:** Discriminated union of all 40+ `GameEvent` interfaces and `GameEventType` enum.
-- **Decomposition Target:**
-  - `src/types/events/combat_events.types.ts` (~180 lines): Attack, damage, death, maneuver, combat doctrine events.
-  - `src/types/events/interaction_events.types.ts` (~180 lines): Dialogue, trade, loot, inspect, social, narrative events.
-  - `src/types/events.types.ts` (< 150 lines): `GameEventType` enum, `BaseGameEvent`, and the `GameEvent` discriminated union.
+### Task 3: Per-Strike Weapon-Scoped Feat & Item Modifiers (`attack_routine.ts`, `feats/weapon_focus*.json`)
+- Update `weapon_focus_*.json`, `weapon_focus.json`, `greater_weapon_focus.json`, `weapon_specialization.json`, and `greater_weapon_specialization.json` to emit `StatModifier`s with `condition: { effectTagsAny: ['weapon:<id>'] }` (or `selfTagsAll: ['wielding:primary:<id>']` for primary-weapon sheet summary).
+- Pass `statModifiers` and `selfTags` into `resolveActorAttackRoutine` (`attack_routine.ts`) so each strike evaluates `strike_attack`, `strike_damage`, and `crit_threat_doubling` filtered by `effectTags: [\`weapon:\${strikeWeaponId}\`, \`attack_source:\${entry.attackSource}\`]` via `resolveTypedModifiersWithBreakdown`.
 
-#### A.3 `src/rulesets/dnd35e/types/dnd35e_system.types.ts` (962 lines)
-- **Domain:** Tier 1 Types (`D&D 3.5e: Ruleset Types & Schemas`)
-- **Current Responsibilities:** Zod schemas and TypeScript interfaces for system content records (races, classes, feats, spells, creature types, templates, domains).
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/types/system/race_class.types.ts` (~250 lines): Race, class, progression track, save curves, BAB curves.
-  - `src/rulesets/dnd35e/types/system/feat_spell.types.ts` (~260 lines): Feat grant descriptors, spell definitions, metamagic descriptors, domain schemas.
-  - `src/rulesets/dnd35e/types/system/creature_template.types.ts` (~240 lines): Creature type engines, monster templates, dragon families, elemental steps.
-  - `src/rulesets/dnd35e/types/dnd35e_system.types.ts` (< 220 lines): `DnD35EffectBundle` schema, `DnD35SystemContentSchema`, container types.
+### Task 4: Dynamic Tactical Doctrine Dials & Pure Tumble Rank-Threshold Synergy (`tactical_doctrine.ts`, `dnd35e_dag_adapter.ts`)
+- Implement `extractActorTacticalDials(featIds, featRegistry, suppressedBundleIds)` in `tactical_doctrine.ts` reading `featDef.effectBundle.activatedAbilities[].variableDial` from `sysContent.feats` (`power_attack.json`, `combat_expertise.json`), falling back to `CANONICAL_TACTICAL_DIALS` only when `featRegistry` is undefined.
+- In `dnd35e_dag_adapter.ts`, ensure `buildSkillRankThresholdModifiers` from `sysContent.skills` is included when `skill:` modifiers are not yet in `dndData.statModifiers`, and pass `0` for `tumbleRanks` into `evaluateTacticalDoctrineModifiers` so `tumble.json`'s 5-rank threshold modifiers are the single source of truth for defensive fighting AC synergy in the Stat DAG.
 
-#### A.4 `src/rulesets/dnd35e/types/dnd35e.types.ts` (472 lines)
-- **Domain:** Tier 1 Types (`D&D 3.5e: Ruleset Types & Schemas`)
-- **Current Responsibilities:** 6 ability score types, conditions, damage types, resolved stat DTOs, modifier condition interfaces.
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/types/stats.types.ts` (~200 lines): `AbilityScoresRecord`, `StatModifier`, `StatModifierCondition`, `StatQueryContext`.
-  - `src/rulesets/dnd35e/types/dnd35e.types.ts` (< 270 lines): `DnD35EntityData`, `DnD35ConditionId`, `DnD35DamageType`, `DnD35ResolvedActorStats`.
-
----
-
-### Phase B: Core Console Systems & Engine Primitives (15 files)
-
-#### B.1 `src/core/ecs.ts` (825 lines)
-- **Domain:** Tier 1 Console (`Core Console: Entity Component System`)
-- **Current Responsibilities:** Entity creation/destruction, component storage, indexing, querying, cold storage packing, orphan pruning, serialization.
-- **Decomposition Target:**
-  - `src/core/ecs/entity_manager.ts` (~240 lines): Entity ID counter, creation, deletion, existence checks.
-  - `src/core/ecs/component_store.ts` (~280 lines): `addComponent`, `removeComponent`, `getComponent`, `hasComponent`, component indexing.
-  - `src/core/ecs/query.ts` (~200 lines): `queryEntities`, single/multi-component filter matching.
-  - `src/core/ecs/serialization.ts` (~200 lines): `packComponentsForColdStorage`, `unpackComponentsFromColdStorage`, `pruneOrphanEntities`.
-  - `src/core/ecs.ts` (< 150 lines): Re-export facade preserving 100% backward compatibility for all callers.
-
-#### B.2 `src/core/session_controller.ts` (687 lines)
-- **Domain:** Tier 1 Console (`Core Console: Session & State`)
-- **Current Responsibilities:** Game loop turn queue scheduling, RTwP tick accumulator, pause state, auto-pause condition checks.
-- **Decomposition Target:**
-  - `src/core/session/session_clock.ts` (~250 lines): Turn queue scheduling, delta-time accumulation, RTwP tick pacing.
-  - `src/core/session/session_pause.ts` (~200 lines): Auto-pause condition evaluation (enemy spotted, low HP, trap discovered, combat start).
-  - `src/core/session_controller.ts` (< 280 lines): Central session controller facade.
-
-#### B.3 `src/systems/map.system.ts` (589 lines)
-- **Domain:** Tier 1 Console (`Core Console: Map & Exploration`)
-- **Current Responsibilities:** Map tile exploration, FOV invalidation, shadowcasting, stairs & multi-level traversal.
-- **Decomposition Target:**
-  - `src/systems/map/map_traversal.ts` (~260 lines): Stairs, portals, multi-level map transitions, entity migration.
-  - `src/systems/map/map_fov.ts` (~200 lines): FOV invalidation, shadowcasting delegation, exploration tile memory.
-  - `src/systems/map.system.ts` (< 200 lines): Map system dispatcher.
-
-#### B.4 `src/systems/trigger/systemic.ts` (621 lines) & `src/systems/trigger/social.ts` (520 lines)
-- **Domain:** Tier 1 Console (`Core Console: Narrative & Triggers`)
-- **Current Responsibilities:** Environmental physics interactions (fire spread, water conductivity, pressure plates) and social dialogue option triggers.
-- **Decomposition Target:**
-  - `src/systems/trigger/environmental_hazard.ts` (~280 lines): Fire, water, freezing, hazard interactions.
-  - `src/systems/trigger/mechanical_pressure.ts` (~250 lines): Pressure plates, tripwires, traps.
-  - `src/systems/trigger/social_dialogue.ts` (~260 lines): Dialogue option condition triggers, attitude shifts.
-  - `src/systems/trigger/systemic.ts` (< 150 lines) & `social.ts` (< 200 lines): Pure event listener wiring.
-
-#### B.5 Remaining Core Console Files:
-- `src/core/loader.ts` (466 lines) $\to$ extract `src/core/loader/loader_system_content.ts`.
-- `src/core/bootstrap.ts` (446 lines) $\to$ extract `src/core/bootstrap/dom_mount.ts`.
-- `src/core/game-loop.ts` (381 lines) $\to$ extract `src/core/loop/scheduler_bridge.ts`.
-- `src/actions/action.registry.ts` (371 lines) $\to$ extract `src/actions/action_handlers_core.ts`.
-- `src/systems/inventory.system.ts` (423 lines) $\to$ extract `src/systems/inventory/equipment_slots.ts`.
-- `src/systems/effects.system.ts` (460 lines) $\to$ extract `src/systems/effects/floating_text.ts`.
-- `src/systems/rivalry.system.ts` (514 lines) $\to$ extract `src/systems/rivalry/rivalry_nemesis_generator.ts`.
-- `src/systems/scheme.system.ts` (401 lines) $\to$ extract `src/systems/scheme/scheme_progression.ts`.
-- `src/map/encounter_director.ts` (512 lines) $\to$ extract `src/map/director/encounter_budget.ts`.
-- `src/map/generator_stages.ts` (426 lines) $\to$ extract `src/map/generator/generator_room_features.ts`.
+### Task 5: Data-Driven Class Curves, Literacy, Domain Spell Slots, Skill Take-10/20 Flags & UI Feat Category Filters
+- `race_hydrator.ts`: Read `clsDef.babCurve`, `clsDef.fortCurve`, `clsDef.refCurve`, `clsDef.willCurve` from `classes?.[cl.classId]`.
+- `semantic_tags.ts` & `dnd35e_combat_adapter.ts`: Pass `sysContent?.classes` and `sysContent?.skills` in `dnd35e_combat_adapter.ts` and remove the legacy `'barbarian'` string check in `semantic_tags.ts`.
+- `builder_spells.ts`: Replace `if (classId === 'cleric')` with `if (domainIds.length > 0)`.
+- `skills.ts`: Remove `params.definition.skillId === 'use_magic_device'` and rely strictly on `take10Allowed === false` and `take20Allowed === false`.
+- `dnd35e_char_builder_feats.ui.ts`: Replace `COMBAT_FEAT_IDS` and substring checks in `classifyFeatCategory` with declarative inspection of `DnD35FeatDefinition`.
 
 ---
 
-### Phase C: D&D 3.5e Ruleset Engine Sub-Resolvers (14 files)
+## 4. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
-#### C.1 `src/rulesets/dnd35e/modifiers.ts` (1,187 lines)
-- **Domain:** Tier 2 Ruleset Cartridge (`D&D 3.5e: Layer 2 — Modifiers & Stacking Math`)
-- **Current Responsibilities:** 4-Stage Topological Sub-Stat DAG evaluator, 18-bonus-type stacking rules, AC triplet calculation.
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/modifiers/stacking_engine.ts` (~260 lines): Bonus type stacking rules (dodge/untyped stack; enhancement, morale, sacred, luck take highest).
-  - `src/rulesets/dnd35e/modifiers/stat_dag_stages.ts` (~280 lines): Stage 1 (Base/Racial), Stage 2 (Abilities), Stage 3 (Armor/Shield), Stage 4 (Derived).
-  - `src/rulesets/dnd35e/modifiers/ac_evaluator.ts` (~220 lines): Full AC, Touch AC, Flat-Footed AC triplet calculation.
-  - `src/rulesets/dnd35e/modifiers.ts` (< 200 lines): DAG entry point facade (`evaluateDnD35ActorStatDAG`).
-
-#### C.2 `src/rulesets/dnd35e/combat/attack_resolver.ts` (995 lines)
-- **Domain:** Tier 2 Ruleset Cartridge (`D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage`)
-- **Current Responsibilities:** Iterative BAB sequencing, TWF penalties, natural weapon demotion, Power Attack scaling, attack rolls.
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/combat/attack_roll.ts` (~250 lines): d20 attack roll, critical threat range check, critical confirmation roll.
-  - `src/rulesets/dnd35e/combat/attack_routine_builder.ts` (~280 lines): Stage 4 DAG iterative manufactured + natural weapon strike routine synthesis.
-  - `src/rulesets/dnd35e/combat/doctrine_calculator.ts` (~220 lines): Power Attack scaling (1x/2x/0x) and Combat Expertise allocation.
-  - `src/rulesets/dnd35e/combat/attack_resolver.ts` (< 250 lines): Facade coordinating attack intents.
-
-#### C.3 `src/rulesets/dnd35e/equipment_physics.ts` (952 lines)
-- **Domain:** Tier 2 Ruleset Cartridge (`D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage`)
-- **Current Responsibilities:** Weapon effort ladder, handedness/grip mode toggles, size mismatch penalties, special materials, magic item activation.
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/equipment/weapon_effort_ladder.ts` (~260 lines): 3-step effort ladder, wielder vs weapon size mismatch penalties.
-  - `src/rulesets/dnd35e/equipment/special_materials.ts` (~240 lines): Special materials physics and bypass tags.
-  - `src/rulesets/dnd35e/equipment/magic_item_activation.ts` (~220 lines): Command word, spell completion, spell trigger resolution.
-  - `src/rulesets/dnd35e/equipment_physics.ts` (< 240 lines): Equipped profile resolver facade.
-
-#### C.4 `src/rulesets/dnd35e/character_builder.ts` (1,538 lines)
-- **Domain:** Tier 2 Ruleset Cartridge (`D&D 3.5e: Core Cartridge & Progression`)
-- **Current Responsibilities:** 1st-level character creation draft state, Point-Buy budget evaluation, Level-Up advancement commit, multiclass XP penalties, and negative level / permanent drain mutations.
-- **Decomposition Target:**
-  - `src/rulesets/dnd35e/builder/char_builder_creation.ts` (~280 lines): Point-Buy cost calculator, Level 1 starting equipment physical materialization, baseline character creation draft commit.
-  - `src/rulesets/dnd35e/builder/char_builder_level_up.ts` (~260 lines): Incremental level advancement, every-4th-HD ability score increases, spell slot advancement.
-  - `src/rulesets/dnd35e/builder/char_builder_penalties.ts` (~180 lines): Multiclass XP penalties, negative level drain (`applyNegativeLevelsToActor`), permanent drain.
-  - `src/rulesets/dnd35e/builder/char_builder_validation.ts` (~250 lines): Validation functions for character creation steps and level up steps.
-  - `src/rulesets/dnd35e/character_builder.ts` (< 200 lines): Slim coordinator facade.
-
-#### C.5 Remaining Ruleset Files:
-- `src/rulesets/dnd35e/skill_verbs.ts` (938 lines) $\to$ extract `skill_verbs_dungeon.ts`, `skill_verbs_combat.ts`, `skill_verbs_lore.ts`.
-- `src/rulesets/dnd35e/skills.ts` (690 lines) $\to$ extract `skill_resolvers_social.ts`, `skill_resolvers_thievery.ts`.
-- `src/rulesets/dnd35e/level_ledger.ts` (720 lines) $\to$ extract `level_ledger_rebuild.ts`, `level_ledger_drain.ts`.
-- `src/rulesets/dnd35e/family_synthesizer.ts` (644 lines) $\to$ extract `dragon_synthesizer.ts`, `elemental_synthesizer.ts`.
-- `src/rulesets/dnd35e/magic/spellcasting.ts` (501 lines) $\to$ extract `spell_slot_math.ts`.
-- `src/rulesets/dnd35e/progression.ts` (539 lines) $\to$ extract `progression_curves.ts`, `progression_tables.ts`.
-- `src/rulesets/dnd35e/templates.ts` (443 lines) $\to$ extract `undead_templates.ts`.
-- `src/rulesets/dnd35e/dnd35e_validator.ts` (412 lines) $\to$ extract `prerequisite_validator.ts`.
-- `src/rulesets/dnd35e/archetype_resolver.ts` (451 lines) $\to$ extract `race_hydrator.ts`.
-- `src/rulesets/dnd35e/dnd35e_ruleset.ts` (688 lines) $\to$ extract `dnd35e_combat_dispatch.ts`.
-
----
-
-### Phase D: Editor, Simulation & Diagnostic Tools (10 files)
-- `src/rendering/ui/zod_form_renderer.ts` (581 lines) $\to$ extract `form_primitives.ts`, `form_composites.ts`.
-- `src/rendering/ui/knowledge_simulator.ui.ts` (574 lines) $\to$ extract `knowledge_sim_graph.ui.ts`.
-- `src/editor/campaign_editor.ts` (550 lines) $\to$ extract `editor_persistence.ts`.
-- `src/rendering/ui/area_editor.ts` (534 lines) $\to$ extract `area_editor_tools.ts`.
-- `src/rendering/editor/editor_toolbar.ts` (504 lines) $\to$ extract `toolbar_buttons.ts`.
-- `src/editor/workspace_file_service.ts` (424 lines) $\to$ extract `workspace_zip.ts`.
-- `src/rendering/ui/dialogue_editor.ts` (410 lines) $\to$ extract `dialogue_node_editor.ts`.
-- `src/rendering/render_debug.ts` (410 lines) $\to$ extract `render_debug_spatial.ts`.
-- `src/editor/simulation/ai_arena.ts` (406 lines) $\to$ extract `arena_runner.ts`.
-- `src/rendering/editor/editor_workspace.ts` (398 lines) $\to$ extract `editor_tabs.ts`.
-
----
-
-### Phase E: Tactical UI, Character Sheet & Viewport (7 files)
-- `src/rendering/ui/dnd35e_char_builder.ui.ts` (887 lines) $\to$ extract `char_builder_nav.ui.ts`, `char_builder_summary.ui.ts`.
-- `src/rendering/ui/dnd35e_char_builder_steps.ui.ts` (846 lines) $\to$ extract `skills_step.ui.ts`, `feats_step.ui.ts`, `spells_step.ui.ts`, `equipment_step.ui.ts`.
-- `src/rendering/ui/dnd35e_level_up.ui.ts` (591 lines) $\to$ extract `level_up_tabs.ui.ts`.
-- `src/rendering/viewport_snapshot.ts` (488 lines) $\to$ extract `snapshot_entities.ts`.
-- `src/rendering/ui/world_graph.ts` (453 lines) $\to$ extract `world_graph_renderer.ts`.
-- `src/rendering/ui/dnd35e_inspector.ui.ts` (381 lines) $\to$ extract `inspector_skill_feat.ui.ts`.
-- `src/rendering/display.ts` (379 lines) $\to$ extract `display_resize.ts`.
-
----
-
-## 4. Cascading Effects Matrix (Rule 15)
-
-| Phase | Upstream Callers & Producers | Downstream Consumers | Lateral Registries |
+| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Validators / UI) | Lateral (Sibling JSONs / Tests / SSOT) |
 | :--- | :--- | :--- | :--- |
-| **Phase A: Types** | All `.ts` files importing types; `package.json` build. Re-export hubs ensure zero call-site breakage. | Zod validators, serializers, tests. Shapes are 100% preserved. | `docs/ssot/ssot_dnd35e.json`, `docs/ssot/ssot_console.json`. |
-| **Phase B: Console Engine** | Action dispatchers, event listeners, input handlers, dev server. | Game loop, rendering pipeline, map loader. | SSOT docs, `verify.sh` linters. |
-| **Phase C: Rules Engine** | Actions, combat intent processors, skill verbs, Character Creation modal. | DAG evaluators, damage mitigators, combat log, tests. | `system_content_files.ts`, bestiary tests. |
-| **Phase D: Editors** | Toolbar buttons, workspace tabs, authoring canvas. | Campaign JSON files, disk IO, JSZip exporter. | Editor UI forms and schema bindings. |
-| **Phase E: Tactical UI** | Keybinds, mouse clicks, modal triggers, Level-Up notifications. | DOM canvas, inspector cards, character sheets. | CSS stylesheets, layout splitters. |
-
----
-
-## 5. Verification Gate & Pipeline Strategy
-
-After each phase (or individual sub-phase batch):
-1. **TypeScript strict check:** `bun x tsc --noEmit` must pass with 0 errors.
-2. **Architecture check:** `bun run lint:arch` must confirm strict downward dependency flow (no circular dependencies).
-3. **File length warning check:** `bun run lint:filelength` must show immediate reduction in long files.
-4. **Dead-code check:** `bun run lint:deadcode` must confirm 0 unused exports.
-5. **Full regression test suite:** `bun test` must pass 100% of tests.
-6. **Campaign & SSOT validation:** `bun run scripts/run-validator.ts` must pass with 0 errors.
+| **1. Add `'threat_expansion'` to `BonusType` & `DnD35BonusTypeSchema`** | `improved_critical.json`, `collectEquippedItemDAGContributions` (`keen`), future *Keen Edge* spell | `resolveTypedModifiersWithBreakdown` (`stacking_engine.ts`), `resolveActorAttackRoutine` (`attack_routine.ts`), `parseEquippedItem` (`weapon_profile_parser.ts`) | `tests/dnd35e_feats_m114.test.ts`, `tests/dnd35e_equipment_m115.test.ts` |
+| **2. Pure `featRuleOverrides` routing (`buildCombatRuleOverridesFromActiveRules`)** | `collectActiveFeatRuleOverrides` (`ledger_modifiers.ts`), `two_weapon_fighting.json`, `multiweapon_fighting.json`, `multiattack.json`, `weapon_finesse.json`, `cleave.json`, `great_cleave.json` | `evaluateDnD35eEntityDAG`, `resolveActorAttackRoutine`, `resolveDnD35eMeleeAttack` | `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
+| **3. Per-strike weapon-scoped modifiers (`strike_attack`, `strike_damage`, `crit_threat_doubling`)** | `weapon_focus_*.json`, `weapon_focus.json`, `weapon_specialization.json`, `greater_weapon_*.json`, `improved_critical.json` | `resolveActorAttackRoutine` (`attack_routine.ts`), `evaluateDnD35eEntityDAG` (`dnd35e_dag_adapter.ts`) | `tests/dnd35e_classes_builder.test.ts`, `tests/dnd35e_feats_m114.test.ts` |
+| **4. Dynamic `extractActorTacticalDials` & Tumble synergy cleanup** | `power_attack.json`, `combat_expertise.json`, `tumble.json` | `evaluateTacticalDoctrineModifiers`, `computeStrikeDoctrineDamageBonus`, `evaluateDnD35eEntityDAG` | `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
+| **5. `race_hydrator.ts`, `semantic_tags.ts`, `builder_spells.ts`, `skills.ts`, `dnd35e_char_builder_feats.ui.ts` cleanup** | `classes/*.json`, `skills/use_magic_device.json`, `feats/*.json` | `hydrateRaceAsArchetype`, `projectDnD35ActorSemanticTags`, `getSpellLevelForClass`, `resolveSkillCheck`, `renderSharedFeatsStep` | `tests/dnd35e_skills_phase3.test.ts`, `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |

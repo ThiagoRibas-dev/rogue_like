@@ -1,0 +1,39 @@
+{
+  "kukri": {
+    "id": "kukri",
+    "name": "Kukri",
+    "unidentifiedName": "Kukri",
+    "description": "Kukri (martial light melee weapon, 1d4 slashing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 8,
+    "tags": [
+      "weapon",
+      "martial",
+      "light",
+      "slashing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d4",
+      "damageType": "slashing",
+      "critThreatMin": 18,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_dagger"
+  }
+}

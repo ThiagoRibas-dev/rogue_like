@@ -1,0 +1,37 @@
+{
+  "improved_precise_shot": {
+    "id": "improved_precise_shot",
+    "name": "Improved Precise Shot",
+    "description": "Ranged attacks ignore the AC bonus granted to targets by anything less than total cover, and the miss chance granted by anything less than total concealment.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 19
+        },
+        {
+          "type": "has_feat",
+          "featId": "point_blank_shot"
+        },
+        {
+          "type": "has_feat",
+          "featId": "precise_shot"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 11
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "ignore_partial_cover_and_concealment",
+        "ruleKey": "ignore_partial_cover_and_concealment",
+        "value": true
+      }
+    ]
+  }
+}

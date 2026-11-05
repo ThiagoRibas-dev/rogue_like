@@ -1,0 +1,42 @@
+{
+  "periapt_of_wisdom_plus2": {
+    "id": "periapt_of_wisdom_plus2",
+    "name": "Periapt of Wisdom +2",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+2 enhancement bonus to Wisdom.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 4000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:neck"
+    ],
+    "equippable": {
+      "slot": "neck",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_periapt_of_wisdom_plus2",
+      "name": "Periapt of Wisdom +2",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+2 enhancement bonus to Wisdom.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ability:wis",
+          "value": 2,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "forge_ring": {
+    "id": "forge_ring",
+    "name": "Forge Ring",
+    "description": "Create any magic ring whose prerequisites you meet.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 12
+    }
+  }
+}

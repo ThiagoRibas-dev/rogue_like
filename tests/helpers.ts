@@ -76,9 +76,18 @@ export function loadCampaignFromDisk(id: string): CampaignData {
     const existing = rawSystemContent[desc.key];
     rawSystemContent[desc.key] = existing !== undefined ? { ...existing, ...normalizedIncoming } : normalizedIncoming;
   }
-  assembled['systemContent'] = ruleset.parseSystemContent
+  const parsedSys = ruleset.parseSystemContent
     ? ruleset.parseSystemContent(rawSystemContent)
     : rawSystemContent;
+  assembled['systemContent'] = parsedSys;
+
+  const sysItems = (parsedSys as Record<string, unknown> | undefined)?.['items'] as Record<string, unknown> | undefined;
+  if (sysItems && Object.keys(sysItems).length > 0) {
+    assembled['items'] = {
+      ...sysItems,
+      ...((assembled['items'] as Record<string, unknown> | undefined) ?? {})
+    };
+  }
 
   return CampaignDataSchema.parse(assembled);
 }

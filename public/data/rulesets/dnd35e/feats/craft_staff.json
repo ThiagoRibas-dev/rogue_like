@@ -1,0 +1,12 @@
+{
+  "craft_staff": {
+    "id": "craft_staff",
+    "name": "Craft Staff",
+    "description": "Create any magic staff whose prerequisites you meet.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 12
+    }
+  }
+}

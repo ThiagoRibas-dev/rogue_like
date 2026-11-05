@@ -337,9 +337,18 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     const existing = rawSystemContent[desc.key];
     rawSystemContent[desc.key] = existing !== undefined ? { ...existing, ...normalizedIncoming } : normalizedIncoming;
   }
-  campaignData['systemContent'] = ruleset.parseSystemContent
+  const parsedSys = ruleset.parseSystemContent
     ? ruleset.parseSystemContent(rawSystemContent)
     : rawSystemContent;
+  campaignData['systemContent'] = parsedSys;
+
+  const sysItems = (parsedSys as Record<string, unknown> | undefined)?.['items'] as Record<string, unknown> | undefined;
+  if (sysItems && Object.keys(sysItems).length > 0) {
+    campaignData['items'] = {
+      ...sysItems,
+      ...((campaignData['items'] as Record<string, unknown> | undefined) ?? {})
+    };
+  }
 
   // Build trigger buckets
   const triggers = campaignData.triggers as Record<string, { eventType: string }> | undefined;

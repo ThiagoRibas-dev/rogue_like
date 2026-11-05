@@ -1,0 +1,12 @@
+{
+  "weapon_focus_claw": {
+    "id": "weapon_focus_claw",
+    "name": "Weapon Focus (Claw)",
+    "description": "+1 bonus on attack rolls with claw attacks.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    }
+  }
+}

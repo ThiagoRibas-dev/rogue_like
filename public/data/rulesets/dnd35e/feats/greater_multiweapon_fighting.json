@@ -1,0 +1,37 @@
+{
+  "greater_multiweapon_fighting": {
+    "id": "greater_multiweapon_fighting",
+    "name": "Greater Multiweapon Fighting",
+    "description": "Gain a third attack with each off-hand weapon at a -10 penalty.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 19
+        },
+        {
+          "type": "has_feat",
+          "featId": "multiweapon_fighting"
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_multiweapon_fighting"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 15
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "extra_offhand_attacks",
+        "ruleKey": "extra_offhand_attacks",
+        "value": 2
+      }
+    ]
+  }
+}

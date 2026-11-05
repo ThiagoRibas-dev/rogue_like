@@ -9,7 +9,6 @@ import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import {
   buildUnarmedProfile,
   type EquippedWeaponProfile,
-  evaluateNonproficiencyPenalty,
   parseEquippedItem,
   type ResolvedActorWeapons
 } from './equipment/weapon_profile_parser.ts';
@@ -101,13 +100,7 @@ export function resolveAllEquippedWeaponProfiles(
 
     const primaryWeapon: EquippedWeaponProfile = {
       ...parsedPrimary,
-      handedness: 'one_handed',
-      nonproficiencyPenalty: evaluateNonproficiencyPenalty(
-        parsedPrimary.weaponItemId,
-        parsedPrimary.isExotic1HMartial2H,
-        'one_handed',
-        dndData
-      )
+      handedness: 'one_handed'
     };
 
     const synthesizedOffHand: EquippedWeaponProfile = {
@@ -137,13 +130,7 @@ export function resolveAllEquippedWeaponProfiles(
 
     const primaryWeapon: EquippedWeaponProfile = {
       ...parsedPrimary,
-      handedness: 'two_handed',
-      nonproficiencyPenalty: evaluateNonproficiencyPenalty(
-        parsedPrimary.weaponItemId,
-        parsedPrimary.isExotic1HMartial2H,
-        'two_handed',
-        dndData
-      )
+      handedness: 'two_handed'
     };
 
     return {
@@ -163,12 +150,7 @@ export function resolveAllEquippedWeaponProfiles(
     const primaryWeapon: EquippedWeaponProfile = {
       ...parsedPrimary,
       handedness: 'two_handed',
-      nonproficiencyPenalty: evaluateNonproficiencyPenalty(
-        parsedPrimary.weaponItemId,
-        parsedPrimary.isExotic1HMartial2H,
-        'two_handed',
-        dndData
-      )
+      nonproficiencyPenalty: parsedPrimary.isExotic1HMartial2H ? 0 : parsedPrimary.nonproficiencyPenalty
     };
 
     return {
@@ -203,13 +185,7 @@ export function resolveAllEquippedWeaponProfiles(
 
   const primaryWeapon: EquippedWeaponProfile = {
     ...parsedPrimary,
-    handedness: parsedPrimary.effectiveEffort,
-    nonproficiencyPenalty: evaluateNonproficiencyPenalty(
-      parsedPrimary.weaponItemId,
-      parsedPrimary.isExotic1HMartial2H,
-      parsedPrimary.effectiveEffort,
-      dndData
-    )
+    handedness: parsedPrimary.effectiveEffort
   };
 
   const offHandWeapons: EquippedWeaponProfile[] = [];
@@ -221,13 +197,7 @@ export function resolveAllEquippedWeaponProfiles(
           parsedOffHand.effectiveEffort === 'two_handed' ? 'one_handed' : parsedOffHand.effectiveEffort;
         offHandWeapons.push({
           ...parsedOffHand,
-          handedness: offHandedness,
-          nonproficiencyPenalty: evaluateNonproficiencyPenalty(
-            parsedOffHand.weaponItemId,
-            parsedOffHand.isExotic1HMartial2H,
-            offHandedness,
-            dndData
-          )
+          handedness: offHandedness
         });
       }
     }

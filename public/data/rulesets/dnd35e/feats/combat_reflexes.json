@@ -3,6 +3,18 @@
     "id": "combat_reflexes",
     "name": "Combat Reflexes",
     "description": "Make additional Attacks of Opportunity equal to your DEX modifier and make AoOs while flat-footed.",
-    "isFighterBonusFeat": true
+    "isFighterBonusFeat": true,
+    "ruleOverrides": [
+      {
+        "id": "aoo_while_flat_footed",
+        "ruleKey": "aoo_while_flat_footed",
+        "value": true
+      },
+      {
+        "id": "bonus_aoo_from_dex",
+        "ruleKey": "bonus_aoo_from_dex",
+        "value": true
+      }
+    ]
   }
 }

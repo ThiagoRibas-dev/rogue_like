@@ -1,0 +1,36 @@
+{
+  "tower_shield": {
+    "id": "tower_shield",
+    "name": "Tower Shield",
+    "unidentifiedName": "Tower Shield",
+    "description": "Tower Shield (tower shield, +4 AC, ACP -10, ASF 50%).",
+    "glyph": ")",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 45,
+    "baseValue": 30,
+    "armorStats": {
+      "armorCategory": "tower_shield",
+      "armorBonus": 4,
+      "maxDexBonus": 2,
+      "armorCheckPenalty": -10,
+      "arcaneSpellFailure": 50,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 4,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "shield",
+      "tower_shield"
+    ],
+    "spriteId": "item_round_shield"
+  }
+}

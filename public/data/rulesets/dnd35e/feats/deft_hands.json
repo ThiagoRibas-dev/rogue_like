@@ -1,0 +1,22 @@
+{
+  "deft_hands": {
+    "id": "deft_hands",
+    "name": "Deft Hands",
+    "description": "+2 bonus on all Sleight of Hand and Use Rope checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:sleight_of_hand",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:use_rope",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

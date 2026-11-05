@@ -1,0 +1,31 @@
+{
+  "improved_critical": {
+    "id": "improved_critical",
+    "name": "Improved Critical",
+    "description": "Doubles the critical threat range of your chosen weapon (does not stack with Keen).",
+    "isFighterBonusFeat": true,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "weapon"
+    },
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 8
+    },
+    "modifiers": [
+      {
+        "id": "improved_crit_threat_expansion",
+        "target": "crit_threat_doubling",
+        "value": 1,
+        "type": "threat_expansion"
+      }
+    ],
+    "ruleOverrides": [
+      {
+        "id": "double_weapon_threat_range",
+        "ruleKey": "double_weapon_threat_range",
+        "value": true
+      }
+    ]
+  }
+}

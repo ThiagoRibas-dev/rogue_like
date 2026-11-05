@@ -1,0 +1,40 @@
+{
+  "composite_shortbow": {
+    "id": "composite_shortbow",
+    "name": "Composite Shortbow",
+    "unidentifiedName": "Composite Shortbow",
+    "description": "Composite Shortbow (martial two-handed ranged weapon, 1d6 piercing).",
+    "glyph": "}",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 75,
+    "tags": [
+      "weapon",
+      "martial",
+      "two_handed",
+      "piercing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "ranged",
+      "effort": "two_handed",
+      "damageDice": "1d6",
+      "damageType": "piercing",
+      "critThreatMin": 20,
+      "critMultiplier": 3,
+      "rangeIncrementFt": 70,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

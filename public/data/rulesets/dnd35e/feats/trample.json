@@ -1,0 +1,29 @@
+{
+  "trample": {
+    "id": "trample",
+    "name": "Trample",
+    "description": "When you attempt to overrun an opponent while mounted, your target cannot choose to avoid you, and your mount can make one hoof attack against a knocked-down target.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_skill_ranks",
+          "skillId": "ride",
+          "minRanks": 1
+        },
+        {
+          "type": "has_feat",
+          "featId": "mounted_combat"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "mounted_trample_overrun",
+        "ruleKey": "mounted_trample_overrun",
+        "value": true
+      }
+    ]
+  }
+}

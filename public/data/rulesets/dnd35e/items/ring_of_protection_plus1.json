@@ -1,0 +1,42 @@
+{
+  "ring_of_protection_plus1": {
+    "id": "ring_of_protection_plus1",
+    "name": "Ring of Protection +1",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+1 deflection bonus to Armor Class.",
+    "glyph": "=",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 0,
+    "baseValue": 2000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:finger"
+    ],
+    "equippable": {
+      "slot": "finger",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_ring_of_protection_plus1",
+      "name": "Ring of Protection +1",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+1 deflection bonus to Armor Class.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ac",
+          "value": 1,
+          "type": "deflection"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

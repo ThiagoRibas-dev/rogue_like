@@ -1,6 +1,6 @@
 {
-  "summary": "Comprehensive architectural research document for modularizing all 50 files exceeding the 300-line threshold (AGENTS.md Rule 8). Organizes the entire codebase into 5 phased execution batches (Types, Core Console, D&D 3.5e Rules Engine, Editor Tools, and Tactical UI), detailing downstream/upstream dependencies and cascading effects.",
-  "updatedAt": "2026-11-04T15:35:02.879408652Z",
+  "summary": "Updated Research Notes for Milestone 115.1 including the SSOT Ownership & Old-Brain Eviction Table from docs/SSOT_DND35E.md and Cascading Effects Matrix.",
+  "updatedAt": "2026-11-05T14:53:48.817531838Z",
   "requestFeedback": true,
   "userFacing": true
 }

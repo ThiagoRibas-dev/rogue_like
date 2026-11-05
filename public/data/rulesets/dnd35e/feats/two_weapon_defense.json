@@ -1,0 +1,50 @@
+{
+  "two_weapon_defense": {
+    "id": "two_weapon_defense",
+    "name": "Two-Weapon Defense",
+    "description": "When wielding a double weapon or two weapons, gain a +1 shield bonus to AC (+2 when fighting defensively or using total defense).",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 15
+        },
+        {
+          "type": "has_feat",
+          "featId": "two_weapon_fighting"
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "ac",
+        "value": 1,
+        "type": "shield",
+        "condition": {
+          "selfTagsAll": [
+            "wielding:two_weapons"
+          ]
+        }
+      },
+      {
+        "id": "mod_1",
+        "target": "ac",
+        "value": 2,
+        "type": "shield",
+        "condition": {
+          "selfTagsAll": [
+            "wielding:two_weapons"
+          ],
+          "selfTagsAny": [
+            "stance:fighting_defensively",
+            "stance:total_defense"
+          ]
+        }
+      }
+    ]
+  }
+}

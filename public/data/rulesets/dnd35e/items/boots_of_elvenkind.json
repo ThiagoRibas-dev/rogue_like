@@ -1,0 +1,42 @@
+{
+  "boots_of_elvenkind": {
+    "id": "boots_of_elvenkind",
+    "name": "Boots of Elvenkind",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+5 competence bonus on Move Silently checks.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 2500,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:foot"
+    ],
+    "equippable": {
+      "slot": "foot",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_boots_of_elvenkind",
+      "name": "Boots of Elvenkind",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+5 competence bonus on Move Silently checks.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "skill:move_silently",
+          "value": 5,
+          "type": "competence"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

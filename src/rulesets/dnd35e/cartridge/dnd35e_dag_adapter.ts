@@ -1,7 +1,6 @@
 import { getComponent } from '../../../core/ecs.ts';
 import {
   ComponentType,
-  type EquipmentComponent,
   type FighterComponent,
   type PropertyOverlayComponent,
   type TacticalDoctrineComponent,
@@ -11,17 +10,21 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { EffectiveStats } from '../../../types/ruleset.types.ts';
 import {
   type DnD35ResolvedAttackRoutine,
-  type NaturalWeaponLimbEntry,
   evaluateTacticalDoctrineModifiers,
+  extractActorTacticalDials,
   resolveActorAttackRoutine
 } from '../combat/attack_resolver.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import {
   type ResolvedActorWeapons,
   resolveAllEquippedWeaponProfiles,
-  resolveEquippedWeaponProfile,
-  scaleWeaponDamageDice
+  resolveEquippedWeaponProfile
 } from '../equipment_physics.ts';
+import {
+  buildCombatRuleOverridesFromActiveRules,
+  buildFeatEffectModifiers,
+  collectActiveFeatRuleOverrides
+} from '../level_ledger.ts';
 import { DND35E_BASE_AC, evaluateDnD35ActorStatDAG } from '../modifiers.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
@@ -34,6 +37,7 @@ import type {
 } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
+import { buildActorNaturalWeaponLimbs, collectEquippedItemDAGContributions } from './dnd35e_equipped_item_dag.ts';
 
 /** Default movement speed for uninitialized entities. */
 const DND35E_DEFAULT_SPEED = 100;
@@ -46,18 +50,14 @@ export interface DnD35EntityDAGResult {
   readonly canAttack: boolean;
   readonly resolvedWeapons: ResolvedActorWeapons;
   readonly attackRoutine: DnD35ResolvedAttackRoutine;
+  readonly hasCleave: boolean;
+  readonly hasGreatCleave: boolean;
 }
 
 /**
  * Evaluates the full 4-Stage Topological Sub-Stat DAG for an entity in `GameState`,
  * incorporating active `PropertyOverlayComponent`s, equipped item bonuses, `TacticalDoctrineComponent`,
  * condition penalties, and optional contextual query flags (e.g. `targetTags` during combat).
- *
- * @param state The current GameState.
- * @param entityId The target entity ID.
- * @param contextOverride Optional `StatQueryContext` (such as `targetTags` or `inAntimagicField`).
- * @param prehydrated Optional pre-resolved `{ dndData, selfTags }` to avoid redundant hydration.
- * @returns `DnD35EntityDAGResult` or `undefined` if the entity lacks a `FighterComponent`.
  */
 export function evaluateDnD35eEntityDAG(
   state: GameState,
@@ -66,9 +66,7 @@ export function evaluateDnD35eEntityDAG(
   prehydrated?: { readonly dndData: DnD35EntityData; readonly selfTags: ReadonlyArray<string> }
 ): DnD35EntityDAGResult | undefined {
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
-  if (!fighter) {
-    return undefined;
-  }
+  if (!fighter) return undefined;
   const actor = getComponent(state, entityId, ComponentType.Actor);
 
   const dndData =
@@ -89,14 +87,20 @@ export function evaluateDnD35eEntityDAG(
   const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
-  const hasSkillTumbleMod = (dndData.statModifiers ?? []).some((m) => (m.sourcePath ?? '').startsWith('skill:tumble'));
-  const effectiveTumbleRanks = hasSkillTumbleMod ? 0 : (dndData.skillRanks['tumble'] ?? 0);
+  const suppressedIds = dndData.suppressedBundleIds ?? [];
+  const activeDials = extractActorTacticalDials(dndData.feats ?? [], sysContent?.feats, suppressedIds);
   const mainHandProfile = resolveEquippedWeaponProfile(state, entityId, 'main_hand');
   const doctrineMod = doctrine
-    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, mainHandProfile.handedness, effectiveTumbleRanks)
+    ? evaluateTacticalDoctrineModifiers(doctrine, rawChassis.totalBab, mainHandProfile.handedness, 0, activeDials)
     : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
 
-  const extraModifiers: StatModifier[] = [...(dndData.statModifiers ?? [])];
+  const itemContrib = collectEquippedItemDAGContributions(state, entityId, suppressedIds, selfTags);
+  const extraModifiers: StatModifier[] = [...(dndData.statModifiers ?? []), ...itemContrib.modifiers];
+
+  const hasFeatModsAlready = (dndData.statModifiers ?? []).some((m) => (m.sourcePath ?? '').startsWith('feat:'));
+  if (!hasFeatModsAlready && (dndData.feats ?? []).length > 0 && sysContent?.feats) {
+    extraModifiers.push(...buildFeatEffectModifiers(dndData.feats ?? [], sysContent.feats, suppressedIds, selfTags));
+  }
 
   if (equipAttackBonus !== 0) {
     extraModifiers.push({
@@ -161,12 +165,16 @@ export function evaluateDnD35eEntityDAG(
 
   const isIncorporeal = dndData.subtypes?.includes('incorporeal') === true;
   const stanceTags: string[] = [];
-  if (doctrine?.totalDefense === true) {
-    stanceTags.push('stance:total_defense');
-  } else if (doctrine?.fightingDefensively === true) {
-    stanceTags.push('stance:fighting_defensively');
+  if (doctrine?.totalDefense === true) stanceTags.push('stance:total_defense');
+  else if (doctrine?.fightingDefensively === true) stanceTags.push('stance:fighting_defensively');
+
+  const resolvedWeapons = resolveAllEquippedWeaponProfiles(state, entityId, dndData.sizeCategory);
+  if (resolvedWeapons.offHandWeapons.length > 0) {
+    stanceTags.push('wielding:two_weapons');
   }
-  const mergedSelfTags = Array.from(new Set([...selfTags, ...stanceTags, ...(contextOverride?.selfTags ?? [])]));
+  const mergedSelfTags = Array.from(
+    new Set([...selfTags, ...itemContrib.grantedTags, ...stanceTags, ...(contextOverride?.selfTags ?? [])])
+  );
 
   const dagResult = evaluateDnD35ActorStatDAG({
     baseSize: dndData.sizeCategory,
@@ -186,8 +194,11 @@ export function evaluateDnD35eEntityDAG(
     },
     tracks: dndData.tracks,
     baseNaturalArmor: dndData.naturalArmorBonus,
-    armorBonus: Math.max(dndData.armorBonus, equipArmorBonus),
+    armorBonus: itemContrib.hasStructuredArmorOrShield
+      ? dndData.armorBonus
+      : Math.max(dndData.armorBonus, equipArmorBonus),
     shieldBonus: dndData.shieldBonus,
+    maxDexBonus: itemContrib.maxDexBonusCap,
     baseMaxHp: fighter.maxHp > 0 ? fighter.maxHp : undefined,
     baseSpeed: actor?.speed ?? DND35E_DEFAULT_SPEED,
     isIncorporeal,
@@ -202,83 +213,47 @@ export function evaluateDnD35eEntityDAG(
     }
   });
 
-  // Stage 4 DAG: Resolve equipped weapons, grip mode, occupied limbs, and complete attack routine
-  const resolvedWeapons = resolveAllEquippedWeaponProfiles(state, entityId, dagResult.effectiveSize);
-
-  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  const handSlotLimbGroups: string[] = [];
-  for (const s of equipment?.slots ?? []) {
-    if (
-      s.suppressed !== true &&
-      s.limbGroupId !== undefined &&
-      (s.slotType === 'held' ||
-        s.slotType === 'hand' ||
-        s.slotType === 'main_hand' ||
-        s.slotType === 'off_hand' ||
-        s.id.startsWith('hand_') ||
-        s.id.startsWith('main_hand') ||
-        s.id.startsWith('off_hand')) &&
-      !handSlotLimbGroups.includes(s.limbGroupId)
-    ) {
-      handSlotLimbGroups.push(s.limbGroupId);
-    }
-  }
-  const availableHandLimbs = handSlotLimbGroups.length > 0 ? handSlotLimbGroups : ['hand_main', 'hand_off'];
-
-  const naturalLimbs: NaturalWeaponLimbEntry[] = [];
-  for (const nw of dndData.naturalWeapons ?? []) {
-    const scaledDice = scaleWeaponDamageDice(nw.damageDice, dndData.sizeCategory, dagResult.effectiveSize);
-    if ((nw.naturalType === 'claw' || nw.naturalType === 'slam') && nw.count > 1) {
-      for (let cIdx = 0; cIdx < nw.count; cIdx++) {
-        const limbGroupId = availableHandLimbs[cIdx] ?? (cIdx === 0 ? 'hand_main' : `hand_off_${cIdx}`);
-        naturalLimbs.push({
-          id: nw.id,
-          name: nw.name,
-          isPrimary: nw.isPrimary,
-          count: 1,
-          limbGroupId,
-          dice: scaledDice,
-          damageType: nw.damageType,
-          critThreatMin: nw.critThreatMin,
-          critMultiplier: nw.critMultiplier
-        });
-      }
-      continue;
-    }
-
-    let limbGroupId: string | undefined;
-    if (nw.naturalType === 'claw' || nw.naturalType === 'slam') {
-      limbGroupId = availableHandLimbs[0] ?? 'hand_main';
-    } else if (nw.naturalType === 'bite' || nw.naturalType === 'gore') {
-      limbGroupId = 'head';
-    }
-    naturalLimbs.push({
-      id: nw.id,
-      name: nw.name,
-      isPrimary: nw.isPrimary,
-      count: nw.count,
-      limbGroupId,
-      dice: scaledDice,
-      damageType: nw.damageType,
-      critThreatMin: nw.critThreatMin,
-      critMultiplier: nw.critMultiplier
-    });
-  }
+  const finalWeapons =
+    dagResult.effectiveSize === dndData.sizeCategory
+      ? resolvedWeapons
+      : resolveAllEquippedWeaponProfiles(state, entityId, dagResult.effectiveSize);
+  const naturalLimbs = buildActorNaturalWeaponLimbs(state, entityId, dndData, dagResult.effectiveSize);
 
   const strMod = dagResult.effectiveAbilityModifiers.str;
+  const dexMod = dagResult.effectiveAbilityModifiers.dex;
   const baseActorAttackBonus = dagResult.attackBonus - equipAttackBonus - doctrineMod.attackPenalty;
   const nonStrNonDoctrineFlatDamage = dagResult.damageBonus - strMod - doctrineMod.damageBonus;
 
+  const featRuleOverrides = collectActiveFeatRuleOverrides(
+    dndData.feats ?? [],
+    sysContent?.feats,
+    suppressedIds,
+    mergedSelfTags
+  );
+  const offHandIsLight =
+    finalWeapons.offHandWeapons.length > 0 && finalWeapons.offHandWeapons.every((w) => w.handedness === 'light');
+  const activeCombatRules = buildCombatRuleOverridesFromActiveRules(featRuleOverrides, offHandIsLight);
+
   const attackRoutine = resolveActorAttackRoutine({
-    resolvedWeapons,
+    resolvedWeapons: finalWeapons,
     naturalWeapons: naturalLimbs,
     totalBab: rawChassis.totalBab,
     baseAttackModifier: baseActorAttackBonus,
     strModifier: strMod,
+    dexModifier: dexMod,
+    hasWeaponFinesse: activeCombatRules.hasWeaponFinesse || dndData.feats?.includes('weapon_finesse') === true,
     doctrine,
     flatDamageBonus: nonStrNonDoctrineFlatDamage,
-    hasTwoWeaponFightingFeat: dndData.feats?.includes('two_weapon_fighting') === true,
-    hasMultiattackFeat: dndData.feats?.includes('multiattack') === true
+    hasTwoWeaponFightingFeat:
+      activeCombatRules.combatOverrides.twfPrimaryPenalty !== undefined ||
+      dndData.feats?.includes('two_weapon_fighting') === true ||
+      dndData.feats?.includes('multiweapon_fighting') === true,
+    hasMultiattackFeat:
+      activeCombatRules.combatOverrides.secondaryNaturalPenalty !== undefined ||
+      dndData.feats?.includes('multiattack') === true,
+    overrides: activeCombatRules.combatOverrides,
+    statModifiers: extraModifiers,
+    selfTags: mergedSelfTags
   });
 
   return {
@@ -286,19 +261,16 @@ export function evaluateDnD35eEntityDAG(
     dagResult,
     selfTags: mergedSelfTags,
     canAttack: doctrineMod.canAttack,
-    resolvedWeapons,
-    attackRoutine
+    resolvedWeapons: finalWeapons,
+    attackRoutine,
+    hasCleave: activeCombatRules.hasCleave || dndData.feats?.includes('cleave') === true,
+    hasGreatCleave: activeCombatRules.hasGreatCleave || dndData.feats?.includes('great_cleave') === true
   };
 }
 
 /**
  * Computes effective actor stats (`attack`, `defense`, `maxHp`, `speed`) for the `dnd35e`
  * ruleset cartridge using the 4-Stage Topological Sub-Stat DAG.
- *
- * @param state The current GameState.
- * @param entityId The target entity ID.
- * @param contextOverride Optional `StatQueryContext` for target-conditional or field-conditional queries.
- * @returns Computed `EffectiveStats` (where `10 + defense` equals `Full AC`).
  */
 export function computeDnD35eEffectiveStats(
   state: GameState,

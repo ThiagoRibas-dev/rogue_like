@@ -1,0 +1,16 @@
+{
+  "great_fortitude": {
+    "id": "great_fortitude",
+    "name": "Great Fortitude",
+    "description": "+2 bonus on all Fortitude saving throws.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "save_fort",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

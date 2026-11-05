@@ -1,0 +1,19 @@
+{
+  "improved_shield_bash": {
+    "id": "improved_shield_bash",
+    "name": "Improved Shield Bash",
+    "description": "Retain your shield bonus to AC when performing a shield bash.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "shield_proficiency"
+    },
+    "ruleOverrides": [
+      {
+        "id": "retain_shield_ac_on_bash",
+        "ruleKey": "retain_shield_ac_on_bash",
+        "value": true
+      }
+    ]
+  }
+}

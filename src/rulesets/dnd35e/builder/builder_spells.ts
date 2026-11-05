@@ -18,7 +18,7 @@ export function getSpellLevelForClass(
   if (classLevel !== undefined) {
     return classLevel;
   }
-  if (classId === 'cleric') {
+  if (domainIds.length > 0) {
     for (const domId of domainIds) {
       const domLvl = spell.levelByDomain[domId];
       if (domLvl !== undefined) {

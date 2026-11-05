@@ -1,0 +1,15 @@
+{
+  "run": {
+    "id": "run",
+    "name": "Run",
+    "description": "Move 5 times your normal speed (or 4 times in heavy armor) when running, and gain a +4 bonus on Jump checks made after a running start.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "run_speed_multiplier",
+        "ruleKey": "run_speed_multiplier",
+        "value": 5
+      }
+    ]
+  }
+}

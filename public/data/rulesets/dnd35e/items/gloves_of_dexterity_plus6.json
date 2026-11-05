@@ -1,0 +1,42 @@
+{
+  "gloves_of_dexterity_plus6": {
+    "id": "gloves_of_dexterity_plus6",
+    "name": "Gloves of Dexterity +6",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+6 enhancement bonus to Dexterity.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 36000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:arm"
+    ],
+    "equippable": {
+      "slot": "arm",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_gloves_of_dexterity_plus6",
+      "name": "Gloves of Dexterity +6",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+6 enhancement bonus to Dexterity.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ability:dex",
+          "value": 6,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "greater_spell_penetration": {
+    "id": "greater_spell_penetration",
+    "name": "Greater Spell Penetration",
+    "description": "Additional +2 bonus on caster level checks made to overcome a creature's spell resistance (stacks with Spell Penetration for +4 total).",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "spell_penetration"
+    },
+    "ruleOverrides": [
+      {
+        "id": "greater_caster_level_check_vs_sr_bonus",
+        "ruleKey": "greater_caster_level_check_vs_sr_bonus",
+        "value": 2
+      }
+    ]
+  }
+}

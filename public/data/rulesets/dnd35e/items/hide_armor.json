@@ -1,0 +1,36 @@
+{
+  "hide_armor": {
+    "id": "hide_armor",
+    "name": "Hide Armor",
+    "unidentifiedName": "Hide Armor",
+    "description": "Hide Armor (medium, +3 AC, ACP -3, ASF 20%).",
+    "glyph": "[",
+    "fg": "#a67c52",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 25,
+    "baseValue": 15,
+    "armorStats": {
+      "armorCategory": "medium",
+      "armorBonus": 3,
+      "maxDexBonus": 4,
+      "armorCheckPenalty": -3,
+      "arcaneSpellFailure": 20,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": false
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 3,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "medium"
+    ],
+    "spriteId": "item_scale_mail"
+  }
+}

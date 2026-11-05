@@ -1,0 +1,19 @@
+{
+  "quick_draw": {
+    "id": "quick_draw",
+    "name": "Quick Draw",
+    "description": "Draw a weapon as a free action instead of as a move action.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_bab",
+      "minBab": 1
+    },
+    "ruleOverrides": [
+      {
+        "id": "draw_weapon_free_action",
+        "ruleKey": "draw_weapon_free_action",
+        "value": true
+      }
+    ]
+  }
+}

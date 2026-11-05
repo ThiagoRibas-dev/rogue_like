@@ -1,0 +1,39 @@
+{
+  "improved_disarm": {
+    "id": "improved_disarm",
+    "name": "Improved Disarm",
+    "description": "Do not provoke an AoO when disarming, opponent cannot disarm you on failure, and gain +4 on the disarm check.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "int",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "combat_expertise"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "disarm_no_aoo",
+        "ruleKey": "disarm_no_aoo",
+        "value": true
+      },
+      {
+        "id": "disarm_no_counter",
+        "ruleKey": "disarm_no_counter",
+        "value": true
+      },
+      {
+        "id": "disarm_check_bonus",
+        "ruleKey": "disarm_check_bonus",
+        "value": 4
+      }
+    ]
+  }
+}

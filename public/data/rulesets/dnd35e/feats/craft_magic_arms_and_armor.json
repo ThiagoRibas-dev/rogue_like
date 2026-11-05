@@ -1,0 +1,12 @@
+{
+  "craft_magic_arms_and_armor": {
+    "id": "craft_magic_arms_and_armor",
+    "name": "Craft Magic Arms and Armor",
+    "description": "Create any magic weapon, armor, or shield whose prerequisites you meet.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 5
+    }
+  }
+}

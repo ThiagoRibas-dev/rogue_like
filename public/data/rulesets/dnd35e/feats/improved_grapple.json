@@ -1,0 +1,37 @@
+{
+  "improved_grapple": {
+    "id": "improved_grapple",
+    "name": "Improved Grapple",
+    "description": "Do not provoke an AoO when initiating a grapple; gain a +4 bonus on all grapple checks.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_unarmed_strike"
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "grapple",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
+    "ruleOverrides": [
+      {
+        "id": "grapple_no_aoo",
+        "ruleKey": "grapple_no_aoo",
+        "value": true
+      }
+    ]
+  }
+}

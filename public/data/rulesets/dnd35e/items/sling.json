@@ -1,0 +1,40 @@
+{
+  "sling": {
+    "id": "sling",
+    "name": "Sling",
+    "unidentifiedName": "Sling",
+    "description": "Sling (simple one-handed ranged weapon, 1d4 bludgeoning).",
+    "glyph": "}",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 0,
+    "baseValue": 0,
+    "tags": [
+      "weapon",
+      "simple",
+      "one_handed",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "ranged",
+      "effort": "one_handed",
+      "damageDice": "1d4",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "rangeIncrementFt": 50,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

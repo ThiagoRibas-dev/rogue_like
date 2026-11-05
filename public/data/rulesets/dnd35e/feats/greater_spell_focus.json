@@ -1,0 +1,23 @@
+{
+  "greater_spell_focus": {
+    "id": "greater_spell_focus",
+    "name": "Greater Spell Focus",
+    "description": "Add an additional +1 to the Difficulty Class for all saving throws against spells from the selected school of magic (stacks with Spell Focus).",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "school"
+    },
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "spell_focus"
+    },
+    "ruleOverrides": [
+      {
+        "id": "greater_spell_save_dc_bonus",
+        "ruleKey": "greater_spell_save_dc_bonus",
+        "value": 1
+      }
+    ]
+  }
+}

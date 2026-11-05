@@ -22,6 +22,7 @@ import {
   DnD35SubtypeDefinitionSchema,
   DnD35TemplateSchema
 } from './system/creature_system.types.ts';
+import { DnD35ItemDefinitionSchema } from './system/item_system.types.ts';
 
 // Re-export base types and schemas
 export * from './system/base_system.types.ts';
@@ -31,6 +32,9 @@ export * from './system/effect_system.types.ts';
 
 // Re-export creature and race types and schemas
 export * from './system/creature_system.types.ts';
+
+// Re-export item types and schemas
+export * from './system/item_system.types.ts';
 
 /** Zod schema for a single row in a class's level-by-level progression table (levels 1..maxLevel). */
 export const DnD35ClassLevelRowSchema = z.object({
@@ -124,12 +128,36 @@ export const DnD35SkillDefinitionSchema = z.object({
 /** Inferred type for a declarative skill definition. */
 export type DnD35SkillDefinition = z.infer<typeof DnD35SkillDefinitionSchema>;
 
+/** Repeatable feat configuration distinguishing stacking vs targeted mechanics. */
+export const DnD35FeatRepeatableSchema = z.object({
+  mode: z.enum(['stacking', 'targeted']),
+  targetCategory: z.enum(['weapon', 'school', 'skill', 'ability']).optional()
+});
+export type DnD35FeatRepeatable = z.infer<typeof DnD35FeatRepeatableSchema>;
+
+/** Structured metamagic feat descriptor (`feats/<id>.json`). */
+export const DnD35MetamagicDescriptorSchema = z.object({
+  slotLevelAdjustment: z.number().int().min(0).max(9),
+  isVariableHeighten: z.boolean().optional(),
+  actionTimeOverride: z.enum(['swift', 'full_round']).optional(),
+  rangeMultiplier: z.number().positive().optional(),
+  durationMultiplier: z.number().positive().optional(),
+  areaMultiplier: z.number().positive().optional(),
+  empowerDamageMultiplier: z.number().positive().optional(),
+  maximizeVariableDice: z.boolean().optional(),
+  suppressVerbalComponent: z.boolean().optional(),
+  suppressSomaticComponent: z.boolean().optional()
+});
+export type DnD35MetamagicDescriptor = z.infer<typeof DnD35MetamagicDescriptorSchema>;
+
 /** Zod schema for a declarative feat definition (`feats.json` & `feats/<id>.json`). */
 export const DnD35FeatDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
   isFighterBonusFeat: z.boolean().default(false),
+  repeatable: DnD35FeatRepeatableSchema.optional(),
+  metamagicDescriptor: DnD35MetamagicDescriptorSchema.optional(),
   prerequisites: PrerequisiteNodeSchema.optional(),
   effectBundle: DnD35EffectBundleSchema.optional(),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
@@ -180,6 +208,7 @@ export const DnD35SystemContentSchema = z.object({
   domains: z.record(z.string(), DnD35DomainDefinitionSchema).default({}),
   skills: z.record(z.string(), DnD35SkillDefinitionSchema).default({}),
   feats: z.record(z.string(), DnD35FeatDefinitionSchema).default({}),
+  items: z.record(z.string(), DnD35ItemDefinitionSchema).default({}),
   spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({}),
   templates: z.record(z.string(), DnD35TemplateSchema).default({}),
   races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),

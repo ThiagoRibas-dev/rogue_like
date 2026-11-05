@@ -1,0 +1,38 @@
+{
+  "natural_spell": {
+    "id": "natural_spell",
+    "name": "Natural Spell",
+    "description": "Complete the verbal and somatic components of spells while in a Wild Shape form.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "wis",
+          "minScore": 13
+        },
+        {
+          "type": "has_tag",
+          "tag": "feature:wild_shape"
+        }
+      ]
+    },
+    "effectBundle": {
+      "bundleId": "feat_natural_spell",
+      "name": "Natural Spell",
+      "category": "feat",
+      "usageMode": "passive",
+      "ruleOverrides": [
+        {
+          "id": "allow_casting_in_wild_shape",
+          "ruleKey": "allow_casting_in_wild_shape",
+          "value": true
+        }
+      ],
+      "grantedTags": [
+        "trait:cast_in_wild_shape"
+      ]
+    }
+  }
+}

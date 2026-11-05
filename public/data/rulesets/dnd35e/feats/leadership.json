@@ -1,0 +1,15 @@
+{
+  "leadership": {
+    "id": "leadership",
+    "name": "Leadership",
+    "description": "Attract a loyal cohort and devoted followers to assist you.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "leadership_cohort",
+        "ruleKey": "leadership_cohort",
+        "value": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "tower_shield_proficiency": {
+    "id": "tower_shield_proficiency",
+    "name": "Tower Shield Proficiency",
+    "description": "Use a tower shield without applying its armor check penalty to attack rolls (beyond the standard -2 tower shield attack penalty).",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "shield_proficiency"
+    },
+    "effectBundle": {
+      "bundleId": "feat_tower_shield_proficiency",
+      "name": "Tower Shield Proficiency",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:shield:tower"
+      ]
+    }
+  }
+}

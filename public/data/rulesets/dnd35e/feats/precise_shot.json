@@ -1,0 +1,19 @@
+{
+  "precise_shot": {
+    "id": "precise_shot",
+    "name": "Precise Shot",
+    "description": "Shoot or throw ranged weapons at an opponent engaged in melee without taking the standard -4 penalty.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "point_blank_shot"
+    },
+    "ruleOverrides": [
+      {
+        "id": "ignore_shooting_into_melee_penalty",
+        "ruleKey": "ignore_shooting_into_melee_penalty",
+        "value": true
+      }
+    ]
+  }
+}

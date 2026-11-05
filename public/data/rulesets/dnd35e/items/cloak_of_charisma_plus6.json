@@ -1,0 +1,42 @@
+{
+  "cloak_of_charisma_plus6": {
+    "id": "cloak_of_charisma_plus6",
+    "name": "Cloak of Charisma +6",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+6 enhancement bonus to Charisma.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 2,
+    "baseValue": 36000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:back"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_cloak_of_charisma_plus6",
+      "name": "Cloak of Charisma +6",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+6 enhancement bonus to Charisma.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ability:cha",
+          "value": 6,
+          "type": "enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

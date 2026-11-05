@@ -1,6 +1,7 @@
 import type { TacticalDoctrineComponent } from '../../../types/components.types.ts';
 import { dndFloor } from '../math/multipliers.ts';
 import type { CreatureSizeCategory } from '../types/dnd35e.types.ts';
+import type { DnD35FeatDefinition } from '../types/dnd35e_system.types.ts';
 import type { AttackRollParams } from './attack_roll.ts';
 
 /** Minimum whole ranks in Tumble required for enhanced defensive fighting (+3 / +6 Dodge AC). */
@@ -47,6 +48,53 @@ export const CANONICAL_TACTICAL_DIALS: ReadonlyArray<TacticalDialDescriptor> = [
     legacyPropertyKey: 'combatExpertiseAmount'
   }
 ];
+
+/**
+ * Extracts active `TacticalDialDescriptor` entries declaratively from an actor's owned feats
+ * (`featDef.activatedAbilities[].variableDial` or `featDef.effectBundle.activatedAbilities[].variableDial`),
+ * falling back to `CANONICAL_TACTICAL_DIALS` only when no feat registry is provided.
+ */
+export function extractActorTacticalDials(
+  featIds: ReadonlyArray<string>,
+  featRegistry: Readonly<Record<string, DnD35FeatDefinition>> | undefined,
+  suppressedBundleIds: ReadonlyArray<string> = []
+): ReadonlyArray<TacticalDialDescriptor> {
+  if (!featRegistry) return CANONICAL_TACTICAL_DIALS;
+  const dials: TacticalDialDescriptor[] = [];
+
+  for (const rawFeatId of featIds) {
+    const baseFeatId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    const featDef = featRegistry[rawFeatId] ?? featRegistry[baseFeatId];
+    if (!featDef) continue;
+    if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(featDef.id)) continue;
+
+    const activated = [...(featDef.activatedAbilities ?? []), ...(featDef.effectBundle?.activatedAbilities ?? [])];
+
+    for (const act of activated) {
+      const vd = act.variableDial;
+      if (!vd) continue;
+      const isPowerAttack = featDef.id === 'power_attack';
+      const isCombatExpertise = featDef.id === 'combat_expertise';
+      dials.push({
+        abilityId: featDef.id,
+        name: featDef.name ?? act.name,
+        min: vd.min ?? 0,
+        maxCapRule: vd.maxCapRule,
+        attackDeltaPerPoint: vd.attackDeltaPerPoint,
+        damageDeltaPerPoint: vd.damageDeltaPerPoint,
+        acDeltaPerPoint: vd.acDeltaPerPoint,
+        ...(isPowerAttack ? { twoHandedMultiplier: 2 } : {}),
+        ...(isPowerAttack
+          ? { legacyPropertyKey: 'powerAttackAmount' }
+          : isCombatExpertise
+            ? { legacyPropertyKey: 'combatExpertiseAmount' }
+            : {})
+      });
+    }
+  }
+
+  return dials.length > 0 ? dials : CANONICAL_TACTICAL_DIALS;
+}
 
 /**
  * Evaluates attack roll and damage/AC adjustments resulting from active tactical doctrines

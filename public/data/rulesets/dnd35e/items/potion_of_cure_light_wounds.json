@@ -1,0 +1,24 @@
+{
+  "potion_of_cure_light_wounds": {
+    "id": "potion_of_cure_light_wounds",
+    "name": "Potion of Cure Light Wounds",
+    "unidentifiedName": "Ruby Vial",
+    "description": "Restores 1d8+1 hit points when imbibed.",
+    "glyph": "!",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 1,
+    "baseValue": 50,
+    "tags": [
+      "magic",
+      "potion",
+      "spell:cure_light_wounds"
+    ],
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    },
+    "spriteId": "item_red_potion"
+  }
+}

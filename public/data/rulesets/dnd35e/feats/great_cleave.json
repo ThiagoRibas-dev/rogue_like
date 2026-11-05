@@ -1,0 +1,37 @@
+{
+  "great_cleave": {
+    "id": "great_cleave",
+    "name": "Great Cleave",
+    "description": "Continue making Cleave attacks with no limit per round.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "str",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "power_attack"
+        },
+        {
+          "type": "has_feat",
+          "featId": "cleave"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "great_cleave_unlimited",
+        "ruleKey": "great_cleave_unlimited",
+        "value": true
+      }
+    ]
+  }
+}

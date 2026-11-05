@@ -94,15 +94,28 @@ export function hydrateRaceAsArchetype(
 
   for (const cl of requestedClassLevels) {
     const clsDef = classes?.[cl.classId];
+    const row1 = clsDef?.progression?.[0];
+    const row4 = clsDef?.progression?.[3];
+    const babCurve: 'full' | 'three_quarters' | 'half' =
+      row1?.bab === 1
+        ? 'full'
+        : row4?.bab === 3
+          ? 'three_quarters'
+          : cl.classId === 'warrior'
+            ? 'full'
+            : 'three_quarters';
+    const fortCurve: 'good' | 'poor' = row1?.fortSave === 2 ? 'good' : cl.classId === 'warrior' ? 'good' : 'poor';
+    const refCurve: 'good' | 'poor' = row1?.refSave === 2 ? 'good' : 'poor';
+    const willCurve: 'good' | 'poor' = row1?.willSave === 2 ? 'good' : 'poor';
+
     tracks.push({
       trackId: cl.classId,
       levels: cl.levels,
       hitDieSides: clsDef?.hitDieSides ?? 8,
-      babCurve:
-        cl.classId === 'warrior' || cl.classId === 'fighter' || cl.classId === 'barbarian' ? 'full' : 'three_quarters',
-      fortCurve: cl.classId === 'warrior' || cl.classId === 'fighter' ? 'good' : 'poor',
-      refCurve: cl.classId === 'rogue' || cl.classId === 'ranger' ? 'good' : 'poor',
-      willCurve: cl.classId === 'cleric' || cl.classId === 'wizard' || cl.classId === 'adept' ? 'good' : 'poor',
+      babCurve,
+      fortCurve,
+      refCurve,
+      willCurve,
       skillPointsPerLevel: clsDef?.skillPointsPerLevel ?? 2,
       trackCategory: clsDef?.isPrestige ? 'prestige' : clsDef?.isNpcClass || cl.classId === 'warrior' ? 'npc' : 'pc'
     });

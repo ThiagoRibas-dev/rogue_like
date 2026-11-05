@@ -1,0 +1,21 @@
+{
+  "armor_proficiency_medium": {
+    "id": "armor_proficiency_medium",
+    "name": "Armor Proficiency (Medium)",
+    "description": "Wear medium armor without applying its armor check penalty to attack rolls.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "armor_proficiency_light"
+    },
+    "effectBundle": {
+      "bundleId": "feat_armor_proficiency_medium",
+      "name": "Armor Proficiency (Medium)",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:armor:medium"
+      ]
+    }
+  }
+}

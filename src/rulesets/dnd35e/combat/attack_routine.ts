@@ -7,6 +7,9 @@ import {
   type CombatRuleOverrides,
   type NaturalWeaponLimbEntry
 } from './full_attack_sequence.ts';
+import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
+import type { StatModifier, StatResolutionBreakdown } from '../types/dnd35e.types.ts';
+import { computeExpandedCritThreatMin } from '../equipment/weapon_profile_parser.ts';
 import { computeStrikeDoctrineDamageBonus, evaluateTacticalDoctrineModifiers } from './tactical_doctrine.ts';
 
 /**
@@ -27,6 +30,7 @@ export interface DnD35ResolvedStrikeProfile {
   readonly critThreatMin: number;
   readonly critMultiplier: number;
   readonly bypassTags: ReadonlyArray<string>;
+  readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
   readonly weaponId?: string | undefined;
   readonly naturalWeaponId?: string | undefined;
 }
@@ -52,15 +56,23 @@ export function resolveActorAttackRoutine(params: {
   readonly totalBab: number;
   readonly baseAttackModifier: number;
   readonly strModifier: number;
+  readonly dexModifier?: number | undefined;
+  readonly hasWeaponFinesse?: boolean | undefined;
   readonly doctrine?: TacticalDoctrineComponent | undefined;
   readonly flatDamageBonus: number;
   readonly hasTwoWeaponFightingFeat?: boolean | undefined;
   readonly hasMultiattackFeat?: boolean | undefined;
   readonly overrides?: CombatRuleOverrides | undefined;
+  readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
+  readonly selfTags?: ReadonlyArray<string> | undefined;
 }): DnD35ResolvedAttackRoutine {
   const primary = params.resolvedWeapons.primaryWeapon;
   const offHands = params.resolvedWeapons.offHandWeapons;
   const isPureNaturalRoutine = !primary.isArmed && (params.naturalWeapons ?? []).length > 0;
+  const finesseDelta =
+    params.hasWeaponFinesse === true && params.dexModifier !== undefined
+      ? Math.max(0, params.dexModifier - params.strModifier)
+      : 0;
 
   const hasOffHand = offHands.length > 0;
   const offHandIsLight = hasOffHand && offHands.every((w) => w.handedness === 'light');
@@ -93,6 +105,45 @@ export function resolveActorAttackRoutine(params: {
 
   for (let i = 0; i < seq.entries.length; i++) {
     const entry = seq.entries[i]!;
+    const isManufactured =
+      entry.attackSource === 'manufactured_primary' || entry.attackSource === 'manufactured_offhand';
+    const strikeWeaponId = isManufactured
+      ? entry.attackSource === 'manufactured_primary'
+        ? primary.weaponItemId
+        : entry.weaponId
+      : entry.naturalWeaponId;
+
+    const strikeEffectTags: string[] = [
+      ...(strikeWeaponId !== undefined ? [`weapon:${strikeWeaponId}`] : []),
+      `attack_source:${entry.attackSource}`,
+      isManufactured ? 'weapon_group:manufactured' : 'weapon_group:natural'
+    ];
+
+    const strikeCandidateMods = params.statModifiers ?? [];
+    let strikeAttackMod = 0;
+    let strikeDamageMod = 0;
+    let critThreatExpansionSteps = 0;
+    let critThreatBreakdown: StatResolutionBreakdown | undefined;
+
+    if (strikeCandidateMods.length > 0) {
+      const atkBreakdown = resolveTypedModifiersWithBreakdown(
+        strikeCandidateMods.filter((m) => m.targetStat === 'strike_attack'),
+        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+      );
+      strikeAttackMod = atkBreakdown.total;
+
+      const dmgBreakdown = resolveTypedModifiersWithBreakdown(
+        strikeCandidateMods.filter((m) => m.targetStat === 'strike_damage'),
+        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+      );
+      strikeDamageMod = dmgBreakdown.total;
+
+      critThreatBreakdown = resolveTypedModifiersWithBreakdown(
+        strikeCandidateMods.filter((m) => m.targetStat === 'crit_threat_doubling'),
+        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+      );
+      critThreatExpansionSteps = critThreatBreakdown.total;
+    }
 
     if (entry.attackSource === 'manufactured_primary') {
       const strikeHandedness = primary.handedness;
@@ -108,6 +159,12 @@ export function resolveActorAttackRoutine(params: {
         isNaturalOrUnarmed,
         primary.cannotTwoHandStr
       );
+      const primaryFinesseBonus =
+        primary.isFinesseEligible === true || primary.handedness === 'light' || isNaturalOrUnarmed ? finesseDelta : 0;
+      const critMin =
+        critThreatExpansionSteps > 0
+          ? computeExpandedCritThreatMin(primary.critThreatMin, critThreatExpansionSteps)
+          : primary.critThreatMin;
 
       strikes.push({
         index: i,
@@ -116,15 +173,21 @@ export function resolveActorAttackRoutine(params: {
         handedness: strikeHandedness,
         isNaturalOrUnarmed,
         attackBonus:
-          entry.attackBonus + primary.attackBonus + primary.sizeAttackPenalty + primary.nonproficiencyPenalty,
+          entry.attackBonus +
+          primary.attackBonus +
+          primary.sizeAttackPenalty +
+          primary.nonproficiencyPenalty +
+          primaryFinesseBonus +
+          strikeAttackMod,
         weaponDice: primary.weaponDice,
         weaponDamageType: primary.weaponDamageType,
         strDamageBonus: strDmg,
         doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus + primary.damageBonus,
-        critThreatMin: primary.critThreatMin,
+        flatDamageBonus: params.flatDamageBonus + primary.damageBonus + strikeDamageMod,
+        critThreatMin: critMin,
         critMultiplier: primary.critMultiplier,
         bypassTags: primary.bypassTags,
+        critThreatBreakdown,
         weaponId: primary.weaponItemId
       });
     } else if (entry.attackSource === 'manufactured_offhand') {
@@ -144,6 +207,14 @@ export function resolveActorAttackRoutine(params: {
         isNaturalOrUnarmed,
         offWeapon.cannotTwoHandStr
       );
+      const offFinesseBonus =
+        offWeapon.isFinesseEligible === true || offWeapon.handedness === 'light' || isNaturalOrUnarmed
+          ? finesseDelta
+          : 0;
+      const critMin =
+        critThreatExpansionSteps > 0
+          ? computeExpandedCritThreatMin(offWeapon.critThreatMin, critThreatExpansionSteps)
+          : offWeapon.critThreatMin;
 
       strikes.push({
         index: i,
@@ -152,62 +223,56 @@ export function resolveActorAttackRoutine(params: {
         handedness: strikeHandedness,
         isNaturalOrUnarmed,
         attackBonus:
-          entry.attackBonus + offWeapon.attackBonus + offWeapon.sizeAttackPenalty + offWeapon.nonproficiencyPenalty,
+          entry.attackBonus +
+          offWeapon.attackBonus +
+          offWeapon.sizeAttackPenalty +
+          offWeapon.nonproficiencyPenalty +
+          offFinesseBonus +
+          strikeAttackMod,
         weaponDice: offWeapon.weaponDice,
         weaponDamageType: offWeapon.weaponDamageType,
         strDamageBonus: strDmg,
         doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus + offWeapon.damageBonus,
-        critThreatMin: offWeapon.critThreatMin,
+        flatDamageBonus: params.flatDamageBonus + offWeapon.damageBonus + strikeDamageMod,
+        critThreatMin: critMin,
         critMultiplier: offWeapon.critMultiplier,
         bypassTags: offWeapon.bypassTags,
+        critThreatBreakdown,
         weaponId: offWeapon.weaponItemId
       });
-    } else if (entry.attackSource === 'natural_primary') {
+    } else {
+      const isPrimary = entry.attackSource === 'natural_primary';
       const natLimb = params.naturalWeapons?.find((nw) => nw.id === entry.naturalWeaponId);
-      const isSole = (params.naturalWeapons?.length ?? 0) === 1 && (params.naturalWeapons?.[0]?.count ?? 0) === 1;
-      const strikeHandedness: AttackRollParams['handedness'] = isSole ? 'primary_natural_sole' : 'one_handed';
+      const isSole =
+        isPrimary && (params.naturalWeapons?.length ?? 0) === 1 && (params.naturalWeapons?.[0]?.count ?? 0) === 1;
+      const strikeHandedness: AttackRollParams['handedness'] = isPrimary
+        ? isSole
+          ? 'primary_natural_sole'
+          : 'one_handed'
+        : 'off_hand';
       const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
       const doctrineDmg = computeStrikeDoctrineDamageBonus(params.doctrine, params.totalBab, strikeHandedness, true);
+      const baseCrit = natLimb?.critThreatMin ?? 20;
+      const critMin =
+        critThreatExpansionSteps > 0 ? computeExpandedCritThreatMin(baseCrit, critThreatExpansionSteps) : baseCrit;
 
       strikes.push({
         index: i,
-        label: natLimb?.name ?? entry.naturalWeaponId ?? 'Primary Natural Attack',
-        attackSource: 'natural_primary',
+        label:
+          natLimb?.name ?? entry.naturalWeaponId ?? (isPrimary ? 'Primary Natural Attack' : 'Secondary Natural Attack'),
+        attackSource: entry.attackSource,
         handedness: strikeHandedness,
         isNaturalOrUnarmed: true,
-        attackBonus: entry.attackBonus,
+        attackBonus: entry.attackBonus + finesseDelta + strikeAttackMod,
         weaponDice: natLimb?.dice ?? '1d4',
         weaponDamageType: natLimb?.damageType ?? 'slashing',
         strDamageBonus: strDmg,
         doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus,
-        critThreatMin: natLimb?.critThreatMin ?? 20,
+        flatDamageBonus: params.flatDamageBonus + strikeDamageMod,
+        critThreatMin: critMin,
         critMultiplier: natLimb?.critMultiplier ?? 2,
         bypassTags: [natLimb?.damageType ?? 'slashing'],
-        naturalWeaponId: entry.naturalWeaponId
-      });
-    } else if (entry.attackSource === 'natural_secondary') {
-      const natLimb = params.naturalWeapons?.find((nw) => nw.id === entry.naturalWeaponId);
-      const strikeHandedness: AttackRollParams['handedness'] = 'off_hand';
-      const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
-      const doctrineDmg = computeStrikeDoctrineDamageBonus(params.doctrine, params.totalBab, strikeHandedness, true);
-
-      strikes.push({
-        index: i,
-        label: natLimb?.name ?? entry.naturalWeaponId ?? 'Secondary Natural Attack',
-        attackSource: 'natural_secondary',
-        handedness: strikeHandedness,
-        isNaturalOrUnarmed: true,
-        attackBonus: entry.attackBonus,
-        weaponDice: natLimb?.dice ?? '1d4',
-        weaponDamageType: natLimb?.damageType ?? 'slashing',
-        strDamageBonus: strDmg,
-        doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus,
-        critThreatMin: natLimb?.critThreatMin ?? 20,
-        critMultiplier: natLimb?.critMultiplier ?? 2,
-        bypassTags: [natLimb?.damageType ?? 'slashing'],
+        critThreatBreakdown,
         naturalWeaponId: entry.naturalWeaponId
       });
     }
@@ -219,43 +284,4 @@ export function resolveActorAttackRoutine(params: {
     occupiedLimbGroupIds: params.resolvedWeapons.occupiedLimbGroupIds,
     strikes
   };
-}
-
-/**
- * Checks if a Cleave / Great Cleave follow-up attack is granted after dropping a foe to <= 0 HP.
- */
-export function resolveCleaveFollowupEligibility(
-  droppedFoe: boolean,
-  cleavesUsedThisRound: number,
-  hasGreatCleave: boolean
-): boolean {
-  if (!droppedFoe) return false;
-  if (hasGreatCleave) return true;
-  return cleavesUsedThisRound === 0;
-}
-
-/**
- * Resolves all eligible melee targets within reach for a Whirlwind Attack.
- */
-export function resolveWhirlwindTargets(
-  attackerPos: { readonly x: number; readonly y: number },
-  reachFt: number,
-  potentialTargets: ReadonlyArray<{
-    readonly entityId: number;
-    readonly pos: { readonly x: number; readonly y: number };
-  }>
-): ReadonlyArray<number> {
-  const reachTiles = Math.max(1, Math.floor(reachFt / 5));
-  const validTargetIds: number[] = [];
-
-  for (const target of potentialTargets) {
-    const dx = Math.abs(attackerPos.x - target.pos.x);
-    const dy = Math.abs(attackerPos.y - target.pos.y);
-    const dist = Math.max(dx, dy);
-    if (dist <= reachTiles && (dx > 0 || dy > 0)) {
-      validTargetIds.push(target.entityId);
-    }
-  }
-
-  return validTargetIds;
 }

@@ -1,0 +1,12 @@
+{
+  "craft_wand": {
+    "id": "craft_wand",
+    "name": "Craft Wand",
+    "description": "Create a wand of any 4th-level or lower spell that you know.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 5
+    }
+  }
+}

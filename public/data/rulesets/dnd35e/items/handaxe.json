@@ -1,0 +1,39 @@
+{
+  "handaxe": {
+    "id": "handaxe",
+    "name": "Handaxe",
+    "unidentifiedName": "Handaxe",
+    "description": "Handaxe (martial light melee weapon, 1d6 slashing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 3,
+    "baseValue": 6,
+    "tags": [
+      "weapon",
+      "martial",
+      "light",
+      "slashing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "light",
+      "damageDice": "1d6",
+      "damageType": "slashing",
+      "critThreatMin": 20,
+      "critMultiplier": 3,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "still_spell": {
+    "id": "still_spell",
+    "name": "Still Spell",
+    "description": "A stilled spell can be cast with no somatic components. A stilled spell uses up a spell slot one level higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 1,
+      "suppressSomaticComponent": true
+    }
+  }
+}

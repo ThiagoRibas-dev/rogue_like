@@ -48,6 +48,7 @@ export type BonusType =
   | 'shield_enhancement'
   | 'size'
   | 'size_step'
+  | 'threat_expansion'
   | 'untyped';
 
 /**

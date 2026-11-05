@@ -1,0 +1,15 @@
+{
+  "wingover": {
+    "id": "wingover",
+    "name": "Wingover",
+    "description": "Change direction quickly once each round while airborne (turn up to 180 degrees as a free action).",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "fly_wingover_turn",
+        "ruleKey": "fly_wingover_turn",
+        "value": true
+      }
+    ]
+  }
+}

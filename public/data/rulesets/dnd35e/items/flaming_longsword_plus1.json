@@ -1,0 +1,45 @@
+{
+  "flaming_longsword_plus1": {
+    "id": "flaming_longsword_plus1",
+    "name": "+1 Flaming Longsword",
+    "unidentifiedName": "+1 Flaming Longsword",
+    "description": "+1 Flaming Longsword (martial one-handed melee weapon, 1d8 slashing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "baseValue": 8315,
+    "tags": [
+      "weapon",
+      "martial",
+      "one_handed",
+      "slashing",
+      "magic",
+      "bypass:magic"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "one_handed",
+      "damageDice": "1d8",
+      "damageType": "slashing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 1,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "magicalProperties": {
+      "enhancementBonus": 1,
+      "isMasterwork": true
+    },
+    "spriteId": "item_long_sword"
+  }
+}

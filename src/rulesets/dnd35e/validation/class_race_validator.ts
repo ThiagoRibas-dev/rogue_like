@@ -46,9 +46,19 @@ export function validatePrerequisiteNodeReferences(
         });
       }
       return;
+    case 'has_feat': {
+      const baseFeatId = node.featId.includes(':') ? node.featId.split(':')[0]! : node.featId;
+      if (Object.keys(sys.feats).length > 0 && !sys.feats[node.featId] && !sys.feats[baseFeatId]) {
+        errors.push({
+          path: `${basePath}.featId`,
+          message: `Prerequisite references unknown feat "${node.featId}".`,
+          severity: 'error'
+        });
+      }
+      return;
+    }
     case 'min_ability':
     case 'min_bab':
-    case 'has_feat':
     case 'has_tag':
     case 'min_caster_level':
     case 'size_in':

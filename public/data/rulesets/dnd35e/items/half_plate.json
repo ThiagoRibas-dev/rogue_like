@@ -1,0 +1,37 @@
+{
+  "half_plate": {
+    "id": "half_plate",
+    "name": "Half-Plate",
+    "unidentifiedName": "Half-Plate",
+    "description": "Half-Plate (heavy, +7 AC, ACP -7, ASF 40%).",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 50,
+    "baseValue": 600,
+    "armorStats": {
+      "armorCategory": "heavy",
+      "armorBonus": 7,
+      "maxDexBonus": 0,
+      "armorCheckPenalty": -7,
+      "arcaneSpellFailure": 40,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 7,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "heavy",
+      "metal"
+    ],
+    "spriteId": "item_chain_mail"
+  }
+}

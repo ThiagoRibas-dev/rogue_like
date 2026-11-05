@@ -1,0 +1,37 @@
+{
+  "scale_mail": {
+    "id": "scale_mail",
+    "name": "Scale Mail",
+    "unidentifiedName": "Scale Mail",
+    "description": "Scale Mail (medium, +4 AC, ACP -4, ASF 25%).",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 30,
+    "baseValue": 50,
+    "armorStats": {
+      "armorCategory": "medium",
+      "armorBonus": 4,
+      "maxDexBonus": 3,
+      "armorCheckPenalty": -4,
+      "arcaneSpellFailure": 25,
+      "speed30Ft": 20,
+      "speed20Ft": 15,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 4,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "tags": [
+      "armor",
+      "medium",
+      "metal"
+    ],
+    "spriteId": "item_scale_mail"
+  }
+}

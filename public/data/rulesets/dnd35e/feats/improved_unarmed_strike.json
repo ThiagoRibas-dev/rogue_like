@@ -1,0 +1,20 @@
+{
+  "improved_unarmed_strike": {
+    "id": "improved_unarmed_strike",
+    "name": "Improved Unarmed Strike",
+    "description": "Considered armed even when unarmed; unarmed strikes do not provoke Attacks of Opportunity and can deal lethal damage.",
+    "isFighterBonusFeat": true,
+    "ruleOverrides": [
+      {
+        "id": "unarmed_strike_armed",
+        "ruleKey": "unarmed_strike_armed",
+        "value": true
+      },
+      {
+        "id": "unarmed_strike_lethal",
+        "ruleKey": "unarmed_strike_lethal",
+        "value": true
+      }
+    ]
+  }
+}

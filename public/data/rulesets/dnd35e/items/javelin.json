@@ -1,0 +1,40 @@
+{
+  "javelin": {
+    "id": "javelin",
+    "name": "Javelin",
+    "unidentifiedName": "Javelin",
+    "description": "Javelin (simple light thrown weapon, 1d6 piercing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 2,
+    "baseValue": 1,
+    "tags": [
+      "weapon",
+      "simple",
+      "light",
+      "piercing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "thrown",
+      "effort": "light",
+      "damageDice": "1d6",
+      "damageType": "piercing",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "rangeIncrementFt": 30,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

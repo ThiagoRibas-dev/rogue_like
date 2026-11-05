@@ -1,0 +1,12 @@
+{
+  "empower_spell": {
+    "id": "empower_spell",
+    "name": "Empower Spell",
+    "description": "All variable, numeric effects of an empowered spell are increased by one-half (+50%). An empowered spell uses up a spell slot two levels higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 2,
+      "empowerDamageMultiplier": 1.5
+    }
+  }
+}

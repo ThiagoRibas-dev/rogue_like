@@ -1,0 +1,33 @@
+{
+  "spirited_charge": {
+    "id": "spirited_charge",
+    "name": "Spirited Charge",
+    "description": "When mounted and using the charge action, deal double damage with a melee weapon (or triple damage with a lance).",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_skill_ranks",
+          "skillId": "ride",
+          "minRanks": 1
+        },
+        {
+          "type": "has_feat",
+          "featId": "mounted_combat"
+        },
+        {
+          "type": "has_feat",
+          "featId": "ride_by_attack"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "spirited_charge_multiplier",
+        "ruleKey": "spirited_charge_multiplier",
+        "value": 2
+      }
+    ]
+  }
+}

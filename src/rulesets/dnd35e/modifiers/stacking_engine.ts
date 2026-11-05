@@ -67,12 +67,15 @@ export function resolveTypedModifiersWithBreakdown(
     }
 
     if (ignoreArmor && isArmorOrNaturalBonus(mod.bonusType)) {
-      const isForceEffect =
+      const isForceOrGhostTouchEffect =
         againstIncorporealTouch &&
-        (mod.bonusType === 'armor' || mod.bonusType === 'shield') &&
-        mod.effectTags?.includes('force') === true;
+        (mod.bonusType === 'armor' ||
+          mod.bonusType === 'armor_enhancement' ||
+          mod.bonusType === 'shield' ||
+          mod.bonusType === 'shield_enhancement') &&
+        (mod.effectTags?.includes('force') === true || mod.effectTags?.includes('ghost_touch') === true);
 
-      if (!isForceEffect) {
+      if (!isForceOrGhostTouchEffect) {
         suppressedModifiers.push({ modifier: mod, reason: 'touch_attack' });
         continue;
       }
@@ -157,9 +160,9 @@ export function resolveTypedModifiersWithBreakdown(
     const mundaneBaseMods = baseMods.filter((m) => m.origin === 'mundane' || m.sourceId === baseType);
     const standaloneMods = baseMods.filter((m) => m.origin !== 'mundane' && m.sourceId !== baseType);
 
-    mundaneBaseMods.sort((a, b) => b.value - a.value);
-    enhMods.sort((a, b) => b.value - a.value);
-    standaloneMods.sort((a, b) => b.value - a.value);
+    mundaneBaseMods.sort((a, b) => b.value - a.value || (b.effectTags?.length ?? 0) - (a.effectTags?.length ?? 0));
+    enhMods.sort((a, b) => b.value - a.value || (b.effectTags?.length ?? 0) - (a.effectTags?.length ?? 0));
+    standaloneMods.sort((a, b) => b.value - a.value || (b.effectTags?.length ?? 0) - (a.effectTags?.length ?? 0));
 
     const bestMundane = mundaneBaseMods[0];
     const bestEnh = enhMods[0];

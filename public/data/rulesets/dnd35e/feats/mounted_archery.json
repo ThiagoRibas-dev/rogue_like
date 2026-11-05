@@ -1,0 +1,29 @@
+{
+  "mounted_archery": {
+    "id": "mounted_archery",
+    "name": "Mounted Archery",
+    "description": "Halves the penalty for making ranged attacks while your mount is moving.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_skill_ranks",
+          "skillId": "ride",
+          "minRanks": 1
+        },
+        {
+          "type": "has_feat",
+          "featId": "mounted_combat"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "mounted_archery_halve_penalty",
+        "ruleKey": "mounted_archery_halve_penalty",
+        "value": true
+      }
+    ]
+  }
+}

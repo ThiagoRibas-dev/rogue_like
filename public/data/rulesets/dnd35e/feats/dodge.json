@@ -1,0 +1,21 @@
+{
+  "dodge": {
+    "id": "dodge",
+    "name": "Dodge",
+    "description": "+1 dodge bonus to Armor Class.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "dex",
+      "minScore": 13
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "ac",
+        "value": 1,
+        "type": "dodge"
+      }
+    ]
+  }
+}

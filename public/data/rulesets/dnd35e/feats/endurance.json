@@ -1,0 +1,15 @@
+{
+  "endurance": {
+    "id": "endurance",
+    "name": "Endurance",
+    "description": "+4 bonus on checks or saves to resist nonlethal damage from swimming, running, forced marches, starvation, thirst, or hot/cold environments; may sleep in light or medium armor without becoming fatigued.",
+    "isFighterBonusFeat": false,
+    "ruleOverrides": [
+      {
+        "id": "sleep_in_medium_armor",
+        "ruleKey": "sleep_in_medium_armor",
+        "value": true
+      }
+    ]
+  }
+}

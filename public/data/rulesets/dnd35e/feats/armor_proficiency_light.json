@@ -1,0 +1,17 @@
+{
+  "armor_proficiency_light": {
+    "id": "armor_proficiency_light",
+    "name": "Armor Proficiency (Light)",
+    "description": "Wear light armor without applying its armor check penalty to attack rolls.",
+    "isFighterBonusFeat": false,
+    "effectBundle": {
+      "bundleId": "feat_armor_proficiency_light",
+      "name": "Armor Proficiency (Light)",
+      "category": "proficiency",
+      "usageMode": "passive",
+      "grantedTags": [
+        "proficiency:armor:light"
+      ]
+    }
+  }
+}

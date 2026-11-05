@@ -15,6 +15,7 @@ export const DnD35DeclarativeModifierSchema = z.object({
   type: z.enum([
     'alchemical',
     'armor',
+    'armor_enhancement',
     'base',
     'circumstance',
     'competence',
@@ -27,15 +28,19 @@ export const DnD35DeclarativeModifierSchema = z.object({
     'luck',
     'morale',
     'natural_armor',
+    'natural_armor_enhancement',
     'profane',
     'racial',
     'resistance',
     'sacred',
     'shield',
+    'shield_enhancement',
     'size',
     'size_step',
+    'threat_expansion',
     'untyped'
   ]),
+  effectTags: z.array(z.string()).optional(),
   condition: z
     .object({
       selfTagsAll: z.array(z.string()).optional(),
@@ -49,6 +54,10 @@ export const DnD35DeclarativeModifierSchema = z.object({
     .optional()
 });
 export type DnD35DeclarativeModifier = z.infer<typeof DnD35DeclarativeModifierSchema>;
+
+/** Zod schema for canonical D&D 3.5e bonus types usable in declarative modifiers. */
+export const DnD35BonusTypeSchema = DnD35DeclarativeModifierSchema.shape.type;
+export type DnD35BonusType = z.infer<typeof DnD35BonusTypeSchema>;
 
 /** Zod schema for a declarative Rule Override entry inside an Effect Bundle. */
 export const DnD35RuleOverrideEntrySchema = z.object({

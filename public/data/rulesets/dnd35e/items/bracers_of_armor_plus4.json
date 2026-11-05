@@ -1,0 +1,45 @@
+{
+  "bracers_of_armor_plus4": {
+    "id": "bracers_of_armor_plus4",
+    "name": "Bracers of Armor +4",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+4 armor bonus to AC from a tangible field of force (applies against incorporeal touch attacks).",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 16000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:arm"
+    ],
+    "equippable": {
+      "slot": "arm",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_bracers_of_armor_plus4",
+      "name": "Bracers of Armor +4",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+4 armor bonus to AC from a tangible field of force (applies against incorporeal touch attacks).",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ac",
+          "value": 4,
+          "type": "armor",
+          "effectTags": [
+            "force"
+          ]
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

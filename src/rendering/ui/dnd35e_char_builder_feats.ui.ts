@@ -18,76 +18,42 @@ import { renderFeatInspector } from './dnd35e_inspector.ui.ts';
 let inspectedFeatId = 'power_attack';
 let featFilterMode: 'all' | 'eligible' | 'fighter' | 'combat' | 'magic' = 'all';
 
-const COMBAT_FEAT_IDS: ReadonlyArray<string> = [
-  'power_attack',
-  'cleave',
-  'great_cleave',
-  'combat_expertise',
-  'improved_trip',
-  'improved_disarm',
-  'improved_bull_rush',
-  'improved_sunder',
-  'improved_grapple',
-  'improved_feint',
-  'Dodge',
-  'dodge',
-  'mobility',
-  'spring_attack',
-  'whirlwind_attack',
-  'weapon_finesse',
-  'weapon_focus',
-  'weapon_specialization',
-  'greater_weapon_focus',
-  'greater_weapon_specialization',
-  'improved_critical',
-  'point_blank_shot',
-  'precise_shot',
-  'rapid_shot',
-  'manyshot',
-  'two_weapon_fighting',
-  'improved_two_weapon_fighting',
-  'greater_two_weapon_fighting',
-  'two_weapon_defense',
-  'improved_initiative',
-  'improved_unarmed_strike',
-  'stunning_fist',
-  'deflect_arrows',
-  'mounted_combat',
-  'ride_by_attack',
-  'spirited_charge',
-  'trample',
-  'blind_fight',
-  'combat_reflexes'
-];
-
 function classifyFeatCategory(feat: DnD35FeatDefinition): {
   readonly isFighterBonus: boolean;
   readonly isCombat: boolean;
   readonly isMagic: boolean;
 } {
   const isFighterBonus = feat.isFighterBonusFeat === true;
-  const idLower = feat.id.toLowerCase();
-  const nameLower = feat.name.toLowerCase();
+  const prereqJson = feat.prerequisites ? JSON.stringify(feat.prerequisites) : '';
   const descLower = feat.description.toLowerCase();
+
   const isMagic =
-    idLower.includes('spell') ||
-    idLower.includes('empower') ||
-    idLower.includes('maximize') ||
-    idLower.includes('quicken') ||
-    idLower.includes('extend') ||
-    idLower.includes('silent') ||
-    idLower.includes('still') ||
-    idLower.includes('widen') ||
-    idLower.includes('heighten') ||
-    idLower.includes('eschew') ||
-    idLower.includes('augment_summoning') ||
-    idLower.includes('combat_casting') ||
-    idLower.includes('natural_spell') ||
-    idLower.includes('extra_turning') ||
-    nameLower.includes('spell') ||
+    feat.metamagicDescriptor !== undefined ||
+    (feat.modifiers !== undefined &&
+      feat.modifiers.some((m) =>
+        ['caster_level', 'spell_resistance', 'spell_penetration', 'spells_per_day', 'turn_undead'].some((target) =>
+          m.target.includes(target)
+        )
+      )) ||
+    prereqJson.includes('caster_level') ||
+    prereqJson.includes('spells') ||
     descLower.includes('metamagic') ||
-    descLower.includes('caster level');
-  const isCombat = isFighterBonus || COMBAT_FEAT_IDS.includes(feat.id);
+    descLower.includes('caster level') ||
+    descLower.includes('turn undead') ||
+    descLower.includes('spell');
+
+  const isCombat =
+    isFighterBonus ||
+    (feat.ruleOverrides !== undefined && feat.ruleOverrides.length > 0) ||
+    (feat.activatedAbilities !== undefined && feat.activatedAbilities.length > 0) ||
+    (feat.modifiers !== undefined &&
+      feat.modifiers.some((m) =>
+        ['attack', 'damage', 'crit_threat_doubling', 'ac', 'initiative', 'grapple', 'trip', 'disarm'].some((target) =>
+          m.target.includes(target)
+        )
+      )) ||
+    prereqJson.includes('min_bab');
+
   return { isFighterBonus, isCombat, isMagic };
 }
 

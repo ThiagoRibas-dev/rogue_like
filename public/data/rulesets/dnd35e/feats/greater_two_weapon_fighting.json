@@ -1,0 +1,37 @@
+{
+  "greater_two_weapon_fighting": {
+    "id": "greater_two_weapon_fighting",
+    "name": "Greater Two-Weapon Fighting",
+    "description": "Gain a third off-hand attack at a -10 penalty.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 19
+        },
+        {
+          "type": "has_feat",
+          "featId": "two_weapon_fighting"
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_two_weapon_fighting"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 11
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "extra_offhand_attacks",
+        "ruleKey": "extra_offhand_attacks",
+        "value": 2
+      }
+    ]
+  }
+}

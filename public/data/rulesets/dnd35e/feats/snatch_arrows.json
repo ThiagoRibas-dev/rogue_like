@@ -1,0 +1,33 @@
+{
+  "snatch_arrows": {
+    "id": "snatch_arrows",
+    "name": "Snatch Arrows",
+    "description": "Catch a deflected projectile or thrown weapon and immediately throw it back.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 15
+        },
+        {
+          "type": "has_feat",
+          "featId": "improved_unarmed_strike"
+        },
+        {
+          "type": "has_feat",
+          "featId": "deflect_arrows"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "snatch_deflected_arrow",
+        "ruleKey": "snatch_deflected_arrow",
+        "value": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "ride_by_attack": {
+    "id": "ride_by_attack",
+    "name": "Ride-By Attack",
+    "description": "When mounted and charging, move and attack and then continue moving without provoking an AoO from the target.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_skill_ranks",
+          "skillId": "ride",
+          "minRanks": 1
+        },
+        {
+          "type": "has_feat",
+          "featId": "mounted_combat"
+        }
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "ride_by_attack_charge",
+        "ruleKey": "ride_by_attack_charge",
+        "value": true
+      }
+    ]
+  }
+}

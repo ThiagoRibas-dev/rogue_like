@@ -1,0 +1,30 @@
+{
+  "mobility": {
+    "id": "mobility",
+    "name": "Mobility",
+    "description": "+4 dodge bonus to Armor Class against Attacks of Opportunity provoked by moving out of or within a threatened area.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "dex",
+          "minScore": 13
+        },
+        {
+          "type": "has_feat",
+          "featId": "dodge"
+        }
+      ]
+    },
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "ac",
+        "value": 4,
+        "type": "dodge"
+      }
+    ]
+  }
+}

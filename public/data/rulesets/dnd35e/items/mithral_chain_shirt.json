@@ -1,0 +1,39 @@
+{
+  "mithral_chain_shirt": {
+    "id": "mithral_chain_shirt",
+    "name": "Mithral Chain Shirt",
+    "unidentifiedName": "Mithral Chain Shirt",
+    "description": "Mithral Chain Shirt (light, +4 AC, ACP -2, ASF 20%).",
+    "glyph": "[",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 12,
+    "baseValue": 1100,
+    "armorStats": {
+      "armorCategory": "light",
+      "armorBonus": 4,
+      "maxDexBonus": 4,
+      "armorCheckPenalty": -2,
+      "arcaneSpellFailure": 20,
+      "speed30Ft": 30,
+      "speed20Ft": 20,
+      "isMetal": true
+    },
+    "equippable": {
+      "slot": "torso",
+      "attackBonus": 0,
+      "defenseBonus": 4,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "specialMaterial": "mithral",
+    "tags": [
+      "armor",
+      "light",
+      "metal",
+      "material:mithral"
+    ],
+    "spriteId": "item_leather_armor"
+  }
+}

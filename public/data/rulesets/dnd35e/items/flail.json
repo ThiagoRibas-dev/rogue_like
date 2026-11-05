@@ -1,0 +1,43 @@
+{
+  "flail": {
+    "id": "flail",
+    "name": "Flail",
+    "unidentifiedName": "Flail",
+    "description": "Flail (martial one-handed melee weapon, 1d8 bludgeoning).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 5,
+    "baseValue": 8,
+    "tags": [
+      "weapon",
+      "martial",
+      "one_handed",
+      "bludgeoning"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "martial",
+      "weaponCategory": "melee",
+      "effort": "one_handed",
+      "damageDice": "1d8",
+      "damageType": "bludgeoning",
+      "critThreatMin": 20,
+      "critMultiplier": 2,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "maneuverTags": [
+        "trip",
+        "disarm"
+      ]
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_mace_1"
+  }
+}

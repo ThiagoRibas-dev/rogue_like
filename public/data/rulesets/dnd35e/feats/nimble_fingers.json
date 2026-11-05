@@ -1,0 +1,22 @@
+{
+  "nimble_fingers": {
+    "id": "nimble_fingers",
+    "name": "Nimble Fingers",
+    "description": "+2 bonus on all Disable Device and Open Lock checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:disable_device",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:open_lock",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

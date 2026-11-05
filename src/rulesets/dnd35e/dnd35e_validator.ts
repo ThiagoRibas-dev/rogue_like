@@ -41,6 +41,16 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
+  for (const [itemKey, itemDef] of Object.entries(sys.items ?? {})) {
+    if (itemDef.id !== itemKey) {
+      errors.push({
+        path: `systemContent.items.${itemKey}.id`,
+        message: `Item key "${itemKey}" does not match inner id "${itemDef.id}".`,
+        severity: 'error'
+      });
+    }
+  }
+
   for (const [spellKey, spellDef] of Object.entries(sys.spells)) {
     if (spellDef.id !== spellKey) {
       errors.push({

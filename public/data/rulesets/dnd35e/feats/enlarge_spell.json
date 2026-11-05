@@ -1,0 +1,12 @@
+{
+  "enlarge_spell": {
+    "id": "enlarge_spell",
+    "name": "Enlarge Spell",
+    "description": "Doubles the range of a close, medium, or long-range spell. An enlarged spell uses up a spell slot one level higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 1,
+      "rangeMultiplier": 2
+    }
+  }
+}

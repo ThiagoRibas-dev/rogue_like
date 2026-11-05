@@ -2,7 +2,16 @@
   "track": {
     "id": "track",
     "name": "Track",
-    "description": "Use Survival checks to follow tracks.",
-    "isFighterBonusFeat": false
+    "description": "Use Survival checks to find and follow tracks across any surface.",
+    "isFighterBonusFeat": false,
+    "effectBundle": {
+      "bundleId": "feat_track",
+      "name": "Track",
+      "category": "feat",
+      "usageMode": "passive",
+      "grantedTags": [
+        "trait:track"
+      ]
+    }
   }
 }

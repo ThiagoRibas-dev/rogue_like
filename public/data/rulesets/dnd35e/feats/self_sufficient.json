@@ -1,0 +1,22 @@
+{
+  "self_sufficient": {
+    "id": "self_sufficient",
+    "name": "Self-Sufficient",
+    "description": "+2 bonus on all Heal and Survival checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:heal",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:survival",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

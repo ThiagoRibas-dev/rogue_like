@@ -1,0 +1,19 @@
+{
+  "far_shot": {
+    "id": "far_shot",
+    "name": "Far Shot",
+    "description": "Increases range increment by 50% for projectile weapons and 100% for thrown weapons.",
+    "isFighterBonusFeat": true,
+    "prerequisites": {
+      "type": "has_feat",
+      "featId": "point_blank_shot"
+    },
+    "ruleOverrides": [
+      {
+        "id": "far_shot_range_multiplier",
+        "ruleKey": "far_shot_range_multiplier",
+        "value": 1.5
+      }
+    ]
+  }
+}

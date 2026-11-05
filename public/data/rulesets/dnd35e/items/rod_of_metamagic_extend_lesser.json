@@ -1,0 +1,20 @@
+{
+  "rod_of_metamagic_extend_lesser": {
+    "id": "rod_of_metamagic_extend_lesser",
+    "name": "Metamagic Rod, Extend (Lesser)",
+    "unidentifiedName": "Brass-Bound Rod",
+    "description": "Cast up to three spells per day (up to 3rd level) as though using the Extend Spell feat without increasing spell slot level.",
+    "glyph": "/",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 3000,
+    "tags": [
+      "magic",
+      "rod",
+      "metamagic_rod:extend"
+    ],
+    "spriteId": "item_blue_staff"
+  }
+}

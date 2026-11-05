@@ -1,0 +1,22 @@
+{
+  "acrobatic": {
+    "id": "acrobatic",
+    "name": "Acrobatic",
+    "description": "+2 bonus on all Jump and Tumble checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:jump",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:tumble",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "scroll_of_mage_armor": {
+    "id": "scroll_of_mage_armor",
+    "name": "Scroll of Mage Armor",
+    "unidentifiedName": "Arcane Scroll",
+    "description": "An arcane scroll inscribed with Mage Armor (CL 1st).",
+    "glyph": "?",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "category": "consumable",
+    "weight": 0,
+    "baseValue": 25,
+    "tags": [
+      "magic",
+      "scroll",
+      "spell:mage_armor"
+    ],
+    "consumable": {
+      "effectId": "heal_5",
+      "charges": 1
+    },
+    "spriteId": "item_scroll"
+  }
+}

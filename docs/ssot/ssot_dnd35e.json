@@ -381,6 +381,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts."
     ]
   },
+  "src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates equipped item EffectBundles, armor/shield AC modifiers, Ghost Touch tags, Max Dex caps, and natural weapon limb mappings for the Entity Stat DAG.",
+    "canonicalEntryPoints": [
+      "EquippedItemDAGContributions",
+      "collectEquippedItemDAGContributions",
+      "buildActorNaturalWeaponLimbs"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts."
+    ]
+  },
   "src/rulesets/dnd35e/character_builder.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
@@ -449,9 +466,7 @@
     "canonicalEntryPoints": [
       "DnD35ResolvedStrikeProfile",
       "DnD35ResolvedAttackRoutine",
-      "resolveActorAttackRoutine",
-      "resolveCleaveFollowupEligibility",
-      "resolveWhirlwindTargets"
+      "resolveActorAttackRoutine"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/attack_routine.ts.",
@@ -459,6 +474,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/attack_routine.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/cleave_whirlwind.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves Cleave follow-up eligibility and multi-target Whirlwind Attack candidate sets.",
+    "canonicalEntryPoints": [
+      "resolveCleaveFollowupEligibility",
+      "resolveWhirlwindTargets"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/cleave_whirlwind.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/cleave_whirlwind.ts."
     ]
   },
   "src/rulesets/dnd35e/combat/full_attack_sequence.ts": {
@@ -1025,10 +1056,12 @@
   "src/rulesets/dnd35e/progression/ledger_modifiers.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
-    "responsibility": "Collects virtual/granted feats and emits class, domain, racial, and negative-level EffectBundle modifiers for Horizon 2 rebuilds.",
+    "responsibility": "Collects virtual/granted feats and emits class, domain, racial, feat, and negative-level EffectBundle modifiers for Horizon 2 rebuilds.",
     "canonicalEntryPoints": [
       "collectActiveGrantedAndVirtualFeats",
-      "buildClassAndDomainEffectModifiers"
+      "buildClassAndDomainEffectModifiers",
+      "buildFeatEffectModifiers",
+      "collectActiveFeatRuleOverrides"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/progression/ledger_modifiers.ts.",
@@ -1312,6 +1345,21 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/srd_registry.ts."
     ]
   },
+  "src/rulesets/dnd35e/system_content_feat_ids.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Canonical SRD Feat ID catalog for modular D&D 3.5e feat JSON loading.",
+    "canonicalEntryPoints": [
+      "FEAT_IDS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/system_content_feat_ids.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/system_content_feat_ids.ts."
+    ]
+  },
   "src/rulesets/dnd35e/system_content_files.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
@@ -1325,6 +1373,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/system_content_files.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/system_content_item_ids.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Canonical SRD Item ID catalog for modular D&D 3.5e item JSON loading.",
+    "canonicalEntryPoints": [
+      "ITEM_IDS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/system_content_item_ids.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/system_content_item_ids.ts."
     ]
   },
   "src/rulesets/dnd35e/templates.ts": {
@@ -1583,6 +1646,30 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/effect_system.types.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/types/system/item_system.types.ts": {
+    "domain": "D&D 3.5e: Ruleset Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Structured schemas and types for D&D 3.5e weapons, armors, shields, special materials, magical properties, and item definitions.",
+    "canonicalEntryPoints": [
+      "DnD35SpecialMaterialSchema",
+      "DnD35SpecialMaterial",
+      "DnD35WeaponStatsSchema",
+      "DnD35WeaponStats",
+      "DnD35ArmorStatsSchema",
+      "DnD35ArmorStats",
+      "DnD35MagicalPropertiesSchema",
+      "DnD35MagicalProperties",
+      "DnD35ItemDefinitionSchema",
+      "DnD35ItemDefinition"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/types/system/item_system.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/item_system.types.ts."
     ]
   },
   "src/rulesets/dnd35e/validation/class_race_validator.ts": {

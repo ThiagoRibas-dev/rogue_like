@@ -7,9 +7,11 @@ import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from './type
 import type {
   DnD35ClassDefinition,
   DnD35CreatureTypeEngine,
+  DnD35ItemDefinition,
   DnD35SkillDefinition,
   DnD35SubtypeDefinition
 } from './types/dnd35e_system.types.ts';
+import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
 
 /** Canonical SRD Construct Bonus HP by Size emitted by the `type:construct` Effect Provider. */
 export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly<Partial<Record<CreatureSizeCategory, number>>> = {
@@ -42,13 +44,6 @@ export const DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS = 5;
  * Emits declarative `StatModifier` entries for an actor's Creature Type (`type:construct` bonus HP by size)
  * and Subtypes (`subtype:incorporeal` Charisma deflection AC bonus, min +1, plus any declarative subtype modifiers),
  * tagging each modifier with its hierarchical `sourcePath` lineage.
- *
- * @param creatureType Optional creature type ID (`'construct'`, `'undead'`, etc.).
- * @param subtypes Optional array of creature subtypes (`'incorporeal'`, etc.).
- * @param chaModifier Resolved Charisma modifier of the actor.
- * @param parentSourcePath Optional parent provenance path (e.g. `'template:ghost'` or `'archetype:iron_golem'`).
- * @param systemContent Optional loaded system content containing `subtypes` and `creatureTypes`.
- * @returns Array of declarative `StatModifier` entries.
  */
 export function buildCreatureTypeAndSubtypeModifiers(
   creatureType: string | undefined,
@@ -73,9 +68,7 @@ export function buildCreatureTypeAndSubtypeModifiers(
           sourceId: `type:construct:bonus_hp:${sizeKey}`,
           sourcePath: typePath,
           origin: 'ex',
-          condition: {
-            selfTagsAll: ['type:construct', `size:${sizeKey}`]
-          }
+          condition: { selfTagsAll: ['type:construct', `size:${sizeKey}`] }
         });
       }
     }
@@ -91,9 +84,7 @@ export function buildCreatureTypeAndSubtypeModifiers(
       sourceId: 'subtype:incorporeal:deflection_ac',
       sourcePath: subtypePath,
       origin: 'su',
-      condition: {
-        selfTagsAll: ['subtype:incorporeal']
-      }
+      condition: { selfTagsAll: ['subtype:incorporeal'] }
     });
   }
 
@@ -111,6 +102,7 @@ export function buildCreatureTypeAndSubtypeModifiers(
           sourceId: `subtype:${subId}:${m.id}`,
           sourcePath: appendSourcePath(subRoot, m.id),
           origin: 'ex',
+          ...(m.effectTags !== undefined ? { effectTags: m.effectTags } : {}),
           ...(m.condition !== undefined ? { condition: m.condition } : {})
         });
       }
@@ -129,13 +121,6 @@ export function buildCreatureTypeAndSubtypeModifiers(
  * equipment/load tags (`type:<creatureType>`, `subtype:<subtype>`, `size:<sizeCategory>`,
  * `trait:literate`, `trait:illiterate`, `feature:<id>`, `armor:<category>`, `load:<category>`)
  * from `DnD35EntityData`, merging them deduplicated with any existing tags on the entity.
- *
- * @param dndData Resolved `DnD35EntityData` of the actor.
- * @param existingTags Optional existing tags from `TagsComponent`.
- * @param situationalContext Optional live equipment/load context for Horizon 3 evaluation.
- * @param classRegistry Optional class registry to inspect declarative `grantsLiteracy`.
- * @param skillRegistry Optional skill registry to inspect declarative `rankThresholdModifiers.grantedTags`.
- * @returns Deduplicated array of semantic tags for `matchesEntityTagCondition`.
  */
 export function projectDnD35ActorSemanticTags(
   dndData: DnD35EntityData,
@@ -155,14 +140,13 @@ export function projectDnD35ActorSemanticTags(
     tags.add(`subtype:${subtype}`);
   }
 
-  // Literacy projection (PHB p. 25 / Multiclass rules: any class with grantsLiteracy !== false or 2 skill points grants permanent literacy)
   const hasClassTracks = dndData.tracks.some((t) => t.levels > 0 && t.trackCategory !== 'racial_hd');
   const hasLiterateClass = dndData.tracks.some((t) => {
     if (t.levels <= 0 || t.trackCategory === 'racial_hd') return false;
     if (classRegistry && classRegistry[t.trackId]) {
       return classRegistry[t.trackId]!.grantsLiteracy !== false;
     }
-    return t.trackId !== 'barbarian';
+    return true;
   });
 
   if (dndData.spentLiteracySkillPoints === true || hasLiterateClass || !hasClassTracks) {
@@ -179,12 +163,6 @@ export function projectDnD35ActorSemanticTags(
     }
   }
 
-  if (!tags.has('trait:literate') && dndData.tracks.some((t) => t.trackId === 'barbarian' && t.levels > 0)) {
-    tags.add('feature:illiteracy');
-    tags.add('trait:illiterate');
-  }
-
-  // Declarative skill rank threshold trait projections
   if (skillRegistry) {
     for (const [skillId, rawRanks] of Object.entries(dndData.skillRanks ?? {})) {
       const wholeRanks = Math.floor(Math.max(0, rawRanks));
@@ -193,26 +171,19 @@ export function projectDnD35ActorSemanticTags(
       if (!skillDef) continue;
       for (const entry of skillDef.rankThresholdModifiers) {
         if (wholeRanks < entry.minRanks) continue;
-        for (const tag of entry.grantedTags ?? []) {
-          tags.add(tag);
-        }
-        for (const tag of entry.effectBundle?.grantedTags ?? []) {
-          tags.add(tag);
-        }
+        for (const tag of entry.grantedTags ?? []) tags.add(tag);
+        for (const tag of entry.effectBundle?.grantedTags ?? []) tags.add(tag);
       }
     }
   } else {
-    const balanceRanks = Math.floor(dndData.skillRanks?.['balance'] ?? 0);
-    if (balanceRanks >= DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS) {
+    if (Math.floor(dndData.skillRanks?.['balance'] ?? 0) >= DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS) {
       tags.add('trait:balance_uncanny_flat_footed');
     }
-    const tumbleRanks = Math.floor(dndData.skillRanks?.['tumble'] ?? 0);
-    if (tumbleRanks >= DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS) {
+    if (Math.floor(dndData.skillRanks?.['tumble'] ?? 0) >= DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS) {
       tags.add('trait:tumble_acrobatic_defense');
     }
   }
 
-  // Situational armor / shield / load tags (only project defaults if not already overridden in existingTags)
   const hasExplicitArmorTag = Array.from(tags).some((t) => t.startsWith('armor:'));
   if (!hasExplicitArmorTag) {
     const armorCat =
@@ -248,12 +219,8 @@ export function projectDnD35ActorSemanticTags(
 
 /**
  * Inspects an entity's equipped items in `GameState` to derive live Horizon 3 `SituationalTagContext`
- * (`armorCategory`, `hasShield`, `isMetalArmorOrShield`, `loadCategory`).
- *
- * @param state The current GameState.
- * @param entityId The target entity ID.
- * @param dndData Resolved `DnD35EntityData`.
- * @returns Resolved `SituationalTagContext`.
+ * (`armorCategory`, `hasShield`, `isMetalArmorOrShield`, `loadCategory`) using declarative `armorStats`
+ * and `specialMaterial` (with tag/threshold fallbacks).
  */
 export function resolveEntitySituationalTagContext(
   state: GameState,
@@ -265,20 +232,41 @@ export function resolveEntitySituationalTagContext(
   let hasShield = dndData.shieldBonus > 0;
   let isMetalArmorOrShield = false;
 
-  if (equipment) {
+  if (equipment && Array.isArray(equipment.slots)) {
     for (const slot of equipment.slots) {
       if (slot.equippedItem === null || slot.suppressed === true) continue;
       const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
-      const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+      const itemDef = itemComp ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined) : undefined;
       if (!itemDef) continue;
+
       const itemTags = itemDef.tags ?? [];
-      const lowerId = itemDef.id.toLowerCase();
-      if (
-        itemTags.includes('metal') ||
-        lowerId.includes('chain') ||
-        lowerId.includes('plate') ||
-        lowerId.includes('scale')
-      ) {
+      const armorStats = itemDef.armorStats;
+      const isMithral =
+        itemDef.specialMaterial === 'mithral' || itemTags.includes('mithral') || itemTags.includes('material:mithral');
+
+      if (armorStats) {
+        if (armorStats.isMetal && itemDef.specialMaterial !== 'darkwood') {
+          isMetalArmorOrShield = true;
+        }
+        if (armorStats.armorCategory === 'shield' || armorStats.armorCategory === 'tower_shield') {
+          hasShield = true;
+        } else {
+          const effectiveCat = isMithral
+            ? (computeMaterialEquipmentStats('mithral', armorStats.armorCategory).effectiveArmorCategory ??
+              armorStats.armorCategory)
+            : armorStats.armorCategory;
+          if (effectiveCat === 'heavy') {
+            armorCategory = 'heavy';
+          } else if (effectiveCat === 'medium' && armorCategory !== 'heavy') {
+            armorCategory = 'medium';
+          } else if (effectiveCat === 'light' && !armorCategory) {
+            armorCategory = 'light';
+          }
+        }
+        continue;
+      }
+
+      if (itemTags.includes('metal') || itemTags.includes('armor_material:metal')) {
         isMetalArmorOrShield = true;
       }
       if (slot.slotType === 'off_hand' || itemTags.includes('shield')) {
@@ -288,28 +276,30 @@ export function resolveEntitySituationalTagContext(
       }
       if (slot.slotType === 'torso' || slot.slotType === 'body' || (itemDef.equippable?.defenseBonus ?? 0) > 0) {
         const defBonus = itemDef.equippable?.defenseBonus ?? 0;
+        let rawCat: 'light' | 'medium' | 'heavy' | undefined;
         if (
           itemTags.includes('armor:heavy') ||
           itemTags.includes('heavy_armor') ||
-          lowerId.includes('full_plate') ||
-          lowerId.includes('half_plate') ||
-          lowerId.includes('splint') ||
-          lowerId.includes('banded') ||
           defBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
         ) {
-          armorCategory = 'heavy';
+          rawCat = 'heavy';
         } else if (
           itemTags.includes('armor:medium') ||
           itemTags.includes('medium_armor') ||
-          lowerId.includes('breastplate') ||
-          lowerId.includes('chainmail') ||
-          lowerId.includes('scale_mail') ||
-          lowerId.includes('hide') ||
           defBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
         ) {
-          if (armorCategory !== 'heavy') armorCategory = 'medium';
+          rawCat = 'medium';
         } else if (defBonus >= 1 || itemTags.includes('armor:light') || itemTags.includes('light_armor')) {
-          if (!armorCategory) armorCategory = 'light';
+          rawCat = 'light';
+        }
+        if (rawCat) {
+          const effectiveCat = isMithral
+            ? ((computeMaterialEquipmentStats('mithral', rawCat).effectiveArmorCategory as
+                'light' | 'medium' | 'heavy') ?? rawCat)
+            : rawCat;
+          if (effectiveCat === 'heavy') armorCategory = 'heavy';
+          else if (effectiveCat === 'medium' && armorCategory !== 'heavy') armorCategory = 'medium';
+          else if (effectiveCat === 'light' && !armorCategory) armorCategory = 'light';
         }
       }
     }

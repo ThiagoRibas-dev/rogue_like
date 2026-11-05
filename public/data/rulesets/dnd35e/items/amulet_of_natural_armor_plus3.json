@@ -1,0 +1,42 @@
+{
+  "amulet_of_natural_armor_plus3": {
+    "id": "amulet_of_natural_armor_plus3",
+    "name": "Amulet of Natural Armor +3",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+3 enhancement bonus to natural armor.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 0,
+    "baseValue": 18000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:neck"
+    ],
+    "equippable": {
+      "slot": "neck",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_amulet_of_natural_armor_plus3",
+      "name": "Amulet of Natural Armor +3",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+3 enhancement bonus to natural armor.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "ac",
+          "value": 3,
+          "type": "natural_armor_enhancement"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

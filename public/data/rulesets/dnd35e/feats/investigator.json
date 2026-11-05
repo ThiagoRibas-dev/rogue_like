@@ -1,0 +1,22 @@
+{
+  "investigator": {
+    "id": "investigator",
+    "name": "Investigator",
+    "description": "+2 bonus on all Gather Information and Search checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:gather_information",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:search",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

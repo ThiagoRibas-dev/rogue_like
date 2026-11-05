@@ -17,6 +17,13 @@
           "featId": "power_attack"
         }
       ]
-    }
+    },
+    "ruleOverrides": [
+      {
+        "id": "cleave_extra_attack_on_drop",
+        "ruleKey": "cleave_extra_attack_on_drop",
+        "value": true
+      }
+    ]
   }
 }

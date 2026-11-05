@@ -1,0 +1,19 @@
+{
+  "spell_focus": {
+    "id": "spell_focus",
+    "name": "Spell Focus",
+    "description": "Add +1 to the Difficulty Class for all saving throws against spells from the school of magic you select.",
+    "isFighterBonusFeat": false,
+    "repeatable": {
+      "mode": "targeted",
+      "targetCategory": "school"
+    },
+    "ruleOverrides": [
+      {
+        "id": "spell_save_dc_bonus",
+        "ruleKey": "spell_save_dc_bonus",
+        "value": 1
+      }
+    ]
+  }
+}

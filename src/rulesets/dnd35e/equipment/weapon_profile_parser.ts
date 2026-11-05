@@ -7,10 +7,16 @@ import {
 } from '../../../types/components.types.ts';
 import type { GameState } from '../../../types/game-state.types.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
-import type { CreatureSizeCategory, DnD35EntityData } from '../types/dnd35e.types.ts';
-import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
-import { applyMaterialPhysics, computeMaterialEquipmentStats } from './special_materials.ts';
+import type {
+  CreatureSizeCategory,
+  DnD35EntityData,
+  StatModifier,
+  StatResolutionBreakdown
+} from '../types/dnd35e.types.ts';
+import type { DnD35DamageType, DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
+import { type SpecialMaterialType, applyMaterialPhysics, computeMaterialEquipmentStats } from './special_materials.ts';
 import { evaluateWeaponWieldingProfile, scaleWeaponDamageDice } from './weapon_scaling.ts';
+import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
 
 /**
  * Resolved combat profile of an equipped weapon (or unarmed strike fallback) in a hand/held slot.
@@ -29,8 +35,11 @@ export interface EquippedWeaponProfile {
   readonly effectiveEffort: 'light' | 'one_handed' | 'two_handed';
   readonly handedness: 'light' | 'one_handed' | 'two_handed';
   readonly isDoubleWeapon?: boolean | undefined;
+  readonly isFinesseEligible?: boolean | undefined;
   readonly cannotTwoHandStr?: boolean | undefined;
   readonly isExotic1HMartial2H?: boolean | undefined;
+  readonly reachFt?: number | undefined;
+  readonly strikesAdjacent?: boolean | undefined;
   readonly attackBonus: number;
   readonly sizeAttackPenalty: number;
   readonly nonproficiencyPenalty: number;
@@ -38,6 +47,7 @@ export interface EquippedWeaponProfile {
   readonly bypassTags: ReadonlyArray<string>;
   readonly slotId?: string | undefined;
   readonly limbGroupId?: string | undefined;
+  readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
 }
 
 /**
@@ -51,11 +61,25 @@ export interface ResolvedActorWeapons {
 }
 
 const DEFAULT_CRIT_THREAT_MIN = 20;
-const BLADED_CRIT_THREAT_MIN = 19;
 const DEFAULT_CRIT_MULTIPLIER = 2;
 const MAX_CRIT_MULTIPLIER = 5;
 const MIN_WEAPON_DAMAGE_BONUS = -10;
 const NONPROFICIENCY_ATTACK_PENALTY = -4;
+const UNARMED_BASE_MEDIUM_DICE = '1d3';
+const DEFAULT_WEAPON_MEDIUM_DICE = '1d8';
+const CRIT_THREAT_CEILING = 21;
+const MIN_CRIT_THREAT_ROLL = 2;
+
+/**
+ * Doubles a weapon's critical threat range (e.g. 20 -> 19, 19 -> 17, 18 -> 15) for Keen or Improved Critical.
+ * Per SRD rules, Keen and Improved Critical do not stack with each other.
+ */
+export function computeExpandedCritThreatMin(baseCritThreatMin: number, expandThreatRange: boolean | number): number {
+  const expansionSteps = typeof expandThreatRange === 'boolean' ? (expandThreatRange ? 1 : 0) : expandThreatRange;
+  if (expansionSteps <= 0) return baseCritThreatMin;
+  const span = Math.max(1, CRIT_THREAT_CEILING - baseCritThreatMin);
+  return Math.max(MIN_CRIT_THREAT_ROLL, CRIT_THREAT_CEILING - span * (1 + expansionSteps));
+}
 
 /**
  * Evaluates the nonproficiency attack penalty (`0` or `-4`) for a weapon based on its
@@ -65,43 +89,38 @@ export function evaluateNonproficiencyPenalty(
   weaponItemId: string | undefined,
   isExotic1HMartial2H: boolean | undefined,
   finalHandedness: 'light' | 'one_handed' | 'two_handed',
-  dndData: Partial<DnD35EntityData> | undefined
+  dndData: Partial<DnD35EntityData> | undefined,
+  familiaritySubtypes: ReadonlyArray<string> = [],
+  proficiencyCategory?: 'simple' | 'martial' | 'exotic'
 ): number {
-  if (!isExotic1HMartial2H) {
-    return 0;
-  }
-  if (finalHandedness === 'two_handed') {
+  const isExotic = proficiencyCategory === 'exotic' || isExotic1HMartial2H === true;
+  if (!isExotic || (isExotic1HMartial2H === true && finalHandedness === 'two_handed')) {
     return 0;
   }
   const feats = dndData?.feats ?? [];
   const hasExoticProficiency = feats.some(
     (f) =>
       f === 'exotic_weapon_proficiency' ||
-      (weaponItemId !== undefined && f === `exotic_weapon_proficiency_${weaponItemId}`)
+      (weaponItemId !== undefined &&
+        (f === `exotic_weapon_proficiency_${weaponItemId}` || f === `exotic_weapon_proficiency:${weaponItemId}`))
   );
   if (hasExoticProficiency) {
     return 0;
   }
-  const isDwarvenWeapon = weaponItemId !== undefined && weaponItemId.includes('dwarven');
-  const isDwarf = dndData?.raceId === 'dwarf' || dndData?.subtypes?.includes('dwarf') === true;
-  if (isDwarvenWeapon && isDwarf) {
-    return 0;
+  if (familiaritySubtypes.length > 0) {
+    const actorSubtypes = new Set<string>([...(dndData?.raceId ? [dndData.raceId] : []), ...(dndData?.subtypes ?? [])]);
+    if (familiaritySubtypes.some((sub) => actorSubtypes.has(sub))) {
+      return 0;
+    }
   }
   return NONPROFICIENCY_ATTACK_PENALTY;
 }
 
 /**
- * Builds an unarmed strike profile for an actor of size `wielderSize`.
+ * Builds an unarmed strike profile for an actor of size `wielderSize` using `scaleWeaponDamageDice`.
  */
 export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand: boolean): EquippedWeaponProfile {
-  let unarmedDice = '1d3';
-  if (wielderSize === 'fine' || wielderSize === 'diminutive') unarmedDice = '1';
-  else if (wielderSize === 'tiny' || wielderSize === 'small') unarmedDice = '1d2';
-  else if (wielderSize === 'medium') unarmedDice = '1d3';
-  else if (wielderSize === 'large') unarmedDice = '1d4';
-  else if (wielderSize === 'huge') unarmedDice = '1d6';
-  else if (wielderSize === 'gargantuan') unarmedDice = '1d8';
-  else if (wielderSize === 'colossal') unarmedDice = '2d6';
+  const unarmedDice = scaleWeaponDamageDice(UNARMED_BASE_MEDIUM_DICE, 'medium', wielderSize);
 
   return {
     isArmed: false,
@@ -115,6 +134,9 @@ export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand
     inherentEffort: 'light',
     effectiveEffort: 'light',
     handedness: 'light',
+    isFinesseEligible: true,
+    reachFt: 5,
+    strikesAdjacent: true,
     attackBonus: 0,
     sizeAttackPenalty: 0,
     nonproficiencyPenalty: 0,
@@ -124,7 +146,8 @@ export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand
 }
 
 /**
- * Parses an equipped weapon item into an EquippedWeaponProfile.
+ * Parses an equipped weapon item into an `EquippedWeaponProfile` using declarative `weaponStats`,
+ * `specialMaterial`, and `magicalProperties` from `DnD35ItemDefinition` (with tag fallbacks for custom items).
  */
 export function parseEquippedItem(
   state: GameState,
@@ -136,18 +159,31 @@ export function parseEquippedItem(
   const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
   if (!itemComp) return undefined;
 
-  const baseItemDef = state.campaign.items[itemComp.itemId];
+  const baseItemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
   if (!baseItemDef || baseItemDef.category !== 'weapon') return undefined;
 
-  const itemTags = baseItemDef.tags ?? [];
+  const entityTagsComp = getComponent(state, slot.equippedItem, ComponentType.Tags) as
+    { tags?: ReadonlyArray<string> } | undefined;
+  const dynamicItemTags = (itemComp as { tags?: ReadonlyArray<string> }).tags ?? entityTagsComp?.tags ?? [];
+  const itemTags = Array.from(new Set([...(baseItemDef.tags ?? []), ...dynamicItemTags]));
+  const weaponStats = baseItemDef.weaponStats;
+  const magicalProps = baseItemDef.magicalProperties;
 
   let finalItemDef = baseItemDef;
   let weaponPenalty = 0;
   const bypassTags: string[] = [];
 
-  for (const mat of ['mithral', 'adamantine', 'silver', 'cold_iron', 'darkwood'] as const) {
-    if (itemTags.includes(mat) || itemTags.includes(`material:${mat}`)) {
-      finalItemDef = applyMaterialPhysics(finalItemDef, mat);
+  const declaredMat = baseItemDef.specialMaterial === 'alchemical_silver' ? 'silver' : baseItemDef.specialMaterial;
+
+  for (const mat of [
+    'mithral',
+    'adamantine',
+    'silver',
+    'cold_iron',
+    'darkwood'
+  ] as const satisfies ReadonlyArray<SpecialMaterialType>) {
+    if (declaredMat === mat || itemTags.includes(mat) || itemTags.includes(`material:${mat}`)) {
+      finalItemDef = applyMaterialPhysics(finalItemDef, mat) as DnD35ItemDefinition;
       const adjustments = computeMaterialEquipmentStats(mat);
       weaponPenalty += adjustments.weaponDamagePenalty;
     }
@@ -157,6 +193,9 @@ export function parseEquippedItem(
     if (tag.startsWith('bypass:') || tag.startsWith('material:')) {
       bypassTags.push(tag);
     }
+  }
+  if ((magicalProps?.enhancementBonus ?? 0) >= 1) {
+    bypassTags.push('bypass:magic');
   }
 
   let weaponSize: CreatureSizeCategory = wielderSize;
@@ -168,47 +207,66 @@ export function parseEquippedItem(
     }
   }
 
-  let baseDice = '1d8';
   const diceTag = itemTags.find((t) => t.startsWith('weaponDice:') || t.startsWith('dice:'));
-  if (diceTag) {
-    baseDice = diceTag.replace(/^(?:weaponDice:|dice:)/, '');
-  } else if (baseItemDef.id === 'longsword' || baseItemDef.id === 'heavy_mace') {
-    baseDice = '1d8';
-  } else if (baseItemDef.id === 'short_sword' || baseItemDef.id === 'quarterstaff') {
-    baseDice = '1d6';
-  } else if (baseItemDef.id.includes('dagger') || baseItemDef.id.includes('knife')) {
-    baseDice = '1d4';
-  } else if (baseItemDef.id.includes('greatsword')) {
-    baseDice = '2d6';
-  } else if (baseItemDef.id.includes('bastard_sword') || baseItemDef.id.includes('dwarven_waraxe')) {
-    baseDice = '1d10';
-  }
+  const baseDice =
+    weaponStats?.damageDice ?? (diceTag ? diceTag.replace(/^(?:weaponDice:|dice:)/, '') : DEFAULT_WEAPON_MEDIUM_DICE);
 
   const scaledDice = scaleWeaponDamageDice(baseDice, 'medium', weaponSize);
 
-  let damageType: DnD35DamageType = 'slashing';
-  if (itemTags.includes('bludgeoning') || baseItemDef.id.includes('mace') || baseItemDef.id.includes('staff')) {
-    damageType = 'bludgeoning';
-  } else if (
-    itemTags.includes('piercing') ||
-    baseItemDef.id.includes('short_sword') ||
-    baseItemDef.id.includes('dagger')
-  ) {
-    damageType = 'piercing';
-  } else if (itemTags.includes('slashing') || baseItemDef.id.includes('longsword')) {
-    damageType = 'slashing';
+  let damageType: DnD35DamageType = weaponStats?.damageType ?? 'slashing';
+  if (!weaponStats?.damageType) {
+    if (itemTags.includes('bludgeoning')) damageType = 'bludgeoning';
+    else if (itemTags.includes('piercing')) damageType = 'piercing';
+    else if (itemTags.includes('slashing')) damageType = 'slashing';
   }
+  bypassTags.push(damageType);
 
-  let critThreatMin = DEFAULT_CRIT_THREAT_MIN;
+  let critThreatMin = weaponStats?.critThreatMin ?? DEFAULT_CRIT_THREAT_MIN;
   const threatTag = itemTags.find((t) => t.startsWith('critThreatMin:') || t.startsWith('threat:'));
   if (threatTag) {
     const parsed = Number(threatTag.replace(/^(?:critThreatMin:|threat:)/, ''));
     if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= DEFAULT_CRIT_THREAT_MIN) critThreatMin = parsed;
-  } else if (baseItemDef.id === 'longsword' || baseItemDef.id === 'short_sword' || baseItemDef.id.includes('dagger')) {
-    critThreatMin = BLADED_CRIT_THREAT_MIN;
   }
 
-  let critMultiplier = DEFAULT_CRIT_MULTIPLIER;
+  const candidateCritMods: StatModifier[] = [
+    ...(dndData?.statModifiers ?? []).filter((m) => m.targetStat === 'crit_threat_doubling')
+  ];
+  if (magicalProps?.keen === true || itemTags.includes('keen')) {
+    candidateCritMods.push({
+      targetStat: 'crit_threat_doubling',
+      value: 1,
+      bonusType: 'threat_expansion',
+      sourceId: `item:${baseItemDef.id}:keen`,
+      sourcePath: `item:${baseItemDef.id}/keen`,
+      origin: 'magical',
+      condition: { effectTagsAny: [`weapon:${baseItemDef.id}`] }
+    });
+  }
+  const feats = dndData?.feats ?? [];
+  const hasImprovedCrit = feats.some(
+    (f) =>
+      f === 'improved_critical' ||
+      f === `improved_critical:${baseItemDef.id}` ||
+      f === `improved_critical_${baseItemDef.id}`
+  );
+  if (hasImprovedCrit && !candidateCritMods.some((m) => (m.sourcePath ?? '').startsWith('feat:improved_critical'))) {
+    candidateCritMods.push({
+      targetStat: 'crit_threat_doubling',
+      value: 1,
+      bonusType: 'threat_expansion',
+      sourceId: `feat:improved_critical:${baseItemDef.id}`,
+      sourcePath: `feat:improved_critical/${baseItemDef.id}`,
+      origin: 'ex',
+      condition: { effectTagsAny: [`weapon:${baseItemDef.id}`] }
+    });
+  }
+
+  const threatDoublingBreakdown = resolveTypedModifiersWithBreakdown(candidateCritMods, {
+    effectTags: [`weapon:${baseItemDef.id}`]
+  });
+  critThreatMin = computeExpandedCritThreatMin(critThreatMin, threatDoublingBreakdown.total);
+
+  let critMultiplier = weaponStats?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER;
   const critMultTag = itemTags.find((t) => t.startsWith('critMultiplier:') || t.startsWith('crit:x'));
   if (critMultTag) {
     const parsed = Number(critMultTag.replace(/^(?:critMultiplier:|crit:x)/, ''));
@@ -217,44 +275,33 @@ export function parseEquippedItem(
     }
   }
 
-  let inherentEffort: 'light' | 'one_handed' | 'two_handed' = 'one_handed';
-  if (
-    itemTags.includes('two_handed') ||
-    baseItemDef.id.includes('greatsword') ||
-    baseItemDef.id.includes('greataxe') ||
-    baseItemDef.id.includes('quarterstaff') ||
-    baseItemDef.id.includes('staff')
-  ) {
-    inherentEffort = 'two_handed';
-  } else if (itemTags.includes('light') || baseItemDef.id.includes('dagger') || baseItemDef.id === 'short_sword') {
-    inherentEffort = 'light';
-  } else if (
-    itemTags.includes('one_handed') ||
-    baseItemDef.id === 'longsword' ||
-    baseItemDef.id === 'heavy_mace' ||
-    baseItemDef.id.includes('rapier')
-  ) {
-    inherentEffort = 'one_handed';
+  let inherentEffort: 'light' | 'one_handed' | 'two_handed' = weaponStats?.effort ?? 'one_handed';
+  if (!weaponStats?.effort) {
+    if (itemTags.includes('two_handed')) inherentEffort = 'two_handed';
+    else if (itemTags.includes('light')) inherentEffort = 'light';
+    else if (itemTags.includes('one_handed')) inherentEffort = 'one_handed';
   }
 
   const wieldProfile = evaluateWeaponWieldingProfile(weaponSize, inherentEffort, wielderSize);
   const effectiveEffort = wieldProfile.effectiveHandedness ?? inherentEffort;
-  const isDoubleWeapon =
-    itemTags.includes('double_weapon') || baseItemDef.id.includes('quarterstaff') || baseItemDef.id.includes('double_');
-  const cannotTwoHandStr = itemTags.includes('cannot_two_hand_str') || baseItemDef.id.includes('rapier');
-  const isExotic1HMartial2H =
-    itemTags.includes('exotic_1h_martial_2h') ||
-    baseItemDef.id.includes('bastard_sword') ||
-    baseItemDef.id.includes('dwarven_waraxe');
+  const isDoubleWeapon = weaponStats?.isDoubleWeapon === true || itemTags.includes('double_weapon');
+  const cannotTwoHandStr = weaponStats?.cannotTwoHandStr === true || itemTags.includes('cannot_two_hand_str');
+  const isExotic1HMartial2H = weaponStats?.isExotic1HMartial2H === true || itemTags.includes('exotic_1h_martial_2h');
+  const isFinesseEligible =
+    weaponStats?.isFinesseEligible === true || effectiveEffort === 'light' || itemTags.includes('finesse');
 
-  const attackBonus = baseItemDef.equippable?.attackBonus ?? 0;
+  const enhBonus = magicalProps?.enhancementBonus ?? 0;
+  const masterworkAtk = magicalProps?.isMasterwork === true && enhBonus === 0 ? 1 : 0;
+  const attackBonus = Math.max(baseItemDef.equippable?.attackBonus ?? 0, enhBonus, masterworkAtk);
   const nonproficiencyPenalty = evaluateNonproficiencyPenalty(
     baseItemDef.id,
     isExotic1HMartial2H,
     effectiveEffort,
-    dndData
+    dndData,
+    weaponStats?.familiaritySubtypes ?? [],
+    weaponStats?.proficiencyCategory
   );
-  const damageBonus = Math.max(MIN_WEAPON_DAMAGE_BONUS, -weaponPenalty);
+  const damageBonus = Math.max(MIN_WEAPON_DAMAGE_BONUS, enhBonus - weaponPenalty);
 
   return {
     isArmed: true,
@@ -270,14 +317,18 @@ export function parseEquippedItem(
     effectiveEffort,
     handedness: effectiveEffort,
     isDoubleWeapon,
+    isFinesseEligible,
     cannotTwoHandStr,
     isExotic1HMartial2H,
+    reachFt: weaponStats?.reachFt ?? (itemTags.includes('reach_10ft') ? 10 : 5),
+    strikesAdjacent: weaponStats?.strikesAdjacent ?? !itemTags.includes('reach_10ft'),
     attackBonus,
     sizeAttackPenalty: wieldProfile.attackPenalty,
     nonproficiencyPenalty,
     damageBonus,
     bypassTags: Array.from(new Set(bypassTags)),
     slotId: slot.id,
-    limbGroupId: slot.limbGroupId
+    limbGroupId: slot.limbGroupId,
+    critThreatBreakdown: threatDoublingBreakdown
   };
 }

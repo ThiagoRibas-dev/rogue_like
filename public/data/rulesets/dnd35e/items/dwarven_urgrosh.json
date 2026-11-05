@@ -1,0 +1,47 @@
+{
+  "dwarven_urgrosh": {
+    "id": "dwarven_urgrosh",
+    "name": "Dwarven Urgrosh",
+    "unidentifiedName": "Dwarven Urgrosh",
+    "description": "Dwarven Urgrosh (exotic two-handed melee weapon, 1d8 slashing).",
+    "glyph": "/",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 12,
+    "baseValue": 50,
+    "tags": [
+      "weapon",
+      "exotic",
+      "two_handed",
+      "slashing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "exotic",
+      "weaponCategory": "melee",
+      "effort": "two_handed",
+      "damageDice": "1d8",
+      "damageType": "slashing",
+      "critThreatMin": 20,
+      "critMultiplier": 3,
+      "reachFt": 5,
+      "strikesAdjacent": true,
+      "isDoubleWeapon": true,
+      "offHandDamageDice": "1d6",
+      "offHandDamageType": "piercing",
+      "offHandCritThreatMin": 20,
+      "offHandCritMultiplier": 3,
+      "familiaritySubtypes": [
+        "dwarf"
+      ]
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}

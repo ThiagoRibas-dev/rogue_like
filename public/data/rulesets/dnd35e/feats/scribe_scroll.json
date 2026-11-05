@@ -1,0 +1,12 @@
+{
+  "scribe_scroll": {
+    "id": "scribe_scroll",
+    "name": "Scribe Scroll",
+    "description": "Create a scroll of any spell that you know.",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_caster_level",
+      "minCasterLevel": 1
+    }
+  }
+}

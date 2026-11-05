@@ -1,0 +1,22 @@
+{
+  "magical_aptitude": {
+    "id": "magical_aptitude",
+    "name": "Magical Aptitude",
+    "description": "+2 bonus on all Spellcraft and Use Magic Device checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:spellcraft",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:use_magic_device",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

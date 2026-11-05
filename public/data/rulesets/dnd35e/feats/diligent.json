@@ -1,0 +1,22 @@
+{
+  "diligent": {
+    "id": "diligent",
+    "name": "Diligent",
+    "description": "+2 bonus on all Appraise and Decipher Script checks.",
+    "isFighterBonusFeat": false,
+    "modifiers": [
+      {
+        "id": "mod_0",
+        "target": "skill:appraise",
+        "value": 2,
+        "type": "untyped"
+      },
+      {
+        "id": "mod_1",
+        "target": "skill:decipher_script",
+        "value": 2,
+        "type": "untyped"
+      }
+    ]
+  }
+}

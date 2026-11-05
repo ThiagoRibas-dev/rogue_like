@@ -1,0 +1,20 @@
+{
+  "rod_of_metamagic_empower_lesser": {
+    "id": "rod_of_metamagic_empower_lesser",
+    "name": "Metamagic Rod, Empower (Lesser)",
+    "unidentifiedName": "Runed Iron Rod",
+    "description": "Cast up to three spells per day (up to 3rd level) as though using the Empower Spell feat without increasing spell slot level.",
+    "glyph": "/",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "category": "tool",
+    "weight": 5,
+    "baseValue": 9000,
+    "tags": [
+      "magic",
+      "rod",
+      "metamagic_rod:empower"
+    ],
+    "spriteId": "item_blue_staff"
+  }
+}

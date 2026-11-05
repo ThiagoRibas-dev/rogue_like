@@ -1,0 +1,42 @@
+{
+  "cloak_of_resistance_plus1": {
+    "id": "cloak_of_resistance_plus1",
+    "name": "Cloak of Resistance +1",
+    "unidentifiedName": "Unidentified Magic Item",
+    "description": "+1 resistance bonus on all saving throws.",
+    "glyph": "\"",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "category": "armor",
+    "weight": 1,
+    "baseValue": 1000,
+    "tags": [
+      "magic",
+      "wondrous",
+      "slot:back"
+    ],
+    "equippable": {
+      "slot": "back",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "effectBundle": {
+      "bundleId": "item_cloak_of_resistance_plus1",
+      "name": "Cloak of Resistance +1",
+      "category": "su",
+      "usageMode": "passive",
+      "description": "+1 resistance bonus on all saving throws.",
+      "modifiers": [
+        {
+          "id": "mod_0",
+          "target": "save_all",
+          "value": 1,
+          "type": "resistance"
+        }
+      ]
+    },
+    "spriteId": "item_ankh"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "light_crossbow": {
+    "id": "light_crossbow",
+    "name": "Light Crossbow",
+    "unidentifiedName": "Light Crossbow",
+    "description": "Light Crossbow (simple two-handed ranged weapon, 1d8 piercing).",
+    "glyph": "}",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "category": "weapon",
+    "weight": 4,
+    "baseValue": 35,
+    "tags": [
+      "weapon",
+      "simple",
+      "two_handed",
+      "piercing"
+    ],
+    "weaponStats": {
+      "proficiencyCategory": "simple",
+      "weaponCategory": "ranged",
+      "effort": "two_handed",
+      "damageDice": "1d8",
+      "damageType": "piercing",
+      "critThreatMin": 19,
+      "critMultiplier": 2,
+      "rangeIncrementFt": 80,
+      "reachFt": 5,
+      "strikesAdjacent": true
+    },
+    "equippable": {
+      "slot": "hand",
+      "attackBonus": 0,
+      "defenseBonus": 0,
+      "maxHpBonus": 0,
+      "carryBonus": 0
+    },
+    "spriteId": "item_long_sword"
+  }
+}
