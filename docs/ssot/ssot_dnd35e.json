@@ -1783,5 +1783,150 @@
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/wild_shape.ts."
     ]
+  },
+  "src/rendering/ui/dnd35e_doctrine_actions.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Pure state updates for TacticalDoctrineComponent (Power Attack, Combat Expertise, Fighting Defensively, Total Defense, Grip Mode).",
+    "canonicalEntryPoints": [
+      "updateActorTacticalDoctrine",
+      "applyDoctrineUpdate"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_actions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_actions.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_doctrine_bar.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the HUD Tactical Doctrine Bar with variable dials, stance toggles, grip mode pills, and 5-tier action budget pips.",
+    "canonicalEntryPoints": [
+      "renderDnD35eDoctrineBar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_bar.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_bar.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "7-tab Heroic Character Sheet modal orchestrating Overview, Progression, Equipment Paper Doll, Skills, Feats, Special Abilities, and Conditions.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSheetModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Feats, Special Abilities & Domains, Progression Tracks, and Conditions tabs for the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetFeatsTab",
+      "renderSheetSpecialAbilitiesTab",
+      "renderSheetProgressionTab",
+      "renderSheetConditionsTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Ability Scores, AC Breakdown, Saving Throws, and Full Attack Routine preview for the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetOverviewTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the Character Sheet Skills table with ranks, modifiers, and interactive Use Skill buttons.",
+    "canonicalEntryPoints": [
+      "renderSheetSkillsTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Class-tabbed Vancian Spellbook & Grimoire modal displaying prepared spell slots, known spells, and 8-hour rest actions.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSpellbookModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook_actions.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "State mutations for Vancian spell slot preparation, unpreparation, and 8-hour rest recovery.",
+    "canonicalEntryPoints": [
+      "prepareSpellIntoSlot",
+      "unprepareSpellSlot",
+      "executeEightHourRest",
+      "applyRestAction"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_actions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_actions.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_ui_adapter.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Registers the D&D 3.5e CartridgeUIDefinition (modals, dock commands, HUD alerts, and doctrine panel hook) into the Console UI Registry.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSheetModal",
+      "renderDnD35eSpellbookModal",
+      "dnd35eUIDefinition",
+      "registerDnD35eUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_ui_adapter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_adapter.ts."
+    ]
   }
 }

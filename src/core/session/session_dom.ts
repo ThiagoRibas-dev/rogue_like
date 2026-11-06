@@ -10,7 +10,8 @@ import { hasSaveGame, getSaveData, CampaignNotFoundError } from '../save.ts';
 import { setGameState, queuePlayerIntent, getGameState } from '../game-loop.ts';
 import { startNewGame, continueGame } from '../bootstrap.ts';
 import { startSandboxEncounter } from '../bootstrap_sandbox.ts';
-import { populateRulesetList, populateCampaignList, resetDnD35eCharBuilderDraft } from '../../rendering/ui.ts';
+import { populateRulesetList, populateCampaignList } from '../../rendering/ui.ts';
+import { applyCartridgeNewGameHook } from '../../rendering/ui/cartridge_ui_registry.ts';
 import type { RulesetId } from '../../types/ruleset.types.ts';
 import { getAllRulesets, getRuleset } from '../../rulesets/registry.ts';
 import { syncDisplayLayout } from '../../rendering/display.ts';
@@ -154,12 +155,7 @@ export function bindDOMControls(display: ROT.Display): void {
 
       setTimeout(() => {
         startNewGame(selectedCampaignId!, getGameState(), display, (newState) => {
-          if (newState.campaign.manifest.rulesetId === 'dnd35e') {
-            resetDnD35eCharBuilderDraft(newState);
-            setGameState({ ...newState, uiMode: UIMode.CharCreation });
-          } else {
-            setGameState(newState);
-          }
+          setGameState(applyCartridgeNewGameHook(newState));
         }).finally(() => {
           btn.textContent = originalText;
           btn.disabled = false;

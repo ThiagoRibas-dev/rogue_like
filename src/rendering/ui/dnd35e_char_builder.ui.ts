@@ -18,7 +18,8 @@ import {
   validateCharacterCreationStep
 } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import { type GameState, UIMode } from '../../types/game-state.types.ts';
+import type { GameState } from '../../types/game-state.types.ts';
+import { closeCartridgeModal, isCartridgeModalOpen } from './cartridge_ui_registry.ts';
 import { renderClassStep } from './dnd35e_char_builder_class.ui.ts';
 import { renderAbilityStep, renderRaceStep } from './dnd35e_char_builder_race_abilities.ui.ts';
 import {
@@ -129,7 +130,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   const overlay = document.getElementById('char-creation-overlay');
   if (!overlay) return;
 
-  if (state.uiMode !== UIMode.CharCreation) {
+  if (!isCartridgeModalOpen(state, 'char_creation')) {
     overlay.classList.add('hidden');
     return;
   }
@@ -148,7 +149,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     fallbackBtn.className = 'modal-btn';
     fallbackBtn.textContent = 'Continue to Dungeon';
     fallbackBtn.addEventListener('click', () => {
-      setGameState({ ...state, uiMode: UIMode.Game });
+      setGameState(closeCartridgeModal(state));
       markAllDomainsDirty();
     });
     content.appendChild(fallbackBtn);
@@ -270,7 +271,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   quickBtn.textContent = '⚡ Quick Start Default Hero';
   quickBtn.addEventListener('click', () => {
     const nextState = applyCharacterCreationToPlayer(state, playerId, createDefaultDraft());
-    setGameState({ ...nextState, uiMode: UIMode.Game });
+    setGameState(closeCartridgeModal(nextState));
     markAllDomainsDirty();
   });
 
@@ -313,7 +314,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     finishBtn.addEventListener('click', () => {
       if (!allStepsValid) return;
       const nextState = applyCharacterCreationToPlayer(state, playerId, draftState);
-      setGameState({ ...nextState, uiMode: UIMode.Game });
+      setGameState(closeCartridgeModal(nextState));
       markAllDomainsDirty();
     });
     navRight.appendChild(finishBtn);

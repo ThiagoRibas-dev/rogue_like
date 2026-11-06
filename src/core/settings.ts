@@ -28,7 +28,10 @@ export type ActionType =
   | 'investigation'
   | 'verb_menu'
   | 'dossier'
-  | 'ledger';
+  | 'ledger'
+  | 'character_sheet'
+  | 'spellbook'
+  | 'level_up';
 
 /**
  * Rendering mode preference: campaign default ('auto'), procedural/sheet 2D pixel sprites ('sprites'), or classic ASCII ('ascii').
@@ -56,6 +59,16 @@ export interface AccessibilitySettings {
 }
 
 /**
+ * Persisted dimensions for resizable UI layout panels.
+ */
+export interface PanelLayoutSettings {
+  readonly leftSidebarWidthPx?: number | undefined;
+  readonly rightSidebarWidthPx?: number | undefined;
+  readonly logDrawerHeightPx?: number | undefined;
+  readonly modalMasterWidthPercent?: number | undefined;
+}
+
+/**
  * Combined player configuration container representing binds and user choices.
  */
 export interface PlayerSettings {
@@ -63,6 +76,7 @@ export interface PlayerSettings {
   visualFeedback: VisualFeedbackSettings;
   accessibility: AccessibilitySettings;
   autoPause: AutoPauseSettings;
+  panelLayout?: PanelLayoutSettings;
 }
 
 const DEFAULT_SETTINGS: PlayerSettings = {
@@ -81,12 +95,15 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     debug_reveal_map: ['r'],
     debug_god_mode: ['o'],
     debug_spawn_entity: ['e'],
-    factions: ['c'],
+    factions: ['y'],
     quests: ['q'],
     investigation: ['v'],
     verb_menu: ['m', 'enter'],
     dossier: ['n'],
-    ledger: ['l']
+    ledger: ['l'],
+    character_sheet: ['c'],
+    spellbook: ['b'],
+    level_up: ['u']
   },
   visualFeedback: {
     showDamageNumbers: true,
@@ -177,6 +194,16 @@ export function updateAutoPause(partial: Partial<AutoPauseSettings>): void {
   );
 
   updateSettings({ autoPause: { ...merged, lowHealthThresholdPercent: clampedPercent } });
+}
+
+/**
+ * Updates persisted panel layout dimensions.
+ *
+ * @param partial New panel layout values.
+ */
+export function updatePanelLayout(partial: Partial<PanelLayoutSettings>): void {
+  const current = currentSettings.panelLayout ?? {};
+  updateSettings({ panelLayout: { ...current, ...partial } });
 }
 
 /**

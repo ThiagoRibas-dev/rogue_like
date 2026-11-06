@@ -2,6 +2,7 @@ import type { EntityId } from '../../types/game-state.types.ts';
 import { isAction, type ActionType } from '../settings.ts';
 import { getGameState, queuePlayerIntent } from '../game-loop.ts';
 import {
+  createToggleCartridgeModalAction,
   createToggleDebugAction,
   createToggleDossierAction,
   createToggleFactionsAction,
@@ -9,6 +10,7 @@ import {
   createToggleLedgerAction,
   createToggleQuestsAction
 } from '../../actions/core.actions.ts';
+import { getActiveCartridgeUI } from '../../rendering/ui/cartridge_ui_registry.ts';
 import {
   createDebugGodModeAction,
   createDebugRevealMapAction,
@@ -76,9 +78,27 @@ export function handleGameShortcutKey(event: KeyboardEvent, playerEntityId: Enti
   }
 
   const binding = SHORTCUT_BINDINGS.find((candidate) => isAction(event, candidate.action));
-  if (binding === undefined) return false;
+  if (binding !== undefined) {
+    event.preventDefault();
+    queuePlayerIntent(binding.buildIntent(playerEntityId));
+    return true;
+  }
 
-  event.preventDefault();
-  queuePlayerIntent(binding.buildIntent(playerEntityId));
-  return true;
+  const state = getGameState();
+  const cartridgeUI = getActiveCartridgeUI(state);
+  if (cartridgeUI?.dockCommands) {
+    for (const cmd of cartridgeUI.dockCommands) {
+      const isMatch = isAction(event, cmd.id as ActionType) || event.key.toLowerCase() === cmd.defaultKey.toLowerCase();
+      if (isMatch) {
+        if (cmd.isAvailable && !cmd.isAvailable(state, playerEntityId)) {
+          continue;
+        }
+        event.preventDefault();
+        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

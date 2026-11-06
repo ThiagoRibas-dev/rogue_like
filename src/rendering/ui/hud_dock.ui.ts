@@ -5,6 +5,7 @@
 
 import * as ROT from 'rot-js';
 import {
+  createToggleCartridgeModalAction,
   createToggleDebugAction,
   createToggleDossierAction,
   createToggleFactionsAction,
@@ -14,6 +15,7 @@ import {
   createToggleSettingsAction,
   createWaitAction
 } from '../../actions/core.actions.ts';
+import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import { createToggleInspectAction } from '../../actions/inspect.actions.ts';
 import { createPickUpAction, createToggleInventoryAction } from '../../actions/inventory.actions.ts';
 import { createToggleTargetingAction } from '../../actions/targeting.actions.ts';
@@ -267,5 +269,40 @@ export function renderHudDock(state: GameState): void {
     });
 
     container.appendChild(btn);
+  }
+
+  const cartridgeUI = getActiveCartridgeUI(state);
+  if (cartridgeUI?.dockCommands) {
+    for (const cmd of cartridgeUI.dockCommands) {
+      if (cmd.isAvailable && !cmd.isAvailable(state, playerEntityId)) continue;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = `dock-btn-cartridge-${cmd.id}`;
+      const isActive = state.uiMode === UIMode.CartridgeModal && state.activeCartridgeModalId === cmd.modalId;
+      btn.className = isActive ? 'dock-cmd-btn active' : 'dock-cmd-btn';
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'dock-cmd-icon';
+      iconSpan.textContent = cmd.icon ?? '✨';
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'dock-cmd-label';
+      labelSpan.textContent = cmd.label;
+
+      const keyBadge = document.createElement('kbd');
+      keyBadge.className = 'dock-cmd-key';
+      keyBadge.textContent = formatKeyBadge(cmd.id as ActionType, cmd.defaultKey.toUpperCase());
+
+      btn.appendChild(iconSpan);
+      btn.appendChild(labelSpan);
+      btn.appendChild(keyBadge);
+
+      btn.addEventListener('click', () => {
+        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+      });
+
+      container.appendChild(btn);
+    }
   }
 }

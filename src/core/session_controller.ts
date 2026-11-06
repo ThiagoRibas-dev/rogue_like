@@ -10,6 +10,7 @@ import { bindCanvasMouseControls } from './input/mouse_input.ts';
 import { perfTracker } from './performance.ts';
 import { trapFocus } from '../utils/a11y.ts';
 import { initUITooltips } from '../rendering/ui.ts';
+import { getActiveCartridgeUI } from '../rendering/ui/cartridge_ui_registry.ts';
 import { consumeDirtyDomains, markAllDomainsDirty, markDomainDirty, PresentationDomain } from './presentation_queue.ts';
 import { renderPresenterFrame, invalidateViewportSnapshot } from '../rendering/presenter.ts';
 import { recordEarlyReturn, recordPresenterFrame } from '../rendering/render_debug.ts';
@@ -17,6 +18,7 @@ import { flushPendingSave } from './persistence_service.ts';
 import { syncDisplayLayout, configureDisplayForCampaign, syncFogOverlayCanvas } from '../rendering/display.ts';
 import { bindDOMControls, refreshRulesetList, refreshCampaignList } from './session/session_dom.ts';
 import { bindSettingsControls, rebindingAction, setRebindingAction } from './session/session_settings.ts';
+import { initResizablePanels } from '../rendering/ui/resizable_panels.ui.ts';
 
 // Re-export DOM and settings helpers
 export * from './session/session_dom.ts';
@@ -131,10 +133,12 @@ export function bindStateSubscription(display: ROT.Display, _globalCampaignEdito
         targetEl = document.getElementById('ruleset-selection-overlay');
       } else if (newState.uiMode === UIMode.CampaignSelect) {
         targetEl = document.getElementById('campaign-selection-overlay');
-      } else if (newState.uiMode === UIMode.CharCreation) {
-        targetEl = document.getElementById('char-creation-overlay');
-      } else if (newState.uiMode === UIMode.LevelUp) {
-        targetEl = document.getElementById('level-up-overlay');
+      } else if (newState.uiMode === UIMode.CartridgeModal && newState.activeCartridgeModalId) {
+        const cartridgeUI = getActiveCartridgeUI(newState);
+        const modalDesc = cartridgeUI?.modals[newState.activeCartridgeModalId];
+        if (modalDesc?.overlayElementId) {
+          targetEl = document.getElementById(modalDesc.overlayElementId);
+        }
       } else if (newState.uiMode === UIMode.GameOver) {
         targetEl = document.getElementById('game-over-screen');
       }
@@ -210,6 +214,7 @@ export function initSession(display: ROT.Display, globalCampaignEditor: Campaign
   bindDOMControls(display);
   bindCanvasMouseControls(display);
   bindSettingsControls();
+  initResizablePanels();
   bindStateSubscription(display, globalCampaignEditor);
 
   // Hook window beforeunload to flush pending saves

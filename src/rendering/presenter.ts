@@ -1,6 +1,8 @@
 import type * as ROT from 'rot-js';
 import type { GameState } from '../types/game-state.types.ts';
 import { UIMode } from '../types/game-state.types.ts';
+import { ComponentType } from '../types/components.types.ts';
+import { getComponent } from '../core/ecs.ts';
 import { PresentationDomain } from '../core/presentation_queue.ts';
 import { render } from './renderer.ts';
 import { buildViewportSnapshot } from './viewport_snapshot.ts';
@@ -24,8 +26,7 @@ import { renderDebugOverlay } from './ui/debug.ui.ts';
 import { renderVerbMenu } from './ui/verb_menu.ui.ts';
 import { renderDossierUI } from './ui/dossier.ui.ts';
 import { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
-import { renderDnD35eCharBuilderModal } from './ui/dnd35e_char_builder.ui.ts';
-import { renderDnD35eLevelUpModal } from './ui/dnd35e_level_up.ui.ts';
+import { renderActiveCartridgeModal, renderCartridgeHudPanel } from './ui/cartridge_ui_registry.ts';
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
@@ -145,6 +146,15 @@ export function renderPresenterFrame(
     renderHudPaperdoll(state);
     renderHudAlerts(state);
     renderHudDock(state);
+    const cartridgeSlot = document.getElementById('hud-cartridge-panel-slot');
+    if (cartridgeSlot) {
+      const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+      if (playerEntityId !== undefined) {
+        renderCartridgeHudPanel(cartridgeSlot, state, playerEntityId);
+      } else {
+        cartridgeSlot.replaceChildren();
+      }
+    }
     renderRTwPControls(state);
     renderViewControls(state);
     renderMenus(state, hasSaveGame());
@@ -171,8 +181,7 @@ export function renderPresenterFrame(
     renderInvestigationBoard(state);
     renderDossierUI(state);
     renderHudDock(state);
-    renderDnD35eCharBuilderModal(state);
-    renderDnD35eLevelUpModal(state);
+    renderActiveCartridgeModal(state);
   }
 
   // Debug Overlays

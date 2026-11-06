@@ -1,6 +1,6 @@
 {
-  "summary": "Revised implementation plan for Milestone 117 strictly enforcing AGENTS.md Rule 12 (Zero Magic Values) and Rule 17 (Zero Feat/Content Spaghetti): Augment Summoning and Domain Caster Level boosts are evaluated 100% declaratively via effectTags and caster StatModifiers without any hardcoded feat IDs or magic numbers in spell_effects.ts.",
-  "updatedAt": "2026-11-06T12:37:25.476985061Z",
+  "summary": "Revised Phase 26 Implementation Plan (Milestones 118 & 119) featuring the Console Slot/Modal Host API (cartridge_ui_registry.ts), eviction of hardcoded UIMode.CharCreation & UIMode.LevelUp from Tier 1 Console modules, Visual Anatomical Paper Doll, Resizable Layout Panels, D&D 3.5e Tactical Doctrine Bar, 7-Tab Character Sheet, Class-Tabbed Vancian Spellbook, and The Sunless Reliquary 4-Zone SRD Content Showcase.",
+  "updatedAt": "2026-11-06T14:17:22.083920104Z",
   "requestFeedback": true,
   "userFacing": true
 }

@@ -43,12 +43,18 @@
   image-rendering: pixelated;
 }
 
+:root {
+  --left-sidebar-width: 268px;
+  --right-sidebar-width: 268px;
+  --log-drawer-height: 180px;
+  --modal-master-percent: 32%;
+}
+
 /* Floating Left & Right Side Stacks (Pointer-transparent containers, interactive plates) */
 .side-panel {
   position: absolute;
   top: 8px;
   bottom: 8px;
-  width: 268px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -61,12 +67,44 @@
 
 .left-panel {
   left: 8px;
+  width: var(--left-sidebar-width, 268px);
   align-items: flex-start;
 }
 
 .right-panel {
   right: 8px;
+  width: var(--right-sidebar-width, 268px);
   align-items: flex-end;
+}
+
+/* Interactive Drag Splitters */
+.panel-splitter {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 30;
+  pointer-events: auto !important;
+  transition: background 0.15s ease;
+}
+
+.panel-splitter:hover,
+.panel-splitter.dragging {
+  background: rgba(241, 196, 15, 0.45);
+}
+
+.splitter-left {
+  right: -3px;
+}
+
+.splitter-right {
+  left: -3px;
+}
+
+body.resizing {
+  user-select: none;
+  cursor: col-resize !important;
 }
 
 .side-panel > * {

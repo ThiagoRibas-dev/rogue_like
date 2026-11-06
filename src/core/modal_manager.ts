@@ -5,6 +5,7 @@ import { EngineMode, UIMode, type GameState } from '../types/game-state.types.ts
  */
 interface ModalFrame {
   readonly mode: UIMode;
+  readonly cartridgeModalId?: string | undefined;
 }
 
 /**
@@ -25,9 +26,10 @@ let baselinePaused: boolean | undefined;
 /**
  * Pushes a modal mode onto the stack.
  * @param mode The UIMode being opened.
+ * @param cartridgeModalId Optional identifier when opening a cartridge modal.
  */
-export function pushModal(mode: UIMode): void {
-  modalStack.push({ mode });
+export function pushModal(mode: UIMode, cartridgeModalId?: string): void {
+  modalStack.push({ mode, ...(cartridgeModalId !== undefined ? { cartridgeModalId } : {}) });
 }
 
 /**
@@ -40,12 +42,26 @@ export function popModal(): UIMode | undefined {
 }
 
 /**
+ * Returns the top modal frame on the stack.
+ * @returns ModalFrame or undefined if empty.
+ */
+export function getCurrentModalFrame(): ModalFrame | undefined {
+  return modalStack[modalStack.length - 1];
+}
+
+/**
  * Returns the UIMode of the top modal frame.
  * @returns The current modal UIMode, or undefined when no modal is open.
  */
 export function getCurrentModal(): UIMode | undefined {
-  const frame = modalStack[modalStack.length - 1];
-  return frame?.mode;
+  return getCurrentModalFrame()?.mode;
+}
+
+/**
+ * Returns the active cartridge modal ID of the top frame, if any.
+ */
+export function getCurrentCartridgeModalId(): string | undefined {
+  return getCurrentModalFrame()?.cartridgeModalId;
 }
 
 /**
@@ -64,11 +80,18 @@ export function hasModalsOpen(): boolean {
  *
  * @param state The current GameState.
  * @param mode The modal UIMode to toggle.
+ * @param cartridgeModalId Optional cartridge modal identifier.
  * @returns The updated GameState.
  */
-export function toggleModal(state: GameState, mode: UIMode): GameState {
-  const isOpen = state.uiMode === mode || getCurrentModal() === mode;
-  return isOpen ? closeTopModal(state) : openModal(state, mode);
+export function toggleModal(state: GameState, mode: UIMode, cartridgeModalId?: string): GameState {
+  const isCartridge = mode === UIMode.CartridgeModal;
+  const currentFrame = getCurrentModalFrame();
+  const isOpen = isCartridge
+    ? (state.uiMode === UIMode.CartridgeModal && state.activeCartridgeModalId === cartridgeModalId) ||
+      (currentFrame?.mode === UIMode.CartridgeModal && currentFrame?.cartridgeModalId === cartridgeModalId)
+    : state.uiMode === mode || currentFrame?.mode === mode;
+
+  return isOpen ? closeTopModal(state) : openModal(state, mode, cartridgeModalId);
 }
 
 /**
@@ -86,14 +109,20 @@ export function clearModals(): void {
  *
  * @param state The current GameState.
  * @param mode The modal UIMode to open.
+ * @param cartridgeModalId Optional cartridge modal identifier.
  * @returns The updated GameState with `uiMode` set and RTwP paused.
  */
-export function openModal(state: GameState, mode: UIMode): GameState {
+export function openModal(state: GameState, mode: UIMode, cartridgeModalId?: string): GameState {
   if (modalStack.length === 0) baselinePaused = state.rtwpState.paused;
-  pushModal(mode);
+  pushModal(mode, cartridgeModalId);
 
   const paused = state.engineMode === EngineMode.RTwP ? true : state.rtwpState.paused;
-  return { ...state, uiMode: mode, rtwpState: { ...state.rtwpState, paused } };
+  return {
+    ...state,
+    uiMode: mode,
+    ...(cartridgeModalId !== undefined ? { activeCartridgeModalId: cartridgeModalId } : {}),
+    rtwpState: { ...state.rtwpState, paused }
+  };
 }
 
 /**
@@ -107,7 +136,9 @@ export function openModal(state: GameState, mode: UIMode): GameState {
 export function closeTopModal(state: GameState): GameState {
   popModal();
 
-  const nextMode = getCurrentModal() ?? UIMode.Game;
+  const nextFrame = getCurrentModalFrame();
+  const nextMode = nextFrame?.mode ?? UIMode.Game;
+  const nextCartridgeId = nextFrame?.cartridgeModalId;
   let paused = state.rtwpState.paused;
 
   if (!hasModalsOpen()) {
@@ -121,5 +152,14 @@ export function closeTopModal(state: GameState): GameState {
     }
   }
 
-  return { ...state, uiMode: nextMode, rtwpState: { ...state.rtwpState, paused } };
+  const nextState: GameState = {
+    ...state,
+    uiMode: nextMode,
+    rtwpState: { ...state.rtwpState, paused }
+  };
+  if (nextCartridgeId !== undefined) {
+    return { ...nextState, activeCartridgeModalId: nextCartridgeId };
+  }
+  const { activeCartridgeModalId: _ignored, ...cleanState } = nextState;
+  return cleanState as GameState;
 }

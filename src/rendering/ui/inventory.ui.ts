@@ -1,8 +1,9 @@
-import { type GameState, type EntityId, UIMode } from '../../types/game-state.types.ts';
+import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { getEffectiveCapacity } from '../../systems/inventory.system.ts';
 import { UITooltipType } from '../../constants/ui.constants.ts';
+import { renderAnatomicalPaperDoll } from './equipment.ui.ts';
 
 /**
  * Renders or hides the inventory panel overlay based on the current UIMode.
@@ -56,108 +57,7 @@ export function renderInventoryPanel(state: GameState): void {
   // --- Equipment Panel (Paperdoll Layout) ---
   const paperdoll = document.createElement('div');
   paperdoll.className = 'paperdoll-layout';
-
-  const renderEquipSlot = (slotName: string, itemEntityId: EntityId | null): HTMLElement => {
-    const slotDiv = document.createElement('div');
-    slotDiv.className = 'paperdoll-slot';
-
-    const header = document.createElement('div');
-    header.className = 'equipment-slot-header';
-    header.textContent = slotName;
-    slotDiv.appendChild(header);
-
-    if (itemEntityId === null) {
-      const empty = document.createElement('div');
-      empty.className = 'equipment-slot-empty';
-      empty.textContent = '(Empty)';
-      slotDiv.appendChild(empty);
-    } else {
-      const index = inventory.items.indexOf(itemEntityId);
-      if (index === -1) return slotDiv;
-
-      const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-      if (!itemComp) return slotDiv;
-
-      const def = state.campaign.items[itemComp.itemId];
-      const isIdentified = state.identifiedItems.has(itemComp.itemId);
-      const displayName = isIdentified
-        ? def?.name
-        : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? def?.unidentifiedName ?? itemComp.itemId);
-      const slotLabel = String.fromCharCode(97 + index);
-
-      const row = document.createElement('div');
-      row.className = `inv-slot inv-cat-${def?.category ?? 'consumable'} inv-equipped`;
-      row.dataset.tooltipType = UITooltipType.Item;
-      row.dataset.tooltipId = itemEntityId.toString();
-
-      const label = document.createElement('span');
-      label.className = 'inv-slot-label';
-      label.textContent = `[${slotLabel}]`;
-
-      const name = document.createElement('span');
-      name.className = 'inv-slot-name';
-      name.textContent = `${displayName}`;
-
-      row.appendChild(label);
-      row.appendChild(name);
-      slotDiv.appendChild(row);
-    }
-    return slotDiv;
-  };
-
-  const createZone = (zoneName: string, slotTypes: string[]): void => {
-    const zoneDiv = document.createElement('div');
-    zoneDiv.className = `paperdoll-zone zone-${zoneName}`;
-
-    if (equipment) {
-      const zoneSlots = equipment.slots.filter((s) => slotTypes.includes(s.slotType));
-      if (zoneSlots.length > 0) {
-        zoneSlots.forEach((slot) => {
-          zoneDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
-        });
-        paperdoll.appendChild(zoneDiv);
-      }
-    }
-  };
-
-  const createSplitZone = (zonePrefix: string, slotTypes: string[]): void => {
-    if (equipment) {
-      const leftSlots: typeof equipment.slots = [];
-      const rightSlots: typeof equipment.slots = [];
-
-      slotTypes.forEach((type) => {
-        const slotsOfType = equipment.slots.filter((s) => s.slotType === type);
-        slotsOfType.forEach((slot, index) => {
-          if (index % 2 === 0) leftSlots.push(slot);
-          else rightSlots.push(slot);
-        });
-      });
-
-      if (leftSlots.length > 0) {
-        const leftDiv = document.createElement('div');
-        leftDiv.className = `paperdoll-zone zone-${zonePrefix}-left`;
-        leftSlots.forEach((slot) => {
-          leftDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
-        });
-        paperdoll.appendChild(leftDiv);
-      }
-
-      if (rightSlots.length > 0) {
-        const rightDiv = document.createElement('div');
-        rightDiv.className = `paperdoll-zone zone-${zonePrefix}-right`;
-        rightSlots.forEach((slot) => {
-          rightDiv.appendChild(renderEquipSlot(slot.slotType, slot.equippedItem));
-        });
-        paperdoll.appendChild(rightDiv);
-      }
-    }
-  };
-
-  createZone('head', ['head', 'neck']);
-  createZone('torso', ['torso', 'back']);
-  createSplitZone('arms', ['arm', 'hand', 'finger']);
-  createZone('legs', ['leg', 'foot']);
-
+  renderAnatomicalPaperDoll(paperdoll, state, playerEntityId, { compact: false });
   equipPanel.appendChild(paperdoll);
 
   // --- Backpack Panel (Grid Layout) ---

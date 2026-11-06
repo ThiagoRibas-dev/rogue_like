@@ -115,6 +115,8 @@ export function dispatchAction(
       return { state: toggleModal(state, UIMode.Dossier), success: false };
     case IntentType.ToggleLedger:
       return { state: toggleModal(state, UIMode.Ledger), success: false };
+    case IntentType.ToggleCartridgeModal:
+      return { state: toggleModal(state, UIMode.CartridgeModal, intent.modalId), success: false };
 
     case IntentType.DebugRevealMap:
       return processDebugRevealMap(state);

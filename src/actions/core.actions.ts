@@ -19,7 +19,8 @@ import {
   type ToggleSettingsIntent,
   type ToggleDebugIntent,
   type ToggleDossierIntent,
-  type ToggleLedgerIntent
+  type ToggleLedgerIntent,
+  type ToggleCartridgeModalIntent
 } from '../types/intents/ui.intents.ts';
 
 /**
@@ -191,6 +192,22 @@ export function createToggleLedgerAction(entityId: EntityId): ToggleLedgerIntent
   return {
     type: IntentType.ToggleLedger,
     entityId,
+    isImmediate: true
+  };
+}
+
+/**
+ * Creates an intent to toggle a cartridge-contributed modal overlay.
+ *
+ * @param entityId The entity initiating the action.
+ * @param modalId The identifier of the cartridge modal to toggle.
+ * @returns The generated ToggleCartridgeModalIntent.
+ */
+export function createToggleCartridgeModalAction(entityId: EntityId, modalId: string): ToggleCartridgeModalIntent {
+  return {
+    type: IntentType.ToggleCartridgeModal,
+    entityId,
+    modalId,
     isImmediate: true
   };
 }

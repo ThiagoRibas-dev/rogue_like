@@ -5084,5 +5084,65 @@
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/worker/worker.types.ts."
     ]
+  },
+  "src/rendering/ui/cartridge_ui_registry.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Console UI Slot & Modal Host API allowing ruleset cartridges to register modals, dock commands, HUD alerts, and panel slots without Console coupling.",
+    "canonicalEntryPoints": [
+      "CartridgeDockCommandDescriptor",
+      "CartridgeHudAlertDescriptor",
+      "CartridgeModalDescriptor",
+      "CartridgeUIDefinition",
+      "registerCartridgeUI",
+      "getCartridgeUI",
+      "getActiveCartridgeUI",
+      "isCartridgeModalOpen",
+      "openCartridgeModal",
+      "closeCartridgeModal",
+      "toggleCartridgeModal",
+      "applyCartridgeNewGameHook",
+      "renderActiveCartridgeModal",
+      "renderCartridgeHudPanel",
+      "renderCartridgeInspectorExtension"
+    ],
+    "ownershipBoundary": {
+      "includes": "Generic slot/modal host API, cartridge UI registration, and ruleset-agnostic modal/dock/alert orchestration.",
+      "excludes": "Ruleset-specific UI rendering or ruleset domain logic."
+    },
+    "antiPatterns": [
+      "Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files."
+    ]
+  },
+  "src/rendering/ui/equipment.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders interactive anatomical paper doll slot cards across HUD, Inventory, and Character Sheet views.",
+    "canonicalEntryPoints": [
+      "renderAnatomicalPaperDoll"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/equipment.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/equipment.ui.ts."
+    ]
+  },
+  "src/rendering/ui/resizable_panels.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Manages interactive drag splitters, CSS layout variables, and persistent sidebar dimensions.",
+    "canonicalEntryPoints": [
+      "applyPanelLayoutSettings",
+      "initResizablePanels"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/resizable_panels.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/resizable_panels.ui.ts."
+    ]
   }
 }

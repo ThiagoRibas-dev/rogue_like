@@ -26,7 +26,8 @@ import {
   validateLevelUpStep
 } from '../../rulesets/registry.ts';
 import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
-import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
+import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { closeCartridgeModal, isCartridgeModalOpen } from './cartridge_ui_registry.ts';
 import { captureScrollPositions, restoreScrollPositions } from './dnd35e_char_builder.ui.ts';
 import {
   renderSharedClassSpellStep,
@@ -73,7 +74,7 @@ export function canPlayerLevelUpDnD35e(state: GameState, playerId: EntityId): bo
 export function renderDnD35eLevelUpModal(state: GameState): void {
   const overlay = document.getElementById('level-up-overlay');
   if (!overlay) return;
-  if (state.uiMode !== UIMode.LevelUp) {
+  if (!isCartridgeModalOpen(state, 'level_up')) {
     overlay.classList.add('hidden');
     return;
   }
@@ -294,7 +295,7 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     tabs.length,
     allTabsValid,
     () => {
-      setGameState({ ...state, uiMode: UIMode.Game });
+      setGameState(closeCartridgeModal(state));
       markAllDomainsDirty();
     },
     (delta) => {
@@ -306,7 +307,7 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     },
     () => {
       const result = applyLevelUpToActor(state, playerId, levelUpDraft);
-      setGameState({ ...result.state, uiMode: UIMode.Game });
+      setGameState(closeCartridgeModal(result.state));
       markAllDomainsDirty();
     }
   );

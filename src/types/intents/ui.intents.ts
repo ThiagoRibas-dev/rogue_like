@@ -84,3 +84,10 @@ export interface ToggleLedgerIntent extends BaseIntent {
   readonly type: IntentType.ToggleLedger;
   readonly isImmediate: true;
 }
+
+/** Intent to toggle a cartridge-contributed modal overlay by modal ID. */
+export interface ToggleCartridgeModalIntent extends BaseIntent {
+  readonly type: IntentType.ToggleCartridgeModal;
+  readonly modalId: string;
+  readonly isImmediate: true;
+}

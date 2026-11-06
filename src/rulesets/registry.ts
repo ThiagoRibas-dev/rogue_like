@@ -119,6 +119,7 @@ export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
 export {
   ALL_ABILITY_IDS,
   type AbilityId,
+  type DnD35ActionBudget,
   type DnD35Alignment,
   type DnD35EntityData,
   type DnD35SpellSchool
@@ -132,5 +133,8 @@ export {
   type DnD35SystemContent,
   getDnD35SystemContent
 } from './dnd35e/types/dnd35e_system.types.ts';
+export { evaluateDnD35eEntityDAG } from './dnd35e/cartridge/dnd35e_dag_adapter.ts';
+export { extractActorTacticalDials } from './dnd35e/combat/tactical_doctrine.ts';
+export { evaluateActorSkillCheck } from './dnd35e/skills/skill_verb_helpers.ts';
 export { checkClassicRuleset } from './classic/classic_validator.ts';
 export { checkDnD35eRuleset, validateDnD35eSystemContentIntegrity } from './dnd35e/dnd35e_validator.ts';

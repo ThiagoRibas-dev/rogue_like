@@ -11,6 +11,7 @@ import { CampaignEditor } from './editor/campaign_editor.ts';
 import { GAME_ASPECT_RATIO_STRING } from './constants/display.constants.ts';
 import { createDisplay, mountDisplayWithFogOverlay } from './rendering/display.ts';
 import { createInitialMenuState, initSession } from './core/session_controller.ts';
+import { registerDnD35eUIAdapter } from './rendering/ui/dnd35e_ui_adapter.ts';
 
 // Global error boundary overlay setup
 window.addEventListener('error', (e) => showCrashModal(e.error));
@@ -73,6 +74,7 @@ function showCrashModal(err: unknown): void {
 
 // 0. Initialize RNG and Aspect Ratio
 initRNG();
+registerDnD35eUIAdapter();
 document.documentElement.style.setProperty('--game-aspect-ratio', GAME_ASPECT_RATIO_STRING);
 
 // 1. Load default campaign and apply user settings

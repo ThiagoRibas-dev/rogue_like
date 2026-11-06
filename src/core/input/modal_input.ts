@@ -3,6 +3,7 @@ import { isAction, type ActionType } from '../settings.ts';
 import { queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { createApplyAction } from '../../actions/interaction.actions.ts';
 import {
+  createToggleCartridgeModalAction,
   createToggleDebugAction,
   createToggleDossierAction,
   createToggleFactionsAction,
@@ -11,6 +12,7 @@ import {
   createToggleQuestsAction,
   createToggleSettingsAction
 } from '../../actions/core.actions.ts';
+import { getActiveCartridgeUI } from '../../rendering/ui/cartridge_ui_registry.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { handleInventoryKey } from './inventory_input.ts';
 
@@ -47,7 +49,7 @@ const MODAL_BINDINGS: ReadonlyArray<ModalBinding> = [
  * @returns True when the mode is a modal overlay.
  */
 export function isModalUIMode(mode: UIMode): boolean {
-  if (mode === UIMode.Inventory || mode === UIMode.VerbMenu) return true;
+  if (mode === UIMode.Inventory || mode === UIMode.VerbMenu || mode === UIMode.CartridgeModal) return true;
   return MODAL_BINDINGS.some((binding) => binding.mode === mode);
 }
 
@@ -67,6 +69,40 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 
   if (state.uiMode === UIMode.Inventory) {
     handleInventoryKey(event, state, playerEntityId);
+    return;
+  }
+
+  if (state.uiMode === UIMode.CartridgeModal) {
+    const activeModalId = state.activeCartridgeModalId;
+    const cartridgeUI = getActiveCartridgeUI(state);
+    const descriptor = activeModalId ? cartridgeUI?.modals[activeModalId] : undefined;
+
+    if (event.key === 'Escape') {
+      if (descriptor?.allowEscapeClose !== false && activeModalId) {
+        event.preventDefault();
+        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, activeModalId));
+      }
+      return;
+    }
+
+    if (cartridgeUI?.dockCommands) {
+      const match = cartridgeUI.dockCommands.find(
+        (cmd) => isAction(event, cmd.id as ActionType) || event.key.toLowerCase() === cmd.defaultKey.toLowerCase()
+      );
+      if (match && match.modalId !== activeModalId) {
+        event.preventDefault();
+        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, match.modalId));
+        return;
+      }
+    }
+
+    const nestedBinding = MODAL_BINDINGS.find(
+      (candidate) => candidate.shortcut !== undefined && isAction(event, candidate.shortcut)
+    );
+    if (nestedBinding !== undefined) {
+      event.preventDefault();
+      queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
+    }
     return;
   }
 

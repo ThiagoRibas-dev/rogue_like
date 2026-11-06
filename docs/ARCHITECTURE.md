@@ -673,8 +673,27 @@ To eliminate "split-brain" architecture risks, duplicate implementations, and ar
    - Verifies that `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are in sync with the JSON registries.
    - Enforced automatically in `scripts/run-validator.ts` and automated test suites.
 
+### 9.12 Console UI Slot & Modal Host API, Resizable Panels & D&D 3.5e Tactical UI (Phase 26, Milestones 118–119)
+
+To allow ruleset cartridges (`dnd35e`, `classic`, and future systems) to inject custom modals, side-stack HUD panels, command dock items, and RimWorld-style alert ribbons without leaking ruleset-specific `UIMode` enum members or cartridge imports into Tier 1 Console modules (`AGENTS.md` Rule 16), the rendering layer exposes a generic **Console UI Slot & Modal Host API**:
+
+1. **Console UI Slot & Modal Host API (`src/rendering/ui/cartridge_ui_registry.ts`, `src/core/modal_manager.ts`)**:
+   - Replaces hardcoded cartridge `UIMode` values with a single generic `UIMode.CartridgeModal = 'cartridge_modal'` paired with `GameState.activeCartridgeModalId?: string | undefined` and `IntentType.ToggleCartridgeModal`.
+   - `registerCartridgeUIAdapter(adapter: CartridgeUIAdapter)` registers a cartridge's `modals` (`CartridgeModalDescriptor`), `dockCommands` (`CartridgeDockCommandDescriptor`), `projectAlerts`, and `renderHudLeftSlot`.
+   - `presenter.ts`, `session_dom.ts`, `session_controller.ts`, `modal_input.ts`, `shortcut_input.ts`, `hud_alerts.ui.ts`, and `hud_dock.ui.ts` query the registry dynamically by `state.campaign.manifest.rulesetId` with zero direct cartridge imports.
+
+2. **D&D 3.5e Cartridge UI Adapter & Views (`src/rendering/ui/dnd35e_ui_adapter.ts`)**:
+   - **Tactical Doctrine & Maneuver Bar (`dnd35e_doctrine_bar.ui.ts`, `dnd35e_doctrine_actions.ts`)**: Renders compact sliders for `variable_dial` feats (*Power Attack*, *Combat Expertise*), stance buttons (*Fighting Defensively*, *Total Defense*), 1H/2H grip toggles, and 5-tier action budget pips (`STD`, `MOV`, `SWF`, `AoO`) inside `#hud-cartridge-panel-slot`.
+   - **Visual Anatomical Paper Doll (`equipment.ui.ts`)**: Renders interactive slot cards (`Head`, `Eyes`, `Neck`, `Shoulders`, `Torso`, `Body`, `Waist`, `Wrists`, `Hands`, `Ring L/R`, `Feet`, `Main Hand`, `Off Hand`) shared across both the Inventory modal and the Character Sheet Equipment tab.
+   - **7-Tab Character Sheet (`dnd35e_sheet.ui.ts`, `dnd35e_sheet_overview_tab.ui.ts`, `dnd35e_sheet_skills_tab.ui.ts`, `dnd35e_sheet_feats_abilities_tab.ui.ts`)**: Surfaces 4-Stage Topological Stat DAG breakdowns (`Full / Touch / Flat-Footed AC`, active/shadowed modifiers, `sourcePath` provenance), Saving Throws, Full-Attack Routine strike cards, chronological `levelHistory`, Anatomical Paper Doll, and a 50-skill table with interactive `[Use]` buttons routing through `createApplyAction`.
+   - **Class-Tabbed Vancian Spellbook (`dnd35e_spellbook.ui.ts`, `dnd35e_spellbook_actions.ts`)**: Renders per-class spellbook tabs from `spellbooksByClass`, daily Level 0–9 slot preparation/unpreparation, and 8-hour rest (`executeEightHourRest`).
+
+3. **Resizable Layout Panels (`src/rendering/ui/resizable_panels.ui.ts`, `src/styles/layout.css`, `src/core/settings.ts`)**:
+   - Provides pointer-driven drag splitters (`#splitter-left-hud`, `#splitter-right-hud`) with clamped min/max bounds, `localStorage` persistence via `updatePanelLayout`, and automatic `syncDisplayLayout` canvas reflow.
+
 ---
 
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
+

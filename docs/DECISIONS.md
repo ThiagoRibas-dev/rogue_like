@@ -366,3 +366,14 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Enforced disk and registry parity via `system_content_spell_ids.ts` and automated validation in `class_race_validator.ts` and `tests/dnd35e_m117_spells.test.ts`.
   - *Rationale*: Eliminates broken domain lookups or missing prayerbook spells in character creation, level-up, and domain preparation loops.
 
+---
+
+### Phase 26 (Milestones 118 & 119): Console UI Slot & Modal Host API vs. Hardcoded Cartridge `UIMode`s
+
+- **Decision: Generic Console UI Slot & Modal Host API (`src/rendering/ui/cartridge_ui_registry.ts`, `UIMode.CartridgeModal`, `IntentType.ToggleCartridgeModal`)**:
+  - Evicted ruleset-specific `UIMode` enum members (`UIMode.CharCreation`, `UIMode.LevelUp`) and eliminated direct D&D 3.5e UI imports from Tier 1 Console files (`game-state.types.ts`, `presenter.ts`, `session_dom.ts`, `session_controller.ts`, `input_handler.ts`, `hud_alerts.ui.ts`).
+  - Introduced `UIMode.CartridgeModal = 'cartridge_modal'` paired with `activeCartridgeModalId?: string | undefined` on `GameState` and `ModalFrame`, backed by a declarative `CartridgeUIAdapter` registry (`cartridge_ui_registry.ts`).
+  - Wired all D&D 3.5e UI surfaces (`'char_creation'`, `'level_up'`, `'character_sheet'`, `'spellbook'`, the HUD Tactical Doctrine Bar, and the `'Level Up Available!'` alert ribbon) through `src/rendering/ui/dnd35e_ui_adapter.ts`.
+  - *Rationale*: Hardcoding `UIMode.Spellbook`, `UIMode.CharacterSheet`, `UIMode.CharCreation`, or `UIMode.LevelUp` in Tier 1 Console enums and `presenter.ts` violates `AGENTS.md` Rule 16 (Three-Tier Placement Heuristic). A Console-level UI Host API lets any Cartridge register arbitrary modals, hotkeys, dock commands, HUD slots, and alert ribbons while keeping the Console 100% ruleset-agnostic and centrally managing LIFO ESC stack behavior, RTwP auto-pause restoration, and `PresentationDomain` dirty-flag gating.
+
+

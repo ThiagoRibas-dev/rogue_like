@@ -40,8 +40,7 @@ export const enum UIMode {
   Trade = 'trade',
   Services = 'services',
   Ledger = 'ledger',
-  CharCreation = 'char_creation',
-  LevelUp = 'level_up'
+  CartridgeModal = 'cartridge_modal'
 }
 
 /**
@@ -205,6 +204,8 @@ export interface GameState {
    * 'game' = normal play; 'inventory' = inventory panel open.
    */
   readonly uiMode: UIMode;
+  /** Active cartridge-contributed modal ID (e.g. 'char_creation', 'level_up', 'character_sheet', 'spellbook') when uiMode === UIMode.CartridgeModal. */
+  readonly activeCartridgeModalId?: string | undefined;
   readonly targetingMode?:
     | {
         readonly active: boolean;

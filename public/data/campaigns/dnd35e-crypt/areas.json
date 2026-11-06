@@ -1,7 +1,7 @@
 {
   "safe_hub": {
     "id": "safe_hub",
-    "name": "Camp",
+    "name": "Outfitter Sanctuary Hub",
     "generatorType": "static",
     "dangerRating": 0,
     "tags": [
@@ -71,7 +71,7 @@
   },
   "dungeon_1": {
     "id": "dungeon_1",
-    "name": "The Upper Dungeons",
+    "name": "Goblinoid & Orcish Outer Warrens",
     "generatorType": "digger",
     "dangerRating": 1,
     "crBudget": 15,
@@ -94,7 +94,7 @@
   },
   "dungeon_2": {
     "id": "dungeon_2",
-    "name": "The Deep Caverns",
+    "name": "Desecrated Ossuary",
     "generatorType": "cellular",
     "dangerRating": 2,
     "crBudget": 50,
@@ -122,7 +122,7 @@
   },
   "bandit_stronghold": {
     "id": "bandit_stronghold",
-    "name": "Bandit Stronghold",
+    "name": "Reliquary Sanctum",
     "generatorType": "static",
     "dangerRating": 3,
     "tags": [

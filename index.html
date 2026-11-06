@@ -138,6 +138,9 @@
           </div>
         </div>
 
+        <!-- Cartridge Panel Slot (e.g. Tactical Doctrine Bar for D&D 3.5e) -->
+        <div id="hud-cartridge-panel-slot" class="hud-cartridge-slot"></div>
+
       </aside>
 
       <!-- Floating Right Side Stack -->
@@ -315,6 +318,32 @@
         <h1 class="modal-title" style="margin-bottom: 6px; color: #2ecc71; font-size: 1.45rem;">Level Up Advancement</h1>
         <div id="level-up-body" class="dnd35-modal-body">
           <!-- dnd35e_level_up.ui.ts populates this -->
+        </div>
+      </div>
+    </div>
+
+    <!-- D&D 3.5e Character Sheet Overlay (Milestone 118) -->
+    <div id="dnd35e-sheet-overlay" class="modal-overlay hidden">
+      <div class="modal-content dnd35-fullscreen-modal dnd35-sheet-modal">
+        <div class="dnd35-sheet-header">
+          <h1 class="modal-title" style="margin: 0; color: #f1c40f; font-size: 1.35rem;">Heroic Character Sheet</h1>
+          <button id="btn-close-dnd35e-sheet" class="modal-close-btn" title="Close Sheet [C or Esc]">×</button>
+        </div>
+        <div id="dnd35e-sheet-body" class="dnd35-modal-body">
+          <!-- dnd35e_sheet.ui.ts populates this -->
+        </div>
+      </div>
+    </div>
+
+    <!-- D&D 3.5e Vancian Spellbook Overlay (Milestone 118) -->
+    <div id="dnd35e-spellbook-overlay" class="modal-overlay hidden">
+      <div class="modal-content dnd35-fullscreen-modal dnd35-spellbook-modal">
+        <div class="dnd35-sheet-header">
+          <h1 class="modal-title" style="margin: 0; color: #9b59b6; font-size: 1.35rem;">Grimoire &amp; Spell Preparation</h1>
+          <button id="btn-close-dnd35e-spellbook" class="modal-close-btn" title="Close Grimoire [B or Esc]">×</button>
+        </div>
+        <div id="dnd35e-spellbook-body" class="dnd35-modal-body">
+          <!-- dnd35e_spellbook.ui.ts populates this -->
         </div>
       </div>
     </div>
