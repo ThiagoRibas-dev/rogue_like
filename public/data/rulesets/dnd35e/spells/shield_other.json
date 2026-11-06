@@ -1,0 +1,82 @@
+{
+  "shield_other": {
+    "id": "shield_other",
+    "name": "Shield Other",
+    "description": "You take half of subject's damage, subject gains +1 deflection AC and +1 resistance saves.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2,
+      "paladin": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "shield_other_bundle",
+      "name": "Shield Other",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "so_ac",
+          "target": "ac",
+          "value": 1,
+          "type": "deflection"
+        },
+        {
+          "id": "so_save",
+          "target": "saves",
+          "value": 1,
+          "type": "resistance"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "so_split_damage",
+          "ruleKey": "split_damage_with_caster",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "shield_other_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "abjuration",
+      "ward",
+      "defense"
+    ]
+  }
+}

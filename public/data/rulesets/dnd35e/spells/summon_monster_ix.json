@@ -1,0 +1,65 @@
+{
+  "summon_monster_ix": {
+    "id": "summon_monster_ix",
+    "name": "Summon Monster IX",
+    "description": "Summons extraplanar creatures (celestial or fiendish) to fight for you for 1 round/level.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9,
+      "cleric": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "summoning",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "sm_ix_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "balor",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "pit_fiend",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "summoning",
+      "allies"
+    ]
+  }
+}

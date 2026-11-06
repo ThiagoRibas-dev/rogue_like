@@ -1,0 +1,93 @@
+{
+  "iron_body": {
+    "id": "iron_body",
+    "name": "Iron Body",
+    "description": "Body turns to iron: DR 15/adamantine, +6 enhancement Str, -6 penalty to Dex, half speed, immune to critical hits and poison.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "iron_body_bundle",
+      "name": "Iron Body",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "ib_str",
+          "target": "str",
+          "value": 6,
+          "type": "enhancement"
+        },
+        {
+          "id": "ib_dex",
+          "target": "dex",
+          "value": -6,
+          "type": "untyped"
+        },
+        {
+          "id": "ib_dr",
+          "target": "dr",
+          "value": 15,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "ib_dr_tag",
+          "ruleKey": "dr_bypass_tags",
+          "value": "adamantine",
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "iron_body_active",
+        "dr:15/adamantine"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [
+        "poison",
+        "blindness",
+        "deafness",
+        "disease",
+        "critical_hits"
+      ],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "earth",
+      "buff",
+      "iron"
+    ]
+  }
+}

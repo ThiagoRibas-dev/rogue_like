@@ -9,7 +9,7 @@
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
 - [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (2 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
 - [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (12 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
-- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (4 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
+- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (5 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
 - [D&D 3.5e: Ruleset Types & Schemas (8 files)](#d-d-3-5e-ruleset-types-schemas)
 - [D&D 3.5e: Tactical UI & Character Sheet (11 files)](#d-d-3-5e-tactical-ui-character-sheet)
 
@@ -119,13 +119,14 @@
 
 ## D&D 3.5e: Layer 6 — Vancian Magic & Fields
 
-**Modules in this domain:** 4
+**Modules in this domain:** 5
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/rulesets/dnd35e/magic/aoe_rest.ts` | `tier2_cartridge` | Number of 6-second combat rounds in 8 hours (`8 * 60 * 10 = 4800` rounds). | `EIGHT_HOURS_IN_ROUNDS`, `OPEN_SLOT_PREPARATION_ROUNDS`, `AoETemplateShape`, `computeAoEAffectedSquares`, `resolveEightHourRest`, `prepareOpenSpellSlot` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/aoe_rest.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/aoe_rest.ts. |
 | `src/rulesets/dnd35e/magic/metamagic_dispel.ts` | `tier2_cartridge` | Evaluates Metamagic slot-level adjustments, casting time extensions, and Dispel Magic / Counterspell checks. | `resolveCounterspellAttempt` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/metamagic_dispel.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/metamagic_dispel.ts. |
 | `src/rulesets/dnd35e/magic/spell_effects.ts` | `tier2_cartridge` | Projects semantic spell effect tags, evaluates CL scaling rules, filters tag-conditioned effect units, materializes StatModifiers with hierarchical provenance, and projects active tether tags. | `projectSpellEffectTags`, `evaluateSpellScalingRule`, `evaluateSpellEffectUnitsForTarget`, `materializeSpellUnitModifiers`, `materializeTopLevelSpellModifiers`, `projectActiveSpellTetherTags` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_effects.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_effects.ts. |
+| `src/rulesets/dnd35e/magic/spell_modifiers.ts` | `tier2_cartridge` | Resolves effective caster level and materializes summoned creature stat modifiers with hierarchical provenance. | `resolveSpellEffectiveCasterLevel`, `materializeSummonedCreatureModifiers` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_modifiers.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_modifiers.ts. |
 | `src/rulesets/dnd35e/magic/spellcasting.ts` | `tier2_cartridge` | Minimum ability score base (`10 + spellLevel`) required to cast a spell of that level. | `CapabilityRuleDescriptor`, `CAPABILITY_RULES`, `PreparedSpellSlot`, `canCastSpellOfLevel`, `computeBonusSpellSlots`, `convertPreparedSlotSpontaneously`, `CastResolutionParams`, `CastResolutionResult` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spellcasting.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellcasting.ts. |
 
 ## D&D 3.5e: Ruleset Types & Schemas

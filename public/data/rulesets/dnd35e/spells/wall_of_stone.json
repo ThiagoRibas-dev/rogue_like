@@ -1,0 +1,46 @@
+{
+  "wall_of_stone": {
+    "id": "wall_of_stone",
+    "name": "Wall of Stone",
+    "description": "Creates a permanent stone wall (1 inch thick per 4 CL) that can be merged with existing rock.",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5,
+      "cleric": 5,
+      "druid": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "wall",
+    "aoeRadiusFt": 20,
+    "effectUnits": [],
+    "tags": [
+      "conjuration",
+      "creation",
+      "earth",
+      "permanent",
+      "barrier"
+    ]
+  }
+}

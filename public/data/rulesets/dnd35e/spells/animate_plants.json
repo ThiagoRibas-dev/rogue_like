@@ -1,0 +1,61 @@
+{
+  "animate_plants": {
+    "id": "animate_plants",
+    "name": "Animate Plants",
+    "description": "Imbues inanimate plants within range with animation and mobility, allowing them to attack or entangle foes.",
+    "level": 7,
+    "levelByClass": {
+      "druid": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "animate_plants_unit",
+        "targetRole": "area_occupant",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "troll",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "plant",
+      "animation"
+    ]
+  }
+}

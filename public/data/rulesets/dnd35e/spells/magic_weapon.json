@@ -1,0 +1,72 @@
+{
+  "magic_weapon": {
+    "id": "magic_weapon",
+    "name": "Magic Weapon",
+    "description": "Weapon gains +1 enhancement bonus on attack and damage rolls.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "cleric": 1,
+      "paladin": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "magic_weapon_bundle",
+      "name": "Magic Weapon",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "mw_atk",
+          "target": "attack",
+          "value": 1,
+          "type": "enhancement"
+        },
+        {
+          "id": "mw_dmg",
+          "target": "damage",
+          "value": 1,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "weapon:magic"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "buff",
+      "weapon_enhancement"
+    ]
+  }
+}

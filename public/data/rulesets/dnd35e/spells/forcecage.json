@@ -1,0 +1,43 @@
+{
+  "forcecage": {
+    "id": "forcecage",
+    "name": "Forcecage",
+    "description": "Imprison creatures in an immutable 20-ft cube of force bands or solid force.",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "2 hours/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 1500,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "evocation",
+      "force",
+      "trap",
+      "cage"
+    ]
+  }
+}

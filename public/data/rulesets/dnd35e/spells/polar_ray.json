@@ -1,0 +1,58 @@
+{
+  "polar_ray": {
+    "id": "polar_ray",
+    "name": "Polar Ray",
+    "description": "Ranged touch ray deals 1d6/level cold damage (max 25d6) with no save.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "polar_ray_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 25
+        },
+        "damageType": "cold",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "cold",
+      "ray",
+      "high_damage"
+    ]
+  }
+}

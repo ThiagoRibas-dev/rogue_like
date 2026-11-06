@@ -1,0 +1,43 @@
+{
+  "repel_wood": {
+    "id": "repel_wood",
+    "name": "Repel Wood",
+    "description": "Waves of invisible force roll out in a 60-ft line pushing wooden objects and shafts forcefully backward.",
+    "level": 6,
+    "levelByClass": {
+      "druid": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "wood",
+      "barrier",
+      "push"
+    ]
+  }
+}

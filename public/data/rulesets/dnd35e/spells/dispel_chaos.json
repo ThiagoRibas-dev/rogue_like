@@ -1,0 +1,71 @@
+{
+  "dispel_chaos": {
+    "id": "dispel_chaos",
+    "name": "Dispel Chaos",
+    "description": "Grants +4 deflection AC against chaotic creatures, and drives them back to their home planes with a melee touch.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5,
+      "paladin": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "lawful"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "dispel_chaos_bundle",
+      "name": "Dispel Chaos",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "dc_ac",
+          "target": "ac_deflection",
+          "value": 4,
+          "type": "deflection"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "dispel_chaos_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "lawful",
+      "banishment",
+      "defense"
+    ]
+  }
+}

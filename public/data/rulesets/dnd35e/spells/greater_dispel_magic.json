@@ -1,0 +1,50 @@
+{
+  "greater_dispel_magic": {
+    "id": "greater_dispel_magic",
+    "name": "Greater Dispel Magic",
+    "description": "As Dispel Magic, but with caster level check bonus up to +20, and can strip multiple spells.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6,
+      "cleric": 6,
+      "druid": 6,
+      "bard": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "greater_dispel_unit",
+        "targetRole": "primary_target",
+        "type": "dispel",
+        "maxCasterLevelBonus": 20,
+        "revokesPathPrefix": "spell:"
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "dispel",
+      "anti_magic"
+    ]
+  }
+}

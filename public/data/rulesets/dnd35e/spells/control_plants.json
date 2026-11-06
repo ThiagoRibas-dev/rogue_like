@@ -1,0 +1,61 @@
+{
+  "control_plants": {
+    "id": "control_plants",
+    "name": "Control Plants",
+    "description": "Enchants up to 2 HD per caster level of plant creatures to obey your mental commands.",
+    "level": 8,
+    "levelByClass": {
+      "druid": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "control_plants_dominate",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "dominated",
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 10,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "plant",
+      "compulsion"
+    ]
+  }
+}

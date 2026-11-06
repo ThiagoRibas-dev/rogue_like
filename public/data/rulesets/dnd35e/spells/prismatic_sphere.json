@@ -1,0 +1,77 @@
+{
+  "prismatic_sphere": {
+    "id": "prismatic_sphere",
+    "name": "Prismatic Sphere",
+    "description": "Surrounds you with an impenetrable multi-colored sphere composed of 7 glowing energy layers.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 10,
+    "effectBundle": {
+      "bundleId": "prismatic_sphere_bundle",
+      "name": "Prismatic Sphere",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "ps_ac",
+          "target": "ac_deflection",
+          "value": 8,
+          "type": "deflection"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "prismatic_sphere_active",
+        "ward:prismatic"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {
+        "fire": 30,
+        "acid": 30,
+        "electricity": 30,
+        "cold": 30,
+        "sonic": 30
+      },
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "prismatic",
+      "apex",
+      "barrier",
+      "ward"
+    ]
+  }
+}

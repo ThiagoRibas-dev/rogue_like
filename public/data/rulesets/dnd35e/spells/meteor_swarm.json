@@ -1,0 +1,56 @@
+{
+  "meteor_swarm": {
+    "id": "meteor_swarm",
+    "name": "Meteor Swarm",
+    "description": "Four exploding spheres deal 2d6 bludgeoning damage on ranged touch plus 6d6 fire damage in a 40-ft spread each.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 40,
+    "effectUnits": [
+      {
+        "unitId": "meteor_swarm_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "24d6",
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "fire",
+      "aoe",
+      "high_damage",
+      "meteors"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "clenched_fist": {
+    "id": "clenched_fist",
+    "name": "Clenched Fist",
+    "description": "Conjures a giant hand of force that strikes designated foes for 1d8+11 bludgeoning damage and can push or stun them.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d8+11",
+    "damageType": "force",
+    "effectUnits": [
+      {
+        "unitId": "clenched_fist_dmg",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d8+11",
+        "damageType": "force",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "clenched_fist_stun",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "stunned",
+        "durationRoundsScaling": {
+          "baseValue": 1,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "force",
+      "striker",
+      "control"
+    ]
+  }
+}

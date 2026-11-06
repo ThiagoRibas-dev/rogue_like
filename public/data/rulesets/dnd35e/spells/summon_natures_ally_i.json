@@ -1,0 +1,61 @@
+{
+  "summon_natures_ally_i": {
+    "id": "summon_natures_ally_i",
+    "name": "Summon Nature's Ally I",
+    "description": "Summons natural animals or elementals to fight for you for 1 round/level.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "summoning",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "sna_i_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "dire_rat",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "conjuration",
+      "summoning",
+      "nature",
+      "allies"
+    ]
+  }
+}

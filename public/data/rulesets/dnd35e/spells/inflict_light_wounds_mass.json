@@ -1,0 +1,61 @@
+{
+  "inflict_light_wounds_mass": {
+    "id": "inflict_light_wounds_mass",
+    "name": "Mass Inflict Light Wounds",
+    "description": "Channels negative energy dealing 1d8 + 1/CL (max +25) damage to multiple living creatures within 30 ft.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 30,
+    "damageDice": "1d8",
+    "damageType": "negative",
+    "effectUnits": [
+      {
+        "unitId": "mass_inflict_light_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 25
+        },
+        "damageType": "negative",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "negative_energy",
+      "mass",
+      "harm"
+    ]
+  }
+}

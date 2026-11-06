@@ -1,0 +1,41 @@
+{
+  "dimension_door": {
+    "id": "dimension_door",
+    "name": "Dimension Door",
+    "description": "Instantly transfers you anywhere within range (400 ft + 40 ft/level); ends your turn.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "bard": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "teleportation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "conjuration",
+      "teleportation",
+      "tactical"
+    ]
+  }
+}

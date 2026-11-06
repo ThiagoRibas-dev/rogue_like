@@ -1,0 +1,45 @@
+{
+  "restoration": {
+    "id": "restoration",
+    "name": "Restoration",
+    "description": "Restores drained ability scores and dispels negative levels.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "paladin": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 100,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "healing",
+      "cure_drain"
+    ]
+  }
+}

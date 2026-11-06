@@ -1,0 +1,62 @@
+{
+  "animate_objects": {
+    "id": "animate_objects",
+    "name": "Animate Objects",
+    "description": "Imbues inanimate objects with mobility and animation, attacking designated targets on your command.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6,
+      "bard": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "animate_objects_unit",
+        "targetRole": "area_occupant",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "gargoyle",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "construct",
+      "animation"
+    ]
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "slay_living": {
+    "id": "slay_living",
+    "name": "Slay Living",
+    "description": "Touch attack deals death (Fort save negates; deals 3d6+CL damage on successful save).",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "death"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "partial"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "slay_living_slay",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "onSavePartialDamageDice": "3d6",
+        "onSavePartialFlatScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "onSaveDamageType": "negative"
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "death",
+      "touch"
+    ]
+  }
+}

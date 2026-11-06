@@ -1,0 +1,44 @@
+{
+  "dictum": {
+    "id": "dictum",
+    "name": "Dictum",
+    "description": "Kills, paralyzes, slows, or deafens nonlawful creatures, and banishes chaotic extraplanar creatures.",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "lawful",
+      "sonic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 40,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "evocation",
+      "lawful",
+      "sonic",
+      "banishment",
+      "aoe"
+    ]
+  }
+}

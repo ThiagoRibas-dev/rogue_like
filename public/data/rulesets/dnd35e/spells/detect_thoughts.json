@@ -1,0 +1,46 @@
+{
+  "detect_thoughts": {
+    "id": "detect_thoughts",
+    "name": "Detect Thoughts",
+    "description": "Detects surface thoughts of creatures with INT 1+ within 60 ft.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "concentration",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "cone",
+    "aoeRadiusFt": 60,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "mind_affecting",
+      "telepathy"
+    ]
+  }
+}

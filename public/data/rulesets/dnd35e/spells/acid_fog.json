@@ -1,0 +1,70 @@
+{
+  "acid_fog": {
+    "id": "acid_fog",
+    "name": "Acid Fog",
+    "description": "Creates a 20-ft-radius fog bank that restricts vision, slows movement to 5 ft, and deals 2d6 acid damage each round.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "acid"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "damageDice": "2d6",
+    "damageType": "acid",
+    "effectUnits": [
+      {
+        "unitId": "acid_fog_damage",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "2d6",
+        "damageType": "acid",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "acid_fog_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "fog",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "movementCostMultiplier": 4,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "acid",
+      "cloud",
+      "hazard"
+    ]
+  }
+}

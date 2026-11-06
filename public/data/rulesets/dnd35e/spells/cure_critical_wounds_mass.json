@@ -1,0 +1,63 @@
+{
+  "cure_critical_wounds_mass": {
+    "id": "cure_critical_wounds_mass",
+    "name": "Mass Cure Critical Wounds",
+    "description": "Cures 4d8 hit points + 1 point per caster level (max +40) on one ally per level within 30 ft.",
+    "level": 8,
+    "levelByClass": {
+      "cleric": 8,
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 30,
+    "damageDice": "4d8",
+    "effectUnits": [
+      {
+        "unitId": "mass_cure_crit_heal",
+        "targetRole": "area_occupant",
+        "type": "healing",
+        "dice": "4d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 40
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "healing",
+      "mass",
+      "positive_energy"
+    ]
+  }
+}

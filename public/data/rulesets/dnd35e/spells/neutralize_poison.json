@@ -1,0 +1,57 @@
+{
+  "neutralize_poison": {
+    "id": "neutralize_poison",
+    "name": "Neutralize Poison",
+    "description": "Detoxifies poison in or on subject.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 3,
+      "ranger": 3,
+      "bard": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "cure_poison_unit",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "poison_neutralized",
+        "eachRoundSaveRetry": false,
+        "curesConditions": [
+          "poisoned"
+        ]
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "cure_poison"
+    ]
+  }
+}

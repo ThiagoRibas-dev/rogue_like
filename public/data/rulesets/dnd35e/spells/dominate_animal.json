@@ -1,0 +1,64 @@
+{
+  "dominate_animal": {
+    "id": "dominate_animal",
+    "name": "Dominate Animal",
+    "description": "Telepathically control an animal.",
+    "level": 3,
+    "levelByClass": {
+      "druid": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "dominate_animal_condition",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:animal"
+          ]
+        },
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "condition",
+        "conditionId": "dominated",
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "animals",
+      "compulsion"
+    ]
+  }
+}

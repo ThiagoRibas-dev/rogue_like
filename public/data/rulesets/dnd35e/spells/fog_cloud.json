@@ -1,0 +1,53 @@
+{
+  "fog_cloud": {
+    "id": "fog_cloud",
+    "name": "Fog Cloud",
+    "description": "Fog obscures vision beyond 5 ft, providing concealment.",
+    "level": 2,
+    "levelByClass": {
+      "wizard": 2,
+      "sorcerer": 2,
+      "druid": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "fog_cloud_field",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "fog",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "obscurement"
+    ]
+  }
+}

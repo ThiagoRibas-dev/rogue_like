@@ -1,0 +1,63 @@
+{
+  "entropic_shield": {
+    "id": "entropic_shield",
+    "name": "Entropic Shield",
+    "description": "Ranged attacks against you suffer a 20% miss chance.",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "entropic_shield_bundle",
+      "name": "Entropic Shield",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "entropic_shield_miss_chance",
+          "ruleKey": "ranged_attack_miss_chance",
+          "value": 20,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "entropic_shield_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "defense",
+      "ranged_defense"
+    ]
+  }
+}

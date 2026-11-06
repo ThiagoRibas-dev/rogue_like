@@ -1,0 +1,74 @@
+{
+  "fire_shield": {
+    "id": "fire_shield",
+    "name": "Fire Shield",
+    "description": "Wreaths you in warm or chill flames: melee attackers taking full damage take 1d6 + 1/CL fire or cold damage.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "fire",
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "1d6",
+    "damageType": "fire",
+    "effectBundle": {
+      "bundleId": "fire_shield_bundle",
+      "name": "Fire Shield",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "fire_shield_retaliate",
+          "ruleKey": "retaliatory_damage_dice",
+          "value": "1d6",
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "fire_shield_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {
+        "cold": 10,
+        "fire": 10
+      },
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "evocation",
+      "fire",
+      "cold",
+      "retaliation",
+      "buff"
+    ]
+  }
+}

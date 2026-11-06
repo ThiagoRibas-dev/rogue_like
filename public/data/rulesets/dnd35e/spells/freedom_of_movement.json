@@ -1,0 +1,74 @@
+{
+  "freedom_of_movement": {
+    "id": "freedom_of_movement",
+    "name": "Freedom of Movement",
+    "description": "Subject moves and attacks normally despite solid fog, web, slow, paralysis, or underwater conditions.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 4,
+      "ranger": 4,
+      "bard": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "freedom_of_movement_bundle",
+      "name": "Freedom of Movement",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "fom_auto_escape",
+          "ruleKey": "auto_escape_grapple_and_pins",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "freedom_of_movement_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [
+        "paralysis",
+        "entangled",
+        "slowed"
+      ],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "mobility",
+      "anti_cc"
+    ]
+  }
+}

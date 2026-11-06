@@ -1,0 +1,62 @@
+{
+  "animate_dead": {
+    "id": "animate_dead",
+    "name": "Animate Dead",
+    "description": "Creates undead skeletons or zombies from corpses, up to 2 HD per caster level (max 4 HD/CL controlled).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 50,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "animate_dead_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "wolf",
+            "templateId": "fiendish",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ]
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "evil",
+      "undead",
+      "minion"
+    ]
+  }
+}

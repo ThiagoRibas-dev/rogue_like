@@ -1,0 +1,69 @@
+{
+  "moment_of_prescience": {
+    "id": "moment_of_prescience",
+    "name": "Moment of Prescience",
+    "description": "Grants a single insight bonus equal to your caster level (max +25) on any single attack roll, check, or save.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "moment_of_prescience_bundle",
+      "name": "Moment of Prescience",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "mop_bonus",
+          "target": "d20_insight",
+          "value": 25,
+          "type": "insight"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "moment_of_prescience_ready"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "insight",
+      "buff",
+      "surge"
+    ]
+  }
+}

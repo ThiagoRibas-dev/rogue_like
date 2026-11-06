@@ -1,0 +1,51 @@
+{
+  "antilife_shell": {
+    "id": "antilife_shell",
+    "name": "Antilife Shell",
+    "description": "A mobile 10-ft hemispherical barrier hedges out living creatures (except constructs and undead).",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6,
+      "druid": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "unitId": "antilife_barrier",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "barrier",
+        "radiusFt": 10,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "barrier",
+      "ward"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "commune_with_nature": {
+    "id": "commune_with_nature",
+    "name": "Commune with Nature",
+    "description": "Instantly learn up to one fact per caster level about the surrounding wilderness terrain, animals, or minerals.",
+    "level": 5,
+    "levelByClass": {
+      "druid": 5,
+      "ranger": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "nature",
+      "information"
+    ]
+  }
+}

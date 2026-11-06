@@ -1,0 +1,63 @@
+{
+  "shambler": {
+    "id": "shambler",
+    "name": "Shambler",
+    "description": "Creates 1d4+2 shambling mounds to fight for you or guard a designated location.",
+    "level": 9,
+    "levelByClass": {
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "7 days",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "shambler_unit",
+        "targetRole": "area_occupant",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "troll",
+            "countDice": "1d4+2",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 1000,
+          "perCL": 100,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "plant",
+      "minion"
+    ]
+  }
+}

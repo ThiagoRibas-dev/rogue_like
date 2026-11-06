@@ -1,0 +1,81 @@
+{
+  "summon_monster_iv": {
+    "id": "summon_monster_iv",
+    "name": "Summon Monster IV",
+    "description": "Summons extraplanar creatures (celestial or fiendish) to fight for you for 1 round/level.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "cleric": 4,
+      "bard": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "summoning",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "sm_iv_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "elemental_air",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_earth",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_fire",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_water",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "gargoyle",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "summoning",
+      "allies"
+    ]
+  }
+}

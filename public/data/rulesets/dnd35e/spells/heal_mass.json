@@ -1,0 +1,61 @@
+{
+  "heal_mass": {
+    "id": "heal_mass",
+    "name": "Mass Heal",
+    "description": "Cures 10 points/level (max 250) divided as you choose among multiple creatures in range.",
+    "level": 9,
+    "levelByClass": {
+      "cleric": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "mass_heal_healing",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "0",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 10,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 250
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "panacea",
+      "mass"
+    ]
+  }
+}

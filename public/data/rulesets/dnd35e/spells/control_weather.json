@@ -1,0 +1,45 @@
+{
+  "control_weather": {
+    "id": "control_weather",
+    "name": "Control Weather",
+    "description": "Quickly alters the weather conditions across a 2-mile radius area for 4d12 hours.",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7,
+      "druid": 7,
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "long",
+    "duration": "4d12 hours",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "weather",
+      "environment"
+    ]
+  }
+}

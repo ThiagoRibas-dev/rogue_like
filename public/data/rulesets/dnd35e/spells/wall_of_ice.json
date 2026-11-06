@@ -1,0 +1,41 @@
+{
+  "wall_of_ice": {
+    "id": "wall_of_ice",
+    "name": "Wall of Ice",
+    "description": "Creates an anchored sheet or dome of ice with 3 HP per inch of thickness.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "wall",
+    "aoeRadiusFt": 20,
+    "effectUnits": [],
+    "tags": [
+      "evocation",
+      "cold",
+      "barrier"
+    ]
+  }
+}

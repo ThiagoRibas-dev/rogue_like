@@ -1,0 +1,67 @@
+{
+  "crushing_hand": {
+    "id": "crushing_hand",
+    "name": "Crushing Hand",
+    "description": "Conjures a titanic hand of force that grapples and crushes foes, dealing 2d6+12 bludgeoning damage each round.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "2d6+12",
+    "damageType": "force",
+    "effectUnits": [
+      {
+        "unitId": "crushing_hand_dmg",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "2d6+12",
+        "damageType": "force",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "crushing_hand_pin",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "pinned",
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "force",
+      "grapple",
+      "damage"
+    ]
+  }
+}

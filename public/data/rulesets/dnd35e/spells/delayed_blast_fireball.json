@@ -1,0 +1,62 @@
+{
+  "delayed_blast_fireball": {
+    "id": "delayed_blast_fireball",
+    "name": "Delayed Blast Fireball",
+    "description": "Deals 1d6/level fire damage (max 20d6) in 20-ft spread; blast can be delayed up to 5 rounds.",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "dbf_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 20
+        },
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "fire",
+      "aoe",
+      "delayed"
+    ]
+  }
+}

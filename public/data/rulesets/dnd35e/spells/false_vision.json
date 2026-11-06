@@ -1,0 +1,47 @@
+{
+  "false_vision": {
+    "id": "false_vision",
+    "name": "False Vision",
+    "description": "Protects a 40-ft area from divination (scrying) spells, projecting a false scene of your design.",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5,
+      "bard": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 250,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "illusion",
+      "glamer",
+      "deception",
+      "anti_scrying"
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "power_word_stun": {
+    "id": "power_word_stun",
+    "name": "Power Word Stun",
+    "description": "Stuns creature with 150 or fewer HP (<=50 HP 4d4 rounds; 51-100 HP 2d4 rounds; 101-150 HP 1d4 rounds).",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "varies",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "pws_low",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "stunned",
+        "maxTargetCurrentHp": 50,
+        "durationFormula": "4d4 rounds"
+      },
+      {
+        "unitId": "pws_mid",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "stunned",
+        "minTargetCurrentHp": 51,
+        "maxTargetCurrentHp": 100,
+        "durationFormula": "2d4 rounds"
+      },
+      {
+        "unitId": "pws_high",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "stunned",
+        "minTargetCurrentHp": 101,
+        "maxTargetCurrentHp": 150,
+        "durationFormula": "1d4 rounds"
+      }
+    ],
+    "tags": [
+      "enchantment",
+      "compulsion",
+      "power_word",
+      "stun"
+    ]
+  }
+}

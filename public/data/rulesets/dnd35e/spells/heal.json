@@ -1,0 +1,79 @@
+{
+  "heal": {
+    "id": "heal",
+    "name": "Heal",
+    "description": "Cures 10 points/level of damage (max 150) and removes most negative conditions.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6,
+      "druid": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "heal_healing",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "0",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 10,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 150
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "heal_cures",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "heal_restoration",
+        "eachRoundSaveRetry": false,
+        "curesConditions": [
+          "blinded",
+          "deafened",
+          "fatigued",
+          "exhausted",
+          "nauseated",
+          "sickened",
+          "poisoned",
+          "dazed",
+          "stunned"
+        ]
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "panacea"
+    ]
+  }
+}

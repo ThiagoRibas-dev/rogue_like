@@ -1,0 +1,44 @@
+{
+  "find_the_path": {
+    "id": "find_the_path",
+    "name": "Find the Path",
+    "description": "Finds the most direct physical route to a specified location, bypassing mazes and wrong turns.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6,
+      "druid": 6,
+      "bard": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "navigation",
+      "utility"
+    ]
+  }
+}

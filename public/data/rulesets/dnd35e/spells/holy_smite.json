@@ -1,0 +1,78 @@
+{
+  "holy_smite": {
+    "id": "holy_smite",
+    "name": "Holy Smite",
+    "description": "Unleashes holy power dealing 1d8 damage per 2 CL (max 5d8) to evil creatures and blinding them for 1 round.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "good"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "partial"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 20,
+    "damageDice": "5d8",
+    "damageType": "untyped",
+    "effectUnits": [
+      {
+        "unitId": "holy_smite_dmg",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "type": "damage",
+        "dice": "1d8",
+        "damageType": "untyped",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "holy_smite_blind",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "blinded",
+        "durationRoundsScaling": {
+          "baseValue": 1,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "good",
+      "radiant",
+      "aoe"
+    ]
+  }
+}

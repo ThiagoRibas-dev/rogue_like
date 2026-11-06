@@ -1,0 +1,75 @@
+{
+  "earthquake": {
+    "id": "earthquake",
+    "name": "Earthquake",
+    "description": "Triggers a violent tremor in an 80-ft radius, dealing 8d6 damage to structures, collapsing tunnels, and pinning creatures.",
+    "level": 8,
+    "levelByClass": {
+      "cleric": 8,
+      "druid": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 round",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 80,
+    "damageDice": "8d6",
+    "damageType": "bludgeoning",
+    "effectUnits": [
+      {
+        "unitId": "earthquake_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "8d6",
+        "damageType": "bludgeoning",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "earthquake_pinned",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "ref",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "pinned",
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "earth",
+      "destructive",
+      "aoe"
+    ]
+  }
+}

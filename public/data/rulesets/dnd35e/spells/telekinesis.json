@@ -1,0 +1,44 @@
+{
+  "telekinesis": {
+    "id": "telekinesis",
+    "name": "Telekinesis",
+    "description": "Moves objects or creatures up to 25 lb/level, or conducts combat maneuvers at a distance.",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "concentration",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "force",
+      "utility",
+      "combat_maneuver"
+    ]
+  }
+}

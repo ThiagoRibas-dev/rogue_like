@@ -1,0 +1,72 @@
+{
+  "endure_elements": {
+    "id": "endure_elements",
+    "name": "Endure Elements",
+    "description": "Exist comfortably in hot or cold environments (-50 to 140 degrees F).",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "cleric": 1,
+      "druid": 1,
+      "paladin": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "24 hours",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "endure_elements_bundle",
+      "name": "Endure Elements",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "endure_elements_override",
+          "ruleKey": "immune_environmental_heat_cold",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "endure_elements_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "survival",
+      "environment"
+    ]
+  }
+}

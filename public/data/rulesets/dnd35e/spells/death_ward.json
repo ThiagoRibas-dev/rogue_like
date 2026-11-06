@@ -1,0 +1,80 @@
+{
+  "death_ward": {
+    "id": "death_ward",
+    "name": "Death Ward",
+    "description": "Immunity to all death spells, magical death effects, energy drain, and negative energy effects.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 5,
+      "paladin": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "death_ward_bundle",
+      "name": "Death Ward",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "dw_immune_death",
+          "ruleKey": "immune_death_effects",
+          "value": true,
+          "priority": 10
+        },
+        {
+          "id": "dw_immune_drain",
+          "ruleKey": "immune_energy_drain",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "death_ward_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [
+        "death_effects",
+        "energy_drain",
+        "negative_energy"
+      ],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "necromancy",
+      "ward",
+      "anti_death"
+    ]
+  }
+}

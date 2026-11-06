@@ -1,0 +1,41 @@
+{
+  "soften_earth_and_stone": {
+    "id": "soften_earth_and_stone",
+    "name": "Soften Earth and Stone",
+    "description": "Turns wet earth into mud, reducing movement speed.",
+    "level": 2,
+    "levelByClass": {
+      "druid": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "transmutation",
+      "earth",
+      "terrain"
+    ]
+  }
+}

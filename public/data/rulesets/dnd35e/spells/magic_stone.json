@@ -1,0 +1,39 @@
+{
+  "magic_stone": {
+    "id": "magic_stone",
+    "name": "Magic Stone",
+    "description": "Three pebbles gain +1 attack and deal 1d6+1 damage (2d6+2 against undead).",
+    "level": 1,
+    "levelByClass": {
+      "cleric": 1,
+      "druid": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "30 minutes",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "transmutation",
+      "ranged"
+    ]
+  }
+}

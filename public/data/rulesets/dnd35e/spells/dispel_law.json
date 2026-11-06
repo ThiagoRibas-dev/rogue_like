@@ -1,0 +1,70 @@
+{
+  "dispel_law": {
+    "id": "dispel_law",
+    "name": "Dispel Law",
+    "description": "Grants +4 deflection AC against lawful creatures, and drives them back to their home planes with a melee touch.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "chaotic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "dispel_law_bundle",
+      "name": "Dispel Law",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "dl_ac",
+          "target": "ac_deflection",
+          "value": 4,
+          "type": "deflection"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "dispel_law_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "chaotic",
+      "banishment",
+      "defense"
+    ]
+  }
+}

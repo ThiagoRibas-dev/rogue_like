@@ -341,3 +341,28 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Isolated spellcasting state by class using `spellbooksByClass: Record<string, SpellbookState>` and `learnedSpellsByClass: Record<string, string[]>` on `Dnd35eProgressionComponent`.
   - Step validation (`validateCharacterCreationStep` & `validateLevelUpStep`) automatically bypasses manual spell steps for `prayerbook_prepared` casters (Clerics, Paladins, Druids) while spawning dynamic per-class spell tabs for Arcane casters (Wizards, Bards, Sorcerers).
   - *Rationale*: Multiclass spellcasters in D&D 3.5e keep distinct spell lists, caster levels, and preparation slots per class. Mixing learned spells into a single unified array creates ambiguous spell DC calculations and breaks preparation UI gating.
+
+---
+
+### Milestone 117: Mid- & High-Level Spells (4th–9th Level) & 100% 22-Domain Grimoire Coverage
+
+- **Decision: Modular High-Level Spell Effect Units (`energy_drain`, `save_or_die`, `summon`, `form_overlay`)**:
+  - Expanded `DnD35SpellEffectUnitSchema` with 4 discriminated union variants:
+    - `energy_drain`: Models negative levels with scaling duration or permanence.
+    - `save_or_die`: Models thresholded/conditioned kill, banish, stun, and petrify effects with target HP/HD brackets (`minTargetCurrentHp`, `maxTargetCurrentHp`, `minTargetHitDice`, `maxTargetHitDice`) and on-save partial damage fallbacks.
+    - `summon`: References canonical races (`sys.races`) and optional templates (`sys.templates`) in `summonPool` arrays with count dice and CL scaling.
+    - `form_overlay`: Parameterizes polymorph, baleful polymorph, and shapechange transformations with allowed creature types and ability grants.
+  - *Rationale*: Adheres to ECS data purity and Rule 18 (Universal Actor Symmetry). Avoids custom hardcoded spell mechanics by expressing complex 4th–9th level spell behaviors as data-driven effect units evaluated uniformly by `evaluateSpellEffectUnitsForTarget`.
+
+- **Decision: Declarative Augment Summoning & Effective Caster Level Modifiers (Zero Feat Spaghetti)**:
+  - Eliminated any potential `if (hasFeat('augment_summoning'))` branching in spell resolvers. Instead:
+    - `augment_summoning.json` emits `modifiers` targeting `"summoned_creature:str"` and `"summoned_creature:con"` gated by `condition: { effectTagsAny: ["subschool:summoning", "summoning"] }`.
+    - `materializeSummonedCreatureModifiers` in `spell_modifiers.ts` generically scans active caster `StatModifier[]` targeting `"summoned_creature:<stat>"`, validates against the spell's projected `effectTags`, strips the prefix, and stamps hierarchical `sourcePath` provenance (`"spell:<id>:<castId>/unit:<unitId>/<casterMod.sourcePath>"`).
+    - `resolveSpellEffectiveCasterLevel` evaluates any active caster `StatModifier[]` targeting `"caster_level"` against spell effect tags (e.g. Good/Healing domain +1 CL).
+  - *Rationale*: Preserves Rule 17 & Rule 19 of `AGENTS.md`. New feats, items, or domains that enhance summoned creatures or boost caster level for specific descriptors/schools require zero code changes.
+
+- **Decision: 100% Referential Coverage Across All 22 Cleric Domains**:
+  - Expanded the modular spell catalog from 98 to 289 spell definitions, ensuring every domain spell slot (`domainSpells["1".."9"]`) across all 22 Cleric Domains references a valid, canonical spell file in `public/data/rulesets/dnd35e/spells/<id>.json`.
+  - Enforced disk and registry parity via `system_content_spell_ids.ts` and automated validation in `class_race_validator.ts` and `tests/dnd35e_m117_spells.test.ts`.
+  - *Rationale*: Eliminates broken domain lookups or missing prayerbook spells in character creation, level-up, and domain preparation loops.
+

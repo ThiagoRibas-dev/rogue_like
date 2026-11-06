@@ -1,0 +1,43 @@
+{
+  "divination": {
+    "id": "divination",
+    "name": "Divination",
+    "description": "Offers short, cryptic guidance and omen from your deity regarding an action to be taken in the next week.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 25,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "omen",
+      "utility"
+    ]
+  }
+}

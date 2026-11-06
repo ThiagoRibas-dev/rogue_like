@@ -1,0 +1,62 @@
+{
+  "baleful_polymorph": {
+    "id": "baleful_polymorph",
+    "name": "Baleful Polymorph",
+    "description": "Permanently turns target creature into a harmless 1-HD animal (such as a toad or snail).",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5,
+      "druid": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "baleful_poly_unit",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "form_overlay",
+        "overlayMode": "baleful_polymorph",
+        "allowedCreatureTypes": [
+          "animal"
+        ],
+        "grantsExAbilities": false,
+        "grantsSuAbilities": false,
+        "freeActionFormShift": false
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "polymorph",
+      "curse"
+    ]
+  }
+}

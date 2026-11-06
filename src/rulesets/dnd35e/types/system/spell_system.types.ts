@@ -169,6 +169,47 @@ export const DnD35SpellEffectUnitSchema = z.discriminatedUnion('type', [
   SpellEffectUnitBaseSchema.extend({
     type: z.literal('quicken_cast_grant'),
     maxSpellLevelScaling: DnD35SpellScalingRuleSchema
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('energy_drain'),
+    dice: z.string().default('1d4'),
+    durationHoursScaling: DnD35SpellScalingRuleSchema.optional(),
+    isPermanent: z.boolean().default(false)
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('save_or_die'),
+    onFailOutcome: z.enum(['dead', 'blinded', 'stunned', 'petrified', 'banished']).default('dead'),
+    minTargetCurrentHp: z.number().int().optional(),
+    maxTargetCurrentHp: z.number().int().optional(),
+    minTargetHitDice: z.number().int().positive().optional(),
+    maxTargetHitDice: z.number().int().positive().optional(),
+    durationFormula: z.string().optional(),
+    onSavePartialDamageDice: z.string().optional(),
+    onSavePartialFlatScaling: DnD35SpellScalingRuleSchema.optional(),
+    onSaveDamageType: DnD35DamageTypeSchema.optional()
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('summon'),
+    summonPool: z
+      .array(
+        z.object({
+          raceId: z.string(),
+          templateId: z.string().optional(),
+          countDice: z.string().default('1'),
+          minCasterLevel: z.number().int().positive().default(1)
+        })
+      )
+      .default([]),
+    durationRoundsScaling: DnD35SpellScalingRuleSchema.optional()
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('form_overlay'),
+    overlayMode: z.enum(['baleful_polymorph', 'polymorph', 'shapechange']).default('polymorph'),
+    allowedCreatureTypes: z.array(z.string()).default([]),
+    maxHitDiceScaling: DnD35SpellScalingRuleSchema.optional(),
+    grantsExAbilities: z.boolean().default(false),
+    grantsSuAbilities: z.boolean().default(false),
+    freeActionFormShift: z.boolean().default(false)
   })
 ]);
 export type DnD35SpellEffectUnit = z.infer<typeof DnD35SpellEffectUnitSchema>;

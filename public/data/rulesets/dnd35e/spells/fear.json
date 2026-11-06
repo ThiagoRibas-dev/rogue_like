@@ -1,0 +1,62 @@
+{
+  "fear": {
+    "id": "fear",
+    "name": "Fear",
+    "description": "30-ft cone causes creatures to flee Panicked for 1 round/level (Shaken for 1 round if save succeeds).",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "mind_affecting",
+      "fear"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "partial"
+    },
+    "aoeShape": "cone",
+    "aoeRadiusFt": 30,
+    "effectUnits": [
+      {
+        "unitId": "fear_panicked",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "partial"
+        },
+        "allowsSpellResistance": true,
+        "type": "condition",
+        "conditionId": "panicked",
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "fear",
+      "mind_affecting",
+      "aoe"
+    ]
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "protection_from_spells": {
+    "id": "protection_from_spells",
+    "name": "Protection from Spells",
+    "description": "Grants target creature an +8 resistance bonus on saving throws against spells and spell-like abilities.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 500,
+      "focusCostGp": 1000,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "protection_from_spells_bundle",
+      "name": "Protection from Spells",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "pfs_saves",
+          "target": "saves_all",
+          "value": 8,
+          "type": "resistance"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "protection_from_spells_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "saves",
+      "buff",
+      "ward"
+    ]
+  }
+}

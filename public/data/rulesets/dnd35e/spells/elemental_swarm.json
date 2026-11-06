@@ -1,0 +1,83 @@
+{
+  "elemental_swarm": {
+    "id": "elemental_swarm",
+    "name": "Elemental Swarm",
+    "description": "Opens a portal summoning 2d4 Large elementals, followed in 10 minutes by 1d4 Huge, and then 1 Greater elemental.",
+    "level": 9,
+    "levelByClass": {
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "summoning",
+    "descriptors": [
+      "air",
+      "earth",
+      "fire",
+      "water"
+    ],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "medium",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "elem_swarm_unit",
+        "targetRole": "area_occupant",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "elemental_fire",
+            "countDice": "2d4",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_water",
+            "countDice": "2d4",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_air",
+            "countDice": "2d4",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "elemental_earth",
+            "countDice": "2d4",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 100,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "summoning",
+      "elemental",
+      "swarm"
+    ]
+  }
+}

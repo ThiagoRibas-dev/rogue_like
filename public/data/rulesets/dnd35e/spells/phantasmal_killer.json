@@ -1,0 +1,59 @@
+{
+  "phantasmal_killer": {
+    "id": "phantasmal_killer",
+    "name": "Phantasmal Killer",
+    "description": "Fearsome illusion causes target to make Will disbelief save; if failed, Fort save or die of fright (deals 3d6 damage on save).",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "phantasm",
+    "descriptors": [
+      "mind_affecting",
+      "fear",
+      "death"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "disbelief"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "phantasmal_killer_death",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "onSavePartialDamageDice": "3d6",
+        "onSaveDamageType": "untyped"
+      }
+    ],
+    "tags": [
+      "illusion",
+      "phantasm",
+      "fear",
+      "death",
+      "mind_affecting"
+    ]
+  }
+}

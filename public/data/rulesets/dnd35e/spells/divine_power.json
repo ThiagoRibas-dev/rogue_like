@@ -1,0 +1,71 @@
+{
+  "divine_power": {
+    "id": "divine_power",
+    "name": "Divine Power",
+    "description": "Your BAB becomes equal to your character level, and you gain +6 enhancement to Str and 1 temp HP per CL.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "divine_power_bundle",
+      "name": "Divine Power",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "dp_str",
+          "target": "str",
+          "value": 6,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "dp_full_bab",
+          "ruleKey": "bab_equals_character_level",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "divine_power_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "evocation",
+      "buff",
+      "combat_enhancement"
+    ]
+  }
+}

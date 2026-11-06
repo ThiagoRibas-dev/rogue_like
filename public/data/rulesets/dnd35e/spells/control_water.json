@@ -1,0 +1,47 @@
+{
+  "control_water": {
+    "id": "control_water",
+    "name": "Control Water",
+    "description": "Raises or lowers water levels in a designated area by up to 2 ft per caster level.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 4,
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "water"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "water",
+      "environment"
+    ]
+  }
+}

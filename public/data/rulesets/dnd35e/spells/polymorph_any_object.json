@@ -1,0 +1,62 @@
+{
+  "polymorph_any_object": {
+    "id": "polymorph_any_object",
+    "name": "Polymorph Any Object",
+    "description": "Transforms any object or creature into another object or creature with duration scaling up to permanent.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "see text",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "polymorph_any_object_overlay",
+        "targetRole": "primary_target",
+        "type": "form_overlay",
+        "overlayMode": "polymorph",
+        "allowedCreatureTypes": [
+          "animal",
+          "humanoid",
+          "monstrous_humanoid",
+          "magical_beast",
+          "giant",
+          "dragon",
+          "aberration"
+        ],
+        "grantsExAbilities": true,
+        "grantsSuAbilities": false,
+        "freeActionFormShift": false
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "polymorph",
+      "transformation"
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "prismatic_spray": {
+    "id": "prismatic_spray",
+    "name": "Prismatic Spray",
+    "description": "Rays hit subjects with 1 or 2 of 7 colors: fire, acid, electricity, poison, petrify, insanity, or planar banishment.",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "cone",
+    "aoeRadiusFt": 60,
+    "effectUnits": [
+      {
+        "unitId": "prismatic_spray_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "20d6",
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "prismatic",
+      "cone",
+      "chaos"
+    ]
+  }
+}

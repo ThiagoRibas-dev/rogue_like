@@ -1,0 +1,80 @@
+{
+  "stoneskin": {
+    "id": "stoneskin",
+    "name": "Stoneskin",
+    "description": "Grants DR 10/adamantine, absorbing up to 10 points per caster level (max 150 points).",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "druid": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 250,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "stoneskin_bundle",
+      "name": "Stoneskin",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "stoneskin_dr",
+          "target": "dr",
+          "value": 10,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "stoneskin_dr_bypass",
+          "ruleKey": "dr_bypass_tags",
+          "value": "adamantine",
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "stoneskin_active",
+        "dr:10/adamantine"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "defense",
+      "dr"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "calm_animals": {
+    "id": "calm_animals",
+    "name": "Calm Animals",
+    "description": "Calms 2d4 + CL animals, soothing hostile beasts.",
+    "level": 1,
+    "levelByClass": {
+      "druid": 1,
+      "ranger": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "calm_animals_condition",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:animal"
+          ]
+        },
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "condition",
+        "conditionId": "calmed",
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "animals",
+      "enchantment"
+    ]
+  }
+}

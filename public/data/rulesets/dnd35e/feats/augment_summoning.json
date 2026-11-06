@@ -8,6 +8,32 @@
       "type": "has_feat",
       "featId": "spell_focus"
     },
+    "modifiers": [
+      {
+        "id": "augment_summoning_str",
+        "target": "summoned_creature:str",
+        "value": 4,
+        "type": "enhancement",
+        "condition": {
+          "effectTagsAny": [
+            "subschool:summoning",
+            "summoning"
+          ]
+        }
+      },
+      {
+        "id": "augment_summoning_con",
+        "target": "summoned_creature:con",
+        "value": 4,
+        "type": "enhancement",
+        "condition": {
+          "effectTagsAny": [
+            "subschool:summoning",
+            "summoning"
+          ]
+        }
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "summoned_creature_str_con_enhancement",

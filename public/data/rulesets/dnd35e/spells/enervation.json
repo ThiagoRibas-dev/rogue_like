@@ -1,0 +1,54 @@
+{
+  "enervation": {
+    "id": "enervation",
+    "name": "Enervation",
+    "description": "Ranged touch ray bestows 1d4 temporary negative levels with no saving throw.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "enervation_drain",
+        "targetRole": "primary_target",
+        "type": "energy_drain",
+        "dice": "1d4",
+        "durationHoursScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "isPermanent": false
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "negative_levels",
+      "ray",
+      "debilitation"
+    ]
+  }
+}

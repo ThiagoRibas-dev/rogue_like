@@ -1,0 +1,44 @@
+{
+  "discern_location": {
+    "id": "discern_location",
+    "name": "Discern Location",
+    "description": "Instantly senses the exact name and location of any creature or object you have touched or seen.",
+    "level": 8,
+    "levelByClass": {
+      "cleric": 8,
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "unlimited",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "scrying",
+      "utility"
+    ]
+  }
+}

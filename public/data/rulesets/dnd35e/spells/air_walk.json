@@ -1,0 +1,65 @@
+{
+  "air_walk": {
+    "id": "air_walk",
+    "name": "Air Walk",
+    "description": "Target can tread on air as if walking on solid ground, ascending or descending at a 45-degree angle.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "air"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "air_walk_bundle",
+      "name": "Air Walk",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "air_walk_active",
+        "trait:walk_on_air"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "air",
+      "mobility",
+      "buff"
+    ]
+  }
+}

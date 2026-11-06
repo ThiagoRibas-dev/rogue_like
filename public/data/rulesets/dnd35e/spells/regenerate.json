@@ -1,0 +1,61 @@
+{
+  "regenerate": {
+    "id": "regenerate",
+    "name": "Regenerate",
+    "description": "Subject's severed body members grow back; cures 4d8 + CL (max +35) and exhaustion/fatigue.",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7,
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "regenerate_heal",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "4d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 35
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "regeneration"
+    ]
+  }
+}

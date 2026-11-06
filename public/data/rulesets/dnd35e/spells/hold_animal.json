@@ -1,0 +1,66 @@
+{
+  "hold_animal": {
+    "id": "hold_animal",
+    "name": "Hold Animal",
+    "description": "Paralyzes one animal for 1 round/level.",
+    "level": 2,
+    "levelByClass": {
+      "druid": 2,
+      "ranger": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "hold_animal_paralysis",
+        "targetRole": "primary_target",
+        "condition": {
+          "targetTagsAll": [
+            "type:animal"
+          ]
+        },
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "condition",
+        "conditionId": "paralyzed",
+        "eachRoundSaveRetry": true,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "enchantment",
+      "animals",
+      "paralysis"
+    ]
+  }
+}

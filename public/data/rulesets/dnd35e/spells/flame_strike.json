@@ -1,0 +1,62 @@
+{
+  "flame_strike": {
+    "id": "flame_strike",
+    "name": "Flame Strike",
+    "description": "Column of divine fire deals 1d6/level damage (max 15d6), half fire and half divine power.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5,
+      "druid": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "cylinder",
+    "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "unitId": "flame_strike_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 15
+        },
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "fire",
+      "aoe"
+    ]
+  }
+}

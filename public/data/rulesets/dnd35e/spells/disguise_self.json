@@ -1,0 +1,66 @@
+{
+  "disguise_self": {
+    "id": "disguise_self",
+    "name": "Disguise Self",
+    "description": "Changes your appearance, granting +10 bonus on Disguise checks.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "disguise_self_bundle",
+      "name": "Disguise Self",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "disguise_self_skill",
+          "target": "disguise",
+          "value": 10,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "disguised"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "illusion",
+      "glamer",
+      "social"
+    ]
+  }
+}

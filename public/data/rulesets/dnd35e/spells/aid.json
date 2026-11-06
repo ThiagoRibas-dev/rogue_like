@@ -1,0 +1,105 @@
+{
+  "aid": {
+    "id": "aid",
+    "name": "Aid",
+    "description": "Target gains +1 morale bonus on attack rolls and saves against fear, plus 1d8 temporary hit points + 1 point per caster level (max +10).",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "aid_temp_hp",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 10
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": true,
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "aid_buff",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "aid_buff_bundle",
+          "name": "Aid Buff",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "aid_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "morale"
+            },
+            {
+              "id": "aid_fear_save",
+              "target": "save_fear",
+              "value": 1,
+              "type": "morale",
+              "condition": {
+                "effectTagsAny": [
+                  "descriptor:fear",
+                  "fear"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "aided"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "buff",
+      "morale",
+      "temporary_hp"
+    ]
+  }
+}

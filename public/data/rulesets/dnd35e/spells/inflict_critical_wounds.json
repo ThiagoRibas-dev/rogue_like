@@ -1,0 +1,58 @@
+{
+  "inflict_critical_wounds": {
+    "id": "inflict_critical_wounds",
+    "name": "Inflict Critical Wounds",
+    "description": "Touch attack deals 4d8 damage + 1/level (max +20) to living creatures or heals undead.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "inflict_crit_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "4d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 20
+        },
+        "damageType": "negative",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "inflict"
+    ]
+  }
+}

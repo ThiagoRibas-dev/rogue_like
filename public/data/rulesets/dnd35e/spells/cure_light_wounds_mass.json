@@ -1,0 +1,64 @@
+{
+  "cure_light_wounds_mass": {
+    "id": "cure_light_wounds_mass",
+    "name": "Mass Cure Light Wounds",
+    "description": "Cures 1d8 hit points + 1 point per caster level (max +25) on one ally per level within 30 ft.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5,
+      "druid": 6,
+      "bard": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 30,
+    "damageDice": "1d8",
+    "effectUnits": [
+      {
+        "unitId": "mass_cure_light_heal",
+        "targetRole": "area_occupant",
+        "type": "healing",
+        "dice": "1d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 25
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "healing",
+      "mass",
+      "positive_energy"
+    ]
+  }
+}

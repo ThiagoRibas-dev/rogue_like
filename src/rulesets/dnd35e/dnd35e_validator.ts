@@ -98,6 +98,36 @@ export function validateDnD35eSystemContentIntegrity(
         }
       }
     }
+    for (const unit of spellDef.effectUnits) {
+      if (unit.type === 'summon') {
+        for (const entry of unit.summonPool) {
+          if (Object.keys(sys.races).length > 0 && !sys.races[entry.raceId]) {
+            errors.push({
+              path: `systemContent.spells.${spellKey}.effectUnits.${unit.unitId}.summonPool`,
+              message: `Spell "${spellKey}" summon unit "${unit.unitId}" references unknown race "${entry.raceId}".`,
+              severity: 'error'
+            });
+          }
+          if (entry.templateId && Object.keys(sys.templates).length > 0 && !sys.templates[entry.templateId]) {
+            errors.push({
+              path: `systemContent.spells.${spellKey}.effectUnits.${unit.unitId}.summonPool`,
+              message: `Spell "${spellKey}" summon unit "${unit.unitId}" references unknown template "${entry.templateId}".`,
+              severity: 'error'
+            });
+          }
+        }
+      } else if (unit.type === 'form_overlay') {
+        for (const ct of unit.allowedCreatureTypes) {
+          if (Object.keys(sys.creatureTypes).length > 0 && !sys.creatureTypes[ct]) {
+            errors.push({
+              path: `systemContent.spells.${spellKey}.effectUnits.${unit.unitId}.allowedCreatureTypes`,
+              message: `Spell "${spellKey}" form_overlay unit "${unit.unitId}" references unknown creatureType "${ct}".`,
+              severity: 'error'
+            });
+          }
+        }
+      }
+    }
   }
 
   for (const [skillKey, skillDef] of Object.entries(sys.skills)) {

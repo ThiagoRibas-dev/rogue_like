@@ -1,0 +1,74 @@
+{
+  "whirlwind": {
+    "id": "whirlwind",
+    "name": "Whirlwind",
+    "description": "Conjures a cyclone of shrieking wind that batters foes for 2d6 damage per round and traps small and medium creatures.",
+    "level": 8,
+    "levelByClass": {
+      "druid": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "air"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "cylinder",
+    "aoeRadiusFt": 10,
+    "damageDice": "2d6",
+    "damageType": "bludgeoning",
+    "effectUnits": [
+      {
+        "unitId": "whirlwind_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "2d6",
+        "damageType": "bludgeoning",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "whirlwind_pinned",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "ref",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "pinned",
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "air",
+      "cyclone",
+      "hazard"
+    ]
+  }
+}

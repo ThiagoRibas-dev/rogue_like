@@ -1,0 +1,43 @@
+{
+  "stone_shape": {
+    "id": "stone_shape",
+    "name": "Stone Shape",
+    "description": "Sculpts existing stone into any shape (10 cu ft + 1 cu ft/level).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "druid": 3,
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "earth",
+      "utility"
+    ]
+  }
+}

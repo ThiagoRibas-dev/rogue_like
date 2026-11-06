@@ -1,0 +1,78 @@
+{
+  "feeblemind": {
+    "id": "feeblemind",
+    "name": "Feeblemind",
+    "description": "Target's Int and Cha drop to 1; arcane spellcasters suffer a -4 penalty on saving throw.",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "feeblemind_int",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "ability_harm",
+        "ability": "int",
+        "harmKind": "penalty",
+        "dice": "99",
+        "minimumScore": 1,
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "feeblemind_cha",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "ability_harm",
+        "ability": "cha",
+        "harmKind": "penalty",
+        "dice": "99",
+        "minimumScore": 1,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "enchantment",
+      "compulsion",
+      "anti_caster",
+      "mind_affecting"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "repulsion": {
+    "id": "repulsion",
+    "name": "Repulsion",
+    "description": "An invisible aura repels creatures, preventing them from approaching within 10 ft per caster level.",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7,
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "repulsion_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "barrier",
+        "radiusFt": 30,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "ward",
+      "repulsion",
+      "crowd_control"
+    ]
+  }
+}

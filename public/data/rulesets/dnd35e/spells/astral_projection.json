@@ -1,0 +1,45 @@
+{
+  "astral_projection": {
+    "id": "astral_projection",
+    "name": "Astral Projection",
+    "description": "Frees your astral spirit and that of up to one companion per two caster levels to traverse the Astral Plane.",
+    "level": 9,
+    "levelByClass": {
+      "cleric": 9,
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_minute",
+    "range": "touch",
+    "duration": "see text",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 1000,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "necromancy",
+      "planar",
+      "teleportation"
+    ]
+  }
+}

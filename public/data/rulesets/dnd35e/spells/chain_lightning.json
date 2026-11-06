@@ -1,0 +1,77 @@
+{
+  "chain_lightning": {
+    "id": "chain_lightning",
+    "name": "Chain Lightning",
+    "description": "Deals 1d6/level damage (max 20d6) to primary target, and half damage to up to CL secondary targets.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "electricity"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "chain_lightning_primary",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 20
+        },
+        "damageType": "electricity",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "chain_lightning_secondary",
+        "targetRole": "secondary_enemy",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 0.5,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 10
+        },
+        "damageType": "electricity",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "electricity",
+      "chain",
+      "aoe"
+    ]
+  }
+}

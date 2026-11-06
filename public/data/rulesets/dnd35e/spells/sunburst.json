@@ -1,0 +1,77 @@
+{
+  "sunburst": {
+    "id": "sunburst",
+    "name": "Sunburst",
+    "description": "Blinding flash of sunlight deals 6d6 damage to creatures in 80-ft burst (or 1d6/CL max 25d6 to undead) and permanently blinds.",
+    "level": 8,
+    "levelByClass": {
+      "druid": 8,
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "light"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "partial"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 80,
+    "damageDice": "6d6",
+    "damageType": "positive",
+    "effectUnits": [
+      {
+        "unitId": "sunburst_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "6d6",
+        "damageType": "positive",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "sunburst_blind",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "ref",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "blinded",
+        "durationRoundsScaling": {
+          "baseValue": 14400,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "light",
+      "radiant",
+      "undead_killer",
+      "apex"
+    ]
+  }
+}

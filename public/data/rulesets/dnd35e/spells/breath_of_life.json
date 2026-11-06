@@ -1,0 +1,60 @@
+{
+  "breath_of_life": {
+    "id": "breath_of_life",
+    "name": "Breath of Life",
+    "description": "Cures 5d8 + CL (max +25) damage; if cast within 1 round of death, restores a dead creature to life.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "breath_of_life_heal",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "5d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 25
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "resurrection"
+    ]
+  }
+}

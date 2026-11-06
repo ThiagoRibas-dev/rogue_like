@@ -178,4 +178,48 @@ export function renderSpellInspector(
   const tagEntries = Object.entries(spell.levelByAccessTag ?? {}).map(([t, l]) => `${t} ${l}`);
   avail.textContent = [...clsEntries, ...domEntries, ...tagEntries].join(' • ') || `Level ${spell.level}`;
   pane.appendChild(avail);
+
+  if (spell.effectUnits && spell.effectUnits.length > 0) {
+    pane.appendChild(createInspectorSectionTitle('Modular Effect Units'));
+    const unitList = document.createElement('div');
+    unitList.style.display = 'flex';
+    unitList.style.flexDirection = 'column';
+    unitList.style.gap = '4px';
+    unitList.style.fontSize = '0.82rem';
+
+    for (const u of spell.effectUnits) {
+      const row = document.createElement('div');
+      row.style.color = '#c9d1d9';
+      let summary = `${u.unitId} (${u.type} • ${u.targetRole})`;
+      if (u.type === 'damage') {
+        summary = `⚔ Damage: ${u.dice} ${u.damageType}`;
+      } else if (u.type === 'healing') {
+        summary = `✚ Healing: ${u.dice}${u.isTemporaryHp ? ' (Temp HP)' : ''}`;
+      } else if (u.type === 'ability_harm') {
+        summary = `⚡ ${u.harmKind.toUpperCase()}: ${u.dice} ${u.ability.toUpperCase()}`;
+      } else if (u.type === 'condition') {
+        summary = `⬢ Condition: ${u.conditionId}`;
+      } else if (u.type === 'stat_bundle') {
+        summary = `✦ Buff: ${u.effectBundle.name}`;
+      } else if (u.type === 'spatial_field') {
+        summary = `◉ Field: ${u.fieldType} (${u.radiusFt} ft)`;
+      } else if (u.type === 'dispel') {
+        summary = `✕ Dispel: Max CL +${u.maxCasterLevelBonus}`;
+      } else if (u.type === 'quicken_cast_grant') {
+        summary = `⏩ Quicken Cast Grant`;
+      } else if (u.type === 'energy_drain') {
+        summary = `☠ Energy Drain: ${u.dice} negative levels`;
+      } else if (u.type === 'save_or_die') {
+        summary = `☠ Save or Die: ${u.onFailOutcome.toUpperCase()}`;
+      } else if (u.type === 'summon') {
+        const pool = u.summonPool.map((p) => (p.templateId ? `${p.templateId} ${p.raceId}` : p.raceId)).join(', ');
+        summary = `🐾 Summon: ${pool || 'creatures'}`;
+      } else if (u.type === 'form_overlay') {
+        summary = `✨ Form Overlay: ${u.overlayMode} (${u.allowedCreatureTypes.join(', ') || 'all'})`;
+      }
+      row.textContent = summary;
+      unitList.appendChild(row);
+    }
+    pane.appendChild(unitList);
+  }
 }

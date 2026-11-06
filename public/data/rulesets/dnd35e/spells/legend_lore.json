@@ -1,0 +1,46 @@
+{
+  "legend_lore": {
+    "id": "legend_lore",
+    "name": "Legend Lore",
+    "description": "Uncovers esoteric legends and lore regarding a legendary person, place, or artifact.",
+    "level": 6,
+    "levelByClass": {
+      "bard": 4,
+      "cleric": 6,
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 250,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "lore",
+      "utility"
+    ]
+  }
+}

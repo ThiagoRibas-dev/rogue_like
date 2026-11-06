@@ -1,0 +1,89 @@
+{
+  "cloudkill": {
+    "id": "cloudkill",
+    "name": "Cloudkill",
+    "description": "Poisonous fog kills creatures up to 3 HD automatically; 4-6 HD make Fort save or die; 6+ HD take 1d4 Con damage/round.",
+    "level": 5,
+    "levelByClass": {
+      "wizard": 5,
+      "sorcerer": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "poison"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "cloudkill_field",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "poison_gas",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "cloudkill_low_hd_slay",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "maxTargetHitDice": 3
+      },
+      {
+        "unitId": "cloudkill_mid_hd_slay",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "minTargetHitDice": 4,
+        "maxTargetHitDice": 6
+      },
+      {
+        "unitId": "cloudkill_con_damage",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "half"
+        },
+        "type": "ability_harm",
+        "ability": "con",
+        "harmKind": "damage",
+        "dice": "1d4",
+        "minimumScore": 1,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "poison",
+      "death",
+      "fog"
+    ]
+  }
+}

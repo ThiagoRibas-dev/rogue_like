@@ -1,0 +1,44 @@
+{
+  "blasphemy": {
+    "id": "blasphemy",
+    "name": "Blasphemy",
+    "description": "Kills, paralyzes, weakens, or dazes nonevil creatures, and banishes good extraplanar creatures.",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "evil",
+      "sonic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "burst",
+    "aoeRadiusFt": 40,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "evocation",
+      "evil",
+      "sonic",
+      "banishment",
+      "aoe"
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "horrid_wilting": {
+    "id": "horrid_wilting",
+    "name": "Horrid Wilting",
+    "description": "Deals 1d6/level damage (max 20d6) to living creatures (1d8/level to water elementals and plants).",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "wilting_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 20
+        },
+        "damageType": "untyped",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "desiccation",
+      "aoe"
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "obscuring_mist": {
+    "id": "obscuring_mist",
+    "name": "Obscuring Mist",
+    "description": "Fog surrounds you in 20-ft radius, providing concealment.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "cleric": 1,
+      "druid": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "obscuring_mist_field",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "fog",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "obscurement"
+    ]
+  }
+}

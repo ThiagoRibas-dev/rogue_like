@@ -1,0 +1,60 @@
+{
+  "spike_stones": {
+    "id": "spike_stones",
+    "name": "Spike Stones",
+    "description": "Rocky ground sprouts sharp stone spikes, dealing 1d8 piercing damage per 5 ft moved and halving speed.",
+    "level": 4,
+    "levelByClass": {
+      "druid": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "partial"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "damageDice": "1d8",
+    "damageType": "piercing",
+    "effectUnits": [
+      {
+        "unitId": "spike_stones_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "hazard",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "earth",
+      "hazard",
+      "movement_reduction"
+    ]
+  }
+}

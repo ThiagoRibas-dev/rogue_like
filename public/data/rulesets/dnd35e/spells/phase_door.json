@@ -1,0 +1,45 @@
+{
+  "phase_door": {
+    "id": "phase_door",
+    "name": "Phase Door",
+    "description": "Creates an invisible, ethereal passageway through wooden, plaster, or stone walls usable only by you.",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 use/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "conjuration",
+      "creation",
+      "passage",
+      "mobility"
+    ]
+  }
+}

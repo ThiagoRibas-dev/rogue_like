@@ -1,0 +1,64 @@
+{
+  "spell_turning": {
+    "id": "spell_turning",
+    "name": "Spell Turning",
+    "description": "Reflect 1d4+6 spell levels of targeted spells back at their casters.",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "spell_turning_bundle",
+      "name": "Spell Turning",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "st_reflect",
+          "ruleKey": "reflects_targeted_spells",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "spell_turning_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "defense",
+      "reflection"
+    ]
+  }
+}

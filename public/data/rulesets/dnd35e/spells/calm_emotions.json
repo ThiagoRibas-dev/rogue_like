@@ -1,0 +1,61 @@
+{
+  "calm_emotions": {
+    "id": "calm_emotions",
+    "name": "Calm Emotions",
+    "description": "Calms agitated creatures, suppressing rage, morale bonuses, and fear.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2,
+      "bard": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "concentration",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "calm_emotions_condition",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "condition",
+        "conditionId": "calmed",
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "divine",
+      "arcane",
+      "enchantment",
+      "calm"
+    ]
+  }
+}

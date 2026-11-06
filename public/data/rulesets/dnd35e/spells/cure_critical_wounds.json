@@ -1,0 +1,62 @@
+{
+  "cure_critical_wounds": {
+    "id": "cure_critical_wounds",
+    "name": "Cure Critical Wounds",
+    "description": "Cures 4d8 damage + 1/level (max +20) or deals equivalent damage to undead.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4,
+      "druid": 5,
+      "bard": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "healing",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "cure_crit_heal",
+        "targetRole": "primary_target",
+        "type": "healing",
+        "dice": "4d8",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 20
+        },
+        "invertsForUndead": true,
+        "isTemporaryHp": false,
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "healing",
+      "cure"
+    ]
+  }
+}

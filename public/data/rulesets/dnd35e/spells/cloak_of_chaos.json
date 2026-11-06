@@ -1,0 +1,84 @@
+{
+  "cloak_of_chaos": {
+    "id": "cloak_of_chaos",
+    "name": "Cloak of Chaos",
+    "description": "Surrounds subjects with chaotic light: +4 deflection AC, +4 resistance to saves, SR 25 vs lawful spells, and lawful attackers are confused.",
+    "level": 8,
+    "levelByClass": {
+      "cleric": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "chaotic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 20,
+    "effectBundle": {
+      "bundleId": "cloak_of_chaos_bundle",
+      "name": "Cloak of Chaos",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "coc_ac",
+          "target": "ac_deflection",
+          "value": 4,
+          "type": "deflection"
+        },
+        {
+          "id": "coc_saves",
+          "target": "saves_all",
+          "value": 4,
+          "type": "resistance"
+        },
+        {
+          "id": "coc_sr",
+          "target": "spell_resistance",
+          "value": 25,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "cloak_of_chaos_active",
+        "ward:chaos"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "chaotic",
+      "buff",
+      "defense",
+      "sr"
+    ]
+  }
+}

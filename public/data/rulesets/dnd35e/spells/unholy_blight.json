@@ -1,0 +1,79 @@
+{
+  "unholy_blight": {
+    "id": "unholy_blight",
+    "name": "Unholy Blight",
+    "description": "Unleashes cold, cloying unholy miasma dealing 1d8 damage per 2 CL (max 5d8) to good creatures and sickening them for 1d4 rounds.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "partial"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 20,
+    "damageDice": "5d8",
+    "damageType": "untyped",
+    "effectUnits": [
+      {
+        "unitId": "unholy_blight_dmg",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "half"
+        },
+        "type": "damage",
+        "dice": "1d8",
+        "damageType": "untyped",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "unholy_blight_sicken",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "sickened",
+        "durationRoundsScaling": {
+          "baseValue": 2,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "evocation",
+      "evil",
+      "miasma",
+      "aoe",
+      "debuff"
+    ]
+  }
+}

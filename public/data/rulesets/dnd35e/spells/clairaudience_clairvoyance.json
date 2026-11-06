@@ -1,0 +1,42 @@
+{
+  "clairaudience_clairvoyance": {
+    "id": "clairaudience_clairvoyance",
+    "name": "Clairaudience/Clairvoyance",
+    "description": "Hear or see at a distance for 1 min/level.",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3,
+      "cleric": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "subschool": "scrying",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_minute",
+    "range": "long",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "scrying",
+      "sensory"
+    ]
+  }
+}

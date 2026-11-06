@@ -1,0 +1,61 @@
+{
+  "blade_barrier": {
+    "id": "blade_barrier",
+    "name": "Blade Barrier",
+    "description": "Whirling blades deal 1d6 force damage per caster level (max 15d6) and provide cover.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "force"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "wall",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "blade_barrier_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 15
+        },
+        "damageType": "force",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "force",
+      "barrier"
+    ]
+  }
+}

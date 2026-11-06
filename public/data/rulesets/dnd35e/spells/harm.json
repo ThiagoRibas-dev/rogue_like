@@ -1,0 +1,59 @@
+{
+  "harm": {
+    "id": "harm",
+    "name": "Harm",
+    "description": "Negative energy deals 10 points/level of damage (max 150, leaves target with at least 1 HP); heals undead.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "harm_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "0",
+        "flatBonusScaling": {
+          "baseValue": 0,
+          "perCL": 10,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 150
+        },
+        "damageType": "negative",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "inflict",
+      "negative_energy"
+    ]
+  }
+}

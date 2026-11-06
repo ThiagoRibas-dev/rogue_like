@@ -1,0 +1,43 @@
+{
+  "imbue_with_spell_ability": {
+    "id": "imbue_with_spell_ability",
+    "name": "Imbue with Spell Ability",
+    "description": "Transfers divine spells of 1st or 2nd level to another willing creature so they may cast them once.",
+    "level": 4,
+    "levelByClass": {
+      "cleric": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "touch",
+    "duration": "permanent until discharged",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "evocation",
+      "buff",
+      "spellcasting",
+      "grant"
+    ]
+  }
+}

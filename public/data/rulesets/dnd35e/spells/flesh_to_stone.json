@@ -1,0 +1,58 @@
+{
+  "flesh_to_stone": {
+    "id": "flesh_to_stone",
+    "name": "Flesh to Stone",
+    "description": "Turns a creature into a statue permanently unless Fort save is made.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "earth"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "flesh_to_stone_petrify",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "type": "save_or_die",
+        "onFailOutcome": "petrified"
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "earth",
+      "petrification",
+      "save_or_die"
+    ]
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "stone_to_flesh": {
+    "id": "stone_to_flesh",
+    "name": "Stone to Flesh",
+    "description": "Restores a petrified creature to its normal state.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "cure_petrified",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "flesh_restored",
+        "eachRoundSaveRetry": false,
+        "curesConditions": [
+          "petrified"
+        ]
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "cure_petrification"
+    ]
+  }
+}

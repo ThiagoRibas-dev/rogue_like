@@ -1,0 +1,65 @@
+{
+  "time_stop": {
+    "id": "time_stop",
+    "name": "Time Stop",
+    "description": "You act freely for 1d4 + 1 rounds of apparent time while all other creatures are frozen in time.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1d4+1 rounds",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "time_stop_bundle",
+      "name": "Time Stop",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "ts_free_rounds",
+          "ruleKey": "apparent_time_stop",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "time_stop_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "time",
+      "apex",
+      "temporal"
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "create_greater_undead": {
+    "id": "create_greater_undead",
+    "name": "Create Greater Undead",
+    "description": "Creates powerful undead beings (shadows, wraiths, spectres, or devourers) from corpses.",
+    "level": 8,
+    "levelByClass": {
+      "cleric": 8,
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "1_hour",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 200,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "create_greater_undead_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "shadow",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ]
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "evil",
+      "undead",
+      "minion"
+    ]
+  }
+}

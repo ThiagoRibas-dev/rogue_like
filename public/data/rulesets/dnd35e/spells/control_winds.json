@@ -1,0 +1,44 @@
+{
+  "control_winds": {
+    "id": "control_winds",
+    "name": "Control Winds",
+    "description": "Alters wind strength and direction in a cylinder 40 ft per caster level in radius.",
+    "level": 5,
+    "levelByClass": {
+      "druid": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "air"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "air",
+      "weather"
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "break_enchantment": {
+    "id": "break_enchantment",
+    "name": "Break Enchantment",
+    "description": "Frees subjects from enchantments, transmutations, and curses up to 5th level (CL check d20 + CL vs DC 11 + spell CL).",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5,
+      "wizard": 5,
+      "sorcerer": 5,
+      "bard": 4,
+      "paladin": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_minute",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "break_enchantment_dispel",
+        "targetRole": "primary_target",
+        "type": "dispel",
+        "maxCasterLevelBonus": 15,
+        "revokesPathPrefix": "spell:"
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "curse_removal",
+      "dispelling"
+    ]
+  }
+}

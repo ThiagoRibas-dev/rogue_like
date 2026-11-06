@@ -1,0 +1,58 @@
+{
+  "command_plants": {
+    "id": "command_plants",
+    "name": "Command Plants",
+    "description": "Controls the actions of one or more plant creatures (2 HD per caster level) as if charmed.",
+    "level": 4,
+    "levelByClass": {
+      "druid": 4,
+      "ranger": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 day/level",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "command_plants_charm",
+        "targetRole": "primary_target",
+        "type": "condition",
+        "conditionId": "charmed",
+        "durationRoundsScaling": {
+          "baseValue": 14400,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "plant",
+      "compulsion"
+    ]
+  }
+}

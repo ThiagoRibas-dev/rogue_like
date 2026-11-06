@@ -1,0 +1,39 @@
+{
+  "plant_growth": {
+    "id": "plant_growth",
+    "name": "Plant Growth",
+    "description": "Vegetation grows thick and thorny, reducing speed to 5 ft in area.",
+    "level": 3,
+    "levelByClass": {
+      "druid": 3,
+      "ranger": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "plants",
+      "terrain"
+    ]
+  }
+}

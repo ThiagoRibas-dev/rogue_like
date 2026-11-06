@@ -1,0 +1,52 @@
+{
+  "mages_disjunction": {
+    "id": "mages_disjunction",
+    "name": "Mordenkainen's Disjunction",
+    "description": "All magical effects in a 40-ft burst are automatically dispelled; magic items must make Will saves or lose their powers.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 40,
+    "effectUnits": [
+      {
+        "unitId": "disjunction_dispel",
+        "targetRole": "area_occupant",
+        "type": "dispel",
+        "maxCasterLevelBonus": 40,
+        "revokesPathPrefix": "spell:"
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "dispelling",
+      "apex",
+      "anti_magic"
+    ]
+  }
+}

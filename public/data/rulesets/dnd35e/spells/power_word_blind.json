@@ -1,0 +1,69 @@
+{
+  "power_word_blind": {
+    "id": "power_word_blind",
+    "name": "Power Word Blind",
+    "description": "Blinds creature with 200 or fewer HP (<=50 HP permanent; 51-100 HP 1d4+1 min; 101-200 HP 1d4+1 rounds).",
+    "level": 7,
+    "levelByClass": {
+      "wizard": 7,
+      "sorcerer": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "varies",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "pwb_perm",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "blinded",
+        "maxTargetCurrentHp": 50
+      },
+      {
+        "unitId": "pwb_mid",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "blinded",
+        "minTargetCurrentHp": 51,
+        "maxTargetCurrentHp": 100,
+        "durationFormula": "1d4+1 minutes"
+      },
+      {
+        "unitId": "pwb_high",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "blinded",
+        "minTargetCurrentHp": 101,
+        "maxTargetCurrentHp": 200,
+        "durationFormula": "1d4+1 rounds"
+      }
+    ],
+    "tags": [
+      "enchantment",
+      "compulsion",
+      "power_word",
+      "blindness"
+    ]
+  }
+}

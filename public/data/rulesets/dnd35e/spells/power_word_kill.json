@@ -1,0 +1,52 @@
+{
+  "power_word_kill": {
+    "id": "power_word_kill",
+    "name": "Power Word Kill",
+    "description": "Kills one creature with 100 or fewer HP instantly with no saving throw.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting",
+      "death"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": false,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "pwk_kill",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "maxTargetCurrentHp": 100
+      }
+    ],
+    "tags": [
+      "enchantment",
+      "compulsion",
+      "death",
+      "power_word"
+    ]
+  }
+}

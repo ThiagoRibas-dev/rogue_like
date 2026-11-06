@@ -1,0 +1,61 @@
+{
+  "contagion": {
+    "id": "contagion",
+    "name": "Contagion",
+    "description": "Infects the subject with the disease of your choice (blinding sickness, cackle fever, filth fever, etc.).",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "druid": 3,
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "contagion_disease",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "diseased",
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "evil",
+      "disease",
+      "debuff"
+    ]
+  }
+}

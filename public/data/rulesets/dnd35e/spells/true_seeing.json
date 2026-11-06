@@ -1,0 +1,67 @@
+{
+  "true_seeing": {
+    "id": "true_seeing",
+    "name": "True Seeing",
+    "description": "Lets you see all things as they actually are (sees through darkness, invisibility, blur, displacement, polymorph).",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5,
+      "druid": 7,
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 250,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "true_seeing_bundle",
+      "name": "True Seeing",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [],
+      "ruleOverrides": [
+        {
+          "id": "ts_override",
+          "ruleKey": "sees_through_all_illusions",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "true_seeing_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "sensory",
+      "anti_illusion"
+    ]
+  }
+}

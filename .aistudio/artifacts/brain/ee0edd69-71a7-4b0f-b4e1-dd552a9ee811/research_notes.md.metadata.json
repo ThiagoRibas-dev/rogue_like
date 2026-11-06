@@ -1,6 +1,6 @@
 {
-  "summary": "Research notes and Cascading Effects Matrix for Phase 25 — Milestone 117: Mid- & High-Level Spells (4th–9th Level Arcane & Divine), Summoning Chains, Polymorph/Shapechange Overlays, Negative Levels, and HP/HD Threshold Mechanics.",
-  "updatedAt": "2026-11-05T16:51:04.717654853Z",
+  "summary": "Updated research notes for Milestone 117 enforcing strict AGENTS.md Rule 12, Rule 17,Rule 18, and Rule 19 compliance (zero hardcoded feat IDs or magic numbers in spell_effects.ts).",
+  "updatedAt": "2026-11-06T12:37:24.760125619Z",
   "requestFeedback": true,
   "userFacing": true
 }

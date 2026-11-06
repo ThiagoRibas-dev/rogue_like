@@ -835,6 +835,22 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_effects.ts."
     ]
   },
+  "src/rulesets/dnd35e/magic/spell_modifiers.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves effective caster level and materializes summoned creature stat modifiers with hierarchical provenance.",
+    "canonicalEntryPoints": [
+      "resolveSpellEffectiveCasterLevel",
+      "materializeSummonedCreatureModifiers"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_modifiers.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_modifiers.ts."
+    ]
+  },
   "src/rulesets/dnd35e/magic/spellcasting.ts": {
     "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
     "tier": "tier2_cartridge",

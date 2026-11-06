@@ -1,0 +1,50 @@
+{
+  "implosion": {
+    "id": "implosion",
+    "name": "Implosion",
+    "description": "Concentration for up to 4 rounds creates a destructive vortex collapsing one creature per round (Fort save negates).",
+    "level": 9,
+    "levelByClass": {
+      "cleric": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "concentration",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "implosion_collapse",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead"
+      }
+    ],
+    "tags": [
+      "divine",
+      "evocation",
+      "death",
+      "save_or_die"
+    ]
+  }
+}

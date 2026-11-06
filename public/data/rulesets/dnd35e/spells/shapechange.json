@@ -1,0 +1,69 @@
+{
+  "shapechange": {
+    "id": "shapechange",
+    "name": "Shapechange",
+    "description": "Transforms you into any creature up to your CL in HD (max 25 HD); shift forms freely as a free action each round.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9,
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "shapechange_overlay",
+        "targetRole": "primary_target",
+        "type": "form_overlay",
+        "overlayMode": "shapechange",
+        "allowedCreatureTypes": [
+          "animal",
+          "dragon",
+          "elemental",
+          "fey",
+          "giant",
+          "humanoid",
+          "magical_beast",
+          "monstrous_humanoid",
+          "plant"
+        ],
+        "maxHitDiceScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 25
+        },
+        "grantsExAbilities": true,
+        "grantsSuAbilities": true,
+        "freeActionFormShift": true
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "polymorph",
+      "shapechange",
+      "apex"
+    ]
+  }
+}

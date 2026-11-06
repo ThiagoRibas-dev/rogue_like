@@ -1,0 +1,76 @@
+{
+  "gaseous_form": {
+    "id": "gaseous_form",
+    "name": "Gaseous Form",
+    "description": "Subject becomes insubstantial and flies slowly (10 ft, DR 10/magic).",
+    "level": 3,
+    "levelByClass": {
+      "wizard": 3,
+      "sorcerer": 3,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "2 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "gaseous_form_bundle",
+      "name": "Gaseous Form",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "gf_dr",
+          "target": "dr",
+          "value": 10,
+          "type": "untyped"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "gf_flight",
+          "ruleKey": "fly_speed",
+          "value": 10,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "gaseous",
+        "dr:10/magic"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [
+        "poison",
+        "critical_hits"
+      ],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "transmutation",
+      "mobility",
+      "flight"
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "wish": {
+    "id": "wish",
+    "name": "Wish",
+    "description": "The ultimate arcane spell, duplicating any spell of 8th level or lower or altering reality.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "universal",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "unlimited",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "xpCost": 5000,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "universal",
+      "reality_warp",
+      "wish"
+    ]
+  }
+}

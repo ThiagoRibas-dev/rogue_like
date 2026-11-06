@@ -1,0 +1,55 @@
+{
+  "animal_shapes": {
+    "id": "animal_shapes",
+    "name": "Animal Shapes",
+    "description": "Transforms up to one willing ally per caster level into the form of an animal of up to their Hit Dice.",
+    "level": 8,
+    "levelByClass": {
+      "druid": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 hour/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "animal_shapes_overlay",
+        "targetRole": "primary_target",
+        "type": "form_overlay",
+        "overlayMode": "polymorph",
+        "allowedCreatureTypes": [
+          "animal"
+        ],
+        "grantsExAbilities": true,
+        "grantsSuAbilities": false,
+        "freeActionFormShift": false
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "polymorph",
+      "animal"
+    ]
+  }
+}

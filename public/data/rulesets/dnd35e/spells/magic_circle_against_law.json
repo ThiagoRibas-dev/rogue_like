@@ -1,0 +1,42 @@
+{
+  "magic_circle_against_law": {
+    "id": "magic_circle_against_law",
+    "name": "Magic Circle against Law",
+    "description": "As Protection from Law, but 10-ft radius emanation around touched creature.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "wizard": 3,
+      "sorcerer": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "chaotic"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 10,
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "chaotic",
+      "ward"
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "dispel_good": {
+    "id": "dispel_good",
+    "name": "Dispel Good",
+    "description": "Grants +4 deflection AC against good creatures, and drives them back to their home planes with a melee touch.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "dispel_good_bundle",
+      "name": "Dispel Good",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "dg_ac",
+          "target": "ac_deflection",
+          "value": 4,
+          "type": "deflection"
+        }
+      ],
+      "ruleOverrides": [],
+      "grantedTags": [
+        "dispel_good_active"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "evil",
+      "banishment",
+      "defense"
+    ]
+  }
+}

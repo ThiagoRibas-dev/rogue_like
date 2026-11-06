@@ -1,0 +1,55 @@
+{
+  "energy_drain": {
+    "id": "energy_drain",
+    "name": "Energy Drain",
+    "description": "Ranged touch ray bestows 2d4 temporary negative levels (become permanent after 24 hours if Fort save fails).",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9,
+      "cleric": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "energy_drain_unit",
+        "targetRole": "primary_target",
+        "type": "energy_drain",
+        "dice": "2d4",
+        "durationHoursScaling": {
+          "baseValue": 24,
+          "perCL": 0,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "isPermanent": true
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "negative_levels",
+      "ray",
+      "death"
+    ]
+  }
+}

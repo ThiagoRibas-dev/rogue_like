@@ -1,0 +1,45 @@
+{
+  "screen": {
+    "id": "screen",
+    "name": "Screen",
+    "description": "Combines scrying ward and glamer to deceive observers into seeing and hearing a false scene within a 30-ft cube.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "illusion",
+    "subschool": "glamer",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "10_minutes",
+    "range": "close",
+    "duration": "24 hours",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "illusion",
+      "glamer",
+      "anti_scrying",
+      "deception"
+    ]
+  }
+}

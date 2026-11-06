@@ -10,7 +10,8 @@ import type { MetamagicSpellModifiers } from './metamagic_dispel.ts';
 
 /**
  * Projects semantic effect tags from a spell definition and active metamagic modifiers:
- * - `school:<school>`, `subschool:<subschool>`, `descriptor:<descriptor>`, `classification:<classification>`.
+ * - `school:<school>`, `<school>`, `subschool:<subschool>`, `<subschool>`, `descriptor:<descriptor>`, `<descriptor>`.
+ * - `classification:<classification>`.
  * - `component:verbal` (omitted if Silent Spell is applied).
  * - `component:somatic` (omitted if Still Spell is applied).
  * - `component:material`, `component:focus`, `component:divine_focus`, `component:sacrifice`, `component:corrupt`, `component:xp`.
@@ -27,11 +28,14 @@ export function projectSpellEffectTags(
   const tags = new Set<string>();
 
   tags.add(`school:${spell.school}`);
+  tags.add(spell.school);
   if (spell.subschool) {
     tags.add(`subschool:${spell.subschool}`);
+    tags.add(spell.subschool);
   }
   for (const descriptor of spell.descriptors) {
     tags.add(`descriptor:${descriptor}`);
+    tags.add(descriptor);
   }
   tags.add(`classification:${spell.classification}`);
 
@@ -92,10 +96,11 @@ export function evaluateSpellScalingRule(rule: DnD35SpellScalingRule | undefined
 
 /**
  * Filters and selects active `DnD35SpellEffectUnit` entries for a given target entity
- * using tag-based matching against the caster's self-tags, the target's tags, and projected effect tags.
+ * using tag-based matching against the caster's self-tags, the target's tags, and projected effect tags,
+ * as well as target Current HP and Hit Dice threshold brackets.
  *
  * @param spell The spell definition.
- * @param context Context containing caster selfTags, target tags, and active metamagic.
+ * @param context Context containing caster selfTags, target tags, active metamagic, targetCurrentHp, and targetHitDice.
  * @returns Array of active effect units for the target.
  */
 export function evaluateSpellEffectUnitsForTarget(
@@ -104,12 +109,50 @@ export function evaluateSpellEffectUnitsForTarget(
     readonly casterSelfTags?: ReadonlyArray<string>;
     readonly targetTags?: ReadonlyArray<string>;
     readonly metamagic?: MetamagicSpellModifiers;
+    readonly targetCurrentHp?: number;
+    readonly targetHitDice?: number;
   }
 ): ReadonlyArray<DnD35SpellEffectUnit> {
   const effectTags = projectSpellEffectTags(spell, context.metamagic);
   return spell.effectUnits.filter((unit) => {
-    if (!unit.condition) return true;
-    return matchesEntityTagCondition(unit.condition, context.targetTags, effectTags, context.casterSelfTags);
+    if (unit.condition) {
+      const tagMatch = matchesEntityTagCondition(
+        unit.condition,
+        context.targetTags,
+        effectTags,
+        context.casterSelfTags
+      );
+      if (!tagMatch) return false;
+    }
+
+    if (unit.type === 'save_or_die') {
+      if (context.targetCurrentHp !== undefined) {
+        if (unit.minTargetCurrentHp !== undefined && context.targetCurrentHp < unit.minTargetCurrentHp) {
+          return false;
+        }
+        if (unit.maxTargetCurrentHp !== undefined && context.targetCurrentHp > unit.maxTargetCurrentHp) {
+          return false;
+        }
+      }
+      if (context.targetHitDice !== undefined) {
+        if (unit.minTargetHitDice !== undefined && context.targetHitDice < unit.minTargetHitDice) {
+          return false;
+        }
+        if (unit.maxTargetHitDice !== undefined && context.targetHitDice > unit.maxTargetHitDice) {
+          return false;
+        }
+      }
+    } else if (unit.type === 'condition') {
+      if (
+        context.targetHitDice !== undefined &&
+        unit.maxTargetHitDice !== undefined &&
+        context.targetHitDice > unit.maxTargetHitDice
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   });
 }
 

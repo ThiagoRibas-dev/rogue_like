@@ -1,0 +1,90 @@
+{
+  "righteous_might": {
+    "id": "righteous_might",
+    "name": "Righteous Might",
+    "description": "Your size increases one step, granting +4 size Str, +2 size Con, +2 natural armor, and DR evil/good.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "righteous_might_bundle",
+      "name": "Righteous Might",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "rm_size",
+          "target": "size",
+          "value": 1,
+          "type": "size_step"
+        },
+        {
+          "id": "rm_str",
+          "target": "str",
+          "value": 4,
+          "type": "size"
+        },
+        {
+          "id": "rm_con",
+          "target": "con",
+          "value": 2,
+          "type": "size"
+        },
+        {
+          "id": "rm_na",
+          "target": "natural_armor",
+          "value": 2,
+          "type": "enhancement"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "rm_dr",
+          "ruleKey": "damage_reduction",
+          "value": 3,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "righteous_might_active",
+        "enlarged"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "transmutation",
+      "size_change",
+      "buff"
+    ]
+  }
+}

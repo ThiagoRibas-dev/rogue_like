@@ -1,0 +1,54 @@
+{
+  "solid_fog": {
+    "id": "solid_fog",
+    "name": "Solid Fog",
+    "description": "Blocks vision, slows movement to 5 ft, and imposes -2 penalty on melee attack and damage rolls.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "solid_fog_field",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "solid_fog",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "movementCostMultiplier": 6,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "fog",
+      "slow"
+    ]
+  }
+}

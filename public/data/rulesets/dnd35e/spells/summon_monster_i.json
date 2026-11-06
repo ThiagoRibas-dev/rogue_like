@@ -1,0 +1,68 @@
+{
+  "summon_monster_i": {
+    "id": "summon_monster_i",
+    "name": "Summon Monster I",
+    "description": "Summons extraplanar creatures (celestial or fiendish) to fight for you for 1 round/level.",
+    "level": 1,
+    "levelByClass": {
+      "wizard": 1,
+      "sorcerer": 1,
+      "cleric": 1,
+      "bard": 1
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "summoning",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "1_round",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": true,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "sm_i_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "dire_rat",
+            "templateId": "fiendish",
+            "countDice": "1",
+            "minCasterLevel": 1
+          },
+          {
+            "raceId": "giant_fire_beetle",
+            "templateId": "celestial",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ],
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        }
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "summoning",
+      "allies"
+    ]
+  }
+}

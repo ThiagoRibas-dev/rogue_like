@@ -1,0 +1,43 @@
+{
+  "magic_circle_against_chaos": {
+    "id": "magic_circle_against_chaos",
+    "name": "Magic Circle against Chaos",
+    "description": "As Protection from Chaos, but 10-ft radius emanation around touched creature.",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "wizard": 3,
+      "sorcerer": 3,
+      "paladin": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [
+      "lawful"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 10,
+    "effectUnits": [],
+    "tags": [
+      "abjuration",
+      "lawful",
+      "ward"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "destruction": {
+    "id": "destruction",
+    "name": "Destruction",
+    "description": "Instantly slays target creature (Fort save partial: takes 10d6 damage instead of death).",
+    "level": 7,
+    "levelByClass": {
+      "cleric": 7
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "death",
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "partial"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "10d6",
+    "damageType": "untyped",
+    "effectUnits": [
+      {
+        "unitId": "destruction_kill",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "onSavePartialDamageDice": "10d6",
+        "onSaveDamageType": "untyped"
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "death",
+      "evil",
+      "save_or_die"
+    ]
+  }
+}

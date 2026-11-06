@@ -1,0 +1,62 @@
+{
+  "evards_black_tentacles": {
+    "id": "evards_black_tentacles",
+    "name": "Evard's Black Tentacles",
+    "description": "Tentacles grapple everyone in a 20-ft spread (grapple bonus = CL + 8, deals 1d6+4 bludgeoning/round).",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "black_tentacles_field",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "black_tentacles",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 2,
+        "suppressedTags": []
+      },
+      {
+        "unitId": "tentacles_grapple_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "1d6+4",
+        "damageType": "bludgeoning",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "crowd_control",
+      "grapple"
+    ]
+  }
+}

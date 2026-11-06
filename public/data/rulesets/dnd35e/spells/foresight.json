@@ -1,0 +1,80 @@
+{
+  "foresight": {
+    "id": "foresight",
+    "name": "Foresight",
+    "description": "Grants a sixth sense about immediate peril: +2 insight bonus to AC and Reflex saves, and you are never surprised or flat-footed.",
+    "level": 9,
+    "levelByClass": {
+      "wizard": 9,
+      "sorcerer": 9,
+      "druid": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "divination",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectBundle": {
+      "bundleId": "foresight_bundle",
+      "name": "Foresight",
+      "category": "trait",
+      "usageMode": "passive",
+      "modifiers": [
+        {
+          "id": "fs_ac",
+          "target": "ac_insight",
+          "value": 2,
+          "type": "insight"
+        },
+        {
+          "id": "fs_ref",
+          "target": "save_reflex",
+          "value": 2,
+          "type": "insight"
+        }
+      ],
+      "ruleOverrides": [
+        {
+          "id": "fs_never_flat_footed",
+          "ruleKey": "never_flat_footed",
+          "value": true,
+          "priority": 10
+        }
+      ],
+      "grantedTags": [
+        "foresight_active",
+        "never_flat_footed"
+      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
+      "classSkillsAdded": [],
+      "immunities": [],
+      "vulnerabilities": [],
+      "energyResistances": {},
+      "activatedAbilities": []
+    },
+    "effectUnits": [],
+    "tags": [
+      "divination",
+      "buff",
+      "defense",
+      "insight"
+    ]
+  }
+}

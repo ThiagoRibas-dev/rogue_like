@@ -1,0 +1,58 @@
+{
+  "wall_of_thorns": {
+    "id": "wall_of_thorns",
+    "name": "Wall of Thorns",
+    "description": "Creates a barrier of tough, pliable, tangled brush with sharp thorns; moving through deals 25 - AC damage per 5 ft.",
+    "level": 5,
+    "levelByClass": {
+      "druid": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "wall",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "wall_of_thorns_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "barrier",
+        "radiusFt": 10,
+        "anchorToCaster": false,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "movementCostMultiplier": 4,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "barrier",
+      "hazard",
+      "plant"
+    ]
+  }
+}

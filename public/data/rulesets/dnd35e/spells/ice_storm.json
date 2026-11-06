@@ -1,0 +1,60 @@
+{
+  "ice_storm": {
+    "id": "ice_storm",
+    "name": "Ice Storm",
+    "description": "Hail deals 3d6 bludgeoning damage and 2d6 cold damage in a 20-ft cylinder, with no save.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "druid": 4
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [
+      "cold"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "long",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "aoeShape": "cylinder",
+    "aoeRadiusFt": 20,
+    "effectUnits": [
+      {
+        "unitId": "ice_storm_bludgeon",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "3d6",
+        "damageType": "bludgeoning",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "ice_storm_cold",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "2d6",
+        "damageType": "cold",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "evocation",
+      "cold",
+      "bludgeoning",
+      "aoe"
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "antimagic_field": {
+    "id": "antimagic_field",
+    "name": "Antimagic Field",
+    "description": "10-ft radius mobile sphere suppresses all magic, spells, spell-like, and supernatural abilities.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6,
+      "cleric": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "abjuration",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "personal",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 10,
+    "effectUnits": [
+      {
+        "unitId": "antimagic_field_unit",
+        "targetRole": "primary_target",
+        "type": "spatial_field",
+        "fieldType": "antimagic_field",
+        "radiusFt": 10,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": [
+          "magical",
+          "spell",
+          "sp",
+          "su"
+        ]
+      }
+    ],
+    "tags": [
+      "abjuration",
+      "antimagic",
+      "ward",
+      "dispelling"
+    ]
+  }
+}

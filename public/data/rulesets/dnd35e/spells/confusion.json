@@ -1,0 +1,67 @@
+{
+  "confusion": {
+    "id": "confusion",
+    "name": "Confusion",
+    "description": "Causes creatures within a 15-ft radius to become confused, acting erratically and unpredictably.",
+    "level": 4,
+    "levelByClass": {
+      "wizard": 4,
+      "sorcerer": 4,
+      "bard": 3
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "enchantment",
+    "subschool": "compulsion",
+    "descriptors": [
+      "mind_affecting"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "burst",
+    "aoeRadiusFt": 15,
+    "effectUnits": [
+      {
+        "unitId": "confusion_condition",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "type": "condition",
+        "conditionId": "confused",
+        "durationRoundsScaling": {
+          "baseValue": 0,
+          "perCL": 1,
+          "clStepInterval": 1,
+          "startAboveCL": 0
+        },
+        "eachRoundSaveRetry": false,
+        "curesConditions": []
+      }
+    ],
+    "tags": [
+      "enchantment",
+      "compulsion",
+      "mind_affecting",
+      "crowd_control"
+    ]
+  }
+}

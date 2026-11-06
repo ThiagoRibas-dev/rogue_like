@@ -1,0 +1,82 @@
+{
+  "spell_resistance": {
+    "id": "spell_resistance",
+    "name": "Spell Resistance",
+    "description": "Subject gains spell resistance equal to 12 + your caster level.",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "1 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "sr_bundle",
+        "targetRole": "primary_target",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "spell_resistance_grant",
+          "name": "Spell Resistance",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "sr_grant",
+              "target": "spell_resistance",
+              "value": 13,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "spell_resistance_active"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        },
+        "statScalingRules": {
+          "spell_resistance": {
+            "baseValue": 12,
+            "perCL": 1,
+            "clStepInterval": 1,
+            "startAboveCL": 0
+          }
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "buff",
+      "defense"
+    ]
+  }
+}

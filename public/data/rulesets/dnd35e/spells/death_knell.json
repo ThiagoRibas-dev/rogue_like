@@ -1,0 +1,90 @@
+{
+  "death_knell": {
+    "id": "death_knell",
+    "name": "Death Knell",
+    "description": "Draws life from a dying creature, granting +2 Str, 1d8 temp HP, and +1 CL.",
+    "level": 2,
+    "levelByClass": {
+      "cleric": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "death",
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "death_knell_drain",
+        "targetRole": "primary_target",
+        "type": "save_or_die",
+        "onFailOutcome": "dead",
+        "maxTargetCurrentHp": 0
+      },
+      {
+        "unitId": "death_knell_caster_buff",
+        "targetRole": "caster",
+        "type": "stat_bundle",
+        "effectBundle": {
+          "bundleId": "death_knell_buff",
+          "name": "Death Knell Buff",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "dk_str",
+              "target": "str",
+              "value": 2,
+              "type": "enhancement"
+            },
+            {
+              "id": "dk_cl",
+              "target": "caster_level",
+              "value": 1,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "death_knell_energized"
+          ],
+          "grantedFeats": [],
+          "virtualFeatGrants": [],
+          "classSkillsAdded": [],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": []
+        }
+      }
+    ],
+    "tags": [
+      "divine",
+      "necromancy",
+      "death",
+      "evil"
+    ]
+  }
+}

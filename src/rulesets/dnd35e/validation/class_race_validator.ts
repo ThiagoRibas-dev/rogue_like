@@ -180,6 +180,17 @@ export function validateDnD35eClassesRacesTemplates(
         });
       }
     }
+    if (Object.keys(sys.spells).length > 0) {
+      for (const [lvlKey, spellId] of Object.entries(domDef.domainSpells)) {
+        if (!sys.spells[spellId]) {
+          errors.push({
+            path: `systemContent.domains.${domKey}.domainSpells.${lvlKey}`,
+            message: `Domain "${domKey}" level ${lvlKey} references unknown spell "${spellId}".`,
+            severity: 'error'
+          });
+        }
+      }
+    }
   }
 
   // 3. Validate Races: ID parity, favoredClass reference, creatureType reference, defaultClassLevels, rhdProgression tiers

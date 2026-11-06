@@ -1,0 +1,54 @@
+{
+  "heat_metal": {
+    "id": "heat_metal",
+    "name": "Heat Metal",
+    "description": "Make metal warm, hot, then searing (2d4 fire/round), damaging creatures wearing it.",
+    "level": 2,
+    "levelByClass": {
+      "druid": 2
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "7 rounds",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "negates"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "heat_metal_damage",
+        "targetRole": "primary_target",
+        "type": "damage",
+        "dice": "2d4",
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "divine",
+      "transmutation",
+      "fire",
+      "anti_armor"
+    ]
+  }
+}

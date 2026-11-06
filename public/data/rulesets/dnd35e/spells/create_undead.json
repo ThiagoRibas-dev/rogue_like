@@ -1,0 +1,61 @@
+{
+  "create_undead": {
+    "id": "create_undead",
+    "name": "Create Undead",
+    "description": "Creates ghouls, ghasts, mummies, or mohrgs from corpses, requiring command or rebuke to control.",
+    "level": 6,
+    "levelByClass": {
+      "cleric": 6,
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "necromancy",
+    "descriptors": [
+      "evil"
+    ],
+    "classification": "spell",
+    "castingTime": "1_hour",
+    "range": "close",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "materialCostGp": 100,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "none",
+      "effect": "none"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "create_undead_unit",
+        "targetRole": "primary_target",
+        "type": "summon",
+        "summonPool": [
+          {
+            "raceId": "shadow",
+            "countDice": "1",
+            "minCasterLevel": 1
+          }
+        ]
+      }
+    ],
+    "tags": [
+      "necromancy",
+      "evil",
+      "undead",
+      "minion"
+    ]
+  }
+}

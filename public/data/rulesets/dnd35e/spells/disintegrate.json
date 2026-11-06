@@ -1,0 +1,64 @@
+{
+  "disintegrate": {
+    "id": "disintegrate",
+    "name": "Disintegrate",
+    "description": "Green ray deals 2d6/level damage (max 40d6); on Fort save, takes 5d6 damage. Reduces target to dust at 0 HP.",
+    "level": 6,
+    "levelByClass": {
+      "wizard": 6,
+      "sorcerer": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "transmutation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "fort",
+      "effect": "partial"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [
+      {
+        "unitId": "disintegrate_damage",
+        "targetRole": "primary_target",
+        "savingThrow": {
+          "saveType": "fort",
+          "effect": "partial"
+        },
+        "type": "damage",
+        "dice": "2d6",
+        "diceCountScaling": {
+          "baseValue": 0,
+          "perCL": 2,
+          "clStepInterval": 1,
+          "startAboveCL": 0,
+          "maxCap": 40
+        },
+        "damageType": "untyped",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "transmutation",
+      "ray",
+      "disintegrate",
+      "high_damage"
+    ]
+  }
+}

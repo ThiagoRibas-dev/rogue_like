@@ -1,0 +1,57 @@
+{
+  "fire_seeds": {
+    "id": "fire_seeds",
+    "name": "Fire Seeds",
+    "description": "Turns up to four acorns into fire grenades (1d6 fire/CL max 4d6 each) or eight holly berries into contact bombs.",
+    "level": 6,
+    "levelByClass": {
+      "druid": 6
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "touch",
+    "duration": "10 min/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": true,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "damageDice": "4d6",
+    "damageType": "fire",
+    "effectUnits": [
+      {
+        "unitId": "fire_seeds_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "4d6",
+        "damageType": "fire",
+        "metamagicScalable": true
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "fire",
+      "grenade"
+    ]
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "incendiary_cloud": {
+    "id": "incendiary_cloud",
+    "name": "Incendiary Cloud",
+    "description": "Conjures a 20-ft-radius cloud of billowing flame and smoke dealing 4d6 fire damage each round and obscuring vision.",
+    "level": 8,
+    "levelByClass": {
+      "wizard": 8,
+      "sorcerer": 8
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "conjuration",
+    "subschool": "creation",
+    "descriptors": [
+      "fire"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "medium",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "savingThrow": {
+      "saveType": "ref",
+      "effect": "half"
+    },
+    "aoeShape": "spread",
+    "aoeRadiusFt": 20,
+    "damageDice": "4d6",
+    "damageType": "fire",
+    "effectUnits": [
+      {
+        "unitId": "incendiary_cloud_dmg",
+        "targetRole": "area_occupant",
+        "type": "damage",
+        "dice": "4d6",
+        "damageType": "fire",
+        "metamagicScalable": true
+      },
+      {
+        "unitId": "incendiary_field",
+        "targetRole": "area_occupant",
+        "type": "spatial_field",
+        "fieldType": "hazard",
+        "radiusFt": 20,
+        "anchorToCaster": false,
+        "blocksLoS": true,
+        "blocksLoE": false,
+        "suppressedTags": []
+      }
+    ],
+    "tags": [
+      "conjuration",
+      "creation",
+      "fire",
+      "cloud",
+      "hazard"
+    ]
+  }
+}

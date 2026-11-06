@@ -1,0 +1,40 @@
+{
+  "miracle": {
+    "id": "miracle",
+    "name": "Miracle",
+    "description": "Requests divine intervention to duplicate other spells, undo catastrophe, or reshape reality.",
+    "level": 9,
+    "levelByClass": {
+      "cleric": 9
+    },
+    "levelByDomain": {},
+    "levelByAccessTag": {},
+    "school": "evocation",
+    "descriptors": [],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "unlimited",
+    "duration": "instantaneous",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": false,
+      "sacrifice": false,
+      "corrupt": false,
+      "xpCost": 5000,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": false,
+    "aoeShape": "single",
+    "aoeRadiusFt": 0,
+    "effectUnits": [],
+    "tags": [
+      "divine",
+      "evocation",
+      "reality_warp",
+      "miracle"
+    ]
+  }
+}
