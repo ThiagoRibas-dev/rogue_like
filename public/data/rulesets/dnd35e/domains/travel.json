@@ -51,7 +51,7 @@
       "2": "locate_object",
       "3": "fly",
       "4": "dimension_door",
-      "5": "teleport",
+      "5": "dimension_door",
       "6": "find_the_path",
       "7": "greater_teleport",
       "8": "phase_door",

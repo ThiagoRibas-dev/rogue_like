@@ -84,10 +84,18 @@ function createDefaultDraft(): CharacterCreationDraft {
     abilityMethod: 'point_buy',
     pointBuyBudget: 28,
     baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 12, cha: 10 },
-    skillRanks: { climb: 4, jump: 4, intimidate: 4 },
-    selectedFeats: ['power_attack', 'cleave', 'improved_initiative'],
+    skillRanks: {},
+    selectedFeats: [],
     knownSpells: [],
     equipmentPackageId: 'martial_vanguard'
+  };
+}
+
+function createQuickStartHeroDraft(): CharacterCreationDraft {
+  return {
+    ...createDefaultDraft(),
+    skillRanks: { climb: 4, jump: 4, intimidate: 4 },
+    selectedFeats: ['power_attack', 'cleave', 'improved_initiative']
   };
 }
 
@@ -270,7 +278,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   quickBtn.className = 'modal-btn';
   quickBtn.textContent = '⚡ Quick Start Default Hero';
   quickBtn.addEventListener('click', () => {
-    const nextState = applyCharacterCreationToPlayer(state, playerId, createDefaultDraft());
+    const nextState = applyCharacterCreationToPlayer(state, playerId, createQuickStartHeroDraft());
     setGameState(closeCartridgeModal(nextState));
     markAllDomainsDirty();
   });

@@ -154,6 +154,50 @@ export function validateCharacterCreationStep(
   }
 
   if (stepId === 'feats') {
+    if (!raceDef || !classDef) return { valid: false, reason: 'Select race and class first.' };
+    const strAdj = raceDef.abilityAdjustments.str ?? 0;
+    const dexAdj = raceDef.abilityAdjustments.dex ?? 0;
+    const conAdj = raceDef.abilityAdjustments.con ?? 0;
+    const intAdj = raceDef.abilityAdjustments.int ?? 0;
+    const wisAdj = raceDef.abilityAdjustments.wis ?? 0;
+    const chaAdj = raceDef.abilityAdjustments.cha ?? 0;
+    const firstLevelBab = classDef.progression[0]?.bab ?? 0;
+
+    const prereqCtx: PrerequisiteEvalContext = {
+      abilityScores: {
+        str: draft.baseAbilityScores.str + strAdj,
+        dex: draft.baseAbilityScores.dex + dexAdj,
+        con: draft.baseAbilityScores.con + conAdj,
+        int: draft.baseAbilityScores.int + intAdj,
+        wis: draft.baseAbilityScores.wis + wisAdj,
+        cha: draft.baseAbilityScores.cha + chaAdj
+      },
+      totalBab: firstLevelBab,
+      skillRanks: draft.skillRanks,
+      feats: [],
+      tags: [`type:${raceDef.creatureType}`, `size:${raceDef.size}`],
+      casterLevel: classDef.castingMode !== 'none' ? 1 : 0,
+      sizeCategory: raceDef.size,
+      alignment: draft.alignment,
+      raceId: draft.raceId
+    };
+
+    const accumulatedFeats: string[] = [];
+    for (const featId of draft.selectedFeats) {
+      const featDef = sysContent.feats[featId];
+      if (!featDef) {
+        return { valid: false, reason: `Unknown feat selected: ${featId}` };
+      }
+      const ctxWithAccumulated: PrerequisiteEvalContext = {
+        ...prereqCtx,
+        feats: accumulatedFeats
+      };
+      if (featDef.prerequisites && !evaluatePrerequisiteAST(featDef.prerequisites, ctxWithAccumulated)) {
+        return { valid: false, reason: `Prerequisites not met for feat: ${featDef.name}` };
+      }
+      accumulatedFeats.push(featId);
+    }
+
     const featBudget = computeFirstLevelFeatSlotBudget(raceDef, classDef);
     if (draft.selectedFeats.length !== featBudget.totalSlots) {
       return {

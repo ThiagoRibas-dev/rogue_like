@@ -1,6 +1,6 @@
 {
-  "summary": "Revised Phase 26 Implementation Plan (Milestones 118 & 119) featuring the Console Slot/Modal Host API (cartridge_ui_registry.ts), eviction of hardcoded UIMode.CharCreation & UIMode.LevelUp from Tier 1 Console modules, Visual Anatomical Paper Doll, Resizable Layout Panels, D&D 3.5e Tactical Doctrine Bar, 7-Tab Character Sheet, Class-Tabbed Vancian Spellbook, and The Sunless Reliquary 4-Zone SRD Content Showcase.",
-  "updatedAt": "2026-11-06T14:17:22.083920104Z",
+  "summary": "Implementation plan to remove the standalone UI Prototype button/modal and integrate the Consolidated 3-Column Parchment/CRT Master Dossier, Reactive Anatomical Body Graph, and Multi-Limb Attack Routine directly into the live Character Sheet and Inventory UI.",
+  "updatedAt": "2026-11-06T21:21:49.761043802Z",
   "requestFeedback": true,
   "userFacing": true
 }

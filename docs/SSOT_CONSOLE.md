@@ -11,9 +11,10 @@
 - [Core Console: ECS Systems & Simulation (57 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (37 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
+- [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
 - [Core Console: Map Generation & Director (8 files)](#core-console-map-generation-director)
 - [Core Console: Map Generation & Spatial (2 files)](#core-console-map-generation-spatial)
-- [Core Console: Rendering & UI Views (75 files)](#core-console-rendering-ui-views)
+- [Core Console: Rendering & UI Views (80 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (5 files)](#core-console-ruleset-cartridge-registry)
 - [Core Console: Utility Helpers (9 files)](#core-console-utility-helpers)
 
@@ -263,6 +264,14 @@
 | `src/types/ruleset.types.ts` | `tier1_types` | Describes a campaign verification warning or error containing pathway keys and details. | `ValidationError`, `ValidationReport`, `ViewPanelType`, `TabDefinition`, `ViewGroup`, `RulesetIdSchema`, `RulesetId`, `EffectiveStats` | **Includes:** Pure implementation and exports for src/types/ruleset.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/ruleset.types.ts. |
 | `src/types/trigger.types.ts` | `tier1_types` | Zod schema for declarative condition predicates evaluated by the trigger system. | `ConditionPredicateSchema`, `ConditionPredicate`, `ConsequenceActionSchema`, `ConsequenceAction`, `PacingSchema`, `PacingSettings`, `ForeshadowingSchema`, `ForeshadowingSettings` | **Includes:** Pure implementation and exports for src/types/trigger.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/trigger.types.ts. |
 
+## Core Console: Foundation & Data Types
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/types/ui_adapter.types.ts` | `tier1_console` | Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData. | `ICartridgeUIAdapter`, `UICharacterSheetModel`, `UIInventoryModel`, `UIInventoryItem`, `UIAnatomicalSlotDescriptor`, `UIAttackGroupModel`, `UISkillRowModel`, `UIFeatureEntryModel`, `UILevelHistoryRowModel`, `UIInspectData` | **Includes:** Pure implementation and exports for src/types/ui_adapter.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/types/ui_adapter.types.ts. |
+
 ## Core Console: Map Generation & Director
 
 **Modules in this domain:** 8
@@ -289,7 +298,7 @@
 
 ## Core Console: Rendering & UI Views
 
-**Modules in this domain:** 75
+**Modules in this domain:** 80
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -319,6 +328,10 @@
 | `src/rendering/ui/area_static_painter.ts` | `tier1_console` | Renders the interactive ASCII/Tile Grid Painter for static area layouts in the Area Editor. | `renderStaticAreaPainter` | **Includes:** Pure implementation and exports for src/rendering/ui/area_static_painter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/area_static_painter.ts. |
 | `src/rendering/ui/balance_lab.ui.ts` | `tier1_console` | Renders the Balance Lab simulation tab in the Simulation Lab. | `renderBalanceLab` | **Includes:** Pure implementation and exports for src/rendering/ui/balance_lab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/balance_lab.ui.ts. |
 | `src/rendering/ui/cartridge_ui_registry.ts` | `tier1_console` | Console UI Slot & Modal Host API allowing ruleset cartridges to register modals, dock commands, HUD alerts, and panel slots without Console coupling. | `CartridgeDockCommandDescriptor`, `CartridgeHudAlertDescriptor`, `CartridgeModalDescriptor`, `CartridgeUIDefinition`, `registerCartridgeUI`, `getCartridgeUI`, `getActiveCartridgeUI`, `isCartridgeModalOpen`, `openCartridgeModal`, `closeCartridgeModal`, `toggleCartridgeModal`, `applyCartridgeNewGameHook`, `renderActiveCartridgeModal`, `renderCartridgeHudPanel`, `renderCartridgeInspectorExtension` | **Includes:** Generic slot/modal host API, cartridge UI registration, and ruleset-agnostic modal/dock/alert orchestration.<br>**Excludes:** Ruleset-specific UI rendering or ruleset domain logic. | • Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files. |
+| `src/rendering/ui/console_hotbar.ui.ts` | `tier1_console` | Generic 12-slot action hotbar with 10-bank pagination and combat stance dock bar. | `renderConsoleHotbar` | **Includes:** Pure implementation and exports for src/rendering/ui/console_hotbar.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_hotbar.ui.ts. |
+| `src/rendering/ui/console_inspect_card.ui.ts` | `tier1_console` | Floating Item Examine Popover card displaying lore, base stats, and special properties. | `showConsoleItemInspectCard`, `hideConsoleItemInspectCard` | **Includes:** Pure implementation and exports for src/rendering/ui/console_inspect_card.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_inspect_card.ui.ts. |
+| `src/rendering/ui/console_inventory.ui.ts` | `tier1_console` | Reactive anatomical equipment slot paper doll (supporting multi-limb and melded slots) and compact 10x4 inventory stash grid. | `renderReactivePaperDollWidget`, `renderCompactStashWidget`, `renderConsoleInventoryView` | **Includes:** Pure implementation and exports for src/rendering/ui/console_inventory.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_inventory.ui.ts. |
+| `src/rendering/ui/console_theme.ts` | `tier1_console` | Global Skin Token Engine for parchment tabletop and retro CRT sci-fi themes. | `getConsoleThemeMode`, `getConsoleThemeTokens`, `setConsoleThemeMode`, `subscribeConsoleThemeChange` | **Includes:** Pure implementation and exports for src/rendering/ui/console_theme.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_theme.ts. |
 | `src/rendering/ui/controls.ui.ts` | `tier1_console` | Updates the Real-Time with Pause (RTwP) UI controls in the sidebar. | `renderRTwPControls`, `renderViewControls` | **Includes:** Pure implementation and exports for src/rendering/ui/controls.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/controls.ui.ts. |
 | `src/rendering/ui/debug_ledger.ui.ts` | `tier1_console` | Renders the Debug Ledger UI panel. | `renderDebugLedgerUI` | **Includes:** Pure implementation and exports for src/rendering/ui/debug_ledger.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/debug_ledger.ui.ts. |
 | `src/rendering/ui/debug.ui.ts` | `tier1_console` | Renders the developer debug panel presenting triggered events and active field statuses on-screen. | `renderDebugOverlay` | **Includes:** Pure implementation and exports for src/rendering/ui/debug.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/debug.ui.ts. |
@@ -368,6 +381,7 @@
 | `src/rendering/ui/zod_form_renderer.ts` | `tier1_console` | Renders a form dynamically based on a Zod schema. | `renderFormForZodSchema` | **Includes:** Pure implementation and exports for src/rendering/ui/zod_form_renderer.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/zod_form_renderer.ts. |
 | `src/rendering/viewport_snapshot.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.ts | `buildViewportSnapshot` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.ts. |
 | `src/rendering/viewport_snapshot.types.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.types.ts | `EntityRenderDTO`, `ViewportCellDTO`, `VisualEffectDTO`, `InspectSectionType`, `InspectSectionDTO`, `InspectTooltipDTO`, `FogOverlayCellDTO`, `GlyphOverlayDTO` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.types.ts. |
+| `src/rulesets/default/ui/default_ui_adapter.ts` | `tier1_console` | Implements ICartridgeUIAdapter for Default Sci-Fi ruleset using retro-crt skin. | `DefaultSciFiUIAdapter` | **Includes:** Pure implementation and exports for src/rulesets/default/ui/default_ui_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/default/ui/default_ui_adapter.ts. |
 
 ## Core Console: Ruleset Cartridge Registry
 

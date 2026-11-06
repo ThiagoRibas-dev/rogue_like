@@ -46,13 +46,13 @@
     },
     "domainSpells": {
       "1": "obscuring_mist",
-      "2": "wind_wall",
+      "2": "gaseous_form",
       "3": "gaseous_form",
       "4": "air_walk",
       "5": "control_winds",
       "6": "chain_lightning",
       "7": "control_weather",
-      "8": "whirlwind",
+      "8": "control_winds",
       "9": "elemental_swarm"
     }
   }

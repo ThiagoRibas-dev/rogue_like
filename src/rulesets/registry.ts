@@ -138,3 +138,5 @@ export { extractActorTacticalDials } from './dnd35e/combat/tactical_doctrine.ts'
 export { evaluateActorSkillCheck } from './dnd35e/skills/skill_verb_helpers.ts';
 export { checkClassicRuleset } from './classic/classic_validator.ts';
 export { checkDnD35eRuleset, validateDnD35eSystemContentIntegrity } from './dnd35e/dnd35e_validator.ts';
+export { DnD35UIAdapter } from './dnd35e/ui/dnd35e_ui_adapter.ts';
+export { DefaultSciFiUIAdapter } from './default/ui/default_ui_adapter.ts';

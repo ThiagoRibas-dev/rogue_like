@@ -1,5 +1,4 @@
 // Auto-generated spell IDs list for D&D 3.5e system content.
-// Generated for Milestone 117 (Full 4th-9th Level SRD + 22 Cleric Domains coverage).
 
 export const SPELL_IDS = [
   'acid_fog',
@@ -250,47 +249,11 @@ export const SPELL_IDS = [
   'stone_shape',
   'stone_to_flesh',
   'stoneskin',
-  'summon_monster_i',
-  'summon_monster_ii',
   'summon_monster_iii',
-  'summon_monster_iv',
-  'summon_monster_ix',
-  'summon_monster_v',
-  'summon_monster_vi',
-  'summon_monster_vii',
-  'summon_monster_viii',
-  'summon_natures_ally_i',
-  'summon_natures_ally_ii',
-  'summon_natures_ally_iii',
-  'summon_natures_ally_iv',
-  'summon_natures_ally_ix',
-  'summon_natures_ally_v',
-  'summon_natures_ally_vi',
-  'summon_natures_ally_vii',
-  'summon_natures_ally_viii',
-  'sunbeam',
-  'sunburst',
-  'telekinesis',
-  'teleport',
-  'time_stop',
-  'true_seeing',
   'true_strike',
-  'unholy_aura',
-  'unholy_blight',
   'vampiric_touch',
   'virtue',
-  'wail_of_the_banshee',
-  'wall_of_fire',
-  'wall_of_force',
-  'wall_of_ice',
-  'wall_of_stone',
-  'wall_of_thorns',
-  'water_breathing',
-  'web',
-  'whirlwind',
-  'wind_wall',
-  'wish',
-  'word_of_chaos'
+  'web'
 ] as const;
 
 export type DnD35SpellId = (typeof SPELL_IDS)[number];

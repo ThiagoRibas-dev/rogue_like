@@ -2,67 +2,36 @@
   "summon_monster_iii": {
     "id": "summon_monster_iii",
     "name": "Summon Monster III",
-    "description": "Summons extraplanar creatures (celestial or fiendish) to fight for you for 1 round/level.",
-    "level": 3,
-    "levelByClass": {
-      "wizard": 3,
-      "sorcerer": 3,
-      "cleric": 3,
-      "bard": 3
-    },
-    "levelByDomain": {},
-    "levelByAccessTag": {},
     "school": "conjuration",
     "subschool": "summoning",
     "descriptors": [],
-    "classification": "spell",
-    "castingTime": "1_round",
-    "range": "close",
-    "duration": "1 round/level",
+    "level": 3,
+    "levelByClass": {
+      "cleric": 3,
+      "sorcerer": 3,
+      "wizard": 3
+    },
     "components": {
       "verbal": true,
       "somatic": true,
-      "material": false,
-      "focus": true,
-      "divineFocus": false,
-      "sacrifice": false,
-      "corrupt": false,
-      "casterCosts": []
+      "material": true
     },
-    "allowsSpellResistance": false,
-    "aoeShape": "single",
-    "aoeRadiusFt": 0,
+    "castingTime": "1_round",
+    "range": "close",
+    "target": "one_summoned_creature",
+    "duration": "1_round_per_level",
+    "savingThrow": {
+      "saveType": "none"
+    },
+    "spellResistance": false,
+    "description": "Summons an extraplanar creature to attack your enemies.",
+    "tags": ["subschool:summoning", "summoning"],
     "effectUnits": [
       {
-        "unitId": "sm_iii_unit",
-        "targetRole": "primary_target",
+        "unitId": "summon_1",
         "type": "summon",
-        "summonPool": [
-          {
-            "raceId": "dire_wolf",
-            "templateId": "fiendish",
-            "countDice": "1",
-            "minCasterLevel": 1
-          },
-          {
-            "raceId": "black_bear",
-            "templateId": "celestial",
-            "countDice": "1",
-            "minCasterLevel": 1
-          }
-        ],
-        "durationRoundsScaling": {
-          "baseValue": 0,
-          "perCL": 1,
-          "clStepInterval": 1,
-          "startAboveCL": 0
-        }
+        "creatureId": "celestial_dire_rat"
       }
-    ],
-    "tags": [
-      "conjuration",
-      "summoning",
-      "allies"
     ]
   }
 }

@@ -1,4 +1,5 @@
 import { computeAbilityModifier } from './abilities.ts';
+import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from './prerequisites.ts';
 import {
   calculateLevelSkillPointBudget,
   calculateSkillAllocationCost,
@@ -88,7 +89,45 @@ export function sanitizeDraftOnRaceOrClassChange(
   const skillRanks = newCost <= budget ? clampedRanks : {};
 
   const featBudget = computeFirstLevelFeatSlotBudget(raceDef, classDef);
-  const selectedFeats = draft.selectedFeats.slice(0, featBudget.totalSlots);
+  const strAdj = raceDef.abilityAdjustments.str ?? 0;
+  const dexAdj = raceDef.abilityAdjustments.dex ?? 0;
+  const conAdj = raceDef.abilityAdjustments.con ?? 0;
+  const wisAdj = raceDef.abilityAdjustments.wis ?? 0;
+  const chaAdj = raceDef.abilityAdjustments.cha ?? 0;
+  const firstLevelBab = classDef.progression[0]?.bab ?? 0;
+
+  const prereqCtx: PrerequisiteEvalContext = {
+    abilityScores: {
+      str: draft.baseAbilityScores.str + strAdj,
+      dex: draft.baseAbilityScores.dex + dexAdj,
+      con: draft.baseAbilityScores.con + conAdj,
+      int: draft.baseAbilityScores.int + intAdj,
+      wis: draft.baseAbilityScores.wis + wisAdj,
+      cha: draft.baseAbilityScores.cha + chaAdj
+    },
+    totalBab: firstLevelBab,
+    skillRanks,
+    feats: [],
+    tags: [`type:${raceDef.creatureType}`, `size:${raceDef.size}`],
+    casterLevel: classDef.castingMode !== 'none' ? 1 : 0,
+    sizeCategory: raceDef.size,
+    alignment,
+    raceId: raceDef.id
+  };
+
+  const selectedFeats: string[] = [];
+  for (const featId of draft.selectedFeats) {
+    if (selectedFeats.length >= featBudget.totalSlots) break;
+    const featDef = sysContent.feats[featId];
+    if (!featDef) continue;
+    const ctxWithAccumulated: PrerequisiteEvalContext = {
+      ...prereqCtx,
+      feats: selectedFeats
+    };
+    if (!featDef.prerequisites || evaluatePrerequisiteAST(featDef.prerequisites, ctxWithAccumulated)) {
+      selectedFeats.push(featId);
+    }
+  }
 
   const spellBudget = computeClassSpellSelectionBudget(
     classDef,

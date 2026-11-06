@@ -1835,10 +1835,7 @@
     "tier": "tier2_ui",
     "responsibility": "Renders Feats, Special Abilities & Domains, Progression Tracks, and Conditions tabs for the Character Sheet.",
     "canonicalEntryPoints": [
-      "renderSheetFeatsTab",
-      "renderSheetSpecialAbilitiesTab",
-      "renderSheetProgressionTab",
-      "renderSheetConditionsTab"
+      "renderSheetFeatsAndFeaturesTab"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts.",
@@ -1927,6 +1924,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_adapter.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Implements ICartridgeUIAdapter for D&D 3.5e actors, converting DnD35EntityData into unified Console UI models.",
+    "canonicalEntryPoints": [
+      "DnD35UIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts."
     ]
   }
 }

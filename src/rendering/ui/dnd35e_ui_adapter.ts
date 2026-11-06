@@ -8,10 +8,12 @@ import { type EntityId, type GameState, UIMode } from '../../types/game-state.ty
 import { setGameState, getGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { type CartridgeUIDefinition, closeCartridgeModal, registerCartridgeUI } from './cartridge_ui_registry.ts';
+import { hideConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd35e_char_builder.ui.ts';
+import { renderDnD35eDoctrineBar } from './dnd35e_doctrine_bar.ui.ts';
 import { canPlayerLevelUpDnD35e, renderDnD35eLevelUpModal } from './dnd35e_level_up.ui.ts';
-
 import { renderDnD35eSheetModal as renderSheetModalImpl } from './dnd35e_sheet.ui.ts';
+import { renderDnD35eSpellbookModal as renderSpellbookModalImpl } from './dnd35e_spellbook.ui.ts';
 
 let closeListenersBound = false;
 
@@ -19,6 +21,7 @@ function bindModalCloseButtons(): void {
   if (closeListenersBound) return;
   closeListenersBound = true;
   document.getElementById('btn-close-dnd35e-sheet')?.addEventListener('click', () => {
+    hideConsoleItemInspectCard();
     setGameState(closeCartridgeModal(getGameState()));
     markAllDomainsDirty();
   });
@@ -29,13 +32,14 @@ function bindModalCloseButtons(): void {
 }
 
 /**
- * Renders the D&D 3.5e Character Sheet modal (Milestone 118).
+ * Renders the D&D 3.5e Character Sheet overlay modal.
  */
 export function renderDnD35eSheetModal(state: GameState): void {
   bindModalCloseButtons();
   const overlay = document.getElementById('dnd35e-sheet-overlay');
   if (!overlay) return;
   if (state.uiMode !== UIMode.CartridgeModal || state.activeCartridgeModalId !== 'character_sheet') {
+    hideConsoleItemInspectCard();
     overlay.classList.add('hidden');
     return;
   }
@@ -43,10 +47,8 @@ export function renderDnD35eSheetModal(state: GameState): void {
   renderSheetModalImpl(state);
 }
 
-import { renderDnD35eSpellbookModal as renderSpellbookModalImpl } from './dnd35e_spellbook.ui.ts';
-
 /**
- * Renders the D&D 3.5e Vancian Spellbook modal (Milestone 118).
+ * Renders the D&D 3.5e Vancian Spellbook overlay modal.
  */
 export function renderDnD35eSpellbookModal(state: GameState): void {
   bindModalCloseButtons();
@@ -59,8 +61,6 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
   overlay.classList.remove('hidden');
   renderSpellbookModalImpl(state);
 }
-
-import { renderDnD35eDoctrineBar } from './dnd35e_doctrine_bar.ui.ts';
 
 /**
  * Canonical D&D 3.5e Cartridge UI Definition.

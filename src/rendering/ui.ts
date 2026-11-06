@@ -16,3 +16,17 @@ export { renderDossierUI } from './ui/dossier.ui.ts';
 export { renderDebugLedgerUI } from './ui/debug_ledger.ui.ts';
 export { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './ui/dnd35e_char_builder.ui.ts';
 export { renderDnD35eLevelUpModal, canPlayerLevelUpDnD35e } from './ui/dnd35e_level_up.ui.ts';
+export {
+  getConsoleThemeMode,
+  getConsoleThemeTokens,
+  setConsoleThemeMode,
+  subscribeConsoleThemeChange
+} from './ui/console_theme.ts';
+export { renderConsoleHotbar } from './ui/console_hotbar.ui.ts';
+export {
+  renderCompactStashWidget,
+  renderConsoleInventoryView,
+  renderReactivePaperDollWidget
+} from './ui/console_inventory.ui.ts';
+export { showConsoleItemInspectCard, hideConsoleItemInspectCard } from './ui/console_inspect_card.ui.ts';
+export { getSheetMorphologyMode, setSheetMorphologyMode } from './ui/dnd35e_sheet_overview_tab.ui.ts';

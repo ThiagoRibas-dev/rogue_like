@@ -5,9 +5,18 @@
     "description": "Trade melee attack bonus for melee damage (1:1 one-handed, 1:2 two-handed).",
     "isFighterBonusFeat": true,
     "prerequisites": {
-      "type": "min_ability",
-      "ability": "str",
-      "minScore": 13
+      "type": "and",
+      "children": [
+        {
+          "type": "min_ability",
+          "ability": "str",
+          "minScore": 13
+        },
+        {
+          "type": "min_bab",
+          "minBab": 1
+        }
+      ]
     },
     "effectBundle": {
       "bundleId": "feat_power_attack",

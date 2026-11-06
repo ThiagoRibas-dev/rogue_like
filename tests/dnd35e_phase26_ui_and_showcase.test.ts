@@ -18,6 +18,7 @@ import {
   unprepareSpellSlot
 } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
 import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_adapter.ts';
+import { validateCharacterCreationStep } from '../src/rulesets/dnd35e/character_builder.ts';
 import {
   applyCharacterCreationToPlayer,
   type CharacterCreationDraft,
@@ -184,6 +185,41 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
     state = executeEightHourRest(state, playerId);
     const restedFighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
     expect(restedFighter.hp).toBeGreaterThan(1);
+  });
+
+  it('rejects Power Attack for Level 1 Clerics (BAB +0) and enforces strict AST prerequisite validation', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign)!;
+
+    const clericDraft: CharacterCreationDraft = {
+      raceId: 'human',
+      classId: 'cleric',
+      alignment: 'NG',
+      selectedAcfs: [],
+      domains: ['war', 'good'],
+      prohibitedSchools: [],
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 28,
+      baseAbilityScores: { str: 16, dex: 10, con: 14, int: 10, wis: 16, cha: 10 },
+      skillRanks: {},
+      selectedFeats: ['power_attack', 'toughness'],
+      knownSpells: [],
+      equipmentPackageId: 'divine_crusader'
+    };
+
+    const validation = validateCharacterCreationStep(clericDraft, 'feats', sys);
+    expect(validation.valid).toBe(false);
+    expect(validation.reason).toContain('Prerequisites not met for feat: Power Attack');
+
+    // Fighter at Level 1 has BAB +1, so Human Fighter with STR 16 meets Power Attack, Cleave & Weapon Focus (3 slots total)
+    const fighterDraft: CharacterCreationDraft = {
+      ...clericDraft,
+      classId: 'fighter',
+      domains: [],
+      selectedFeats: ['power_attack', 'cleave', 'weapon_focus_longsword']
+    };
+    const fighterValidation = validateCharacterCreationStep(fighterDraft, 'feats', sys);
+    expect(fighterValidation.valid).toBe(true);
   });
 
   it('verifies The Sunless Reliquary (dnd35e-crypt) showcase campaign zones', () => {

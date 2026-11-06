@@ -1,93 +1,38 @@
-# Phase 26 Research Notes — Milestones 118 & 119
+# Research Notes: Direct Live Integration of Consolidated CRPG + Pen-and-Paper Sheet, Reactive Anatomy & Multi-Attack Routine
 
-## 1. Core Architectural Constraints (`AGENTS.md`, `docs/ARCHITECTURE.md`, `.dependency-cruiser.cjs`)
-
-1. **Zero `any` & Strict TypeScript (`Rule 11`, `exactOptionalPropertyTypes: true`)**:
-   - No `any` types anywhere. Optional properties cannot be assigned `undefined` explicitly (`foo?: string` must be omitted or typed `string | undefined`).
-2. **Zero Magic Values (`Rule 12`)**:
-   - Every numerical or string literal governing gameplay, layout bounds, or UI limits must be extracted to a named constant or JSON registry.
-3. **One Concern Per File & $\le 250\text{--}300$ Line Limit (`Section 8`)**:
-   - Large UI surfaces (`cartridge_ui_registry.ts`, `dnd35e_doctrine_bar.ui.ts`, `equipment.ui.ts`, `dnd35e_sheet.ui.ts`, `dnd35e_spellbook.ui.ts`, `resizable_panels.ui.ts`) MUST be decomposed into single-concern sub-modules so no `.ts` file exceeds 300 lines.
-4. **Pure DOM Construction & View/Controller Separation (`Rule 7`)**:
-   - Never use `.innerHTML` for dynamic UI rendering. Build DOM elements using `document.createElement()` and `textContent`.
-   - Separate View rendering (`src/rendering/ui/*.ui.ts`) from Intent creation and state transitions.
-5. **Three-Tier Placement Heuristic (`Rule 16`) & Dependency Cruiser Boundaries**:
-   - **`headless-simulation-purity`**: `src/rulesets/**` must never import from `src/rendering/` or touch the DOM.
-   - **`no-direct-cartridge-imports-outside-registry`**: `src/(core|systems|actions|rendering)/` must never import from `src/rulesets/dnd35e/` directly—only through `src/rulesets/registry.ts`.
-   - **Console UI Host API vs. Cartridge UI Adapter**:
-     - **Tier 1 (Console Engine)**: Owns the generic **Cartridge UI Host & Slot API** (`src/rendering/ui/cartridge_ui_registry.ts`), generic `UIMode.CartridgeModal` (`activeCartridgeModalId?: string`), generic `IntentType.ToggleCartridgeModal`, Resizable Panels (`src/rendering/ui/resizable_panels.ui.ts`), and the Visual Anatomical Paper Doll primitive (`src/rendering/ui/equipment.ui.ts`).
-     - **Old-Brain Eviction**: Evict the hardcoded `UIMode.CharCreation` and `UIMode.LevelUp` enum members and all direct `dnd35e_*` imports from Tier 1 Console files (`game-state.types.ts`, `presenter.ts`, `session_dom.ts`, `session_controller.ts`, `input_handler.ts`, `hud_alerts.ui.ts`), migrating `'char_creation'` and `'level_up'` into the unified `CartridgeUIRegistry` alongside `'character_sheet'` and `'spellbook'`.
-     - **Tier 2 (D&D 3.5e Cartridge & Cartridge UI Adapter)**: Registers `'dnd35e'` into `cartridge_ui_registry.ts` with its HUD Tactical Doctrine & Maneuver Bar (`dnd35e_doctrine_bar.ui.ts`), 7-Tab Character Sheet (`dnd35e_sheet.ui.ts`), Class-Tabbed Vancian Spellbook (`dnd35e_spellbook.ui.ts`), Character Creation (`dnd35e_char_builder.ui.ts`), Level-Up (`dnd35e_level_up.ui.ts`), and Inspector (`dnd35e_inspector.ui.ts`).
-     - **Tier 3 (System & Campaign Content)**: `public/data/campaigns/dnd35e-crypt/*.json` showcasing the 4-zone *"The Sunless Reliquary"* adventure.
-6. **Declarative Effect Providers & Provenance (`Rule 17`, `Rule 19`)**:
-   - Character sheet stat tooltips and AC/Attack/Save breakdowns must read directly from `evaluateDnD35eEntityDAG` and `buildEffectProvenanceIndex` (`sourcePath` attribution, winner/shadowed/suppressed status)—never recomputing ad-hoc math in the UI.
+## 1. User Directive & Scope Shift
+- **Directive:** Remove the standalone `[🎨 UI Prototype]` button and `#ui-prototype-overlay` modal, and apply the consolidated high-density Parchment / Retro-CRT layout directly to the **live game layout** (`#dnd35e-sheet-overlay` `[C] Sheet` and `#inventory-overlay` `[I] Pack`).
+- **Core Goals:**
+  1. Shrink oversized inventory cells to compact `36×36px` sockets (`10 columns × 4 rows`) with inline category filter pills and sort controls.
+  2. Consolidate **Character Identity + 6 Ability Scores + Reactive Anatomical Paper Doll + AC/Saves Defense Strip** into the Left Column (`310px`), matching the user's mockup (`image_de4cde50.png`).
+  3. Fill the Center (`460px`) and Right (`1fr`) columns with rich, live Pen-and-Paper + CRPG data:
+     - **Full-Attack & Natural Weapon Routine Ledger** (all iterative strikes, off-hand weapons, extra limbs, and primary/secondary natural weapons from `dag.attackRoutine.strikes`).
+     - **Feats, Class Features, Domains & Active Conditions** (from `dndData.feats`, `collectActiveClassFeaturesAndPools`, `dndData.domains`, and `StatusEffects`).
+     - **Horizon 1 Level-by-Level Progression Matrix** (from `dndData.levelHistory`).
+     - **Pen-and-Paper Skills Table** (`Class? | Skill | Key | Total | Ranks | Mod | Synergy` + active `[Use]` button) stacked above the **Compact Backpack/Stash Grid** (with live Equip/Unequip/Use/Drop intents).
+  4. Make the **Equipment / Paper Doll section** dynamically reactive to `EquipmentComponent.slots` (`EquipmentSlotInstance[]`):
+     - Default 12-slot humanoid arrangement around the central archway.
+     - Reactively handles missing body parts (Quadruped/Beast), melded/suppressed slots (`suppressed: true` -> `🔒 Melded`), 2H weapon grip occupation (`occupiedBySlotId` -> `🔗 2H Grip`), and repeated extra body parts (e.g., 6-armed Marilith or multi-limb mutations rendered in an **Extra Anatomy / Multi-Limb Drawer**).
 
 ---
 
-## 2. Subsystem Analysis & Existing Codebase Integration Points
+## 2. Existing Live Files & SSOT Ownership Audit
 
-### 2.1 Console Slot/Modal Host API & Eviction of Hardcoded Cartridge Modes (`src/rendering/ui/cartridge_ui_registry.ts`)
-- **Problem Identified in Existing Codebase**:
-  - Previously, `UIMode.CharCreation` and `UIMode.LevelUp` were hardcoded in `src/types/game-state.types.ts`, `src/core/session/session_dom.ts` had `if (newState.campaign.manifest.rulesetId === 'dnd35e')`, `src/rendering/presenter.ts` directly imported `renderDnD35eCharBuilderModal`, `renderDnD35eLevelUpModal`, and `renderDnD35eInspector`, and `src/rendering/ui/hud_alerts.ui.ts` directly imported `canPlayerLevelUpDnD35e`.
-- **Console-Level Solution (Approach 4)**:
-  - Replace `UIMode.CharCreation` and `UIMode.LevelUp` in `src/types/game-state.types.ts` with a single universal **`UIMode.CartridgeModal = 'cartridge_modal'`** and `readonly activeCartridgeModalId?: string | undefined` on `GameState`.
-  - Add a single generic **`IntentType.ToggleCartridgeModal = 'TOGGLE_CARTRIDGE_MODAL'`** (`{ type: IntentType.ToggleCartridgeModal, entityId, modalId: string, isImmediate: true }`) handled in `src/systems/intent.system.ts`.
-  - Create `src/rendering/ui/cartridge_ui_registry.ts` exposing the Console UI Host API (`CartridgeUIDefinition`, `CartridgeModalDescriptor`, `CartridgeDockCommandDescriptor`, `CartridgeHudAlertDescriptor`) and helper functions (`getActiveCartridgeUI`, `openCartridgeModal`, `closeCartridgeModal`, `syncCartridgeModalVisibility`, `renderActiveCartridgeModal`).
-  - Register `'dnd35e'` in `src/rendering/ui/dnd35e_ui_adapter.ts` providing:
-    - `onStartNewGame`: resets character builder draft and opens `modalId: 'char_creation'` (`allowEscapeClose: false`).
-    - `modals`: `'char_creation'`, `'level_up'`, `'character_sheet'`, `'spellbook'`.
-    - `dockCommands`: `Sheet [C]`, `Spells [B]`, `Level Up [L]` (dynamically rendered in `hud_dock.ui.ts` and handled in `shortcut_input.ts` & `modal_input.ts`).
-    - `projectHudAlerts`: projects the `Level Up Available!` ribbon into `hud_alerts.ui.ts` without `hud_alerts.ui.ts` importing D&D files.
-    - `renderHudPanel`: mounts the D&D 3.5e Tactical Doctrine & Maneuver Bar into `#hud-cartridge-panel-slot` in `hud.ui.ts`.
-    - `renderInspectorExtension`: mounts the D&D 3.5e entity inspector into `#inspector-content` in `presenter.ts`.
-
-### 2.2 Milestone 118.1 — HUD Tactical Doctrine Dials, Combat Maneuvers, Active Class Abilities & Level-Up Banner
-- **Existing Primitives**:
-  - `src/rulesets/dnd35e/combat/tactical_doctrine.ts`: Exports `extractActorTacticalDials(featIds, featRegistry, suppressedBundleIds)` and `evaluateTacticalDoctrineModifiers(...)`.
-  - `src/types/components.types.ts`: `TacticalDoctrineComponent` holds `powerAttackAmount`, `combatExpertiseAmount`, `fightingDefensively`, `totalDefense`, `castDefensively`, `weaponGrip` (`'one_handed' | 'two_handed' | 'double_weapon'`), and `settings: Readonly<Record<string, number | boolean | string>>`.
-  - `src/rulesets/dnd35e/resource_pools.ts` & `src/rulesets/dnd35e/wild_shape.ts`: Manage `ResourcePoolComponent` and `applyWildShapeOverlay` / `revertWildShapeOverlay`.
-  - `src/rulesets/dnd35e/action_economy.ts`: Provides `ActionBudgetState` (`hasStandard`, `hasMove`, `hasSwift`, `canTake5FootStep`, `nextTurnSwiftConsumedByImmediate`, `distanceMovedFt`).
-  - `src/rulesets/dnd35e/combat/maneuvers_conditions.ts`: Exports `CombatManeuverType` (`'trip' | 'bull_rush' | 'disarm' | 'sunder' | 'overrun' | 'grapple' | 'feint'`) and `resolveCombatManeuver(params)`.
-  - `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`: `resolveDnD35eMeleeAttack` already resolves full iterative + off-hand + secondary natural weapon routines (`attackerEval.attackRoutine.strikes`) when `distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT`. By reading `doctrine?.settings?.['active_maneuver']`, `resolveDnD35eMeleeAttack` can execute a chosen Special Combat Maneuver (`resolveCombatManeuver`), a Charge (`+2` attack, `-2` AC, Pounce check), a Full-Round Attack (`strikes`), or a Standard single strike (`strikes.slice(0, 1)`).
-
-### 2.3 Milestone 118.2 — Visual Anatomical Paper Doll & In-Game HUD Overhaul
-- **Existing Primitives**:
-  - `src/systems/inventory/equipment_slots.ts`: Defines `buildAnatomyEquipmentSlots(bodyPlan)` supporting `'humanoid_biped'`, `'quadruped'`, `'marilith_6arm'`, `'avian'`, `'serpentine'`.
-- **Required Integration**:
-  - Create Console-level `src/rendering/ui/equipment.ui.ts` rendering the interactive **Visual Anatomical Paper Doll** around an actor silhouette (`Head`, `Eyes`, `Neck`, `Shoulders`, `Torso`, `Body/Armor`, `Waist`, `Arms/Wrists`, `Hands`, `Ring L`, `Ring R`, `Feet`, `Main Hand`, `Off Hand`, plus dynamic extra limb slots for `marilith_6arm` and melded/suppressed state badges when Wild Shaped).
-  - Embed the compact anatomical paper doll in `#hud-paperdoll-grid` (`src/rendering/ui/hud_paperdoll.ui.ts`) and the full-size interactive paper doll in both the Inventory Modal (`src/rendering/ui/inventory.ui.ts`) and Tab 3 of the D&D 3.5e Character Sheet.
-  - Upgrade `projectHudVitals` in `src/rulesets/dnd35e/dnd35e_ruleset.ts` to surface live `Full / Touch / FF AC`, `Fort / Ref / Will` saves, `BAB` / iterative attack summary, active conditions, and encumbrance tier (`Light / Med / Heavy`).
-
-### 2.4 Milestone 118.3 — 7-Tab D&D 3.5e Character Sheet (`src/rendering/ui/dnd35e_sheet.ui.ts`)
-- Decompose the 7-Tab Character Sheet into focused modules under `src/rendering/ui/sheet/` coordinated by `src/rendering/ui/dnd35e_sheet.ui.ts`:
-  1. **Tab 1 — Overview & Combat DAG Breakdown** (`sheet_overview_tab.ui.ts`): 6 Ability Scores with itemized `sourcePath` provenance from `dagResult.provenanceIndex`, `Full / Touch / Flat-Footed AC` breakdown (winning, shadowed, and suppressed modifiers), `Fort / Ref / Will` save breakdowns, `BAB` + iterative/natural attack sequence, Grapple, Initiative, `SR`, `DR`, Energy Resistances, and Encumbrance load gauge.
-  2. **Tab 2 — Classes, Racial HD & Level History** (`sheet_overview_tab.ui.ts`): Chronological `levelHistory` (`1..20`), Racial HD tiers (`rhdProgression`), Favored Class & Multiclass XP penalty status, and active `acfSwaps`.
-  3. **Tab 3 — Dynamic Anatomical Equipment Paper Doll** (`dnd35e_sheet.ui.ts` + `equipment.ui.ts`): Full interactive paper doll with slot-filtered equip pickers, grip toggles (`1H / 2H / Double`), and itemized `ACP / ASF% / Max DEX` readouts.
-  4. **Tab 4 — Skills & Active Skill Actions** (`sheet_skills_tab.ui.ts`): Full 42+ skill table (`Total = Ranks + KeyMod + Synergy + Typed - ACP`) with `[Use Skill]` buttons for active dungeon/combat skills (*Search*, *Open Lock*, *Disable Device*, *Hide*, *Tumble*, *Intimidate: Demoralize*, *Heal*, *Use Magic Device*) that execute real skill checks against adjacent tiles/actors/traps/locks in the current dungeon.
-  5. **Tab 5, 6 & 7 — Feats, Special Abilities/Domains, and Active Conditions/Overlays** (`sheet_feats_abilities_tab.ui.ts`).
-
-### 2.5 Milestone 118.4 — Class-Tabbed Vancian Spellbook, Spontaneous Casting & 8h Rest / 15-Min Open Slot UI (`src/rendering/ui/dnd35e_spellbook.ui.ts`)
-- Create `src/rendering/ui/dnd35e_spellbook.ui.ts` and `src/rendering/ui/spellbook/spellbook_actions.ts`:
-  - Render top-level **Class Spellbook Tabs** from `dndData.spellbooksByClass` showing class Caster Level, governing ability score, Save DCs (`10 + SpellLvl + KeyMod`), and Arcane Spell Failure % (`ASF%`).
-  - Level 0–9 + Domain `(+1)` slot matrix supporting Metamagic preparation (`applyMetamagicToSpell`), Open slots for **15-Minute (`150`-round) Mid-Dungeon Preparation** (`prepareOpenSpellSlotInDungeon`), Cleric/Druid spontaneous conversion (`convertPreparedSlotSpontaneously`), direct `[Cast]` execution (`resolveCastPipeline` + `executeModularSpellEffects`), and `[8-Hour Rest & Study]` (`resolveRestSlotRecovery`).
-
-### 2.6 Milestone 118.5 — General Resizable Panels & Drag Splitters (`src/rendering/ui/resizable_panels.ui.ts`, `src/styles/layout.css`, `src/core/settings.ts`)
-- Extend `PlayerSettings` in `src/core/settings.ts` with `panelLayout?: { leftSidebarWidthPx?: number; rightSidebarWidthPx?: number; logDrawerHeightPx?: number; modalMasterWidthPercent?: number }`.
-- Create Console-level `src/rendering/ui/resizable_panels.ui.ts` attaching pointer-drag splitters to `#hud-left-stack`, `#hud-right-stack`, `#hud-log-drawer`, and 2-pane Master/Detail modals, clamping dimensions, persisting to `PlayerSettings`, and dispatching `window.dispatchEvent(new Event('resize'))` on drag end so ROT.js re-projects the canvas cleanly.
-
-### 2.7 Milestone 119 — *"The Sunless Reliquary"* Full SRD Content Showcase & Campaign Editor Verification
-- Expand `public/data/campaigns/dnd35e-crypt/` across all 4 adventure zones (Outfitter Sanctuary Hub, Goblinoid & Orcish Outer Warrens, The Desecrated Ossuary, and The Reliquary Sanctum) and verify with `tests/dnd35e_phase26_ui_and_showcase.test.ts` and `./verify.sh`.
+| File | Current Role | Planned Live Integration Action |
+| :--- | :--- | :--- |
+| `index.html` | Contains `#dnd35e-sheet-overlay`, `#inventory-overlay`, and temporary `#ui-prototype-overlay` | Remove `#ui-prototype-overlay`. Expand `#dnd35e-sheet-overlay` to host the 3-column Parchment/CRT Master Dossier. |
+| `src/rendering/ui/dnd35e_ui_adapter.ts` | Registers `dnd35eUIDefinition` (`character_sheet`, `spellbook`, `level_up`, `ui_prototype`) | Remove `dnd35e_ui_prototype` dock command and `ui_prototype` modal entry. |
+| `src/rendering/ui/console_prototype_modal.ui.ts` | Standalone prototype showcase modal | **Evict / Delete** (no longer needed once live sheet & inventory use the unified components). Update `docs/ssot/ssot_console.json`. |
+| `src/rendering/ui/dnd35e_sheet.ui.ts` | Old 3-tab dark modal (`1. Combat & Attributes`, `2. Skills`, `3. Feats & Features`) | Replace with the **Consolidated 3-Column Master Dossier** (Left: Identity + Reactive Paper Doll + Defenses; Center: Full Attack Routine + Feats/Class Features + Level History Matrix; Right: Pen & Paper Skills Table + Compact `36×36px` Live Backpack/Stash). |
+| `src/rendering/ui/console_inventory.ui.ts` | Renders Paper Doll & Stash Grid | Refactor into two composable Console primitives: `renderReactivePaperDollWidget` (driven by `UIAnatomicalSlotDescriptor[]` derived from live `EquipmentSlotInstance[]`) and `renderCompactStashWidget` (`10×4` `36×36px` sockets wired to live Equip/Use intents and Examine hover cards). |
+| `src/rendering/ui/inventory.ui.ts` | Standalone `[I] Pack` modal | Wire `renderReactivePaperDollWidget` and `renderCompactStashWidget` so `[I] Pack` also benefits from the reactive anatomy paper doll and compact `36×36px` stash grid. |
 
 ---
 
-## 3. Three-Axis Cascading Effects Matrix (`Rule 15`)
+## 3. Cascading Effects Matrix
 
-| Change / Subsystem | Upstream (Callers, Emitters, Inputs) | Downstream (Consumers, Renderers, Validators) | Lateral (Sibling Configs, Keybinds, SSOT Docs) |
+| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers) | Lateral (Siblings / Docs / Tests) |
 | :--- | :--- | :--- | :--- |
-| **1. Console Slot/Modal Host (`UIMode.CartridgeModal`, `ToggleCartridgeModal`, `cartridge_ui_registry.ts`) & Eviction of `CharCreation`/`LevelUp`** | `shortcut_input.ts`, `modal_input.ts`, `hud_dock.ui.ts`, `session_dom.ts` (`onStartNewGame`), `hud_alerts.ui.ts` | `presenter.ts` (`syncCartridgeModalVisibility`, `renderActiveCartridgeModal`), `session_controller.ts` (focus trap), `intent.system.ts` exhaustive switch | `dnd35e_ui_adapter.ts`, `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts`, `index.html` |
-| **2. HUD Tactical Doctrine & Maneuver Bar** (`dnd35e_doctrine_bar.ui.ts`, `dnd35e_doctrine_actions.ts`, `dnd35e_combat_adapter.ts`) | `TacticalDoctrineComponent`, `ResourcePoolComponent`, `ActionBudgetComponent`, `dndData.feats`, `canPlayerLevelUpDnD35e` | `evaluateDnD35eEntityDAG`, `resolveDnD35eMeleeAttack` (dispatches selected maneuver or Full/Standard attack) | `dnd35e_ui_adapter.ts` (`renderHudPanel`), `hud.ui.ts` (`#hud-cartridge-panel-slot`) |
-| **3. Visual Anatomical Paper Doll** (`equipment.ui.ts`, `hud_paperdoll.ui.ts`, `inventory.ui.ts`, `inventory.css`) | `EquipmentComponent.slots`, `buildAnatomyEquipmentSlots`, `PropertyOverlayComponent` (Wild Shape melded slots) | `processEquipItemIntent`, `processUnequipItemIntent`, Tab 3 of `dnd35e_sheet.ui.ts`, `#hud-paperdoll-grid` | `equipment_physics.ts` (1H/2H grip & off-hand shield occupation) |
-| **4. 7-Tab Character Sheet & Active Skill Loop** (`dnd35e_sheet.ui.ts`, `src/rendering/ui/sheet/*.ts`) | `evaluateDnD35eEntityDAG`, `buildEffectProvenanceIndex`, `computeEncumbranceState`, `dndData.levelHistory` | `cartridge_ui_registry.ts` (`modalId: 'character_sheet'`), active dungeon skill resolver (Search, Open Lock, Disable Device, Heal, Demoralize) | `dnd35e_feat_spell_inspector.ui.ts` |
-| **5. Class-Tabbed Vancian Spellbook & Rest/Cast Loop** (`dnd35e_spellbook.ui.ts`, `src/rendering/ui/spellbook/*.ts`) | `dndData.spellbooksByClass`, `sysContent.spells`, `sysContent.domains`, `dndData.feats` (Metamagic) | `cartridge_ui_registry.ts` (`modalId: 'spellbook'`), `setDnD35EntityData`, `resolveCastPipeline`, `executeModularSpellEffects`, `resolveRestSlotRecovery`, `prepareOpenSpellSlotInDungeon` | `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts` |
-| **6. Resizable Layout Panels** (`resizable_panels.ui.ts`, `settings.ts`, `layout.css`) | Pointer drag events on `.panel-splitter-v` / `.panel-splitter-h`, `PlayerSettings.panelLayout` | CSS custom properties (`--hud-left-width`, `--hud-right-width`, `--modal-master-width`), `window` `'resize'` event -> `applyViewportResize` | All 2-pane modals (`char-creation`, `level-up`, `character-sheet`, `spellbook`, `editor`) |
-| **7. `dnd35e-crypt` Campaign Showcase Expansion** (`public/data/campaigns/dnd35e-crypt/*.json`) | `loadCampaign('dnd35e-crypt')`, SRD `races/*.json` & `items/*.json` | `scripts/run-validator.ts` (referential integrity, spawn pools, area connections, dialogue trees) | `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json`, `docs/MILESTONES.md`, `docs/DECISIONS.md` |
+| Remove `ui_prototype` modal & `console_prototype_modal.ui.ts` | `src/rendering/ui/dnd35e_ui_adapter.ts`, `index.html` | `cartridge_ui_registry.ts` | `tests/dnd35e_phase26_ui_and_showcase.test.ts`, `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| Expand `UICharacterSheetModel` & `UIInventoryModel` in `src/types/ui_adapter.types.ts` (`anatomicalSlots`, `attackGroups`, `levelHistory`, `skillRows`, `featureBadges`) | `DnD35UIAdapter`, `DefaultSciFiUIAdapter`, live `GameState` hydrator in `dnd35e_sheet.ui.ts` | `dnd35e_sheet.ui.ts`, `console_inventory.ui.ts`, `inventory.ui.ts` | `tests/console_ui_architecture.test.ts`, `docs/UI_UX_STANDARDS.md` |
+| Upgrade `dnd35e_sheet.ui.ts` to Consolidated 3-Column Parchment Master Dossier | `renderDnD35eSheetModal` in `src/rendering/ui/dnd35e_ui_adapter.ts` | `#dnd35e-sheet-body`, `queuePlayerIntent` (Equip, Unequip, UseItem, UseSkill) | `dnd35e_sheet_overview_tab.ui.ts`, `dnd35e_sheet_skills_tab.ui.ts`, `dnd35e_sheet_feats_abilities_tab.ui.ts` |

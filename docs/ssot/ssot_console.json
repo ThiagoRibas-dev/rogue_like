@@ -5144,5 +5144,110 @@
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/resizable_panels.ui.ts."
     ]
+  },
+  "src/rendering/ui/console_theme.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Global Skin Token Engine for parchment tabletop and retro CRT sci-fi themes.",
+    "canonicalEntryPoints": [
+      "getConsoleThemeMode",
+      "getConsoleThemeTokens",
+      "setConsoleThemeMode",
+      "subscribeConsoleThemeChange"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_theme.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_theme.ts."
+    ]
+  },
+  "src/rendering/ui/console_hotbar.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Generic 12-slot action hotbar with 10-bank pagination and combat stance dock bar.",
+    "canonicalEntryPoints": [
+      "renderConsoleHotbar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_hotbar.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_hotbar.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_inventory.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Reactive anatomical equipment slot paper doll (supporting multi-limb and melded slots) and compact 10x4 inventory stash grid.",
+    "canonicalEntryPoints": [
+      "renderReactivePaperDollWidget",
+      "renderCompactStashWidget",
+      "renderConsoleInventoryView"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_inventory.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_inventory.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_inspect_card.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Floating Item Examine Popover card displaying lore, base stats, and special properties.",
+    "canonicalEntryPoints": [
+      "showConsoleItemInspectCard",
+      "hideConsoleItemInspectCard"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_inspect_card.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_inspect_card.ui.ts."
+    ]
+  },
+  "src/rulesets/default/ui/default_ui_adapter.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Implements ICartridgeUIAdapter for Default Sci-Fi ruleset using retro-crt skin.",
+    "canonicalEntryPoints": [
+      "DefaultSciFiUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/default/ui/default_ui_adapter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/default/ui/default_ui_adapter.ts."
+    ]
+  },
+  "src/types/ui_adapter.types.ts": {
+    "domain": "Core Console: Foundation & Data Types",
+    "tier": "tier1_console",
+    "responsibility": "Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData.",
+    "canonicalEntryPoints": [
+      "ICartridgeUIAdapter",
+      "UICharacterSheetModel",
+      "UIInventoryModel",
+      "UIInventoryItem",
+      "UIAnatomicalSlotDescriptor",
+      "UIAttackGroupModel",
+      "UISkillRowModel",
+      "UIFeatureEntryModel",
+      "UILevelHistoryRowModel",
+      "UIInspectData"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/ui_adapter.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/ui_adapter.types.ts."
+    ]
   }
 }

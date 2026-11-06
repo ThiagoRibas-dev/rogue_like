@@ -81,7 +81,7 @@ export function renderDnD35eDoctrineBar(container: HTMLElement, state: GameState
   const header = document.createElement('div');
   header.className = 'hud-card-header';
   const title = document.createElement('h2');
-  title.textContent = 'Tactical Doctrine';
+  title.textContent = 'Combat Stances & Actions';
   header.appendChild(title);
   card.appendChild(header);
 
