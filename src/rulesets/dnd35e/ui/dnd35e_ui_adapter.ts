@@ -47,14 +47,110 @@ interface ItemSeed {
 }
 
 const ITEM_SEEDS: ReadonlyArray<ItemSeed> = [
-  { id: 'luskan_rapier', name: "Luskan Battlemage's Rapier", icon: '⚔️', cat: 'weapon', qty: 1, gp: 4500, lbs: 2.0, lore: 'Forged in the Host Tower.', mLabel: 'Damage', mVal: '1d6+5 (18-20/x2)', prop: '+3 Enhancement, +1d6 Elec/Sonic' },
-  { id: 'kizu_shortsword', name: "Kizu's Short Sword", icon: '🗡️', cat: 'weapon', qty: 1, gp: 8310, lbs: 2.0, lore: 'Coated in Wyvern venom.', mLabel: 'Damage', mVal: '1d6 (19-20/x2)', prop: '+2d6 vs Chaotic, Wyvern Poison' },
-  { id: 'mithral_shirt', name: 'Mithral Chain Shirt +2', icon: '🛡️', cat: 'armor', qty: 1, gp: 1100, lbs: 10.0, lore: 'Elven silver links.', mLabel: 'Armor', mVal: '+6 AC (Max Dex +6)', prop: '+2 Enhancement (Mithral)' },
-  { id: 'cloak_resistance', name: 'Cloak of Resistance +2', icon: '🧥', cat: 'accessory', qty: 1, gp: 4000, lbs: 1.0, lore: 'Abjuration threads.', mLabel: 'Slot', mVal: 'Shoulders', prop: '+2 Resistance to Saves' },
-  { id: 'ring_protection', name: 'Ring of Protection +2', icon: '💍', cat: 'accessory', qty: 1, gp: 8000, lbs: 0.1, lore: 'Force barrier.', mLabel: 'Slot', mVal: 'Ring', prop: '+2 Deflection to AC' },
-  { id: 'amulet_natural_armor', name: 'Amulet of Natural Armor +1', icon: '📿', cat: 'accessory', qty: 1, gp: 2000, lbs: 0.2, lore: 'Amber talisman.', mLabel: 'Slot', mVal: 'Neck', prop: '+1 Natural Armor to AC' },
-  { id: 'potion_cure_serious', name: 'Potion of Cure Serious Wounds', icon: '🧪', cat: 'consumable', qty: 4, gp: 750, lbs: 0.5, lore: 'Ruby phial.', mLabel: 'Heal', mVal: '3d8+5 HP', prop: 'Conjuration (Healing)' },
-  { id: 'scroll_haste', name: 'Scroll of Haste', icon: '📜', cat: 'consumable', qty: 2, gp: 375, lbs: 0.1, lore: 'Chronomantic vellum.', mLabel: 'Spell', mVal: 'Wiz/Sor 3', prop: '+1 Extra Attack, +30 ft Speed' }
+  {
+    id: 'luskan_rapier',
+    name: "Luskan Battlemage's Rapier",
+    icon: '⚔️',
+    cat: 'weapon',
+    qty: 1,
+    gp: 4500,
+    lbs: 2.0,
+    lore: 'Forged in the Host Tower.',
+    mLabel: 'Damage',
+    mVal: '1d6+5 (18-20/x2)',
+    prop: '+3 Enhancement, +1d6 Elec/Sonic'
+  },
+  {
+    id: 'kizu_shortsword',
+    name: "Kizu's Short Sword",
+    icon: '🗡️',
+    cat: 'weapon',
+    qty: 1,
+    gp: 8310,
+    lbs: 2.0,
+    lore: 'Coated in Wyvern venom.',
+    mLabel: 'Damage',
+    mVal: '1d6 (19-20/x2)',
+    prop: '+2d6 vs Chaotic, Wyvern Poison'
+  },
+  {
+    id: 'mithral_shirt',
+    name: 'Mithral Chain Shirt +2',
+    icon: '🛡️',
+    cat: 'armor',
+    qty: 1,
+    gp: 1100,
+    lbs: 10.0,
+    lore: 'Elven silver links.',
+    mLabel: 'Armor',
+    mVal: '+6 AC (Max Dex +6)',
+    prop: '+2 Enhancement (Mithral)'
+  },
+  {
+    id: 'cloak_resistance',
+    name: 'Cloak of Resistance +2',
+    icon: '🧥',
+    cat: 'accessory',
+    qty: 1,
+    gp: 4000,
+    lbs: 1.0,
+    lore: 'Abjuration threads.',
+    mLabel: 'Slot',
+    mVal: 'Shoulders',
+    prop: '+2 Resistance to Saves'
+  },
+  {
+    id: 'ring_protection',
+    name: 'Ring of Protection +2',
+    icon: '💍',
+    cat: 'accessory',
+    qty: 1,
+    gp: 8000,
+    lbs: 0.1,
+    lore: 'Force barrier.',
+    mLabel: 'Slot',
+    mVal: 'Ring',
+    prop: '+2 Deflection to AC'
+  },
+  {
+    id: 'amulet_natural_armor',
+    name: 'Amulet of Natural Armor +1',
+    icon: '📿',
+    cat: 'accessory',
+    qty: 1,
+    gp: 2000,
+    lbs: 0.2,
+    lore: 'Amber talisman.',
+    mLabel: 'Slot',
+    mVal: 'Neck',
+    prop: '+1 Natural Armor to AC'
+  },
+  {
+    id: 'potion_cure_serious',
+    name: 'Potion of Cure Serious Wounds',
+    icon: '🧪',
+    cat: 'consumable',
+    qty: 4,
+    gp: 750,
+    lbs: 0.5,
+    lore: 'Ruby phial.',
+    mLabel: 'Heal',
+    mVal: '3d8+5 HP',
+    prop: 'Conjuration (Healing)'
+  },
+  {
+    id: 'scroll_haste',
+    name: 'Scroll of Haste',
+    icon: '📜',
+    cat: 'consumable',
+    qty: 2,
+    gp: 375,
+    lbs: 0.1,
+    lore: 'Chronomantic vellum.',
+    mLabel: 'Spell',
+    mVal: 'Wiz/Sor 3',
+    prop: '+1 Extra Attack, +30 ft Speed'
+  }
 ];
 
 export const DND35_SHOWCASE_ITEMS: Readonly<Record<string, UIInventoryItem>> = Object.fromEntries(
@@ -88,33 +184,123 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     const it = DND35_SHOWCASE_ITEMS;
     const base: ReadonlyArray<UIAnatomicalSlotDescriptor> = [
       { slotId: 'head', slotType: 'head', label: 'Head', emptyGlyph: '🪖', rail: 'left', equippedItem: null },
-      { slotId: 'cloak', slotType: 'shoulders', label: 'Cloak', emptyGlyph: '🧥', rail: 'left', equippedItem: it.cloak_resistance! },
-      { slotId: 'ring_1', slotType: 'ring', label: 'Ring 1', emptyGlyph: '💍', rail: 'left', equippedItem: it.ring_protection! },
+      {
+        slotId: 'cloak',
+        slotType: 'shoulders',
+        label: 'Cloak',
+        emptyGlyph: '🧥',
+        rail: 'left',
+        equippedItem: it.cloak_resistance!
+      },
+      {
+        slotId: 'ring_1',
+        slotType: 'ring',
+        label: 'Ring 1',
+        emptyGlyph: '💍',
+        rail: 'left',
+        equippedItem: it.ring_protection!
+      },
       { slotId: 'hands', slotType: 'hands', label: 'Gloves', emptyGlyph: '🧤', rail: 'left', equippedItem: null },
-      { slotId: 'main_hand', slotType: 'main_hand', label: 'Main Hand', emptyGlyph: '⚔️', rail: 'left', equippedItem: it.luskan_rapier! },
+      {
+        slotId: 'main_hand',
+        slotType: 'main_hand',
+        label: 'Main Hand',
+        emptyGlyph: '⚔️',
+        rail: 'left',
+        equippedItem: it.luskan_rapier!
+      },
       { slotId: 'ammo', slotType: 'ranged', label: 'Ammo', emptyGlyph: '🏹', rail: 'left', equippedItem: null },
-      { slotId: 'neck', slotType: 'neck', label: 'Neck', emptyGlyph: '📿', rail: 'right', equippedItem: it.amulet_natural_armor! },
-      { slotId: 'torso', slotType: 'torso', label: 'Armor', emptyGlyph: '🛡️', rail: 'right', equippedItem: it.mithral_shirt! },
+      {
+        slotId: 'neck',
+        slotType: 'neck',
+        label: 'Neck',
+        emptyGlyph: '📿',
+        rail: 'right',
+        equippedItem: it.amulet_natural_armor!
+      },
+      {
+        slotId: 'torso',
+        slotType: 'torso',
+        label: 'Armor',
+        emptyGlyph: '🛡️',
+        rail: 'right',
+        equippedItem: it.mithral_shirt!
+      },
       { slotId: 'waist', slotType: 'waist', label: 'Belt', emptyGlyph: '🎗️', rail: 'right', equippedItem: null },
       { slotId: 'ring_2', slotType: 'ring', label: 'Ring 2', emptyGlyph: '💍', rail: 'right', equippedItem: null },
       { slotId: 'feet', slotType: 'feet', label: 'Boots', emptyGlyph: '🥾', rail: 'right', equippedItem: null },
-      { slotId: 'off_hand', slotType: 'off_hand', label: 'Off Hand', emptyGlyph: '🗡️', rail: 'right', equippedItem: it.kizu_shortsword! }
+      {
+        slotId: 'off_hand',
+        slotType: 'off_hand',
+        label: 'Off Hand',
+        emptyGlyph: '🗡️',
+        rail: 'right',
+        equippedItem: it.kizu_shortsword!
+      }
     ];
     if (preset === 'marilith_6arm') {
       return [
         ...base,
-        { slotId: 'arm_3_hand', slotType: 'off_hand', label: 'Arm 3 (Lower L)', emptyGlyph: '🗡️', rail: 'extra', isExtraLimb: true, equippedItem: it.kizu_shortsword! },
-        { slotId: 'arm_4_hand', slotType: 'off_hand', label: 'Arm 4 (Lower R)', emptyGlyph: '⚔️', rail: 'extra', isExtraLimb: true, equippedItem: it.luskan_rapier! },
-        { slotId: 'arm_5_hand', slotType: 'off_hand', label: 'Arm 5 (Ventral L)', emptyGlyph: '🗡️', rail: 'extra', isExtraLimb: true, equippedItem: it.kizu_shortsword! },
-        { slotId: 'arm_6_hand', slotType: 'off_hand', label: 'Arm 6 (Ventral R)', emptyGlyph: '🛡️', rail: 'extra', isExtraLimb: true, equippedItem: null },
-        { slotId: 'tail_slap', slotType: 'natural', label: 'Serpent Tail', emptyGlyph: '🐍', rail: 'extra', isExtraLimb: true, equippedItem: null }
+        {
+          slotId: 'arm_3_hand',
+          slotType: 'off_hand',
+          label: 'Arm 3 (Lower L)',
+          emptyGlyph: '🗡️',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: it.kizu_shortsword!
+        },
+        {
+          slotId: 'arm_4_hand',
+          slotType: 'off_hand',
+          label: 'Arm 4 (Lower R)',
+          emptyGlyph: '⚔️',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: it.luskan_rapier!
+        },
+        {
+          slotId: 'arm_5_hand',
+          slotType: 'off_hand',
+          label: 'Arm 5 (Ventral L)',
+          emptyGlyph: '🗡️',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: it.kizu_shortsword!
+        },
+        {
+          slotId: 'arm_6_hand',
+          slotType: 'off_hand',
+          label: 'Arm 6 (Ventral R)',
+          emptyGlyph: '🛡️',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: null
+        },
+        {
+          slotId: 'tail_slap',
+          slotType: 'natural',
+          label: 'Serpent Tail',
+          emptyGlyph: '🐍',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: null
+        }
       ];
     }
     if (preset === 'quadruped_wolf') {
       const meldedIds = new Set(['hands', 'main_hand', 'off_hand', 'ring_1', 'ring_2', 'torso', 'ammo']);
       return [
         ...base.map((s) => (meldedIds.has(s.slotId) ? { ...s, suppressed: true } : s)),
-        { slotId: 'natural_bite', slotType: 'natural', label: 'Primary Bite', emptyGlyph: '🐺', rail: 'extra', isExtraLimb: true, equippedItem: null }
+        {
+          slotId: 'natural_bite',
+          slotType: 'natural',
+          label: 'Primary Bite',
+          emptyGlyph: '🐺',
+          rail: 'extra',
+          isExtraLimb: true,
+          equippedItem: null
+        }
       ];
     }
     return base;
@@ -137,16 +323,63 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     const levelSummary = (dndData.tracks ?? []).map((t) => `${t.trackId} ${t.levels}`).join(' / ') || 'Level 1';
 
     const attackGroups: ReadonlyArray<UIAttackGroupModel> = [
-      { id: 'primary_rapier', label: "Luskan Battlemage's Rapier", subtitle: 'Main Hand • Iterative', category: 'manufactured', attackBonuses: `+${chassis.totalBab + strMod}`, damageFormula: `1d6 + ${Math.max(1, strMod)}`, criticalProfile: '18-20 / x2', riderNotes: '+3 Piercing, +1d6 Elec/Sonic' },
-      { id: 'offhand_shortsword', label: "Kizu's Short Sword", subtitle: 'Off-Hand • TWF', category: 'off_hand', attackBonuses: `+${chassis.totalBab + strMod - 2}`, damageFormula: `1d6 + ${Math.max(1, Math.floor(strMod / 2))}`, criticalProfile: '19-20 / x2', riderNotes: '+2d6 vs Chaotic, Wyvern Poison' },
-      { id: 'natural_bite', label: 'Secondary Natural Bite / Tail', subtitle: 'Natural Secondary (-5)', category: 'natural_secondary', attackBonuses: `+${chassis.totalBab + strMod - 5}`, damageFormula: `1d8 + ${Math.max(1, Math.floor(strMod / 2))}`, criticalProfile: '20 / x2', riderNotes: 'Improved Grab / Trip' }
+      {
+        id: 'primary_rapier',
+        label: "Luskan Battlemage's Rapier",
+        subtitle: 'Main Hand • Iterative',
+        category: 'manufactured',
+        attackBonuses: `+${chassis.totalBab + strMod}`,
+        damageFormula: `1d6 + ${Math.max(1, strMod)}`,
+        criticalProfile: '18-20 / x2',
+        riderNotes: '+3 Piercing, +1d6 Elec/Sonic'
+      },
+      {
+        id: 'offhand_shortsword',
+        label: "Kizu's Short Sword",
+        subtitle: 'Off-Hand • TWF',
+        category: 'off_hand',
+        attackBonuses: `+${chassis.totalBab + strMod - 2}`,
+        damageFormula: `1d6 + ${Math.max(1, Math.floor(strMod / 2))}`,
+        criticalProfile: '19-20 / x2',
+        riderNotes: '+2d6 vs Chaotic, Wyvern Poison'
+      },
+      {
+        id: 'natural_bite',
+        label: 'Secondary Natural Bite / Tail',
+        subtitle: 'Natural Secondary (-5)',
+        category: 'natural_secondary',
+        attackBonuses: `+${chassis.totalBab + strMod - 5}`,
+        damageFormula: `1d8 + ${Math.max(1, Math.floor(strMod / 2))}`,
+        criticalProfile: '20 / x2',
+        riderNotes: 'Improved Grab / Trip'
+      }
     ];
 
     const skillEntries = Object.entries(dndData.skillRanks ?? {});
     const skillRows: ReadonlyArray<UISkillRowModel> =
       skillEntries.length > 0
-        ? skillEntries.map(([id, ranks]) => ({ id, name: id.replace(/_/g, ' ').toUpperCase(), keyAbility: 'DEX', totalModifier: ranks + dexMod, ranks, abilityModifier: dexMod, miscModifier: 0, isClassSkill: true, isUsableActive: true }))
-        : Array.from({ length: 8 }, (_, idx) => ({ id: `skill_${idx}`, name: `SKILL ${idx + 1}`, keyAbility: 'INT', totalModifier: 4, ranks: 4, abilityModifier: 0, miscModifier: 0, isClassSkill: true, isUsableActive: idx < 4 }));
+        ? skillEntries.map(([id, ranks]) => ({
+            id,
+            name: id.replace(/_/g, ' ').toUpperCase(),
+            keyAbility: 'DEX',
+            totalModifier: ranks + dexMod,
+            ranks,
+            abilityModifier: dexMod,
+            miscModifier: 0,
+            isClassSkill: true,
+            isUsableActive: true
+          }))
+        : Array.from({ length: 8 }, (_, idx) => ({
+            id: `skill_${idx}`,
+            name: `SKILL ${idx + 1}`,
+            keyAbility: 'INT',
+            totalModifier: 4,
+            ranks: 4,
+            abilityModifier: 0,
+            miscModifier: 0,
+            isClassSkill: true,
+            isUsableActive: idx < 4
+          }));
 
     const featureEntries: ReadonlyArray<UIFeatureEntryModel> = [
       { id: 'weapon_finesse', name: 'Weapon Finesse', category: 'feat', sourceLabel: 'Feat' },
@@ -165,9 +398,27 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
             featsAndFeatures: [...entry.selectedFeats, ...entry.selectedAcfs].join(', ') || '—'
           }))
         : [
-            { level: 1, classAndLevel: 'Cleric 1', hitDieRoll: 8, skillPointsSpent: 12, featsAndFeatures: 'Weapon Focus, Turn Undead' },
-            { level: 2, classAndLevel: 'Fighter 1', hitDieRoll: 10, skillPointsSpent: 3, featsAndFeatures: 'Power Attack (Bonus)' },
-            { level: 3, classAndLevel: 'Cleric 2', hitDieRoll: 6, skillPointsSpent: 3, featsAndFeatures: 'Cleave (3rd HD)' }
+            {
+              level: 1,
+              classAndLevel: 'Cleric 1',
+              hitDieRoll: 8,
+              skillPointsSpent: 12,
+              featsAndFeatures: 'Weapon Focus, Turn Undead'
+            },
+            {
+              level: 2,
+              classAndLevel: 'Fighter 1',
+              hitDieRoll: 10,
+              skillPointsSpent: 3,
+              featsAndFeatures: 'Power Attack (Bonus)'
+            },
+            {
+              level: 3,
+              classAndLevel: 'Cleric 2',
+              hitDieRoll: 6,
+              skillPointsSpent: 3,
+              featsAndFeatures: 'Cleave (3rd HD)'
+            }
           ];
 
     return {
@@ -192,11 +443,28 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       hpMax: chassis.maxHp,
       acTotal: BASE_AC_SCORE + dexMod,
       babTotal: chassis.totalBab,
-      combatSummary: [{ title: "Luskan Battlemage's Rapier", attackBonus: `+${chassis.totalBab + strMod}`, damage: `1d6 + ${Math.max(1, strMod)}`, critRange: '18-20 / x2', specialEffects: ['+3 Piercing', '+1d6 Electrical', '+1d6 Sonic'] }],
+      combatSummary: [
+        {
+          title: "Luskan Battlemage's Rapier",
+          attackBonus: `+${chassis.totalBab + strMod}`,
+          damage: `1d6 + ${Math.max(1, strMod)}`,
+          critRange: '18-20 / x2',
+          specialEffects: ['+3 Piercing', '+1d6 Electrical', '+1d6 Sonic']
+        }
+      ],
       attackGroups,
-      skills: skillRows.map((s) => ({ id: s.id, name: s.name, totalModifier: s.totalModifier, isClassSkill: s.isClassSkill })),
+      skills: skillRows.map((s) => ({
+        id: s.id,
+        name: s.name,
+        totalModifier: s.totalModifier,
+        isClassSkill: s.isClassSkill
+      })),
       skillRows,
-      feats: (dndData.feats ?? []).map((f) => ({ id: f, name: f.replace(/_/g, ' ').toUpperCase(), description: 'SRD 3.5e Feat' })),
+      feats: (dndData.feats ?? []).map((f) => ({
+        id: f,
+        name: f.replace(/_/g, ' ').toUpperCase(),
+        description: 'SRD 3.5e Feat'
+      })),
       featureEntries,
       levelHistory
     };
@@ -208,7 +476,20 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     const it = DND35_SHOWCASE_ITEMS;
     const preset = dndData.morphologyPreset ?? 'humanoid';
     return {
-      equippedSlots: { main_hand: it.luskan_rapier!, off_hand: it.kizu_shortsword!, head: null, torso: it.mithral_shirt!, feet: null, hands: null, waist: null, ring_1: it.ring_protection!, ring_2: null, neck: it.amulet_natural_armor!, cloak: it.cloak_resistance!, ammo: null },
+      equippedSlots: {
+        main_hand: it.luskan_rapier!,
+        off_hand: it.kizu_shortsword!,
+        head: null,
+        torso: it.mithral_shirt!,
+        feet: null,
+        hands: null,
+        waist: null,
+        ring_1: it.ring_protection!,
+        ring_2: null,
+        neck: it.amulet_natural_armor!,
+        cloak: it.cloak_resistance!,
+        ammo: null
+      },
       anatomicalSlots: this.buildAnatomicalSlotsForPreset(preset),
       morphologyLabel: preset,
       activeWeaponSetIndex: 1,

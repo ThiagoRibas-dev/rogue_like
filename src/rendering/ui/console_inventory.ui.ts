@@ -71,7 +71,7 @@ function createSlotElement(slot: UIAnatomicalSlotDescriptor, callbacks: ConsoleI
 
   const icon = document.createElement('span');
   icon.className = 'crpg-pd-slot-icon';
-  icon.textContent = slot.suppressed ? '🔒' : equipped?.iconUrl ?? slot.emptyGlyph;
+  icon.textContent = slot.suppressed ? '🔒' : (equipped?.iconUrl ?? slot.emptyGlyph);
   const caption = document.createElement('span');
   caption.className = 'crpg-pd-slot-caption';
   caption.textContent = equipped ? equipped.name : slot.label;
@@ -165,7 +165,11 @@ export function renderReactivePaperDollWidget(
   const pct = Math.min(PERCENT_SCALE, Math.round((data.currentWeightLbs / maxW) * PERCENT_SCALE));
   const ticks = document.createElement('div');
   ticks.className = 'crpg-encumbrance-ticks';
-  for (const txt of [`Light (${data.currentWeightLbs.toFixed(1)} lbs)`, `${Math.round(maxW * MEDIUM_LOAD_RATIO)} lbs`, `Max ${maxW.toFixed(0)} lbs`]) {
+  for (const txt of [
+    `Light (${data.currentWeightLbs.toFixed(1)} lbs)`,
+    `${Math.round(maxW * MEDIUM_LOAD_RATIO)} lbs`,
+    `Max ${maxW.toFixed(0)} lbs`
+  ]) {
     const sp = document.createElement('span');
     sp.textContent = txt;
     ticks.appendChild(sp);
@@ -242,13 +246,28 @@ export function renderCompactStashWidget(
   wrap.appendChild(toolbar);
 
   const filtered = data.stashItems
-    .filter((item) => (activeCategory === 'all' ? true : activeCategory === 'quest' ? item.category === 'quest' || item.category === 'misc' : item.category === activeCategory))
+    .filter((item) =>
+      activeCategory === 'all'
+        ? true
+        : activeCategory === 'quest'
+          ? item.category === 'quest' || item.category === 'misc'
+          : item.category === activeCategory
+    )
     .slice()
-    .sort((a, b) => (activeSort === 'price_desc' ? b.priceGp - a.priceGp : activeSort === 'name_asc' ? a.name.localeCompare(b.name) : a.weightLbs - b.weightLbs));
+    .sort((a, b) =>
+      activeSort === 'price_desc'
+        ? b.priceGp - a.priceGp
+        : activeSort === 'name_asc'
+          ? a.name.localeCompare(b.name)
+          : a.weightLbs - b.weightLbs
+    );
 
   const matrix = document.createElement('div');
   matrix.className = 'crpg-stash-matrix-compact';
-  const cellTotal = Math.max(COMPACT_STASH_MIN_CELLS, Math.ceil(filtered.length / COMPACT_STASH_COLS) * COMPACT_STASH_COLS);
+  const cellTotal = Math.max(
+    COMPACT_STASH_MIN_CELLS,
+    Math.ceil(filtered.length / COMPACT_STASH_COLS) * COMPACT_STASH_COLS
+  );
   for (let i = 0; i < cellTotal; i++) {
     const item = filtered[i];
     const cell = document.createElement('div');
@@ -290,7 +309,11 @@ export function renderCompactStashWidget(
   container.appendChild(wrap);
 }
 
-export function renderConsoleInventoryView(container: HTMLElement, data: ConsoleInventoryData, callbacks: ConsoleInventoryCallbacks): void {
+export function renderConsoleInventoryView(
+  container: HTMLElement,
+  data: ConsoleInventoryData,
+  callbacks: ConsoleInventoryCallbacks
+): void {
   container.replaceChildren();
   const pdCol = document.createElement('div');
   pdCol.className = 'crpg-col-pane';
