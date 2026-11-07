@@ -171,7 +171,7 @@ export function renderLevelUpClassStage(
 
   const rTitle = document.createElement('h3');
   rTitle.style.margin = '0 0 6px 0';
-  rTitle.style.color = '#2ecc71';
+  rTitle.style.color = 'var(--crpg-success, #2ecc71)';
   rTitle.textContent = `${activeCls.name} Level ${nextClassLevel} Advancement`;
   rightPane.appendChild(rTitle);
 
@@ -182,7 +182,7 @@ export function renderLevelUpClassStage(
     const mBtn = document.createElement('button');
     mBtn.type = 'button';
     mBtn.className = 'modal-btn';
-    mBtn.style.borderColor = levelUpDraft.hpMethod === method ? '#f1c40f' : 'var(--border-color)';
+    mBtn.style.borderColor = levelUpDraft.hpMethod === method ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
     mBtn.textContent =
       method === 'average'
         ? `Fixed Average (+${Math.floor(activeCls.hitDieSides / 2) + 1} HP)`
@@ -196,7 +196,7 @@ export function renderLevelUpClassStage(
 
   if (nextCharLevel % ABILITY_INCREASE_HD_STEP === 0) {
     const abTitle = document.createElement('strong');
-    abTitle.style.color = '#f1c40f';
+    abTitle.style.color = 'var(--crpg-gold, #f1c40f)';
     abTitle.textContent = '+1 Ability Score Increase (Every 4th Hit Die):';
     rightPane.appendChild(abTitle);
     const abWrap = document.createElement('div');
@@ -208,7 +208,8 @@ export function renderLevelUpClassStage(
       kBtn.type = 'button';
       kBtn.className = 'modal-btn';
       kBtn.style.padding = '4px 8px';
-      kBtn.style.borderColor = levelUpDraft.abilityScoreIncrease === key ? '#f1c40f' : 'var(--border-color)';
+      kBtn.style.borderColor =
+        levelUpDraft.abilityScoreIncrease === key ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
       kBtn.textContent = `+1 ${key.toUpperCase()}`;
       kBtn.addEventListener('click', () => {
         onUpdateDraft({ ...levelUpDraft, abilityScoreIncrease: key });
@@ -221,7 +222,7 @@ export function renderLevelUpClassStage(
   if (prestigeSlots.length > 0) {
     prestigeSlots.forEach((slot, slotIdx) => {
       const slotHeader = document.createElement('strong');
-      slotHeader.style.color = '#58a6ff';
+      slotHeader.style.color = 'var(--crpg-info, #58a6ff)';
       slotHeader.textContent = `${slot.label}:`;
       rightPane.appendChild(slotHeader);
 
@@ -236,7 +237,7 @@ export function renderLevelUpClassStage(
         cBtn.type = 'button';
         cBtn.className = 'modal-btn';
         cBtn.style.padding = '4px 8px';
-        cBtn.style.borderColor = curTarget === candId ? '#2ecc71' : 'var(--border-color)';
+        cBtn.style.borderColor = curTarget === candId ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
         cBtn.textContent = candCls?.name ?? candId;
         cBtn.addEventListener('click', () => {
           const nextTargets = [...effectivePrestigeTargets];
@@ -273,14 +274,14 @@ export function renderLevelUpFooter(
   if (!currentTabCheck.valid && currentTabCheck.reason) {
     const gateBanner = document.createElement('div');
     gateBanner.style.cssText =
-      'padding: 5px 10px; font-size: 0.78rem; color: #f39c12; border: 1px solid #e67e22; background: rgba(230, 126, 34, 0.12);';
+      'padding: 5px 10px; font-size: 0.78rem; color: var(--crpg-warning, #f39c12); border: 1px solid var(--crpg-warning, #e67e22); background: rgba(230, 126, 34, 0.12);';
     gateBanner.textContent = `⚠ Required before proceeding: ${currentTabCheck.reason}`;
     content.appendChild(gateBanner);
   }
 
   const footer = document.createElement('div');
   footer.style.cssText =
-    'display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #333947;';
+    'display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--crpg-border-subtle, #333947);';
 
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
@@ -315,7 +316,7 @@ export function renderLevelUpFooter(
   const confirmBtn = document.createElement('button');
   confirmBtn.type = 'button';
   confirmBtn.className = 'modal-btn';
-  confirmBtn.style.borderColor = allTabsValid ? '#2ecc71' : 'var(--border-color)';
+  confirmBtn.style.borderColor = allTabsValid ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
   confirmBtn.textContent = '✔ Confirm Level Up';
   confirmBtn.disabled = !allTabsValid;
   confirmBtn.addEventListener('click', () => {

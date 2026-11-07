@@ -5,10 +5,9 @@ import {
   setConsoleThemeMode,
   subscribeConsoleThemeChange
 } from '../src/rendering/ui/console_theme.ts';
-import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
-import { DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { DefaultSciFiUIAdapter } from '../src/rulesets/default/ui/default_ui_adapter.ts';
-import type { DnD35EntityData } from '../src/rulesets/dnd35e/types/dnd35e.types.ts';
+import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
+import { type DnD35ExtendedActorData, DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 
 describe('Console UI Architecture & Cartridge Adapter Suite', () => {
   it('toggles ConsoleThemeMode and updates skin tokens dynamically', () => {
@@ -33,15 +32,15 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     unsubscribe();
   });
 
-  it('evaluates D&D 3.5e Cartridge UI Adapter stats and paper doll models', () => {
+  it('evaluates D&D 3.5e Cartridge UI Adapter stats and build-driven stances', () => {
     const adapter = new DnD35UIAdapter();
     expect(adapter.rulesetId).toBe('dnd35e');
     expect(adapter.defaultThemeMode).toBe('parchment');
 
-    const dummyActor: DnD35EntityData = {
-      entityId: 'hero_1',
+    const dummyActor: DnD35ExtendedActorData = {
+      name: 'Valen',
       raceId: 'human',
-      alignment: 'neutral_good',
+      alignment: 'NG',
       abilityScores: {
         str: createAbilityScoreState(14),
         dex: createAbilityScoreState(21),
@@ -51,80 +50,158 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
         cha: createAbilityScoreState(12)
       },
       tracks: [
-        { trackId: 'swashbuckler', levels: 12 },
-        { trackId: 'duelist', levels: 3 }
+        {
+          trackId: 'swashbuckler',
+          levels: 12,
+          hitDieSides: 10,
+          babCurve: 'full',
+          fortCurve: 'good',
+          refCurve: 'poor',
+          willCurve: 'poor',
+          skillPointsPerLevel: 4
+        },
+        {
+          trackId: 'duelist',
+          levels: 3,
+          hitDieSides: 10,
+          babCurve: 'full',
+          fortCurve: 'poor',
+          refCurve: 'good',
+          willCurve: 'poor',
+          skillPointsPerLevel: 4
+        }
       ],
-      skillRanks: { tumble: 15, balance: 10 },
+      skillRanks: { tumble: 15, search: 10 },
       feats: ['power_attack', 'weapon_finesse'],
+      scalingPools: { turn_undead: 4 },
       goldCurrency: 21386
     };
 
     const sheet = adapter.getCharacterSheetData(dummyActor);
-    expect(sheet.name).toBe('Adventurer');
+    expect(sheet.name).toBe('Valen');
     expect(sheet.levelSummary).toBe('swashbuckler 12 / duelist 3');
     expect(sheet.attributes.find((a) => a.id === 'dex')?.score).toBe(21);
     expect(sheet.attributes.find((a) => a.id === 'dex')?.modifier).toBe(5);
     expect(sheet.savingThrows.length).toBe(3);
 
     const inv = adapter.getInventoryData(dummyActor);
-    expect(inv.equippedSlots.main_hand?.name).toBe("Luskan Battlemage's Rapier");
+    expect(inv.stashItems.length).toBe(0);
+    expect(inv.currentWeightLbs).toBe(0);
     expect(inv.goldCurrency).toBe(21386);
 
-    const stances = adapter.getStanceActions(dummyActor);
-    expect(stances.some((s) => s.id === 'power_attack')).toBe(true);
-    expect(stances.some((s) => s.id === 'fighting_defensively')).toBe(true);
+    // Actor has power_attack and turn_undead pool, but NOT combat_expertise
+    const hotbar = adapter.getHotbarData(dummyActor);
+    expect(hotbar.stanceModes.some((s) => s.id === 'power_attack' && s.maxNumericValue === 15)).toBe(true);
+    expect(hotbar.stanceModes.some((s) => s.id === 'combat_expertise')).toBe(false);
+    expect(hotbar.stanceModes.some((s) => s.id === 'fighting_defensively')).toBe(true);
+    expect(hotbar.stanceModes.some((s) => s.id === 'pool:turn_undead')).toBe(true);
+    expect(hotbar.slots.some((sl) => sl.actionPayload?.kind === 'skill' && sl.actionPayload.id === 'search')).toBe(
+      true
+    );
   });
 
-  it('evaluates Default Sci-Fi Cartridge UI Adapter models', () => {
+  it('evaluates Default / Classic Cartridge UI Adapter models without fake items', () => {
     const adapter = new DefaultSciFiUIAdapter();
     expect(adapter.rulesetId).toBe('default');
     expect(adapter.defaultThemeMode).toBe('retro-crt');
 
-    const sheet = adapter.getCharacterSheetData({});
-    expect(sheet.name).toBe('OPERATIVE #1337');
-    expect(sheet.attributes.find((a) => a.id === 'dex')?.score).toBe(14);
+    const sheet = adapter.getCharacterSheetData({ name: 'Ranger', level: 5, attack: 14, defense: 12 });
+    expect(sheet.name).toBe('Ranger');
+    expect(sheet.levelSummary).toBe('Level 5');
+    expect(sheet.babTotal).toBe(14);
 
     const inv = adapter.getInventoryData({});
-    expect(inv.stashItems[0]?.name).toBe('Nanite Hypo-Stimpack v2');
-    expect(inv.stashItems[0]?.priceGp).toBe(150);
+    expect(inv.stashItems.length).toBe(0);
+    expect(inv.currentWeightLbs).toBe(0);
   });
 
-  it('safely handles empty or partial actor payloads in DnD35UIAdapter without throwing', () => {
+  it('safely handles empty or partial actor payloads in DnD35UIAdapter without injecting fake gear', () => {
     const adapter = new DnD35UIAdapter();
 
     const emptySheet = adapter.getCharacterSheetData({});
     expect(emptySheet.name).toBe('Adventurer');
     expect(emptySheet.attributes.find((a) => a.id === 'str')?.score).toBe(10);
     expect(emptySheet.attributes.find((a) => a.id === 'str')?.modifier).toBe(0);
-    expect((emptySheet.attackGroups ?? []).length).toBeGreaterThanOrEqual(3);
-    expect((emptySheet.skillRows ?? []).length).toBeGreaterThanOrEqual(8);
-    expect((emptySheet.featureEntries ?? []).length).toBeGreaterThanOrEqual(4);
-    expect((emptySheet.levelHistory ?? []).length).toBeGreaterThanOrEqual(3);
+    expect((emptySheet.attackGroups ?? []).length).toBe(1);
+    expect(emptySheet.attackGroups?.[0]?.label).toBe('Unarmed Strike');
+    expect((emptySheet.skillRows ?? []).length).toBe(0);
+    expect((emptySheet.featureEntries ?? []).length).toBe(0);
 
     const emptyInv = adapter.getInventoryData({});
     expect(emptyInv.maxWeightLbs).toBe(150);
-    expect(emptyInv.goldCurrency).toBe(250);
-    expect(emptyInv.equippedSlots.main_hand?.name).toBe("Luskan Battlemage's Rapier");
+    expect(emptyInv.goldCurrency).toBe(0);
+    expect(emptyInv.stashItems.length).toBe(0);
+    expect(emptyInv.equippedSlots.main_hand).toBeNull();
     expect((emptyInv.anatomicalSlots ?? []).length).toBe(12);
   });
 
-  it('builds reactive anatomical slots for humanoid, 6-armed Marilith, and Wild Shape quadruped presets', () => {
+  it('projects dynamic anatomical slots for extra limbs and suppressed Wild Shape slots from actor equipmentSlots', () => {
     const adapter = new DnD35UIAdapter();
 
-    const humanoidSlots = adapter.buildAnatomicalSlotsForPreset('humanoid');
-    expect(humanoidSlots.length).toBe(12);
-    expect(humanoidSlots.some((s) => s.isExtraLimb)).toBe(false);
+    const marilithInv = adapter.getInventoryData({
+      anatomyBodyPlan: 'marilith_6arm',
+      equipmentSlots: [
+        { id: 'main_hand', slotType: 'main_hand', equippedItem: null },
+        { id: 'off_hand', slotType: 'off_hand', equippedItem: null },
+        { id: 'arm_3_hand', slotType: 'off_hand', equippedItem: null },
+        { id: 'arm_4_hand', slotType: 'off_hand', equippedItem: null },
+        { id: 'tail_slap', slotType: 'held', equippedItem: null }
+      ]
+    });
+    const slots = marilithInv.anatomicalSlots ?? [];
+    expect(slots.length).toBe(5);
+    expect(slots.filter((s) => s.isExtraLimb).length).toBe(3);
 
-    const marilithSlots = adapter.buildAnatomicalSlotsForPreset('marilith_6arm');
-    const extraLimbs = marilithSlots.filter((s) => s.isExtraLimb);
-    expect(extraLimbs.length).toBe(5);
-    expect(extraLimbs.some((s) => s.slotId === 'arm_3_hand')).toBe(true);
-    expect(extraLimbs.some((s) => s.slotId === 'tail_slap')).toBe(true);
+    const wolfInv = adapter.getInventoryData({
+      anatomyBodyPlan: 'quadruped',
+      equipmentSlots: [
+        { id: 'main_hand', slotType: 'main_hand', equippedItem: null, suppressed: true },
+        { id: 'torso', slotType: 'torso', equippedItem: null, suppressed: true },
+        { id: 'neck', slotType: 'neck', equippedItem: null, suppressed: false }
+      ]
+    });
+    const wolfSlots = wolfInv.anatomicalSlots ?? [];
+    expect(wolfSlots.filter((s) => s.suppressed).length).toBe(2);
+  });
 
-    const wolfSlots = adapter.buildAnatomicalSlotsForPreset('quadruped_wolf');
-    const suppressedSlots = wolfSlots.filter((s) => s.suppressed);
-    expect(suppressedSlots.length).toBeGreaterThanOrEqual(4);
-    expect(wolfSlots.some((s) => s.slotId === 'natural_bite' && s.isExtraLimb)).toBe(true);
+  it('provides persistent hotbar model with conditional feat steppers and spellbook slots via Cartridge UI Adapters', () => {
+    const dndAdapter = new DnD35UIAdapter();
+    const casterActor: DnD35ExtendedActorData = {
+      feats: ['combat_expertise'],
+      tracks: [
+        {
+          trackId: 'wizard',
+          levels: 5,
+          hitDieSides: 4,
+          babCurve: 'half',
+          fortCurve: 'poor',
+          refCurve: 'poor',
+          willCurve: 'good',
+          skillPointsPerLevel: 2
+        }
+      ],
+      spellbooksByClass: {
+        wizard: {
+          classId: 'wizard',
+          castingMode: 'prepared',
+          castingTradition: 'arcane',
+          spellAcquisitionMode: 'spellbook_scribed',
+          governingAbility: 'int',
+          effectiveCasterLevel: 5,
+          maxCastableSpellLevel: 3,
+          knownSpellIds: ['fireball', 'magic_missile'],
+          preparedSpellIds: ['fireball', 'magic_missile'],
+          spellsPerDay: { '1': 3, '3': 1 }
+        }
+      }
+    };
+
+    const dndHotbar = dndAdapter.getHotbarData(casterActor);
+    expect(dndHotbar.slots.length).toBe(12);
+    expect(dndHotbar.stanceModes.some((s) => s.id === 'combat_expertise' && s.maxNumericValue === 2)).toBe(true);
+    expect(dndHotbar.stanceModes.some((s) => s.id === 'power_attack')).toBe(false);
+    expect(dndHotbar.slots[0]?.actionPayload?.kind).toBe('spell');
+    expect(dndHotbar.slots[0]?.actionPayload?.id).toBe('fireball');
+    expect((dndHotbar.actionPips ?? []).length).toBe(4);
   });
 });
-

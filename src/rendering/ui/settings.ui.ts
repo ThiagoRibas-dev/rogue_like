@@ -1,6 +1,9 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { getSettings, updateAutoPause } from '../../core/settings.ts';
+import { getGameState } from '../../core/game-loop.ts';
 import { MAX_LOW_HEALTH_PERCENT, MIN_LOW_HEALTH_PERCENT } from '../../constants/autopause.constants.ts';
+import { setConsoleThemeMode } from './console_theme.ts';
+import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 
 /**
  * Applies the current settings to the DOM (e.g. data attributes for CSS).
@@ -25,6 +28,20 @@ export function applySettingsToDOM(): void {
     document.body.setAttribute('data-no-animations', 'true');
   } else {
     document.body.removeAttribute('data-no-animations');
+  }
+
+  if (acc.consoleThemePreference) {
+    if (acc.consoleThemePreference === 'auto') {
+      try {
+        const curState = getGameState();
+        const activeCartridge = getActiveCartridgeUI(curState);
+        setConsoleThemeMode(activeCartridge?.defaultThemeMode ?? 'parchment');
+      } catch {
+        setConsoleThemeMode('parchment');
+      }
+    } else {
+      setConsoleThemeMode(acc.consoleThemePreference);
+    }
   }
 }
 
@@ -90,10 +107,12 @@ export function renderSettingsMenu(state?: GameState): void {
   if (dangerTel) dangerTel.checked = settings.visualFeedback.showDangerTelegraphs;
 
   const uiScale = document.getElementById('setting-ui-scale') as HTMLSelectElement;
+  const themeSelect = document.getElementById('setting-console-theme') as HTMLSelectElement | null;
   const highContrast = document.getElementById('setting-high-contrast') as HTMLInputElement;
   const disableAnim = document.getElementById('setting-disable-animations') as HTMLInputElement;
 
   if (uiScale) uiScale.value = settings.accessibility.uiScale;
+  if (themeSelect) themeSelect.value = settings.accessibility.consoleThemePreference ?? 'auto';
   if (highContrast) highContrast.checked = settings.accessibility.highContrast;
   if (disableAnim) disableAnim.checked = settings.accessibility.disableAnimations;
 

@@ -4,138 +4,11 @@
  */
 
 import { getComponent } from '../../core/ecs.ts';
-import {
-  type DnD35ResolvedStrikeProfile,
-  evaluateDnD35eEntityDAG,
-  getDnD35EntityData,
-  getDnD35SystemContent
-} from '../../rulesets/registry.ts';
+import { DnD35UIAdapter, getDnD35EntityData, getDnD35SystemContent } from '../../rulesets/registry.ts';
 import { ComponentType, type StatusEffectsComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import type { UIAttackGroupModel } from '../../types/ui_adapter.types.ts';
-import { getSheetMorphologyMode } from './dnd35e_sheet_overview_tab.ui.ts';
 
-const NATURAL_20 = 20;
-
-function formatSigned(val: number): string {
-  return val >= 0 ? `+${val}` : `${val}`;
-}
-
-function groupLiveStrikesIntoAttackGroups(
-  strikes: ReadonlyArray<DnD35ResolvedStrikeProfile>
-): ReadonlyArray<UIAttackGroupModel> {
-  const mode = getSheetMorphologyMode();
-  if (mode === 'marilith_6arm') {
-    return [
-      {
-        id: 'marilith_primary',
-        label: 'Primary Arm 1: Abyssal Longsword',
-        subtitle: 'Primary Hand • 4 Iterative Strikes',
-        category: 'manufactured',
-        attackBonuses: '+22 / +17 / +12 / +7',
-        damageFormula: '2d6 + 9',
-        criticalProfile: '19-20 / x2',
-        riderNotes: 'Multiweapon Mastery (0 Penalty) • Chaotic / Evil'
-      },
-      {
-        id: 'marilith_offhands',
-        label: 'Arms 2–6: 5× Abyssal Longswords',
-        subtitle: '5 Off-Hand Limbs • Multiweapon Fighting',
-        category: 'extra_limb',
-        attackBonuses: '5× (+22)',
-        damageFormula: '2d6 + 4 each',
-        criticalProfile: '19-20 / x2',
-        riderNotes: '5 Simultaneous Off-Hand Strikes'
-      },
-      {
-        id: 'marilith_tail',
-        label: 'Serpent Tail Slap',
-        subtitle: 'Natural Secondary (-5 Demoted)',
-        category: 'natural_secondary',
-        attackBonuses: '+17',
-        damageFormula: '4d6 + 4',
-        criticalProfile: '20 / x2',
-        riderNotes: 'Improved Grab • Constrict 4d6+13'
-      }
-    ];
-  }
-
-  if (mode === 'quadruped_wolf') {
-    return [
-      {
-        id: 'wolf_bite',
-        label: 'Dire Wolf Bite (Primary Natural)',
-        subtitle: 'Head / Jaws • Primary 1.5× STR',
-        category: 'natural_primary',
-        attackBonuses: '+11',
-        damageFormula: '1d8 + 7',
-        criticalProfile: '20 / x2',
-        riderNotes: 'Free Trip Attempt On Hit (Ex) • Manufactured Gear Melded'
-      },
-      {
-        id: 'wolf_claws',
-        label: '2× Forelimb Rake Claws',
-        subtitle: 'Forelimbs • Secondary (-5)',
-        category: 'natural_secondary',
-        attackBonuses: '+6 / +6',
-        damageFormula: '1d4 + 2',
-        criticalProfile: '20 / x2',
-        riderNotes: 'Piercing & Slashing'
-      }
-    ];
-  }
-
-  const map = new Map<string, { bonuses: string[]; first: DnD35ResolvedStrikeProfile }>();
-  for (const s of strikes) {
-    const key = `${s.attackSource}::${s.weaponId ?? s.naturalWeaponId ?? s.label}`;
-    const existing = map.get(key);
-    if (existing) {
-      existing.bonuses.push(formatSigned(s.attackBonus));
-    } else {
-      map.set(key, { bonuses: [formatSigned(s.attackBonus)], first: s });
-    }
-  }
-
-  const groups: UIAttackGroupModel[] = [];
-  for (const [key, entry] of map.entries()) {
-    const s = entry.first;
-    const dmgBonus = s.strDamageBonus + s.doctrineDamageBonus + s.flatDamageBonus;
-    const critStr =
-      s.critThreatMin < NATURAL_20
-        ? `${s.critThreatMin}-${NATURAL_20} / x${s.critMultiplier}`
-        : `20 / x${s.critMultiplier}`;
-    const subtitle =
-      s.attackSource === 'manufactured_primary'
-        ? `Primary Hand (${s.handedness.replace(/_/g, ' ')})`
-        : s.attackSource === 'manufactured_offhand'
-          ? 'Off-Hand (TWF)'
-          : s.attackSource === 'natural_primary'
-            ? 'Natural Primary'
-            : 'Natural Secondary (-5)';
-
-    const category: UIAttackGroupModel['category'] =
-      s.attackSource === 'manufactured_primary'
-        ? 'manufactured'
-        : s.attackSource === 'manufactured_offhand'
-          ? 'off_hand'
-          : s.attackSource === 'natural_primary'
-            ? 'natural_primary'
-            : 'natural_secondary';
-
-    groups.push({
-      id: key,
-      label: s.label.replace(/\s+#\d+$/, ''),
-      subtitle,
-      category,
-      attackBonuses: entry.bonuses.join(' / '),
-      damageFormula: `${s.weaponDice} ${formatSigned(dmgBonus)}`,
-      criticalProfile: critStr,
-      riderNotes: [s.weaponDamageType.toUpperCase(), ...s.bypassTags].join(' • ')
-    });
-  }
-
-  return groups;
-}
+const dndAdapter = new DnD35UIAdapter();
 
 /**
  * Renders Column 2 (Center Column): Attack Routine Ledger, Feats/Features/Conditions & Level-by-Level Matrix.
@@ -145,7 +18,7 @@ export function renderSheetFeatsAndFeaturesTab(container: HTMLElement, state: Ga
   col.className = 'crpg-col-pane';
 
   const dndData = getDnD35EntityData(state, playerId);
-  const evalResult = evaluateDnD35eEntityDAG(state, playerId);
+  const sheetModel = dndAdapter.getCharacterSheetData({ state, entityId: playerId });
   const sys = getDnD35SystemContent(state.campaign);
   const featRegistry = sys?.feats ?? {};
 
@@ -155,8 +28,7 @@ export function renderSheetFeatsAndFeaturesTab(container: HTMLElement, state: Ga
   atkHeading.textContent = 'Full-Attack & Natural Weapon Routine';
   col.appendChild(atkHeading);
 
-  const strikes = evalResult?.attackRoutine.strikes ?? [];
-  const attackGroups = groupLiveStrikesIntoAttackGroups(strikes);
+  const attackGroups = sheetModel.attackGroups ?? [];
 
   const routineList = document.createElement('div');
   routineList.className = 'crpg-attack-routine-list';

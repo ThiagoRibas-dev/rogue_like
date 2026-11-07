@@ -13,11 +13,11 @@ import {
 export function createInspectorSectionTitle(text: string): HTMLElement {
   const el = document.createElement('div');
   el.style.fontWeight = '700';
-  el.style.color = '#f1c40f';
+  el.style.color = 'var(--crpg-gold)';
   el.style.fontSize = '0.82rem';
   el.style.textTransform = 'uppercase';
   el.style.letterSpacing = '0.06em';
-  el.style.borderBottom = '1px solid #333947';
+  el.style.borderBottom = '1px solid var(--crpg-border-inner)';
   el.style.paddingBottom = '3px';
   el.style.marginTop = '6px';
   el.textContent = text;
@@ -27,7 +27,7 @@ export function createInspectorSectionTitle(text: string): HTMLElement {
 /**
  * Creates a pill badge element for D&D 3.5e right-pane inspectors.
  */
-export function createInspectorBadge(text: string, color = '#c9d1d9'): HTMLElement {
+export function createInspectorBadge(text: string, color = 'var(--crpg-text-main)'): HTMLElement {
   const span = document.createElement('span');
   span.className = 'dnd35-badge';
   span.style.color = color;
@@ -48,7 +48,7 @@ function renderPrerequisiteNodeChecklist(
   }
   const met = evaluatePrerequisiteAST(node, ctx);
   const row = document.createElement('div');
-  row.style.color = met ? '#2ecc71' : '#e74c3c';
+  row.style.color = met ? 'var(--crpg-success)' : 'var(--crpg-danger)';
   row.style.fontSize = '0.82rem';
   let label: string = node.type;
   if (node.type === 'min_ability') label = `${node.ability.toUpperCase()} ${node.minScore}+`;
@@ -71,7 +71,7 @@ export function renderFeatInspector(
   pane.replaceChildren();
   const title = document.createElement('h3');
   title.style.margin = '0 0 4px 0';
-  title.style.color = '#f1c40f';
+  title.style.color = 'var(--crpg-gold)';
   title.textContent = feat.name;
   pane.appendChild(title);
 
@@ -81,7 +81,7 @@ export function renderFeatInspector(
   badges.appendChild(
     createInspectorBadge(
       feat.isFighterBonusFeat ? 'Fighter Bonus Feat' : 'General Feat',
-      feat.isFighterBonusFeat ? '#f39c12' : '#58a6ff'
+      feat.isFighterBonusFeat ? 'var(--crpg-warning)' : 'var(--crpg-info)'
     )
   );
   pane.appendChild(badges);
@@ -95,7 +95,7 @@ export function renderFeatInspector(
   pane.appendChild(createInspectorSectionTitle('Prerequisites'));
   const preBox = document.createElement('div');
   if (!feat.prerequisites) {
-    preBox.style.color = '#2ecc71';
+    preBox.style.color = 'var(--crpg-success)';
     preBox.style.fontSize = '0.82rem';
     preBox.textContent = '🟢 None (Available to any eligible character)';
   } else {
@@ -116,7 +116,7 @@ export function renderSpellInspector(
   pane.replaceChildren();
   const title = document.createElement('h3');
   title.style.margin = '0 0 4px 0';
-  title.style.color = '#f1c40f';
+  title.style.color = 'var(--crpg-gold)';
   title.textContent = spell.name;
   pane.appendChild(title);
 
@@ -128,9 +128,9 @@ export function renderSpellInspector(
   const schoolLabel = spell.subschool
     ? `${spell.school.toUpperCase()} (${spell.subschool.toUpperCase()})`
     : spell.school.toUpperCase();
-  badges.appendChild(createInspectorBadge(`School: ${schoolLabel}`, '#58a6ff'));
+  badges.appendChild(createInspectorBadge(`School: ${schoolLabel}`, 'var(--crpg-info)'));
   for (const descTag of spell.descriptors ?? []) {
-    badges.appendChild(createInspectorBadge(`[${descTag.toUpperCase()}]`, '#a371f7'));
+    badges.appendChild(createInspectorBadge(`[${descTag.toUpperCase()}]`, 'var(--crpg-info)'));
   }
   badges.appendChild(createInspectorBadge(`Level: ${effLvl}`));
   if (spell.castingTime) {
@@ -158,7 +158,9 @@ export function renderSpellInspector(
     );
   }
   if (spell.damageDice) {
-    badges.appendChild(createInspectorBadge(`Effect: ${spell.damageDice} ${spell.damageType ?? ''}`, '#e74c3c'));
+    badges.appendChild(
+      createInspectorBadge(`Effect: ${spell.damageDice} ${spell.damageType ?? ''}`, 'var(--crpg-danger)')
+    );
   }
   pane.appendChild(badges);
 
@@ -189,7 +191,7 @@ export function renderSpellInspector(
 
     for (const u of spell.effectUnits) {
       const row = document.createElement('div');
-      row.style.color = '#c9d1d9';
+      row.style.color = 'var(--crpg-text-main)';
       let summary = `${u.unitId} (${u.type} • ${u.targetRole})`;
       if (u.type === 'damage') {
         summary = `⚔ Damage: ${u.dice} ${u.damageType}`;

@@ -46,7 +46,7 @@ export function renderCharBuilderEquipmentStep(
     title.textContent = pkg.name;
     const desc = document.createElement('div');
     desc.style.fontSize = '0.78rem';
-    desc.style.color = '#9da7b3';
+    desc.style.color = 'var(--crpg-text-dim, #9da7b3)';
     desc.textContent = pkg.description;
     info.appendChild(title);
     info.appendChild(desc);
@@ -58,7 +58,7 @@ export function renderCharBuilderEquipmentStep(
     STARTING_EQUIPMENT_PACKAGES.find((p) => p.id === draft.equipmentPackageId) ?? STARTING_EQUIPMENT_PACKAGES[0]!;
   const summaryTitle = document.createElement('h3');
   summaryTitle.style.margin = '0 0 6px 0';
-  summaryTitle.style.color = '#f1c40f';
+  summaryTitle.style.color = 'var(--crpg-gold, #f1c40f)';
   summaryTitle.textContent = `Character Summary & ${activePkg.name}`;
   rightPane.appendChild(summaryTitle);
 
@@ -84,7 +84,7 @@ export function renderCharBuilderEquipmentStep(
     const p = document.createElement('div');
     p.style.fontSize = '0.84rem';
     p.style.padding = '4px 0';
-    p.style.borderBottom = '1px solid #282e3b';
+    p.style.borderBottom = '1px solid var(--crpg-border-subtle, #282e3b)';
     p.textContent = text;
     rightPane.appendChild(p);
   }

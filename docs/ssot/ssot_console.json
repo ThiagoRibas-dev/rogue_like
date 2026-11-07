@@ -2579,21 +2579,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/hud_dock.ui.ts."
     ]
   },
-  "src/rendering/ui/hud_paperdoll.ui.ts": {
+  "src/rendering/ui/hud_bottom_dock.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "Dispatches standard equip/unequip/apply intents via the buffered InputCommandQueue.",
+    "responsibility": "Persistent Bottom-Center HUD Hotbar & Combat Stance Dock mounting Action Hotbar and Tactical Stances on the gameplay canvas.",
     "canonicalEntryPoints": [
       "getQuickBeltItems",
       "triggerQuickBeltSlot",
-      "renderHudPaperdoll"
+      "renderHudBottomDock"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/hud_paperdoll.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/hud_bottom_dock.ui.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/hud_paperdoll.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/hud_bottom_dock.ui.ts."
     ]
   },
   "src/rendering/ui/hud.ui.ts": {
@@ -5153,7 +5153,9 @@
       "getConsoleThemeMode",
       "getConsoleThemeTokens",
       "setConsoleThemeMode",
-      "subscribeConsoleThemeChange"
+      "subscribeConsoleThemeChange",
+      "syncGlobalConsoleTheme",
+      "applyConsoleTheme"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/ui/console_theme.ts.",
@@ -5161,6 +5163,38 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/console_theme.ts."
+    ]
+  },
+  "src/rendering/ui/console_dossier.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Generic 3-Column Master Dossier modal rendering Bio/Attributes/Saves, Center View Tabs, and Right Inspector Pane driven by ICartridgeUIAdapter.",
+    "canonicalEntryPoints": [
+      "renderConsoleMasterDossier"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_dossier.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_dossier.ui.ts."
+    ]
+  },
+  "src/rendering/ui/classic_ui_adapter.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Classic Sci-Fi ruleset UI definition and modal bridge registering DefaultSciFiUIAdapter in cartridge UI registry.",
+    "canonicalEntryPoints": [
+      "renderClassicSheetModal",
+      "registerClassicUIAdapter",
+      "classicUIDefinition"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_adapter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_adapter.ts."
     ]
   },
   "src/rendering/ui/console_hotbar.ui.ts": {

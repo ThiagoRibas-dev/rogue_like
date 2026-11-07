@@ -1800,21 +1800,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_actions.ts."
     ]
   },
-  "src/rendering/ui/dnd35e_doctrine_bar.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the HUD Tactical Doctrine Bar with variable dials, stance toggles, grip mode pills, and 5-tier action budget pips.",
-    "canonicalEntryPoints": [
-      "renderDnD35eDoctrineBar"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_bar.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_bar.ui.ts."
-    ]
-  },
   "src/rendering/ui/dnd35e_sheet.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -1939,6 +1924,42 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Pure hotbar and stance-mode projection helpers for the D&D 3.5e Cartridge UI Adapter.",
+    "canonicalEntryPoints": [
+      "ACTIVE_SKILL_IDS",
+      "buildActorStanceModes",
+      "buildActorHotbarSlots",
+      "DND35E_ACTION_PIPS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Pure projection helpers converting live ECS equipment slots, strikes, and feature entries into Tier 1 Console UI models.",
+    "canonicalEntryPoints": [
+      "buildAnatomicalSlotsFromEquipment",
+      "buildAttackGroupsFromStrikes",
+      "buildActorFeatureEntries",
+      "mapEntityItemToUI"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts."
     ]
   }
 }

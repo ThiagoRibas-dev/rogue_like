@@ -29,4 +29,7 @@ export {
   renderReactivePaperDollWidget
 } from './ui/console_inventory.ui.ts';
 export { showConsoleItemInspectCard, hideConsoleItemInspectCard } from './ui/console_inspect_card.ui.ts';
-export { getSheetMorphologyMode, setSheetMorphologyMode } from './ui/dnd35e_sheet_overview_tab.ui.ts';
+export { renderConsoleMasterDossier } from './ui/console_dossier.ui.ts';
+export { renderHudBottomDock } from './ui/hud_bottom_dock.ui.ts';
+export { renderClassicSheetModal, registerClassicUIAdapter } from './ui/classic_ui_adapter.ts';
+export { syncGlobalConsoleTheme, applyConsoleTheme } from './ui/console_theme.ts';

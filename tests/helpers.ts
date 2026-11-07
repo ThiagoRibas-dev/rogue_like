@@ -30,8 +30,14 @@ const CATEGORY_FILE_OVERRIDES: Partial<Record<keyof CampaignData, string>> = {
   schemeRecipes: 'schemes.json'
 };
 
+const CAMPAIGN_CACHE = new Map<string, CampaignData>();
+
 /** Loads a campaign from disk the same way the runtime loader maps files, including parent ruleset System Content. */
 export function loadCampaignFromDisk(id: string): CampaignData {
+  const cached = CAMPAIGN_CACHE.get(id);
+  if (cached) {
+    return structuredClone(cached);
+  }
   const dir = join(CAMPAIGNS_ROOT, id);
   const defaultDir = join(CAMPAIGNS_ROOT, 'default');
   const assembled: Record<string, unknown> = {};
@@ -76,9 +82,7 @@ export function loadCampaignFromDisk(id: string): CampaignData {
     const existing = rawSystemContent[desc.key];
     rawSystemContent[desc.key] = existing !== undefined ? { ...existing, ...normalizedIncoming } : normalizedIncoming;
   }
-  const parsedSys = ruleset.parseSystemContent
-    ? ruleset.parseSystemContent(rawSystemContent)
-    : rawSystemContent;
+  const parsedSys = ruleset.parseSystemContent ? ruleset.parseSystemContent(rawSystemContent) : rawSystemContent;
   assembled['systemContent'] = parsedSys;
 
   const sysItems = (parsedSys as Record<string, unknown> | undefined)?.['items'] as Record<string, unknown> | undefined;
@@ -89,7 +93,9 @@ export function loadCampaignFromDisk(id: string): CampaignData {
     };
   }
 
-  return CampaignDataSchema.parse(assembled);
+  const parsed = CampaignDataSchema.parse(assembled);
+  CAMPAIGN_CACHE.set(id, parsed);
+  return structuredClone(parsed);
 }
 
 /**

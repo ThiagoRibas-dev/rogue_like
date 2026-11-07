@@ -26,8 +26,9 @@ This document serves as the canonical Source of Truth (SSOT) for UI and UX archi
 │ ┌─────────────────────────────────────────┐ ┌───────────────────────────────────┐ │
 │ │        D&D 3.5e Cartridge Adapter       │ │    Default Sci-Fi Cartridge       │ │
 │ │ src/rulesets/dnd35e/ui/                 │ │ src/rulesets/default/ui/          │ │
-│ │ ├── dnd35e_ui_adapter.ts                │ │ ├── default_ui_adapter.ts         │ │
-│ │ └── dnd35e_hotbar_binding.ts            │ │ └── default_crt_profile.ts        │ │
+│ │ ├── dnd35e_ui_adapter.ts                │ │ └── default_ui_adapter.ts         │ │
+│ │ ├── dnd35e_ui_projection.ts             │ │                                   │ │
+│ │ └── dnd35e_ui_hotbar.ts                 │ │                                   │ │
 │ └─────────────────────────────────────────┘ └───────────────────────────────────┘ │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -78,12 +79,27 @@ Every Cartridge selects a primary theme skin, which can be toggled in settings:
 
 ## 4. Component Contracts & Standards
 
-### A. 12-Slot Action Hotbar Contract (`ConsoleHotbarUI`)
-- **Keybindings**: Slots 1 through 12 map to keys `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, `0`, `-`, `=`.
-- **Bank Pagination**: `Shift+Up` / `Shift+Down` cycles through 10 hotbar banks (120 total action slots).
-- **Slot Visual States**: Empty, Slotted Item/Spell, Active Cooldown Overlay, Insufficient Resource / Mana Warning, Active Toggle Highlight.
+### A. 3-Column Master Dossier Modal Contract (`ConsoleMasterDossierUI`)
+- **Container**: Full-screen modal (`.dossier-full-modal`) with parchment leather frame or CRT scanline frame.
+- **Left Column (`.crpg-sheet-left`)**: Hero Identity Badge (Portrait, Level, Class, HD, HP bar), Core Attributes Ledger with modifier boxes, and Saving Throws strip (Fort, Ref, Will).
+- **Center Column (`.crpg-sheet-center`)**: Responsive Tabbed Viewports:
+  - **Overview Tab**: Combat Attack routine breakdown (Melee/Ranged/Unarmed attacks, iterative BAB, damage, critical threat range), Armor Class breakdown (Touch, Flat-Footed), Maneuver modifiers (Grapple, Trip).
+  - **Inventory & Stash Tab**: Anatomical Equipment Paper Doll (12 slots, multi-limb Marilith, Wild Shape suppressed limbs) + 10x4 Item Stash Grid + Weight Slider + Gold counter.
+  - **Skills Tab**: Formatted Pen-and-Paper Skills Ledger with Active [Use] buttons and synergy indicators.
+  - **Feats & Abilities Tab**: Categorized Feats list (General, Racial, Class Bonus, Metamagic) and Active Special Abilities.
+- **Right Column (`.crpg-sheet-right`)**: Active Item/Feat/Skill Inspector Card displaying detailed metrics, synergy trees, and flavor lore.
 
-### B. Anatomical Paper Doll Contract (`ConsolePaperDollUI`)
+### B. Persistent HUD Bottom Dock Contract (`HudBottomDockUI` & `ConsoleHotbarUI`)
+- **Mount Point**: Persistent bottom-center screen overlay (`#hud-bottom-dock`) displayed across gameplay turns.
+- **Left Stance Modes Strip**: Tactical combat doctrine toggles with numeric steppers (Power Attack `[-][+]`, Combat Expertise `[-][+]`, Fighting Defensively, Total Defense, Grip Mode 1H/2H).
+- **Action Economy Pips**: Compact visual indicators for combat turn resource budgets:
+  - `STD` (Standard Action)
+  - `MOV` (Move Action)
+  - `SWF` (Swift / Quickened Action)
+  - `AoO` (Attack of Opportunity)
+- **12-Slot Action Hotbar**: Keybindings `1` through `6` (and `7` through `=`), quick-use consumable trigger integration, and bank pagination (`Bank 1..10`).
+
+### C. Anatomical Paper Doll Contract (`ConsolePaperDollUI`)
 - **Supported Slots**:
   - `head` (Helmet / Hood)
   - `neck` (Amulet / Necklace)

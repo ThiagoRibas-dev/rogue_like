@@ -83,7 +83,8 @@ export function renderSharedClassSpellStep(
   const summaryStrong = document.createElement('strong');
   if (budget.freePickCount > 0) {
     const targetCount = budget.freePickCount;
-    summaryStrong.style.color = nonZeroPicked === targetCount ? '#2ecc71' : '#f1c40f';
+    summaryStrong.style.color =
+      nonZeroPicked === targetCount ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-gold, #f1c40f)';
     summaryStrong.textContent = `${config.className} Spellbook • Scribe Lv 1–${budget.maxCastableLevel} Spells: ${nonZeroPicked} / ${targetCount}`;
   } else {
     const parts: string[] = [];
@@ -96,7 +97,7 @@ export function renderSharedClassSpellStep(
     }
     const cantripNote =
       budget.autoGrantedCantripIds.length > 0 ? ' (All non-prohibited Lv 0 Cantrips auto-scribed)' : '';
-    summaryStrong.style.color = allExact ? '#2ecc71' : '#f1c40f';
+    summaryStrong.style.color = allExact ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-gold, #f1c40f)';
     summaryStrong.textContent = `${config.className} Spells • ${parts.join(' | ')}${cantripNote}`;
   }
   filterBar.appendChild(summaryStrong);
@@ -111,7 +112,7 @@ export function renderSharedClassSpellStep(
   allChip.className = 'modal-btn';
   allChip.style.padding = '3px 7px';
   allChip.style.fontSize = '0.72rem';
-  allChip.style.borderColor = spellLevelFilter === 'all' ? '#f1c40f' : 'var(--border-color)';
+  allChip.style.borderColor = spellLevelFilter === 'all' ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
   allChip.textContent = 'All Levels';
   allChip.addEventListener('click', () => {
     spellLevelFilter = 'all';
@@ -125,7 +126,7 @@ export function renderSharedClassSpellStep(
     lvlChip.className = 'modal-btn';
     lvlChip.style.padding = '3px 7px';
     lvlChip.style.fontSize = '0.72rem';
-    lvlChip.style.borderColor = spellLevelFilter === lvl ? '#f1c40f' : 'var(--border-color)';
+    lvlChip.style.borderColor = spellLevelFilter === lvl ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
     lvlChip.textContent = `Lv ${lvl}`;
     lvlChip.addEventListener('click', () => {
       spellLevelFilter = lvl;

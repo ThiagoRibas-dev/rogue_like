@@ -67,7 +67,7 @@ export function renderClassStep(
   npcBtn.className = 'modal-btn';
   npcBtn.style.padding = '3px 8px';
   npcBtn.style.fontSize = '0.72rem';
-  npcBtn.style.borderColor = showNpcClasses ? '#f1c40f' : 'var(--border-color)';
+  npcBtn.style.borderColor = showNpcClasses ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
   npcBtn.textContent = showNpcClasses ? 'Hide NPC Classes' : 'Show NPC Classes';
   npcBtn.addEventListener('click', () => {
     onToggleNpcClasses();
@@ -96,7 +96,7 @@ export function renderClassStep(
     nameSpan.textContent = cls.name;
     const metaSpan = document.createElement('span');
     metaSpan.style.fontSize = '0.75rem';
-    metaSpan.style.color = '#9da7b3';
+    metaSpan.style.color = 'var(--crpg-text-dim, #9da7b3)';
     metaSpan.textContent = `d${cls.hitDieSides} HD • BAB +${row1.bab} • ${cls.skillPointsPerLevel}+INT Skills`;
     row.appendChild(nameSpan);
     row.appendChild(metaSpan);
@@ -107,15 +107,15 @@ export function renderClassStep(
   if (activeCls) {
     const title = document.createElement('h3');
     title.style.margin = '0 0 4px 0';
-    title.style.color = '#f1c40f';
+    title.style.color = 'var(--crpg-gold, #f1c40f)';
     title.textContent = `${activeCls.name} (d${activeCls.hitDieSides} Hit Die)`;
     rightPane.appendChild(title);
 
     const tablePreview = document.createElement('div');
     tablePreview.style.fontSize = '0.78rem';
     tablePreview.style.padding = '8px';
-    tablePreview.style.background = 'rgba(0,0,0,0.35)';
-    tablePreview.style.border = '1px solid #333947';
+    tablePreview.style.background = 'var(--crpg-bg-card, rgba(0,0,0,0.35))';
+    tablePreview.style.border = '1px solid var(--crpg-border-subtle, #333947)';
     for (const row of activeCls.progression.slice(0, 5)) {
       const rDiv = document.createElement('div');
       const featsStr = row.features.length > 0 ? ` [${row.features.join(', ')}]` : '';
@@ -128,9 +128,9 @@ export function renderClassStep(
       const prayerBanner = document.createElement('div');
       prayerBanner.style.fontSize = '0.78rem';
       prayerBanner.style.padding = '6px 8px';
-      prayerBanner.style.color = '#2ecc71';
+      prayerBanner.style.color = 'var(--crpg-success, #2ecc71)';
       prayerBanner.style.background = 'rgba(46, 204, 113, 0.1)';
-      prayerBanner.style.border = '1px solid #2ecc71';
+      prayerBanner.style.border = '1px solid var(--crpg-success, #2ecc71)';
       prayerBanner.textContent = ` Divine Prayerbook Rule: ${activeCls.name} automatically knows the full ${activeCls.name} spell list (plus domain spells) for all castable levels; no manual spell learning step required.`;
       rightPane.appendChild(prayerBanner);
     }
@@ -150,7 +150,7 @@ export function renderClassStep(
       aBtn.className = 'modal-btn';
       aBtn.style.padding = '4px 8px';
       aBtn.style.fontSize = '0.75rem';
-      aBtn.style.borderColor = draftState.alignment === align ? '#f1c40f' : 'var(--border-color)';
+      aBtn.style.borderColor = draftState.alignment === align ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
       aBtn.textContent = align;
       aBtn.addEventListener('click', () => {
         updateDraft({ ...draftState, alignment: align });
@@ -165,7 +165,7 @@ export function renderClassStep(
       acfBtn.type = 'button';
       acfBtn.className = 'modal-btn';
       acfBtn.style.fontSize = '0.78rem';
-      acfBtn.style.borderColor = isChecked ? '#2ecc71' : 'var(--border-color)';
+      acfBtn.style.borderColor = isChecked ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
       acfBtn.textContent = `${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})`;
       acfBtn.addEventListener('click', () => {
         const nextAcfs = isChecked
@@ -178,7 +178,7 @@ export function renderClassStep(
 
     if (draftState.classId === 'cleric') {
       const domHeader = document.createElement('strong');
-      domHeader.style.color = '#f1c40f';
+      domHeader.style.color = 'var(--crpg-gold, #f1c40f)';
       domHeader.textContent = `Cleric Domains (${draftState.domains.length} / 2 selected):`;
       rightPane.appendChild(domHeader);
       for (const dom of Object.values(sys.domains)) {
@@ -202,7 +202,7 @@ export function renderClassStep(
       const activeSchool = draftState.arcaneSchool ?? 'universal';
       const specCheck = validateSpecialistSchoolSelection(activeSchool, draftState.prohibitedSchools);
       const specTitle = document.createElement('strong');
-      specTitle.style.color = specCheck.valid ? '#2ecc71' : '#e67e22';
+      specTitle.style.color = specCheck.valid ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-warning, #e67e22)';
       specTitle.textContent = `Arcane School (${specCheck.valid ? 'Valid' : (specCheck.reason ?? 'Select prohibited schools')}):`;
       rightPane.appendChild(specTitle);
 
@@ -216,7 +216,7 @@ export function renderClassStep(
         sBtn.className = 'modal-btn';
         sBtn.style.padding = '4px 8px';
         sBtn.style.fontSize = '0.74rem';
-        sBtn.style.borderColor = activeSchool === school ? '#f1c40f' : 'var(--border-color)';
+        sBtn.style.borderColor = activeSchool === school ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
         sBtn.textContent = school;
         sBtn.addEventListener('click', () => {
           updateDraft({ ...draftState, arcaneSchool: school, prohibitedSchools: [] });
@@ -243,7 +243,7 @@ export function renderClassStep(
           pBtn.className = 'modal-btn';
           pBtn.style.padding = '4px 8px';
           pBtn.style.fontSize = '0.74rem';
-          pBtn.style.borderColor = isProhib ? '#e74c3c' : 'var(--border-color)';
+          pBtn.style.borderColor = isProhib ? 'var(--crpg-danger, #e74c3c)' : 'var(--border-color)';
           pBtn.textContent = `${isProhib ? '✖ ' : ''}${pSchool}`;
           pBtn.addEventListener('click', () => {
             const nextProhib = isProhib
@@ -274,7 +274,7 @@ export function renderClassStep(
         feBtn.className = 'modal-btn';
         feBtn.style.padding = '4px 8px';
         feBtn.style.fontSize = '0.74rem';
-        feBtn.style.borderColor = curFe === feType ? '#f1c40f' : 'var(--border-color)';
+        feBtn.style.borderColor = curFe === feType ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
         feBtn.textContent = feType;
         feBtn.addEventListener('click', () => {
           updateDraft({ ...draftState, favoredEnemyType: feType });

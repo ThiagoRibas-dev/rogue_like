@@ -165,7 +165,12 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     tBtn.type = 'button';
     tBtn.className = 'modal-btn';
     const tabValid = validateLevelUpStep(dndData, levelUpDraft, t.id, sys).valid;
-    const borderCol = levelUpTab === t.id ? '#2ecc71' : tabValid ? 'var(--border-color)' : '#e67e22';
+    const borderCol =
+      levelUpTab === t.id
+        ? 'var(--crpg-success, #2ecc71)'
+        : tabValid
+          ? 'var(--border-color)'
+          : 'var(--crpg-warning, #e67e22)';
     tBtn.style.cssText = `padding: 6px 12px; font-size: 0.8rem; border-color: ${borderCol};`;
     tBtn.textContent = t.label;
     tBtn.disabled = !canNavigateToTab(idx);

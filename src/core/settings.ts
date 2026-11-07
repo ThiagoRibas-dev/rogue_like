@@ -56,6 +56,7 @@ export interface AccessibilitySettings {
   uiScale: 'small' | 'normal' | 'large';
   highContrast: boolean;
   disableAnimations: boolean;
+  consoleThemePreference?: 'auto' | 'parchment' | 'retro-crt' | undefined;
 }
 
 /**
@@ -115,7 +116,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
   accessibility: {
     uiScale: 'large',
     highContrast: false,
-    disableAnimations: false
+    disableAnimations: false,
+    consoleThemePreference: 'auto'
   },
   autoPause: DEFAULT_AUTO_PAUSE_SETTINGS
 };

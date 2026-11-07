@@ -56,7 +56,7 @@ export function renderRaceStep(
   toggleBtn.className = 'modal-btn';
   toggleBtn.style.padding = '3px 8px';
   toggleBtn.style.fontSize = '0.72rem';
-  toggleBtn.style.borderColor = showMonstrousRaces ? '#f1c40f' : 'var(--border-color)';
+  toggleBtn.style.borderColor = showMonstrousRaces ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
   toggleBtn.textContent = showMonstrousRaces ? 'Hide Monstrous Races' : 'Show Monstrous Races';
   toggleBtn.addEventListener('click', () => {
     onToggleMonstrousRaces();
@@ -77,7 +77,7 @@ export function renderRaceStep(
     nameSpan.textContent = race.name;
     const metaSpan = document.createElement('span');
     metaSpan.style.fontSize = '0.75rem';
-    metaSpan.style.color = '#9da7b3';
+    metaSpan.style.color = 'var(--crpg-text-dim, #9da7b3)';
     const laText = race.levelAdjustment > 0 ? ` • LA +${race.levelAdjustment}` : '';
     metaSpan.textContent = `${race.size.toUpperCase()} • ${race.baseLandSpeedFt}ft${laText}`;
 
@@ -133,7 +133,7 @@ export function renderAbilityStep(
     pBtn.style.padding = '4px 9px';
     pBtn.style.fontSize = '0.75rem';
     const isThisPreset = draftState.abilityMethod === 'point_buy' && draftState.pointBuyBudget === pts;
-    pBtn.style.borderColor = isThisPreset ? '#f1c40f' : 'var(--border-color)';
+    pBtn.style.borderColor = isThisPreset ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
     pBtn.textContent = `Point Buy (${pts})`;
     pBtn.addEventListener('click', () => {
       const clampedScores = { ...draftState.baseAbilityScores };
@@ -155,7 +155,8 @@ export function renderAbilityStep(
   eliteBtn.className = 'modal-btn';
   eliteBtn.style.padding = '4px 9px';
   eliteBtn.style.fontSize = '0.75rem';
-  eliteBtn.style.borderColor = draftState.abilityMethod === 'elite_array' ? '#f1c40f' : 'var(--border-color)';
+  eliteBtn.style.borderColor =
+    draftState.abilityMethod === 'elite_array' ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
   eliteBtn.textContent = 'Elite Array';
   eliteBtn.addEventListener('click', () => {
     updateDraft({
@@ -178,7 +179,8 @@ export function renderAbilityStep(
   rollBtn.className = 'modal-btn';
   rollBtn.style.padding = '4px 9px';
   rollBtn.style.fontSize = '0.75rem';
-  rollBtn.style.borderColor = draftState.abilityMethod === 'rolled_4d6kh3' ? '#f1c40f' : 'var(--border-color)';
+  rollBtn.style.borderColor =
+    draftState.abilityMethod === 'rolled_4d6kh3' ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
   rollBtn.textContent = '🎲 Roll 4d6kh3';
   rollBtn.addEventListener('click', () => {
     updateDraft({
@@ -195,13 +197,14 @@ export function renderAbilityStep(
   modeBanner.style.fontWeight = '700';
   if (draftState.abilityMethod === 'point_buy') {
     const spent = calculatePointBuyCost(draftState.baseAbilityScores);
-    modeBanner.style.color = spent <= draftState.pointBuyBudget ? '#2ecc71' : '#e74c3c';
+    modeBanner.style.color =
+      spent <= draftState.pointBuyBudget ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-danger, #e74c3c)';
     modeBanner.textContent = `Mode: Point-Buy (${draftState.pointBuyBudget} Budget) — Spent: ${spent} / ${draftState.pointBuyBudget} pts`;
   } else if (draftState.abilityMethod === 'elite_array') {
-    modeBanner.style.color = '#58a6ff';
+    modeBanner.style.color = 'var(--crpg-info, #58a6ff)';
     modeBanner.textContent = 'Mode: Elite Array (15, 14, 13, 12, 10, 8) — Use ⇅ to swap scores';
   } else {
-    modeBanner.style.color = '#f1c40f';
+    modeBanner.style.color = 'var(--crpg-gold, #f1c40f)';
     modeBanner.textContent = 'Mode: Rolled 4d6 Drop Lowest — Click Roll 4d6kh3 to reroll or ⇅ to arrange';
   }
   leftPane.appendChild(modeBanner);
@@ -228,10 +231,7 @@ export function renderAbilityStep(
       minus.textContent = '−';
       minus.disabled = val <= POINT_BUY_MIN_SCORE;
       minus.addEventListener('click', () => {
-        updateDraft({
-          ...draftState,
-          baseAbilityScores: { ...draftState.baseAbilityScores, [key]: val - 1 }
-        });
+        updateDraft({ ...draftState, baseAbilityScores: { ...draftState.baseAbilityScores, [key]: val - 1 } });
       });
 
       const plus = document.createElement('button');
@@ -240,10 +240,7 @@ export function renderAbilityStep(
       plus.textContent = '+';
       plus.disabled = val >= POINT_BUY_MAX_SCORE;
       plus.addEventListener('click', () => {
-        updateDraft({
-          ...draftState,
-          baseAbilityScores: { ...draftState.baseAbilityScores, [key]: val + 1 }
-        });
+        updateDraft({ ...draftState, baseAbilityScores: { ...draftState.baseAbilityScores, [key]: val + 1 } });
       });
       controls.appendChild(minus);
       controls.appendChild(plus);
@@ -260,11 +257,7 @@ export function renderAbilityStep(
       const nextVal = draftState.baseAbilityScores[nextKey];
       updateDraft({
         ...draftState,
-        baseAbilityScores: {
-          ...draftState.baseAbilityScores,
-          [key]: nextVal,
-          [nextKey]: val
-        }
+        baseAbilityScores: { ...draftState.baseAbilityScores, [key]: nextVal, [nextKey]: val }
       });
     });
     controls.appendChild(swapBtn);
@@ -276,7 +269,7 @@ export function renderAbilityStep(
 
   const rTitle = document.createElement('h3');
   rTitle.style.margin = '0 0 6px 0';
-  rTitle.style.color = '#f1c40f';
+  rTitle.style.color = 'var(--crpg-gold, #f1c40f)';
   rTitle.textContent = 'Live Combat & Skill Preview (Level 1)';
   rightPane.appendChild(rTitle);
 
@@ -301,7 +294,7 @@ export function renderAbilityStep(
     for (const sLine of statsLines) {
       const div = document.createElement('div');
       div.style.padding = '6px 8px';
-      div.style.border = '1px solid #303644';
+      div.style.border = '1px solid var(--crpg-border-subtle, #303644)';
       div.style.fontSize = '0.84rem';
       div.textContent = sLine;
       rightPane.appendChild(div);

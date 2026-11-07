@@ -3,15 +3,28 @@ import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { getEffectiveCapacity } from '../../systems/inventory.system.ts';
 import { UITooltipType } from '../../constants/ui.constants.ts';
+import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import { renderAnatomicalPaperDoll } from './equipment.ui.ts';
 
 /**
  * Renders or hides the inventory panel overlay based on the current UIMode.
- * When open, lists all items in the player's inventory with slot labels (a-z),
- * colored by item category, and shows current capacity.
+ * When open, delegates to the active cartridge's unified Master Dossier if registered,
+ * or falls back to the split-view paperdoll backpack.
  * @param state The current GameState.
  */
 export function renderInventoryPanel(state: GameState): void {
+  const cartridgeUI = getActiveCartridgeUI(state);
+  const sheetModal = cartridgeUI?.modals['character_sheet'] ?? cartridgeUI?.modals['inventory'];
+
+  if (state.uiMode === UIMode.Inventory && sheetModal) {
+    const overlayEl = document.getElementById(sheetModal.overlayElementId ?? 'dnd35e-sheet-overlay');
+    if (overlayEl) {
+      overlayEl.classList.remove('hidden');
+    }
+    sheetModal.render(state);
+    return;
+  }
+
   const overlay = document.getElementById('inventory-overlay');
   const equipPanel = document.getElementById('equipment-panel');
   const packPanel = document.getElementById('backpack-panel');

@@ -259,8 +259,8 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     const gateBanner = document.createElement('div');
     gateBanner.style.padding = '5px 10px';
     gateBanner.style.fontSize = '0.78rem';
-    gateBanner.style.color = '#f39c12';
-    gateBanner.style.border = '1px solid #e67e22';
+    gateBanner.style.color = 'var(--crpg-warning, #f39c12)';
+    gateBanner.style.border = '1px solid var(--crpg-warning, #e67e22)';
     gateBanner.style.background = 'rgba(230, 126, 34, 0.12)';
     gateBanner.textContent = `⚠ Required before proceeding: ${currentStepCheck.reason}`;
     content.appendChild(gateBanner);
@@ -271,7 +271,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   footer.style.justifyContent = 'space-between';
   footer.style.gap = '8px';
   footer.style.paddingTop = '6px';
-  footer.style.borderTop = '1px solid #333947';
+  footer.style.borderTop = '1px solid var(--crpg-border-subtle, #333947)';
 
   const quickBtn = document.createElement('button');
   quickBtn.type = 'button';
@@ -316,7 +316,7 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     const finishBtn = document.createElement('button');
     finishBtn.type = 'button';
     finishBtn.className = 'modal-btn';
-    finishBtn.style.borderColor = allStepsValid ? '#2ecc71' : 'var(--border-color)';
+    finishBtn.style.borderColor = allStepsValid ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
     finishBtn.textContent = '✔ Embark into the Dungeon';
     finishBtn.disabled = !allStepsValid;
     finishBtn.addEventListener('click', () => {

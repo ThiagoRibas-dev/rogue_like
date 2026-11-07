@@ -1,375 +1,216 @@
-# Milestone 114 & 115 Implementation Plan: Complete SRD Feat Registry, Combat Chains & Metamagic Trees + Complete SRD Equipment, Magic Item Compendium & Data-Driven Weapon Profile Parser
+# Implementation Plan — Console & Cartridge UI Architecture Unification (Milestone 118.1)
 
-**Date:** 2026-11-05  
-**Status:** Revised & Ready for Review (Kickoff Flow Step 4 & 5: Implementation Plan Gate)  
-**Authors:** AI Agent & User  
-**Milestones Covered:**
-- **Milestone 114**: Complete SRD Feat Registry, Combat Chains & Metamagic Trees (`public/data/rulesets/dnd35e/feats/<id>.json`)
-- **Milestone 115**: Complete SRD Weapons, Armors, Special Materials, Magic Item Compendium & Data-Driven Weapon Profile Parser (`public/data/rulesets/dnd35e/items/<id>.json`)
-**Architecture References:** `docs/ARCHITECTURE.md`, `AGENTS.md` (§0 Golden Rules 1–20), `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, `docs/MILESTONES.md#L1592-L1635`, `docs/research_notes.md`
+## 1. Objective & Architectural Scope
 
----
-
-## 1. Executive Summary & Architectural Goals
-
-The joint objective of **Milestones 114 and 115** is to establish the complete System Content (Tier 3) catalogs for SRD Feats and SRD Equipment (Weapons, Armors, Shields, Special Materials, Magic Properties, Wondrous Items, Rings, Rods, Staves, Wands, Scrolls, and Potions) in modular, data-driven JSON formats, while refactoring all hardcoded item-ID and feat-ID branches in Tier 2 cartridge resolvers into 100% declarative schemas and Effect Providers.
-
-### Key Architectural Directives
-1. **Zero Hardcoded Item or Feat Branches (`AGENTS.md` Rule 17)**:
-   - Eliminate all 6 hardcoded item-ID heuristics in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` (damage dice, damage type, critical threat range, handedness/effort/special flags, dwarven weapon familiarity, and unarmed strike size ladder) and the parallel armor substring checks in `src/rulesets/dnd35e/semantic_tags.ts`.
-   - Drive all weapon and armor mechanics from structured `weaponStats`, `armorStats`, `specialMaterial`, and `magicalProperties` defined on `DnD35ItemDefinitionSchema`.
-   - Drive all feat stat bonuses, combat rule overrides (*Weapon Finesse*, *Two-Weapon Fighting*, *Improved Critical*, *Multiattack*, *Improved Trip/Disarm/Bull Rush/Sunder/Overrun/Grapple/Feint*, *Natural Spell*), and metamagic adjustments from declarative `DnD35FeatDefinitionSchema` (`effectBundle`, `modifiers`, `ruleOverrides`, `metamagicDescriptor`).
-2. **Unified Effect Providers & Hierarchical Provenance (`AGENTS.md` Rule 19)**:
-   - Every modifier emitted by a feat carries `sourcePath: "feat:<featId>/..."` (or `"feat:<featId>#<instance>/..."` for stacking repeatable feats like *Toughness*).
-   - Every modifier emitted by an equipped item carries `sourcePath: "item:<itemId>/..."`.
-3. **Strict File Size Modularity (`AGENTS.md` Rule 8)**:
-   - Every `.ts` file must remain strictly $\le 300$ code lines (`bun run lint:filelength` passes with 0 warnings). New item schemas live in a dedicated `src/rulesets/dnd35e/types/system/item_system.types.ts` module.
+Following the Milestone 118 UI prototype, this plan upgrades the **Core Console Engine (Tier 1)** and **Ruleset Cartridges (Tier 2)** so that:
+1. **Prototype Testing Controls Are Removed from Live Gameplay**:
+   - Remove the inline **Morphology Switcher** (`[🧍 Live Anatomy]`, `[🐍 6-Armed Marilith]`, `[🐺 Wild Shape Wolf]`) and inline **Theme Switcher** (`[📜 Parchment Tabletop]`, `[📟 Retro CRT]`) from the Master Dossier header.
+   - Remove the embedded **Bottom Action Hotbar & Tactical Modes Dock** from the bottom of the Master Dossier modal.
+   - **Fix the Showcase Fallback Injection Bug**: Stop injecting fake showcase items (*Luskan Battlemage's Rapier*, *Kizu's Short Sword*, *Elven Chainmail*, *Ring of Protection +2*, *Potion of Cure Serious Wounds*, *Thieves' Tools*) into the live player's paper doll and backpack when their slots/stash are empty during actual gameplay.
+2. **Tier 1 Console 3-Column Master Dossier (`src/rendering/ui/console_dossier.ui.ts`)**:
+   - Promote the **3-Column Master Dossier** out of `dnd35e_sheet*.ui.ts` into a reusable **Tier 1 Console component** (`renderConsoleMasterDossier` in [`src/rendering/ui/console_dossier.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_dossier.ui.ts)) driven by [`ICartridgeUIAdapter`](file:///d:/Projects/Game%20Dev/rogue-like/src/types/ui_adapter.types.ts) (`UICharacterSheetModel` + `UIInventoryModel` + interactive callbacks).
+   - Unify **both `I` (Inventory)** and **`C` (Character Sheet)** across all cartridges (`dnd35e` and `classic`) to open the unified 3-Column Master Dossier, retiring the legacy 2-pane [`inventory.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/inventory.ui.ts) and [`equipment.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/equipment.ui.ts) modals.
+3. **Full Cartridge Parity (`dnd35e` + `classic` Registered in `cartridge_ui_registry.ts`)**:
+   - Register both `dnd35e` (`defaultThemeMode: 'parchment'`) and `classic` (`defaultThemeMode: 'retro-crt'`, backed by [`DefaultSciFiUIAdapter`](file:///d:/Projects/Game%20Dev/rogue-like/src/rulesets/default/ui/default_ui_adapter.ts)) in [`src/rendering/ui/cartridge_ui_registry.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/cartridge_ui_registry.ts).
+   - Upgrade `CartridgeModalDescriptor` and [`src/rendering/ui/modal.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/modal.ui.ts) with a **Dynamic Console Modal Host** so Cartridge modals do not require hardcoded ruleset styling in [`index.html`](file:///d:/Projects/Game%20Dev/rogue-like/index.html).
+4. **Persistent Bottom-Center HUD Dock (`#hud-bottom-dock`) & Sidebar De-duplication**:
+   - Mount the **NWN2 Tactical Modes & 12-Slot Action Hotbar** persistently in the bottom-center HUD (`#hud-bottom-dock`).
+   - Extend [`UIStanceModeEntry`](file:///d:/Projects/Game%20Dev/rogue-like/src/types/ui_adapter.types.ts) and [`renderConsoleHotbar`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_hotbar.ui.ts) to render **numeric steppers** (Power Attack & Combat Expertise `-`/`+` dials) and **Round Action Economy Pips** (`STD`, `MOV`, `SWF`, `AoO`) directly inside the persistent Modes strip.
+   - Retire the redundant Left Sidebar **Mini-Paperdoll** (`hud_paperdoll.ui.ts`) and separate Left Sidebar **Tactical Doctrine Card** (`dnd35e_doctrine_bar.ui.ts`).
+5. **Global Console Theme Promotion (`:root[data-console-theme]`) & Complete Sub-View Restyling**:
+   - Promote `--crpg-*` CSS custom properties (including new semantic tokens `--crpg-success`, `--crpg-warning`, `--crpg-info`) from `.crpg-prototype-shell` to `:root[data-console-theme='parchment' | 'retro-crt']` in [`src/styles/console_prototype.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/styles/console_prototype.css) and [`src/index.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/index.css).
+   - Auto-select the active Cartridge's `defaultThemeMode` on campaign load, with a persistent user override (`auto` / `parchment` / `retro-crt`) in [`src/core/settings.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/core/settings.ts) and [`src/rendering/ui/settings.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/settings.ui.ts).
+   - Restyle **all 12 Character Creation, Level-Up, Vancian Spellbook, and Inspector UI files** by replacing hardcoded dark-mode inline hex colors (`#f1c40f`, `#9da7b3`, `#c9d1d9`, `#303644`, `#333947`, `#282e3b`, `rgba(0,0,0,0.35)`) with `--crpg-*` theme variables so every screen is crisp and legible in both **Parchment Tabletop** and **Retro CRT** themes.
 
 ---
 
 ## 2. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility | Canonical Owner (New SSOT) | Legacy / Old-Brain Implementation | Eviction Action |
+| Responsibility | Old / Split-Brain Location (Evicted) | New Canonical SSOT Owner |
+| :--- | :--- | :--- |
+| **Theme Token Scope & Lifecycle** | Scoped only to `.crpg-prototype-shell`; toggled via prototype button inside `dnd35e_sheet.ui.ts` | Global `:root[data-console-theme]` managed by [`src/rendering/ui/console_theme.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_theme.ts), auto-synced from `CartridgeUIDefinition.defaultThemeMode` + [`src/core/settings.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/core/settings.ts) |
+| **3-Column Master Dossier Rendering** | Coupled to D&D 3.5e inside `dnd35e_sheet.ui.ts` & `dnd35e_sheet_*_tab.ui.ts` | Generic Tier 1 Console renderer [`src/rendering/ui/console_dossier.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_dossier.ui.ts) consuming `UICharacterSheetModel` + `UIInventoryModel` |
+| **Live D&D 3.5e Sheet & Inventory Projection** | Split between `DnD35UIAdapter` (hardcoded showcase items) and `dnd35e_sheet_*_tab.ui.ts` (live DAG + buggy showcase item fallback injection) | Live projection helpers in [`src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts), [`src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts), and [`src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts) (projecting 100% real player state; synthetic fallback used *only* for headless `{}` unit tests in `DnD35UIAdapter`) |
+| **Inventory (`I`) & Character (`C`) Modals** | `I` opened legacy `#inventory-overlay`; `E` opened `#equipment-overlay`; `C` opened `#dnd35e-sheet-overlay` | Both `I` and `C` open the unified Console Master Dossier (`#dnd35e-sheet-overlay`) via [`src/rendering/ui/console_dossier.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_dossier.ui.ts) |
+| **Action Hotbar & Tactical Modes Bar** | Embedded inside the `dnd35e_sheet.ui.ts` modal footer AND duplicated as a sidebar card in `dnd35e_doctrine_bar.ui.ts` | Persistent bottom HUD dock (`#hud-bottom-dock`) rendered by [`src/rendering/ui/hud_dock.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/hud_dock.ui.ts) + [`src/rendering/ui/console_hotbar.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_hotbar.ui.ts) |
+| **Left Sidebar Equipment Preview** | Redundant 9-slot mini-paperdoll in [`src/rendering/ui/hud_paperdoll.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/hud_paperdoll.ui.ts) | Evicted from Left Sidebar; Anatomical Paper Doll lives canonically in Column 1 of the Master Dossier (`I` / `C`) |
+| **Character Creation, Level-Up, Spellbook & Inspector Styling** | Hardcoded dark hex colors (`#f1c40f`, `#9da7b3`, `#c9d1d9`, `#303644`, `rgba(0,0,0,0.35)`) across 12 `dnd35e_*.ui.ts` files | Styled via `--crpg-*` theme tokens in [`src/styles/console_prototype.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/styles/console_prototype.css) and semantic classes |
+
+---
+
+## 3. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Producers / Input) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Cartridges / Configs / Tests / Docs) |
 | :--- | :--- | :--- | :--- |
-| **Weapon Profile Resolution** | `parseEquippedItem`, `evaluateNonproficiencyPenalty`, and `buildUnarmedProfile` in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` reading `itemDef.weaponStats` | Hardcoded `baseItemDef.id === 'longsword'`, `.includes('dagger')`, `.includes('dwarven')`, and 7-branch unarmed size ladder | Replace all hardcoded ID branches with declarative reads from `weaponStats`, `specialMaterial`, and `magicalProperties` (retaining tag fallbacks for legacy unit tests) |
-| **Armor Category & Material Tag Projection** | `resolveEntitySituationalTagContext` in `src/rulesets/dnd35e/semantic_tags.ts` reading `itemDef.armorStats` & `applyMaterialPhysics` | Hardcoded `lowerId.includes('full_plate')`, `lowerId.includes('breastplate')`, `lowerId.includes('chain')` | Read `armorStats.armorCategory` and `armorStats.isMetal` directly after applying special material step-downs (e.g. Mithral) |
-| **Feat Stat Modifiers & Combat Overrides** | `buildFeatEffectModifiers` and `collectActiveFeatRuleOverrides` in `src/rulesets/dnd35e/progression/ledger_modifiers.ts` | Feats stored in `dndData.feats` were never evaluated into `StatModifier`s | Evaluate `featDef.modifiers`, `featDef.effectBundle`, and `featDef.ruleOverrides` across Horizon 2 (`level_ledger.ts`) and Horizon 3 (`dnd35e_dag_adapter.ts`) |
-| **Equipped Item Effect Bundles & Armor/Shield DAG** | `collectEquippedItemModifiers` in `src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts` | `getEquippedItemBonuses` in `srd_registry.ts` only summed untyped `attackBonus` and `defenseBonus` | Evaluate `itemDef.effectBundle`, `armorStats`, and `magicalProperties` (`ghostTouch`, `force`) into typed DAG modifiers with `sourcePath: "item:<itemId>/..."` |
-| **SRD Item Catalog** | Modular `public/data/rulesets/dnd35e/items/<id>.json` merged into `campaign.items` | Only 7 campaign-specific items in `dnd35e-crypt/items.json` | Register all 110+ SRD items in `system_content_files.ts` and shallow-merge `parsedSystemContent['items']` into `campaign.items` in `loader.ts`, `tests/helpers.ts`, and `run-validator.ts` |
+| **1. Extend `UIStanceModeEntry`, `UIHotbarModel`, & `CartridgeUIDefinition` in `ui_adapter.types.ts` & `cartridge_ui_registry.ts`** | `DnD35UIAdapter`, `DefaultSciFiUIAdapter`, `dnd35e_ui_adapter.ts`, `cartridge_ui_registry.ts` | `console_hotbar.ui.ts`, `hud_dock.ui.ts`, `modal.ui.ts` | `tests/console_ui_architecture.test.ts` |
+| **2. Extract Tier 1 Console Master Dossier (`console_dossier.ui.ts`) & Remove Fake Showcase Fallback Injection** | `dnd35e_sheet.ui.ts`, `inventory.ui.ts`, `equipment.ui.ts`, `cartridge_ui_registry.ts` | `console_inventory.ui.ts`, `console_inspect_card.ui.ts` | `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json`, `tests/dnd35e_phase26_ui_and_showcase.test.ts` |
+| **3. Unify `I` & `C` Shortcuts to Master Dossier & Retire `#equipment-overlay`** | `shortcut_input.ts`, `modal_input.ts`, `inventory_input.ts`, `session_controller.ts` | `modal.ui.ts`, `ui.ts`, `index.html` | `public/data/campaigns/default/keybinds.json`, `src/core/settings.ts` |
+| **4. Mount Persistent Bottom Dock (`#hud-bottom-dock`) & Evict Sidebar Paperdoll / Doctrine Card** | `presenter.ts`, `hud.ui.ts`, `hud_dock.ui.ts`, `shortcut_input.ts` (`1`–`0`, `-`, `=`) | `console_hotbar.ui.ts`, `index.html`, `src/index.css` | `hud_paperdoll.ui.ts`, `dnd35e_doctrine_bar.ui.ts`, `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
+| **5. Promote `--crpg-*` Theme Tokens to `:root[data-console-theme]` & Restyle All 12 Builder/Level-Up/Spellbook/Inspector Files** | `console_theme.ts`, `settings.ts`, `settings.ui.ts`, `session_controller.ts` | `src/styles/console_prototype.css`, `src/index.css`, `dnd35e_char_builder*.ui.ts` (7 files), `dnd35e_level_up*.ui.ts` (2 files), `dnd35e_spellbook.ui.ts`, `dnd35e_inspector.ui.ts`, `dnd35e_feat_spell_inspector.ui.ts` | `docs/UI_UX_STANDARDS.md`, `docs/ARCHITECTURE.md`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md` |
 
 ---
 
-## 3. Step-by-Step Implementation Plan
+## 4. Step-by-Step Implementation Details & Code Diffs
 
-### Phase 1: Item & Feat Schemas and System Content Merging (Tier 1 & Tier 2)
+### Step 1: Extend `src/types/ui_adapter.types.ts` for Tactical Steppers, Action Economy Pips, & Theme Mode
 
-1. **Extend Tier 1 Console `ItemDefinitionSchema` (`src/types/campaign/item.ts`)**:
-   - Add optional ruleset pass-through fields so `CampaignDataSchema.parse` preserves them on `campaign.items`:
-     ```ts
-     weaponStats: z.unknown().optional(),
-     armorStats: z.unknown().optional(),
-     specialMaterial: z.unknown().optional(),
-     magicalProperties: z.unknown().optional(),
-     effectBundle: z.unknown().optional(),
-     ```
-2. **Create `src/rulesets/dnd35e/types/system/item_system.types.ts` (Tier 2)**:
-   - Define `DnD35SpecialMaterialSchema` (`'mundane' | 'masterwork' | 'mithral' | 'adamantine' | 'darkwood' | 'alchemical_silver' | 'cold_iron'`).
-   - Define `DnD35WeaponStatsSchema` (`proficiencyCategory`, `weaponCategory`, `effort`, `damageDice`, `damageType`, `secondaryDamageTypes`, `critThreatMin`, `critMultiplier`, `rangeIncrementFt`, `reachFt`, `strikesAdjacent`, `isDoubleWeapon`, `offHandDamageDice`, `offHandDamageType`, `isFinesseEligible`, `cannotTwoHandStr`, `isExotic1HMartial2H`, `familiaritySubtypes`, `maneuverTags`).
-   - Define `DnD35ArmorStatsSchema` (`armorCategory`, `armorBonus`, `maxDexBonus`, `armorCheckPenalty`, `arcaneSpellFailure`, `speed30Ft`, `speed20Ft`, `isMetal`).
-   - Define `DnD35MagicalPropertiesSchema` (`enhancementBonus`, `isMasterwork`, `keen`, `ghostTouch`, `animated`, `fortificationType`, `baneCreatureType`, `energyRiders`, `onHitEffectIds`).
-   - Define `DnD35ItemDefinitionSchema` extending `ItemDefinitionSchema` with these typed schemas and `effectBundle: DnD35EffectBundleSchema.optional()`.
-3. **Update `effect_system.types.ts` & `dnd35e_system.types.ts`**:
-   - In `effect_system.types.ts`:
-     - Add `effectTags: z.array(z.string()).optional()` to `DnD35DeclarativeModifierSchema`.
-     - Forward `effectTags` onto emitted `StatModifier`s in `src/rulesets/dnd35e/effect_bundle.ts`.
-   - In `dnd35e_system.types.ts`:
-     - Re-export `* from './system/item_system.types.ts'`.
-     - Add `repeatable` (`mode: 'stacking' | 'targeted'`, `targetCategory?: 'weapon' | 'school' | 'skill' | 'ability'`) and `metamagicDescriptor` (`slotLevelAdjustment`, `actionTimeOverride`, `rangeMultiplier`, `durationMultiplier`, `areaMultiplier`, `empowerDamageMultiplier`, `maximizeVariableDice`, `suppressVerbalComponent`, `suppressSomaticComponent`) to `DnD35FeatDefinitionSchema`.
-     - Add `items: z.record(z.string(), DnD35ItemDefinitionSchema).default({})` to `DnD35SystemContentSchema`.
-4. **Merge `parsedSystemContent.items` into `campaign.items`**:
-   - Update `src/core/loader.ts`, `tests/helpers.ts`, and `scripts/run-validator.ts` so `campaign.items` shallow-merges `{ ...rulesetBase.items, ...(parsedSystemContent['items'] ?? {}), ...campaignItems }`.
+In [`src/types/ui_adapter.types.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/types/ui_adapter.types.ts), add optional numeric stepper fields to `UIStanceModeEntry`, optional `actionPips` to `UIHotbarModel`, and `defaultThemeMode` to `ICartridgeUIAdapter`:
 
----
-
-### Phase 2: Milestone 114 — Complete SRD Feat Catalog & Effect Provider Wiring
-
-1. **Implement `buildFeatEffectModifiers` and `collectActiveFeatRuleOverrides` (`src/rulesets/dnd35e/progression/ledger_modifiers.ts`)**:
-   - `buildFeatEffectModifiers(featIds, featRegistry, suppressedBundleIds, activeSelfTags)`:
-     - Iterates `featIds`. Tracks occurrence counts per feat ID so stacking repeatable feats (*Toughness*) receive unique provenance (`feat:toughness#1/...`, `feat:toughness#2/...`).
-     - Resolves parameterized feat IDs (`weapon_focus:longsword` or `weapon_focus_longsword`) against `featRegistry[rawId] ?? featRegistry[baseId]`.
-     - Evaluates both `featDef.modifiers` and `featDef.effectBundle`, returning `ReadonlyArray<StatModifier>`.
-   - `collectActiveFeatRuleOverrides(featIds, featRegistry, suppressedBundleIds, activeSelfTags)`:
-     - Collects all `DnD35RuleOverrideEntry` items from active feats (`use_dex_for_light_finesse_melee_attack`, `double_crit_threat_range`, `secondary_natural_penalty`, `twf_primary_penalty_light`, `twf_offhand_penalty_light`, `extra_offhand_attacks`, `maneuver_no_aoo:<type>`, `maneuver_bonus:<type>`, `cast_spells_in_wild_shape`).
-2. **Wire Feat Modifiers into Horizon 2 & Horizon 3**:
-   - In `src/rulesets/dnd35e/level_ledger.ts` (`rebuildActorStateFromLevelHistory`):
-     - Preserve duplicate occurrences for feats with `repeatable?.mode === 'stacking'`.
-     - Strip old `feat:` modifiers and append `buildFeatEffectModifiers(...)`.
-   - In `src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts` (`evaluateDnD35eEntityDAG`):
-     - If `dndData.feats` has feats not yet represented in `extraModifiers` with `sourcePath: 'feat:...'`, evaluate `buildFeatEffectModifiers` dynamically so monster statblocks and spawned NPCs automatically receive all feat modifiers (*Alertness*, *Iron Will*, *Toughness*, *Improved Initiative*, *Dodge*, *Weapon Focus*, etc.).
-     - Apply *Weapon Finesse* (`use_dex_for_light_finesse_melee_attack` or `dndData.feats.includes('weapon_finesse')`): when the primary/off-hand melee weapon is light or `isFinesseEligible === true` (or unarmed/natural), use `Math.max(strMod, dexMod)` for melee attack rolls!
-     - Pass active feat `CombatRuleOverrides` into `resolveActorAttackRoutine`.
-3. **Enable `has_feat` Reference Check in `src/rulesets/dnd35e/validation/class_race_validator.ts`**:
-   - In `validatePrerequisiteNodeReferences`, validate `case 'has_feat':` against `sys.feats[node.featId] ?? sys.feats[node.featId.split(':')[0]!]`.
-4. **Author Complete Modular SRD Feat Catalog (`public/data/rulesets/dnd35e/feats/<id>.json` & `system_content_files.ts`)**:
-   - Author 85+ modular JSON files covering:
-     - **Melee & Tactical Stance Chains**: `power_attack`, `cleave`, `great_cleave`, `combat_expertise`, `whirlwind_attack`, `dodge`, `mobility`, `spring_attack`, `weapon_finesse`, `weapon_focus`, `weapon_specialization`, `greater_weapon_focus`, `greater_weapon_specialization`, `improved_critical`, `exotic_weapon_proficiency`, `martial_weapon_proficiency`, `simple_weapon_proficiency`, `armor_proficiency_light`, `armor_proficiency_medium`, `armor_proficiency_heavy`, `shield_proficiency`, `tower_shield_proficiency`.
-     - **Combat Maneuver Chains**: `improved_bull_rush`, `improved_overrun`, `improved_sunder`, `improved_disarm`, `improved_feint`, `improved_trip`, `improved_unarmed_strike`, `improved_grapple`, `deflect_arrows`, `snatch_arrows`, `stunning_fist`.
-     - **Two-Weapon & Ranged Chains**: `two_weapon_fighting`, `two_weapon_defense`, `improved_two_weapon_fighting`, `greater_two_weapon_fighting`, `point_blank_shot`, `precise_shot`, `improved_precise_shot`, `far_shot`, `rapid_shot`, `manyshot`, `shot_on_the_run`, `rapid_reload`, `quick_draw`, `mounted_combat`, `mounted_archery`, `ride_by_attack`, `spirited_charge`, `trample`.
-     - **Save, Defensive, Skill & General Feats**: `combat_reflexes`, `blind_fight`, `improved_initiative`, `toughness`, `endurance`, `diehard`, `run`, `track`, `iron_will`, `lightning_reflexes`, `great_fortitude`, `skill_focus`, `alertness`, `stealthy`, `nimble_fingers`, `acrobatic`, `agile`, `athletic`, `deceitful`, `deft_hands`, `diligent`, `investigator`, `magical_aptitude`, `negotiator`, `persuasive`, `self_sufficient`, `extra_turning`, `improved_turning`.
-     - **Monster & Weapon-Specific Feats**: `multiattack`, `multiweapon_fighting`, `improved_multiweapon_fighting`, `greater_multiweapon_fighting`, `ability_focus`, `ability_focus_poison`, `awesome_blow`, `empower_spell_like_ability`, `quicken_spell_like_ability`, `flyby_attack`, `hover`, `improved_natural_armor`, `improved_natural_attack`, `snatch`, `wingover`, `weapon_focus_bite`, `weapon_focus_claw`, `weapon_focus_greataxe`, `weapon_focus_longsword`, `weapon_focus_hoof`, `weapon_focus_ray`.
-     - **Spellcasting & Metamagic Feats**: `combat_casting`, `spell_focus`, `greater_spell_focus`, `spell_penetration`, `greater_spell_penetration`, `augment_summoning`, `natural_spell`, `eschew_materials`, `empower_spell`, `enlarge_spell`, `extend_spell`, `heighten_spell`, `maximize_spell`, `quicken_spell`, `silent_spell`, `still_spell`, `widen_spell`.
-
----
-
-### Phase 3: Milestone 115 — Data-Driven `weapon_profile_parser.ts`, `semantic_tags.ts` & SRD Item Compendium
-
-1. **Refactor `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` (100% Data-Driven)**:
-   - Add `isFinesseEligible?: boolean` and `reachFt?: number` to `EquippedWeaponProfile`.
-   - Refactor `evaluateNonproficiencyPenalty`:
-     - Accept `familiaritySubtypes?: ReadonlyArray<string>` from `weaponStats`.
-     - Check if any subtype in `familiaritySubtypes` matches `dndData.raceId` or `dndData.subtypes` (handling *Dwarven Waraxe*, *Dwarven Urgrosh*, and *Gnome Hooked Hammer* declaratively without `weaponItemId.includes('dwarven')`).
-   - Refactor `buildUnarmedProfile`:
-     - Replace the 7-branch `if/else` size ladder with `scaleWeaponDamageDice('1d3', 'medium', wielderSize)`, and set `isFinesseEligible: true`.
-   - Refactor `parseEquippedItem`:
-     - Read `weaponStats`, `specialMaterial`, and `magicalProperties` directly from `baseItemDef as DnD35ItemDefinition`:
-       - `baseDice = weaponStats?.damageDice ?? diceTagFallback ?? '1d8'`
-       - `damageType = weaponStats?.damageType ?? tagDamageTypeFallback ?? 'slashing'`
-       - `critThreatMin = weaponStats?.critThreatMin ?? threatTagFallback ?? 20` (if `magicalProperties?.keen === true` or actor has `improved_critical`, double threat range: `21 - (21 - critThreatMin) * 2`)
-       - `critMultiplier = weaponStats?.critMultiplier ?? critMultTagFallback ?? 2`
-       - `inherentEffort = weaponStats?.effort ?? effortTagFallback ?? 'one_handed'`
-       - `isDoubleWeapon = weaponStats?.isDoubleWeapon ?? itemTags.includes('double_weapon')`
-       - `isFinesseEligible = weaponStats?.isFinesseEligible === true || inherentEffort === 'light' || itemTags.includes('finesse')`
-       - `cannotTwoHandStr = weaponStats?.cannotTwoHandStr === true || itemTags.includes('cannot_two_hand_str')`
-       - `isExotic1HMartial2H = weaponStats?.isExotic1HMartial2H === true || itemTags.includes('exotic_1h_martial_2h')`
-     - Zero hardcoded `baseItemDef.id === ...` or `baseItemDef.id.includes(...)` branches!
-2. **Refactor `src/rulesets/dnd35e/semantic_tags.ts` (100% Data-Driven Armor Context)**:
-   - Update `resolveEntitySituationalTagContext`:
-     - Inspect `itemDef.armorStats` and `itemDef.specialMaterial` (applying `applyMaterialPhysics` when `specialMaterial === 'mithral'` or `itemTags` includes `'mithral'`).
-     - Derive `armorCategory` (`'light' | 'medium' | 'heavy'`), `hasShield` (`armorCategory === 'shield' || armorCategory === 'tower_shield'`), and `isMetalArmorOrShield` (`armorStats.isMetal === true`) directly from `armorStats` (falling back to tags/thresholds only when `armorStats` is absent).
-     - Remove all hardcoded `lowerId.includes('full_plate')`, `lowerId.includes('breastplate')`, etc.
-3. **Wire Equipped Item `effectBundle`, Armor/Shield Modifiers, and *Ghost Touch* / *Force* AC into `dnd35e_dag_adapter.ts` & `stacking_engine.ts`**:
-   - In `dnd35e_dag_adapter.ts`:
-     - Evaluate `itemDef.effectBundle` on every equipped, non-suppressed item (`sourcePath: "item:<itemId>"`), merging `statModifiers` and `grantedTags` into the entity's DAG inputs.
-     - For equipped items with `armorStats`, emit typed `'armor'`, `'armor_enhancement'`, `'shield'`, and `'shield_enhancement'` modifiers with `effectTags: ['ghost_touch']` when `magicalProperties?.ghostTouch === true`.
-     - Pass the lowest equipped `armorStats.maxDexBonus` into `evaluateDnD35ActorStatDAG`.
-   - In `stacking_engine.ts`:
-     - Preserve armor/shield bonuses against incorporeal touch attacks when `mod.effectTags` includes `'force'` or `'ghost_touch'`.
-4. **Author Complete Modular SRD Item Compendium (`public/data/rulesets/dnd35e/items/<id>.json` & `system_content_files.ts`)**:
-   - Author 110+ modular JSON files covering:
-     - **Simple, Martial & Exotic Weapons (60+ weapons)**: All SRD unarmed, light, one-handed, two-handed, reach, double, thrown, and projectile weapons (`unarmed_strike`, `gauntlet`, `dagger`, `punching_dagger`, `spiked_gauntlet`, `light_mace`, `sickle`, `club`, `heavy_mace`, `morningstar`, `shortspear`, `longspear`, `quarterstaff`, `spear`, `heavy_crossbow`, `light_crossbow`, `dart`, `javelin`, `sling`, `throwing_axe`, `light_hammer`, `handaxe`, `kukri`, `light_pick`, `sap`, `short_sword`, `battleaxe`, `flail`, `longsword`, `heavy_pick`, `rapier`, `scimitar`, `trident`, `warhammer`, `falchion`, `glaive`, `greataxe`, `greatclub`, `heavy_flail`, `greatsword`, `guisarme`, `halberd`, `lance`, `ranseur`, `scythe`, `shortbow`, `composite_shortbow`, `longbow`, `composite_longbow`, `kama`, `nunchaku`, `sai`, `siangham`, `bastard_sword`, `dwarven_waraxe`, `whip`, `orc_double_axe`, `spiked_chain`, `dire_flail`, `gnome_hooked_hammer`, `two_bladed_sword`, `dwarven_urgrosh`, `bolas`, `hand_crossbow`, `repeating_heavy_crossbow`, `repeating_light_crossbow`, `net`, `shuriken`).
-     - **Armors, Shields & Special Material Variants (25+ items)**: `padded_armor`, `leather_armor`, `studded_leather_armor`, `chain_shirt`, `mithral_chain_shirt`, `hide_armor`, `scale_mail`, `chainmail`, `breastplate`, `mithral_full_plate`, `splint_mail`, `banded_mail`, `half_plate`, `full_plate`, `adamantine_full_plate`, `buckler`, `light_wooden_shield`, `light_steel_shield`, `heavy_wooden_shield`, `heavy_steel_shield`, `darkwood_heavy_shield`, `tower_shield`.
-     - **Magical Weapons & Armors (15+ items)**: `longsword_plus1`, `longsword_plus2`, `flaming_longsword_plus1`, `frost_battleaxe_plus1`, `shock_shortbow_plus1`, `keen_rapier_plus1`, `ghost_touch_longsword_plus1`, `holy_greatsword_plus2`, `adamantine_greataxe`, `cold_iron_longsword`, `alchemical_silver_dagger`, `chain_shirt_plus1`, `full_plate_plus1`, `ghost_touch_full_plate_plus1`, `animated_heavy_steel_shield_plus1`, `heavy_fortification_full_plate_plus1`.
-     - **Wondrous Items, Rings, Rods, Staves, Wands, Scrolls & Potions (30+ items)**: `belt_of_giant_strength_plus2`, `belt_of_giant_strength_plus4`, `belt_of_giant_strength_plus6`, `gloves_of_dexterity_plus2`, `gloves_of_dexterity_plus4`, `gloves_of_dexterity_plus6`, `headband_of_intellect_plus2`, `headband_of_intellect_plus4`, `headband_of_intellect_plus6`, `periapt_of_wisdom_plus2`, `periapt_of_wisdom_plus4`, `periapt_of_wisdom_plus6`, `amulet_of_health_plus2`, `amulet_of_health_plus4`, `amulet_of_health_plus6`, `cloak_of_charisma_plus2`, `cloak_of_charisma_plus4`, `cloak_of_charisma_plus6`, `ring_of_protection_plus1`, `ring_of_protection_plus2`, `ring_of_protection_plus3`, `amulet_of_natural_armor_plus1`, `amulet_of_natural_armor_plus2`, `amulet_of_natural_armor_plus3`, `amulet_of_mighty_fists_plus1`, `bracers_of_armor_plus2`, `bracers_of_armor_plus4`, `cloak_of_resistance_plus1`, `cloak_of_resistance_plus2`, `cloak_of_resistance_plus3`, `boots_of_speed`, `boots_of_striding_and_springing`, `cloak_of_elvenkind`, `boots_of_elvenkind`, `goggles_of_night`, `handy_haversack`, `bag_of_holding_type_i`, `ring_of_evasion`, `ring_of_feather_falling`, `metamagic_rod_empower_lesser`, `metamagic_rod_extend_lesser`, `metamagic_rod_quicken_lesser`, `staff_of_fire`, `staff_of_healing`, `wand_magic_missile`, `wand_cure_light_wounds`, `scroll_fireball`, `scroll_magic_missile`, `potion_cure_light_wounds`, `potion_cure_serious_wounds`, `potion_bulls_strength`, `potion_cats_grace`.
-
----
-
-## 4. Concrete Code Snippets & Diffs
-
-### Snippet 1: `src/rulesets/dnd35e/types/system/item_system.types.ts`
-```ts
-import { z } from 'zod';
-import { ItemDefinitionSchema } from '../../../../types/campaign/item.ts';
-import { DnD35DamageTypeSchema } from './base_system.types.ts';
-import { DnD35EffectBundleSchema } from './effect_system.types.ts';
-
-/** Canonical D&D 3.5e special material types. */
-export const DnD35SpecialMaterialSchema = z.enum([
-  'mundane',
-  'masterwork',
-  'mithral',
-  'adamantine',
-  'darkwood',
-  'alchemical_silver',
-  'cold_iron'
-]);
-export type DnD35SpecialMaterial = z.infer<typeof DnD35SpecialMaterialSchema>;
-
-/** Structured D&D 3.5e weapon statistics driving `weapon_profile_parser.ts` without hardcoded IDs. */
-export const DnD35WeaponStatsSchema = z.object({
-  proficiencyCategory: z.enum(['simple', 'martial', 'exotic']),
-  weaponCategory: z.enum(['unarmed', 'melee', 'ranged', 'thrown']),
-  effort: z.enum(['light', 'one_handed', 'two_handed']),
-  damageDice: z.string(),
-  damageType: DnD35DamageTypeSchema,
-  secondaryDamageTypes: z.array(DnD35DamageTypeSchema).optional(),
-  critThreatMin: z.number().int().min(15).max(20).default(20),
-  critMultiplier: z.number().int().min(2).max(4).default(2),
-  rangeIncrementFt: z.number().int().positive().optional(),
-  reachFt: z.number().int().positive().default(5),
-  strikesAdjacent: z.boolean().default(true),
-  isDoubleWeapon: z.boolean().default(false),
-  offHandDamageDice: z.string().optional(),
-  offHandDamageType: DnD35DamageTypeSchema.optional(),
-  isFinesseEligible: z.boolean().default(false),
-  cannotTwoHandStr: z.boolean().default(false),
-  isExotic1HMartial2H: z.boolean().default(false),
-  familiaritySubtypes: z.array(z.string()).default([]),
-  maneuverTags: z
-    .array(z.enum(['trip', 'disarm', 'brace_vs_charge', 'monk', 'nonlethal_only', 'composite_str']))
-    .default([])
-});
-export type DnD35WeaponStats = z.infer<typeof DnD35WeaponStatsSchema>;
-
-/** Structured D&D 3.5e armor & shield statistics driving `semantic_tags.ts` and Stage 3/4 Stat DAG. */
-export const DnD35ArmorStatsSchema = z.object({
-  armorCategory: z.enum(['light', 'medium', 'heavy', 'shield', 'tower_shield']),
-  armorBonus: z.number().int().nonnegative(),
-  maxDexBonus: z.number().int().nonnegative().nullable().default(null),
-  armorCheckPenalty: z.number().int().max(0).default(0),
-  arcaneSpellFailure: z.number().int().min(0).max(100).default(0),
-  speed30Ft: z.number().int().positive().optional(),
-  speed20Ft: z.number().int().positive().optional(),
-  isMetal: z.boolean().default(false)
-});
-export type DnD35ArmorStats = z.infer<typeof DnD35ArmorStatsSchema>;
-
-/** Structured magical armament properties. */
-export const DnD35MagicalPropertiesSchema = z.object({
-  enhancementBonus: z.number().int().min(0).max(5).default(0),
-  isMasterwork: z.boolean().default(false),
-  keen: z.boolean().optional(),
-  ghostTouch: z.boolean().optional(),
-  animated: z.boolean().optional(),
-  fortificationType: z.enum(['light', 'moderate', 'heavy']).optional(),
-  baneCreatureType: z.string().optional(),
-  energyRiders: z
-    .array(
-      z.object({
-        propertyId: z.string(),
-        dice: z.string(),
-        damageType: DnD35DamageTypeSchema
-      })
-    )
-    .optional(),
-  onHitEffectIds: z.array(z.string()).optional()
-});
-export type DnD35MagicalProperties = z.infer<typeof DnD35MagicalPropertiesSchema>;
-
-/** Complete D&D 3.5e Item Definition schema (`public/data/rulesets/dnd35e/items/<id>.json`). */
-export const DnD35ItemDefinitionSchema = ItemDefinitionSchema.extend({
-  weaponStats: DnD35WeaponStatsSchema.optional(),
-  armorStats: DnD35ArmorStatsSchema.optional(),
-  specialMaterial: DnD35SpecialMaterialSchema.optional(),
-  magicalProperties: DnD35MagicalPropertiesSchema.optional(),
-  effectBundle: DnD35EffectBundleSchema.optional()
-});
-export type DnD35ItemDefinition = z.infer<typeof DnD35ItemDefinitionSchema>;
-```
-
-### Snippet 2: Data-Driven `parseEquippedItem` & `evaluateNonproficiencyPenalty` (`src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`)
-```ts
-export function evaluateNonproficiencyPenalty(
-  weaponItemId: string | undefined,
-  isExotic1HMartial2H: boolean | undefined,
-  finalHandedness: 'light' | 'one_handed' | 'two_handed',
-  dndData: Partial<DnD35EntityData> | undefined,
-  familiaritySubtypes: ReadonlyArray<string> = []
-): number {
-  if (!isExotic1HMartial2H || finalHandedness === 'two_handed') {
-    return 0;
-  }
-  const feats = dndData?.feats ?? [];
-  const hasExoticProficiency = feats.some(
-    (f) =>
-      f === 'exotic_weapon_proficiency' ||
-      (weaponItemId !== undefined &&
-        (f === `exotic_weapon_proficiency_${weaponItemId}` || f === `exotic_weapon_proficiency:${weaponItemId}`))
-  );
-  if (hasExoticProficiency) {
-    return 0;
-  }
-  if (familiaritySubtypes.length > 0) {
-    const actorSubtypes = new Set<string>([
-      ...(dndData?.raceId ? [dndData.raceId] : []),
-      ...(dndData?.subtypes ?? [])
-    ]);
-    if (familiaritySubtypes.some((sub) => actorSubtypes.has(sub))) {
-      return 0;
-    }
-  }
-  return NONPROFICIENCY_ATTACK_PENALTY;
+```typescript
+/**
+ * Represents a toggleable tactical mode or numeric stance dial (e.g., Power Attack, Combat Expertise, Stealth).
+ */
+export interface UIStanceModeEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly isActive: boolean;
+  readonly description: string;
+  /** Optional numeric dial value (e.g. Power Attack / Combat Expertise trade-off points). */
+  readonly numericValue?: number;
+  /** Minimum value for numeric dial. */
+  readonly minNumericValue?: number;
+  /** Maximum value for numeric dial (e.g. current BAB cap). */
+  readonly maxNumericValue?: number;
 }
 
-export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand: boolean): EquippedWeaponProfile {
-  const unarmedDice = scaleWeaponDamageDice('1d3', 'medium', wielderSize);
-  return {
-    isArmed: false,
-    wieldable: true,
-    weaponName: isOffHand ? 'Unarmed Strike (Off-Hand)' : 'Unarmed Strike',
-    weaponSize: wielderSize,
-    weaponDice: unarmedDice,
-    weaponDamageType: 'bludgeoning',
-    critThreatMin: DEFAULT_CRIT_THREAT_MIN,
-    critMultiplier: DEFAULT_CRIT_MULTIPLIER,
-    inherentEffort: 'light',
-    effectiveEffort: 'light',
-    handedness: 'light',
-    isFinesseEligible: true,
-    attackBonus: 0,
-    sizeAttackPenalty: 0,
-    nonproficiencyPenalty: 0,
-    damageBonus: 0,
-    bypassTags: ['bludgeoning']
-  };
+/**
+ * Represents a round action-economy pip in the tactical dock (`STD`, `MOV`, `SWF`, `AoO`).
+ */
+export interface UIActionEconomyPip {
+  readonly id: string;
+  readonly label: string;
+  readonly available: boolean;
+  readonly detailText?: string;
+}
+
+/**
+ * Represents the bottom NWN2-style Action Hotbar & Stance Modes dock.
+ */
+export interface UIHotbarModel {
+  readonly activeBank: number;
+  readonly totalBanks: number;
+  readonly stanceModes: ReadonlyArray<UIStanceModeEntry>;
+  readonly slots: ReadonlyArray<UIHotbarSlot>;
+  readonly actionPips?: ReadonlyArray<UIActionEconomyPip>;
+}
+
+export interface ICartridgeUIAdapter {
+  readonly rulesetId: string;
+  readonly defaultThemeMode: ConsoleThemeMode;
+  getCharacterSheetData(actorState: Record<string, unknown>): UICharacterSheetModel;
+  getInventoryData(actorState: Record<string, unknown>): UIInventoryModel;
+  getHotbarData(actorState: Record<string, unknown>, activeBank?: number): UIHotbarModel;
 }
 ```
 
-### Snippet 3: Example Weapon JSON (`public/data/rulesets/dnd35e/items/dwarven_waraxe.json`)
-```json
-{
-  "dwarven_waraxe": {
-    "id": "dwarven_waraxe",
-    "name": "Dwarven Waraxe",
-    "description": "A dwarven waraxe is too large to use in one hand without special training; thus, it is an exotic weapon. A Medium character can use a dwarven waraxe two-handed as a martial weapon, or a Large creature can use it one-handed in the same way. A dwarf treats a dwarven waraxe as a martial weapon even when using it in one hand.",
-    "glyph": ")",
-    "fg": "#c0c0c0",
-    "bg": "#000000",
-    "category": "weapon",
-    "tags": ["slashing", "exotic_1h_martial_2h"],
-    "weight": 8,
-    "baseValue": 30,
-    "equippable": {
-      "slot": "main_hand",
-      "attackBonus": 0,
-      "defenseBonus": 0,
-      "maxHpBonus": 0,
-      "carryBonus": 0
-    },
-    "weaponStats": {
-      "proficiencyCategory": "exotic",
-      "weaponCategory": "melee",
-      "effort": "one_handed",
-      "damageDice": "1d10",
-      "damageType": "slashing",
-      "critThreatMin": 20,
-      "critMultiplier": 3,
-      "reachFt": 5,
-      "strikesAdjacent": true,
-      "isDoubleWeapon": false,
-      "isFinesseEligible": false,
-      "cannotTwoHandStr": false,
-      "isExotic1HMartial2H": true,
-      "familiaritySubtypes": ["dwarf"],
-      "maneuverTags": []
-    }
-  }
-}
-```
-
-### Snippet 4: Example Metamagic Feat JSON (`public/data/rulesets/dnd35e/feats/empower_spell.json`)
-```json
-{
-  "empower_spell": {
-    "id": "empower_spell",
-    "name": "Empower Spell",
-    "description": "All variable, numeric effects of an empowered spell are increased by one-half. An empowered spell uses up a spell slot two levels higher than the spell's actual level.",
-    "isFighterBonusFeat": false,
-    "metamagicDescriptor": {
-      "slotLevelAdjustment": 2,
-      "empowerDamageMultiplier": 1.5
-    },
-    "effectBundle": {
-      "bundleId": "feat:empower_spell",
-      "name": "Empower Spell",
-      "category": "feat",
-      "usageMode": "passive",
-      "grantedTags": ["metamagic:empower_spell"]
-    }
-  }
-}
-```
+Update [`src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts) (`defaultThemeMode: 'parchment'`) and [`src/rulesets/default/ui/default_ui_adapter.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rulesets/default/ui/default_ui_adapter.ts) (`defaultThemeMode: 'retro-crt'`) to satisfy `ICartridgeUIAdapter`.
 
 ---
 
-## 5. Verification Strategy & Step 5 Gate
+### Step 2: Global Theme Engine (`console_theme.ts`) & Settings Override (`settings.ts` / `settings.ui.ts`)
 
-1. **Automated Test Suites**:
-   - `tests/dnd35e_feats_m114.test.ts`: Tests all 85+ SRD feats, prerequisite AST validation (`has_feat`), passive stat modifiers in the 4-Stage DAG, stacking repeatable *Toughness*, *Weapon Finesse* DEX-to-attack override, *Improved Critical*, *Multiattack*, and metamagic descriptors.
-   - `tests/dnd35e_equipment_m115.test.ts`: Tests all 110+ SRD items, 100% data-driven `weapon_profile_parser.ts` (zero hardcoded ID branches, dwarven/gnome weapon familiarity, finesse, reach, double weapons, unarmed strike scaling), `semantic_tags.ts` armor category & Mithral step-down, equipped wondrous items in the Stat DAG, and *Ghost Touch* / *Force* AC preservation against incorporeal touch attacks.
-   - `tests/ssot_registry_parity.test.ts`: Verifies `ssot_dnd35e.json` and `SSOT_DND35E.md` include `item_system.types.ts` and all new modular files.
-2. **Full 8-Stage `./verify.sh` Pipeline**:
-   - Must pass with 0 errors and 0 warnings across TypeScript, Prettier, ESLint, File Length ($\le 300$ lines), Architecture, Knip dead-code, Bun tests, Vite build, and Campaign/SSOT Validator.
+1. **Update [`src/rendering/ui/console_theme.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_theme.ts)**:
+   - Apply `document.documentElement.dataset['consoleTheme'] = mode` on `:root` (`<html>`) as the primary global theme selector (and preserve `applyConsoleTheme(container, mode)` for unit test compatibility).
+   - Export `syncGlobalConsoleTheme(cartridgeDefaultMode: ConsoleThemeMode, userPreference?: 'auto' | ConsoleThemeMode): ConsoleThemeMode`.
+2. **Update [`src/core/settings.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/core/settings.ts) & [`src/rendering/ui/settings.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/settings.ui.ts)**:
+   - Add `consoleThemePreference: 'auto' | 'parchment' | 'retro-crt'` (default `'auto'`) to `GameSettings`.
+   - Remove the redundant `openEquipment` keybind from `DEFAULT_KEYBINDS` (`Keybinds` in `settings.ts` and `public/data/campaigns/default/keybinds.json`), keeping `openInventory: 'KeyI'` (`Inventory & Equipment`) and `openCharacterSheet: 'KeyC'` (`Character Dossier`).
+   - Add a **UI Theme** selector (`Auto (Cartridge Default)`, `Parchment Tabletop`, `Retro CRT`) in `settings.ui.ts`.
 
-**Implementation Plan Gate:**
-Per `AGENTS.md` Step 5:
-> **STOP HERE and wait for the User's explicit approval of the Implementation Plan before writing or modifying any actual codebase files.**
+---
+
+### Step 3: Extract Tier 1 Console 3-Column Master Dossier (`src/rendering/ui/console_dossier.ui.ts`)
+
+Create [`src/rendering/ui/console_dossier.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_dossier.ui.ts) ($\le 240$ lines) as the canonical **Tier 1 Console** renderer for the 3-Column Master Dossier:
+- Accepts:
+  - `container: HTMLElement`
+  - `sheetModel: UICharacterSheetModel`
+  - `inventoryModel: UIInventoryModel`
+  - `callbacks: ConsoleDossierCallbacks` (`onWeaponSetChange`, `onEquipSlotClick`, `onStashItemClick`, `onUseSkill`, `onClose`, `extraHeaderActions`)
+- Renders the clean production header (Identity, ECL, XP bar, optional Cartridge action buttons like `[📖 Spellbook]`, and `[✕ Close]`—with **zero** prototype Morphology/Theme buttons) and the 3-Column grid:
+  - **Column 1**: Portrait + HP pill + 6 Ability Scores table + [`renderAnatomicalPaperDoll`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_inventory.ui.ts) + 6-box AC & Saving Throws strip + Speed/BAB/Grapple/Init footer.
+  - **Column 2**: Full-Attack & Natural Weapon Routine Ledger + Feats/Traits/Domains/Conditions badge grid + Horizon 1 Level-by-Level Matrix.
+  - **Column 3**: Pen-and-Paper Skills Table (with `[Trained Only]` filter and `[Use]` action triggers) + [`renderStashGrid`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_inventory.ui.ts) (`10×4` compact socket matrix with category filter pills, sort dropdown, and hover Examine card).
+- Does **not** append any bottom hotbar dock inside the modal.
+
+---
+
+### Step 4: Clean Up `dnd35e_sheet*.ui.ts` & Eliminate Fake Showcase Item Injection
+
+1. **Fix [`src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts)**:
+   - Remove the `fallbackData.anatomicalSlots` fallback loop that injected fake equipped items (*Luskan Battlemage's Rapier*, *Kizu's Short Sword*) into empty live player slots! When a live player's slot is empty, `item: undefined` is passed so the socket accurately renders as an empty slot.
+   - Refactor into a pure model builder (`buildLiveDnD35SheetOverviewModel(state, playerId, activeWeaponSet)`) and DOM helper for Column 1.
+2. **Fix [`src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts)**:
+   - Remove lines 102–106 (`if (stashItems.length === 0) { stashItems.push(...fallbackData.stashItems); }`) so an empty player backpack renders 40 empty sockets rather than spawning fake showcase loot!
+3. **Update [`src/rendering/ui/dnd35e_sheet.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_sheet.ui.ts)**:
+   - Remove `activeMorphologyPreset`, Morphology switcher buttons, inline Theme switcher buttons, and the modal-bottom `renderConsoleHotbar` call.
+   - Delegate rendering to `renderConsoleMasterDossier` (or the 3 clean column builders).
+4. **Unify `I` and `C` in [`src/rendering/ui/inventory.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/inventory.ui.ts), [`src/rendering/ui/modal.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/modal.ui.ts), and [`src/rendering/ui/cartridge_ui_registry.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/cartridge_ui_registry.ts)**:
+   - Register both `dnd35e` and `classic` in `cartridge_ui_registry.ts` so pressing `I` or `C` in *either* ruleset opens the 3-Column Master Dossier (`#dnd35e-sheet-overlay`) themed in `parchment` (for `dnd35e`) or `retro-crt` (for `classic`).
+   - Make `renderInventoryModal` in `inventory.ui.ts` delegate to the active Cartridge's Master Dossier modal.
+
+---
+
+### Step 5: Persistent Bottom HUD Hotbar & Tactical Modes Dock (`#hud-bottom-dock`)
+
+1. **Add `#hud-bottom-dock` to [`index.html`](file:///d:/Projects/Game%20Dev/rogue-like/index.html) and style it in [`src/index.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/index.css)**:
+   - Place `<div id="hud-bottom-dock" class="hud-bottom-dock"></div>` inside `#canvas-container` anchored at `bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 18;`.
+   - Remove the dead `#equipment-overlay` block and strip hardcoded inline hex colors (`style="color: #f1c40f"`, etc.) from `#dnd35e-sheet-overlay`, `#dnd35e-spellbook-overlay`, `#char-creation-overlay`, and `#level-up-overlay` in `index.html`.
+2. **Enhance [`src/rendering/ui/console_hotbar.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/console_hotbar.ui.ts)**:
+   - Support optional `onStanceStep?: (modeId: string, delta: number) => void` in `ConsoleHotbarCallbacks`.
+   - When a `UIStanceModeEntry` defines `numericValue !== undefined`, render compact `-` / `+` buttons around the value inside the `.crpg-mode-pill`.
+   - When `model.actionPips` is present, render the compact `STD` / `MOV` / `SWF` / `AoO` status badges on the right end of the `.crpg-modes-strip`.
+3. **Wire Live D&D 3.5e & Classic Hotbars in [`src/rendering/ui/dnd35e_ui_adapter.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_ui_adapter.ts) & [`src/rendering/ui/hud_dock.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/hud_dock.ui.ts)**:
+   - Build live `UIHotbarModel` from the player's combat stances (`Power Attack` stepper, `Combat Expertise` stepper, `Fighting Defensively`, `Total Defense`, `2H Grip`, `Stealth`, `Search`), round action budget (`STD`, `MOV`, `SWF`, `AoO`), prepared/spontaneous spells, and quick-use inventory items.
+   - Clicking a stance toggle or `-`/`+` stepper dispatches `IntentType.SET_COMBAT_STANCE` via `onIntent`.
+   - Clicking a hotbar slot or pressing digits `1`–`0`, `-`, `=` in [`src/core/input/shortcut_input.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/core/input/shortcut_input.ts) triggers the corresponding spell, item, or combat action.
+4. **Retire Redundant Sidebar Views**:
+   - Remove `renderHudPaperdoll` and `renderDnD35eDoctrineBar` from [`src/rendering/ui/hud.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/hud.ui.ts) and [`src/rendering/ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui.ts).
+   - Delete the now-superseded [`src/rendering/ui/hud_paperdoll.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/hud_paperdoll.ui.ts), [`src/rendering/ui/dnd35e_doctrine_bar.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_doctrine_bar.ui.ts), and [`src/rendering/ui/equipment.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/equipment.ui.ts), and update `docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json` accordingly so Stage 5 (`lint:deadcode`) and Stage 8 (`run-validator.ts`) pass with 0 warnings.
+
+---
+
+### Step 6: Promote `--crpg-*` CSS Tokens & Restyle All 12 Cartridge Modal / Inspector Files
+
+1. **Globalize Theme Tokens in [`src/styles/console_prototype.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/styles/console_prototype.css)**:
+   - Bind `--crpg-*` variables to `:root, :root[data-console-theme='parchment'], [data-console-theme='parchment']` and `:root[data-console-theme='retro-crt'], [data-console-theme='retro-crt']`.
+   - Add theme-aware semantic accent variables so positive/warning/info badges are high-contrast on both cream parchment and dark CRT:
+     - **Parchment**:
+       - `--crpg-success: #1e5631;` (deep forest green)
+       - `--crpg-warning: #8b4513;` (warm bronze/ochre)
+       - `--crpg-info: #1d4e89;` (royal ink blue)
+       - `--crpg-danger: #8b1e1e;` (crimson ink)
+     - **Retro CRT**:
+       - `--crpg-success: #2ecc71;` (phosphor green)
+       - `--crpg-warning: #ffb000;` (amber)
+       - `--crpg-info: #00e5ff;` (cyan)
+       - `--crpg-danger: #ff4d4d;` (alert red)
+   - Style `.modal-content`, `.modal-header`, `.modal-footer`, `.modal-btn`, `.dnd35-wizard-shell`, `.dnd35-step-pill`, `.dnd35-pane-left`, `.dnd35-pane-right`, `.dnd35-list-item`, `.dnd35-filter-bar`, `.dnd35-badge`, and `.dnd35-counter-btn` in [`src/index.css`](file:///d:/Projects/Game%20Dev/rogue-like/src/index.css) using `var(--crpg-*)`.
+2. **Replace Hardcoded Inline Hex Colors Across All 12 Cartridge UI Files**:
+   - [`src/rendering/ui/dnd35e_char_builder.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_race_abilities.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_class.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_class.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_skills.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_skills.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_feats.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_feats.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_spells.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_spells.ui.ts)
+   - [`src/rendering/ui/dnd35e_char_builder_steps.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_steps.ui.ts)
+   - [`src/rendering/ui/dnd35e_level_up.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_level_up.ui.ts)
+   - [`src/rendering/ui/dnd35e_level_up_class.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_level_up_class.ui.ts)
+   - [`src/rendering/ui/dnd35e_spellbook.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_spellbook.ui.ts)
+   - [`src/rendering/ui/dnd35e_inspector.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_inspector.ui.ts)
+   - [`src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts)
+   Every `#f1c40f` becomes `var(--crpg-gold)`, `#9da7b3` / `#8b949e` becomes `var(--crpg-text-dim)`, `#c9d1d9` becomes `var(--crpg-ink)`, `#2ecc71` becomes `var(--crpg-success)`, `#e74c3c` becomes `var(--crpg-danger)`, `#58a6ff` becomes `var(--crpg-info)`, `#e67e22` / `#f39c12` becomes `var(--crpg-warning)`, and `#303644` / `#333947` / `rgba(0,0,0,0.35)` becomes `var(--crpg-border-inner)` / `var(--crpg-bg-card)`.
+
+---
+
+## 5. Verification & Test Plan
+
+1. **Unit & Integration Tests**:
+   - Update [`tests/console_ui_architecture.test.ts`](file:///d:/Projects/Game%20Dev/rogue-like/tests/console_ui_architecture.test.ts) and [`tests/dnd35e_phase26_ui_and_showcase.test.ts`](file:///d:/Projects/Game%20Dev/rogue-like/tests/dnd35e_phase26_ui_and_showcase.test.ts) to verify:
+     - `renderConsoleMasterDossier` renders the 3-column Master Dossier for both `DnD35UIAdapter` and `DefaultSciFiUIAdapter` with zero prototype Morphology/Theme switcher buttons and zero embedded modal-bottom hotbars.
+     - Live player sheet & inventory projection in `dnd35e_sheet.ui.ts` never injects fake showcase items into an empty player inventory.
+     - `renderConsoleHotbar` renders the persistent bottom dock with stance toggles, numeric `-`/`+` steppers (`Power Attack`, `Combat Expertise`), action economy pips (`STD`, `MOV`, `SWF`, `AoO`), and 12 action slots (`1`–`0`, `-`, `=`).
+     - Global theme synchronization (`syncGlobalConsoleTheme`) sets `document.documentElement.dataset['consoleTheme']` to `'parchment'` for `dnd35e` and `'retro-crt'` for `classic`, and respects user overrides in `Settings`.
+2. **8-Stage Verification Pipeline (`.\verify.bat`)**:
+   - Run all 8 stages (`tsc --noEmit`, `format`, `lint`, `lint:arch`, `lint:deadcode`, `bun test`, `build`, `run-validator.ts`) and ensure 0 errors and all files $\le 300$ lines.

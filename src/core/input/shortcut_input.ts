@@ -18,7 +18,7 @@ import {
 } from '../../actions/debug.actions.ts';
 import { createPickUpAction, createToggleInventoryAction } from '../../actions/inventory.actions.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
-import { triggerQuickBeltSlot } from '../../rendering/ui/hud_paperdoll.ui.ts';
+import { triggerQuickBeltSlot } from '../../rendering/ui/hud_bottom_dock.ui.ts';
 import { toggleAllHudPanelsFolded } from './mouse_input.ts';
 
 /** Keyboard key that always toggles the debug overlay while in game mode. */

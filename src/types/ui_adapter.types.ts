@@ -151,6 +151,69 @@ export interface UIInventoryModel {
 }
 
 /**
+ * Represents a toggleable tactical mode or numeric stance dial (e.g., Power Attack, Combat Expertise, Stealth).
+ */
+export interface UIStanceModeEntry {
+  readonly id: string;
+  readonly label: string;
+  readonly icon?: string;
+  readonly isActive: boolean;
+  readonly description?: string;
+  readonly tooltipText?: string;
+  /** Optional numeric dial value (e.g. Power Attack / Combat Expertise trade-off points). */
+  readonly numericValue?: number;
+  /** Minimum value for numeric dial. */
+  readonly minNumericValue?: number;
+  /** Maximum value for numeric dial (e.g. current BAB cap). */
+  readonly maxNumericValue?: number;
+}
+
+/**
+ * Represents a round action-economy pip in the tactical dock (`STD`, `MOV`, `SWF`, `AoO`).
+ */
+export interface UIActionEconomyPip {
+  readonly id: string;
+  readonly label: string;
+  readonly available: boolean;
+  readonly detailText?: string;
+}
+
+/**
+ * Data model representing a bound action inside a Console Hotbar slot.
+ */
+export interface UIHotbarSlot {
+  readonly slotIndex: number;
+  readonly label: string;
+  readonly iconUrl?: string | undefined;
+  readonly keyLabel: string;
+  readonly cooldownProgress?: number | undefined;
+  readonly activeToggle?: boolean | undefined;
+  readonly isDisabled?: boolean | undefined;
+  readonly tooltipTitle?: string | undefined;
+  readonly tooltipDescription?: string | undefined;
+  readonly actionPayload?:
+    | {
+        readonly kind: 'item' | 'spell' | 'skill' | 'ability' | 'weapon';
+        readonly id: string;
+        readonly entityId?: number | undefined;
+        readonly classId?: string | undefined;
+        readonly slotIdx?: number | undefined;
+      }
+    | undefined;
+}
+
+/**
+ * Represents the bottom NWN2-style Action Hotbar & Stance Modes dock.
+ */
+export interface UIHotbarModel {
+  readonly activeBank: number;
+  readonly totalBanks: number;
+  readonly stanceModes: ReadonlyArray<UIStanceModeEntry>;
+  readonly slots: ReadonlyArray<UIHotbarSlot>;
+  readonly actionPips?: ReadonlyArray<UIActionEconomyPip>;
+}
+
+/**
  * Standard interface implemented by all Ruleset Cartridge UI Adapters.
  */
 export interface ICartridgeUIAdapter {
@@ -161,5 +224,6 @@ export interface ICartridgeUIAdapter {
   getInventoryData(actor: unknown): UIInventoryModel;
   getHotbarBinding(actor: unknown, slotIndex: number): UIInventoryItem | null;
   getStanceActions(actor: unknown): ReadonlyArray<{ id: string; label: string; isActive: boolean }>;
+  getHotbarData?(actor: unknown, activeBank?: number): UIHotbarModel;
   getItemInspectData(item: unknown): UIInspectData;
 }

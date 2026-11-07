@@ -207,6 +207,10 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 ## 7. UI & View Layer Rules
 
 - **UI Controller vs View Separation:** Split UI into DOM manipulation/state reading (Views) and DOM Event generation/Intents routing (Controllers). `main.ts` is for wiring, `input_handler.ts` for mapping, and `rendering/ui/` for Views.
+- **Tier 1 Console Host vs. Tier 2 Cartridge UI Separation (Inversion of Control):** Tier 1 Console UI (`src/rendering/ui/hud_*.ui.ts`, `console_*.ui.ts`) provides generic, ruleset-agnostic structural primitives (Hotbar, Master Dossier, Paper Doll, Compact Stash, Inspect Card, Modal Host) and must never branch on `rulesetId` or import cartridge rules directly. Tier 2 Cartridges register their data projections (`ICartridgeUIAdapter`) and intent callbacks (`CartridgeUIDefinition`) into the Console UI Registry.
+- **Component & Build-Reactive UI Composition:** Interactive UI surfaces—such as tactical stance toggles, numeric dial steppers, hotbar action slots, dock commands (e.g., Spellbook availability), and anatomical paper doll slots—must never be hardcoded per ruleset. They must be projected dynamically from the actor's live ECS components (`EquipmentComponent`, `InventoryComponent`, `ResourcePoolComponent`, `TacticalDoctrineComponent`, `StatusEffectsComponent`) and build state (`feats`, `spellbooksByClass`, `scalingPools`, `skillRanks`).
+- **Zero Showcase/Mock Fallbacks in Production Adapters & Views:** Production UI Adapters (`ICartridgeUIAdapter`) and Views are pure state projectors, never mock data generators. When an entity has an empty inventory, no equipped gear, or partial state, adapters must return empty collections (`stashItems: []`, `currentWeightLbs: 0`) and baseline unarmed/default state—never hardcoded showcase items, fake attacks, or prototype presets.
+- **Single Source of Truth for UI Projection (No View/Adapter Split-Brain):** `ICartridgeUIAdapter` owns the canonical transformation from live ECS/DAG state into `UICharacterSheetModel`, `UIInventoryModel`, and `UIHotbarModel`. DOM Views must consume these adapter models rather than duplicating item-to-UI mapping or maintaining parallel fallback logic.
 - **DOM Injection & Security:** Avoid using `.innerHTML` for rich text parsing. Parse text into semantic segments and construct DOM nodes natively with `document.createElement()`.
 - **Export Clashes in UI Barrel Files:** Be extremely careful not to double-export or accidentally overwrite exports in UI hubs like `src/rendering/ui.ts`, which can break routing silently.
 
@@ -240,6 +244,9 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 | Skip the plan step for multi-file changes     | Always state the plan and get confirmation first  |
 | Leak subsystem knowledge into the game loop   | Subsystems expose query helpers (e.g., `shouldSkipTurn()`) |
 | Hardcode editor dropdown values               | Derive dropdown options programmatically           |
+| Inject mock/showcase items in UI adapters     | Project live ECS components (`stashItems: []` when empty) |
+| Branch on `rulesetId` inside Tier 1 Console UI| Delegate projection & actions via `CartridgeUIDefinition` |
+| Hardcode stances/buttons for all characters   | Project stances, dials, and dock buttons from actor components/feats |
 
 ---
 

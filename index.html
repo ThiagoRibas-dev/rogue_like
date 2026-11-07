@@ -27,6 +27,8 @@
           <div id="effects-overlay" class="effects-overlay"></div>
           <div id="inspect-tooltip" class="inspect-tooltip hidden"></div>
         </div>
+        <!-- Persistent Bottom-Center Action Hotbar & Tactical Modes Dock -->
+        <div id="hud-bottom-dock" class="hud-bottom-dock"></div>
       </main>
 
       <!-- Floating Left Side Stack -->
@@ -121,25 +123,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Ultima / DF Sunken 5x2 Equipment & Quick-Belt Socket Plate -->
-        <div class="hud-card paperdoll-card">
-          <button type="button" class="hud-edge-tab" title="Expand Gear &amp; Quick Belt [1]–[5]">
-            <span class="hud-edge-icon">⚔</span>
-            <span class="hud-edge-badge" id="edge-badge-gear">1-5</span>
-          </button>
-          <div class="hud-card-body socket-plate-body">
-            <div class="socket-plate-header">
-              <span class="socket-plate-label">Equipped &amp; Belt <span class="quickbelt-sub">[1–5]</span></span>
-              <button type="button" class="hud-fold-btn" aria-expanded="true" title="Collapse to edge emblem">«</button>
-            </div>
-            <div id="hud-paperdoll-grid" class="mini-paperdoll-grid"></div>
-            <div id="hud-quickbelt-grid" class="quickbelt-grid"></div>
-          </div>
-        </div>
-
-        <!-- Cartridge Panel Slot (e.g. Tactical Doctrine Bar for D&D 3.5e) -->
-        <div id="hud-cartridge-panel-slot" class="hud-cartridge-slot"></div>
 
       </aside>
 
@@ -306,7 +289,7 @@
 
     <div id="char-creation-overlay" class="modal-overlay hidden">
       <div class="modal-content dnd35-fullscreen-modal">
-        <h1 class="modal-title" style="margin-bottom: 6px; color: #f1c40f; font-size: 1.45rem;">D&amp;D 3.5e Character Creation</h1>
+        <h1 class="modal-title crpg-modal-title">D&amp;D 3.5e Character Creation</h1>
         <div id="char-creation-body" class="dnd35-modal-body">
           <!-- dnd35e_char_builder.ui.ts populates this -->
         </div>
@@ -315,7 +298,7 @@
 
     <div id="level-up-overlay" class="modal-overlay hidden">
       <div class="modal-content dnd35-fullscreen-modal">
-        <h1 class="modal-title" style="margin-bottom: 6px; color: #2ecc71; font-size: 1.45rem;">Level Up Advancement</h1>
+        <h1 class="modal-title crpg-modal-title">Level Up Advancement</h1>
         <div id="level-up-body" class="dnd35-modal-body">
           <!-- dnd35e_level_up.ui.ts populates this -->
         </div>
@@ -326,7 +309,7 @@
     <div id="dnd35e-sheet-overlay" class="modal-overlay hidden">
       <div class="modal-content dnd35-fullscreen-modal dnd35-sheet-modal">
         <div class="dnd35-sheet-header">
-          <h1 class="modal-title" style="margin: 0; color: #f1c40f; font-size: 1.35rem;">Character Sheet</h1>
+          <h1 class="modal-title crpg-modal-title">Character Dossier</h1>
           <button id="btn-close-dnd35e-sheet" class="modal-close-btn" title="Close Sheet [C or Esc]">×</button>
         </div>
         <div id="dnd35e-sheet-body" class="dnd35-modal-body">
@@ -339,7 +322,7 @@
     <div id="dnd35e-spellbook-overlay" class="modal-overlay hidden">
       <div class="modal-content dnd35-fullscreen-modal dnd35-spellbook-modal">
         <div class="dnd35-sheet-header">
-          <h1 class="modal-title" style="margin: 0; color: #9b59b6; font-size: 1.35rem;">Grimoire &amp; Spell Preparation</h1>
+          <h1 class="modal-title crpg-modal-title">Grimoire &amp; Spell Preparation</h1>
           <button id="btn-close-dnd35e-spellbook" class="modal-close-btn" title="Close Grimoire [B or Esc]">×</button>
         </div>
         <div id="dnd35e-spellbook-body" class="dnd35-modal-body">
@@ -385,13 +368,21 @@
         </div>
 
         <div class="settings-group">
-          <h3 class="settings-group-title">Accessibility</h3>
+          <h3 class="settings-group-title">Accessibility &amp; Visuals</h3>
           <label class="settings-label">
             <span>UI Scale</span>
             <select id="setting-ui-scale" class="settings-select">
               <option value="small">Small</option>
               <option value="normal">Normal</option>
               <option value="large">Large</option>
+            </select>
+          </label>
+          <label class="settings-label">
+            <span>UI Theme Skin</span>
+            <select id="setting-console-theme" class="settings-select">
+              <option value="auto">Auto (Cartridge Default)</option>
+              <option value="parchment">Parchment Tabletop</option>
+              <option value="retro-crt">Retro CRT</option>
             </select>
           </label>
           <label class="settings-label">

@@ -14,144 +14,18 @@ import {
   evaluateDnD35eEntityDAG,
   getDnD35EntityData
 } from '../../rulesets/registry.ts';
-import {
-  ComponentType,
-  type EquipmentComponent,
-  type FighterComponent,
-  type IdentityComponent
-} from '../../types/components.types.ts';
+import { ComponentType, type FighterComponent, type IdentityComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import type { UIAnatomicalSlotDescriptor, UIInventoryItem } from '../../types/ui_adapter.types.ts';
 import { hideConsoleItemInspectCard, showConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderReactivePaperDollWidget } from './console_inventory.ui.ts';
 
 const DEFAULT_ABILITY_SCORE = 10;
-const LIGHT_LOAD_PER_STR = 15;
-const DEFAULT_GOLD_CURRENCY = 250;
-const DEFAULT_ITEM_PRICE_GP = 25;
-const DEFAULT_ITEM_WEIGHT_LBS = 1.0;
-const DEFAULT_CARRIED_WEIGHT_LBS = 18.5;
 const dndAdapter = new DnD35UIAdapter();
 
-export type SheetMorphologyMode = 'live' | 'marilith_6arm' | 'quadruped_wolf';
-
 let activeWeaponSet = 1;
-let activeMorphologyMode: SheetMorphologyMode = 'live';
-
-export function getSheetMorphologyMode(): SheetMorphologyMode {
-  return activeMorphologyMode;
-}
-
-export function setSheetMorphologyMode(mode: SheetMorphologyMode): void {
-  activeMorphologyMode = mode;
-}
 
 function formatSigned(val: number): string {
   return val >= 0 ? `+${val}` : `${val}`;
-}
-
-const SLOT_VISUAL_MAP: Readonly<Record<string, { label: string; glyph: string; rail: 'left' | 'right' }>> = {
-  head: { label: 'Head', glyph: '🪖', rail: 'left' },
-  cloak: { label: 'Cloak', glyph: '🧥', rail: 'left' },
-  shoulders: { label: 'Cloak', glyph: '🧥', rail: 'left' },
-  ring_1: { label: 'Ring 1', glyph: '💍', rail: 'left' },
-  ring_left: { label: 'Ring L', glyph: '💍', rail: 'left' },
-  hands: { label: 'Gloves', glyph: '🧤', rail: 'left' },
-  hand: { label: 'Gloves', glyph: '🧤', rail: 'left' },
-  main_hand: { label: 'Main Hand', glyph: '⚔️', rail: 'left' },
-  ammo: { label: 'Ammo', glyph: '🏹', rail: 'left' },
-  ranged: { label: 'Ammo', glyph: '🏹', rail: 'left' },
-  neck: { label: 'Neck', glyph: '📿', rail: 'right' },
-  torso: { label: 'Armor', glyph: '🛡️', rail: 'right' },
-  body: { label: 'Armor', glyph: '🛡️', rail: 'right' },
-  waist: { label: 'Belt', glyph: '🎗️', rail: 'right' },
-  ring_2: { label: 'Ring 2', glyph: '💍', rail: 'right' },
-  ring_right: { label: 'Ring R', glyph: '💍', rail: 'right' },
-  feet: { label: 'Boots', glyph: '🥾', rail: 'right' },
-  foot: { label: 'Boots', glyph: '🥾', rail: 'right' },
-  off_hand: { label: 'Off Hand', glyph: '🗡️', rail: 'right' }
-};
-
-function mapLiveEntityItemToUI(state: GameState, itemEntityId: EntityId): UIInventoryItem | null {
-  const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
-  if (!itemComp) return null;
-  const def = state.campaign.items[itemComp.itemId];
-  const name = def?.name ?? itemComp.itemId.replace(/_/g, ' ');
-  const renderable = getComponent(state, itemEntityId, ComponentType.Renderable);
-  const slot = def?.equippable?.slot ?? 'held';
-  const isWeapon = def?.category === 'weapon' || slot === 'main_hand' || slot === 'off_hand' || slot === 'two_handed';
-  const isArmor = def?.category === 'armor' || slot === 'torso' || slot === 'body';
-  const isConsumable = def?.category === 'consumable' || def?.consumable !== undefined;
-
-  return {
-    id: itemComp.itemId,
-    entityId: itemEntityId,
-    name,
-    iconUrl: isWeapon ? '⚔️' : isArmor ? '🛡️' : isConsumable ? '🧪' : (renderable?.glyph ?? '📦'),
-    category: isWeapon ? 'weapon' : isArmor ? 'armor' : isConsumable ? 'consumable' : 'accessory',
-    quantity: itemComp.charges ?? 1,
-    priceGp: def?.baseValue ?? DEFAULT_ITEM_PRICE_GP,
-    weightLbs: def?.weight ?? DEFAULT_ITEM_WEIGHT_LBS,
-    isEquipped: true,
-    inspectData: {
-      title: name,
-      loreText: def?.description ?? 'Adventuring gear.',
-      baseMetrics: [
-        ...(def?.equippable?.attackBonus ? [{ label: 'Attack Mod', value: `+${def.equippable.attackBonus}` }] : []),
-        ...(def?.equippable?.defenseBonus ? [{ label: 'Armor Mod', value: `+${def.equippable.defenseBonus} AC` }] : []),
-        { label: 'Slot', value: String(slot).toUpperCase() }
-      ],
-      specialProperties: (def?.tags ?? []).map((t) => ({ text: `Tag: ${t}`, colorHint: 'green' as const }))
-    }
-  };
-}
-
-function buildLiveAnatomicalSlots(state: GameState, playerId: EntityId): ReadonlyArray<UIAnatomicalSlotDescriptor> {
-  if (activeMorphologyMode !== 'live') {
-    return dndAdapter.buildAnatomicalSlotsForPreset(activeMorphologyMode);
-  }
-
-  const equipment = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  const fallbackData = dndAdapter.getInventoryData({});
-  if (!equipment || equipment.slots.length === 0) {
-    return fallbackData.anatomicalSlots ?? [];
-  }
-
-  const seenSlotIds = new Set<string>();
-  const descriptors: UIAnatomicalSlotDescriptor[] = [];
-
-  for (const slot of equipment.slots) {
-    const visual = SLOT_VISUAL_MAP[slot.id] ?? SLOT_VISUAL_MAP[slot.slotType];
-    const isDuplicate = seenSlotIds.has(slot.id);
-    seenSlotIds.add(slot.id);
-
-    const rail: 'left' | 'right' | 'extra' = !visual || isDuplicate ? 'extra' : visual.rail;
-    const liveEquipped = slot.equippedItem !== null ? mapLiveEntityItemToUI(state, slot.equippedItem) : null;
-    const fallbackEquipped = fallbackData.equippedSlots[slot.id] ?? null;
-
-    descriptors.push({
-      slotId: slot.id,
-      slotType: slot.slotType,
-      label: visual?.label ?? slot.id.replace(/_/g, ' '),
-      emptyGlyph: visual?.glyph ?? '🦾',
-      rail,
-      suppressed: slot.suppressed === true,
-      ...(slot.occupiedBySlotId ? { occupiedBySlotId: slot.occupiedBySlotId } : {}),
-      isExtraLimb: rail === 'extra',
-      equippedItem: liveEquipped ?? fallbackEquipped
-    });
-  }
-
-  if (descriptors.length < 12 && fallbackData.anatomicalSlots) {
-    const existingIds = new Set(descriptors.map((d) => d.slotId));
-    for (const fb of fallbackData.anatomicalSlots) {
-      if (!existingIds.has(fb.slotId)) {
-        descriptors.push(fb);
-      }
-    }
-  }
-
-  return descriptors;
 }
 
 /**
@@ -174,7 +48,7 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
 
   const nameHeading = document.createElement('h3');
   nameHeading.className = 'crpg-section-heading';
-  nameHeading.textContent = identity?.name ?? 'Jestan Millown';
+  nameHeading.textContent = identity?.name ?? 'Adventurer';
   col.appendChild(nameHeading);
 
   const xpRow = document.createElement('div');
@@ -198,7 +72,7 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
   const avatarGlyph = document.createElement('div');
   avatarGlyph.className = 'crpg-portrait-avatar';
   avatarGlyph.textContent =
-    activeMorphologyMode === 'marilith_6arm' ? '🐍' : activeMorphologyMode === 'quadruped_wolf' ? '🐺' : '🧙‍♂️';
+    dndData.anatomyBodyPlan === 'marilith_6arm' ? '🐍' : dndData.anatomyBodyPlan === 'quadruped' ? '🐺' : '🧙‍♂️';
 
   const hpPill = document.createElement('div');
   hpPill.className = 'crpg-portrait-hp-pill';
@@ -215,7 +89,7 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
 
   const alignPill = document.createElement('div');
   alignPill.className = 'crpg-alignment-pill';
-  alignPill.textContent = (dndData.alignment ?? 'neutral_good').toUpperCase().replace(/_/g, ' ');
+  alignPill.textContent = (dndData.alignment ?? 'NG').toUpperCase().replace(/_/g, ' ');
   rightIdentity.appendChild(alignPill);
 
   const raceLine = document.createElement('div');
@@ -246,21 +120,14 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
   split.append(portraitFrame, rightIdentity);
   col.appendChild(split);
 
-  // Reactive Anatomical Paper Doll
+  // Reactive Anatomical Paper Doll driven 100% by live EquipmentComponent
   const pdHost = document.createElement('div');
-  const strScore = evalResult?.dagResult.effectiveAbilities.str?.base ?? DEFAULT_ABILITY_SCORE;
-  const anatomicalSlots = buildLiveAnatomicalSlots(state, playerId);
+  const invData = dndAdapter.getInventoryData({ state, entityId: playerId });
   renderReactivePaperDollWidget(
     pdHost,
     {
-      equippedSlots: {},
-      anatomicalSlots,
-      morphologyLabel: activeMorphologyMode,
-      activeWeaponSetIndex: activeWeaponSet,
-      stashItems: [],
-      currentWeightLbs: DEFAULT_CARRIED_WEIGHT_LBS,
-      maxWeightLbs: strScore * LIGHT_LOAD_PER_STR,
-      goldCurrency: DEFAULT_GOLD_CURRENCY
+      ...invData,
+      activeWeaponSetIndex: activeWeaponSet
     },
     {
       onHoverItem: (item, event) => {
@@ -268,10 +135,8 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
         else hideConsoleItemInspectCard();
       },
       onUnequipItem: (slotId) => {
-        if (activeMorphologyMode === 'live') {
-          queuePlayerIntent(createUnequipItemAction(playerId, slotId));
-          markAllDomainsDirty();
-        }
+        queuePlayerIntent(createUnequipItemAction(playerId, slotId));
+        markAllDomainsDirty();
       },
       onSelectWeaponSet: (idx) => {
         activeWeaponSet = idx;
@@ -291,9 +156,9 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
   const defGrid = document.createElement('div');
   defGrid.className = 'crpg-ac-saves-grid';
   for (const c of [
-    { label: 'Armor Class', value: `${acBreakdown?.fullAC ?? 12}` },
+    { label: 'Armor Class', value: `${acBreakdown?.fullAC ?? 10}` },
     { label: 'Flat-footed', value: `${acBreakdown?.flatFootedAC ?? 10}` },
-    { label: 'Touch', value: `${acBreakdown?.touchAC ?? 12}` },
+    { label: 'Touch', value: `${acBreakdown?.touchAC ?? 10}` },
     { label: 'Fortitude', value: formatSigned(saves?.fort ?? chassis.baseSaves.fort) },
     { label: 'Reflex', value: formatSigned(saves?.ref ?? chassis.baseSaves.ref) },
     { label: 'Will', value: formatSigned(saves?.will ?? chassis.baseSaves.will) }

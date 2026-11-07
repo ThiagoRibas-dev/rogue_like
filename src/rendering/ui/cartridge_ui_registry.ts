@@ -1,6 +1,7 @@
 import { closeTopModal, openModal, toggleModal as toggleModalBase } from '../../core/modal_manager.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import type { RulesetId } from '../../types/ruleset.types.ts';
+import type { UIHotbarModel } from '../../types/ui_adapter.types.ts';
 
 /**
  * Command button contributed by a ruleset cartridge for the HUD Command Dock.
@@ -39,6 +40,7 @@ export interface CartridgeModalDescriptor {
  */
 export interface CartridgeUIDefinition {
   readonly rulesetId: RulesetId;
+  readonly defaultThemeMode?: 'parchment' | 'retro-crt' | undefined;
   readonly onStartNewGame?: ((state: GameState) => GameState) | undefined;
   readonly dockCommands?: ReadonlyArray<CartridgeDockCommandDescriptor> | undefined;
   readonly projectHudAlerts?:
@@ -46,6 +48,11 @@ export interface CartridgeUIDefinition {
   readonly renderHudPanel?: ((container: HTMLElement, state: GameState, playerId: EntityId) => void) | undefined;
   readonly renderInspectorExtension?:
     ((container: HTMLElement, state: GameState, targetId: EntityId) => boolean) | undefined;
+  readonly getHotbarData?: ((state: GameState, playerId: EntityId, activeBank?: number) => UIHotbarModel) | undefined;
+  readonly onToggleStance?: ((state: GameState, playerId: EntityId, stanceId: string) => void) | undefined;
+  readonly onStepStance?: ((state: GameState, playerId: EntityId, stanceId: string, delta: number) => void) | undefined;
+  readonly onExecuteHotbarSlot?:
+    ((state: GameState, playerId: EntityId, slotIndex: number, activeBank: number) => void) | undefined;
   readonly modals: Readonly<Record<string, CartridgeModalDescriptor>>;
 }
 

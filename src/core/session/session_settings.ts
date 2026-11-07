@@ -88,6 +88,7 @@ export function bindSettingsControls(): void {
   bindSetting('setting-status-text', 'showStatusText', 'visualFeedback');
   bindSetting('setting-danger-telegraphs', 'showDangerTelegraphs', 'visualFeedback');
   bindSetting('setting-ui-scale', 'uiScale', 'accessibility', false);
+  bindSetting('setting-console-theme', 'consoleThemePreference', 'accessibility', false);
   bindSetting('setting-high-contrast', 'highContrast', 'accessibility');
   bindSetting('setting-disable-animations', 'disableAnimations', 'accessibility');
 

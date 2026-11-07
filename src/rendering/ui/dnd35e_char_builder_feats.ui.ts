@@ -91,7 +91,8 @@ export function renderSharedFeatsStep(
   const filterBar = document.createElement('div');
   filterBar.className = 'dnd35-filter-bar';
   const summaryStrong = document.createElement('strong');
-  summaryStrong.style.color = config.selectedFeatIds.length >= config.totalSlots ? '#2ecc71' : '#f1c40f';
+  summaryStrong.style.color =
+    config.selectedFeatIds.length >= config.totalSlots ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-gold, #f1c40f)';
   summaryStrong.textContent = config.slotSummaryLabel;
   filterBar.appendChild(summaryStrong);
 
@@ -112,7 +113,7 @@ export function renderSharedFeatsStep(
     fBtn.className = 'modal-btn';
     fBtn.style.padding = '3px 7px';
     fBtn.style.fontSize = '0.72rem';
-    fBtn.style.borderColor = featFilterMode === fm.id ? '#f1c40f' : 'var(--border-color)';
+    fBtn.style.borderColor = featFilterMode === fm.id ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
     fBtn.textContent = fm.label;
     fBtn.addEventListener('click', () => {
       featFilterMode = fm.id;

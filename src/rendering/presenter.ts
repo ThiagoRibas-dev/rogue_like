@@ -11,7 +11,7 @@ import { renderInspectView } from './ui/inspect_view.ui.ts';
 import { renderVFXAndFogOverlay } from './ui/vfx_overlay.ui.ts';
 import { renderTacticalOverlay } from './ui/tactical_overlay.ui.ts';
 import { renderMessageLog, renderPlayerStats, updateHUD } from './ui/hud.ui.ts';
-import { renderHudPaperdoll } from './ui/hud_paperdoll.ui.ts';
+import { renderHudBottomDock } from './ui/hud_bottom_dock.ui.ts';
 import { renderHudAlerts } from './ui/hud_alerts.ui.ts';
 import { renderHudDock } from './ui/hud_dock.ui.ts';
 import { renderInventoryPanel } from './ui/inventory.ui.ts';
@@ -143,7 +143,7 @@ export function renderPresenterFrame(
   if (dirtyDomains.has(PresentationDomain.HUD)) {
     renderPlayerStats(state);
     updateHUD(state);
-    renderHudPaperdoll(state);
+    renderHudBottomDock(state);
     renderHudAlerts(state);
     renderHudDock(state);
     const cartridgeSlot = document.getElementById('hud-cartridge-panel-slot');
@@ -168,7 +168,6 @@ export function renderPresenterFrame(
   // Inventory & Equipment
   if (dirtyDomains.has(PresentationDomain.Inventory)) {
     renderInventoryPanel(state);
-    renderHudPaperdoll(state);
   }
 
   // Modals & Overlays

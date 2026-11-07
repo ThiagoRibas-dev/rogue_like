@@ -107,6 +107,32 @@ export function setConsoleThemeMode(mode: ConsoleThemeMode): void {
 }
 
 /**
+ * Synchronizes the global console theme based on user settings and cartridge defaults.
+ *
+ * @param cartridgeDefaultMode The active cartridge's default theme mode.
+ * @param userPreference Optional user preference override ('auto', 'parchment', 'retro-crt').
+ * @returns Applied ConsoleThemeMode.
+ */
+export function syncGlobalConsoleTheme(
+  cartridgeDefaultMode: ConsoleThemeMode = 'parchment',
+  userPreference: 'auto' | ConsoleThemeMode = 'auto'
+): ConsoleThemeMode {
+  const targetMode = userPreference === 'auto' ? cartridgeDefaultMode : userPreference;
+  setConsoleThemeMode(targetMode);
+  return targetMode;
+}
+
+/**
+ * Applies the console theme data attribute to a specific container element.
+ *
+ * @param container Target HTML container element.
+ * @param mode Target theme mode.
+ */
+export function applyConsoleTheme(container: HTMLElement, mode: ConsoleThemeMode): void {
+  container.setAttribute('data-console-theme', mode);
+}
+
+/**
  * Registers a listener callback for theme change events.
  *
  * @param listener Function called on theme updates.
