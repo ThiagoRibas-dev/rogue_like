@@ -64,41 +64,40 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
   }
   col.appendChild(xpRow);
 
-  const split = document.createElement('div');
-  split.className = 'crpg-identity-split';
-
-  const portraitFrame = document.createElement('div');
-  portraitFrame.className = 'crpg-portrait-frame';
-  const avatarGlyph = document.createElement('div');
-  avatarGlyph.className = 'crpg-portrait-avatar';
-  avatarGlyph.textContent =
-    dndData.anatomyBodyPlan === 'marilith_6arm' ? '🐍' : dndData.anatomyBodyPlan === 'quadruped' ? '🐺' : '🧙‍♂️';
-
-  const hpPill = document.createElement('div');
-  hpPill.className = 'crpg-portrait-hp-pill';
-  const heart = document.createElement('span');
-  heart.className = 'crpg-hp-heart';
-  heart.textContent = '♥';
-  const hpText = document.createElement('span');
-  hpText.textContent = `${fighter?.hp ?? chassis.maxHp}/${fighter?.maxHp ?? chassis.maxHp}`;
-  hpPill.append(heart, hpText);
-  portraitFrame.append(avatarGlyph, hpPill);
-
-  const rightIdentity = document.createElement('div');
-  rightIdentity.className = 'crpg-identity-right';
+  const idRow = document.createElement('div');
+  idRow.className = 'crpg-identity-header-row';
+  idRow.style.display = 'flex';
+  idRow.style.justifyContent = 'space-between';
+  idRow.style.alignItems = 'center';
+  idRow.style.gap = '6px';
+  idRow.style.margin = '4px 0';
 
   const alignPill = document.createElement('div');
   alignPill.className = 'crpg-alignment-pill';
   alignPill.textContent = (dndData.alignment ?? 'NG').toUpperCase().replace(/_/g, ' ');
-  rightIdentity.appendChild(alignPill);
 
   const raceLine = document.createElement('div');
   raceLine.className = 'crpg-race-line';
   raceLine.textContent = `⚥ ${(dndData.raceId ?? 'human').toUpperCase()}`;
-  rightIdentity.appendChild(raceLine);
+
+  const hpPill = document.createElement('div');
+  hpPill.className = 'crpg-portrait-hp-pill';
+  hpPill.style.display = 'inline-flex';
+  hpPill.style.alignItems = 'center';
+  hpPill.style.gap = '4px';
+  const heart = document.createElement('span');
+  heart.className = 'crpg-hp-heart';
+  heart.textContent = '♥';
+  const hpText = document.createElement('span');
+  hpText.textContent = `${fighter?.hp ?? chassis.maxHp}/${fighter?.maxHp ?? chassis.maxHp} HP`;
+  hpPill.append(heart, hpText);
+
+  idRow.append(alignPill, raceLine, hpPill);
+  col.appendChild(idRow);
 
   const attrTable = document.createElement('div');
   attrTable.className = 'crpg-attr-table';
+  attrTable.style.marginBottom = '6px';
   for (const ab of ALL_ABILITY_IDS) {
     const scoreVal = evalResult?.dagResult.effectiveAbilities[ab]?.base ?? DEFAULT_ABILITY_SCORE;
     const modVal = evalResult?.dagResult.effectiveAbilityModifiers[ab] ?? 0;
@@ -116,9 +115,7 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
     row.append(lbl, sc, md);
     attrTable.appendChild(row);
   }
-  rightIdentity.appendChild(attrTable);
-  split.append(portraitFrame, rightIdentity);
-  col.appendChild(split);
+  col.appendChild(attrTable);
 
   // Reactive Anatomical Paper Doll driven 100% by live EquipmentComponent
   const pdHost = document.createElement('div');

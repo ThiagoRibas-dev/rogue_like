@@ -159,6 +159,10 @@ export function toggleRenderMode(state: GameState): void {
   const nextMode = currentlySprites ? 'ascii' : 'sprites';
   const currentSettings = getSettings();
 
+  if (activeDisplayRef) {
+    activeDisplayRef.clear();
+  }
+
   updateSettings({
     visualFeedback: {
       ...currentSettings.visualFeedback,

@@ -97,8 +97,9 @@ export function renderClassStep(
     const tablePreview = document.createElement('div');
     tablePreview.style.fontSize = '0.78rem';
     tablePreview.style.padding = '8px';
-    tablePreview.style.background = 'var(--crpg-bg-card, rgba(0,0,0,0.35))';
-    tablePreview.style.border = '1px solid var(--crpg-border-subtle, #333947)';
+    tablePreview.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
+    tablePreview.style.color = 'var(--crpg-text-main, #261d14)';
+    tablePreview.style.border = '1px solid var(--crpg-border-inner, #a69478)';
     for (const row of activeCls.progression.slice(0, 5)) {
       const rDiv = document.createElement('div');
       const featsStr = row.features.length > 0 ? ` [${row.features.join(', ')}]` : '';

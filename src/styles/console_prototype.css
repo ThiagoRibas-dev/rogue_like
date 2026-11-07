@@ -7,17 +7,24 @@
 #dnd35e-sheet-overlay .modal-content.dnd35-sheet-modal {
   max-width: 1280px;
   width: 97vw;
-  max-height: 95vh;
+  height: 94vh;
+  max-height: 94vh;
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  background: var(--crpg-bg-page);
+  color: var(--crpg-text-main);
+  border: 2px solid var(--crpg-border-gold);
 }
 
 #dnd35e-sheet-body {
   overflow-y: auto;
-  max-height: calc(95vh - 46px);
+  flex: 1;
+  min-height: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 /* --- Theme Variable Palettes --- */
@@ -163,12 +170,21 @@
   box-shadow: 0 0 6px rgba(0, 240, 255, 0.35);
 }
 
+.crpg-prototype-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 /* --- 3-Column Master Dossier Grid --- */
 .crpg-three-col-grid {
   display: grid;
   grid-template-columns: 300px 435px 1fr;
   gap: 10px;
   align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 @media (max-width: 1150px) {

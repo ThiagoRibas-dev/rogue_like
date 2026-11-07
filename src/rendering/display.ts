@@ -47,10 +47,13 @@ export async function configureDisplayForCampaign(
   const useSprites = isEffectiveSpriteMode(campaign);
   const sheets = campaign.theme.spriteSheets;
 
+  display.clear();
+
   if (useSprites) {
     if (sheets && Object.keys(sheets).length > 0) {
       try {
         const { atlas, mergedTileMap, tileWidth, tileHeight } = await compositeAtlas(sheets, basePath);
+        display.clear();
         display.setOptions({
           layout: 'tile',
           tileWidth,
@@ -68,6 +71,7 @@ export async function configureDisplayForCampaign(
     }
 
     const { atlas, mergedTileMap, tileWidth, tileHeight } = buildProceduralSpriteAtlas(campaign);
+    display.clear();
     display.setOptions({
       layout: 'tile',
       tileWidth,

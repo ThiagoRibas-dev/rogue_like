@@ -598,6 +598,10 @@ body[data-no-animations='true'] * {
   flex-direction: column;
   gap: 10px;
   overflow: hidden;
+  background: var(--crpg-bg-page, #dcd2be);
+  color: var(--crpg-text-main, #261d14);
+  border: 2px solid var(--crpg-border-gold, #b88a36);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .dnd35-modal-body {
@@ -620,8 +624,9 @@ body[data-no-animations='true'] * {
 
 .dnd35-pane-left,
 .dnd35-pane-right {
-  border: 1px solid #3c4252;
-  background: rgba(8, 10, 14, 0.78);
+  border: 1px solid var(--crpg-border-inner, #a69478);
+  background: var(--crpg-bg-panel, rgba(232, 224, 207, 0.94));
+  color: var(--crpg-text-main, #261d14);
   padding: 12px;
   overflow-y: auto;
   display: flex;
@@ -637,8 +642,8 @@ body[data-no-animations='true'] * {
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #333947;
+  background: var(--crpg-bg-card, rgba(235, 227, 212, 0.96));
+  border: 1px solid var(--crpg-border-inner, #a69478);
   margin-bottom: 4px;
 }
 
@@ -648,8 +653,9 @@ body[data-no-animations='true'] * {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
-  border: 1px solid #303644;
-  background: rgba(20, 24, 32, 0.75);
+  border: 1px solid var(--crpg-border-inner, #a69478);
+  background: var(--crpg-bg-card, rgba(235, 227, 212, 0.96));
+  color: var(--crpg-text-main, #261d14);
   cursor: pointer;
   transition:
     border-color 0.1s ease,
@@ -657,17 +663,27 @@ body[data-no-animations='true'] * {
 }
 
 .dnd35-list-item:hover {
-  border-color: #6b7488;
-  background: rgba(34, 40, 52, 0.85);
+  border-color: var(--crpg-border-gold, #b88a36);
+  background: rgba(244, 238, 225, 0.98);
 }
 
 .dnd35-list-item.selected {
-  border-color: #f1c40f;
-  background: rgba(241, 196, 15, 0.14);
+  border-color: var(--crpg-border-gold, #b88a36);
+  background: rgba(184, 138, 54, 0.18);
+  font-weight: 700;
 }
 
 .dnd35-list-item.inspected {
-  outline: 1px solid #58a6ff;
+  outline: 2px solid var(--crpg-border-gold, #b88a36);
+}
+
+.dnd35-fullscreen-modal select,
+.dnd35-fullscreen-modal input,
+.dnd35-fullscreen-modal textarea {
+  background: var(--crpg-bg-card, #ebe3d4);
+  color: var(--crpg-text-main, #261d14);
+  border: 1px solid var(--crpg-border-inner, #a69478);
+  font-family: inherit;
 }
 
 .dnd35-counter-group {

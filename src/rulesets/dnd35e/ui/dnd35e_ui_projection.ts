@@ -75,6 +75,34 @@ export const DEFAULT_HUMANOID_SLOTS: ReadonlyArray<UIAnatomicalSlotDescriptor> =
   return { slotId: id, slotType: v.slotType, label: v.label, emptyGlyph: v.glyph, rail: v.rail, equippedItem: null };
 });
 
+const PRIMARY_SLOT_DEFS: Readonly<Record<string, { rail: 'left' | 'right'; label: string; emptyGlyph: string }>> = {
+  head: { rail: 'left', label: 'Head', emptyGlyph: '🪖' },
+  back: { rail: 'left', label: 'Cloak / Back', emptyGlyph: '🧥' },
+  shoulders: { rail: 'left', label: 'Cloak / Back', emptyGlyph: '🧥' },
+  cloak: { rail: 'left', label: 'Cloak / Back', emptyGlyph: '🧥' },
+  finger_0: { rail: 'left', label: 'Ring L', emptyGlyph: '💍' },
+  finger_1: { rail: 'right', label: 'Ring R', emptyGlyph: '💍' },
+  arm_0: { rail: 'left', label: 'Bracers L', emptyGlyph: '🧤' },
+  arm_1: { rail: 'right', label: 'Bracers R', emptyGlyph: '🧤' },
+  arms_0: { rail: 'left', label: 'Bracers L', emptyGlyph: '🧤' },
+  arms_1: { rail: 'right', label: 'Bracers R', emptyGlyph: '🧤' },
+  main_hand: { rail: 'left', label: 'Main Hand', emptyGlyph: '⚔️' },
+  hand_0: { rail: 'left', label: 'Main Hand', emptyGlyph: '⚔️' },
+  hand_1: { rail: 'right', label: 'Off Hand', emptyGlyph: '🗡️' },
+  ammo: { rail: 'left', label: 'Ammo', emptyGlyph: '🏹' },
+  ranged: { rail: 'left', label: 'Ammo', emptyGlyph: '🏹' },
+  neck: { rail: 'right', label: 'Neck', emptyGlyph: '📿' },
+  torso: { rail: 'right', label: 'Armor / Torso', emptyGlyph: '🛡️' },
+  chest: { rail: 'right', label: 'Armor / Torso', emptyGlyph: '🛡️' },
+  armor: { rail: 'right', label: 'Armor / Torso', emptyGlyph: '🛡️' },
+  body: { rail: 'right', label: 'Armor / Torso', emptyGlyph: '🛡️' },
+  waist: { rail: 'right', label: 'Waist / Greaves', emptyGlyph: '🎗️' },
+  belt: { rail: 'right', label: 'Waist / Greaves', emptyGlyph: '🎗️' },
+  foot: { rail: 'right', label: 'Boots', emptyGlyph: '🥾' },
+  feet: { rail: 'right', label: 'Boots', emptyGlyph: '🥾' },
+  off_hand: { rail: 'right', label: 'Off Hand', emptyGlyph: '🗡️' }
+};
+
 /** Projects an ECS item entity into a `UIInventoryItem`. */
 export function mapEntityItemToUI(
   state: GameState,
@@ -127,18 +155,27 @@ export function buildAnatomicalSlotsFromEquipment(
   state?: GameState
 ): ReadonlyArray<UIAnatomicalSlotDescriptor> {
   if (!slots || slots.length === 0) return DEFAULT_HUMANOID_SLOTS;
-  const seenSlotIds = new Set<string>();
+  const occurrenceCount = new Map<string, number>();
+
   return slots.map((slot) => {
-    const visual = SLOT_VISUAL_MAP[slot.id];
-    const isDuplicate = seenSlotIds.has(slot.id);
-    seenSlotIds.add(slot.id);
-    const rail: 'left' | 'right' | 'extra' = !visual || isDuplicate ? 'extra' : visual.rail;
+    const baseType: string = slot.slotType || slot.id.replace(/_\d+$/, '');
+    const count = occurrenceCount.get(baseType) ?? 0;
+    occurrenceCount.set(baseType, count + 1);
+
+    const lookupKey = `${baseType}_${count}`;
+    const mapped = PRIMARY_SLOT_DEFS[lookupKey] ?? (count === 0 ? PRIMARY_SLOT_DEFS[baseType] : undefined);
+    const direct = count === 0 ? SLOT_VISUAL_MAP[slot.id] : undefined;
+
+    const rail = mapped?.rail ?? direct?.rail ?? 'extra';
+    const label = mapped?.label ?? direct?.label ?? `${baseType.replace(/_/g, ' ')} ${count + 1}`;
+    const emptyGlyph = mapped?.emptyGlyph ?? direct?.glyph ?? '🦾';
+
     const equippedItem = state && slot.equippedItem !== null ? mapEntityItemToUI(state, slot.equippedItem, true) : null;
     return {
       slotId: slot.id,
       slotType: slot.slotType,
-      label: visual?.label ?? slot.id.replace(/_/g, ' '),
-      emptyGlyph: visual?.glyph ?? SLOT_VISUAL_MAP[slot.slotType]?.glyph ?? '🦾',
+      label,
+      emptyGlyph,
       rail,
       suppressed: slot.suppressed === true,
       ...(slot.occupiedBySlotId ? { occupiedBySlotId: slot.occupiedBySlotId } : {}),

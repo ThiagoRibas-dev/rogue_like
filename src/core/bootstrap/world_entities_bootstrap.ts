@@ -15,6 +15,7 @@ import { clearModals } from '../modal_manager.ts';
 import { resetAutoPauseTracking } from '../auto_pause.ts';
 import { loadGame } from '../save.ts';
 import { addActor, clearScheduler, initEngine, startEngine } from '../scheduler.ts';
+import { updateExploredTiles } from '../../systems/map.system.ts';
 
 const POTION_DESCRIPTORS = [
   'Red',
@@ -197,7 +198,8 @@ export async function continueGame(setGlobalState: (s: GameState) => void): Prom
       }
     }
 
-    setGlobalState(state);
+    const withFov = updateExploredTiles(state);
+    setGlobalState(withFov);
     startEngine();
   }
 }

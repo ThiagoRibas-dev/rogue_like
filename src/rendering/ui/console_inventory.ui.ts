@@ -12,6 +12,7 @@ export interface ConsoleInventoryData {
   readonly equippedSlots: Readonly<Record<string, UIInventoryItem | null>>;
   readonly anatomicalSlots?: ReadonlyArray<UIAnatomicalSlotDescriptor> | undefined;
   readonly morphologyLabel?: string | undefined;
+  readonly avatarGlyph?: string | undefined;
   readonly activeWeaponSetIndex: number;
   readonly stashItems: ReadonlyArray<UIInventoryItem>;
   readonly currentWeightLbs: number;
@@ -115,12 +116,13 @@ export function renderReactivePaperDollWidget(
   const figure = document.createElement('div');
   figure.className = 'crpg-avatar-silhouette';
   const extraLimbs = slots.filter((x) => x.rail === 'extra');
-  figure.textContent = extraLimbs.length >= 3 ? '🐍' : slots.some((x) => x.suppressed) ? '🐺' : '🤺';
+  figure.textContent =
+    data.avatarGlyph ?? (extraLimbs.length >= 3 ? '🐍' : slots.some((x) => x.suppressed) ? '🐺' : '🤺');
 
-  const mainWeapon = slots.find((x) => x.slotId === 'main_hand')?.equippedItem;
+  const mainWeapon = slots.find((x) => x.slotId === 'main_hand' || x.slotType === 'main_hand')?.equippedItem;
   const figureCap = document.createElement('div');
   figureCap.className = 'crpg-avatar-caption';
-  figureCap.textContent = mainWeapon?.name ?? data.morphologyLabel ?? 'Unarmed';
+  figureCap.textContent = mainWeapon?.name ?? 'Unarmed';
   avatarStage.append(figure, figureCap);
 
   const bottomStrip = document.createElement('div');

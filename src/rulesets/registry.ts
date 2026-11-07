@@ -124,11 +124,19 @@ export {
 } from './dnd35e/progression.ts';
 export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
 export {
+  computeClassLevelSlotSummaries,
+  getSpontaneousConversionTargets,
+  reconcilePreparedSlots,
+  type SpellLevelSlotSummary
+} from './dnd35e/magic/spellbook_slots.ts';
+export {
   ALL_ABILITY_IDS,
   type AbilityId,
   type DnD35ActionBudget,
   type DnD35Alignment,
+  type DnD35ClassSpellbookState,
   type DnD35EntityData,
+  type DnD35PreparedSlotEntry,
   type DnD35SpellSchool
 } from './dnd35e/types/dnd35e.types.ts';
 export {

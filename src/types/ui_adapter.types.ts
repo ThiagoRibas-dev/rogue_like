@@ -143,6 +143,7 @@ export interface UIInventoryModel {
   readonly equippedSlots: Readonly<Record<string, UIInventoryItem | null>>;
   readonly anatomicalSlots?: ReadonlyArray<UIAnatomicalSlotDescriptor>;
   readonly morphologyLabel?: string;
+  readonly avatarGlyph?: string;
   readonly activeWeaponSetIndex: number;
   readonly stashItems: ReadonlyArray<UIInventoryItem>;
   readonly currentWeightLbs: number;

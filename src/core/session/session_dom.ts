@@ -15,6 +15,8 @@ import { applyCartridgeNewGameHook } from '../../rendering/ui/cartridge_ui_regis
 import type { RulesetId } from '../../types/ruleset.types.ts';
 import { getAllRulesets, getRuleset } from '../../rulesets/registry.ts';
 import { syncDisplayLayout } from '../../rendering/display.ts';
+import { invalidateViewportSnapshot } from '../../rendering/presenter.ts';
+import { markAllDomainsDirty } from '../presentation_queue.ts';
 import {
   createToggleEngineModeAction,
   createTogglePauseAction,
@@ -168,6 +170,8 @@ export function bindDOMControls(display: ROT.Display): void {
     continueGame((newState) => {
       syncDisplayLayout(display, newState);
       setGameState(newState);
+      invalidateViewportSnapshot();
+      markAllDomainsDirty();
     }).catch((err) => {
       if (err instanceof CampaignNotFoundError) {
         alert(`Failed to load save game: ${err.message}\n\nPlease reinstall the missing campaign or start a new game.`);

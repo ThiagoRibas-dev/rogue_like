@@ -7,6 +7,8 @@
 import { getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
+import { invalidateViewportSnapshot } from '../presenter.ts';
+import { updateExploredTiles } from '../../systems/map.system.ts';
 import {
   applyCharacterCreationToPlayer,
   type CharacterCreationDraft,
@@ -278,8 +280,10 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
   quickBtn.className = 'modal-btn';
   quickBtn.textContent = '⚡ Quick Start Default Hero';
   quickBtn.addEventListener('click', () => {
-    const nextState = applyCharacterCreationToPlayer(state, playerId, createQuickStartHeroDraft());
+    let nextState = applyCharacterCreationToPlayer(state, playerId, createQuickStartHeroDraft());
+    nextState = updateExploredTiles(nextState);
     setGameState(closeCartridgeModal(nextState));
+    invalidateViewportSnapshot();
     markAllDomainsDirty();
   });
 
@@ -321,8 +325,10 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     finishBtn.disabled = !allStepsValid;
     finishBtn.addEventListener('click', () => {
       if (!allStepsValid) return;
-      const nextState = applyCharacterCreationToPlayer(state, playerId, draftState);
+      let nextState = applyCharacterCreationToPlayer(state, playerId, draftState);
+      nextState = updateExploredTiles(nextState);
       setGameState(closeCartridgeModal(nextState));
+      invalidateViewportSnapshot();
       markAllDomainsDirty();
     });
     navRight.appendChild(finishBtn);

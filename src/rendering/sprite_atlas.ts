@@ -80,6 +80,14 @@ export async function compositeAtlas(
   ctx.fillRect(0, yOffset, tileWidth, tileHeight);
   mergedTileMap['__fallback__'] = [0, yOffset];
 
+  // Map common ASCII glyphs to fallback coordinate to ensure ROT.Display.Tile.draw never throws
+  const fallbackGlyphs = ['#', '.', '+', '@', '?', ' ', '<', '>', '%', '^', '*', '$', '!', '/', '\\'];
+  for (const glyph of fallbackGlyphs) {
+    if (!mergedTileMap[glyph]) {
+      mergedTileMap[glyph] = [0, yOffset];
+    }
+  }
+
   return { atlas, mergedTileMap, tileWidth, tileHeight };
 }
 

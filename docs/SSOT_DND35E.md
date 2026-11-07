@@ -9,9 +9,9 @@
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
 - [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (2 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
 - [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (12 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
-- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (5 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
+- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (6 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
 - [D&D 3.5e: Ruleset Types & Schemas (8 files)](#d-d-3-5e-ruleset-types-schemas)
-- [D&D 3.5e: Tactical UI & Character Sheet (26 files)](#d-d-3-5e-tactical-ui-character-sheet)
+- [D&D 3.5e: Tactical UI & Character Sheet (29 files)](#d-d-3-5e-tactical-ui-character-sheet)
 
 ---
 
@@ -129,7 +129,7 @@
 
 ## D&D 3.5e: Layer 6 — Vancian Magic & Fields
 
-**Modules in this domain:** 5
+**Modules in this domain:** 6
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -137,6 +137,7 @@
 | `src/rulesets/dnd35e/magic/metamagic_dispel.ts` | `tier2_cartridge` | Evaluates Metamagic slot-level adjustments, casting time extensions, and Dispel Magic / Counterspell checks. | `resolveCounterspellAttempt` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/metamagic_dispel.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/metamagic_dispel.ts. |
 | `src/rulesets/dnd35e/magic/spell_effects.ts` | `tier2_cartridge` | Projects semantic spell effect tags, evaluates CL scaling rules, filters tag-conditioned effect units, materializes StatModifiers with hierarchical provenance, and projects active tether tags. | `projectSpellEffectTags`, `evaluateSpellScalingRule`, `evaluateSpellEffectUnitsForTarget`, `materializeSpellUnitModifiers`, `materializeTopLevelSpellModifiers`, `projectActiveSpellTetherTags` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_effects.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_effects.ts. |
 | `src/rulesets/dnd35e/magic/spell_modifiers.ts` | `tier2_cartridge` | Resolves effective caster level and materializes summoned creature stat modifiers with hierarchical provenance. | `resolveSpellEffectiveCasterLevel`, `materializeSummonedCreatureModifiers` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_modifiers.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_modifiers.ts. |
+| `src/rulesets/dnd35e/magic/spellbook_slots.ts` | `tier2_cartridge` | Computes Level 0..9 slot matrices, ability bonus slots, specialist school slots, domain bonus slots, and spontaneous conversion targets. | `computeClassLevelSlotSummaries`, `reconcilePreparedSlots`, `getSpontaneousConversionTargets` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spellbook_slots.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellbook_slots.ts. |
 | `src/rulesets/dnd35e/magic/spellcasting.ts` | `tier2_cartridge` | Minimum ability score base (`10 + spellLevel`) required to cast a spell of that level. | `CapabilityRuleDescriptor`, `CAPABILITY_RULES`, `PreparedSpellSlot`, `canCastSpellOfLevel`, `computeBonusSpellSlots`, `convertPreparedSlotSpontaneously`, `CastResolutionParams`, `CastResolutionResult` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spellcasting.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellcasting.ts. |
 
 ## D&D 3.5e: Ruleset Types & Schemas
@@ -156,7 +157,7 @@
 
 ## D&D 3.5e: Tactical UI & Character Sheet
 
-**Modules in this domain:** 26
+**Modules in this domain:** 29
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -181,9 +182,12 @@
 | `src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts` | `tier2_ui` | Renders the Character Sheet Skills table with ranks, modifiers, and interactive Use Skill buttons. | `renderSheetSkillsTab` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts. |
 | `src/rendering/ui/dnd35e_sheet.ui.ts` | `tier2_ui` | 7-tab Heroic Character Sheet modal orchestrating Overview, Progression, Equipment Paper Doll, Skills, Feats, Special Abilities, and Conditions. | `renderDnD35eSheetModal` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts. |
 | `src/rendering/ui/dnd35e_spellbook_actions.ts` | `tier2_ui` | State mutations for Vancian spell slot preparation, unpreparation, and 8-hour rest recovery. | `prepareSpellIntoSlot`, `unprepareSpellSlot`, `executeEightHourRest`, `applyRestAction` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_actions.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_actions.ts. |
+| `src/rendering/ui/dnd35e_spellbook_known.ui.ts` | `tier2_ui` | Renders known spells list and action buttons for the Spellbook modal. | `renderKnownSpellsPane` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_known.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_known.ui.ts. |
+| `src/rendering/ui/dnd35e_spellbook_panes.ui.ts` | `tier2_ui` | Renders prepared slots and spontaneous daily casts matrix panes for the Spellbook modal. | `renderPreparedSlotsPane`, `renderSpontaneousSlotsPane` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_panes.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_panes.ui.ts. |
 | `src/rendering/ui/dnd35e_spellbook.ui.ts` | `tier2_ui` | Class-tabbed Vancian Spellbook & Grimoire modal displaying prepared spell slots, known spells, and 8-hour rest actions. | `renderDnD35eSpellbookModal` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_spellbook.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook.ui.ts. |
 | `src/rendering/ui/dnd35e_ui_adapter.ts` | `tier2_ui` | Registers the D&D 3.5e CartridgeUIDefinition (modals, dock commands, HUD alerts, and doctrine panel hook) into the Console UI Registry. | `renderDnD35eSheetModal`, `renderDnD35eSpellbookModal`, `dnd35eUIDefinition`, `registerDnD35eUIAdapter` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_ui_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_adapter.ts. |
 | `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts` | `tier2_ui` | Implements ICartridgeUIAdapter for D&D 3.5e actors, converting DnD35EntityData into unified Console UI models. | `DnD35UIAdapter` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts. |
+| `src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts` | `tier2_ui` | Projects D&D 3.5e entity stats and state into the unified UICharacterSheetModel. | `projectCharacterSheetData`, `extractActorContext` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts. |
 | `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` | `tier2_ui` | Pure hotbar and stance-mode projection helpers for the D&D 3.5e Cartridge UI Adapter. | `ACTIVE_SKILL_IDS`, `buildActorStanceModes`, `buildActorHotbarSlots`, `DND35E_ACTION_PIPS` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts. |
 | `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts` | `tier2_ui` | Pure projection helpers converting live ECS equipment slots, strikes, and feature entries into Tier 1 Console UI models. | `buildAnatomicalSlotsFromEquipment`, `buildAttackGroupsFromStrikes`, `buildActorFeatureEntries`, `mapEntityItemToUI` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts. |
 

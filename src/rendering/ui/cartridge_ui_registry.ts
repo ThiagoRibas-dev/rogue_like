@@ -121,6 +121,9 @@ export function openCartridgeModal(state: GameState, modalId: string): GameState
  * @returns Updated GameState.
  */
 export function closeCartridgeModal(state: GameState): GameState {
+  if (state.uiMode === UIMode.Inventory) {
+    return { ...state, uiMode: UIMode.Game };
+  }
   return closeTopModal(state);
 }
 
@@ -158,7 +161,14 @@ export function renderActiveCartridgeModal(state: GameState): void {
   const uiDef = getActiveCartridgeUI(state);
   if (!uiDef) return;
 
-  const activeId = state.uiMode === UIMode.CartridgeModal ? state.activeCartridgeModalId : undefined;
+  const activeId =
+    state.uiMode === UIMode.CartridgeModal
+      ? state.activeCartridgeModalId
+      : state.uiMode === UIMode.Inventory
+        ? uiDef.modals['inventory']
+          ? 'inventory'
+          : 'character_sheet'
+        : undefined;
 
   for (const descriptor of Object.values(uiDef.modals)) {
     if (descriptor.overlayElementId) {

@@ -1,18 +1,24 @@
 /**
- * @file D&D 3.5e Vancian Spellbook & Preparation Grimoire Modal (Milestone 118).
+ * @file D&D 3.5e Vancian Spellbook & Preparation Grimoire Modal (Milestone 118 / Phase 26).
  * Multi-class tabbed grimoire showing Spell Level 0-9 slots, domain bonus slots,
- * prepared spells with cast/unprepare buttons, and 8-hour rest recovery.
+ * prepared spells with cast/unprepare/convert buttons, and 8-hour rest recovery.
  */
 
 import { getComponent } from '../../core/ecs.ts';
-import { setGameState } from '../../core/game-loop.ts';
-import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import { getDnD35EntityData, getDnD35SystemContent } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
-import { applyRestAction, prepareSpellIntoSlot, unprepareSpellSlot } from './dnd35e_spellbook_actions.ts';
+import {
+  computeClassLevelSlotSummaries,
+  getDnD35EntityData,
+  getDnD35SystemContent,
+  reconcilePreparedSlots
+} from '../../rulesets/registry.ts';
+import { applyRestAction } from './dnd35e_spellbook_actions.ts';
+import { renderPreparedSlotsPane, renderSpontaneousSlotsPane } from './dnd35e_spellbook_panes.ui.ts';
+import { renderKnownSpellsPane } from './dnd35e_spellbook_known.ui.ts';
 
 let selectedClassTab: string | undefined;
+let selectedLevelFilter = -1; // -1 = All levels
 
 /**
  * Renders the Vancian Spellbook modal dialog into `#dnd35e-spellbook-body`.
@@ -64,17 +70,39 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     selectedClassTab = classIds[0]!;
   }
 
+  // Compute active book slot summaries
+  let activeBook = classBooks[selectedClassTab]!;
+  const summaries = computeClassLevelSlotSummaries(activeBook, dndData, dndData.abilityScores, sys ?? undefined);
+
+  // Initialize/reconcile preparedSlots if needed
+  if (activeBook.castingMode === 'prepared') {
+    const currentSlots = activeBook.preparedSlots ?? [];
+    if (currentSlots.length === 0) {
+      const reconciled = reconcilePreparedSlots(activeBook, summaries);
+      activeBook = { ...activeBook, preparedSlots: reconciled };
+    }
+  }
+
   // 1. Top Bar: Class Tabs & Rest Action
   const topBar = document.createElement('div');
   topBar.className = 'spellbook-top-bar';
+  topBar.style.display = 'flex';
+  topBar.style.justifyContent = 'space-between';
+  topBar.style.alignItems = 'center';
+  topBar.style.gap = '8px';
+  topBar.style.padding = '8px 12px';
+  topBar.style.background = 'var(--crpg-bg-panel, rgba(232, 224, 207, 0.94))';
+  topBar.style.borderBottom = '1px solid var(--crpg-border-inner, #a69478)';
 
   const tabContainer = document.createElement('div');
   tabContainer.className = 'spellbook-class-tabs';
+  tabContainer.style.display = 'flex';
+  tabContainer.style.gap = '6px';
   for (const cid of classIds) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = cid === selectedClassTab ? 'dnd35-tab-btn active' : 'dnd35-tab-btn';
-    btn.textContent = cid.toUpperCase();
+    btn.textContent = `${cid.toUpperCase()} (${classBooks[cid]!.castingMode})`;
     btn.addEventListener('click', () => {
       selectedClassTab = cid;
       renderDnD35eSpellbookModal(state);
@@ -96,92 +124,100 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
 
   content.appendChild(topBar);
 
-  // 2. Active Class Grimoire Pane
-  const activeBook = classBooks[selectedClassTab]!;
-  const pane = document.createElement('div');
-  pane.className = 'spellbook-grimoire-pane';
+  // 2. Spell Level Filter Strip
+  const filterStrip = document.createElement('div');
+  filterStrip.className = 'spellbook-level-filter-bar';
+  filterStrip.style.display = 'flex';
+  filterStrip.style.gap = '6px';
+  filterStrip.style.padding = '6px 12px';
+  filterStrip.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
+  filterStrip.style.borderBottom = '1px solid var(--crpg-border-inner, #a69478)';
 
-  // Prepared Spell Slots Section
-  const prepSection = document.createElement('div');
-  prepSection.className = 'spellbook-section';
-  const prepTitle = document.createElement('h3');
-  prepTitle.textContent = 'Prepared Spells & Slots';
-  prepSection.appendChild(prepTitle);
+  const allLevelsBtn = document.createElement('button');
+  allLevelsBtn.type = 'button';
+  allLevelsBtn.className = selectedLevelFilter === -1 ? 'dnd35-tab-btn active' : 'dnd35-tab-btn';
+  allLevelsBtn.textContent = 'All Spell Levels';
+  allLevelsBtn.addEventListener('click', () => {
+    selectedLevelFilter = -1;
+    renderDnD35eSpellbookModal(state);
+  });
+  filterStrip.appendChild(allLevelsBtn);
 
-  const prepList = document.createElement('div');
-  prepList.className = 'sheet-cards-list';
-  if (activeBook.preparedSpellIds.length === 0) {
-    const emptyPrep = document.createElement('div');
-    emptyPrep.className = 'status-empty';
-    emptyPrep.textContent = 'No spells currently prepared.';
-    prepList.appendChild(emptyPrep);
+  for (const sum of summaries) {
+    if (!sum.canCast) continue;
+    const lvlBtn = document.createElement('button');
+    lvlBtn.type = 'button';
+    lvlBtn.className = selectedLevelFilter === sum.spellLevel ? 'dnd35-tab-btn active' : 'dnd35-tab-btn';
+    lvlBtn.textContent = `Level ${sum.spellLevel} (${sum.totalSlots} slots • DC ${sum.saveDc})`;
+    lvlBtn.addEventListener('click', () => {
+      selectedLevelFilter = sum.spellLevel;
+      renderDnD35eSpellbookModal(state);
+    });
+    filterStrip.appendChild(lvlBtn);
+  }
+  content.appendChild(filterStrip);
+
+  // 3. Main 2-Pane Grimoire Stage
+  const mainStage = document.createElement('div');
+  mainStage.className = 'dnd35-two-pane-stage';
+  mainStage.style.flex = '1';
+  mainStage.style.minHeight = '0';
+  mainStage.style.padding = '12px';
+  mainStage.style.gap = '12px';
+
+  // Left Pane: Prepared Slots (or Spontaneous Casts Matrix)
+  const leftPane = document.createElement('div');
+  leftPane.className = 'dnd35-pane-left';
+  leftPane.style.overflowY = 'auto';
+
+  const leftTitle = document.createElement('h3');
+  leftTitle.className = 'crpg-section-heading';
+  leftTitle.textContent =
+    activeBook.castingMode === 'prepared' ? 'Memorized Spell Slots' : 'Daily Spell Casts Remaining';
+  leftPane.appendChild(leftTitle);
+
+  const filteredSummaries = summaries.filter(
+    (s) => s.canCast && (selectedLevelFilter === -1 || s.spellLevel === selectedLevelFilter)
+  );
+
+  if (activeBook.castingMode === 'prepared') {
+    renderPreparedSlotsPane(
+      leftPane,
+      state,
+      playerId,
+      selectedClassTab,
+      activeBook,
+      filteredSummaries,
+      spellRegistry,
+      dndData,
+      sys ?? undefined
+    );
   } else {
-    activeBook.preparedSpellIds.forEach((spId, idx) => {
-      const spDef = spellRegistry[spId];
-      const row = document.createElement('div');
-      row.className = 'sheet-detail-card spell-slot-card';
-
-      const label = document.createElement('strong');
-      label.textContent = spDef?.name ?? spId;
-      row.appendChild(label);
-
-      const unprepBtn = document.createElement('button');
-      unprepBtn.type = 'button';
-      unprepBtn.className = 'skill-use-btn';
-      unprepBtn.textContent = 'Unprepare';
-      unprepBtn.addEventListener('click', () => {
-        const next = unprepareSpellSlot(state, playerId, selectedClassTab!, idx);
-        setGameState(next);
-        markAllDomainsDirty();
-      });
-      row.appendChild(unprepBtn);
-
-      prepList.appendChild(row);
-    });
+    renderSpontaneousSlotsPane(leftPane, activeBook, filteredSummaries);
   }
-  prepSection.appendChild(prepList);
-  pane.appendChild(prepSection);
 
-  // Known / Available Spells to Prepare Section
-  const knownSection = document.createElement('div');
-  knownSection.className = 'spellbook-section';
-  const knownTitle = document.createElement('h3');
-  knownTitle.textContent = 'Known Spells (Click to Prepare)';
-  knownSection.appendChild(knownTitle);
+  // Right Pane: Available / Known Spells by Level
+  const rightPane = document.createElement('div');
+  rightPane.className = 'dnd35-pane-right';
+  rightPane.style.overflowY = 'auto';
 
-  const knownList = document.createElement('div');
-  knownList.className = 'sheet-cards-list';
-  for (const spId of activeBook.knownSpellIds) {
-    const spDef = spellRegistry[spId];
-    const row = document.createElement('div');
-    row.className = 'sheet-detail-card spell-slot-card';
+  const rightTitle = document.createElement('h3');
+  rightTitle.className = 'crpg-section-heading';
+  rightTitle.textContent = activeBook.castingMode === 'prepared' ? 'Known Spells & Prayerbook' : 'Known Spells';
+  rightPane.appendChild(rightTitle);
 
-    const info = document.createElement('div');
-    const nameStrong = document.createElement('strong');
-    nameStrong.textContent = spDef?.name ?? spId;
-    info.appendChild(nameStrong);
+  renderKnownSpellsPane(
+    rightPane,
+    state,
+    playerId,
+    selectedClassTab,
+    activeBook,
+    filteredSummaries,
+    spellRegistry,
+    dndData,
+    sys ?? undefined
+  );
 
-    const lvlBadge = document.createElement('span');
-    lvlBadge.className = 'badge-feat';
-    lvlBadge.textContent = ` Scroll/School: ${spDef?.school ?? 'universal'}`;
-    info.appendChild(lvlBadge);
-    row.appendChild(info);
-
-    const prepBtn = document.createElement('button');
-    prepBtn.type = 'button';
-    prepBtn.className = 'skill-use-btn';
-    prepBtn.textContent = 'Prepare';
-    prepBtn.addEventListener('click', () => {
-      const next = prepareSpellIntoSlot(state, playerId, selectedClassTab!, spId);
-      setGameState(next);
-      markAllDomainsDirty();
-    });
-    row.appendChild(prepBtn);
-
-    knownList.appendChild(row);
-  }
-  knownSection.appendChild(knownList);
-  pane.appendChild(knownSection);
-
-  content.appendChild(pane);
+  mainStage.append(leftPane, rightPane);
+  content.appendChild(mainStage);
 }

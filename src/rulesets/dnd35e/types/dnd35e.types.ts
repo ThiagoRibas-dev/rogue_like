@@ -109,6 +109,18 @@ export interface DnD35CharacterLevelRecord {
   readonly animalCompanionId?: string | undefined;
 }
 
+/** Kind of spell slot available in D&D 3.5e Grimoires. */
+export type DnD35SpellSlotKind = 'general' | 'domain' | 'specialist';
+
+/** Structured prepared spell slot entry for a specific spell level. */
+export interface DnD35PreparedSlotEntry {
+  readonly slotId: string;
+  readonly spellLevel: number;
+  readonly slotKind: DnD35SpellSlotKind;
+  readonly preparedSpellId?: string | undefined;
+  readonly expended: boolean;
+}
+
 /** Per-class isolated spellbook / spellcasting state for multiclass casters. */
 export interface DnD35ClassSpellbookState {
   readonly classId: string;
@@ -122,6 +134,8 @@ export interface DnD35ClassSpellbookState {
   readonly preparedSpellIds: ReadonlyArray<string>;
   readonly spellsPerDay: Readonly<Record<string, number>>;
   readonly domainSpellSlots?: Readonly<Record<string, number>> | undefined;
+  readonly preparedSlots?: ReadonlyArray<DnD35PreparedSlotEntry> | undefined;
+  readonly spontaneousSlotsUsedByLevel?: Readonly<Record<string, number>> | undefined;
 }
 
 /** Aggregated progression chassis computed across all racial HD and class tracks. */

@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated Implementation Plan for Milestone 119 (D&D 3.5e Feature-Driven Progression & Tagged Companion Architecture), incorporating all newly discovered JSON gaps (weasel familiar schema, ranger static favored_enemy_1 modifier fix, rogue bonusFeatPool, cleric_domains), Sorcerer/Abrupt Jaunt ACF reactivity, builder_prereq_context.ts cascade, registry/SSOT cleanup, and 4-Stage Stat DAG evaluation for companions.",
-  "updatedAt":  "2026-11-07T21:21:59.977978872Z",
+  "summary":  "Step-by-step implementation plan with Cascading Effects Matrix, SSOT Ownership Table, and code diffs for the 6 playtest fixes (Parchment theme unification, Inventory 'I' modal fix, Character Dossier Paper Doll & single-avatar cleanup, Game Load FOV update, Level 0-9 Vancian/Spontaneous/Domain/Specialist Spellbook overhaul, and 2D Tile Mode toggle crash fix).",
+  "updatedAt":  "2026-11-07T22:55:52.246916492Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

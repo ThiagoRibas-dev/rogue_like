@@ -173,7 +173,7 @@ export function renderSharedFeatsStep(
     if (isTargeted) {
       targetSelect = document.createElement('select');
       targetSelect.style.cssText =
-        'padding: 2px 4px; font-size: 0.72rem; margin-right: 4px; background: var(--crpg-bg-card, #222); color: inherit; border: 1px solid var(--border-color);';
+        'padding: 2px 4px; font-size: 0.72rem; margin-right: 4px; background: var(--crpg-bg-card, #ebe3d4); color: var(--crpg-text-main, #261d14); border: 1px solid var(--crpg-border-inner, #a69478);';
       const tCat = feat.repeatable?.targetCategory;
       const opts =
         tCat === 'weapon' ? TARGETED_WEAPONS : tCat === 'school' ? TARGETED_SCHOOLS : Object.keys(sys.skills ?? {});
