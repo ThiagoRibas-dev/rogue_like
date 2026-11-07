@@ -1,223 +1,45 @@
-# Research Notes — Milestones 114 & 115: Complete SRD Feat Registry, Combat Chains, Metamagic Trees, SRD Equipment/Magic Item Compendium & Data-Driven Weapon Profile Parser
+# Research Notes — Milestone 121: Feature-Driven Progression & Tagged Companion Architecture
 
-**Date:** 2026-11-05  
-**Status:** Revised & Complete (Kickoff Flow Step 3: Research Gate)  
-**Author:** AI Agent & User  
-**Milestones:** 114 & 115 (Phase 24: D&D 3.5e System Content Pillars 3 & 5)  
-**Canonical Rules Reference:** `docs/MILESTONES.md#L1592-L1635`, `docs/ARCHITECTURE.md`, `AGENTS.md` (§0 Golden Rules 1–20), `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`
-
----
-
-## 1. Executive Summary & Objectives
-
-The joint objective of **Milestones 114 and 115** is to establish the complete System Content (Tier 3) catalogs for SRD Feats (`public/data/rulesets/dnd35e/feats/<id>.json`) and SRD Equipment, Weapons, Armors, Special Materials, and Magic Items (`public/data/rulesets/dnd35e/items/<id>.json`), while refactoring all hardcoded item-ID and feat-ID heuristics in Tier 2 ruleset resolvers (`weapon_profile_parser.ts`, `semantic_tags.ts`, `ledger_modifiers.ts`, `dnd35e_dag_adapter.ts`, `attack_routine.ts`, and `stacking_engine.ts`) into 100% data-driven Effect Providers and structured item schemas with hierarchical `sourcePath` provenance.
+## 1. Objective & Architectural Mandate
+Per `AGENTS.md` Rules 12, 16, 17, 18, 19, and 20, baseline ruleset resolvers, character builders, and UI projections must never hardcode `if (classId === 'druid')`, `if (level === 2)`, or magic progression arrays (`RANGER_FAVORED_ENEMY_UPGRADE_LEVELS = [5, 10, 15, 20]`). Instead:
+- **Progression Choices & Grants** must derive strictly from active class features (`collectClassFeaturesUpToLevel(classDef, classLevel, acfIds)`), feature prefixes (`favored_enemy_`, `rogue_special_ability_`, `cleric_domains`, `arcane_school_specialization`, `combat_style`, `improved_combat_style`, `combat_style_mastery`), and `scalingPoolContribution` metadata (`animal_companion_effective_level`, `familiar_master_effective_level`).
+- **Alternate Class Features (ACFs)** that replace a baseline feature automatically suppress the replaced feature's UI picker, validation requirement, and mechanical grant without custom `if (acfId === ...)` branches.
+- **Companion / Servant Synchronization** must operate over a generic, tag-driven `companions: ReadonlyArray<DnD35CompanionEntry>` registry (`tags: ['animal_companion', 'familiar', ...]`) and evaluate servant stats through the canonical 4-stage Stat DAG (`evaluateDnD35ActorStatDAG`) rather than manual HP/BAB/AC arithmetic.
 
 ---
 
-## 2. Deep-Dive Audit: Hardcoded Heuristics in `weapon_profile_parser.ts` & `semantic_tags.ts`
+## 2. Audit of Hardcoded Progression Constants & Class-ID Branches
 
-An audit of `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` (284 lines) and `src/rulesets/dnd35e/semantic_tags.ts` (336 lines) revealed **6 hardcoded item-ID substring/equality branches** in `weapon_profile_parser.ts` plus **parallel hardcoded armor substring branches** in `semantic_tags.ts` that were written before the D&D 3.5e item registry existed:
-
-### 2.1 Hardcoded Branches in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`
-1. **Weapon Damage Dice (`lines 175–185`)**:
-   - Currently hardcodes:
-     - `baseItemDef.id === 'longsword' || baseItemDef.id === 'heavy_mace'` $\to$ `'1d8'`
-     - `baseItemDef.id === 'short_sword' || baseItemDef.id === 'quarterstaff'` $\to$ `'1d6'`
-     - `baseItemDef.id.includes('dagger') || baseItemDef.id.includes('knife')` $\to$ `'1d4'`
-     - `baseItemDef.id.includes('greatsword')` $\to$ `'2d6'`
-     - `baseItemDef.id.includes('bastard_sword') || baseItemDef.id.includes('dwarven_waraxe')` $\to$ `'1d10'`
-   - **Data-Driven Replacement**: Read `itemDef.weaponStats.damageDice` (default Medium damage dice, e.g. `'1d8'`, `'2d6'`, `'1d10'`) directly from the validated `DnD35ItemDefinitionSchema`, falling back to `weaponDice:` tag only for legacy test fixtures.
-2. **Weapon Damage Type (`lines 190–200`)**:
-   - Currently hardcodes:
-     - `baseItemDef.id.includes('mace') || baseItemDef.id.includes('staff')` $\to$ `'bludgeoning'`
-     - `baseItemDef.id.includes('short_sword') || baseItemDef.id.includes('dagger')` $\to$ `'piercing'`
-     - `baseItemDef.id.includes('longsword')` $\to$ `'slashing'`
-   - **Data-Driven Replacement**: Read `itemDef.weaponStats.damageType` (`'bludgeoning' | 'piercing' | 'slashing'`) and `secondaryDamageTypes` (for weapons like *morningstar* `[bludgeoning, piercing]` or *halberd* `[piercing, slashing]`).
-3. **Critical Threat Range & Multiplier (`lines 202–218`)**:
-   - Currently hardcodes `baseItemDef.id === 'longsword' || baseItemDef.id === 'short_sword' || baseItemDef.id.includes('dagger')` $\to$ `19`.
-   - **Data-Driven Replacement**: Read `itemDef.weaponStats.critThreatMin` (default `20`, `19` for 19–20, `18` for 18–20) and `itemDef.weaponStats.critMultiplier` (default `2`, `3` for $\times 3$, `4` for $\times 4$). Furthermore, apply *Keen* (`magicalProperties.keen === true`) or *Improved Critical* (`ruleOverrides: [{ ruleKey: 'double_crit_threat_range', value: true }]`) dynamically to double the threat range (`21 - (21 - critThreatMin) * 2`).
-4. **Handedness / Effort & Special Combat Flags (`lines 220–248`)**:
-   - Currently hardcodes:
-     - `baseItemDef.id.includes('greatsword') || baseItemDef.id.includes('greataxe') || baseItemDef.id.includes('quarterstaff') || baseItemDef.id.includes('staff')` $\to$ `'two_handed'`
-     - `baseItemDef.id.includes('dagger') || baseItemDef.id === 'short_sword'` $\to$ `'light'`
-     - `baseItemDef.id === 'longsword' || baseItemDef.id === 'heavy_mace' || baseItemDef.id.includes('rapier')` $\to$ `'one_handed'`
-     - `isDoubleWeapon`: `baseItemDef.id.includes('quarterstaff') || baseItemDef.id.includes('double_')`
-     - `cannotTwoHandStr`: `baseItemDef.id.includes('rapier')`
-     - `isExotic1HMartial2H`: `baseItemDef.id.includes('bastard_sword') || baseItemDef.id.includes('dwarven_waraxe')`
-   - **Data-Driven Replacement**: Read structured `itemDef.weaponStats`:
-     - `effort: 'light' | 'one_handed' | 'two_handed'`
-     - `proficiencyCategory: 'simple' | 'martial' | 'exotic'`
-     - `weaponCategory: 'unarmed' | 'melee' | 'ranged' | 'thrown'`
-     - `isDoubleWeapon?: boolean`
-     - `isFinesseEligible?: boolean` (for *rapier*, *whip*, *spiked chain*, plus all light weapons)
-     - `cannotTwoHandStr?: boolean` (for *rapier*, *whip*)
-     - `isExotic1HMartial2H?: boolean` (for *bastard sword*, *dwarven waraxe*)
-     - `reachFt?: number` (`10` for reach weapons)
-     - ` strikesAdjacent?: boolean` (`true` for *spiked chain*, `false` for standard reach polearms)
-5. **Dwarven / Racial Weapon Familiarity (`lines 85–89`)**:
-   - Currently hardcodes `weaponItemId.includes('dwarven')` and checks `raceId === 'dwarf' || subtypes.includes('dwarf')`.
-   - **Data-Driven Replacement**: Add `familiaritySubtypes?: string[]` to `DnD35WeaponStatsSchema` (e.g., `familiaritySubtypes: ['dwarf']` on *dwarven waraxe* and *dwarven urgrosh*; `familiaritySubtypes: ['gnome']` on *gnome hooked hammer*). In `evaluateNonproficiencyPenalty`, if `weaponStats.familiaritySubtypes` intersects the actor's `raceId` or `subtypes` (or if the actor has tag `trait:weapon_familiarity:<subtype>`), treat the exotic weapon as martial!
-6. **Unarmed Strike Size Scaling (`lines 96–105`)**:
-   - Currently uses a 7-branch `if / else if` ladder on `wielderSize` (`fine` $\to$ `'1'`, `small` $\to$ `'1d2'`, `medium` $\to$ `'1d3'`, `large` $\to$ `'1d4'`, `huge` $\to$ `'1d6'`, `gargantuan` $\to$ `'1d8'`, `colossal` $\to$ `'2d6'`).
-   - **Data-Driven Replacement**: Author `public/data/rulesets/dnd35e/items/unarmed_strike.json` with `weaponStats.damageDice: '1d3'` (Medium base) and call `scaleWeaponDamageDice('1d3', 'medium', wielderSize)` directly, eliminating the duplicated size ladder.
-
-### 2.2 Parallel Hardcoded Armor Heuristics in `src/rulesets/dnd35e/semantic_tags.ts` (`lines 275–315`)
-- Currently `resolveEntitySituationalTagContext` inspects `lowerId.includes('chain')`, `lowerId.includes('plate')`, `lowerId.includes('scale')`, `lowerId.includes('full_plate')`, `lowerId.includes('half_plate')`, `lowerId.includes('splint')`, `lowerId.includes('banded')`, `lowerId.includes('breastplate')`, `lowerId.includes('chainmail')`, `lowerId.includes('scale_mail')`, `lowerId.includes('hide')`.
-- **Data-Driven Replacement**: Define `DnD35ArmorStatsSchema` on `DnD35ItemDefinitionSchema`:
-  - `armorCategory: 'light' | 'medium' | 'heavy' | 'shield' | 'tower_shield'`
-  - `armorBonus: number` (or `shieldBonus: number`)
-  - `maxDexBonus: number | null` (`null` for uncapped shields)
-  - `armorCheckPenalty: number` (non-positive integer, e.g. `-6`, `-1`, `0`)
-  - `arcaneSpellFailure: number` (`0..100`)
-  - `speed30Ft?: number`, `speed20Ft?: number`
-  - `isMetal: boolean`
-- When `specialMaterial: 'mithral'` is applied via `applyMaterialPhysics`, Mithral automatically steps down `armorCategory` (`'heavy' -> 'medium'`, `'medium' -> 'light'`), increases `maxDexBonus` by `+2`, reduces `armorCheckPenalty` magnitude by `3`, and reduces `arcaneSpellFailure` by `10%`. `resolveEntitySituationalTagContext` simply reads `finalItemDef.armorStats`!
+| File | Current Hardcoding / Issue | Declarative Replacement |
+| :--- | :--- | :--- |
+| `src/rulesets/dnd35e/companions.ts` | Exports 7 hardcoded progression constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT`); duplicates `animalCompanionId` and `familiarId` syncing; computes HP/BAB/AC manually (304 lines, exceeding 300-line limit). | Evict all 7 progression constants. Iterate over unified `companions: ReadonlyArray<DnD35CompanionEntry>`, stack bonuses per `tag` (`animal_companion`, `familiar`) from `scalingPools`, and compute servant stats via `evaluateDnD35ActorStatDAG`. |
+| `src/rulesets/registry.ts` | Re-exports the 7 evicted progression constants from `companions.ts`. | Remove the 7 evicted progression constants from `registry.ts` (and re-export `collectClassFeaturesUpToLevel`). |
+| `src/rulesets/dnd35e/character_builder.ts` | `sanitizeDraftOnRaceOrClassChange` branches on `classDef.id === 'cleric' \| 'wizard' \| 'sorcerer' \| 'druid' \| 'ranger'`. | Compute `activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, selectedAcfs)` and derive `hasDomains`, `grantsFamiliar`, `grantsAnimalCompanion`, `hasArcaneSchool`, and `hasFavoredEnemy` from active features and `featureDetails`. |
+| `src/rulesets/dnd35e/progression/ledger_choices.ts` | `collectClassChoiceFeats` checks `track.classId === 'ranger' && track.level >= RANGER_COMBAT_STYLE_LEVEL` (and `6`, `11`) and `familiarId !== undefined` directly. | Check active features (`combat_style`, `improved_combat_style`, `combat_style_mastery`) from `collectClassFeaturesUpToLevel`, and check `familiar_master_effective_level > 0` before reading `familiarData.masterEffectBundle`. |
+| `src/rulesets/dnd35e/builder/builder_prereq_context.ts` | Calls `collectClassChoiceFeats(nextTracks, ...)` using the old signature (`line 123`). | Pass `activeNextFeatures`, `data.companions`, and `nextPools` to the updated `collectClassChoiceFeats` signature. |
+| `src/rulesets/dnd35e/builder/builder_validation.ts` | Branches on `draft.classId === 'cleric'`, `'wizard'`, `'druid'`, `'ranger'` at creation. Misses Sorcerer `summon_familiar` and does not suppress validation if an ACF swaps out a feature (e.g. `wizard_abrupt_jaunt_1` replacing `summon_familiar`). | Inspect active level-1 features via `collectClassFeaturesUpToLevel(classDef, 1, draft.selectedAcfs)` (`cleric_domains`, `arcane_school_specialization`, `favored_enemy_1`, and `scalingPoolContribution.poolId`). |
+| `src/rulesets/dnd35e/builder/builder_levelup_validation.ts` | Uses `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS` and `choice.classId === 'ranger' \| 'rogue'`. | Inspect `newFeatures` at `newClassLevel` (`currFeatures.filter(f => !prevFeatures.includes(f))`) for `combat_style`, `favored_enemy_*`, `rogue_special_ability_*`, and `scalingPoolContribution.poolId === 'animal_companion_effective_level'` transition from `0` to `> 0`. |
+| `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts` & `level_ledger.ts` | Hydrates only `animalCompanionId` and `familiarId` strings on `DnD35EntityData`. | Hydrate `companions: ReadonlyArray<DnD35CompanionEntry>` (`tags: ['animal_companion']`, `['familiar']`, or merged tags when both point to the same companion) alongside backward-compatible `animalCompanionId` / `familiarId`. |
+| `src/rendering/ui/dnd35e_char_builder_class.ui.ts` & `dnd35e_char_builder_class_options.ui.ts` | Branches on `draftState.classId === 'cleric' \| 'wizard' \| 'druid' \| 'ranger'`. Sorcerer never sees the Familiar picker; selecting Wizard's `wizard_abrupt_jaunt_1` ACF does not hide the Familiar picker. | Gate sub-option panels by active level-1 features (`cleric_domains`, `arcane_school_specialization`, `favored_enemy_*`, `animal_companion_effective_level`, `familiar_master_effective_level`). Split `renderWizardOptions` into `renderArcaneSchoolOptions` + `renderFamiliarOptions`. Clear invalidated draft choices when an ACF toggle replaces their gating feature. |
+| `src/rendering/ui/dnd35e_level_up_class_options.ui.ts` | Uses `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `ROGUE_SPECIAL_ABILITY_LEVELS`, and hardcoded `ROGUE_SPECIAL_ABILITIES` array. | Gate level-up sub-option pickers by newly unlocked active features at `nextClassLevel` and read Rogue special ability options from `featureDetails[featId].bonusFeatPool`. |
 
 ---
 
-## 3. Milestone 114 Research: Complete SRD Feat Registry, Combat Chains & Metamagic Trees
+## 3. Newly Uncovered Gaps from Deep Audit
 
-### 3.1 Current State & Gaps Identified
-1. **Incomplete Feat Catalog**: Only 12 feat files currently exist in `public/data/rulesets/dnd35e/feats/`:
-   - `alertness.json`, `blind_fight.json`, `cleave.json`, `combat_casting.json`, `combat_reflexes.json`, `dodge.json`, `great_fortitude.json`, `improved_initiative.json`, `iron_will.json`, `lightning_reflexes.json`, `power_attack.json`, `toughness.json`, `weapon_focus.json`.
-   - Furthermore, several SRD monster race files in `public/data/rulesets/dnd35e/races/*.json` reference feats that do not yet exist in `feats/` (e.g., `multiattack`, `weapon_finesse`, `improved_overrun`, `improved_bull_rush`, `improved_sunder`, `awesome_blow`, `flyby_attack`, `hover`, `wingover`, `snatch`, `empower_spell_like_ability`, `quicken_spell_like_ability`, `ability_focus_poison`, `weapon_focus_bite`, `weapon_focus_claw`, `weapon_focus_greataxe`, `weapon_focus_longsword`, `weapon_focus_hoof`, `weapon_focus_ray`, `track`, `endurance`, `diehard`, `run`, `stealthy`, `athletic`, `persuasive`, `point_blank_shot`, `precise_shot`, `rapid_shot`, `two_weapon_fighting`, `multiweapon_fighting`).
-2. **Missing Feat Effect Provider Wiring (Horizon 2 & Horizon 3)**:
-   - While `dndData.feats` stores acquired feat IDs, **nothing in `ledger_modifiers.ts`, `level_ledger.ts`, `character_builder.ts`, `archetype_resolver.ts`, or `dnd35e_dag_adapter.ts` currently evaluates `featDef.effectBundle`, `featDef.modifiers`, or `featDef.ruleOverrides` into `StatModifier`s (`sourcePath: "feat:<id>/..."`)**!
-   - As a result, taking *Iron Will* (`+2 Will`), *Lightning Reflexes* (`+2 Reflex`), *Great Fortitude* (`+2 Fortitude`), *Improved Initiative* (`+4 Initiative`), *Toughness* (`+3 HP`), *Dodge* (`+1 Dodge AC`), *Alertness* (`+2 Listen/Spot`), or *Weapon Focus* (`+1 Attack`) does not currently emit `StatModifier`s into the 4-Stage Topological Stat DAG.
-3. **Missing Metamagic Descriptor Schema**:
-   - `DnD35FeatDefinitionSchema` in `src/rulesets/dnd35e/types/dnd35e_system.types.ts` lacks a structured `metamagicDescriptor` field to drive `metamagic_dispel.ts` (`slotLevelAdjustment`, `actionTimeOverride`, `rangeMultiplier`, `durationMultiplier`, `areaMultiplier`, `empowerDamageMultiplier`, `maximizeVariableDice`, `suppressVerbalComponent`, `suppressSomaticComponent`).
-4. **Missing `effectTags` on `DnD35DeclarativeModifierSchema`**:
-   - `StatModifier` in `dnd35e.types.ts` supports `effectTags?: ReadonlyArray<string>` (used by `stacking_engine.ts` line 73 to preserve `effectTags: ['force']` against incorporeal touch attacks), but `DnD35DeclarativeModifierSchema` in `effect_system.types.ts` does not yet include `effectTags: z.array(z.string()).optional()`.
-5. **Unvalidated `has_feat` Prerequisite References**:
-   - In `src/rulesets/dnd35e/validation/class_race_validator.ts` (`line 51`), `case 'has_feat':` is a no-op rather than verifying that `node.featId` (or its base feat ID before `:`) exists in `sys.feats`.
+1. **Gap 1 — Duplicate Static Modifier Bug in `public/data/rulesets/dnd35e/classes/ranger.json`**:
+   - `ranger.json` lines 50–65 attached a static modifier (`sourceId: "favored_enemy_1"`, `targetStat: "strike_damage"`, `value: 2`, `targetTagsAny: ["subtype:orc", "subtype:goblinoid", "type:undead", "type:magical_beast", "type:dragon"]`) directly to `featureDetails.favored_enemy_1`.
+   - Because `buildClassAndDomainEffectModifiers` in `ledger_modifiers.ts` collects all modifiers in `featureDetails` and `buildClassChoiceModifiers` in `ledger_choices.ts` *also* emits dynamic modifiers for `favoredEnemies`, every Ranger got an extra unconditional +2 damage against those 5 creature types regardless of their actual Favored Enemy choice.
+   - **Resolution**: Removed the static `modifiers` array from `favored_enemy_1` in `ranger.json` and added `improved_combat_style` and `combat_style_mastery` entries to `featureDetails`.
 
-### 3.2 Milestone 114 Architecture & Solutions
-1. **Extend `DnD35FeatDefinitionSchema` & `DnD35DeclarativeModifierSchema`**:
-   - Add `effectTags: z.array(z.string()).optional()` to `DnD35DeclarativeModifierSchema` and forward it in `evaluateEffectBundle`.
-   - Add `repeatable: z.object({ mode: z.enum(['stacking', 'targeted']), targetCategory: z.enum(['weapon', 'school', 'skill', 'ability']).optional() }).optional()` and `metamagicDescriptor: DnD35MetamagicDescriptorSchema.optional()` to `DnD35FeatDefinitionSchema`.
-2. **Implement `buildFeatEffectModifiers` and `collectActiveFeatRuleOverrides` (`src/rulesets/dnd35e/progression/ledger_modifiers.ts`)**:
-   - Evaluates both `featDef.modifiers` and `featDef.effectBundle` for all active feats (`dndData.feats` + `activeGrantedAndVirtualFeats`).
-   - Assigns deterministic hierarchical `sourcePath`:
-     - Standard feat: `feat:<featId>/<modId>` (or `feat:<featId>/bundle:<bundleId>/<modId>`).
-     - Repeatable stacking feat (*Toughness* taken multiple times): `feat:toughness#1/hp`, `feat:toughness#2/hp` so each instance has a unique `sourceId` and `sourcePath` and stacks cleanly in the DAG.
-     - Parameterized/targeted feat (e.g. `weapon_focus:longsword` or `weapon_focus_longsword`): resolves base `weapon_focus` or exact `weapon_focus_longsword` definition, attaching weapon target tag condition when parameterized.
-   - `collectActiveFeatRuleOverrides` aggregates `featDef.ruleOverrides` and `featDef.effectBundle.ruleOverrides` into a structured lookup map (`CombatRuleOverrides` & `ManeuverRuleOverrides`) so combat resolvers never hardcode feat names:
-     - `weapon_finesse` $\to$ `ruleKey: 'use_dex_for_light_finesse_melee_attack', value: true`
-     - `two_weapon_fighting` $\to$ `ruleKey: 'twf_ReducePenalty', value: true`
-     - `improved_two_weapon_fighting` $\to$ `ruleKey: 'twf_extra_offhand_attacks', value: 1`
-     - `greater_two_weapon_fighting` $\to$ `ruleKey: 'twf_extra_offhand_attacks', value: 2`
-     - `multiattack` $\to$ `ruleKey: 'secondary_natural_penalty', value: -2`
-     - `improved_critical` $\to$ `ruleKey: 'double_crit_threat_range', value: true`
-     - `improved_trip` / `improved_disarm` / `improved_bull_rush` / `improved_sunder` / `improved_overrun` / `improved_grapple` / `improved_feint` $\to$ `provokesAoO: false`, `opposedBonus: 4`, `grantsFreeFollowupAttackOnSuccess: true` (for Trip).
-     - `natural_spell` $\to$ `ruleKey: 'cast_spells_in_wild_shape', value: true`.
-3. **Wire Feat Modifiers Across Horizon 2 & Horizon 3**:
-   - In `level_ledger.ts` (`rebuildActorStateFromLevelHistory`): preserve multiple occurrences of `repeatable.mode === 'stacking'` feats (*Toughness*) instead of collapsing with `new Set()`, strip stale `feat:` modifiers, and append `buildFeatEffectModifiers(...)`.
-   - In `dnd35e_dag_adapter.ts` (`evaluateDnD35eEntityDAG`): if an entity's `dndData.feats` have not yet been expanded into `dndData.statModifiers` with `sourcePath: 'feat:...'` (e.g., spawned monsters or test entities), dynamically evaluate `buildFeatEffectModifiers` and `collectActiveFeatRuleOverrides` in Horizon 3, and apply `use_dex_for_light_finesse_melee_attack` when resolving light/finesse melee attacks!
-4. **Author Complete Modular SRD Feat Registry (`public/data/rulesets/dnd35e/feats/<id>.json`)**:
-   - Author all 85+ SRD feats covering Melee, Tactical Chains, Maneuver Chains, Ranged Chains, TWF/Multiweapon Chains, Unarmed/Grapple Chains, Defensive/Save/Skill Feats, Monster Feats (including weapon-specific feats referenced by `races/*.json`), Spellcasting Feats, and Metamagic Feats.
-5. **Enable `has_feat` Prerequisite AST Validation (`class_race_validator.ts`)**:
-   - Update `validatePrerequisiteNodeReferences` so `case 'has_feat':` checks `sys.feats[node.featId] ?? sys.feats[node.featId.split(':')[0]!]`.
+2. **Gap 2 — Legacy `weasel` Familiar Shape in `public/data/rulesets/dnd35e/races.json`**:
+   - Normalized all 9 familiar `masterEffectBundle` objects in `races.json` (`bat`, `cat`, `hawk`, `owl`, `rat`, `raven`, `viper`, `toad`, and `weasel`) to the strict `DnD35EffectBundle` schema (`bundleId`, `name`, `category: "ex"`, `modifiers: [{ id, target, value, type: "untyped" }]`, `virtualFeatGrants: [{ featId: "alertness", ignorePrerequisites: true }]`), enabling strict Zod validation in `effect_system.types.ts`.
 
----
+3. **Gap 3 — Data-Driven `bonusFeatPool` for Rogue Special Abilities in `public/data/rulesets/dnd35e/classes/rogue.json`**:
+   - Added `bonusFeatPool: ["crippling_strike", "defensive_roll", "improved_evasion", "opportunist", "skill_mastery", "slippery_mind"]` to `rogue_special_ability_1..4` and added metadata entries for those 6 abilities in `rogue.json`'s `featureDetails` so both UI rendering and level-up validation derive 100% from `rogue.json`.
 
-## 4. Milestone 115 Research: Complete SRD Equipment, Special Materials, Magic Item Compendium & Data-Driven Parser
+4. **Gap 4 — `cleric_domains` Feature in `public/data/rulesets/dnd35e/classes/cleric.json`**:
+   - Added `"cleric_domains"` to `cleric.json` `featureDetails` and level-1 `progression.features`.
 
-### 4.1 Structured Item Schema (`src/rulesets/dnd35e/types/system/item_system.types.ts`)
-To keep all files strictly $\le 300$ lines (`AGENTS.md` Rule 8), we will create `src/rulesets/dnd35e/types/system/item_system.types.ts` (and re-export from `dnd35e_system.types.ts`) defining:
-1. **`DnD35WeaponStatsSchema`**:
-   - `proficiencyCategory: z.enum(['simple', 'martial', 'exotic'])`
-   - `weaponCategory: z.enum(['unarmed', 'melee', 'ranged', 'thrown'])`
-   - `effort: z.enum(['light', 'one_handed', 'two_handed'])`
-   - `damageDice: z.string()` (Medium base dice, e.g. `'1d8'`, `'2d6'`)
-   - `damageType: DnD35DamageTypeSchema`
-   - `secondaryDamageTypes: z.array(DnD35DamageTypeSchema).optional()`
-   - `critThreatMin: z.number().int().min(15).max(20).default(20)`
-   - `critMultiplier: z.number().int().min(2).max(4).default(2)`
-   - `rangeIncrementFt: z.number().int().positive().optional()`
-   - `reachFt: z.number().int().positive().default(5)`
-   - `strikesAdjacent: z.boolean().default(true)`
-   - `isDoubleWeapon: z.boolean().default(false)`
-   - `offHandDamageDice: z.string().optional()`
-   - `offHandDamageType: DnD35DamageTypeSchema.optional()`
-   - `offHandCritThreatMin: z.number().int().min(15).max(20).optional()`
-   - `offHandCritMultiplier: z.number().int().min(2).max(4).optional()`
-   - `isFinesseEligible: z.boolean().default(false)`
-   - `cannotTwoHandStr: z.boolean().default(false)`
-   - `isExotic1HMartial2H: z.boolean().default(false)`
-   - `familiaritySubtypes: z.array(z.string()).default([])`
-   - `maneuverTags: z.array(z.enum(['trip', 'disarm', 'brace_vs_charge', 'monk', 'nonlethal_only', 'composite_str'])).default([])`
-2. **`DnD35ArmorStatsSchema`**:
-   - `armorCategory: z.enum(['light', 'medium', 'heavy', 'shield', 'tower_shield'])`
-   - `armorBonus: z.number().int().nonnegative()`
-   - `maxDexBonus: z.number().int().nonnegative().nullable().default(null)`
-   - `armorCheckPenalty: z.number().int().max(0).default(0)`
-   - `arcaneSpellFailure: z.number().int().min(0).max(100).default(0)`
-   - `speed30Ft: z.number().int().positive().optional()`
-   - `speed20Ft: z.number().int().positive().optional()`
-   - `isMetal: z.boolean().default(false)`
-3. **`DnD35SpecialMaterialSchema`**:
-   - `z.enum(['mundane', 'masterwork', 'mithral', 'adamantine', 'darkwood', 'alchemical_silver', 'cold_iron'])`
-4. **`DnD35MagicalPropertiesSchema`**:
-   - `enhancementBonus: z.number().int().min(0).max(5).default(0)`
-   - `isMasterwork: z.boolean().default(false)`
-   - `keen: z.boolean().optional()`
-   - `ghostTouch: z.boolean().optional()`
-   - `animated: z.boolean().optional()`
-   - `fortificationType: z.enum(['light', 'moderate', 'heavy']).optional()`
-   - `baneCreatureType: z.string().optional()`
-   - `energyRiders: z.array(z.object({ propertyId: z.string(), dice: z.string(), damageType: DnD35DamageTypeSchema })).optional()`
-   - `onHitEffectIds: z.array(z.string()).optional()`
-5. **`DnD35ItemDefinitionSchema`**:
-   - Extends `ItemDefinitionSchema` (from `src/types/campaign/item.ts`, which gains optional ruleset fields `weaponStats?: unknown`, `armorStats?: unknown`, `specialMaterial?: unknown`, `magicalProperties?: unknown`, `effectBundle?: unknown`) with strongly typed `weaponStats`, `armorStats`, `specialMaterial`, `magicalProperties`, and `effectBundle: DnD35EffectBundleSchema.optional()`.
-
-### 4.2 System Content Merging (`loader.ts`, `tests/helpers.ts`, `run-validator.ts`)
-- Add `items: z.record(z.string(), DnD35ItemDefinitionSchema).default({})` to `DnD35SystemContentSchema`.
-- Register `{ key: 'items', filename: 'items.json' }` and modular `items/<id>.json` in `DND35E_SYSTEM_CONTENT_FILES` (`src/rulesets/dnd35e/system_content_files.ts`).
-- In `src/core/loader.ts`, `tests/helpers.ts`, and `scripts/run-validator.ts`, shallow-merge `parsedSystemContent['items']` into `campaign.items`:
-  ```ts
-  items: {
-    ...rulesetBase.items,
-    ...((parsedSystemContent['items'] as Record<string, unknown> | undefined) ?? {}),
-    ...(items as Record<string, unknown>)
-  }
-  ```
-  This makes every modular SRD item in `public/data/rulesets/dnd35e/items/<id>.json` automatically available in `state.campaign.items[itemId]` while still allowing campaign-specific `items.json` overrides.
-
-### 4.3 Equipped Item DAG Integration & Ghost Touch / Force AC Preservation
-- In `dnd35e_dag_adapter.ts`:
-  - Implement `collectEquippedItemModifiers(state, entityId, activeSelfTags)` which scans active, non-suppressed `EquipmentComponent.slots`:
-    1. Evaluates `itemDef.effectBundle` via `evaluateEffectBundle(itemDef.effectBundle, "item:" + itemDef.id, [], activeSelfTags)`, collecting `statModifiers` (`sourcePath: "item:<itemId>/..."`) and `grantedTags`.
-    2. For equipped armors and shields with `armorStats`, emits typed `'armor'`, `'armor_enhancement'`, `'shield'`, and `'shield_enhancement'` modifiers with `sourcePath: "item:<itemId>/armor"` or `"item:<itemId>/shield"`. If `magicalProperties.ghostTouch === true`, attaches `effectTags: ['force', 'ghost_touch']` so `stacking_engine.ts` preserves the armor/shield bonus against incorporeal touch attacks!
-    3. Computes the most restrictive `maxDexBonus` across equipped armor and tower shields (after applying Mithral adjustments) and passes `maxDexBonus` into Stage 3/4 of `evaluateDnD35ActorStatDAG`.
-- In `stacking_engine.ts`:
-  - Check `(mod.effectTags?.includes('force') === true || mod.effectTags?.includes('ghost_touch') === true)` when `againstIncorporealTouch` is true so both *Bracers of Armor* (`effectTags: ['force']`) and *Ghost Touch* armor/shields (`effectTags: ['ghost_touch']`) protect against incorporeal touch attacks.
-
----
-
-## 5. Cascading Effects Matrix (Rule 15)
-
-| Change / Subsystem | Upstream Callers & Producers | Downstream Consumers | Lateral / Sibling Mirrors |
-| :--- | :--- | :--- | :--- |
-| **1. `item_system.types.ts` & `ItemDefinitionSchema`** | `public/data/rulesets/dnd35e/items/*.json`, `public/data/campaigns/*/items.json`, `loader.ts`. | `weapon_profile_parser.ts`, `semantic_tags.ts`, `dnd35e_dag_adapter.ts`, `special_materials.ts`, `dnd35e_validator.ts`. | `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md`, `ai-prompt-kit`. |
-| **2. Modular `items/<id>.json` Merging** | `system_content_files.ts`, `loadCampaign`, `loadCampaignFromDisk`, `loadAndValidateZod`. | `state.campaign.items`, inventory UI, paperdoll HUD, character builder equipment step, combat resolvers. | `public/data/campaigns/dnd35e-crypt/items.json`, `run-validator.ts` disk parity check. |
-| **3. Data-Driven `weapon_profile_parser.ts` & `semantic_tags.ts`** | `parseEquippedItem`, `evaluateNonproficiencyPenalty`, `buildUnarmedProfile`, `resolveEntitySituationalTagContext`. | `resolveEquippedWeaponProfile`, `resolveAllEquippedWeaponProfiles`, `evaluateDnD35eEntityDAG`, `resolveActorAttackRoutine`. | `special_materials.ts`, existing weapon/material unit tests (`dnd35e_combat_engine.test.ts`). |
-| **4. Feat Schema & Modular `feats/<id>.json` Catalog** | `effect_system.types.ts`, `dnd35e_system.types.ts`, `system_content_files.ts`. | `prerequisites.ts`, `class_race_validator.ts`, `metamagic_dispel.ts`, character builder & level-up feat pickers. | `public/data/rulesets/dnd35e/races/*.json` (monster feat lists), `classes/*.json` (bonusFeatPool). |
-| **5. `buildFeatEffectModifiers` & `collectActiveFeatRuleOverrides`** | `level_ledger.ts`, `character_builder.ts`, `archetype_resolver.ts`, `dnd35e_dag_adapter.ts`. | `evaluateDnD35ActorStatDAG` (Stages 1–4), `resolveActorAttackRoutine` (Weapon Finesse, TWF, Multiattack, Improved Critical), `resolveCombatManeuver`. | `provenance.ts` (`feat:` classified as `'progression'` OriginLayer). |
-| **6. Equipped Item `effectBundle` & Armor/Shield DAG Wiring** | `EquipmentComponent.slots`, `collectEquippedItemModifiers` in `dnd35e_dag_adapter.ts`. | `evaluateDnD35ActorStatDAG`, `resolveTypedModifiersWithBreakdown` (`stacking_engine.ts`). | `getEquippedItemBonuses` in `srd_registry.ts` (avoid double-counting when `armorStats` / `effectBundle` is present). |
-
----
-
-## 6. Verification Plan
-
-1. **8-Stage `./verify.sh` Pipeline**:
-   - `[1/8]` `bun x tsc --noEmit` (0 errors)
-   - `[2/8]` `bun run format`
-   - `[3/8]` `bun run lint --fix` & `bun run lint:filelength` (0 files > 300 code lines)
-   - `[4/8]` `bun run lint:arch` (0 circular or upward dependencies)
-   - `[5/8]` `bun run lint:deadcode` (0 unused exports)
-   - `[6/8]` `bun test` (all existing + new M114/M115 test suites pass)
-   - `[7/8]` `bun run build`
-   - `[8/8]` `bun run scripts/run-validator.ts` (0 errors, 0 warnings, 100% disk & SSOT parity)
-2. **New Regression Test Suites**:
-   - `tests/dnd35e_feats_m114.test.ts`: Validates all 85+ SRD feats, prerequisite AST resolution, passive `effectBundle` stat modifiers in the 4-Stage DAG (*Iron Will*, *Lightning Reflexes*, *Great Fortitude*, *Improved Initiative*, stacking *Toughness*, *Dodge*, *Weapon Focus*, *Weapon Specialization*), *Weapon Finesse* DEX-to-attack override, *Improved Critical* threat doubling, *Multiattack*, and metamagic descriptors.
-   - `tests/dnd35e_equipment_m115.test.ts`: Validates all 110+ SRD items, 100% data-driven `weapon_profile_parser.ts` (dice, damage types, crit ranges, reach, finesse, dwarven/gnome weapon familiarity, unarmed strike scaling), `semantic_tags.ts` armor category & Mithral step-down, equipped wondrous items in Stage 2/3/4 DAG (*Belt of Giant Strength*, *Gloves of Dexterity*, *Headband of Intellect*, *Cloak of Resistance*, *Ring of Protection*, *Amulet of Natural Armor*, *Bracers of Armor*), and *Ghost Touch* / *Force* AC preservation against incorporeal touch attacks.
+5. **Gap 5 — Sorcerer Familiar Picker & Wizard Abrupt Jaunt ACF Reactivity**:
+   - Split `renderWizardOptions` into `renderArcaneSchoolOptions` (gated by `arcane_school_specialization`) and `renderFamiliarOptions` (gated by any level-1 feature contributing to `familiar_master_effective_level`), enabling the Familiar picker for Sorcerers at creation and automatically hiding/clearing `familiarId` when a Wizard enables the Abrupt Jaunt ACF (`wizard_abrupt_jaunt_1`).

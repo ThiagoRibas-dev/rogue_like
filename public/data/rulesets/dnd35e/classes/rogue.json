@@ -87,7 +87,93 @@
         "id": "rogue_special_ability_1",
         "name": "Rogue Special Ability",
         "category": "ex",
-        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind."
+        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind.",
+        "bonusFeatPool": [
+          "crippling_strike",
+          "defensive_roll",
+          "improved_evasion",
+          "opportunist",
+          "skill_mastery",
+          "slippery_mind"
+        ]
+      },
+      "rogue_special_ability_2": {
+        "id": "rogue_special_ability_2",
+        "name": "Rogue Special Ability",
+        "category": "ex",
+        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind.",
+        "bonusFeatPool": [
+          "crippling_strike",
+          "defensive_roll",
+          "improved_evasion",
+          "opportunist",
+          "skill_mastery",
+          "slippery_mind"
+        ]
+      },
+      "rogue_special_ability_3": {
+        "id": "rogue_special_ability_3",
+        "name": "Rogue Special Ability",
+        "category": "ex",
+        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind.",
+        "bonusFeatPool": [
+          "crippling_strike",
+          "defensive_roll",
+          "improved_evasion",
+          "opportunist",
+          "skill_mastery",
+          "slippery_mind"
+        ]
+      },
+      "rogue_special_ability_4": {
+        "id": "rogue_special_ability_4",
+        "name": "Rogue Special Ability",
+        "category": "ex",
+        "description": "Select from Crippling Strike (2 STR damage), Defensive Roll, Improved Evasion, Opportunist, Skill Mastery, or Slippery Mind.",
+        "bonusFeatPool": [
+          "crippling_strike",
+          "defensive_roll",
+          "improved_evasion",
+          "opportunist",
+          "skill_mastery",
+          "slippery_mind"
+        ]
+      },
+      "crippling_strike": {
+        "id": "crippling_strike",
+        "name": "Crippling Strike",
+        "category": "ex",
+        "description": "Sneak attacks also deal 2 points of Strength damage to the target."
+      },
+      "defensive_roll": {
+        "id": "defensive_roll",
+        "name": "Defensive Roll",
+        "category": "ex",
+        "description": "Roll with a potentially lethal blow to take half damage on a successful Reflex save."
+      },
+      "improved_evasion": {
+        "id": "improved_evasion",
+        "name": "Improved Evasion",
+        "category": "ex",
+        "description": "Take no damage on a successful Reflex save and only half damage on a failed save."
+      },
+      "opportunist": {
+        "id": "opportunist",
+        "name": "Opportunist",
+        "category": "ex",
+        "description": "Make an attack of opportunity against an opponent who has just been struck in melee by an ally."
+      },
+      "skill_mastery": {
+        "id": "skill_mastery",
+        "name": "Skill Mastery",
+        "category": "ex",
+        "description": "Take 10 on chosen skills even under stress and adverse conditions."
+      },
+      "slippery_mind": {
+        "id": "slippery_mind",
+        "name": "Slippery Mind",
+        "category": "ex",
+        "description": "Gain a second saving throw on the following round against enchantment spells and effects."
       }
     },
     "acfSwaps": [

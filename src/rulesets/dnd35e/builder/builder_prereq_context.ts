@@ -1,6 +1,10 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import type { PrerequisiteEvalContext } from '../prerequisites.ts';
-import { aggregateProgressionChassis, buildHitDieTrackFromClass } from '../progression.ts';
+import {
+  aggregateProgressionChassis,
+  buildHitDieTrackFromClass,
+  collectClassFeaturesUpToLevel
+} from '../progression.ts';
 import { collectClassChoiceFeats } from '../progression/ledger_choices.ts';
 import { projectDnD35ActorSemanticTags } from '../semantic_tags.ts';
 import type { AbilityId, DnD35EntityData, HitDieTrack } from '../types/dnd35e.types.ts';
@@ -120,12 +124,18 @@ export function buildPostLevelUpPrerequisiteContext(
   }
 
   const activeTags = projectDnD35ActorSemanticTags(dndData);
+  const activeFeatures = collectClassFeaturesUpToLevel(classDef, nextClassLevel, [
+    ...(dndData.selectedAcfs ?? []),
+    ...(choice.selectedAcfs ?? [])
+  ]);
   const choiceFeats = collectClassChoiceFeats(
-    simulatedTracks,
+    [...(dndData.activeClassFeatures ?? []), ...activeFeatures],
     dndData.domains ?? [],
     choice.deityFavoredWeaponId ?? dndData.deityFavoredWeaponId,
     choice.combatStyle ?? dndData.combatStyle,
     choice.familiarId ?? dndData.familiarId,
+    dndData.companions,
+    dndData.scalingPools ?? {},
     [...(dndData.rogueSpecialAbilities ?? []), ...(choice.rogueSpecialAbility ? [choice.rogueSpecialAbility] : [])],
     sysContent,
     activeTags

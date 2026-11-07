@@ -1,0 +1,6 @@
+{
+  "summary":  "Comprehensive research notes for Milestone 119 (D&D 3.5e Feature-Driven Progression & Tagged Companion Architecture), documenting all hardcoded class/level constants, JSON data gaps discovered during the deep audit, and the Cascading Effects Matrix across Engine, Cartridge, UI, and Data tiers.",
+  "updatedAt":  "2026-11-07T21:20:39.970889487Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

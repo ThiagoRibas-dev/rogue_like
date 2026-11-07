@@ -1,7 +1,7 @@
 import { computeAbilityModifier } from '../abilities.ts';
-import { CLERIC_REQUIRED_DOMAIN_COUNT } from '../companions.ts';
 import { parseParameterizedFeatId } from '../effect_bundle.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../prerequisites.ts';
+import { collectClassFeaturesUpToLevel } from '../progression.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import {
   calculateLevelSkillPointBudget,
@@ -51,9 +51,11 @@ export function validateCharacterCreationStep(
         };
       }
     }
-    if (classDef.id === 'cleric') {
-      if (draft.domains.length !== CLERIC_REQUIRED_DOMAIN_COUNT) {
-        return { valid: false, reason: `Clerics must select exactly ${CLERIC_REQUIRED_DOMAIN_COUNT} deity domains.` };
+    const activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, draft.selectedAcfs);
+    const hasDomainsFeature = activeFeatures.includes('cleric_domains') || activeFeatures.includes('deity_domains');
+    if (hasDomainsFeature) {
+      if (draft.domains.length !== 2) {
+        return { valid: false, reason: 'Clerics must select exactly 2 deity domains.' };
       }
       for (const domainId of draft.domains) {
         const dom = sysContent.domains[domainId];
@@ -68,15 +70,21 @@ export function validateCharacterCreationStep(
         return { valid: false, reason: "Clerics with the War domain must select their deity's favored weapon." };
       }
     }
-    if (classDef.id === 'wizard') {
+    if (activeFeatures.includes('arcane_school_specialization')) {
       const schoolCheck = validateSpecialistSchoolSelection(draft.arcaneSchool ?? 'universal', draft.prohibitedSchools);
       if (!schoolCheck.valid) return schoolCheck;
     }
-    if (classDef.id === 'druid' && !draft.animalCompanionId) {
-      return { valid: false, reason: 'Druids must select a 1st-level Animal Companion.' };
+    const grantsAnimalCompanion = activeFeatures.some(
+      (fId) =>
+        classDef.featureDetails[fId]?.scalingPoolContribution?.poolId === 'animal_companion_effective_level' &&
+        (classDef.featureDetails[fId]?.scalingPoolContribution?.minClassLevel ?? 1) <= 1
+    );
+    if (grantsAnimalCompanion && !draft.animalCompanionId) {
+      return { valid: false, reason: `${classDef.name} must select a 1st-level Animal Companion.` };
     }
-    if (classDef.id === 'ranger' && !draft.favoredEnemyType) {
-      return { valid: false, reason: 'Rangers must select a 1st-level Favored Enemy.' };
+    const grantsFavoredEnemy = activeFeatures.some((fId) => fId.startsWith('favored_enemy_'));
+    if (grantsFavoredEnemy && !draft.favoredEnemyType) {
+      return { valid: false, reason: `${classDef.name} must select a 1st-level Favored Enemy.` };
     }
     return { valid: true };
   }

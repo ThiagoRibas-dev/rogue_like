@@ -7,7 +7,7 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
-import { FAVORED_ENEMY_BONUS_STEP } from '../companion_data.ts';
+import { FAVORED_ENEMY_BONUS_STEP } from '../companions.ts';
 import { syncActorCompanionsAndFamiliars } from '../companions.ts';
 import {
   buildClassAndDomainEffectModifiers,
@@ -124,6 +124,26 @@ export function applyCharacterCreationToPlayer(
     ...(draft.deityFavoredWeaponId !== undefined ? { deityFavoredWeaponId: draft.deityFavoredWeaponId } : {}),
     ...(draft.familiarId !== undefined ? { familiarId: draft.familiarId } : {}),
     ...(draft.animalCompanionId !== undefined ? { animalCompanionId: draft.animalCompanionId } : {}),
+    companions: [
+      ...(draft.animalCompanionId
+        ? [
+            {
+              id: `comp_${draft.animalCompanionId}`,
+              raceId: draft.animalCompanionId,
+              tags: ['animal_companion']
+            }
+          ]
+        : []),
+      ...(draft.familiarId
+        ? [
+            {
+              id: `fam_${draft.familiarId}`,
+              raceId: draft.familiarId,
+              tags: ['familiar']
+            }
+          ]
+        : [])
+    ],
     ...(draft.arcaneSchool !== undefined ? { arcaneSchool: draft.arcaneSchool } : {}),
     prohibitedSchools: draft.prohibitedSchools,
     ...(draft.favoredEnemyType !== undefined

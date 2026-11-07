@@ -115,6 +115,7 @@ export {
   aggregateProgressionChassis,
   buildHitDieTrackFromClass,
   calculateMulticlassXpMultiplier,
+  collectClassFeaturesUpToLevel,
   computeEffectiveClassCastingLevel,
   computeXpThresholdForLevel,
   getClassLevelRow,
@@ -140,6 +141,7 @@ export {
   getDnD35SystemContent
 } from './dnd35e/types/dnd35e_system.types.ts';
 export { evaluateDnD35eEntityDAG } from './dnd35e/cartridge/dnd35e_dag_adapter.ts';
+export { FAVORED_ENEMY_BONUS_STEP } from './dnd35e/companions.ts';
 export { extractActorTacticalDials } from './dnd35e/combat/tactical_doctrine.ts';
 export { evaluateActorSkillCheck } from './dnd35e/skills/skill_verb_helpers.ts';
 export { checkClassicRuleset } from './classic/classic_validator.ts';

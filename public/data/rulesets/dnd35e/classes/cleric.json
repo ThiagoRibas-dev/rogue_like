@@ -40,6 +40,12 @@
         "category": "ex",
         "description": "Projects an aura of Chaos, Evil, Good, or Law corresponding to deity alignment."
       },
+      "cleric_domains": {
+        "id": "cleric_domains",
+        "name": "Cleric Domains",
+        "category": "ex",
+        "description": "Choose two divine domains, gaining their granted powers, domain skill additions, and domain spell access."
+      },
       "deity_domains": {
         "id": "deity_domains",
         "name": "Deity Domains (2)",
@@ -90,6 +96,7 @@
         "willSave": 2,
         "features": [
           "aura",
+          "cleric_domains",
           "deity_domains",
           "spontaneous_casting",
           "turn_or_rebuke_undead"

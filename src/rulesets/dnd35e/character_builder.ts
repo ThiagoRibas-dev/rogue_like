@@ -1,5 +1,4 @@
 import { computeAbilityModifier } from './abilities.ts';
-import { CLERIC_REQUIRED_DOMAIN_COUNT } from './companions.ts';
 import { parseParameterizedFeatId } from './effect_bundle.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from './prerequisites.ts';
 import {
@@ -21,7 +20,7 @@ import {
   collectActiveGrantedAndVirtualFeats,
   rebuildActorStateFromLevelHistory
 } from './level_ledger.ts';
-import { computeNpcClassCrContribution } from './progression.ts';
+import { collectClassFeaturesUpToLevel, computeNpcClassCrContribution } from './progression.ts';
 import type { DnD35Alignment } from './types/dnd35e.types.ts';
 import type { DnD35SystemContent } from './types/dnd35e_system.types.ts';
 
@@ -58,16 +57,29 @@ export function sanitizeDraftOnRaceOrClassChange(
       ? allowedAlignments[0]!
       : draft.alignment;
 
-  const domains = classDef.id === 'cleric' ? draft.domains.slice(0, CLERIC_REQUIRED_DOMAIN_COUNT) : [];
-  const deityFavoredWeaponId =
-    classDef.id === 'cleric' && domains.includes('war') ? (draft.deityFavoredWeaponId ?? 'longsword') : undefined;
-  const familiarId = classDef.id === 'wizard' || classDef.id === 'sorcerer' ? draft.familiarId : undefined;
-  const animalCompanionId = classDef.id === 'druid' ? (draft.animalCompanionId ?? 'wolf') : undefined;
-  const arcaneSchool = classDef.id === 'wizard' ? (draft.arcaneSchool ?? 'universal') : undefined;
-  const prohibitedSchools = classDef.id === 'wizard' && arcaneSchool !== 'universal' ? draft.prohibitedSchools : [];
-
   const validAcfs = new Set(classDef.acfSwaps.filter((a) => a.level === 1).map((a) => a.acfId));
   const selectedAcfs = draft.selectedAcfs.filter((id) => validAcfs.has(id));
+  const activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, selectedAcfs);
+
+  const hasDomains = activeFeatures.includes('cleric_domains');
+  const grantsFamiliar = activeFeatures.some(
+    (fId) => classDef.featureDetails?.[fId]?.scalingPoolContribution?.poolId === 'familiar_master_effective_level'
+  );
+  const grantsAnimalCompanion = activeFeatures.some((fId) => {
+    const contrib = classDef.featureDetails?.[fId]?.scalingPoolContribution;
+    return contrib?.poolId === 'animal_companion_effective_level' && (contrib.minClassLevel ?? 1) <= 1;
+  });
+  const hasArcaneSchool = activeFeatures.includes('arcane_school_specialization');
+  const hasFavoredEnemy = activeFeatures.some((fId) => fId.startsWith('favored_enemy_'));
+
+  const domains = hasDomains ? draft.domains.slice(0, 2) : [];
+  const deityFavoredWeaponId =
+    hasDomains && domains.includes('war') ? (draft.deityFavoredWeaponId ?? 'longsword') : undefined;
+  const familiarId = grantsFamiliar ? draft.familiarId : undefined;
+  const animalCompanionId = grantsAnimalCompanion ? (draft.animalCompanionId ?? 'wolf') : undefined;
+  const arcaneSchool = hasArcaneSchool ? (draft.arcaneSchool ?? 'universal') : undefined;
+  const prohibitedSchools = hasArcaneSchool && arcaneSchool !== 'universal' ? draft.prohibitedSchools : [];
+  const favoredEnemyType = hasFavoredEnemy ? (draft.favoredEnemyType ?? 'undead') : undefined;
 
   const classSkills = getEffectiveClassSkillIds(classDef, domains, sysContent);
   const intAdj = raceDef.abilityAdjustments.int ?? 0;
@@ -175,7 +187,7 @@ export function sanitizeDraftOnRaceOrClassChange(
     animalCompanionId,
     arcaneSchool,
     prohibitedSchools,
-    favoredEnemyType: classDef.id === 'ranger' ? (draft.favoredEnemyType ?? 'undead') : undefined,
+    favoredEnemyType,
     skillRanks,
     selectedFeats,
     knownSpells

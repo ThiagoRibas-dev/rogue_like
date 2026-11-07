@@ -708,17 +708,16 @@ To ensure ruleset mechanics remain cleanly composable without spaghetti code, al
 3. **Post-Level-Up Prerequisite Context & Same-Level Chaining (`buildPostLevelUpPrerequisiteContext`)**:
    - Level-up feat validation projects the actor's forward state (new ability score increases, advanced BAB, new skill ranks, and class-granted feats like Monk Lv 1 *Improved Unarmed Strike*) so same-level prerequisite chaining succeeds deterministically.
 
-4. **Cleric War Domain & Mid-Level Class Choices**:
-   - Clerics selecting the War domain choose their deity's favored weapon (`deityFavoredWeaponId`), automatically receiving proficiency and scoped `weapon_focus:<weaponId>`.
-   - Level-Up advances Ranger Combat Style (`archery` granting *Rapid Shot* / *Manyshot* vs `two_weapon` granting *Two-Weapon Fighting*), Favored Enemy additions and boosts, and Rogue Special Abilities via `ledger_choices.ts`.
+4. **Feature-Driven Class Choices & ACF Reactivity (`ledger_choices.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`)**:
+   - All class choice mechanics (Cleric `cleric_domains`, Wizard `arcane_school_specialization`, Ranger `combat_style` / `improved_combat_style` / `combat_style_mastery` and `favored_enemy_*`, Rogue `rogue_special_ability_*` reading from `bonusFeatPool`, and `scalingPoolContribution` pools `animal_companion_effective_level` and `familiar_master_effective_level`) are gated strictly by active features (`collectClassFeaturesUpToLevel`), with zero hardcoded `classId` or level constants.
+   - Toggling an Alternate Class Feature (e.g. `wizard_abrupt_jaunt_1` replacing `summon_familiar`) automatically suppresses replaced UI pickers, validation checks, and virtual feat grants.
 
-5. **Familiars & Animal Companions (`src/rulesets/dnd35e/companions.ts`, `src/systems/map.system.ts`)**:
-   - Wizard/Sorcerer Familiars project master `DnD35EffectBundle` modifiers (+3 Listen for Bat, +2 Fortitude for Rat, +3 HP for Toad) and grant *Alertness*.
-   - Druid and Ranger Animal Companions scale through the `animal_companion_effective_level` pool, receiving bonus HD, natural armor, and STR/DEX advancement. Linked via `ControllerLinkComponent`, companions migrate across dungeon floors with their master and spawn on adjacent walkable tiles.
+5. **Tagged Companions & 4-Stage Stat DAG Synchronization (`src/rulesets/dnd35e/companions.ts`, `src/systems/map.system.ts`)**:
+   - Servants are stored in a unified, tag-driven `companions: ReadonlyArray<DnD35CompanionEntry>` array (`tags: ['animal_companion', 'familiar']`), allowing a single entity (such as an Arcane Hierophant's Companion Familiar) to accumulate multiple progression tracks.
+   - `syncActorCompanionsAndFamiliars` advances servant Hit Die tracks, natural armor, and ability scores per tag and evaluates the servant's full combat stats (`Full/Touch/Flat-Footed AC`, `maxHp`, `attackBonus`, `saves`, `size`) through `evaluateDnD35ActorStatDAG`. Linked via `ControllerLinkComponent`, companions migrate across dungeon floors with their master and spawn on adjacent walkable tiles.
 
 ---
 
 ## 10. Key Design Decisions
 
 > **📋 Key design decisions and their detailed rationale are documented in [DECISIONS.md](./DECISIONS.md).**
-

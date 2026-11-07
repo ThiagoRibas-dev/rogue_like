@@ -17,6 +17,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_bat_bundle",
+      "name": "Familiar Master Bonus (Bat)",
       "category": "ex",
       "modifiers": [
         {
@@ -26,7 +27,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": []
   },
@@ -48,6 +54,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_cat_bundle",
+      "name": "Familiar Master Bonus (Cat)",
       "category": "ex",
       "modifiers": [
         {
@@ -57,7 +64,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -102,6 +114,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_hawk_bundle",
+      "name": "Familiar Master Bonus (Hawk)",
       "category": "ex",
       "modifiers": [
         {
@@ -111,7 +124,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -145,6 +163,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_owl_bundle",
+      "name": "Familiar Master Bonus (Owl)",
       "category": "ex",
       "modifiers": [
         {
@@ -154,7 +173,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -188,6 +212,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_rat_bundle",
+      "name": "Familiar Master Bonus (Rat)",
       "category": "ex",
       "modifiers": [
         {
@@ -197,7 +222,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -231,6 +261,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_raven_bundle",
+      "name": "Familiar Master Bonus (Raven)",
       "category": "ex",
       "modifiers": [
         {
@@ -240,7 +271,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -274,6 +310,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_viper_bundle",
+      "name": "Familiar Master Bonus (Viper)",
       "category": "ex",
       "modifiers": [
         {
@@ -283,7 +320,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {
@@ -317,6 +359,7 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_toad_bundle",
+      "name": "Familiar Master Bonus (Toad)",
       "category": "ex",
       "modifiers": [
         {
@@ -326,7 +369,12 @@
           "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": []
   },
@@ -348,16 +396,22 @@
     "companionTags": ["familiar"],
     "masterEffectBundle": {
       "bundleId": "familiar_weasel_bundle",
+      "name": "Familiar Master Bonus (Weasel)",
+      "category": "ex",
       "modifiers": [
         {
-          "sourceId": "familiar_weasel_ref",
-          "targetStat": "save_ref",
+          "id": "familiar_weasel_ref",
+          "target": "save_ref",
           "value": 2,
-          "bonusType": "untyped",
-          "sourcePath": "familiar:weasel"
+          "type": "untyped"
         }
       ],
-      "virtualFeatGrants": ["alertness"]
+      "virtualFeatGrants": [
+        {
+          "featId": "alertness",
+          "ignorePrerequisites": true
+        }
+      ]
     },
     "naturalWeapons": [
       {

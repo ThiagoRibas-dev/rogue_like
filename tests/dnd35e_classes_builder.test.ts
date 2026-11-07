@@ -711,5 +711,49 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(sanitized.selectedFeats.length).toBe(1); // Elf Cleric gets 1 feat at level 1
     expect(sanitized.knownSpells).toEqual(['cure_light_wounds']); // Magic Missile stripped for Cleric
   });
+
+  it('validates feature-driven class progression, ACF reactivity, and tagged companion architecture (Milestone 119)', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign);
+    expect(sys).not.toBeNull();
+    if (!sys) return;
+
+    // 1. Wizard with Abrupt Jaunt ACF suppresses Familiar
+    const jauntAcf = sys.classes['wizard']?.acfSwaps.find((s) => s.acfId === 'wizard_abrupt_jaunt_1');
+    expect(jauntAcf).toBeDefined();
+    expect(jauntAcf?.replacesFeature).toBe('summon_familiar');
+
+    const wizardActiveBase = collectClassFeaturesUpToLevel(sys.classes['wizard']!, 1, []);
+    expect(wizardActiveBase).toContain('summon_familiar');
+    expect(wizardActiveBase).toContain('arcane_school_specialization');
+
+    const wizardActiveJaunt = collectClassFeaturesUpToLevel(sys.classes['wizard']!, 1, ['wizard_abrupt_jaunt_1']);
+    expect(wizardActiveJaunt).not.toContain('summon_familiar');
+    expect(wizardActiveJaunt).toContain('abrupt_jaunt');
+
+    // 2. Sorcerer has summon_familiar contributing to familiar_master_effective_level
+    const sorcActive = collectClassFeaturesUpToLevel(sys.classes['sorcerer']!, 1, []);
+    expect(sorcActive).toContain('summon_familiar');
+    const sorcFamContrib = sys.classes['sorcerer']?.featureDetails['summon_familiar']?.scalingPoolContribution;
+    expect(sorcFamContrib?.poolId).toBe('familiar_master_effective_level');
+
+    // 3. Ranger favored_enemy_1 has no static modifier block (dynamic choice only)
+    const rangerFe = sys.classes['ranger']?.featureDetails['favored_enemy_1'];
+    expect(rangerFe?.modifiers?.length ?? 0).toBe(0);
+
+    // 4. Rogue special abilities are data-driven from bonusFeatPool
+    const rogueSa1 = sys.classes['rogue']?.featureDetails['rogue_special_ability_1'];
+    expect(rogueSa1?.bonusFeatPool).toBeDefined();
+    expect(rogueSa1?.bonusFeatPool).toContain('crippling_strike');
+    expect(rogueSa1?.bonusFeatPool).toContain('improved_evasion');
+
+    // 5. Races: Weasel has canonical masterEffectBundle
+    const weasel = sys.races['weasel'];
+    expect(weasel?.masterEffectBundle?.bundleId).toBe('familiar_weasel_bundle');
+    expect(weasel?.masterEffectBundle?.name).toBe('Familiar Master Bonus (Weasel)');
+    expect(weasel?.masterEffectBundle?.category).toBe('ex');
+    expect(weasel?.masterEffectBundle?.modifiers[0]?.target).toBe('save_ref');
+    expect(weasel?.masterEffectBundle?.virtualFeatGrants[0]?.featId).toBe('alertness');
+  });
 });
 

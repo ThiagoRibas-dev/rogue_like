@@ -163,11 +163,13 @@ export function rebuildActorStateFromLevelHistory(
   );
 
   const choiceFeats = collectClassChoiceFeats(
-    nextTracks,
+    featurePoolSummary.activeFeatureIds,
     currentData.domains ?? [],
     deityFavoredWeaponId,
     combatStyle,
     familiarId,
+    currentData.companions,
+    featurePoolSummary.scalingPools,
     rogueSpecialAbilities,
     sysContent,
     activeTags
@@ -210,10 +212,32 @@ export function rebuildActorStateFromLevelHistory(
     suppressedIds,
     activeTags
   );
-  const choiceMods = buildClassChoiceModifiers(favoredEnemies, familiarId, sysContent);
+  const choiceMods = buildClassChoiceModifiers(
+    favoredEnemies,
+    familiarId,
+    currentData.companions,
+    featurePoolSummary.scalingPools,
+    sysContent
+  );
   const featMods = buildFeatEffectModifiers(rebuiltFeats, sysContent.feats, suppressedIds, activeTags);
   const skillThresholdMods = sysContent.skills ? buildSkillRankThresholdModifiers(skillRanks, sysContent.skills) : [];
   const negMods = buildNegativeLevelModifiers(currentData.negativeLevels ?? 0);
+
+  const syncedCompanions = [...(currentData.companions ?? [])];
+  if (animalCompanionId && !syncedCompanions.some((c) => c.tags.includes('animal_companion'))) {
+    syncedCompanions.push({
+      id: `comp_${animalCompanionId}`,
+      raceId: animalCompanionId,
+      tags: ['animal_companion']
+    });
+  }
+  if (familiarId && !syncedCompanions.some((c) => c.tags.includes('familiar'))) {
+    syncedCompanions.push({
+      id: `fam_${familiarId}`,
+      raceId: familiarId,
+      tags: ['familiar']
+    });
+  }
 
   return {
     ...currentData,
@@ -231,6 +255,7 @@ export function rebuildActorStateFromLevelHistory(
     ...(combatStyle !== undefined ? { combatStyle } : {}),
     ...(familiarId !== undefined ? { familiarId } : {}),
     ...(animalCompanionId !== undefined ? { animalCompanionId } : {}),
+    companions: syncedCompanions,
     favoredEnemies,
     rogueSpecialAbilities,
     statModifiers: [
