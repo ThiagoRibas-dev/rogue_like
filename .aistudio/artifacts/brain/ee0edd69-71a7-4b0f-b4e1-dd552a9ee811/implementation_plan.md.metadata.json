@@ -1,0 +1,6 @@
+{
+  "summary":  "Updated Implementation Plan for Milestone 119 (D&D 3.5e Feature-Driven Progression & Tagged Companion Architecture), incorporating all newly discovered JSON gaps (weasel familiar schema, ranger static favored_enemy_1 modifier fix, rogue bonusFeatPool, cleric_domains), Sorcerer/Abrupt Jaunt ACF reactivity, builder_prereq_context.ts cascade, registry/SSOT cleanup, and 4-Stage Stat DAG evaluation for companions.",
+  "updatedAt":  "2026-11-07T21:21:59.977978872Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

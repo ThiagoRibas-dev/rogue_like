@@ -1,10 +1,5 @@
-import {
-  RANGER_COMBAT_STYLE_LEVEL,
-  RANGER_COMBAT_STYLE_MASTERY_LEVEL,
-  RANGER_IMPROVED_COMBAT_STYLE_LEVEL
-} from '../companions.ts';
 import { appendSourcePath } from '../modifiers.ts';
-import type { HitDieTrack, StatModifier } from '../types/dnd35e.types.ts';
+import type { DnD35CompanionEntry, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 /** Skills receiving Ranger Favored Enemy bonus (PHB p. 47). */
@@ -14,22 +9,26 @@ const FAVORED_ENEMY_SKILLS: ReadonlyArray<string> = ['bluff', 'listen', 'sense_m
  * Collects feats granted dynamically by class and domain choices
  * (War domain deity weapon, Ranger combat style progression in light/no armor, Familiar Alertness, and Rogue special ability feats).
  *
- * @param tracks Active Hit Die tracks.
+ * @param activeFeatures Array of active class feature IDs accumulated by the character.
  * @param domains Selected Cleric domains.
  * @param deityFavoredWeaponId Selected deity favored weapon ID.
  * @param combatStyle Selected Ranger combat style ('archery' | 'two_weapon').
  * @param familiarId Selected Arcane Familiar ID.
+ * @param companions Registered companions array.
+ * @param scalingPools Active scaling pool values.
  * @param rogueSpecialAbilities Selected Rogue special abilities.
  * @param sysContent Loaded D&D 3.5e system content.
  * @param activeTags Active semantic tags on the actor (used to enforce light/no-armor condition for Ranger combat style).
  * @returns Deduplicated array of granted feat IDs.
  */
 export function collectClassChoiceFeats(
-  tracks: ReadonlyArray<HitDieTrack>,
+  activeFeatures: ReadonlyArray<string>,
   domains: ReadonlyArray<string>,
   deityFavoredWeaponId?: string,
   combatStyle?: 'archery' | 'two_weapon',
   familiarId?: string,
+  companions?: ReadonlyArray<DnD35CompanionEntry>,
+  scalingPools: Readonly<Record<string, number>> = {},
   rogueSpecialAbilities: ReadonlyArray<string> = [],
   sysContent?: DnD35SystemContent,
   activeTags: ReadonlyArray<string> = []
@@ -41,25 +40,27 @@ export function collectClassChoiceFeats(
     granted.add(`weapon_focus:${deityFavoredWeaponId}`);
   }
 
-  const rangerTrack = tracks.find((t) => t.trackId === 'ranger');
-  const rangerLvl = rangerTrack ? rangerTrack.levels : 0;
   const wearingMediumOrHeavyArmor = activeTags.includes('armor:medium') || activeTags.includes('armor:heavy');
 
   if (!wearingMediumOrHeavyArmor && combatStyle === 'archery') {
-    if (rangerLvl >= RANGER_COMBAT_STYLE_LEVEL) granted.add('rapid_shot');
-    if (rangerLvl >= RANGER_IMPROVED_COMBAT_STYLE_LEVEL) granted.add('manyshot');
-    if (rangerLvl >= RANGER_COMBAT_STYLE_MASTERY_LEVEL) granted.add('improved_precise_shot');
+    if (activeFeatures.includes('combat_style')) granted.add('rapid_shot');
+    if (activeFeatures.includes('improved_combat_style')) granted.add('manyshot');
+    if (activeFeatures.includes('combat_style_mastery')) granted.add('improved_precise_shot');
   } else if (!wearingMediumOrHeavyArmor && combatStyle === 'two_weapon') {
-    if (rangerLvl >= RANGER_COMBAT_STYLE_LEVEL) granted.add('two_weapon_fighting');
-    if (rangerLvl >= RANGER_IMPROVED_COMBAT_STYLE_LEVEL) granted.add('improved_two_weapon_fighting');
-    if (rangerLvl >= RANGER_COMBAT_STYLE_MASTERY_LEVEL) granted.add('greater_two_weapon_fighting');
+    if (activeFeatures.includes('combat_style')) granted.add('two_weapon_fighting');
+    if (activeFeatures.includes('improved_combat_style')) granted.add('improved_two_weapon_fighting');
+    if (activeFeatures.includes('combat_style_mastery')) granted.add('greater_two_weapon_fighting');
   }
 
-  if (familiarId) {
-    const famRace = sysContent?.races?.[familiarId];
-    const famFeats = famRace?.masterEffectBundle?.virtualFeatGrants ?? ['alertness'];
+  const famRaceId = familiarId ?? companions?.find((c) => c.tags.includes('familiar'))?.raceId;
+  const famMasterLevel = scalingPools['familiar_master_effective_level'] ?? (famRaceId ? 1 : 0);
+  if (famRaceId && famMasterLevel > 0) {
+    const famRace = sysContent?.races?.[famRaceId];
+    const famFeats = famRace?.masterEffectBundle?.virtualFeatGrants ?? [
+      { featId: 'alertness', ignorePrerequisites: true }
+    ];
     for (const f of famFeats) {
-      granted.add(f);
+      granted.add(f.featId);
     }
   }
 
@@ -79,12 +80,16 @@ export function collectClassChoiceFeats(
  *
  * @param favoredEnemies Accumulated Ranger favored enemy entries and bonuses.
  * @param familiarId Optional Arcane Familiar ID.
+ * @param companions Optional registered companions array.
+ * @param scalingPools Active scaling pool values.
  * @param sysContent Optional loaded D&D 3.5e system content.
  * @returns Array of `StatModifier`s with hierarchical `sourcePath`.
  */
 export function buildClassChoiceModifiers(
   favoredEnemies: ReadonlyArray<{ readonly creatureType: string; readonly bonus: number }>,
   familiarId?: string,
+  companions?: ReadonlyArray<DnD35CompanionEntry>,
+  scalingPools: Readonly<Record<string, number>> = {},
   sysContent?: DnD35SystemContent
 ): ReadonlyArray<StatModifier> {
   const modifiers: StatModifier[] = [];
@@ -115,15 +120,17 @@ export function buildClassChoiceModifiers(
     }
   }
 
-  if (familiarId && sysContent?.races?.[familiarId]?.masterEffectBundle?.modifiers) {
-    const bundleMods = sysContent.races[familiarId].masterEffectBundle?.modifiers ?? [];
+  const famRaceId = familiarId ?? companions?.find((c) => c.tags.includes('familiar'))?.raceId;
+  const famMasterLevel = scalingPools['familiar_master_effective_level'] ?? (famRaceId ? 1 : 0);
+  if (famRaceId && famMasterLevel > 0 && sysContent?.races?.[famRaceId]?.masterEffectBundle?.modifiers) {
+    const bundleMods = sysContent.races[famRaceId].masterEffectBundle?.modifiers ?? [];
     for (const mod of bundleMods) {
       modifiers.push({
-        sourceId: mod.sourceId,
-        targetStat: mod.targetStat,
+        sourceId: mod.id ?? `familiar_${mod.target}`,
+        targetStat: mod.target,
         value: mod.value,
-        bonusType: mod.bonusType ?? 'untyped',
-        sourcePath: mod.sourcePath ?? `familiar:${familiarId}`
+        bonusType: mod.type ?? 'untyped',
+        sourcePath: `familiar:${famRaceId}`
       });
     }
   }

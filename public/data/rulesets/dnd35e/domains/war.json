@@ -14,7 +14,10 @@
       "grantedTags": [
         "domain:war"
       ],
-      "grantedFeats": [],
+      "grantedFeats": [
+        "weapon_focus",
+        "martial_weapon_proficiency"
+      ],
       "virtualFeatGrants": [],
       "classSkillsAdded": [],
       "immunities": [],

@@ -1,100 +1,48 @@
-# Implementation Plan — D&D 3.5e Feature-Driven Progression & Tagged Companion Architecture (Milestone 119)
+# Implementation Plan — Milestone 121: Feature-Driven Progression & Tagged Companion Architecture
 
-## 1. Audit of Hardcoded Data & Declarative Architecture Parity
+## 1. Architectural Goal & Audit Summary
+Replace all remaining hardcoded class-ID checks (`draft.classId === 'druid'`, `choice.classId === 'ranger'`, `track.classId === 'rogue'`) and magic progression constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `CLERIC_REQUIRED_DOMAIN_COUNT`) with **100% declarative feature & scaling-pool inspection**, and unify companion/familiar synchronization through a **tag-driven `companions` registry evaluated by the 4-Stage Stat DAG (`evaluateDnD35ActorStatDAG`)**.
 
-Following the architectural review, we identified eight distinct places where gameplay data, progression rules, and class logic were hardcoded in TypeScript instead of being driven declaratively by the D&D 3.5e JSON content:
+### Audit of Hardcoded Checks & Declarative Replacements
 
-| System / File | Hardcoded Anti-Pattern | Data-Driven / Declarative Replacement |
+| Area | Current Hardcoding / Issue | Declarative Replacement |
 | :--- | :--- | :--- |
-| **1. Class Progression Constants** (`companions.ts` / `progression.ts`) | `RANGER_COMBAT_STYLE_LEVEL = 2`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL = 4`, `ROGUE_SPECIAL_ABILITY_LEVELS = [10,13,16,19]`, `CLERIC_REQUIRED_DOMAIN_COUNT = 2` | **Zero Level Constants**: Derive directly from class progression features (`progression[lvl - 1].features`) after applying active ACF swaps. E.g. prompt for Animal Companion when gaining a feature with `scalingPoolContribution.poolId === 'animal_companion_effective_level'`. |
-| **2. Class ID Branching** (`character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`, UI) | `if (classDef.id === 'cleric')`, `if (classDef.id === 'ranger')`, `if (classDef.id === 'wizard')`, `if (classDef.id === 'druid')` | **Feature-Driven Predicates**: Check active features (`features.includes('deity_domains')`, `features.includes('combat_style')`, `scalingPoolContribution.poolId === 'familiar_master_effective_level'`). Supports ACFs, homebrew, and prestige classes seamlessly. |
-| **3. Companion Stat Formulas** (`companions.ts`) | `ANIMAL_BAB_MULTIPLIER = 0.75`, `COMPANION_HP_PER_BONUS_HD = 5`, `FAMILIAR_BASE_AC = 14`, ad-hoc AC math | **4-Stage Stat DAG (`evaluateDnD35ActorStatDAG`)**: Advance companion's racial HD track by `bonusHd`, adjust natural armor and abilities on `DnD35EntityData`, and evaluate DAG. Familiar gets `max(dag.attack, masterBab)` and `max(dag.maxHp, floor(masterHp / 2))`. |
-| **4. Companion Advancement Tables** (`companions.ts`) | `computeAnimalCompanionAdvancement` and `computeFamiliarAdvancement` hardcoded math | Keep pure progression tables parameterized by effective level pools (`animal_companion_effective_level`, `familiar_master_effective_level`) with future JSON migration path. |
-| **5. Favored Enemy Skills & Step** (`ledger_choices.ts`, `builder_hydrator_creation.ts`) | `FAVORED_ENEMY_SKILLS = ['bluff', 'listen', ...]` and `FAVORED_ENEMY_BONUS_STEP = 2` hardcoded in TS | Derive skill list and initial bonus from `featureDetails.favored_enemy_1.modifiers` in `ranger.json` (or canonical `DEFAULT_FAVORED_ENEMY_BONUS = 2`). |
-| **6. Rogue Special Abilities** (`dnd35e_level_up_class_options.ui.ts`) | Hardcoded `ROGUE_SPECIAL_ABILITIES` array in UI component | Derive from `featureDetails.rogue_special_ability_1.bonusFeatPool` or `sys.feats` tagged with `pool:rogue_special_abilities`. |
-| **7. Favored Enemy Candidates** (`dnd35e_level_up_class_options.ui.ts`, `dnd35e_char_builder_class_options.ui.ts`) | Only `Object.keys(sys.creatureTypes)` without subtypes | Derive from `sys.creatureTypes` + `sys.subtypes` (e.g. `type:undead`, `subtype:goblinoid`, `subtype:orc`, `subtype:elf`). |
-| **8. Familiar Effect Bundles** (`races.json`) | Familiar modifiers using `{ sourceId, targetStat, bonusType, sourcePath }` violating `DnD35DeclarativeModifierSchema` | Update all familiars in `races.json` to `{ id, target, value, type: "untyped" }` and evaluate with `evaluateEffectBundle`. |
+| **JSON Data (`races.json`, `cleric.json`, `ranger.json`, `rogue.json`)** | 1) `weasel` in `races.json` uses legacy `{ sourceId, targetStat, bonusType }` and all 9 familiars lack `name`/`category` and object-form `virtualFeatGrants`.<br>2) `cleric.json` lacks a `cleric_domains` feature ID at level 1.<br>3) `ranger.json` has a buggy static `+2 damage` modifier on `favored_enemy_1` against 5 hardcoded creature types and omits `improved_combat_style` / `combat_style_mastery` from `featureDetails`.<br>4) `rogue.json` omits `bonusFeatPool` on `rogue_special_ability_1..4`. | 1) Normalize all 9 familiar `masterEffectBundle` objects in `races.json` to strict `DnD35EffectBundle` format.<br>2) Add `cleric_domains` to `cleric.json` level 1.<br>3) Remove static `modifiers` from `favored_enemy_1` in `ranger.json` and add `improved_combat_style` & `combat_style_mastery` to `featureDetails`.<br>4) Add `bonusFeatPool: ["crippling_strike", "defensive_roll", "improved_evasion", "opportunist", "skill_mastery", "slippery_mind"]` + `featureDetails` entries to `rogue.json`. |
+| **Combat Style & Familiar Feats (`ledger_choices.ts`, `builder_prereq_context.ts`)** | `collectClassChoiceFeats` checks `track.classId === 'ranger' && track.level >= 2 / 6 / 11` and checks `familiarId !== undefined` without verifying `familiar_master_effective_level > 0`. | Inspect active features (`combat_style`, `improved_combat_style`, `combat_style_mastery`) via `collectClassFeaturesUpToLevel`, and check `familiar_master_effective_level > 0` before granting `familiarData.masterEffectBundle.virtualFeatGrants`. Update callers in `level_ledger.ts`, `builder_prereq_context.ts`, and `builder_hydrator_creation.ts`. |
+| **Creation, Draft Sanitization & Level-Up Validation (`character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`)** | Hardcodes `draft.classId === 'cleric' \| 'wizard' \| 'druid' \| 'ranger'` and level constants (`2`, `4`, `[5,10,15,20]`, `[10,13,16,19]`). | Inspect active features at level 1 (`character_builder.ts`, `builder_validation.ts`) and newly unlocked features at `newClassLevel` (`builder_levelup_validation.ts`): `cleric_domains`, `arcane_school_specialization`, `combat_style`, `favored_enemy_*`, `rogue_special_ability_*`, and `scalingPoolContribution.poolId` transitions (`0 -> >0`). |
+| **Character Creation & Level-Up UI (`dnd35e_char_builder_class*.ui.ts`, `dnd35e_level_up_class*.ui.ts`)** | Hardcodes `draftState.classId` branches and level constants; Sorcerer lacks Familiar picker; Wizard Abrupt Jaunt ACF does not hide Familiar picker; Rogue special abilities hardcoded in UI. | Gate all sub-option panels by active class features & `scalingPoolContribution.poolId`. Split `renderWizardOptions` into `renderArcaneSchoolOptions` + `renderFamiliarOptions`. Clear invalidated draft choices on ACF toggle. Read Rogue special abilities from `featureDetails[featId].bonusFeatPool`. |
+| **Companion Sync & Stat Calculation (`companions.ts`, `builder_hydrator_*.ts`, `level_ledger.ts`)** | Separate `animalCompanionId` / `familiarId` sync blocks; manual HP/BAB/AC math; 304 lines (> 300 limit). | Hydrate `companions: ReadonlyArray<DnD35CompanionEntry>` (`tags: ['animal_companion' \| 'familiar']`). Stack progression bonuses per tag in `syncActorCompanionsAndFamiliars` and compute servant stats via `evaluateDnD35ActorStatDAG`. |
 
 ---
 
 ## 2. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility | Old Brain (To Evict) | Canonical Owner (New Brain) |
+| Responsibility | Old-Brain / Duplicate Location (To Evict) | Canonical SSOT Owner |
 | :--- | :--- | :--- |
-| **Controller Link Relationships** | Hardcoded `relationship: 'companion' \| 'familiar' \| ...` | Tier 1 Console `ControllerLinkComponent.tags: ReadonlyArray<string>` (`actor_components.types.ts`) |
-| **Bonded Companions State** | `dndData.animalCompanionId`, `dndData.familiarId` | Tier 2 Cartridge `dndData.companions: ReadonlyArray<DnD35CompanionEntry>` with multi-role tags |
-| **Companion Mechanics & Spawning** | Deleted `companion_data.ts` & ad-hoc formulas in `companions.ts` | `companions.ts` using `evaluateDnD35ActorStatDAG` |
-| **Familiar Master Grants** | Ad-hoc modifier assembly in `ledger_choices.ts` | `evaluateEffectBundle` in `ledger_choices.ts` reading `famRace.masterEffectBundle` |
-| **Class Progression Validation** | Hardcoded level constants (`RANGER_*`, `ROGUE_*`, `CLERIC_*`) | Feature-presence checks in `builder_validation.ts` & `builder_levelup_validation.ts` |
-| **Class Options UI Rendering** | Hardcoded `classId === '...'` in `dnd35e_char_builder_class.ui.ts` & `dnd35e_level_up_class_options.ui.ts` | Active feature inspection from `classDef.progression[level - 1]` with ACF substitutions |
+| Class feature progression levels (Combat Style, Favored Enemy, Rogue Special Abilities, Animal Companion unlock, Cleric Domains) | `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT` in `src/rulesets/dnd35e/companions.ts` & `src/rulesets/registry.ts` | `public/data/rulesets/dnd35e/classes/*.json` (`progression` & `featureDetails`) queried via `collectClassFeaturesUpToLevel` (`src/rulesets/dnd35e/progression/class_features_xp.ts`) |
+| Rogue Special Ability option pool & labels | `ROGUE_SPECIAL_ABILITIES` hardcoded array in `src/rendering/ui/dnd35e_level_up_class_options.ui.ts` | `public/data/rulesets/dnd35e/classes/rogue.json` (`featureDetails.rogue_special_ability_*.bonusFeatPool` & `featureDetails`) |
+| Ranger Favored Enemy damage & skill modifiers | Duplicate static `modifiers` on `favored_enemy_1` in `public/data/rulesets/dnd35e/classes/ranger.json` | `buildClassChoiceModifiers` in `src/rulesets/dnd35e/progression/ledger_choices.ts` |
+| Companion & Familiar stat calculation (HP, AC, BAB, Saves, Ability Mods) | Manual arithmetic in `upsertLinkedServantActor` (`src/rulesets/dnd35e/companions.ts`) | `evaluateDnD35ActorStatDAG` (`src/rulesets/dnd35e/modifiers/dag_resolver.ts`) |
 
 ---
 
-## 3. Cascading Effects Matrix (Rule 15)
+## 3. Cascading Effects Matrix
 
-| Change | Upstream (Callers / Data / Schemas) | Downstream (Consumers / Validators / DAG / UI) | Lateral (Sibling JSONs / Docs / Mirrors) |
+| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Validators / Renderers) | Lateral (Sibling JSONs / Registries / Tests) |
 | :--- | :--- | :--- | :--- |
-| **1. Declarative Modifiers in `races.json` & `evaluateEffectBundle`** | `public/data/rulesets/dnd35e/races.json`, `DnD35RaceDefinitionSchema` | `collectClassChoiceFeats`, `buildClassChoiceModifiers`, `rebuildActorStateFromLevelHistory`, `run-validator.ts` | `dnd35e_char_builder_class_options.ui.ts` (`.target`) |
-| **2. Feature-Driven Choice Checks (Zero Level Constants)** | Class JSONs (`ranger.json`, `cleric.json`, `rogue.json`, `druid.json`, `wizard.json`) | `builder_validation.ts`, `builder_levelup_validation.ts`, `character_builder.ts`, `level_ledger.ts`, `dnd35e_char_builder_class.ui.ts`, `dnd35e_level_up_class_options.ui.ts` | Removes all imports of deleted `companion_data.ts` and progression level constants |
-| **3. Tagged `companions` Array + 4-Stage Stat DAG** | `CharacterCreationDraft`, `LevelUpChoice`, `DnD35CharacterLevelRecord`, `rebuildActorStateFromLevelHistory` | `syncActorCompanionsAndFamiliars`, `evaluateDnD35ActorStatDAG`, `ControllerLinkComponent.tags`, `projectDnD35ActorSemanticTags` | `tests/dnd35e_char_builder.test.ts`, `tests/dnd35e_level_ledger.test.ts` |
-| **4. Data-Driven UI Pickers** | `sys.races`, `sys.creatureTypes`, `sys.subtypes`, `sys.items`, `sys.feats` | Character Creation & Level-Up modals | `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
+| **Step 1: JSON Data Normalization (`races.json`, `cleric.json`, `ranger.json`, `rogue.json`)** | `public/data/rulesets/dnd35e/races.json`, `classes/cleric.json`, `classes/ranger.json`, `classes/rogue.json` | `DnD35EffectBundleSchema` (`effect_system.types.ts`), `ledger_choices.ts`, `ledger_modifiers.ts`, `character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`, UI class option views | `scripts/run-validator.ts` |
+| **Step 2: Feature-Driven `ledger_choices.ts` & `builder_prereq_context.ts`** | `level_ledger.ts`, `builder_prereq_context.ts`, `builder_hydrator_creation.ts` | `collectClassChoiceFeats`, `buildClassChoiceModifiers`, actor `feats` & `modifiers` arrays | `tests/dnd35e_classes_builder.test.ts` |
+| **Step 3: Feature-Driven Validation & Tagged Companion Hydration (`character_builder.ts`, `builder_*.ts`, `level_ledger.ts`)** | `character_builder.ts`, `level_ledger.ts` | `sanitizeDraftOnRaceOrClassChange`, `validateCharacterCreationStep`, `validateLevelUpStep`, `applyCharacterCreationToPlayer`, `applyLevelUpToActor`, `rebuildActorStateFromLevelHistory` | `src/rulesets/dnd35e/types/data/actor_data.types.ts` |
+| **Step 4: Tagged Companion Sync & Stat DAG Evaluation (`companions.ts`, `registry.ts`)** | `builder_hydrator_creation.ts`, `builder_hydrator_levelup.ts`, `dnd35e/index.ts` | `syncActorCompanionsAndFamiliars`, `evaluateDnD35ActorStatDAG`, `ControllerLinkComponent` (`tags`) | `src/rulesets/registry.ts`, `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
+| **Step 5: Feature-Reactive Class Options UI (`dnd35e_char_builder_class*.ui.ts`, `dnd35e_level_up_class*.ui.ts`)** | `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts` | DOM rendering for Cleric Domains, Wizard Arcane School, Wizard/Sorcerer Familiar (ACF-reactive), Druid Animal Companion (ACF-reactive), Ranger Favored Enemy / Combat Style / Companion, Rogue Special Abilities | `docs/ssot/ssot_console.json` |
 
 ---
 
-## 4. Step-by-Step Implementation Flow
+## 4. Implementation Status Checklist
 
-### Step 1: Finish `races.json` & UI Modifier Schema Fixes
-- Ensure all 9 familiars (`bat`, `cat`, `hawk`, `owl`, `rat`, `raven`, `viper`, `toad`, `weasel`) in [`races.json`](file:///d:/Projects/Game%20Dev/rogue-like/public/data/rulesets/dnd35e/races.json) use `DnD35DeclarativeModifierSchema` (`{ id, target, value, type: "untyped" }`).
-- In [`dnd35e_char_builder_class_options.ui.ts`](file:///d:/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_char_builder_class_options.ui.ts), read `.target` instead of `.targetStat`.
-
-### Step 2: Feature-Driven Refactoring in `ledger_choices.ts`
-- Remove all imports of level constants from `ledger_choices.ts`.
-- Accept `activeFeatures: ReadonlyArray<string>` and `companions: ReadonlyArray<DnD35CompanionEntry>`.
-- Combat style feats granted when:
-  - `activeFeatures.includes('combat_style')` $\to$ `rapid_shot` or `two_weapon_fighting`
-  - `activeFeatures.includes('improved_combat_style')` $\to$ `manyshot` or `improved_two_weapon_fighting`
-  - `activeFeatures.includes('combat_style_mastery')` $\to$ `improved_precise_shot` or `greater_two_weapon_fighting`
-- Familiar master bonuses evaluated via canonical `evaluateEffectBundle(famRace.masterEffectBundle, 'familiar:' + comp.raceId, activeTags)`.
-
-### Step 3: Pure 4-Stage Stat DAG for Companions in `companions.ts`
-- Remove all 8 class progression constants and hardcoded stat formulas from `companions.ts`.
-- Fix `getDnD35SystemContent(nextState.campaign)`.
-- In `syncSingleCompanionEntry`:
-  - Advance the companion's racial HD track by `bonusHd`.
-  - Apply `totalNatArmor` and STR/DEX bonuses to `scaledData`.
-  - Call `evaluateDnD35ActorStatDAG` to compute true HP, Attack, and AC.
-  - Familiar scales HP to `max(dag.maxHp, floor(masterHp / 2))` and attack to `max(dag.attack, masterBab)`.
-- In `upsertLinkedServantActor`, update `link.tags` when an existing companion entity is modified.
-- Keep file length strictly $\le 260$ lines.
-
-### Step 4: Feature-Driven Character Builder & Validation
-- In `character_builder.ts`:
-  - Determine active level 1 features from `classDef.progression[0].features` and `selectedAcfs`.
-  - Keep domains if active features include `"deity_domains"`.
-  - Keep familiar if active features include a feature with `poolId === 'familiar_master_effective_level'`.
-  - Keep companion if active features include a feature with `poolId === 'animal_companion_effective_level'`.
-- In `builder_validation.ts` and `builder_levelup_validation.ts`:
-  - Remove all dangling `companion_data.ts` imports.
-  - Derive required choices at `nextClassLevel` by inspecting that level's features:
-    - Feature `"combat_style"` $\to$ validate `choice.combatStyle`.
-    - Feature matching `/^favored_enemy_([2-9]|\d{2,})$/` $\to$ validate `choice.favoredEnemyAdded` and `choice.favoredEnemyBoosted`.
-    - Feature with `poolId === 'animal_companion_effective_level'` $\to$ validate `choice.animalCompanionId`.
-    - Feature with `bonusFeatPool` or starting with `"rogue_special_ability_"` $\to$ validate `choice.rogueSpecialAbility`.
-
-### Step 5: Feature-Driven UI Panels
-- In `dnd35e_char_builder_class.ui.ts`:
-  - Inspect active level 1 features instead of `draftState.classId === '...'`.
-  - Render Cleric domains if active features have `"deity_domains"`.
-  - Render Arcane schools if active features have `"arcane_school_specialization"`.
-  - Render Familiar if active features have `familiar_master_effective_level`.
-  - Render Animal Companion if active features have `animal_companion_effective_level`.
-  - Render Favored Enemy if active features have `"favored_enemy_1"`.
-- In `dnd35e_level_up_class_options.ui.ts`:
-  - Inspect gained features at `nextClassLevel` (with ACF swaps applied).
-  - Dynamically render Combat Style, Favored Enemy upgrade, Animal Companion, or Rogue Special Ability based on the gained features.
-  - Derive Rogue special abilities from `activeCls.featureDetails` or `sys.feats`.
-
-### Step 6: SSOT Registries & 8-Stage Verification
-- Update `docs/ssot/ssot_dnd35e.json`.
-- Run `bun scripts/map-codebase.ts` to regenerate SSOT docs.
-- Run `.\verify.bat` and fix any stage failures until all 8 stages pass with 0 errors.
+- [x] **Step 1**: Normalized `races.json`, `cleric.json`, `ranger.json`, and `rogue.json` and restored strict `DnD35EffectBundleSchema` validation in `src/rulesets/dnd35e/types/system/effect_system.types.ts`.
+- [x] **Step 2**: Refactored `collectClassChoiceFeats` (`ledger_choices.ts`), `buildClassAndDomainEffectModifiers` (`ledger_modifiers.ts`), and `buildPostLevelUpPrerequisiteContext` (`builder_prereq_context.ts`) to inspect active features and scaling pools.
+- [x] **Step 3**: Refactored `sanitizeDraftOnRaceOrClassChange` (`character_builder.ts`), `validateCharacterCreationStep` (`builder_validation.ts`), `validateLevelUpStep` (`builder_levelup_validation.ts`), `applyCharacterCreationToPlayer` (`builder_hydrator_creation.ts`), and `rebuildActorStateFromLevelHistory` (`level_ledger.ts`) to be 100% feature-driven and hydrate tagged `companions`.
+- [x] **Step 4**: Refactored `syncActorCompanionsAndFamiliars` (`companions.ts`) to stack progression bonuses per tag (`animal_companion`, `familiar`) and evaluate servant stats via `evaluateDnD35ActorStatDAG`, and evicted hardcoded progression constants from `companions.ts` and `registry.ts`.
+- [x] **Step 5**: Refactored `dnd35e_char_builder_class.ui.ts`, `dnd35e_char_builder_class_options.ui.ts`, and `dnd35e_level_up_class_options.ui.ts` to render class option panels strictly from active features, scaling pools, and `bonusFeatPool` metadata.
+- [x] **Step 6**: Added regression tests in `tests/dnd35e_classes_builder.test.ts`, synced `docs/ssot/ssot_dnd35e.json` and `docs/SSOT_DND35E.md`, updated `docs/MILESTONES.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`, and verified all 8 stages of `./verify.sh`.

@@ -1,14 +1,9 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
-import {
-  RANGER_ANIMAL_COMPANION_MIN_LEVEL,
-  RANGER_COMBAT_STYLE_LEVEL,
-  RANGER_FAVORED_ENEMY_UPGRADE_LEVELS,
-  ROGUE_SPECIAL_ABILITY_LEVELS
-} from '../companion_data.ts';
 import { parseParameterizedFeatId } from '../effect_bundle.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../prerequisites.ts';
 import {
   aggregateProgressionChassis,
+  collectClassFeaturesUpToLevel,
   computeEffectiveClassCastingLevel,
   getEligibleBaseCastingClassesForPrestige
 } from '../progression.ts';
@@ -70,35 +65,65 @@ export function validateLevelUpStep(
     if (newTotalHd % ABILITY_SCORE_INCREASE_HD_STEP === 0 && !choice.abilityScoreIncrease) {
       return { valid: false, reason: `Select a +1 Ability Score Increase for reaching HD ${newTotalHd}.` };
     }
-    if (classDef.id === 'ranger') {
-      if (nextClassLevel === RANGER_COMBAT_STYLE_LEVEL && !choice.combatStyle) {
-        return { valid: false, reason: 'Rangers at 2nd level must choose a Combat Style (Archery or Two-Weapon).' };
+    const prevFeatures = collectClassFeaturesUpToLevel(
+      classDef,
+      existingTrack ? existingTrack.levels : 0,
+      dndData.selectedAcfs ?? []
+    );
+    const currFeatures = collectClassFeaturesUpToLevel(classDef, nextClassLevel, [
+      ...(dndData.selectedAcfs ?? []),
+      ...(choice.selectedAcfs ?? [])
+    ]);
+    const newFeatures = currFeatures.filter((f) => !prevFeatures.includes(f));
+
+    if (newFeatures.includes('combat_style') && !choice.combatStyle) {
+      return {
+        valid: false,
+        reason: `${classDef.name} at level ${nextClassLevel} must choose a Combat Style (Archery or Two-Weapon).`
+      };
+    }
+
+    if (newFeatures.some((f) => f.startsWith('favored_enemy_'))) {
+      if (!choice.favoredEnemyAdded) {
+        return { valid: false, reason: `${classDef.name} at level ${nextClassLevel} must select a new Favored Enemy.` };
       }
-      if (RANGER_FAVORED_ENEMY_UPGRADE_LEVELS.includes(nextClassLevel)) {
-        if (!choice.favoredEnemyAdded) {
-          return { valid: false, reason: `Rangers at level ${nextClassLevel} must select a new Favored Enemy.` };
-        }
-        if (!choice.favoredEnemyBoosted) {
-          return {
-            valid: false,
-            reason: `Rangers at level ${nextClassLevel} must increase bonus against an existing Favored Enemy.`
-          };
-        }
-      }
-      if (
-        nextClassLevel === RANGER_ANIMAL_COMPANION_MIN_LEVEL &&
-        !dndData.animalCompanionId &&
-        !choice.animalCompanionId
-      ) {
-        return { valid: false, reason: 'Rangers at 4th level must select an Animal Companion.' };
+      if (prevFeatures.some((f) => f.startsWith('favored_enemy_')) && !choice.favoredEnemyBoosted) {
+        return {
+          valid: false,
+          reason: `${classDef.name} at level ${nextClassLevel} must increase bonus against an existing Favored Enemy.`
+        };
       }
     }
-    if (
-      classDef.id === 'rogue' &&
-      ROGUE_SPECIAL_ABILITY_LEVELS.includes(nextClassLevel) &&
-      !choice.rogueSpecialAbility
-    ) {
-      return { valid: false, reason: `Rogues at level ${nextClassLevel} must choose a Special Ability.` };
+
+    const prevCompPool = prevFeatures.reduce((max, fId) => {
+      const contrib = classDef.featureDetails[fId]?.scalingPoolContribution;
+      if (contrib?.poolId === 'animal_companion_effective_level') {
+        const eff = existingTrack ? existingTrack.levels : 0;
+        return eff >= (contrib.minClassLevel ?? 1) ? Math.max(max, eff * contrib.multiplier + contrib.offset) : max;
+      }
+      return max;
+    }, 0);
+    const nextCompPool = currFeatures.reduce((max, fId) => {
+      const contrib = classDef.featureDetails[fId]?.scalingPoolContribution;
+      if (contrib?.poolId === 'animal_companion_effective_level') {
+        return nextClassLevel >= (contrib.minClassLevel ?? 1)
+          ? Math.max(max, nextClassLevel * contrib.multiplier + contrib.offset)
+          : max;
+      }
+      return max;
+    }, 0);
+
+    const hasAnimalCompanion =
+      dndData.animalCompanionId !== undefined ||
+      (dndData.companions ?? []).some((c) => c.tags.includes('animal_companion'));
+
+    if (prevCompPool === 0 && nextCompPool > 0 && !hasAnimalCompanion && !choice.animalCompanionId) {
+      return { valid: false, reason: `${classDef.name} at level ${nextClassLevel} must select an Animal Companion.` };
+    }
+
+    const rogueSpecialFeatId = newFeatures.find((f) => f.startsWith('rogue_special_ability_'));
+    if (rogueSpecialFeatId && !choice.rogueSpecialAbility) {
+      return { valid: false, reason: `${classDef.name} at level ${nextClassLevel} must choose a Special Ability.` };
     }
     const prcSlots = getEligibleBaseCastingClassesForPrestige(
       dndData.tracks,

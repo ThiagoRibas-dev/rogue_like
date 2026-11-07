@@ -1,5 +1,4 @@
-import type { DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import type { CharacterCreationDraft, DnD35SpellSchool } from '../../rulesets/registry.ts';
+import type { CharacterCreationDraft, DnD35SpellSchool, DnD35SystemContent } from '../../rulesets/registry.ts';
 import { validateSpecialistSchoolSelection } from '../../rulesets/registry.ts';
 
 const SPELL_SCHOOLS: ReadonlyArray<DnD35SpellSchool> = [
@@ -98,9 +97,17 @@ export function renderClericOptions(
  * @param draft Current character creation draft.
  * @param updateDraft Callback to update the draft.
  */
-export function renderWizardOptions(
+/**
+ * Renders Wizard specialist arcane school and prohibited school selectors.
+ *
+ * @param parent Host container element.
+ * @param sys Loaded D&D 3.5e system content.
+ * @param draft Current character creation draft.
+ * @param updateDraft Callback to update the draft.
+ */
+export function renderArcaneSchoolOptions(
   parent: HTMLElement,
-  sys: DnD35SystemContent,
+  _sys: DnD35SystemContent,
   draft: CharacterCreationDraft,
   updateDraft: (next: CharacterCreationDraft) => void
 ): void {
@@ -162,7 +169,22 @@ export function renderWizardOptions(
     }
     parent.appendChild(prohibWrap);
   }
+}
 
+/**
+ * Renders Summon Familiar picker for any class granting familiar progression.
+ *
+ * @param parent Host container element.
+ * @param sys Loaded D&D 3.5e system content.
+ * @param draft Current character creation draft.
+ * @param updateDraft Callback to update the draft.
+ */
+export function renderFamiliarOptions(
+  parent: HTMLElement,
+  sys: DnD35SystemContent,
+  draft: CharacterCreationDraft,
+  updateDraft: (next: CharacterCreationDraft) => void
+): void {
   const famHeader = document.createElement('strong');
   famHeader.textContent = 'Summon Familiar:';
   parent.appendChild(famHeader);
@@ -180,7 +202,7 @@ export function renderWizardOptions(
     fBtn.style.fontSize = '0.74rem';
     fBtn.style.borderColor = isCur ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
     const bonusDesc = fam.masterEffectBundle?.modifiers?.[0]
-      ? `+${fam.masterEffectBundle.modifiers[0].value} ${fam.masterEffectBundle.modifiers[0].targetStat.replace('skill:', '')}`
+      ? `+${fam.masterEffectBundle.modifiers[0].value} ${fam.masterEffectBundle.modifiers[0].target.replace('skill:', '')}`
       : 'Alertness';
     fBtn.textContent = `${fam.name} (${bonusDesc})`;
     fBtn.addEventListener('click', () => {
@@ -189,6 +211,19 @@ export function renderWizardOptions(
     famWrap.appendChild(fBtn);
   }
   parent.appendChild(famWrap);
+}
+
+/**
+ * Backwards-compatible compound renderer for Wizard options (School + Familiar).
+ */
+export function renderWizardOptions(
+  parent: HTMLElement,
+  sys: DnD35SystemContent,
+  draft: CharacterCreationDraft,
+  updateDraft: (next: CharacterCreationDraft) => void
+): void {
+  renderArcaneSchoolOptions(parent, sys, draft, updateDraft);
+  renderFamiliarOptions(parent, sys, draft, updateDraft);
 }
 
 /**

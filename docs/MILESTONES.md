@@ -1709,7 +1709,7 @@ Build and polish the ruleset-specific UI views (`src/rendering/ui/dnd35e_sheet.u
 - [x] **General Resizable Panels & Drag Splitters (`src/rendering/ui/resizable_panels.ui.ts`, `src/styles/layout.css`, `src/core/settings.ts`)**:
   - Add interactive drag-splitter handles between the main game panels (`#splitter-left-hud`, `#splitter-right-hud`) with clamped viewport bounds, `localStorage` persistence (`updatePanelLayout`), and automatic ROT.js canvas viewport reflow (`syncDisplayLayout`).
 
-## 🟢 Milestone 119: _"The Sunless Reliquary"_ Full SRD Content Showcase & Campaign Editor Verification (Complete)
+### 🟢 Milestone 119: _"The Sunless Reliquary"_ Full SRD Content Showcase & Campaign Editor Verification (Complete)
 
 Upgrade `public/data/campaigns/dnd35e-crypt/` and the verification suite to exercise every Phase 21–26 primitive and content registry.
 
@@ -1719,4 +1719,30 @@ Upgrade `public/data/campaigns/dnd35e-crypt/` and the verification suite to exer
   - Added unit and headless integration tests covering the Console UI Slot & Modal Host API, D&D 3.5e UI Adapter, LIFO `CartridgeModal` stack, Level-Up alert ribbon & dock gating, Tactical Doctrine sliders/stances/grip modes feeding the 4-Stage Stat DAG, Vancian Spellbook preparation/rest loops, and *The Sunless Reliquary* showcase zones.
   - Verified 100% green execution across `./verify.sh` (TypeScript strict check, Prettier, ESLint, dependency-cruiser DAG, Knip dead-code check, `bun test` across 157 test suites, Vite production build, and `run-validator.ts` across all 4 campaigns, 788 ruleset files, and 394 SSOT source files).
 
+## 🟢 Milestone 120: Console & Cartridge UI Unification, Master Dossier, Dual-Column Paper Doll & HUD Bottom Dock (Complete)
 
+Unified the Tier 1 Console Host UI and Tier 2 Cartridge UI adapters (`ICartridgeUIAdapter`, `classicUIAdapter`, `dnd35eUIAdapter`) with live ECS/DAG state projection, zero mock/showcase fallbacks, a 4-tab Master Character Dossier, a dual-column symmetrical Paper Doll with 12-item compact stash and ground loot grids, and a unified HUD Bottom Dock with interactive stance toggles and variable dial steppers.
+
+- [x] **Tier 1 Console UI Host & Live Cartridge Adapters (`src/rendering/ui/cartridge_ui.types.ts`, `dnd35e_ui_adapter.ts`, `classic_ui_adapter.ts`)**:
+  - Standardized `ICartridgeUIAdapter` projection contracts (`projectHotbarData`, `projectMasterDossierData`, `projectInspectCardData`) reading exclusively from live ECS components and the 4-Stage Topological Stat DAG (`evaluateDnD35eEntityDAG`).
+- [x] **HUD Bottom Dock, Interactive Stances & Dial Steppers (`src/rendering/ui/hud_bottom_dock.ui.ts`, `dnd35e_ui_actions.ts`)**:
+  - Wired single-click tactical stances (*Fighting Defensively*, *Total Defense*, *Two-Handed Grip*), `-` / `+` dial steppers (*Power Attack*, *Combat Expertise*), and dynamically gated dock buttons (hiding *Spellbook* for non-casters and highlighting *Level Up* when XP reaches the next ECL threshold).
+- [x] **4-Tab Master Character Dossier & Dual-Column Paper Doll (`src/rendering/ui/console_master_dossier.ui.ts`, `console_paper_doll.ui.ts`)**:
+  - Replaced legacy split sheets with a unified 4-tab Master Dossier (*Overview & Defenses*, *Equipment & Stash*, *Skills*, *Feats & Progression*) featuring a symmetrical left/right anatomical Paper Doll around the central silhouette and a 12-slot scrollable Stash & Ground Loot grid.
+
+## 🟢 Milestone 121: D&D 3.5e Feature-Driven Progression & Tagged Companion Architecture (Complete)
+
+Eliminated all hardcoded class-ID checks (`classId === 'cleric' | 'wizard' | 'druid' | 'ranger' | 'rogue'`) and magic progression level constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT`) from character creation, draft sanitization, level-up validation, and UI projections, replacing them with declarative class feature and scaling-pool inspections. Unified servant lifecycle management under a tag-driven `companions: ReadonlyArray<DnD35CompanionEntry>` architecture evaluated through the 4-Stage Topological Stat DAG (`evaluateDnD35ActorStatDAG`).
+
+- [x] **Declarative Feature-Driven Class Progression & ACF Reactivity (`src/rulesets/dnd35e/progression/ledger_choices.ts`, `character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`)**:
+  - Gated all class choice mechanics (Combat Styles, Favored Enemies, Animal Companions, Cleric Domains, Wizard Specialist Schools, Rogue Special Abilities) strictly on active features (`collectClassFeaturesUpToLevel`) and scaling pool contributions (`animal_companion_effective_level`, `familiar_master_effective_level`).
+  - Toggling an Alternate Class Feature (e.g. `wizard_abrupt_jaunt_1` replacing `summon_familiar`) now automatically suppresses the replaced feature's UI picker, validation requirements, and virtual feat grants while clearing invalidated draft state.
+  - Enabled Summon Familiar picker for Sorcerers at character creation.
+- [x] **Data-Driven Content Cleanup & Strict Effect Bundle Schema (`public/data/rulesets/dnd35e/`, `effect_system.types.ts`)**:
+  - Normalized all 9 familiar `masterEffectBundle` definitions in `races.json` (including `weasel`) to canonical `DnD35EffectBundle` schemas with structured `virtualFeatGrants: [{ featId, ignorePrerequisites: true }]` and restored strict Zod validation on `DnD35EffectBundleSchema`.
+  - Added `cleric_domains` to `cleric.json` level-1 features, removed the phantom static modifier on `favored_enemy_1` in `ranger.json`, and added `bonusFeatPool` metadata plus ability descriptions to `rogue.json`.
+- [x] **Tagged Companion Architecture & 4-Stage Stat DAG (`src/rulesets/dnd35e/companions.ts`, `level_ledger.ts`, `builder_hydrator_creation.ts`)**:
+  - Unified companion and familiar storage under `companions: ReadonlyArray<DnD35CompanionEntry>` with multi-tag support (`tags: ['animal_companion', 'familiar']`).
+  - Refactored `syncActorCompanionsAndFamiliars` to advance servant Hit Die tracks and evaluate AC, HP, attack bonuses, saving throws, and size modifiers through `evaluateDnD35ActorStatDAG`.
+- [x] **Verification & SSOT Parity**:
+  - Re-mapped SSOT registries (`docs/ssot/ssot_dnd35e.json`), updated canonical documentation (`docs/SSOT_DND35E.md`), and passed all 8 stages of `./verify.sh` with 165/165 passing tests.

@@ -19,8 +19,9 @@
     "tier": "tier2_ui",
     "responsibility": "Renders class-specific multiple choice pickers (domains, deity weapons, schools, familiars, companions, favored enemies) for character creation.",
     "canonicalEntryPoints": [
-      "COMMON_DEITY_WEAPONS",
       "renderClericOptions",
+      "renderArcaneSchoolOptions",
+      "renderFamiliarOptions",
       "renderWizardOptions",
       "renderDruidOptions",
       "renderRangerOptions"
@@ -368,7 +369,6 @@
     "canonicalEntryPoints": [
       "FeatSlotPoolType",
       "FeatSlotDescriptor",
-      "FirstLevelFeatBudget",
       "WIZARD_BONUS_ITEM_CREATION_AND_MASTERY_FEATS",
       "isFeatAllowedInSlot",
       "computeFirstLevelFeatSlotBudget",
@@ -568,14 +568,7 @@
     "tier": "tier2_cartridge",
     "responsibility": "SRD Familiars, Animal Companions, progression advancement formulas, and lifecycle entity synchronization.",
     "canonicalEntryPoints": [
-      "RANGER_COMBAT_STYLE_LEVEL",
-      "RANGER_IMPROVED_COMBAT_STYLE_LEVEL",
-      "RANGER_COMBAT_STYLE_MASTERY_LEVEL",
-      "RANGER_ANIMAL_COMPANION_MIN_LEVEL",
-      "RANGER_FAVORED_ENEMY_UPGRADE_LEVELS",
       "FAVORED_ENEMY_BONUS_STEP",
-      "ROGUE_SPECIAL_ABILITY_LEVELS",
-      "CLERIC_REQUIRED_DOMAIN_COUNT",
       "computeAnimalCompanionAdvancement",
       "computeFamiliarAdvancement",
       "syncActorCompanionsAndFamiliars"

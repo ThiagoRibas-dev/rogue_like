@@ -8,6 +8,7 @@ import type { GameState } from '../../types/game-state.types.ts';
 import {
   renderClericOptions,
   renderDruidOptions,
+  renderFamiliarOptions,
   renderRangerOptions,
   renderWizardOptions
 } from './dnd35e_char_builder_class_options.ui.ts';
@@ -141,6 +142,18 @@ export function renderClassStep(
     }
     rightPane.appendChild(alignRow);
 
+    const activeFeatures = Object.keys(activeCls.featureDetails).filter((fId) => {
+      const row = activeCls.progression[0];
+      const hasBase = row?.features.includes(fId) ?? false;
+      const swapReplaced = activeCls.acfSwaps.some(
+        (s) => s.level === 1 && draftState.selectedAcfs.includes(s.acfId) && s.replacesFeature === fId
+      );
+      const swapGranted = activeCls.acfSwaps.some(
+        (s) => s.level === 1 && draftState.selectedAcfs.includes(s.acfId) && s.grantedFeature === fId
+      );
+      return (hasBase && !swapReplaced) || swapGranted;
+    });
+
     for (const acf of activeCls.acfSwaps.filter((a) => a.level === 1)) {
       const isChecked = draftState.selectedAcfs.includes(acf.acfId);
       const acfBtn = document.createElement('button');
@@ -153,24 +166,44 @@ export function renderClassStep(
         const nextAcfs = isChecked
           ? draftState.selectedAcfs.filter((id) => id !== acf.acfId)
           : [...draftState.selectedAcfs, acf.acfId];
-        updateDraft({ ...draftState, selectedAcfs: nextAcfs });
+        const nextDraft: CharacterCreationDraft = {
+          ...draftState,
+          selectedAcfs: nextAcfs,
+          ...(acf.replacesFeature === 'summon_familiar' ? { familiarId: undefined } : {}),
+          ...(acf.replacesFeature === 'animal_companion' ? { animalCompanionId: undefined } : {})
+        };
+        updateDraft(nextDraft);
       });
       rightPane.appendChild(acfBtn);
     }
 
-    if (draftState.classId === 'cleric') {
+    const hasClericDomains = activeFeatures.includes('cleric_domains') || activeFeatures.includes('deity_domains');
+    if (hasClericDomains) {
       renderClericOptions(rightPane, sys, draftState, updateDraft);
     }
 
-    if (draftState.classId === 'wizard') {
+    if (activeFeatures.includes('arcane_school_specialization')) {
       renderWizardOptions(rightPane, sys, draftState, updateDraft);
+    } else {
+      const grantsFamiliar = activeFeatures.some(
+        (fId) => activeCls.featureDetails[fId]?.scalingPoolContribution?.poolId === 'familiar_master_effective_level'
+      );
+      if (grantsFamiliar) {
+        renderFamiliarOptions(rightPane, sys, draftState, updateDraft);
+      }
     }
 
-    if (draftState.classId === 'druid') {
+    const grantsAnimalCompanion = activeFeatures.some(
+      (fId) =>
+        activeCls.featureDetails[fId]?.scalingPoolContribution?.poolId === 'animal_companion_effective_level' &&
+        (activeCls.featureDetails[fId]?.scalingPoolContribution?.minClassLevel ?? 1) <= 1
+    );
+    if (grantsAnimalCompanion) {
       renderDruidOptions(rightPane, sys, draftState, updateDraft);
     }
 
-    if (draftState.classId === 'ranger') {
+    const grantsFavoredEnemy = activeFeatures.some((fId) => fId.startsWith('favored_enemy_'));
+    if (grantsFavoredEnemy) {
       renderRangerOptions(rightPane, sys, draftState, updateDraft);
     }
   }

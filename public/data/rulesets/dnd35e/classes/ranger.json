@@ -46,24 +46,7 @@
         "id": "favored_enemy_1",
         "name": "Favored Enemy",
         "category": "ex",
-        "description": "+2 bonus on Bluff, Listen, Sense Motive, Spot, Survival, and weapon damage rolls against a chosen creature type (+2 at 5th, 10th, 15th, 20th).",
-        "modifiers": [
-          {
-            "id": "ranger_favored_enemy_dmg",
-            "target": "damage",
-            "value": 2,
-            "type": "untyped",
-            "condition": {
-              "targetTagsAny": [
-                "subtype:orc",
-                "subtype:goblinoid",
-                "type:undead",
-                "type:magical_beast",
-                "type:dragon"
-              ]
-            }
-          }
-        ]
+        "description": "+2 bonus on Bluff, Listen, Sense Motive, Spot, Survival, and weapon damage rolls against a chosen creature type (+2 at 5th, 10th, 15th, 20th)."
       },
       "track": {
         "id": "track",
@@ -91,6 +74,30 @@
             "ignorePrerequisites": true
           }
         ]
+      },
+      "improved_combat_style": {
+        "id": "improved_combat_style",
+        "name": "Improved Combat Style",
+        "category": "ex",
+        "description": "Gain Manyshot (Archery) or Improved Two-Weapon Fighting (Two-Weapon) while wearing light or no armor.",
+        "activationCondition": {
+          "selfTagsNone": [
+            "armor:medium",
+            "armor:heavy"
+          ]
+        }
+      },
+      "combat_style_mastery": {
+        "id": "combat_style_mastery",
+        "name": "Combat Style Mastery",
+        "category": "ex",
+        "description": "Gain Improved Precise Shot (Archery) or Greater Two-Weapon Fighting (Two-Weapon) while wearing light or no armor.",
+        "activationCondition": {
+          "selfTagsNone": [
+            "armor:medium",
+            "armor:heavy"
+          ]
+        }
       },
       "animal_companion_ranger": {
         "id": "animal_companion_ranger",

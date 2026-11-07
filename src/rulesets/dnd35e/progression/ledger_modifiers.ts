@@ -57,6 +57,9 @@ export function collectActiveGrantedAndVirtualFeats(
       for (const gf of evalRes.grantedFeats) {
         granted.add(gf);
       }
+      for (const vf of evalRes.virtualFeatGrants) {
+        granted.add(vf.featId);
+      }
       for (const f of domainDef.featGrants) {
         granted.add(f);
       }

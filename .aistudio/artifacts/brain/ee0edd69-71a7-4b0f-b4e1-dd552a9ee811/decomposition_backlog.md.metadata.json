@@ -1,0 +1,5 @@
+{
+  "summary": "Comprehensive backlog of files exceeding the 300-line modularity threshold (AGENTS.md Rule 8), ordered from longest to shortest, detailing domain, current responsibilities, and proposed single-concern decomposition strategies across Tier 1 Console, Tier 2 Ruleset Cartridge, and Tier 3 Content.",
+  "updatedAt": "2026-11-04T15:32:13.888319519Z",
+  "userFacing": true
+}

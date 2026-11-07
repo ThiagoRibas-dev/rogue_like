@@ -376,4 +376,16 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Wired all D&D 3.5e UI surfaces (`'char_creation'`, `'level_up'`, `'character_sheet'`, `'spellbook'`, the HUD Tactical Doctrine Bar, and the `'Level Up Available!'` alert ribbon) through `src/rendering/ui/dnd35e_ui_adapter.ts`.
   - *Rationale*: Hardcoding `UIMode.Spellbook`, `UIMode.CharacterSheet`, `UIMode.CharCreation`, or `UIMode.LevelUp` in Tier 1 Console enums and `presenter.ts` violates `AGENTS.md` Rule 16 (Three-Tier Placement Heuristic). A Console-level UI Host API lets any Cartridge register arbitrary modals, hotkeys, dock commands, HUD slots, and alert ribbons while keeping the Console 100% ruleset-agnostic and centrally managing LIFO ESC stack behavior, RTwP auto-pause restoration, and `PresentationDomain` dirty-flag gating.
 
+---
 
+### Milestone 121: Feature-Driven Class Progression, ACF Reactivity & Tagged Companion Stat DAG
+
+- **Decision: 100% Feature-Driven Class Choice Gating over Class-ID & Level Constants**:
+  - Evicted all hardcoded class-ID checks (`classId === 'cleric' | 'wizard' | 'druid' | 'ranger' | 'rogue'`) and magic progression constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT`) across `character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`, `ledger_choices.ts`, and the Character Builder / Level-Up UI views.
+  - All class option UI panels, validation requirements, and virtual feat grants now inspect active class features (`collectClassFeaturesUpToLevel(classDef, level, selectedAcfs)`) and `scalingPoolContribution` transitions (`animal_companion_effective_level`, `familiar_master_effective_level`).
+  - *Rationale*: Hardcoding `classId === 'wizard'` or `level === 2` prevented Sorcerers from selecting a Familiar at creation, failed to suppress the Familiar requirement when a Wizard selected the *Abrupt Jaunt* ACF (`wizard_abrupt_jaunt_1` replacing `summon_familiar`), and prevented modded or prestige classes from reusing Domains, Combat Styles, Favored Enemies, or Special Ability pools.
+
+- **Decision: Tag-Driven `companions` Array & 4-Stage Topological Stat DAG Evaluation for Servants**:
+  - Unified servant definitions under `companions: ReadonlyArray<DnD35CompanionEntry>` where each entry carries `tags: ReadonlyArray<string>` (`['animal_companion']`, `['familiar']`, or merged `['animal_companion', 'familiar']`).
+  - Refactored `syncActorCompanionsAndFamiliars` in `src/rulesets/dnd35e/companions.ts` to stack advancement bonuses per tag onto the servant's `DnD35EntityData` and evaluate its combat stats (`maxHp`, `attackBonus`, `acBreakdown.fullAC`, `saves`, `effectiveAbilityModifiers`) through `evaluateDnD35ActorStatDAG`.
+  - *Rationale*: Separate `animalCompanionId` and `familiarId` spawners duplicated entity creation logic, bypassed size/DEX/CON DAG calculation, and could not represent prestige class dual-role servants (such as an Arcane Hierophant's *Companion Familiar*) where a single creature receives both Druid Animal Companion and Wizard Arcane Familiar progression simultaneously.
