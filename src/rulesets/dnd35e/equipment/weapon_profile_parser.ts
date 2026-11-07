@@ -98,12 +98,18 @@ export function evaluateNonproficiencyPenalty(
     return 0;
   }
   const feats = dndData?.feats ?? [];
-  const hasExoticProficiency = feats.some(
-    (f) =>
-      f === 'exotic_weapon_proficiency' ||
-      (weaponItemId !== undefined &&
-        (f === `exotic_weapon_proficiency_${weaponItemId}` || f === `exotic_weapon_proficiency:${weaponItemId}`))
-  );
+  const isDeityWeapon = weaponItemId !== undefined && dndData?.deityFavoredWeaponId === weaponItemId;
+  const hasExoticProficiency =
+    isDeityWeapon ||
+    feats.some(
+      (f) =>
+        f === 'exotic_weapon_proficiency' ||
+        (weaponItemId !== undefined &&
+          (f === `exotic_weapon_proficiency_${weaponItemId}` ||
+            f === `exotic_weapon_proficiency:${weaponItemId}` ||
+            f === `proficiency:weapon:${weaponItemId}` ||
+            f === `martial_weapon_proficiency:${weaponItemId}`))
+    );
   if (hasExoticProficiency) {
     return 0;
   }

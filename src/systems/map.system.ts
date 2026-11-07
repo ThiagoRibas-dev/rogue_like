@@ -215,9 +215,21 @@ export function processChangeAreaIntent(
   }
   nextEntities = nextEntitiesArray;
 
-  // 3. Move Player and their owned items
+  // 3. Move Player, their owned items, and linked companions
   const migratingArray = Array.from(migratingEntities);
   nextEntities = [...migratingArray, ...nextEntities];
+
+  const occupiedTileKeys = new Set<string>([`${spawnX},${spawnY}`]);
+  const candidateOffsets = [
+    { x: 0, y: 1 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: -1, y: 0 },
+    { x: 1, y: 1 },
+    { x: -1, y: 1 },
+    { x: 1, y: -1 },
+    { x: -1, y: -1 }
+  ];
 
   for (const id of migratingArray) {
     let comps = state.components.get(id) ?? {};
@@ -226,6 +238,32 @@ export function processChangeAreaIntent(
         ...comps,
         [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: spawnX, y: spawnY }
       };
+    } else if (comps[ComponentType.ControllerLink] !== undefined && comps[ComponentType.Position] !== undefined) {
+      let placed = false;
+      for (const off of candidateOffsets) {
+        const cx = spawnX + off.x;
+        const cy = spawnY + off.y;
+        const cKey = `${cx},${cy}`;
+        if (cx >= 0 && cx < targetMap.width && cy >= 0 && cy < targetMap.height) {
+          const tile = targetMap.tiles[cy * targetMap.width + cx];
+          const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
+          if (tile && tileDef?.walkable !== false && !occupiedTileKeys.has(cKey)) {
+            occupiedTileKeys.add(cKey);
+            comps = {
+              ...comps,
+              [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: cx, y: cy }
+            };
+            placed = true;
+            break;
+          }
+        }
+      }
+      if (!placed) {
+        comps = {
+          ...comps,
+          [ComponentType.Position]: { ...(comps[ComponentType.Position] as PositionComponent), x: spawnX, y: spawnY }
+        };
+      }
     }
     nextComponents.set(id, comps);
   }

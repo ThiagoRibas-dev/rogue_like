@@ -1,9 +1,3 @@
-/**
- * @file D&D 3.5e Interactive Level-Up Modal (Milestone 112.9).
- * Reuses shared 2-pane Skills, Feats, and Per-Class Spell step renderers with multiclass skill caps,
- * Prestige Class spellcasting target selectors, isolated per-class spell tabs, and mandatory step gating.
- */
-
 import { getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
@@ -12,13 +6,14 @@ import {
   ALL_ABILITY_IDS,
   aggregateProgressionChassis,
   applyLevelUpToActor,
+  buildPostLevelUpPrerequisiteContext,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculateSkillAllocationCost,
   computeAbilityModifier,
+  computeLevelUpFeatSlots,
   computeXpThresholdForLevel,
   getActorEverClassSkillIds,
-  getClassLevelRow,
   getDnD35EntityData,
   getDnD35SystemContent,
   getEffectiveClassSkillIds,
@@ -34,12 +29,7 @@ import {
   renderSharedFeatsStep,
   renderSharedSkillsStep
 } from './dnd35e_char_builder_steps.ui.ts';
-import {
-  computeLevelUpSpellTabs,
-  GENERAL_FEAT_HD_STEP,
-  renderLevelUpClassStage,
-  renderLevelUpFooter
-} from './dnd35e_level_up_class.ui.ts';
+import { computeLevelUpSpellTabs, renderLevelUpClassStage, renderLevelUpFooter } from './dnd35e_level_up_class.ui.ts';
 
 export * from './dnd35e_level_up_class.ui.ts';
 
@@ -57,6 +47,10 @@ let levelUpDraft: LevelUpChoice = {
 
 /**
  * Checks whether the player actor has enough XP to advance to the next character level.
+ *
+ * @param state Current GameState.
+ * @param playerId Player EntityId.
+ * @returns True if player XP meets or exceeds next ECL threshold.
  */
 export function canPlayerLevelUpDnD35e(state: GameState, playerId: EntityId): boolean {
   if (state.campaign.manifest.rulesetId !== 'dnd35e') return false;
@@ -69,7 +63,9 @@ export function canPlayerLevelUpDnD35e(state: GameState, playerId: EntityId): bo
 }
 
 /**
- * Renders the D&D 3.5e Interactive Level-Up Modal when `state.uiMode === UIMode.LevelUp`.
+ * Renders the D&D 3.5e Interactive Level-Up Modal when the `level_up` cartridge modal is open.
+ *
+ * @param state Current GameState.
  */
 export function renderDnD35eLevelUpModal(state: GameState): void {
   const overlay = document.getElementById('level-up-overlay');
@@ -98,7 +94,6 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
   const activeCls = sys.classes[levelUpDraft.classId] ?? Object.values(sys.classes)[0]!;
   const existingTrack = dndData.tracks.find((t) => t.trackId === activeCls.id);
   const nextClassLevel = (existingTrack ? existingTrack.levels : 0) + 1;
-  const nextRow = getClassLevelRow(activeCls, nextClassLevel);
 
   const raceDef = dndData.raceId ? sys.races[dndData.raceId] : undefined;
   const intScore = (dndData.abilityScores.int.base ?? 10) + (levelUpDraft.abilityScoreIncrease === 'int' ? 1 : 0);
@@ -117,9 +112,9 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
     calculateSkillAllocationCost(levelUpDraft.addedSkillRanks, activeLevelClassSkillIds) + literacyCost;
   const skillRemaining = Math.max(0, Math.round((skillBudget - skillSpent) * 100) / 100);
 
-  const generalFeatEarned = nextCharLevel % GENERAL_FEAT_HD_STEP === 0 ? 1 : 0;
-  const bonusFeatEarned = nextRow?.bonusFeatSlot === true ? 1 : 0;
-  const totalFeatSlots = generalFeatEarned + bonusFeatEarned;
+  const activeAcfs = [...(dndData.selectedAcfs ?? []), ...(levelUpDraft.selectedAcfs ?? [])];
+  const featSlots = computeLevelUpFeatSlots(activeCls, nextClassLevel, nextCharLevel, activeAcfs);
+  const totalFeatSlots = featSlots.length;
 
   const { prestigeSlots, effectivePrestigeTargets, spellTabs } = computeLevelUpSpellTabs(
     dndData,
@@ -234,21 +229,28 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
       onRefresh: () => renderDnD35eLevelUpModal(state)
     });
   } else if (levelUpTab === 'feats') {
-    const parts: string[] = [];
-    if (generalFeatEarned > 0) parts.push(`${generalFeatEarned} General`);
-    if (bonusFeatEarned > 0) parts.push(`${bonusFeatEarned} Class Bonus`);
+    const parts = featSlots.map((s) => s.label);
     const summaryLabel =
       totalFeatSlots > 0
         ? `Feats Selected: ${levelUpDraft.selectedFeats.length} / ${totalFeatSlots} (${parts.join(' + ')})`
         : 'No new feat slots earned at this Hit Die (General feats gained at HD 3, 6, 9, 12, 15, 18)';
 
+    const postPrereqCtx = buildPostLevelUpPrerequisiteContext(
+      dndData,
+      levelUpDraft,
+      activeCls,
+      sys,
+      levelUpDraft.selectedFeats
+    );
+
     renderSharedFeatsStep(stageHost, sys, {
       scrollPrefix: 'lvlup',
       slotSummaryLabel: summaryLabel,
       totalSlots: totalFeatSlots,
+      slots: featSlots,
       alreadyOwnedFeatIds: dndData.feats,
       selectedFeatIds: levelUpDraft.selectedFeats,
-      prereqCtx,
+      prereqCtx: postPrereqCtx,
       onUpdateSelectedFeats: (nextFeats) => {
         levelUpDraft = { ...levelUpDraft, selectedFeats: nextFeats };
         renderDnD35eLevelUpModal(state);

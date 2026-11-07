@@ -96,7 +96,13 @@
         "id": "animal_companion_ranger",
         "name": "Animal Companion",
         "category": "ex",
-        "description": "Bond with an animal companion at effective druid level equal to 1/2 ranger level."
+        "description": "Bond with an animal companion at effective druid level equal to 1/2 ranger level.",
+        "scalingPoolContribution": {
+          "poolId": "animal_companion_effective_level",
+          "multiplier": 0.5,
+          "offset": 0,
+          "minClassLevel": 4
+        }
       },
       "evasion": {
         "id": "evasion",

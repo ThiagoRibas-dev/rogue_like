@@ -111,7 +111,8 @@ export function tickControllerLinksAndOverlays(state: GameState): GameState {
     if (link) {
       const controllerExists = nextState.entities.includes(link.controllerEntityId);
       const isExpired = link.expirationTurn !== undefined && nextState.globalTurn >= link.expirationTurn;
-      if ((!controllerExists || isExpired) && link.relationship === 'summon') {
+      const isTemporary = link.tags.includes('summon') || link.tags.includes('temporary_ally');
+      if (isExpired || (!controllerExists && isTemporary)) {
         nextState = removeEntity(nextState, entityId);
       }
     }

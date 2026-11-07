@@ -2,6 +2,11 @@
   "law": {
     "id": "law",
     "name": "Law",
+    "allowedAlignments": [
+      "LG",
+      "LN",
+      "LE"
+    ],
     "grantedPowerDescription": "You cast law spells at +1 caster level.",
     "grantedPowerBundle": {
       "bundleId": "domain_power_law",

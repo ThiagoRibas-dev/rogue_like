@@ -19,7 +19,13 @@ import type {
 } from './types/dnd35e_system.types.ts';
 
 // Re-export extracted single-concern modules for backward compatibility (Rule 15)
-export { type EvaluatedEffectBundleResult, isActivationConditionMet, evaluateEffectBundle } from './effect_bundle.ts';
+export {
+  type EvaluatedEffectBundleResult,
+  isActivationConditionMet,
+  evaluateEffectBundle,
+  parseParameterizedFeatId,
+  resolveFeatEffectBundle
+} from './effect_bundle.ts';
 
 export {
   CONSTRUCT_BONUS_HP_BY_SIZE,

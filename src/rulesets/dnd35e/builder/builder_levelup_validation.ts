@@ -1,0 +1,215 @@
+import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
+import {
+  RANGER_ANIMAL_COMPANION_MIN_LEVEL,
+  RANGER_COMBAT_STYLE_LEVEL,
+  RANGER_FAVORED_ENEMY_UPGRADE_LEVELS,
+  ROGUE_SPECIAL_ABILITY_LEVELS
+} from '../companion_data.ts';
+import { parseParameterizedFeatId } from '../effect_bundle.ts';
+import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../prerequisites.ts';
+import {
+  aggregateProgressionChassis,
+  computeEffectiveClassCastingLevel,
+  getEligibleBaseCastingClassesForPrestige
+} from '../progression.ts';
+import type { DnD35EntityData } from '../types/dnd35e.types.ts';
+import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import {
+  calculateLevelSkillPointBudget,
+  calculateSkillAllocationCost,
+  computeLevelUpFeatSlots,
+  getEffectiveClassSkillIds,
+  isFeatAllowedInSlot,
+  type LevelUpChoice
+} from './builder_core.ts';
+import { buildPostLevelUpPrerequisiteContext, buildPrerequisiteContextForActor } from './builder_prereq_context.ts';
+import { computeClassSpellSelectionBudget, validateClassSpellSelection } from './builder_spells.ts';
+
+/** Hit Dice interval for +1 Ability Score Increases (`4`). */
+const ABILITY_SCORE_INCREASE_HD_STEP = 4;
+
+/** Skill point cost required for an illiterate character (e.g. Barbarian) to gain Literacy (`2`). */
+const LITERACY_SKILL_POINT_COST = 2;
+
+/**
+ * Validates a specific step of the Level-Up modal.
+ *
+ * @param dndData Current actor `DnD35EntityData`.
+ * @param choice Current `LevelUpChoice` draft.
+ * @param stepKey Step tab identifier (`'class' | 'skills' | 'feats' | 'spells:<classId>'`).
+ * @param sysContent Loaded D&D 3.5e system content.
+ * @returns Validation result `{ valid, reason? }`.
+ */
+export function validateLevelUpStep(
+  dndData: DnD35EntityData,
+  choice: LevelUpChoice,
+  stepKey: string,
+  sysContent: DnD35SystemContent
+): { readonly valid: boolean; readonly reason?: string } {
+  const classDef = sysContent.classes[choice.classId];
+  if (!classDef) {
+    return { valid: false, reason: 'Please select a valid class to advance.' };
+  }
+
+  const conMod = computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.con));
+  const prevChassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0);
+  const newTotalHd = prevChassis.totalHD + 1;
+  const existingTrack = dndData.tracks.find((t) => t.trackId === classDef.id);
+  const nextClassLevel = (existingTrack ? existingTrack.levels : 0) + 1;
+
+  if (stepKey === 'class') {
+    if (nextClassLevel > classDef.maxLevel) {
+      return { valid: false, reason: `Already at maximum level (${classDef.maxLevel}) for ${classDef.name}.` };
+    }
+    if (classDef.prerequisites) {
+      const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes);
+      if (!evaluatePrerequisiteAST(classDef.prerequisites, prereqCtx)) {
+        return { valid: false, reason: `Prerequisites not met for ${classDef.name}.` };
+      }
+    }
+    if (newTotalHd % ABILITY_SCORE_INCREASE_HD_STEP === 0 && !choice.abilityScoreIncrease) {
+      return { valid: false, reason: `Select a +1 Ability Score Increase for reaching HD ${newTotalHd}.` };
+    }
+    if (classDef.id === 'ranger') {
+      if (nextClassLevel === RANGER_COMBAT_STYLE_LEVEL && !choice.combatStyle) {
+        return { valid: false, reason: 'Rangers at 2nd level must choose a Combat Style (Archery or Two-Weapon).' };
+      }
+      if (RANGER_FAVORED_ENEMY_UPGRADE_LEVELS.includes(nextClassLevel)) {
+        if (!choice.favoredEnemyAdded) {
+          return { valid: false, reason: `Rangers at level ${nextClassLevel} must select a new Favored Enemy.` };
+        }
+        if (!choice.favoredEnemyBoosted) {
+          return {
+            valid: false,
+            reason: `Rangers at level ${nextClassLevel} must increase bonus against an existing Favored Enemy.`
+          };
+        }
+      }
+      if (
+        nextClassLevel === RANGER_ANIMAL_COMPANION_MIN_LEVEL &&
+        !dndData.animalCompanionId &&
+        !choice.animalCompanionId
+      ) {
+        return { valid: false, reason: 'Rangers at 4th level must select an Animal Companion.' };
+      }
+    }
+    if (
+      classDef.id === 'rogue' &&
+      ROGUE_SPECIAL_ABILITY_LEVELS.includes(nextClassLevel) &&
+      !choice.rogueSpecialAbility
+    ) {
+      return { valid: false, reason: `Rogues at level ${nextClassLevel} must choose a Special Ability.` };
+    }
+    const prcSlots = getEligibleBaseCastingClassesForPrestige(
+      dndData.tracks,
+      classDef,
+      nextClassLevel,
+      sysContent.classes
+    );
+    const nonEmptySlots = prcSlots.filter((s) => s.eligibleClassIds.length > 0);
+    if (nonEmptySlots.length > 0) {
+      const chosen = choice.advancedSpellcastingClassIds ?? [];
+      if (chosen.length < nonEmptySlots.length || chosen.some((c) => !c)) {
+        return {
+          valid: false,
+          reason: `Select which base spellcasting class(es) ${classDef.name} advances.`
+        };
+      }
+    }
+    return { valid: true };
+  }
+
+  if (stepKey === 'skills') {
+    const raceDef = dndData.raceId ? sysContent.races[dndData.raceId] : undefined;
+    let effInt = computeEffectiveAbilityScore(dndData.abilityScores.int);
+    if (choice.abilityScoreIncrease === 'int' && effInt !== null) effInt += 1;
+    const intMod = computeAbilityModifier(effInt);
+    const budget = calculateLevelSkillPointBudget(
+      classDef.skillPointsPerLevel,
+      intMod,
+      false,
+      0,
+      raceDef?.extraSkillPointsPerLevel ?? 0
+    );
+    const activeLevelClassSkills = getEffectiveClassSkillIds(classDef, dndData.domains ?? [], sysContent);
+    const literacyCost = choice.spendSkillPointsForLiteracy === true ? LITERACY_SKILL_POINT_COST : 0;
+    const spent = calculateSkillAllocationCost(choice.addedSkillRanks, activeLevelClassSkills) + literacyCost;
+    if (spent > budget) return { valid: false, reason: `Skill points overspent (${spent}/${budget}).` };
+    if (spent < budget)
+      return { valid: false, reason: `Allocate all remaining skill points (${spent}/${budget} spent).` };
+    return { valid: true };
+  }
+
+  if (stepKey === 'feats') {
+    const activeAcfs = [...(dndData.selectedAcfs ?? []), ...(choice.selectedAcfs ?? [])];
+    const slots = computeLevelUpFeatSlots(classDef, nextClassLevel, newTotalHd, activeAcfs);
+    if (choice.selectedFeats.length !== slots.length) {
+      return {
+        valid: false,
+        reason: `Select ${slots.length} feat(s) before continuing (${choice.selectedFeats.length}/${slots.length} selected).`
+      };
+    }
+    const accumulatedFeats: string[] = [];
+    for (let i = 0; i < choice.selectedFeats.length; i++) {
+      const featId = choice.selectedFeats[i]!;
+      const slot = slots[i];
+      const { baseFeatId, targetId } = parseParameterizedFeatId(featId);
+      const featDef = sysContent.feats[baseFeatId];
+      if (!featDef) {
+        return { valid: false, reason: `Unknown feat selected: ${featId}` };
+      }
+      if (slot && !isFeatAllowedInSlot(featDef, slot)) {
+        return { valid: false, reason: `Feat ${featDef.name} is not permitted in ${slot.label}.` };
+      }
+      if (!slot?.ignorePrerequisites && featDef.prerequisites) {
+        const ctx = buildPostLevelUpPrerequisiteContext(dndData, choice, classDef, sysContent, accumulatedFeats);
+        const evalCtx: PrerequisiteEvalContext = targetId ? { ...ctx, targetId } : ctx;
+        if (!evaluatePrerequisiteAST(featDef.prerequisites, evalCtx)) {
+          return { valid: false, reason: `Prerequisites not met for feat: ${featDef.name}` };
+        }
+      }
+      accumulatedFeats.push(featId);
+    }
+    return { valid: true };
+  }
+
+  if (stepKey.startsWith('spells:')) {
+    const targetClassId = stepKey.slice('spells:'.length);
+    const targetClassDef = sysContent.classes[targetClassId];
+    if (!targetClassDef) return { valid: true };
+
+    const prevCasterLvl = computeEffectiveClassCastingLevel(
+      dndData.tracks,
+      targetClassDef,
+      sysContent.classes,
+      dndData.levelHistory
+    );
+    const nextCasterLvl = prevCasterLvl + 1;
+    let effInt = computeEffectiveAbilityScore(dndData.abilityScores.int);
+    if (choice.abilityScoreIncrease === 'int' && effInt !== null) effInt += 1;
+    const intMod = computeAbilityModifier(effInt);
+    const existingKnown = dndData.spellbooksByClass?.[targetClassId]?.knownSpellIds ?? dndData.knownSpells ?? [];
+    const budget = computeClassSpellSelectionBudget(
+      targetClassDef,
+      prevCasterLvl,
+      nextCasterLvl,
+      intMod,
+      dndData.prohibitedSchools ?? [],
+      dndData.domains ?? [],
+      existingKnown,
+      sysContent
+    );
+    const selectedForClass =
+      choice.learnedSpellsByClass?.[targetClassId] ??
+      (choice.classId === targetClassId ? (choice.learnedSpells ?? []) : []);
+    return validateClassSpellSelection(
+      selectedForClass,
+      budget,
+      dndData.prohibitedSchools ?? [],
+      dndData.domains ?? [],
+      sysContent
+    );
+  }
+
+  return { valid: true };
+}

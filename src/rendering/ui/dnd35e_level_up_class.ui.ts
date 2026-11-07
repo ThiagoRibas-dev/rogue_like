@@ -2,18 +2,20 @@ import {
   ALL_ABILITY_IDS,
   buildHitDieTrackFromClass,
   calculateMulticlassXpMultiplier,
-  type ClassSpellSelectionBudget,
-  computeClassSpellSelectionBudget,
-  computeEffectiveClassCastingLevel,
   type DnD35ClassDefinition,
   type DnD35EntityData,
   type DnD35SystemContent,
   evaluatePrerequisiteAST,
   getClassLevelRow,
-  getEligibleBaseCastingClassesForPrestige,
+  type getEligibleBaseCastingClassesForPrestige,
   type LevelUpChoice,
   type PrerequisiteEvalContext
 } from '../../rulesets/registry.ts';
+import { renderLevelUpClassOptions } from './dnd35e_level_up_class_options.ui.ts';
+import { computeLevelUpSpellTabs, type SpellTabDescriptor } from './dnd35e_level_up_tabs.ts';
+
+export { renderLevelUpFooter } from './dnd35e_level_up_footer.ui.ts';
+export { computeLevelUpSpellTabs, type SpellTabDescriptor };
 
 /** Hit Dice interval for ability score increases (`4`). */
 export const ABILITY_INCREASE_HD_STEP = 4;
@@ -21,90 +23,20 @@ export const ABILITY_INCREASE_HD_STEP = 4;
 /** Hit Dice interval for general feat slots (`3`). */
 export const GENERAL_FEAT_HD_STEP = 3;
 
-/** Descriptor for a per-class spell learning tab during Level-Up. */
-export interface SpellTabDescriptor {
-  readonly tabId: `spells:${string}`;
-  readonly classId: string;
-  readonly className: string;
-  readonly castingTradition: string;
-  readonly budget: ClassSpellSelectionBudget;
-}
-
 /**
- * Computes the Prestige Class spellcasting advancement slots and per-class spell tabs for a level-up draft.
- */
-export function computeLevelUpSpellTabs(
-  dndData: DnD35EntityData,
-  activeCls: DnD35ClassDefinition,
-  nextClassLevel: number,
-  intMod: number,
-  draft: LevelUpChoice,
-  sys: DnD35SystemContent
-): {
-  readonly prestigeSlots: ReturnType<typeof getEligibleBaseCastingClassesForPrestige>;
-  readonly effectivePrestigeTargets: ReadonlyArray<string>;
-  readonly spellTabs: ReadonlyArray<SpellTabDescriptor>;
-} {
-  const prestigeSlots = getEligibleBaseCastingClassesForPrestige(
-    dndData.tracks,
-    activeCls,
-    nextClassLevel,
-    sys.classes
-  );
-
-  let effectivePrestigeTargets = [...(draft.advancedSpellcastingClassIds ?? [])];
-  if (prestigeSlots.length > 0 && effectivePrestigeTargets.length === 0) {
-    effectivePrestigeTargets = prestigeSlots
-      .map((slot) => slot.eligibleClassIds[0])
-      .filter((id): id is string => id !== undefined);
-  }
-
-  const advancedCastingClassIds: string[] = [];
-  if (activeCls.castingMode !== 'none' && !activeCls.isPrestige) {
-    advancedCastingClassIds.push(activeCls.id);
-  }
-  for (const targetId of effectivePrestigeTargets) {
-    if (targetId && !advancedCastingClassIds.includes(targetId)) {
-      advancedCastingClassIds.push(targetId);
-    }
-  }
-
-  const spellTabs: SpellTabDescriptor[] = [];
-
-  for (const targetClassId of advancedCastingClassIds) {
-    const targetCls = sys.classes[targetClassId];
-    if (!targetCls) continue;
-    const prevEffLvl = computeEffectiveClassCastingLevel(dndData.tracks, targetCls, sys.classes, dndData.levelHistory);
-    const nextEffLvl = prevEffLvl + 1;
-    const existingKnown =
-      dndData.spellbooksByClass?.[targetClassId]?.knownSpellIds ??
-      (targetClassId === dndData.tracks[0]?.trackId ? (dndData.knownSpells ?? []) : []);
-    const spBudget = computeClassSpellSelectionBudget(
-      targetCls,
-      prevEffLvl,
-      nextEffLvl,
-      intMod,
-      dndData.prohibitedSchools ?? [],
-      dndData.domains ?? [],
-      existingKnown,
-      sys
-    );
-    if (spBudget.requiresManualSelection) {
-      spellTabs.push({
-        tabId: `spells:${targetClassId}`,
-        classId: targetClassId,
-        className: targetCls.name,
-        castingTradition: targetCls.castingTradition,
-        budget: spBudget
-      });
-    }
-  }
-
-  return { prestigeSlots, effectivePrestigeTargets, spellTabs };
-}
-
-/**
- * Renders the 2-pane Class, Hit Points, 4th-HD Ability Score Increase, and Prestige Spellcasting Target stage.
+ * Renders the Class & Prerequisite Selection stage (Stage 1) in the Level-Up modal.
+ *
+ * @param stageHost Host container element.
+ * @param dndData Actor's current `DnD35EntityData`.
+ * @param prereqCtx Actor's prerequisite evaluation context.
+ * @param activeCls Advancing class definition.
+ * @param nextClassLevel New level in the advancing class.
+ * @param newTotalHd New total Hit Dice after level-up.
+ * @param prestigeSlots Prestige spellcasting advancement slots.
+ * @param effectivePrestigeTargets Selected base spellcasting class targets.
+ * @param levelUpDraft Current `LevelUpChoice` draft.
+ * @param sys Loaded D&D 3.5e system content.
+ * @param onUpdateDraft Callback to update the level-up draft.
  */
 export function renderLevelUpClassStage(
   stageHost: HTMLElement,
@@ -112,12 +44,12 @@ export function renderLevelUpClassStage(
   prereqCtx: PrerequisiteEvalContext,
   activeCls: DnD35ClassDefinition,
   nextClassLevel: number,
-  nextCharLevel: number,
+  newTotalHd: number,
   prestigeSlots: ReturnType<typeof getEligibleBaseCastingClassesForPrestige>,
   effectivePrestigeTargets: ReadonlyArray<string>,
   levelUpDraft: LevelUpChoice,
   sys: DnD35SystemContent,
-  onUpdateDraft: (nextDraft: LevelUpChoice) => void
+  onUpdateDraft: (next: LevelUpChoice) => void
 ): void {
   const stage = document.createElement('div');
   stage.className = 'dnd35-two-pane-stage';
@@ -130,71 +62,84 @@ export function renderLevelUpClassStage(
   rightPane.className = 'dnd35-pane-right';
   rightPane.dataset['scrollId'] = 'lvlup-class-right';
 
-  for (const cls of Object.values(sys.classes).filter((c) => !c.isNpcClass)) {
-    const meetsPrereqs = cls.prerequisites ? evaluatePrerequisiteAST(cls.prerequisites, prereqCtx) : true;
-    const alignOk = cls.allowedAlignments ? cls.allowedAlignments.includes(dndData.alignment ?? 'N') : true;
-    const eligible = meetsPrereqs && alignOk;
-
-    const trk = dndData.tracks.find((t) => t.trackId === cls.id);
-    const nxtLvl = (trk ? trk.levels : 0) + 1;
-    const previewTracks = trk
-      ? dndData.tracks.map((t) => (t.trackId === cls.id ? buildHitDieTrackFromClass(cls, nxtLvl) : t))
-      : [...dndData.tracks, buildHitDieTrackFromClass(cls, 1)];
-    const xpMult = calculateMulticlassXpMultiplier(
-      previewTracks,
-      sys.classes,
-      dndData.favoredClass ?? 'any',
-      dndData.enforceMulticlassXpPenalty ?? true
-    );
-    const rRow = getClassLevelRow(cls, nxtLvl) ?? cls.progression[cls.progression.length - 1]!;
-    const isSelected = levelUpDraft.classId === cls.id;
+  const classes = Object.values(sys.classes);
+  for (const cls of classes) {
+    const existingTrack = dndData.tracks.find((t) => t.trackId === cls.id);
+    const curLevel = existingTrack ? existingTrack.levels : 0;
+    const isAdvancing = levelUpDraft.classId === cls.id;
+    const atCap = curLevel >= cls.maxLevel;
+    const meetsPrereq = cls.prerequisites ? evaluatePrerequisiteAST(cls.prerequisites, prereqCtx) : true;
+    const isEligible = !atCap && meetsPrereq;
 
     const row = document.createElement('div');
-    row.className = `dnd35-list-item${isSelected ? ' selected' : ''}`;
-    const tag = cls.isPrestige ? '[Prestige]' : '[Base]';
-    const xpNote = xpMult < 1 ? ` ⚠ XP ${Math.round(xpMult * 100)}%` : '';
-    row.textContent = `${eligible ? '🟢' : '🔴'} ${tag} ${cls.name} (Lv ${nxtLvl}, d${cls.hitDieSides}, BAB +${rRow.bab})${xpNote}`;
-    row.addEventListener('click', () => {
-      if (!eligible) return;
-      onUpdateDraft({
-        ...levelUpDraft,
-        classId: cls.id,
-        addedSkillRanks: {},
-        selectedFeats: [],
-        learnedSpells: [],
-        advancedSpellcastingClassIds: [],
-        learnedSpellsByClass: {}
+    row.className = `dnd35-list-item${isAdvancing ? ' selected' : ''}${!isEligible ? ' disabled' : ''}`;
+    if (isEligible) {
+      row.addEventListener('click', () => {
+        onUpdateDraft({
+          ...levelUpDraft,
+          classId: cls.id,
+          selectedAcfs: [],
+          advancedSpellcastingClassIds: []
+        });
       });
-    });
+    }
+
+    const titleSpan = document.createElement('strong');
+    titleSpan.textContent = `${cls.name} (${curLevel > 0 ? `Lv ${curLevel}` : 'New Class'})`;
+
+    const metaSpan = document.createElement('span');
+    metaSpan.style.fontSize = '0.74rem';
+    metaSpan.style.color = 'var(--crpg-text-dim, #9da7b3)';
+    const reasonText = atCap ? 'At Maximum Level' : !meetsPrereq ? 'Prerequisites Not Met' : 'Eligible';
+    metaSpan.textContent = `d${cls.hitDieSides} HD • ${cls.isPrestige ? 'Prestige' : 'Base'} • ${reasonText}`;
+
+    row.appendChild(titleSpan);
+    row.appendChild(metaSpan);
     leftPane.appendChild(row);
   }
 
-  const rTitle = document.createElement('h3');
-  rTitle.style.margin = '0 0 6px 0';
-  rTitle.style.color = 'var(--crpg-success, #2ecc71)';
-  rTitle.textContent = `${activeCls.name} Level ${nextClassLevel} Advancement`;
-  rightPane.appendChild(rTitle);
+  const existingAdvTrack = dndData.tracks.find((t) => t.trackId === activeCls.id);
+  const rowDef = getClassLevelRow(activeCls, nextClassLevel);
 
-  const hpRow = document.createElement('div');
-  hpRow.style.display = 'flex';
-  hpRow.style.gap = '8px';
-  for (const method of ['average', 'roll'] as const) {
-    const mBtn = document.createElement('button');
-    mBtn.type = 'button';
-    mBtn.className = 'modal-btn';
-    mBtn.style.borderColor = levelUpDraft.hpMethod === method ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
-    mBtn.textContent =
-      method === 'average'
-        ? `Fixed Average (+${Math.floor(activeCls.hitDieSides / 2) + 1} HP)`
-        : `🎲 Roll 1d${activeCls.hitDieSides}`;
-    mBtn.addEventListener('click', () => {
-      onUpdateDraft({ ...levelUpDraft, hpMethod: method });
-    });
-    hpRow.appendChild(mBtn);
+  const title = document.createElement('h3');
+  title.style.margin = '0 0 6px 0';
+  title.style.color = 'var(--crpg-gold, #f1c40f)';
+  title.textContent = `Advancing: ${activeCls.name} (Level ${nextClassLevel})`;
+  rightPane.appendChild(title);
+
+  const previewBox = document.createElement('div');
+  previewBox.style.cssText =
+    'padding: 8px; font-size: 0.78rem; background: var(--crpg-bg-card, rgba(0,0,0,0.35)); border: 1px solid var(--crpg-border-subtle, #333947); margin-bottom: 8px;';
+
+  const hdLine = document.createElement('div');
+  hdLine.textContent = `Hit Die: d${activeCls.hitDieSides} (Gain +${Math.floor(activeCls.hitDieSides / 2) + 1} HP avg + CON mod)`;
+  const babLine = document.createElement('div');
+  babLine.textContent = `BAB: +${rowDef?.bab ?? 0} | Fort: +${rowDef?.fortSave ?? 0} | Ref: +${rowDef?.refSave ?? 0} | Will: +${rowDef?.willSave ?? 0}`;
+  const featLine = document.createElement('div');
+  featLine.textContent = `Features: ${rowDef?.features && rowDef.features.length > 0 ? rowDef.features.join(', ') : 'None'}`;
+  previewBox.appendChild(hdLine);
+  previewBox.appendChild(babLine);
+  previewBox.appendChild(featLine);
+  rightPane.appendChild(previewBox);
+
+  // Multiclass XP Penalty Evaluation
+  const simulatedTrack = buildHitDieTrackFromClass(activeCls, nextClassLevel);
+  const simulatedTracks = dndData.tracks.map((t) => (t.trackId === activeCls.id ? simulatedTrack : t));
+  if (!existingAdvTrack) {
+    simulatedTracks.push(simulatedTrack);
   }
-  rightPane.appendChild(hpRow);
+  const xpMult = calculateMulticlassXpMultiplier(simulatedTracks, sys.classes, dndData.favoredClass ?? 'any');
+  if (xpMult < 1.0) {
+    const penaltyPct = Math.round((1.0 - xpMult) * 100);
+    const xpNotice = document.createElement('div');
+    xpNotice.style.cssText =
+      'padding: 6px 10px; font-size: 0.76rem; color: var(--crpg-warning, #f39c12); background: rgba(243, 156, 18, 0.12); border: 1px solid var(--crpg-warning, #f39c12); margin-bottom: 8px;';
+    xpNotice.textContent = `⚠ Multiclass XP Penalty: Non-favored class levels are uneven. Future XP gains will be reduced by -${penaltyPct}%.`;
+    rightPane.appendChild(xpNotice);
+  }
 
-  if (nextCharLevel % ABILITY_INCREASE_HD_STEP === 0) {
+  // +1 Ability Score Increase every 4th HD
+  if (newTotalHd % ABILITY_INCREASE_HD_STEP === 0) {
     const abTitle = document.createElement('strong');
     abTitle.style.color = 'var(--crpg-gold, #f1c40f)';
     abTitle.textContent = '+1 Ability Score Increase (Every 4th Hit Die):';
@@ -253,78 +198,9 @@ export function renderLevelUpClassStage(
     });
   }
 
+  renderLevelUpClassOptions(rightPane, dndData, activeCls, nextClassLevel, levelUpDraft, sys, onUpdateDraft);
+
   stage.appendChild(leftPane);
   stage.appendChild(rightPane);
   stageHost.appendChild(stage);
-}
-
-/**
- * Renders the validation gate banner and Previous / Next / Confirm footer bar for the Level-Up modal.
- */
-export function renderLevelUpFooter(
-  content: HTMLElement,
-  currentTabCheck: { readonly valid: boolean; readonly reason?: string },
-  activeTabIndex: number,
-  totalTabs: number,
-  allTabsValid: boolean,
-  onCancel: () => void,
-  onNavigateDelta: (delta: -1 | 1) => void,
-  onConfirm: () => void
-): void {
-  if (!currentTabCheck.valid && currentTabCheck.reason) {
-    const gateBanner = document.createElement('div');
-    gateBanner.style.cssText =
-      'padding: 5px 10px; font-size: 0.78rem; color: var(--crpg-warning, #f39c12); border: 1px solid var(--crpg-warning, #e67e22); background: rgba(230, 126, 34, 0.12);';
-    gateBanner.textContent = `⚠ Required before proceeding: ${currentTabCheck.reason}`;
-    content.appendChild(gateBanner);
-  }
-
-  const footer = document.createElement('div');
-  footer.style.cssText =
-    'display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid var(--crpg-border-subtle, #333947);';
-
-  const cancelBtn = document.createElement('button');
-  cancelBtn.type = 'button';
-  cancelBtn.className = 'modal-btn';
-  cancelBtn.textContent = 'Later (Esc)';
-  cancelBtn.addEventListener('click', onCancel);
-
-  const navRight = document.createElement('div');
-  navRight.style.cssText = 'display: flex; gap: 8px;';
-
-  if (activeTabIndex > 0) {
-    const prevBtn = document.createElement('button');
-    prevBtn.type = 'button';
-    prevBtn.className = 'modal-btn';
-    prevBtn.textContent = '← Previous';
-    prevBtn.addEventListener('click', () => onNavigateDelta(-1));
-    navRight.appendChild(prevBtn);
-  }
-
-  if (activeTabIndex < totalTabs - 1) {
-    const nextBtn = document.createElement('button');
-    nextBtn.type = 'button';
-    nextBtn.className = 'modal-btn';
-    nextBtn.textContent = 'Next Step →';
-    nextBtn.disabled = !currentTabCheck.valid;
-    nextBtn.addEventListener('click', () => {
-      if (currentTabCheck.valid) onNavigateDelta(1);
-    });
-    navRight.appendChild(nextBtn);
-  }
-
-  const confirmBtn = document.createElement('button');
-  confirmBtn.type = 'button';
-  confirmBtn.className = 'modal-btn';
-  confirmBtn.style.borderColor = allTabsValid ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
-  confirmBtn.textContent = '✔ Confirm Level Up';
-  confirmBtn.disabled = !allTabsValid;
-  confirmBtn.addEventListener('click', () => {
-    if (allTabsValid) onConfirm();
-  });
-  navRight.appendChild(confirmBtn);
-
-  footer.appendChild(cancelBtn);
-  footer.appendChild(navRight);
-  content.appendChild(footer);
 }

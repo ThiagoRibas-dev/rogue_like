@@ -691,6 +691,31 @@ To allow ruleset cartridges (`dnd35e`, `classic`, and future systems) to inject 
 3. **Resizable Layout Panels (`src/rendering/ui/resizable_panels.ui.ts`, `src/styles/layout.css`, `src/core/settings.ts`)**:
    - Provides pointer-driven drag splitters (`#splitter-left-hud`, `#splitter-right-hud`) with clamped min/max bounds, `localStorage` persistence via `updatePanelLayout`, and automatic `syncDisplayLayout` canvas reflow.
 
+### 9.13 Character Creation, Level-Up Conditionals & The 4-Layer Decision Matrix (Milestone 112.9)
+
+To ensure ruleset mechanics remain cleanly composable without spaghetti code, all character advancement and active mechanical effects adhere strictly to the **4-Layer Decision Matrix**:
+
+1. **The 4-Layer Mechanic Placement Pipeline**:
+   - **Layer A — Semantic Tags**: Situational, physical, or categorical state predicates with zero numerical logic (`size:large`, `type:undead`, `armor:heavy`, `trait:flanked`). Used exclusively by conditions (`selfTags*`, `targetTags*`, `effectTags*`).
+   - **Layer B — Effect Bundles (`DnD35EffectBundle`)**: Declarative packages of `StatModifier`s, `RuleOverride`s, and `virtualFeatGrants` carrying hierarchical `sourcePath` provenance. Feats parameterized by weapon, school, or skill (e.g. `weapon_focus:longsword`) dynamically transform into effect bundles targeting `effectTagsAll: ['weapon:<id>']`.
+   - **Layer C — Scaling Pools (`ResourcePoolComponent` / `scalingPools`)**: Numeric progression capacities that scale with class levels or ability scores (e.g. `animal_companion_effective_level`, `turn_undead_level`, `wild_shape_uses`, `ki_pool`), evaluated via `scalingPoolContribution`.
+   - **Layer D — Domain Resolvers**: Pure baseline mathematical and simulation resolvers (Attack Resolver, Opposed Maneuvers, Spellcasting Slots, Companion Synchronization). They read Layers A–C as inputs and never hardcode `if (hasFeat(...))` or `if (classId === ...)`.
+
+2. **Typed Feat Slot Descriptors & Pool Restrictions (`src/rulesets/dnd35e/builder/builder_feats.ts`)**:
+   - Feat slots in Character Creation and Level-Up are typed via `FeatSlotDescriptor` (`general`, `human_bonus`, `fighter_bonus`, `wizard_bonus`, `monk_bonus`).
+   - Restricts slot selection to valid pools (e.g. Fighter Bonus Feats restricted to `isFighterBonusFeat: true`, Wizard Bonus Feats restricted to metamagic and item creation feats, Monk Bonus Feats granting specific choices with `ignorePrerequisites: true`).
+
+3. **Post-Level-Up Prerequisite Context & Same-Level Chaining (`buildPostLevelUpPrerequisiteContext`)**:
+   - Level-up feat validation projects the actor's forward state (new ability score increases, advanced BAB, new skill ranks, and class-granted feats like Monk Lv 1 *Improved Unarmed Strike*) so same-level prerequisite chaining succeeds deterministically.
+
+4. **Cleric War Domain & Mid-Level Class Choices**:
+   - Clerics selecting the War domain choose their deity's favored weapon (`deityFavoredWeaponId`), automatically receiving proficiency and scoped `weapon_focus:<weaponId>`.
+   - Level-Up advances Ranger Combat Style (`archery` granting *Rapid Shot* / *Manyshot* vs `two_weapon` granting *Two-Weapon Fighting*), Favored Enemy additions and boosts, and Rogue Special Abilities via `ledger_choices.ts`.
+
+5. **Familiars & Animal Companions (`src/rulesets/dnd35e/companions.ts`, `src/systems/map.system.ts`)**:
+   - Wizard/Sorcerer Familiars project master `DnD35EffectBundle` modifiers (+3 Listen for Bat, +2 Fortitude for Rat, +3 HP for Toad) and grant *Alertness*.
+   - Druid and Ranger Animal Companions scale through the `animal_companion_effective_level` pool, receiving bonus HD, natural armor, and STR/DEX advancement. Linked via `ControllerLinkComponent`, companions migrate across dungeon floors with their master and spawn on adjacent walkable tiles.
+
 ---
 
 ## 10. Key Design Decisions

@@ -234,6 +234,7 @@ export const DnD35DomainDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   grantedPowerDescription: z.string(),
+  allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
   grantedPowerBundle: DnD35EffectBundleSchema.optional(),
   classSkillsAdded: z.array(z.string()).default([]),
   featGrants: z.array(z.string()).default([]),

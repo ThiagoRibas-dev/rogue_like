@@ -83,7 +83,40 @@
         "id": "unarmed_strike",
         "name": "Unarmed Strike",
         "category": "ex",
-        "description": "Gain Improved Unarmed Strike as a bonus feat; unarmed damage scales from 1d6 at 1st to 2d10 at 20th level."
+        "description": "Gain Improved Unarmed Strike as a bonus feat; unarmed damage scales from 1d6 at 1st to 2d10 at 20th level.",
+        "grantedFeats": [
+          "improved_unarmed_strike"
+        ]
+      },
+      "monk_bonus_feat_1": {
+        "id": "monk_bonus_feat_1",
+        "name": "Monk Bonus Feat (1st Level)",
+        "category": "bonus_feat",
+        "description": "At 1st level, a monk may select either Improved Grapple or Stunning Fist as a bonus feat without needing to meet the normal prerequisites.",
+        "bonusFeatPool": [
+          "improved_grapple",
+          "stunning_fist"
+        ]
+      },
+      "monk_bonus_feat_2": {
+        "id": "monk_bonus_feat_2",
+        "name": "Monk Bonus Feat (2nd Level)",
+        "category": "bonus_feat",
+        "description": "At 2nd level, a monk may select either Combat Reflexes or Deflect Arrows as a bonus feat without needing to meet the normal prerequisites.",
+        "bonusFeatPool": [
+          "combat_reflexes",
+          "deflect_arrows"
+        ]
+      },
+      "monk_bonus_feat_6": {
+        "id": "monk_bonus_feat_6",
+        "name": "Monk Bonus Feat (6th Level)",
+        "category": "bonus_feat",
+        "description": "At 6th level, a monk may select either Improved Disarm or Improved Trip as a bonus feat without needing to meet the normal prerequisites.",
+        "bonusFeatPool": [
+          "improved_disarm",
+          "improved_trip"
+        ]
       },
       "evasion": {
         "id": "evasion",

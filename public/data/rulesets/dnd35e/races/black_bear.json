@@ -38,6 +38,9 @@
     "levelAdjustment": 0,
     "favoredClass": "any",
     "bonusFeatAtFirstLevel": false,
+    "companionTags": [
+      "animal_companion"
+    ],
     "extraSkillPointsFirstLevel": 0,
     "extraSkillPointsPerLevel": 0,
     "energyResistances": {},

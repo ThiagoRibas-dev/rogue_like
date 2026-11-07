@@ -7,13 +7,40 @@ import {
   type DnD35FeatDefinition,
   type DnD35SystemContent,
   evaluatePrerequisiteAST,
+  type FeatSlotDescriptor,
   getDnD35EntityData,
   getDnD35SystemContent,
+  isFeatAllowedInSlot,
   type PrerequisiteEvalContext
 } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderFeatInspector } from './dnd35e_inspector.ui.ts';
+
+const TARGETED_WEAPONS: ReadonlyArray<string> = [
+  'longsword',
+  'greatsword',
+  'battleaxe',
+  'greataxe',
+  'shortbow',
+  'longbow',
+  'dagger',
+  'shortsword',
+  'warhammer',
+  'rapier',
+  'scimitar',
+  'unarmed_strike'
+];
+const TARGETED_SCHOOLS: ReadonlyArray<string> = [
+  'abjuration',
+  'conjuration',
+  'divination',
+  'enchantment',
+  'evocation',
+  'illusion',
+  'necromancy',
+  'transmutation'
+];
 
 let inspectedFeatId = 'power_attack';
 let featFilterMode: 'all' | 'eligible' | 'fighter' | 'combat' | 'magic' = 'all';
@@ -62,6 +89,7 @@ export interface SharedFeatsStepConfig {
   readonly scrollPrefix: string;
   readonly slotSummaryLabel: string;
   readonly totalSlots: number;
+  readonly slots?: ReadonlyArray<FeatSlotDescriptor> | undefined;
   readonly alreadyOwnedFeatIds: ReadonlyArray<string>;
   readonly selectedFeatIds: ReadonlyArray<string>;
   readonly prereqCtx: PrerequisiteEvalContext;
@@ -71,6 +99,10 @@ export interface SharedFeatsStepConfig {
 
 /**
  * Renders the shared 2-pane Feat Selection step with category filter chips (`All`, `Eligible`, `Fighter Bonus`, `Combat`, `Metamagic / Magic`).
+ *
+ * @param container Host container element.
+ * @param sys Loaded D&D 3.5e system content.
+ * @param config Shared feats step configuration.
  */
 export function renderSharedFeatsStep(
   container: HTMLElement,
@@ -129,29 +161,79 @@ export function renderSharedFeatsStep(
     inspectedFeatId = allFeats[0]!.id;
   }
 
+  const activeSlot = config.slots?.[config.selectedFeatIds.length];
+  const chainedFeats = Array.from(new Set([...config.prereqCtx.feats, ...config.selectedFeatIds]));
+
   for (const feat of allFeats) {
+    const matchingSelected = config.selectedFeatIds.filter((f) => f === feat.id || f.startsWith(`${feat.id}:`));
+    const isSelected = matchingSelected.length > 0;
+    const isTargeted = feat.repeatable?.mode === 'targeted';
+
+    let targetSelect: HTMLSelectElement | undefined;
+    if (isTargeted) {
+      targetSelect = document.createElement('select');
+      targetSelect.style.cssText =
+        'padding: 2px 4px; font-size: 0.72rem; margin-right: 4px; background: var(--crpg-bg-card, #222); color: inherit; border: 1px solid var(--border-color);';
+      const tCat = feat.repeatable?.targetCategory;
+      const opts =
+        tCat === 'weapon' ? TARGETED_WEAPONS : tCat === 'school' ? TARGETED_SCHOOLS : Object.keys(sys.skills ?? {});
+      for (const opt of opts) {
+        const oEl = document.createElement('option');
+        oEl.value = opt;
+        oEl.textContent = opt.replace(/_/g, ' ');
+        targetSelect.appendChild(oEl);
+      }
+      targetSelect.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    const curTarget = targetSelect?.value;
+    const evalCtx: PrerequisiteEvalContext = {
+      ...config.prereqCtx,
+      feats: chainedFeats,
+      ...(curTarget ? { targetId: curTarget } : {})
+    };
     const alreadyOwned = config.alreadyOwnedFeatIds.includes(feat.id);
-    const meets = feat.prerequisites ? evaluatePrerequisiteAST(feat.prerequisites, config.prereqCtx) : true;
-    const isSelected = config.selectedFeatIds.includes(feat.id);
+    const allowedInSlot = activeSlot ? isFeatAllowedInSlot(feat, activeSlot) : true;
+    const meets = activeSlot?.ignorePrerequisites
+      ? true
+      : feat.prerequisites
+        ? evaluatePrerequisiteAST(feat.prerequisites, evalCtx)
+        : true;
     const cat = classifyFeatCategory(feat);
 
-    if (featFilterMode === 'eligible' && (!meets || alreadyOwned)) continue;
+    if (featFilterMode === 'eligible' && (!meets || alreadyOwned || !allowedInSlot)) continue;
     if (featFilterMode === 'fighter' && !cat.isFighterBonus) continue;
     if (featFilterMode === 'combat' && !cat.isCombat) continue;
     if (featFilterMode === 'magic' && !cat.isMagic) continue;
 
-    const canToggle = isSelected || (!alreadyOwned && meets && config.selectedFeatIds.length < config.totalSlots);
+    const canToggle =
+      isSelected || (!alreadyOwned && allowedInSlot && meets && config.selectedFeatIds.length < config.totalSlots);
 
     const row = document.createElement('div');
     row.className = `dnd35-list-item${isSelected ? ' selected' : ''}${inspectedFeatId === feat.id ? ' inspected' : ''}`;
     row.addEventListener('click', () => {
       inspectedFeatId = feat.id;
-      renderFeatInspector(rightPane, feat, config.prereqCtx);
+      renderFeatInspector(rightPane, feat, evalCtx);
     });
 
     const label = document.createElement('div');
     const fighterTag = cat.isFighterBonus ? ' [Fighter]' : '';
-    label.textContent = `${alreadyOwned ? '✔ [Owned]' : isSelected ? '☑' : meets ? '🟢' : '🔴'} ${feat.name}${fighterTag}`;
+    const targetBadge =
+      matchingSelected.length > 0
+        ? ` (${matchingSelected
+            .map((m) => (m.includes(':') ? m.split(':')[1] : ''))
+            .filter(Boolean)
+            .join(', ')})`
+        : '';
+    label.textContent = `${alreadyOwned ? '✔ [Owned]' : isSelected ? '☑' : meets && allowedInSlot ? '🟢' : '🔴'} ${feat.name}${targetBadge}${fighterTag}`;
+
+    const actionWrap = document.createElement('div');
+    actionWrap.style.display = 'flex';
+    actionWrap.style.alignItems = 'center';
+
+    if (!isSelected && targetSelect) {
+      actionWrap.appendChild(targetSelect);
+    }
 
     const toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
@@ -163,20 +245,22 @@ export function renderSharedFeatsStep(
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       inspectedFeatId = feat.id;
+      const finalFeatId = isTargeted && targetSelect ? `${feat.id}:${targetSelect.value}` : feat.id;
       const nextFeats = isSelected
-        ? config.selectedFeatIds.filter((id) => id !== feat.id)
-        : [...config.selectedFeatIds, feat.id];
+        ? config.selectedFeatIds.filter((id) => id !== feat.id && !id.startsWith(`${feat.id}:`))
+        : [...config.selectedFeatIds, finalFeatId];
       config.onUpdateSelectedFeats(nextFeats);
     });
 
+    actionWrap.appendChild(toggleBtn);
     row.appendChild(label);
-    row.appendChild(toggleBtn);
+    row.appendChild(actionWrap);
     leftPane.appendChild(row);
   }
 
   const activeFeat = sys.feats[inspectedFeatId] ?? allFeats[0];
   if (activeFeat) {
-    renderFeatInspector(rightPane, activeFeat, config.prereqCtx);
+    renderFeatInspector(rightPane, activeFeat, { ...config.prereqCtx, feats: chainedFeats });
   }
 
   stage.appendChild(leftPane);
@@ -186,6 +270,11 @@ export function renderSharedFeatsStep(
 
 /**
  * Renders Step 5 (Feat Selection) in the Level 1 Character Creation Wizard via `renderSharedFeatsStep`.
+ *
+ * @param container Host container element.
+ * @param state Current GameState.
+ * @param draft Current character creation draft.
+ * @param updateDraft Callback to update the draft.
  */
 export function renderCharBuilderFeatsStep(
   container: HTMLElement,
@@ -199,19 +288,18 @@ export function renderCharBuilderFeatsStep(
 
   const race = sys.races[draft.raceId];
   const cls = sys.classes[draft.classId];
-  const budget = computeFirstLevelFeatSlotBudget(race, cls);
+  const budget = computeFirstLevelFeatSlotBudget(race, cls, draft.selectedAcfs);
   const previewState = applyCharacterCreationToPlayer(state, playerId, draft);
   const dndData = getDnD35EntityData(previewState, playerId);
   const prereqCtx = buildPrerequisiteContextForActor(dndData, sys.classes);
 
-  const parts: string[] = [`${budget.generalSlots} General`];
-  if (budget.humanBonusSlots > 0) parts.push(`${budget.humanBonusSlots} Racial Bonus`);
-  if (budget.fighterBonusSlots > 0) parts.push(`${budget.fighterBonusSlots} Class Bonus`);
+  const parts = budget.slots.map((s) => s.label);
 
   renderSharedFeatsStep(container, sys, {
     scrollPrefix: 'char',
     slotSummaryLabel: `Feats Selected: ${draft.selectedFeats.length} / ${budget.totalSlots} (${parts.join(' + ')})`,
     totalSlots: budget.totalSlots,
+    slots: budget.slots,
     alreadyOwnedFeatIds: [],
     selectedFeatIds: draft.selectedFeats,
     prereqCtx,

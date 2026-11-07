@@ -100,6 +100,13 @@ export interface DnD35CharacterLevelRecord {
   readonly learnedSpells: ReadonlyArray<string>;
   readonly advancedSpellcastingClassIds?: ReadonlyArray<string> | undefined;
   readonly learnedSpellsByClass?: Readonly<Record<string, ReadonlyArray<string>>> | undefined;
+  readonly combatStyle?: 'archery' | 'two_weapon' | undefined;
+  readonly favoredEnemyAdded?: string | undefined;
+  readonly favoredEnemyBoosted?: string | undefined;
+  readonly rogueSpecialAbility?: string | undefined;
+  readonly deityFavoredWeaponId?: string | undefined;
+  readonly familiarId?: string | undefined;
+  readonly animalCompanionId?: string | undefined;
 }
 
 /** Per-class isolated spellbook / spellcasting state for multiclass casters. */
@@ -327,4 +334,18 @@ export interface DnD35EntityData {
   readonly levelHistory?: ReadonlyArray<DnD35CharacterLevelRecord> | undefined;
   readonly negativeLevels?: number | undefined;
   readonly suppressedBundleIds?: ReadonlyArray<string> | undefined;
+  readonly deityFavoredWeaponId?: string | undefined;
+  readonly familiarId?: string | undefined;
+  readonly animalCompanionId?: string | undefined;
+  readonly companions?: ReadonlyArray<DnD35CompanionEntry> | undefined;
+  readonly rogueSpecialAbilities?: ReadonlyArray<string> | undefined;
+}
+
+/** Bonded companion, familiar, mount, cohort, or hireling registered to an actor. */
+export interface DnD35CompanionEntry {
+  readonly id: string;
+  readonly raceId: string;
+  readonly name?: string | undefined;
+  readonly tags: ReadonlyArray<string>;
+  readonly entityId?: number | undefined;
 }

@@ -9,27 +9,13 @@
       "category": "domain_power",
       "usageMode": "passive",
       "description": "Free Martial Weapon Proficiency with deity's favored weapon (if necessary) and Weapon Focus with the deity's favored weapon.",
-      "modifiers": [
-        {
-          "id": "domain_war_weapon_focus",
-          "target": "attack",
-          "value": 1,
-          "type": "untyped"
-        }
-      ],
+      "modifiers": [],
       "ruleOverrides": [],
       "grantedTags": [
         "domain:war"
       ],
-      "grantedFeats": [
-        "weapon_focus"
-      ],
-      "virtualFeatGrants": [
-        {
-          "featId": "weapon_focus",
-          "ignorePrerequisites": true
-        }
-      ],
+      "grantedFeats": [],
+      "virtualFeatGrants": [],
       "classSkillsAdded": [],
       "immunities": [],
       "vulnerabilities": [],
@@ -37,17 +23,8 @@
       "activatedAbilities": []
     },
     "classSkillsAdded": [],
-    "featGrants": [
-      "weapon_focus"
-    ],
-    "modifiers": [
-      {
-        "id": "domain_war_weapon_focus",
-        "target": "attack",
-        "value": 1,
-        "type": "untyped"
-      }
-    ],
+    "featGrants": [],
+    "modifiers": [],
     "domainSpells": {
       "1": "magic_weapon",
       "2": "spiritual_weapon",

@@ -245,6 +245,8 @@ export const DnD35RaceDefinitionSchema = z.object({
   skillRanks: z.record(z.string(), z.number().nonnegative()).default({}),
   hasPounce: z.boolean().default(false),
   singleActionsOnly: z.boolean().default(false),
+  companionTags: z.array(z.string()).default([]),
+  masterEffectBundle: DnD35EffectBundleSchema.optional(),
   breathWeapon: z
     .object({
       shape: z.enum(['cone', 'line']),

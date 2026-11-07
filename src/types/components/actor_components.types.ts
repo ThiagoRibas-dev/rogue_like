@@ -228,12 +228,13 @@ export interface InteractionScoreComponent {
 }
 
 /**
- * Component linking an entity to its controller/master (minions, companions, familiars, eidolons, summons).
+ * Component linking an entity to its controller/master (minions, companions, familiars, eidolons, summons, party members).
  */
 export interface ControllerLinkComponent {
   readonly type: ComponentType.ControllerLink;
   readonly controllerEntityId: EntityId;
-  readonly relationship: 'minion' | 'companion' | 'familiar' | 'eidolon' | 'mount' | 'summon';
+  /** Open relationship tags (e.g. ['animal_companion', 'mount', 'familiar'], ['party_member', 'hireling'], ['summon', 'temporary_ally']). */
+  readonly tags: ReadonlyArray<string>;
   readonly shareInitiative?: boolean | undefined;
   readonly expirationTurn?: number | undefined;
 }

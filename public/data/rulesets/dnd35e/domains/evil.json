@@ -2,6 +2,11 @@
   "evil": {
     "id": "evil",
     "name": "Evil",
+    "allowedAlignments": [
+      "LE",
+      "NE",
+      "CE"
+    ],
     "grantedPowerDescription": "You cast evil spells at +1 caster level.",
     "grantedPowerBundle": {
       "bundleId": "domain_power_evil",

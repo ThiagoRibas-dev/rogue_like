@@ -57,6 +57,7 @@ export {
   applyLevelUpToActor,
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
+  buildPostLevelUpPrerequisiteContext,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
@@ -65,11 +66,15 @@ export {
   type ClassSpellSelectionBudget,
   computeClassSpellSelectionBudget,
   computeFirstLevelFeatSlotBudget,
+  computeLevelUpFeatSlots,
   ELITE_ABILITY_ARRAY,
+  type FeatSlotDescriptor,
+  type FeatSlotPoolType,
   getActorEverClassSkillIds,
   getEffectiveClassSkillIds,
   getSkillMaxRanks,
   getSpellLevelForClass,
+  isFeatAllowedInSlot,
   isSpellSelectableForDraft,
   type LevelUpChoice,
   POINT_BUY_MAX_SCORE,
@@ -84,7 +89,8 @@ export {
   validateCharacterCreationStep,
   validateClassSpellSelection,
   validateLevelUpStep,
-  validateSpecialistSchoolSelection
+  validateSpecialistSchoolSelection,
+  WIZARD_BONUS_ITEM_CREATION_AND_MASTERY_FEATS
 } from './dnd35e/character_builder.ts';
 export { buildActorSpellbooksByClass, collectActiveClassFeaturesAndPools } from './dnd35e/level_ledger.ts';
 export {

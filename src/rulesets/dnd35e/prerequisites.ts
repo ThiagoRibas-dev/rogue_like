@@ -46,6 +46,7 @@ export interface PrerequisiteEvalContext {
   readonly raceId?: string | undefined;
   readonly maxArcaneSpellLevel?: number | undefined;
   readonly maxDivineSpellLevel?: number | undefined;
+  readonly targetId?: string | undefined;
 }
 
 /**
@@ -74,8 +75,14 @@ export function evaluatePrerequisiteAST(node: PrerequisiteNode, context: Prerequ
       const wholeRanks = dndFloor(context.skillRanks[node.skillId] ?? 0);
       return wholeRanks >= node.minRanks;
     }
-    case 'has_feat':
-      return context.feats.includes(node.featId);
+    case 'has_feat': {
+      if (context.targetId !== undefined) {
+        const targetedFeatId = `${node.featId}:${context.targetId}`;
+        if (context.feats.includes(targetedFeatId)) return true;
+      }
+      if (context.feats.includes(node.featId)) return true;
+      return context.feats.some((f) => f.startsWith(`${node.featId}:`));
+    }
     case 'has_tag':
       return context.tags.includes(node.tag);
     case 'min_caster_level':

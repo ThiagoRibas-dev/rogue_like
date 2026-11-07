@@ -154,7 +154,7 @@ describe('Milestone 102: Tier 1 Shared Console Engine Primitives', () => {
             ControllerLink: {
               type: ComponentType.ControllerLink,
               controllerEntityId: 100 as EntityId,
-              relationship: 'companion'
+              tags: ['companion']
             }
           }
         ]

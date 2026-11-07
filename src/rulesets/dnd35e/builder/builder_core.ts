@@ -7,7 +7,7 @@ import {
   type DnD35EntityData,
   type DnD35SpellSchool
 } from '../types/dnd35e.types.ts';
-import type { DnD35ClassDefinition, DnD35RaceDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import type { DnD35ClassDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 /** Standard D&D 3.5e DMG Point-Buy cost table (scores 8 through 18). */
 export const POINT_BUY_COST_TABLE: Readonly<Record<number, number>> = {
@@ -46,88 +46,7 @@ const MIN_SKILL_POINTS_PER_LEVEL = 1;
 /** Minimum ranks required in a source skill to unlock a +2 synergy bonus (`5`). */
 export const SYNERGY_RANK_THRESHOLD = SYNERGY_REQUIRED_RANKS;
 
-/** Curated starting equipment packages for character creation. */
-export interface StartingEquipmentPackage {
-  readonly id: string;
-  readonly name: string;
-  readonly description: string;
-  readonly items: ReadonlyArray<{
-    readonly itemId: string;
-    readonly equipSlot?: 'main_hand' | 'off_hand' | 'torso' | 'body' | 'hand' | undefined;
-  }>;
-  readonly weaponDice: string;
-  readonly weaponDamageType: 'slashing' | 'piercing' | 'bludgeoning';
-  readonly armorBonus: number;
-  readonly shieldBonus: number;
-}
-
-/** Canonical starting equipment packages selectable in Step 7 of Character Creation. */
-export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage> = [
-  {
-    id: 'martial_vanguard',
-    name: 'Martial Vanguard Kit',
-    description: 'Longsword (1d8 slashing), Scale Mail (+4 armor), Heavy Wooden Shield (+2 shield), Explorer Pack.',
-    items: [
-      { itemId: 'longsword', equipSlot: 'main_hand' },
-      { itemId: 'scale_mail', equipSlot: 'torso' },
-      { itemId: 'heavy_wooden_shield', equipSlot: 'off_hand' },
-      { itemId: 'backpack' },
-      { itemId: 'health_potion' }
-    ],
-    weaponDice: '1d8',
-    weaponDamageType: 'slashing',
-    armorBonus: 4,
-    shieldBonus: 2
-  },
-  {
-    id: 'skirmisher_scout',
-    name: 'Skirmisher & Scout Kit',
-    description: 'Shortsword (1d6 piercing), Leather Armor (+3 armor), Thieves Tools, Backpack.',
-    items: [
-      { itemId: 'short_sword', equipSlot: 'main_hand' },
-      { itemId: 'leather_armor', equipSlot: 'torso' },
-      { itemId: 'lockpick' },
-      { itemId: 'backpack' },
-      { itemId: 'health_potion' }
-    ],
-    weaponDice: '1d6',
-    weaponDamageType: 'piercing',
-    armorBonus: 3,
-    shieldBonus: 0
-  },
-  {
-    id: 'divine_templar',
-    name: 'Divine Templar Kit',
-    description: 'Heavy Mace (1d8 bludgeoning), Chainmail (+5 armor), Heavy Shield (+2 shield), Wooden Holy Symbol.',
-    items: [
-      { itemId: 'heavy_mace', equipSlot: 'main_hand' },
-      { itemId: 'chainmail', equipSlot: 'torso' },
-      { itemId: 'heavy_wooden_shield', equipSlot: 'off_hand' },
-      { itemId: 'backpack' },
-      { itemId: 'health_potion' },
-      { itemId: 'wooden_holy_symbol' }
-    ],
-    weaponDice: '1d8',
-    weaponDamageType: 'bludgeoning',
-    armorBonus: 5,
-    shieldBonus: 2
-  },
-  {
-    id: 'arcane_scholar',
-    name: 'Arcane Scholar & Monk Kit',
-    description: 'Quarterstaff (1d6 bludgeoning), Scholar Robes (+0 armor), Backpack, Health Potion.',
-    items: [
-      { itemId: 'quarterstaff', equipSlot: 'main_hand' },
-      { itemId: 'scholar_robes', equipSlot: 'torso' },
-      { itemId: 'backpack' },
-      { itemId: 'health_potion' }
-    ],
-    weaponDice: '1d6',
-    weaponDamageType: 'bludgeoning',
-    armorBonus: 0,
-    shieldBonus: 0
-  }
-];
+export { type StartingEquipmentPackage, STARTING_EQUIPMENT_PACKAGES } from './starting_packages.ts';
 
 /** Draft state for the 7-Step D&D 3.5e Character Creation Wizard. */
 export interface CharacterCreationDraft {
@@ -147,6 +66,9 @@ export interface CharacterCreationDraft {
   readonly selectedFeats: ReadonlyArray<string>;
   readonly knownSpells: ReadonlyArray<string>;
   readonly equipmentPackageId: string;
+  readonly deityFavoredWeaponId?: string | undefined;
+  readonly familiarId?: string | undefined;
+  readonly animalCompanionId?: string | undefined;
 }
 
 /** Input payload for advancing an actor by 1 class level in the Level-Up Modal. */
@@ -161,6 +83,13 @@ export interface LevelUpChoice {
   readonly learnedSpells?: ReadonlyArray<string> | undefined;
   readonly advancedSpellcastingClassIds?: ReadonlyArray<string> | undefined;
   readonly learnedSpellsByClass?: Readonly<Record<string, ReadonlyArray<string>>> | undefined;
+  readonly combatStyle?: 'archery' | 'two_weapon' | undefined;
+  readonly favoredEnemyAdded?: string | undefined;
+  readonly favoredEnemyBoosted?: string | undefined;
+  readonly rogueSpecialAbility?: string | undefined;
+  readonly deityFavoredWeaponId?: string | undefined;
+  readonly familiarId?: string | undefined;
+  readonly animalCompanionId?: string | undefined;
 }
 
 /**
@@ -228,29 +157,14 @@ export function calculateSkillAllocationCost(
   return Math.round(spent * 100) / 100;
 }
 
-/**
- * Computes the 1st-level feat slot budget breakdown.
- */
-export function computeFirstLevelFeatSlotBudget(
-  raceDef: DnD35RaceDefinition | undefined,
-  classDef: DnD35ClassDefinition | undefined
-): {
-  readonly generalSlots: number;
-  readonly humanBonusSlots: number;
-  readonly fighterBonusSlots: number;
-  readonly totalSlots: number;
-} {
-  const generalSlots = 1;
-  const humanBonusSlots = raceDef?.bonusFeatAtFirstLevel === true ? 1 : 0;
-  const row1 = classDef?.progression.find((r) => r.level === 1);
-  const fighterBonusSlots = row1?.bonusFeatSlot === true ? 1 : 0;
-  return {
-    generalSlots,
-    humanBonusSlots,
-    fighterBonusSlots,
-    totalSlots: generalSlots + humanBonusSlots + fighterBonusSlots
-  };
-}
+export {
+  type FeatSlotPoolType,
+  type FeatSlotDescriptor,
+  WIZARD_BONUS_ITEM_CREATION_AND_MASTERY_FEATS,
+  isFeatAllowedInSlot,
+  computeFirstLevelFeatSlotBudget,
+  computeLevelUpFeatSlots
+} from './builder_feats.ts';
 
 /**
  * Computes the effective list of class skill IDs for a class + Cleric domains.

@@ -1,11 +1,18 @@
 import type {
   DnD35ActivatedAbilityDescriptor,
+  DnD35DeclarativeModifier,
   DnD35EffectBundle,
+  DnD35FeatDefinition,
   DnD35FeatGrantDescriptor,
   DnD35RuleOverrideEntry
 } from './types/dnd35e_system.types.ts';
 import { appendSourcePath } from './modifiers.ts';
 import type { StatModifier, StatModifierCondition } from './types/dnd35e.types.ts';
+
+function mergeTags(a?: ReadonlyArray<string>, b?: ReadonlyArray<string>): string[] | undefined {
+  if (!a && !b) return undefined;
+  return Array.from(new Set([...(a ?? []), ...(b ?? [])]));
+}
 
 /** Result of evaluating a universal `DnD35EffectBundle`. */
 export interface EvaluatedEffectBundleResult {
@@ -70,23 +77,10 @@ export function evaluateEffectBundle(
   suppressedBundleIds: ReadonlyArray<string> = [],
   activeSelfTags?: ReadonlyArray<string>
 ): EvaluatedEffectBundleResult {
-  if (suppressedBundleIds.includes(bundle.bundleId)) {
-    return {
-      isActive: false,
-      statModifiers: [],
-      ruleOverrides: [],
-      grantedTags: [],
-      grantedFeats: [],
-      virtualFeatGrants: [],
-      classSkillsAdded: [],
-      immunities: [],
-      vulnerabilities: [],
-      activatedAbilities: []
-    };
-  }
-
-  const isActive = isActivationConditionMet(bundle.activationCondition, activeSelfTags);
-  if (!isActive) {
+  if (
+    suppressedBundleIds.includes(bundle.bundleId) ||
+    !isActivationConditionMet(bundle.activationCondition, activeSelfTags)
+  ) {
     return {
       isActive: false,
       statModifiers: [],
@@ -106,33 +100,20 @@ export function evaluateEffectBundle(
     bundle.category === 'su' || bundle.category === 'domain_power' ? 'su' : bundle.category === 'sp' ? 'sp' : 'ex';
 
   const statModifiers: StatModifier[] = bundle.modifiers.map((mod) => {
+    const actCond = bundle.activationCondition;
+    const modCond = mod.condition;
     const mergedCondition: StatModifierCondition | undefined =
-      bundle.activationCondition || mod.condition
+      actCond || modCond
         ? {
-            ...(mod.condition ?? {}),
-            ...(bundle.activationCondition?.selfTagsAll !== undefined || mod.condition?.selfTagsAll !== undefined
-              ? {
-                  selfTagsAll: Array.from(
-                    new Set([...(bundle.activationCondition?.selfTagsAll ?? []), ...(mod.condition?.selfTagsAll ?? [])])
-                  )
-                }
+            ...(modCond ?? {}),
+            ...(mergeTags(actCond?.selfTagsAll, modCond?.selfTagsAll)
+              ? { selfTagsAll: mergeTags(actCond?.selfTagsAll, modCond?.selfTagsAll) }
               : {}),
-            ...(bundle.activationCondition?.selfTagsAny !== undefined || mod.condition?.selfTagsAny !== undefined
-              ? {
-                  selfTagsAny: Array.from(
-                    new Set([...(bundle.activationCondition?.selfTagsAny ?? []), ...(mod.condition?.selfTagsAny ?? [])])
-                  )
-                }
+            ...(mergeTags(actCond?.selfTagsAny, modCond?.selfTagsAny)
+              ? { selfTagsAny: mergeTags(actCond?.selfTagsAny, modCond?.selfTagsAny) }
               : {}),
-            ...(bundle.activationCondition?.selfTagsNone !== undefined || mod.condition?.selfTagsNone !== undefined
-              ? {
-                  selfTagsNone: Array.from(
-                    new Set([
-                      ...(bundle.activationCondition?.selfTagsNone ?? []),
-                      ...(mod.condition?.selfTagsNone ?? [])
-                    ])
-                  )
-                }
+            ...(mergeTags(actCond?.selfTagsNone, modCond?.selfTagsNone)
+              ? { selfTagsNone: mergeTags(actCond?.selfTagsNone, modCond?.selfTagsNone) }
               : {})
           }
         : undefined;
@@ -160,5 +141,154 @@ export function evaluateEffectBundle(
     immunities: bundle.immunities,
     vulnerabilities: bundle.vulnerabilities,
     activatedAbilities: bundle.activatedAbilities
+  };
+}
+
+/**
+ * Splits a potentially parameterized feat ID (e.g. `"weapon_focus:longsword"`)
+ * into its canonical `baseFeatId` and optional `targetId`.
+ *
+ * @param rawFeatId The raw or parameterized feat ID string.
+ * @returns Object with baseFeatId and optional targetId.
+ */
+export function parseParameterizedFeatId(rawFeatId: string): {
+  readonly baseFeatId: string;
+  readonly targetId?: string;
+} {
+  const colonIdx = rawFeatId.indexOf(':');
+  if (colonIdx === -1) {
+    return { baseFeatId: rawFeatId };
+  }
+  const baseFeatId = rawFeatId.slice(0, colonIdx);
+  const targetId = rawFeatId.slice(colonIdx + 1);
+  return targetId.length > 0 ? { baseFeatId, targetId } : { baseFeatId };
+}
+
+/**
+ * Normalizes any `DnD35FeatDefinition` into a universal `DnD35EffectBundle` (`category: 'feat'`).
+ * When `targetId` is provided (e.g. for targeted feats like `weapon_focus`, `weapon_specialization`,
+ * `improved_critical`, `skill_focus`, `spell_focus`), binds the target into the bundle's modifiers,
+ * conditions (`effectTagsAll`), or granted tags.
+ *
+ * @param featDef The feat definition.
+ * @param targetId Optional target identifier (weapon ID, skill ID, or spell school).
+ * @returns Universal `DnD35EffectBundle`.
+ */
+export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?: string): DnD35EffectBundle {
+  const baseBundle: DnD35EffectBundle = featDef.effectBundle ?? {
+    bundleId: featDef.id,
+    name: featDef.name,
+    category: 'feat',
+    usageMode: 'passive',
+    description: featDef.description,
+    modifiers: featDef.modifiers ?? [],
+    ruleOverrides: featDef.ruleOverrides ?? [],
+    grantedTags: [],
+    grantedFeats: [],
+    virtualFeatGrants: [],
+    classSkillsAdded: [],
+    immunities: [],
+    vulnerabilities: [],
+    energyResistances: {},
+    activatedAbilities: featDef.activatedAbilities ?? []
+  };
+
+  if (!targetId) {
+    return baseBundle;
+  }
+
+  const targetCategory = featDef.repeatable?.targetCategory;
+  const isWeaponTargeted =
+    targetCategory === 'weapon' ||
+    featDef.id.startsWith('weapon_') ||
+    featDef.id.startsWith('greater_weapon_') ||
+    featDef.id === 'improved_critical' ||
+    featDef.id.includes('weapon_proficiency');
+
+  const isSkillTargeted = targetCategory === 'skill' || featDef.id.startsWith('skill_');
+  const isSchoolTargeted =
+    targetCategory === 'school' || featDef.id.startsWith('spell_focus') || featDef.id.startsWith('greater_spell_focus');
+
+  const transformedModifiers: DnD35DeclarativeModifier[] = baseBundle.modifiers.map((mod) => {
+    if (isWeaponTargeted) {
+      const isAttackMod = mod.target === 'attack' || mod.target === 'strike_attack';
+      const isDamageMod = mod.target === 'damage' || mod.target === 'strike_damage';
+      const isCritMod = mod.target === 'crit_threat_doubling';
+
+      if (isAttackMod || isDamageMod || isCritMod) {
+        const nextTarget = isAttackMod ? 'strike_attack' : isDamageMod ? 'strike_damage' : mod.target;
+        const existingTags = mod.condition?.effectTagsAll ?? [];
+        const weaponTag = `weapon:${targetId}`;
+        const effectTagsAll = existingTags.includes(weaponTag) ? existingTags : [...existingTags, weaponTag];
+
+        return {
+          ...mod,
+          target: nextTarget,
+          condition: {
+            ...(mod.condition ?? {}),
+            effectTagsAll
+          }
+        };
+      }
+    } else if (isSkillTargeted) {
+      if (mod.target === 'skill_all' || mod.target === 'skill') {
+        return {
+          ...mod,
+          target: `skill:${targetId}`
+        };
+      }
+    } else if (isSchoolTargeted) {
+      if (mod.target === 'spell_save_dc' || mod.target === 'spell_dc') {
+        const existingTags = mod.condition?.effectTagsAll ?? [];
+        const schoolTag = `school:${targetId}`;
+        const effectTagsAll = existingTags.includes(schoolTag) ? existingTags : [...existingTags, schoolTag];
+        return {
+          ...mod,
+          target: 'spell_save_dc',
+          condition: {
+            ...(mod.condition ?? {}),
+            effectTagsAll
+          }
+        };
+      }
+    }
+    return mod;
+  });
+
+  const nextGrantedTags = [...baseBundle.grantedTags];
+  if (isWeaponTargeted && (featDef.id.includes('weapon_proficiency') || featDef.id.startsWith('proficiency_'))) {
+    nextGrantedTags.push(`proficiency:weapon:${targetId}`);
+  }
+
+  if (isSchoolTargeted) {
+    for (const rule of baseBundle.ruleOverrides) {
+      if (
+        (rule.ruleKey === 'spell_save_dc_bonus' || rule.ruleKey === 'greater_spell_save_dc_bonus') &&
+        typeof rule.value === 'number'
+      ) {
+        const schoolTag = `school:${targetId}`;
+        const hasExisting = transformedModifiers.some(
+          (m) => m.target === 'spell_save_dc' && m.condition?.effectTagsAll?.includes(schoolTag)
+        );
+        if (!hasExisting) {
+          transformedModifiers.push({
+            id: `${rule.id}_${targetId}`,
+            target: 'spell_save_dc',
+            value: rule.value,
+            type: 'untyped',
+            condition: {
+              effectTagsAll: [schoolTag]
+            }
+          });
+        }
+      }
+    }
+  }
+
+  return {
+    ...baseBundle,
+    bundleId: `${baseBundle.bundleId}:${targetId}`,
+    modifiers: transformedModifiers,
+    grantedTags: nextGrantedTags
   };
 }

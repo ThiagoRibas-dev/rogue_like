@@ -1,17 +1,19 @@
-import { getComponent } from '../../core/ecs.ts';
-import { ComponentType, type EquipmentComponent, type ItemComponent } from '../../types/components.types.ts';
-import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { evaluateEffectBundle } from './effect_bundle.ts';
 import { appendSourcePath } from './modifiers.ts';
+import {
+  HEAVY_ARMOR_BONUS_THRESHOLD,
+  MEDIUM_ARMOR_BONUS_THRESHOLD,
+  type SituationalTagContext
+} from './semantic_tags_context.ts';
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from './types/dnd35e.types.ts';
 import type {
   DnD35ClassDefinition,
   DnD35CreatureTypeEngine,
-  DnD35ItemDefinition,
   DnD35SkillDefinition,
   DnD35SubtypeDefinition
 } from './types/dnd35e_system.types.ts';
-import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
+
+export * from './semantic_tags_context.ts';
 
 /** Canonical SRD Construct Bonus HP by Size emitted by the `type:construct` Effect Provider. */
 export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly<Partial<Record<CreatureSizeCategory, number>>> = {
@@ -23,20 +25,6 @@ export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly<Partial<Record<CreatureSizeCat
   colossal: 80
 };
 
-/** Live situational equipment and encumbrance context for Horizon 3 semantic tag projection. */
-export interface SituationalTagContext {
-  readonly armorCategory?: 'none' | 'light' | 'medium' | 'heavy' | undefined;
-  readonly hasShield?: boolean | undefined;
-  readonly isMetalArmorOrShield?: boolean | undefined;
-  readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
-}
-
-/** Minimum armor bonus threshold heuristic for Heavy Armor when no item tag is present. */
-export const HEAVY_ARMOR_BONUS_THRESHOLD = 6;
-
-/** Minimum armor bonus threshold heuristic for Medium Armor when no item tag is present. */
-export const MEDIUM_ARMOR_BONUS_THRESHOLD = 4;
-
 /** Standard 5-rank threshold for Balance/Tumble acrobatics trait projection when skillRegistry is omitted. */
 export const DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS = 5;
 
@@ -44,6 +32,13 @@ export const DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS = 5;
  * Emits declarative `StatModifier` entries for an actor's Creature Type (`type:construct` bonus HP by size)
  * and Subtypes (`subtype:incorporeal` Charisma deflection AC bonus, min +1, plus any declarative subtype modifiers),
  * tagging each modifier with its hierarchical `sourcePath` lineage.
+ *
+ * @param creatureType Canonical creature type string.
+ * @param subtypes Array of creature subtypes.
+ * @param chaModifier Actor Charisma modifier (for incorporeal deflection).
+ * @param parentSourcePath Hierarchical parent source path.
+ * @param systemContent System content dictionary for creature types/subtypes.
+ * @returns Array of generated `StatModifier`s.
  */
 export function buildCreatureTypeAndSubtypeModifiers(
   creatureType: string | undefined,
@@ -121,6 +116,13 @@ export function buildCreatureTypeAndSubtypeModifiers(
  * equipment/load tags (`type:<creatureType>`, `subtype:<subtype>`, `size:<sizeCategory>`,
  * `trait:literate`, `trait:illiterate`, `feature:<id>`, `armor:<category>`, `load:<category>`)
  * from `DnD35EntityData`, merging them deduplicated with any existing tags on the entity.
+ *
+ * @param dndData Actor's `DnD35EntityData`.
+ * @param existingTags Existing tags already on the actor or from ControllerLink.
+ * @param situationalContext Live situational equipment and encumbrance context.
+ * @param classRegistry Optional loaded class definitions.
+ * @param skillRegistry Optional loaded skill definitions.
+ * @returns Deduplicated array of projected semantic tags.
  */
 export function projectDnD35ActorSemanticTags(
   dndData: DnD35EntityData,
@@ -198,128 +200,17 @@ export function projectDnD35ActorSemanticTags(
     tags.add(`armor:${armorCat}`);
   }
 
-  const hasExplicitShieldTag = Array.from(tags).some((t) => t.startsWith('shield:'));
-  if (!hasExplicitShieldTag) {
-    const hasShield = situationalContext?.hasShield ?? dndData.shieldBonus > 0;
-    tags.add(hasShield ? 'shield:any' : 'shield:none');
-  }
-
-  if (situationalContext?.isMetalArmorOrShield) {
-    tags.add('armor_material:metal');
-  }
-
-  const hasExplicitLoadTag = Array.from(tags).some((t) => t.startsWith('load:'));
-  if (!hasExplicitLoadTag) {
-    const loadCat = situationalContext?.loadCategory ?? 'light';
-    tags.add(`load:${loadCat}`);
-  }
-
-  return Array.from(tags);
-}
-
-/**
- * Inspects an entity's equipped items in `GameState` to derive live Horizon 3 `SituationalTagContext`
- * (`armorCategory`, `hasShield`, `isMetalArmorOrShield`, `loadCategory`) using declarative `armorStats`
- * and `specialMaterial` (with tag/threshold fallbacks).
- */
-export function resolveEntitySituationalTagContext(
-  state: GameState,
-  entityId: EntityId,
-  dndData: DnD35EntityData
-): SituationalTagContext {
-  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  let armorCategory: 'none' | 'light' | 'medium' | 'heavy' | undefined;
-  let hasShield = dndData.shieldBonus > 0;
-  let isMetalArmorOrShield = false;
-
-  if (equipment && Array.isArray(equipment.slots)) {
-    for (const slot of equipment.slots) {
-      if (slot.equippedItem === null || slot.suppressed === true) continue;
-      const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
-      const itemDef = itemComp ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined) : undefined;
-      if (!itemDef) continue;
-
-      const itemTags = itemDef.tags ?? [];
-      const armorStats = itemDef.armorStats;
-      const isMithral =
-        itemDef.specialMaterial === 'mithral' || itemTags.includes('mithral') || itemTags.includes('material:mithral');
-
-      if (armorStats) {
-        if (armorStats.isMetal && itemDef.specialMaterial !== 'darkwood') {
-          isMetalArmorOrShield = true;
-        }
-        if (armorStats.armorCategory === 'shield' || armorStats.armorCategory === 'tower_shield') {
-          hasShield = true;
-        } else {
-          const effectiveCat = isMithral
-            ? (computeMaterialEquipmentStats('mithral', armorStats.armorCategory).effectiveArmorCategory ??
-              armorStats.armorCategory)
-            : armorStats.armorCategory;
-          if (effectiveCat === 'heavy') {
-            armorCategory = 'heavy';
-          } else if (effectiveCat === 'medium' && armorCategory !== 'heavy') {
-            armorCategory = 'medium';
-          } else if (effectiveCat === 'light' && !armorCategory) {
-            armorCategory = 'light';
-          }
-        }
-        continue;
-      }
-
-      if (itemTags.includes('metal') || itemTags.includes('armor_material:metal')) {
-        isMetalArmorOrShield = true;
-      }
-      if (slot.slotType === 'off_hand' || itemTags.includes('shield')) {
-        if ((itemDef.equippable?.defenseBonus ?? 0) > 0 || itemTags.includes('shield')) {
-          hasShield = true;
-        }
-      }
-      if (slot.slotType === 'torso' || slot.slotType === 'body' || (itemDef.equippable?.defenseBonus ?? 0) > 0) {
-        const defBonus = itemDef.equippable?.defenseBonus ?? 0;
-        let rawCat: 'light' | 'medium' | 'heavy' | undefined;
-        if (
-          itemTags.includes('armor:heavy') ||
-          itemTags.includes('heavy_armor') ||
-          defBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
-        ) {
-          rawCat = 'heavy';
-        } else if (
-          itemTags.includes('armor:medium') ||
-          itemTags.includes('medium_armor') ||
-          defBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
-        ) {
-          rawCat = 'medium';
-        } else if (defBonus >= 1 || itemTags.includes('armor:light') || itemTags.includes('light_armor')) {
-          rawCat = 'light';
-        }
-        if (rawCat) {
-          const effectiveCat = isMithral
-            ? ((computeMaterialEquipmentStats('mithral', rawCat).effectiveArmorCategory as
-                'light' | 'medium' | 'heavy') ?? rawCat)
-            : rawCat;
-          if (effectiveCat === 'heavy') armorCategory = 'heavy';
-          else if (effectiveCat === 'medium' && armorCategory !== 'heavy') armorCategory = 'medium';
-          else if (effectiveCat === 'light' && !armorCategory) armorCategory = 'light';
-        }
-      }
+  for (const comp of dndData.companions ?? []) {
+    for (const cTag of comp.tags) {
+      tags.add(`has_companion:${cTag}`);
     }
   }
 
-  if (!armorCategory) {
-    armorCategory =
-      dndData.armorBonus >= HEAVY_ARMOR_BONUS_THRESHOLD
-        ? 'heavy'
-        : dndData.armorBonus >= MEDIUM_ARMOR_BONUS_THRESHOLD
-          ? 'medium'
-          : dndData.armorBonus >= 1
-            ? 'light'
-            : 'none';
+  for (const t of existingTags) {
+    if (['animal_companion', 'familiar', 'mount', 'cohort', 'hireling', 'summon', 'temporary_ally'].includes(t)) {
+      tags.add(`companion:${t}`);
+    }
   }
 
-  return {
-    armorCategory,
-    hasShield,
-    isMetalArmorOrShield,
-    loadCategory: 'light'
-  };
+  return Array.from(tags);
 }

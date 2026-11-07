@@ -1,4 +1,6 @@
 import { computeAbilityModifier } from './abilities.ts';
+import { CLERIC_REQUIRED_DOMAIN_COUNT } from './companions.ts';
+import { parseParameterizedFeatId } from './effect_bundle.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from './prerequisites.ts';
 import {
   calculateLevelSkillPointBudget,
@@ -6,7 +8,8 @@ import {
   type CharacterCreationDraft,
   computeFirstLevelFeatSlotBudget,
   getEffectiveClassSkillIds,
-  getSkillMaxRanks
+  getSkillMaxRanks,
+  isFeatAllowedInSlot
 } from './builder/builder_core.ts';
 import { computeClassSpellSelectionBudget, isSpellSelectableForDraft } from './builder/builder_spells.ts';
 import {
@@ -55,7 +58,11 @@ export function sanitizeDraftOnRaceOrClassChange(
       ? allowedAlignments[0]!
       : draft.alignment;
 
-  const domains = classDef.id === 'cleric' ? draft.domains.slice(0, 2) : [];
+  const domains = classDef.id === 'cleric' ? draft.domains.slice(0, CLERIC_REQUIRED_DOMAIN_COUNT) : [];
+  const deityFavoredWeaponId =
+    classDef.id === 'cleric' && domains.includes('war') ? (draft.deityFavoredWeaponId ?? 'longsword') : undefined;
+  const familiarId = classDef.id === 'wizard' || classDef.id === 'sorcerer' ? draft.familiarId : undefined;
+  const animalCompanionId = classDef.id === 'druid' ? (draft.animalCompanionId ?? 'wolf') : undefined;
   const arcaneSchool = classDef.id === 'wizard' ? (draft.arcaneSchool ?? 'universal') : undefined;
   const prohibitedSchools = classDef.id === 'wizard' && arcaneSchool !== 'universal' ? draft.prohibitedSchools : [];
 
@@ -118,13 +125,21 @@ export function sanitizeDraftOnRaceOrClassChange(
   const selectedFeats: string[] = [];
   for (const featId of draft.selectedFeats) {
     if (selectedFeats.length >= featBudget.totalSlots) break;
-    const featDef = sysContent.feats[featId];
+    const slot = featBudget.slots[selectedFeats.length];
+    const { baseFeatId, targetId } = parseParameterizedFeatId(featId);
+    const featDef = sysContent.feats[baseFeatId];
     if (!featDef) continue;
+    if (slot && !isFeatAllowedInSlot(featDef, slot)) continue;
     const ctxWithAccumulated: PrerequisiteEvalContext = {
       ...prereqCtx,
-      feats: selectedFeats
+      feats: selectedFeats,
+      ...(targetId ? { targetId } : {})
     };
-    if (!featDef.prerequisites || evaluatePrerequisiteAST(featDef.prerequisites, ctxWithAccumulated)) {
+    if (
+      slot?.ignorePrerequisites ||
+      !featDef.prerequisites ||
+      evaluatePrerequisiteAST(featDef.prerequisites, ctxWithAccumulated)
+    ) {
       selectedFeats.push(featId);
     }
   }
@@ -155,9 +170,12 @@ export function sanitizeDraftOnRaceOrClassChange(
     alignment,
     selectedAcfs,
     domains,
+    deityFavoredWeaponId,
+    familiarId,
+    animalCompanionId,
     arcaneSchool,
     prohibitedSchools,
-    ...(classDef.id === 'ranger' ? { favoredEnemyType: draft.favoredEnemyType ?? 'undead' } : {}),
+    favoredEnemyType: classDef.id === 'ranger' ? (draft.favoredEnemyType ?? 'undead') : undefined,
     skillRanks,
     selectedFeats,
     knownSpells

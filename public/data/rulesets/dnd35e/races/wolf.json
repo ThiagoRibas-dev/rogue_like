@@ -48,6 +48,9 @@
       "tiers": []
     },
     "defaultClassLevels": [],
+    "companionTags": [
+      "animal_companion"
+    ],
     "levelAdjustment": 0,
     "favoredClass": "any",
     "bonusFeatAtFirstLevel": false,

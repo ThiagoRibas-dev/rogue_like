@@ -1,1 +1,488 @@
-{}
+{
+  "bat": {
+    "id": "bat",
+    "name": "Bat",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "diminutive",
+    "baseLandSpeedFt": 5,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -9, "dex": 5, "con": 0, "int": -8, "wis": 4, "cha": -6 },
+    "defaultAbilityScores": { "str": 1, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 4 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_bat_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_bat_listen",
+          "target": "skill:listen",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": []
+  },
+  "cat": {
+    "id": "cat",
+    "name": "Cat",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 30,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -7, "dex": 5, "con": 0, "int": -8, "wis": 2, "cha": -3 },
+    "defaultAbilityScores": { "str": 3, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 7 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_cat_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_cat_move_silently",
+          "target": "skill:move_silently",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d2",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d3",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "hawk": {
+    "id": "hawk",
+    "name": "Hawk",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 10,
+    "naturalArmorBonus": 1,
+    "abilityAdjustments": { "str": -4, "dex": 7, "con": 0, "int": -8, "wis": 4, "cha": -4 },
+    "defaultAbilityScores": { "str": 6, "dex": 17, "con": 10, "int": 2, "wis": 14, "cha": 6 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_hawk_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_hawk_spot",
+          "target": "skill:spot",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "talon",
+        "name": "Talons",
+        "naturalType": "talon",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "owl": {
+    "id": "owl",
+    "name": "Owl",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 10,
+    "naturalArmorBonus": 1,
+    "abilityAdjustments": { "str": -6, "dex": 5, "con": 0, "int": -8, "wis": 4, "cha": -6 },
+    "defaultAbilityScores": { "str": 4, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 4 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_owl_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_owl_spot",
+          "target": "skill:spot",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "talon",
+        "name": "Talons",
+        "naturalType": "talon",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "rat": {
+    "id": "rat",
+    "name": "Rat",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 15,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -8, "dex": 5, "con": 0, "int": -8, "wis": 2, "cha": -8 },
+    "defaultAbilityScores": { "str": 2, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 2 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_rat_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_rat_fort",
+          "target": "save_fort",
+          "value": 2,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d3",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "raven": {
+    "id": "raven",
+    "name": "Raven",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 10,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -9, "dex": 5, "con": 0, "int": -8, "wis": 4, "cha": -4 },
+    "defaultAbilityScores": { "str": 1, "dex": 15, "con": 10, "int": 2, "wis": 14, "cha": 6 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_raven_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_raven_appraise",
+          "target": "skill:appraise",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d2",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "viper": {
+    "id": "viper",
+    "name": "Viper",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 15,
+    "naturalArmorBonus": 1,
+    "abilityAdjustments": { "str": -6, "dex": 7, "con": 1, "int": -9, "wis": 2, "cha": -8 },
+    "defaultAbilityScores": { "str": 4, "dex": 17, "con": 11, "int": 1, "wis": 12, "cha": 2 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_viper_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_viper_bluff",
+          "target": "skill:bluff",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d2",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "toad": {
+    "id": "toad",
+    "name": "Toad",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "diminutive",
+    "baseLandSpeedFt": 5,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -9, "dex": 2, "con": 1, "int": -9, "wis": 4, "cha": -6 },
+    "defaultAbilityScores": { "str": 1, "dex": 12, "con": 11, "int": 1, "wis": 14, "cha": 4 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_toad_bundle",
+      "category": "ex",
+      "modifiers": [
+        {
+          "id": "familiar_toad_hp",
+          "target": "max_hp",
+          "value": 3,
+          "type": "untyped"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": []
+  },
+  "weasel": {
+    "id": "weasel",
+    "name": "Weasel",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "tiny",
+    "baseLandSpeedFt": 20,
+    "naturalArmorBonus": 0,
+    "abilityAdjustments": { "str": -7, "dex": 5, "con": 0, "int": -8, "wis": 2, "cha": -5 },
+    "defaultAbilityScores": { "str": 3, "dex": 15, "con": 10, "int": 2, "wis": 12, "cha": 5 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["familiar"],
+    "masterEffectBundle": {
+      "bundleId": "familiar_weasel_bundle",
+      "modifiers": [
+        {
+          "sourceId": "familiar_weasel_ref",
+          "targetStat": "save_ref",
+          "value": 2,
+          "bonusType": "untyped",
+          "sourcePath": "familiar:weasel"
+        }
+      ],
+      "virtualFeatGrants": ["alertness"]
+    },
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d3",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "badger": {
+    "id": "badger",
+    "name": "Badger",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "small",
+    "baseLandSpeedFt": 30,
+    "naturalArmorBonus": 1,
+    "abilityAdjustments": { "str": -2, "dex": 7, "con": 5, "int": -8, "wis": 2, "cha": -4 },
+    "defaultAbilityScores": { "str": 8, "dex": 17, "con": 15, "int": 2, "wis": 12, "cha": 6 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["animal_companion"],
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d2",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d3",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "riding_dog": {
+    "id": "riding_dog",
+    "name": "Riding Dog",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "medium",
+    "baseLandSpeedFt": 40,
+    "naturalArmorBonus": 4,
+    "abilityAdjustments": { "str": 5, "dex": 5, "con": 5, "int": -8, "wis": 2, "cha": -4 },
+    "defaultAbilityScores": { "str": 15, "dex": 15, "con": 15, "int": 2, "wis": 12, "cha": 6 },
+    "rhdProgression": { "baseHdCount": 2, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["animal_companion", "mount"],
+    "naturalWeapons": [
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": true,
+        "count": 1,
+        "damageDice": "1d6",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  },
+  "eagle": {
+    "id": "eagle",
+    "name": "Eagle",
+    "isPlayableRace": false,
+    "creatureType": "animal",
+    "subtypes": [],
+    "size": "small",
+    "baseLandSpeedFt": 10,
+    "naturalArmorBonus": 1,
+    "abilityAdjustments": { "str": 0, "dex": 5, "con": 2, "int": -8, "wis": 4, "cha": -4 },
+    "defaultAbilityScores": { "str": 10, "dex": 15, "con": 12, "int": 2, "wis": 14, "cha": 6 },
+    "rhdProgression": { "baseHdCount": 1, "saveCurveOverrides": { "fortCurve": "good", "refCurve": "good", "willCurve": "poor" } },
+    "defaultClassLevels": [],
+    "levelAdjustment": 0,
+    "favoredClass": "any",
+    "companionTags": ["animal_companion"],
+    "naturalWeapons": [
+      {
+        "id": "talon",
+        "name": "Talons",
+        "naturalType": "talon",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
+        "id": "bite",
+        "name": "Bite",
+        "naturalType": "bite",
+        "isPrimary": false,
+        "count": 1,
+        "damageDice": "1d4",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ]
+  }
+}

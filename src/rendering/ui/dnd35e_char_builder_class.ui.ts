@@ -1,36 +1,18 @@
 import {
   type CharacterCreationDraft,
   type DnD35Alignment,
-  type DnD35SpellSchool,
   getDnD35SystemContent,
-  resolveClassSpellAcquisitionMode,
-  validateSpecialistSchoolSelection
+  resolveClassSpellAcquisitionMode
 } from '../../rulesets/registry.ts';
 import type { GameState } from '../../types/game-state.types.ts';
+import {
+  renderClericOptions,
+  renderDruidOptions,
+  renderRangerOptions,
+  renderWizardOptions
+} from './dnd35e_char_builder_class_options.ui.ts';
 
-const SPELL_SCHOOLS: ReadonlyArray<DnD35SpellSchool> = [
-  'abjuration',
-  'conjuration',
-  'divination',
-  'enchantment',
-  'evocation',
-  'illusion',
-  'necromancy',
-  'transmutation',
-  'universal'
-];
 const ALL_ALIGNMENTS: ReadonlyArray<DnD35Alignment> = ['LG', 'NG', 'CG', 'LN', 'N', 'CN', 'LE', 'NE', 'CE'];
-const FAVORED_ENEMY_TYPES: ReadonlyArray<string> = [
-  'undead',
-  'goblinoid',
-  'orc',
-  'giant',
-  'dragon',
-  'magical_beast',
-  'outsider',
-  'aberration',
-  'construct'
-];
 
 /**
  * Renders Step 2 (Class & Path Selection) of the D&D 3.5e Character Creation Wizard.
@@ -177,111 +159,19 @@ export function renderClassStep(
     }
 
     if (draftState.classId === 'cleric') {
-      const domHeader = document.createElement('strong');
-      domHeader.style.color = 'var(--crpg-gold, #f1c40f)';
-      domHeader.textContent = `Cleric Domains (${draftState.domains.length} / 2 selected):`;
-      rightPane.appendChild(domHeader);
-      for (const dom of Object.values(sys.domains)) {
-        const chosen = draftState.domains.includes(dom.id);
-        const dRow = document.createElement('div');
-        dRow.className = `dnd35-list-item${chosen ? ' selected' : ''}`;
-        dRow.textContent = `${chosen ? '☑' : '☐'} ${dom.name} — ${dom.grantedPowerDescription}`;
-        dRow.addEventListener('click', () => {
-          const nextDomains = chosen
-            ? draftState.domains.filter((d) => d !== dom.id)
-            : draftState.domains.length < 2
-              ? [...draftState.domains, dom.id]
-              : draftState.domains;
-          updateDraft({ ...draftState, domains: nextDomains });
-        });
-        rightPane.appendChild(dRow);
-      }
+      renderClericOptions(rightPane, sys, draftState, updateDraft);
     }
 
     if (draftState.classId === 'wizard') {
-      const activeSchool = draftState.arcaneSchool ?? 'universal';
-      const specCheck = validateSpecialistSchoolSelection(activeSchool, draftState.prohibitedSchools);
-      const specTitle = document.createElement('strong');
-      specTitle.style.color = specCheck.valid ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-warning, #e67e22)';
-      specTitle.textContent = `Arcane School (${specCheck.valid ? 'Valid' : (specCheck.reason ?? 'Select prohibited schools')}):`;
-      rightPane.appendChild(specTitle);
+      renderWizardOptions(rightPane, sys, draftState, updateDraft);
+    }
 
-      const schoolWrap = document.createElement('div');
-      schoolWrap.style.display = 'flex';
-      schoolWrap.style.flexWrap = 'wrap';
-      schoolWrap.style.gap = '4px';
-      for (const school of SPELL_SCHOOLS) {
-        const sBtn = document.createElement('button');
-        sBtn.type = 'button';
-        sBtn.className = 'modal-btn';
-        sBtn.style.padding = '4px 8px';
-        sBtn.style.fontSize = '0.74rem';
-        sBtn.style.borderColor = activeSchool === school ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
-        sBtn.textContent = school;
-        sBtn.addEventListener('click', () => {
-          updateDraft({ ...draftState, arcaneSchool: school, prohibitedSchools: [] });
-        });
-        schoolWrap.appendChild(sBtn);
-      }
-      rightPane.appendChild(schoolWrap);
-
-      if (activeSchool !== 'universal') {
-        const reqCount = activeSchool === 'divination' ? 1 : 2;
-        const prohibLabel = document.createElement('strong');
-        prohibLabel.textContent = `Prohibited Schools (${draftState.prohibitedSchools.length} / ${reqCount}):`;
-        rightPane.appendChild(prohibLabel);
-
-        const prohibWrap = document.createElement('div');
-        prohibWrap.style.display = 'flex';
-        prohibWrap.style.flexWrap = 'wrap';
-        prohibWrap.style.gap = '4px';
-        for (const pSchool of SPELL_SCHOOLS) {
-          if (pSchool === 'universal' || pSchool === 'divination' || pSchool === activeSchool) continue;
-          const isProhib = draftState.prohibitedSchools.includes(pSchool);
-          const pBtn = document.createElement('button');
-          pBtn.type = 'button';
-          pBtn.className = 'modal-btn';
-          pBtn.style.padding = '4px 8px';
-          pBtn.style.fontSize = '0.74rem';
-          pBtn.style.borderColor = isProhib ? 'var(--crpg-danger, #e74c3c)' : 'var(--border-color)';
-          pBtn.textContent = `${isProhib ? '✖ ' : ''}${pSchool}`;
-          pBtn.addEventListener('click', () => {
-            const nextProhib = isProhib
-              ? draftState.prohibitedSchools.filter((s) => s !== pSchool)
-              : draftState.prohibitedSchools.length < reqCount
-                ? [...draftState.prohibitedSchools, pSchool]
-                : draftState.prohibitedSchools;
-            updateDraft({ ...draftState, prohibitedSchools: nextProhib });
-          });
-          prohibWrap.appendChild(pBtn);
-        }
-        rightPane.appendChild(prohibWrap);
-      }
+    if (draftState.classId === 'druid') {
+      renderDruidOptions(rightPane, sys, draftState, updateDraft);
     }
 
     if (draftState.classId === 'ranger') {
-      const feLabel = document.createElement('strong');
-      feLabel.textContent = '1st Favored Enemy (+2 Bonus):';
-      rightPane.appendChild(feLabel);
-      const feWrap = document.createElement('div');
-      feWrap.style.display = 'flex';
-      feWrap.style.flexWrap = 'wrap';
-      feWrap.style.gap = '4px';
-      const curFe = draftState.favoredEnemyType ?? 'undead';
-      for (const feType of FAVORED_ENEMY_TYPES) {
-        const feBtn = document.createElement('button');
-        feBtn.type = 'button';
-        feBtn.className = 'modal-btn';
-        feBtn.style.padding = '4px 8px';
-        feBtn.style.fontSize = '0.74rem';
-        feBtn.style.borderColor = curFe === feType ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
-        feBtn.textContent = feType;
-        feBtn.addEventListener('click', () => {
-          updateDraft({ ...draftState, favoredEnemyType: feType });
-        });
-        feWrap.appendChild(feBtn);
-      }
-      rightPane.appendChild(feWrap);
+      renderRangerOptions(rightPane, sys, draftState, updateDraft);
     }
   }
 

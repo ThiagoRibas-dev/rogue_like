@@ -14,6 +14,25 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_char_builder_class_options.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders class-specific multiple choice pickers (domains, deity weapons, schools, familiars, companions, favored enemies) for character creation.",
+    "canonicalEntryPoints": [
+      "COMMON_DEITY_WEAPONS",
+      "renderClericOptions",
+      "renderWizardOptions",
+      "renderDruidOptions",
+      "renderRangerOptions"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_class_options.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class_options.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_char_builder_feats.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -157,7 +176,8 @@
       "GENERAL_FEAT_HD_STEP",
       "SpellTabDescriptor",
       "computeLevelUpSpellTabs",
-      "renderLevelUpClassStage"
+      "renderLevelUpClassStage",
+      "renderLevelUpFooter"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_class.ui.ts.",
@@ -165,6 +185,52 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_level_up_class_options.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders mid-level class choices (ACFs, Ranger combat styles & favored enemies, Rogue special abilities, companions) for the Level-Up modal.",
+    "canonicalEntryPoints": [
+      "renderLevelUpClassOptions"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_class_options.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class_options.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_level_up_footer.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the validation gate banner and Previous / Next / Confirm footer bar for the Level-Up modal.",
+    "canonicalEntryPoints": [
+      "renderLevelUpFooter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_footer.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_footer.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_level_up_tabs.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Computes the Prestige Class spellcasting advancement slots and per-class spell tabs for a level-up draft.",
+    "canonicalEntryPoints": [
+      "SpellTabDescriptor",
+      "computeLevelUpSpellTabs"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_tabs.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_tabs.ts."
     ]
   },
   "src/rendering/ui/dnd35e_level_up.ui.ts": {
@@ -295,6 +361,27 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_core.ts."
     ]
   },
+  "src/rulesets/dnd35e/builder/builder_feats.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Defines typed feat slot descriptors and bonus feat pool restrictions for character creation and level-up.",
+    "canonicalEntryPoints": [
+      "FeatSlotPoolType",
+      "FeatSlotDescriptor",
+      "FirstLevelFeatBudget",
+      "WIZARD_BONUS_ITEM_CREATION_AND_MASTERY_FEATS",
+      "isFeatAllowedInSlot",
+      "computeFirstLevelFeatSlotBudget",
+      "computeLevelUpFeatSlots"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_feats.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_feats.ts."
+    ]
+  },
   "src/rulesets/dnd35e/builder/builder_hydrator.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
@@ -309,6 +396,67 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_hydrator.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_hydrator_creation.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Applies a completed 7-Step CharacterCreationDraft to an entity in GameState.",
+    "canonicalEntryPoints": [
+      "applyCharacterCreationToPlayer"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_hydrator_creation.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_hydrator_creation.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_hydrator_levelup.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Applies an interactive Level-Up choice to an actor, advancing tracks, skills, feats, and choices.",
+    "canonicalEntryPoints": [
+      "applyLevelUpToActor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_hydrator_levelup.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_hydrator_levelup.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_levelup_validation.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Validates LevelUpChoice steps including mid-level class choices, skill budgets, and typed feat slot pools with same-level prerequisite chaining.",
+    "canonicalEntryPoints": [
+      "validateLevelUpStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_levelup_validation.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_levelup_validation.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_prereq_context.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Builds current and forward-projected PrerequisiteEvalContext for actors before and after level-up advancements.",
+    "canonicalEntryPoints": [
+      "buildPrerequisiteContextForActor",
+      "buildPostLevelUpPrerequisiteContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_prereq_context.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_prereq_context.ts."
     ]
   },
   "src/rulesets/dnd35e/builder/builder_spells.ts": {
@@ -337,6 +485,7 @@
     "responsibility": "Validates CharacterCreationDraft and LevelUpChoice state against D&D 3.5e point-buy, skill rank cap, feat prerequisite, and spell allowance rules.",
     "canonicalEntryPoints": [
       "buildPrerequisiteContextForActor",
+      "buildPostLevelUpPrerequisiteContext",
       "validateCharacterCreationStep",
       "validateLevelUpStep"
     ],
@@ -346,6 +495,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_validation.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/starting_packages.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Pre-configured starting equipment packages for quick character creation.",
+    "canonicalEntryPoints": [
+      "StartingEquipmentPackage",
+      "STARTING_EQUIPMENT_PACKAGES"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/starting_packages.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/starting_packages.ts."
     ]
   },
   "src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts": {
@@ -396,6 +561,49 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/companions.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "SRD Familiars, Animal Companions, progression advancement formulas, and lifecycle entity synchronization.",
+    "canonicalEntryPoints": [
+      "RANGER_COMBAT_STYLE_LEVEL",
+      "RANGER_IMPROVED_COMBAT_STYLE_LEVEL",
+      "RANGER_COMBAT_STYLE_MASTERY_LEVEL",
+      "RANGER_ANIMAL_COMPANION_MIN_LEVEL",
+      "RANGER_FAVORED_ENEMY_UPGRADE_LEVELS",
+      "FAVORED_ENEMY_BONUS_STEP",
+      "ROGUE_SPECIAL_ABILITY_LEVELS",
+      "CLERIC_REQUIRED_DOMAIN_COUNT",
+      "computeAnimalCompanionAdvancement",
+      "computeFamiliarAdvancement",
+      "syncActorCompanionsAndFamiliars"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/companions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/companions.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/semantic_tags_context.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Live situational equipment and encumbrance context extraction for Horizon 3 semantic tag projection.",
+    "canonicalEntryPoints": [
+      "SituationalTagContext",
+      "HEAVY_ARMOR_BONUS_THRESHOLD",
+      "MEDIUM_ARMOR_BONUS_THRESHOLD",
+      "resolveEntitySituationalTagContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/semantic_tags_context.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/semantic_tags_context.ts."
     ]
   },
   "src/rulesets/dnd35e/character_builder.ts": {
@@ -1070,6 +1278,22 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/class_features_xp.ts."
     ]
   },
+  "src/rulesets/dnd35e/progression/ledger_choices.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Collects dynamic feats and emits active StatModifiers for Ranger Favored Enemies and Familiar Master bonuses.",
+    "canonicalEntryPoints": [
+      "collectClassChoiceFeats",
+      "buildClassChoiceModifiers"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/progression/ledger_choices.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/ledger_choices.ts."
+    ]
+  },
   "src/rulesets/dnd35e/progression/ledger_features_spells.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
@@ -1087,6 +1311,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/ledger_features_spells.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/progression/ledger_level_drain.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "tier": "tier2_cartridge",
+    "responsibility": "Applies permanent level drain and temporary negative levels to actors.",
+    "canonicalEntryPoints": [
+      "applyPermanentLevelDrainToActor",
+      "applyNegativeLevelsToActor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/progression/ledger_level_drain.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/ledger_level_drain.ts."
     ]
   },
   "src/rulesets/dnd35e/progression/ledger_modifiers.ts": {
