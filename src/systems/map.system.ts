@@ -17,6 +17,7 @@ import { addActor, clearScheduler } from '../core/scheduler.ts';
 import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 import { wakeSavedAreaFloor } from './map/map_wake_respawn.ts';
 import { generateAndPopulateAreaFloor } from './map/map_generation_spawner.ts';
+import { processQuestEvent } from './quest.system.ts';
 
 /**
  * Evaluates the player's line of sight and marks newly visible tiles as explored.
@@ -301,6 +302,10 @@ export function processChangeAreaIntent(
 
   const msg = `You travel to ${targetAreaId}.`;
   nextState = addMessage(nextState, msg, MessageLogCategory.System);
+
+  if (getComponent(nextState, entityId, ComponentType.Player)) {
+    nextState = processQuestEvent(nextState, 'explore', targetAreaId, 1);
+  }
 
   return { state: updateExploredTiles(nextState), success: true };
 }

@@ -1746,3 +1746,25 @@ Eliminated all hardcoded class-ID checks (`classId === 'cleric' | 'wizard' | 'dr
   - Refactored `syncActorCompanionsAndFamiliars` to advance servant Hit Die tracks and evaluate AC, HP, attack bonuses, saving throws, and size modifiers through `evaluateDnD35ActorStatDAG`.
 - [x] **Verification & SSOT Parity**:
   - Re-mapped SSOT registries (`docs/ssot/ssot_dnd35e.json`), updated canonical documentation (`docs/SSOT_DND35E.md`), and passed all 8 stages of `./verify.sh` with 165/165 passing tests.
+
+## 🟢 Milestone 122: End-to-End Quest & Narrative Lifecycle Wiring (Complete)
+
+Resolved the five foundational gaps between declarative quest schemas and runtime execution across the Console engine:
+
+- [x] **Universal Objective Emission & Retroactive Evaluation (`src/systems/quest.system.ts`, `inventory.system.ts`, `map.system.ts`, `apply.system.ts`)**:
+  - Connected `'gather'` objective emission to item pickups (`processPickUpIntent`) and added retroactive inventory inspection in `grantQuest()` so pre-existing items immediately count toward quest progress.
+  - Connected `'explore'` objective emission to area transitions (`processChangeAreaIntent`) and retroactive current-area checks in `grantQuest()`.
+  - Connected `'interact'` objective emission to verb applications on entity targets with `TemplateComponent` (`processApplyIntent`).
+- [x] **Inversion of Responsibility: Exhaustive Reward Dispatch (`QuestRewardApplierMap`)**:
+  - Replaced open-ended `for-if` branching in `completeQuest()` with an exhaustive `QUEST_REWARD_APPLIERS` dictionary mapping `'xp'`, `'item'`, `'standing'`, and `'event'`.
+  - Added item spawning with inventory overflow placement at the player's feet, faction standing adjustments on `MemoryComponent`, and world event emissions.
+- [x] **Quest Failure Lifecycle & Journal UI Polish (`src/systems/quest.system.ts`, `quest.ui.ts`, `src/types/events.types.ts`)**:
+  - Implemented `failQuest()`, `fail_quest` consequence action, and `GameEventType.QuestFailed`.
+  - Updated `quest.ui.ts` to filter out hidden quests (`isHidden`), render failed quests in distinct red styling (`#e74c3c`), and display a Rewards Preview on active quests.
+- [x] **Procedural Bounties & Dynamic Shop Restock Integration (`procedural-quest.system.ts`, `shop.system.ts`, `trigger/quest.ts`)**:
+  - Fixed entity `targetTags` filtering in `procedural-quest.system.ts` so monster bounty templates query `entityDef.tags`, `roleTags`, and `encounterTags`.
+  - Added `generate_procedural_quest` trigger consequence and connected `restockShop()` to auto-grant dynamic restock supply contracts directly to the player's `QuestLogComponent`.
+- [x] **Multi-Stage Quest Chaining & Static Validation (`src/types/quests.types.ts`, `quest.validator.ts`)**:
+  - Added `nextQuestId: z.string().optional()` to `QuestSchema` and auto-chained follow-up quests in `completeQuest()`.
+  - Upgraded `src/editor/validator/quest.validator.ts` to exhaustively validate quest rewards, `nextQuestId` references, and explore/interact targets.
+

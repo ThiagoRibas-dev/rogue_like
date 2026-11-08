@@ -1,0 +1,6 @@
+{
+  "summary":  "Detailed implementation plan for Milestone 122: End-to-End Quest & Narrative Lifecycle Wiring. Addresses Gaps 1–5, featuring QuestRewardApplierMap dictionary dispatch, wiring all 5 objective emitters, retroactive gather/explore checks, failQuest lifecycle, procedural quest tag filtering and consequence integration, multi-stage quest chaining, and journal UI polish.",
+  "updatedAt":  "2026-11-08T15:39:51.366601249Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

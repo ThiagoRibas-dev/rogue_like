@@ -3,6 +3,7 @@ import { ComponentType, type InventoryComponent, type ClueComponent } from '../t
 import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
+import { processQuestEvent } from './quest.system.ts';
 import type { ActionResult } from '../types/intents/intent.union.ts';
 import {
   processEquipItemIntent,
@@ -104,6 +105,10 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
     items: [...inventory.items, itemEntityId]
   };
   nextState = addComponent(nextState, entityId, nextInventory);
+
+  if (getComponent(nextState, entityId, ComponentType.Player)) {
+    nextState = processQuestEvent(nextState, 'gather', itemComp.itemId, 1);
+  }
 
   const clueComp = getComponent(nextState, itemEntityId, ComponentType.Clue) as ClueComponent | undefined;
   const events: GameEvent[] = [];

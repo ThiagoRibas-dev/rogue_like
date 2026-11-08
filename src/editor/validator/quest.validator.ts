@@ -47,15 +47,78 @@ export async function validateQuests(campaign: Readonly<CampaignData>): Promise<
           }
           break;
         }
-        case 'explore':
-        case 'interact':
-        case 'talk':
-          // No specific validation required for these types during smoke test
+        case 'explore': {
+          const targetId = obj.targetId;
+          if (!campaign.areas[targetId]) {
+            errors.push({
+              path: `/quests/${questId}/objectives/${i}/targetId`,
+              message: `Quest requires exploring unknown area '${targetId}'.`,
+              severity: 'error'
+            });
+          }
           break;
+        }
+        case 'interact':
+        case 'talk': {
+          const targetId = obj.targetId;
+          if (!campaign.entities[targetId]) {
+            errors.push({
+              path: `/quests/${questId}/objectives/${i}/targetId`,
+              message: `Quest objective requires unknown entity '${targetId}'.`,
+              severity: 'error'
+            });
+          }
+          break;
+        }
         default:
           return assertNever(obj.type);
       }
     }
+
+    // Check rewards exhaustively
+    if (quest.rewards) {
+      for (let r = 0; r < quest.rewards.length; r++) {
+        const reward = quest.rewards[r];
+        if (!reward) continue;
+        switch (reward.type) {
+          case 'item': {
+            if (!campaign.items[reward.itemId]) {
+              errors.push({
+                path: `/quests/${questId}/rewards/${r}/itemId`,
+                message: `Quest grants unknown item reward '${reward.itemId}'.`,
+                severity: 'error'
+              });
+            }
+            break;
+          }
+          case 'standing': {
+            if (!campaign.factions[reward.factionId]) {
+              errors.push({
+                path: `/quests/${questId}/rewards/${r}/factionId`,
+                message: `Quest grants standing for unknown faction '${reward.factionId}'.`,
+                severity: 'error'
+              });
+            }
+            break;
+          }
+          case 'xp':
+          case 'event':
+            break;
+          default:
+            return assertNever(reward);
+        }
+      }
+    }
+
+    // Check follow-up quest
+    if (quest.nextQuestId && !campaign.quests[quest.nextQuestId]) {
+      errors.push({
+        path: `/quests/${questId}/nextQuestId`,
+        message: `Quest references unknown follow-up quest '${quest.nextQuestId}'.`,
+        severity: 'error'
+      });
+    }
+
     // Yield to the event loop
     await new Promise((resolve) => setTimeout(resolve, 0));
   }

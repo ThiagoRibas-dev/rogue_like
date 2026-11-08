@@ -58,6 +58,24 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
   if (key === 'dialogueId') {
     return Object.keys(doc.dialogues).map((k) => ({ value: k, label: `${k} [ST]` }));
   }
+  if (key === 'questId' || key === 'nextQuestId') {
+    return Object.keys(doc.quests || {}).map((k) => ({
+      value: k,
+      label: `Quest: ${doc.quests[k]?.title || k} [ST]`
+    }));
+  }
+  if (key === 'questTemplateId') {
+    return Object.keys(doc.questTemplates || {}).map((k) => ({
+      value: k,
+      label: `Quest Template: ${k} [BP]`
+    }));
+  }
+  if (key === 'itemId') {
+    return Object.keys(doc.items || {}).map((k) => ({
+      value: k,
+      label: `Item: ${doc.items[k]?.name || k} [ST]`
+    }));
+  }
   if (key === 'encounterProfileId') {
     return Object.keys(doc.encounterProfiles || {}).map((k) => ({
       value: k,
@@ -73,7 +91,11 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
       value: k,
       label: `Item: ${doc.items[k]?.name || k} [ST]`
     }));
-    return [...ents, ...itms];
+    const qtmps = Object.keys(doc.questTemplates || {}).map((k) => ({
+      value: k,
+      label: `Quest Template: ${k} [BP]`
+    }));
+    return [...ents, ...itms, ...qtmps];
   }
   if (key === 'promotionSources' || key === 'promotionSource') {
     return Object.keys(doc.entities || {}).map((k) => ({

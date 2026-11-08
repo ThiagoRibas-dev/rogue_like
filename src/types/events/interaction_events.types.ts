@@ -93,6 +93,12 @@ export interface QuestCompletedEvent extends BaseGameEvent {
   readonly questId: string;
 }
 
+/** Fired when a quest is failed. */
+export interface QuestFailedEvent extends BaseGameEvent {
+  readonly type: GameEventType.QuestFailed;
+  readonly questId: string;
+}
+
 /** Fired during debug triggers execution tracing. */
 export interface DebugTriggerTraceEvent extends BaseGameEvent {
   readonly type: GameEventType.DebugTriggerTrace;

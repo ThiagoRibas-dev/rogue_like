@@ -4,6 +4,8 @@ import { ComponentType } from '../types/components.types.ts';
 import type { ShopComponent, RenderableComponent } from '../types/components.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 import { rng } from '../core/rng.ts';
+import { grantQuest } from './quest.system.ts';
+import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
  * Restocks a shop if it is completely empty.
@@ -85,6 +87,17 @@ export function restockShop(state: GameState, shopEntityId: EntityId): GameState
         [questId]: quest
       }
     };
+
+    const playerEntities = nextState.entities.filter((e) => getComponent(nextState, e, ComponentType.Player));
+    const playerId = playerEntities[0];
+    if (playerId !== undefined) {
+      nextState = grantQuest(nextState, playerId, questId);
+      nextState = addMessage(
+        nextState,
+        `${shopName} posted a request: "Out of stock! I need ${amount}x ${targetItemDef.name ?? targetItemDef.id}."`,
+        MessageLogCategory.System
+      );
+    }
   }
 
   return nextState;

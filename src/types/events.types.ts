@@ -30,6 +30,7 @@ import type {
   ItemUnequippedEvent,
   ItemUsedEvent,
   QuestCompletedEvent,
+  QuestFailedEvent,
   QuestStageChangedEvent,
   ReactionResolvedEvent,
   SayResolvedEvent,
@@ -72,6 +73,7 @@ export type {
   DialogueSelectedEvent,
   QuestStageChangedEvent,
   QuestCompletedEvent,
+  QuestFailedEvent,
   DebugTriggerTraceEvent,
   ApplyResolvedEvent,
   ApplyFailedEvent,
@@ -108,6 +110,7 @@ export enum GameEventType {
   TrapTriggered = 'TrapTriggered',
   QuestStageChanged = 'QuestStageChanged',
   QuestCompleted = 'QuestCompleted',
+  QuestFailed = 'QuestFailed',
   DebugTriggerTrace = 'DebugTriggerTrace',
   ApplyResolved = 'ApplyResolved',
   ApplyFailed = 'ApplyFailed',
@@ -160,6 +163,7 @@ export type GameEvent =
   | TrapTriggeredEvent
   | QuestStageChangedEvent
   | QuestCompletedEvent
+  | QuestFailedEvent
   | DebugTriggerTraceEvent
   | ApplyResolvedEvent
   | ApplyFailedEvent

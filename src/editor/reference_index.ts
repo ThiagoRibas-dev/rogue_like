@@ -161,6 +161,39 @@ export function buildReferenceIndex(data: CampaignData): ReferenceIndex {
       });
   }
 
+  // Quests (Record<string, QuestSchema>) -> entities, items, areas, quests
+  for (const [questId, quest] of Object.entries(data.quests || {})) {
+    const safeQuestId = String(questId);
+    for (let i = 0; i < (quest.objectives || []).length; i++) {
+      const obj = quest.objectives[i];
+      if (!obj || !obj.targetId) continue;
+      const targetKind = obj.type === 'gather' ? 'item' : obj.type === 'explore' ? 'area' : 'entity';
+      usages.push({
+        targetKind,
+        targetId: obj.targetId,
+        sourcePath: `/quests/${safeQuestId}/objectives/${i}/targetId`
+      });
+    }
+    for (let r = 0; r < (quest.rewards || []).length; r++) {
+      const rew = quest.rewards?.[r];
+      if (!rew) continue;
+      if (rew.type === 'item' && rew.itemId) {
+        usages.push({
+          targetKind: 'item',
+          targetId: rew.itemId,
+          sourcePath: `/quests/${safeQuestId}/rewards/${r}/itemId`
+        });
+      }
+    }
+    if (quest.nextQuestId) {
+      usages.push({
+        targetKind: 'quest',
+        targetId: quest.nextQuestId,
+        sourcePath: `/quests/${safeQuestId}/nextQuestId`
+      });
+    }
+  }
+
   const usageMap = new Map<string, ReferenceUsage[]>();
   for (const u of usages) {
     const key = `${u.targetKind}:${u.targetId}`;

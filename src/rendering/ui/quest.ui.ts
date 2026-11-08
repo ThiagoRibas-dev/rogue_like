@@ -4,6 +4,7 @@ import { getComponent } from '../../core/ecs.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { getQuestDef } from '../../systems/quest.system.ts';
 import type { QuestLogComponent } from '../../types/components.types.ts';
+import { assertNever } from '../../utils/assert.ts';
 
 function appendWikiSegments(container: HTMLElement, text: string): void {
   const segments = parseWikiSegments(text);
@@ -56,15 +57,30 @@ export function renderQuestJournal(state: GameState): void {
   for (const [questId, qState] of Object.entries(questLog.quests)) {
     const questDef = getQuestDef(state, questId);
     if (!questDef) continue;
+    if (questDef.isHidden && qState.status !== 'completed') continue;
 
     const questContainer = document.createElement('div');
     questContainer.style.cssText =
       'margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--border-color); border-radius: 4px;';
 
+    const statusColor = qState.status === 'completed' ? '#2ecc71' : qState.status === 'failed' ? '#e74c3c' : '#f1c40f';
+    const statusLabel =
+      qState.status === 'completed' ? '[Completed]' : qState.status === 'failed' ? '[Failed]' : '[Active]';
+
+    const header = document.createElement('div');
+    header.style.cssText = 'display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px;';
+
     const title = document.createElement('h3');
-    title.style.cssText = `margin: 0 0 8px 0; font-size: 1.1rem; color: ${qState.status === 'completed' ? '#2ecc71' : '#f1c40f'};`;
+    title.style.cssText = `margin: 0; font-size: 1.1rem; color: ${statusColor};`;
     title.textContent = questDef.title;
-    questContainer.appendChild(title);
+    header.appendChild(title);
+
+    const badge = document.createElement('span');
+    badge.style.cssText = `font-size: 0.8rem; font-weight: bold; color: ${statusColor};`;
+    badge.textContent = statusLabel;
+    header.appendChild(badge);
+
+    questContainer.appendChild(header);
 
     const desc = document.createElement('p');
     desc.style.cssText = 'color: var(--text-dim); font-size: 0.9rem; margin-bottom: 12px;';
@@ -92,6 +108,36 @@ export function renderQuestJournal(state: GameState): void {
       objLine.appendChild(progCount);
 
       questContainer.appendChild(objLine);
+    }
+
+    if (questDef.rewards && questDef.rewards.length > 0) {
+      const rewardSection = document.createElement('div');
+      rewardSection.style.cssText =
+        'margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.8rem; color: #f39c12;';
+      const rewardLabels: string[] = [];
+      for (const rew of questDef.rewards) {
+        switch (rew.type) {
+          case 'xp':
+            rewardLabels.push(`${rew.amount ?? 0} XP`);
+            break;
+          case 'item': {
+            const itemDef = state.campaign.items[rew.itemId];
+            rewardLabels.push(`${rew.amount ?? 1}x ${itemDef?.name ?? rew.itemId}`);
+            break;
+          }
+          case 'standing':
+            rewardLabels.push(`${rew.amount && rew.amount >= 0 ? '+' : ''}${rew.amount ?? 0} ${rew.factionId} Rep`);
+            break;
+          case 'event':
+            break;
+          default:
+            return assertNever(rew);
+        }
+      }
+      if (rewardLabels.length > 0) {
+        rewardSection.textContent = `Rewards: ${rewardLabels.join(', ')}`;
+        questContainer.appendChild(rewardSection);
+      }
     }
 
     content.appendChild(questContainer);

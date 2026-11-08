@@ -12,7 +12,8 @@ import type {
 import { toItemInstanceId } from '../../types/components.types.ts';
 import type { EntityDiedEvent } from '../../types/events.types.ts';
 import { getComponent, addComponent, createEntity } from '../../core/ecs.ts';
-import { completeQuest, grantQuest } from '../quest.system.ts';
+import { completeQuest, failQuest, grantQuest } from '../quest.system.ts';
+import { generateProceduralQuest } from '../procedural-quest.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 
 /**
@@ -140,6 +141,40 @@ export const questConsequences = {
       return completeQuest(state, playerId, questId);
     }
     return state;
+  },
+
+  fail_quest: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'fail_quest' }>
+  ): GameState => {
+    const questId = consequence.questId ?? consequence.targetId;
+    const playerId =
+      consequence._playerEntityId ??
+      consequence.entityId ??
+      ('entityId' in event ? ((event as unknown as Record<string, unknown>).entityId as EntityId) : undefined);
+
+    if (playerId !== undefined && questId) {
+      return failQuest(state, playerId, questId);
+    }
+    return state;
+  },
+
+  generate_procedural_quest: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'generate_procedural_quest' }>
+  ): GameState => {
+    const playerId =
+      consequence._playerEntityId ??
+      consequence.entityId ??
+      ('entityId' in event ? ((event as unknown as Record<string, unknown>).entityId as EntityId) : undefined);
+
+    const { nextState, questId } = generateProceduralQuest(state, consequence.templateId);
+    if (questId && playerId !== undefined) {
+      return grantQuest(nextState, playerId, questId);
+    }
+    return nextState;
   }
 } satisfies Partial<
   Record<ConsequenceAction['type'], (state: GameState, event: GameEvent, consequence: never) => GameState>

@@ -180,42 +180,36 @@ Because `GameState.dynamicQuests` is part of the serializable root state, proced
 
 ---
 
-## 6. Identified Wiring Gaps & CRPG Roadmap
+## 6. Resolved Wiring Gaps (Milestone 122: End-to-End Quest & Narrative Lifecycle Wiring)
 
-An audit of the current codebase reveals five specific gaps between the declarative schemas and runtime execution that should be addressed as we deepen CRPG quest mechanics:
+In **Milestone 122**, all five foundational gaps between declarative schemas and runtime execution were resolved:
 
-### Gap 1: Unwired Objective Emitters (`'gather'`, `'explore'`, `'interact'`)
-- **Current State**: `processQuestEvent()` is only called in two places across the entire codebase:
-  1. `src/systems/death.system.ts:142` (`processQuestEvent(nextState, 'kill', templateComp.templateId, 1)`)
-  2. `src/systems/dialogue.system.ts:38` (`processQuestEvent(state, 'talk', targetTemplateId, 1)`)
-- **Missing Wiring**:
-  - `'gather'` is never emitted when picking up items (`src/actions/inventory.actions.ts`), nor does `grantQuest()` check if the player already holds required items in their `InventoryComponent`.
-  - `'explore'` is never emitted on area transition or room/tile discovery (`src/systems/area-transition.system.ts` / `fov.ts`).
-  - `'interact'` is never emitted when interacting with world props/altars/containers (`src/actions/interact.actions.ts`).
+### ✅ Gap 1: Universal Objective Emitters (`'gather'`, `'explore'`, `'interact'`) & Retroactive Progress
+- **Wiring Resolved**:
+  - `'gather'` is emitted on pickup in `src/systems/inventory.system.ts` (`processPickUpIntent`). In addition, `grantQuest()` inspects the player's current `InventoryComponent` so existing items retroactively satisfy `'gather'` objectives upon receiving the quest.
+  - `'explore'` is emitted on area transition in `src/systems/map.system.ts` (`processChangeAreaIntent`), and `grantQuest()` checks if the player is currently in the target area.
+  - `'interact'` is emitted when applying verbs to world props/entities in `src/systems/apply.system.ts` (`processApplyIntent`).
 
-### Gap 2: Incomplete Reward Payouts in `completeQuest()`
-- **Current State**: While `QuestRewardSchema` defines `'xp'`, `'item'`, `'standing'`, and `'event'` rewards (and `default/quests.json` already authors `'item'` rewards like `health_potion` and `potion_of_fire`), `completeQuest()` in `src/systems/quest.system.ts:54–61` only processes `reward.type === 'xp'`:
-  ```ts
-  for (const reward of questDef.rewards) {
-    if (reward.type === 'xp' && reward.amount) {
-      nextState = awardExperience(nextState, playerEntityId, reward.amount);
-    }
-    // Future: handle item/standing rewards here
-  }
-  ```
-- **Needed Fix**: Spawn and grant `'item'` rewards into the player's inventory (or drop at feet if full), apply `'standing'` deltas to faction standing/relationships, dispatch `'event'` triggers, and support currency/gold payouts.
+### ✅ Gap 2: Inversion of Responsibility & Exhaustive Reward Payouts (`QuestRewardApplierMap`)
+- **Wiring Resolved**:
+  - Replaced the open-ended `for-if` in `completeQuest()` with an exhaustive `QUEST_REWARD_APPLIERS` dictionary (`QuestRewardApplierMap`) in `src/systems/quest.system.ts`.
+  - Supports all 4 reward variants: `'xp'` (`grantXp`), `'item'` (spawns into `InventoryComponent` or drops at player's feet if full), `'standing'` (mutates `MemoryComponent.factionStandings`), and `'event'` (`WorldEventFired`).
+  - Added exhaustive reward validation to `src/editor/validator/quest.validator.ts`.
 
-### Gap 3: Unconnected Procedural Quest Surfaces & Tag Filter Bug
-- **Current State**:
-  - `generateProceduralQuest()` in `src/systems/procedural-quest.system.ts` currently has **zero callers** in `src/`.
-  - `restockShop()` in `src/systems/shop.system.ts` writes `dyn_restock_*` quests into `state.dynamicQuests`, but neither grants them to the player nor surfaces them in merchant dialogue / notice boards.
-  - **Bug in `src/systems/procedural-quest.system.ts:24–34`**: When `template.targetTags` is non-empty (such as `"bounty_kill"` in `default/quest_templates.json` which specifies `targetTags: ["monster"]`), the entity filter unconditionally returns `false` at line 33 instead of checking `entityDef.tags`, causing `generateProceduralQuest(state, 'bounty_kill')` to always fail with `"No valid targets found"`.
+### ✅ Gap 3: Procedural Bounties & Dynamic Shop Restock Contracts
+- **Wiring Resolved**:
+  - Fixed the `targetTags` filter bug in `src/systems/procedural-quest.system.ts` so monster templates matching `targetTags: ["monster"]` generate valid bounties.
+  - Added `generate_procedural_quest` consequence action to `ConsequenceActionSchema` and `src/systems/trigger/quest.ts`.
+  - Connected `restockShop()` in `src/systems/shop.system.ts` to automatically `grantQuest()` dynamic restock supply contracts directly to the player's `QuestLogComponent`.
 
-### Gap 4: Single-Stage Flat Quests vs. Multi-Stage Branching CRPG Quests & Quest Failure
-- **Current State**:
-  - Each `Quest` has a single flat `objectives[]` array (`AND`/`OR`). Multi-step narratives currently require chaining separate quest IDs (`quest_part_1` -> `quest_part_2`) via triggers rather than advancing stages within a single cohesive journal entry that preserves completed stage history.
-  - Although `QuestLogComponent` includes `'failed'` in its status union (`'active' | 'completed' | 'failed'`) and `quest.ts` maps `'failed'` to `2`, there is no `failQuest()` function in `quest.system.ts` or `fail_quest` consequence in `src/systems/trigger/quest.ts` (e.g., when a protected NPC dies or a competing faction branch is chosen).
+### ✅ Gap 4: Quest Failure Lifecycle (`failQuest`) & Journal UI Polish
+- **Wiring Resolved**:
+  - Implemented `failQuest(state, playerId, questId)` in `src/systems/quest.system.ts`, transitioning status to `'failed'`, evicting triggers from the O(1) bucket, logging the failure, and emitting `GameEventType.QuestFailed` (`QuestFailedEvent`).
+  - Added `fail_quest` consequence action in `src/systems/trigger/quest.ts`.
+  - Updated `src/rendering/ui/quest.ui.ts` to filter out hidden quests (`isHidden`), render failed quests with distinct red styling (`#e74c3c`) and status badges, and display a Rewards Preview on active quests.
 
-### Gap 5: Tier 1 Console <-> Tier 2 Cartridge Skill & Ability Check Hooks
-- **Current State**: Dialogue options and triggers can gate on `MemoryComponent` facts, faction standing, personality facets, and relationship axes, but cannot yet invoke Tier 2 ruleset skill/ability checks (`Diplomacy`, `Bluff`, `Intimidate`, `Sense Motive`, `Search`, `Disable Device`, `Knowledge`, or ability score thresholds like `STR >= 14`).
-- **Opportunity**: Adding a ruleset-agnostic check interface on the cartridge adapter (e.g., `evaluateSkillCheck` / `evaluateStatRequirement`) will allow dialogues and interactive props to offer classic CRPG `[Diplomacy DC 15]` or `[Knowledge (Arcana) DC 12]` branches that advance quest objectives or grant bonus XP.
+### ✅ Gap 5: Multi-Stage Quest Chaining (`nextQuestId`)
+- **Wiring Resolved**:
+  - Added `nextQuestId: z.string().optional()` to `QuestSchema` in `src/types/quests.types.ts`.
+  - When `completeQuest()` finishes, if `questDef.nextQuestId` is defined, it automatically grants the follow-up quest in the narrative chain via `grantQuest()`.
+  - Added validation for `nextQuestId` in `src/editor/validator/quest.validator.ts`.

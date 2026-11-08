@@ -2,6 +2,12 @@ import { rng } from '../core/rng.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 
+interface ProceduralTargetCandidate {
+  readonly id: string;
+  readonly name: string;
+  readonly wikiLink: string;
+}
+
 /**
  * Procedurally generates a quest from templates, assigning random targets and objectives.
  */
@@ -15,25 +21,63 @@ export function generateProceduralQuest(
     return { nextState: state, questId: null };
   }
 
-  // Find valid targets from the campaign entities registry
-  const validTargets = Object.values(state.campaign.entities).filter((entityDef) => {
-    // If template has targetTags, the entity must have AT LEAST ONE matching tag.
-    // Assuming entities have tags, wait, our EntityTemplateSchema might not have tags!
-    // Let's just check targetId matching for now or if we have tags.
-    // If no targetTags are defined, all entities are valid (probably a bad idea, but fallback).
-    if (template.targetTags && template.targetTags.length > 0) {
-      // If entities don't have tags in the schema yet, we can't filter by them.
-      // Let's just pretend we will add tags to entities, or just filter by faction for now.
-      // Actually, we can check faction if targetFactions is provided.
-      if (template.targetFactions && template.targetFactions.length > 0) {
-        if (!entityDef.faction || !template.targetFactions.includes(entityDef.faction)) {
-          return false;
+  let validTargets: ProceduralTargetCandidate[] = [];
+
+  if (template.objectiveType === 'gather') {
+    validTargets = Object.values(state.campaign.items)
+      .filter((itemDef) => {
+        if (template.targetTags && template.targetTags.length > 0) {
+          const itemTags = itemDef.tags ?? [];
+          return template.targetTags.some((tag) => itemTags.includes(tag));
         }
-      }
-      return false; // If we wanted tags but couldn't check them
-    }
-    return true;
-  });
+        return true;
+      })
+      .map((itemDef) => ({
+        id: itemDef.id,
+        name: itemDef.name,
+        wikiLink: `[${itemDef.name}](item:${itemDef.id})`
+      }));
+  } else if (template.objectiveType === 'explore') {
+    validTargets = Object.values(state.campaign.areas)
+      .filter((areaDef) => {
+        if (areaDef.id === state.currentAreaId) return false;
+        if (template.targetTags && template.targetTags.length > 0) {
+          const areaTags = areaDef.tags ?? [];
+          return template.targetTags.some((tag) => areaTags.includes(tag));
+        }
+        return true;
+      })
+      .map((areaDef) => ({
+        id: areaDef.id,
+        name: areaDef.name,
+        wikiLink: areaDef.name
+      }));
+  } else {
+    validTargets = Object.values(state.campaign.entities)
+      .filter((entityDef) => {
+        if (!entityDef.isActor || entityDef.id === 'player') return false;
+        if (template.targetTags && template.targetTags.length > 0) {
+          const entityTags = entityDef.tags ?? [];
+          const roleTags = entityDef.roleTags ?? [];
+          const encounterTags = entityDef.encounterTags ?? [];
+          const factionTag = entityDef.faction ? [entityDef.faction] : [];
+          const allTags = [...entityTags, ...roleTags, ...encounterTags, ...factionTag];
+          const hasMatchingTag = template.targetTags.some((tag) => allTags.includes(tag));
+          if (!hasMatchingTag) return false;
+        }
+        if (template.targetFactions && template.targetFactions.length > 0) {
+          if (!entityDef.faction || !template.targetFactions.includes(entityDef.faction)) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .map((entityDef) => ({
+        id: entityDef.id,
+        name: entityDef.name,
+        wikiLink: `[${entityDef.name}](entity:${entityDef.id})`
+      }));
+  }
 
   if (validTargets.length === 0) {
     console.warn(`No valid targets found for quest template ${templateId}.`);
@@ -48,15 +92,15 @@ export function generateProceduralQuest(
 
   // Pick random amount
   const [min, max] = template.amountRange;
-  const amount = Math.floor(rng.getUniform() * (max - min + 1)) + min;
+  const amount = template.objectiveType === 'explore' ? 1 : Math.floor(rng.getUniform() * (max - min + 1)) + min;
 
   // Construct strings
   const title = template.titleTemplate
-    .replace('{targetName}', `[${targetDef.name}](entity:${targetDef.id})`)
+    .replace('{targetName}', targetDef.wikiLink)
     .replace('{amount}', amount.toString());
 
   const description = template.descriptionTemplate
-    .replace('{targetName}', `[${targetDef.name}](entity:${targetDef.id})`)
+    .replace('{targetName}', targetDef.wikiLink)
     .replace('{amount}', amount.toString());
 
   // Determine reward (e.g. 50 XP * amount)
@@ -71,7 +115,7 @@ export function generateProceduralQuest(
     objectives: [
       {
         id: `obj_0`,
-        description: `${template.objectiveType} ${amount} [${targetDef.name}](entity:${targetDef.id})`,
+        description: `${template.objectiveType} ${amount} ${targetDef.wikiLink}`,
         type: template.objectiveType,
         targetId: targetDef.id,
         requiredAmount: amount

@@ -127,6 +127,8 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('spawn_clue'), message: z.string().optional() }),
   z.object({ type: z.literal('grant_quest'), targetId: z.string().optional(), questId: z.string().optional() }),
   z.object({ type: z.literal('complete_quest'), targetId: z.string().optional(), questId: z.string().optional() }),
+  z.object({ type: z.literal('fail_quest'), targetId: z.string().optional(), questId: z.string().optional() }),
+  z.object({ type: z.literal('generate_procedural_quest'), templateId: z.string() }),
   z.object({ type: z.literal('modify_standing'), factionId: z.string(), amount: z.number() }),
   z.object({ type: z.literal('open_barter'), targetId: z.string().optional() }),
   z.object({ type: z.literal('trigger_service'), serviceId: z.string(), targetId: z.string().optional() }),

@@ -21,9 +21,15 @@
       {
         "type": "xp",
         "amount": 50
+      },
+      {
+        "type": "standing",
+        "factionId": "town",
+        "amount": 10
       }
     ],
-    "autoComplete": false
+    "autoComplete": false,
+    "nextQuestId": "main_quest_bandit_king"
   },
   "main_quest_bandit_king": {
     "id": "main_quest_bandit_king",
@@ -42,6 +48,11 @@
       {
         "type": "xp",
         "amount": 250
+      },
+      {
+        "type": "standing",
+        "factionId": "town",
+        "amount": 25
       }
     ],
     "autoComplete": false
@@ -56,6 +67,13 @@
         "description": "Speak to the Scout in Safe Hub.",
         "type": "talk",
         "targetId": "scout",
+        "requiredAmount": 1
+      },
+      {
+        "id": "explore_dungeon_1",
+        "description": "Venture into Dungeon 1.",
+        "type": "explore",
+        "targetId": "dungeon_1",
         "requiredAmount": 1
       }
     ],
@@ -79,6 +97,40 @@
         "type": "talk",
         "targetId": "scholar",
         "requiredAmount": 1
+      },
+      {
+        "id": "interact_shrine_altar",
+        "description": "Interact with the [Altar](entity:altar) in the Shrine Vault.",
+        "type": "interact",
+        "targetId": "altar",
+        "requiredAmount": 1
+      }
+    ],
+    "logicalOperator": "OR",
+    "autoComplete": true
+  },
+  "camp_medical_supplies": {
+    "id": "camp_medical_supplies",
+    "title": "Camp Medical Supplies",
+    "description": "Gather [Health Potions](item:health_potion) from the dungeon to restock the camp infirmary.",
+    "objectives": [
+      {
+        "id": "gather_potions",
+        "description": "Gather [Health Potions](item:health_potion)",
+        "type": "gather",
+        "targetId": "health_potion",
+        "requiredAmount": 2
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 75
+      },
+      {
+        "type": "standing",
+        "factionId": "town",
+        "amount": 5
       }
     ],
     "autoComplete": true

@@ -50,6 +50,10 @@ export function processLedgerEvents(events: ReadonlyArray<GameEvent>, turns: num
         isNarrativeRelevant = true;
         eventSummary = eventSummary || `Quest Completed: ${event.questId}`;
         break;
+      case GameEventType.QuestFailed:
+        isNarrativeRelevant = true;
+        eventSummary = eventSummary || `Quest Failed: ${event.questId}`;
+        break;
       case GameEventType.SchemeAdvanced:
         isNarrativeRelevant = true;
         dramaCountDelta++;

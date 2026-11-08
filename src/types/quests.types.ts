@@ -32,7 +32,8 @@ export const QuestSchema = z.object({
   logicalOperator: z.enum(['AND', 'OR']).default('AND').optional(),
   rewards: z.array(QuestRewardSchema).optional(),
   isHidden: z.boolean().optional(), // If true, doesn't show in the main journal initially
-  autoComplete: z.boolean().optional() // If true, finishes instantly when objectives are met
+  autoComplete: z.boolean().optional(), // If true, finishes instantly when objectives are met
+  nextQuestId: z.string().optional() // Optional follow-up quest to grant upon completion
 });
 
 /** Inferred type for a quest definition. */
