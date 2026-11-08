@@ -195,6 +195,7 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 - **Internal Constants:** Engine-internal constants that can't be data-driven go in `src/constants/`.
 - **The Data Pipeline is Explicit:** Creating a new JSON registry requires explicitly updating `src/core/loader.ts` to `fetch()` it.
 - **Zod Schemas Must Mirror Runtime Switches:** If the runtime `switch`es on a `type` string, the Zod schema **must** use `z.discriminatedUnion('type', [...])` with explicit param shapes. Do not use `z.record(z.string(), z.unknown())`.
+- **Validate at Load/Edit Boundaries, Never in Hot Query Loops:** Zod `.parse()` / `.safeParse()` over campaign or ruleset registries (`CampaignData`, `systemContent`) must execute once at load/import/editor boundaries or be memoized via a `WeakMap<object, T>` keyed on the immutable registry object reference. Never run uncached Zod validation inside per-turn combat, stat DAG (`evaluateDnD35eEntityDAG`), or 60Hz HUD/viewport projection functions.
 - **Editor Dropdowns Must Derive from Canonical Sources:** Never hardcode dropdown options. Derive them from Enums, Zod, or CampaignData keys programmatically.
 - **Never Duplicate Reference-Resolution Logic:** If two UIs need to resolve a reference (like populating an entity dropdown), extract it into a single utility.
 - **Tag-Based Interactions:** Operating on `tags` rather than specific `itemId`s scales combinatorially. Always use tags for data-driven rules (reactions, triggers).
@@ -252,6 +253,7 @@ The project uses the strictest possible TS config (`tsconfig.json`).
 | Inject mock/showcase items in UI adapters     | Project live ECS components (`stashItems: []` when empty) |
 | Branch on `rulesetId` inside Tier 1 Console UI| Delegate projection & actions via `CartridgeUIDefinition` |
 | Hardcode stances/buttons for all characters   | Project stances, dials, and dock buttons from actor components/feats |
+| Run uncached Zod `.parse()` in turn/render loops | Validate at load time or memoize via `WeakMap<object, T>` on the registry reference |
 
 ---
 

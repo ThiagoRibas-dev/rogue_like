@@ -9,13 +9,13 @@ import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { setHoveredTile } from '../../core/hover_state.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
+import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
 import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
 import {
   ComponentType,
   type FighterComponent,
   type HungerComponent,
-  type IdentityComponent,
   type NemesisComponent,
   type PositionComponent,
   type QuestLogComponent,
@@ -95,11 +95,10 @@ export function renderHudAlerts(state: GameState): void {
     if (!isVisible) continue;
 
     if (isHostile(state, playerEntityId, entityId)) {
-      const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
       const nemesis = getComponent(state, entityId, ComponentType.Nemesis) as NemesisComponent | undefined;
       visibleHostiles.push({
         id: entityId,
-        name: identity?.name ?? 'Hostile',
+        name: resolveEntityDisplayName(state, entityId),
         pos,
         isNemesis: Boolean(nemesis)
       });

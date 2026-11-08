@@ -9,6 +9,7 @@ import {
   DEFAULT_ACTOR_TURN_DURATION,
   MAX_ACCUMULATED_RTWP_TIME
 } from '../constants/scheduler.constants.ts';
+import { recordSchedulerSliceYield } from './performance.ts';
 
 class SchedulerActor {
   constructor(public readonly id: EntityId) {}
@@ -135,6 +136,7 @@ function runTurnBasedLoop(): void {
   while (!isEngineLocked) {
     // Exceeded frame budget: yield cooperatively to browser
     if (performance.now() - sliceStart >= FRAME_BUDGET_MS) {
+      recordSchedulerSliceYield();
       sliceYieldTimerId = setTimeout(() => {
         sliceYieldTimerId = null;
         if (!isEngineLocked) {
@@ -190,6 +192,7 @@ function rtwpLoop(time: number): void {
 
   while (accumulatedTime >= 0 && !isEngineLocked && iterations < MAX_RTWP_DRAIN_ITERATIONS) {
     if (performance.now() - sliceStart >= FRAME_BUDGET_MS) {
+      recordSchedulerSliceYield();
       break;
     }
 

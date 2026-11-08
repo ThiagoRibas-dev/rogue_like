@@ -249,6 +249,18 @@ Computationally intensive operations that risk blocking main thread 60Hz renderi
 - **Serializable JSON DTO Boundary (`src/types/worker.types.ts`)**: All worker requests and responses use pure JSON-serializable DTOs (e.g., transforming `Set<string>` in `DirectorContext` into plain arrays).
 - **Non-Blocking Progress Streaming**: Workers emit `WorkerProgressPayload` messages during execution, updating DOM loading overlays (`#loading-overlay`) and UI progress bars at native browser frame rates without freezing UI animation.
 
+### 4.8 Performance Telemetry & Hot-Path Memoization Invariants (`src/core/performance.ts`)
+
+To prevent frame budget overruns ($>16.6\text{ms}$ render or $>4\text{ms}$ turn slice) and diagnose systemic bottlenecks across 750+ JSON definitions and multi-actor turn cascades:
+
+- **Sub-System & Sub-Domain Performance Telemetry (`perfTracker`)**:
+  - **Turn Breakdown (`TurnSubsystemsSample`)**: Instruments `applyIntentWithCost` across 6 sub-stages (`dispatchActionMs`, `stabilizationMs`, `fieldsAndInvestigationMs`, `cadenceAndLedgerMs`, `fovAndExploreMs`, `autoPauseMs`) with a 60-sample rolling window (`computeTurnRollingStats`), peak tracking (`maxTurnTimeMs`), and slow-turn counters ($\ge 8\text{ms}$).
+  - **Render Domain Breakdown (`RenderSubsystemsSample`)**: Instruments `renderPresenterFrame` across `snapshotBuildMs`, `canvasDrawMs` (with `drawCalls` and `fullRedraw`), `overlaysMs`, `hudDomainMs`, `logDomainMs`, `inventoryDomainMs`, `modalsDomainMs`, and `debugDomainMs` with a 120-frame rolling window (`computeRenderRollingStats`).
+  - **One-Click Diagnostic Export (`triggerTelemetryDownload`)**: The Settings menu exposes a **Download Telemetry** button that exports `buildTelemetryExportPayload(state, getRenderDebugMetrics())` as a structured JSON file combining session state, entity/spatial bucket counts, rolling/peak timings, render debug metrics (`missingSprites`, early returns), and recent turn/render/AI sample histories.
+- **Hot-Path Schema & DAG Memoization Invariants**:
+  - **Zero Uncached Zod Parsing in Turn/Render Loops**: Validating large ruleset registries (e.g., 752 D&D 3.5e SRD definitions in `campaign.systemContent`) with Zod `.safeParse()` takes ~34ms per call. `getDnD35SystemContent(campaign)` and `parseDnD35SystemContent(raw)` memoize the validated `DnD35SystemContent` in a `WeakMap<object, DnD35SystemContent | null>` keyed on the `campaign.systemContent` reference, reducing hot-path lookups to $O(1)$ ($<0.001\text{ms}$) while automatically re-validating if the Campaign Editor replaces the object reference.
+  - **Per-State-Revision Entity DAG Cache (`entityDagCache`)**: Context-free calls to `evaluateDnD35eEntityDAG(state, entityId)` are memoized in a `WeakMap<GameState['components'], ...>` keyed on the immutable `state.components` reference so multiple HUD panels, inspect tooltips, and tactical overlays sharing a frame snapshot compute an actor's 4-stage stat DAG and attack routine at most once per state revision.
+
 ---
 
 ## 5. World & Map Systems

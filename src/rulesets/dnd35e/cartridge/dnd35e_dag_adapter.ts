@@ -55,6 +55,17 @@ export interface DnD35EntityDAGResult {
 }
 
 /**
+ * Per-state-revision cache for context-free `evaluateDnD35eEntityDAG` queries.
+ * Keyed on the immutable `state.components` Map reference and guarded by `state.campaign?.systemContent`
+ * identity so multiple HUD panels and viewport projectors sharing the same state snapshot compute
+ * an actor's 4-stage DAG and attack routine at most once.
+ */
+const entityDagCache = new WeakMap<
+  GameState['components'],
+  { readonly systemContentRef: unknown; readonly byEntity: Map<EntityId, DnD35EntityDAGResult | undefined> }
+>();
+
+/**
  * Evaluates the full 4-Stage Topological Sub-Stat DAG for an entity in `GameState`,
  * incorporating active `PropertyOverlayComponent`s, equipped item bonuses, `TacticalDoctrineComponent`,
  * condition penalties, and optional contextual query flags (e.g. `targetTags` during combat).
@@ -65,6 +76,15 @@ export function evaluateDnD35eEntityDAG(
   contextOverride?: StatQueryContext,
   prehydrated?: { readonly dndData: DnD35EntityData; readonly selfTags: ReadonlyArray<string> }
 ): DnD35EntityDAGResult | undefined {
+  const isCacheable = contextOverride === undefined && prehydrated === undefined;
+  const sysRef = state.campaign?.systemContent;
+  if (isCacheable) {
+    const entry = entityDagCache.get(state.components);
+    if (entry && entry.systemContentRef === sysRef && entry.byEntity.has(entityId)) {
+      return entry.byEntity.get(entityId);
+    }
+  }
+
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (!fighter) return undefined;
   const actor = getComponent(state, entityId, ComponentType.Actor);
@@ -102,66 +122,24 @@ export function evaluateDnD35eEntityDAG(
     extraModifiers.push(...buildFeatEffectModifiers(dndData.feats ?? [], sysContent.feats, suppressedIds, selfTags));
   }
 
-  if (equipAttackBonus !== 0) {
-    extraModifiers.push({
-      targetStat: 'attack',
-      value: equipAttackBonus,
-      bonusType: 'enhancement',
-      sourceId: 'equipment_attack',
-      sourcePath: 'item:weapon/enhancement',
-      origin: 'mundane'
-    });
-  }
+  const pushMod = (
+    targetStat: StatModifier['targetStat'],
+    value: number,
+    bonusType: StatModifier['bonusType'],
+    sourceId: string,
+    sourcePath: string,
+    origin: StatModifier['origin']
+  ): void => {
+    if (value !== 0) extraModifiers.push({ targetStat, value, bonusType, sourceId, sourcePath, origin });
+  };
+  pushMod('attack', equipAttackBonus, 'enhancement', 'equipment_attack', 'item:weapon/enhancement', 'mundane');
   if (doctrineMod.dodgeAcBonus > 0) {
-    extraModifiers.push({
-      targetStat: 'ac',
-      value: doctrineMod.dodgeAcBonus,
-      bonusType: 'dodge',
-      sourceId: 'tactical_doctrine',
-      sourcePath: 'stance:doctrine/dodge_ac',
-      origin: 'ex'
-    });
+    pushMod('ac', doctrineMod.dodgeAcBonus, 'dodge', 'tactical_doctrine', 'stance:doctrine/dodge_ac', 'ex');
   }
-  if (doctrineMod.attackPenalty !== 0) {
-    extraModifiers.push({
-      targetStat: 'attack',
-      value: doctrineMod.attackPenalty,
-      bonusType: 'untyped',
-      sourceId: 'tactical_doctrine',
-      sourcePath: 'stance:doctrine/attack_penalty',
-      origin: 'ex'
-    });
-  }
-  if (doctrineMod.damageBonus !== 0) {
-    extraModifiers.push({
-      targetStat: 'damage',
-      value: doctrineMod.damageBonus,
-      bonusType: 'untyped',
-      sourceId: 'tactical_doctrine',
-      sourcePath: 'stance:doctrine/damage_bonus',
-      origin: 'ex'
-    });
-  }
-  if (condSummary.acPenalty !== 0) {
-    extraModifiers.push({
-      targetStat: 'ac',
-      value: condSummary.acPenalty,
-      bonusType: 'untyped',
-      sourceId: 'conditions',
-      sourcePath: 'condition:status/ac_penalty',
-      origin: 'ex'
-    });
-  }
-  if (condSummary.meleeAttackPenalty !== 0) {
-    extraModifiers.push({
-      targetStat: 'attack',
-      value: condSummary.meleeAttackPenalty,
-      bonusType: 'untyped',
-      sourceId: 'conditions',
-      sourcePath: 'condition:status/attack_penalty',
-      origin: 'ex'
-    });
-  }
+  pushMod('attack', doctrineMod.attackPenalty, 'untyped', 'tactical_doctrine', 'stance:doctrine/attack_penalty', 'ex');
+  pushMod('damage', doctrineMod.damageBonus, 'untyped', 'tactical_doctrine', 'stance:doctrine/damage_bonus', 'ex');
+  pushMod('ac', condSummary.acPenalty, 'untyped', 'conditions', 'condition:status/ac_penalty', 'ex');
+  pushMod('attack', condSummary.meleeAttackPenalty, 'untyped', 'conditions', 'condition:status/attack_penalty', 'ex');
 
   const isIncorporeal = dndData.subtypes?.includes('incorporeal') === true;
   const stanceTags: string[] = [];
@@ -256,7 +234,7 @@ export function evaluateDnD35eEntityDAG(
     selfTags: mergedSelfTags
   });
 
-  return {
+  const finalDagResult: DnD35EntityDAGResult = {
     dndData,
     dagResult,
     selfTags: mergedSelfTags,
@@ -266,6 +244,17 @@ export function evaluateDnD35eEntityDAG(
     hasCleave: activeCombatRules.hasCleave || dndData.feats?.includes('cleave') === true,
     hasGreatCleave: activeCombatRules.hasGreatCleave || dndData.feats?.includes('great_cleave') === true
   };
+
+  if (isCacheable) {
+    let entry = entityDagCache.get(state.components);
+    if (!entry || entry.systemContentRef !== sysRef) {
+      entry = { systemContentRef: sysRef, byEntity: new Map() };
+      entityDagCache.set(state.components, entry);
+    }
+    entry.byEntity.set(entityId, finalDagResult);
+  }
+
+  return finalDagResult;
 }
 
 /**

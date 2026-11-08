@@ -3,7 +3,6 @@ import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { getActiveRuleset } from '../../rulesets/registry.ts';
-import { getHungerState } from '../../systems/hunger.system.ts';
 import { LOG_FILTER_TABS, type LogFilterCategory, UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
 
 let activeLogFilter: LogFilterCategory = 'all';
@@ -142,22 +141,10 @@ export function renderPlayerStats(state: GameState): void {
     }
   }
 
-  // Update Level
+  // Update Level Socket
   const levelText = document.getElementById('player-level-text');
   if (levelText) {
-    levelText.textContent = vitals.levelLabel;
-  }
-
-  // Update Hunger
-  const hungerText = document.getElementById('hunger-text');
-  if (hungerText) {
-    const hunger = getComponent(state, playerEntityId, ComponentType.Hunger);
-    if (hunger) {
-      const stateLabel = getHungerState(state, hunger.satiation);
-      hungerText.textContent = stateLabel;
-      hungerText.style.color =
-        stateLabel === 'Starving' ? '#d9383e' : stateLabel === 'Hungry' ? '#e6a23c' : 'var(--text-main)';
-    }
+    levelText.textContent = vitals.levelLabel.replace(/^ECL\s+/i, '');
   }
 
   // Update XP
@@ -207,21 +194,38 @@ export function renderPlayerStats(state: GameState): void {
 }
 
 /**
- * Updates the HUD elements (health bar, depth indicator) based on current GameState.
+ * Updates the HUD elements (health bar, depth indicator, player coordinates) based on current GameState.
  * @param s The current GameState.
  */
 export function updateHUD(s: GameState): void {
+  const currentArea = s.campaign.areas[s.currentAreaId];
+  const areaName = currentArea?.name ?? s.currentAreaId;
+
   const depthElement = document.getElementById('dungeon-depth');
   if (depthElement !== null) {
-    depthElement.textContent = s.campaign.areas[s.currentAreaId]?.name ?? s.currentAreaId;
+    depthElement.textContent = areaName;
+  }
+
+  const areaDepthTag = document.getElementById('area-depth-tag');
+  if (areaDepthTag !== null) {
+    const danger = currentArea?.dangerRating;
+    areaDepthTag.textContent = typeof danger === 'number' && danger > 0 ? `DANGER ${danger}` : 'SANCTUARY';
+  }
+
+  const playerEntityId = s.entities.find((id) => getComponent(s, id, ComponentType.Player) !== undefined);
+  if (playerEntityId !== undefined) {
+    const pos = getComponent(s, playerEntityId, ComponentType.Position);
+    const coordsText = document.getElementById('player-coords-text');
+    if (coordsText !== null && pos !== undefined) {
+      coordsText.textContent = `X: ${pos.x}, Y: ${pos.y}`;
+    }
   }
 
   const hpBarFill = document.querySelector('.health-bar') as HTMLElement | null;
   const hpBarText = document.querySelector('.health-bar + .bar-text') as HTMLElement | null;
 
-  const players = s.entities.filter((id) => getComponent(s, id, ComponentType.Player));
-  if (players.length > 0 && players[0] !== undefined) {
-    const fighter = getComponent(s, players[0], ComponentType.Fighter);
+  if (playerEntityId !== undefined) {
+    const fighter = getComponent(s, playerEntityId, ComponentType.Fighter);
     if (fighter) {
       if (hpBarFill) {
         const percent = Math.max(0, Math.min(100, Math.round((fighter.hp / fighter.maxHp) * 100)));

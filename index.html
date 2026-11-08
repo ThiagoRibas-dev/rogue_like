@@ -49,15 +49,23 @@
             <span class="hidden" id="edge-badge-status">OK</span>
           </button>
           <div class="hud-card-body vitals-plate-body">
-            <!-- Top Area Banner + Level Crest + Collapse Button -->
-            <div class="vitals-banner-row">
-              <div class="vitals-area-title">
-                <span class="vitals-crest">⚜</span>
-                <span id="dungeon-depth" class="area-banner-name">Dungeon</span>
+            <!-- Top Area Banner + Coordinates Telemetry + Collapse Button -->
+            <div class="vitals-banner-plate">
+              <div class="vitals-banner-top">
+                <div class="vitals-area-title">
+                  <span class="vitals-crest">⚜</span>
+                  <span id="dungeon-depth" class="area-banner-name">Dungeon</span>
+                </div>
+                <div class="vitals-banner-right">
+                  <button type="button" class="hud-fold-btn" aria-expanded="true" title="Collapse to edge emblem">«</button>
+                </div>
               </div>
-              <div class="vitals-banner-right">
-                <span class="level-crest">LV <strong id="player-level-text">1</strong></span>
-                <button type="button" class="hud-fold-btn" aria-expanded="true" title="Collapse to edge emblem">«</button>
+              <div class="vitals-telemetry-row">
+                <span class="telemetry-chip coords-chip">
+                  <span class="telemetry-label">POS</span>
+                  <span id="player-coords-text" class="telemetry-value">X: 0, Y: 0</span>
+                </span>
+                <span id="area-depth-tag" class="telemetry-chip depth-chip">AREA</span>
               </div>
             </div>
 
@@ -81,8 +89,12 @@
               </div>
             </div>
 
-            <!-- Recessed Combat & Survival Readout Sockets -->
+            <!-- Recessed Combat & Progression Readout Sockets (LVL | ATK/BAB | DEF/AC) -->
             <div class="stat-grid-3">
+              <div class="stat-row stat-pill">
+                <span class="stat-label-inline">LVL</span>
+                <span id="player-level-text" class="stat-value">1</span>
+              </div>
               <div class="stat-row stat-pill">
                 <span class="stat-label-inline">ATK</span>
                 <span id="atk-text" class="stat-value">0</span>
@@ -90,10 +102,6 @@
               <div class="stat-row stat-pill">
                 <span class="stat-label-inline">DEF</span>
                 <span id="def-text" class="stat-value">0</span>
-              </div>
-              <div class="stat-row stat-pill">
-                <span class="stat-label-inline">SAT</span>
-                <span id="hunger-text" class="stat-value">Normal</span>
               </div>
             </div>
 
@@ -395,7 +403,8 @@
           </label>
         </div>
 
-        <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 8px;">
+        <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-download-telemetry-settings" class="modal-btn" style="background: #16a085;">Download Telemetry</button>
           <button id="btn-download-replay-settings" class="modal-btn" style="background: #2980b9; display: none;">Download Replay</button>
           <button id="btn-close-settings" class="modal-btn">Close</button>
         </div>

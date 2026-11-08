@@ -1,4 +1,5 @@
 import { type GameState, UIMode } from '../types/game-state.types.ts';
+import { recordDomainMarkedDirty } from './performance.ts';
 
 /**
  * Granular UI & rendering domains tracked for selective frame presentation.
@@ -36,6 +37,7 @@ class PresentationEventQueue {
    */
   markDirty(domain: PresentationDomain): void {
     this.dirtyDomains.add(domain);
+    recordDomainMarkedDirty(domain);
   }
 
   /**

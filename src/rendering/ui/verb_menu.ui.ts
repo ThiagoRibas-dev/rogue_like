@@ -2,6 +2,7 @@ import { createApplyAction } from '../../actions/interaction.actions.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent, setGameState } from '../../core/game-loop.ts';
 import { getHoverState, setContextMenuAnchor } from '../../core/hover_state.ts';
+import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { UIMode } from '../../types/game-state.types.ts';
@@ -54,8 +55,8 @@ export function renderVerbMenu(state: GameState): void {
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
 
   let targetName = 'Target';
-  if (target.type === 'entity') targetName = 'Entity Actions';
-  else if (target.type === 'item') targetName = 'Item Actions';
+  if (target.type === 'entity') targetName = resolveEntityDisplayName(state, target.entityId);
+  else if (target.type === 'item') targetName = resolveEntityDisplayName(state, target.itemEntityId);
   else if (target.type === 'tile') targetName = `Tile (${target.x}, ${target.y})`;
   else if (target.type === 'self') targetName = 'Self Actions';
 

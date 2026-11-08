@@ -5,7 +5,7 @@ import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ActionResult, Intent } from '../../types/intents/intent.union.ts';
 import { getComponent, tickControllerLinksAndOverlays } from '../ecs.ts';
 import { pushTelemetryEvents } from '../telemetry.ts';
-import { perfTracker } from '../performance.ts';
+import { recordTurnSample } from '../performance.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 import type { GameEvent } from '../../types/events.types.ts';
 import { updateExploredTiles } from '../../systems/map.system.ts';
@@ -60,13 +60,16 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   if (result.events && result.events.length > 0) {
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
   }
+  const tAfterDispatch = performance.now();
 
   nextState = resolveStateStabilization(nextState);
+  const tAfterStabilization = performance.now();
 
   const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
 
   nextState = processFieldsTick(nextState);
   nextState = processInvestigationEvents(nextState);
+  const tAfterFields = performance.now();
 
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
@@ -78,14 +81,31 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   nextState = processTier2LocalCadence(nextState, didGlobalTurnAdvance);
   nextState = processTier3GlobalCadence(nextState, didGlobalTurnAdvance);
   nextState = processLedgerSystem(nextState, didGlobalTurnAdvance);
+  const tAfterCadence = performance.now();
+
   nextState = updateExploredTiles(nextState);
+  const tAfterFov = performance.now();
+
   nextState = evaluateAutoPause(state, nextState, intent.entityId);
+  const tAfterAutoPause = performance.now();
 
   const eventsToReturn = [...nextState.events];
   pushTelemetryEvents(eventsToReturn);
   nextState = { ...nextState, events: [] };
 
-  perfTracker.lastTurnTimeMs = performance.now() - turnTime0;
+  const turnTimeEnd = performance.now();
+  recordTurnSample({
+    intentType: intent.type,
+    actorEntityId: intent.entityId,
+    isPlayer: isPlayerAction,
+    dispatchActionMs: tAfterDispatch - turnTime0,
+    stabilizationMs: tAfterStabilization - tAfterDispatch,
+    fieldsAndInvestigationMs: tAfterFields - tAfterStabilization,
+    cadenceAndLedgerMs: tAfterCadence - tAfterFields,
+    fovAndExploreMs: tAfterFov - tAfterCadence,
+    autoPauseMs: tAfterAutoPause - tAfterFov,
+    totalTurnMs: turnTimeEnd - turnTime0
+  });
 
   return {
     ...finalResult,

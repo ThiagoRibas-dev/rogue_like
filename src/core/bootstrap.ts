@@ -195,6 +195,7 @@ export async function startNewGame(
     let stairId: EntityId;
     [state, stairId] = createEntity(state);
 
+    const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
     const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
     const renderCmp: RenderableComponent = {
       type: ComponentType.Renderable,
@@ -204,7 +205,7 @@ export async function startNewGame(
           : (state.campaign.theme.glyphs.stairsDown ?? '>'),
       fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
       bg: state.campaign.theme.colors.transparent ?? 'transparent',
-      spriteId: portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down'
+      spriteId: state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey
     };
     const portalComp: PortalComponent = {
       type: ComponentType.Portal,

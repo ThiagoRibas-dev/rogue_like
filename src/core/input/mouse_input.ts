@@ -19,6 +19,7 @@ import { coordToIndex, getBresenhamLine, isInBounds } from '../../utils/grid.ts'
 import { getComponent } from '../ecs.ts';
 import { getGameState, queuePlayerIntent, setGameState } from '../game-loop.ts';
 import { setContextMenuAnchor, setHoveredTile } from '../hover_state.ts';
+import { recordHoverTileChange } from '../performance.ts';
 import { markDomainDirty, PresentationDomain } from '../presentation_queue.ts';
 import { getIsPlayingReplay } from '../replay.ts';
 
@@ -185,6 +186,7 @@ export function bindCanvasMouseControls(display: ROT.Display): void {
 
       const coords = resolveEventWorldCoords(event, display, state);
       if (setHoveredTile(coords ? { x: coords.mapX, y: coords.mapY } : null)) {
+        recordHoverTileChange();
         markDomainDirty(PresentationDomain.Map);
         markDomainDirty(PresentationDomain.HUD);
       }
@@ -192,6 +194,7 @@ export function bindCanvasMouseControls(display: ROT.Display): void {
 
     wrapper.addEventListener('mouseleave', () => {
       if (setHoveredTile(null)) {
+        recordHoverTileChange();
         markDomainDirty(PresentationDomain.Map);
         markDomainDirty(PresentationDomain.HUD);
       }

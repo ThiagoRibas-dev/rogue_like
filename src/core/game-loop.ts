@@ -3,7 +3,7 @@ import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game
 import type { Intent } from '../types/intents/intent.union.ts';
 import { addComponent, getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
-import { perfTracker } from './performance.ts';
+import { recordAISample } from './performance.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
 import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from './input_queue.ts';
 import { markDirtyFromStateDiff } from './presentation_queue.ts';
@@ -220,7 +220,11 @@ export function processTurn(entityId: EntityId): void {
     try {
       const aiTime0 = performance.now();
       const aiResult = processAITurn(aiTurnState, entityId);
-      perfTracker.lastAITimeMs = performance.now() - aiTime0;
+      recordAISample({
+        entityId,
+        durationMs: performance.now() - aiTime0,
+        intentType: aiResult.intent?.type ?? 'none'
+      });
 
       aiTurnState = aiResult.state;
       const intent = aiResult.intent;

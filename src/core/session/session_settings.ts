@@ -7,6 +7,8 @@ import { getSaveData, setSaveData, hasSaveGame } from '../save.ts';
 import { loadCampaignRegistry } from '../loader.ts';
 import { createToggleSettingsAction } from '../../actions/core.actions.ts';
 import { UIMode } from '../../types/game-state.types.ts';
+import { buildTelemetryExportPayload } from '../performance.ts';
+import { getRenderDebugMetrics } from '../../rendering/render_debug.ts';
 
 export let rebindingAction: ActionType | null = null;
 
@@ -27,6 +29,21 @@ export function triggerReplayDownload(): void {
   } else {
     alert('No active replay found!');
   }
+}
+
+/**
+ * Exports the current performance, subsystem timing, and render debug telemetry snapshot as a JSON file.
+ */
+export function triggerTelemetryDownload(): void {
+  const state = getGameState();
+  const payload = buildTelemetryExportPayload(state, getRenderDebugMetrics());
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `roguelike_telemetry_${state.campaignId}_turn${state.globalTurn}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /**
@@ -126,6 +143,7 @@ export function bindSettingsControls(): void {
     }
   });
 
+  document.getElementById('btn-download-telemetry-settings')?.addEventListener('click', triggerTelemetryDownload);
   document.getElementById('btn-download-replay-settings')?.addEventListener('click', triggerReplayDownload);
   document.getElementById('btn-download-replay-gameover')?.addEventListener('click', triggerReplayDownload);
 

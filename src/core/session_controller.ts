@@ -7,7 +7,6 @@ import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { setGameState, onStateChange, getGameState } from './game-loop.ts';
 import { handleKeyDown } from './input_handler.ts';
 import { bindCanvasMouseControls } from './input/mouse_input.ts';
-import { perfTracker } from './performance.ts';
 import { trapFocus } from '../utils/a11y.ts';
 import { initUITooltips } from '../rendering/ui.ts';
 import { getActiveCartridgeUI } from '../rendering/ui/cartridge_ui_registry.ts';
@@ -179,9 +178,7 @@ export function startGlobalPresenterLoop(display: ROT.Display, globalCampaignEdi
       return;
     }
 
-    const renderTime0 = performance.now();
     renderPresenterFrame(display, currentState, globalCampaignEditor, dirtyDomains);
-    perfTracker.lastRenderTimeMs = performance.now() - renderTime0;
   }
 
   requestAnimationFrame(presenterLoop);

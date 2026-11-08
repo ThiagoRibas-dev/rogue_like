@@ -30,6 +30,7 @@ import { renderActiveCartridgeModal, renderCartridgeHudPanel } from './ui/cartri
 import { renderEditorUI } from './editor_ui.ts';
 import type { CampaignEditor } from '../editor/campaign_editor.ts';
 import { hasSaveGame } from '../core/save.ts';
+import { recordRenderSample } from '../core/performance.ts';
 import { recordEarlyReturn, recordDisplayCanvas, recordMapRender } from './render_debug.ts';
 
 /**
@@ -64,6 +65,7 @@ export function renderPresenterFrame(
     return;
   }
 
+  const frameStartMs = performance.now();
   const gameLayout = document.getElementById('game-layout');
   const editorLayout = document.getElementById('editor-layout');
 
@@ -88,6 +90,17 @@ export function renderPresenterFrame(
     lastRenderedCampaignId = state.campaignId;
   }
 
+  let snapshotBuildMs = 0;
+  let canvasDrawMs = 0;
+  let overlaysMs = 0;
+  let hudDomainMs = 0;
+  let logDomainMs = 0;
+  let inventoryDomainMs = 0;
+  let modalsDomainMs = 0;
+  let debugDomainMs = 0;
+  let drawCalls = 0;
+  let wasFullRedraw = false;
+
   // Canvas Viewport Redraw (Map / Entities / Visual Effects)
   if (
     dirtyDomains.has(PresentationDomain.Map) ||
@@ -98,15 +111,21 @@ export function renderPresenterFrame(
     const viewportW = options.width ?? state.map.width;
     const viewportH = options.height ?? state.map.height;
 
+    const tSnap0 = performance.now();
     const snapshot = buildViewportSnapshot(state, viewportW, viewportH);
+    snapshotBuildMs = performance.now() - tSnap0;
+
     recordDisplayCanvas(display);
     const previous = lastViewportSnapshot;
-    const wasFullRedraw =
+    wasFullRedraw =
       !previous ||
       previous.viewportW !== snapshot.viewportW ||
       previous.viewportH !== snapshot.viewportH ||
       previous.isSpriteMode !== snapshot.isSpriteMode;
-    const drawCalls = render(display, snapshot, previous);
+
+    const tDraw0 = performance.now();
+    drawCalls = render(display, snapshot, previous);
+    canvasDrawMs = performance.now() - tDraw0;
     lastViewportSnapshot = snapshot;
 
     let exploredCells = 0;
@@ -127,6 +146,7 @@ export function renderPresenterFrame(
       displayHeight: options.height ?? 0
     });
 
+    const tOverlays0 = performance.now();
     renderInspectView(snapshot.inspectTooltip, display, viewportW, viewportH, snapshot.is3D);
     renderVFXAndFogOverlay(
       snapshot.visualEffects,
@@ -137,10 +157,12 @@ export function renderPresenterFrame(
       viewportH
     );
     renderTacticalOverlay(snapshot.tactical, display, viewportW, viewportH);
+    overlaysMs = performance.now() - tOverlays0;
   }
 
   // HUD & Stats Panels
   if (dirtyDomains.has(PresentationDomain.HUD)) {
+    const tHud0 = performance.now();
     renderPlayerStats(state);
     updateHUD(state);
     renderHudBottomDock(state);
@@ -158,20 +180,26 @@ export function renderPresenterFrame(
     renderRTwPControls(state);
     renderViewControls(state);
     renderMenus(state, hasSaveGame());
+    hudDomainMs = performance.now() - tHud0;
   }
 
   // Message Log
   if (dirtyDomains.has(PresentationDomain.Log)) {
+    const tLog0 = performance.now();
     renderMessageLog(state);
+    logDomainMs = performance.now() - tLog0;
   }
 
   // Inventory & Equipment
   if (dirtyDomains.has(PresentationDomain.Inventory)) {
+    const tInv0 = performance.now();
     renderInventoryPanel(state);
+    inventoryDomainMs = performance.now() - tInv0;
   }
 
   // Modals & Overlays
   if (dirtyDomains.has(PresentationDomain.Modals)) {
+    const tMod0 = performance.now();
     renderDialoguePanel(state);
     renderVerbMenu(state);
     renderSettingsMenu(state);
@@ -181,11 +209,30 @@ export function renderPresenterFrame(
     renderDossierUI(state);
     renderHudDock(state);
     renderActiveCartridgeModal(state);
+    modalsDomainMs = performance.now() - tMod0;
   }
 
   // Debug Overlays
   if (dirtyDomains.has(PresentationDomain.Debug)) {
+    const tDbg0 = performance.now();
     renderDebugOverlay(state);
     renderDebugLedgerUI(state);
+    debugDomainMs = performance.now() - tDbg0;
   }
+
+  const totalRenderMs = performance.now() - frameStartMs;
+  recordRenderSample({
+    dirtyDomains: Array.from(dirtyDomains),
+    snapshotBuildMs,
+    canvasDrawMs,
+    overlaysMs,
+    hudDomainMs,
+    logDomainMs,
+    inventoryDomainMs,
+    modalsDomainMs,
+    debugDomainMs,
+    totalRenderMs,
+    drawCalls,
+    fullRedraw: wasFullRedraw
+  });
 }

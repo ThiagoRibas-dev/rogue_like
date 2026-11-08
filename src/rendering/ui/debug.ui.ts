@@ -7,7 +7,7 @@ import {
 } from '../../types/events.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { ComponentType, type FieldComponent } from '../../types/components.types.ts';
-import { perfTracker } from '../../core/performance.ts';
+import { computeRenderRollingStats, computeTurnRollingStats, perfTracker } from '../../core/performance.ts';
 
 /**
  * Renders the developer debug panel presenting triggered events and active field statuses on-screen.
@@ -43,12 +43,19 @@ export function renderDebugOverlay(state: GameState): void {
     return comp && comp[ComponentType.Field] !== undefined;
   }).length;
 
+  const turnStats = computeTurnRollingStats();
+  const renderStats = computeRenderRollingStats();
+  const tb = perfTracker.lastTurnBreakdown;
+  const rb = perfTracker.lastRenderBreakdown;
+
   perfInfo.innerHTML = `
-    <div style="font-weight: bold; color: #00ff00; border-bottom: 1px solid #333; margin-bottom: 4px; padding-bottom: 2px;">⚡ PERF telemetry</div>
-    Turn Process: ${perfTracker.lastTurnTimeMs.toFixed(1)} ms<br/>
-    UI Render: ${perfTracker.lastRenderTimeMs.toFixed(1)} ms<br/>
-    AI Process: ${perfTracker.lastAITimeMs.toFixed(1)} ms<br/>
-    Entities: ${state.entities.length} | Fields: ${activeFields}
+    <div style="font-weight: bold; color: #00ff00; border-bottom: 1px solid #333; margin-bottom: 4px; padding-bottom: 2px;">⚡ PERF TELEMETRY (Rolling / Peak)</div>
+    <strong>Turn:</strong> ${perfTracker.lastTurnTimeMs.toFixed(2)} ms (avg ${turnStats.avgTotalMs.toFixed(2)} | peak ${perfTracker.maxTurnTimeMs.toFixed(2)} | slow ${perfTracker.slowTurnCount}/${perfTracker.turnCount})<br/>
+    <span style="color: #95a5a6; font-size: 0.72rem;">↳ Dispatch ${tb.dispatchActionMs.toFixed(2)} | Stab ${tb.stabilizationMs.toFixed(2)} | Cadence ${tb.cadenceAndLedgerMs.toFixed(2)} | FOV ${tb.fovAndExploreMs.toFixed(2)} ms</span><br/>
+    <strong>Render:</strong> ${perfTracker.lastRenderTimeMs.toFixed(2)} ms (avg ${renderStats.avgTotalMs.toFixed(2)} | peak ${perfTracker.maxRenderTimeMs.toFixed(2)} | slow ${perfTracker.slowRenderFrameCount}/${perfTracker.renderFrameCount})<br/>
+    <span style="color: #95a5a6; font-size: 0.72rem;">↳ Snap ${rb.snapshotBuildMs.toFixed(2)} | Draw ${rb.canvasDrawMs.toFixed(2)} (${rb.drawCalls} calls) | Ovl ${rb.overlaysMs.toFixed(2)} | HUD ${rb.hudDomainMs.toFixed(2)} | Mod ${rb.modalsDomainMs.toFixed(2)} ms</span><br/>
+    <strong>AI:</strong> ${perfTracker.lastAITimeMs.toFixed(2)} ms (peak ${perfTracker.maxAITimeMs.toFixed(2)} | calls ${perfTracker.aiCallCount} | yields ${perfTracker.schedulerSliceYields})<br/>
+    <strong>World:</strong> Entities ${state.entities.length} | Fields ${activeFields} | Hover Δ ${perfTracker.hoverTileChanges}
   `;
 
   const ledgerContainer = document.getElementById('debug-event-ledger');

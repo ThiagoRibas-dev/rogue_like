@@ -189,21 +189,47 @@ export const DnD35SystemContentSchema = z.object({
 export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;
 
 /**
+ * WeakMap cache mapping a raw `campaign.systemContent` object reference to its validated
+ * `DnD35SystemContent` instance (or `null` if invalid). Eliminates repeated O(N) Zod schema
+ * parsing across 750+ SRD definitions during hot turn, stat DAG, and 60Hz render loops,
+ * while automatically invalidating if the Campaign Editor or a test replaces `systemContent`.
+ */
+const systemContentCache = new WeakMap<object, DnD35SystemContent | null>();
+
+/**
  * Safely parses raw system content records into a validated DnD35SystemContent structure.
  * @param raw Raw system content record dictionary.
  * @returns Validated DnD35SystemContent object.
  */
 export function parseDnD35SystemContent(raw: unknown): DnD35SystemContent {
+  if (typeof raw === 'object' && raw !== null) {
+    const cached = systemContentCache.get(raw);
+    if (cached) return cached;
+    const parsed = DnD35SystemContentSchema.parse(raw);
+    systemContentCache.set(raw, parsed);
+    systemContentCache.set(parsed, parsed);
+    return parsed;
+  }
   return DnD35SystemContentSchema.parse(raw ?? {});
 }
 
 /**
  * Retrieves and parses the D&D 3.5e system content from a campaign document if available.
+ * Memoized by `campaign.systemContent` object identity for O(1) hot-path lookups.
  * @param campaign The campaign data structure.
  * @returns Validated DnD35SystemContent or null.
  */
 export function getDnD35SystemContent(campaign: CampaignData): DnD35SystemContent | null {
   if (!campaign.systemContent || campaign.manifest?.rulesetId !== 'dnd35e') return null;
-  const result = DnD35SystemContentSchema.safeParse(campaign.systemContent);
-  return result.success ? result.data : null;
+  const rawRef = campaign.systemContent;
+  if (systemContentCache.has(rawRef)) {
+    return systemContentCache.get(rawRef) ?? null;
+  }
+  const result = DnD35SystemContentSchema.safeParse(rawRef);
+  const parsed = result.success ? result.data : null;
+  systemContentCache.set(rawRef, parsed);
+  if (parsed) {
+    systemContentCache.set(parsed, parsed);
+  }
+  return parsed;
 }

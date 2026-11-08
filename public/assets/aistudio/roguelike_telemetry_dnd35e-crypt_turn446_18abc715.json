@@ -1,0 +1,3384 @@
+{
+  "exportedAtIso": "2026-11-08T17:47:27.904Z",
+  "sessionSummary": {
+    "campaignId": "dnd35e-crypt",
+    "rulesetId": "dnd35e",
+    "currentAreaId": "dungeon_1",
+    "globalTurn": 446,
+    "engineMode": "turn-based",
+    "uiMode": "settings",
+    "isRotated": false,
+    "is3D": false,
+    "zoomLevel": 1
+  },
+  "worldCounts": {
+    "liveEntities": 84,
+    "activeActors": 33,
+    "activeItems": 4,
+    "activeFields": 0,
+    "spatialBuckets": 61,
+    "cachedAreasCount": 3,
+    "persistentEntitiesCount": 23,
+    "historicalLedgerEntries": 35,
+    "messagesCount": 100,
+    "activeVisualEffects": 0
+  },
+  "gameplayTelemetry": {
+    "playerDeaths": 0,
+    "damageTaken": 15,
+    "resourcesConsumed": 2,
+    "questsCompleted": 1
+  },
+  "performanceSummary": {
+    "lastTurnTimeMs": 0.10000002384185791,
+    "maxTurnTimeMs": 174.5,
+    "turnCount": 860,
+    "slowTurnCount": 610,
+    "lastRenderTimeMs": 66.5,
+    "maxRenderTimeMs": 251.59999999403954,
+    "renderFrameCount": 742,
+    "slowRenderFrameCount": 697,
+    "lastAITimeMs": 0.09999999403953552,
+    "maxAITimeMs": 3.399999976158142,
+    "aiCallCount": 1710,
+    "schedulerSliceYields": 627,
+    "hoverTileChanges": 86,
+    "domainDirtyMarkCounts": {
+      "Map": 256,
+      "Entities": 616,
+      "HUD": 878,
+      "Inventory": 626,
+      "Log": 76,
+      "Modals": 53,
+      "Editor": 10,
+      "VFX": 13
+    }
+  },
+  "turnRollingStats": {
+    "sampleCount": 60,
+    "avgTotalMs": 25.729999999205273,
+    "maxTotalMs": 48.69999998807907,
+    "avgDispatchMs": 25.638333333532014,
+    "avgStabilizationMs": 0.05333333313465118,
+    "avgFieldsMs": 0.008333333333333333,
+    "avgCadenceMs": 0.011666666467984517,
+    "avgFovMs": 0.016666666169961295
+  },
+  "renderRollingStats": {
+    "sampleCount": 120,
+    "avgTotalMs": 126.62083333258828,
+    "maxTotalMs": 175.7000000178814,
+    "avgSnapshotMs": 35.49000000034769,
+    "avgCanvasDrawMs": 0.07333333492279052,
+    "avgOverlaysMs": 0.692499998708566,
+    "avgHudMs": 89.89749999965231,
+    "avgLogMs": 0.2683333332339923,
+    "avgInventoryMs": 0.004166666915019353,
+    "avgModalsMs": 0.09000000009934107
+  },
+  "lastTurnBreakdown": {
+    "intentType": "ToggleSettings",
+    "actorEntityId": 11,
+    "isPlayer": true,
+    "dispatchActionMs": 0.10000002384185791,
+    "stabilizationMs": 0,
+    "fieldsAndInvestigationMs": 0,
+    "cadenceAndLedgerMs": 0,
+    "fovAndExploreMs": 0,
+    "autoPauseMs": 0,
+    "totalTurnMs": 0.10000002384185791
+  },
+  "lastRenderBreakdown": {
+    "dirtyDomains": [
+      "Modals",
+      "HUD",
+      "Editor",
+      "Inventory"
+    ],
+    "snapshotBuildMs": 0,
+    "canvasDrawMs": 0,
+    "overlaysMs": 0,
+    "hudDomainMs": 65.39999997615814,
+    "logDomainMs": 0,
+    "inventoryDomainMs": 0,
+    "modalsDomainMs": 1.100000023841858,
+    "debugDomainMs": 0,
+    "totalRenderMs": 66.5,
+    "drawCalls": 0,
+    "fullRedraw": false
+  },
+  "renderDebugMetrics": {
+    "frames": 37959,
+    "framesWithDirty": 742,
+    "framesWithMapDirty": 263,
+    "mapRenderCount": 693,
+    "earlyReturns": {
+      "loop-idle": 37217
+    },
+    "lastDirtyDomains": [],
+    "lastUiMode": "settings",
+    "lastSnapshotCells": 1900,
+    "lastExploredCells": 395,
+    "lastVisibleCells": 103,
+    "lastDrawCalls": 0,
+    "lastFullRedraw": false,
+    "viewportW": 50,
+    "viewportH": 38,
+    "displayWidth": 50,
+    "displayHeight": 38,
+    "canvasWidth": 1242,
+    "canvasHeight": 944,
+    "lastFrameAt": 728443.599999994,
+    "canvasCount": 3,
+    "liveCanvasMounted": true,
+    "liveBackingWidth": 1600,
+    "liveBackingHeight": 1216,
+    "liveCssWidth": 1242,
+    "liveCssHeight": 944,
+    "missingSprites": [
+      "entity#48 (unresolved: stairs_down)",
+      "entity#47 (unresolved: stairs_up)",
+      "entity#13 (unresolved: stairs_down)",
+      "entity#14 (unresolved: stairs_down)",
+      "entity#56 (unresolved: stairs_up)"
+    ]
+  },
+  "recentTurnSamples": [
+    {
+      "intentType": "Move",
+      "actorEntityId": 60,
+      "isPlayer": false,
+      "dispatchActionMs": 35.69999998807907,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.80000001192093
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 61,
+      "isPlayer": false,
+      "dispatchActionMs": 35.89999997615814,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.89999997615814
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 62,
+      "isPlayer": false,
+      "dispatchActionMs": 35.19999998807907,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0.09999999403953552,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.29999998211861
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 63,
+      "isPlayer": false,
+      "dispatchActionMs": 38.69999998807907,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0.09999999403953552,
+      "autoPauseMs": 0,
+      "totalTurnMs": 38.79999998211861
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 64,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.10000002384185791
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 108,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 109,
+      "isPlayer": false,
+      "dispatchActionMs": 34.099999994039536,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.19999998807907
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 111,
+      "isPlayer": false,
+      "dispatchActionMs": 34.900000005960464,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 112,
+      "isPlayer": false,
+      "dispatchActionMs": 34.69999998807907,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.69999998807907
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 113,
+      "isPlayer": false,
+      "dispatchActionMs": 34,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.10000002384186
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 115,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 118,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 120,
+      "isPlayer": false,
+      "dispatchActionMs": 35.5,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.599999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 121,
+      "isPlayer": false,
+      "dispatchActionMs": 0.09999999403953552,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.19999998807907104
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 122,
+      "isPlayer": false,
+      "dispatchActionMs": 38.79999998211861,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0.09999999403953552,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 38.89999997615814
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 57,
+      "isPlayer": false,
+      "dispatchActionMs": 0.09999999403953552,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 58,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 62,
+      "isPlayer": false,
+      "dispatchActionMs": 37.099999994039536,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 37.099999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 109,
+      "isPlayer": false,
+      "dispatchActionMs": 36.900000005960464,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 37
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 113,
+      "isPlayer": false,
+      "dispatchActionMs": 36.69999998807907,
+      "stabilizationMs": 0.19999998807907104,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.89999997615814
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 11,
+      "isPlayer": true,
+      "dispatchActionMs": 34.69999998807907,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0.10000002384185791,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0.3999999761581421,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.19999998807907
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 64,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 108,
+      "isPlayer": false,
+      "dispatchActionMs": 35.60000002384186,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.70000001788139
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 115,
+      "isPlayer": false,
+      "dispatchActionMs": 0.09999999403953552,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.19999998807907104
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 118,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 121,
+      "isPlayer": false,
+      "dispatchActionMs": 36.900000005960464,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.900000005960464
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 56,
+      "isPlayer": false,
+      "dispatchActionMs": 35,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 59,
+      "isPlayer": false,
+      "dispatchActionMs": 34,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.099999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 60,
+      "isPlayer": false,
+      "dispatchActionMs": 47.29999998211861,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 47.39999997615814
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 61,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 112,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 120,
+      "isPlayer": false,
+      "dispatchActionMs": 34.70000001788139,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0.09999999403953552,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.80000001192093
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 122,
+      "isPlayer": false,
+      "dispatchActionMs": 35.20000001788139,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.20000001788139
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 111,
+      "isPlayer": false,
+      "dispatchActionMs": 35.099999994039536,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.099999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 62,
+      "isPlayer": false,
+      "dispatchActionMs": 33.5,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 33.5
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 109,
+      "isPlayer": false,
+      "dispatchActionMs": 36.599999994039536,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.79999998211861
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 113,
+      "isPlayer": false,
+      "dispatchActionMs": 48.599999994039536,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 48.69999998807907
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 57,
+      "isPlayer": false,
+      "dispatchActionMs": 33.80000001192093,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 33.900000005960464
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 58,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 11,
+      "isPlayer": true,
+      "dispatchActionMs": 45.400000005960464,
+      "stabilizationMs": 0.19999998807907104,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0.5,
+      "autoPauseMs": 0,
+      "totalTurnMs": 46.099999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 64,
+      "isPlayer": false,
+      "dispatchActionMs": 35.60000002384186,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.70000001788139
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 115,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0.09999999403953552,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 118,
+      "isPlayer": false,
+      "dispatchActionMs": 0.09999999403953552,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.09999999403953552
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 108,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 121,
+      "isPlayer": false,
+      "dispatchActionMs": 39,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 39.10000002384186
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 61,
+      "isPlayer": false,
+      "dispatchActionMs": 46.900000005960464,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.10000002384185791,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 47.10000002384186
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 112,
+      "isPlayer": false,
+      "dispatchActionMs": 34.70000001788139,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.70000001788139
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 63,
+      "isPlayer": false,
+      "dispatchActionMs": 34.19999998807907,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.29999998211861
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 56,
+      "isPlayer": false,
+      "dispatchActionMs": 35.400000005960464,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.5
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 59,
+      "isPlayer": false,
+      "dispatchActionMs": 34.79999998211861,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.79999998211861
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 60,
+      "isPlayer": false,
+      "dispatchActionMs": 36.5,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.599999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 120,
+      "isPlayer": false,
+      "dispatchActionMs": 36.70000001788139,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.80000001192093
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 122,
+      "isPlayer": false,
+      "dispatchActionMs": 34.400000005960464,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.5
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 111,
+      "isPlayer": false,
+      "dispatchActionMs": 0,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0.09999999403953552,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.20000001788139343
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 62,
+      "isPlayer": false,
+      "dispatchActionMs": 36.80000001192093,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 36.900000005960464
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 109,
+      "isPlayer": false,
+      "dispatchActionMs": 34,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.099999994039536
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 113,
+      "isPlayer": false,
+      "dispatchActionMs": 35.30000001192093,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 35.400000005960464
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 57,
+      "isPlayer": false,
+      "dispatchActionMs": 34.30000001192093,
+      "stabilizationMs": 0.09999999403953552,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.400000005960464
+    },
+    {
+      "intentType": "Move",
+      "actorEntityId": 58,
+      "isPlayer": false,
+      "dispatchActionMs": 34.599999994039536,
+      "stabilizationMs": 0.10000002384185791,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 34.70000001788139
+    },
+    {
+      "intentType": "ToggleSettings",
+      "actorEntityId": 11,
+      "isPlayer": true,
+      "dispatchActionMs": 0.10000002384185791,
+      "stabilizationMs": 0,
+      "fieldsAndInvestigationMs": 0,
+      "cadenceAndLedgerMs": 0,
+      "fovAndExploreMs": 0,
+      "autoPauseMs": 0,
+      "totalTurnMs": 0.10000002384185791
+    }
+  ],
+  "recentRenderSamples": [
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 64,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 97.7999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 162.5,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 73,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 95.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 169.40000000596046,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 65.2000000178814,
+      "canvasDrawMs": 0.19999998807907104,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 102.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 168.80000001192093,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 65.7000000178814,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 95.60000002384186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 162.10000002384186,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log"
+      ],
+      "snapshotBuildMs": 65,
+      "canvasDrawMs": 0.19999998807907104,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 96,
+      "logDomainMs": 4.199999988079071,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 166,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 63.599999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.7000000178813934,
+      "hudDomainMs": 101.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 166,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 64.59999999403954,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 1,
+      "hudDomainMs": 97.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 163.5,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 63.79999998211861,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 101.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 166.40000000596046,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 68.10000002384186,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 105,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 173.80000001192093,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 64.69999998807907,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 104.19999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 169.69999998807907,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 65.59999999403954,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 96.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 162.89999997615814,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 70.7000000178814,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 104.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 175.7000000178814,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 67.5,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 101.30000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 169.7000000178814,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 66.69999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.7000000178813934,
+      "hudDomainMs": 106,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 173.5,
+      "drawCalls": 2,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Log"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 3.4000000059604645,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 3.5999999940395355,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.19999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.7000000178813934,
+      "hudDomainMs": 98.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 131.7999999821186,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 66.7000000178814,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 95.40000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 162.90000000596046,
+      "drawCalls": 1,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log"
+      ],
+      "snapshotBuildMs": 39.39999997615814,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 1,
+      "hudDomainMs": 98.40000000596046,
+      "logDomainMs": 4.399999976158142,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 143.5,
+      "drawCalls": 231,
+      "fullRedraw": true
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 93.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 126.59999999403954,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 39,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 101.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 140.89999997615814,
+      "drawCalls": 12,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 94.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 127.5,
+      "drawCalls": 16,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.69999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 97.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.90000000596046,
+      "drawCalls": 15,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.19999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 94.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.69999998807907,
+      "drawCalls": 63,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.099999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 96.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.59999999403954,
+      "drawCalls": 74,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.099999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 95.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 127.89999997615814,
+      "drawCalls": 26,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.10000002384186,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 99.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0.09999999403953552,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.7000000178814,
+      "drawCalls": 23,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34.5,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 97.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 132.40000000596046,
+      "drawCalls": 18,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 40.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 97.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 138.7000000178814,
+      "drawCalls": 8,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.099999994039536,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 94.19999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0.09999999403953552,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 127.09999999403954,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.20000001788139,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 100.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 138.90000000596046,
+      "drawCalls": 7,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.599999994039536,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 93.19999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 125.59999999403954,
+      "drawCalls": 3,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Modals",
+        "Editor"
+      ],
+      "snapshotBuildMs": 27.69999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 68,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.7999999821186066,
+      "debugDomainMs": 0,
+      "totalRenderMs": 97.19999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "HUD"
+      ],
+      "snapshotBuildMs": 36.5,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 66.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 103.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 1,
+      "debugDomainMs": 0,
+      "totalRenderMs": 1,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log",
+        "Modals"
+      ],
+      "snapshotBuildMs": 32,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 63.599999994039536,
+      "logDomainMs": 3.800000011920929,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.5999999940395355,
+      "debugDomainMs": 0,
+      "totalRenderMs": 100.69999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.800000011920929,
+      "debugDomainMs": 0,
+      "totalRenderMs": 0.9000000059604645,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.699999988079071,
+      "debugDomainMs": 0,
+      "totalRenderMs": 0.7999999821186066,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 1.0999999940395355,
+      "debugDomainMs": 0,
+      "totalRenderMs": 1.0999999940395355,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals",
+        "HUD",
+        "Editor",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 95.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.19999998807907104,
+      "debugDomainMs": 0,
+      "totalRenderMs": 96.19999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.70000001788139,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.800000011920929,
+      "hudDomainMs": 95.2999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 133,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.5,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 95.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0.10000002384185791,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.10000002384186,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.80000001192093,
+      "canvasDrawMs": 0.19999998807907104,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 100.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0.10000002384185791,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.80000001192093,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 93.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 126.90000000596046,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.10000002384186,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 98.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 136.5,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.5,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 94.7000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 127.10000002384186,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log",
+        "Modals",
+        "Editor"
+      ],
+      "snapshotBuildMs": 28,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 69.19999998807907,
+      "logDomainMs": 3.9000000059604645,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.09999999403953552,
+      "debugDomainMs": 0,
+      "totalRenderMs": 101.90000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log",
+        "Modals"
+      ],
+      "snapshotBuildMs": 32.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 63.30000001192093,
+      "logDomainMs": 3.5999999940395355,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.5999999940395355,
+      "debugDomainMs": 0,
+      "totalRenderMs": 101.09999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 1.300000011920929,
+      "debugDomainMs": 0,
+      "totalRenderMs": 1.300000011920929,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.800000011920929,
+      "debugDomainMs": 0,
+      "totalRenderMs": 0.800000011920929,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.800000011920929,
+      "debugDomainMs": 0,
+      "totalRenderMs": 0.800000011920929,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 0,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.800000011920929,
+      "debugDomainMs": 0,
+      "totalRenderMs": 0.800000011920929,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals",
+        "HUD",
+        "Editor",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 96.40000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0.09999999403953552,
+      "debugDomainMs": 0,
+      "totalRenderMs": 96.59999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.60000002384186,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 98.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 136.2000000178814,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 93.7999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 126.59999999403954,
+      "drawCalls": 6,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.10000002384186,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 97.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135.5,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 93,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 125.7999999821186,
+      "drawCalls": 20,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 38.10000002384186,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 99.30000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 138.2000000178814,
+      "drawCalls": 23,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.900000005960464,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 94.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 127.40000000596046,
+      "drawCalls": 16,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.400000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 97.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.7999999821186,
+      "drawCalls": 26,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.799999982118607,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 96,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.69999998807907,
+      "drawCalls": 74,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.599999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.5,
+      "hudDomainMs": 97.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135,
+      "drawCalls": 63,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 31.5,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 94.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 126.5,
+      "drawCalls": 15,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.39999997615814,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 97.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135.69999998807907,
+      "drawCalls": 12,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.79999998211861,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 94.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.69999998807907,
+      "drawCalls": 7,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 38.599999994039536,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.5999999940395355,
+      "hudDomainMs": 96.19999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135.5,
+      "drawCalls": 12,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.099999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.6000000238418579,
+      "hudDomainMs": 95,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.90000000596046,
+      "drawCalls": 9,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.69999998807907,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 0.699999988079071,
+      "hudDomainMs": 96.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.40000000596046,
+      "drawCalls": 7,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log"
+      ],
+      "snapshotBuildMs": 32.70000001788139,
+      "canvasDrawMs": 0.29999998211860657,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 94.59999999403954,
+      "logDomainMs": 4.4000000059604645,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 133,
+      "drawCalls": 448,
+      "fullRedraw": true
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 37.400000005960464,
+      "canvasDrawMs": 0.19999998807907104,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 98.60000002384186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.2000000178814,
+      "drawCalls": 208,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.599999994039536,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 1.199999988079071,
+      "hudDomainMs": 98.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 133.59999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35.29999998211861,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 106.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 142.89999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Log"
+      ],
+      "snapshotBuildMs": 33.69999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 99.2000000178814,
+      "logDomainMs": 4.5,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 138.40000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 39.80000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 96.30000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.2000000178814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.5,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 105.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.19999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.099999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.7999999821186066,
+      "hudDomainMs": 105.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.2999999821186,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34.900000005960464,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 92.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.90000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 105.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.69999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.099999994039536,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 1,
+      "hudDomainMs": 96.2999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 130.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 37.19999998807907,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 100.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 138.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 32.5,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1,
+      "hudDomainMs": 108.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 142.09999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1,
+      "hudDomainMs": 103.30000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.40000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.599999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 1,
+      "hudDomainMs": 97.7000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 131.40000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 44.29999998211861,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1.0999999940395355,
+      "hudDomainMs": 101,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 146.59999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 99.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 136,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.10000002384186,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1.0999999940395355,
+      "hudDomainMs": 97.40000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0.09999999403953552,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.80000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 42.19999998807907,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 94,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.599999994039536,
+      "canvasDrawMs": 0.20000001788139343,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 101,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.69999998807907,
+      "drawCalls": 196,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.80000001192093,
+      "canvasDrawMs": 0.19999998807907104,
+      "overlaysMs": 0.800000011920929,
+      "hudDomainMs": 96.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 129.90000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 46.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 103.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 150.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 33.599999994039536,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 97.7999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 132.39999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35.60000002384186,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 104.2999999821186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 141,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 32,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 98.39999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 131.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35.69999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.7999999821186066,
+      "hudDomainMs": 102.60000002384186,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.30000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.900000005960464,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 95,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 129,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 41.099999994039536,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 110.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 152.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34.69999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 99.30000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135.09999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 35.39999997615814,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 105.89999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 142.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "HUD"
+      ],
+      "snapshotBuildMs": 34.69999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.7999999821186066,
+      "hudDomainMs": 98.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.39999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 102.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "HUD"
+      ],
+      "snapshotBuildMs": 35.19999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 99.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135.40000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32.69999998807907,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.800000011920929,
+      "hudDomainMs": 100.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 134.39999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 32,
+      "canvasDrawMs": 0.30000001192092896,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 97.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 130.5,
+      "drawCalls": 185,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.19999998807907,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.7999999821186066,
+      "hudDomainMs": 94.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 128.30000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34.70000001788139,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 97.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 132.90000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 33,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 99.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 133.19999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "HUD"
+      ],
+      "snapshotBuildMs": 41.29999998211861,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 1,
+      "hudDomainMs": 97.89999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 140.39999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 32.29999998211861,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 98.2000000178814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 131.40000000596046,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Map",
+        "HUD"
+      ],
+      "snapshotBuildMs": 44.599999994039536,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 1.199999988079071,
+      "hudDomainMs": 101.5,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 147.59999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 35.20000001788139,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 96.39999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 132.69999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 102.69999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.69999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 42,
+      "canvasDrawMs": 0.10000002384185791,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 97.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 141,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.800000011920929,
+      "hudDomainMs": 105,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 139.09999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 35.70000001788139,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 98.19999998807907,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 135,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 40.89999997615814,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0.7999999821186066,
+      "hudDomainMs": 109.09999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 150.89999997615814,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 36.60000002384186,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1,
+      "hudDomainMs": 99,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 136.80000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 38.900000005960464,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.8999999761581421,
+      "hudDomainMs": 102.80000001192093,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 142.80000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 33.599999994039536,
+      "canvasDrawMs": 0,
+      "overlaysMs": 1,
+      "hudDomainMs": 108.39999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 143.09999999403954,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory",
+        "Map"
+      ],
+      "snapshotBuildMs": 33.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 0.9000000059604645,
+      "hudDomainMs": 102.90000000596046,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 137.30000001192093,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Entities",
+        "HUD",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 34.30000001192093,
+      "canvasDrawMs": 0.09999999403953552,
+      "overlaysMs": 1,
+      "hudDomainMs": 100.59999999403954,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 0,
+      "debugDomainMs": 0,
+      "totalRenderMs": 136.19999998807907,
+      "drawCalls": 0,
+      "fullRedraw": false
+    },
+    {
+      "dirtyDomains": [
+        "Modals",
+        "HUD",
+        "Editor",
+        "Inventory"
+      ],
+      "snapshotBuildMs": 0,
+      "canvasDrawMs": 0,
+      "overlaysMs": 0,
+      "hudDomainMs": 65.39999997615814,
+      "logDomainMs": 0,
+      "inventoryDomainMs": 0,
+      "modalsDomainMs": 1.100000023841858,
+      "debugDomainMs": 0,
+      "totalRenderMs": 66.5,
+      "drawCalls": 0,
+      "fullRedraw": false
+    }
+  ],
+  "recentAISamples": [
+    {
+      "entityId": 113,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 115,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 118,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 120,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 121,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 122,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 51,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 31,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 35,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 45,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 57,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 58,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 62,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 109,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 113,
+      "durationMs": 0.10000002384185791,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 64,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 108,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 115,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 118,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 121,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 51,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 31,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 35,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 45,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 56,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 59,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 60,
+      "durationMs": 0.10000002384185791,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 61,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 112,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 120,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 122,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 111,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 62,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 109,
+      "durationMs": 0.10000002384185791,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 113,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 57,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 58,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 64,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 115,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 118,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 51,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 31,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 35,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 45,
+      "durationMs": 0,
+      "intentType": "none"
+    },
+    {
+      "entityId": 108,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 121,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 61,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 112,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 63,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 56,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 59,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 60,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 120,
+      "durationMs": 0,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 122,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 111,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 62,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 109,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 113,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 57,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    },
+    {
+      "entityId": 58,
+      "durationMs": 0.09999999403953552,
+      "intentType": "Move"
+    }
+  ]
+}

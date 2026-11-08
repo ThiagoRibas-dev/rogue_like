@@ -91,6 +91,7 @@ export function generateAndPopulateAreaFloor(
     } else {
       [tempState, stairId] = createEntity(tempState);
 
+      const stairTileKey = portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down';
       const pos: PositionComponent = { type: ComponentType.Position, x: portal.x, y: portal.y };
       const render: RenderableComponent = {
         type: ComponentType.Renderable,
@@ -102,7 +103,7 @@ export function generateAndPopulateAreaFloor(
               : (state.campaign.theme.glyphs.stairsDown ?? '>'),
         fg: state.campaign.theme.colors.stairsFg ?? '#ffffff',
         bg: state.campaign.theme.colors.transparent ?? 'transparent',
-        spriteId: portal.connection.direction === 'up' ? 'stairs_up' : 'stairs_down'
+        spriteId: state.campaign.tiles[stairTileKey]?.spriteId ?? stairTileKey
       };
 
       const tags: TagsComponent = {

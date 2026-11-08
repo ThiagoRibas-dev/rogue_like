@@ -672,51 +672,51 @@
         ],
         "actor_warlock": [
           160,
-          160
+          128
         ],
         "actor_farmer_wheat_thresher": [
           0,
-          192
+          160
         ],
         "actor_farmer_scythe": [
           32,
-          192
+          160
         ],
         "actor_farmer_pitchfork": [
           64,
-          192
+          160
         ],
         "actor_baker": [
           96,
-          192
+          160
         ],
         "actor_blacksmith": [
           128,
-          192
+          160
         ],
         "actor_scholar": [
           160,
-          192
+          160
         ],
         "actor_peasant_coalburner": [
           0,
-          224
+          192
         ],
         "actor_peasant": [
           32,
-          224
+          192
         ],
         "actor_shopkeep": [
           64,
-          224
+          192
         ],
         "actor_elderly_woman": [
           96,
-          224
+          192
         ],
         "actor_elderly_man": [
           128,
-          224
+          192
         ]
       }
     },
