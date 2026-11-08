@@ -98,6 +98,10 @@ const PRIMARY_SLOT_DEFS: Readonly<Record<string, { rail: 'left' | 'right'; label
   body: { rail: 'right', label: 'Armor / Torso', emptyGlyph: '🛡️' },
   waist: { rail: 'right', label: 'Waist / Greaves', emptyGlyph: '🎗️' },
   belt: { rail: 'right', label: 'Waist / Greaves', emptyGlyph: '🎗️' },
+  leg: { rail: 'left', label: 'Greaves / Legs', emptyGlyph: '🦵' },
+  leg_0: { rail: 'left', label: 'Greaves / Legs', emptyGlyph: '🦵' },
+  legs: { rail: 'left', label: 'Greaves / Legs', emptyGlyph: '🦵' },
+  legs_0: { rail: 'left', label: 'Greaves / Legs', emptyGlyph: '🦵' },
   foot: { rail: 'right', label: 'Boots', emptyGlyph: '🥾' },
   feet: { rail: 'right', label: 'Boots', emptyGlyph: '🥾' },
   off_hand: { rail: 'right', label: 'Off Hand', emptyGlyph: '🗡️' }

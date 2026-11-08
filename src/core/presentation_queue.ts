@@ -1,4 +1,4 @@
-import type { GameState } from '../types/game-state.types.ts';
+import { type GameState, UIMode } from '../types/game-state.types.ts';
 
 /**
  * Granular UI & rendering domains tracked for selective frame presentation.
@@ -114,6 +114,9 @@ class PresentationEventQueue {
       this.markDirty(PresentationDomain.Entities);
       this.markDirty(PresentationDomain.HUD);
       this.markDirty(PresentationDomain.Inventory);
+      if (next.uiMode === UIMode.CartridgeModal || next.uiMode === UIMode.Inventory) {
+        this.markDirty(PresentationDomain.Modals);
+      }
     }
 
     if (prev.messages !== next.messages) {

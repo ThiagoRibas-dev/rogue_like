@@ -110,7 +110,7 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
 
     const abilities = {
       wis: { base: 14 }
-    } as any;
+    } as unknown as DnD35EntityData['abilityScores'];
 
     const summaries = computeClassLevelSlotSummaries(book, dndData, abilities, mockSystemContent);
     const lv0 = summaries.find((s) => s.spellLevel === 0)!;
@@ -136,6 +136,55 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     expect(reconciled.filter((s) => s.spellLevel === 1 && s.slotKind === 'domain').length).toBe(1);
   });
 
+  it('seeds initial general slots from preparedSpellIds when preparedSlots is uninitialized', () => {
+    const book: DnD35ClassSpellbookState = {
+      classId: 'cleric',
+      castingMode: 'prepared',
+      castingTradition: 'divine',
+      spellAcquisitionMode: 'prayerbook_full_list',
+      governingAbility: 'wis',
+      effectiveCasterLevel: 1,
+      maxCastableSpellLevel: 1,
+      knownSpellIds: ['cure_minor_wounds', 'guidance', 'bless'],
+      preparedSpellIds: ['cure_minor_wounds', 'bless'],
+      spellsPerDay: { '0': 3, '1': 1 },
+      domainSpellSlots: { '1': 1 }
+    };
+
+    const dndData: Partial<DnD35EntityData> = {
+      tracks: [
+        {
+          trackId: 'cleric',
+          levels: 1,
+          babCurve: 'medium',
+          fortCurve: 'good',
+          refCurve: 'poor',
+          willCurve: 'good',
+          skillPointsPerLevel: 2
+        }
+      ],
+      domains: ['war']
+    };
+
+    const abilities = {
+      wis: { base: 14 }
+    } as unknown as DnD35EntityData['abilityScores'];
+
+    const summaries = computeClassLevelSlotSummaries(book, dndData, abilities, mockSystemContent);
+    const reconciled = reconcilePreparedSlots(book, summaries, {
+      cure_minor_wounds: { levelByClass: { cleric: 0 } },
+      bless: { levelByClass: { cleric: 1 } }
+    });
+
+    const lv0Gen0 = reconciled.find((s) => s.slotId === 'lv0_gen_0');
+    const lv1Gen0 = reconciled.find((s) => s.slotId === 'lv1_gen_0');
+    const lv1Gen1 = reconciled.find((s) => s.slotId === 'lv1_gen_1');
+
+    expect(lv0Gen0?.preparedSpellId).toBe('cure_minor_wounds');
+    expect(lv1Gen0?.preparedSpellId).toBe('bless');
+    expect(lv1Gen1?.preparedSpellId).toBeUndefined();
+  });
+
   it('computes Wizard specialist slot for an Evoker with 16 INT', () => {
     const book: DnD35ClassSpellbookState = {
       classId: 'wizard',
@@ -151,13 +200,23 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     };
 
     const dndData: Partial<DnD35EntityData> = {
-      tracks: [{ trackId: 'wizard', levels: 1, babCurve: 'poor', fortCurve: 'poor', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+      tracks: [
+        {
+          trackId: 'wizard',
+          levels: 1,
+          babCurve: 'poor',
+          fortCurve: 'poor',
+          refCurve: 'poor',
+          willCurve: 'good',
+          skillPointsPerLevel: 2
+        }
+      ],
       arcaneSchool: 'evocation'
     };
 
     const abilities = {
       int: { base: 16 }
-    } as any;
+    } as unknown as DnD35EntityData['abilityScores'];
 
     const summaries = computeClassLevelSlotSummaries(book, dndData, abilities, mockSystemContent);
     const lv1 = summaries.find((s) => s.spellLevel === 1)!;

@@ -16,18 +16,15 @@ export function renderInventoryPanel(state: GameState): void {
   const cartridgeUI = getActiveCartridgeUI(state);
   const sheetModal = cartridgeUI?.modals['character_sheet'] ?? cartridgeUI?.modals['inventory'];
 
-  if (state.uiMode === UIMode.Inventory && sheetModal) {
-    const overlayEl = document.getElementById(sheetModal.overlayElementId ?? 'dnd35e-sheet-overlay');
-    if (overlayEl) {
-      overlayEl.classList.remove('hidden');
-    }
-    sheetModal.render(state);
-    return;
-  }
-
   const overlay = document.getElementById('inventory-overlay');
   const equipPanel = document.getElementById('equipment-panel');
   const packPanel = document.getElementById('backpack-panel');
+
+  if (sheetModal) {
+    if (overlay) overlay.classList.add('hidden');
+    return;
+  }
+
   if (!overlay || !equipPanel || !packPanel) return;
 
   if (state.uiMode !== UIMode.Inventory) {

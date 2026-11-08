@@ -22,20 +22,24 @@ import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abiliti
 import { getActorEverClassSkillIds } from '../builder/builder_core.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../progression.ts';
-import { evaluateActorSkillCheck } from '../skills/skill_verb_helpers.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
-import type { AbilityScoreState, DnD35EntityData } from '../types/dnd35e.types.ts';
+import type { AbilityId, AbilityScoreState, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { ACTIVE_SKILL_IDS } from './dnd35e_ui_hotbar.ts';
 import { buildActorFeatureEntries, buildAttackGroupsFromStrikes } from './dnd35e_ui_projection.ts';
 
 const DEFAULT_ABILITY_SCORE = 10;
 const BASE_AC_SCORE = 10;
-const NOMINAL_SKILL_PREVIEW_DC = 10;
+const SYNERGY_RANK_THRESHOLD = 5;
+const SYNERGY_BONUS_PER_SKILL = 2;
+const FEAR_SKILL_PENALTY = -2;
+
+export type EvaluatedDnD35EntityResult = ReturnType<typeof evaluateDnD35eEntityDAG>;
 
 export interface DnD35AdapterContext {
   readonly state: GameState;
   readonly entityId: EntityId;
+  readonly evalResult?: EvaluatedDnD35EntityResult | undefined;
 }
 
 export interface DnD35ExtendedActorData extends Partial<DnD35EntityData> {
@@ -64,10 +68,16 @@ export function resolveAbilityScore(scoreState: AbilityScoreState | undefined): 
 export function extractActorContext(actor: unknown): {
   readonly state?: GameState | undefined;
   readonly entityId?: EntityId | undefined;
+  readonly preEvalResult?: EvaluatedDnD35EntityResult | undefined;
   readonly dndData: DnD35ExtendedActorData;
 } {
   if (isAdapterContext(actor)) {
-    return { state: actor.state, entityId: actor.entityId, dndData: getDnD35EntityData(actor.state, actor.entityId) };
+    return {
+      state: actor.state,
+      entityId: actor.entityId,
+      preEvalResult: actor.evalResult,
+      dndData: getDnD35EntityData(actor.state, actor.entityId)
+    };
   }
   const raw = (actor ?? {}) as Record<string, unknown>;
   const dndData =
@@ -77,9 +87,46 @@ export function extractActorContext(actor: unknown): {
   return { dndData };
 }
 
+function computePassiveSkillModifier(
+  skill: {
+    readonly id: string;
+    readonly keyAbility: AbilityId;
+    readonly synergyFromSkills?: ReadonlyArray<string> | undefined;
+  },
+  ranks: number,
+  allSkillRanks: Readonly<Record<string, number>>,
+  abilityMod: number,
+  statModifiers: ReadonlyArray<StatModifier>,
+  conditions: ReadonlyArray<string>
+): { readonly totalModifier: number; readonly miscModifier: number } {
+  let synergyBonus = 0;
+  for (const sourceSkillId of skill.synergyFromSkills ?? []) {
+    if ((allSkillRanks[sourceSkillId] ?? 0) >= SYNERGY_RANK_THRESHOLD) {
+      synergyBonus += SYNERGY_BONUS_PER_SKILL;
+    }
+  }
+  let statSkillBonus = 0;
+  const targetKey = `skill:${skill.id}`;
+  for (const mod of statModifiers) {
+    if (mod.targetStat === targetKey || mod.targetStat === 'skills') {
+      statSkillBonus += mod.value;
+    }
+  }
+  const fearPenalty =
+    conditions.includes('shaken') || conditions.includes('frightened') || conditions.includes('panicked')
+      ? FEAR_SKILL_PENALTY
+      : 0;
+  const miscModifier = synergyBonus + statSkillBonus + fearPenalty;
+  return {
+    totalModifier: ranks + abilityMod + miscModifier,
+    miscModifier
+  };
+}
+
 export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel {
-  const { state, entityId, dndData } = extractActorContext(actor);
-  const evalResult = state && entityId !== undefined ? evaluateDnD35eEntityDAG(state, entityId) : undefined;
+  const { state, entityId, preEvalResult, dndData } = extractActorContext(actor);
+  const evalResult =
+    preEvalResult ?? (state && entityId !== undefined ? evaluateDnD35eEntityDAG(state, entityId) : undefined);
   const identity =
     state && entityId !== undefined
       ? (getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined)
@@ -122,25 +169,35 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
   const everClassSkills = sys
     ? new Set(getActorEverClassSkillIds(dndData as DnD35EntityData, primaryClassId, dndData.domains ?? [], sys))
     : new Set<string>();
+  const allRanks = dndData.skillRanks ?? {};
+  const statModifiers = evalResult?.dndData.statModifiers ?? dndData.statModifiers ?? [];
+  const conditions = dndData.conditions ?? [];
   const skillRows: UISkillRowModel[] =
     sys && state && entityId !== undefined
       ? Object.values(sys.skills).map((skill) => {
-          const ranks = dndData.skillRanks?.[skill.id] ?? 0;
-          const { check } = evaluateActorSkillCheck(state, entityId, skill.id, NOMINAL_SKILL_PREVIEW_DC);
+          const ranks = allRanks[skill.id] ?? 0;
           const abMod = effMod?.[skill.keyAbility] ?? 0;
+          const { totalModifier, miscModifier } = computePassiveSkillModifier(
+            skill,
+            ranks,
+            allRanks,
+            abMod,
+            statModifiers,
+            conditions
+          );
           return {
             id: skill.id,
             name: skill.name,
             keyAbility: skill.keyAbility.toUpperCase(),
-            totalModifier: check.totalModifier,
+            totalModifier,
             ranks,
             abilityModifier: abMod,
-            miscModifier: check.totalModifier - ranks - abMod,
+            miscModifier,
             isClassSkill: everClassSkills.has(skill.id),
             isUsableActive: ACTIVE_SKILL_IDS.has(skill.id)
           };
         })
-      : Object.entries(dndData.skillRanks ?? {}).map(([id, ranks]) => ({
+      : Object.entries(allRanks).map(([id, ranks]) => ({
           id,
           name: id.replace(/_/g, ' ').toUpperCase(),
           keyAbility: 'DEX',

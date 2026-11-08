@@ -9,6 +9,7 @@
 
 import { getComponent } from '../../core/ecs.ts';
 import { getGameState } from '../../core/game-loop.ts';
+import { DnD35UIAdapter, evaluateDnD35eEntityDAG } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { getConsoleThemeMode } from './console_theme.ts';
@@ -16,8 +17,10 @@ import { renderSheetFeatsAndFeaturesTab } from './dnd35e_sheet_feats_abilities_t
 import { renderSheetOverviewTab } from './dnd35e_sheet_overview_tab.ui.ts';
 import { renderSheetSkillsTab } from './dnd35e_sheet_skills_tab.ui.ts';
 
+const dndAdapter = new DnD35UIAdapter();
+
 /**
- * Renders the Consolidated 3-Column Master Dossier into `#dnd35e-sheet-body`.
+ * Renders the Consolidated 3-Column Character Sheet into `#dnd35e-sheet-body`.
  */
 export function renderDnD35eSheetModal(state: GameState): void {
   const overlay = document.getElementById('dnd35e-sheet-overlay');
@@ -40,18 +43,22 @@ export function renderDnD35eSheetModal(state: GameState): void {
     return;
   }
 
+  const evalResult = evaluateDnD35eEntityDAG(liveState, playerId);
+  const sheetModel = dndAdapter.getCharacterSheetData({ state: liveState, entityId: playerId, evalResult });
+  const invData = dndAdapter.getInventoryData({ state: liveState, entityId: playerId });
+
   const theme = getConsoleThemeMode();
   const shell = document.createElement('div');
   shell.className = 'crpg-prototype-shell';
   shell.setAttribute('data-console-theme', theme);
 
-  // Consolidated 3-Column Master Dossier Grid
+  // Consolidated 3-Column Character Sheet Grid
   const grid = document.createElement('div');
   grid.className = 'crpg-three-col-grid';
 
-  renderSheetOverviewTab(grid, liveState, playerId);
-  renderSheetFeatsAndFeaturesTab(grid, liveState, playerId);
-  renderSheetSkillsTab(grid, liveState, playerId);
+  renderSheetOverviewTab(grid, liveState, playerId, evalResult, invData);
+  renderSheetFeatsAndFeaturesTab(grid, liveState, playerId, sheetModel);
+  renderSheetSkillsTab(grid, liveState, playerId, sheetModel, invData);
 
   shell.appendChild(grid);
   content.appendChild(shell);

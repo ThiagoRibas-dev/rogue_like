@@ -1,6 +1,6 @@
 {
-  "summary":  "Step-by-step implementation plan with Cascading Effects Matrix, SSOT Ownership Table, and code diffs for the 6 playtest fixes (Parchment theme unification, Inventory 'I' modal fix, Character Dossier Paper Doll & single-avatar cleanup, Game Load FOV update, Level 0-9 Vancian/Spontaneous/Domain/Specialist Spellbook overhaul, and 2D Tile Mode toggle crash fix).",
-  "updatedAt":  "2026-11-07T22:55:52.246916492Z",
+  "summary":  "Step-by-step implementation plan with Cascading Effects Matrix and code diffs for Cleric prepared spellbook slots, Character Sheet O(1) passive skill DAG optimization & naming, Paper Doll cleanup, and global UI font scaling.",
+  "updatedAt":  "2026-11-08T00:00:37.204165184Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

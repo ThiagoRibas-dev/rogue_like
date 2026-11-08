@@ -118,12 +118,7 @@ export function renderReactivePaperDollWidget(
   const extraLimbs = slots.filter((x) => x.rail === 'extra');
   figure.textContent =
     data.avatarGlyph ?? (extraLimbs.length >= 3 ? '🐍' : slots.some((x) => x.suppressed) ? '🐺' : '🤺');
-
-  const mainWeapon = slots.find((x) => x.slotId === 'main_hand' || x.slotType === 'main_hand')?.equippedItem;
-  const figureCap = document.createElement('div');
-  figureCap.className = 'crpg-avatar-caption';
-  figureCap.textContent = mainWeapon?.name ?? 'Unarmed';
-  avatarStage.append(figure, figureCap);
+  avatarStage.appendChild(figure);
 
   const bottomStrip = document.createElement('div');
   bottomStrip.className = 'crpg-pd-bottom-strip';

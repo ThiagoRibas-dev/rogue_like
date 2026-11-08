@@ -7,10 +7,51 @@
 import { addComponent, getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import { getDnD35EntityData } from '../../rulesets/registry.ts';
+import {
+  computeClassLevelSlotSummaries,
+  type DnD35ClassSpellbookState,
+  type DnD35PreparedSlotEntry,
+  getDnD35EntityData,
+  getDnD35SystemContent,
+  reconcilePreparedSlots
+} from '../../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+
+function ensureHydratedClassSlots(
+  state: GameState,
+  playerId: EntityId,
+  book: DnD35ClassSpellbookState
+): ReadonlyArray<DnD35PreparedSlotEntry> {
+  if (book.preparedSlots && book.preparedSlots.length > 0) {
+    return book.preparedSlots;
+  }
+  const dndData = getDnD35EntityData(state, playerId);
+  const sys = getDnD35SystemContent(state.campaign);
+  const summaries = computeClassLevelSlotSummaries(book, dndData, dndData.abilityScores, sys ?? undefined);
+  return reconcilePreparedSlots(book, summaries, sys?.spells);
+}
+
+function persistUpdatedSpellbookSlots(
+  state: GameState,
+  playerId: EntityId,
+  dndData: ReturnType<typeof getDnD35EntityData>,
+  classId: string,
+  book: DnD35ClassSpellbookState,
+  currentSlots: ReadonlyArray<DnD35PreparedSlotEntry>
+): GameState {
+  const preparedSpellIds = currentSlots
+    .filter((s) => s.preparedSpellId !== undefined && !s.expended)
+    .map((s) => s.preparedSpellId!);
+  const updatedBook = { ...book, preparedSlots: currentSlots, preparedSpellIds };
+  const updatedBooks = { ...(dndData.spellbooksByClass ?? {}), [classId]: updatedBook };
+  return addComponent(state, playerId, {
+    type: ComponentType.RulesetData,
+    rulesetId: 'dnd35e',
+    payload: { ...dndData, spellbooksByClass: updatedBooks }
+  } as RulesetDataComponent);
+}
 
 /**
  * Prepares a spell into a specific slot ID.
@@ -23,39 +64,15 @@ export function prepareSpellIntoSpecificSlot(
   spellId: string
 ): GameState {
   const dndData = getDnD35EntityData(state, playerId);
-  const classBooks = dndData.spellbooksByClass ?? {};
-  const book = classBooks[classId];
+  const book = (dndData.spellbooksByClass ?? {})[classId];
   if (!book) return state;
 
-  const currentSlots = book.preparedSlots ? [...book.preparedSlots] : [];
+  const currentSlots = [...ensureHydratedClassSlots(state, playerId, book)];
   const slotIdx = currentSlots.findIndex((s) => s.slotId === slotId);
   if (slotIdx === -1) return state;
 
-  const oldSlot = currentSlots[slotIdx]!;
-  currentSlots[slotIdx] = {
-    ...oldSlot,
-    preparedSpellId: spellId,
-    expended: false
-  };
-
-  // Keep legacy preparedSpellIds in sync
-  const preparedSpellIds = currentSlots
-    .filter((s) => s.preparedSpellId !== undefined && !s.expended)
-    .map((s) => s.preparedSpellId!);
-
-  const updatedBook = {
-    ...book,
-    preparedSlots: currentSlots,
-    preparedSpellIds
-  };
-  const updatedBooks = { ...classBooks, [classId]: updatedBook };
-  const updatedDndData = { ...dndData, spellbooksByClass: updatedBooks };
-
-  const nextState = addComponent(state, playerId, {
-    type: ComponentType.RulesetData,
-    rulesetId: 'dnd35e',
-    payload: updatedDndData
-  } as RulesetDataComponent);
+  currentSlots[slotIdx] = { ...currentSlots[slotIdx]!, preparedSpellId: spellId, expended: false };
+  const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, currentSlots);
 
   return addMessage(
     nextState,
@@ -80,7 +97,7 @@ export function prepareSpellIntoSlot(
   const book = classBooks[classId];
   if (!book) return state;
 
-  const slots = book.preparedSlots ?? [];
+  const slots = ensureHydratedClassSlots(state, playerId, book);
   const openSlot = slots.find(
     (s) => s.spellLevel === spellLevel && s.slotKind === slotKind && (!s.preparedSpellId || s.expended)
   );
@@ -89,16 +106,15 @@ export function prepareSpellIntoSlot(
     return prepareSpellIntoSpecificSlot(state, playerId, classId, openSlot.slotId, spellId);
   }
 
-  // Fallback if structured slots not initialized
-  const prepared = [...book.preparedSpellIds, spellId];
-  const updatedBook = { ...book, preparedSpellIds: prepared };
-  const updatedBooks = { ...classBooks, [classId]: updatedBook };
-  const updatedDndData = { ...dndData, spellbooksByClass: updatedBooks };
+  if (slots.length > 0) {
+    return addMessage(state, `No open Level ${spellLevel} ${slotKind} slots remaining.`, MessageLogCategory.System);
+  }
 
+  const updatedBook = { ...book, preparedSpellIds: [...book.preparedSpellIds, spellId] };
   const nextState = addComponent(state, playerId, {
     type: ComponentType.RulesetData,
     rulesetId: 'dnd35e',
-    payload: updatedDndData
+    payload: { ...dndData, spellbooksByClass: { ...classBooks, [classId]: updatedBook } }
   } as RulesetDataComponent);
 
   return addMessage(nextState, `Prepared spell: ${spellId}`, MessageLogCategory.System);
@@ -114,40 +130,23 @@ export function unprepareSpecificSlot(
   slotId: string
 ): GameState {
   const dndData = getDnD35EntityData(state, playerId);
-  const classBooks = dndData.spellbooksByClass ?? {};
-  const book = classBooks[classId];
+  const book = (dndData.spellbooksByClass ?? {})[classId];
   if (!book) return state;
 
-  const currentSlots = book.preparedSlots ? [...book.preparedSlots] : [];
+  const currentSlots = [...ensureHydratedClassSlots(state, playerId, book)];
   const slotIdx = currentSlots.findIndex((s) => s.slotId === slotId);
   if (slotIdx === -1) return state;
 
   const oldSlot = currentSlots[slotIdx]!;
   const removedName = oldSlot.preparedSpellId;
   currentSlots[slotIdx] = {
-    ...oldSlot,
-    preparedSpellId: undefined,
+    slotId: oldSlot.slotId,
+    spellLevel: oldSlot.spellLevel,
+    slotKind: oldSlot.slotKind,
     expended: false
   };
 
-  const preparedSpellIds = currentSlots
-    .filter((s) => s.preparedSpellId !== undefined && !s.expended)
-    .map((s) => s.preparedSpellId!);
-
-  const updatedBook = {
-    ...book,
-    preparedSlots: currentSlots,
-    preparedSpellIds
-  };
-  const updatedBooks = { ...classBooks, [classId]: updatedBook };
-  const updatedDndData = { ...dndData, spellbooksByClass: updatedBooks };
-
-  const nextState = addComponent(state, playerId, {
-    type: ComponentType.RulesetData,
-    rulesetId: 'dnd35e',
-    payload: updatedDndData
-  } as RulesetDataComponent);
-
+  const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, currentSlots);
   return addMessage(nextState, `Unprepared slot [${slotId}] (${removedName ?? 'empty'})`, MessageLogCategory.System);
 }
 
@@ -162,11 +161,10 @@ export function castPreparedSlot(
   convertedSpellId?: string
 ): GameState {
   const dndData = getDnD35EntityData(state, playerId);
-  const classBooks = dndData.spellbooksByClass ?? {};
-  const book = classBooks[classId];
+  const book = (dndData.spellbooksByClass ?? {})[classId];
   if (!book) return state;
 
-  const currentSlots = book.preparedSlots ? [...book.preparedSlots] : [];
+  const currentSlots = [...ensureHydratedClassSlots(state, playerId, book)];
   const slotIdx = currentSlots.findIndex((s) => s.slotId === slotId);
   if (slotIdx === -1) return state;
 
@@ -174,28 +172,8 @@ export function castPreparedSlot(
   if (slot.expended || !slot.preparedSpellId) return state;
 
   const castSpellName = convertedSpellId ?? slot.preparedSpellId;
-  currentSlots[slotIdx] = {
-    ...slot,
-    expended: true
-  };
-
-  const preparedSpellIds = currentSlots
-    .filter((s) => s.preparedSpellId !== undefined && !s.expended)
-    .map((s) => s.preparedSpellId!);
-
-  const updatedBook = {
-    ...book,
-    preparedSlots: currentSlots,
-    preparedSpellIds
-  };
-  const updatedBooks = { ...classBooks, [classId]: updatedBook };
-  const updatedDndData = { ...dndData, spellbooksByClass: updatedBooks };
-
-  const nextState = addComponent(state, playerId, {
-    type: ComponentType.RulesetData,
-    rulesetId: 'dnd35e',
-    payload: updatedDndData
-  } as RulesetDataComponent);
+  currentSlots[slotIdx] = { ...slot, expended: true };
+  const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, currentSlots);
 
   const msg = convertedSpellId
     ? `Spontaneously converted slot [${slotId}] and cast: ${convertedSpellId.replace(/_/g, ' ')}`

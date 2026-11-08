@@ -717,11 +717,12 @@ body[data-no-animations='true'] * {
   display: inline-block;
   padding: 2px 6px;
   font-family: var(--font-mono, monospace);
-  font-size: 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 700;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #c9d1d9;
+  background: rgba(60, 45, 30, 0.14);
+  border: 1px solid var(--crpg-border-inner, #a69478);
+  color: var(--crpg-text-header, #3b2818);
 }
 
 /* Milestone 118: Character Sheet, Spellbook, Paper Doll & Tactical Doctrine Bar */
@@ -738,10 +739,10 @@ body[data-no-animations='true'] * {
   background: transparent;
   border: 1px solid var(--border-brass);
   color: var(--text-main);
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   line-height: 1;
 }
 
@@ -759,19 +760,20 @@ body[data-no-animations='true'] * {
 }
 
 .dnd35-tab-btn {
-  background: #141820;
-  border: 1px solid #303644;
-  color: #9da7b3;
+  background: var(--crpg-bg-subpanel, #d9cfbc);
+  border: 1px solid var(--crpg-border-outer, #5c4730);
+  color: var(--crpg-text-main, #261d14);
   padding: 6px 12px;
   font-family: var(--font-mono, monospace);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
 .dnd35-tab-btn.active {
-  border-color: #f1c40f;
-  color: #f1c40f;
-  background: rgba(241, 196, 15, 0.12);
+  border-color: var(--crpg-border-gold, #b88a36);
+  color: #fff5d6;
+  background: var(--crpg-accent-fill, #8c2620);
 }
 
 .dnd35-sheet-overview-grid {
@@ -793,7 +795,7 @@ body[data-no-animations='true'] * {
   justify-content: space-between;
   padding: 4px 0;
   border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
-  font-size: 0.82rem;
+  font-size: 0.86rem;
 }
 
 .sheet-skills-table {
@@ -812,7 +814,7 @@ body[data-no-animations='true'] * {
   padding: 6px 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
 }
 
 .skills-table-header {
@@ -822,17 +824,24 @@ body[data-no-animations='true'] * {
 }
 
 .skill-use-btn {
-  background: #1e293b;
-  border: 1px solid #475569;
-  color: #e2e8f0;
-  padding: 3px 8px;
-  font-size: 0.72rem;
+  background: var(--crpg-accent-fill, #8c2620);
+  border: 1px solid var(--crpg-border-gold, #b88a36);
+  color: #fff5d6;
+  padding: 4px 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.skill-use-btn:hover {
-  border-color: #f1c40f;
-  color: #f1c40f;
+.skill-use-btn:hover:not(:disabled) {
+  border-color: #ffd97d;
+  background: #a32e27;
+}
+
+.skill-use-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .anatomical-paperdoll-full-grid {

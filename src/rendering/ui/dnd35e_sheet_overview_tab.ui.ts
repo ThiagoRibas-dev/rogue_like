@@ -16,6 +16,7 @@ import {
 } from '../../rulesets/registry.ts';
 import { ComponentType, type FighterComponent, type IdentityComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import type { UIInventoryModel } from '../../types/ui_adapter.types.ts';
 import { hideConsoleItemInspectCard, showConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderReactivePaperDollWidget } from './console_inventory.ui.ts';
 
@@ -31,11 +32,17 @@ function formatSigned(val: number): string {
 /**
  * Renders Column 1 (Left Column): Identity, Attributes, Reactive Paper Doll & Defenses into `container`.
  */
-export function renderSheetOverviewTab(container: HTMLElement, state: GameState, playerId: EntityId): void {
+export function renderSheetOverviewTab(
+  container: HTMLElement,
+  state: GameState,
+  playerId: EntityId,
+  preEvalResult?: ReturnType<typeof evaluateDnD35eEntityDAG>,
+  preInvData?: UIInventoryModel
+): void {
   const col = document.createElement('div');
   col.className = 'crpg-col-pane';
 
-  const evalResult = evaluateDnD35eEntityDAG(state, playerId);
+  const evalResult = preEvalResult ?? evaluateDnD35eEntityDAG(state, playerId);
   const dndData = getDnD35EntityData(state, playerId);
   const identity = getComponent(state, playerId, ComponentType.Identity) as IdentityComponent | undefined;
   const fighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent | undefined;
@@ -119,7 +126,7 @@ export function renderSheetOverviewTab(container: HTMLElement, state: GameState,
 
   // Reactive Anatomical Paper Doll driven 100% by live EquipmentComponent
   const pdHost = document.createElement('div');
-  const invData = dndAdapter.getInventoryData({ state, entityId: playerId });
+  const invData = preInvData ?? dndAdapter.getInventoryData({ state, entityId: playerId });
   renderReactivePaperDollWidget(
     pdHost,
     {

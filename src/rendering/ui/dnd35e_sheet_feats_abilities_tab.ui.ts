@@ -7,18 +7,24 @@ import { getComponent } from '../../core/ecs.ts';
 import { DnD35UIAdapter, getDnD35EntityData, getDnD35SystemContent } from '../../rulesets/registry.ts';
 import { ComponentType, type StatusEffectsComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import type { UICharacterSheetModel } from '../../types/ui_adapter.types.ts';
 
 const dndAdapter = new DnD35UIAdapter();
 
 /**
  * Renders Column 2 (Center Column): Attack Routine Ledger, Feats/Features/Conditions & Level-by-Level Matrix.
  */
-export function renderSheetFeatsAndFeaturesTab(container: HTMLElement, state: GameState, playerId: EntityId): void {
+export function renderSheetFeatsAndFeaturesTab(
+  container: HTMLElement,
+  state: GameState,
+  playerId: EntityId,
+  preSheetModel?: UICharacterSheetModel
+): void {
   const col = document.createElement('div');
   col.className = 'crpg-col-pane';
 
   const dndData = getDnD35EntityData(state, playerId);
-  const sheetModel = dndAdapter.getCharacterSheetData({ state, entityId: playerId });
+  const sheetModel = preSheetModel ?? dndAdapter.getCharacterSheetData({ state, entityId: playerId });
   const sys = getDnD35SystemContent(state.campaign);
   const featRegistry = sys?.feats ?? {};
 

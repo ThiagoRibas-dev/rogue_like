@@ -98,12 +98,33 @@ export function computeClassLevelSlotSummaries(
  */
 export function reconcilePreparedSlots(
   book: DnD35ClassSpellbookState,
-  summaries: ReadonlyArray<SpellLevelSlotSummary>
+  summaries: ReadonlyArray<SpellLevelSlotSummary>,
+  spellsRegistry?: Readonly<Record<string, { readonly levelByClass?: Readonly<Record<string, number>> } | undefined>>
 ): ReadonlyArray<DnD35PreparedSlotEntry> {
   const existingMap = new Map<string, DnD35PreparedSlotEntry>();
   for (const s of book.preparedSlots ?? []) {
     existingMap.set(s.slotId, s);
   }
+
+  const legacyPool =
+    (book.preparedSlots === undefined || book.preparedSlots.length === 0) && book.preparedSpellIds.length > 0
+      ? [...book.preparedSpellIds]
+      : [];
+
+  const takeLegacySpellForLevel = (spellLevel: number): string | undefined => {
+    if (legacyPool.length === 0) return undefined;
+    if (!spellsRegistry) {
+      return spellLevel === 0 ? legacyPool.shift() : undefined;
+    }
+    const idx = legacyPool.findIndex((spId) => {
+      const def = spellsRegistry[spId];
+      const lv = def?.levelByClass?.[book.classId] ?? def?.levelByClass?.['sorcerer_wizard'];
+      return lv === spellLevel;
+    });
+    if (idx === -1) return undefined;
+    const [picked] = legacyPool.splice(idx, 1);
+    return picked;
+  };
 
   const result: DnD35PreparedSlotEntry[] = [];
 
@@ -114,14 +135,18 @@ export function reconcilePreparedSlots(
     for (let i = 0; i < sum.generalSlots; i++) {
       const slotId = `lv${sum.spellLevel}_gen_${i}`;
       const existing = existingMap.get(slotId);
-      result.push(
-        existing ?? {
+      if (existing) {
+        result.push(existing);
+      } else {
+        const seededSpellId = takeLegacySpellForLevel(sum.spellLevel);
+        result.push({
           slotId,
           spellLevel: sum.spellLevel,
           slotKind: 'general',
+          ...(seededSpellId !== undefined ? { preparedSpellId: seededSpellId } : {}),
           expended: false
-        }
-      );
+        });
+      }
     }
 
     // Domain slots

@@ -8,18 +8,12 @@ import { createEquipItemAction } from '../../actions/inventory.actions.ts';
 import type { Verb } from '../../constants/verbs.constants.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import {
-  DnD35UIAdapter,
-  evaluateActorSkillCheck,
-  getActorEverClassSkillIds,
-  getDnD35EntityData,
-  getDnD35SystemContent
-} from '../../rulesets/registry.ts';
+import { DnD35UIAdapter } from '../../rulesets/registry.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import type { UICharacterSheetModel, UIInventoryModel } from '../../types/ui_adapter.types.ts';
 import { hideConsoleItemInspectCard, showConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderCompactStashWidget } from './console_inventory.ui.ts';
 
-const NOMINAL_PREVIEW_DC = 10;
 const dndAdapter = new DnD35UIAdapter();
 
 let showTrainedOnly = false;
@@ -36,12 +30,18 @@ const ACTIVE_SKILL_VERBS: Readonly<Record<string, Verb>> = {
 /**
  * Renders Column 3 (Right Column): Pen-and-Paper Skills Ledger + Compact 36x36px Backpack & Stash.
  */
-export function renderSheetSkillsTab(container: HTMLElement, state: GameState, playerId: EntityId): void {
+export function renderSheetSkillsTab(
+  container: HTMLElement,
+  state: GameState,
+  playerId: EntityId,
+  preSheetModel?: UICharacterSheetModel,
+  preInvData?: UIInventoryModel
+): void {
   const col = document.createElement('div');
   col.className = 'crpg-col-pane';
 
-  const dndData = getDnD35EntityData(state, playerId);
-  const sys = getDnD35SystemContent(state.campaign);
+  const sheetModel = preSheetModel ?? dndAdapter.getCharacterSheetData({ state, entityId: playerId });
+  const invData = preInvData ?? dndAdapter.getInventoryData({ state, entityId: playerId });
 
   // TOP HALF: Pen-and-Paper Skills Ledger
   const skillHeaderBar = document.createElement('div');
@@ -61,7 +61,7 @@ export function renderSheetSkillsTab(container: HTMLElement, state: GameState, p
     col.replaceWith(
       (() => {
         const holder = document.createElement('div');
-        renderSheetSkillsTab(holder, state, playerId);
+        renderSheetSkillsTab(holder, state, playerId, sheetModel, invData);
         return holder.firstElementChild ?? holder;
       })()
     );
@@ -85,27 +85,19 @@ export function renderSheetSkillsTab(container: HTMLElement, state: GameState, p
   tbl.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  const primaryClassId = dndData.tracks[0]?.trackId ?? 'fighter';
-  const everClassSkills = sys
-    ? new Set(getActorEverClassSkillIds(dndData, primaryClassId, dndData.domains ?? [], sys))
-    : new Set<string>();
-  const skillsList = Object.values(sys?.skills ?? {});
 
-  for (const skill of skillsList) {
-    const ranks = dndData.skillRanks[skill.id] ?? 0;
-    if (showTrainedOnly && ranks <= 0) continue;
+  for (const skill of sheetModel.skillRows ?? []) {
+    if (showTrainedOnly && skill.ranks <= 0) continue;
 
-    const { check } = evaluateActorSkillCheck(state, playerId, skill.id, NOMINAL_PREVIEW_DC);
-    const totalBonus = check.totalModifier;
+    const totalBonus = skill.totalModifier;
     const sign = totalBonus >= 0 ? `+${totalBonus}` : `${totalBonus}`;
-    const isClassSkill = everClassSkills.has(skill.id);
 
     const tr = document.createElement('tr');
 
     const csTd = document.createElement('td');
     csTd.className = 'crpg-skill-cs-dot';
-    csTd.textContent = isClassSkill ? '■' : '□';
-    csTd.title = isClassSkill ? 'Class Skill' : 'Cross-Class Skill';
+    csTd.textContent = skill.isClassSkill ? '■' : '□';
+    csTd.title = skill.isClassSkill ? 'Class Skill' : 'Cross-Class Skill';
 
     const nameTd = document.createElement('td');
     nameTd.className = 'crpg-skill-name-cell';
@@ -113,7 +105,7 @@ export function renderSheetSkillsTab(container: HTMLElement, state: GameState, p
 
     const keyTd = document.createElement('td');
     keyTd.className = 'crpg-skill-ability-cell';
-    keyTd.textContent = skill.keyAbility.toUpperCase();
+    keyTd.textContent = skill.keyAbility;
 
     const totTd = document.createElement('td');
     totTd.className = 'crpg-skill-total-cell';
@@ -121,7 +113,7 @@ export function renderSheetSkillsTab(container: HTMLElement, state: GameState, p
 
     const rnkTd = document.createElement('td');
     rnkTd.className = 'crpg-skill-ranks-cell';
-    rnkTd.textContent = `${ranks}`;
+    rnkTd.textContent = `${skill.ranks}`;
 
     const useTd = document.createElement('td');
     useTd.className = 'crpg-skill-use-cell';
@@ -149,7 +141,6 @@ export function renderSheetSkillsTab(container: HTMLElement, state: GameState, p
 
   // BOTTOM HALF: Compact 36x36px Shared Stash / Backpack Grid driven by live InventoryComponent
   const stashHost = document.createElement('div');
-  const invData = dndAdapter.getInventoryData({ state, entityId: playerId });
 
   renderCompactStashWidget(stashHost, invData, {
     onHoverItem: (item, event) => {

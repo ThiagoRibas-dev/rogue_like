@@ -5,6 +5,7 @@
  */
 
 import { getComponent } from '../../core/ecs.ts';
+import { getGameState } from '../../core/game-loop.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import {
@@ -32,7 +33,8 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
 
   content.replaceChildren();
 
-  const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+  const liveState = getGameState() ?? state;
+  const playerId = liveState.entities.find((id) => getComponent(liveState, id, ComponentType.Player) !== undefined);
   if (playerId === undefined) {
     const empty = document.createElement('div');
     empty.className = 'status-empty';
@@ -41,8 +43,8 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     return;
   }
 
-  const dndData = getDnD35EntityData(state, playerId);
-  const sys = getDnD35SystemContent(state.campaign);
+  const dndData = getDnD35EntityData(liveState, playerId);
+  const sys = getDnD35SystemContent(liveState.campaign);
   const spellRegistry = sys?.spells ?? {};
   const classBooks = dndData.spellbooksByClass ?? {};
   const classIds = Object.keys(classBooks);
@@ -59,8 +61,8 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     restBtn.style.marginTop = '16px';
     restBtn.textContent = '💤 Take 8-Hour Rest';
     restBtn.addEventListener('click', () => {
-      applyRestAction(state, playerId);
-      renderDnD35eSpellbookModal(state);
+      applyRestAction(liveState, playerId);
+      renderDnD35eSpellbookModal(getGameState() ?? liveState);
     });
     content.appendChild(restBtn);
     return;
@@ -76,11 +78,8 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
 
   // Initialize/reconcile preparedSlots if needed
   if (activeBook.castingMode === 'prepared') {
-    const currentSlots = activeBook.preparedSlots ?? [];
-    if (currentSlots.length === 0) {
-      const reconciled = reconcilePreparedSlots(activeBook, summaries);
-      activeBook = { ...activeBook, preparedSlots: reconciled };
-    }
+    const reconciled = reconcilePreparedSlots(activeBook, summaries, spellRegistry);
+    activeBook = { ...activeBook, preparedSlots: reconciled };
   }
 
   // 1. Top Bar: Class Tabs & Rest Action
@@ -105,7 +104,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     btn.textContent = `${cid.toUpperCase()} (${classBooks[cid]!.castingMode})`;
     btn.addEventListener('click', () => {
       selectedClassTab = cid;
-      renderDnD35eSpellbookModal(state);
+      renderDnD35eSpellbookModal(getGameState() ?? liveState);
     });
     tabContainer.appendChild(btn);
   }
@@ -117,8 +116,8 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
   restBtn.textContent = '💤 8-Hour Rest';
   restBtn.title = 'Refresh daily spell slots and restore vital vitality';
   restBtn.addEventListener('click', () => {
-    applyRestAction(state, playerId);
-    renderDnD35eSpellbookModal(state);
+    applyRestAction(liveState, playerId);
+    renderDnD35eSpellbookModal(getGameState() ?? liveState);
   });
   topBar.appendChild(restBtn);
 
@@ -139,7 +138,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
   allLevelsBtn.textContent = 'All Spell Levels';
   allLevelsBtn.addEventListener('click', () => {
     selectedLevelFilter = -1;
-    renderDnD35eSpellbookModal(state);
+    renderDnD35eSpellbookModal(getGameState() ?? liveState);
   });
   filterStrip.appendChild(allLevelsBtn);
 
@@ -151,7 +150,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     lvlBtn.textContent = `Level ${sum.spellLevel} (${sum.totalSlots} slots • DC ${sum.saveDc})`;
     lvlBtn.addEventListener('click', () => {
       selectedLevelFilter = sum.spellLevel;
-      renderDnD35eSpellbookModal(state);
+      renderDnD35eSpellbookModal(getGameState() ?? liveState);
     });
     filterStrip.appendChild(lvlBtn);
   }
@@ -183,7 +182,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
   if (activeBook.castingMode === 'prepared') {
     renderPreparedSlotsPane(
       leftPane,
-      state,
+      liveState,
       playerId,
       selectedClassTab,
       activeBook,
@@ -208,7 +207,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
 
   renderKnownSpellsPane(
     rightPane,
-    state,
+    liveState,
     playerId,
     selectedClassTab,
     activeBook,

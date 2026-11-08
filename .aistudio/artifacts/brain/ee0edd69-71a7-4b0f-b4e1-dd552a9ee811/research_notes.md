@@ -1,181 +1,100 @@
-# Research Notes — Post-M121 Playtest Bug Analysis & Spellbook Architecture
+# Research Notes: Cleric Spell Preparation, Character Sheet Performance & Naming, and Font Scaling
 
-## 0. Rules & Standards Reiteration
-Per `AGENTS.md` and `docs/ARCHITECTURE.md`:
-- **Three-Tier Placement Heuristic (Rule 16):**
-  - **Tier 1 — Core Console Engine (`src/core/`, `src/systems/`, `src/rendering/ui/console_*.ui.ts`, `src/rendering/ui/cartridge_ui_registry.ts`):** Ruleset-agnostic modal routing, FOV initialization on load, ROT.js display backend switching (`rect` vs. `tile`), and generic Paper Doll widget rendering.
-  - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`):** D&D 3.5e Vancian/Spontaneous/Domain/Specialist slot math, slot preparation/conversion state, and anatomical slot-to-Paper-Doll rail projection (`dnd35e_ui_projection.ts`).
-  - **Tier 3 — System Content (`public/data/rulesets/dnd35e/*.json`):** Spell definitions (`levelByClass`, `levelByDomain`, `school`), class progression tables (`spellsPerDay`, `spellsKnown`, `domainSpellSlots`), and domain registries.
-- **Strict Type Discipline:** Zero `any`, zero magic values, explicit return types on all functions, `exactOptionalPropertyTypes: true` compliance, and pure JSON-serializable ECS components (no `Map` or `Set` in components).
-
----
-
-## 1. Root-Cause Analysis of the 6 Reported Issues
-
-### Issue 1: Character Creation & Modal Theme Mismatch (Light Parchment Boxes with Invisible Light Text)
-- **Symptom (Screenshots 1 & 2):**
-  - In `2. CLASS & PATHS`, the class progression preview container has a light parchment background (`#ebe3d4`) while the text inside it is light cream (`#e2d9c8`), making `Lv 1: BAB +0...` unreadable unless highlighted.
-  - In `5. FEATS`, the `<select>` dropdown next to `Ability Focus` has a light parchment background with invisible light text.
-  - Even inside the Character Dossier (`Screenshot 3`), the outer `.modal-content` header/frame is dark (`#191c24`) while the inner `.crpg-prototype-shell` is parchment.
-- **Root Cause:**
-  - `src/styles/console_prototype.css:24-56` sets `:root` and `:root[data-console-theme='parchment']` variables such as `--crpg-bg-page: #d8ceb8`, `--crpg-bg-panel: rgba(244, 238, 225, 0.96)`, `--crpg-bg-card: rgba(235, 227, 212, 0.96)`, and `--crpg-text-main: #261d14` (dark ink).
-  - Meanwhile, `#char-creation-overlay`, `#level-up-overlay`, `#dnd35e-sheet-overlay`, `#dnd35e-spellbook-overlay`, and `.dnd35-*` classes in `src/styles/modals.css` hardcode dark backgrounds (`#191c24`, `#12141a`, `rgba(0,0,0,0.28)`) and light text (`--text-main: #e2d9c8`).
-  - When `src/rendering/ui/dnd35e_char_builder_class.ui.ts:100` (`background: var(--crpg-bg-card)`) and `src/rendering/ui/dnd35e_char_builder_feats.ui.ts:176` (`background: var(--crpg-bg-card); color: inherit`) use `--crpg-bg-card` inside the dark modal, they render a light parchment box with inherited light text (`#e2d9c8`).
-- **Fix Architecture:**
-  - Unify all D&D 3.5e modals (`#char-creation-overlay`, `#level-up-overlay`, `#dnd35e-sheet-overlay`, `#dnd35e-spellbook-overlay`) and `.dnd35-*` classes (`modals.css`, `console_prototype.css`, and inline styles in `dnd35e_char_builder*.ui.ts` / `dnd35e_spellbook.ui.ts`) to follow the `--crpg-*` parchment theme variables (`--crpg-bg-page`, `--crpg-bg-panel`, `--crpg-bg-card`, `--crpg-text-main`, `--crpg-text-muted`, `--crpg-text-header`, `--crpg-border-gold`, `--crpg-accent-crimson`) so that headers, frames, cards, inputs, and `<select>` dropdowns share a cohesive, high-contrast parchment aesthetic.
+## 0. Rules & Standards Reiteration (`AGENTS.md` & `docs/ARCHITECTURE.md`)
+- **Zero `any` & Strict TypeScript (`exactOptionalPropertyTypes: true`)**: Explicit return types, exhaustive switches, zero `any`.
+- **No Magic Values**: All numeric thresholds and constants named explicitly.
+- **300-Line File Limit & Architectural Boundaries**: `src/rendering/` must import cartridge functions only via `src/rulesets/registry.ts` (never directly from `src/rulesets/dnd35e/*`).
+- **ECS Purity**: `GameState` components remain plain JSON-serializable objects (`Record`, `ReadonlyArray`), never `Map`/`Set`, and UI projection must never mutate `rng` state.
+- **Map Cascading Effects (Rule 15)**: Every change is mapped across **Upstream**, **Downstream**, and **Lateral** axes.
 
 ---
 
-### Issue 2: Pressing `I` Freezes the Game With No Window Popping Up
-- **Symptom:**
-  - Pressing `I` switches the game into `UIMode.Inventory` (blocking movement/world keys until `Esc` is pressed), but no modal appears on screen.
-- **Root Cause (`src/rendering/presenter.ts:169-184` & `src/rendering/ui/cartridge_ui_registry.ts:157-179`):**
-  1. Pressing `I` dispatches `IntentType.ToggleInventory`, which sets `state.uiMode = UIMode.Inventory`.
-  2. In `presentGameState` (`src/rendering/presenter.ts:169`), `if (dirtyDomains.has(PresentationDomain.Inventory))` calls `renderInventoryPanel(state)` (`src/rendering/ui/inventory.ui.ts:19-25`), which sees `state.uiMode === UIMode.Inventory`, finds `#dnd35e-sheet-overlay`, removes `.hidden`, and renders the sheet.
-  3. **Immediately afterward on line 183**, `if (dirtyDomains.has(PresentationDomain.Modals))` calls `renderActiveCartridgeModal(state)` (`src/rendering/ui/cartridge_ui_registry.ts:157-179`).
-  4. Inside `renderActiveCartridgeModal(state)`:
+## 1. Issue-by-Issue Root Cause Analysis
+
+### Issue 1: Cleric Prepared Spells Go to the Hotbar Instead of Prepared Slots in the Spellbook
+**Symptom:** When preparing spells as a Cleric in the Spellbook (`B`), clicking `+ Prep` places the spell onto the bottom hotbar (and logs `"Prepared spell: ..."`) instead of filling the structured General / Domain slot inside the left pane of the Spellbook modal (which stays `— Empty Slot —`).
+
+**Root Causes:**
+1. **Unpersisted `reconcilePreparedSlots` on Initial Spellbook Open:**
+   - When a character is created or loaded (`buildActorSpellbooksByClass` in `src/rulesets/dnd35e/level_ledger.ts`), `book.preparedSlots` is initially `undefined` in `dndData.spellbooksByClass[classId]`.
+   - In `src/rendering/ui/dnd35e_spellbook.ui.ts` (lines 78–84), `renderDnD35eSpellbookModal` computes `const reconciled = reconcilePreparedSlots(activeBook, summaries)` and assigns it ONLY to a local variable (`activeBook = { ...activeBook, preparedSlots: reconciled }`) for display. It does **not** persist `reconciled` to `state`, and `prepareSpellIntoSlot` reads directly from `state`.
+2. **`prepareSpellIntoSlot` Reads Empty `book.preparedSlots` from `state` and Falls Back to `preparedSpellIds`:**
+   - When the user clicks `+ Prep` in `src/rendering/ui/dnd35e_spellbook_known.ui.ts`, `prepareSpellIntoSlot(state, playerId, classId, sp.id, 'general', sum.spellLevel)` (`src/rendering/ui/dnd35e_spellbook_actions.ts`, lines 70–105) looks up `const slots = book.preparedSlots ? [...book.preparedSlots] : []`.
+   - Because `book.preparedSlots` in `state` is `undefined`, `slots` is `[]`, so `openSlot` is `undefined`.
+   - Execution falls through to the legacy branch (lines 93–94):
      ```ts
-     const activeId = state.uiMode === UIMode.CartridgeModal ? state.activeCartridgeModalId : undefined;
+     const prepared = [...book.preparedSpellIds, spellId];
      ```
-     Because `state.uiMode` is `UIMode.Inventory` (not `UIMode.CartridgeModal`), `activeId` is `undefined`. The loop over `uiDef.modals` (`character_sheet`, `spellbook`, `char_creation`, `level_up`) then executes `el.classList.add('hidden')` on `#dnd35e-sheet-overlay` in the exact same frame!
-- **Fix Architecture:**
-  - In `renderActiveCartridgeModal` (`src/rendering/ui/cartridge_ui_registry.ts`), resolve `activeId` when `state.uiMode === UIMode.Inventory` to `'inventory'` (if registered in `uiDef.modals`) or `'character_sheet'` (if the cartridge shares the unified Dossier for inventory/equipment management), so `renderActiveCartridgeModal` renders and keeps `#dnd35e-sheet-overlay` visible rather than hiding it.
+     which appends the spell to `book.preparedSpellIds` (read by `buildActorHotbarSlots` for the bottom hotbar) while leaving `book.preparedSlots` `undefined`!
+3. **`reconcilePreparedSlots` Ignores Existing `preparedSpellIds` When `preparedSlots` Is Undefined:**
+   - In `src/rulesets/dnd35e/magic/spellbook_slots.ts` (lines 118–157), `reconcilePreparedSlots` checks `const existing = book.preparedSlots ?? []`. Because `preparedSlots` was never written to `book`, every re-render reconstructs all slots with `spellId: null` (`— Empty Slot —`), even though `book.preparedSpellIds` has the prepared spells!
+4. **Modal Domain Not Marked Dirty on Component Updates:**
+   - In `src/core/presentation_queue.ts` (lines 109–117), when `prev.components !== next.components`, `markDirtyFromStateDiff` marks `Entities`, `HUD`, and `Inventory` dirty, but does **not** mark `PresentationDomain.Modals` dirty when `next.uiMode === UIMode.CartridgeModal` (or `UIMode.Inventory`).
+
+**Proposed Fix:**
+- In `reconcilePreparedSlots` (`src/rulesets/dnd35e/magic/spellbook_slots.ts`), if `book.preparedSlots` is `undefined` or empty while `book.preparedSpellIds` has entries, seed the initial general slots of matching spell levels from `book.preparedSpellIds` so pre-existing/default prepared spells appear in slots immediately.
+- In `prepareSpellIntoSlot`, `unprepareSlotById`, and `clearAllPreparedSlotsForClass` (`src/rendering/ui/dnd35e_spellbook_actions.ts`), always hydrate `slots` via `reconcilePreparedSlots(book, summaries)` when `book.preparedSlots` is missing or out of sync before mutating slots, and write both `preparedSlots` and derived `preparedSpellIds` back into `RulesetDataComponent`.
+- In `src/core/presentation_queue.ts`, when `prev.components !== next.components` while a modal is open (`next.uiMode === UIMode.CartridgeModal` or `next.uiMode === UIMode.Inventory`), also mark `PresentationDomain.Modals` dirty, and call `renderDnD35eSpellbookModal(next)` directly in `dnd35e_spellbook_known.ui.ts` / `dnd35e_spellbook_panes.ui.ts` on state mutation.
 
 ---
 
-### Issue 3: Character Dossier (`C`) Layout, Misclassified "Extra Anatomy & Multi-Limb Slots (12)", Snake Icon (`humanoid_biped`) & Wizard Portrait
-- **Symptoms (Screenshot 3):**
-  1. **All 12 standard humanoid slots dumped into `"EXTRA ANATOMY & MULTI-LIMB SLOTS (12)"` with `+Limb` badges**, leaving the left and right rails of the Paper Doll arch completely blank.
-  2. **Green snake icon (`🐍`) with raw caption `humanoid_biped`** inside the Paper Doll arch.
-  3. **Portrait always displays a Wizard emoji (`🧙‍♂️`)** even for a Cleric, Fighter, or Rogue.
-  4. **Modal content is shorter than the outer `.modal-content` box**, leaving a large empty gap at the bottom.
-- **Root Causes:**
-  1. **Slot ID Suffix Mismatch (`src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts:96-148`):**
-     - When `spawnEntity` (`src/core/ecs/ecs_spawner.ts:137-141`) spawns the player from `entities.json`, it constructs slot IDs as `${slotType}_${index}`: `'head_0'`, `'neck_1'`, `'torso_2'`, `'back_3'`, `'arm_4'`, `'arm_5'`, `'hand_6'`, `'hand_7'`, `'finger_8'`, `'finger_9'`, `'leg_10'`, `'foot_11'`.
-     - Similarly, `buildAnatomyEquipmentSlots('humanoid_biped')` (`src/systems/inventory/equipment_slots.ts:147-167`) creates suffixed IDs (`'head_1'`, `'neck_1'`, `'finger_1'`, `'finger_2'`, etc.).
-     - However, `SLOT_VISUAL_MAP` in `dnd35e_ui_projection.ts:96-119` only keyed by unsuffixed names (`'head'`, `'cloak'`, `'ring_1'`, `'main_hand'`, etc.), and `buildAnatomicalSlotsFromEquipment` only checked `SLOT_VISUAL_MAP[slot.id]`.
-     - Because `SLOT_VISUAL_MAP['head_0']` was `undefined` for all 12 slots, every single slot fell into the fallback:
-       ```ts
-       rail: visual ? visual.rail : 'extra',
-       isExtraLimb: !visual,
-       ```
-     - Consequently, `renderReactivePaperDollWidget` (`src/rendering/ui/console_inventory.ui.ts:116-118`) saw `leftSlots.length === 0`, `rightSlots.length === 0`, and `extraLimbs.length === 12` (`>= 3`), which triggered `extraLimbs.length >= 3 ? '🐍' : ...` (the Marilith snake silhouette!) and placed all 12 standard slots into the `"Extra Anatomy & Multi-Limb Slots (12)"` drawer!
-  2. **Hardcoded Wizard Portrait (`src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts:276`):**
-     - `portraitIcon: '🧙‍♂️'` is hardcoded on line 276 regardless of the character's class (`cleric`, `fighter`, `barbarian`, `rogue`, `monk`, `druid`, `paladin`, `ranger`, `bard`, `sorcerer`, `wizard`).
-  3. **Raw `humanoid_biped` Caption (`src/rendering/ui/console_inventory.ui.ts:127`):**
-     - `renderReactivePaperDollWidget` renders `${escapeHtml(doll.morphologyLabel)}` directly (`humanoid_biped`) instead of a human-readable anatomy title (e.g. `Humanoid (Biped)`).
-  4. **Modal Height Gap (`src/styles/console_prototype.css:7-38`):**
-     - `#dnd35e-sheet-overlay .modal-content.dnd35-sheet-modal` sets `height: 92vh` (from `modals.css`) while `#dnd35e-sheet-body`, `.crpg-prototype-shell`, and `.crpg-three-col-grid` do not stretch via `flex: 1; min-height: 0;` to fill the modal body.
-- **Fix Architecture:**
-  - Replace naive `SLOT_VISUAL_MAP[slot.id]` lookup in `buildAnatomicalSlotsFromEquipment` (`src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts`) with a deterministic **slot-type + per-type occurrence index resolver**:
-    - Left Rail (6 standard slots): `head` (1st) → `Head`, `eyes` (1st) → `Eyes`, `back`/`shoulders`/`cloak` (1st) → `Cloak / Back`, `arm`/`bracers`/`wrists` (1st) → `Bracers / Arms`, `finger`/`ring` (1st) → `Ring L`, `main_hand`/`hand` (1st) → `Main Hand`.
-    - Right Rail (6 standard slots): `neck`/`amulet` (1st) → `Neck`, `torso`/`chest`/`armor` (1st) → `Armor / Torso`, `body`/`robe` (1st) or `arm` (2nd) → `Robe / Wrists`, `waist`/`belt` (1st) or `leg` (1st) → `Waist / Greaves`, `finger`/`ring` (2nd) → `Ring R`, `off_hand`/`hand` (2nd) → `Off Hand`, `foot`/`boots` (1st) → `Boots`.
-    - Only genuine overflow/extra limbs (e.g. 3rd+ `arm`, 3rd+ `hand`, 3rd+ `finger`, `tail`, `wing`, `tentacle` on multi-limbed creatures like a 6-armed Marilith) are routed to `rail: 'extra'` with `isExtraLimb: true`.
-  - Derive `portraitIcon` and Paper Doll silhouette icon dynamically from primary class / morphology (`fighter`/`paladin`/`barbarian` → `'⚔️'`/`'🛡️'`, `cleric` → `'✝️'`/`'☀️'`, `druid`/`ranger` → `'🌿'`/`'🏹'`, `rogue`/`bard` → `'🗡️'`/`'🎵'`, `monk` → `'🥋'`, `wizard`/`sorcerer` → `'🧙‍♂️'`), and format `morphologyLabel` into readable title case (`Humanoid Biped`).
-  - Make `#dnd35e-sheet-body`, `.crpg-prototype-shell`, and `.crpg-three-col-grid` flex-fill the modal container cleanly with zero dead space at the bottom.
+### Issue 2: Severe Performance Bottleneck & Wrong Title ("Character Dossier") When Opening Character Sheet
+**Symptom:** Pressing `I` or `C` to open the Character Sheet causes a severe freeze/lag spike, and the modal header says `"CHARACTER DOSSIER"` instead of `"CHARACTER SHEET"`.
+
+**Root Causes:**
+1. **90+ Full 4-Stage Stat DAG + Semantic Tag + RNG Roll Evaluations per Render:**
+   - Inside a single `renderDnD35eSheetModal(state)` call:
+     - **Column 1 (`renderSheetOverviewTab`)** calls `evaluateDnD35eEntityDAG(liveState, playerId)` AND `dndAdapter.getInventoryData(...)`.
+     - **Column 2 (`renderSheetFeatsAndFeaturesTab`)** calls `dndAdapter.getCharacterSheetData({ state: liveState, entityId: playerId })`. Inside `projectCharacterSheetData` (`src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts`, lines 82 & 127–142), it calls `evaluateDnD35eEntityDAG` a **second** time AND loops over all **45 skills** in `sys.skills`, calling `evaluateActorSkillCheck(state, entityId, skill.id, 10)` **45 times**—even though Column 2 only reads `sheetModel.attackGroups` and completely discards `sheetModel.skillRows`!
+     - **Column 3 (`renderSheetSkillsTab`, line 98)** ALSO loops over all **45 skills** in `sys.skills` and calls `evaluateActorSkillCheck(liveState, playerId, skill.id, 10)` **another 45 times**, plus `dndAdapter.getInventoryData(...)` a second time!
+   - Inside `evaluateActorSkillCheck` (`src/rulesets/dnd35e/skills/skill_verb_helpers.ts`, lines 154–244), **each individual call** runs:
+     1. `projectDnD35ActorSemanticTags(...)` (iterating classes, skills, equipment, status conditions)
+     2. `evaluateDnD35ActorStatDAG(...)` (running the entire 4-stage topological stat & 18-bonus-type stacking DAG from scratch!)
+     3. `resolveSkillCheck(...)` (which calls `rollD20()`, advancing the global deterministic RNG 90 times just by opening the UI!).
+2. **Duplicate Render in the Same Frame (`PresentationDomain.Inventory` + `PresentationDomain.Modals`):**
+   - When opening the Character Sheet (`UIMode.Inventory` or `UIMode.CartridgeModal`), `markDirtyFromStateDiff` marks both `PresentationDomain.Inventory` and `PresentationDomain.Modals` dirty.
+   - In `src/rendering/presenter.ts`:
+     - `PresentationDomain.Inventory` calls `renderInventoryPanel(state)` (`src/rendering/ui/inventory.ui.ts`, line 33), which looks up `sheetModal` and calls `sheetModal.render(state)` (`renderDnD35eSheetModal`).
+     - Immediately after, `PresentationDomain.Modals` calls `renderActiveCartridgeModal(state)` (`src/rendering/ui/cartridge_ui_registry.ts`, line 179), which ALSO calls `sheetModal.render(state)` (`renderDnD35eSheetModal`)!
+   - Combined with the 92 DAG evaluations per render, a single press of `I` or `C` executes **`evaluateDnD35ActorStatDAG` + `projectDnD35ActorSemanticTags` ~184 times synchronously on the main thread**!
+   - Furthermore, whenever `prev.components !== next.components` during normal gameplay (`UIMode.Game`), `PresentationDomain.Inventory` is marked dirty and calls `renderInventoryPanel(state)`, which only hides the modal at the *end* of `renderDnD35eSheetModal` if `activeModalId !== 'character_sheet'`, meaning during `UIMode.Inventory` any component tick re-runs the full render twice.
+3. **Wrong Header Title in `index.html`:**
+   - Line 312 of `index.html` hardcodes `<span id="crpg-sheet-modal-title" class="modal-title">Character Dossier</span>`.
+
+**Proposed Fix:**
+1. **Fast, Pure Passive Skill Breakdown (`computePassiveSkillRows` / fast path):**
+   - Extract or compute passive skill totals using the **already-evaluated** `evalResult` (`DnD35StatEvaluationResult`) and `dndData.skillRanks` in O(1) per skill (without re-running `evaluateDnD35ActorStatDAG`, `projectDnD35ActorSemanticTags`, or `rollD20()` 45 times!).
+   - Evaluate `evalResult = evaluateDnD35eEntityDAG(liveState, playerId)`, `invData = dndAdapter.getInventoryData(...)`, and `sheetModel = dndAdapter.getCharacterSheetData(...)` **once** in `renderDnD35eSheetModal` and pass the shared precomputed context into `renderSheetOverviewTab`, `renderSheetFeatsAndFeaturesTab`, and `renderSheetSkillsTab`.
+   - This reduces `evaluateDnD35ActorStatDAG` calls on Character Sheet open from **~184 down to 1**, and RNG `rollD20()` calls on UI render from **~180 down to 0**!
+2. **Eliminate Double Modal Render:**
+   - In `src/rendering/ui/inventory.ui.ts`, when `cartridgeUI` delegates to `character_sheet`, let `renderActiveCartridgeModal` be the single owner of rendering cartridge modals (or skip `sheetModal.render(state)` in `renderInventoryPanel` when `PresentationDomain.Modals` renders it), ensuring `renderDnD35eSheetModal` executes at most **once** per state change and **zero** times when the sheet is closed.
+3. **Rename `"Character Dossier"` to `"Character Sheet"`:**
+   - Update `index.html` line 312 (`#crpg-sheet-modal-title`) from `"Character Dossier"` to `"Character Sheet"`.
 
 ---
 
-### Issue 4: Blank / Unrendered Map on Game Load Until Moving Character
-- **Symptom:**
-  - When loading a saved game (`Continue`), the viewport canvas is completely dark/blank until the player moves a step.
-- **Root Cause (`src/core/bootstrap/world_entities_bootstrap.ts:176-203` & `src/core/save.ts:224-225`):**
-  1. `deserializeGameState` (`src/core/save.ts:224-225`) sets `fovNeedsUpdate: true` and `cachedFov: new Set<number>()`.
-  2. `continueGame` (`src/core/bootstrap/world_entities_bootstrap.ts:176-203`) deserializes the save and calls `setGlobalState(state)` **without calling `updateExploredTiles(state)`**!
-  3. Because `state.cachedFov` is an empty `Set`, `buildViewportSnapshot` (`src/rendering/viewport_snapshot.ts`) treats every tile on the map as out-of-FOV (`visibleIndices.has(idx) === false`), leaving the viewport unlit until the first turn action triggers `updateExploredTiles`!
-  4. Similarly, when completing Character Creation (`src/rendering/ui/dnd35e_char_builder.ui.ts:280-284, 322-326`), `updateExploredTiles` and `invalidateViewportSnapshot()` were not invoked when transitioning from `UIMode.CartridgeModal` back to `UIMode.Normal`.
-- **Fix Architecture:**
-  - Call `state = updateExploredTiles(state)` inside `continueGame` (`src/core/bootstrap/world_entities_bootstrap.ts`) before `setGlobalState(state)`.
-  - In `session_dom.ts` (`continueGame` button handler) and `dnd35e_char_builder.ui.ts` (Quick Start & Finish Character Creation), call `invalidateViewportSnapshot()` and `markAllDomainsDirty()` so the viewport immediately renders the player's FOV on frame 0.
+### Issue 3: Global & Modal Font Size Scaling + Paper Doll Cleanup
+**Symptom:**
+1. Text across the UI (Character Sheet, Spellbook, Character Creation, HUD panels, Chronicle log) is too small (`0.45rem`–`0.72rem`).
+2. In the screenshot of the Character Sheet (`/public/assets/aistudio/image_19e7b22d.png`), two small Paper Doll issues remain:
+   - Inside the Paper Doll arch under the class icon (`☀️`), there is still a `"Unarmed"` badge (`.crpg-avatar-caption` in `src/rendering/ui/console_inventory.ui.ts` lines 122–126), which also falsely says `"Unarmed"` even when a Longsword is equipped in `hand_6` (`hand_0`).
+   - `EXTRA ANATOMY & MULTI-LIMB SLOTS (1)` appears for a standard human with `LEG 1` (`leg_10`) because `leg` / `leg_0` was not listed in `PRIMARY_SLOT_DEFS` in `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts`.
+
+**Proposed Fix:**
+1. **Typography Scaling (`src/styles/console_prototype.css`, `src/styles/modals.css`, `src/styles/hud.css`):**
+   - Increase font sizes across the Character Sheet, Spellbook, Character Creation wizard, HUD sidebars, and buttons by ~20–25% (raising micro-labels from `0.5rem–0.65rem` to `0.72rem–0.82rem`, table/body rows from `0.68rem–0.74rem` to `0.84rem–0.92rem`, and section headers/titles proportionally) while keeping layout containers well-proportioned.
+2. **Paper Doll Cleanup (`src/rendering/ui/console_inventory.ui.ts` & `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts`):**
+   - Remove `.crpg-avatar-caption` (`"Unarmed"`) from `renderReactivePaperDollWidget` in `src/rendering/ui/console_inventory.ui.ts`.
+   - Add `leg` and `leg_0` (`{ rail: 'left', label: 'Greaves / Legs', emptyGlyph: '🦵' }`) to `PRIMARY_SLOT_DEFS` in `src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts` so all 12 standard humanoid anatomical slots map cleanly to the left/right rails (6 left, 6 right) and `Extra Anatomy & Multi-Limb Slots` stays hidden (`0` extra slots) for normal humanoids.
 
 ---
 
-### Issue 5: D&D 3.5e Spellbook / Grimoire Architecture (Level 0–9 Breakdown, Multi-Slot Prep, Specialist & Domain Bonus Slots, Spontaneous Casters, and Spontaneous Cure/Inflict/SNA Conversion)
-- **Symptom:**
-  - Currently, `src/rendering/ui/dnd35e_spellbook.ui.ts` renders two flat ungrouped lists (`Prepared / Active Slots` and `Known Spells / Prayerbook`) with no spell levels (`0..9`), no slot counts, no way to see how many slots exist per level, no domain bonus slots or specialist school slots, no differentiation between prepared casters (Wizard, Cleric, Druid, Paladin, Ranger) and spontaneous casters (Sorcerer, Bard), and no spontaneous conversion of prepared slots into *Cure/Inflict Wounds* (Cleric) or *Summon Nature's Ally* (Druid).
-- **Root Cause:**
-  - While `src/rulesets/dnd35e/magic/spellcasting.ts` already implements `computeBonusSpellSlots`, `canCastSpellOfLevel`, and `convertPreparedSlotSpontaneously`, `DnD35ClassSpellbookState` (`src/rulesets/dnd35e/types/data/actor_data.types.ts:62-75`) and `src/rendering/ui/dnd35e_spellbook.ui.ts` were left as an early flat-array prototype (`preparedSpellIds: readonly string[]`, `expendedSpellIds: readonly string[]`).
-- **Fix Architecture (Tier 2 Ruleset + UI Projection):**
-  1. **Structured Slot & Spontaneous Cast State (`DnD35ClassSpellbookState` in `actor_data.types.ts` & `ledger_features_spells.ts`):**
-     - Preserve backward-compatible `preparedSpellIds` / `expendedSpellIds` while adding structured per-level slot & cast tracking on `DnD35ClassSpellbookState`:
-       - `preparedSlots?: ReadonlyArray<DnD35PreparedSlotEntry>` where each `DnD35PreparedSlotEntry` has:
-         - `slotId: string` (e.g. `'lv1_base_0'`, `'lv1_domain_0'`, `'lv1_specialist_0'`)
-         - `spellLevel: number` (`0..9`)
-         - `slotKind: 'general' | 'domain' | 'specialist'`
-         - `preparedSpellId?: string` (the spell currently memorized in this slot, if any)
-         - `expended: boolean` (whether this slot has been cast/expended today)
-       - `spontaneousSlotsUsedByLevel?: Readonly<Record<string, number>>` (tracks how many daily casts have been spent at each spell level `'0'..'9'` for spontaneous casters like Sorcerer and Bard).
-  2. **Deterministic Slot Capacity Computation (`src/rulesets/dnd35e/magic/spellbook_slots.ts`):**
-     - For any spellcasting class track on the actor (`classId`, `classLevel`) and the actor's effective key ability score (`INT` for Wizard, `WIS` for Cleric/Druid/Paladin/Ranger, `CHA` for Sorcerer/Bard):
-       - **Minimum Ability Score Gate (`canCastSpellOfLevel`):** A caster can only cast/prepare spells of level $L$ if $\text{AbilityScore} \ge 10 + L$.
-       - **Base Slots (`spellsPerDay[L]`):** Read from `classDef.progression[classLevel - 1].spellsPerDay[String(L)]`. (Note: if `baseSlots === 0`, e.g., Level 4 Paladin/Ranger or Level 1 Bard at Lv 1, they only gain slots at that level if their ability bonus grants $>0$ bonus slots; if `spellsPerDay[String(L)] === undefined`, the class cannot cast level $L$ yet).
-       - **Ability Bonus Slots (`computeBonusSpellSlots(abilityScore, L)`):** Added to `general` slots for $L \ge 1$ whenever the class has access to spell level $L$.
-       - **Wizard Specialist School Slot (`+1` `slotKind: 'specialist'` per castable level $L \ge 1$):** Granted when `classId === 'wizard'` and `dndData.arcaneSchool` is set and $\ne \text{'universal'}$. Restricted to spells whose `spell.school === dndData.arcaneSchool` (and forbidden schools `dndData.prohibitedSchools` are blocked from preparation/learning).
-       - **Cleric Domain Slot (`+1` `slotKind: 'domain'` per castable level $L \ge 1$):** Granted when `progRow.domainSpellSlots?.[String(L)] > 0` and the Cleric has chosen domains (`dndData.domains`). Restricted to spells granted by the Cleric's selected domains at level $L$ (`spell.levelByDomain?.[domainId] === L`). Domain spells are automatically included in the Cleric's available spells at that level!
-  3. **Spontaneous Conversion Rules (Cleric & Druid):**
-     - **Cleric (`spontaneous_casting` feature):** Any unexpended prepared `'general'` slot of level $L \ge 1$ (or $L = 0$ for `cure_minor_wounds` / `inflict_minor_wounds`) can be spontaneously converted at cast time:
-       - Good / Neutral Clerics convert into the level-$L$ *Cure* spell (`1: cure_light_wounds`, `2: cure_moderate_wounds`, `3: cure_serious_wounds`, `4: cure_critical_wounds`, `5: cure_light_wounds_mass`, `6: cure_moderate_wounds_mass`, `7: cure_serious_wounds_mass`, `8: cure_critical_wounds_mass`).
-       - Evil Clerics (`alignment` ending in `'E'`) convert into the level-$L$ *Inflict* spell (`1: inflict_light_wounds`, `2: inflict_moderate_wounds`, `3: inflict_serious_wounds`, `4: inflict_critical_wounds`, etc.).
-       - If the Cleric selected the **Domain Spontaneity ACF (`cleric_domain_spontaneity_1`)**, prepared `'general'` slots convert into their chosen Domain spells of level $L$ instead!
-     - **Druid (`spontaneous_summoning` feature):** Any unexpended prepared `'general'` slot of level $L \in [1..9]$ can be spontaneously converted at cast time into `summon_natures_ally_i` .. `summon_natures_ally_ix` of level $L$.
-  4. **Prepared vs. Spontaneous UI Workflow (`src/rendering/ui/dnd35e_spellbook.ui.ts` & `dnd35e_spellbook_actions.ts`):**
-     - **Spell Level Tabs (`All Levels`, `Lv 0 (Orisons/Cantrips)`, `Lv 1`, `Lv 2`, ... up to max castable level)** at the top of the Grimoire, alongside class tabs (for multiclass casters) and key ability score / Save DC (`10 + Spell Level + Key Ability Mod`) summary.
-     - **For Prepared Casters (Wizard, Cleric, Druid, Paladin, Ranger):**
-       - **Left Pane — Memorized Spell Slots by Level:** Grouped by Spell Level (`Lv 0`, `Lv 1`, ...). Shows every individual slot box (`[General Slot #1]`, `[General Slot #2]`, `[Domain Slot (War/Healing)]`, `[Specialist Slot (Evocation)]`).
-         - Filled slots show the prepared spell name, school/save badge, `[Cast]`, `[Unprepare ×]`, and—for Clerics/Druids on general slots—a `[Convert → Cure/Inflict/SNA]` action button!
-         - Empty slots show `— Empty General/Domain/Specialist Slot —`.
-       - **Right Pane — Known Spells / Prayerbook & Domain Spells by Level:** Grouped by Spell Level. Each spell row shows its school, components, range/save/SR metadata, and:
-         - `[+ Prep General (N open)]` (can be clicked multiple times to prepare multiple copies of the same spell into open general slots of that level!)
-         - `[+ Prep Domain]` (if the spell matches one of the Cleric's domains at that level and the domain slot is open)
-         - `[+ Prep Specialist]` (if the spell matches the Wizard's specialist school and the specialist slot is open).
-     - **For Spontaneous Casters (Sorcerer, Bard):**
-       - **Left Pane — Daily Spell Casts Remaining by Level:** Shows visual slot pips / counters per spell level (`Level 0: 5 / 5 Remaining`, `Level 1: 4 / 4 Remaining`, etc., including CHA bonus slots).
-       - **Right Pane — Known Spells by Level:** Grouped by Spell Level, with a direct `[Cast Spell (Uses Lv X Slot)]` button on every known spell that decrements the remaining casts for that level and logs/executes the cast!
-     - **8-Hour Rest (`[8-Hour Rest & Recharge]`):**
-       - For Prepared Casters: Recharges all `expended: true` slots back to `expended: false` while **keeping their memorized `preparedSpellId` intact** (so a Wizard or Cleric doesn't lose their memorized loadout on rest, while still allowing them to swap any slot freely).
-       - For Spontaneous Casters: Resets `spontaneousSlotsUsedByLevel` to `{}` (all daily casts restored).
+## 2. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
----
-
-### Issue 6: Crash When Toggling To and From 2D Tile Mode (`Error: Char "#" not found in tileMap`)
-- **Symptom:**
-  - Clicking the `2D Tiles` / `ASCII` toggle button on the HUD dock throws:
-    `Error: Char "#" not found in tileMap at Tile.draw (rot-js.js:497:15) at Display._draw (rot-js.js:1915:19) at Display._tick (rot-js.js:1897:14)`.
-- **Root Cause (`src/rendering/display.ts:44-86` & `src/rendering/ui/hud_dock.ui.ts:157-184`):**
-  1. Inside `rot-js`, `ROT.Display` caches every drawn cell's character array in `this._data["x,y"] = [x, y, ch, fg, bg]` and schedules `this._tick()` via `requestAnimationFrame` whenever `this._dirty` is truthy.
-  2. When the game is in ASCII (`layout: 'rect'`) mode, `this._data` is populated with ASCII characters like `"#"` (walls), `"."` (floors), and `"@"`.
-  3. When the user clicks the render mode toggle, `configureDisplayForCampaign` (`src/rendering/display.ts:53, 84`) calls:
-     ```ts
-     display.setOptions({
-       layout: 'tile',
-       tileWidth: ...,
-       tileHeight: ...,
-       tileSet: atlas,
-       tileMap: mergedTileMap,
-     });
-     ```
-  4. Inside `rot-js`, `Display.prototype.setOptions` immediately sets `this._dirty = true` (which schedules or runs `Display._tick()` on the next animation frame using the **existing `this._data` cells**!).
-  5. When `Display._tick()` iterates over the old `this._data` cells before `renderGame` overwrites them—or if any cell still contains `"#"` while `mergedTileMap` in `dnd35e-crypt` only maps sprite keys (`"wall_brick"`, `"floor_crypt"`, etc.)—`ROT.Display.Tile.draw` executes:
-     ```js
-     let tile = this._options.tileMap[ch];
-     if (!tile) { throw new Error('Char "' + ch + '" not found in tileMap'); }
-     ```
-     which crashes immediately with `Error: Char "#" not found in tileMap`!
-  6. Furthermore, in `toggleRenderMode` (`src/rendering/ui/hud_dock.ui.ts:163`), `updateSettings({ renderMode: nextMode })` was called **before** `await configureDisplayForCampaign(...)` completed. Because `configureDisplayForCampaign` awaits `compositeAtlas(campaign)` asynchronously, any render tick occurring during that `await` saw `isEffectiveSpriteMode() === true` while `display` was still in `'rect'` mode (or vice versa), and `toggleRenderMode` did not call `invalidateViewportSnapshot()` after the switch!
-- **Fix Architecture:**
-  1. In `configureDisplayForCampaign` (`src/rendering/display.ts`), always call `display.clear()` **immediately before** calling `display.setOptions(...)` so `ROT.Display._data` is completely empty when switching between `'rect'` and `'tile'` backends.
-  2. In `compositeAtlas` (`src/rendering/sprite_atlas.ts`), ensure common ASCII fallback glyphs (`"#"`, `"."`, `"+"`, `"@"`, `"?"`, `" "`) are mapped to the fallback/procedural coordinates in `tileMap` if not already present, preventing `Tile.draw` from ever throwing on an unmapped character.
-  3. In `toggleRenderMode` (`src/rendering/ui/hud_dock.ui.ts`), await `configureDisplayForCampaign` and call `invalidateViewportSnapshot()` + `markAllDomainsDirty()` atomically so the viewport redraws every cell with the matching backend immediately.
-
----
-
-## 2. Cascading Effects Matrix (Rule 15)
-
-| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Modals / Tests / Docs) |
+| Change | Upstream (Callers / Emitters) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Modals / Tests / SSOT) |
 | :--- | :--- | :--- | :--- |
-| **1. Parchment Theme Unification (`modals.css`, `console_prototype.css`, `dnd35e_char_builder*.ui.ts`)** | Triggered whenever `#char-creation-overlay`, `#level-up-overlay`, `#dnd35e-sheet-overlay`, or `#dnd35e-spellbook-overlay` is shown. | Consumed by browser CSS layout across all 6 Character Creation tabs, Level-Up wizard, Character Dossier, and Grimoire. | Keeps `:root[data-console-theme='parchment']` variables as the single source of truth across all D&D 3.5e modals. |
-| **2. Inventory (`I`) Modal Resolution (`cartridge_ui_registry.ts`)** | `IntentType.ToggleInventory` sets `state.uiMode = UIMode.Inventory`. | `presentGameState` calls `renderInventoryPanel` and `renderActiveCartridgeModal`. Mapping `UIMode.Inventory` in `renderActiveCartridgeModal` prevents it from re-hiding `#dnd35e-sheet-overlay`. | Preserves `Esc` closing behavior (`input_Modal.ts` handles `UIMode.Inventory` → `IntentType.ToggleInventory`). |
-| **3. Paper Doll Slot Rail Projection & Portrait Icons (`dnd35e_ui_projection.ts`, `console_inventory.ui.ts`)** | Reads `EquipmentComponent.slots` spawned by `ecs_spawner.ts` (`head_0`, `finger_8`, `finger_9`) or `equipment_slots.ts` (`head_1`, `finger_1`, `finger_2`). | `renderReactivePaperDollWidget` renders 6 left-rail and 6 right-rail slots for standard bipeds, reserving `rail: 'extra'` strictly for 3rd+ multi-limb slots. | Existing unit tests in `tests/dnd35e_phase4_5_smoke.test.ts` and `tests/equipment_slots.test.ts` remain green. |
-| **4. Initial FOV Update on Game Load (`world_entities_bootstrap.ts`, `session_dom.ts`, `dnd35e_char_builder.ui.ts`)** | `continueGame` in `world_entities_bootstrap.ts` and character creation completion in `dnd35e_char_builder.ui.ts`. | Populates `state.cachedFov` and `state.explored` via `updateExploredTiles(state)` and invalidates viewport snapshot before first render. | Ensures both `New Game` (after Char Creation) and `Continue Game` render full FOV on frame 0 without requiring player movement. |
-| **5. Level 0–9 Spellbook & Slot Engine (`actor_data.types.ts`, `spellbook_slots.ts`, `dnd35e_spellbook.ui.ts`, `dnd35e_spellbook_actions.ts`)** | Reads `ClassProgressionComponent`, `CharacterProgressionLedgerComponent`, `AbilityScoresComponent`, and `DnD35RulesetAdapter.getFullData()`. | Synchronizes `DnD35ClassSpellbookState.preparedSlots` & `spontaneousSlotsUsedByLevel` with `preparedSpellIds`/`expendedSpellIds` for backward compatibility with HUD hotbar (`dnd35e_ui_projection.ts`). | Updates `docs/SSOT_DND35E.md` (`ssot_dnd35e.json`) if a helper module is added; covered by unit tests for Wizard specialist slots, Cleric domain & spontaneous conversion, Druid SNA conversion, and Sorcerer/Bard spontaneous casts. |
-| **6. 2D Tile Mode Toggle Crash Fix (`display.ts`, `hud_dock.ui.ts`, `sprite_atlas.ts`)** | Triggered by `#hud-render-mode-btn` click in `hud_dock.ui.ts` or campaign bootstrap in `session_dom.ts`. | `display.clear()` wipes stale `_data` before `display.setOptions` switches between `'rect'` and `'tile'`, and `invalidateViewportSnapshot()` forces a clean full redraw. | Works identically for procedural sprite campaigns and atlas-backed campaigns (`dnd35e-crypt`). |
+| **Hydrate & persist `preparedSlots` in `dnd35e_spellbook_actions.ts` & `spellbook_slots.ts`** | `+ Prep`, `Unprep`, `Clear Prepared` buttons in `dnd35e_spellbook_known.ui.ts` & `dnd35e_spellbook_panes.ui.ts` | `renderLeftPreparedPane` in `dnd35e_spellbook_panes.ui.ts`, `buildActorHotbarSlots` in `dnd35e_ui_hotbar.ts` (reads synced `preparedSpellIds` + `preparedSlots`) | Spontaneous conversion toggle & `Cast` buttons in `dnd35e_spellbook_panes.ui.ts`; `presentation_queue.ts` modal dirty flag |
+| **Single-pass `evalResult` & passive skill calculation in `projectCharacterSheetData` & `renderDnD35eSheetModal`** | `presenter.ts` (`renderActiveCartridgeModal`), `dnd35e_ui_adapter.ts` (`getCharacterSheetData`) | `renderSheetOverviewTab`, `renderSheetFeatsAndFeaturesTab`, `renderSheetSkillsTab` | Preserves deterministic `rng` state (no `rollD20()` side effects during UI rendering); tests in `tests/` |
+| **Deduplicate Character Sheet render in `inventory.ui.ts` / `presenter.ts`** | `renderPresenterFrame` in `src/rendering/presenter.ts` | `#crpg-sheet-modal` DOM container | Legacy fallback inventory modal when no cartridge UI is registered |
+| **Map `leg` / `leg_0` in `PRIMARY_SLOT_DEFS` & remove `.crpg-avatar-caption`** | `projectAnatomicalSlots` in `dnd35e_ui_projection.ts` | `renderReactivePaperDollWidget` in `console_inventory.ui.ts` | `Extra Anatomy & Multi-Limb Slots` drawer only renders for true multi-limb creatures (`extraLimbs.length > 0`) |
+| **Global & Modal CSS font scaling + `"Character Sheet"` title** | `index.html`, `src/styles/console_prototype.css`, `src/styles/modals.css`, `src/styles/hud.css` | All modal views, Character Sheet, Spellbook, Character Creation, and HUD | Maintains responsive scroll containers and parchment contrast |
