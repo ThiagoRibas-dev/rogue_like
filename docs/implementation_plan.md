@@ -1,48 +1,52 @@
-# Implementation Plan — Milestone 121: Feature-Driven Progression & Tagged Companion Architecture
+# Implementation Plan: Hotbar Keys, RTwP Transition, Declarative Stances, & Multi-Action Round Economy
 
-## 1. Architectural Goal & Audit Summary
-Replace all remaining hardcoded class-ID checks (`draft.classId === 'druid'`, `choice.classId === 'ranger'`, `track.classId === 'rogue'`) and magic progression constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `CLERIC_REQUIRED_DOMAIN_COUNT`) with **100% declarative feature & scaling-pool inspection**, and unify companion/familiar synchronization through a **tag-driven `companions` registry evaluated by the 4-Stage Stat DAG (`evaluateDnD35ActorStatDAG`)**.
+## Overview of Changes
 
-### Audit of Hardcoded Checks & Declarative Replacements
+1. **Hotbar Keyboard Controls (`1`–`9`, `0`, `-`, `=`)**:
+   - Differentiate top-row number keys (`Digit1` through `Digit0`, `Minus`, `Equal`) from numpad keys (`Numpad2`, `Numpad4`, `Numpad6`, `Numpad8` used for movement).
+   - In `src/core/input/shortcut_input.ts`, replace the old `1/3/5` check with top-row hotbar slot execution (slots 0–11).
+   - Route through `executeHotbarSlot(state, playerId, slotIndex)`, which properly triggers `cartridgeUI.onExecuteHotbarSlot` (or quick-belt fallback) without double keystrokes or suppressed movement.
 
-| Area | Current Hardcoding / Issue | Declarative Replacement |
-| :--- | :--- | :--- |
-| **JSON Data (`races.json`, `cleric.json`, `ranger.json`, `rogue.json`)** | 1) `weasel` in `races.json` uses legacy `{ sourceId, targetStat, bonusType }` and all 9 familiars lack `name`/`category` and object-form `virtualFeatGrants`.<br>2) `cleric.json` lacks a `cleric_domains` feature ID at level 1.<br>3) `ranger.json` has a buggy static `+2 damage` modifier on `favored_enemy_1` against 5 hardcoded creature types and omits `improved_combat_style` / `combat_style_mastery` from `featureDetails`.<br>4) `rogue.json` omits `bonusFeatPool` on `rogue_special_ability_1..4`. | 1) Normalize all 9 familiar `masterEffectBundle` objects in `races.json` to strict `DnD35EffectBundle` format.<br>2) Add `cleric_domains` to `cleric.json` level 1.<br>3) Remove static `modifiers` from `favored_enemy_1` in `ranger.json` and add `improved_combat_style` & `combat_style_mastery` to `featureDetails`.<br>4) Add `bonusFeatPool: ["crippling_strike", "defensive_roll", "improved_evasion", "opportunist", "skill_mastery", "slippery_mind"]` + `featureDetails` entries to `rogue.json`. |
-| **Combat Style & Familiar Feats (`ledger_choices.ts`, `builder_prereq_context.ts`)** | `collectClassChoiceFeats` checks `track.classId === 'ranger' && track.level >= 2 / 6 / 11` and checks `familiarId !== undefined` without verifying `familiar_master_effective_level > 0`. | Inspect active features (`combat_style`, `improved_combat_style`, `combat_style_mastery`) via `collectClassFeaturesUpToLevel`, and check `familiar_master_effective_level > 0` before granting `familiarData.masterEffectBundle.virtualFeatGrants`. Update callers in `level_ledger.ts`, `builder_prereq_context.ts`, and `builder_hydrator_creation.ts`. |
-| **Creation, Draft Sanitization & Level-Up Validation (`character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`)** | Hardcodes `draft.classId === 'cleric' \| 'wizard' \| 'druid' \| 'ranger'` and level constants (`2`, `4`, `[5,10,15,20]`, `[10,13,16,19]`). | Inspect active features at level 1 (`character_builder.ts`, `builder_validation.ts`) and newly unlocked features at `newClassLevel` (`builder_levelup_validation.ts`): `cleric_domains`, `arcane_school_specialization`, `combat_style`, `favored_enemy_*`, `rogue_special_ability_*`, and `scalingPoolContribution.poolId` transitions (`0 -> >0`). |
-| **Character Creation & Level-Up UI (`dnd35e_char_builder_class*.ui.ts`, `dnd35e_level_up_class*.ui.ts`)** | Hardcodes `draftState.classId` branches and level constants; Sorcerer lacks Familiar picker; Wizard Abrupt Jaunt ACF does not hide Familiar picker; Rogue special abilities hardcoded in UI. | Gate all sub-option panels by active class features & `scalingPoolContribution.poolId`. Split `renderWizardOptions` into `renderArcaneSchoolOptions` + `renderFamiliarOptions`. Clear invalidated draft choices on ACF toggle. Read Rogue special abilities from `featureDetails[featId].bonusFeatPool`. |
-| **Companion Sync & Stat Calculation (`companions.ts`, `builder_hydrator_*.ts`, `level_ledger.ts`)** | Separate `animalCompanionId` / `familiarId` sync blocks; manual HP/BAB/AC math; 304 lines (> 300 limit). | Hydrate `companions: ReadonlyArray<DnD35CompanionEntry>` (`tags: ['animal_companion' \| 'familiar']`). Stack progression bonuses per tag in `syncActorCompanionsAndFamiliars` and compute servant stats via `evaluateDnD35ActorStatDAG`. |
+2. **RTwP Area Transition Freeze**:
+   - In `src/core/scheduler.ts`, export `resetSchedulerActors()`: clears `scheduler` and `actors` without setting `isEngineLocked = true` and without cancelling `rtwpLoopId`.
+   - In `src/systems/map.system.ts:290`, call `resetSchedulerActors()` instead of `clearScheduler()`.
+
+3. **Eliminate Feat Leak & Hardcoded Stances**:
+   - In `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts`, ensure `withBaseAbilities` resets `feats: []` instead of inheriting `['power_attack', 'cleave', 'combat_reflexes']` from `DEFAULT_PLAYER_ARCHETYPE`.
+   - Define baseline universal combat abilities (`fighting_defensively`, `total_defense`, `two_handed_grip`) in `public/data/rulesets/dnd35e/abilities/` or runtime registries.
+   - Refactor `buildActorStanceModes` and `dnd35e_ui_adapter.ts` to iterate declaratively over actor dials and toggle abilities via `extractActorTacticalDials` and effect bundles—removing all hardcoded IDs.
+
+4. **Turn-Based Multi-Action Round & `[END TURN]` Button**:
+   - In `DnD35EntityData`, include `actionBudget?: DnD35ActionBudget`.
+   - When taking a step in Turn-Based mode, call `consumeMovementStepFt`. If the actor has movement feet remaining in their budget, set `energyCost = 0` so ROT.js lets the actor continue acting.
+   - When standard action (attack or spell) is taken, consume standard action from budget.
+   - When all movement and standard actions are spent, return `energyCost = 100` to advance the round.
+   - Add an explicit **`[END TURN]`** button on the dock modes bar and allow `Space` or `.` in Turn-Based mode to yield the rest of the round immediately.
+   - Project `actionPips` dynamically from `actionBudget` (showing remaining feet, e.g. `MOV 20ft`).
 
 ---
 
-## 2. SSOT Ownership & Old-Brain Eviction Table
+## Cascading Effects Matrix (Rule 15)
 
-| Responsibility | Old-Brain / Duplicate Location (To Evict) | Canonical SSOT Owner |
-| :--- | :--- | :--- |
-| Class feature progression levels (Combat Style, Favored Enemy, Rogue Special Abilities, Animal Companion unlock, Cleric Domains) | `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT` in `src/rulesets/dnd35e/companions.ts` & `src/rulesets/registry.ts` | `public/data/rulesets/dnd35e/classes/*.json` (`progression` & `featureDetails`) queried via `collectClassFeaturesUpToLevel` (`src/rulesets/dnd35e/progression/class_features_xp.ts`) |
-| Rogue Special Ability option pool & labels | `ROGUE_SPECIAL_ABILITIES` hardcoded array in `src/rendering/ui/dnd35e_level_up_class_options.ui.ts` | `public/data/rulesets/dnd35e/classes/rogue.json` (`featureDetails.rogue_special_ability_*.bonusFeatPool` & `featureDetails`) |
-| Ranger Favored Enemy damage & skill modifiers | Duplicate static `modifiers` on `favored_enemy_1` in `public/data/rulesets/dnd35e/classes/ranger.json` | `buildClassChoiceModifiers` in `src/rulesets/dnd35e/progression/ledger_choices.ts` |
-| Companion & Familiar stat calculation (HP, AC, BAB, Saves, Ability Mods) | Manual arithmetic in `upsertLinkedServantActor` (`src/rulesets/dnd35e/companions.ts`) | `evaluateDnD35ActorStatDAG` (`src/rulesets/dnd35e/modifiers/dag_resolver.ts`) |
-
----
-
-## 3. Cascading Effects Matrix
-
-| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Validators / Renderers) | Lateral (Sibling JSONs / Registries / Tests) |
+| Change | Upstream (Callers / Emitters) | Downstream (Consumers / Renderers) | Lateral (Mirrors / Other Modes) |
 | :--- | :--- | :--- | :--- |
-| **Step 1: JSON Data Normalization (`races.json`, `cleric.json`, `ranger.json`, `rogue.json`)** | `public/data/rulesets/dnd35e/races.json`, `classes/cleric.json`, `classes/ranger.json`, `classes/rogue.json` | `DnD35EffectBundleSchema` (`effect_system.types.ts`), `ledger_choices.ts`, `ledger_modifiers.ts`, `character_builder.ts`, `builder_validation.ts`, `builder_levelup_validation.ts`, UI class option views | `scripts/run-validator.ts` |
-| **Step 2: Feature-Driven `ledger_choices.ts` & `builder_prereq_context.ts`** | `level_ledger.ts`, `builder_prereq_context.ts`, `builder_hydrator_creation.ts` | `collectClassChoiceFeats`, `buildClassChoiceModifiers`, actor `feats` & `modifiers` arrays | `tests/dnd35e_classes_builder.test.ts` |
-| **Step 3: Feature-Driven Validation & Tagged Companion Hydration (`character_builder.ts`, `builder_*.ts`, `level_ledger.ts`)** | `character_builder.ts`, `level_ledger.ts` | `sanitizeDraftOnRaceOrClassChange`, `validateCharacterCreationStep`, `validateLevelUpStep`, `applyCharacterCreationToPlayer`, `applyLevelUpToActor`, `rebuildActorStateFromLevelHistory` | `src/rulesets/dnd35e/types/data/actor_data.types.ts` |
-| **Step 4: Tagged Companion Sync & Stat DAG Evaluation (`companions.ts`, `registry.ts`)** | `builder_hydrator_creation.ts`, `builder_hydrator_levelup.ts`, `dnd35e/index.ts` | `syncActorCompanionsAndFamiliars`, `evaluateDnD35ActorStatDAG`, `ControllerLinkComponent` (`tags`) | `src/rulesets/registry.ts`, `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
-| **Step 5: Feature-Reactive Class Options UI (`dnd35e_char_builder_class*.ui.ts`, `dnd35e_level_up_class*.ui.ts`)** | `dnd35e_char_builder.ui.ts`, `dnd35e_level_up.ui.ts` | DOM rendering for Cleric Domains, Wizard Arcane School, Wizard/Sorcerer Familiar (ACF-reactive), Druid Animal Companion (ACF-reactive), Ranger Favored Enemy / Combat Style / Companion, Rogue Special Abilities | `docs/ssot/ssot_console.json` |
+| **Top-row hotbar keys** | `shortcut_input.ts`, `input_handler.ts` | `hud_bottom_dock.ui.ts`, `cartridgeUI.onExecuteHotbarSlot` | Numpad movement (`settings.ts`) preserved without conflict |
+| **`resetSchedulerActors`** | `src/systems/map.system.ts` | `src/core/scheduler.ts`, `rtwpLoop` | Turn-based mode remains unaffected; RTwP loop stays running across floors |
+| **Feat leak fix** | `applyCharacterCreationToPlayer` | `dndData.feats`, `evaluateDnD35eEntityDAG` | New character sheets now only show actually chosen feats |
+| **Declarative stance projection** | `dnd35e_ui_hotbar.ts`, `dnd35e_ui_adapter.ts` | `console_hotbar.ui.ts` modes bar | Other ruleset cartridges can project dials/stances without core changes |
+| **Round action budget & End Turn** | `intent_cost_resolver.ts`, `dnd35e_combat_adapter.ts` | ROT.js scheduler queue, `crpg-action-pips-strip` | Full-attack detection now correctly checks `distanceMovedThisRoundFt` |
 
 ---
 
-## 4. Implementation Status Checklist
+## Verification Plan
 
-- [x] **Step 1**: Normalized `races.json`, `cleric.json`, `ranger.json`, and `rogue.json` and restored strict `DnD35EffectBundleSchema` validation in `src/rulesets/dnd35e/types/system/effect_system.types.ts`.
-- [x] **Step 2**: Refactored `collectClassChoiceFeats` (`ledger_choices.ts`), `buildClassAndDomainEffectModifiers` (`ledger_modifiers.ts`), and `buildPostLevelUpPrerequisiteContext` (`builder_prereq_context.ts`) to inspect active features and scaling pools.
-- [x] **Step 3**: Refactored `sanitizeDraftOnRaceOrClassChange` (`character_builder.ts`), `validateCharacterCreationStep` (`builder_validation.ts`), `validateLevelUpStep` (`builder_levelup_validation.ts`), `applyCharacterCreationToPlayer` (`builder_hydrator_creation.ts`), and `rebuildActorStateFromLevelHistory` (`level_ledger.ts`) to be 100% feature-driven and hydrate tagged `companions`.
-- [x] **Step 4**: Refactored `syncActorCompanionsAndFamiliars` (`companions.ts`) to stack progression bonuses per tag (`animal_companion`, `familiar`) and evaluate servant stats via `evaluateDnD35ActorStatDAG`, and evicted hardcoded progression constants from `companions.ts` and `registry.ts`.
-- [x] **Step 5**: Refactored `dnd35e_char_builder_class.ui.ts`, `dnd35e_char_builder_class_options.ui.ts`, and `dnd35e_level_up_class_options.ui.ts` to render class option panels strictly from active features, scaling pools, and `bonusFeatPool` metadata.
-- [x] **Step 6**: Added regression tests in `tests/dnd35e_classes_builder.test.ts`, synced `docs/ssot/ssot_dnd35e.json` and `docs/SSOT_DND35E.md`, updated `docs/MILESTONES.md`, `docs/ARCHITECTURE.md`, and `docs/DECISIONS.md`, and verified all 8 stages of `./verify.sh`.
+1. Strict TypeScript check (`bun x tsc --noEmit`).
+2. Lint check (`bun run lint`).
+3. Regression tests (`bun test`).
+4. Production build (`bun run build`).
+5. Campaign & SSOT validator (`bun run scripts/run-validator.ts`).
+6. Manual playtest scenario:
+   - Start in RTwP mode, walk through stairs/portals to another area, and verify movement continues seamlessly without freeze.
+   - Create a character without Power Attack: verify Power Attack dial is absent from the MODES bar.
+   - In Turn-Based mode, press a number key `1`–`3` to use a hotbar item/ability via keyboard.
+   - Take several steps: verify movement consumes feet from `MOV` pip without ending turn until movement is exhausted or `[END TURN]` is clicked.

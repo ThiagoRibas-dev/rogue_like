@@ -55,17 +55,6 @@ export interface DnD35EntityDAGResult {
 }
 
 /**
- * Per-state-revision cache for context-free `evaluateDnD35eEntityDAG` queries.
- * Keyed on the immutable `state.components` Map reference and guarded by `state.campaign?.systemContent`
- * identity so multiple HUD panels and viewport projectors sharing the same state snapshot compute
- * an actor's 4-stage DAG and attack routine at most once.
- */
-const entityDagCache = new WeakMap<
-  GameState['components'],
-  { readonly systemContentRef: unknown; readonly byEntity: Map<EntityId, DnD35EntityDAGResult | undefined> }
->();
-
-/**
  * Evaluates the full 4-Stage Topological Sub-Stat DAG for an entity in `GameState`,
  * incorporating active `PropertyOverlayComponent`s, equipped item bonuses, `TacticalDoctrineComponent`,
  * condition penalties, and optional contextual query flags (e.g. `targetTags` during combat).
@@ -76,15 +65,6 @@ export function evaluateDnD35eEntityDAG(
   contextOverride?: StatQueryContext,
   prehydrated?: { readonly dndData: DnD35EntityData; readonly selfTags: ReadonlyArray<string> }
 ): DnD35EntityDAGResult | undefined {
-  const isCacheable = contextOverride === undefined && prehydrated === undefined;
-  const sysRef = state.campaign?.systemContent;
-  if (isCacheable) {
-    const entry = entityDagCache.get(state.components);
-    if (entry && entry.systemContentRef === sysRef && entry.byEntity.has(entityId)) {
-      return entry.byEntity.get(entityId);
-    }
-  }
-
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (!fighter) return undefined;
   const actor = getComponent(state, entityId, ComponentType.Actor);
@@ -234,7 +214,7 @@ export function evaluateDnD35eEntityDAG(
     selfTags: mergedSelfTags
   });
 
-  const finalDagResult: DnD35EntityDAGResult = {
+  return {
     dndData,
     dagResult,
     selfTags: mergedSelfTags,
@@ -244,17 +224,6 @@ export function evaluateDnD35eEntityDAG(
     hasCleave: activeCombatRules.hasCleave || dndData.feats?.includes('cleave') === true,
     hasGreatCleave: activeCombatRules.hasGreatCleave || dndData.feats?.includes('great_cleave') === true
   };
-
-  if (isCacheable) {
-    let entry = entityDagCache.get(state.components);
-    if (!entry || entry.systemContentRef !== sysRef) {
-      entry = { systemContentRef: sysRef, byEntity: new Map() };
-      entityDagCache.set(state.components, entry);
-    }
-    entry.byEntity.set(entityId, finalDagResult);
-  }
-
-  return finalDagResult;
 }
 
 /**

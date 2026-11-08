@@ -1,45 +1,68 @@
-# Research Notes — Milestone 121: Feature-Driven Progression & Tagged Companion Architecture
+# Research Notes: Hotbar Keybindings, RTwP Transition Lock, Declarative Stances, & Turn-Based Action Economy
 
-## 1. Objective & Architectural Mandate
-Per `AGENTS.md` Rules 12, 16, 17, 18, 19, and 20, baseline ruleset resolvers, character builders, and UI projections must never hardcode `if (classId === 'druid')`, `if (level === 2)`, or magic progression arrays (`RANGER_FAVORED_ENEMY_UPGRADE_LEVELS = [5, 10, 15, 20]`). Instead:
-- **Progression Choices & Grants** must derive strictly from active class features (`collectClassFeaturesUpToLevel(classDef, classLevel, acfIds)`), feature prefixes (`favored_enemy_`, `rogue_special_ability_`, `cleric_domains`, `arcane_school_specialization`, `combat_style`, `improved_combat_style`, `combat_style_mastery`), and `scalingPoolContribution` metadata (`animal_companion_effective_level`, `familiar_master_effective_level`).
-- **Alternate Class Features (ACFs)** that replace a baseline feature automatically suppress the replaced feature's UI picker, validation requirement, and mechanical grant without custom `if (acfId === ...)` branches.
-- **Companion / Servant Synchronization** must operate over a generic, tag-driven `companions: ReadonlyArray<DnD35CompanionEntry>` registry (`tags: ['animal_companion', 'familiar', ...]`) and evaluate servant stats through the canonical 4-stage Stat DAG (`evaluateDnD35ActorStatDAG`) rather than manual HP/BAB/AC arithmetic.
+## 1. Problem Statements & Root Causes
+
+### A. Hotbar Key Response (Numbers 1–9, 0, -, =)
+- **Current State**:
+  - In `src/core/input/shortcut_input.ts:73`, there is hardcoded legacy code:
+    ```ts
+    if (event.key === '1' || event.key === '3' || event.key === '5') {
+      if (triggerQuickBeltSlot(getGameState(), playerEntityId, Number(event.key) - 1)) {
+        event.preventDefault();
+        return true;
+      }
+    }
+    ```
+  - It only checked `'1'`, `'3'`, `'5'` because `'2'`, `'4'`, `'6'`, `'8'` are default numpad movement bindings (`move_south`, `move_west`, etc.) in `src/core/settings.ts`!
+  - But top-row number keys (`Digit1`..`Digit0`, `Minus`, `Equal`) are distinct from numpad keys (`Numpad1`..`Numpad9`) via `event.code` vs `event.key`.
+  - In `src/core/settings.ts`, the default binds for `move_*` include `'2', '4', '6', '8'`. When a player presses top-row `'2'` on their keyboard, `event.key === '2'`, which triggered `move_south` instead of hotbar slot 2!
+  - Furthermore, clicking a hotbar slot calls `callbacks.onExecuteSlot(slotIndex)` in `hud_bottom_dock.ui.ts`, which delegates to `cartridgeUI.onExecuteHotbarSlot(...)` (or fallback `triggerQuickBeltSlot`).
+- **Conflict Analysis & Safeguards**:
+  - If we bind hotbar slots to top-row number keys `1`–`9`, `0`, `-`, `=`, we must ensure:
+    1. **Numpad vs Top-Row Differentiation**: Check `event.code` (`Digit1`..`Digit0`, `Minus`, `Equal`) or distinguish when numpad keys (`Numpad2`, etc.) are used for roguelike 8-way/4-way movement so numpad movement is not broken.
+    2. **Modal / Text Input Protection**: When a modal is open, or when typing in an `<input>` / `<textarea>` (like in the editor or search bars), hotbar keys must be suppressed.
+    3. **No Double Invocations**: Do not execute both `triggerQuickBeltSlot` and `onExecuteHotbarSlot`. We unify hotbar key dispatching through a single canonical function `executeHotbarSlotByKey(state, playerEntityId, slotIndex)` that routes through `cartridgeUI.onExecuteHotbarSlot` if present, else fallback `triggerQuickBeltSlot`.
+
+### B. RTwP Area Transition Freeze
+- **Current State**:
+  - `src/systems/map.system.ts:290` calls `clearScheduler()` on area transition.
+  - `clearScheduler()` in `src/core/scheduler.ts` sets `isEngineLocked = true` and `cancelAnimationFrame(rtwpLoopId)`.
+  - In Turn-Based mode, pressing an arrow key calls `unlockEngine()` which restarts the turn-based loop. In RTwP mode, input does not call `unlockEngine()`, it just enqueues an intent into the input queue waiting for `rtwpLoop`—which is now dead and locked!
+- **Solution**:
+  - Add `resetSchedulerActors()` in `src/core/scheduler.ts` that clears `scheduler` and `actors` without locking the engine or cancelling the animation frame loop.
+  - Use `resetSchedulerActors()` in `src/systems/map.system.ts` during area transitions.
+
+### C. Hardcoded Stance Modes & Feat Leak in Character Creation
+- **Current State**:
+  - `DEFAULT_PLAYER_ARCHETYPE` in `src/rulesets/dnd35e/archetype_resolver.ts` has `feats: ['power_attack', 'cleave', 'combat_reflexes']`.
+  - In `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts:66`, `applyCharacterCreationToPlayer` spread `...currentData` without resetting `feats: []`. The newly created player character retained `power_attack` even if never chosen.
+  - `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts:42` had hardcoded `if (feats.has('power_attack'))` and `if (feats.has('combat_expertise'))`, and hardcoded `fighting_defensively`, `total_defense`, and `two_handed_grip`.
+- **Solution**:
+  - Clear `feats: []` on `withBaseAbilities` in `applyCharacterCreationToPlayer`.
+  - Register baseline universal tactical combat abilities (`fighting_defensively`, `total_defense`, `two_handed_grip`) in `public/data/rulesets/dnd35e/` as standard abilities with declarative `effectBundle` descriptors.
+  - In `buildActorStanceModes`, dynamically iterate over actor abilities and dials (`extractActorTacticalDials`), with zero hardcoded IDs.
+
+### D. Multi-Step Turn-Based Rounds & Action Economy
+- **Current State**:
+  - `src/rulesets/dnd35e/action_economy.ts` has `createRoundActionBudget`, `consumeMovementStepFt`, `downgradeStandardToMove`, etc.
+  - `intent_cost_resolver.ts` always returned `energyCost = 100` on any move or action, terminating the turn immediately.
+  - `DND35E_ACTION_PIPS` was a static array with `available: true`.
+- **Solution**:
+  - Maintain `actionBudget?: DnD35ActionBudget` on actor state (`DnD35EntityData` / `actor.actionBudget`).
+  - At the start of a turn in turn-based mode, ensure a fresh round action budget is active.
+  - When moving, consume movement via `consumeMovementStepFt`. If movement budget remains, return `energyCost = 0` (turn continues).
+  - When standard action (attack/cast) is taken, consume standard action. If both standard and move (and movement remaining) are exhausted, return `energyCost = 100` (turn ends).
+  - Add an explicit `[END TURN]` button on the HUD bottom dock and `Space` / `.` keybind to end turn immediately (`energyCost = 100`).
+  - Project `actionPips` dynamically from `actionBudget`.
 
 ---
 
-## 2. Audit of Hardcoded Progression Constants & Class-ID Branches
+## 2. Upstream, Downstream, and Lateral Cascading Matrix (Rule 15)
 
-| File | Current Hardcoding / Issue | Declarative Replacement |
-| :--- | :--- | :--- |
-| `src/rulesets/dnd35e/companions.ts` | Exports 7 hardcoded progression constants (`RANGER_COMBAT_STYLE_LEVEL`, `RANGER_IMPROVED_COMBAT_STYLE_LEVEL`, `RANGER_COMBAT_STYLE_MASTERY_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS`, `CLERIC_REQUIRED_DOMAIN_COUNT`); duplicates `animalCompanionId` and `familiarId` syncing; computes HP/BAB/AC manually (304 lines, exceeding 300-line limit). | Evict all 7 progression constants. Iterate over unified `companions: ReadonlyArray<DnD35CompanionEntry>`, stack bonuses per `tag` (`animal_companion`, `familiar`) from `scalingPools`, and compute servant stats via `evaluateDnD35ActorStatDAG`. |
-| `src/rulesets/registry.ts` | Re-exports the 7 evicted progression constants from `companions.ts`. | Remove the 7 evicted progression constants from `registry.ts` (and re-export `collectClassFeaturesUpToLevel`). |
-| `src/rulesets/dnd35e/character_builder.ts` | `sanitizeDraftOnRaceOrClassChange` branches on `classDef.id === 'cleric' \| 'wizard' \| 'sorcerer' \| 'druid' \| 'ranger'`. | Compute `activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, selectedAcfs)` and derive `hasDomains`, `grantsFamiliar`, `grantsAnimalCompanion`, `hasArcaneSchool`, and `hasFavoredEnemy` from active features and `featureDetails`. |
-| `src/rulesets/dnd35e/progression/ledger_choices.ts` | `collectClassChoiceFeats` checks `track.classId === 'ranger' && track.level >= RANGER_COMBAT_STYLE_LEVEL` (and `6`, `11`) and `familiarId !== undefined` directly. | Check active features (`combat_style`, `improved_combat_style`, `combat_style_mastery`) from `collectClassFeaturesUpToLevel`, and check `familiar_master_effective_level > 0` before reading `familiarData.masterEffectBundle`. |
-| `src/rulesets/dnd35e/builder/builder_prereq_context.ts` | Calls `collectClassChoiceFeats(nextTracks, ...)` using the old signature (`line 123`). | Pass `activeNextFeatures`, `data.companions`, and `nextPools` to the updated `collectClassChoiceFeats` signature. |
-| `src/rulesets/dnd35e/builder/builder_validation.ts` | Branches on `draft.classId === 'cleric'`, `'wizard'`, `'druid'`, `'ranger'` at creation. Misses Sorcerer `summon_familiar` and does not suppress validation if an ACF swaps out a feature (e.g. `wizard_abrupt_jaunt_1` replacing `summon_familiar`). | Inspect active level-1 features via `collectClassFeaturesUpToLevel(classDef, 1, draft.selectedAcfs)` (`cleric_domains`, `arcane_school_specialization`, `favored_enemy_1`, and `scalingPoolContribution.poolId`). |
-| `src/rulesets/dnd35e/builder/builder_levelup_validation.ts` | Uses `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `ROGUE_SPECIAL_ABILITY_LEVELS` and `choice.classId === 'ranger' \| 'rogue'`. | Inspect `newFeatures` at `newClassLevel` (`currFeatures.filter(f => !prevFeatures.includes(f))`) for `combat_style`, `favored_enemy_*`, `rogue_special_ability_*`, and `scalingPoolContribution.poolId === 'animal_companion_effective_level'` transition from `0` to `> 0`. |
-| `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts` & `level_ledger.ts` | Hydrates only `animalCompanionId` and `familiarId` strings on `DnD35EntityData`. | Hydrate `companions: ReadonlyArray<DnD35CompanionEntry>` (`tags: ['animal_companion']`, `['familiar']`, or merged tags when both point to the same companion) alongside backward-compatible `animalCompanionId` / `familiarId`. |
-| `src/rendering/ui/dnd35e_char_builder_class.ui.ts` & `dnd35e_char_builder_class_options.ui.ts` | Branches on `draftState.classId === 'cleric' \| 'wizard' \| 'druid' \| 'ranger'`. Sorcerer never sees the Familiar picker; selecting Wizard's `wizard_abrupt_jaunt_1` ACF does not hide the Familiar picker. | Gate sub-option panels by active level-1 features (`cleric_domains`, `arcane_school_specialization`, `favored_enemy_*`, `animal_companion_effective_level`, `familiar_master_effective_level`). Split `renderWizardOptions` into `renderArcaneSchoolOptions` + `renderFamiliarOptions`. Clear invalidated draft choices when an ACF toggle replaces their gating feature. |
-| `src/rendering/ui/dnd35e_level_up_class_options.ui.ts` | Uses `RANGER_COMBAT_STYLE_LEVEL`, `RANGER_FAVORED_ENEMY_UPGRADE_LEVELS`, `RANGER_ANIMAL_COMPANION_MIN_LEVEL`, `ROGUE_SPECIAL_ABILITY_LEVELS`, and hardcoded `ROGUE_SPECIAL_ABILITIES` array. | Gate level-up sub-option pickers by newly unlocked active features at `nextClassLevel` and read Rogue special ability options from `featureDetails[featId].bonusFeatPool`. |
-
----
-
-## 3. Newly Uncovered Gaps from Deep Audit
-
-1. **Gap 1 — Duplicate Static Modifier Bug in `public/data/rulesets/dnd35e/classes/ranger.json`**:
-   - `ranger.json` lines 50–65 attached a static modifier (`sourceId: "favored_enemy_1"`, `targetStat: "strike_damage"`, `value: 2`, `targetTagsAny: ["subtype:orc", "subtype:goblinoid", "type:undead", "type:magical_beast", "type:dragon"]`) directly to `featureDetails.favored_enemy_1`.
-   - Because `buildClassAndDomainEffectModifiers` in `ledger_modifiers.ts` collects all modifiers in `featureDetails` and `buildClassChoiceModifiers` in `ledger_choices.ts` *also* emits dynamic modifiers for `favoredEnemies`, every Ranger got an extra unconditional +2 damage against those 5 creature types regardless of their actual Favored Enemy choice.
-   - **Resolution**: Removed the static `modifiers` array from `favored_enemy_1` in `ranger.json` and added `improved_combat_style` and `combat_style_mastery` entries to `featureDetails`.
-
-2. **Gap 2 — Legacy `weasel` Familiar Shape in `public/data/rulesets/dnd35e/races.json`**:
-   - Normalized all 9 familiar `masterEffectBundle` objects in `races.json` (`bat`, `cat`, `hawk`, `owl`, `rat`, `raven`, `viper`, `toad`, and `weasel`) to the strict `DnD35EffectBundle` schema (`bundleId`, `name`, `category: "ex"`, `modifiers: [{ id, target, value, type: "untyped" }]`, `virtualFeatGrants: [{ featId: "alertness", ignorePrerequisites: true }]`), enabling strict Zod validation in `effect_system.types.ts`.
-
-3. **Gap 3 — Data-Driven `bonusFeatPool` for Rogue Special Abilities in `public/data/rulesets/dnd35e/classes/rogue.json`**:
-   - Added `bonusFeatPool: ["crippling_strike", "defensive_roll", "improved_evasion", "opportunist", "skill_mastery", "slippery_mind"]` to `rogue_special_ability_1..4` and added metadata entries for those 6 abilities in `rogue.json`'s `featureDetails` so both UI rendering and level-up validation derive 100% from `rogue.json`.
-
-4. **Gap 4 — `cleric_domains` Feature in `public/data/rulesets/dnd35e/classes/cleric.json`**:
-   - Added `"cleric_domains"` to `cleric.json` `featureDetails` and level-1 `progression.features`.
-
-5. **Gap 5 — Sorcerer Familiar Picker & Wizard Abrupt Jaunt ACF Reactivity**:
-   - Split `renderWizardOptions` into `renderArcaneSchoolOptions` (gated by `arcane_school_specialization`) and `renderFamiliarOptions` (gated by any level-1 feature contributing to `familiar_master_effective_level`), enabling the Familiar picker for Sorcerers at creation and automatically hiding/clearing `familiarId` when a Wizard enables the Abrupt Jaunt ACF (`wizard_abrupt_jaunt_1`).
+| Change | Upstream Impact | Downstream Impact | Lateral Impact |
+| :--- | :--- | :--- | :--- |
+| **Hotbar Number Keys** (`Digit1`..`Digit0`, `-`, `=`) | `src/core/input_handler.ts`, `src/core/input/shortcut_input.ts` | `src/rendering/ui/hud_bottom_dock.ui.ts`, `cartridgeUI.onExecuteHotbarSlot` | Top-row vs Numpad movement keybindings (`settings.ts`) |
+| **Scheduler Actor Reset** (`resetSchedulerActors`) | `src/systems/map.system.ts` (`transitionArea`) | `src/core/scheduler.ts` (RTwP loop remains alive) | No disruption to `clearScheduler()` callers during full shutdown |
+| **Player Hydrator Feat Reset** | `applyCharacterCreationToPlayer` | `dndData.feats` on newly created characters | Test fixtures in `tests/` that create characters |
+| **Declarative Stance & Dial Modes** | `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`, `dnd35e_ui_adapter.ts` | `#hud-bottom-dock` modes strip rendering | Ability descriptions in SRD system content |
+| **Turn-Based Round Budget & End Turn** | `src/core/loop/intent_cost_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts` | Scheduler turn duration, `DND35E_ACTION_PIPS` in hotbar dock | Test suites verifying turn-based action sequences |

@@ -1,6 +1,6 @@
 {
-  "summary":  "Detailed implementation plan for Milestone 122: End-to-End Quest & Narrative Lifecycle Wiring. Addresses Gaps 1–5, featuring QuestRewardApplierMap dictionary dispatch, wiring all 5 objective emitters, retroactive gather/explore checks, failQuest lifecycle, procedural quest tag filtering and consequence integration, multi-stage quest chaining, and journal UI polish.",
-  "updatedAt":  "2026-11-08T15:39:51.366601249Z",
+  "summary":  "Implementation plan for resolving hotbar keyboard controls without key conflicts, fixing the RTwP area transition scheduler freeze, refactoring combat stances and dial steppers into pure declarative abilities while eliminating the Character Creation feat leak, and connecting the D&D 3.5e multi-step round action economy with live HUD pips and an End Turn button.",
+  "updatedAt":  "2026-11-08T19:16:10.996016393Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
