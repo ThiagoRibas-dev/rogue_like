@@ -1,4 +1,4 @@
-import { ComponentType } from '@/types/components.types.ts';
+import { ComponentType } from '../../types/components.types.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
 import type { DialogueTree } from '../../types/dialogue.types.ts';
 import type { GameEvent } from '../../types/events.types.ts';

@@ -1,0 +1,331 @@
+Here is a complete breakdown of how quests, objectives, and their intersecting narrative systems are currently architected, documented, and wired up across the engine—including both manual (authored) and procedural/emergent capabilities, plus an honest audit of where the current wiring has gaps.
+1. Where Are These Systems Documented & Mapped Out?
+Currently, the documentation is spread across the architectural and SSOT registries rather than living in a single dedicated Narrative/Quest design document:
+docs/SSOT_CONSOLE.md (docs/ssot/ssot_console.json): Maps all canonical file ownership under systems, types, actions, rendering/ui, and editor/validator:
+Core Quest Engine: src/systems/quest.system.ts, src/types/quests.types.ts, src/rendering/ui/quest.ui.ts
+Procedural Quests: src/systems/procedural-quest.system.ts
+Declarative Triggers & Pacing: src/systems/trigger.system.ts, src/systems/trigger/quest.ts, src/systems/pacing.system.ts
+Intersecting Narrative Systems: src/systems/dialogue.system.ts, src/systems/scheme.system.ts, src/systems/scheme_compiler.ts, src/systems/investigation.system.ts, src/systems/knowledge.system.ts, src/systems/gossip.system.ts, src/systems/nemesis.system.ts
+Authoring & Verification Tools: src/rendering/ui/trigger_composer.ui.ts, src/rendering/ui/dialogue_editor.ts, src/rendering/ui/narrative_fuzzer.ui.ts, src/editor/validator/quest.validator.ts
+docs/ARCHITECTURE.md (Lines 305–355 & 400–418): High-level summary of the Pacing Governor (DramaTracker), Dialogues, Quests (QuestLogComponent), Knowledge/Rumors, Merchant fetch quests, and the Villain Scheme / Investigation loop.
+docs/MILESTONES.md: Historical records of when each layer was introduced.
+(Note: We do not currently have a dedicated docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md that maps the end-to-end event lifecycle and cross-system interactions in one place—we can easily generate or maintain one if you'd like.)
+2. Manual (Authored) Quest-Making Capabilities
+Manual quests are authored in public/data/campaigns/<campaign_id>/quests.json (or via the in-app Campaign Editor) and validated by QuestSchema (src/types/quests.types.ts).
+A. Quest & Objective Schema (QuestSchema)
+Logical Combinators (logicalOperator: 'AND' | 'OR'):
+'AND' (default): All objectives in the quest must reach requiredAmount.
+'OR': Completing any single objective in the list satisfies the quest (enabling branching "kill the warlord OR talk/bribe your way past" resolutions).
+5 Objective Types (QuestObjectiveSchema):
+'kill' — Target an entity template ID (targetId: "goblin", requiredAmount: 3).
+'talk' — Speak to an NPC template ID (targetId: "scout", requiredAmount: 1).
+'gather' — Acquire an item ID (targetId: "health_potion", requiredAmount: 2).
+'explore' — Reach/discover a target area or location.
+'interact' — Use a specific world prop/feature (altar, lever, chest).
+Completion Modes (autoComplete: boolean):
+autoComplete: true: The moment the objective threshold is met, completeQuest() fires immediately in the field.
+autoComplete: false: Meeting the objectives keeps the quest 'active' until an NPC dialogue option or world trigger explicitly fires the complete_quest consequence (classic CRPG "return to quest-giver" turn-in).
+Visibility (isHidden?: boolean): Supports hidden/secret tracking quests that don't clutter the journal UI.
+Wiki-Link Hypertext: Titles, descriptions, and objective strings support [Goblin](entity:goblin) syntax, which quest.ui.ts parses into interactive hoverable tooltip links.
+B. Runtime O(1) Event Routing (QuestLogComponent)
+Stored on the player entity in QuestLogComponent:
+quests: Record<string, { status: 'active' | 'completed' | 'failed', objectiveProgress: Record<string, number> }>
+activeTriggers: Record<string, ReadonlyArray<{ questId: string; objectiveId: string }>>
+Whenever a quest is granted or completed, rebuildQuestTriggers() indexes all active objectives by "${obj.type}:${obj.targetId}" (e.g., "kill:goblin"). When processQuestEvent(state, 'kill', 'goblin', 1) runs, it performs an O(1) lookup instead of scanning every quest in the campaign.
+C. Intersections with Triggers & Dialogues
+Trigger System (src/systems/trigger.system.ts & src/systems/trigger/quest.ts):
+Events: quest.system.ts emits GameEventType.QuestStageChanged (whenever an objective increments) and GameEventType.QuestCompleted.
+Conditions: Triggers and Dialogue options can gate on quest_status (target: questId, operator: '==' | '>=' | '<=', where 0 = active, 1 = completed, 2 = failed, -1 = not started).
+Consequences: Any dialogue option or world trigger can execute grant_quest or complete_quest.
+Editor & Validator Tooling:
+quest.validator.ts verifies that 'kill' objectives reference valid entity IDs and 'gather' objectives reference valid item IDs that actually exist in the loot table.
+narrative_fuzzer.ts runs Monte Carlo walk simulations across dialogue trees and triggers to catch deadlocks or unreachable quest states.
+3. Procedural & Emergent Quest-Making Capabilities
+The engine has a second registry inside GameState: state.dynamicQuests: Record<string, Quest>, alongside getQuestDef(state, questId) which seamlessly resolves both static (state.campaign.quests[id]) and procedural (state.dynamicQuests[id]) quests.
+Currently, procedural quests and emergent objectives come from three sources:
+Template-Driven Procedural Bounties (src/systems/procedural-quest.system.ts):
+Reads quest_templates.json (QuestTemplateSchema), which defines titleTemplate, descriptionTemplate, objectiveType, targetTags, targetFactions, amountRange: [min, max], and rewardXpMultiplier.
+generateProceduralQuest(state, templateId) uses the deterministic rng to pick a matching entity template, roll a count in [min, max], format wiki-linked strings, compute scaled XP, and register dyn_<templateId>_<nextQuestId> into state.dynamicQuests.
+Economy-Driven Merchant Supply Runs (src/systems/shop.system.ts):
+When a merchant's ShopComponent.inventory is depleted, restockShop() has a 50% chance to procedurally generate a dyn_restock_<shopEntityId>_<nextQuestId> 'gather' quest for 1–3x items matching the merchant's buyTags, registering it into state.dynamicQuests.
+Emergent Villain Schemes & Investigation Loop (scheme.system.ts + investigation.system.ts + gossip.system.ts):
+Mastermind Schemes: Villains compile multi-phase schemes (SchemeRecipe + PhaseBlocks) that recruit NPC minions via MICE personality profiling (AgreementComponent) and mutate dungeon areas (SchemeMutatedArea).
+Clue Drops: Killing a minion with an AgreementComponent triggers the has_agreement condition -> spawn_clue consequence (src/systems/trigger/quest.ts), dropping a physical scroll with a ClueComponent implicating the mastermind.
+Investigation Board & Stall Detector: Picking up clues fires ClueDiscoveredEvent, adding secrets/suspects to the player's MemoryComponent.knowledge and state.investigation. If the player goes too many turns (INVESTIGATION_STALL_THRESHOLD) without finding a clue, investigation.system.ts emits GameEventType.InvestigationStalled, which the Trigger/Drama Director can use to inject a lead or ambush.
+4. Honest Audit: Current Gaps & Unfinished Wiring
+While the foundational architecture (schemas, O(1) trigger map, dual static/dynamic registries, trigger/dialogue hooks, investigation board) is clean and in place, several critical pieces are currently half-wired or stubbed:
+Only 2 of the 5 Objective Types Are Emitted in Gameplay:
+'kill' is emitted in src/systems/death.system.ts:142.
+'talk' is emitted in src/systems/dialogue.system.ts:38.
+'gather', 'explore', and 'interact' are never called via processQuestEvent()! Picking up an item, entering an area, or interacting with a prop does not currently notify quest.system.ts.
+Only 'xp' Rewards Are Paid Out on Completion:
+QuestRewardSchema supports 4 reward types: 'xp', 'item', 'standing' (faction reputation), and 'event'.
+However, in src/systems/quest.system.ts:54–61, completeQuest() only processes reward.type === 'xp' and has a literal comment: // Future: handle item/standing rewards here. (Even tutorial_quest in default/quests.json defines an 'item' reward of 2 health potions that currently gets ignored!)
+Procedural Quests Are Generated, But Not Granted/Exposed via Notice Boards or NPCs:
+generateProceduralQuest() in src/systems/procedural-quest.system.ts has zero callers in src/.
+restockShop() puts dyn_restock_* quests into state.dynamicQuests, but nothing grants them to the player's QuestLogComponent or displays available dynamic contracts on a Notice Board / Merchant dialogue node.
+In procedural-quest.system.ts:24–34, if a template specifies targetTags (like "bounty_kill" in default/quest_templates.json which has targetTags: ["monster"]), the filter unconditionally returns false unless targetFactions is also set, because entity tag filtering wasn't finished there.
+Single-Stage Flat Objectives vs. Multi-Stage CRPG Quests:
+Right now, a Quest is a single flat list of objectives (AND/OR). To do a multi-stage quest ("1. Investigate the crypt -> 2. Confront the necromancer OR take his bribe -> 3. Report back to the Mayor"), you currently have to chain separate Quest IDs via triggers (Quest A completes -> grants Quest B) rather than advancing stages/branches inside a single journal entry.
+No Cartridge / D&D 3.5e Skill & Ability Integration in Quests/Dialogues Yet:
+Classic CRPG quests heavily feature skill/ability checks in dialogues and interactions ([Diplomacy DC 15], [Search DC 12], [Knowledge (Religion) DC 15], [STR 14]), as well as XP awards scaled by Encounter Level / CR or party level. Currently, dialogue/trigger conditions check Console-level MemoryComponent facts, faction standing, and personality, but don't yet have a clean Tier 1 -> Tier 2 hook for ruleset skill/ability checks.
+Where Would You Like to Take This?
+Depending on your priorities, we could tackle any of these next:
+Complete the Core Quest Loop (Closing the Wiring Gaps):
+Wire up 'gather', 'explore', and 'interact' events into processQuestEvent() (including retroactive inventory checks when a 'gather' quest is granted or turned in).
+Implement 'item', 'standing', and 'event' reward payouts in completeQuest() (plus gold/currency rewards).
+Add failQuest() support and failure triggers (e.g., if a protected NPC dies).
+Multi-Stage & Branching CRPG Quests:
+Evolve QuestSchema to support multi-stage quest nodes (with stage descriptions, stage transitions, and branching outcomes recorded in a single journal history) while staying backward-compatible with simple single-stage quests.
+Bring Procedural Quests & Notice Boards Alive:
+Wire generateProceduralQuest() and merchant supply runs into interactive Notice Boards / Bounty Officers / Merchant dialogues, fix entity tag filtering in procedural-quest.system.ts, and connect Villain Scheme / Investigation discoveries to dynamic quests.
+D&D 3.5e CRPG Skill-Check & Attribute Gating in Dialogues/Interactions:
+Add ruleset-agnostic skill/ability check predicates & consequences so dialogues and world props can run real d20 checks (Diplomacy, Bluff, Intimidate, Sense Motive, Search, Disable Device, Knowledge) to unlock quest branches.
+What are your thoughts, and which aspects of the quest and objective systems do you want to focus on first?
+Awesome. Create a docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md and link it in the main archtecture document. Include the gaps you already identified in this new document too please
+Gemini 4 Argon
+Ran for 3m 35s
+
+Action history
+Here are key actions taken for the app:
+
+Edited 2 files
+docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md
+docs/ARCHITECTURE.md
+Built
+Created docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md and linked it under Section 7.3 (Dialogue, Quests & Knowledge Brokering) in docs/ARCHITECTURE.md.
+What's Included in docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md:
+Tier Placement & SSOT Ownership Table: Maps every quest, procedural generator, trigger, dialogue, scheme, investigation, UI, and validator module across Tiers 1–3.
+End-to-End Architecture Diagram (Mermaid): Traces static (quests.json) and dynamic (GameState.dynamicQuests) quests through QuestLogComponent.activeTriggers, gameplay emitters, the Trigger System, and the Villain Scheme / Investigation loops.
+Manual (Authored) Quest Capabilities: Documents QuestSchema, the 5 objective types (kill, talk, gather, explore, interact), AND/OR combinators, autoComplete vs. NPC turn-in, wiki-link hypertext, O(1) trigger indexing, and Campaign Editor validation/fuzzing.
+Procedural & Emergent Quest Capabilities: Documents the unified dual registry (getQuestDef), template-driven bounties (generateProceduralQuest), depleted-merchant supply runs (restockShop), and the Villain Scheme / Minion Agreement / Clue / InvestigationStalled loop.
+Identified Wiring Gaps & CRPG Roadmap:
+Gap 1: Unwired 'gather', 'explore', and 'interact' emitters (processQuestEvent currently only fires for 'kill' and 'talk').
+Gap 2: Incomplete reward payouts in completeQuest() ('item', 'standing', and 'event' rewards are defined in the schema and JSON data, but only 'xp' is currently awarded).
+Gap 3: Unconnected procedural quest surfaces (generateProceduralQuest has no callers, dynamic merchant quests aren't surfaced to dialogue/notice boards, and targetTags filtering in procedural-quest.system.ts unconditionally returns false).
+Gap 4: Single-stage flat objectives vs. multi-stage branching CRPG quests and missing failQuest() / fail_quest support.
+Gap 5: Tier 1 Console <-> Tier 2 Cartridge hooks for d20 skill and ability checks in dialogues and world interactions.
+
+```QUEST_AND_NARRATIVE_ARCHITECTURE.md
+# Quest, Objective & Emergent Narrative Architecture
+
+This document is the canonical architectural reference for the **Quest System**, **Declarative Trigger & Dialogue Engines**, **Procedural Quest Generation**, and **Emergent Narrative Subsystems** (Villain Schemes, Investigation Board, Knowledge/Gossip Brokering, and Nemesis Rivalries).
+
+It maps how authored CRPG quests and systemic procedural quests operate, how they intersect across ECS components and event loops, and documents current wiring gaps and roadmap milestones.
+
+---
+
+## 1. Architectural Philosophy & Tier Placement
+
+In accordance with the **Three-Tier Placement Heuristic** (`AGENTS.md` Rule 16) and **Core Design Philosophy** (`docs/ARCHITECTURE.md` Section 2):
+
+1. **Tier 1 — Core Console Engine (`src/systems/`, `src/types/`, `src/actions/`)**:
+   - Owns the ruleset-agnostic quest state machine (`quest.system.ts`), O(1) objective event routing (`QuestLogComponent.activeTriggers`), declarative trigger evaluation (`trigger.system.ts`), dialogue tree traversal (`dialogue.system.ts`), villain scheme simulation (`scheme.system.ts`), clue/investigation tracking (`investigation.system.ts`), and social rumor propagation (`gossip.system.ts`, `knowledge.system.ts`).
+2. **Tier 2 — Ruleset Cartridge (`src/rulesets/<id>/`)**:
+   - Provides mathematical resolvers for XP progression, level-up thresholds, and (planned) skill/ability check evaluation (`Diplomacy`, `Bluff`, `Intimidate`, `Sense Motive`, `Search`, `Knowledge`) invoked by Console triggers and dialogue nodes.
+3. **Tier 3 — Campaign & System Content (`public/data/campaigns/<id>/*.json`)**:
+   - Expresses all authored quests (`quests.json`), procedural quest templates (`quest_templates.json`), dialogue trees (`dialogues.json`), reactive world triggers (`triggers.json`, `trigger_templates.json`), villain schemes (`schemes.json`, `agreements.json`), and rumor rules (`rumors.json`) purely as Zod-validated JSON data.
+
+---
+
+## 2. Canonical File & SSOT Ownership Map
+
+| Subsystem | Canonical Files | Responsibility |
+| :--- | :--- | :--- |
+| **Quest Schema & Types** | `src/types/quests.types.ts`<br>`src/types/campaign.types.ts` | Zod schemas (`QuestSchema`, `QuestObjectiveSchema`, `QuestRewardSchema`, `QuestTemplateSchema`) and TypeScript types. |
+| **Quest State & ECS** | `src/types/components.types.ts`<br>`src/types/game-state.types.ts` | `QuestLogComponent` (per-actor quest states + `activeTriggers` index) and `GameState.dynamicQuests` registry. |
+| **Core Quest Engine** | `src/systems/quest.system.ts` | `getQuestDef`, `grantQuest`, `completeQuest`, `rebuildQuestTriggers`, and `processQuestEvent`. |
+| **Procedural Quests** | `src/systems/procedural-quest.system.ts`<br>`src/systems/shop.system.ts` | `generateProceduralQuest` (from `quest_templates.json`) and merchant `restockShop` supply-run generation. |
+| **Trigger Integration** | `src/systems/trigger.system.ts`<br>`src/systems/trigger/quest.ts`<br>`src/systems/pacing.system.ts` | Evaluates `quest_status` / `has_agreement` conditions and applies `grant_quest`, `complete_quest`, and `spawn_clue` consequences under `DramaTracker` pacing constraints. |
+| **Dialogue & Social** | `src/systems/dialogue.system.ts`<br>`src/actions/dialogue.actions.ts`<br>`src/systems/knowledge.system.ts`<br>`src/systems/gossip.system.ts` | Dialogue tree traversal, `talk` objective firing, option consequence execution, and `ask_about` / `gossip` / `inject_rumor` dynamic knowledge nodes. |
+| **Schemes & Clues** | `src/systems/scheme.system.ts`<br>`src/systems/scheme_compiler.ts`<br>`src/systems/investigation.system.ts` | Autonomous villain scheme phases, minion `AgreementComponent` recruitment, clue drops on minion death, suspect linking, and `InvestigationStalled` detection. |
+| **UI & Presentation** | `src/rendering/ui/quest.ui.ts`<br>`src/rendering/ui/investigation.ui.ts`<br>`src/rendering/ui/dialogue.ui.ts` | Quest Journal modal (`UIMode.Quests`) with wiki-link tooltip parsing, Investigation Board UI, and Dialogue overlay. |
+| **Authoring & Validation** | `src/editor/validator/quest.validator.ts`<br>`src/rendering/ui/dialogue_editor.ts`<br>`src/rendering/ui/trigger_composer.ui.ts`<br>`src/rendering/ui/narrative_fuzzer.ui.ts` | Static cross-reference validation (`validateQuests`), visual node/trigger editors, and Monte Carlo narrative walk simulation (`narrative_fuzzer`). |
+
+---
+
+## 3. End-to-End Narrative & Quest Architecture Diagram
+
+```mermaid
+flowchart TD
+    subgraph Data ["Tier 3: Campaign JSON & Runtime Registries"]
+        QJ["quests.json (Static Quests)"]
+        QTJ["quest_templates.json (Bounty Templates)"]
+        DJ["dialogues.json & triggers.json"]
+        SJ["schemes.json & agreements.json"]
+        DQ["GameState.dynamicQuests (Runtime Registry)"]
+    end
+
+    subgraph Generators ["Procedural & Emergent Generators"]
+        PQ["generateProceduralQuest()"]
+        SHOP["restockShop() (Merchant Supply Runs)"]
+        SCHEME["scheme.system.ts (Villain Schemes & Minions)"]
+    end
+
+    subgraph CoreQuest ["Core Quest Engine (quest.system.ts)"]
+        GQ["grantQuest()"]
+        RBT["rebuildQuestTriggers() -> O(1) activeTriggers Map"]
+        PQE["processQuestEvent(state, type, targetId, amount)"]
+        CQ["completeQuest()"]
+    end
+
+    subgraph Emitters ["Gameplay Event & Action Emitters"]
+        DEATH["death.system.ts ('kill' + EntityDiedEvent)"]
+        DIAL["dialogue.system.ts ('talk' + DialogueSelectedEvent)"]
+        INV["investigation.system.ts (ClueDiscovered / InvestigationStalled)"]
+        TRIG["trigger.system.ts (questConditions / questConsequences)"]
+    end
+
+    QTJ --> PQ --> DQ
+    SHOP --> DQ
+    QJ --> GQ
+    DQ --> GQ
+
+    GQ --> RBT
+    DEATH -->|"processQuestEvent('kill')"| PQE
+    DIAL -->|"processQuestEvent('talk')"| PQE
+    DEATH -->|"EntityDiedEvent (has_agreement)"| TRIG
+    SCHEME -->|"Recruits Minions / Mutates Areas"| INV
+    TRIG -->|"spawn_clue"| INV
+
+    RBT --> PQE
+    PQE -->|"QuestStageChanged / AutoComplete"| CQ
+    PQE -->|"Emits QuestStageChanged"| TRIG
+    CQ -->|"Emits QuestCompleted"| TRIG
+    DIAL -->|"Option Consequences"| TRIG
+    TRIG -->|"grant_quest / complete_quest"| CoreQuest
+```
+
+---
+
+## 4. Manual (Authored) Quest-Making Capabilities
+
+### 4.1 Schema & Data Model (`src/types/quests.types.ts`)
+Authored quests live in `public/data/campaigns/<campaign_id>/quests.json` and conform to `QuestSchema`:
+
+- **`id`**: Unique string identifier (e.g., `"tutorial_quest"`, `"main_quest_bandit_king"`).
+- **`title` & `description`**: Display strings supporting **Wiki-Link Hypertext** syntax (`[Goblins](entity:goblin)`), parsed by `parseWikiSegments()` in `src/rendering/ui/quest.ui.ts` into interactive tooltip spans.
+- **`logicalOperator?: 'AND' | 'OR'`** (defaults to `'AND'`):
+  - `'AND'`: Every objective in `objectives[]` must reach its `requiredAmount` for the quest to be satisfied.
+  - `'OR'`: Reaching `requiredAmount` on **any single** objective satisfies the entire quest, enabling classic CRPG multi-solution quests (e.g., slay the target, steal the sigil, or persuade the lieutenant).
+- **`objectives: ReadonlyArray<QuestObjective>`**:
+  - `id`: Objective key scoped to the quest (e.g., `"kill_goblins"`).
+  - `description`: Player-facing tracker text (also supports wiki links).
+  - `type`: `'kill' | 'gather' | 'explore' | 'interact' | 'talk'`.
+  - `targetId`: Canonical ID of the entity template, item, area, or prop.
+  - `requiredAmount`: Positive integer threshold.
+- **`rewards: ReadonlyArray<QuestReward>`**:
+  - Discriminated union supporting 4 reward payloads:
+    1. `{ type: 'xp', amount: number }`
+    2. `{ type: 'item', itemId: string, amount: number }`
+    3. `{ type: 'standing', factionId: string, amount: number }`
+    4. `{ type: 'event', eventId: string }`
+- **`isHidden?: boolean`**: Allows silent tracker quests that do not clutter the player's Quest Journal UI.
+- **`autoComplete?: boolean`** (defaults to `true`):
+  - When `true`, satisfying the objectives immediately invokes `completeQuest()`.
+  - When `false`, satisfying the objectives marks all objective lines complete in the journal (`progress >= requiredAmount`), but waits for an explicit `complete_quest` consequence (typically fired when returning to an NPC in dialogue).
+
+### 4.2 O(1) Trigger Indexing (`QuestLogComponent.activeTriggers`)
+To avoid iterating over all quests and objectives on every combat death or interaction, `QuestLogComponent` maintains a derived lookup table:
+- **Key**: `"${objective.type}:${objective.targetId}"` (for example, `"kill:goblin"` or `"talk:scout"`).
+- **Value**: `ReadonlyArray<{ questId: string; objectiveId: string }>`.
+- `rebuildQuestTriggers(state, questLog)` recalculates this index whenever a quest is granted (`grantQuest`) or completed (`completeQuest`).
+- During gameplay, `processQuestEvent(state, eventType, targetId, amount)` performs a direct dictionary lookup on `questLog.activeTriggers["${eventType}:${targetId}"]`, increments `objectiveProgress[objectiveId]`, emits `GameEventType.QuestStageChanged`, and checks `AND`/`OR` completion predicates.
+
+### 4.3 Declarative Trigger & Dialogue Integration
+Quests intersect with the **Trigger System** (`src/systems/trigger/quest.ts`) and **Dialogue System** (`src/systems/dialogue.system.ts`, `src/actions/dialogue.actions.ts`):
+
+- **Trigger & Dialogue Conditions (`questConditions`)**:
+  - `quest_status`: Compares a quest's current state against a numeric code (`-1` = unstarted, `0` = `'active'`, `1` = `'completed'`, `2` = `'failed'`) using `'==' | '>=' | '<='`. Used both in world triggers and to gate dialogue options based on quest progress.
+  - `has_agreement`: Evaluates `true` on `EntityDiedEvent` if the slain entity carries an `AgreementComponent` (linking them to a Villain Scheme).
+- **Trigger & Dialogue Consequences (`questConsequences`)**:
+  - `grant_quest`: Adds the quest to the player's `QuestLogComponent`, initializes all objective progress counters to `0`, rebuilds `activeTriggers`, and logs `"New Quest: <title>"`.
+  - `complete_quest`: Marks the quest `'completed'`, removes its hooks from `activeTriggers`, distributes rewards, and emits `GameEventType.QuestCompleted`.
+  - `spawn_clue`: Spawns a physical clue scroll item (`ClueComponent`) at a slain minion's position implicating the scheme's `mastermindId`.
+
+### 4.4 Campaign Validator & Narrative Fuzzer
+- **Static Validation (`src/editor/validator/quest.validator.ts`)**:
+  - Executed during Stage 8 of `./verify.sh` (`bun run scripts/run-validator.ts`) and live in the Campaign Editor's Validation Dock.
+  - Verifies that every `'kill'` objective references an existing template in `campaign.entities` and every `'gather'` objective references a valid item in `campaign.items` that is reachable via `campaign.rules.spawning.lootTable`.
+- **Narrative Fuzzer (`src/rendering/ui/narrative_fuzzer.ui.ts`)**:
+  - Simulates randomized playthroughs across dialogue trees and triggers to detect unreachable nodes or soft-locked quest chains.
+
+---
+
+## 5. Procedural & Emergent Quest-Making Capabilities
+
+### 5.1 Unified Dual Registry (`campaign.quests` + `state.dynamicQuests`)
+`getQuestDef(state, questId)` in `src/systems/quest.system.ts` transparently resolves quest definitions from two sources:
+```ts
+export function getQuestDef(state: Readonly<GameState>, questId: string): Quest | undefined {
+  return state.campaign.quests[questId] ?? state.dynamicQuests[questId];
+}
+```
+Because `GameState.dynamicQuests` is part of the serializable root state, procedurally generated quests persist cleanly across save/load boundaries and use the exact same `QuestLogComponent`, `activeTriggers`, and `quest.ui.ts` journal renderer as hand-authored quests.
+
+### 5.2 Template-Driven Procedural Bounties (`src/systems/procedural-quest.system.ts`)
+- Driven by `public/data/campaigns/<id>/quest_templates.json` (`QuestTemplateSchema`).
+- Each template defines:
+  - `titleTemplate` & `descriptionTemplate` with `{targetName}` and `{amount}` placeholders.
+  - `objectiveType`: `'kill' | 'gather' | 'explore' | 'interact' | 'talk'`.
+  - `targetTags` / `targetFactions`: Filters candidate targets from `state.campaign.entities`.
+  - `amountRange`: `[min, max]` rolled via the deterministic `rng`.
+  - `rewardXpMultiplier`: Scales XP reward proportionally to the rolled `amount`.
+- `generateProceduralQuest(state, templateId)` constructs a unique `dyn_${templateId}_${state.nextQuestId}` `Quest` object with wiki-linked target names and registers it into `state.dynamicQuests`.
+
+### 5.3 Economy-Driven Merchant Supply Runs (`src/systems/shop.system.ts`)
+- When a merchant entity with a `ShopComponent` runs out of stock (`shop.inventory.length === 0`), `restockShop(state, shopEntityId)` filters `state.campaign.items` by the merchant's `buyTags`.
+- With a 50% deterministic roll, instead of magically restocking, the merchant generates a dynamic `'gather'` quest (`dyn_restock_${shopEntityId}_${nextQuestId}`: *"Supply Run for <Merchant>"*) requesting `1–3x` of a needed item and registers it in `state.dynamicQuests`.
+
+### 5.4 Emergent Villain Schemes, Clues & Stall Recovery
+- **Villain Schemes (`src/systems/scheme.system.ts` & `scheme_compiler.ts`)**:
+  - Masterminds execute multi-phase `SchemeRecipe`s compiled from `PhaseBlock`s.
+  - Schemes recruit NPC minions via MICE personality profiling (`AgreementComponent`) and mutate dungeon areas (`GameEventType.SchemeMutatedArea`).
+- **Investigation & Rumor Loop (`src/systems/investigation.system.ts`)**:
+  - Discovering a `ClueComponent` (`GameEventType.ClueDiscovered`) records `'secret'` entries in the player's `MemoryComponent.knowledge` and adds `implicatesEntityId` to `state.investigation.knownActors` on the **Investigation Board UI**.
+  - `SchemeMutatedArea` events automatically generate `'rumor'` entries alerting the player that a dungeon area's tags and fortification budget have shifted.
+- **Defensive Stall Detector (`INVESTIGATION_STALL_THRESHOLD`)**:
+  - If `state.globalTurn - lastClueTurn >= INVESTIGATION_STALL_THRESHOLD`, `processInvestigationEvents()` emits `GameEventType.InvestigationStalled`, enabling campaign triggers and the `DramaTracker` pacing governor to inject a fresh lead or ambush so the investigation never dead-ends.
+
+---
+
+## 6. Identified Wiring Gaps & CRPG Roadmap
+
+An audit of the current codebase reveals five specific gaps between the declarative schemas and runtime execution that should be addressed as we deepen CRPG quest mechanics:
+
+### Gap 1: Unwired Objective Emitters (`'gather'`, `'explore'`, `'interact'`)
+- **Current State**: `processQuestEvent()` is only called in two places across the entire codebase:
+  1. `src/systems/death.system.ts:142` (`processQuestEvent(nextState, 'kill', templateComp.templateId, 1)`)
+  2. `src/systems/dialogue.system.ts:38` (`processQuestEvent(state, 'talk', targetTemplateId, 1)`)
+- **Missing Wiring**:
+  - `'gather'` is never emitted when picking up items (`src/actions/inventory.actions.ts`), nor does `grantQuest()` check if the player already holds required items in their `InventoryComponent`.
+  - `'explore'` is never emitted on area transition or room/tile discovery (`src/systems/area-transition.system.ts` / `fov.ts`).
+  - `'interact'` is never emitted when interacting with world props/altars/containers (`src/actions/interact.actions.ts`).
+
+### Gap 2: Incomplete Reward Payouts in `completeQuest()`
+- **Current State**: While `QuestRewardSchema` defines `'xp'`, `'item'`, `'standing'`, and `'event'` rewards (and `default/quests.json` already authors `'item'` rewards like `health_potion` and `potion_of_fire`), `completeQuest()` in `src/systems/quest.system.ts:54–61` only processes `reward.type === 'xp'`:
+  ```ts
+  for (const reward of questDef.rewards) {
+    if (reward.type === 'xp' && reward.amount) {
+      nextState = awardExperience(nextState, playerEntityId, reward.amount);
+    }
+    // Future: handle item/standing rewards here
+  }
+  ```
+- **Needed Fix**: Spawn and grant `'item'` rewards into the player's inventory (or drop at feet if full), apply `'standing'` deltas to faction standing/relationships, dispatch `'event'` triggers, and support currency/gold payouts.
+
+### Gap 3: Unconnected Procedural Quest Surfaces & Tag Filter Bug
+- **Current State**:
+  - `generateProceduralQuest()` in `src/systems/procedural-quest.system.ts` currently has **zero callers** in `src/`.
+  - `restockShop()` in `src/systems/shop.system.ts` writes `dyn_restock_*` quests into `state.dynamicQuests`, but neither grants them to the player nor surfaces them in merchant dialogue / notice boards.
+  - **Bug in `src/systems/procedural-quest.system.ts:24–34`**: When `template.targetTags` is non-empty (such as `"bounty_kill"` in `default/quest_templates.json` which specifies `targetTags: ["monster"]`), the entity filter unconditionally returns `false` at line 33 instead of checking `entityDef.tags`, causing `generateProceduralQuest(state, 'bounty_kill')` to always fail with `"No valid targets found"`.
+
+### Gap 4: Single-Stage Flat Quests vs. Multi-Stage Branching CRPG Quests & Quest Failure
+- **Current State**:
+  - Each `Quest` has a single flat `objectives[]` array (`AND`/`OR`). Multi-step narratives currently require chaining separate quest IDs (`quest_part_1` -> `quest_part_2`) via triggers rather than advancing stages within a single cohesive journal entry that preserves completed stage history.
+  - Although `QuestLogComponent` includes `'failed'` in its status union (`'active' | 'completed' | 'failed'`) and `quest.ts` maps `'failed'` to `2`, there is no `failQuest()` function in `quest.system.ts` or `fail_quest` consequence in `src/systems/trigger/quest.ts` (e.g., when a protected NPC dies or a competing faction branch is chosen).
+
+### Gap 5: Tier 1 Console <-> Tier 2 Cartridge Skill & Ability Check Hooks
+- **Current State**: Dialogue options and triggers can gate on `MemoryComponent` facts, faction standing, personality facets, and relationship axes, but cannot yet invoke Tier 2 ruleset skill/ability checks (`Diplomacy`, `Bluff`, `Intimidate`, `Sense Motive`, `Search`, `Disable Device`, `Knowledge`, or ability score thresholds like `STR >= 14`).
+- **Opportunity**: Adding a ruleset-agnostic check interface on the cartridge adapter (e.g., `evaluateSkillCheck` / `evaluateStatRequirement`) will allow dialogues and interactive props to offer classic CRPG `[Diplomacy DC 15]` or `[Knowledge (Arcana) DC 12]` branches that advance quest objectives or grant bonus XP.
+```

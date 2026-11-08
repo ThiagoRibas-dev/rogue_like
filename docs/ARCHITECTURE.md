@@ -326,6 +326,8 @@ AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`) com
 
 ### 7.3 Dialogue, Quests & Knowledge Brokering
 
+*For full deep-dive architectural specifications, end-to-end dataflow diagrams, and identified gaps, see [`docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md`](./QUEST_AND_NARRATIVE_ARCHITECTURE.md).*
+
 - **Dialogues**: JSON trees (`DialogueTreeSchema`) with conditional gating against `MemoryComponent` (faction standing, grudges, personality, and relationship axes). Options dispatch configurable effects via the trigger system.
 - **Quests**: Data-driven structures with observable objectives tracked via `QuestLogComponent`. Subsystems emit generic events that `quest.system.ts` listens to, decoupling combat from quest logic. Supports `AND`/`OR` logical operators for branching resolutions.
 - **Knowledge**: NPCs learn about world events through delayed propagation in the social graph. The player uses dialogue verbs (`ask_about`, `gossip`) to acquire knowledge dynamically. Rumors spread organically and decay over time. Knowledge sharing is gated dynamically: NPCs with high loyalty or fear are more willing to share rumors (evaluated via `getWillingnessToShare()` which considers relationship axes), while high resentment blocks it.

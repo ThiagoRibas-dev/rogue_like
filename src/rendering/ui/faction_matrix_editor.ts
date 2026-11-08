@@ -1,4 +1,4 @@
-import type { PatchOperation } from '@/utils/json-patch.ts';
+import type { PatchOperation } from '../../utils/json-patch.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { FactionRelationEnum } from '../../types/campaign.types.ts';
 import { showPromptModal } from './modal.ui.ts';
