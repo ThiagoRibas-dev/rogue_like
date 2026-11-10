@@ -45,6 +45,8 @@ export interface DnD35ResolvedActorStats {
   readonly maxHp: number;
   readonly saves: Readonly<Record<SaveType, number>>;
   readonly speed: number;
+  readonly fortificationPercent?: number | undefined;
+  readonly concealmentMissChancePercent?: number | undefined;
 }
 
 /** Itemized Armor Class triplet and breakdown DTO. */

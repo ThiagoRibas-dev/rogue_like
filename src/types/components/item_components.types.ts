@@ -26,7 +26,12 @@ export interface ItemComponent {
   readonly type: ComponentType.Item;
   readonly itemId: string;
   readonly instanceId: ItemInstanceId;
-  readonly charges?: number;
+  readonly charges?: number | undefined;
+  readonly customName?: string | undefined;
+  readonly customDescription?: string | undefined;
+  readonly specialMaterial?: string | undefined;
+  readonly enhancementBonus?: number | undefined;
+  readonly enhancements?: ReadonlyArray<string> | undefined;
 }
 
 /**

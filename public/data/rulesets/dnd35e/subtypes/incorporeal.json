@@ -14,14 +14,18 @@
       "subtype:incorporeal",
       "ignore_natural_armor"
     ],
-    "modifiers": [],
-    "ruleOverrides": [
+    "modifiers": [
       {
-        "id": "incorporeal_corporeal_miss_chance",
-        "ruleKey": "corporeal_magic_miss_chance_pct",
+        "id": "incorporeal_miss_chance",
+        "target": "miss_chance",
         "value": 50,
-        "priority": 20
-      },
+        "type": "base",
+        "condition": {
+          "effectTagsNone": ["ghost_touch", "force"]
+        }
+      }
+    ],
+    "ruleOverrides": [
       {
         "id": "incorporeal_silent_move",
         "ruleKey": "auto_succeed_move_silently",
@@ -35,7 +39,17 @@
         "name": "Incorporeal Subtype Traits",
         "category": "su",
         "usageMode": "passive",
-        "modifiers": [],
+        "modifiers": [
+          {
+            "id": "incorporeal_miss_chance",
+            "target": "miss_chance",
+            "value": 50,
+            "type": "base",
+            "condition": {
+              "effectTagsNone": ["ghost_touch", "force"]
+            }
+          }
+        ],
         "ruleOverrides": [],
         "grantedTags": [
           "subtype:incorporeal",

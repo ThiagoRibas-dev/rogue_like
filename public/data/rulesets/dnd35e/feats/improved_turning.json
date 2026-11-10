@@ -4,11 +4,12 @@
     "name": "Improved Turning",
     "description": "Turn or rebuke creatures as if you were one level higher than you are in the class that grants the ability.",
     "isFighterBonusFeat": false,
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "effective_turning_level_bonus",
-        "ruleKey": "effective_turning_level_bonus",
-        "value": 1
+        "target": "effective_turning_level",
+        "value": 1,
+        "type": "untyped"
       }
     ]
   }

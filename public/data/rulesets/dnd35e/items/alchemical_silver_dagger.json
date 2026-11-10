@@ -1,6 +1,7 @@
 {
   "alchemical_silver_dagger": {
     "id": "alchemical_silver_dagger",
+    "baseItemId": "dagger",
     "name": "Alchemical Silver Dagger",
     "unidentifiedName": "Alchemical Silver Dagger",
     "description": "Alchemical Silver Dagger (simple light melee weapon, 1d4 piercing).",
@@ -17,18 +18,6 @@
       "piercing",
       "bypass:silver"
     ],
-    "weaponStats": {
-      "proficiencyCategory": "simple",
-      "weaponCategory": "melee",
-      "effort": "light",
-      "damageDice": "1d4",
-      "damageType": "piercing",
-      "critThreatMin": 19,
-      "critMultiplier": 2,
-      "rangeIncrementFt": 10,
-      "reachFt": 5,
-      "strikesAdjacent": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,

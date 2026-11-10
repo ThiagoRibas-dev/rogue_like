@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated research_notes.md with an in-depth comparison of Option 2C (QuestRewardApplierMap + Shared ECS Mutators) vs. Option 2B (ConsequenceAction Unification) across Software Engineering, ECS Best Practices, and Project Architecture, plus full scope for Gaps 1–5, retroactive gather progress, and Milestone 122 tracking.",
-  "updatedAt":  "2026-11-08T15:26:31.356777044Z",
+  "summary":  "Research Notes for Milestone 124: Post-M123 Audit Remediation covering weapon enhancement scoping, lateral spell/feat StatModifier parity, crit immunity, Blind-Fight, and Bane weapons.",
+  "updatedAt":  "2026-11-10T16:45:57.996776792Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -34,6 +34,7 @@ export type BonusType =
   | 'dodge'
   | 'enhancement'
   | 'form_override'
+  | 'haste'
   | 'inherent'
   | 'insight'
   | 'luck'

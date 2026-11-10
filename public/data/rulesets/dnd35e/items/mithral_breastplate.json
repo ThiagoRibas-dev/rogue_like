@@ -1,6 +1,7 @@
 {
   "mithral_breastplate": {
     "id": "mithral_breastplate",
+    "baseItemId": "breastplate",
     "name": "Mithral Breastplate",
     "unidentifiedName": "Mithral Breastplate",
     "description": "Mithral Breastplate (medium, +5 AC, ACP -4, ASF 25%).",
@@ -10,16 +11,6 @@
     "category": "armor",
     "weight": 15,
     "baseValue": 4200,
-    "armorStats": {
-      "armorCategory": "medium",
-      "armorBonus": 5,
-      "maxDexBonus": 3,
-      "armorCheckPenalty": -4,
-      "arcaneSpellFailure": 25,
-      "speed30Ft": 20,
-      "speed20Ft": 15,
-      "isMetal": true
-    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,

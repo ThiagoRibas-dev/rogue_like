@@ -44,13 +44,15 @@ export interface EntityTagCondition {
   readonly targetTagsAll?: ReadonlyArray<string> | undefined;
   readonly targetTagsAny?: ReadonlyArray<string> | undefined;
   readonly targetTagsNone?: ReadonlyArray<string> | undefined;
+  readonly effectTagsAll?: ReadonlyArray<string> | undefined;
   readonly effectTagsAny?: ReadonlyArray<string> | undefined;
+  readonly effectTagsNone?: ReadonlyArray<string> | undefined;
   readonly targetSizeMin?: string | undefined;
 }
 
 /**
  * Checks if self tags, target tags, and effect tags satisfy an EntityTagCondition.
- * Evaluates selfTagsAll/Any/None, targetTagsAll/Any/None, and effectTagsAny.
+ * Evaluates selfTagsAll/Any/None, targetTagsAll/Any/None, and effectTagsAll/Any/None.
  *
  * @param condition The tag condition to evaluate.
  * @param targetTags Optional tags of the opponent/target entity.
@@ -118,6 +120,13 @@ export function matchesEntityTagCondition(
     }
   }
 
+  if (condition.effectTagsAll && condition.effectTagsAll.length > 0) {
+    if (!effectTags) return false;
+    for (const tag of condition.effectTagsAll) {
+      if (!effectTags.includes(tag)) return false;
+    }
+  }
+
   if (condition.effectTagsAny && condition.effectTagsAny.length > 0) {
     if (!effectTags) return false;
     let match = false;
@@ -128,6 +137,14 @@ export function matchesEntityTagCondition(
       }
     }
     if (!match) return false;
+  }
+
+  if (condition.effectTagsNone && condition.effectTagsNone.length > 0) {
+    if (effectTags) {
+      for (const tag of condition.effectTagsNone) {
+        if (effectTags.includes(tag)) return false;
+      }
+    }
   }
 
   return true;

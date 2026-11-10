@@ -12,11 +12,12 @@
       "type": "has_feat",
       "featId": "spell_focus"
     },
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "greater_spell_save_dc_bonus",
-        "ruleKey": "greater_spell_save_dc_bonus",
-        "value": 1
+        "target": "spell_save_dc",
+        "value": 1,
+        "type": "untyped"
       }
     ]
   }

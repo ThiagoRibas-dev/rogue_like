@@ -1,0 +1,321 @@
+{
+  "flaming": {
+    "id": "flaming",
+    "name": "Flaming",
+    "description": "Upon command, a flaming weapon sheathes its blade in fire, dealing an extra 1d6 points of fire damage on a successful hit.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 1,
+    "damageRiders": [
+      {
+        "id": "flaming_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "fire"
+      }
+    ]
+  },
+  "flaming_burst": {
+    "id": "flaming_burst",
+    "name": "Flaming Burst",
+    "description": "A flaming burst weapon deals +1d6 fire damage on hit and explodes with flame upon scoring a critical hit (+1d10 on x2, +2d10 on x3, +3d10 on x4).",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 2,
+    "damageRiders": [
+      {
+        "id": "flaming_burst_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "fire"
+      },
+      {
+        "id": "flaming_burst_crit",
+        "trigger": "on_crit",
+        "diceByCritMultiplier": {
+          "2": "1d10",
+          "3": "2d10",
+          "4": "3d10"
+        },
+        "damageType": "fire"
+      }
+    ]
+  },
+  "frost": {
+    "id": "frost",
+    "name": "Frost",
+    "description": "Upon command, a frost weapon is sheathed in a cold, icy aura, dealing an extra 1d6 points of cold damage on a successful hit.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 1,
+    "damageRiders": [
+      {
+        "id": "frost_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "cold"
+      }
+    ]
+  },
+  "icy_burst": {
+    "id": "icy_burst",
+    "name": "Icy Burst",
+    "description": "An icy burst weapon deals +1d6 cold damage on hit and erupts with frost on a critical hit (+1d10 on x2, +2d10 on x3, +3d10 on x4).",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 2,
+    "damageRiders": [
+      {
+        "id": "icy_burst_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "cold"
+      },
+      {
+        "id": "icy_burst_crit",
+        "trigger": "on_crit",
+        "diceByCritMultiplier": {
+          "2": "1d10",
+          "3": "2d10",
+          "4": "3d10"
+        },
+        "damageType": "cold"
+      }
+    ]
+  },
+  "shock": {
+    "id": "shock",
+    "name": "Shock",
+    "description": "Upon command, a shock weapon is sheathed in crackling electricity, dealing an extra 1d6 points of electricity damage on a successful hit.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 1,
+    "damageRiders": [
+      {
+        "id": "shock_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "electricity"
+      }
+    ]
+  },
+  "shocking_burst": {
+    "id": "shocking_burst",
+    "name": "Shocking Burst",
+    "description": "A shocking burst weapon deals +1d6 electricity damage on hit and creates an electrical burst on a critical hit (+1d10 on x2, +2d10 on x3, +3d10 on x4).",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 2,
+    "damageRiders": [
+      {
+        "id": "shocking_burst_hit",
+        "trigger": "on_hit",
+        "dice": "1d6",
+        "damageType": "electricity"
+      },
+      {
+        "id": "shocking_burst_crit",
+        "trigger": "on_crit",
+        "diceByCritMultiplier": {
+          "2": "1d10",
+          "3": "2d10",
+          "4": "3d10"
+        },
+        "damageType": "electricity"
+      }
+    ]
+  },
+  "keen": {
+    "id": "keen",
+    "name": "Keen",
+    "description": "This ability doubles the normal threat range of a weapon.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 1,
+    "effectBundle": {
+      "bundleId": "item_enh:keen",
+      "name": "Keen",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "Doubles critical threat range.",
+      "modifiers": [
+        {
+          "id": "keen_threat",
+          "target": "crit_threat_doubling",
+          "value": 1,
+          "type": "threat_expansion"
+        }
+      ]
+    }
+  },
+  "ghost_touch": {
+    "id": "ghost_touch",
+    "name": "Ghost Touch",
+    "description": "A ghost touch weapon deals normal damage against incorporeal creatures regardless of the bonus. Incorporeal armor bonuses also apply against incorporeal touch attacks.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon", "armor", "shield"],
+    "bonusEquivalent": 1,
+    "effectBundle": {
+      "bundleId": "item_enh:ghost_touch",
+      "name": "Ghost Touch",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "Full damage and protection against incorporeal foes.",
+      "grantedTags": ["ghost_touch", "bypass:incorporeal"]
+    }
+  },
+  "holy": {
+    "id": "holy",
+    "name": "Holy",
+    "description": "A holy weapon is imbued with holy power, dealing +2d6 damage against evil creatures and bypassing damage reduction as a good-aligned weapon.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 2,
+    "damageRiders": [
+      {
+        "id": "holy_hit",
+        "trigger": "on_hit",
+        "dice": "2d6",
+        "damageType": "untyped",
+        "condition": {
+          "targetTagsAny": ["alignment:evil", "subtype:evil"]
+        }
+      }
+    ],
+    "effectBundle": {
+      "bundleId": "item_enh:holy",
+      "name": "Holy",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "Good-aligned weapon bypassing DR/good.",
+      "grantedTags": ["bypass:good"]
+    }
+  },
+  "unholy": {
+    "id": "unholy",
+    "name": "Unholy",
+    "description": "An unholy weapon is imbued with unholy power, dealing +2d6 damage against good creatures and bypassing damage reduction as an evil-aligned weapon.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 2,
+    "damageRiders": [
+      {
+        "id": "unholy_hit",
+        "trigger": "on_hit",
+        "dice": "2d6",
+        "damageType": "untyped",
+        "condition": {
+          "targetTagsAny": ["alignment:good", "subtype:good"]
+        }
+      }
+    ],
+    "effectBundle": {
+      "bundleId": "item_enh:unholy",
+      "name": "Unholy",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "Evil-aligned weapon bypassing DR/evil.",
+      "grantedTags": ["bypass:evil"]
+    }
+  },
+  "bane": {
+    "id": "bane",
+    "name": "Bane",
+    "description": "A bane weapon excels at attacking one type or subtype of creature. Against its designated foe, its effective enhancement bonus is +2 higher than normal and it deals an extra 2d6 points of damage.",
+    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
+    "bonusEquivalent": 1
+  },
+  "speed": {
+    "id": "speed",
+    "name": "Speed",
+    "description": "When making a full attack, a weapon of speed grants one extra attack at full base attack bonus.",
+    "appliesTo": ["melee_weapon", "ranged_weapon"],
+    "bonusEquivalent": 3,
+    "effectBundle": {
+      "bundleId": "item_enh:speed",
+      "name": "Speed",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "One extra attack at highest BAB during full attack.",
+      "modifiers": [
+        {
+          "id": "speed_extra_attack",
+          "target": "extra_full_bab_attacks",
+          "value": 1,
+          "type": "haste"
+        }
+      ]
+    }
+  },
+  "animated": {
+    "id": "animated",
+    "name": "Animated",
+    "description": "An animated shield floats in the air to protect its wielder, freeing both hands.",
+    "appliesTo": ["shield"],
+    "bonusEquivalent": 2,
+    "effectBundle": {
+      "bundleId": "item_enh:animated",
+      "name": "Animated",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "Shield protects without occupying hand.",
+      "grantedTags": ["shield:animated"]
+    }
+  },
+  "fortification_light": {
+    "id": "fortification_light",
+    "name": "Light Fortification",
+    "description": "This suit of armor or shield produces a magical force that protects vital areas (25% chance to ignore critical hits or sneak attacks).",
+    "appliesTo": ["armor", "shield"],
+    "bonusEquivalent": 1,
+    "effectBundle": {
+      "bundleId": "item_enh:fortification_light",
+      "name": "Light Fortification",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "25% chance to ignore critical hits and sneak attacks.",
+      "modifiers": [
+        {
+          "id": "fortification_light_mod",
+          "target": "fortification",
+          "value": 25,
+          "type": "enhancement"
+        }
+      ]
+    }
+  },
+  "fortification_moderate": {
+    "id": "fortification_moderate",
+    "name": "Moderate Fortification",
+    "description": "75% chance to ignore critical hits or sneak attacks.",
+    "appliesTo": ["armor", "shield"],
+    "bonusEquivalent": 3,
+    "effectBundle": {
+      "bundleId": "item_enh:fortification_moderate",
+      "name": "Moderate Fortification",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "75% chance to ignore critical hits and sneak attacks.",
+      "modifiers": [
+        {
+          "id": "fortification_moderate_mod",
+          "target": "fortification",
+          "value": 75,
+          "type": "enhancement"
+        }
+      ]
+    }
+  },
+  "fortification_heavy": {
+    "id": "fortification_heavy",
+    "name": "Heavy Fortification",
+    "description": "100% chance to ignore critical hits or sneak attacks.",
+    "appliesTo": ["armor", "shield"],
+    "bonusEquivalent": 5,
+    "effectBundle": {
+      "bundleId": "item_enh:fortification_heavy",
+      "name": "Heavy Fortification",
+      "category": "item",
+      "usageMode": "passive",
+      "description": "100% chance to ignore critical hits and sneak attacks.",
+      "modifiers": [
+        {
+          "id": "fortification_heavy_mod",
+          "target": "fortification",
+          "value": 100,
+          "type": "enhancement"
+        }
+      ]
+    }
+  }
+}

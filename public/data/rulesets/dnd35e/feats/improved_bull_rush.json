@@ -18,16 +18,19 @@
         }
       ]
     },
+    "modifiers": [
+      {
+        "id": "bull_rush_check_bonus",
+        "target": "bull_rush",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "bull_rush_no_aoo",
         "ruleKey": "bull_rush_no_aoo",
         "value": true
-      },
-      {
-        "id": "bull_rush_check_bonus",
-        "ruleKey": "bull_rush_check_bonus",
-        "value": 4
       }
     ]
   }

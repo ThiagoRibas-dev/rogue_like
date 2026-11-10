@@ -18,16 +18,19 @@
         }
       ]
     },
+    "modifiers": [
+      {
+        "id": "trip_check_bonus",
+        "target": "trip",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "trip_no_aoo",
         "ruleKey": "trip_no_aoo",
         "value": true
-      },
-      {
-        "id": "trip_check_bonus",
-        "ruleKey": "trip_check_bonus",
-        "value": 4
       },
       {
         "id": "trip_followup_melee_attack",

@@ -24,11 +24,13 @@ export interface AttackRollParams {
   readonly extraCritMultipliers?: ReadonlyArray<number>;
   readonly bonusUnmultipliedDice?: ReadonlyArray<string>;
   readonly precisionDice?: ReadonlyArray<string>;
-  readonly concealmentMissChancePercent?: 0 | 20 | 50;
+  readonly concealmentMissChancePercent?: number;
+  readonly fortificationPercent?: number;
   readonly hasBlindFight?: boolean;
   readonly targetImmuneToCrits?: boolean;
   readonly forcedAttackRoll?: number;
   readonly forcedConfirmRoll?: number;
+  readonly forcedFortificationRoll?: number;
 }
 
 /** Result of resolving a single attack roll, concealment check, and critical confirmation. */
@@ -126,10 +128,20 @@ export function resolveAttackRoll(params: AttackRollParams): AttackResolutionRes
     };
   }
 
-  const isThreat = atkRoll.naturalRoll >= params.critThreatMin && params.targetImmuneToCrits !== true;
+  let isThreat = atkRoll.naturalRoll >= params.critThreatMin && params.targetImmuneToCrits !== true;
   let isCriticalConfirmed = false;
   let confirmNaturalRoll: number | undefined;
   let confirmTotalRoll: number | undefined;
+
+  const fortification = params.fortificationPercent ?? 0;
+  let fortifiedAgainstCrit = false;
+  if (fortification > 0 && isThreat) {
+    const fortRoll = params.forcedFortificationRoll ?? Math.floor(rng.getUniform() * PERCENT_ROLL_MODULUS) + 1;
+    if (fortRoll <= fortification) {
+      fortifiedAgainstCrit = true;
+      isThreat = false;
+    }
+  }
 
   if (isThreat) {
     const confirmRoll = rollD20('attack', params.attackBonus, params.forcedConfirmRoll);
@@ -155,7 +167,19 @@ export function resolveAttackRoll(params: AttackRollParams): AttackResolutionRes
     unmultipliedExtraDamage += Math.max(0, evaluateDiceExpression(expr).total);
   }
 
-  if (missChance === 0 && params.targetImmuneToCrits !== true) {
+  let precisionNegated = false;
+  if (fortification > 0) {
+    if (fortifiedAgainstCrit) {
+      precisionNegated = true;
+    } else {
+      const fortRoll = params.forcedFortificationRoll ?? Math.floor(rng.getUniform() * PERCENT_ROLL_MODULUS) + 1;
+      if (fortRoll <= fortification) {
+        precisionNegated = true;
+      }
+    }
+  }
+
+  if (missChance === 0 && params.targetImmuneToCrits !== true && !precisionNegated) {
     for (const expr of params.precisionDice ?? []) {
       unmultipliedExtraDamage += Math.max(0, evaluateDiceExpression(expr).total);
     }

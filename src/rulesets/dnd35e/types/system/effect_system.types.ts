@@ -37,6 +37,7 @@ export const DnD35DeclarativeModifierSchema = z.object({
     'dodge',
     'enhancement',
     'form_override',
+    'haste',
     'inherent',
     'insight',
     'luck',
@@ -108,7 +109,7 @@ export const DnD35EffectBundleSchema = z.object({
   bundleId: z.string(),
   name: z.string(),
   category: z
-    .enum(['ex', 'su', 'sp', 'trait', 'domain_power', 'feat', 'class_feature', 'acf', 'proficiency'])
+    .enum(['ex', 'su', 'sp', 'trait', 'domain_power', 'feat', 'class_feature', 'acf', 'proficiency', 'item'])
     .default('trait'),
   usageMode: z.enum(['passive', 'activated', 'toggle', 'variable_dial', 'spell_like', 'triggered']).default('passive'),
   description: z.string().optional(),
@@ -266,6 +267,7 @@ export const DnD35RacialConditionalModifierSchema = z.object({
     'dodge',
     'enhancement',
     'form_override',
+    'haste',
     'inherent',
     'insight',
     'luck',

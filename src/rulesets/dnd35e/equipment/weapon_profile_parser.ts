@@ -13,10 +13,29 @@ import type {
   StatModifier,
   StatResolutionBreakdown
 } from '../types/dnd35e.types.ts';
-import type { DnD35DamageType, DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
+import type {
+  DnD35ClassDefinition,
+  DnD35DamageType,
+  DnD35ItemDefinition,
+  DnD35ItemEnhancement,
+  DnD35WeaponDamageRider
+} from '../types/dnd35e_system.types.ts';
+import {
+  computeExpandedCritThreatMin,
+  evaluateNonproficiencyPenalty,
+  getCanonicalBaseWeapons,
+  resolveEffectiveItemDefinition
+} from './item_inheritance.ts';
 import { type SpecialMaterialType, applyMaterialPhysics, computeMaterialEquipmentStats } from './special_materials.ts';
 import { evaluateWeaponWieldingProfile, scaleWeaponDamageDice } from './weapon_scaling.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
+
+export {
+  computeExpandedCritThreatMin,
+  evaluateNonproficiencyPenalty,
+  getCanonicalBaseWeapons,
+  resolveEffectiveItemDefinition
+};
 
 /**
  * Resolved combat profile of an equipped weapon (or unarmed strike fallback) in a hand/held slot.
@@ -25,10 +44,12 @@ export interface EquippedWeaponProfile {
   readonly isArmed: boolean;
   readonly wieldable: boolean;
   readonly weaponItemId?: string | undefined;
+  readonly baseWeaponId?: string | undefined;
   readonly weaponName: string;
   readonly weaponSize: CreatureSizeCategory;
   readonly weaponDice: string;
   readonly weaponDamageType: DnD35DamageType;
+  readonly baseCritThreatMin?: number | undefined;
   readonly critThreatMin: number;
   readonly critMultiplier: number;
   readonly inherentEffort: 'light' | 'one_handed' | 'two_handed';
@@ -45,6 +66,7 @@ export interface EquippedWeaponProfile {
   readonly nonproficiencyPenalty: number;
   readonly damageBonus: number;
   readonly bypassTags: ReadonlyArray<string>;
+  readonly damageRiders?: ReadonlyArray<DnD35WeaponDamageRider> | undefined;
   readonly slotId?: string | undefined;
   readonly limbGroupId?: string | undefined;
   readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
@@ -64,63 +86,8 @@ const DEFAULT_CRIT_THREAT_MIN = 20;
 const DEFAULT_CRIT_MULTIPLIER = 2;
 const MAX_CRIT_MULTIPLIER = 5;
 const MIN_WEAPON_DAMAGE_BONUS = -10;
-const NONPROFICIENCY_ATTACK_PENALTY = -4;
 const UNARMED_BASE_MEDIUM_DICE = '1d3';
 const DEFAULT_WEAPON_MEDIUM_DICE = '1d8';
-const CRIT_THREAT_CEILING = 21;
-const MIN_CRIT_THREAT_ROLL = 2;
-
-/**
- * Doubles a weapon's critical threat range (e.g. 20 -> 19, 19 -> 17, 18 -> 15) for Keen or Improved Critical.
- * Per SRD rules, Keen and Improved Critical do not stack with each other.
- */
-export function computeExpandedCritThreatMin(baseCritThreatMin: number, expandThreatRange: boolean | number): number {
-  const expansionSteps = typeof expandThreatRange === 'boolean' ? (expandThreatRange ? 1 : 0) : expandThreatRange;
-  if (expansionSteps <= 0) return baseCritThreatMin;
-  const span = Math.max(1, CRIT_THREAT_CEILING - baseCritThreatMin);
-  return Math.max(MIN_CRIT_THREAT_ROLL, CRIT_THREAT_CEILING - span * (1 + expansionSteps));
-}
-
-/**
- * Evaluates the nonproficiency attack penalty (`0` or `-4`) for a weapon based on its
- * resolved grip handedness and the actor's proficiencies/racial familiarity.
- */
-export function evaluateNonproficiencyPenalty(
-  weaponItemId: string | undefined,
-  isExotic1HMartial2H: boolean | undefined,
-  finalHandedness: 'light' | 'one_handed' | 'two_handed',
-  dndData: Partial<DnD35EntityData> | undefined,
-  familiaritySubtypes: ReadonlyArray<string> = [],
-  proficiencyCategory?: 'simple' | 'martial' | 'exotic'
-): number {
-  const isExotic = proficiencyCategory === 'exotic' || isExotic1HMartial2H === true;
-  if (!isExotic || (isExotic1HMartial2H === true && finalHandedness === 'two_handed')) {
-    return 0;
-  }
-  const feats = dndData?.feats ?? [];
-  const isDeityWeapon = weaponItemId !== undefined && dndData?.deityFavoredWeaponId === weaponItemId;
-  const hasExoticProficiency =
-    isDeityWeapon ||
-    feats.some(
-      (f) =>
-        f === 'exotic_weapon_proficiency' ||
-        (weaponItemId !== undefined &&
-          (f === `exotic_weapon_proficiency_${weaponItemId}` ||
-            f === `exotic_weapon_proficiency:${weaponItemId}` ||
-            f === `proficiency:weapon:${weaponItemId}` ||
-            f === `martial_weapon_proficiency:${weaponItemId}`))
-    );
-  if (hasExoticProficiency) {
-    return 0;
-  }
-  if (familiaritySubtypes.length > 0) {
-    const actorSubtypes = new Set<string>([...(dndData?.raceId ? [dndData.raceId] : []), ...(dndData?.subtypes ?? [])]);
-    if (familiaritySubtypes.some((sub) => actorSubtypes.has(sub))) {
-      return 0;
-    }
-  }
-  return NONPROFICIENCY_ATTACK_PENALTY;
-}
 
 /**
  * Builds an unarmed strike profile for an actor of size `wielderSize` using `scaleWeaponDamageDice`.
@@ -131,6 +98,8 @@ export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand
   return {
     isArmed: false,
     wieldable: true,
+    weaponItemId: 'unarmed_strike',
+    baseWeaponId: 'unarmed_strike',
     weaponName: isOffHand ? 'Unarmed Strike (Off-Hand)' : 'Unarmed Strike',
     weaponSize: wielderSize,
     weaponDice: unarmedDice,
@@ -165,8 +134,11 @@ export function parseEquippedItem(
   const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
   if (!itemComp) return undefined;
 
-  const baseItemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
-  if (!baseItemDef || baseItemDef.category !== 'weapon') return undefined;
+  const rawItemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+  if (!rawItemDef || rawItemDef.category !== 'weapon') return undefined;
+
+  const baseItemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
+  const baseWeaponId = baseItemDef.baseItemId ?? baseItemDef.id;
 
   const entityTagsComp = getComponent(state, slot.equippedItem, ComponentType.Tags) as
     { tags?: ReadonlyArray<string> } | undefined;
@@ -204,6 +176,35 @@ export function parseEquippedItem(
     bypassTags.push('bypass:magic');
   }
 
+  const sysEnhancements =
+    (state.campaign.systemContent?.['itemEnhancements'] as Record<string, DnD35ItemEnhancement> | undefined) ?? {};
+  const damageRiders: DnD35WeaponDamageRider[] = [];
+  const enhancementsList = magicalProps?.enhancements ?? [];
+  for (const enhId of enhancementsList) {
+    const enh = sysEnhancements[enhId];
+    if (enh?.damageRiders) {
+      damageRiders.push(...enh.damageRiders);
+    }
+    if (enh?.effectBundle?.grantedTags) {
+      for (const t of enh.effectBundle.grantedTags) {
+        bypassTags.push(t);
+      }
+    }
+  }
+
+  const baneType = magicalProps?.baneCreatureType;
+  if (baneType) {
+    damageRiders.push({
+      id: `bane_${baneType}_hit`,
+      trigger: 'on_hit',
+      dice: '2d6',
+      damageType: 'untyped',
+      condition: {
+        targetTagsAny: [`type:${baneType}`, `subtype:${baneType}`]
+      }
+    });
+  }
+
   let weaponSize: CreatureSizeCategory = wielderSize;
   const sizeTag = itemTags.find((t) => t.startsWith('weaponSize:') || t.startsWith('size:'));
   if (sizeTag) {
@@ -237,7 +238,7 @@ export function parseEquippedItem(
   const candidateCritMods: StatModifier[] = [
     ...(dndData?.statModifiers ?? []).filter((m) => m.targetStat === 'crit_threat_doubling')
   ];
-  if (magicalProps?.keen === true || itemTags.includes('keen')) {
+  if (magicalProps?.keen === true || itemTags.includes('keen') || enhancementsList.includes('keen')) {
     candidateCritMods.push({
       targetStat: 'crit_threat_doubling',
       value: 1,
@@ -245,13 +246,15 @@ export function parseEquippedItem(
       sourceId: `item:${baseItemDef.id}:keen`,
       sourcePath: `item:${baseItemDef.id}/keen`,
       origin: 'magical',
-      condition: { effectTagsAny: [`weapon:${baseItemDef.id}`] }
+      condition: { effectTagsAny: [`weapon:${baseWeaponId}`, `weapon:${baseItemDef.id}`] }
     });
   }
   const feats = dndData?.feats ?? [];
   const hasImprovedCrit = feats.some(
     (f) =>
       f === 'improved_critical' ||
+      f === `improved_critical:${baseWeaponId}` ||
+      f === `improved_critical_${baseWeaponId}` ||
       f === `improved_critical:${baseItemDef.id}` ||
       f === `improved_critical_${baseItemDef.id}`
   );
@@ -260,17 +263,18 @@ export function parseEquippedItem(
       targetStat: 'crit_threat_doubling',
       value: 1,
       bonusType: 'threat_expansion',
-      sourceId: `feat:improved_critical:${baseItemDef.id}`,
-      sourcePath: `feat:improved_critical/${baseItemDef.id}`,
+      sourceId: `feat:improved_critical:${baseWeaponId}`,
+      sourcePath: `feat:improved_critical/${baseWeaponId}`,
       origin: 'ex',
-      condition: { effectTagsAny: [`weapon:${baseItemDef.id}`] }
+      condition: { effectTagsAny: [`weapon:${baseWeaponId}`, `weapon:${baseItemDef.id}`] }
     });
   }
 
+  const baseCritThreatMin = critThreatMin;
   const threatDoublingBreakdown = resolveTypedModifiersWithBreakdown(candidateCritMods, {
-    effectTags: [`weapon:${baseItemDef.id}`]
+    effectTags: [`weapon:${baseWeaponId}`, `weapon:${baseItemDef.id}`]
   });
-  critThreatMin = computeExpandedCritThreatMin(critThreatMin, threatDoublingBreakdown.total);
+  critThreatMin = computeExpandedCritThreatMin(baseCritThreatMin, threatDoublingBreakdown.total);
 
   let critMultiplier = weaponStats?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER;
   const critMultTag = itemTags.find((t) => t.startsWith('critMultiplier:') || t.startsWith('crit:x'));
@@ -299,13 +303,16 @@ export function parseEquippedItem(
   const enhBonus = magicalProps?.enhancementBonus ?? 0;
   const masterworkAtk = magicalProps?.isMasterwork === true && enhBonus === 0 ? 1 : 0;
   const attackBonus = Math.max(baseItemDef.equippable?.attackBonus ?? 0, enhBonus, masterworkAtk);
+  const classesRegistry = state.campaign.systemContent?.['classes'] as Record<string, DnD35ClassDefinition> | undefined;
   const nonproficiencyPenalty = evaluateNonproficiencyPenalty(
     baseItemDef.id,
+    baseWeaponId,
     isExotic1HMartial2H,
     effectiveEffort,
     dndData,
     weaponStats?.familiaritySubtypes ?? [],
-    weaponStats?.proficiencyCategory
+    weaponStats?.proficiencyCategory,
+    classesRegistry
   );
   const damageBonus = Math.max(MIN_WEAPON_DAMAGE_BONUS, enhBonus - weaponPenalty);
 
@@ -313,10 +320,12 @@ export function parseEquippedItem(
     isArmed: true,
     wieldable: wieldProfile.wieldable,
     weaponItemId: baseItemDef.id,
+    baseWeaponId,
     weaponName: baseItemDef.name,
     weaponSize,
     weaponDice: scaledDice,
     weaponDamageType: damageType,
+    baseCritThreatMin,
     critThreatMin,
     critMultiplier,
     inherentEffort,
@@ -333,6 +342,7 @@ export function parseEquippedItem(
     nonproficiencyPenalty,
     damageBonus,
     bypassTags: Array.from(new Set(bypassTags)),
+    damageRiders: damageRiders.length > 0 ? damageRiders : undefined,
     slotId: slot.id,
     limbGroupId: slot.limbGroupId,
     critThreatBreakdown: threatDoublingBreakdown

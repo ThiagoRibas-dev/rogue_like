@@ -2,6 +2,7 @@ import { getComponent } from '../../core/ecs.ts';
 import { ComponentType, type EquipmentComponent, type ItemComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
+import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import type { DnD35EntityData } from './types/dnd35e.types.ts';
 import type { DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
 
@@ -42,8 +43,11 @@ export function resolveEntitySituationalTagContext(
     for (const slot of equipment.slots) {
       if (slot.equippedItem === null || slot.suppressed === true) continue;
       const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
-      const itemDef = itemComp ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined) : undefined;
-      if (!itemDef) continue;
+      const rawItemDef = itemComp
+        ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined)
+        : undefined;
+      if (!rawItemDef) continue;
+      const itemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
 
       const itemTags = itemDef.tags ?? [];
       const armorStats = itemDef.armorStats;

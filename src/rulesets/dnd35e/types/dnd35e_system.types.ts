@@ -18,7 +18,7 @@ import {
   DnD35SubtypeDefinitionSchema,
   DnD35TemplateSchema
 } from './system/creature_system.types.ts';
-import { DnD35ItemDefinitionSchema } from './system/item_system.types.ts';
+import { DnD35ItemDefinitionSchema, DnD35ItemEnhancementSchema } from './system/item_system.types.ts';
 
 // Re-export base types and schemas
 export * from './system/base_system.types.ts';
@@ -178,6 +178,7 @@ export const DnD35SystemContentSchema = z.object({
   skills: z.record(z.string(), DnD35SkillDefinitionSchema).default({}),
   feats: z.record(z.string(), DnD35FeatDefinitionSchema).default({}),
   items: z.record(z.string(), DnD35ItemDefinitionSchema).default({}),
+  itemEnhancements: z.record(z.string(), DnD35ItemEnhancementSchema).default({}),
   spells: z.record(z.string(), DnD35SpellDefinitionSchema).default({}),
   templates: z.record(z.string(), DnD35TemplateSchema).default({}),
   races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),

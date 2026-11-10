@@ -18,8 +18,9 @@ import type {
   UIInventoryItem
 } from '../../../types/ui_adapter.types.ts';
 import type { DnD35ResolvedStrikeProfile } from '../combat/attack_routine.ts';
+import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
-import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import type { DnD35ItemDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 const NATURAL_20 = 20;
 const ASCII_LOWERCASE_A = 97;
@@ -116,7 +117,9 @@ export function mapEntityItemToUI(
 ): UIInventoryItem | null {
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   if (!itemComp) return null;
-  const def = state.campaign?.items?.[itemComp.itemId];
+  const rawDef = state.campaign?.items?.[itemComp.itemId] as DnD35ItemDefinition | undefined;
+  const def =
+    rawDef && state.campaign?.items ? resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp) : rawDef;
   const name = def?.name ?? itemComp.itemId.replace(/_/g, ' ');
   const renderable = getComponent(state, itemEntityId, ComponentType.Renderable);
   const slot = def?.equippable?.slot ?? 'held';
@@ -224,7 +227,11 @@ export function buildAttackGroupsFromStrikes(
         attackBonuses: bonuses.join(' / '),
         damageFormula: `${s.weaponDice} ${formatSigned(dmgBonus)}`,
         criticalProfile: `${critPrefix} / x${s.critMultiplier}`,
-        riderNotes: [s.weaponDamageType.toUpperCase(), ...s.bypassTags].join(' • ')
+        riderNotes: [
+          s.weaponDamageType.toUpperCase(),
+          ...s.bypassTags,
+          ...(s.damageRiders?.map((r) => `+${r.dice ?? ''} ${r.damageType}`) ?? [])
+        ].join(' • ')
       };
     });
   }

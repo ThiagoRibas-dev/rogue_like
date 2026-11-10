@@ -7,11 +7,12 @@
     "repeatable": {
       "mode": "stacking"
     },
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "extra_turn_attempts_per_day",
-        "ruleKey": "extra_turn_attempts_per_day",
-        "value": 4
+        "target": "turn_attempts_per_day",
+        "value": 4,
+        "type": "untyped"
       }
     ]
   }

@@ -1,6 +1,11 @@
 import { appendSourcePath } from '../modifiers.ts';
 import { collectClassFeaturesUpToLevel } from '../progression.ts';
-import { evaluateEffectBundle, isActivationConditionMet } from '../srd_registry.ts';
+import {
+  evaluateEffectBundle,
+  isActivationConditionMet,
+  parseParameterizedFeatId,
+  resolveFeatEffectBundle
+} from '../srd_registry.ts';
 import type { HitDieTrack, StatModifier, StatModifierCondition } from '../types/dnd35e.types.ts';
 import type {
   DnD35ClassDefinition,
@@ -198,7 +203,7 @@ export function buildFeatEffectModifiers(
   const featOccurrences: Record<string, number> = {};
 
   for (const rawFeatId of featIds) {
-    const baseFeatId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    const { baseFeatId, targetId } = parseParameterizedFeatId(rawFeatId);
     const featDef = featRegistry[rawFeatId] ?? featRegistry[baseFeatId];
     if (!featDef) continue;
     if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(featDef.id)) continue;
@@ -208,21 +213,25 @@ export function buildFeatEffectModifiers(
     const instanceSuffix = featDef.repeatable?.mode === 'stacking' || occurrence > 1 ? `#${occurrence}` : '';
     const featRoot = `feat:${rawFeatId}${instanceSuffix}`;
 
-    for (const mod of featDef.modifiers) {
-      modifiers.push({
-        targetStat: mod.target,
-        value: mod.value,
-        bonusType: mod.type,
-        sourceId: `${featRoot}:${mod.id}`,
-        sourcePath: appendSourcePath(featRoot, mod.id),
-        origin: 'ex',
-        ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
-        ...(mod.condition !== undefined ? { condition: mod.condition } : {})
-      });
+    if (featDef.modifiers.length > 0) {
+      const topLevelResolved = resolveFeatEffectBundle({ ...featDef, effectBundle: undefined }, targetId);
+      for (const mod of topLevelResolved.modifiers) {
+        modifiers.push({
+          targetStat: mod.target,
+          value: mod.value,
+          bonusType: mod.type,
+          sourceId: `${featRoot}:${mod.id}`,
+          sourcePath: appendSourcePath(featRoot, mod.id),
+          origin: 'ex',
+          ...(mod.effectTags !== undefined ? { effectTags: mod.effectTags } : {}),
+          ...(mod.condition !== undefined ? { condition: mod.condition } : {})
+        });
+      }
     }
 
     if (featDef.effectBundle) {
-      const evalRes = evaluateEffectBundle(featDef.effectBundle, featRoot, suppressedBundleIds, activeSelfTags);
+      const resolvedBundle = resolveFeatEffectBundle(featDef, targetId);
+      const evalRes = evaluateEffectBundle(resolvedBundle, featRoot, suppressedBundleIds, activeSelfTags);
       for (const sm of evalRes.statModifiers) {
         modifiers.push({
           ...sm,
@@ -248,31 +257,28 @@ export function collectActiveFeatRuleOverrides(
   const overrides: DnD35RuleOverrideEntry[] = [];
 
   for (const rawFeatId of featIds) {
-    const baseFeatId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    const { baseFeatId, targetId } = parseParameterizedFeatId(rawFeatId);
     const featDef = featRegistry[rawFeatId] ?? featRegistry[baseFeatId];
     if (!featDef) continue;
     if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(featDef.id)) continue;
 
-    overrides.push(...featDef.ruleOverrides);
-    if (featDef.effectBundle) {
-      const evalRes = evaluateEffectBundle(
-        featDef.effectBundle,
-        `feat:${rawFeatId}`,
-        suppressedBundleIds,
-        activeSelfTags
-      );
-      overrides.push(...evalRes.ruleOverrides);
-    }
+    const resolvedBundle = resolveFeatEffectBundle(featDef, targetId);
+    const evalRes = evaluateEffectBundle(resolvedBundle, `feat:${rawFeatId}`, suppressedBundleIds, activeSelfTags);
+    overrides.push(...evalRes.ruleOverrides);
   }
 
   return overrides;
 }
+
+/** Base primary-hand and off-hand attack penalty (`-4`) when fighting with two weapons with the Two-Weapon Fighting feat before light-weapon adjustment. */
+const TWF_FEAT_BASE_PENALTY = -4;
 
 /**
  * Resolved combat behavioral flags and numerical penalty overrides derived purely from active `DnD35RuleOverrideEntry` records.
  */
 export interface ResolvedActiveCombatRules {
   readonly hasWeaponFinesse: boolean;
+  readonly hasBlindFight: boolean;
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
   readonly hasExoticWeaponProficiency: boolean;
@@ -295,8 +301,14 @@ export function buildCombatRuleOverridesFromActiveRules(
   const hasWeaponFinesse = ruleOverrides.some(
     (r) => r.ruleKey === 'use_dex_for_light_finesse_melee_attack' && r.value === true
   );
-  const hasCleave = ruleOverrides.some((r) => r.ruleKey === 'cleave_followup_on_drop' && r.value === true);
-  const hasGreatCleave = ruleOverrides.some((r) => r.ruleKey === 'great_cleave_unlimited_on_drop' && r.value === true);
+  const hasBlindFight = ruleOverrides.some((r) => r.ruleKey === 'reroll_concealment_miss_chance' && r.value === true);
+  const hasCleave = ruleOverrides.some(
+    (r) => (r.ruleKey === 'cleave_followup_on_drop' || r.ruleKey === 'cleave_extra_attack_on_drop') && r.value === true
+  );
+  const hasGreatCleave = ruleOverrides.some(
+    (r) =>
+      (r.ruleKey === 'great_cleave_unlimited_on_drop' || r.ruleKey === 'great_cleave_unlimited') && r.value === true
+  );
   const hasExoticWeaponProficiency = ruleOverrides.some(
     (r) => r.ruleKey === 'exotic_weapon_proficiency' && r.value === true
   );
@@ -308,9 +320,17 @@ export function buildCombatRuleOverridesFromActiveRules(
   let extraOffHandAttacks = 0;
 
   for (const r of ruleOverrides) {
-    if (r.ruleKey === 'secondary_natural_penalty' && typeof r.value === 'number') {
+    if (
+      (r.ruleKey === 'secondary_natural_penalty' || r.ruleKey === 'secondary_natural_attack_penalty') &&
+      typeof r.value === 'number'
+    ) {
       secondaryNaturalPenalty =
         secondaryNaturalPenalty === undefined ? r.value : Math.max(secondaryNaturalPenalty, r.value);
+    } else if (r.ruleKey === 'twf_penalty_reduction' && r.value === true) {
+      baseTwfPrimary =
+        baseTwfPrimary === undefined ? TWF_FEAT_BASE_PENALTY : Math.max(baseTwfPrimary, TWF_FEAT_BASE_PENALTY);
+      baseTwfOffHand =
+        baseTwfOffHand === undefined ? TWF_FEAT_BASE_PENALTY : Math.max(baseTwfOffHand, TWF_FEAT_BASE_PENALTY);
     } else if (r.ruleKey === 'twf_primary_penalty' && typeof r.value === 'number') {
       baseTwfPrimary = baseTwfPrimary === undefined ? r.value : Math.max(baseTwfPrimary, r.value);
     } else if (r.ruleKey === 'twf_offhand_penalty' && typeof r.value === 'number') {
@@ -328,6 +348,7 @@ export function buildCombatRuleOverridesFromActiveRules(
 
   return {
     hasWeaponFinesse,
+    hasBlindFight,
     hasCleave,
     hasGreatCleave,
     hasExoticWeaponProficiency,

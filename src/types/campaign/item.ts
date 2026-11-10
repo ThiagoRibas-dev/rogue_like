@@ -34,6 +34,7 @@ export type EquipmentSlot = z.infer<typeof EquipmentSlotEnum>;
 /** Zod schema defining an item registry template. */
 export const ItemDefinitionSchema = z.object({
   id: z.string(),
+  baseItemId: z.string().optional(),
   name: z.string(),
   unidentifiedName: z.string().default('Unidentified Item'),
   description: z.string(),
@@ -50,6 +51,7 @@ export const ItemDefinitionSchema = z.object({
   armorStats: z.unknown().optional(),
   specialMaterial: z.unknown().optional(),
   magicalProperties: z.unknown().optional(),
+  enhancements: z.array(z.string()).optional(),
   effectBundle: z.unknown().optional(),
   consumable: z
     .object({

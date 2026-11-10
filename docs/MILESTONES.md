@@ -1768,3 +1768,46 @@ Resolved the five foundational gaps between declarative quest schemas and runtim
   - Added `nextQuestId: z.string().optional()` to `QuestSchema` and auto-chained follow-up quests in `completeQuest()`.
   - Upgraded `src/editor/validator/quest.validator.ts` to exhaustively validate quest rewards, `nextQuestId` references, and explore/interact targets.
 
+## 🟢 Milestone 123: Composable Armament Inheritance, First-Class Item Enhancements & Base Weapon Tag Matching (Complete)
+
+Established a data-driven armament inheritance engine, made item enhancements first-class objects with damage riders, and fixed weapon-targeted feats and deity favored weapon matching for magic and material variants:
+
+- [x] **Armament Inheritance & Recursive Template Resolution (`src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`, `src/types/campaign/item.ts`, `src/types/components/item_components.types.ts`)**:
+  - Added `baseItemId: z.string().optional()` and `enhancements: z.array(z.string()).optional()` to `ItemDefinitionSchema` and `DnD35ItemDefinitionSchema`.
+  - Added serializable instance overrides (`customName`, `customDescription`, `specialMaterial`, `enhancementBonus`, `enhancements`) to `ItemComponent`.
+  - Built `resolveEffectiveItemDefinition()` to recursively resolve base item physics (damage dice, crit threat/multiplier, effort, category, weight) and merge with preset overrides and runtime ECS component properties.
+  - Migrated enchanted and special material presets (`flaming_longsword_plus1`, `longsword_plus1`, `masterwork_longsword`, `cold_iron_longsword`, `keen_rapier_plus1`, `adamantine_greataxe`, `ghost_touch_full_plate_plus1`, `animated_heavy_steel_shield_plus1`, etc.) to inherit from canonical base weapons.
+- [x] **First-Class Item Enhancements & Damage Riders (`public/data/rulesets/dnd35e/item_enhancements.json`, `item_system.types.ts`, `effect_system.types.ts`)**:
+  - Registered `item_enhancements.json` containing first-class SRD weapon and armor enhancements (*Flaming*, *Flaming Burst*, *Frost*, *Icy Burst*, *Shock*, *Shocking Burst*, *Keen*, *Ghost Touch*, *Holy*, *Unholy*, *Speed*, *Animated*, *Fortification*).
+  - Defined schemas for `DnD35WeaponDamageRider` (`on_hit` / `on_crit`, dice, `diceByCritMultiplier`) and `DnD35ItemEnhancement`, expanding `DnD35EffectBundle.category` to support `'item'`.
+  - Integrated damage rider rolling into `resolveDnD35eMeleeAttack` in `dnd35e_combat_adapter.ts`, emitting typed energy damage instances processed through full resistance/immunity mitigation.
+- [x] **Universal Base Weapon Tagging (`baseWeaponId`) & Strike Scoping (`weapon_profile_parser.ts`, `attack_routine.ts`)**:
+  - Enriched `EquippedWeaponProfile` and `DnD35ResolvedStrikeProfile` with `baseWeaponId = itemDef.baseItemId ?? itemDef.id` and resolved `damageRiders`.
+  - Updated `strikeEffectTags` to emit both canonical base weapon tags (`weapon:<baseWeaponId>`) and variant tags (`weapon:<itemId>`).
+  - Fixed Weapon Focus, Weapon Specialization, Improved Critical, and Cleric War Domain deity favored weapon bonuses so magic and material variants retain all feat and domain modifiers.
+  - Evaluated nonproficiency penalties and racial weapon familiarities against the base weapon chassis.
+- [x] **Feat & Domain Picker Deduplication & Prerequisite Isolation (`dnd35e_char_builder_class_options.ui.ts`, `dnd35e_char_builder_feats.ui.ts`, `prerequisites.ts`)**:
+  - Exported `getCanonicalBaseWeapons()` to filter out magic and material variants, populating the War Domain deity weapon selector and Feat target picker exclusively with canonical base weapons.
+  - Fixed `has_feat` prerequisite evaluation in `evaluatePrerequisiteAST` to strictly match the requested `targetId`, preventing cross-weapon qualification leakages (e.g. Weapon Focus: Dagger incorrectly qualifying for Weapon Specialization: Longsword).
+- [x] **Validation & Regression Test Suite (`dnd35e_validator.ts`, `tests/dnd35e_equipment_m115.test.ts`)**:
+  - Added integrity validation in `dnd35e_validator.ts` for `itemEnhancements` and item `baseItemId` references.
+  - Added unit test suite in `tests/dnd35e_equipment_m115.test.ts` verifying canonical weapon filtering, recursive inheritance, ECS instance overrides (Holy Avenger), on-hit fire damage riders, variant feat matching, and strict prerequisite evaluation.
+  - Passed all 8 stages of `verify.sh` with 179 passing tests across 29 test suites.
+
+## 🟢 Milestone 124: Full-Pipeline Item Inheritance, Parameterized Feat Binding, Unified Stacking Primitives, Weapon Enhancement Scoping & SRD Combat Fidelity (Complete)
+
+Completed the full-pipeline Horizon 2/Horizon 3 integration and post-M123 audit remediation across item inheritance, parameterized feat binding, unified `StatModifier` stacking primitives, lateral spell/feat JSON parity, SRD critical hit immunity, `Blind-Fight`, and *Bane* weapons:
+
+- [x] **Horizon 3 Full-Pipeline Item Inheritance & Weapon-Scoped Enhancement Modifiers (`src/rulesets/dnd35e/equipment/item_inheritance.ts`, `dnd35e_equipped_item_dag.ts`, `semantic_tags_context.ts`, `equipment_physics.ts`, `dnd35e_ui_projection.ts`, `srd_registry.ts`)**:
+  - Wired `resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp)` across every Horizon 3 consumer and UI projection, and stripped redundant `weaponStats` / `armorStats` blocks from 17 variant item JSONs.
+  - Added `scopeWeaponModifiers` in `collectEquippedItemDAGContributions` so weapon-intrinsic modifiers (`crit_threat_doubling`, `extra_full_bab_attacks`, `strike_attack`, `strike_damage`) emitted by a weapon's `effectBundle` or `enh.effectBundle` are scoped to `['weapon:<id>', 'weapon:<baseItemId>']` and never leak from an off-hand weapon onto a main-hand weapon.
+  - Updated `getEquippedItemBonuses` in `srd_registry.ts` to resolve item inheritance and avoid summing weapon attack bonuses across dual-wielded weapons.
+- [x] **Horizon 2 Parameterized Feat Binding & `EntityTagCondition` `effectTagsAll`/`effectTagsNone` (`ledger_modifiers.ts`, `effect_bundle.ts`, `reaction.system.ts`)**:
+  - Wired `parseParameterizedFeatId` and `resolveFeatEffectBundle` into `buildFeatEffectModifiers` and `collectActiveFeatRuleOverrides`, binding weapon (`weapon:<id>`), skill (`skill:<id>`), school (`school:<id>`), and special ability (`ability:<id>`) targets at Horizon 2.
+  - Added `effectTagsAll` and `effectTagsNone` evaluation to `matchesEntityTagCondition` in `src/systems/reaction.system.ts`.
+- [x] **Unified `StatModifier` Stacking Primitives (`extra_full_bab_attacks`, `fortification`, `miss_chance`) & Lateral Spell/Subtype/Feat Parity (`stats.types.ts`, `dag_resolver.ts`, `attack_routine.ts`, `full_attack_sequence.ts`, `attack_roll.ts`, `spells/*.json`, `feats/*.json`)**:
+  - Added `'haste'` to `BonusType` and resolved `extra_full_bab_attacks`, `fortification` (`0–100%`), and `miss_chance` (`0–100%`) through `resolveTypedModifiersWithBreakdown`.
+  - Migrated `haste.json`, `battletide.json`, `blur.json`, `displacement.json`, `incorporeal.json`, and 13 feat JSONs (`spell_focus`, `greater_spell_focus`, `spell_penetration`, `greater_spell_penetration`, `improved_turning`, `extra_turning`, `ability_focus`, `ability_focus_poison`, `improved_{trip,bull_rush,disarm,overrun,sunder}`) from legacy `ruleOverrides` to canonical `StatModifier`s.
+- [x] **SRD Combat Fidelity: Alignment Tags, Conditional Riders, *Bane* Weapons, *Animated* Shields, Crit Immunity, `Blind-Fight` & Weapon Proficiency (`semantic_tags.ts`, `dnd35e_combat_adapter.ts`, `weapon_profile_parser.ts`, `item_enhancements.json`)**:
+  - Projected actor alignment semantic tags (`alignment:good`, `alignment:evil`, `alignment:lawful`, `alignment:chaotic`, `alignment:neutral`), gated `strike.damageRiders` against attacker/defender tags, and implemented `baneCreatureType` (`+2` attack/damage and `+2d6` on-hit damage against `type:<bane>` / `subtype:<bane>`).
+  - Expanded `targetImmuneToCrits` in `resolveDnD35eMeleeAttack` to check `defenderData.immunities.includes('critical_hits')` and Elemental/Ooze/Plant/Swarm/Incorporeal tags (unless negated by *Ghost Touch*), wired `hasBlindFight`, aligned feat `ruleKey`s in `buildCombatRuleOverridesFromActiveRules`, and removed hardcoded `dndData.feats?.includes(...)` fallbacks from `dnd35e_dag_adapter.ts`.

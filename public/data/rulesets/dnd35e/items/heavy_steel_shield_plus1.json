@@ -1,6 +1,7 @@
 {
   "heavy_steel_shield_plus1": {
     "id": "heavy_steel_shield_plus1",
+    "baseItemId": "heavy_steel_shield",
     "name": "+1 Heavy Steel Shield",
     "unidentifiedName": "+1 Heavy Steel Shield",
     "description": "+1 Heavy Steel Shield (shield, +2 AC, ACP -1, ASF 15%).",
@@ -10,16 +11,6 @@
     "category": "armor",
     "weight": 15,
     "baseValue": 1170,
-    "armorStats": {
-      "armorCategory": "shield",
-      "armorBonus": 2,
-      "maxDexBonus": null,
-      "armorCheckPenalty": -1,
-      "arcaneSpellFailure": 15,
-      "speed30Ft": 30,
-      "speed20Ft": 20,
-      "isMetal": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,

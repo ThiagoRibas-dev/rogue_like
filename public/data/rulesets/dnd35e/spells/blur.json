@@ -43,14 +43,15 @@
       "name": "Blur",
       "category": "trait",
       "usageMode": "passive",
-      "modifiers": [],
-      "ruleOverrides": [
+      "modifiers": [
         {
           "id": "blur_concealment",
-          "ruleKey": "concealment_20_percent",
-          "value": true
+          "target": "miss_chance",
+          "value": 20,
+          "type": "enhancement"
         }
       ],
+      "ruleOverrides": [],
       "grantedTags": [
         "blur_active",
         "concealment:20"

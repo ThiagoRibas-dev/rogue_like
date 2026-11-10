@@ -78,10 +78,15 @@ export function evaluatePrerequisiteAST(node: PrerequisiteNode, context: Prerequ
     case 'has_feat': {
       if (context.targetId !== undefined) {
         const targetedFeatId = `${node.featId}:${context.targetId}`;
-        if (context.feats.includes(targetedFeatId)) return true;
+        const legacyTargetedFeatId = `${node.featId}_${context.targetId}`;
+        return (
+          context.feats.includes(targetedFeatId) ||
+          context.feats.includes(legacyTargetedFeatId) ||
+          context.feats.includes(node.featId)
+        );
       }
       if (context.feats.includes(node.featId)) return true;
-      return context.feats.some((f) => f.startsWith(`${node.featId}:`));
+      return context.feats.some((f) => f.startsWith(`${node.featId}:`) || f.startsWith(`${node.featId}_`));
     }
     case 'has_tag':
       return context.tags.includes(node.tag);

@@ -113,7 +113,7 @@
             },
             {
               "id": "battletide_caster_ref",
-              "target": "save_ref",
+              "target": "ref",
               "value": 1,
               "type": "dodge"
             },
@@ -128,15 +128,15 @@
               "target": "speed",
               "value": 30,
               "type": "enhancement"
-            }
-          ],
-          "ruleOverrides": [
+            },
             {
               "id": "battletide_extra_attack",
-              "ruleKey": "extra_full_attack_haste",
-              "value": true
+              "target": "extra_full_bab_attacks",
+              "value": 1,
+              "type": "haste"
             }
           ],
+          "ruleOverrides": [],
           "grantedTags": [
             "battletide_buff_active",
             "effect_group:haste_extra_attack"

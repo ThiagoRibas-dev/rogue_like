@@ -3,10 +3,11 @@ import { ComponentType, type EquipmentComponent, type ItemComponent } from '../.
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { NaturalWeaponLimbEntry } from '../combat/attack_resolver.ts';
 import { computeMaterialEquipmentStats } from '../equipment/special_materials.ts';
+import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
 import { scaleWeaponDamageDice } from '../equipment_physics.ts';
 import { evaluateEffectBundle } from '../srd_registry.ts';
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
-import type { DnD35ItemDefinition } from '../types/dnd35e_system.types.ts';
+import type { DnD35ItemDefinition, DnD35ItemEnhancement } from '../types/dnd35e_system.types.ts';
 
 /** Result of evaluating equipped item DAG contributions across active anatomical slots. */
 export interface EquippedItemDAGContributions {
@@ -14,6 +15,41 @@ export interface EquippedItemDAGContributions {
   readonly grantedTags: ReadonlyArray<string>;
   readonly maxDexBonusCap: number | undefined;
   readonly hasStructuredArmorOrShield: boolean;
+}
+
+/** Target stats emitted by weapon effect bundles or enhancements that must be scoped to that specific weapon. */
+const WEAPON_SCOPED_TARGET_STATS: ReadonlySet<string> = new Set([
+  'crit_threat_doubling',
+  'extra_full_bab_attacks',
+  'strike_attack',
+  'strike_damage'
+]);
+
+/** Effective enhancement bonus increase (+2) granted by a Bane weapon against its designated foe (DMG p. 224). */
+const BANE_ENHANCEMENT_BONUS_DELTA = 2;
+
+/**
+ * Scopes weapon-specific `StatModifier`s (`crit_threat_doubling`, `extra_full_bab_attacks`, `strike_attack`,
+ * `strike_damage`) to the specific weapon's semantic tags so off-hand weapon enhancements do not leak onto
+ * main-hand weapons.
+ */
+function scopeWeaponModifiers(
+  mods: ReadonlyArray<StatModifier>,
+  weaponTags: ReadonlyArray<string>
+): ReadonlyArray<StatModifier> {
+  if (weaponTags.length === 0) return mods;
+  return mods.map((mod) => {
+    if (!WEAPON_SCOPED_TARGET_STATS.has(mod.targetStat)) return mod;
+    const existingAny = mod.condition?.effectTagsAny ?? [];
+    const mergedAny = Array.from(new Set([...existingAny, ...weaponTags]));
+    return {
+      ...mod,
+      condition: {
+        ...(mod.condition ?? {}),
+        effectTagsAny: mergedAny
+      }
+    };
+  });
 }
 
 /**
@@ -46,8 +82,9 @@ export function collectEquippedItemDAGContributions(
     if (slot.equippedItem === null || slot.suppressed === true) continue;
     const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
     if (!itemComp) continue;
-    const itemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
-    if (!itemDef) continue;
+    const rawItemDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+    if (!rawItemDef) continue;
+    const itemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
 
     const itemRoot = `item:${itemDef.id}`;
     const itemTags = itemDef.tags ?? [];
@@ -93,6 +130,11 @@ export function collectEquippedItemDAGContributions(
       }
     }
 
+    const weaponTags =
+      itemDef.category === 'weapon'
+        ? Array.from(new Set([`weapon:${itemDef.id}`, ...(itemDef.baseItemId ? [`weapon:${itemDef.baseItemId}`] : [])]))
+        : [];
+
     if (itemDef.category === 'weapon' && (itemDef.magicalProperties?.keen === true || itemTags.includes('keen'))) {
       modifiers.push({
         targetStat: 'crit_threat_doubling',
@@ -101,14 +143,60 @@ export function collectEquippedItemDAGContributions(
         sourceId: `${itemRoot}:keen`,
         sourcePath: `${itemRoot}/keen`,
         origin: 'magical',
-        condition: { effectTagsAny: [`weapon:${itemDef.id}`] }
+        condition: { effectTagsAny: weaponTags }
       });
+    }
+
+    const baneType = itemDef.magicalProperties?.baneCreatureType;
+    if (itemDef.category === 'weapon' && baneType) {
+      const baneTargetTags = [`type:${baneType}`, `subtype:${baneType}`];
+      modifiers.push(
+        {
+          targetStat: 'strike_attack',
+          value: BANE_ENHANCEMENT_BONUS_DELTA,
+          bonusType: 'untyped',
+          sourceId: `${itemRoot}:bane_atk`,
+          sourcePath: `${itemRoot}/enh:bane/attack`,
+          origin: 'magical',
+          condition: {
+            targetTagsAny: baneTargetTags,
+            effectTagsAny: weaponTags
+          }
+        },
+        {
+          targetStat: 'strike_damage',
+          value: BANE_ENHANCEMENT_BONUS_DELTA,
+          bonusType: 'untyped',
+          sourceId: `${itemRoot}:bane_dmg`,
+          sourcePath: `${itemRoot}/enh:bane/damage`,
+          origin: 'magical',
+          condition: {
+            targetTagsAny: baneTargetTags,
+            effectTagsAny: weaponTags
+          }
+        }
+      );
     }
 
     if (itemDef.effectBundle) {
       const evalRes = evaluateEffectBundle(itemDef.effectBundle, itemRoot, suppressedBundleIds, activeSelfTags);
-      modifiers.push(...evalRes.statModifiers);
+      modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
       grantedTags.push(...evalRes.grantedTags);
+    }
+
+    const sysEnhancements =
+      (state.campaign.systemContent?.['itemEnhancements'] as Record<string, DnD35ItemEnhancement> | undefined) ?? {};
+    const enhancementsList = Array.from(
+      new Set([...(itemDef.enhancements ?? []), ...(itemDef.magicalProperties?.enhancements ?? [])])
+    );
+    for (const enhId of enhancementsList) {
+      const enh = sysEnhancements[enhId];
+      if (enh?.effectBundle) {
+        const enhRoot = `${itemRoot}/enh:${enhId}`;
+        const evalRes = evaluateEffectBundle(enh.effectBundle, enhRoot, suppressedBundleIds, activeSelfTags);
+        modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
+        grantedTags.push(...evalRes.grantedTags);
+      }
     }
   }
 

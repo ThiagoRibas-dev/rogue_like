@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ItemDefinitionSchema } from '../../../../types/campaign/item.ts';
-import { DnD35DamageTypeSchema } from './base_system.types.ts';
-import { DnD35EffectBundleSchema } from './effect_system.types.ts';
+import { DnD35DamageTypeSchema, OnHitRiderDescriptorSchema } from './base_system.types.ts';
+import { DnD35EffectBundleSchema, DnD35ModifierTagConditionSchema } from './effect_system.types.ts';
 
 /** Canonical D&D 3.5e special material types. */
 export const DnD35SpecialMaterialSchema = z.enum([
@@ -57,6 +57,31 @@ export const DnD35ArmorStatsSchema = z.object({
 });
 export type DnD35ArmorStats = z.infer<typeof DnD35ArmorStatsSchema>;
 
+/** Declarative on-hit or on-crit damage rider granted by an item enhancement (e.g. Flaming, Flaming Burst, Holy). */
+export const DnD35WeaponDamageRiderSchema = z.object({
+  id: z.string(),
+  trigger: z.enum(['on_hit', 'on_crit']),
+  dice: z.string().optional(),
+  diceByCritMultiplier: z.record(z.string(), z.string()).optional(),
+  damageType: DnD35DamageTypeSchema,
+  condition: DnD35ModifierTagConditionSchema.optional()
+});
+export type DnD35WeaponDamageRider = z.infer<typeof DnD35WeaponDamageRiderSchema>;
+
+/** First-class D&D 3.5e Weapon/Armor Special Ability (Enhancement) definition (`item_enhancements.json`). */
+export const DnD35ItemEnhancementSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  appliesTo: z.array(z.enum(['melee_weapon', 'ranged_weapon', 'thrown_weapon', 'armor', 'shield'])).min(1),
+  bonusEquivalent: z.number().int().min(0).max(5).default(1),
+  flatCostGp: z.number().nonnegative().optional(),
+  damageRiders: z.array(DnD35WeaponDamageRiderSchema).default([]),
+  onHitRiders: z.array(OnHitRiderDescriptorSchema).default([]),
+  effectBundle: DnD35EffectBundleSchema.optional()
+});
+export type DnD35ItemEnhancement = z.infer<typeof DnD35ItemEnhancementSchema>;
+
 /** Structured magical armament properties. */
 export const DnD35MagicalPropertiesSchema = z.object({
   enhancementBonus: z.number().int().min(0).max(5).default(0),
@@ -64,8 +89,8 @@ export const DnD35MagicalPropertiesSchema = z.object({
   keen: z.boolean().optional(),
   ghostTouch: z.boolean().optional(),
   animated: z.boolean().optional(),
-  fortificationType: z.enum(['light', 'moderate', 'heavy']).optional(),
   baneCreatureType: z.string().optional(),
+  enhancements: z.array(z.string()).default([]),
   energyRiders: z
     .array(
       z.object({
@@ -85,6 +110,7 @@ export const DnD35ItemDefinitionSchema = ItemDefinitionSchema.extend({
   armorStats: DnD35ArmorStatsSchema.optional(),
   specialMaterial: DnD35SpecialMaterialSchema.optional(),
   magicalProperties: DnD35MagicalPropertiesSchema.optional(),
+  enhancements: z.array(z.string()).default([]),
   effectBundle: DnD35EffectBundleSchema.optional()
 });
 export type DnD35ItemDefinition = z.infer<typeof DnD35ItemDefinitionSchema>;

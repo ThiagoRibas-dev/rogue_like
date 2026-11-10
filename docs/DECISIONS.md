@@ -453,3 +453,15 @@ This document records architectural decisions whose rationale is **non-obvious o
   - In `src/core/loop/intent_cost_resolver.ts`, added an early return for `isImmediate` UI actions (such as modal toggles, settings, ledger) that produce `energyCost === 0` and emit no gameplay events.
   - *Rationale*: Previously, `resolveStateStabilization()` repeatedly invoked `processGlobalTriggers(nextState)` from `eventIndex = 0` on every loop iteration. Because `state.events` is preserved across stabilization iterations (and only drained into telemetry at the end of the turn), any iteration that triggered secondary stabilization re-scanned already-processed events from index 0. This recursively generated debug traces and triggered consequences, quickly blowing past `MAX_TRIGGER_LOOPS = 500` and crashing with `TriggerRunawayError: Infinite loop detected in global triggers.` Advancing `processedEventIndex` guarantees that every event is evaluated at most once per trigger cycle, while bypassing stabilization on immediate UI intents eliminates superfluous simulation cycles on keystrokes that only toggle DOM views.
 
+---
+
+### Composable Armament Inheritance, First-Class Item Enhancements & Base Weapon Tag Matching (Milestone 123)
+
+- **Decision: Separate Base Armament Templates (`baseItemId`) from First-Class Item Enhancements (`item_enhancements.json`) and Project Canonical `weapon:<baseWeaponId>` Tags**:
+  - Added `baseItemId?: string` and `enhancements?: string[]` to `ItemDefinitionSchema` (Tier 1) and serializable instance overrides (`customName`, `customDescription`, `specialMaterial`, `enhancementBonus`, `enhancements`) to `ItemComponent`.
+  - Created `public/data/rulesets/dnd35e/item_enhancements.json` registering first-class weapon and armor enhancements (*Flaming*, *Flaming Burst*, *Frost*, *Icy Burst*, *Shock*, *Shocking Burst*, *Keen*, *Ghost Touch*, *Holy*, *Unholy*, *Speed*, *Animated*, *Fortification*).
+  - Implemented `resolveEffectiveItemDefinition()` to recursively merge physical base item chassis data with variant presets and runtime ECS component overrides.
+  - In `attack_routine.ts`, strikes emit both `weapon:<baseWeaponId>` and `weapon:<itemId>` in `strikeEffectTags`.
+  - Added `getCanonicalBaseWeapons()` to filter out variants for the War Domain deity favored weapon selector and Feat target picker, and enforced strict `targetId` checking in `evaluatePrerequisiteAST`.
+  - *Rationale*: Duplicating full `weaponStats` across magic variants (`flaming_longsword_plus1.json`, `longsword_plus1.json`, `masterwork_longsword.json`) severed their connection to the base weapon. Striking with a `+1 Longsword` emitted `weapon:longsword_plus1`, breaking *Weapon Focus (Longsword)*, *Weapon Specialization*, *Improved Critical*, and Cleric *War Domain* favored deity weapons as soon as the player upgraded gear. Treating enhancements as first-class objects composed onto a base chassis restores canonical SRD behavior and allows custom or dynamic weapon creation (like *Holy Avenger*) without copy-pasting statblocks.
+

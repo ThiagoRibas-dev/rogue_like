@@ -1,13 +1,13 @@
 import type { TacticalDoctrineComponent, WeaponGripMode } from '../../../types/components.types.ts';
 import type { ResolvedActorWeapons } from '../equipment_physics.ts';
-import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
+import type { DnD35DamageType, DnD35WeaponDamageRider } from '../types/dnd35e_system.types.ts';
 import { type AttackRollParams, computeHandednessStrDamage } from './attack_roll.ts';
 import {
   buildFullAttackSequence,
   type CombatRuleOverrides,
   type NaturalWeaponLimbEntry
 } from './full_attack_sequence.ts';
-import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
+import { resolveTypedModifiers, resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
 import type { StatModifier, StatResolutionBreakdown } from '../types/dnd35e.types.ts';
 import { computeExpandedCritThreatMin } from '../equipment/weapon_profile_parser.ts';
 import { computeStrikeDoctrineDamageBonus, evaluateTacticalDoctrineModifiers } from './tactical_doctrine.ts';
@@ -30,8 +30,10 @@ export interface DnD35ResolvedStrikeProfile {
   readonly critThreatMin: number;
   readonly critMultiplier: number;
   readonly bypassTags: ReadonlyArray<string>;
+  readonly damageRiders?: ReadonlyArray<DnD35WeaponDamageRider> | undefined;
   readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
   readonly weaponId?: string | undefined;
+  readonly baseWeaponId?: string | undefined;
   readonly naturalWeaponId?: string | undefined;
 }
 
@@ -65,6 +67,7 @@ export function resolveActorAttackRoutine(params: {
   readonly overrides?: CombatRuleOverrides | undefined;
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
   readonly selfTags?: ReadonlyArray<string> | undefined;
+  readonly targetTags?: ReadonlyArray<string> | undefined;
 }): DnD35ResolvedAttackRoutine {
   const primary = params.resolvedWeapons.primaryWeapon;
   const offHands = params.resolvedWeapons.offHandWeapons;
@@ -84,6 +87,20 @@ export function resolveActorAttackRoutine(params: {
     doctrineAtkPenalty = doctrineEval.attackPenalty;
   }
 
+  const extraFullBabMods = (params.statModifiers ?? []).filter((m) => m.targetStat === 'extra_full_bab_attacks');
+  const primaryWeaponTags = primary.weaponItemId
+    ? [`weapon:${primary.weaponItemId}`, ...(primary.baseWeaponId ? [`weapon:${primary.baseWeaponId}`] : [])]
+    : undefined;
+  const extraFullBabFromMods = resolveTypedModifiers(extraFullBabMods, {
+    selfTags: params.selfTags,
+    targetTags: params.targetTags,
+    effectTags: primaryWeaponTags
+  });
+  const extraPrimaryFullBabAttacks = Math.max(
+    0,
+    (params.overrides?.extraPrimaryFullBabAttacks ?? 0) + extraFullBabFromMods
+  );
+
   const seq = buildFullAttackSequence({
     totalBab: params.totalBab,
     baseAttackModifier: params.baseAttackModifier + doctrineAtkPenalty,
@@ -92,7 +109,10 @@ export function resolveActorAttackRoutine(params: {
     offHandIsLight,
     hasTwoWeaponFightingFeat: params.hasTwoWeaponFightingFeat,
     hasMultiattackFeat: params.hasMultiattackFeat,
-    overrides: params.overrides,
+    overrides: {
+      ...params.overrides,
+      extraPrimaryFullBabAttacks
+    },
     weaponId: primary.weaponItemId,
     offHandWeaponId: offHands[0]?.weaponItemId,
     offHandWeaponIds,
@@ -107,14 +127,28 @@ export function resolveActorAttackRoutine(params: {
     const entry = seq.entries[i]!;
     const isManufactured =
       entry.attackSource === 'manufactured_primary' || entry.attackSource === 'manufactured_offhand';
+    const offWeapon =
+      entry.attackSource === 'manufactured_offhand'
+        ? (offHands.find((w) => w.weaponItemId === entry.weaponId) ??
+          offHands[offHandCounter % Math.max(1, offHands.length)] ??
+          primary)
+        : undefined;
+
     const strikeWeaponId = isManufactured
       ? entry.attackSource === 'manufactured_primary'
         ? primary.weaponItemId
-        : entry.weaponId
+        : (offWeapon?.weaponItemId ?? entry.weaponId)
+      : entry.naturalWeaponId;
+
+    const strikeBaseWeaponId = isManufactured
+      ? entry.attackSource === 'manufactured_primary'
+        ? (primary.baseWeaponId ?? primary.weaponItemId)
+        : (offWeapon?.baseWeaponId ?? offWeapon?.weaponItemId ?? entry.weaponId)
       : entry.naturalWeaponId;
 
     const strikeEffectTags: string[] = [
-      ...(strikeWeaponId !== undefined ? [`weapon:${strikeWeaponId}`] : []),
+      ...(strikeBaseWeaponId !== undefined ? [`weapon:${strikeBaseWeaponId}`] : []),
+      ...(strikeWeaponId !== undefined && strikeWeaponId !== strikeBaseWeaponId ? [`weapon:${strikeWeaponId}`] : []),
       `attack_source:${entry.attackSource}`,
       isManufactured ? 'weapon_group:manufactured' : 'weapon_group:natural'
     ];
@@ -128,19 +162,19 @@ export function resolveActorAttackRoutine(params: {
     if (strikeCandidateMods.length > 0) {
       const atkBreakdown = resolveTypedModifiersWithBreakdown(
         strikeCandidateMods.filter((m) => m.targetStat === 'strike_attack'),
-        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+        { selfTags: params.selfTags, targetTags: params.targetTags, effectTags: strikeEffectTags }
       );
       strikeAttackMod = atkBreakdown.total;
 
       const dmgBreakdown = resolveTypedModifiersWithBreakdown(
         strikeCandidateMods.filter((m) => m.targetStat === 'strike_damage'),
-        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+        { selfTags: params.selfTags, targetTags: params.targetTags, effectTags: strikeEffectTags }
       );
       strikeDamageMod = dmgBreakdown.total;
 
       critThreatBreakdown = resolveTypedModifiersWithBreakdown(
         strikeCandidateMods.filter((m) => m.targetStat === 'crit_threat_doubling'),
-        { selfTags: params.selfTags, effectTags: strikeEffectTags }
+        { selfTags: params.selfTags, targetTags: params.targetTags, effectTags: strikeEffectTags }
       );
       critThreatExpansionSteps = critThreatBreakdown.total;
     }
@@ -163,7 +197,7 @@ export function resolveActorAttackRoutine(params: {
         primary.isFinesseEligible === true || primary.handedness === 'light' || isNaturalOrUnarmed ? finesseDelta : 0;
       const critMin =
         critThreatExpansionSteps > 0
-          ? computeExpandedCritThreatMin(primary.critThreatMin, critThreatExpansionSteps)
+          ? computeExpandedCritThreatMin(primary.baseCritThreatMin ?? primary.critThreatMin, critThreatExpansionSteps)
           : primary.critThreatMin;
 
       strikes.push({
@@ -187,58 +221,62 @@ export function resolveActorAttackRoutine(params: {
         critThreatMin: critMin,
         critMultiplier: primary.critMultiplier,
         bypassTags: primary.bypassTags,
+        damageRiders: primary.damageRiders,
         critThreatBreakdown,
-        weaponId: primary.weaponItemId
+        weaponId: primary.weaponItemId,
+        baseWeaponId: primary.baseWeaponId ?? primary.weaponItemId
       });
     } else if (entry.attackSource === 'manufactured_offhand') {
-      const offWeapon =
-        offHands.find((w) => w.weaponItemId === entry.weaponId) ??
-        offHands[offHandCounter % Math.max(1, offHands.length)] ??
-        primary;
+      const currentOffWeapon = offWeapon ?? primary;
       offHandCounter++;
 
       const strikeHandedness: AttackRollParams['handedness'] = 'off_hand';
-      const isNaturalOrUnarmed = !offWeapon.isArmed;
+      const isNaturalOrUnarmed = !currentOffWeapon.isArmed;
       const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
       const doctrineDmg = computeStrikeDoctrineDamageBonus(
         params.doctrine,
         params.totalBab,
         strikeHandedness,
         isNaturalOrUnarmed,
-        offWeapon.cannotTwoHandStr
+        currentOffWeapon.cannotTwoHandStr
       );
       const offFinesseBonus =
-        offWeapon.isFinesseEligible === true || offWeapon.handedness === 'light' || isNaturalOrUnarmed
+        currentOffWeapon.isFinesseEligible === true || currentOffWeapon.handedness === 'light' || isNaturalOrUnarmed
           ? finesseDelta
           : 0;
       const critMin =
         critThreatExpansionSteps > 0
-          ? computeExpandedCritThreatMin(offWeapon.critThreatMin, critThreatExpansionSteps)
-          : offWeapon.critThreatMin;
+          ? computeExpandedCritThreatMin(
+              currentOffWeapon.baseCritThreatMin ?? currentOffWeapon.critThreatMin,
+              critThreatExpansionSteps
+            )
+          : currentOffWeapon.critThreatMin;
 
       strikes.push({
         index: i,
-        label: offWeapon.weaponName,
+        label: currentOffWeapon.weaponName,
         attackSource: 'manufactured_offhand',
         handedness: strikeHandedness,
         isNaturalOrUnarmed,
         attackBonus:
           entry.attackBonus +
-          offWeapon.attackBonus +
-          offWeapon.sizeAttackPenalty +
-          offWeapon.nonproficiencyPenalty +
+          currentOffWeapon.attackBonus +
+          currentOffWeapon.sizeAttackPenalty +
+          currentOffWeapon.nonproficiencyPenalty +
           offFinesseBonus +
           strikeAttackMod,
-        weaponDice: offWeapon.weaponDice,
-        weaponDamageType: offWeapon.weaponDamageType,
+        weaponDice: currentOffWeapon.weaponDice,
+        weaponDamageType: currentOffWeapon.weaponDamageType,
         strDamageBonus: strDmg,
         doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus + offWeapon.damageBonus + strikeDamageMod,
+        flatDamageBonus: params.flatDamageBonus + currentOffWeapon.damageBonus + strikeDamageMod,
         critThreatMin: critMin,
-        critMultiplier: offWeapon.critMultiplier,
-        bypassTags: offWeapon.bypassTags,
+        critMultiplier: currentOffWeapon.critMultiplier,
+        bypassTags: currentOffWeapon.bypassTags,
+        damageRiders: currentOffWeapon.damageRiders,
         critThreatBreakdown,
-        weaponId: offWeapon.weaponItemId
+        weaponId: currentOffWeapon.weaponItemId,
+        baseWeaponId: currentOffWeapon.baseWeaponId ?? currentOffWeapon.weaponItemId
       });
     } else {
       const isPrimary = entry.attackSource === 'natural_primary';

@@ -18,16 +18,19 @@
         }
       ]
     },
+    "modifiers": [
+      {
+        "id": "overrun_check_bonus",
+        "target": "overrun",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "overrun_target_cannot_avoid",
         "ruleKey": "overrun_target_cannot_avoid",
         "value": true
-      },
-      {
-        "id": "overrun_check_bonus",
-        "ruleKey": "overrun_check_bonus",
-        "value": 4
       }
     ]
   }

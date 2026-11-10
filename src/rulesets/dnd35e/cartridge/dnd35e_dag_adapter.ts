@@ -50,6 +50,7 @@ export interface DnD35EntityDAGResult {
   readonly canAttack: boolean;
   readonly resolvedWeapons: ResolvedActorWeapons;
   readonly attackRoutine: DnD35ResolvedAttackRoutine;
+  readonly hasBlindFight: boolean;
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
 }
@@ -199,19 +200,15 @@ export function evaluateDnD35eEntityDAG(
     baseAttackModifier: baseActorAttackBonus,
     strModifier: strMod,
     dexModifier: dexMod,
-    hasWeaponFinesse: activeCombatRules.hasWeaponFinesse || dndData.feats?.includes('weapon_finesse') === true,
+    hasWeaponFinesse: activeCombatRules.hasWeaponFinesse,
     doctrine,
     flatDamageBonus: nonStrNonDoctrineFlatDamage,
-    hasTwoWeaponFightingFeat:
-      activeCombatRules.combatOverrides.twfPrimaryPenalty !== undefined ||
-      dndData.feats?.includes('two_weapon_fighting') === true ||
-      dndData.feats?.includes('multiweapon_fighting') === true,
-    hasMultiattackFeat:
-      activeCombatRules.combatOverrides.secondaryNaturalPenalty !== undefined ||
-      dndData.feats?.includes('multiattack') === true,
+    hasTwoWeaponFightingFeat: activeCombatRules.combatOverrides.twfPrimaryPenalty !== undefined,
+    hasMultiattackFeat: activeCombatRules.combatOverrides.secondaryNaturalPenalty !== undefined,
     overrides: activeCombatRules.combatOverrides,
     statModifiers: extraModifiers,
-    selfTags: mergedSelfTags
+    selfTags: mergedSelfTags,
+    targetTags: contextOverride?.targetTags
   });
 
   return {
@@ -221,8 +218,9 @@ export function evaluateDnD35eEntityDAG(
     canAttack: doctrineMod.canAttack,
     resolvedWeapons: finalWeapons,
     attackRoutine,
-    hasCleave: activeCombatRules.hasCleave || dndData.feats?.includes('cleave') === true,
-    hasGreatCleave: activeCombatRules.hasGreatCleave || dndData.feats?.includes('great_cleave') === true
+    hasBlindFight: activeCombatRules.hasBlindFight,
+    hasCleave: activeCombatRules.hasCleave,
+    hasGreatCleave: activeCombatRules.hasGreatCleave
   };
 }
 

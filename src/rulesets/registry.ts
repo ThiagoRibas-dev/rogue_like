@@ -97,7 +97,9 @@ export {
   resolveEquippedWeaponProfile,
   resolveAllEquippedWeaponProfiles,
   type EquippedWeaponProfile,
-  type ResolvedActorWeapons
+  type ResolvedActorWeapons,
+  getCanonicalBaseWeapons,
+  resolveEffectiveItemDefinition
 } from './dnd35e/equipment_physics.ts';
 export {
   resolveActorAttackRoutine,

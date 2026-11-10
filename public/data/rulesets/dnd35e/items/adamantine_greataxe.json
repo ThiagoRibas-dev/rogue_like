@@ -1,6 +1,7 @@
 {
   "adamantine_greataxe": {
     "id": "adamantine_greataxe",
+    "baseItemId": "greataxe",
     "name": "Adamantine Greataxe",
     "unidentifiedName": "Adamantine Greataxe",
     "description": "Adamantine Greataxe (martial two-handed melee weapon, 1d12 slashing).",
@@ -18,17 +19,6 @@
       "bypass:adamantine",
       "bypass:hardness_20"
     ],
-    "weaponStats": {
-      "proficiencyCategory": "martial",
-      "weaponCategory": "melee",
-      "effort": "two_handed",
-      "damageDice": "1d12",
-      "damageType": "slashing",
-      "critThreatMin": 20,
-      "critMultiplier": 3,
-      "reachFt": 5,
-      "strikesAdjacent": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,

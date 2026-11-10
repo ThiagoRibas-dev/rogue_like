@@ -3,9 +3,11 @@ import {
   ComponentType,
   type EquipmentComponent,
   type EquipmentSlotInstance,
+  type ItemComponent,
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import {
   buildUnarmedProfile,
   type EquippedWeaponProfile,
@@ -13,6 +15,7 @@ import {
   type ResolvedActorWeapons
 } from './equipment/weapon_profile_parser.ts';
 import type { CreatureSizeCategory, DnD35EntityData } from './types/dnd35e.types.ts';
+import type { DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
 
 export * from './equipment/special_materials.ts';
 export * from './equipment/weapon_scaling.ts';
@@ -59,13 +62,33 @@ export function resolveAllEquippedWeaponProfiles(
     handSlots.find((s) => s.equippedItem !== null && (s.slotType === 'main_hand' || s.id === 'main_hand_1')) ??
     handSlots.find((s) => s.equippedItem !== null);
 
+  const isSlotHandFreed = (s: EquipmentSlotInstance): boolean => {
+    if (s.equippedItem === null) return true;
+    const itemComp = getComponent(state, s.equippedItem, ComponentType.Item) as ItemComponent | undefined;
+    if (!itemComp) return true;
+    const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+    if (!rawDef) return false;
+    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+    const tags = itemDef.tags ?? [];
+    const ensh = [...(itemDef.enhancements ?? []), ...(itemDef.magicalProperties?.enhancements ?? [])];
+    return (
+      itemDef.magicalProperties?.animated === true ||
+      tags.includes('animated') ||
+      tags.includes('shield:animated') ||
+      ensh.includes('animated')
+    );
+  };
+
   const otherHandSlots = handSlots.filter((s) => s !== primarySlot);
-  const emptyHandSlots = otherHandSlots.filter((s) => s.equippedItem === null);
+  const emptyHandSlots = otherHandSlots.filter((s) => isSlotHandFreed(s));
   const hasFreeHand = emptyHandSlots.length > 0;
 
   const occupiedLimbGroups = new Set<string>();
   for (const s of equipment?.slots ?? []) {
     if (s.equippedItem !== null && s.suppressed !== true && s.limbGroupId) {
+      if (isHandSlot(s) && isSlotHandFreed(s)) {
+        continue;
+      }
       occupiedLimbGroups.add(s.limbGroupId);
     }
   }

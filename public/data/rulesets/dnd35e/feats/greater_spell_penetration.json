@@ -8,11 +8,12 @@
       "type": "has_feat",
       "featId": "spell_penetration"
     },
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "greater_caster_level_check_vs_sr_bonus",
-        "ruleKey": "greater_caster_level_check_vs_sr_bonus",
-        "value": 2
+        "target": "caster_level_check_vs_sr",
+        "value": 2,
+        "type": "untyped"
       }
     ]
   }

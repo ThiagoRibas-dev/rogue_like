@@ -156,22 +156,41 @@ export function parseParameterizedFeatId(rawFeatId: string): {
   readonly targetId?: string;
 } {
   const colonIdx = rawFeatId.indexOf(':');
-  if (colonIdx === -1) {
-    return { baseFeatId: rawFeatId };
+  if (colonIdx !== -1) {
+    const baseFeatId = rawFeatId.slice(0, colonIdx);
+    const targetId = rawFeatId.slice(colonIdx + 1);
+    return targetId.length > 0 ? { baseFeatId, targetId } : { baseFeatId };
   }
-  const baseFeatId = rawFeatId.slice(0, colonIdx);
-  const targetId = rawFeatId.slice(colonIdx + 1);
-  return targetId.length > 0 ? { baseFeatId, targetId } : { baseFeatId };
+  const KNOWN_PARAMETERIZED_FEAT_PREFIXES = [
+    'weapon_focus_',
+    'weapon_specialization_',
+    'greater_weapon_focus_',
+    'greater_weapon_specialization_',
+    'improved_critical_',
+    'exotic_weapon_proficiency_',
+    'skill_focus_',
+    'spell_focus_',
+    'greater_spell_focus_',
+    'ability_focus_'
+  ];
+  for (const prefix of KNOWN_PARAMETERIZED_FEAT_PREFIXES) {
+    if (rawFeatId.startsWith(prefix)) {
+      const baseFeatId = prefix.slice(0, -1);
+      const targetId = rawFeatId.slice(prefix.length);
+      return { baseFeatId, targetId };
+    }
+  }
+  return { baseFeatId: rawFeatId };
 }
 
 /**
  * Normalizes any `DnD35FeatDefinition` into a universal `DnD35EffectBundle` (`category: 'feat'`).
  * When `targetId` is provided (e.g. for targeted feats like `weapon_focus`, `weapon_specialization`,
- * `improved_critical`, `skill_focus`, `spell_focus`), binds the target into the bundle's modifiers,
+ * `improved_critical`, `skill_focus`, `spell_focus`, `ability_focus`), binds the target into the bundle's modifiers,
  * conditions (`effectTagsAll`), or granted tags.
  *
  * @param featDef The feat definition.
- * @param targetId Optional target identifier (weapon ID, skill ID, or spell school).
+ * @param targetId Optional target identifier (weapon ID, skill ID, spell school, or special ability).
  * @returns Universal `DnD35EffectBundle`.
  */
 export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?: string): DnD35EffectBundle {
@@ -208,6 +227,7 @@ export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?:
   const isSkillTargeted = targetCategory === 'skill' || featDef.id.startsWith('skill_');
   const isSchoolTargeted =
     targetCategory === 'school' || featDef.id.startsWith('spell_focus') || featDef.id.startsWith('greater_spell_focus');
+  const isAbilityTargeted = targetCategory === 'ability' || featDef.id.startsWith('ability_focus');
 
   const transformedModifiers: DnD35DeclarativeModifier[] = baseBundle.modifiers.map((mod) => {
     if (isWeaponTargeted) {
@@ -251,6 +271,20 @@ export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?:
           }
         };
       }
+    } else if (isAbilityTargeted) {
+      if (mod.target === 'special_ability_save_dc' || mod.target === 'ability_save_dc') {
+        const existingTags = mod.condition?.effectTagsAll ?? [];
+        const abilityTag = `ability:${targetId}`;
+        const effectTagsAll = existingTags.includes(abilityTag) ? existingTags : [...existingTags, abilityTag];
+        return {
+          ...mod,
+          target: 'special_ability_save_dc',
+          condition: {
+            ...(mod.condition ?? {}),
+            effectTagsAll
+          }
+        };
+      }
     }
     return mod;
   });
@@ -258,31 +292,6 @@ export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?:
   const nextGrantedTags = [...baseBundle.grantedTags];
   if (isWeaponTargeted && (featDef.id.includes('weapon_proficiency') || featDef.id.startsWith('proficiency_'))) {
     nextGrantedTags.push(`proficiency:weapon:${targetId}`);
-  }
-
-  if (isSchoolTargeted) {
-    for (const rule of baseBundle.ruleOverrides) {
-      if (
-        (rule.ruleKey === 'spell_save_dc_bonus' || rule.ruleKey === 'greater_spell_save_dc_bonus') &&
-        typeof rule.value === 'number'
-      ) {
-        const schoolTag = `school:${targetId}`;
-        const hasExisting = transformedModifiers.some(
-          (m) => m.target === 'spell_save_dc' && m.condition?.effectTagsAll?.includes(schoolTag)
-        );
-        if (!hasExisting) {
-          transformedModifiers.push({
-            id: `${rule.id}_${targetId}`,
-            target: 'spell_save_dc',
-            value: rule.value,
-            type: 'untyped',
-            condition: {
-              effectTagsAll: [schoolTag]
-            }
-          });
-        }
-      }
-    }
   }
 
   return {

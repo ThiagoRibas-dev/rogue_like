@@ -142,6 +142,16 @@ export function projectDnD35ActorSemanticTags(
     tags.add(`subtype:${subtype}`);
   }
 
+  if (dndData.alignment) {
+    const alignUpper = dndData.alignment.toUpperCase();
+    tags.add(`alignment:${alignUpper.toLowerCase()}`);
+    if (alignUpper.includes('L')) tags.add('alignment:lawful');
+    if (alignUpper.includes('C')) tags.add('alignment:chaotic');
+    if (alignUpper.includes('G')) tags.add('alignment:good');
+    if (alignUpper.includes('E')) tags.add('alignment:evil');
+    if (alignUpper === 'N' || alignUpper.includes('N')) tags.add('alignment:neutral');
+  }
+
   const hasClassTracks = dndData.tracks.some((t) => t.levels > 0 && t.trackCategory !== 'racial_hd');
   const hasLiterateClass = dndData.tracks.some((t) => {
     if (t.levels <= 0 || t.trackCategory === 'racial_hd') return false;

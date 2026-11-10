@@ -8,6 +8,7 @@ import {
   type DnD35SystemContent,
   evaluatePrerequisiteAST,
   type FeatSlotDescriptor,
+  getCanonicalBaseWeapons,
   getDnD35EntityData,
   getDnD35SystemContent,
   isFeatAllowedInSlot,
@@ -17,20 +18,11 @@ import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderFeatInspector } from './dnd35e_inspector.ui.ts';
 
-const TARGETED_WEAPONS: ReadonlyArray<string> = [
-  'longsword',
-  'greatsword',
-  'battleaxe',
-  'greataxe',
-  'shortbow',
-  'longbow',
-  'dagger',
-  'shortsword',
-  'warhammer',
-  'rapier',
-  'scimitar',
-  'unarmed_strike'
-];
+function getTargetedWeaponOptions(sys: DnD35SystemContent): ReadonlyArray<string> {
+  const canonicalIds = getCanonicalBaseWeapons(sys).map((w) => w.id);
+  const extraWeapons = ['unarmed_strike', 'bite', 'claw'];
+  return Array.from(new Set([...canonicalIds, ...extraWeapons]));
+}
 const TARGETED_SCHOOLS: ReadonlyArray<string> = [
   'abjuration',
   'conjuration',
@@ -176,7 +168,11 @@ export function renderSharedFeatsStep(
         'padding: 2px 4px; font-size: 0.72rem; margin-right: 4px; background: var(--crpg-bg-card, #ebe3d4); color: var(--crpg-text-main, #261d14); border: 1px solid var(--crpg-border-inner, #a69478);';
       const tCat = feat.repeatable?.targetCategory;
       const opts =
-        tCat === 'weapon' ? TARGETED_WEAPONS : tCat === 'school' ? TARGETED_SCHOOLS : Object.keys(sys.skills ?? {});
+        tCat === 'weapon'
+          ? getTargetedWeaponOptions(sys)
+          : tCat === 'school'
+            ? TARGETED_SCHOOLS
+            : Object.keys(sys.skills ?? {});
       for (const opt of opts) {
         const oEl = document.createElement('option');
         oEl.value = opt;

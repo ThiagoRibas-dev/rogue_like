@@ -1,6 +1,7 @@
 {
   "cold_iron_longsword": {
     "id": "cold_iron_longsword",
+    "baseItemId": "longsword",
     "name": "Cold Iron Longsword",
     "unidentifiedName": "Cold Iron Longsword",
     "description": "Cold Iron Longsword (martial one-handed melee weapon, 1d8 slashing).",
@@ -17,17 +18,6 @@
       "slashing",
       "bypass:cold_iron"
     ],
-    "weaponStats": {
-      "proficiencyCategory": "martial",
-      "weaponCategory": "melee",
-      "effort": "one_handed",
-      "damageDice": "1d8",
-      "damageType": "slashing",
-      "critThreatMin": 19,
-      "critMultiplier": 2,
-      "reachFt": 5,
-      "strikesAdjacent": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 0,

@@ -15,6 +15,7 @@ export interface CombatRuleOverrides {
   readonly twfPrimaryPenalty?: number | undefined;
   readonly twfOffHandPenalty?: number | undefined;
   readonly extraOffHandAttacks?: number | undefined;
+  readonly extraPrimaryFullBabAttacks?: number | undefined;
   readonly naturalAttacksCountMultiplier?: number | undefined;
   readonly manufacturedPrimaryCount?: number | undefined;
 }
@@ -160,27 +161,32 @@ export function buildFullAttackSequence(options: {
   let twfPrimaryPenalty = 0;
   let twfOffHandPenalty = 0;
 
-  if (options.overrides?.twfPrimaryPenalty !== undefined) {
-    twfPrimaryPenalty = options.overrides.twfPrimaryPenalty;
-  } else if (options.hasOffHandWeapon === true) {
-    if (options.hasTwoWeaponFightingFeat === true) {
+  if (options.hasOffHandWeapon === true) {
+    if (options.overrides?.twfPrimaryPenalty !== undefined) {
+      twfPrimaryPenalty = options.overrides.twfPrimaryPenalty;
+    } else if (options.hasTwoWeaponFightingFeat === true) {
       twfPrimaryPenalty = options.offHandIsLight === true ? -2 : -4;
     } else {
       twfPrimaryPenalty = options.offHandIsLight === true ? -4 : -6;
     }
-  }
 
-  if (options.overrides?.twfOffHandPenalty !== undefined) {
-    twfOffHandPenalty = options.overrides.twfOffHandPenalty;
-  } else if (options.hasOffHandWeapon === true) {
-    if (options.hasTwoWeaponFightingFeat === true) {
+    if (options.overrides?.twfOffHandPenalty !== undefined) {
+      twfOffHandPenalty = options.overrides.twfOffHandPenalty;
+    } else if (options.hasTwoWeaponFightingFeat === true) {
       twfOffHandPenalty = options.offHandIsLight === true ? -2 : -4;
     } else {
       twfOffHandPenalty = options.offHandIsLight === true ? -8 : -10;
     }
   }
 
-  const primaryAttacks = iterBabs.map((b) => b + nonBabMod + twfPrimaryPenalty);
+  const basePrimaryAttacks = iterBabs.map((b) => b + nonBabMod + twfPrimaryPenalty);
+  const extraFullBabCount = Math.max(0, options.overrides?.extraPrimaryFullBabAttacks ?? 0);
+  const extraFullBabAttacks: number[] = [];
+  const fullBabAttackBonus = (iterBabs[0] ?? options.totalBab) + nonBabMod + twfPrimaryPenalty;
+  for (let i = 0; i < extraFullBabCount; i++) {
+    extraFullBabAttacks.push(fullBabAttackBonus);
+  }
+  const primaryAttacks = [...extraFullBabAttacks, ...basePrimaryAttacks];
 
   const offHandCount =
     options.offHandWeaponIds && options.offHandWeaponIds.length > 0

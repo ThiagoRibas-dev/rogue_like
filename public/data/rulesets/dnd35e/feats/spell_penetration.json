@@ -4,11 +4,12 @@
     "name": "Spell Penetration",
     "description": "+2 bonus on caster level checks (1d20 + caster level) made to overcome a creature's spell resistance.",
     "isFighterBonusFeat": false,
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "caster_level_check_vs_sr_bonus",
-        "ruleKey": "caster_level_check_vs_sr_bonus",
-        "value": 2
+        "target": "caster_level_check_vs_sr",
+        "value": 2,
+        "type": "untyped"
       }
     ]
   }

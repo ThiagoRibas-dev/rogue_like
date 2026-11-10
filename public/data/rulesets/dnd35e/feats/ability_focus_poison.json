@@ -4,11 +4,15 @@
     "name": "Ability Focus (Poison)",
     "description": "Add +2 to the DC for all saving throws against this creature's poison.",
     "isFighterBonusFeat": false,
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "poison_save_dc_bonus",
-        "ruleKey": "poison_save_dc_bonus",
-        "value": 2
+        "target": "special_ability_save_dc",
+        "value": 2,
+        "type": "untyped",
+        "condition": {
+          "effectTagsAll": ["ability:poison"]
+        }
       }
     ]
   }

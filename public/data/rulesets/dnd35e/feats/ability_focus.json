@@ -8,11 +8,12 @@
       "mode": "targeted",
       "targetCategory": "ability"
     },
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "special_ability_save_dc_bonus",
-        "ruleKey": "special_ability_save_dc_bonus",
-        "value": 2
+        "target": "special_ability_save_dc",
+        "value": 2,
+        "type": "untyped"
       }
     ]
   }

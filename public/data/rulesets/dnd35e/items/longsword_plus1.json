@@ -1,6 +1,7 @@
 {
   "longsword_plus1": {
     "id": "longsword_plus1",
+    "baseItemId": "longsword",
     "name": "+1 Longsword",
     "unidentifiedName": "+1 Longsword",
     "description": "+1 Longsword (martial one-handed melee weapon, 1d8 slashing).",
@@ -18,17 +19,6 @@
       "magic",
       "bypass:magic"
     ],
-    "weaponStats": {
-      "proficiencyCategory": "martial",
-      "weaponCategory": "melee",
-      "effort": "one_handed",
-      "damageDice": "1d8",
-      "damageType": "slashing",
-      "critThreatMin": 19,
-      "critMultiplier": 2,
-      "reachFt": 5,
-      "strikesAdjacent": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 1,

@@ -43,14 +43,15 @@
       "name": "Displacement",
       "category": "trait",
       "usageMode": "passive",
-      "modifiers": [],
-      "ruleOverrides": [
+      "modifiers": [
         {
           "id": "displacement_concealment",
-          "ruleKey": "concealment_50_percent",
-          "value": true
+          "target": "miss_chance",
+          "value": 50,
+          "type": "enhancement"
         }
       ],
+      "ruleOverrides": [],
       "grantedTags": [
         "displacement_active",
         "concealment:50"

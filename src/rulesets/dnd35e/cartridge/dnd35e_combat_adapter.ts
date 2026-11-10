@@ -1,6 +1,7 @@
 import { addComponent, getComponent, removeComponent } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
+import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
 import {
   ComponentType,
   type DamageComponent,
@@ -12,6 +13,7 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts';
 import { resolveAttackRoll, resolveCleaveFollowupEligibility } from '../combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
+import { evaluateDiceExpression } from '../math/dice.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
 import { getDnD35EntityData, resolveDamageTypeFromTags, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -140,6 +142,19 @@ export function resolveDnD35eMeleeAttack(
     const weaponDamageType = strike.weaponDamageType;
     const bypassTags = strike.bypassTags;
 
+    const isIncorporealWithoutGhostTouch =
+      defenderSelfTags.includes('subtype:incorporeal') &&
+      !bypassTags.includes('ghost_touch') &&
+      !bypassTags.includes('bypass:incorporeal');
+    const targetImmuneToCrits =
+      defenderData.abilityScores.con.base === null ||
+      defenderData.immunities.includes('critical_hits') ||
+      defenderSelfTags.includes('type:elemental') ||
+      defenderSelfTags.includes('type:ooze') ||
+      defenderSelfTags.includes('type:plant') ||
+      defenderSelfTags.includes('subtype:swarm') ||
+      isIncorporealWithoutGhostTouch;
+
     const rollResult = resolveAttackRoll({
       attackBonus: strike.attackBonus,
       targetAC,
@@ -149,7 +164,14 @@ export function resolveDnD35eMeleeAttack(
       flatDamageBonus: strike.strDamageBonus + strike.doctrineDamageBonus + strike.flatDamageBonus,
       critThreatMin: strike.critThreatMin,
       critMultiplier: strike.critMultiplier,
-      targetImmuneToCrits: defenderData.abilityScores.con.base === null
+      targetImmuneToCrits,
+      hasBlindFight: attackerEval.hasBlindFight,
+      ...(defenderEval.dagResult.fortificationPercent !== undefined
+        ? { fortificationPercent: defenderEval.dagResult.fortificationPercent }
+        : {}),
+      ...(defenderEval.dagResult.concealmentMissChancePercent !== undefined
+        ? { concealmentMissChancePercent: defenderEval.dagResult.concealmentMissChancePercent }
+        : {})
     });
 
     if (!rollResult.hit) {
@@ -162,24 +184,62 @@ export function resolveDnD35eMeleeAttack(
     }
 
     const existingDamage = getComponent(runningState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
-    const instance = {
-      amount: rollResult.totalDamage,
-      sourceEntityId: attackerId,
-      tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
-    };
-    const nextInstances = existingDamage ? [...existingDamage.instances, instance] : [instance];
+    const newInstances = [
+      {
+        amount: rollResult.totalDamage,
+        sourceEntityId: attackerId,
+        tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
+      }
+    ];
+
+    let riderText = '';
+    let totalRiderDamage = 0;
+    if (strike.damageRiders && strike.damageRiders.length > 0) {
+      for (const rider of strike.damageRiders) {
+        if (
+          rider.condition &&
+          !matchesEntityTagCondition(rider.condition, defenderSelfTags, ['melee', rider.damageType], attackerSelfTags)
+        ) {
+          continue;
+        }
+        if (rider.trigger === 'on_hit' || (rider.trigger === 'on_crit' && rollResult.isCriticalConfirmed)) {
+          const diceExpr =
+            rider.trigger === 'on_crit' && rider.diceByCritMultiplier
+              ? (rider.diceByCritMultiplier[String(strike.critMultiplier)] ??
+                rider.diceByCritMultiplier['2'] ??
+                rider.dice)
+              : rider.dice;
+          if (diceExpr) {
+            const riderRoll = evaluateDiceExpression(diceExpr);
+            const riderAmount = Math.max(0, riderRoll.total);
+            if (riderAmount > 0) {
+              const isEnergy = ['fire', 'cold', 'electricity', 'acid', 'sonic'].includes(rider.damageType);
+              newInstances.push({
+                amount: riderAmount,
+                sourceEntityId: attackerId,
+                tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags]
+              });
+              totalRiderDamage += riderAmount;
+              riderText += ` + ${riderAmount} ${rider.damageType}`;
+            }
+          }
+        }
+      }
+    }
+
+    const nextInstances = existingDamage ? [...existingDamage.instances, ...newInstances] : newInstances;
 
     runningState = addComponent(runningState, defenderId, {
       type: ComponentType.Damage,
       instances: nextInstances
     });
 
-    defenderHpRemaining -= rollResult.totalDamage;
+    defenderHpRemaining -= rollResult.totalDamage + totalRiderDamage;
 
     const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';
     runningState = addMessage(
       runningState,
-      `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType} damage!`,
+      `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType}${riderText} damage!`,
       MessageLogCategory.CombatHit
     );
 

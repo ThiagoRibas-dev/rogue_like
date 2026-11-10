@@ -10,9 +10,11 @@ import {
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { buildAbilityScoresRecord, getDnD35Archetype, hydrateArchetypeData } from './archetype_resolver.ts';
+import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import type { DnD35DamageType, DnD35EntityData } from './types/dnd35e.types.ts';
 import type {
   DnD35CreatureTypeEngine,
+  DnD35ItemDefinition,
   DnD35RaceDefinition,
   DnD35SubtypeDefinition,
   DnD35Template
@@ -155,7 +157,8 @@ export function setDnD35EntityData(state: GameState, entityId: EntityId, data: D
 }
 
 /**
- * Collects equipment modifiers from an entity's equipped items.
+ * Collects equipment modifiers from an entity's equipped items, resolving base item inheritance
+ * and taking the primary/highest weapon attack bonus rather than summing across multiple weapons.
  */
 export function getEquippedItemBonuses(
   state: GameState,
@@ -168,11 +171,27 @@ export function getEquippedItemBonuses(
 
   let equipAttackBonus = 0;
   let equipArmorBonus = 0;
+  let hasMainHandWeapon = false;
   for (const slot of equipment.slots) {
     if (slot.equippedItem === null || slot.suppressed === true) continue;
     const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
-    const itemDef = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
-    if (itemDef?.equippable) {
+    const rawItemDef = itemComp
+      ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined)
+      : undefined;
+    if (!rawItemDef) continue;
+    const itemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
+    if (itemDef.category === 'weapon') {
+      const enhBonus = itemDef.magicalProperties?.enhancementBonus ?? 0;
+      const mwBonus = itemDef.magicalProperties?.isMasterwork === true && enhBonus === 0 ? 1 : 0;
+      const wpnAtk = Math.max(itemDef.equippable?.attackBonus ?? 0, enhBonus, mwBonus);
+      const isMainHand = slot.slotType === 'main_hand' || slot.id.startsWith('main_hand');
+      if (isMainHand) {
+        hasMainHandWeapon = true;
+        equipAttackBonus = wpnAtk;
+      } else if (!hasMainHandWeapon) {
+        equipAttackBonus = Math.max(equipAttackBonus, wpnAtk);
+      }
+    } else if (itemDef.equippable && !itemDef.armorStats) {
       equipAttackBonus += itemDef.equippable.attackBonus ?? 0;
       equipArmorBonus += itemDef.equippable.defenseBonus ?? 0;
     }

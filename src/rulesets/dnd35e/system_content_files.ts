@@ -269,5 +269,6 @@ export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescrip
   { key: 'subtypes', filename: 'subtypes.json' },
   ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` })),
   { key: 'items', filename: 'items.json' },
-  ...ITEM_IDS.map((id) => ({ key: 'items', filename: `items/${id}.json` }))
+  ...ITEM_IDS.map((id) => ({ key: 'items', filename: `items/${id}.json` })),
+  { key: 'itemEnhancements', filename: 'item_enhancements.json' }
 ];

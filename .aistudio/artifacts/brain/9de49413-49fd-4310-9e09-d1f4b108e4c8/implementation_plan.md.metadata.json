@@ -1,6 +1,6 @@
 {
-  "summary":  "Deeply detailed, step-by-step implementation plan with explicit code diffs, SSOT ownership mappings, input conflict resolution, and architectural validations for: (1) hotbar number keybindings without input/numpad conflicts, (2) RTwP area transition scheduler loop preservation, (3) character creation feat leak removal and declarative stance/dial projections, and (4) turn-based multi-step round action economy with live HUD pips and End Turn controls.",
-  "updatedAt":  "2026-11-09T00:27:19.372986418Z",
+  "summary":  "Implementation Plan for Milestone 124: Post-M123 Audit Remediation covering weapon enhancement scoping, lateral spell/feat StatModifier parity, crit immunity, Blind-Fight, and Bane weapons.",
+  "updatedAt":  "2026-11-10T16:47:47.570094343Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

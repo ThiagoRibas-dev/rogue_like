@@ -18,16 +18,19 @@
         }
       ]
     },
+    "modifiers": [
+      {
+        "id": "sunder_check_bonus",
+        "target": "sunder",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "sunder_no_aoo",
         "ruleKey": "sunder_no_aoo",
         "value": true
-      },
-      {
-        "id": "sunder_check_bonus",
-        "ruleKey": "sunder_check_bonus",
-        "value": 4
       }
     ]
   }

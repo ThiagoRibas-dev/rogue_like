@@ -18,6 +18,14 @@
         }
       ]
     },
+    "modifiers": [
+      {
+        "id": "disarm_check_bonus",
+        "target": "disarm",
+        "value": 4,
+        "type": "untyped"
+      }
+    ],
     "ruleOverrides": [
       {
         "id": "disarm_no_aoo",
@@ -28,11 +36,6 @@
         "id": "disarm_no_counter",
         "ruleKey": "disarm_no_counter",
         "value": true
-      },
-      {
-        "id": "disarm_check_bonus",
-        "ruleKey": "disarm_check_bonus",
-        "value": 4
       }
     ]
   }

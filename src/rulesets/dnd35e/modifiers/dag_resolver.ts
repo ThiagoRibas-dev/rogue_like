@@ -289,6 +289,14 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const speedBonus = resolveTypedModifiers(speedMods, stageContext);
   const speed = (input.baseSpeed ?? 30) + speedBonus;
 
+  const fortificationMods = modsByStat['fortification'] ?? [];
+  const rawFortification = resolveTypedModifiers(fortificationMods, stageContext);
+  const fortificationPercent = Math.min(100, Math.max(0, rawFortification));
+
+  const missChanceMods = [...(modsByStat['miss_chance'] ?? []), ...(modsByStat['concealment'] ?? [])];
+  const rawMissChance = resolveTypedModifiers(missChanceMods, stageContext);
+  const concealmentMissChancePercent = Math.min(100, Math.max(0, rawMissChance));
+
   return {
     effectiveSize: sizeResult.sizeCategory,
     sizeRankIndex: sizeResult.rankIndex,
@@ -306,6 +314,8 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     damageBonus,
     maxHp,
     saves,
-    speed
+    speed,
+    ...(fortificationPercent > 0 ? { fortificationPercent } : {}),
+    ...(concealmentMissChancePercent > 0 ? { concealmentMissChancePercent } : {})
   };
 }

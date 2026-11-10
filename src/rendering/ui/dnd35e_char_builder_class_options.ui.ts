@@ -1,5 +1,5 @@
 import type { CharacterCreationDraft, DnD35SpellSchool, DnD35SystemContent } from '../../rulesets/registry.ts';
-import { validateSpecialistSchoolSelection } from '../../rulesets/registry.ts';
+import { getCanonicalBaseWeapons, validateSpecialistSchoolSelection } from '../../rulesets/registry.ts';
 
 const SPELL_SCHOOLS: ReadonlyArray<DnD35SpellSchool> = [
   'abjuration',
@@ -71,7 +71,7 @@ export function renderClericOptions(
     weaponWrap.style.gap = '4px';
 
     const curWpn = draft.deityFavoredWeaponId ?? 'longsword';
-    const weapons = Object.values(sys.items ?? {}).filter((i) => i.weaponStats !== undefined);
+    const weapons = getCanonicalBaseWeapons(sys);
     for (const wpn of weapons) {
       const wBtn = document.createElement('button');
       wBtn.type = 'button';

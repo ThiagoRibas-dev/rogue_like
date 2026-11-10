@@ -208,6 +208,7 @@
   "venom_dagger": {
     "spriteId": "item_dagger",
     "id": "venom_dagger",
+    "baseItemId": "dagger",
     "name": "Venom Dagger",
     "unidentifiedName": "Green-Tinged Dagger",
     "description": "A wicked blade dripping with corrosive poison.",

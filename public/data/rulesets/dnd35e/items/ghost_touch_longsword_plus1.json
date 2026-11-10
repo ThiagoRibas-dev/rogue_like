@@ -1,6 +1,7 @@
 {
   "ghost_touch_longsword_plus1": {
     "id": "ghost_touch_longsword_plus1",
+    "baseItemId": "longsword",
     "name": "+1 Ghost Touch Longsword",
     "unidentifiedName": "+1 Ghost Touch Longsword",
     "description": "+1 Ghost Touch Longsword (martial one-handed melee weapon, 1d8 slashing).",
@@ -19,17 +20,6 @@
       "bypass:magic",
       "ghost_touch"
     ],
-    "weaponStats": {
-      "proficiencyCategory": "martial",
-      "weaponCategory": "melee",
-      "effort": "one_handed",
-      "damageDice": "1d8",
-      "damageType": "slashing",
-      "critThreatMin": 19,
-      "critMultiplier": 2,
-      "reachFt": 5,
-      "strikesAdjacent": true
-    },
     "equippable": {
       "slot": "hand",
       "attackBonus": 1,
@@ -40,7 +30,10 @@
     "magicalProperties": {
       "enhancementBonus": 1,
       "isMasterwork": true,
-      "ghostTouch": true
+      "ghostTouch": true,
+      "enhancements": [
+        "ghost_touch"
+      ]
     },
     "spriteId": "item_long_sword"
   }

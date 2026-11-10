@@ -41,6 +41,16 @@ export function validateDnD35eSystemContentIntegrity(
     }
   }
 
+  for (const [enhKey, enhDef] of Object.entries(sys.itemEnhancements ?? {})) {
+    if (enhDef.id !== enhKey) {
+      errors.push({
+        path: `systemContent.itemEnhancements.${enhKey}.id`,
+        message: `Item enhancement key "${enhKey}" does not match inner id "${enhDef.id}".`,
+        severity: 'error'
+      });
+    }
+  }
+
   for (const [itemKey, itemDef] of Object.entries(sys.items ?? {})) {
     if (itemDef.id !== itemKey) {
       errors.push({
@@ -48,6 +58,25 @@ export function validateDnD35eSystemContentIntegrity(
         message: `Item key "${itemKey}" does not match inner id "${itemDef.id}".`,
         severity: 'error'
       });
+    }
+    if (itemDef.baseItemId !== undefined) {
+      if (!sys.items[itemDef.baseItemId]) {
+        errors.push({
+          path: `systemContent.items.${itemKey}.baseItemId`,
+          message: `Item "${itemKey}" references non-existent baseItemId "${itemDef.baseItemId}".`,
+          severity: 'error'
+        });
+      }
+    }
+    const enhancements = itemDef.magicalProperties?.enhancements ?? [];
+    for (const enhId of enhancements) {
+      if (sys.itemEnhancements && !sys.itemEnhancements[enhId]) {
+        errors.push({
+          path: `systemContent.items.${itemKey}.magicalProperties.enhancements`,
+          message: `Item "${itemKey}" references non-existent item enhancement "${enhId}".`,
+          severity: 'error'
+        });
+      }
     }
   }
 

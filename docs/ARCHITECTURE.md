@@ -735,6 +735,23 @@ To ensure ruleset mechanics remain cleanly composable without spaghetti code, al
    - Turn-based mode preserves actor turn ownership across discrete 5-ft movements using `DnD35ActionBudget` and `consumeMovementStepFt`, returning `energyCost = 0` until movement is exhausted or manually surrendered via `⌛ END TURN` (`createWaitAction`).
    - Area transitions in RTwP mode invoke `resetSchedulerActors()` rather than `clearScheduler()`, purging stale actor queues without locking the engine or cancelling the active animation frame loop.
 
+### 9.14 Composable Armament Inheritance, First-Class Enhancements & Base Tag Scoping (Milestone 123)
+
+To prevent combinatorial explosions in weapon statblocks and ensure character progression modifiers (Feats, Domains, Specializations) scale seamlessly with magical equipment:
+
+1. **Armament Inheritance (`baseItemId`) & Instance Overrides**:
+   - Baseline physical properties (damage dice, critical threat/multiplier, effort, category, weight, reach) are authored once on canonical base items (`longsword.json`, `heavy_steel_shield.json`, `full_plate.json`).
+   - Preset variants (`longsword_plus1.json`, `flaming_longsword_plus1.json`) specify `baseItemId: "longsword"` and `enhancements: ["flaming"]`.
+   - `resolveEffectiveItemDefinition()` recursively resolves the base chassis and merges preset data with serializable ECS instance overrides on `ItemComponent` (`customName`, `customDescription`, `specialMaterial`, `enhancementBonus`, `enhancements`).
+
+2. **First-Class Item Enhancements (`item_enhancements.json`)**:
+   - Weapon and armor special properties are authored as independent records in `public/data/rulesets/dnd35e/item_enhancements.json` conforming to `DnD35ItemEnhancementSchema`.
+   - Enhancements declare `damageRiders` (`on_hit` / `on_crit` energy burst dice evaluated through energy resistance/immunity mitigation) and `effectBundle` descriptors.
+
+3. **Base Weapon Tag Matching (`weapon:<baseWeaponId>`)**:
+   - Weapon strike profiles emit canonical base weapon tags (`weapon:<baseWeaponId>`) alongside variant item tags (`weapon:<itemId>`).
+   - Parameterized weapon feats (*Weapon Focus*, *Weapon Specialization*, *Improved Critical*) and Cleric *War Domain* deity favored weapons check against the base weapon chassis, preserving bonuses across mundane, masterwork, and magic weapon tiers.
+
 ---
 
 ## 10. Key Design Decisions

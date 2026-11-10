@@ -1,6 +1,7 @@
 {
   "ghost_touch_full_plate_plus1": {
     "id": "ghost_touch_full_plate_plus1",
+    "baseItemId": "full_plate",
     "name": "+1 Ghost Touch Full Plate",
     "unidentifiedName": "+1 Ghost Touch Full Plate",
     "description": "+1 Ghost Touch Full Plate (heavy, +8 AC, ACP -5, ASF 35%).",
@@ -10,16 +11,6 @@
     "category": "armor",
     "weight": 50,
     "baseValue": 10650,
-    "armorStats": {
-      "armorCategory": "heavy",
-      "armorBonus": 8,
-      "maxDexBonus": 1,
-      "armorCheckPenalty": -5,
-      "arcaneSpellFailure": 35,
-      "speed30Ft": 20,
-      "speed20Ft": 15,
-      "isMetal": true
-    },
     "equippable": {
       "slot": "torso",
       "attackBonus": 0,
@@ -30,7 +21,10 @@
     "magicalProperties": {
       "enhancementBonus": 1,
       "isMasterwork": true,
-      "ghostTouch": true
+      "ghostTouch": true,
+      "enhancements": [
+        "ghost_touch"
+      ]
     },
     "tags": [
       "armor",
