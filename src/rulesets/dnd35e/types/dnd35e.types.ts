@@ -353,6 +353,7 @@ export interface DnD35EntityData {
   readonly animalCompanionId?: string | undefined;
   readonly companions?: ReadonlyArray<DnD35CompanionEntry> | undefined;
   readonly rogueSpecialAbilities?: ReadonlyArray<string> | undefined;
+  readonly actionBudget?: DnD35ActionBudget | undefined;
 }
 
 /** Bonded companion, familiar, mount, cohort, or hireling registered to an actor. */

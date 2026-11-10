@@ -16,6 +16,7 @@ import { MAX_STABILIZATION_ITERATIONS } from '../constants/pacing.constants.ts';
 export function resolveStateStabilization(state: GameState): GameState {
   let nextState = state;
   let iteration = 0;
+  let processedEventIndex = 0;
 
   while (iteration < MAX_STABILIZATION_ITERATIONS) {
     iteration++;
@@ -23,7 +24,9 @@ export function resolveStateStabilization(state: GameState): GameState {
 
     nextState = processDamageSystem(nextState);
     nextState = processDeathSystem(nextState);
-    nextState = processGlobalTriggers(nextState);
+    const triggerResult = processGlobalTriggers(nextState, processedEventIndex);
+    nextState = triggerResult.state;
+    processedEventIndex = triggerResult.nextEventIndex;
 
     const hasPendingDamage = queryEntities(nextState, [ComponentType.Damage]).length > 0;
     const hasPendingDeath = queryEntities(nextState, [ComponentType.Death]).length > 0;

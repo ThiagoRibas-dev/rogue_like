@@ -18,8 +18,57 @@ import {
 } from '../../actions/debug.actions.ts';
 import { createPickUpAction, createToggleInventoryAction } from '../../actions/inventory.actions.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
-import { triggerQuickBeltSlot } from '../../rendering/ui/hud_bottom_dock.ui.ts';
+import { executeHotbarSlotByKey } from '../../rendering/ui/hud_bottom_dock.ui.ts';
 import { toggleAllHudPanelsFolded } from './mouse_input.ts';
+
+/**
+ * Resolves a keyboard event to a 0-based hotbar slot index (0..11) from top-row keys,
+ * strictly distinguishing top-row digits from numpad digits.
+ */
+function resolveTopRowHotbarSlotIndex(event: KeyboardEvent): number | null {
+  // If user is holding Ctrl, Alt, or Meta, do not intercept as hotbar activation
+  if (event.ctrlKey || event.altKey || event.metaKey) return null;
+
+  // Prefer event.code for unequivocal physical top-row key discrimination
+  switch (event.code) {
+    case 'Digit1':
+      return 0;
+    case 'Digit2':
+      return 1;
+    case 'Digit3':
+      return 2;
+    case 'Digit4':
+      return 3;
+    case 'Digit5':
+      return 4;
+    case 'Digit6':
+      return 5;
+    case 'Digit7':
+      return 6;
+    case 'Digit8':
+      return 7;
+    case 'Digit9':
+      return 8;
+    case 'Digit0':
+      return 9;
+    case 'Minus':
+      return 10;
+    case 'Equal':
+      return 11;
+  }
+
+  // Fallback for non-numpad key events
+  if (!event.code.startsWith('Numpad')) {
+    if (event.key >= '1' && event.key <= '9') {
+      return Number(event.key) - 1;
+    }
+    if (event.key === '0') return 9;
+    if (event.key === '-') return 10;
+    if (event.key === '=') return 11;
+  }
+
+  return null;
+}
 
 /** Keyboard key that always toggles the debug overlay while in game mode. */
 const DEBUG_OVERLAY_KEY = '`';
@@ -69,9 +118,10 @@ export function handleGameShortcutKey(event: KeyboardEvent, playerEntityId: Enti
     return true;
   }
 
-  // Quick-belt slots [1]-[5] (when not using numpad movement 2/4/6/8)
-  if (event.key === '1' || event.key === '3' || event.key === '5') {
-    if (triggerQuickBeltSlot(getGameState(), playerEntityId, Number(event.key) - 1)) {
+  // Hotbar slots [1]-[9], [0], [-], [=] (slots 0..11) from top-row keys
+  const hotbarIndex = resolveTopRowHotbarSlotIndex(event);
+  if (hotbarIndex !== null) {
+    if (executeHotbarSlotByKey(getGameState(), playerEntityId, hotbarIndex)) {
       event.preventDefault();
       return true;
     }

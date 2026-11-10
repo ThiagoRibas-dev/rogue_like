@@ -13,7 +13,7 @@ import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts
 import { resolveAttackRoll, resolveCleaveFollowupEligibility } from '../combat/attack_resolver.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
-import { getDnD35EntityData, resolveDamageTypeFromTags } from '../srd_registry.ts';
+import { getDnD35EntityData, resolveDamageTypeFromTags, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../wild_shape.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
@@ -95,7 +95,7 @@ export function resolveDnD35eMeleeAttack(
 
   const targetAC = defenderEval.dagResult.acBreakdown.fullAC;
 
-  const actionBudget = (attackerData as { actionBudget?: { distanceMovedThisRoundFt?: number } }).actionBudget;
+  const actionBudget = attackerData.actionBudget;
   const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
   const isFullAttack = distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT;
 
@@ -105,7 +105,26 @@ export function resolveDnD35eMeleeAttack(
     return { state, success: false };
   }
 
-  let runningState = state;
+  // Consume standard action in actionBudget if present
+  let updatedAttackerData = attackerData;
+  if (actionBudget) {
+    const nextStd = isFullAttack ? 0 : Math.max(0, actionBudget.standardRemaining - 1);
+    const nextMove = isFullAttack ? 0 : actionBudget.moveRemaining;
+    const nextRemainingFt = isFullAttack ? 0 : actionBudget.movementRemainingFt;
+    updatedAttackerData = {
+      ...attackerData,
+      actionBudget: {
+        ...actionBudget,
+        standardRemaining: nextStd,
+        moveRemaining: nextMove,
+        movementRemainingFt: nextRemainingFt,
+        fiveFootStepAvailable: false,
+        canMoveFurtherThisRound: !isFullAttack && nextRemainingFt > 0
+      }
+    };
+  }
+
+  let runningState = actionBudget ? setDnD35EntityData(state, attackerId, updatedAttackerData) : state;
   let anyStrikeAttempted = false;
   let defenderHpRemaining = targetFighter.hp;
 

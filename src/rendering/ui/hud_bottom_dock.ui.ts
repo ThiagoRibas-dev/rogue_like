@@ -5,6 +5,7 @@
  */
 
 import { createApplyAction } from '../../actions/interaction.actions.ts';
+import { createWaitAction } from '../../actions/core.actions.ts';
 import { QUICK_BELT_SLOT_COUNT } from '../../constants/ui.constants.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { getGameState, queuePlayerIntent } from '../../core/game-loop.ts';
@@ -15,7 +16,7 @@ import {
   type InventoryComponent,
   type ItemComponent
 } from '../../types/components.types.ts';
-import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
+import { EngineMode, type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import {
   type ConsoleHotbarCallbacks,
@@ -82,6 +83,19 @@ export function triggerQuickBeltSlot(state: GameState, playerEntityId: EntityId,
 
   queuePlayerIntent(createApplyAction(playerEntityId, 'apply', { type: 'item', itemEntityId }));
   return true;
+}
+
+/**
+ * Executes a hotbar slot at 0-based index `slotIndex` (`0..11`), delegating to the active cartridge
+ * or falling back to quick-belt items.
+ */
+export function executeHotbarSlotByKey(state: GameState, playerEntityId: EntityId, slotIndex: number): boolean {
+  const cartridgeUI = getActiveCartridgeUI(state);
+  if (cartridgeUI?.onExecuteHotbarSlot) {
+    cartridgeUI.onExecuteHotbarSlot(state, playerEntityId, slotIndex, activeBank);
+    return true;
+  }
+  return triggerQuickBeltSlot(state, playerEntityId, slotIndex);
 }
 
 const EMPTY_HOTBAR_SLOTS: ReadonlyArray<UIHotbarSlotData> = Array.from({ length: HOTBAR_SLOT_COUNT }, (_, i) => ({
@@ -160,7 +174,14 @@ export function renderHudBottomDock(state: GameState): void {
       if (cartridgeUI?.onStepStance) {
         cartridgeUI.onStepStance(liveState, playerId, stanceId, delta);
       }
-    }
+    },
+    ...(state.engineMode === EngineMode.TurnBased
+      ? {
+          onEndTurn: () => {
+            queuePlayerIntent(createWaitAction(playerId));
+          }
+        }
+      : {})
   };
 
   renderConsoleHotbar(container, slots, stanceActions, callbacks, actionPips);

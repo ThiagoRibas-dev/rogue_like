@@ -59,7 +59,12 @@ export function extractActorTacticalDials(
   featRegistry: Readonly<Record<string, DnD35FeatDefinition>> | undefined,
   suppressedBundleIds: ReadonlyArray<string> = []
 ): ReadonlyArray<TacticalDialDescriptor> {
-  if (!featRegistry) return CANONICAL_TACTICAL_DIALS;
+  if (!featRegistry) {
+    const ownedSet = new Set(featIds.map((f) => (f.includes(':') ? f.split(':')[0]! : f)));
+    return CANONICAL_TACTICAL_DIALS.filter(
+      (d) => ownedSet.has(d.abilityId) && !suppressedBundleIds.includes(d.abilityId)
+    );
+  }
   const dials: TacticalDialDescriptor[] = [];
 
   for (const rawFeatId of featIds) {
@@ -93,7 +98,7 @@ export function extractActorTacticalDials(
     }
   }
 
-  return dials.length > 0 ? dials : CANONICAL_TACTICAL_DIALS;
+  return dials;
 }
 
 /**

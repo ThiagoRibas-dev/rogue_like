@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for resolving hotbar keyboard controls without key conflicts, fixing the RTwP area transition scheduler freeze, refactoring combat stances and dial steppers into pure declarative abilities while eliminating the Character Creation feat leak, and connecting the D&D 3.5e multi-step round action economy with live HUD pips and an End Turn button.",
-  "updatedAt":  "2026-11-08T19:16:10.996016393Z",
+  "summary":  "Deeply detailed, step-by-step implementation plan with explicit code diffs, SSOT ownership mappings, input conflict resolution, and architectural validations for: (1) hotbar number keybindings without input/numpad conflicts, (2) RTwP area transition scheduler loop preservation, (3) character creation feat leak removal and declarative stance/dial projections, and (4) turn-based multi-step round action economy with live HUD pips and End Turn controls.",
+  "updatedAt":  "2026-11-09T00:27:19.372986418Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

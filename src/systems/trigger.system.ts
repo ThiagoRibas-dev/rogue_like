@@ -99,15 +99,26 @@ export function applyConsequence(state: GameState, event: GameEvent, consequence
 }
 
 /**
- * Processes all global events against the declarative trigger system.
- * @param state The current game state containing events.
- * @returns The updated game state with triggered consequences applied.
+ * Result of processing global triggers, including the resulting state and advanced event cursor.
  */
-export function processGlobalTriggers(state: GameState): GameState {
-  if (state.events.length === 0) return state;
+export interface ProcessGlobalTriggersResult {
+  readonly state: GameState;
+  readonly nextEventIndex: number;
+}
+
+/**
+ * Processes global events against the declarative trigger system starting from startIndex.
+ * @param state The current game state containing events.
+ * @param startIndex The event index to start processing from (defaults to 0).
+ * @returns The updated game state with triggered consequences applied and advanced event index.
+ */
+export function processGlobalTriggers(state: GameState, startIndex = 0): ProcessGlobalTriggersResult {
+  if (state.events.length === 0 || startIndex >= state.events.length) {
+    return { state, nextEventIndex: state.events.length };
+  }
 
   let nextState = state;
-  let eventIndex = 0;
+  let eventIndex = startIndex;
   let loopCount = 0;
 
   // Using while loop to process newly pushed events from consequences recursively.
@@ -172,5 +183,5 @@ export function processGlobalTriggers(state: GameState): GameState {
     }
   }
 
-  return nextState;
+  return { state: nextState, nextEventIndex: eventIndex };
 }

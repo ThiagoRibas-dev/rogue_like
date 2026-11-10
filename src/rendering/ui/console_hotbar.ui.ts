@@ -42,6 +42,7 @@ export interface ConsoleHotbarCallbacks {
   readonly onToggleStance: (stanceId: string) => void;
   readonly onStanceStep?: (stanceId: string, delta: number) => void;
   readonly onChangeBank: (newBankIndex: number) => void;
+  readonly onEndTurn?: () => void;
 }
 
 const MAX_HOTBAR_BANKS = 10;
@@ -151,6 +152,20 @@ export function renderConsoleHotbar(
       pipSpan.title = pip.detailText ? `${pip.label}: ${pip.detailText}` : pip.label;
       pipsStrip.appendChild(pipSpan);
     }
+
+    if (callbacks.onEndTurn) {
+      const endTurnBtn = document.createElement('button');
+      endTurnBtn.type = 'button';
+      endTurnBtn.className = 'crpg-stance-btn crpg-end-turn-btn';
+      endTurnBtn.textContent = '⌛ END TURN';
+      endTurnBtn.title = 'End your current turn and pass to next actor (Space / .)';
+      endTurnBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        callbacks.onEndTurn?.();
+      });
+      pipsStrip.appendChild(endTurnBtn);
+    }
+
     modesStrip.appendChild(pipsStrip);
   }
 

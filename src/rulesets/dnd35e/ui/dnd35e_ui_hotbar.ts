@@ -14,10 +14,9 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { UIActionEconomyPip, UIHotbarSlot, UIStanceModeEntry } from '../../../types/ui_adapter.types.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
-import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { type DnD35FeatDefinition, getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { mapEntityItemToUI } from './dnd35e_ui_projection.ts';
 
-const FIXED_EXPERTISE_CAP = 5;
 const HOTBAR_SLOT_COUNT = 12;
 
 export const ACTIVE_SKILL_IDS: ReadonlySet<string> = new Set([
@@ -30,40 +29,48 @@ export const ACTIVE_SKILL_IDS: ReadonlySet<string> = new Set([
   'tumble'
 ]);
 
+import { extractActorTacticalDials, type TacticalDialDescriptor } from '../combat/tactical_doctrine.ts';
+
 /** Projects dynamic combat stances and class-feature scaling pools from an actor's live build. */
 export function buildActorStanceModes(
   dndData: Partial<DnD35EntityData>,
   bab: number,
   doctrine?: TacticalDoctrineComponent,
-  resourcePools?: ResourcePoolComponent
+  resourcePools?: ResourcePoolComponent,
+  sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>
 ): ReadonlyArray<UIStanceModeEntry> {
-  const feats = new Set(dndData.feats ?? []);
   const modes: UIStanceModeEntry[] = [];
-  if (feats.has('power_attack')) {
-    const pa = doctrine?.powerAttackAmount ?? 0;
+  const dials: ReadonlyArray<TacticalDialDescriptor> = extractActorTacticalDials(
+    dndData.feats ?? [],
+    sysFeats,
+    dndData.suppressedBundleIds ?? []
+  );
+
+  for (const dial of dials) {
+    let currentVal = 0;
+    if (doctrine?.settings) {
+      const settingVal = doctrine.settings[dial.abilityId] ?? doctrine.settings[`${dial.abilityId}_dial`];
+      if (typeof settingVal === 'number') currentVal = settingVal;
+    }
+    if (currentVal === 0 && dial.legacyPropertyKey !== undefined && doctrine) {
+      const legacyVal = doctrine[dial.legacyPropertyKey];
+      if (typeof legacyVal === 'number') currentVal = legacyVal;
+    }
+
+    let maxVal = bab;
+    if (dial.maxCapRule === 'fixed_5') maxVal = Math.min(5, bab);
+
     modes.push({
-      id: 'power_attack',
-      label: 'Power Attack',
-      isActive: pa > 0,
-      numericValue: pa,
-      minNumericValue: 0,
-      maxNumericValue: bab,
-      tooltipText: `Power Attack (-${pa} Attack / +${pa} Damage, Max ${bab})`
+      id: dial.abilityId,
+      label: dial.name ?? dial.abilityId.replace(/_/g, ' '),
+      isActive: currentVal > 0,
+      numericValue: currentVal,
+      minNumericValue: dial.min,
+      maxNumericValue: maxVal,
+      tooltipText: `${dial.name ?? dial.abilityId} (Current: ${currentVal}, Max: ${maxVal})`
     });
   }
-  if (feats.has('combat_expertise')) {
-    const ce = doctrine?.combatExpertiseAmount ?? 0;
-    const maxCe = Math.min(FIXED_EXPERTISE_CAP, bab);
-    modes.push({
-      id: 'combat_expertise',
-      label: 'Expertise',
-      isActive: ce > 0,
-      numericValue: ce,
-      minNumericValue: 0,
-      maxNumericValue: maxCe,
-      tooltipText: `Combat Expertise (-${ce} Attack / +${ce} Dodge AC, Max ${maxCe})`
-    });
-  }
+
   const is2H = doctrine?.gripMode === 'two_handed';
   modes.push(
     {
@@ -168,6 +175,55 @@ export function buildActorHotbarSlots(
     const c = candidates[i];
     return c ? { slotIndex: i, keyLabel, ...c } : { slotIndex: i, keyLabel, label: '' };
   });
+}
+
+/**
+ * Projects live 5-tier action pips dynamically from an actor's DnD35ActionBudget.
+ */
+export function buildActorActionPips(dndData: Partial<DnD35EntityData>): ReadonlyArray<UIActionEconomyPip> {
+  const budget = dndData.actionBudget;
+  if (!budget) {
+    return DND35E_ACTION_PIPS;
+  }
+
+  const movLabel =
+    budget.movementRemainingFt > 0
+      ? `MOV ${budget.movementRemainingFt}ft`
+      : budget.moveRemaining > 0
+        ? 'MOV'
+        : 'MOV 0ft';
+
+  return [
+    {
+      id: 'std',
+      label: 'STD',
+      available: budget.standardRemaining > 0,
+      detailText: budget.standardRemaining > 0 ? 'Standard Action Available' : 'Standard Action Spent'
+    },
+    {
+      id: 'mov',
+      label: movLabel,
+      available: budget.moveRemaining > 0 || budget.movementRemainingFt > 0,
+      detailText:
+        budget.movementRemainingFt > 0
+          ? `${budget.movementRemainingFt} ft of movement remaining`
+          : budget.moveRemaining > 0
+            ? 'Move Action Available'
+            : 'Move Action Spent'
+    },
+    {
+      id: 'swf',
+      label: 'SWF',
+      available: budget.swiftRemaining > 0,
+      detailText: budget.swiftRemaining > 0 ? 'Swift Action Available' : 'Swift Action Spent'
+    },
+    {
+      id: 'aoo',
+      label: `AoO (${budget.aooRemaining})`,
+      available: budget.aooRemaining > 0,
+      detailText: `${budget.aooRemaining} / ${budget.aooMax} Attacks of Opportunity Remaining`
+    }
+  ];
 }
 
 export const DND35E_ACTION_PIPS: ReadonlyArray<UIActionEconomyPip> = [

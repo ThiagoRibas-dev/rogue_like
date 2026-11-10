@@ -63,7 +63,12 @@ export function applyCharacterCreationToPlayer(
     cha: makeAb(draft.baseAbilityScores.cha)
   };
 
-  const withBaseAbilities: DnD35EntityData = { ...currentData, abilityScores: rawBaseScores, tracks: [] };
+  const withBaseAbilities: DnD35EntityData = {
+    ...currentData,
+    abilityScores: rawBaseScores,
+    tracks: [],
+    feats: []
+  };
   const creatureTypeEngine = sysContent.creatureTypes[raceDef.creatureType];
   const withRaceResult = applyRaceToActorChassis(withBaseAbilities, raceDef, creatureTypeEngine);
   const withRace = withRaceResult.entityData;

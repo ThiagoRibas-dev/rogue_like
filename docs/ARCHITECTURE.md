@@ -730,6 +730,11 @@ To ensure ruleset mechanics remain cleanly composable without spaghetti code, al
    - Servants are stored in a unified, tag-driven `companions: ReadonlyArray<DnD35CompanionEntry>` array (`tags: ['animal_companion', 'familiar']`), allowing a single entity (such as an Arcane Hierophant's Companion Familiar) to accumulate multiple progression tracks.
    - `syncActorCompanionsAndFamiliars` advances servant Hit Die tracks, natural armor, and ability scores per tag and evaluates the servant's full combat stats (`Full/Touch/Flat-Footed AC`, `maxHp`, `attackBonus`, `saves`, `size`) through `evaluateDnD35ActorStatDAG`. Linked via `ControllerLinkComponent`, companions migrate across dungeon floors with their master and spawn on adjacent walkable tiles.
 
+6. **Declarative Tactical Dials, Multi-Step Turn Economy & RTwP Transition Integrity**:
+   - Combat dials and steppers (Power Attack, Combat Expertise) are never checked by hardcoded ID in the UI layer; they are projected dynamically from `extractActorTacticalDials` via `variableDial` descriptors on owned feats or abilities. Universal stances (*Fighting Defensively*, *Total Defense*, *1H/2H Grip*) are granted symmetrically to all combatants.
+   - Turn-based mode preserves actor turn ownership across discrete 5-ft movements using `DnD35ActionBudget` and `consumeMovementStepFt`, returning `energyCost = 0` until movement is exhausted or manually surrendered via `⌛ END TURN` (`createWaitAction`).
+   - Area transitions in RTwP mode invoke `resetSchedulerActors()` rather than `clearScheduler()`, purging stale actor queues without locking the engine or cancelling the active animation frame loop.
+
 ---
 
 ## 10. Key Design Decisions

@@ -1,6 +1,6 @@
 import { dispatchAction } from '../../actions/action.registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import type { GameState } from '../../types/game-state.types.ts';
+import { EngineMode, type GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ActionResult, Intent } from '../../types/intents/intent.union.ts';
 import { getComponent, tickControllerLinksAndOverlays } from '../ecs.ts';
@@ -8,6 +8,12 @@ import { pushTelemetryEvents } from '../telemetry.ts';
 import { recordTurnSample } from '../performance.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 import type { GameEvent } from '../../types/events.types.ts';
+import {
+  getDnD35EntityData,
+  setDnD35EntityData,
+  createRoundActionBudget,
+  consumeMovementStepFt
+} from '../../rulesets/registry.ts';
 import { updateExploredTiles } from '../../systems/map.system.ts';
 import { evaluateAutoPause } from '../auto_pause.ts';
 import { coordToIndex } from '../../utils/grid.ts';
@@ -34,6 +40,89 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   if (!result.success) {
     energyCost = 0;
+  } else if (state.campaign?.manifest?.rulesetId === 'dnd35e' && state.engineMode === EngineMode.TurnBased) {
+    const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+    if (isPlayer) {
+      const dndData = getDnD35EntityData(nextState, intent.entityId);
+      const stats = getEffectiveStats(nextState, intent.entityId);
+      const actorSpeedFt = stats.speed > 0 ? stats.speed : 30;
+      let currentBudget = dndData.actionBudget;
+
+      // Start fresh round budget if missing or starting a new cycle
+      if (!currentBudget) {
+        const dexMod = Math.floor(((dndData.abilityScores?.dex?.base ?? 10) - 10) / 2);
+        const hasReflexes = dndData.feats?.includes('combat_reflexes') ?? false;
+        currentBudget = createRoundActionBudget({
+          dexModifier: dexMod,
+          hasCombatReflexes: hasReflexes,
+          isFlatFooted: dndData.conditions?.includes('flat_footed') ?? false
+        });
+      }
+
+      if (intent.type === IntentType.Move) {
+        const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
+        let isDifficult = false;
+        if (posAfter) {
+          const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
+          const tile = state.map.tiles[tileIdx];
+          const mCost = tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100;
+          isDifficult = mCost > 100;
+        }
+        nextState = processTraps(nextState, intent.entityId);
+
+        const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, 5, isDifficult);
+        if (stepResult.allowed) {
+          nextState = setDnD35EntityData(nextState, intent.entityId, {
+            ...dndData,
+            actionBudget: stepResult.budget
+          });
+          // Turn continues while actor has movement or actions remaining
+          const hasMoreBudget =
+            stepResult.budget.movementRemainingFt > 0 ||
+            stepResult.budget.moveRemaining > 0 ||
+            stepResult.budget.standardRemaining > 0;
+          energyCost = hasMoreBudget ? 0 : 100;
+        } else {
+          // Budget exhausted, advance turn
+          nextState = setDnD35EntityData(nextState, intent.entityId, {
+            ...dndData,
+            actionBudget: undefined
+          });
+          energyCost = 100;
+        }
+      } else if (intent.type === IntentType.Wait) {
+        // Explicitly end turn
+        nextState = setDnD35EntityData(nextState, intent.entityId, {
+          ...dndData,
+          actionBudget: undefined
+        });
+        energyCost = 100;
+      } else {
+        // Standard action (attack, spell, skill)
+        const updatedDndData = getDnD35EntityData(nextState, intent.entityId);
+        const postActionBudget = updatedDndData.actionBudget ?? currentBudget;
+        const canKeepMoving = postActionBudget.movementRemainingFt > 0;
+        if (!canKeepMoving) {
+          nextState = setDnD35EntityData(nextState, intent.entityId, {
+            ...updatedDndData,
+            actionBudget: undefined
+          });
+          energyCost = 100;
+        } else {
+          energyCost = 0;
+        }
+      }
+    } else if (intent.type === IntentType.Move) {
+      const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
+      if (posAfter) {
+        const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
+        const tile = state.map.tiles[tileIdx];
+        if (tile) {
+          energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
+        }
+      }
+      nextState = processTraps(nextState, intent.entityId);
+    }
   } else if (intent.type === IntentType.Move) {
     const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
     if (posAfter) {
@@ -61,6 +150,18 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
   }
   const tAfterDispatch = performance.now();
+
+  // If intent was an immediate non-gameplay action (e.g. toggling UI modals/settings/overlays)
+  // that did not succeed or advance world energy, return early to prevent running world stabilization or cadence.
+  const isImmediate = 'isImmediate' in intent && intent.isImmediate;
+  if (isImmediate && energyCost === 0 && (!result.events || result.events.length === 0)) {
+    return {
+      state: nextState,
+      success: result.success,
+      energyCost: 0,
+      events: []
+    };
+  }
 
   nextState = resolveStateStabilization(nextState);
   const tAfterStabilization = performance.now();

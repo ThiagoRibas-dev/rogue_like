@@ -13,7 +13,7 @@ import { type AreaData, type EntityId, type GameMap, type GameState } from '../t
 import { coordToIndex } from '../utils/grid.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import type { ChangeAreaIntent } from '../types/intents/movement.intents.ts';
-import { addActor, clearScheduler } from '../core/scheduler.ts';
+import { addActor, resetSchedulerActors } from '../core/scheduler.ts';
 import { deliverPendingKnowledgeToArea } from './knowledge.system.ts';
 import { wakeSavedAreaFloor } from './map/map_wake_respawn.ts';
 import { generateAndPopulateAreaFloor } from './map/map_generation_spawner.ts';
@@ -287,7 +287,7 @@ export function processChangeAreaIntent(
   nextState = deliverPendingKnowledgeToArea(nextState, targetAreaId);
 
   // 4. Update Scheduler
-  clearScheduler();
+  resetSchedulerActors();
   for (const id of nextState.entities) {
     if (id === entityId) {
       const actor = getComponent(nextState, id, ComponentType.Actor);

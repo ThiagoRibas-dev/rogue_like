@@ -122,13 +122,19 @@ export {
   getEligibleBaseCastingClassesForPrestige,
   type PrestigeSpellcastingAdvancementSlot
 } from './dnd35e/progression.ts';
-export { getDnD35EntityData } from './dnd35e/srd_registry.ts';
+export { getDnD35EntityData, setDnD35EntityData } from './dnd35e/srd_registry.ts';
 export {
   computeClassLevelSlotSummaries,
   getSpontaneousConversionTargets,
   reconcilePreparedSlots,
   type SpellLevelSlotSummary
 } from './dnd35e/magic/spellbook_slots.ts';
+export {
+  createRoundActionBudget,
+  consumeMovementStepFt,
+  downgradeStandardToMove,
+  takeFiveFootStep
+} from './dnd35e/action_economy.ts';
 export {
   ALL_ABILITY_IDS,
   type AbilityId,

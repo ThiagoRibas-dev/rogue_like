@@ -189,12 +189,24 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
     if (stanceId === 'power_attack') {
       const cur = docComp?.powerAttackAmount ?? 0;
       const next = Math.max(0, Math.min(bab, cur + delta));
-      applyDoctrineUpdate(state, playerId, { powerAttackAmount: next });
+      applyDoctrineUpdate(state, playerId, {
+        powerAttackAmount: next,
+        settings: { ...(docComp?.settings ?? {}), power_attack: next, power_attack_dial: next }
+      });
     } else if (stanceId === 'combat_expertise') {
       const cur = docComp?.combatExpertiseAmount ?? 0;
       const maxCe = Math.min(FIXED_EXPERTISE_CAP, bab);
       const next = Math.max(0, Math.min(maxCe, cur + delta));
-      applyDoctrineUpdate(state, playerId, { combatExpertiseAmount: next });
+      applyDoctrineUpdate(state, playerId, {
+        combatExpertiseAmount: next,
+        settings: { ...(docComp?.settings ?? {}), combat_expertise: next, combat_expertise_dial: next }
+      });
+    } else {
+      const cur = (docComp?.settings?.[stanceId] as number | undefined) ?? 0;
+      const next = Math.max(0, Math.min(bab, cur + delta));
+      applyDoctrineUpdate(state, playerId, {
+        settings: { ...(docComp?.settings ?? {}), [stanceId]: next }
+      });
     }
   },
 

@@ -242,6 +242,20 @@ export function setTurnDuration(duration: number): void {
 }
 
 /**
+ * Resets scheduler actor queues and accumulated time for an area transition
+ * without locking the engine or cancelling the active RTwP animation frame loop.
+ */
+export function resetSchedulerActors(): void {
+  scheduler.clear();
+  actors.clear();
+  accumulatedTime = 0;
+  if (sliceYieldTimerId !== null) {
+    clearTimeout(sliceYieldTimerId);
+    sliceYieldTimerId = null;
+  }
+}
+
+/**
  * Destroys all scheduling states and cancels animation timers.
  */
 export function clearScheduler(): void {

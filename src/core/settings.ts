@@ -214,7 +214,19 @@ export function updatePanelLayout(partial: Partial<PanelLayoutSettings>): void {
 export function isAction(event: KeyboardEvent, action: ActionType): boolean {
   const binds = currentSettings.keybinds[action];
   if (!binds) return false;
-  return binds.includes(event.key.toLowerCase());
+
+  const keyLower = event.key.toLowerCase();
+  // If this key event is from a top-row Digit key (Digit1..Digit0), do not match
+  // single-digit movement bindings ('2', '4', '6', '8') which belong to the numpad.
+  if (
+    event.code.startsWith('Digit') &&
+    (action === 'move_north' || action === 'move_south' || action === 'move_west' || action === 'move_east')
+  ) {
+    const nonDigitBinds = binds.filter((b) => !/^\d$/.test(b));
+    return nonDigitBinds.includes(keyLower);
+  }
+
+  return binds.includes(keyLower);
 }
 
 /**

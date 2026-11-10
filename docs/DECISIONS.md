@@ -404,3 +404,52 @@ This document records architectural decisions whose rationale is **non-obvious o
     - Memoizing `getDnD35SystemContent` by `campaign.systemContent` object identity in a `WeakMap` turns a 34ms O(N) schema validation into an O(1) reference lookup ($<0.001\text{ms}$), allowing all 15 AI actors to finish inside a single $<2\text{ms}$ scheduler slice. Because `campaign.systemContent` is static rulebook data during gameplay and `applyPatch` deep-clones the document on every Campaign Editor edit, keying on `campaign.systemContent` has zero risk of cache desynchronization. Conversely, we intentionally do **not** cache derived `evaluateDnD35eEntityDAG` results (~0.04ms pure arithmetic) so actor stats, equipment, overlays, and stances are always computed fresh from live `GameState` (`AGENTS.md` §9).
     - Inspecting `renderDebugMetrics.missingSprites` in the same telemetry export also surfaced unresolved portal entity `spriteId`s (`stairs_up` / `stairs_down`), which were fixed by resolving `state.campaign.tiles[stairTileKey]?.spriteId` in `bootstrap.ts` and `map_generation_spawner.ts`.
 
+---
+
+### RTwP Area Transition Lifecycle & Scheduler Actor Queue Invalidation
+
+- **Decision: Use `resetSchedulerActors()` on Area Transitions Instead of `clearScheduler()`**:
+  - In `src/systems/map.system.ts` (`transitionArea()`), replaced `clearScheduler()` with `resetSchedulerActors()`.
+  - Added `resetSchedulerActors()` to `src/core/scheduler.ts` to clear queues, remove actors, and reset accumulated time while strictly preserving `isEngineLocked = false` and keeping `rtwpLoopId` alive.
+  - *Rationale*: `clearScheduler()` was designed for tearing down an active run upon game over or main-menu exit; it sets `isEngineLocked = true` and invokes `cancelAnimationFrame(rtwpLoopId)`. When a player transitioned between dungeon floors in RTwP mode, `clearScheduler()` silently killed the animation frame loop and permanently locked the engine. Toggling to Turn-Based mode temporarily cleared the lock because `runTurnBasedLoop()` resets `isEngineLocked = false`. `resetSchedulerActors()` flushes stale actors from the departing floor without severing the active RTwP animation frame ticker.
+
+---
+
+### Declarative Tactical Dials & Universal Ability Projection (Evicting Hardcoded Stance Feat Checks)
+
+- **Decision: Derive Combat Stance and Dial Steppers Declaratively from Owned Feats / Abilities (`variableDial`)**:
+  - Eliminated hardcoded feat-ID checks (`if (feats.has('power_attack'))`, `if (feats.has('combat_expertise'))`) in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`.
+  - Tactical steppers and dials are now projected exclusively through `extractActorTacticalDials(feats, sysFeats, suppressedBundleIds)`. Baseline universal combat modes (*Fighting Defensively*, *Total Defense*, *1H/2H Grip Mode*) are declared universally on every combatant without hardcoded UI branching.
+  - Fixed `builder_hydrator_creation.ts` so `DEFAULT_PLAYER_ARCHETYPE` archetype feats (`power_attack`, `cleave`, `combat_reflexes`) are explicitly overridden with `feats: []` during fresh character creation, preventing newly rolled characters from inheriting unselected martial feats.
+  - *Rationale*: Hardcoding feat IDs in the UI layer violates Tier 1 Console vs. Tier 2 Cartridge inversion of control (`AGENTS.md` §7, Rule 17). It forced every character to display Power Attack and Combat Expertise steppers even without prerequisites, and broke modded or homebrew feats that introduce custom variable dials (e.g., *Deadly Aim*, *Combat Rhythm*). By driving steppers entirely from `featDef.activatedAbilities[].variableDial` or `featDef.effectBundle.activatedAbilities[].variableDial`, the UI dynamically adapts to any variable dial ability.
+
+---
+
+### Multi-Step Action Economy in Turn-Based Mode & Dedicated End-Turn Intent
+
+- **Decision: Preserve Turn Ownership Across 5-ft Movement Steps and Action Budgets; Provide Dedicated `[END TURN]` Action**:
+  - In `src/core/loop/intent_cost_resolver.ts`, wired `DnD35ActionBudget` tracking into Turn-Based intent execution for D&D 3.5e.
+  - When the player executes a successful 5-ft step (`IntentType.Move`), the engine invokes `consumeMovementStepFt(budget, 5, actorSpeedFt)`. If remaining movement or unspent standard actions persist, `energyCost` is returned as `0`, allowing the player to continue maneuvering and acting within their turn.
+  - Standard attack actions consume the standard action budget and deduct standard movement from the round allocation.
+  - Once the round budget is completely exhausted (`budget.isExhausted()`), or when the player clicks the `⌛ END TURN` button (rendered in `.crpg-action-pips-strip` in `src/rendering/ui/console_hotbar.ui.ts`, which queues `createWaitAction(playerId)`), `energyCost` is assigned as `100`, cleanly passing the turn to the next actor in the scheduler queue.
+  - *Rationale*: Returning `energyCost = 100` unconditionally on any single grid move forced a 30-ft speed character to forfeit their entire round after taking a single 5-ft step. Bridging `DnD35ActionBudget` with `intent_cost_resolver.ts` aligns tactical turn-based play with tabletop rules, while the dedicated `[END TURN]` button allows players to conserve or forfeit surplus movement at will.
+
+---
+
+### Top-Row Hotbar Shortcut Routing & Numpad Isolation
+
+- **Decision: Key Hotbar Slots to Top-Row Number Keys (`Digit1`..`Digit0`, `Minus`, `Equal`) While Isolating Numpad (`Numpad1`..`Numpad9`) for Movement**:
+  - In `src/core/input/shortcut_input.ts`, added `resolveTopRowHotbarSlotIndex(event)` checking `event.code` (`Digit1` through `Digit0`, `Minus`, `Equal`) and ensuring `!event.code.startsWith('Numpad')`.
+  - Updated `isAction(event, action)` in `src/core/settings.ts` so top-row `Digit2`, `Digit4`, `Digit6`, `Digit8` are never consumed by single-digit numpad cardinal movement bindings (`"2"`, `"4"`, `"6"`, `"8"`).
+  - *Rationale*: Using `event.key === '1'` indiscriminately triggered hotbar slot 1 when pressing `Numpad1` (Southwest movement in traditional roguelike keymaps), while conversely blocking players from using top-row number keys for quickslot ability activation. Checking `event.code` decouples top-row hotbar firing from 8-directional numpad navigation.
+
+---
+
+### Event-Cursor State Stabilization & Immediate Intent Bypass
+
+- **Decision: Process Global Triggers with Advancing Event Cursor (`startIndex` / `nextEventIndex`) Across Stabilization Iterations & Bypass Stabilization for Immediate UI Actions**:
+  - In `src/systems/trigger.system.ts`, updated `processGlobalTriggers(state: GameState, startIndex = 0): ProcessGlobalTriggersResult` to accept an event start cursor and return `{ state, nextEventIndex }`.
+  - In `src/core/state_stabilizer.ts`, `resolveStateStabilization()` maintains `processedEventIndex` across its iterative loop (`MAX_STABILIZATION_ITERATIONS`), only evaluating newly queued events emitted by damage or consequence callbacks.
+  - In `src/core/loop/intent_cost_resolver.ts`, added an early return for `isImmediate` UI actions (such as modal toggles, settings, ledger) that produce `energyCost === 0` and emit no gameplay events.
+  - *Rationale*: Previously, `resolveStateStabilization()` repeatedly invoked `processGlobalTriggers(nextState)` from `eventIndex = 0` on every loop iteration. Because `state.events` is preserved across stabilization iterations (and only drained into telemetry at the end of the turn), any iteration that triggered secondary stabilization re-scanned already-processed events from index 0. This recursively generated debug traces and triggered consequences, quickly blowing past `MAX_TRIGGER_LOOPS = 500` and crashing with `TriggerRunawayError: Infinite loop detected in global triggers.` Advancing `processedEventIndex` guarantees that every event is evaluated at most once per trigger cycle, while bypassing stabilization on immediate UI intents eliminates superfluous simulation cycles on keystrokes that only toggle DOM views.
+
