@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { DnD35DamageTypeSchema } from './base_system.types.ts';
-import { DnD35EffectBundleSchema, DnD35ModifierTagConditionSchema } from './effect_system.types.ts';
+import {
+  DnD35EffectBundleSchema,
+  DnD35ModifierTagConditionSchema,
+  DnD35SpellStrikeDescriptorSchema
+} from './effect_system.types.ts';
 
 /**
  * Declarative Caster Level scaling formula (`DnD35SpellScalingRuleSchema`).
@@ -96,6 +100,15 @@ export const DnD35SpellTargetingSchema = z.object({
 });
 export type DnD35SpellTargeting = z.infer<typeof DnD35SpellTargetingSchema>;
 
+/** Illumination override descriptor for `[Light]` and `[Darkness]` spatial fields. */
+export const DnD35FieldIlluminationOverrideSchema = z.object({
+  level: z.enum(['bright', 'shadowy', 'darkness']),
+  spellLevel: z.number().int().min(0).max(9).default(0),
+  descriptors: z.array(z.string()).default([]),
+  yieldsToDescriptors: z.array(z.string()).default([])
+});
+export type DnD35FieldIlluminationOverride = z.infer<typeof DnD35FieldIlluminationOverrideSchema>;
+
 /** Common tag-conditioned envelope shared by all `DnD35SpellEffectUnit` variants. */
 const SpellEffectUnitBaseSchema = z.object({
   unitId: z.string(),
@@ -159,7 +172,23 @@ export const DnD35SpellEffectUnitSchema = z.discriminatedUnion('type', [
     blocksLoS: z.boolean().default(false),
     blocksLoE: z.boolean().default(false),
     movementCostMultiplier: z.number().positive().optional(),
-    suppressedTags: z.array(z.string()).default([])
+    suppressedTags: z.array(z.string()).default([]),
+    illuminationOverride: DnD35FieldIlluminationOverrideSchema.optional()
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('retaliation_rider'),
+    triggerCondition: z
+      .enum(['melee_adjacent', 'melee_or_spell_adjacent', 'any_hit'])
+      .default('melee_or_spell_adjacent'),
+    dice: z.string().default('1d8'),
+    flatBonusScaling: DnD35SpellScalingRuleSchema.optional(),
+    damageType: DnD35DamageTypeSchema.default('force'),
+    bypassesDr: z.boolean().default(true),
+    maxUsesPerRound: z.number().int().positive().default(1)
+  }),
+  SpellEffectUnitBaseSchema.extend({
+    type: z.literal('spell_strike'),
+    spellStrike: DnD35SpellStrikeDescriptorSchema
   }),
   SpellEffectUnitBaseSchema.extend({
     type: z.literal('dispel'),
@@ -206,7 +235,7 @@ export const DnD35SpellEffectUnitSchema = z.discriminatedUnion('type', [
     type: z.literal('form_overlay'),
     overlayMode: z.enum(['baleful_polymorph', 'polymorph', 'shapechange']).default('polymorph'),
     allowedCreatureTypes: z.array(z.string()).default([]),
-    maxHitDiceScaling: DnD35SpellScalingRuleSchema.optional(),
+    maxHitDiceScaling: z.number().int().positive().or(DnD35SpellScalingRuleSchema).optional(),
     grantsExAbilities: z.boolean().default(false),
     grantsSuAbilities: z.boolean().default(false),
     freeActionFormShift: z.boolean().default(false)

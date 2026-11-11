@@ -1,6 +1,6 @@
 import { dispatchAction } from '../../actions/action.registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import { EngineMode, type GameState } from '../../types/game-state.types.ts';
+import { type GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ActionResult, Intent } from '../../types/intents/intent.union.ts';
 import { getComponent, tickControllerLinksAndOverlays } from '../ecs.ts';
@@ -8,16 +8,10 @@ import { pushTelemetryEvents } from '../telemetry.ts';
 import { recordTurnSample } from '../performance.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 import type { GameEvent } from '../../types/events.types.ts';
-import {
-  getDnD35EntityData,
-  setDnD35EntityData,
-  createRoundActionBudget,
-  consumeMovementStepFt
-} from '../../rulesets/registry.ts';
+import { resolveActorActionEnergyCost } from '../../systems/lifecycle.system.ts';
 import { updateExploredTiles } from '../../systems/map.system.ts';
 import { evaluateAutoPause } from '../auto_pause.ts';
 import { coordToIndex } from '../../utils/grid.ts';
-import { processTraps } from '../../systems/trigger.system.ts';
 import { resolveStateStabilization } from '../state_stabilizer.ts';
 import { processInvestigationEvents } from '../../systems/investigation.system.ts';
 import { processFieldsTick } from '../../systems/field.system.ts';
@@ -36,106 +30,25 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   const result = dispatchAction(state, intent);
   let nextState = result.state;
 
-  let energyCost = 100;
-
+  let baseEnergyCost = 100;
   if (!result.success) {
-    energyCost = 0;
-  } else if (state.campaign?.manifest?.rulesetId === 'dnd35e' && state.engineMode === EngineMode.TurnBased) {
-    const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-    if (isPlayer) {
-      const dndData = getDnD35EntityData(nextState, intent.entityId);
-      const stats = getEffectiveStats(nextState, intent.entityId);
-      const actorSpeedFt = stats.speed > 0 ? stats.speed : 30;
-      let currentBudget = dndData.actionBudget;
-
-      // Start fresh round budget if missing or starting a new cycle
-      if (!currentBudget) {
-        const dexMod = Math.floor(((dndData.abilityScores?.dex?.base ?? 10) - 10) / 2);
-        const hasReflexes = dndData.feats?.includes('combat_reflexes') ?? false;
-        currentBudget = createRoundActionBudget({
-          dexModifier: dexMod,
-          hasCombatReflexes: hasReflexes,
-          isFlatFooted: dndData.conditions?.includes('flat_footed') ?? false
-        });
-      }
-
-      if (intent.type === IntentType.Move) {
-        const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
-        let isDifficult = false;
-        if (posAfter) {
-          const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-          const tile = state.map.tiles[tileIdx];
-          const mCost = tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100;
-          isDifficult = mCost > 100;
-        }
-        nextState = processTraps(nextState, intent.entityId);
-
-        const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, 5, isDifficult);
-        if (stepResult.allowed) {
-          nextState = setDnD35EntityData(nextState, intent.entityId, {
-            ...dndData,
-            actionBudget: stepResult.budget
-          });
-          // Turn continues while actor has movement or actions remaining
-          const hasMoreBudget =
-            stepResult.budget.movementRemainingFt > 0 ||
-            stepResult.budget.moveRemaining > 0 ||
-            stepResult.budget.standardRemaining > 0;
-          energyCost = hasMoreBudget ? 0 : 100;
-        } else {
-          // Budget exhausted, advance turn
-          nextState = setDnD35EntityData(nextState, intent.entityId, {
-            ...dndData,
-            actionBudget: undefined
-          });
-          energyCost = 100;
-        }
-      } else if (intent.type === IntentType.Wait) {
-        // Explicitly end turn
-        nextState = setDnD35EntityData(nextState, intent.entityId, {
-          ...dndData,
-          actionBudget: undefined
-        });
-        energyCost = 100;
-      } else {
-        // Standard action (attack, spell, skill)
-        const updatedDndData = getDnD35EntityData(nextState, intent.entityId);
-        const postActionBudget = updatedDndData.actionBudget ?? currentBudget;
-        const canKeepMoving = postActionBudget.movementRemainingFt > 0;
-        if (!canKeepMoving) {
-          nextState = setDnD35EntityData(nextState, intent.entityId, {
-            ...updatedDndData,
-            actionBudget: undefined
-          });
-          energyCost = 100;
-        } else {
-          energyCost = 0;
-        }
-      }
-    } else if (intent.type === IntentType.Move) {
-      const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
-      if (posAfter) {
-        const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-        const tile = state.map.tiles[tileIdx];
-        if (tile) {
-          energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
-        }
-      }
-      nextState = processTraps(nextState, intent.entityId);
-    }
+    baseEnergyCost = 0;
+  } else if ('isImmediate' in intent && intent.isImmediate) {
+    baseEnergyCost = 0;
   } else if (intent.type === IntentType.Move) {
     const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
     if (posAfter) {
       const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
       const tile = state.map.tiles[tileIdx];
       if (tile) {
-        energyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
+        baseEnergyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
       }
     }
-    nextState = processTraps(nextState, intent.entityId);
-  } else if ('isImmediate' in intent && intent.isImmediate) {
-    energyCost = 0;
   }
+
+  const costResult = resolveActorActionEnergyCost(nextState, intent, baseEnergyCost);
+  nextState = costResult.state;
+  let energyCost = costResult.energyCost;
 
   if (energyCost > 0) {
     const actor = getComponent(state, intent.entityId, ComponentType.Actor);
@@ -168,7 +81,9 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   const finalResult: ActionResult = { state: nextState, success: result.success, energyCost };
 
-  nextState = processFieldsTick(nextState);
+  if (energyCost > 0) {
+    nextState = processFieldsTick(nextState);
+  }
   nextState = processInvestigationEvents(nextState);
   const tAfterFields = performance.now();
 

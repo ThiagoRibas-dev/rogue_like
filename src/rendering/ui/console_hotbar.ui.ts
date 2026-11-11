@@ -21,6 +21,7 @@ export interface UIStanceActionData {
   readonly label: string;
   readonly iconUrl?: string;
   readonly isActive: boolean;
+  readonly groupId?: string | undefined;
   readonly tooltipText?: string;
   readonly numericValue?: number;
   readonly minNumericValue?: number;
@@ -132,6 +133,9 @@ export function renderConsoleHotbar(
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = stance.isActive ? 'crpg-stance-btn active' : 'crpg-stance-btn';
+      if (stance.groupId) {
+        btn.setAttribute('data-stance-group', stance.groupId);
+      }
       btn.title = stance.tooltipText ?? stance.label;
       btn.textContent = `${stance.isActive ? '◉ ' : '○ '}${stance.label}`;
       btn.addEventListener('click', (e) => {

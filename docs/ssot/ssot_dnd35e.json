@@ -768,6 +768,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/maneuvers_conditions.ts."
     ]
   },
+  "src/rulesets/dnd35e/combat/retaliation_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves target-side retaliatory reaction shields (e.g., Blade Tempest reactive lash) when an actor is struck in melee, enforcing distance and per-round quotas.",
+    "canonicalEntryPoints": [
+      "ActiveRetaliationRiderEntry",
+      "RetaliationResolutionResult",
+      "resolveRetaliationRiders"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/retaliation_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/retaliation_resolver.ts."
+    ]
+  },
   "src/rulesets/dnd35e/creature_advancement.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Progression",
     "tier": "tier2_cartridge",
@@ -1105,6 +1122,39 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellcasting.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_aura_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates active spell emanation fields covering an entity, projecting dynamic stat modifiers, granted tags, retaliation riders, and handling initial save/SR memory.",
+    "canonicalEntryPoints": [
+      "ActiveSpellAuraContributions",
+      "evaluateActiveSpellAuraContributions",
+      "resolveAuraFirstEntrySaveAndSr"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_aura_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_aura_resolver.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_strike_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves isolated iterative spell-attack sequences (e.g. Spectral Assault) using BAB + casting ability, weapon crit profile, and SR checking on first hit.",
+    "canonicalEntryPoints": [
+      "IterativeSpellStrikeResult",
+      "resolveIterativeSpellStrike"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_strike_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_strike_resolver.ts."
     ]
   },
   "src/rulesets/dnd35e/math/dice.ts": {
@@ -2273,6 +2323,58 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+    "tier": "tier2_cartridge",
+    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: resets per-round action budget, triggers aura first-entry saving throw and Spell Resistance checks, consumes movement budget, and gates intent energy costs.",
+    "canonicalEntryPoints": [
+      "evaluateActorAuraEntrySaves",
+      "onDnD35eActorTurnStart",
+      "onDnD35eActorMovementStep",
+      "resolveDnD35eActionEnergyCost"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts": {
+    "domain": "D&D 3.5e: Combat Simulation & Resolution",
+    "tier": "tier2_cartridge",
+    "responsibility": "Coordinates the 5-phase Composable Combat Exchange Pipeline (PreAttackPhase, StrikeRollPhase, OnHitRidersPhase, PostStrikeReactionPhase, OnDropFollowupPhase).",
+    "canonicalEntryPoints": [
+      "executeCombatStrikeExchange",
+      "StrikeExchangeParams",
+      "StrikeExchangeResult"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/combat_exchange_phases.ts": {
+    "domain": "D&D 3.5e: Combat Simulation & Resolution",
+    "tier": "tier2_cartridge",
+    "responsibility": "Provides spatial flanking, tile illumination, observer sensory concealment, and Cleave bonus follow-up strike resolution for the combat exchange pipeline.",
+    "canonicalEntryPoints": [
+      "resolveStrikePreAttackContext",
+      "resolveOnDropCleaveFollowup",
+      "PreAttackContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_phases.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_phases.ts."
     ]
   }
 }

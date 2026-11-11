@@ -8,6 +8,7 @@
 - [Core Console: App Entry & Wiring (11 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (28 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
+- [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
 - [Core Console: ECS Systems & Simulation (57 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (37 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
@@ -112,6 +113,15 @@
 | `src/constants/ui.constants.ts` | `tier1_console` | Identifiers for different types of UI tooltips. | `UITooltipType`, `UIStatId`, `LogFilterCategory`, `LOG_FILTER_TABS`, `QUICK_BELT_SLOT_COUNT`, `MAX_UNIT_STATUS_PIPS`, `ALERT_CRITICAL_HP_RATIO`, `ALERT_LOW_HP_RATIO` | **Includes:** Pure implementation and exports for src/constants/ui.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/ui.constants.ts. |
 | `src/constants/verbs.constants.ts` | `tier1_console` | Canonical interaction verbs supported by the engine's ApplyIntent pipeline. | `Verb`, `VERBS` | **Includes:** Pure implementation and exports for src/constants/verbs.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/verbs.constants.ts. |
 | `src/constants/world_events.constants.ts` | `tier1_console` | Generic flavor text events that can occur to Areas. | `AREA_NARRATIVE_EVENTS`, `FACTION_NARRATIVE_EVENTS` | **Includes:** Pure implementation and exports for src/constants/world_events.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/world_events.constants.ts. |
+
+## Core Console: ECS Systems & Game Loop
+
+**Modules in this domain:** 2
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/systems/lifecycle.system.ts` | `tier1_console` | Coordinates symmetric turn-start, movement-step, and intent energy cost lifecycle windows for player and AI actors across ruleset cartridges. | `runActorTurnStart`, `runActorMovementStep`, `resolveActorActionEnergyCost` | **Includes:** Pure implementation and exports for src/systems/lifecycle.system.ts.<br>**Excludes:** Cartridge-specific rule evaluation or hardcoded ruleset checks. | • Do not branch on rulesetId inside Console lifecycle systems. |
+| `src/systems/stance.system.ts` | `tier1_console` | Provides Tier 1 Console stance group toggling, semantic stance tag projection, and per-round triggered reaction quota tracking on TacticalDoctrineComponent. | `ConsoleStanceGroupOption`, `toggleConsoleStanceGroup`, `resolveActiveStanceInGroup`, `projectConsoleStanceSelfTags`, `canUseTriggeredReactionThisRound`, `incrementTriggeredReactionUse`, `resetTriggeredReactionsForNewRound` | **Includes:** Pure implementation and exports for src/systems/stance.system.ts.<br>**Excludes:** Cartridge-specific math or ruleset content. | • Do not hardcode ruleset-specific stance names in Console systems. |
 
 ## Core Console: ECS Systems & Simulation
 

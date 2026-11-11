@@ -4,16 +4,27 @@
 
 ## Table of Contents
 
+- [D&D 3.5e: Combat Simulation & Resolution (2 files)](#d-d-3-5e-combat-simulation-resolution)
 - [D&D 3.5e: Core Cartridge & Progression (55 files)](#d-d-3-5e-core-cartridge-progression)
+- [D&D 3.5e: Core Cartridge & Ruleset Contract (1 files)](#d-d-3-5e-core-cartridge-ruleset-contract)
 - [D&D 3.5e: Layer 1 — Math & Multipliers (2 files)](#d-d-3-5e-layer-1-math-multipliers)
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
 - [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (2 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
-- [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (13 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
-- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (6 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
+- [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (14 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
+- [D&D 3.5e: Layer 6 — Vancian Magic & Fields (8 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
 - [D&D 3.5e: Ruleset Types & Schemas (8 files)](#d-d-3-5e-ruleset-types-schemas)
 - [D&D 3.5e: Tactical UI & Character Sheet (29 files)](#d-d-3-5e-tactical-ui-character-sheet)
 
 ---
+
+## D&D 3.5e: Combat Simulation & Resolution
+
+**Modules in this domain:** 2
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rulesets/dnd35e/combat/combat_exchange_phases.ts` | `tier2_cartridge` | Provides spatial flanking, tile illumination, observer sensory concealment, and Cleave bonus follow-up strike resolution for the combat exchange pipeline. | `resolveStrikePreAttackContext`, `resolveOnDropCleaveFollowup`, `PreAttackContext` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_phases.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_phases.ts. |
+| `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` | `tier2_cartridge` | Coordinates the 5-phase Composable Combat Exchange Pipeline (PreAttackPhase, StrikeRollPhase, OnHitRidersPhase, PostStrikeReactionPhase, OnDropFollowupPhase). | `executeCombatStrikeExchange`, `StrikeExchangeParams`, `StrikeExchangeResult` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts. |
 
 ## D&D 3.5e: Core Cartridge & Progression
 
@@ -77,6 +88,14 @@
 | `src/rulesets/dnd35e/validation/class_race_validator.ts` | `tier2_cartridge` | Validates cross-references inside D&D 3.5e classes, domains, ACF swaps, races, templates, and dragon families. | `validatePrerequisiteNodeReferences`, `validateDnD35eClassesRacesTemplates` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/validation/class_race_validator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/validation/class_race_validator.ts. |
 | `src/rulesets/dnd35e/wild_shape.ts` | `tier2_cartridge` | Number of combat rounds in 1 hour (`600`). | `WildShapeFormDefinition`, `isWildShapeFormEligible`, `applyWildShapeForm`, `revertWildShapeForm`, `resolveEffectiveEntityDataWithOverlays` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/wild_shape.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/wild_shape.ts. |
 
+## D&D 3.5e: Core Cartridge & Ruleset Contract
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` | `tier2_cartridge` | Provides Tier 2 D&D 3.5e lifecycle hooks: resets per-round action budget, triggers aura first-entry saving throw and Spell Resistance checks, consumes movement budget, and gates intent energy costs. | `evaluateActorAuraEntrySaves`, `onDnD35eActorTurnStart`, `onDnD35eActorMovementStep`, `resolveDnD35eActionEnergyCost` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts. |
+
 ## D&D 3.5e: Layer 1 — Math & Multipliers
 
 **Modules in this domain:** 2
@@ -110,7 +129,7 @@
 
 ## D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage
 
-**Modules in this domain:** 13
+**Modules in this domain:** 14
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -121,6 +140,7 @@
 | `src/rulesets/dnd35e/combat/damage_vitality.ts` | `tier2_cartridge` | HP threshold at which a living creature dies in D&D 3.5e (`-10`). | `DND35E_DEATH_HP_THRESHOLD`, `MASSIVE_DAMAGE_THRESHOLD`, `doesAttackBypassDR`, `mitigateIncomingDamage`, `evaluateVitalityStatus`, `rollDyingStabilization`, `resolveSavingThrow` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/damage_vitality.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/damage_vitality.ts. |
 | `src/rulesets/dnd35e/combat/full_attack_sequence.ts` | `tier2_cartridge` | Builds full-attack strike sequences across iterative BAB, Two-Weapon Fighting, and limb-aware natural weapons. | `buildFullAttackSequence` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/full_attack_sequence.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/full_attack_sequence.ts. |
 | `src/rulesets/dnd35e/combat/maneuvers_conditions.ts` | `tier2_cartridge` | Single-limb grapple penalty (`-20`) allowing a monster with Improved Grab to not be considered grappled itself. | `SINGLE_LIMB_IMPROVED_GRAB_PENALTY`, `CombatManeuverType`, `ManeuverRuleOverrides`, `CombatManeuverParams`, `CombatManeuverResult`, `resolveCombatManeuver`, `shouldTriggerOnHitRider`, `applyConditionWithEscalation` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/maneuvers_conditions.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/maneuvers_conditions.ts. |
+| `src/rulesets/dnd35e/combat/retaliation_resolver.ts` | `tier2_cartridge` | Resolves target-side retaliatory reaction shields (e.g., Blade Tempest reactive lash) when an actor is struck in melee, enforcing distance and per-round quotas. | `ActiveRetaliationRiderEntry`, `RetaliationResolutionResult`, `resolveRetaliationRiders` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/retaliation_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/retaliation_resolver.ts. |
 | `src/rulesets/dnd35e/combat/tactical_doctrine.ts` | `tier2_cartridge` | Evaluates Power Attack, Combat Expertise, and Fighting Defensively modifiers, per-strike doctrine damage scaling, and carrying capacity encumbrance. | `evaluateTacticalDoctrineModifiers`, `computeStrikeDoctrineDamageBonus`, `computeEncumbranceState` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/tactical_doctrine.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/tactical_doctrine.ts. |
 | `src/rulesets/dnd35e/equipment_physics.ts` | `tier2_cartridge` | Single Source of Truth for weapon size vs wielder size 3-step effort ladder, grip mode resolution, double-weapon splitting, nonproficiency penalties, and special materials physics. | `resolveAllEquippedWeaponProfiles`, `resolveEquippedWeaponProfile`, `evaluateWeaponWieldingProfile`, `scaleWeaponDamageDice`, `applyMaterialPhysics`, `computeMaterialEquipmentStats`, `resolveMagicItemActivation`, `EquippedWeaponProfile`, `ResolvedActorWeapons` | **Includes:** 3-step effort ladder bounds, size mismatch attack penalties, hand slot occupancy tracking, double weapon TWF splitting, Bastard Sword/Dwarven Waraxe proficiency checks, and special material stat deltas.<br>**Excludes:** Iterative BAB generation and full-attack strike sequencing (owned by attack_resolver.ts); weapon armor AC integration into the AC triplet (owned by modifiers.ts). | • Never inspect EquipmentComponent.slots or item tags for weapon properties directly in combat resolvers or UI views.<br>• Never use pre-Stage-1 dndData.sizeCategory when evaluating weapon effort shifts (must use post-Stage-1 effectiveSize). |
 | `src/rulesets/dnd35e/equipment/item_inheritance.ts` | `tier2_cartridge` | Resolves item template inheritance (baseItemId) and provides canonical base weapon filtering for UI pickers. | `resolveEffectiveItemDefinition`, `getCanonicalBaseWeapons` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/equipment/item_inheritance.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/equipment/item_inheritance.ts. |
@@ -130,14 +150,16 @@
 
 ## D&D 3.5e: Layer 6 — Vancian Magic & Fields
 
-**Modules in this domain:** 6
+**Modules in this domain:** 8
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/rulesets/dnd35e/magic/aoe_rest.ts` | `tier2_cartridge` | Number of 6-second combat rounds in 8 hours (`8 * 60 * 10 = 4800` rounds). | `EIGHT_HOURS_IN_ROUNDS`, `OPEN_SLOT_PREPARATION_ROUNDS`, `AoETemplateShape`, `computeAoEAffectedSquares`, `resolveEightHourRest`, `prepareOpenSpellSlot` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/aoe_rest.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/aoe_rest.ts. |
 | `src/rulesets/dnd35e/magic/metamagic_dispel.ts` | `tier2_cartridge` | Evaluates Metamagic slot-level adjustments, casting time extensions, and Dispel Magic / Counterspell checks. | `resolveCounterspellAttempt` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/metamagic_dispel.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/metamagic_dispel.ts. |
+| `src/rulesets/dnd35e/magic/spell_aura_resolver.ts` | `tier2_cartridge` | Evaluates active spell emanation fields covering an entity, projecting dynamic stat modifiers, granted tags, retaliation riders, and handling initial save/SR memory. | `ActiveSpellAuraContributions`, `evaluateActiveSpellAuraContributions`, `resolveAuraFirstEntrySaveAndSr` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_aura_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_aura_resolver.ts. |
 | `src/rulesets/dnd35e/magic/spell_effects.ts` | `tier2_cartridge` | Projects semantic spell effect tags, evaluates CL scaling rules, filters tag-conditioned effect units, materializes StatModifiers with hierarchical provenance, and projects active tether tags. | `projectSpellEffectTags`, `evaluateSpellScalingRule`, `evaluateSpellEffectUnitsForTarget`, `materializeSpellUnitModifiers`, `materializeTopLevelSpellModifiers`, `projectActiveSpellTetherTags` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_effects.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_effects.ts. |
 | `src/rulesets/dnd35e/magic/spell_modifiers.ts` | `tier2_cartridge` | Resolves effective caster level and materializes summoned creature stat modifiers with hierarchical provenance. | `resolveSpellEffectiveCasterLevel`, `materializeSummonedCreatureModifiers` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_modifiers.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_modifiers.ts. |
+| `src/rulesets/dnd35e/magic/spell_strike_resolver.ts` | `tier2_cartridge` | Resolves isolated iterative spell-attack sequences (e.g. Spectral Assault) using BAB + casting ability, weapon crit profile, and SR checking on first hit. | `IterativeSpellStrikeResult`, `resolveIterativeSpellStrike` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spell_strike_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_strike_resolver.ts. |
 | `src/rulesets/dnd35e/magic/spellbook_slots.ts` | `tier2_cartridge` | Computes Level 0..9 slot matrices, ability bonus slots, specialist school slots, domain bonus slots, and spontaneous conversion targets. | `computeClassLevelSlotSummaries`, `reconcilePreparedSlots`, `getSpontaneousConversionTargets` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spellbook_slots.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellbook_slots.ts. |
 | `src/rulesets/dnd35e/magic/spellcasting.ts` | `tier2_cartridge` | Minimum ability score base (`10 + spellLevel`) required to cast a spell of that level. | `CapabilityRuleDescriptor`, `CAPABILITY_RULES`, `PreparedSpellSlot`, `canCastSpellOfLevel`, `computeBonusSpellSlots`, `convertPreparedSlotSpontaneously`, `CastResolutionParams`, `CastResolutionResult` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/magic/spellcasting.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellcasting.ts. |
 

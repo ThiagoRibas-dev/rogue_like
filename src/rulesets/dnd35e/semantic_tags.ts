@@ -1,3 +1,4 @@
+import { projectConsoleStanceSelfTags } from '../../systems/stance.system.ts';
 import { evaluateEffectBundle } from './effect_bundle.ts';
 import { appendSourcePath } from './modifiers.ts';
 import {
@@ -219,6 +220,12 @@ export function projectDnD35ActorSemanticTags(
   for (const t of existingTags) {
     if (['animal_companion', 'familiar', 'mount', 'cohort', 'hireling', 'summon', 'temporary_ally'].includes(t)) {
       tags.add(`companion:${t}`);
+    }
+  }
+
+  if (situationalContext?.doctrine) {
+    for (const stanceTag of projectConsoleStanceSelfTags(situationalContext.doctrine)) {
+      tags.add(stanceTag);
     }
   }
 

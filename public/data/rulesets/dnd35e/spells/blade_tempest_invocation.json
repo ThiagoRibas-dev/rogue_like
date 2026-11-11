@@ -1,0 +1,302 @@
+{
+  "blade_tempest_invocation": {
+    "id": "blade_tempest_invocation",
+    "name": "Blade Tempest Invocation",
+    "description": "Calling upon the Queen of the Night Skies, a sudden moonlit night falls in a 30-ft emanation, casting twilight. Evil foes take -1 on attacks, damage, saves, and skills (Will negates). You and allies gain +1 sacred AC, attacks, and Reflex, +10 ft speed, 60 ft darkvision, and +2 flanking bonus. Each ally (excluding caster) retaliates with 1d8 force damage once per round when struck by an adjacent foe. Each round on your turn, choose one Battle Cadence benefit: (A) Spectral Assault (iterative force strike at BAB + Wis dealing 1d8 + 1 per 3 CL max +5), (B) Flurry of Steel (+1 haste full attack), or (C) Divine Celerity (Quicken Cleric spells of 0-1st level, scaling to 4th at CL 18).",
+    "level": 5,
+    "levelByClass": {
+      "cleric": 5
+    },
+    "levelByDomain": {
+      "war": 5
+    },
+    "levelByAccessTag": {
+      "special:spell_research": 5
+    },
+    "school": "transmutation",
+    "descriptors": [
+      "good",
+      "light"
+    ],
+    "classification": "spell",
+    "castingTime": "standard",
+    "range": "close",
+    "duration": "1 round/level",
+    "components": {
+      "verbal": true,
+      "somatic": true,
+      "material": false,
+      "focus": false,
+      "divineFocus": true,
+      "sacrifice": false,
+      "corrupt": false,
+      "casterCosts": []
+    },
+    "allowsSpellResistance": true,
+    "savingThrow": {
+      "saveType": "will",
+      "effect": "harmless"
+    },
+    "targeting": {
+      "mode": "caster_and_multi_creature",
+      "maxClusterSpanFt": 30
+    },
+    "aoeShape": "emanation",
+    "aoeRadiusFt": 30,
+    "effectUnits": [
+      {
+        "type": "spatial_field",
+        "unitId": "nights_battlefield_dim_light",
+        "fieldType": "dim_illumination_aura",
+        "radiusFt": 30,
+        "anchorToCaster": true,
+        "blocksLoS": false,
+        "blocksLoE": false,
+        "suppressedTags": [],
+        "illuminationOverride": {
+          "level": "shadowy",
+          "spellLevel": 5,
+          "descriptors": [
+            "good",
+            "light"
+          ],
+          "yieldsToDescriptors": [
+            "darkness",
+            "daylight"
+          ]
+        }
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "hindered_malice_evil_debuff",
+        "targetRole": "secondary_enemy",
+        "condition": {
+          "targetTagsAny": [
+            "alignment:evil"
+          ]
+        },
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "negates"
+        },
+        "allowsSpellResistance": true,
+        "effectBundle": {
+          "bundleId": "hindered_malice_debuff_bundle",
+          "name": "Hindered Malice",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "hindered_malice_atk",
+              "target": "attack",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "hindered_malice_dmg",
+              "target": "damage",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "hindered_malice_save",
+              "target": "saving_throw",
+              "value": -1,
+              "type": "untyped"
+            },
+            {
+              "id": "hindered_malice_skill",
+              "target": "skill_check",
+              "value": -1,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "debuff:hindered_malice"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "coordinated_host_allies",
+        "targetRole": "area_occupant",
+        "savingThrow": {
+          "saveType": "will",
+          "effect": "harmless"
+        },
+        "allowsSpellResistance": false,
+        "effectBundle": {
+          "bundleId": "coordinated_host_bundle",
+          "name": "Coordinated Host",
+          "category": "trait",
+          "usageMode": "passive",
+          "modifiers": [
+            {
+              "id": "coordinated_host_ac",
+              "target": "ac",
+              "value": 1,
+              "type": "sacred"
+            },
+            {
+              "id": "coordinated_host_atk",
+              "target": "attack",
+              "value": 1,
+              "type": "sacred"
+            },
+            {
+              "id": "coordinated_host_ref",
+              "target": "ref",
+              "value": 1,
+              "type": "sacred"
+            },
+            {
+              "id": "coordinated_host_speed",
+              "target": "speed",
+              "value": 10,
+              "type": "enhancement"
+            },
+            {
+              "id": "coordinated_host_flank",
+              "target": "flanking_attack_bonus",
+              "value": 2,
+              "type": "untyped"
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "buff:coordinated_host",
+            "sense:darkvision_60ft"
+          ],
+          "grantedSenses": {
+            "darkvisionRangeFt": 60,
+            "lowLightVision": false
+          },
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "retaliation_rider",
+        "unitId": "lesser_divine_retaliation",
+        "targetRole": "secondary_ally",
+        "triggerCondition": "melee_or_spell_adjacent",
+        "dice": "1d8",
+        "damageType": "force",
+        "bypassesDr": true,
+        "maxUsesPerRound": 1
+      },
+      {
+        "type": "stat_bundle",
+        "unitId": "battle_cadence_stances",
+        "targetRole": "caster",
+        "effectBundle": {
+          "bundleId": "battle_cadence_bundle",
+          "name": "Battle Cadence",
+          "category": "trait",
+          "usageMode": "toggle",
+          "modifiers": [
+            {
+              "id": "flurry_of_steel_attack",
+              "target": "extra_full_bab_attacks",
+              "value": 1,
+              "type": "haste",
+              "condition": {
+                "selfTagsAll": [
+                  "stance:battle_cadence:flurry_of_steel"
+                ]
+              }
+            }
+          ],
+          "ruleOverrides": [],
+          "grantedTags": [
+            "battle_cadence_active"
+          ],
+          "immunities": [],
+          "vulnerabilities": [],
+          "energyResistances": {},
+          "activatedAbilities": [
+            {
+              "abilityId": "spectral_assault",
+              "name": "Spectral Assault",
+              "actionCost": "free",
+              "toggleGroup": "battle_cadence",
+              "grantsSelfTag": "stance:battle_cadence:spectral_assault",
+              "isDefaultInGroup": true,
+              "spellStrike": {
+                "attackAbility": "wis",
+                "useIterativeBab": true,
+                "touchAttack": false,
+                "critProfileSource": "deity_favored_weapon",
+                "dice": "1d8",
+                "flatBonusPerClInterval": 3,
+                "flatBonusMaxCap": 5,
+                "damageType": "force",
+                "bypassesDr": true,
+                "allowsSpellResistanceOnFirstHit": true,
+                "isolatedFromPhysicalFeats": true
+              }
+            },
+            {
+              "abilityId": "flurry_of_steel",
+              "name": "Flurry of Steel",
+              "actionCost": "free",
+              "toggleGroup": "battle_cadence",
+              "grantsSelfTag": "stance:battle_cadence:flurry_of_steel"
+            },
+            {
+              "abilityId": "divine_celerity",
+              "name": "Divine Celerity",
+              "actionCost": "free",
+              "toggleGroup": "battle_cadence",
+              "grantsSelfTag": "stance:battle_cadence:divine_celerity"
+            }
+          ],
+          "classSkillsAdded": [],
+          "grantedFeats": [],
+          "virtualFeatGrants": []
+        }
+      },
+      {
+        "type": "quicken_cast_grant",
+        "unitId": "divine_celerity_quicken",
+        "targetRole": "caster",
+        "condition": {
+          "selfTagsAll": [
+            "stance:battle_cadence:divine_celerity"
+          ]
+        },
+        "maxSpellLevelScaling": {
+          "baseValue": 1,
+          "perCL": 1,
+          "clStepInterval": 3,
+          "startAboveCL": 9,
+          "minCap": 1,
+          "maxCap": 4
+        }
+      }
+    ],
+    "tags": [
+      "good",
+      "light",
+      "sacred",
+      "force",
+      "retaliation",
+      "cadence",
+      "stance_group",
+      "invocation"
+    ]
+  }
+}

@@ -47,6 +47,7 @@ export interface DnD35ResolvedActorStats {
   readonly speed: number;
   readonly fortificationPercent?: number | undefined;
   readonly concealmentMissChancePercent?: number | undefined;
+  readonly flankingBonus?: number | undefined;
 }
 
 /** Itemized Armor Class triplet and breakdown DTO. */

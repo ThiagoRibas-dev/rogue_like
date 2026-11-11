@@ -1,340 +1,188 @@
-# Implementation Plan — Milestone 124: Post-M123 Audit Remediation (Weapon Enhancement Scoping, Lateral Spell & Feat StatModifier Parity, Crit Immunity, Blind-Fight & Bane Weapons)
+# Milestone 126 Implementation Plan — Unified Console Turn/Step Lifecycle Windows & Composable Cartridge Combat Exchange Pipeline
 
-## 1. Overview & Objectives
-
-Based on the post-M123 audit and `./docs/research_notes.md`, this plan resolves all 6 audit findings across Horizon 2, Horizon 3, Combat Resolvers, and System Content JSONs:
-
-1. **Weapon-Scoped Enhancement `effectBundle` Modifiers (`dnd35e_equipped_item_dag.ts`)**: Prevent weapon-specific modifiers (`crit_threat_doubling`, `extra_full_bab_attacks`, `strike_attack`, `strike_damage`) emitted by an off-hand weapon's `enh.effectBundle` or `itemDef.effectBundle` from leaking onto the main-hand weapon by scoping their `condition.effectTagsAny` to `['weapon:${itemDef.id}', ...(itemDef.baseItemId ? ['weapon:${itemDef.baseItemId}'] : [])]`.
-2. **Lateral Spell & Subtype JSON Parity (`haste.json`, `battletide.json`, `blur.json`, `displacement.json`, `incorporeal.json`)**: Replace legacy boolean `ruleOverrides` (`extra_full_attack_haste`, `concealment_20_percent`, `concealment_50_percent`, `corporeal_magic_miss_chance_pct`) and `"save_ref"` target strings with canonical `StatModifier` entries (`extra_full_bab_attacks` with `type: 'haste'`, `miss_chance`, and `ref`).
-3. **SRD Crit Immunity, `Blind-Fight`, and Feat Rule-Key Alignment (`dnd35e_combat_adapter.ts`, `ledger_modifiers.ts`, `dnd35e_dag_adapter.ts`, feat JSONs)**:
-   - Expand `targetImmuneToCrits` in `resolveDnD35eMeleeAttack` to check `defenderData.immunities.includes('critical_hits')` and Elemental/Ooze/Plant/Swarm/Incorporeal tags (unless negated by *Ghost Touch*).
-   - Expose `hasBlindFight` on `ResolvedActiveCombatRules` and `DnD35EntityDAGResult`, and wire it into `resolveAttackRoll` inside `resolveDnD35eMeleeAttack`.
-   - Align `buildCombatRuleOverridesFromActiveRules` (`ledger_modifiers.ts`) with `cleave.json`, `great_cleave.json`, `multiattack.json`, `two_weapon_fighting.json`, and `multiweapon_fighting.json`, and remove all hardcoded `dndData.feats?.includes(...)` fallbacks from `dnd35e_dag_adapter.ts` (`AGENTS.md` Rule 17).
-4. **Legacy `getEquippedItemBonuses` Split-Brain Cleanup (`srd_registry.ts`)**: Resolve equipped items via `resolveEffectiveItemDefinition` and take the primary/highest weapon attack bonus instead of summing across dual-wielded weapons.
-5. **Feat Numeric `ruleOverrides` -> `StatModifier` Migration (`feats/*.json` & `effect_bundle.ts`)**: Migrate numeric bonuses in `spell_focus`, `greater_spell_focus`, `spell_penetration`, `greater_spell_penetration`, `improved_turning`, `extra_turning`, `ability_focus`, `ability_focus_poison`, and the 5 combat maneuver feats (`improved_trip`, `improved_bull_rush`, `improved_disarm`, `improved_overrun`, `improved_sunder`) from `ruleOverrides` to `modifiers`.
-6. **`baneCreatureType` Weapon Enhancement Resolution (`item_enhancements.json`, `weapon_profile_parser.ts`, `dnd35e_equipped_item_dag.ts`)**: Add `"bane"` to `item_enhancements.json` and emit `+2` attack/damage and `+2d6` on-hit damage gated on `targetTagsAny: ['type:<baneCreatureType>', 'subtype:<baneCreatureType>']`.
+Re-engineering actor turn/step lifecycles and combat resolution around canonical interrupt/resolution windows (`TurnStart`, `MovementStep`, `TurnEnd`, and the 5-phase `CombatExchangePipeline`), eliminating procedural cartridge leakage in `intent_cost_resolver.ts`, synchronizing mobile emanation fields per movement step, automatically resolving aura first-entry saving throws/SR, and unifying melee, follow-up (`Cleave`), flanking, and illumination combat mechanics.
 
 ---
 
-## 2. SSOT Ownership & Old-Brain Eviction Table
+## User Review & Architectural Decisions
 
-| Responsibility | Canonical SSOT Owner | Legacy / Split-Brain Evicted |
-| :--- | :--- | :--- |
-| **Weapon Enhancement Modifier Scoping** | `collectEquippedItemDAGContributions` (`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`) | Unscoped `enh.effectBundle` weapon modifiers leaking across hands |
-| **Spell Haste & Concealment Modifiers** | `StatModifier` (`target: 'extra_full_bab_attacks' | 'miss_chance' | 'ref'`) in `spells/*.json` | Legacy `ruleKey: 'extra_full_attack_haste' | 'concealment_20_percent' | 'concealment_50_percent'` and `target: 'save_ref'` |
-| **Combat Rule Overrides & `Blind-Fight`** | `buildCombatRuleOverridesFromActiveRules` (`src/rulesets/dnd35e/progression/ledger_modifiers.ts`) | Hardcoded `dndData.feats?.includes(...)` fallbacks in `dnd35e_dag_adapter.ts` |
-| **Feat Numeric Bonuses (`+1`/`+2`/`+4`)** | `modifiers: ReadonlyArray<DnD35DeclarativeModifier>` in `public/data/rulesets/dnd35e/feats/*.json` | Numeric `ruleOverrides` (`*_check_bonus: 4`, `spell_save_dc_bonus: 1`, `caster_level_check_vs_sr_bonus: 2`, etc.) |
-| **Bane Weapon Enhancement (`+2` / `+2d6`)** | `parseEquippedItem` (`weapon_profile_parser.ts`) & `collectEquippedItemDAGContributions` (`dnd35e_equipped_item_dag.ts`) | Unwired `baneCreatureType` schema field |
-
----
-
-## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
-
-| Change | Upstream (Callers / Producers / Data) | Downstream (Consumers / Resolvers / UI) | Lateral (Sibling JSONs / Tests / Validators) |
-| :--- | :--- | :--- | :--- |
-| **1. Scope weapon enhancement `effectBundle` modifiers in `collectEquippedItemDAGContributions`** | `item_enhancements.json` (`keen`, `speed`), `DnD35ItemDefinition` | `evaluateDnD35eEntityDAG`, `resolveActorAttackRoutine` (`extra_full_bab_attacks`), `parseEquippedItem` (`crit_threat_doubling`) | `tests/dnd35e_equipment_m115.test.ts` |
-| **2. Migrate spell/subtype JSONs (`haste`, `battletide`, `blur`, `displacement`, `incorporeal`) to `StatModifier`s (`extra_full_bab_attacks`, `miss_chance`, `ref`)** | `public/data/rulesets/dnd35e/spells/{haste,battletide,blur,displacement}.json`, `subtypes/incorporeal.json` | `evaluateDnD35ActorStatDAG` (`modsByStat['ref']`, `modsByStat['miss_chance']`), `resolveActorAttackRoutine` (`extra_full_bab_attacks`) | `scripts/run-validator.ts`, spell & subtype tests |
-| **3. Wire `targetImmuneToCrits`, `hasBlindFight`, and align feat `ruleKey`s in `ledger_modifiers.ts` & `dnd35e_combat_adapter.ts`** | `blind_fight.json`, `cleave.json`, `great_cleave.json`, `multiattack.json`, `two_weapon_fighting.json`, `multiweapon_fighting.json`, `creature_types/*.json`, `subtypes/*.json` | `buildCombatRuleOverridesFromActiveRules`, `evaluateDnD35eEntityDAG`, `resolveDnD35eMeleeAttack`, `resolveAttackRoll` | `tests/dnd35e_feats_m114.test.ts`, `tests/dnd35e_equipment_m115.test.ts` |
-| **4. Update `getEquippedItemBonuses` in `srd_registry.ts` to use `resolveEffectiveItemDefinition` and avoid summing off-hand weapon attack bonuses** | `EquipmentComponent`, `ItemComponent`, `DnD35ItemDefinition` | `evaluateDnD35eEntityDAG` (`dnd35e_dag_adapter.ts`) | `tests/dnd35e_equipment_m115.test.ts` |
-| **5. Migrate numeric `ruleOverrides` in `feats/*.json` to `modifiers`** | `spell_focus.json`, `greater_spell_focus.json`, `spell_penetration.json`, `greater_spell_penetration.json`, `improved_turning.json`, `extra_turning.json`, `ability_focus.json`, `ability_focus_poison.json`, `improved_{trip,bull_rush,disarm,overrun,sunder}.json` | `resolveFeatEffectBundle` (`effect_bundle.ts`), `buildFeatEffectModifiers` (`ledger_modifiers.ts`) | `tests/dnd35e_feats_m114.test.ts`, `scripts/run-validator.ts` |
-| **6. Implement `baneCreatureType` weapon enhancement resolution** | `DnD35MagicalPropertiesSchema`, `item_enhancements.json` (`bane`) | `parseEquippedItem` (`weapon_profile_parser.ts`), `collectEquippedItemDAGContributions` (`dnd35e_equipped_item_dag.ts`), `resolveDnD35eMeleeAttack` | `tests/dnd35e_equipment_m115.test.ts` |
+> [!IMPORTANT]
+> - **Decision 1 (Tier 1 Console Lifecycle Windows vs. Inline Cartridge Branches)**: All `if (rulesetId === 'dnd35e')` action-budget and step-consumption logic in `src/core/loop/intent_cost_resolver.ts` is evicted into a dedicated Tier 2 Cartridge lifecycle adapter (`src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`) invoked by the Tier 1 Console lifecycle orchestrator (`src/systems/lifecycle.system.ts`). Both Player and AI actors pass through the exact same `TurnStart`, `MovementStep`, and `TurnEnd` windows.
+> - **Decision 2 (Step-Synchronized Mobile Emanations & Aura Save Memory)**: Moving 5 ft immediately shifts any `FieldComponent` anchored to the mover (`syncAnchoredFieldsForEntity`), and stepping into or starting a turn inside an active spell emanation field automatically runs `evaluateActorAuraEntrySaves` (`resolveAuraFirstEntrySaveAndSr`) for any unit with a saving throw or Spell Resistance not yet recorded in `field.auraSaveMemory`.
+> - **Decision 3 (5-Phase Composable Combat Exchange Pipeline)**: `resolveDnD35eMeleeAttack` is decomposed into a modular 5-phase pipeline (`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`):
+>   1. `PreAttackPhase` (Flanking geometry + `dagResult.flankingBonus`, Cover, `resolveEffectiveTileIllumination` + `evaluateConcealmentAndSenses`)
+>   2. `StrikeRollPhase` (`resolveAttackRoll`)
+>   3. `OnHitRidersPhase` (conditional weapon/enhancement `damageRiders`)
+>   4. `PostStrikeReactionPhase` (`resolveRetaliationRiders`)
+>   5. `OnDropFollowupPhase` (`Cleave` / `Great Cleave` bonus strike execution against an adjacent hostile foe)
 
 ---
 
-## 4. Step-by-Step Implementation & Code Snippets
+## 1. SSOT Ownership & Old-Brain Eviction Table
 
-### Step 1: Weapon-Scoped Enhancement Modifiers & `baneCreatureType` in `src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`
-
-Add a helper `scopeWeaponModifier` inside `src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts` so any weapon-intrinsic modifier (`crit_threat_doubling`, `extra_full_bab_attacks`, `strike_attack`, `strike_damage`) emitted by a weapon's `effectBundle` or attached `enh.effectBundle` is scoped to `weaponTags` (`['weapon:${itemDef.id}', ...(itemDef.baseItemId ? ['weapon:${itemDef.baseItemId}'] : [])]`), and emit conditional `+2` `strike_attack` and `strike_damage` modifiers when `itemDef.magicalProperties?.baneCreatureType` is present:
-
-```typescript
-const WEAPON_SCOPED_TARGET_STATS: ReadonlySet<string> = new Set([
-  'crit_threat_doubling',
-  'extra_full_bab_attacks',
-  'strike_attack',
-  'strike_damage'
-]);
-
-const BANE_ENHANCEMENT_BONUS_DELTA = 2;
-
-function scopeWeaponModifiers(
-  mods: ReadonlyArray<StatModifier>,
-  weaponTags: ReadonlyArray<string>
-): ReadonlyArray<StatModifier> {
-  if (weaponTags.length === 0) return mods;
-  return mods.map((mod) => {
-    if (!WEAPON_SCOPED_TARGET_STATS.has(mod.targetStat)) return mod;
-    const existingAny = mod.condition?.effectTagsAny ?? [];
-    const mergedAny = Array.from(new Set([...existingAny, ...weaponTags]));
-    return {
-      ...mod,
-      condition: {
-        ...(mod.condition ?? {}),
-        effectTagsAny: mergedAny
-      }
-    };
-  });
-}
-```
-
-And inside `collectEquippedItemDAGContributions` for `itemDef.category === 'weapon'`:
-```typescript
-    const weaponTags =
-      itemDef.category === 'weapon'
-        ? Array.from(new Set([`weapon:${itemDef.id}`, ...(itemDef.baseItemId ? [`weapon:${itemDef.baseItemId}`] : [])]))
-        : [];
-
-    if (itemDef.category === 'weapon' && (itemDef.magicalProperties?.keen === true || itemTags.includes('keen'))) {
-      modifiers.push({
-        targetStat: 'crit_threat_doubling',
-        value: 1,
-        bonusType: 'threat_expansion',
-        sourceId: `${itemRoot}:keen`,
-        sourcePath: `${itemRoot}/keen`,
-        origin: 'magical',
-        condition: { effectTagsAny: weaponTags }
-      });
-    }
-
-    const baneType = itemDef.magicalProperties?.baneCreatureType;
-    if (itemDef.category === 'weapon' && baneType) {
-      const baneTargetTags = [`type:${baneType}`, `subtype:${baneType}`];
-      modifiers.push(
-        {
-          targetStat: 'strike_attack',
-          value: BANE_ENHANCEMENT_BONUS_DELTA,
-          bonusType: 'untyped',
-          sourceId: `${itemRoot}:bane_atk`,
-          sourcePath: `${itemRoot}/enh:bane/attack`,
-          origin: 'magical',
-          condition: {
-            targetTagsAny: baneTargetTags,
-            effectTagsAny: weaponTags
-          }
-        },
-        {
-          targetStat: 'strike_damage',
-          value: BANE_ENHANCEMENT_BONUS_DELTA,
-          bonusType: 'untyped',
-          sourceId: `${itemRoot}:bane_dmg`,
-          sourcePath: `${itemRoot}/enh:bane/damage`,
-          origin: 'magical',
-          condition: {
-            targetTagsAny: baneTargetTags,
-            effectTagsAny: weaponTags
-          }
-        }
-      );
-    }
-
-    if (itemDef.effectBundle) {
-      const evalRes = evaluateEffectBundle(itemDef.effectBundle, itemRoot, suppressedBundleIds, activeSelfTags);
-      modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
-      grantedTags.push(...evalRes.grantedTags);
-    }
-
-    const sysEnhancements =
-      (state.campaign.systemContent?.['itemEnhancements'] as Record<string, DnD35ItemEnhancement> | undefined) ?? {};
-    const enhancementsList = Array.from(
-      new Set([...(itemDef.enhancements ?? []), ...(itemDef.magicalProperties?.enhancements ?? [])])
-    );
-    for (const enhId of enhancementsList) {
-      const enh = sysEnhancements[enhId];
-      if (enh?.effectBundle) {
-        const enhRoot = `${itemRoot}/enh:${enhId}`;
-        const evalRes = evaluateEffectBundle(enh.effectBundle, enhRoot, suppressedBundleIds, activeSelfTags);
-        modifiers.push(...scopeWeaponModifiers(evalRes.statModifiers, weaponTags));
-        grantedTags.push(...evalRes.grantedTags);
-      }
-    }
-```
+| Responsibility | Evicted From | Canonical New Owner (SSOT) | Tier |
+| :--- | :--- | :--- | :---: |
+| **Actor TurnStart / MovementStep / TurnEnd Orchestration** | Inline in `src/core/game-loop.ts` & `src/core/loop/intent_cost_resolver.ts` | `src/systems/lifecycle.system.ts` (`runActorTurnStart`, `runActorMovementStep`, `runActorTurnEnd`) | Tier 1 Console |
+| **Immediate Mobile Field Anchor Position Sync** | Delayed inside `processFieldsTick` (`src/systems/field.system.ts`) | `src/systems/field.system.ts` (`syncAnchoredFieldsForEntity`) | Tier 1 Console |
+| **D&D 3.5e Action Budget Refresh, Step Cost & Automatic Aura Entry Saves** | Hardcoded player-only block in `src/core/loop/intent_cost_resolver.ts:43–115` | `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (`onDnD35eActorTurnStart`, `onDnD35eActorMovementStep`, `resolveDnD35eActionEnergyCost`, `evaluateActorAuraEntrySaves`) | Tier 2 Cartridge |
+| **5-Phase Combat Strike Exchange Pipeline** | Inline monolith in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts:137–320` | `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` (`executeCombatStrikeExchange`) | Tier 2 Cartridge |
+| **HUD Stance Dock Projection (Feats + Active Spell Auras)** | Feat-only loop in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts:105–120` | `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` (`buildActorStanceModes` with `auraStanceOptions`) | Tier 2 Cartridge |
 
 ---
 
-### Step 2: `baneCreatureType` Damage Rider in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` & `public/data/rulesets/dnd35e/item_enhancements.json`
+## 2. Step-by-Step Implementation Plan & Code Snippets
 
-1. In `public/data/rulesets/dnd35e/item_enhancements.json`, add `"bane"`:
-```json
-  "bane": {
-    "id": "bane",
-    "name": "Bane",
-    "description": "A bane weapon excels at attacking one type or subtype of creature. Against its designated foe, its effective enhancement bonus is +2 higher than normal and it deals an extra 2d6 points of damage.",
-    "appliesTo": ["melee_weapon", "ranged_weapon", "thrown_weapon"],
-    "bonusEquivalent": 1
-  },
-```
-2. In `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` (`parseEquippedItem`), emit the conditional `2d6` `on_hit` damage rider when `magicalProps?.baneCreatureType` is set:
-```typescript
-  const baneType = magicalProps?.baneCreatureType;
-  if (baneType) {
-    damageRiders.push({
-      id: `bane_${baneType}_hit`,
-      trigger: 'on_hit',
-      dice: '2d6',
-      damageType: 'untyped',
-      condition: {
-        targetTagsAny: [`type:${baneType}`, `subtype:${baneType}`]
-      }
-    });
-  }
-```
-
----
-
-### Step 3: Lateral Spell & Subtype JSON Parity (`haste.json`, `battletide.json`, `blur.json`, `displacement.json`, `incorporeal.json`)
-
-1. **`public/data/rulesets/dnd35e/spells/haste.json`**:
-   - Change `"target": "save_ref"` to `"target": "ref"`.
-   - Move `haste_extra_attack` from `ruleOverrides` into `modifiers`:
-     ```json
-     {
-       "id": "haste_extra_attack",
-       "target": "extra_full_bab_attacks",
-       "value": 1,
-       "type": "haste"
-     }
-     ```
-   - Set `"ruleOverrides": []`.
-2. **`public/data/rulesets/dnd35e/spells/battletide.json`**:
-   - Change `"target": "save_ref"` to `"target": "ref"`.
-   - Move `battletide_extra_attack` from `ruleOverrides` into `modifiers`:
-     ```json
-     {
-       "id": "battletide_extra_attack",
-       "target": "extra_full_bab_attacks",
-       "value": 1,
-       "type": "haste"
-     }
-     ```
-   - Set `"ruleOverrides": []`.
-3. **`public/data/rulesets/dnd35e/spells/blur.json`**:
-   - Move `blur_concealment` from `ruleOverrides` into `modifiers`:
-     ```json
-     {
-       "id": "blur_concealment",
-       "target": "miss_chance",
-       "value": 20,
-       "type": "enhancement"
-     }
-     ```
-   - Set `"ruleOverrides": []`.
-4. **`public/data/rulesets/dnd35e/spells/displacement.json`**:
-   - Move `displacement_concealment` from `ruleOverrides` into `modifiers`:
-     ```json
-     {
-       "id": "displacement_concealment",
-       "target": "miss_chance",
-       "value": 50,
-       "type": "enhancement"
-     }
-     ```
-   - Set `"ruleOverrides": []`.
-5. **`public/data/rulesets/dnd35e/subtypes/incorporeal.json`**:
-   - Add `{ "id": "incorporeal_miss_chance", "target": "miss_chance", "value": 50, "type": "base", "condition": { "effectTagsNone": ["ghost_touch", "force"] } }` to `modifiers` and `traitBundles[0].modifiers`, and remove `incorporeal_corporeal_miss_chance` from `ruleOverrides`.
-
----
-
-### Step 4: SRD Crit Immunity, `Blind-Fight`, and Feat Rule-Key Alignment (`ledger_modifiers.ts`, `dnd35e_dag_adapter.ts`, `dnd35e_combat_adapter.ts`)
-
-1. **`src/rulesets/dnd35e/progression/ledger_modifiers.ts`**:
-   - Add `readonly hasBlindFight: boolean;` to `ResolvedActiveCombatRules`.
-   - In `buildCombatRuleOverridesFromActiveRules`:
-     - Support canonical rule keys from feat JSONs:
-       - `hasBlindFight = ruleOverrides.some((r) => r.ruleKey === 'reroll_concealment_miss_chance' && r.value === true)`
-       - `hasCleave = ruleOverrides.some((r) => (r.ruleKey === 'cleave_followup_on_drop' || r.ruleKey === 'cleave_extra_attack_on_drop') && r.value === true)`
-       - `hasGreatCleave = ruleOverrides.some((r) => (r.ruleKey === 'great_cleave_unlimited_on_drop' || r.ruleKey === 'great_cleave_unlimited') && r.value === true)`
-       - Recognize `r.ruleKey === 'secondary_natural_penalty' || r.ruleKey === 'secondary_natural_attack_penalty'`
-       - Recognize `r.ruleKey === 'twf_penalty_reduction' && r.value === true` (setting `baseTwfPrimary = -4` and `baseTwfOffHand = -4` when not already set).
-2. **`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`**:
-   - Add `readonly hasBlindFight: boolean;` to `DnD35EntityDAGResult`.
-   - Remove hardcoded `|| dndData.feats?.includes(...)` fallbacks on lines 202, 207–211, 224–225 (`activeCombatRules` now resolves them purely from `featRuleOverrides`).
-3. **`src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`**:
-   - Compute `targetImmuneToCrits`:
+### Step 1: Tier 1 Console Lifecycle System & `RulesetContract` Hooks
+- **Files**:
+  - `src/types/ruleset.types.ts`
+  - `src/systems/field.system.ts`
+  - `src/systems/lifecycle.system.ts` (New Tier 1 Console System — register in `docs/ssot/ssot_console.json`)
+  - `src/core/game-loop.ts`
+  - `src/core/loop/intent_cost_resolver.ts`
+  - `src/systems/movement.system.ts`
+- **Implementation**:
+  1. Extend `RulesetContract` in `src/types/ruleset.types.ts` with three optional lifecycle hooks:
      ```typescript
-     const isIncorporealWithoutGhostTouch =
-       defenderSelfTags.includes('subtype:incorporeal') &&
-       !bypassTags.includes('ghost_touch') &&
-       !bypassTags.includes('bypass:incorporeal');
-     const targetImmuneToCrits =
-       defenderData.abilityScores.con.base === null ||
-       defenderData.immunities.includes('critical_hits') ||
-       defenderSelfTags.includes('type:elemental') ||
-       defenderSelfTags.includes('type:ooze') ||
-       defenderSelfTags.includes('type:plant') ||
-       defenderSelfTags.includes('subtype:swarm') ||
-       isIncorporealWithoutGhostTouch;
+     /**
+      * Optional hook invoked at the start of an actor's turn (after status ticks and Console reaction resets).
+      */
+     onActorTurnStart?(state: GameState, entityId: EntityId): GameState;
+
+     /**
+      * Optional hook invoked immediately after an actor completes a single movement step to `(toX, toY)`.
+      */
+     onActorMovementStep?(
+       state: GameState,
+       entityId: EntityId,
+       fromPos: { readonly x: number; readonly y: number },
+       toPos: { readonly x: number; readonly y: number }
+     ): GameState;
+
+     /**
+      * Optional hook resolving ruleset-specific action budget consumption and turn energy cost (`0` if turn continues, `> 0` if turn ends).
+      */
+     resolveActionEnergyCost?(
+       state: GameState,
+       intent: Intent,
+       baseEnergyCost: number
+     ): { readonly state: GameState; readonly energyCost: number };
      ```
-   - Pass `hasBlindFight: attackerEval.hasBlindFight` to `resolveAttackRoll`.
+  2. Export `syncAnchoredFieldsForEntity(state: GameState, anchorEntityId: EntityId, newX: number, newY: number): GameState` from `src/systems/field.system.ts` so anchored mobile emanations update coordinates immediately when their anchor moves.
+  3. Create `src/systems/lifecycle.system.ts`:
+     ```typescript
+     export function runActorTurnStart(state: GameState, entityId: EntityId): GameState {
+       let nextState = processStatusEffectsTick(state, entityId);
+       nextState = resolveStateStabilization(nextState);
+
+       // Reset Tier 1 per-round triggered reaction quotas (e.g. retaliation riders)
+       const doctrine = getComponent(nextState, entityId, ComponentType.TacticalDoctrine) as
+         | TacticalDoctrineComponent
+         | undefined;
+       if (doctrine?.triggeredUsesThisRound && Object.keys(doctrine.triggeredUsesThisRound).length > 0) {
+         nextState = addComponent(nextState, entityId, resetTriggeredReactionsForNewRound(doctrine));
+       }
+
+       // Tick AI cooldowns if present
+       const aiComp = getComponent(nextState, entityId, ComponentType.AI);
+       if (aiComp?.cooldowns) {
+         // decrement positive cooldowns
+       }
+
+       const ruleset = getActiveRuleset(nextState);
+       if (ruleset.onActorTurnStart) {
+         nextState = ruleset.onActorTurnStart(nextState, entityId);
+       }
+       return nextState;
+     }
+
+     export function runActorMovementStep(
+       state: GameState,
+       entityId: EntityId,
+       fromPos: { readonly x: number; readonly y: number },
+       toPos: { readonly x: number; readonly y: number }
+     ): GameState {
+       let nextState = syncAnchoredFieldsForEntity(state, entityId, toPos.x, toPos.y);
+       nextState = processTraps(nextState, entityId);
+       const ruleset = getActiveRuleset(nextState);
+       if (ruleset.onActorMovementStep) {
+         nextState = ruleset.onActorMovementStep(nextState, entityId, fromPos, toPos);
+       }
+       return nextState;
+     }
+     ```
+  4. Wire `runActorTurnStart` into `processTurn` (`src/core/game-loop.ts`), wire `runActorMovementStep` into `processMoveIntent` (`src/systems/movement.system.ts`), and replace the hardcoded `if (rulesetId === 'dnd35e')` block in `src/core/loop/intent_cost_resolver.ts` with `ruleset.resolveActionEnergyCost`. Also gate `processFieldsTick(nextState)` in `intent_cost_resolver.ts` on `energyCost > 0` so field durations only tick once per completed actor turn rather than on every 0-cost sub-step of a multi-tile move.
 
 ---
 
-### Step 5: Legacy `getEquippedItemBonuses` Cleanup (`src/rulesets/dnd35e/srd_registry.ts`)
-
-Update `getEquippedItemBonuses` in `src/rulesets/dnd35e/srd_registry.ts` to use `resolveEffectiveItemDefinition` and take the highest weapon attack bonus (rather than summing across multiple weapons), while only counting `equippable.defenseBonus` for items without structured `armorStats`:
-
-```typescript
-export function getEquippedItemBonuses(
-  state: GameState,
-  entityId: EntityId
-): { readonly equipAttackBonus: number; readonly equipArmorBonus: number } {
-  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-  if (!equipment) {
-    return { equipAttackBonus: 0, equipArmorBonus: 0 };
-  }
-
-  let equipAttackBonus = 0;
-  let equipArmorBonus = 0;
-  for (const slot of equipment.slots) {
-    if (slot.equippedItem === null || slot.suppressed === true) continue;
-    const itemComp = getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined;
-    const rawItemDef = itemComp ? (state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined) : undefined;
-    if (!rawItemDef) continue;
-    const itemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
-    if (itemDef.category === 'weapon') {
-      const enhBonus = itemDef.magicalProperties?.enhancementBonus ?? 0;
-      const mwBonus = itemDef.magicalProperties?.isMasterwork === true && enhBonus === 0 ? 1 : 0;
-      const wpnAtk = Math.max(itemDef.equippable?.attackBonus ?? 0, enhBonus, mwBonus);
-      if (slot.slotType === 'main_hand' || slot.id.startsWith('main_hand') || equipAttackBonus === 0) {
-        equipAttackBonus = Math.max(equipAttackBonus, wpnAtk);
-      }
-    } else if (itemDef.equippable && !itemDef.armorStats) {
-      equipAttackBonus += itemDef.equippable.attackBonus ?? 0;
-      equipArmorBonus += itemDef.equippable.defenseBonus ?? 0;
-    }
-  }
-  return { equipAttackBonus, equipArmorBonus };
-}
-```
+### Step 2: Tier 2 D&D 3.5e Lifecycle Adapter (`dnd35e_lifecycle_adapter.ts`)
+- **Files**:
+  - `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (New Tier 2 module — register in `docs/ssot/ssot_dnd35e.json`)
+  - `src/rulesets/dnd35e/dnd35e_ruleset.ts`
+- **Implementation**:
+  1. Implement `evaluateActorAuraEntrySaves(state: GameState, occupantId: EntityId): GameState`:
+     - Queries `queryActiveFieldsAtPosition(state, pos.x, pos.y)` for fields with `field.spellId` and `field.castId`.
+     - For any hostile/save-requiring `effectUnit` on that spell where `field.auraSaveMemory?.[String(occupantId)] === undefined`, computes the occupant's effective saving throw modifier and SR from `evaluateDnD35eEntityDAG`, calls `resolveAuraFirstEntrySaveAndSr`, and logs the save/SR result.
+     - Also checks if `occupantId` is the anchor of a mobile emanation field that just moved onto new occupants, evaluating `evaluateActorAuraEntrySaves` for any occupant now inside the shifted radius!
+  2. Implement `onDnD35eActorTurnStart(state: GameState, entityId: EntityId): GameState`:
+     - Initializes a fresh `DnD35ActionBudget` (`createRoundActionBudget`) if `!dndData.actionBudget` for both Player and AI actors.
+     - Calls `evaluateActorAuraEntrySaves(state, entityId)`.
+  3. Implement `onDnD35eActorMovementStep` and `resolveDnD35eActionEnergyCost`:
+     - Handles 5-ft step terrain cost (`consumeMovementStepFt`), updates `actionBudget`, triggers `evaluateActorAuraEntrySaves` at the destination square, and returns `energyCost: 0` while the Player still has remaining movement/actions in `TurnBased` mode (or `100` when the budget completes or for single-intent AI turns).
 
 ---
 
-### Step 6: Migrate Numeric `ruleOverrides` in `public/data/rulesets/dnd35e/feats/*.json` to `modifiers` & Bind `ability` Target in `src/rulesets/dnd35e/effect_bundle.ts`
-
-1. In `src/rulesets/dnd35e/effect_bundle.ts` (`resolveFeatEffectBundle`):
-   - Add `isAbilityTargeted = targetCategory === 'ability' || featDef.id.startsWith('ability_focus')` support so `mod.target === 'special_ability_save_dc'` binds `condition: { effectTagsAll: ['ability:${targetId}'] }`.
-   - Remove the legacy `rule.ruleKey === 'spell_save_dc_bonus'` bridge once `spell_focus.json` and `greater_spell_focus.json` use `modifiers` directly.
-2. Update the 13 feat JSONs in `public/data/rulesets/dnd35e/feats/` so numeric bonuses live in `modifiers`:
-   - `spell_focus.json`: `"modifiers": [{ "id": "spell_save_dc_bonus", "target": "spell_save_dc", "value": 1, "type": "untyped" }]`
-   - `greater_spell_focus.json`: `"modifiers": [{ "id": "greater_spell_save_dc_bonus", "target": "spell_save_dc", "value": 1, "type": "untyped" }]`
-   - `spell_penetration.json`: `"modifiers": [{ "id": "caster_level_check_vs_sr_bonus", "target": "caster_level_check_vs_sr", "value": 2, "type": "untyped" }]`
-   - `greater_spell_penetration.json`: `"modifiers": [{ "id": "greater_caster_level_check_vs_sr_bonus", "target": "caster_level_check_vs_sr", "value": 2, "type": "untyped" }]`
-   - `improved_turning.json`: `"modifiers": [{ "id": "effective_turning_level_bonus", "target": "effective_turning_level", "value": 1, "type": "untyped" }]`
-   - `extra_turning.json`: `"modifiers": [{ "id": "extra_turn_attempts_per_day", "target": "turn_attempts_per_day", "value": 4, "type": "untyped" }]`
-   - `ability_focus.json`: `"modifiers": [{ "id": "special_ability_save_dc_bonus", "target": "special_ability_save_dc", "value": 2, "type": "untyped" }]`
-   - `ability_focus_poison.json`: `"modifiers": [{ "id": "poison_save_dc_bonus", "target": "special_ability_save_dc", "value": 2, "type": "untyped", "condition": { "effectTagsAll": ["ability:poison"] } }]`
-   - `improved_trip.json`: move `trip_check_bonus` (`4`) to `"modifiers": [{ "id": "trip_check_bonus", "target": "trip", "value": 4, "type": "untyped" }]`, keeping `trip_no_aoo` and `trip_followup_melee_attack` in `ruleOverrides`.
-   - `improved_bull_rush.json`: move `bull_rush_check_bonus` (`4`) to `"modifiers": [{ "id": "bull_rush_check_bonus", "target": "bull_rush", "value": 4, "type": "untyped" }]`, keeping `bull_rush_no_aoo` in `ruleOverrides`.
-   - `improved_disarm.json`: move `disarm_check_bonus` (`4`) to `"modifiers": [{ "id": "disarm_check_bonus", "target": "disarm", "value": 4, "type": "untyped" }]`, keeping `disarm_no_aoo` and `disarm_no_counter` in `ruleOverrides`.
-   - `improved_overrun.json`: move `overrun_check_bonus` (`4`) to `"modifiers": [{ "id": "overrun_check_bonus", "target": "overrun", "value": 4, "type": "untyped" }]`, keeping `overrun_target_cannot_avoid` in `ruleOverrides`.
-   - `improved_sunder.json`: move `sunder_check_bonus` (`4`) to `"modifiers": [{ "id": "sunder_check_bonus", "target": "sunder", "value": 4, "type": "untyped" }]`, keeping `sunder_no_aoo` in `ruleOverrides`.
+### Step 3: Tier 2 Composable 5-Phase Combat Exchange Pipeline (`combat_exchange_pipeline.ts`)
+- **Files**:
+  - `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` (New Tier 2 module — register in `docs/ssot/ssot_dnd35e.json`)
+  - `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`
+- **Implementation**:
+  1. Create `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` implementing the 5 modular strike phases:
+     - **Phase 1 (`resolveStrikePreAttackContext`)**:
+       - Evaluates tile illumination at the defender's position via `resolveEffectiveTileIllumination(state, defPos.x, defPos.y)` and observer sensory concealment via `evaluateConcealmentAndSenses` (combining with `defenderEval.dagResult.concealmentMissChancePercent` via `Math.max`).
+       - Evaluates `isFlankingTarget(attackerPos, threateningAllyPositions, defenderPos, defenderImmuneToFlanking)` and adds `attackerEval.dagResult.flankingBonus ?? 2` to the strike's attack bonus when flanking.
+     - **Phase 2 (`executeStrikeRollPhase`)**:
+       - Calls `resolveAttackRoll` with the synthesized attack bonus, target AC, concealment miss chance, fortification, and critical immunity.
+     - **Phase 3 (`applyOnHitDamageRiders`)**:
+       - Evaluates `strike.damageRiders` against `matchesEntityTagCondition` and queues primary + rider damage instances onto the defender's `DamageComponent`.
+     - **Phase 4 (`applyPostStrikeRetaliation`)**:
+       - Evaluates defender's active `retaliation_rider`s via `resolveRetaliationRiders`, updates the defender's `TacticalDoctrineComponent`, and queues retaliation damage onto the attacker's `DamageComponent`.
+     - **Phase 5 (`resolveOnDropCleaveFollowup`)**:
+       - When a strike reduces `defenderHpRemaining <= 0` and `resolveCleaveFollowupEligibility(true, cleaveCountThisTurn, attackerEval.hasGreatCleave)` is true, searches adjacent squares around the attacker for another living hostile `Fighter` entity and executes a bonus melee strike at the same AB against that secondary foe!
+  2. Refactor `resolveDnD35eMeleeAttack` in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts` to delegate strike execution to `executeCombatStrikeExchange`, bringing `dnd35e_combat_adapter.ts` well below 200 lines (eliminating the ESLint `max-lines` warning).
 
 ---
 
-### Step 7: Unit Tests & Verification (`tests/dnd35e_equipment_m115.test.ts` & `./verify.sh`)
+### Step 4: HUD Stance Dock Aura Projection & Max-Lines Cleanup
+- **Files**:
+  - `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`
+  - `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`
+  - `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`
+  - `src/rulesets/dnd35e/progression/ledger_modifiers.ts`
+- **Implementation**:
+  1. Update `buildActorStanceModes` in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` to accept `auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>` and append each option (resolving `isActive` via `resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions)`).
+  2. In `DnD35UIAdapter.getHotbarData` (`src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`), pass `evaluateActiveSpellAuraContributions(state, entityId).stanceGroupOptions` into `buildActorStanceModes`.
+  3. Trim redundant blank/comment lines in `weapon_profile_parser.ts` (309 -> <295 lines) and `ledger_modifiers.ts` (309 -> <295 lines) so `lint_applet` reports **0 errors and 0 warnings**.
 
-Add unit tests in `tests/dnd35e_equipment_m115.test.ts` verifying:
-1. Off-hand weapon enhancement scoping (an off-hand *Keen* or *Speed* weapon does not leak `crit_threat_doubling` or `extra_full_bab_attacks` onto a mundane main-hand weapon).
-2. *Bane (Undead)* weapon granting `+2` attack, `+2` damage, and `+2d6` on-hit damage against `type:undead` foes while granting `0` extra bonus against `type:humanoid` foes.
-3. Spell `haste`, `blur`, and `displacement` effect bundles resolving `extra_full_bab_attacks`, `ref` dodge save, and `concealmentMissChancePercent` via the DAG, plus `Blind-Fight` reroll and Elemental/Ooze/Plant `critical_hits` immunity.
-4. Parameterized `spell_focus:evocation` and `ability_focus:poison` emitting `StatModifier`s with `effectTagsAll: ['school:evocation']` and `effectTagsAll: ['ability:poison']`.
-5. Run `./verify.sh` across all 8 verification stages and update `docs/MILESTONES.md`.
+---
+
+### Step 5: End-to-End Regression Test Suite (`tests/dnd35e_m126_lifecycle_pipeline.test.ts`)
+- **Files**:
+  - `tests/dnd35e_m126_lifecycle_pipeline.test.ts` (New test suite)
+  - `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, `docs/MILESTONES.md`
+- **Tests to Verify**:
+  1. **TurnStart Reaction Quota Reset**: Defender triggers `1/round` retaliation rider in Round 1 -> blocked on second hit in Round 1 -> `runActorTurnStart` runs at start of defender's Round 2 turn -> retaliation rider fires again in Round 2.
+  2. **Per-Step Mobile Emanation Sync & Automatic Aura Entry Save**: Caster with active *Blade Tempest Invocation* moves 5 ft toward an Evil enemy -> field position syncs immediately on the step -> Evil enemy automatically rolls Will save / SR and records `'failed'` or `'saved'` in `field.auraSaveMemory`.
+  3. **5-Phase Combat Exchange — Live Flanking (`+4`) & Shadowy Illumination (`20%` Miss Chance)**: Attacker with *Coordinated Host* (`+2` flanking modifier) flanks an enemy with an ally -> receives `+4` flanking bonus on `resolveDnD35eMeleeAttack`; attacking into *Night's Battlefield* shadowy illumination without darkvision/low-light vision applies `20%` concealment miss chance.
+  4. **5-Phase Combat Exchange — Live Cleave Follow-up Execution**: Attacker with `cleave` drops Goblin A (`<= 0` HP) and automatically executes a free Cleave strike against adjacent Goblin B in the same attack action.
+  5. **HUD Stance Dock Aura Projection**: `DnD35UIAdapter.getHotbarData` projects *Blade Tempest Invocation*'s 3 `battle_cadence` stances (`spectral_assault`, `flurry_of_steel`, `divine_celerity`) into `hotbar.stanceModes` with default selection active.
+
+---
+
+## 3. Cascading Effects Matrix
+
+| Change | Upstream (Callers / Emitters) | Downstream (Consumers / Renderers) | Lateral (Mirrors / Registries) |
+| :--- | :--- | :--- | :--- |
+| **`src/systems/lifecycle.system.ts` (`runActorTurnStart`, `runActorMovementStep`)** | `processTurn` (`game-loop.ts`), `processMoveIntent` (`movement.system.ts`) | `resetTriggeredReactionsForNewRound`, `syncAnchoredFieldsForEntity`, `RulesetContract.onActorTurnStart` / `onActorMovementStep` | Shared by `classic` and `dnd35e` cartridges |
+| **`src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`** | `dnd35eRulesetContract` (`dnd35e_ruleset.ts`), `applyIntentWithCost` (`intent_cost_resolver.ts`) | `createRoundActionBudget`, `consumeMovementStepFt`, `evaluateActorAuraEntrySaves` | Eliminates all D&D 3.5e imports from `intent_cost_resolver.ts` |
+| **`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`** | `resolveDnD35eMeleeAttack` (`dnd35e_combat_adapter.ts`) | `isFlankingTarget`, `resolveEffectiveTileIllumination`, `evaluateConcealmentAndSenses`, `resolveRetaliationRiders`, `resolveCleaveFollowupEligibility` | Shrinks `dnd35e_combat_adapter.ts` from 398 lines to ~160 lines |
+| **Aura Stance Projection in `buildActorStanceModes`** | `DnD35UIAdapter.getHotbarData` (`dnd35e_ui_adapter.ts`) | `console_hotbar.ui.ts`, `onToggleStance` | Unifies feat-granted and spell-aura-granted stance toggles |

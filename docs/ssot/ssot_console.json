@@ -5283,5 +5283,43 @@
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/types/ui_adapter.types.ts."
     ]
+  },
+  "src/systems/stance.system.ts": {
+    "domain": "Core Console: ECS Systems & Game Loop",
+    "tier": "tier1_console",
+    "responsibility": "Provides Tier 1 Console stance group toggling, semantic stance tag projection, and per-round triggered reaction quota tracking on TacticalDoctrineComponent.",
+    "canonicalEntryPoints": [
+      "ConsoleStanceGroupOption",
+      "toggleConsoleStanceGroup",
+      "resolveActiveStanceInGroup",
+      "projectConsoleStanceSelfTags",
+      "canUseTriggeredReactionThisRound",
+      "incrementTriggeredReactionUse",
+      "resetTriggeredReactionsForNewRound"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/stance.system.ts.",
+      "excludes": "Cartridge-specific math or ruleset content."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset-specific stance names in Console systems."
+    ]
+  },
+  "src/systems/lifecycle.system.ts": {
+    "domain": "Core Console: ECS Systems & Game Loop",
+    "tier": "tier1_console",
+    "responsibility": "Coordinates symmetric turn-start, movement-step, and intent energy cost lifecycle windows for player and AI actors across ruleset cartridges.",
+    "canonicalEntryPoints": [
+      "runActorTurnStart",
+      "runActorMovementStep",
+      "resolveActorActionEnergyCost"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/lifecycle.system.ts.",
+      "excludes": "Cartridge-specific rule evaluation or hardcoded ruleset checks."
+    },
+    "antiPatterns": [
+      "Do not branch on rulesetId inside Console lifecycle systems."
+    ]
   }
 }

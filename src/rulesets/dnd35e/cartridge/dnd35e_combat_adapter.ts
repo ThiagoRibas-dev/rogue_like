@@ -1,7 +1,6 @@
 import { addComponent, getComponent, removeComponent } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
 import {
   ComponentType,
   type DamageComponent,
@@ -11,9 +10,8 @@ import {
 import { GameEventType } from '../../../types/events.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts';
-import { resolveAttackRoll, resolveCleaveFollowupEligibility } from '../combat/attack_resolver.ts';
+import { executeCombatStrikeExchange } from '../combat/combat_exchange_pipeline.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
-import { evaluateDiceExpression } from '../math/dice.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
 import { getDnD35EntityData, resolveDamageTypeFromTags, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -24,9 +22,9 @@ import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
 const FIVE_FOOT_STEP_MAX_DISTANCE_FT = 5;
 
 /**
- * Resolves a melee attack intent in the `dnd35e` ruleset cartridge using `resolveAttackRoll`
- * ($d20 + \text{AtkBonus} \ge \text{TargetAC}$, natural 1/20 bounds, critical threat & confirmation,
- * and weapon dice + STR damage).
+ * Resolves a melee attack intent in the `dnd35e` ruleset cartridge using the 5-phase
+ * Composable `executeCombatStrikeExchange` pipeline (PreAttack, StrikeRoll, OnHitRiders,
+ * PostStrikeReaction, and OnDropFollowup).
  *
  * @param state The current GameState.
  * @param intent The MeleeAttackIntent to resolve.
@@ -95,12 +93,9 @@ export function resolveDnD35eMeleeAttack(
     };
   }
 
-  const targetAC = defenderEval.dagResult.acBreakdown.fullAC;
-
   const actionBudget = attackerData.actionBudget;
   const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
   const isFullAttack = distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT;
-
   const strikes = isFullAttack ? attackerEval.attackRoutine.strikes : attackerEval.attackRoutine.strikes.slice(0, 1);
 
   if (strikes.length === 0) {
@@ -129,131 +124,34 @@ export function resolveDnD35eMeleeAttack(
   let runningState = actionBudget ? setDnD35EntityData(state, attackerId, updatedAttackerData) : state;
   let anyStrikeAttempted = false;
   let defenderHpRemaining = targetFighter.hp;
+  let cleavesUsedThisTurn = 0;
 
   for (let sIdx = 0; sIdx < strikes.length; sIdx++) {
     const strike = strikes[sIdx]!;
     anyStrikeAttempted = true;
 
-    let strikeLabel = strike.label;
-    if (strikes.length > 1 && strike.attackSource === 'manufactured_primary') {
-      strikeLabel = `${strikeLabel} (Iterative ${sIdx + 1})`;
-    }
-
-    const weaponDamageType = strike.weaponDamageType;
-    const bypassTags = strike.bypassTags;
-
-    const isIncorporealWithoutGhostTouch =
-      defenderSelfTags.includes('subtype:incorporeal') &&
-      !bypassTags.includes('ghost_touch') &&
-      !bypassTags.includes('bypass:incorporeal');
-    const targetImmuneToCrits =
-      defenderData.abilityScores.con.base === null ||
-      defenderData.immunities.includes('critical_hits') ||
-      defenderSelfTags.includes('type:elemental') ||
-      defenderSelfTags.includes('type:ooze') ||
-      defenderSelfTags.includes('type:plant') ||
-      defenderSelfTags.includes('subtype:swarm') ||
-      isIncorporealWithoutGhostTouch;
-
-    const rollResult = resolveAttackRoll({
-      attackBonus: strike.attackBonus,
-      targetAC,
-      weaponDice: strike.weaponDice,
-      strModifier: 0,
-      handedness: 'one_handed',
-      flatDamageBonus: strike.strDamageBonus + strike.doctrineDamageBonus + strike.flatDamageBonus,
-      critThreatMin: strike.critThreatMin,
-      critMultiplier: strike.critMultiplier,
-      targetImmuneToCrits,
-      hasBlindFight: attackerEval.hasBlindFight,
-      ...(defenderEval.dagResult.fortificationPercent !== undefined
-        ? { fortificationPercent: defenderEval.dagResult.fortificationPercent }
-        : {}),
-      ...(defenderEval.dagResult.concealmentMissChancePercent !== undefined
-        ? { concealmentMissChancePercent: defenderEval.dagResult.concealmentMissChancePercent }
-        : {})
+    const exchangeRes = executeCombatStrikeExchange({
+      state: runningState,
+      attackerId,
+      defenderId,
+      strike,
+      strikeIndex: sIdx,
+      totalStrikes: strikes.length,
+      attackerData,
+      defenderData,
+      attackerSelfTags,
+      defenderSelfTags,
+      attackerEval,
+      defenderEval,
+      defenderHpRemaining,
+      cleavesUsedThisTurn
     });
 
-    if (!rollResult.hit) {
-      runningState = addMessage(
-        runningState,
-        `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}] ${strikeLabel} misses!`,
-        MessageLogCategory.CombatMiss
-      );
-      continue;
-    }
-
-    const existingDamage = getComponent(runningState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
-    const newInstances = [
-      {
-        amount: rollResult.totalDamage,
-        sourceEntityId: attackerId,
-        tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
-      }
-    ];
-
-    let riderText = '';
-    let totalRiderDamage = 0;
-    if (strike.damageRiders && strike.damageRiders.length > 0) {
-      for (const rider of strike.damageRiders) {
-        if (
-          rider.condition &&
-          !matchesEntityTagCondition(rider.condition, defenderSelfTags, ['melee', rider.damageType], attackerSelfTags)
-        ) {
-          continue;
-        }
-        if (rider.trigger === 'on_hit' || (rider.trigger === 'on_crit' && rollResult.isCriticalConfirmed)) {
-          const diceExpr =
-            rider.trigger === 'on_crit' && rider.diceByCritMultiplier
-              ? (rider.diceByCritMultiplier[String(strike.critMultiplier)] ??
-                rider.diceByCritMultiplier['2'] ??
-                rider.dice)
-              : rider.dice;
-          if (diceExpr) {
-            const riderRoll = evaluateDiceExpression(diceExpr);
-            const riderAmount = Math.max(0, riderRoll.total);
-            if (riderAmount > 0) {
-              const isEnergy = ['fire', 'cold', 'electricity', 'acid', 'sonic'].includes(rider.damageType);
-              newInstances.push({
-                amount: riderAmount,
-                sourceEntityId: attackerId,
-                tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags]
-              });
-              totalRiderDamage += riderAmount;
-              riderText += ` + ${riderAmount} ${rider.damageType}`;
-            }
-          }
-        }
-      }
-    }
-
-    const nextInstances = existingDamage ? [...existingDamage.instances, ...newInstances] : newInstances;
-
-    runningState = addComponent(runningState, defenderId, {
-      type: ComponentType.Damage,
-      instances: nextInstances
-    });
-
-    defenderHpRemaining -= rollResult.totalDamage + totalRiderDamage;
-
-    const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';
-    runningState = addMessage(
-      runningState,
-      `[d20: ${rollResult.naturalAttackRoll} + ${strike.attackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType}${riderText} damage!`,
-      MessageLogCategory.CombatHit
-    );
+    runningState = exchangeRes.state;
+    defenderHpRemaining = exchangeRes.defenderHpRemaining;
+    cleavesUsedThisTurn = exchangeRes.cleavesUsedThisTurn;
 
     if (defenderHpRemaining <= 0) {
-      if (attackerEval.hasCleave) {
-        const eligible = resolveCleaveFollowupEligibility(true, 0, attackerEval.hasGreatCleave);
-        if (eligible) {
-          runningState = addMessage(
-            runningState,
-            `[Cleave] Dropped foe grants a free follow-up melee strike!`,
-            MessageLogCategory.CombatHit
-          );
-        }
-      }
       break;
     }
   }

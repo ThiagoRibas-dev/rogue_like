@@ -19,6 +19,7 @@ import { processMeleeAttackIntent } from './combat.system.ts';
 import { processApplyIntent } from './apply.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processInteractIntent } from './intent.system.ts';
+import { runActorMovementStep } from './lifecycle.system.ts';
 
 /**
  * Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.
@@ -233,6 +234,7 @@ export function processMoveIntent(
   };
 
   let nextState = addComponent(state, entityId, nextPosition);
+  nextState = runActorMovementStep(nextState, entityId, { x: position.x, y: position.y }, { x: targetX, y: targetY });
 
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
   if (isPlayer) {

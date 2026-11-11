@@ -39,12 +39,8 @@ export function collectActiveGrantedAndVirtualFeats(
       if (!detail) continue;
       if (!isActivationConditionMet(detail.activationCondition, activeSelfTags)) continue;
 
-      for (const gf of detail.grantedFeats ?? []) {
-        granted.add(gf);
-      }
-      for (const vf of detail.virtualFeatGrants ?? []) {
-        granted.add(vf.featId);
-      }
+      for (const gf of detail.grantedFeats ?? []) granted.add(gf);
+      for (const vf of detail.virtualFeatGrants ?? []) granted.add(vf.featId);
     }
   }
 
@@ -59,20 +55,10 @@ export function collectActiveGrantedAndVirtualFeats(
         suppressedBundleIds,
         activeSelfTags
       );
-      for (const gf of evalRes.grantedFeats) {
-        granted.add(gf);
-      }
-      for (const vf of evalRes.virtualFeatGrants) {
-        granted.add(vf.featId);
-      }
-      for (const f of domainDef.featGrants) {
-        granted.add(f);
-      }
-    } else {
-      for (const f of domainDef.featGrants) {
-        granted.add(f);
-      }
+      for (const gf of evalRes.grantedFeats) granted.add(gf);
+      for (const vf of evalRes.virtualFeatGrants) granted.add(vf.featId);
     }
+    for (const f of domainDef.featGrants) granted.add(f);
   }
 
   return Array.from(granted);
@@ -320,25 +306,24 @@ export function buildCombatRuleOverridesFromActiveRules(
   let extraOffHandAttacks = 0;
 
   for (const r of ruleOverrides) {
-    if (
-      (r.ruleKey === 'secondary_natural_penalty' || r.ruleKey === 'secondary_natural_attack_penalty') &&
-      typeof r.value === 'number'
-    ) {
-      secondaryNaturalPenalty =
-        secondaryNaturalPenalty === undefined ? r.value : Math.max(secondaryNaturalPenalty, r.value);
+    if (typeof r.value === 'number') {
+      if (r.ruleKey === 'secondary_natural_penalty' || r.ruleKey === 'secondary_natural_attack_penalty') {
+        secondaryNaturalPenalty =
+          secondaryNaturalPenalty === undefined ? r.value : Math.max(secondaryNaturalPenalty, r.value);
+      } else if (r.ruleKey === 'twf_primary_penalty') {
+        baseTwfPrimary = baseTwfPrimary === undefined ? r.value : Math.max(baseTwfPrimary, r.value);
+      } else if (r.ruleKey === 'twf_offhand_penalty') {
+        baseTwfOffHand = baseTwfOffHand === undefined ? r.value : Math.max(baseTwfOffHand, r.value);
+      } else if (r.ruleKey === 'twf_light_offhand_bonus') {
+        twfLightBonus = Math.max(twfLightBonus, r.value);
+      } else if (r.ruleKey === 'extra_offhand_attacks') {
+        extraOffHandAttacks = Math.max(extraOffHandAttacks, r.value);
+      }
     } else if (r.ruleKey === 'twf_penalty_reduction' && r.value === true) {
       baseTwfPrimary =
         baseTwfPrimary === undefined ? TWF_FEAT_BASE_PENALTY : Math.max(baseTwfPrimary, TWF_FEAT_BASE_PENALTY);
       baseTwfOffHand =
         baseTwfOffHand === undefined ? TWF_FEAT_BASE_PENALTY : Math.max(baseTwfOffHand, TWF_FEAT_BASE_PENALTY);
-    } else if (r.ruleKey === 'twf_primary_penalty' && typeof r.value === 'number') {
-      baseTwfPrimary = baseTwfPrimary === undefined ? r.value : Math.max(baseTwfPrimary, r.value);
-    } else if (r.ruleKey === 'twf_offhand_penalty' && typeof r.value === 'number') {
-      baseTwfOffHand = baseTwfOffHand === undefined ? r.value : Math.max(baseTwfOffHand, r.value);
-    } else if (r.ruleKey === 'twf_light_offhand_bonus' && typeof r.value === 'number') {
-      twfLightBonus = Math.max(twfLightBonus, r.value);
-    } else if (r.ruleKey === 'extra_offhand_attacks' && typeof r.value === 'number') {
-      extraOffHandAttacks = Math.max(extraOffHandAttacks, r.value);
     }
   }
 

@@ -3,6 +3,7 @@ import type { PrerequisiteNode } from '../../prerequisites.ts';
 import {
   DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
+  DnD35DamageTypeSchema,
   DnD35SensoryProfileSchema,
   SizeCategorySchema
 } from './base_system.types.ts';
@@ -80,6 +81,22 @@ export const DnD35FeatGrantDescriptorSchema = z.object({
 });
 export type DnD35FeatGrantDescriptor = z.infer<typeof DnD35FeatGrantDescriptorSchema>;
 
+/** Zod schema for an isolated spell-strike / iterative ray attack descriptor on an activated ability or spell unit. */
+export const DnD35SpellStrikeDescriptorSchema = z.object({
+  attackAbility: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).default('wis'),
+  useIterativeBab: z.boolean().default(true),
+  touchAttack: z.boolean().default(false),
+  critProfileSource: z.enum(['deity_favored_weapon', 'standard_20_x2']).default('standard_20_x2'),
+  dice: z.string().default('1d8'),
+  flatBonusPerClInterval: z.number().int().positive().optional(),
+  flatBonusMaxCap: z.number().int().nonnegative().optional(),
+  damageType: DnD35DamageTypeSchema.default('force'),
+  bypassesDr: z.boolean().default(true),
+  allowsSpellResistanceOnFirstHit: z.boolean().default(true),
+  isolatedFromPhysicalFeats: z.boolean().default(true)
+});
+export type DnD35SpellStrikeDescriptor = z.infer<typeof DnD35SpellStrikeDescriptorSchema>;
+
 /** Zod schema for an activated, toggled, variable-dial, or spell-like ability granted by an Effect Bundle. */
 export const DnD35ActivatedAbilityDescriptorSchema = z.object({
   abilityId: z.string(),
@@ -88,6 +105,10 @@ export const DnD35ActivatedAbilityDescriptorSchema = z.object({
   usageLimitPoolId: z.string().optional(),
   spellLikeSpellId: z.string().optional(),
   casterLevelFormula: z.enum(['character_level', 'class_level', 'racial_hd', 'half_class_level', 'fixed_1']).optional(),
+  toggleGroup: z.string().optional(),
+  grantsSelfTag: z.string().optional(),
+  isDefaultInGroup: z.boolean().optional(),
+  spellStrike: DnD35SpellStrikeDescriptorSchema.optional(),
   variableDial: z
     .object({
       min: z.number().int().nonnegative().default(0),

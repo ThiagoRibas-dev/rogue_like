@@ -280,4 +280,8 @@ export interface TacticalDoctrineComponent {
   readonly totalDefense?: boolean | undefined;
   readonly gripMode?: WeaponGripMode | undefined;
   readonly settings?: Readonly<Record<string, boolean | number | string>> | undefined;
+  /** Active stance ID keyed by mutually exclusive stance group ID (e.g. { blade_tempest_cadence: 'flurry_of_steel' }). */
+  readonly activeStanceGroups?: Readonly<Record<string, string>> | undefined;
+  /** Per-round usage counter for triggered or retaliatory abilities (reset at round start). */
+  readonly triggeredUsesThisRound?: Readonly<Record<string, number>> | undefined;
 }

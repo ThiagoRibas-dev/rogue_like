@@ -1,3 +1,5 @@
+import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
+import type { GameState } from '../../../types/game-state.types.ts';
 import { measureDnD35DistanceFt } from './grid_geometry.ts';
 import type { CoverState, IlluminationLevel, SensoryProfile } from '../types/dnd35e.types.ts';
 
@@ -252,4 +254,72 @@ export function evaluateConcealmentAndSenses(
     missChancePercent: missChance,
     blocksAoO: missChance === TOTAL_CONCEALMENT_MISS_CHANCE_PERCENT
   };
+}
+
+/**
+ * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) at `(x, y)`
+ * by comparing active `FieldComponent.illuminationOverride` descriptors at that coordinate against
+ * `ambientIllumination`:
+ * - Fields whose `yieldsToDescriptors` match an overlapping active field's `descriptors` (or `fieldType`)
+ *   yield to that field (e.g. *Night's Battlefield* overrides mundane/bright light to `'shadowy'`, but
+ *   yields to magical `darkness` or `daylight` fields).
+ * - Otherwise, the highest `spellLevel` override wins.
+ *
+ * @param state Current immutable GameState.
+ * @param x Grid X coordinate.
+ * @param y Grid Y coordinate.
+ * @param ambientIllumination Base ambient tile illumination (defaults to `'bright'`).
+ * @returns Effective `IlluminationLevel`.
+ */
+export function resolveEffectiveTileIllumination(
+  state: GameState,
+  x: number,
+  y: number,
+  ambientIllumination: IlluminationLevel = 'bright'
+): IlluminationLevel {
+  const activeFields = queryActiveFieldsAtPosition(state, x, y);
+  const overrides = activeFields
+    .map((f) => ({
+      fieldType: f.field.fieldType,
+      spellId: f.field.spellId,
+      override: f.field.illuminationOverride
+    }))
+    .filter(
+      (
+        entry
+      ): entry is {
+        fieldType: string;
+        spellId: string | undefined;
+        override: NonNullable<typeof entry.override>;
+      } => entry.override !== undefined
+    );
+
+  if (overrides.length === 0) {
+    return ambientIllumination;
+  }
+
+  const allActiveDescriptors = new Set<string>();
+  for (const entry of overrides) {
+    allActiveDescriptors.add(entry.fieldType);
+    if (entry.spellId) allActiveDescriptors.add(entry.spellId);
+    for (const d of entry.override.descriptors ?? []) {
+      allActiveDescriptors.add(d);
+    }
+  }
+
+  const nonYielding = overrides.filter((entry) => {
+    const yieldsTo = entry.override.yieldsToDescriptors ?? [];
+    return !yieldsTo.some((yTag) => allActiveDescriptors.has(yTag));
+  });
+
+  const candidates = nonYielding.length > 0 ? nonYielding : overrides;
+  let winner = candidates[0]!;
+  for (let i = 1; i < candidates.length; i++) {
+    const candidate = candidates[i]!;
+    if (candidate.override.spellLevel >= winner.override.spellLevel) {
+      winner = candidate;
+    }
+  }
+
+  return winner.override.level;
 }

@@ -1,5 +1,10 @@
 import { getComponent } from '../../core/ecs.ts';
-import { ComponentType, type EquipmentComponent, type ItemComponent } from '../../types/components.types.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type ItemComponent,
+  type TacticalDoctrineComponent
+} from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
 import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
@@ -12,6 +17,7 @@ export interface SituationalTagContext {
   readonly hasShield?: boolean | undefined;
   readonly isMetalArmorOrShield?: boolean | undefined;
   readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
+  readonly doctrine?: TacticalDoctrineComponent | undefined;
 }
 
 /** Minimum armor bonus threshold heuristic for Heavy Armor when no item tag is present. */
@@ -126,10 +132,14 @@ export function resolveEntitySituationalTagContext(
             : 'none';
   }
 
+  const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
+    TacticalDoctrineComponent | undefined;
+
   return {
     armorCategory,
     hasShield,
     isMetalArmorOrShield,
-    loadCategory: 'light'
+    loadCategory: 'light',
+    ...(doctrine !== undefined ? { doctrine } : {})
   };
 }

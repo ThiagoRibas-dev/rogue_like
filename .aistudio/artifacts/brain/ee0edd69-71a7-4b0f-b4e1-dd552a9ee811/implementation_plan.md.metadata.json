@@ -1,6 +1,0 @@
-{
-  "summary":  "Step-by-step implementation plan with Cascading Effects Matrix and code diffs for Cleric prepared spellbook slots, Character Sheet O(1) passive skill DAG optimization & naming, Paper Doll cleanup, and global UI font scaling.",
-  "updatedAt":  "2026-11-08T00:00:37.204165184Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}

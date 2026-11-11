@@ -159,6 +159,8 @@ export interface UIStanceModeEntry {
   readonly label: string;
   readonly icon?: string;
   readonly isActive: boolean;
+  /** Optional mutually exclusive stance group ID for radio-button stance toggles. */
+  readonly groupId?: string | undefined;
   readonly description?: string;
   readonly tooltipText?: string;
   /** Optional numeric dial value (e.g. Power Attack / Combat Expertise trade-off points). */

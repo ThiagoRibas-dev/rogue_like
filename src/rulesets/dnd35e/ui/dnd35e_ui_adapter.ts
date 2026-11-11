@@ -22,6 +22,7 @@ import type {
   UIInventoryModel
 } from '../../../types/ui_adapter.types.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
+import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { buildActorActionPips, buildActorHotbarSlots, buildActorStanceModes } from './dnd35e_ui_hotbar.ts';
 import { buildAnatomicalSlotsFromEquipment, mapEntityItemToUI } from './dnd35e_ui_projection.ts';
@@ -125,10 +126,19 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
         : dndData.resourcePools;
 
     const sys = state ? getDnD35SystemContent(state.campaign) : undefined;
+    const auraContrib =
+      state && entityId !== undefined ? evaluateActiveSpellAuraContributions(state, entityId) : undefined;
     return {
       activeBank,
       totalBanks: TOTAL_HOTBAR_BANKS,
-      stanceModes: buildActorStanceModes(dndData, chassis.totalBab, doctrine, resourcePools, sys?.feats),
+      stanceModes: buildActorStanceModes(
+        dndData,
+        chassis.totalBab,
+        doctrine,
+        resourcePools,
+        sys?.feats,
+        auraContrib?.stanceGroupOptions
+      ),
       slots: buildActorHotbarSlots(dndData, state, entityId),
       actionPips: buildActorActionPips(dndData)
     };

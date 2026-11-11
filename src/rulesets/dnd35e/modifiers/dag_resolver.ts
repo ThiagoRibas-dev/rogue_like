@@ -297,6 +297,9 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const rawMissChance = resolveTypedModifiers(missChanceMods, stageContext);
   const concealmentMissChancePercent = Math.min(100, Math.max(0, rawMissChance));
 
+  const flankingMods = [...(modsByStat['flanking_attack_bonus'] ?? []), ...(modsByStat['flanking_bonus'] ?? [])];
+  const flankingBonus = 2 + resolveTypedModifiers(flankingMods, stageContext);
+
   return {
     effectiveSize: sizeResult.sizeCategory,
     sizeRankIndex: sizeResult.rankIndex,
@@ -315,6 +318,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     maxHp,
     saves,
     speed,
+    flankingBonus,
     ...(fortificationPercent > 0 ? { fortificationPercent } : {}),
     ...(concealmentMissChancePercent > 0 ? { concealmentMissChancePercent } : {})
   };

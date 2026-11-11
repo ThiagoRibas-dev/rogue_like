@@ -197,6 +197,20 @@ export interface FieldComponent {
   readonly blocksLoE?: boolean | undefined;
   readonly suppressedTags?: ReadonlyArray<string> | undefined;
   readonly movementCostMultiplier?: number | undefined;
+  readonly spellId?: string | undefined;
+  readonly castId?: string | undefined;
+  readonly casterLevel?: number | undefined;
+  /** Per-cast save/SR memory keyed by stringified occupant EntityId ('saved' | 'failed' | 'sr_blocked'). */
+  readonly auraSaveMemory?: Readonly<Record<string, 'saved' | 'failed' | 'sr_blocked'>> | undefined;
+  /** Optional illumination override descriptor for [Light] and [Darkness] fields. */
+  readonly illuminationOverride?:
+    | {
+        readonly level: 'bright' | 'shadowy' | 'darkness';
+        readonly spellLevel: number;
+        readonly descriptors?: ReadonlyArray<string> | undefined;
+        readonly yieldsToDescriptors?: ReadonlyArray<string> | undefined;
+      }
+    | undefined;
 }
 
 /**

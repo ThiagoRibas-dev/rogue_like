@@ -63,6 +63,38 @@ export function spawnField(
 }
 
 /**
+ * Synchronizes coordinates of all mobile emanation fields anchored to a specific entity
+ * immediately upon the anchor entity moving.
+ *
+ * @param state Current GameState.
+ * @param anchorEntityId The entity that moved.
+ * @param newX New X coordinate of the anchor entity.
+ * @param newY New Y coordinate of the anchor entity.
+ * @returns Updated GameState with anchored field positions synchronized.
+ */
+export function syncAnchoredFieldsForEntity(
+  state: GameState,
+  anchorEntityId: EntityId,
+  newX: number,
+  newY: number
+): GameState {
+  let nextState = state;
+  for (const entityId of nextState.entities) {
+    const fieldCmp = getComponent(nextState, entityId, ComponentType.Field) as FieldComponent | undefined;
+    if (!fieldCmp || fieldCmp.anchorEntityId !== anchorEntityId) continue;
+    const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
+    if (!pos || pos.x !== newX || pos.y !== newY) {
+      nextState = addComponent(nextState, entityId, {
+        type: ComponentType.Position,
+        x: newX,
+        y: newY
+      });
+    }
+  }
+  return nextState;
+}
+
+/**
  * Ticks all fields, handles decay, applies effects to occupants, and processes spreading.
  */
 export function processFieldsTick(state: GameState): GameState {

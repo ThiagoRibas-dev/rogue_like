@@ -5,6 +5,7 @@ import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState } from './game-state.types.ts';
 import type { MeleeAttackIntent } from './intents/combat.intents.ts';
 import type { ApplyIntent, ApplyIntentTarget } from './intents/interaction.intents.ts';
+import type { Intent } from './intents/intent.union.ts';
 
 /**
  * Describes a campaign verification warning or error containing pathway keys and details.
@@ -228,4 +229,40 @@ export interface RulesetContract {
     state: GameState,
     targetEntityId: EntityId
   ): ReadonlyArray<{ readonly value: string; readonly color: string }>;
+
+  /**
+   * Optional hook invoked at the start of an actor's turn (after status ticks and Console reaction resets).
+   * @param state The current GameState.
+   * @param entityId The actor whose turn is starting.
+   * @returns Updated GameState.
+   */
+  onActorTurnStart?(state: GameState, entityId: EntityId): GameState;
+
+  /**
+   * Optional hook invoked immediately after an actor completes a single movement step to `(toPos.x, toPos.y)`.
+   * @param state The current GameState.
+   * @param entityId The moving entity ID.
+   * @param fromPos Origin tile coordinate.
+   * @param toPos Destination tile coordinate.
+   * @returns Updated GameState.
+   */
+  onActorMovementStep?(
+    state: GameState,
+    entityId: EntityId,
+    fromPos: { readonly x: number; readonly y: number },
+    toPos: { readonly x: number; readonly y: number }
+  ): GameState;
+
+  /**
+   * Optional hook resolving ruleset-specific action budget consumption and turn energy cost (`0` if turn continues, `> 0` if turn ends).
+   * @param state The current GameState.
+   * @param intent The intent being applied.
+   * @param baseEnergyCost The baseline energy cost computed by Console.
+   * @returns Updated GameState and effective energy cost.
+   */
+  resolveActionEnergyCost?(
+    state: GameState,
+    intent: Intent,
+    baseEnergyCost: number
+  ): { readonly state: GameState; readonly energyCost: number };
 }

@@ -1811,3 +1811,53 @@ Completed the full-pipeline Horizon 2/Horizon 3 integration and post-M123 audit 
 - [x] **SRD Combat Fidelity: Alignment Tags, Conditional Riders, *Bane* Weapons, *Animated* Shields, Crit Immunity, `Blind-Fight` & Weapon Proficiency (`semantic_tags.ts`, `dnd35e_combat_adapter.ts`, `weapon_profile_parser.ts`, `item_enhancements.json`)**:
   - Projected actor alignment semantic tags (`alignment:good`, `alignment:evil`, `alignment:lawful`, `alignment:chaotic`, `alignment:neutral`), gated `strike.damageRiders` against attacker/defender tags, and implemented `baneCreatureType` (`+2` attack/damage and `+2d6` on-hit damage against `type:<bane>` / `subtype:<bane>`).
   - Expanded `targetImmuneToCrits` in `resolveDnD35eMeleeAttack` to check `defenderData.immunities.includes('critical_hits')` and Elemental/Ooze/Plant/Swarm/Incorporeal tags (unless negated by *Ghost Touch*), wired `hasBlindFight`, aligned feat `ruleKey`s in `buildCombatRuleOverridesFromActiveRules`, and removed hardcoded `dndData.feats?.includes(...)` fallbacks from `dnd35e_dag_adapter.ts`.
+
+## 🟢 Milestone 125: Console Stance Groups, Retaliation Riders, Mobile Aura Lifecycles & Iterative Spell Strikes (Complete)
+
+Established a generic Tier 1 stance group and triggered reaction subsystem in the Console Engine, complemented by Tier 2 Cartridge resolvers for target-side retaliatory shields, dynamic mobile emanations, and isolated iterative spell strikes, showcased by *Blade Tempest Invocation*:
+
+- [x] **Console Tier 1 Stance Groups & Triggered Reactions (`src/types/components/actor_components.types.ts`, `src/systems/stance.system.ts`, `src/types/ui_adapter.types.ts`, `console_hotbar.ui.ts`)**:
+  - Extended `TacticalDoctrineComponent` with `activeStanceGroups?: Readonly<Record<string, string>>` and `triggeredUsesThisRound?: Readonly<Record<string, number>>`.
+  - Implemented `toggleConsoleStanceGroup()`, `resolveActiveStanceInGroup()`, `projectConsoleStanceSelfTags()`, `canUseTriggeredReactionThisRound()`, `incrementTriggeredReactionUse()`, and `resetTriggeredReactionsForNewRound()`.
+  - Added `groupId?: string` to `UIStanceModeEntry` and `UIStanceActionData` with `data-stance-group` attribute in `console_hotbar.ui.ts`.
+- [x] **Target-Side Retaliatory Reaction Shields (`src/rulesets/dnd35e/combat/retaliation_resolver.ts`, `spell_system.types.ts`, `dnd35e_combat_adapter.ts`)**:
+  - Implemented `resolveRetaliationRiders()` supporting `melee_adjacent` triggers, 1/round quota consumption via `TacticalDoctrineComponent`, bypass DR check, and energy resistance/immunity mitigation.
+  - Extended `DnD35SpellEffectUnitSchema` with `retaliation_rider`.
+  - Wired retaliation resolution directly into defender processing on melee hit in `resolveDnD35eMeleeAttack`.
+- [x] **Dynamic Mobile Aura Emanations & Illumination Yielding (`src/rulesets/dnd35e/magic/spell_aura_resolver.ts`, `cover_senses.ts`, `dnd35e_dag_adapter.ts`, `src/types/components/world_components.types.ts`)**:
+  - Extended `FieldComponent` with `spellId`, `castId`, `casterLevel`, `auraSaveMemory`, and `illuminationOverride`.
+  - Implemented `evaluateActiveSpellAuraContributions()` and `resolveAuraFirstEntrySaveAndSr()` projecting dynamic stat modifiers, granted tags, senses, and quicken cast caps with per-cast save memory.
+  - Implemented `resolveEffectiveTileIllumination()` resolving competing light and darkness descriptors and field boundaries.
+- [x] **Isolated Iterative Spell-Attack Routines (`src/rulesets/dnd35e/magic/spell_strike_resolver.ts`, `effect_system.types.ts`)**:
+  - Implemented `resolveIterativeSpellStrike()` calculating BAB + casting stat modifier iteratives, deity favored weapon critical profiles, spell penetration, and SR checking on the first successful strike.
+  - Added `DnD35SpellStrikeDescriptorSchema` to `DnD35ActivatedAbilityDescriptorSchema`.
+- [x] **Flanking DAG Stacking & Tag Projection (`src/rulesets/dnd35e/modifiers/dag_helpers.ts`, `dag_resolver.ts`, `semantic_tags.ts`)**:
+  - Mapped `saving_throw: 'saves'` in `mapTargetToCategory`.
+  - Resolved `flankingBonus` via `2 + resolveTypedModifiers('flanking_attack_bonus')` in DAG evaluation and projected active stance tags into actor self-tags.
+- [x] **Showcase Spell: Blade Tempest Invocation & Comprehensive Unit Test Suite (`public/data/rulesets/dnd35e/spells/blade_tempest_invocation.json`, `tests/dnd35e_m125_blade_tempest.test.ts`)**:
+  - Authored Level 7 Cleric/Sorcerer/Wizard homebrew spell JSON showcasing all 6 primitives: mobile emanation field, light aura, flanking bonus modifiers, reactive lash retaliation rider, Battle Cadence stance options (Whirlwind Parry vs Spectral Assault), and Quicken Spell grant.
+  - Authored comprehensive test suite in `tests/dnd35e_m125_blade_tempest.test.ts` with 7/7 passing tests.
+
+## 🟢 Milestone 126: Unified Console Turn/Step Lifecycle Windows & Composable Cartridge Combat Exchange Pipeline (Complete)
+
+Re-engineer actor turn/step lifecycles and combat resolution around canonical interrupt/resolution windows (`TurnStart`, `MovementStep`, `TurnEnd`, and the 5-phase `CombatExchangePipeline`), eliminating procedural cartridge leakage in the Console loop and unifying melee, follow-up, and spell-strike resolution:
+
+- [x] **Tier 1 Console Actor Lifecycle Windows (`src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts`, `src/core/game-loop.ts`, `src/core/loop/intent_cost_resolver.ts`)**:
+  - Defined canonical Console lifecycle windows (`runActorTurnStart`, `runActorMovementStep`, `resolveActorActionEnergyCost`) that execute symmetrically for both Player and AI actors.
+  - Automatically reset `TacticalDoctrineComponent.triggeredUsesThisRound` via `resetTriggeredReactionsForNewRound()` on every actor's `TurnStart` window.
+  - Evicted hardcoded `if (rulesetId === 'dnd35e')` action-budget and step-consumption logic from `src/core/loop/intent_cost_resolver.ts`, delegating cleanly through optional `RulesetContract` lifecycle windows (`onActorTurnStart`, `onActorMovementStep`, `resolveActionEnergyCost`).
+- [x] **Step-Synchronized Mobile Emanations & Automatic Aura First-Entry Save/SR (`src/systems/field.system.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`)**:
+  - Synchronized `anchorEntityId` mobile emanation positions immediately on each 5-ft `MovementStep` (`syncAnchoredFieldsForEntity`) so caster-anchored fields move step-by-step with the caster.
+  - Triggered automatic aura entry save/SR evaluation (`evaluateActorAuraEntrySaves`) whenever an actor steps into a tile covered by an active spell emanation field or starts their turn inside one, recording `'saved' | 'failed' | 'sr_blocked'` in `field.auraSaveMemory`.
+- [x] **Tier 2 Composable 5-Phase Combat Exchange Pipeline (`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`, `src/rulesets/dnd35e/combat/combat_exchange_phases.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`)**:
+  - Decomposed the monolithic `resolveDnD35eMeleeAttack` into a modular 5-phase `CombatExchangePipeline`:
+    1. `PreAttackPhase` (`resolveStrikePreAttackContext`): Evaluates `resolveEffectiveTileIllumination` + `evaluateConcealmentAndSenses` and `isFlankingTarget` (injecting `dagResult.flankingBonus`).
+    2. `StrikeRollPhase`: Executes `resolveAttackRoll` with synthesized flanking, illumination miss chance, fortification, and critical immunity.
+    3. `OnHitRidersPhase`: Evaluates conditional weapon/enhancement `damageRiders` (*Flaming*, *Bane*, *Holy*) and queues typed `DamageComponent` instances.
+    4. `PostStrikeReactionPhase`: Evaluates target-side `retaliation_rider`s (`resolveRetaliationRiders`) and updates defender reaction quotas on `TacticalDoctrineComponent`.
+    5. `OnDropFollowupPhase` (`resolveOnDropCleaveFollowup`): Evaluates `Cleave` / `Great Cleave` follow-up eligibility when a strike drops a defender to `<= 0` HP and executes the bonus strike against an adjacent threatening foe.
+- [x] **HUD Stance Dock Aura Projection & Max-Lines Modularity Remediation (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`, `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`)**:
+  - Wired `auraContrib.stanceGroupOptions` into `buildActorStanceModes()` so spell/aura-granted stance groups (such as *Blade Tempest Invocation*'s `battle_cadence`) project into the HUD Stance Dock alongside feat-granted stances.
+  - Remediated ESLint `max-lines` warnings across `dnd35e_combat_adapter.ts`, `weapon_profile_parser.ts`, and `ledger_modifiers.ts` (`0` errors, `0` warnings).
+- [x] **End-to-End Lifecycle & Combat Pipeline Regression Suite (`tests/dnd35e_m126_lifecycle_pipeline.test.ts`)**:
+  - Verified multi-round reaction quota resets across turns, per-step mobile aura movement + automatic entry saves, live flanking bonus + shadowy illumination miss chance in melee exchanges, Cleave follow-up strike execution, and aura-granted stance dock projection (5/5 passing tests).

@@ -23,8 +23,15 @@ import { getDnD35EntityData } from './srd_registry.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
 
+import {
+  onDnD35eActorMovementStep,
+  onDnD35eActorTurnStart,
+  resolveDnD35eActionEnergyCost
+} from './cartridge/dnd35e_lifecycle_adapter.ts';
+
 export * from './cartridge/dnd35e_combat_adapter.ts';
 export * from './cartridge/dnd35e_dag_adapter.ts';
+export * from './cartridge/dnd35e_lifecycle_adapter.ts';
 
 /**
  * Grants XP to an actor under the D&D 3.5e triangular XP progression table
@@ -141,5 +148,8 @@ export const dnd35eRulesetContract: RulesetContract = {
   resolveSkillVerb: resolveDnD35eSkillVerb,
   getValidRulesetVerbsForTarget: getDnD35eValidVerbsForTarget,
   validateWandActivation: validateDnD35eWandActivation,
-  projectInspectLoreLines: projectDnD35eInspectLoreLines
+  projectInspectLoreLines: projectDnD35eInspectLoreLines,
+  onActorTurnStart: onDnD35eActorTurnStart,
+  onActorMovementStep: onDnD35eActorMovementStep,
+  resolveActionEnergyCost: resolveDnD35eActionEnergyCost
 };

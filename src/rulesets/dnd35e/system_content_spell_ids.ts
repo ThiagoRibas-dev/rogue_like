@@ -18,6 +18,7 @@ export const SPELL_IDS = [
   'battletide',
   'bears_endurance',
   'blade_barrier',
+  'blade_tempest_invocation',
   'blasphemy',
   'bless',
   'blindness_deafness',

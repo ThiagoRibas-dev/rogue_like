@@ -66,7 +66,8 @@ export function partitionDAGModifiers(allModifiers: ReadonlyArray<StatModifier>)
     save_will: 'will',
     'save:will': 'will',
     save_all: 'saves',
-    'save:all': 'saves'
+    'save:all': 'saves',
+    saving_throw: 'saves'
   };
 
   for (const m of allModifiers) {

@@ -13,6 +13,7 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { UIActionEconomyPip, UIHotbarSlot, UIStanceModeEntry } from '../../../types/ui_adapter.types.ts';
+import { type ConsoleStanceGroupOption, resolveActiveStanceInGroup } from '../../../systems/stance.system.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
 import { type DnD35FeatDefinition, getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { mapEntityItemToUI } from './dnd35e_ui_projection.ts';
@@ -37,7 +38,8 @@ export function buildActorStanceModes(
   bab: number,
   doctrine?: TacticalDoctrineComponent,
   resourcePools?: ResourcePoolComponent,
-  sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>
+  sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>,
+  auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>
 ): ReadonlyArray<UIStanceModeEntry> {
   const modes: UIStanceModeEntry[] = [];
   const dials: ReadonlyArray<TacticalDialDescriptor> = extractActorTacticalDials(
@@ -100,6 +102,39 @@ export function buildActorStanceModes(
       if (max > 0) modes.push({ id: `pool:${id}`, label: `${id.replace(/_/g, ' ')} (${max}/day)`, isActive: false });
     }
   }
+
+  // Active Console Stance Groups (e.g. Battle Cadence, Martial Stances)
+  const activeGroups = doctrine?.activeStanceGroups ?? {};
+  for (const featId of dndData.feats ?? []) {
+    const featDef = sysFeats?.[featId];
+    for (const act of featDef?.activatedAbilities ?? []) {
+      if (act.toggleGroup) {
+        const isActive = activeGroups[act.toggleGroup] === act.abilityId;
+        modes.push({
+          id: act.abilityId,
+          label: act.name,
+          isActive,
+          groupId: act.toggleGroup,
+          tooltipText: `${act.name} (${act.toggleGroup})`
+        });
+      }
+    }
+  }
+
+  if (auraStanceOptions && auraStanceOptions.length > 0) {
+    for (const opt of auraStanceOptions) {
+      if (modes.some((m) => m.id === opt.stanceId)) continue;
+      const activeStanceId = resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions, true);
+      modes.push({
+        id: opt.stanceId,
+        label: opt.label,
+        isActive: activeStanceId === opt.stanceId,
+        groupId: opt.groupId,
+        tooltipText: opt.tooltipText ?? `${opt.label} (${opt.groupId})`
+      });
+    }
+  }
+
   return modes;
 }
 

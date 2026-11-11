@@ -16,6 +16,7 @@ import { type CartridgeUIDefinition, closeCartridgeModal, registerCartridgeUI } 
 import { hideConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd35e_char_builder.ui.ts';
 import { applyDoctrineUpdate } from './dnd35e_doctrine_actions.ts';
+import { toggleConsoleStanceGroup } from '../../systems/stance.system.ts';
 import { canPlayerLevelUpDnD35e, renderDnD35eLevelUpModal } from './dnd35e_level_up.ui.ts';
 import { renderDnD35eSheetModal as renderSheetModalImpl } from './dnd35e_sheet.ui.ts';
 import { renderDnD35eSpellbookModal as renderSpellbookModalImpl } from './dnd35e_spellbook.ui.ts';
@@ -176,6 +177,17 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       applyDoctrineUpdate(state, playerId, {
         gripMode: currentGrip === 'two_handed' ? 'one_handed' : 'two_handed'
       });
+    } else {
+      const hotbar = dndAdapter.getHotbarData({ state, entityId: playerId }, 1);
+      const matchingMode = hotbar.stanceModes.find((m) => m.id === stanceId);
+      if (matchingMode?.groupId) {
+        const nextDoctrine = toggleConsoleStanceGroup(docComp, matchingMode.groupId, stanceId, false);
+        applyDoctrineUpdate(state, playerId, { activeStanceGroups: nextDoctrine.activeStanceGroups });
+      } else if (stanceId.includes(':')) {
+        const parts = stanceId.split(':');
+        const nextDoctrine = toggleConsoleStanceGroup(docComp, parts[0]!, parts[1]!, false);
+        applyDoctrineUpdate(state, playerId, { activeStanceGroups: nextDoctrine.activeStanceGroups });
+      }
     }
   },
 

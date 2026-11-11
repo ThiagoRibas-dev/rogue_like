@@ -168,13 +168,9 @@ export function parseEquippedItem(
   }
 
   for (const tag of finalItemDef.tags ?? []) {
-    if (tag.startsWith('bypass:') || tag.startsWith('material:')) {
-      bypassTags.push(tag);
-    }
+    if (tag.startsWith('bypass:') || tag.startsWith('material:')) bypassTags.push(tag);
   }
-  if ((magicalProps?.enhancementBonus ?? 0) >= 1) {
-    bypassTags.push('bypass:magic');
-  }
+  if ((magicalProps?.enhancementBonus ?? 0) >= 1) bypassTags.push('bypass:magic');
 
   const sysEnhancements =
     (state.campaign.systemContent?.['itemEnhancements'] as Record<string, DnD35ItemEnhancement> | undefined) ?? {};
@@ -182,14 +178,8 @@ export function parseEquippedItem(
   const enhancementsList = magicalProps?.enhancements ?? [];
   for (const enhId of enhancementsList) {
     const enh = sysEnhancements[enhId];
-    if (enh?.damageRiders) {
-      damageRiders.push(...enh.damageRiders);
-    }
-    if (enh?.effectBundle?.grantedTags) {
-      for (const t of enh.effectBundle.grantedTags) {
-        bypassTags.push(t);
-      }
-    }
+    if (enh?.damageRiders) damageRiders.push(...enh.damageRiders);
+    if (enh?.effectBundle?.grantedTags) bypassTags.push(...enh.effectBundle.grantedTags);
   }
 
   const baneType = magicalProps?.baneCreatureType;
@@ -276,21 +266,16 @@ export function parseEquippedItem(
   });
   critThreatMin = computeExpandedCritThreatMin(baseCritThreatMin, threatDoublingBreakdown.total);
 
-  let critMultiplier = weaponStats?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER;
   const critMultTag = itemTags.find((t) => t.startsWith('critMultiplier:') || t.startsWith('crit:x'));
-  if (critMultTag) {
-    const parsed = Number(critMultTag.replace(/^(?:critMultiplier:|crit:x)/, ''));
-    if (!Number.isNaN(parsed) && parsed >= DEFAULT_CRIT_MULTIPLIER && parsed <= MAX_CRIT_MULTIPLIER) {
-      critMultiplier = parsed;
-    }
-  }
+  const parsedCritMult = critMultTag ? Number(critMultTag.replace(/^(?:critMultiplier:|crit:x)/, '')) : NaN;
+  const critMultiplier =
+    !Number.isNaN(parsedCritMult) && parsedCritMult >= DEFAULT_CRIT_MULTIPLIER && parsedCritMult <= MAX_CRIT_MULTIPLIER
+      ? parsedCritMult
+      : (weaponStats?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER);
 
-  let inherentEffort: 'light' | 'one_handed' | 'two_handed' = weaponStats?.effort ?? 'one_handed';
-  if (!weaponStats?.effort) {
-    if (itemTags.includes('two_handed')) inherentEffort = 'two_handed';
-    else if (itemTags.includes('light')) inherentEffort = 'light';
-    else if (itemTags.includes('one_handed')) inherentEffort = 'one_handed';
-  }
+  const inherentEffort: 'light' | 'one_handed' | 'two_handed' =
+    weaponStats?.effort ??
+    (itemTags.includes('two_handed') ? 'two_handed' : itemTags.includes('light') ? 'light' : 'one_handed');
 
   const wieldProfile = evaluateWeaponWieldingProfile(weaponSize, inherentEffort, wielderSize);
   const effectiveEffort = wieldProfile.effectiveHandedness ?? inherentEffort;

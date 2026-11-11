@@ -1,7 +1,7 @@
 import { ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
-import { addComponent, getComponent } from './ecs.ts';
+import { getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
 import { recordAISample } from './performance.ts';
 import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
@@ -10,10 +10,10 @@ import { markDirtyFromStateDiff } from './presentation_queue.ts';
 import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { processHungerTick } from '../systems/hunger.system.ts';
-import { processStatusEffectsTick, shouldSkipTurn } from '../systems/status-effect.system.ts';
+import { shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
-import { resolveStateStabilization } from './state_stabilizer.ts';
+import { runActorTurnStart } from '../systems/lifecycle.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { applyIntentWithCost } from './loop/intent_cost_resolver.ts';
 
@@ -21,11 +21,13 @@ export { applyIntentWithCost };
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
+let turnStartProcessedForActor: EntityId | null = null;
 
 /**
  * Sets/updates the global GameState and triggers state change listeners.
  */
 export function setGameState(state: GameState): void {
+  turnStartProcessedForActor = null;
   updateState(state);
 }
 
@@ -112,16 +114,18 @@ export function processTurn(entityId: EntityId): void {
     return;
   }
 
-  let stateAfterTick = processStatusEffectsTick(state, entityId);
-  stateAfterTick = resolveStateStabilization(stateAfterTick);
-
-  if (stateAfterTick !== state) {
-    updateState(stateAfterTick);
-    state = stateAfterTick;
+  if (turnStartProcessedForActor !== entityId) {
+    turnStartProcessedForActor = entityId;
+    const stateAfterTurnStart = runActorTurnStart(state, entityId);
+    if (stateAfterTurnStart !== state) {
+      updateState(stateAfterTurnStart);
+      state = stateAfterTurnStart;
+    }
   }
 
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
   if (!fighter && getComponent(state, entityId, ComponentType.Actor)) {
+    turnStartProcessedForActor = null;
     setTurnDuration(100);
     if (
       getComponent(state, entityId, ComponentType.Player) !== undefined &&
@@ -135,6 +139,7 @@ export function processTurn(entityId: EntityId): void {
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
 
   if (shouldSkipTurn(state, entityId)) {
+    turnStartProcessedForActor = null;
     if (isPlayer) {
       updateState(addMessage(state, `You are unable to act and skip your turn!`, MessageLogCategory.System));
       setTurnDuration(100);
@@ -154,6 +159,7 @@ export function processTurn(entityId: EntityId): void {
           let nextState = result.state;
 
           if (result.energyCost > 0) {
+            turnStartProcessedForActor = null;
             nextState = processHungerTick(nextState, entityId, result.energyCost);
             setTurnDuration(result.energyCost);
           } else {
@@ -176,12 +182,14 @@ export function processTurn(entityId: EntityId): void {
       lockEngine();
       return;
     } else {
+      turnStartProcessedForActor = null;
       setTurnDuration(10);
       const nextState = processHungerTick(state, entityId, 10);
       updateState(nextState);
       return;
     }
   } else {
+    turnStartProcessedForActor = null;
     if (getComponent(state, entityId, ComponentType.Scheme)) {
       try {
         const nextState = processSchemeTurn(state, entityId);
@@ -200,22 +208,6 @@ export function processTurn(entityId: EntityId): void {
     }
 
     let aiTurnState = state;
-    const aiComponent = getComponent(aiTurnState, entityId, ComponentType.AI);
-    if (aiComponent && aiComponent.cooldowns) {
-      const newCooldowns: Record<string, number> = {};
-      let changed = false;
-      for (const [key, val] of Object.entries(aiComponent.cooldowns)) {
-        if (val > 0) {
-          newCooldowns[key] = val - 1;
-          changed = true;
-        } else {
-          newCooldowns[key] = 0;
-        }
-      }
-      if (changed) {
-        aiTurnState = addComponent(aiTurnState, entityId, { ...aiComponent, cooldowns: newCooldowns });
-      }
-    }
 
     try {
       const aiTime0 = performance.now();

@@ -14,6 +14,7 @@ import {
   extractActorTacticalDials,
   resolveActorAttackRoutine
 } from '../combat/attack_resolver.ts';
+import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import {
   type ResolvedActorWeapons,
@@ -96,7 +97,12 @@ export function evaluateDnD35eEntityDAG(
     : { attackPenalty: 0, damageBonus: 0, dodgeAcBonus: 0, canAttack: true };
 
   const itemContrib = collectEquippedItemDAGContributions(state, entityId, suppressedIds, selfTags);
-  const extraModifiers: StatModifier[] = [...(dndData.statModifiers ?? []), ...itemContrib.modifiers];
+  const auraContrib = evaluateActiveSpellAuraContributions(state, entityId, selfTags);
+  const extraModifiers: StatModifier[] = [
+    ...(dndData.statModifiers ?? []),
+    ...itemContrib.modifiers,
+    ...auraContrib.modifiers
+  ];
 
   const hasFeatModsAlready = (dndData.statModifiers ?? []).some((m) => (m.sourcePath ?? '').startsWith('feat:'));
   if (!hasFeatModsAlready && (dndData.feats ?? []).length > 0 && sysContent?.feats) {
@@ -132,7 +138,13 @@ export function evaluateDnD35eEntityDAG(
     stanceTags.push('wielding:two_weapons');
   }
   const mergedSelfTags = Array.from(
-    new Set([...selfTags, ...itemContrib.grantedTags, ...stanceTags, ...(contextOverride?.selfTags ?? [])])
+    new Set([
+      ...selfTags,
+      ...itemContrib.grantedTags,
+      ...auraContrib.grantedTags,
+      ...stanceTags,
+      ...(contextOverride?.selfTags ?? [])
+    ])
   );
 
   const dagResult = evaluateDnD35ActorStatDAG({
