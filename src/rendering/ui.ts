@@ -31,5 +31,5 @@ export {
 export { showConsoleItemInspectCard, hideConsoleItemInspectCard } from './ui/console_inspect_card.ui.ts';
 export { renderConsoleMasterDossier } from './ui/console_dossier.ui.ts';
 export { renderHudBottomDock } from './ui/hud_bottom_dock.ui.ts';
-export { renderClassicSheetModal, registerClassicUIAdapter } from './ui/classic_ui_adapter.ts';
+export { renderClassicSheetModal, registerClassicUIAdapter } from './ui/classic_ui_registration.ts';
 export { syncGlobalConsoleTheme, applyConsoleTheme } from './ui/console_theme.ts';

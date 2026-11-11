@@ -1861,3 +1861,32 @@ Re-engineer actor turn/step lifecycles and combat resolution around canonical in
   - Remediated ESLint `max-lines` warnings across `dnd35e_combat_adapter.ts`, `weapon_profile_parser.ts`, and `ledger_modifiers.ts` (`0` errors, `0` warnings).
 - [x] **End-to-End Lifecycle & Combat Pipeline Regression Suite (`tests/dnd35e_m126_lifecycle_pipeline.test.ts`)**:
   - Verified multi-round reaction quota resets across turns, per-step mobile aura movement + automatic entry saves, live flanking bonus + shadowy illumination miss chance in melee exchanges, Cleave follow-up strike execution, and aura-granted stance dock projection (5/5 passing tests).
+
+---
+
+# 🚀 Phase 29: SSOT Architectural Hygiene, Cartridge Boundary Purification & Declarative Monster/Template De-Hardcoding
+
+Purify Tier 1 vs. Tier 2 dependency boundaries, evict cross-tier re-export smuggling barrels and duplicate files, rebalance SSOT domain taxonomy, and replace remaining hardcoded TypeScript monster/template definitions with Tier 3 declarative JSON rules.
+
+## 🟢 Milestone 127: Cartridge Boundary Purification, Duplicate Eviction & SSOT Domain Rebalancing (Complete)
+
+- [x] **Evict Cartridge Barrel from Tier 1 `src/rulesets/registry.ts` & Scope `.dependency-cruiser.cjs`**:
+  - Removed all 112 lines of D&D 3.5e and Classic re-exports from `src/rulesets/registry.ts` so `registry.ts` contains strictly the 53-line Tier 1 `RulesetContract` registry (`registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset`).
+  - Scoped `.dependency-cruiser.cjs` (`no-direct-cartridge-imports-outside-registry` & `no-cross-cartridge-ui-imports`) so Tier 2 Cartridge UI modules (`src/rendering/ui/dnd35e_*.ts`, `src/rendering/ui/classic_ui_registration.ts`) import directly from their own cartridge modules while Tier 1 Console modules remain strictly isolated.
+- [x] **Delete Duplicate `fuzzer.types.ts` & Consolidate Classic/D&D UI Adapter Naming**:
+  - Deleted `src/editor/simulation/fuzzer.types.ts` (100% duplicate of `src/types/fuzzer.types.ts`) and repointed all 7 simulation and worker callers to `src/types/fuzzer.types.ts`.
+  - Moved `src/rulesets/default/ui/default_ui_adapter.ts` $\rightarrow$ `src/rulesets/classic/ui/classic_ui_adapter.ts` (removing the orphan `src/rulesets/default/` directory) and renamed `src/rendering/ui/{dnd35e,classic}_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/{dnd35e,classic}_ui_registration.ts` to eliminate duplicate filenames.
+- [x] **Deduplicate Tactical Constants & Rebalance SSOT Domain Taxonomy (`ssot_console.json`, `ssot_dnd35e.json`)**:
+  - Deduplicated `FLANKING_ATTACK_BONUS` (`cover_senses.ts`) and `FEET_PER_GRID_SQUARE` (`grid_geometry.ts`) across `combat_exchange_phases.ts`, `dag_resolver.ts`, and `dnd35e_lifecycle_adapter.ts`.
+  - Rebalanced SSOT domain taxonomy across `docs/ssot/ssot_console.json` (`Core Console: AI Behavior Trees & Tactics`, `Core Console: Web Workers & Async Simulation`, `Ruleset Cartridge: Classic Sci-Fi`) and `docs/ssot/ssot_dnd35e.json` (`D&D 3.5e: Cartridge Adapters, Core & Validation`, `D&D 3.5e: Character Builder, Progression & Ledger`, `D&D 3.5e: Races, Templates, Bestiary & Companions`).
+
+## 🟢 Milestone 128: Declarative Magic-Immunity Exceptions, Template JSON Unification & Barrel Shim Eviction (Complete)
+
+- [x] **Declarative Golem Magic-Immunity Exceptions (`base_system.types.ts`, `creature_system.types.ts`, `family_synthesizer.ts`, `races/*_golem.json`)**:
+  - Replaced hardcoded `if (golemArchetypeId === 'flesh_golem' | 'iron_golem' | 'clay_golem' | 'stone_golem')` branches in `evaluateGolemMagicInteraction` with declarative `magicImmunityExceptions` rules (`DnD35MagicImmunityExceptionSchema`) on `DnD35RaceDefinition` / `DnD35Archetype` and Tier 3 JSON definitions in `flesh_golem.json`, `iron_golem.json`, `clay_golem.json`, and `stone_golem.json`.
+- [x] **Evict Hardcoded TypeScript Templates (`src/rulesets/dnd35e/templates/srd_templates.ts`)**:
+  - Deleted `src/rulesets/dnd35e/templates/srd_templates.ts` (`CELESTIAL_TEMPLATE`, `FIENDISH_TEMPLATE`, `SKELETON_TEMPLATE`, `ZOMBIE_TEMPLATE`, `LICH_TEMPLATE`) and updated `tests/dnd35e_phase21_primitives.test.ts` to query `getDnD35Template` from Tier 3 System Content (`public/data/rulesets/dnd35e/templates/*.json`).
+- [x] **Evict Pure Pass-Through Re-Export Shims (`builder_hydrator.ts`, Multi-Hop Re-Exports)**:
+  - Removed pure pass-through barrel shim `src/rulesets/dnd35e/builder/builder_hydrator.ts` and multi-hop re-exports in `character_builder.ts`, verifying 0 errors across all 8 stages of `verify.sh`.
+
+

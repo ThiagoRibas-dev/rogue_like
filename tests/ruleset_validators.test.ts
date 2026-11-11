@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'bun:test';
 import { loadCampaignFromDisk } from './helpers.ts';
+import { checkClassicRuleset } from '../src/rulesets/classic/classic_validator.ts';
 import {
-  checkClassicRuleset,
   checkDnD35eRuleset,
-  validateDnD35eSystemContentIntegrity,
+  validateDnD35eSystemContentIntegrity
+} from '../src/rulesets/dnd35e/dnd35e_validator.ts';
+import {
+  type DnD35SystemContent,
   getDnD35SystemContent
-} from '../src/rulesets/registry.ts';
-import type { DnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
+} from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 describe('Ruleset-Specific Content & Cartridge Validators', () => {
   describe('Classic Cartridge Validator (checkClassicRuleset)', () => {

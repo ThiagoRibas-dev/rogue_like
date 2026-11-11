@@ -4,9 +4,10 @@
 
 ## Table of Contents
 
+- [Core Console: AI Behavior Trees & Tactics (5 files)](#core-console-ai-behavior-trees-tactics)
 - [Core Console: Action Pipeline & Commands (10 files)](#core-console-action-pipeline-commands)
-- [Core Console: App Entry & Wiring (11 files)](#core-console-app-entry-wiring)
-- [Core Console: Campaign Editor Subsystem (28 files)](#core-console-campaign-editor-subsystem)
+- [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
+- [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
 - [Core Console: ECS Systems & Simulation (57 files)](#core-console-ecs-systems-simulation)
@@ -15,11 +16,25 @@
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
 - [Core Console: Map Generation & Director (8 files)](#core-console-map-generation-director)
 - [Core Console: Map Generation & Spatial (2 files)](#core-console-map-generation-spatial)
-- [Core Console: Rendering & UI Views (82 files)](#core-console-rendering-ui-views)
-- [Core Console: Ruleset Cartridge Registry (5 files)](#core-console-ruleset-cartridge-registry)
+- [Core Console: Rendering & UI Views (80 files)](#core-console-rendering-ui-views)
+- [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
 - [Core Console: Utility Helpers (9 files)](#core-console-utility-helpers)
+- [Core Console: Web Workers & Async Simulation (4 files)](#core-console-web-workers-async-simulation)
+- [Ruleset Cartridge: Classic Sci-Fi (6 files)](#ruleset-cartridge-classic-sci-fi)
 
 ---
+
+## Core Console: AI Behavior Trees & Tactics
+
+**Modules in this domain:** 5
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/ai/flee.behavior.ts` | `tier1_console` | Flee behavior: runs away from the nearest hostile entity if HP is below the threshold. | `fleeBehavior` | **Includes:** Pure implementation and exports for src/ai/flee.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/flee.behavior.ts. |
+| `src/ai/hunt.behavior.ts` | `tier1_console` | Hunt behavior: finds the nearest hostile entity within aggroRadius. | `huntBehavior` | **Includes:** Pure implementation and exports for src/ai/hunt.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/hunt.behavior.ts. |
+| `src/ai/ranged.behavior.ts` | `tier1_console` | Ranged behavior: finds the nearest hostile entity within range. | `rangedBehavior` | **Includes:** Pure implementation and exports for src/ai/ranged.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/ranged.behavior.ts. |
+| `src/ai/spell.behavior.ts` | `tier1_console` | Spell casting behavior: evaluates a list of abilities and casts the first valid one | `spellBehavior` | **Includes:** Pure implementation and exports for src/ai/spell.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/spell.behavior.ts. |
+| `src/ai/wander.behavior.ts` | `tier1_console` | Wander behavior: picks a random adjacent direction. | `wanderBehavior` | **Includes:** Pure implementation and exports for src/ai/wander.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/wander.behavior.ts. |
 
 ## Core Console: Action Pipeline & Commands
 
@@ -40,25 +55,16 @@
 
 ## Core Console: App Entry & Wiring
 
-**Modules in this domain:** 11
+**Modules in this domain:** 2
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `src/ai/flee.behavior.ts` | `tier1_console` | Flee behavior: runs away from the nearest hostile entity if HP is below the threshold. | `fleeBehavior` | **Includes:** Pure implementation and exports for src/ai/flee.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/flee.behavior.ts. |
-| `src/ai/hunt.behavior.ts` | `tier1_console` | Hunt behavior: finds the nearest hostile entity within aggroRadius. | `huntBehavior` | **Includes:** Pure implementation and exports for src/ai/hunt.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/hunt.behavior.ts. |
-| `src/ai/ranged.behavior.ts` | `tier1_console` | Ranged behavior: finds the nearest hostile entity within range. | `rangedBehavior` | **Includes:** Pure implementation and exports for src/ai/ranged.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/ranged.behavior.ts. |
-| `src/ai/spell.behavior.ts` | `tier1_console` | Spell casting behavior: evaluates a list of abilities and casts the first valid one | `spellBehavior` | **Includes:** Pure implementation and exports for src/ai/spell.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/spell.behavior.ts. |
-| `src/ai/wander.behavior.ts` | `tier1_console` | Wander behavior: picks a random adjacent direction. | `wanderBehavior` | **Includes:** Pure implementation and exports for src/ai/wander.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/wander.behavior.ts. |
 | `src/main.ts` | `tier1_console` | Module implementation for src/main.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/main.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/main.ts. |
 | `src/vite-env.d.ts` | `tier1_console` | Module implementation for src/vite-env.d.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/vite-env.d.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/vite-env.d.ts. |
-| `src/worker/fuzzer.worker.ts` | `tier1_console` | Module implementation for src/worker/fuzzer.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/fuzzer.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/fuzzer.worker.ts. |
-| `src/worker/map.worker.ts` | `tier1_console` | Module implementation for src/worker/map.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/map.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/map.worker.ts. |
-| `src/worker/worker_bridge.ts` | `tier1_console` | Checks whether Web Workers are supported in the current runtime environment. | `isWorkerAvailable` | **Includes:** Pure implementation and exports for src/worker/worker_bridge.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker_bridge.ts. |
-| `src/worker/worker.types.ts` | `tier1_console` | Serializable director context for thread boundaries without Set/Map. | `SerializableDirectorContext`, `FuzzerWorkerRequest`, `MapWorkerRequest`, `WorkerRequest`, `WorkerProgressPayload`, `WorkerProgressMessage`, `WorkerSuccessMessage`, `WorkerErrorMessage` | **Includes:** Pure implementation and exports for src/worker/worker.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker.types.ts. |
 
 ## Core Console: Campaign Editor Subsystem
 
-**Modules in this domain:** 28
+**Modules in this domain:** 27
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -73,7 +79,6 @@
 | `src/editor/simulation/fuzzer_invariants.ts` | `tier1_console` | Custom error class for infinite or runaway trigger loops in simulation. | `MAX_SAVE_SIZE_BYTES`, `SOFTLOCK_TURN_THRESHOLD`, `BLOAT_CHECK_INTERVAL`, `TriggerRunawayError`, `checkFuzzerSoftlock`, `checkSaveBloat`, `generatePlayerFuzzerIntent` | **Includes:** Pure implementation and exports for src/editor/simulation/fuzzer_invariants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/fuzzer_invariants.ts. |
 | `src/editor/simulation/fuzzer_mock_state.ts` | `tier1_console` | Headless helper to create an entity. | `createEntity`, `createMockFuzzerState` | **Includes:** Pure implementation and exports for src/editor/simulation/fuzzer_mock_state.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/fuzzer_mock_state.ts. |
 | `src/editor/simulation/fuzzer_telemetry.ts` | `tier1_console` | Result of processing ledger events for telemetry tracking. | `ProcessLedgerResult`, `processLedgerEvents`, `compileFuzzerReport` | **Includes:** Pure implementation and exports for src/editor/simulation/fuzzer_telemetry.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/fuzzer_telemetry.ts. |
-| `src/editor/simulation/fuzzer.types.ts` | `tier1_console` | Module implementation for src/editor/simulation/fuzzer.types.ts | `FuzzerOptions`, `FuzzerErrorType`, `FuzzerError`, `FuzzerTelemetry`, `FuzzerReport` | **Includes:** Pure implementation and exports for src/editor/simulation/fuzzer.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/fuzzer.types.ts. |
 | `src/editor/simulation/narrative_fuzzer_async.ts` | `tier1_console` | Progress update emitted during async fuzzer batches. | `FuzzerProgress` | **Includes:** Pure implementation and exports for src/editor/simulation/narrative_fuzzer_async.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer_async.ts. |
 | `src/editor/simulation/narrative_fuzzer.ts` | `tier1_console` | Ticks a single actor's turn in a pure-functional headless state. | `tickHeadlessTurn`, `runFuzzerBatch`, `createEntity`, `createMockFuzzerState`, `TriggerRunawayError`, `generatePlayerFuzzerIntent`, `checkFuzzerSoftlock`, `checkSaveBloat` | **Includes:** Pure implementation and exports for src/editor/simulation/narrative_fuzzer.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/simulation/narrative_fuzzer.ts. |
 | `src/editor/validation_navigator.ts` | `tier1_console` | Validation navigator: drives field reveal, ancestor expansion, tab switching, | `expandedPaths`, `expandAncestors`, `collapsePath`, `revealField`, `togglePath`, `isPathExpanded` | **Includes:** Pure implementation and exports for src/editor/validation_navigator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/editor/validation_navigator.ts. |
@@ -308,7 +313,7 @@
 
 ## Core Console: Rendering & UI Views
 
-**Modules in this domain:** 82
+**Modules in this domain:** 80
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -338,7 +343,6 @@
 | `src/rendering/ui/area_static_painter.ts` | `tier1_console` | Renders the interactive ASCII/Tile Grid Painter for static area layouts in the Area Editor. | `renderStaticAreaPainter` | **Includes:** Pure implementation and exports for src/rendering/ui/area_static_painter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/area_static_painter.ts. |
 | `src/rendering/ui/balance_lab.ui.ts` | `tier1_console` | Renders the Balance Lab simulation tab in the Simulation Lab. | `renderBalanceLab` | **Includes:** Pure implementation and exports for src/rendering/ui/balance_lab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/balance_lab.ui.ts. |
 | `src/rendering/ui/cartridge_ui_registry.ts` | `tier1_console` | Console UI Slot & Modal Host API allowing ruleset cartridges to register modals, dock commands, HUD alerts, and panel slots without Console coupling. | `CartridgeDockCommandDescriptor`, `CartridgeHudAlertDescriptor`, `CartridgeModalDescriptor`, `CartridgeUIDefinition`, `registerCartridgeUI`, `getCartridgeUI`, `getActiveCartridgeUI`, `isCartridgeModalOpen`, `openCartridgeModal`, `closeCartridgeModal`, `toggleCartridgeModal`, `applyCartridgeNewGameHook`, `renderActiveCartridgeModal`, `renderCartridgeHudPanel`, `renderCartridgeInspectorExtension` | **Includes:** Generic slot/modal host API, cartridge UI registration, and ruleset-agnostic modal/dock/alert orchestration.<br>**Excludes:** Ruleset-specific UI rendering or ruleset domain logic. | • Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files. |
-| `src/rendering/ui/classic_ui_adapter.ts` | `tier1_console` | Classic Sci-Fi ruleset UI definition and modal bridge registering DefaultSciFiUIAdapter in cartridge UI registry. | `renderClassicSheetModal`, `registerClassicUIAdapter`, `classicUIDefinition` | **Includes:** Pure implementation and exports for src/rendering/ui/classic_ui_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/classic_ui_adapter.ts. |
 | `src/rendering/ui/console_dossier.ui.ts` | `tier1_console` | Generic 3-Column Master Dossier modal rendering Bio/Attributes/Saves, Center View Tabs, and Right Inspector Pane driven by ICartridgeUIAdapter. | `renderConsoleMasterDossier` | **Includes:** Pure implementation and exports for src/rendering/ui/console_dossier.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_dossier.ui.ts. |
 | `src/rendering/ui/console_hotbar.ui.ts` | `tier1_console` | Generic 12-slot action hotbar with 10-bank pagination and combat stance dock bar. | `renderConsoleHotbar` | **Includes:** Pure implementation and exports for src/rendering/ui/console_hotbar.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_hotbar.ui.ts. |
 | `src/rendering/ui/console_inspect_card.ui.ts` | `tier1_console` | Floating Item Examine Popover card displaying lore, base stats, and special properties. | `showConsoleItemInspectCard`, `hideConsoleItemInspectCard` | **Includes:** Pure implementation and exports for src/rendering/ui/console_inspect_card.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/console_inspect_card.ui.ts. |
@@ -393,19 +397,14 @@
 | `src/rendering/ui/zod_form_renderer.ts` | `tier1_console` | Renders a form dynamically based on a Zod schema. | `renderFormForZodSchema` | **Includes:** Pure implementation and exports for src/rendering/ui/zod_form_renderer.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/zod_form_renderer.ts. |
 | `src/rendering/viewport_snapshot.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.ts | `buildViewportSnapshot` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.ts. |
 | `src/rendering/viewport_snapshot.types.ts` | `tier1_console` | Module implementation for src/rendering/viewport_snapshot.types.ts | `EntityRenderDTO`, `ViewportCellDTO`, `VisualEffectDTO`, `InspectSectionType`, `InspectSectionDTO`, `InspectTooltipDTO`, `FogOverlayCellDTO`, `GlyphOverlayDTO` | **Includes:** Pure implementation and exports for src/rendering/viewport_snapshot.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/viewport_snapshot.types.ts. |
-| `src/rulesets/default/ui/default_ui_adapter.ts` | `tier1_console` | Implements ICartridgeUIAdapter for Default Sci-Fi ruleset using retro-crt skin. | `DefaultSciFiUIAdapter` | **Includes:** Pure implementation and exports for src/rulesets/default/ui/default_ui_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/default/ui/default_ui_adapter.ts. |
 
 ## Core Console: Ruleset Cartridge Registry
 
-**Modules in this domain:** 5
+**Modules in this domain:** 1
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `src/rulesets/classic/classic_combat.ts` | `tier1_console` | Faction standing penalty applied when an actor attacks a member of a faction. | `resolveClassicMeleeAttack`, `processClassicDamage`, `addFloatingText`, `grantClassicXp` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_combat.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_combat.ts. |
-| `src/rulesets/classic/classic_ruleset.ts` | `tier1_console` | The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics. | `classicRulesetContract` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_ruleset.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_ruleset.ts. |
-| `src/rulesets/classic/classic_stats.ts` | `tier1_console` | Default actor speed when ActorComponent is absent. | `computeClassicEffectiveStats`, `projectClassicHudVitals`, `grantClassicXp` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_stats.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_stats.ts. |
-| `src/rulesets/classic/classic_validator.ts` | `tier1_console` | Validates Classic roguelike ruleset invariants for a campaign. | `checkClassicRuleset` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_validator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_validator.ts. |
-| `src/rulesets/registry.ts` | `tier1_console` | Internal map of registered Ruleset Cartridges keyed by RulesetId. | `registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset`, `applyCharacterCreationToPlayer`, `applyLevelUpToActor`, `applyNegativeLevelsToActor`, `applyPermanentLevelDrainToActor` | **Includes:** Pure implementation and exports for src/rulesets/registry.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/registry.ts. |
+| `src/rulesets/registry.ts` | `tier1_console` | Pure Tier 1 Console Ruleset Cartridge Registry exposing only RulesetContract registration and lookup. | `registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset` | **Includes:** Registering and resolving active RulesetContract instances by RulesetId.<br>**Excludes:** Re-exporting cartridge-specific internal functions, types, or UI adapters. | • Never re-export concrete cartridge internals (e.g. dnd35e or classic symbols) through src/rulesets/registry.ts. |
 
 ## Core Console: Utility Helpers
 
@@ -422,6 +421,30 @@
 | `src/utils/stats.ts` | `tier1_console` | Computes the effective combat stats for an entity by delegating to the | `getEffectiveStats` | **Includes:** Pure implementation and exports for src/utils/stats.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/stats.ts. |
 | `src/utils/text.ts` | `tier1_console` | Parses markdown-style wiki links [Text](type:id) into HTML span elements for tooltips. | `WikiSegment`, `parseWikiSegments` | **Includes:** Pure implementation and exports for src/utils/text.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/text.ts. |
 | `src/utils/trade.ts` | `tier1_console` | Economic penalty markup applied when a merchant's supplier hierarchy has a top-tier vacancy. | `HIERARCHY_VACANCY_MARKUP_PENALTY`, `ANNOYED_MARKUP_MODIFIER`, `GRATEFUL_DISCOUNT_MODIFIER`, `FACTION_STANDING_PRICE_DIVISOR`, `PERSONALITY_FACET_PRICE_DIVISOR`, `PERSONALITY_FACET_NEUTRAL_VAL`, `RELATIONSHIP_AXIS_PRICE_DIVISOR`, `MIN_TRADE_MULTIPLIER` | **Includes:** Pure implementation and exports for src/utils/trade.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/trade.ts. |
+
+## Core Console: Web Workers & Async Simulation
+
+**Modules in this domain:** 4
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/worker/fuzzer.worker.ts` | `tier1_console` | Module implementation for src/worker/fuzzer.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/fuzzer.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/fuzzer.worker.ts. |
+| `src/worker/map.worker.ts` | `tier1_console` | Module implementation for src/worker/map.worker.ts | *None (Internal / Leaf / Ambient)* | **Includes:** Pure implementation and exports for src/worker/map.worker.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/map.worker.ts. |
+| `src/worker/worker_bridge.ts` | `tier1_console` | Checks whether Web Workers are supported in the current runtime environment. | `isWorkerAvailable` | **Includes:** Pure implementation and exports for src/worker/worker_bridge.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker_bridge.ts. |
+| `src/worker/worker.types.ts` | `tier1_console` | Serializable director context for thread boundaries without Set/Map. | `SerializableDirectorContext`, `FuzzerWorkerRequest`, `MapWorkerRequest`, `WorkerRequest`, `WorkerProgressPayload`, `WorkerProgressMessage`, `WorkerSuccessMessage`, `WorkerErrorMessage` | **Includes:** Pure implementation and exports for src/worker/worker.types.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/worker/worker.types.ts. |
+
+## Ruleset Cartridge: Classic Sci-Fi
+
+**Modules in this domain:** 6
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rendering/ui/classic_ui_registration.ts` | `tier2_ui` | Registers the Classic / Sci-Fi CartridgeUIDefinition (modals, dock commands, hotbar wiring) into the Console Cartridge UI Registry. | `renderClassicSheetModal`, `registerClassicUIAdapter`, `classicUIDefinition` | **Includes:** Pure implementation and exports for src/rendering/ui/classic_ui_registration.ts.<br>**Excludes:** Headless Classic UI data projection (owned by src/rulesets/classic/ui/classic_ui_adapter.ts). | • Do not duplicate or bypass exports from src/rendering/ui/classic_ui_registration.ts. |
+| `src/rulesets/classic/classic_combat.ts` | `tier1_console` | Faction standing penalty applied when an actor attacks a member of a faction. | `resolveClassicMeleeAttack`, `processClassicDamage`, `addFloatingText`, `grantClassicXp` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_combat.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_combat.ts. |
+| `src/rulesets/classic/classic_ruleset.ts` | `tier1_console` | The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics. | `classicRulesetContract` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_ruleset.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_ruleset.ts. |
+| `src/rulesets/classic/classic_stats.ts` | `tier1_console` | Default actor speed when ActorComponent is absent. | `computeClassicEffectiveStats`, `projectClassicHudVitals`, `grantClassicXp` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_stats.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_stats.ts. |
+| `src/rulesets/classic/classic_validator.ts` | `tier1_console` | Validates Classic roguelike ruleset invariants for a campaign. | `checkClassicRuleset` | **Includes:** Pure implementation and exports for src/rulesets/classic/classic_validator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/classic/classic_validator.ts. |
+| `src/rulesets/classic/ui/classic_ui_adapter.ts` | `tier2_cartridge` | Projects Classic / Sci-Fi ECS state into the unified Tier 1 Console UI models (Character Sheet, Inventory, Hotbar). | `DefaultSciFiUIAdapter` | **Includes:** Pure implementation and exports for src/rulesets/classic/ui/classic_ui_adapter.ts.<br>**Excludes:** DOM manipulation or direct modal registration (owned by src/rendering/ui/classic_ui_registration.ts). | • Do not duplicate or bypass exports from src/rulesets/classic/ui/classic_ui_adapter.ts. |
 
 ---
 

@@ -4,7 +4,9 @@
  */
 
 import { getComponent } from '../../core/ecs.ts';
-import { DnD35UIAdapter, getDnD35EntityData, getDnD35SystemContent } from '../../rulesets/registry.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType, type StatusEffectsComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { UICharacterSheetModel } from '../../types/ui_adapter.types.ts';

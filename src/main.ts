@@ -11,8 +11,8 @@ import { CampaignEditor } from './editor/campaign_editor.ts';
 import { GAME_ASPECT_RATIO_STRING } from './constants/display.constants.ts';
 import { createDisplay, mountDisplayWithFogOverlay } from './rendering/display.ts';
 import { createInitialMenuState, initSession } from './core/session_controller.ts';
-import { registerDnD35eUIAdapter } from './rendering/ui/dnd35e_ui_adapter.ts';
-import { registerClassicUIAdapter } from './rendering/ui/classic_ui_adapter.ts';
+import { registerDnD35eUIAdapter } from './rendering/ui/dnd35e_ui_registration.ts';
+import { registerClassicUIAdapter } from './rendering/ui/classic_ui_registration.ts';
 
 // Global error boundary overlay setup
 window.addEventListener('error', (e) => showCrashModal(e.error));

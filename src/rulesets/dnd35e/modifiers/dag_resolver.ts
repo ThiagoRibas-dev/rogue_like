@@ -1,5 +1,6 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
+import { FLANKING_ATTACK_BONUS } from '../spatial/cover_senses.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
 import {
   type AbilityId,
@@ -298,7 +299,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const concealmentMissChancePercent = Math.min(100, Math.max(0, rawMissChance));
 
   const flankingMods = [...(modsByStat['flanking_attack_bonus'] ?? []), ...(modsByStat['flanking_bonus'] ?? [])];
-  const flankingBonus = 2 + resolveTypedModifiers(flankingMods, stageContext);
+  const flankingBonus = FLANKING_ATTACK_BONUS + resolveTypedModifiers(flankingMods, stageContext);
 
   return {
     effectiveSize: sizeResult.sizeCategory,

@@ -1,18 +1,17 @@
 import { getComponent } from '../../core/ecs.ts';
+import { computeAbilityModifier } from '../../rulesets/dnd35e/abilities.ts';
 import {
-  type AbilityId,
   applyCharacterCreationToPlayer,
   calculateLevelSkillPointBudget,
   calculateSkillAllocationCost,
   type CharacterCreationDraft,
-  computeAbilityModifier,
-  computeSkillSynergyBonus,
-  type DnD35SystemContent,
-  getDnD35EntityData,
-  getDnD35SystemContent,
   getEffectiveClassSkillIds,
   getSkillMaxRanks
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { computeSkillSynergyBonus } from '../../rulesets/dnd35e/skills.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import type { AbilityId } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { type DnD35SystemContent, getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderSkillInspector } from './dnd35e_inspector.ui.ts';

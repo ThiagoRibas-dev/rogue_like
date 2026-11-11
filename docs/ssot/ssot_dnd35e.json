@@ -1,19 +1,4 @@
 {
-  "src/rendering/ui/dnd35e_char_builder_class.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the Class, Alignment, Domains, ACF Swaps, and Familiar selection step for the D&D 3.5e Character Builder.",
-    "canonicalEntryPoints": [
-      "renderClassStep"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_class.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
-    ]
-  },
   "src/rendering/ui/dnd35e_char_builder_class_options.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -32,6 +17,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class_options.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_char_builder_class.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the Class, Alignment, Domains, ACF Swaps, and Familiar selection step for the D&D 3.5e Character Builder.",
+    "canonicalEntryPoints": [
+      "renderClassStep"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_class.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_char_builder_feats.ui.ts": {
@@ -134,6 +134,22 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_doctrine_actions.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Pure state updates for TacticalDoctrineComponent (Power Attack, Combat Expertise, Fighting Defensively, Total Defense, Grip Mode).",
+    "canonicalEntryPoints": [
+      "updateActorTacticalDoctrine",
+      "applyDoctrineUpdate"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_actions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_actions.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -168,6 +184,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_inspector.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_level_up_class_options.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders mid-level class choices (ACFs, Ranger combat styles & favored enemies, Rogue special abilities, companions) for the Level-Up modal.",
+    "canonicalEntryPoints": [
+      "renderLevelUpClassOptions"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_class_options.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class_options.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_level_up_class.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -186,21 +217,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_level_up_class_options.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders mid-level class choices (ACFs, Ranger combat styles & favored enemies, Rogue special abilities, companions) for the Level-Up modal.",
-    "canonicalEntryPoints": [
-      "renderLevelUpClassOptions"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_level_up_class_options.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_class_options.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_level_up_footer.ui.ts": {
@@ -250,8 +266,150 @@
       "Never maintain separate inline Skills or Feats step implementations in dnd35e_level_up.ui.ts; always reuse the parameterized step components from dnd35e_char_builder_steps.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Feats, Special Abilities & Domains, Progression Tracks, and Conditions tabs for the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetFeatsAndFeaturesTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Ability Scores, AC Breakdown, Saving Throws, and Full Attack Routine preview for the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetOverviewTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the Character Sheet Skills table with ranks, modifiers, and interactive Use Skill buttons.",
+    "canonicalEntryPoints": [
+      "renderSheetSkillsTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "7-tab Heroic Character Sheet modal orchestrating Overview, Progression, Equipment Paper Doll, Skills, Feats, Special Abilities, and Conditions.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSheetModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook_actions.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "State mutations for Vancian spell slot preparation, unpreparation, and 8-hour rest recovery.",
+    "canonicalEntryPoints": [
+      "prepareSpellIntoSlot",
+      "unprepareSpellSlot",
+      "executeEightHourRest",
+      "applyRestAction"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_actions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_actions.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook_known.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders known spells list and action buttons for the Spellbook modal.",
+    "canonicalEntryPoints": [
+      "renderKnownSpellsPane"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_known.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_known.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook_panes.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders prepared slots and spontaneous daily casts matrix panes for the Spellbook modal.",
+    "canonicalEntryPoints": [
+      "renderPreparedSlotsPane",
+      "renderSpontaneousSlotsPane"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_panes.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_panes.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spellbook.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Class-tabbed Vancian Spellbook & Grimoire modal displaying prepared spell slots, known spells, and 8-hour rest actions.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSpellbookModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_ui_registration.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Registers the D&D 3.5e CartridgeUIDefinition (modals, dock commands, stance toggles, hotbar execution) into the Console Cartridge UI Registry.",
+    "canonicalEntryPoints": [
+      "renderDnD35eSheetModal",
+      "renderDnD35eSpellbookModal",
+      "dnd35eUIDefinition",
+      "registerDnD35eUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_ui_registration.ts.",
+      "excludes": "Headless D&D 3.5e UI data projection (owned by src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_registration.ts."
+    ]
+  },
   "src/rulesets/dnd35e/abilities.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Baseline ability score that yields a +0 modifier in D&D 3.5e.",
     "canonicalEntryPoints": [
@@ -273,7 +431,7 @@
     ]
   },
   "src/rulesets/dnd35e/action_economy.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Maximum recursion depth for nested Attacks of Opportunity (`AoO` chains).",
     "canonicalEntryPoints": [
@@ -294,23 +452,8 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/action_economy.ts."
     ]
   },
-  "src/rulesets/dnd35e/archetype/race_hydrator.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Hydrates SRD 3.5e Race Definitions and RHD Progression tiers into playable or monster DnD35Archetypes.",
-    "canonicalEntryPoints": [
-      "hydrateRaceAsArchetype"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/archetype/race_hydrator.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/archetype/race_hydrator.ts."
-    ]
-  },
   "src/rulesets/dnd35e/archetype_resolver.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Single Source of Truth for race-to-archetype hydration, dragon/elemental progression delegation, default presets, and runtime DnD35EntityData hydration.",
     "canonicalEntryPoints": [
@@ -329,8 +472,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/archetype_resolver.ts."
     ]
   },
+  "src/rulesets/dnd35e/archetype/race_hydrator.ts": {
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
+    "tier": "tier2_cartridge",
+    "responsibility": "Hydrates SRD 3.5e Race Definitions and RHD Progression tiers into playable or monster DnD35Archetypes.",
+    "canonicalEntryPoints": [
+      "hydrateRaceAsArchetype"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/archetype/race_hydrator.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/archetype/race_hydrator.ts."
+    ]
+  },
   "src/rulesets/dnd35e/builder/builder_core.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Core Character Creation and Level-Up draft schemas, point-buy cost tables, skill rank budget calculators, and class skill resolvers.",
     "canonicalEntryPoints": [
@@ -363,7 +521,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_feats.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Defines typed feat slot descriptors and bonus feat pool restrictions for character creation and level-up.",
     "canonicalEntryPoints": [
@@ -382,24 +540,8 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_feats.ts."
     ]
   },
-  "src/rulesets/dnd35e/builder/builder_hydrator.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Hydrates level-1 player characters from CharacterCreationDraft and commits interactive LevelUpChoice advancements.",
-    "canonicalEntryPoints": [
-      "applyCharacterCreationToPlayer",
-      "applyLevelUpToActor"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_hydrator.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_hydrator.ts."
-    ]
-  },
   "src/rulesets/dnd35e/builder/builder_hydrator_creation.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Applies a completed 7-Step CharacterCreationDraft to an entity in GameState.",
     "canonicalEntryPoints": [
@@ -414,7 +556,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_hydrator_levelup.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Applies an interactive Level-Up choice to an actor, advancing tracks, skills, feats, and choices.",
     "canonicalEntryPoints": [
@@ -429,7 +571,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_levelup_validation.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Validates LevelUpChoice steps including mid-level class choices, skill budgets, and typed feat slot pools with same-level prerequisite chaining.",
     "canonicalEntryPoints": [
@@ -444,7 +586,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_prereq_context.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Builds current and forward-projected PrerequisiteEvalContext for actors before and after level-up advancements.",
     "canonicalEntryPoints": [
@@ -460,7 +602,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_spells.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Computes per-class spellbook allowances, domain slots, and eligible spells for Character Creation and Level-Up drafts.",
     "canonicalEntryPoints": [
@@ -480,7 +622,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/builder_validation.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Validates CharacterCreationDraft and LevelUpChoice state against D&D 3.5e point-buy, skill rank cap, feat prerequisite, and spell allowance rules.",
     "canonicalEntryPoints": [
@@ -498,7 +640,7 @@
     ]
   },
   "src/rulesets/dnd35e/builder/starting_packages.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Pre-configured starting equipment packages for quick character creation.",
     "canonicalEntryPoints": [
@@ -514,7 +656,7 @@
     ]
   },
   "src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Executes D&D 3.5e melee attacks over pre-computed attackRoutine strikes, processes incoming damage mitigation, and grants XP.",
     "canonicalEntryPoints": [
@@ -530,7 +672,7 @@
     ]
   },
   "src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Assembles pre-DAG context from GameState and evaluates the 4-Stage D&D 3.5e Entity Stat DAG.",
     "canonicalEntryPoints": [
@@ -547,7 +689,7 @@
     ]
   },
   "src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Evaluates equipped item EffectBundles, armor/shield AC modifiers, Ghost Touch tags, Max Dex caps, and natural weapon limb mappings for the Entity Stat DAG.",
     "canonicalEntryPoints": [
@@ -563,44 +705,26 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts."
     ]
   },
-  "src/rulesets/dnd35e/companions.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+  "src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
     "tier": "tier2_cartridge",
-    "responsibility": "SRD Familiars, Animal Companions, progression advancement formulas, and lifecycle entity synchronization.",
+    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: resets per-round action budget, triggers aura first-entry saving throw and Spell Resistance checks, consumes movement budget, and gates intent energy costs.",
     "canonicalEntryPoints": [
-      "FAVORED_ENEMY_BONUS_STEP",
-      "computeAnimalCompanionAdvancement",
-      "computeFamiliarAdvancement",
-      "syncActorCompanionsAndFamiliars"
+      "evaluateActorAuraEntrySaves",
+      "onDnD35eActorTurnStart",
+      "onDnD35eActorMovementStep",
+      "resolveDnD35eActionEnergyCost"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/companions.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/companions.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/semantic_tags_context.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Live situational equipment and encumbrance context extraction for Horizon 3 semantic tag projection.",
-    "canonicalEntryPoints": [
-      "SituationalTagContext",
-      "HEAVY_ARMOR_BONUS_THRESHOLD",
-      "MEDIUM_ARMOR_BONUS_THRESHOLD",
-      "resolveEntitySituationalTagContext"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/semantic_tags_context.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/semantic_tags_context.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts."
     ]
   },
   "src/rulesets/dnd35e/character_builder.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Standard D&D 3.5e DMG Point-Buy cost table (scores 8 through 18).",
     "canonicalEntryPoints": [
@@ -693,36 +817,38 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/cleave_whirlwind.ts."
     ]
   },
-  "src/rulesets/dnd35e/combat/full_attack_sequence.ts": {
-    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+  "src/rulesets/dnd35e/combat/combat_exchange_phases.ts": {
+    "domain": "D&D 3.5e: Combat Simulation & Resolution",
     "tier": "tier2_cartridge",
-    "responsibility": "Builds full-attack strike sequences across iterative BAB, Two-Weapon Fighting, and limb-aware natural weapons.",
+    "responsibility": "Provides spatial flanking, tile illumination, observer sensory concealment, and Cleave bonus follow-up strike resolution for the combat exchange pipeline.",
     "canonicalEntryPoints": [
-      "buildFullAttackSequence"
+      "resolveStrikePreAttackContext",
+      "resolveOnDropCleaveFollowup",
+      "PreAttackContext"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/full_attack_sequence.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_phases.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/full_attack_sequence.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_phases.ts."
     ]
   },
-  "src/rulesets/dnd35e/combat/tactical_doctrine.ts": {
-    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+  "src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts": {
+    "domain": "D&D 3.5e: Combat Simulation & Resolution",
     "tier": "tier2_cartridge",
-    "responsibility": "Evaluates Power Attack, Combat Expertise, and Fighting Defensively modifiers, per-strike doctrine damage scaling, and carrying capacity encumbrance.",
+    "responsibility": "Coordinates the 5-phase Composable Combat Exchange Pipeline (PreAttackPhase, StrikeRollPhase, OnHitRidersPhase, PostStrikeReactionPhase, OnDropFollowupPhase).",
     "canonicalEntryPoints": [
-      "evaluateTacticalDoctrineModifiers",
-      "computeStrikeDoctrineDamageBonus",
-      "computeEncumbranceState"
+      "executeCombatStrikeExchange",
+      "StrikeExchangeParams",
+      "StrikeExchangeResult"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/tactical_doctrine.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/tactical_doctrine.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts."
     ]
   },
   "src/rulesets/dnd35e/combat/damage_vitality.ts": {
@@ -744,6 +870,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/damage_vitality.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/full_attack_sequence.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Builds full-attack strike sequences across iterative BAB, Two-Weapon Fighting, and limb-aware natural weapons.",
+    "canonicalEntryPoints": [
+      "buildFullAttackSequence"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/full_attack_sequence.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/full_attack_sequence.ts."
     ]
   },
   "src/rulesets/dnd35e/combat/maneuvers_conditions.ts": {
@@ -785,8 +926,43 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/retaliation_resolver.ts."
     ]
   },
+  "src/rulesets/dnd35e/combat/tactical_doctrine.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates Power Attack, Combat Expertise, and Fighting Defensively modifiers, per-strike doctrine damage scaling, and carrying capacity encumbrance.",
+    "canonicalEntryPoints": [
+      "evaluateTacticalDoctrineModifiers",
+      "computeStrikeDoctrineDamageBonus",
+      "computeEncumbranceState"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/tactical_doctrine.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/tactical_doctrine.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/companions.ts": {
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
+    "tier": "tier2_cartridge",
+    "responsibility": "SRD Familiars, Animal Companions, progression advancement formulas, and lifecycle entity synchronization.",
+    "canonicalEntryPoints": [
+      "FAVORED_ENEMY_BONUS_STEP",
+      "computeAnimalCompanionAdvancement",
+      "computeFamiliarAdvancement",
+      "syncActorCompanionsAndFamiliars"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/companions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/companions.ts."
+    ]
+  },
   "src/rulesets/dnd35e/creature_advancement.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Cumulative size delta benchmarks from Medium (`rankIndex === 0`).",
     "canonicalEntryPoints": [
@@ -801,7 +977,7 @@
     ]
   },
   "src/rulesets/dnd35e/dnd35e_ruleset.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "D&D 3.5e ruleset cartridge entry point implementing RulesetContract; orchestrates 4-stage entity DAG evaluation, melee attack loop over attackRoutine strikes, and damage dispatching.",
     "canonicalEntryPoints": [
@@ -820,7 +996,7 @@
     ]
   },
   "src/rulesets/dnd35e/dnd35e_validator.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Recursively validates cross-references inside a `PrerequisiteNode` AST.",
     "canonicalEntryPoints": [
@@ -836,7 +1012,7 @@
     ]
   },
   "src/rulesets/dnd35e/effect_bundle.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Single Source of Truth for pure DnD35EffectBundle activation condition evaluation and modifier generation with hierarchical sourcePath provenance.",
     "canonicalEntryPoints": [
@@ -852,20 +1028,28 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/effect_bundle.ts."
     ]
   },
-  "src/rulesets/dnd35e/equipment/special_materials.ts": {
+  "src/rulesets/dnd35e/equipment_physics.ts": {
     "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
     "tier": "tier2_cartridge",
-    "responsibility": "Evaluates D&D 3.5e special materials (Adamantine, Mithral, Cold Iron, Alchemical Silver, Darkwood) and magic item activation rules.",
+    "responsibility": "Single Source of Truth for weapon size vs wielder size 3-step effort ladder, grip mode resolution, double-weapon splitting, nonproficiency penalties, and special materials physics.",
     "canonicalEntryPoints": [
+      "resolveAllEquippedWeaponProfiles",
+      "resolveEquippedWeaponProfile",
+      "evaluateWeaponWieldingProfile",
+      "scaleWeaponDamageDice",
       "applyMaterialPhysics",
-      "computeMaterialEquipmentStats"
+      "computeMaterialEquipmentStats",
+      "resolveMagicItemActivation",
+      "EquippedWeaponProfile",
+      "ResolvedActorWeapons"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/equipment/special_materials.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "3-step effort ladder bounds, size mismatch attack penalties, hand slot occupancy tracking, double weapon TWF splitting, Bastard Sword/Dwarven Waraxe proficiency checks, and special material stat deltas.",
+      "excludes": "Iterative BAB generation and full-attack strike sequencing (owned by attack_resolver.ts); weapon armor AC integration into the AC triplet (owned by modifiers.ts)."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/equipment/special_materials.ts."
+      "Never inspect EquipmentComponent.slots or item tags for weapon properties directly in combat resolvers or UI views.",
+      "Never use pre-Stage-1 dndData.sizeCategory when evaluating weapon effort shifts (must use post-Stage-1 effectiveSize)."
     ]
   },
   "src/rulesets/dnd35e/equipment/item_inheritance.ts": {
@@ -882,6 +1066,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/equipment/item_inheritance.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/equipment/special_materials.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates D&D 3.5e special materials (Adamantine, Mithral, Cold Iron, Alchemical Silver, Darkwood) and magic item activation rules.",
+    "canonicalEntryPoints": [
+      "applyMaterialPhysics",
+      "computeMaterialEquipmentStats"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/equipment/special_materials.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/equipment/special_materials.ts."
     ]
   },
   "src/rulesets/dnd35e/equipment/weapon_profile_parser.ts": {
@@ -916,32 +1116,8 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/equipment/weapon_scaling.ts."
     ]
   },
-  "src/rulesets/dnd35e/equipment_physics.ts": {
-    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
-    "tier": "tier2_cartridge",
-    "responsibility": "Single Source of Truth for weapon size vs wielder size 3-step effort ladder, grip mode resolution, double-weapon splitting, nonproficiency penalties, and special materials physics.",
-    "canonicalEntryPoints": [
-      "resolveAllEquippedWeaponProfiles",
-      "resolveEquippedWeaponProfile",
-      "evaluateWeaponWieldingProfile",
-      "scaleWeaponDamageDice",
-      "applyMaterialPhysics",
-      "computeMaterialEquipmentStats",
-      "resolveMagicItemActivation",
-      "EquippedWeaponProfile",
-      "ResolvedActorWeapons"
-    ],
-    "ownershipBoundary": {
-      "includes": "3-step effort ladder bounds, size mismatch attack penalties, hand slot occupancy tracking, double weapon TWF splitting, Bastard Sword/Dwarven Waraxe proficiency checks, and special material stat deltas.",
-      "excludes": "Iterative BAB generation and full-attack strike sequencing (owned by attack_resolver.ts); weapon armor AC integration into the AC triplet (owned by modifiers.ts)."
-    },
-    "antiPatterns": [
-      "Never inspect EquipmentComponent.slots or item tags for weapon properties directly in combat resolvers or UI views.",
-      "Never use pre-Stage-1 dndData.sizeCategory when evaluating weapon effort shifts (must use post-Stage-1 effectiveSize)."
-    ]
-  },
   "src/rulesets/dnd35e/families/dragon_synthesizer.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Synthesizes True Dragon archetypes across the 10 varieties and 12 age categories.",
     "canonicalEntryPoints": [
@@ -957,7 +1133,7 @@
     ]
   },
   "src/rulesets/dnd35e/families/elemental_synthesizer.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Synthesizes Elemental archetypes across the 4 elements and 6 size steps.",
     "canonicalEntryPoints": [
@@ -973,7 +1149,7 @@
     ]
   },
   "src/rulesets/dnd35e/family_synthesizer.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Result of evaluating a spell or magic effect against a Golem's magic immunity.",
     "canonicalEntryPoints": [
@@ -993,7 +1169,7 @@
     ]
   },
   "src/rulesets/dnd35e/level_ledger.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Single Source of Truth for Horizon 2 deterministic actor progression rebuilds from chronological levelHistory, declarative cross-class feature upgrades (upgradeOnDuplicateFeatureId), scalingPool aggregation, per-class spellbooksByClass reconstruction, and negative level / level drain lifecycle.",
     "canonicalEntryPoints": [
@@ -1049,6 +1225,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/metamagic_dispel.ts."
     ]
   },
+  "src/rulesets/dnd35e/magic/spell_aura_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates active spell emanation fields covering an entity, projecting dynamic stat modifiers, granted tags, retaliation riders, and handling initial save/SR memory.",
+    "canonicalEntryPoints": [
+      "ActiveSpellAuraContributions",
+      "evaluateActiveSpellAuraContributions",
+      "resolveAuraFirstEntrySaveAndSr"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_aura_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_aura_resolver.ts."
+    ]
+  },
   "src/rulesets/dnd35e/magic/spell_effects.ts": {
     "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
     "tier": "tier2_cartridge",
@@ -1083,6 +1276,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_modifiers.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_strike_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves isolated iterative spell-attack sequences (e.g. Spectral Assault) using BAB + casting ability, weapon crit profile, and SR checking on first hit.",
+    "canonicalEntryPoints": [
+      "IterativeSpellStrikeResult",
+      "resolveIterativeSpellStrike"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_strike_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_strike_resolver.ts."
     ]
   },
   "src/rulesets/dnd35e/magic/spellbook_slots.ts": {
@@ -1122,39 +1331,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spellcasting.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/magic/spell_aura_resolver.ts": {
-    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
-    "tier": "tier2_cartridge",
-    "responsibility": "Evaluates active spell emanation fields covering an entity, projecting dynamic stat modifiers, granted tags, retaliation riders, and handling initial save/SR memory.",
-    "canonicalEntryPoints": [
-      "ActiveSpellAuraContributions",
-      "evaluateActiveSpellAuraContributions",
-      "resolveAuraFirstEntrySaveAndSr"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_aura_resolver.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_aura_resolver.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/magic/spell_strike_resolver.ts": {
-    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
-    "tier": "tier2_cartridge",
-    "responsibility": "Resolves isolated iterative spell-attack sequences (e.g. Spectral Assault) using BAB + casting ability, weapon crit profile, and SR checking on first hit.",
-    "canonicalEntryPoints": [
-      "IterativeSpellStrikeResult",
-      "resolveIterativeSpellStrike"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_strike_resolver.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_strike_resolver.ts."
     ]
   },
   "src/rulesets/dnd35e/math/dice.ts": {
@@ -1300,7 +1476,7 @@
     ]
   },
   "src/rulesets/dnd35e/prerequisites.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Recursive AST node representing a declarative D&D 3.5e prerequisite requirement",
     "canonicalEntryPoints": [
@@ -1317,7 +1493,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Multiplier for the Three-Quarters (0.75) BAB progression curve.",
     "canonicalEntryPoints": [
@@ -1339,7 +1515,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/class_features_xp.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Computes XP level thresholds, class feature grants up to a given level, and NPC class CR contributions.",
     "canonicalEntryPoints": [
@@ -1355,7 +1531,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/ledger_choices.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Collects dynamic feats and emits active StatModifiers for Ranger Favored Enemies and Familiar Master bonuses.",
     "canonicalEntryPoints": [
@@ -1371,7 +1547,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/ledger_features_spells.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Resolves active class features (with ACF swaps and duplicate upgrades), scaling pools, and per-class spellbooks from levelHistory.",
     "canonicalEntryPoints": [
@@ -1390,7 +1566,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/ledger_level_drain.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Applies permanent level drain and temporary negative levels to actors.",
     "canonicalEntryPoints": [
@@ -1406,7 +1582,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/ledger_modifiers.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Collects virtual/granted feats and emits class, domain, racial, feat, and negative-level EffectBundle modifiers for Horizon 2 rebuilds.",
     "canonicalEntryPoints": [
@@ -1424,7 +1600,7 @@
     ]
   },
   "src/rulesets/dnd35e/progression/prestige_casting.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
     "responsibility": "Computes effective caster levels and spell slot tables when Prestige Classes advance existing base spellcasting classes.",
     "canonicalEntryPoints": [
@@ -1443,7 +1619,7 @@
     ]
   },
   "src/rulesets/dnd35e/races.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Result of applying an SRD 3.5e Race Definition to an actor's chassis.",
     "canonicalEntryPoints": [
@@ -1458,8 +1634,26 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/races.ts."
     ]
   },
+  "src/rulesets/dnd35e/semantic_tags_context.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Live situational equipment and encumbrance context extraction for Horizon 3 semantic tag projection.",
+    "canonicalEntryPoints": [
+      "SituationalTagContext",
+      "HEAVY_ARMOR_BONUS_THRESHOLD",
+      "MEDIUM_ARMOR_BONUS_THRESHOLD",
+      "resolveEntitySituationalTagContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/semantic_tags_context.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/semantic_tags_context.ts."
+    ]
+  },
   "src/rulesets/dnd35e/semantic_tags.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Single Source of Truth for Creature Type/Subtype Effect Providers, live situational equipment/load context, and Horizon 3 actor semantic self-tag projection.",
     "canonicalEntryPoints": [
@@ -1482,7 +1676,7 @@
     ]
   },
   "src/rulesets/dnd35e/skill_verbs.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Tier 2 D&D 3.5e skill verb dispatcher for active dungeon/combat verbs (`search`, `unlock`, `disarm`, `heal`, `persuade`, `intimidate`, `feint`), wand UMD validation, and Monster Lore inspection projection.",
     "canonicalEntryPoints": [
@@ -1502,7 +1696,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Pure D&D 3.5e skill check engine: rank caps, 5-rank synergies, rank-threshold modifier/tag builders, Take 10/20 rules, and pure resolvers for Diplomacy, Monster Lore, Heal, Spellcraft, Search, Disable Device, Open Lock, Demoralize, and Feint.",
     "canonicalEntryPoints": [
@@ -1528,7 +1722,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Executes active dungeon skill verbs (`search`, `unlock`, `disarm`, `heal`) against GameState entities.",
     "canonicalEntryPoints": [
@@ -1543,7 +1737,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/skill_constants.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Constants and interfaces for D&D 3.5e skill ranks, synergies, Take 10/20 rules, and specialized skill check results.",
     "canonicalEntryPoints": [
@@ -1565,7 +1759,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/skill_synergies.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Evaluates 5-rank skill synergies, skill rank caps, and rank-threshold modifier/tag grants.",
     "canonicalEntryPoints": [
@@ -1581,7 +1775,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/skill_verb_helpers.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Shared actor skill-check evaluation, tool-tag inspection, and creature-type-to-Knowledge mapping for skill verbs.",
     "canonicalEntryPoints": [
@@ -1597,7 +1791,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/social_combat_skill_verbs.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Executes social and combat skill verbs (`persuade`, `intimidate`, `feint`), wand UMD checks, and Monster Lore inspection.",
     "canonicalEntryPoints": [
@@ -1612,7 +1806,7 @@
     ]
   },
   "src/rulesets/dnd35e/skills/specialized_skill_checks.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Pure d20 resolvers for Diplomacy, Monster Lore, Disable Device, Open Lock, Search, Heal, Spellcraft, Demoralize, and Feint.",
     "canonicalEntryPoints": [
@@ -1676,7 +1870,7 @@
     ]
   },
   "src/rulesets/dnd35e/srd_registry.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Single Source of Truth for entity data get/set facade, equipped item bonus extraction, damage tag resolution, and system content registry lookups.",
     "canonicalEntryPoints": [
@@ -1698,7 +1892,7 @@
     ]
   },
   "src/rulesets/dnd35e/system_content_feat_ids.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Canonical SRD Feat ID catalog for modular D&D 3.5e feat JSON loading.",
     "canonicalEntryPoints": [
@@ -1713,7 +1907,7 @@
     ]
   },
   "src/rulesets/dnd35e/system_content_files.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Canonical list of System Content JSON file descriptors for the `dnd35e` ruleset cartridge.",
     "canonicalEntryPoints": [
@@ -1728,7 +1922,7 @@
     ]
   },
   "src/rulesets/dnd35e/system_content_item_ids.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Canonical SRD Item ID catalog for modular D&D 3.5e item JSON loading.",
     "canonicalEntryPoints": [
@@ -1743,7 +1937,7 @@
     ]
   },
   "src/rulesets/dnd35e/system_content_spell_ids.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
     "responsibility": "Canonical SRD Spell ID catalog for modular D&D 3.5e spell JSON loading.",
     "canonicalEntryPoints": [
@@ -1758,18 +1952,13 @@
     ]
   },
   "src/rulesets/dnd35e/templates.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
     "responsibility": "Undead Hit Die sides (`d12`).",
     "canonicalEntryPoints": [
       "applyCreatureTemplate",
       "applyInheritedTemplate",
-      "applyAcquiredTemplate",
-      "CELESTIAL_TEMPLATE",
-      "FIENDISH_TEMPLATE",
-      "SKELETON_TEMPLATE",
-      "ZOMBIE_TEMPLATE",
-      "LICH_TEMPLATE"
+      "applyAcquiredTemplate"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/templates.ts.",
@@ -1779,23 +1968,34 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/templates.ts."
     ]
   },
-  "src/rulesets/dnd35e/templates/srd_templates.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Canonical SRD 3.5e creature template definitions (Celestial, Fiendish, Skeleton, Zombie, Lich).",
+  "src/rulesets/dnd35e/types/dnd35e_system.types.ts": {
+    "domain": "D&D 3.5e: Ruleset Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Aggregate System Content schemas and top-level loader parsers for D&D 3.5e Core Rulebooks.",
     "canonicalEntryPoints": [
-      "CELESTIAL_TEMPLATE",
-      "FIENDISH_TEMPLATE",
-      "SKELETON_TEMPLATE",
-      "ZOMBIE_TEMPLATE",
-      "LICH_TEMPLATE"
+      "DnD35ClassLevelRowSchema",
+      "DnD35ClassLevelRow",
+      "DnD35ClassDefinitionSchema",
+      "DnD35ClassDefinition",
+      "DnD35SkillActionDescriptorSchema",
+      "DnD35SkillActionDescriptor",
+      "DnD35SkillRankThresholdGrantSchema",
+      "DnD35SkillRankThresholdGrant",
+      "DnD35SkillDefinitionSchema",
+      "DnD35SkillDefinition",
+      "DnD35FeatDefinitionSchema",
+      "DnD35FeatDefinition",
+      "DnD35SystemContentSchema",
+      "DnD35SystemContent",
+      "parseDnD35SystemContent",
+      "getDnD35SystemContent"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/templates/srd_templates.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/types/dnd35e_system.types.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/templates/srd_templates.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/dnd35e_system.types.ts."
     ]
   },
   "src/rulesets/dnd35e/types/dnd35e.types.ts": {
@@ -1838,36 +2038,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/dnd35e.types.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/types/dnd35e_system.types.ts": {
-    "domain": "D&D 3.5e: Ruleset Types & Schemas",
-    "tier": "tier1_types",
-    "responsibility": "Aggregate System Content schemas and top-level loader parsers for D&D 3.5e Core Rulebooks.",
-    "canonicalEntryPoints": [
-      "DnD35ClassLevelRowSchema",
-      "DnD35ClassLevelRow",
-      "DnD35ClassDefinitionSchema",
-      "DnD35ClassDefinition",
-      "DnD35SkillActionDescriptorSchema",
-      "DnD35SkillActionDescriptor",
-      "DnD35SkillRankThresholdGrantSchema",
-      "DnD35SkillRankThresholdGrant",
-      "DnD35SkillDefinitionSchema",
-      "DnD35SkillDefinition",
-      "DnD35FeatDefinitionSchema",
-      "DnD35FeatDefinition",
-      "DnD35SystemContentSchema",
-      "DnD35SystemContent",
-      "parseDnD35SystemContent",
-      "getDnD35SystemContent"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/types/dnd35e_system.types.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/dnd35e_system.types.ts."
     ]
   },
   "src/rulesets/dnd35e/types/stats.types.ts": {
@@ -2065,199 +2235,6 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/spell_system.types.ts."
     ]
   },
-  "src/rulesets/dnd35e/validation/class_race_validator.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Validates cross-references inside D&D 3.5e classes, domains, ACF swaps, races, templates, and dragon families.",
-    "canonicalEntryPoints": [
-      "validatePrerequisiteNodeReferences",
-      "validateDnD35eClassesRacesTemplates"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/validation/class_race_validator.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/validation/class_race_validator.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/wild_shape.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Progression",
-    "tier": "tier2_cartridge",
-    "responsibility": "Number of combat rounds in 1 hour (`600`).",
-    "canonicalEntryPoints": [
-      "WildShapeFormDefinition",
-      "isWildShapeFormEligible",
-      "applyWildShapeForm",
-      "revertWildShapeForm",
-      "resolveEffectiveEntityDataWithOverlays"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/wild_shape.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/wild_shape.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_doctrine_actions.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Pure state updates for TacticalDoctrineComponent (Power Attack, Combat Expertise, Fighting Defensively, Total Defense, Grip Mode).",
-    "canonicalEntryPoints": [
-      "updateActorTacticalDoctrine",
-      "applyDoctrineUpdate"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_actions.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_doctrine_actions.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "7-tab Heroic Character Sheet modal orchestrating Overview, Progression, Equipment Paper Doll, Skills, Feats, Special Abilities, and Conditions.",
-    "canonicalEntryPoints": [
-      "renderDnD35eSheetModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Feats, Special Abilities & Domains, Progression Tracks, and Conditions tabs for the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetFeatsAndFeaturesTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders Ability Scores, AC Breakdown, Saving Throws, and Full Attack Routine preview for the Character Sheet.",
-    "canonicalEntryPoints": [
-      "renderSheetOverviewTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders the Character Sheet Skills table with ranks, modifiers, and interactive Use Skill buttons.",
-    "canonicalEntryPoints": [
-      "renderSheetSkillsTab"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Class-tabbed Vancian Spellbook & Grimoire modal displaying prepared spell slots, known spells, and 8-hour rest actions.",
-    "canonicalEntryPoints": [
-      "renderDnD35eSpellbookModal"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook_actions.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "State mutations for Vancian spell slot preparation, unpreparation, and 8-hour rest recovery.",
-    "canonicalEntryPoints": [
-      "prepareSpellIntoSlot",
-      "unprepareSpellSlot",
-      "executeEightHourRest",
-      "applyRestAction"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_actions.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_actions.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook_panes.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders prepared slots and spontaneous daily casts matrix panes for the Spellbook modal.",
-    "canonicalEntryPoints": [
-      "renderPreparedSlotsPane",
-      "renderSpontaneousSlotsPane"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_panes.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_panes.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_spellbook_known.ui.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Renders known spells list and action buttons for the Spellbook modal.",
-    "canonicalEntryPoints": [
-      "renderKnownSpellsPane"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spellbook_known.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spellbook_known.ui.ts."
-    ]
-  },
-  "src/rendering/ui/dnd35e_ui_adapter.ts": {
-    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
-    "tier": "tier2_ui",
-    "responsibility": "Registers the D&D 3.5e CartridgeUIDefinition (modals, dock commands, HUD alerts, and doctrine panel hook) into the Console UI Registry.",
-    "canonicalEntryPoints": [
-      "renderDnD35eSheetModal",
-      "renderDnD35eSpellbookModal",
-      "dnd35eUIDefinition",
-      "registerDnD35eUIAdapter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_ui_adapter.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_ui_adapter.ts."
-    ]
-  },
   "src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -2325,56 +2302,39 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts."
     ]
   },
-  "src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts": {
-    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+  "src/rulesets/dnd35e/validation/class_race_validator.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
-    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: resets per-round action budget, triggers aura first-entry saving throw and Spell Resistance checks, consumes movement budget, and gates intent energy costs.",
+    "responsibility": "Validates cross-references inside D&D 3.5e classes, domains, ACF swaps, races, templates, and dragon families.",
     "canonicalEntryPoints": [
-      "evaluateActorAuraEntrySaves",
-      "onDnD35eActorTurnStart",
-      "onDnD35eActorMovementStep",
-      "resolveDnD35eActionEnergyCost"
+      "validatePrerequisiteNodeReferences",
+      "validateDnD35eClassesRacesTemplates"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/validation/class_race_validator.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/validation/class_race_validator.ts."
     ]
   },
-  "src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts": {
-    "domain": "D&D 3.5e: Combat Simulation & Resolution",
+  "src/rulesets/dnd35e/wild_shape.ts": {
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
     "tier": "tier2_cartridge",
-    "responsibility": "Coordinates the 5-phase Composable Combat Exchange Pipeline (PreAttackPhase, StrikeRollPhase, OnHitRidersPhase, PostStrikeReactionPhase, OnDropFollowupPhase).",
+    "responsibility": "Number of combat rounds in 1 hour (`600`).",
     "canonicalEntryPoints": [
-      "executeCombatStrikeExchange",
-      "StrikeExchangeParams",
-      "StrikeExchangeResult"
+      "WildShapeFormDefinition",
+      "isWildShapeFormEligible",
+      "applyWildShapeForm",
+      "revertWildShapeForm",
+      "resolveEffectiveEntityDataWithOverlays"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts.",
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/wild_shape.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts."
-    ]
-  },
-  "src/rulesets/dnd35e/combat/combat_exchange_phases.ts": {
-    "domain": "D&D 3.5e: Combat Simulation & Resolution",
-    "tier": "tier2_cartridge",
-    "responsibility": "Provides spatial flanking, tile illumination, observer sensory concealment, and Cleave bonus follow-up strike resolution for the combat exchange pipeline.",
-    "canonicalEntryPoints": [
-      "resolveStrikePreAttackContext",
-      "resolveOnDropCleaveFollowup",
-      "PreAttackContext"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/combat_exchange_phases.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/combat_exchange_phases.ts."
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/wild_shape.ts."
     ]
   }
 }

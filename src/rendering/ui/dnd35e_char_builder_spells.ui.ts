@@ -1,14 +1,13 @@
+import { computeAbilityModifier } from '../../rulesets/dnd35e/abilities.ts';
 import {
   type CharacterCreationDraft,
   type ClassSpellSelectionBudget,
-  computeAbilityModifier,
   computeClassSpellSelectionBudget,
-  type DnD35SpellSchool,
-  type DnD35SystemContent,
-  getDnD35SystemContent,
   getSpellLevelForClass,
   isSpellSelectableForDraft
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import type { DnD35SpellSchool } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { type DnD35SystemContent, getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderSpellInspector } from './dnd35e_inspector.ui.ts';
 

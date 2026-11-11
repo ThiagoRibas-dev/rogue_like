@@ -17,15 +17,15 @@ import {
   prepareSpellIntoSlot,
   unprepareSpellSlot
 } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
-import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_adapter.ts';
-import { validateCharacterCreationStep } from '../src/rulesets/dnd35e/character_builder.ts';
+import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_registration.ts';
+import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import {
   applyCharacterCreationToPlayer,
   type CharacterCreationDraft,
-  evaluateDnD35eEntityDAG,
-  getDnD35EntityData,
-  getDnD35SystemContent
-} from '../src/rulesets/registry.ts';
+  validateCharacterCreationStep
+} from '../src/rulesets/dnd35e/character_builder.ts';
+import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType, type FighterComponent, type TacticalDoctrineComponent } from '../src/types/components.types.ts';
 import { UIMode } from '../src/types/game-state.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';

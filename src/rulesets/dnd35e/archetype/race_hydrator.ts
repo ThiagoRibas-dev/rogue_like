@@ -190,6 +190,9 @@ export function hydrateRaceAsArchetype(
     hasPounce: raceDef.hasPounce ?? false,
     singleActionsOnly: raceDef.singleActionsOnly ?? false,
     advancementRanges: raceDef.rhdProgression?.advancementRanges ?? [],
+    ...(raceDef.magicImmunityExceptions !== undefined
+      ? { magicImmunityExceptions: raceDef.magicImmunityExceptions }
+      : {}),
     cr: computedCr
   };
 }

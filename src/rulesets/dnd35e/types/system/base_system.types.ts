@@ -225,3 +225,15 @@ export const DnD35DragonFamiliesDataSchema = z.object({
   elementalSteps: z.record(z.string(), DnD35ElementalStepSchema)
 });
 export type DnD35DragonFamiliesData = z.infer<typeof DnD35DragonFamiliesDataSchema>;
+
+/** Zod schema for a declarative magic immunity exception rule (e.g. SRD Golem elemental/spell interactions). */
+export const DnD35MagicImmunityExceptionSchema = z.object({
+  triggerTagsAny: z.array(z.string()).min(1),
+  effectType: z.enum(['heal_per_damage_divisor', 'slow', 'bypass_immunity']),
+  damageDivisor: z.number().int().positive().optional(),
+  slowRounds: z.number().int().positive().optional(),
+  breaksHaste: z.boolean().optional(),
+  description: z.string()
+});
+/** Inferred type for a declarative magic immunity exception rule. */
+export type DnD35MagicImmunityException = z.infer<typeof DnD35MagicImmunityExceptionSchema>;

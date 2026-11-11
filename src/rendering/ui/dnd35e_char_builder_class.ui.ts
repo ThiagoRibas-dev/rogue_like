@@ -1,9 +1,9 @@
 import {
   type CharacterCreationDraft,
-  type DnD35Alignment,
-  getDnD35SystemContent,
   resolveClassSpellAcquisitionMode
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import type { DnD35Alignment } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import {
   renderClericOptions,

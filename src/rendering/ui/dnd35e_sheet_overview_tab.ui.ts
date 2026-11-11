@@ -6,14 +6,11 @@ import { createUnequipItemAction } from '../../actions/inventory.actions.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import {
-  aggregateProgressionChassis,
-  ALL_ABILITY_IDS,
-  computeXpThresholdForLevel,
-  DnD35UIAdapter,
-  evaluateDnD35eEntityDAG,
-  getDnD35EntityData
-} from '../../rulesets/registry.ts';
+import { evaluateDnD35eEntityDAG } from '../../rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
+import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../../rulesets/dnd35e/progression.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { ALL_ABILITY_IDS } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType, type FighterComponent, type IdentityComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { UIInventoryModel } from '../../types/ui_adapter.types.ts';

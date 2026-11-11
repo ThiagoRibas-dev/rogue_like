@@ -3,15 +3,14 @@
  * Reusable across Character Creation and Level-Up modals. Built with pure DOM manipulation.
  */
 
-import {
-  ALL_ABILITY_IDS,
-  computeSkillSynergyBonus,
-  type DnD35RaceDefinition,
-  type DnD35SkillDefinition,
-  type DnD35SystemContent,
-  getSkillsGrantedSynergyBy,
-  SYNERGY_RANK_THRESHOLD
-} from '../../rulesets/registry.ts';
+import { SYNERGY_RANK_THRESHOLD } from '../../rulesets/dnd35e/character_builder.ts';
+import { computeSkillSynergyBonus, getSkillsGrantedSynergyBy } from '../../rulesets/dnd35e/skills.ts';
+import { ALL_ABILITY_IDS } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type {
+  DnD35RaceDefinition,
+  DnD35SkillDefinition,
+  DnD35SystemContent
+} from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { createInspectorBadge, createInspectorSectionTitle } from './dnd35e_feat_spell_inspector.ui.ts';
 
 export * from './dnd35e_feat_spell_inspector.ui.ts';

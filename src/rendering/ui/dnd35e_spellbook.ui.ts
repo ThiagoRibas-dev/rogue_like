@@ -8,12 +8,9 @@ import { getComponent } from '../../core/ecs.ts';
 import { getGameState } from '../../core/game-loop.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
-import {
-  computeClassLevelSlotSummaries,
-  getDnD35EntityData,
-  getDnD35SystemContent,
-  reconcilePreparedSlots
-} from '../../rulesets/registry.ts';
+import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { applyRestAction } from './dnd35e_spellbook_actions.ts';
 import { renderPreparedSlotsPane, renderSpontaneousSlotsPane } from './dnd35e_spellbook_panes.ui.ts';
 import { renderKnownSpellsPane } from './dnd35e_spellbook_known.ui.ts';

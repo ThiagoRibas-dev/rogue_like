@@ -1,6 +1,6 @@
 import type { CampaignData } from '../types/campaign.types.ts';
 import type { EntityId } from '../types/game-state.types.ts';
-import type { FuzzerOptions, FuzzerReport } from '../editor/simulation/fuzzer.types.ts';
+import type { FuzzerOptions, FuzzerReport } from '../types/fuzzer.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import type { MapGenStage } from '../constants/scheduler.constants.ts';
 

@@ -1,6 +1,6 @@
 import type { GameEvent } from '../../types/events.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
-import type { FuzzerReport, FuzzerTelemetry } from './fuzzer.types.ts';
+import type { FuzzerReport, FuzzerTelemetry } from '../../types/fuzzer.types.ts';
 
 /**
  * Result of processing ledger events for telemetry tracking.

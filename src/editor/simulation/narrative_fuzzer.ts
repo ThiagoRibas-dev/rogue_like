@@ -1,6 +1,12 @@
 import * as ROT from 'rot-js';
 import { rng } from '../../core/rng.ts';
-import type { FuzzerOptions, FuzzerReport, FuzzerTelemetry, FuzzerError, FuzzerErrorType } from './fuzzer.types.ts';
+import type {
+  FuzzerOptions,
+  FuzzerReport,
+  FuzzerTelemetry,
+  FuzzerError,
+  FuzzerErrorType
+} from '../../types/fuzzer.types.ts';
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';

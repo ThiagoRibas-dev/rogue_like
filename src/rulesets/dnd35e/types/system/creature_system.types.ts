@@ -4,6 +4,7 @@ import {
   DnD35AdvancementRangeSchema,
   DnD35DamageReductionSchema,
   DnD35DamageTypeSchema,
+  DnD35MagicImmunityExceptionSchema,
   DnD35MovementModesSchema,
   DnD35ProgressionTrackSchema,
   DnD35SensoryProfileSchema,
@@ -50,6 +51,7 @@ export const DnD35ArchetypeSchema = z.object({
   hasPounce: z.boolean().default(false),
   singleActionsOnly: z.boolean().default(false),
   advancementRanges: z.array(DnD35AdvancementRangeSchema).default([]),
+  magicImmunityExceptions: z.array(DnD35MagicImmunityExceptionSchema).optional(),
   cr: z.number().optional()
 });
 /** Inferred type for a declarative System Content archetype. */
@@ -245,6 +247,7 @@ export const DnD35RaceDefinitionSchema = z.object({
   skillRanks: z.record(z.string(), z.number().nonnegative()).default({}),
   hasPounce: z.boolean().default(false),
   singleActionsOnly: z.boolean().default(false),
+  magicImmunityExceptions: z.array(DnD35MagicImmunityExceptionSchema).optional(),
   companionTags: z.array(z.string()).default([]),
   masterEffectBundle: DnD35EffectBundleSchema.optional(),
   breathWeapon: z

@@ -9,16 +9,15 @@ import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { invalidateViewportSnapshot } from '../presenter.ts';
 import { updateExploredTiles } from '../../systems/map.system.ts';
+import { computeAbilityModifier } from '../../rulesets/dnd35e/abilities.ts';
 import {
   applyCharacterCreationToPlayer,
   type CharacterCreationDraft,
-  computeAbilityModifier,
   computeClassSpellSelectionBudget,
-  type DnD35SystemContent,
-  getDnD35SystemContent,
   sanitizeDraftOnRaceOrClassChange,
   validateCharacterCreationStep
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { type DnD35SystemContent, getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { closeCartridgeModal, isCartridgeModalOpen } from './cartridge_ui_registry.ts';

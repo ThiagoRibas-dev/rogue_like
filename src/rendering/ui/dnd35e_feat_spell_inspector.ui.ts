@@ -1,11 +1,10 @@
+import { getSpellLevelForClass } from '../../rulesets/dnd35e/character_builder.ts';
 import {
-  type DnD35FeatDefinition,
-  type DnD35SpellDefinition,
   evaluatePrerequisiteAST,
-  getSpellLevelForClass,
   type PrerequisiteEvalContext,
   type PrerequisiteNode
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/prerequisites.ts';
+import type { DnD35FeatDefinition, DnD35SpellDefinition } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 /**
  * Creates a styled uppercase section header for D&D 3.5e right-pane inspectors.

@@ -9,8 +9,6 @@ import type {
 } from './types/dnd35e.types.ts';
 import type { DnD35Template } from './types/dnd35e_system.types.ts';
 
-export * from './templates/srd_templates.ts';
-
 /** Undead Hit Die sides (`d12`). */
 const UNDEAD_HIT_DIE_SIDES = 12;
 

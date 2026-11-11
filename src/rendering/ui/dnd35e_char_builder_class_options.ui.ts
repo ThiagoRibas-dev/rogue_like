@@ -1,5 +1,10 @@
-import type { CharacterCreationDraft, DnD35SpellSchool, DnD35SystemContent } from '../../rulesets/registry.ts';
-import { getCanonicalBaseWeapons, validateSpecialistSchoolSelection } from '../../rulesets/registry.ts';
+import {
+  type CharacterCreationDraft,
+  validateSpecialistSchoolSelection
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { getCanonicalBaseWeapons } from '../../rulesets/dnd35e/equipment_physics.ts';
+import type { DnD35SpellSchool } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 const SPELL_SCHOOLS: ReadonlyArray<DnD35SpellSchool> = [
   'abjuration',

@@ -17,11 +17,7 @@ import {
   shouldTriggerOnHitRider
 } from '../src/rulesets/dnd35e/combat/maneuvers_conditions.ts';
 import { resolveDiplomacyCheck } from '../src/rulesets/dnd35e/skills.ts';
-import {
-  applyCreatureTemplate,
-  FIENDISH_TEMPLATE,
-  SKELETON_TEMPLATE
-} from '../src/rulesets/dnd35e/templates.ts';
+import { applyCreatureTemplate } from '../src/rulesets/dnd35e/templates.ts';
 import { resolveActiveClassFeatures } from '../src/rulesets/dnd35e/progression.ts';
 import {
   applyWildShapeForm,
@@ -45,9 +41,9 @@ import {
   resolveMagicItemActivation,
   scaleWeaponDamageDice
 } from '../src/rulesets/dnd35e/equipment_physics.ts';
-import { ZOMBIE_TEMPLATE } from '../src/rulesets/dnd35e/templates.ts';
-import { projectDnD35ActorSemanticTags } from '../src/rulesets/dnd35e/srd_registry.ts';
+import { getDnD35Template, projectDnD35ActorSemanticTags } from '../src/rulesets/dnd35e/srd_registry.ts';
 import type { ItemDefinition } from '../src/types/campaign/item.ts';
+import { loadCampaignFromDisk } from './helpers.ts';
 
 describe('Milestone 102: Tier 1 Shared Console Engine Primitives', () => {
   test('matchesEntityTagCondition evaluates conjunction, disjunction, and negation correctly', () => {
@@ -343,28 +339,33 @@ describe('Milestone 103: Tier 2 D&D 3.5e Actor Chassis, Natural Attacks & Templa
     expect(tags).toContain('subtype:cold');
     expect(tags).toContain('size:medium');
 
-    // Apply Fiendish Template
-    const fiendishWolf = applyCreatureTemplate(baseWolf, FIENDISH_TEMPLATE);
+    // Apply Fiendish, Skeleton, and Zombie Templates from Tier 3 System Content
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const fiendishTemplate = getDnD35Template(campaign.systemContent, 'fiendish')!;
+    const skeletonTemplate = getDnD35Template(campaign.systemContent, 'skeleton')!;
+    const zombieTemplate = getDnD35Template(campaign.systemContent, 'zombie')!;
+
+    const fiendishWolf = applyCreatureTemplate(baseWolf, fiendishTemplate);
     expect(fiendishWolf.creatureType).toBe('magical_beast');
     expect(fiendishWolf.subtypes).toContain('extraplanar');
     expect(fiendishWolf.subtypes).toContain('evil');
-    expect(fiendishWolf.damageReduction?.amount).toBe(5);
     expect(fiendishWolf.energyResistance.cold).toBe(5);
     expect(fiendishWolf.energyResistance.fire).toBe(5);
+    expect(fiendishWolf.spellResistance).toBe(7); // 5 + 2 HD
 
-    // Apply Skeleton Template: converts HD to d12 Undead, Con & Int become null
-    const skeletonWolf = applyCreatureTemplate(baseWolf, SKELETON_TEMPLATE);
+    // Apply Skeleton Template: converts HD to d12 Undead, Con & Int become null, strips base NA and sets Medium size NA (+2)
+    const skeletonWolf = applyCreatureTemplate(baseWolf, skeletonTemplate);
     expect(skeletonWolf.creatureType).toBe('undead');
     expect(skeletonWolf.abilityScores.con.base).toBeNull();
     expect(skeletonWolf.abilityScores.int.base).toBeNull();
     expect(skeletonWolf.abilityScores.dex.base).toBe(17); // +2 Dex
-    expect(skeletonWolf.naturalArmorBonus).toBe(4); // 2 base + 2 delta
+    expect(skeletonWolf.naturalArmorBonus).toBe(2); // Medium skeleton natural armor
     expect(skeletonWolf.tracks[0]?.hitDieSides).toBe(12);
     expect(skeletonWolf.tracks[0]?.babCurve).toBe('half');
     expect(skeletonWolf.tracks[0]?.willCurve).toBe('good');
 
     // Apply Zombie Template: doubles base HD (2 -> 4 d12 Undead HD) and sets singleActionsOnly
-    const zombieWolf = applyCreatureTemplate(baseWolf, ZOMBIE_TEMPLATE);
+    const zombieWolf = applyCreatureTemplate(baseWolf, zombieTemplate);
     expect(zombieWolf.tracks[0]?.levels).toBe(4);
     expect(zombieWolf.tracks[0]?.hitDieSides).toBe(12);
     expect(zombieWolf.singleActionsOnly).toBe(true);

@@ -4,16 +4,11 @@ import { initRNG } from '../src/core/rng.ts';
 import {
   applyCharacterCreationToPlayer,
   applyLevelUpToActor,
-  applyNegativeLevelsToActor,
-  applyPermanentLevelDrainToActor,
-  buildClassAndDomainEffectModifiers,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
   calculateSkillAllocationCost,
-  collectActiveGrantedAndVirtualFeats,
   computeFirstLevelFeatSlotBudget,
-  computeNpcClassCrContribution,
   ELITE_ABILITY_ARRAY,
   getEffectiveClassSkillIds,
   getSkillMaxRanks,
@@ -25,10 +20,17 @@ import {
   sanitizeDraftOnRaceOrClassChange,
   validateSpecialistSchoolSelection
 } from '../src/rulesets/dnd35e/character_builder.ts';
+import {
+  applyNegativeLevelsToActor,
+  applyPermanentLevelDrainToActor,
+  buildClassAndDomainEffectModifiers,
+  collectActiveGrantedAndVirtualFeats
+} from '../src/rulesets/dnd35e/level_ledger.ts';
 import { evaluatePrerequisiteAST } from '../src/rulesets/dnd35e/prerequisites.ts';
 import {
   calculateMulticlassXpMultiplier,
   collectClassFeaturesUpToLevel,
+  computeNpcClassCrContribution,
   getClassLevelRow,
   resolveActiveClassFeatures
 } from '../src/rulesets/dnd35e/progression.ts';

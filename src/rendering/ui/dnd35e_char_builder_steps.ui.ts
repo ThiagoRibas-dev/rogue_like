@@ -5,10 +5,10 @@
 
 import {
   type CharacterCreationDraft,
-  type DnD35SystemContent,
   resolveClassSpellAcquisitionMode,
   STARTING_EQUIPMENT_PACKAGES
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import type { DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 export * from './dnd35e_char_builder_feats.ui.ts';
 export * from './dnd35e_char_builder_skills.ui.ts';

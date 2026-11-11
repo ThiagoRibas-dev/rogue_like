@@ -81,6 +81,26 @@
     "skillRanks": {},
     "hasPounce": false,
     "singleActionsOnly": false,
+    "magicImmunityExceptions": [
+      {
+        "triggerTagsAny": [
+          "electricity"
+        ],
+        "effectType": "heal_per_damage_divisor",
+        "damageDivisor": 3,
+        "breaksHaste": false,
+        "description": "Electricity breaks any active slow and repairs 1 HP per 3 damage."
+      },
+      {
+        "triggerTagsAny": [
+          "fire",
+          "cold"
+        ],
+        "effectType": "slow",
+        "slowRounds": 3,
+        "description": "Magical fire or cold slows the Flesh Golem for 3 rounds."
+      }
+    ],
     "cr": 7
   }
 }

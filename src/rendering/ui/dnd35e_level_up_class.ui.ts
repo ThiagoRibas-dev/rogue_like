@@ -1,16 +1,13 @@
+import type { LevelUpChoice } from '../../rulesets/dnd35e/character_builder.ts';
+import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../../rulesets/dnd35e/prerequisites.ts';
 import {
-  ALL_ABILITY_IDS,
   buildHitDieTrackFromClass,
   calculateMulticlassXpMultiplier,
-  type DnD35ClassDefinition,
-  type DnD35EntityData,
-  type DnD35SystemContent,
-  evaluatePrerequisiteAST,
   getClassLevelRow,
-  type getEligibleBaseCastingClassesForPrestige,
-  type LevelUpChoice,
-  type PrerequisiteEvalContext
-} from '../../rulesets/registry.ts';
+  type getEligibleBaseCastingClassesForPrestige
+} from '../../rulesets/dnd35e/progression.ts';
+import { ALL_ABILITY_IDS, type DnD35EntityData } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35ClassDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { renderLevelUpClassOptions } from './dnd35e_level_up_class_options.ui.ts';
 import { computeLevelUpSpellTabs, type SpellTabDescriptor } from './dnd35e_level_up_tabs.ts';
 

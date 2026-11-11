@@ -4,16 +4,17 @@ import {
   buildPrerequisiteContextForActor,
   type CharacterCreationDraft,
   computeFirstLevelFeatSlotBudget,
+  type FeatSlotDescriptor,
+  isFeatAllowedInSlot
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { getCanonicalBaseWeapons } from '../../rulesets/dnd35e/equipment_physics.ts';
+import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../../rulesets/dnd35e/prerequisites.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import {
   type DnD35FeatDefinition,
   type DnD35SystemContent,
-  evaluatePrerequisiteAST,
-  type FeatSlotDescriptor,
-  getCanonicalBaseWeapons,
-  getDnD35EntityData,
-  getDnD35SystemContent,
-  isFeatAllowedInSlot,
-  type PrerequisiteEvalContext
-} from '../../rulesets/registry.ts';
+  getDnD35SystemContent
+} from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderFeatInspector } from './dnd35e_inspector.ui.ts';

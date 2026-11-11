@@ -1,5 +1,5 @@
 import * as ROT from 'rot-js';
-import type { FuzzerError } from './fuzzer.types.ts';
+import type { FuzzerError } from '../../types/fuzzer.types.ts';
 import { type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';

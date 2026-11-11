@@ -1,16 +1,16 @@
+import { computeAbilityModifier } from '../../rulesets/dnd35e/abilities.ts';
 import {
-  ALL_ABILITY_IDS,
   calculateLevelSkillPointBudget,
   calculatePointBuyCost,
   type CharacterCreationDraft,
-  computeAbilityModifier,
   ELITE_ABILITY_ARRAY,
-  getDnD35SystemContent,
   POINT_BUY_MAX_SCORE,
   POINT_BUY_MIN_SCORE,
   POINT_BUY_PRESETS,
   rollAbilityScores4d6DropLowest
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { ALL_ABILITY_IDS } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderRaceInspector } from './dnd35e_inspector.ui.ts';
 

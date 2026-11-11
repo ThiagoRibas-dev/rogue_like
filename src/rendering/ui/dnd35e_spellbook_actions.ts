@@ -7,14 +7,10 @@
 import { addComponent, getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import {
-  computeClassLevelSlotSummaries,
-  type DnD35ClassSpellbookState,
-  type DnD35PreparedSlotEntry,
-  getDnD35EntityData,
-  getDnD35SystemContent,
-  reconcilePreparedSlots
-} from '../../rulesets/registry.ts';
+import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';

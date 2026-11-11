@@ -1,188 +1,174 @@
-# Milestone 126 Implementation Plan — Unified Console Turn/Step Lifecycle Windows & Composable Cartridge Combat Exchange Pipeline
+# Implementation Plan — Phase 29: SSOT Architectural Hygiene, Cartridge Boundary Purification & Declarative Monster/Template De-Hardcoding (Milestones 127 & 128)
 
-Re-engineering actor turn/step lifecycles and combat resolution around canonical interrupt/resolution windows (`TurnStart`, `MovementStep`, `TurnEnd`, and the 5-phase `CombatExchangePipeline`), eliminating procedural cartridge leakage in `intent_cost_resolver.ts`, synchronizing mobile emanation fields per movement step, automatically resolving aura first-entry saving throws/SR, and unifying melee, follow-up (`Cleave`), flanking, and illumination combat mechanics.
+## 1. Architectural Overview & SSOT Ownership / Old-Brain Eviction Table
 
----
-
-## User Review & Architectural Decisions
-
-> [!IMPORTANT]
-> - **Decision 1 (Tier 1 Console Lifecycle Windows vs. Inline Cartridge Branches)**: All `if (rulesetId === 'dnd35e')` action-budget and step-consumption logic in `src/core/loop/intent_cost_resolver.ts` is evicted into a dedicated Tier 2 Cartridge lifecycle adapter (`src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`) invoked by the Tier 1 Console lifecycle orchestrator (`src/systems/lifecycle.system.ts`). Both Player and AI actors pass through the exact same `TurnStart`, `MovementStep`, and `TurnEnd` windows.
-> - **Decision 2 (Step-Synchronized Mobile Emanations & Aura Save Memory)**: Moving 5 ft immediately shifts any `FieldComponent` anchored to the mover (`syncAnchoredFieldsForEntity`), and stepping into or starting a turn inside an active spell emanation field automatically runs `evaluateActorAuraEntrySaves` (`resolveAuraFirstEntrySaveAndSr`) for any unit with a saving throw or Spell Resistance not yet recorded in `field.auraSaveMemory`.
-> - **Decision 3 (5-Phase Composable Combat Exchange Pipeline)**: `resolveDnD35eMeleeAttack` is decomposed into a modular 5-phase pipeline (`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`):
->   1. `PreAttackPhase` (Flanking geometry + `dagResult.flankingBonus`, Cover, `resolveEffectiveTileIllumination` + `evaluateConcealmentAndSenses`)
->   2. `StrikeRollPhase` (`resolveAttackRoll`)
->   3. `OnHitRidersPhase` (conditional weapon/enhancement `damageRiders`)
->   4. `PostStrikeReactionPhase` (`resolveRetaliationRiders`)
->   5. `OnDropFollowupPhase` (`Cleave` / `Great Cleave` bonus strike execution against an adjacent hostile foe)
+| Responsibility | Canonical SSOT Owner (New / Purified) | Evicted Legacy / Duplicate Location ("Old Brain") |
+| :--- | :--- | :--- |
+| **Tier 1 Console Ruleset Contract Registry** | `src/rulesets/registry.ts` (`registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset` — 53 lines) | `src/rulesets/registry.ts` lines 55–166 (112 lines of smuggled D&D 3.5e & Classic re-exports) |
+| **Narrative Fuzzer & Worker Telemetry Schemas** | `src/types/fuzzer.types.ts` (Tier 1 Types) | `src/editor/simulation/fuzzer.types.ts` (Deleted 100% byte-for-byte duplicate) |
+| **Classic Sci-Fi `ICartridgeUIAdapter` & Registration** | `src/rulesets/classic/ui/classic_ui_adapter.ts` & `src/rendering/ui/classic_ui_registration.ts` | `src/rulesets/default/ui/default_ui_adapter.ts` (Deleted orphan `default/` folder) & `src/rendering/ui/classic_ui_adapter.ts` |
+| **D&D 3.5e `CartridgeUIDefinition` DOM Registration** | `src/rendering/ui/dnd35e_ui_registration.ts` (distinct from `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`) | `src/rendering/ui/dnd35e_ui_adapter.ts` (Renamed to eliminate duplicate basename in `SSOT_DND35E.md`) |
+| **Tactical Grid & Flanking Constants** | `FEET_PER_GRID_SQUARE` (`grid_geometry.ts`) & `FLANKING_ATTACK_BONUS` (`cover_senses.ts`) | Duplicate local constants `STANDARD_STEP_DISTANCE_FT`, `BASE_FLANKING_BONUS`, `DEFAULT_FLANKING_BONUS` |
+| **Construct / Creature Magic Immunity Exceptions** | Declarative `magicImmunityExceptions` in `races/{flesh,iron,clay,stone}_golem.json` + generic evaluator in `family_synthesizer.ts` | Hardcoded `if (golemArchetypeId === 'flesh_golem' \| 'iron_golem' \| ...)` branches in `family_synthesizer.ts` |
+| **SRD Creature Templates (Celestial, Fiendish, Skeleton, Zombie, Lich)** | Tier 3 `public/data/rulesets/dnd35e/templates.json` queried via `getDnD35Template` (`srd_registry.ts`) | `src/rulesets/dnd35e/templates/srd_templates.ts` (Deleted 134-line hardcoded TypeScript duplicate) |
+| **Character Creation & Level-Up Hydration Entry Points** | `src/rulesets/dnd35e/builder/builder_hydrator_creation.ts` & `builder_hydrator_levelup.ts` | `src/rulesets/dnd35e/builder/builder_hydrator.ts` (Deleted 3-line pure re-export shim) |
 
 ---
 
-## 1. SSOT Ownership & Old-Brain Eviction Table
+## 2. Milestone 127: Cartridge Boundary Purification, Duplicate Eviction & SSOT Domain Rebalancing
 
-| Responsibility | Evicted From | Canonical New Owner (SSOT) | Tier |
-| :--- | :--- | :--- | :---: |
-| **Actor TurnStart / MovementStep / TurnEnd Orchestration** | Inline in `src/core/game-loop.ts` & `src/core/loop/intent_cost_resolver.ts` | `src/systems/lifecycle.system.ts` (`runActorTurnStart`, `runActorMovementStep`, `runActorTurnEnd`) | Tier 1 Console |
-| **Immediate Mobile Field Anchor Position Sync** | Delayed inside `processFieldsTick` (`src/systems/field.system.ts`) | `src/systems/field.system.ts` (`syncAnchoredFieldsForEntity`) | Tier 1 Console |
-| **D&D 3.5e Action Budget Refresh, Step Cost & Automatic Aura Entry Saves** | Hardcoded player-only block in `src/core/loop/intent_cost_resolver.ts:43–115` | `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (`onDnD35eActorTurnStart`, `onDnD35eActorMovementStep`, `resolveDnD35eActionEnergyCost`, `evaluateActorAuraEntrySaves`) | Tier 2 Cartridge |
-| **5-Phase Combat Strike Exchange Pipeline** | Inline monolith in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts:137–320` | `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` (`executeCombatStrikeExchange`) | Tier 2 Cartridge |
-| **HUD Stance Dock Projection (Feats + Active Spell Auras)** | Feat-only loop in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts:105–120` | `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` (`buildActorStanceModes` with `auraStanceOptions`) | Tier 2 Cartridge |
+### Task 127.1: Scope `.dependency-cruiser.cjs` & Evict 112-Line Cartridge Barrel from `src/rulesets/registry.ts`
+1. **Update `.dependency-cruiser.cjs`**:
+   - Refine `no-direct-cartridge-imports-outside-registry` so Tier 1 Console modules (`src/core/`, `src/systems/`, `src/actions/`, `src/map/`, and non-cartridge `src/rendering/`) are strictly forbidden from importing `src/rulesets/(classic|dnd35e)/`, while Tier 2 Cartridge UI modules (`src/rendering/ui/dnd35e_*.ts`, `src/rendering/ui/classic_ui_registration.ts`) are allowed to import their own cartridge modules directly.
+   - Add `no-cross-cartridge-ui-imports` so `dnd35e_*.ts` UI files can never import from `src/rulesets/classic/` and `classic_ui_registration.ts` can never import from `src/rulesets/dnd35e/`.
 
----
+```javascript
+// .dependency-cruiser.cjs diff
+    {
+      name: 'no-direct-cartridge-imports-outside-registry',
+      severity: 'error',
+      comment: 'Core engine, systems, actions, and Console rendering must resolve rulesets via src/rulesets/registry.ts and never import concrete cartridge files directly.',
+      from: {
+        path: '^src/(core|systems|actions|rendering|map)/',
+        pathNot: '^src/rendering/ui/(dnd35e_|classic_ui_)'
+      },
+      to: {
+        path: '^src/rulesets/(classic|dnd35e)/'
+      }
+    },
+    {
+      name: 'no-cross-cartridge-ui-imports',
+      severity: 'error',
+      comment: 'Cartridge-specific UI views must only import from their own ruleset cartridge.',
+      from: {
+        path: '^src/rendering/ui/dnd35e_'
+      },
+      to: {
+        path: '^src/rulesets/classic/'
+      }
+    },
+```
 
-## 2. Step-by-Step Implementation Plan & Code Snippets
+2. **Purify `src/rulesets/registry.ts` (Lines 1–53 only)**:
+   - Remove lines 55–166 (`export { ... } from './dnd35e/...'` and `export { DefaultSciFiUIAdapter } ...`).
+   - Update the 20 `src/rendering/ui/dnd35e_*.ts` files, `src/rendering/ui/classic_ui_registration.ts`, `tests/dnd35e_phase26_ui_and_showcase.test.ts`, and `tests/ruleset_validators.test.ts` to import directly from their canonical D&D 3.5e / Classic modules (`character_builder.ts`, `level_ledger.ts`, `equipment_physics.ts`, `srd_registry.ts`, `dnd35e_dag_adapter.ts`, `dnd35e_ui_adapter.ts`, `classic_ui_adapter.ts`, etc.).
 
-### Step 1: Tier 1 Console Lifecycle System & `RulesetContract` Hooks
-- **Files**:
-  - `src/types/ruleset.types.ts`
-  - `src/systems/field.system.ts`
-  - `src/systems/lifecycle.system.ts` (New Tier 1 Console System — register in `docs/ssot/ssot_console.json`)
-  - `src/core/game-loop.ts`
-  - `src/core/loop/intent_cost_resolver.ts`
-  - `src/systems/movement.system.ts`
-- **Implementation**:
-  1. Extend `RulesetContract` in `src/types/ruleset.types.ts` with three optional lifecycle hooks:
-     ```typescript
-     /**
-      * Optional hook invoked at the start of an actor's turn (after status ticks and Console reaction resets).
-      */
-     onActorTurnStart?(state: GameState, entityId: EntityId): GameState;
+```typescript
+// src/rulesets/registry.ts (Purified complete file)
+import type { GameState } from '../types/game-state.types.ts';
+import type { RulesetContract, RulesetId } from '../types/ruleset.types.ts';
+import { classicRulesetContract } from './classic/classic_ruleset.ts';
+import { dnd35eRulesetContract } from './dnd35e/dnd35e_ruleset.ts';
 
-     /**
-      * Optional hook invoked immediately after an actor completes a single movement step to `(toX, toY)`.
-      */
-     onActorMovementStep?(
-       state: GameState,
-       entityId: EntityId,
-       fromPos: { readonly x: number; readonly y: number },
-       toPos: { readonly x: number; readonly y: number }
-     ): GameState;
+/** Internal map of registered Ruleset Cartridges keyed by RulesetId. */
+const rulesetRegistry: Record<RulesetId, RulesetContract> = {
+  classic: classicRulesetContract,
+  dnd35e: dnd35eRulesetContract
+};
 
-     /**
-      * Optional hook resolving ruleset-specific action budget consumption and turn energy cost (`0` if turn continues, `> 0` if turn ends).
-      */
-     resolveActionEnergyCost?(
-       state: GameState,
-       intent: Intent,
-       baseEnergyCost: number
-     ): { readonly state: GameState; readonly energyCost: number };
-     ```
-  2. Export `syncAnchoredFieldsForEntity(state: GameState, anchorEntityId: EntityId, newX: number, newY: number): GameState` from `src/systems/field.system.ts` so anchored mobile emanations update coordinates immediately when their anchor moves.
-  3. Create `src/systems/lifecycle.system.ts`:
-     ```typescript
-     export function runActorTurnStart(state: GameState, entityId: EntityId): GameState {
-       let nextState = processStatusEffectsTick(state, entityId);
-       nextState = resolveStateStabilization(nextState);
+export function registerRuleset(contract: RulesetContract): void {
+  rulesetRegistry[contract.id] = contract;
+}
 
-       // Reset Tier 1 per-round triggered reaction quotas (e.g. retaliation riders)
-       const doctrine = getComponent(nextState, entityId, ComponentType.TacticalDoctrine) as
-         | TacticalDoctrineComponent
-         | undefined;
-       if (doctrine?.triggeredUsesThisRound && Object.keys(doctrine.triggeredUsesThisRound).length > 0) {
-         nextState = addComponent(nextState, entityId, resetTriggeredReactionsForNewRound(doctrine));
-       }
+export function getRuleset(rulesetId: RulesetId | undefined): RulesetContract {
+  if (!rulesetId) {
+    return rulesetRegistry.classic;
+  }
+  return rulesetRegistry[rulesetId] ?? rulesetRegistry.classic;
+}
 
-       // Tick AI cooldowns if present
-       const aiComp = getComponent(nextState, entityId, ComponentType.AI);
-       if (aiComp?.cooldowns) {
-         // decrement positive cooldowns
-       }
+export function getAllRulesets(): ReadonlyArray<RulesetContract> {
+  return Object.values(rulesetRegistry);
+}
 
-       const ruleset = getActiveRuleset(nextState);
-       if (ruleset.onActorTurnStart) {
-         nextState = ruleset.onActorTurnStart(nextState, entityId);
-       }
-       return nextState;
-     }
+export function getActiveRuleset(state: GameState): RulesetContract {
+  const rulesetId = state.campaign?.manifest?.rulesetId;
+  return getRuleset(rulesetId);
+}
+```
 
-     export function runActorMovementStep(
-       state: GameState,
-       entityId: EntityId,
-       fromPos: { readonly x: number; readonly y: number },
-       toPos: { readonly x: number; readonly y: number }
-     ): GameState {
-       let nextState = syncAnchoredFieldsForEntity(state, entityId, toPos.x, toPos.y);
-       nextState = processTraps(nextState, entityId);
-       const ruleset = getActiveRuleset(nextState);
-       if (ruleset.onActorMovementStep) {
-         nextState = ruleset.onActorMovementStep(nextState, entityId, fromPos, toPos);
-       }
-       return nextState;
-     }
-     ```
-  4. Wire `runActorTurnStart` into `processTurn` (`src/core/game-loop.ts`), wire `runActorMovementStep` into `processMoveIntent` (`src/systems/movement.system.ts`), and replace the hardcoded `if (rulesetId === 'dnd35e')` block in `src/core/loop/intent_cost_resolver.ts` with `ruleset.resolveActionEnergyCost`. Also gate `processFieldsTick(nextState)` in `intent_cost_resolver.ts` on `energyCost > 0` so field durations only tick once per completed actor turn rather than on every 0-cost sub-step of a multi-tile move.
+### Task 127.2: Evict Duplicate `src/editor/simulation/fuzzer.types.ts` & Consolidate UI Adapter Paths
+1. **Delete `src/editor/simulation/fuzzer.types.ts`** and update its 7 importers (`narrative_fuzzer.ts`, `narrative_fuzzer_async.ts`, `fuzzer_invariants.ts`, `fuzzer_telemetry.ts`, `worker.types.ts`, `worker_bridge.ts`, `fuzzer.worker.ts`) to import from `src/types/fuzzer.types.ts`.
+2. **Relocate `src/rulesets/default/ui/default_ui_adapter.ts` $\rightarrow$ `src/rulesets/classic/ui/classic_ui_adapter.ts`**:
+   - Delete the empty `src/rulesets/default/` directory tree.
+   - Rename `src/rendering/ui/classic_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/classic_ui_registration.ts` and `src/rendering/ui/dnd35e_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/dnd35e_ui_registration.ts` (updating `src/main.ts` and test imports) so no two files share the `dnd35e_ui_adapter.ts` basename.
 
----
-
-### Step 2: Tier 2 D&D 3.5e Lifecycle Adapter (`dnd35e_lifecycle_adapter.ts`)
-- **Files**:
-  - `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (New Tier 2 module — register in `docs/ssot/ssot_dnd35e.json`)
-  - `src/rulesets/dnd35e/dnd35e_ruleset.ts`
-- **Implementation**:
-  1. Implement `evaluateActorAuraEntrySaves(state: GameState, occupantId: EntityId): GameState`:
-     - Queries `queryActiveFieldsAtPosition(state, pos.x, pos.y)` for fields with `field.spellId` and `field.castId`.
-     - For any hostile/save-requiring `effectUnit` on that spell where `field.auraSaveMemory?.[String(occupantId)] === undefined`, computes the occupant's effective saving throw modifier and SR from `evaluateDnD35eEntityDAG`, calls `resolveAuraFirstEntrySaveAndSr`, and logs the save/SR result.
-     - Also checks if `occupantId` is the anchor of a mobile emanation field that just moved onto new occupants, evaluating `evaluateActorAuraEntrySaves` for any occupant now inside the shifted radius!
-  2. Implement `onDnD35eActorTurnStart(state: GameState, entityId: EntityId): GameState`:
-     - Initializes a fresh `DnD35ActionBudget` (`createRoundActionBudget`) if `!dndData.actionBudget` for both Player and AI actors.
-     - Calls `evaluateActorAuraEntrySaves(state, entityId)`.
-  3. Implement `onDnD35eActorMovementStep` and `resolveDnD35eActionEnergyCost`:
-     - Handles 5-ft step terrain cost (`consumeMovementStepFt`), updates `actionBudget`, triggers `evaluateActorAuraEntrySaves` at the destination square, and returns `energyCost: 0` while the Player still has remaining movement/actions in `TurnBased` mode (or `100` when the budget completes or for single-intent AI turns).
+### Task 127.3: Deduplicate Tactical Constants & Rebalance SSOT Domains
+1. **Deduplicate Constants**:
+   - Import `FLANKING_ATTACK_BONUS` from `../spatial/cover_senses.ts` in `src/rulesets/dnd35e/combat/combat_exchange_phases.ts` and `src/rulesets/dnd35e/modifiers/dag_resolver.ts` (removing local `BASE_FLANKING_BONUS` and `DEFAULT_FLANKING_BONUS`).
+   - Import `FEET_PER_GRID_SQUARE` from `../spatial/grid_geometry.ts` in `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (removing local `STANDARD_STEP_DISTANCE_FT`).
+2. **Rebalance `docs/ssot/ssot_console.json` & `docs/ssot/ssot_dnd35e.json`**:
+   - In `ssot_console.json`:
+     - Move `src/ai/*.behavior.ts` (5 files) from `"Core Console: App Entry & Wiring"` to `"Core Console: ECS Systems & Simulation"`.
+     - Merge `"Core Console: ECS Systems & Game Loop"` (2 files) into `"Core Console: ECS Systems & Simulation"`.
+     - Merge `"Core Console: Map Generation & Spatial"` (2 files) into `"Core Console: Map Generation & Director"`.
+     - Merge `"Core Console: Foundation & Data Types"` (1 file) into `"Core Console: Engine Types & Schemas"`.
+   - In `ssot_dnd35e.json`:
+     - Merge `"D&D 3.5e: Combat Simulation & Resolution"` (2 files) into `"D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage"`.
+     - Merge `"D&D 3.5e: Layer 1 — Math & Multipliers"` (2 files) into `"D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG"`.
+     - Split the 55-file `"D&D 3.5e: Core Cartridge & Progression"` mega-bucket + `"D&D 3.5e: Core Cartridge & Ruleset Contract"` into 5 cohesive domains:
+       1. `"D&D 3.5e: Core Cartridge, Adapters & Validation"` (`dnd35e_ruleset.ts`, `dnd35e_validator.ts`, `validation/*`, `cartridge/*`, `srd_registry.ts`, `effect_bundle.ts`, `semantic_tags*.ts`, `system_content_*.ts`)
+       2. `"D&D 3.5e: Layer 2 — Progression, Classes & Level Ledger"` (`abilities.ts`, `action_economy.ts`, `progression.ts`, `progression/*`, `level_ledger.ts`, `prerequisites.ts`, `companions.ts`)
+       3. `"D&D 3.5e: Layer 2 — Character Builder & Level-Up"` (`character_builder.ts`, `builder/*`)
+       4. `"D&D 3.5e: Layer 2 — Archetypes, Races, Templates & Families"` (`archetype_resolver.ts`, `archetype/*`, `races.ts`, `templates.ts`, `creature_advancement.ts`, `family_synthesizer.ts`, `families/*`, `wild_shape.ts`)
+       5. `"D&D 3.5e: Layer 4 — Skills & Skill Verbs"` (`skills.ts`, `skill_verbs.ts`, `skills/*`)
 
 ---
 
-### Step 3: Tier 2 Composable 5-Phase Combat Exchange Pipeline (`combat_exchange_pipeline.ts`)
-- **Files**:
-  - `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` (New Tier 2 module — register in `docs/ssot/ssot_dnd35e.json`)
-  - `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`
-- **Implementation**:
-  1. Create `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` implementing the 5 modular strike phases:
-     - **Phase 1 (`resolveStrikePreAttackContext`)**:
-       - Evaluates tile illumination at the defender's position via `resolveEffectiveTileIllumination(state, defPos.x, defPos.y)` and observer sensory concealment via `evaluateConcealmentAndSenses` (combining with `defenderEval.dagResult.concealmentMissChancePercent` via `Math.max`).
-       - Evaluates `isFlankingTarget(attackerPos, threateningAllyPositions, defenderPos, defenderImmuneToFlanking)` and adds `attackerEval.dagResult.flankingBonus ?? 2` to the strike's attack bonus when flanking.
-     - **Phase 2 (`executeStrikeRollPhase`)**:
-       - Calls `resolveAttackRoll` with the synthesized attack bonus, target AC, concealment miss chance, fortification, and critical immunity.
-     - **Phase 3 (`applyOnHitDamageRiders`)**:
-       - Evaluates `strike.damageRiders` against `matchesEntityTagCondition` and queues primary + rider damage instances onto the defender's `DamageComponent`.
-     - **Phase 4 (`applyPostStrikeRetaliation`)**:
-       - Evaluates defender's active `retaliation_rider`s via `resolveRetaliationRiders`, updates the defender's `TacticalDoctrineComponent`, and queues retaliation damage onto the attacker's `DamageComponent`.
-     - **Phase 5 (`resolveOnDropCleaveFollowup`)**:
-       - When a strike reduces `defenderHpRemaining <= 0` and `resolveCleaveFollowupEligibility(true, cleaveCountThisTurn, attackerEval.hasGreatCleave)` is true, searches adjacent squares around the attacker for another living hostile `Fighter` entity and executes a bonus melee strike at the same AB against that secondary foe!
-  2. Refactor `resolveDnD35eMeleeAttack` in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts` to delegate strike execution to `executeCombatStrikeExchange`, bringing `dnd35e_combat_adapter.ts` well below 200 lines (eliminating the ESLint `max-lines` warning).
+## 3. Milestone 128: Declarative Magic-Immunity Exceptions, Template JSON Unification & Barrel Shim Eviction
+
+### Task 128.1: Declarative `magicImmunityExceptions` for Golems (`creature_system.types.ts`, `family_synthesizer.ts`, `races/*_golem.json`)
+1. **Define `DnD35MagicImmunityExceptionSchema` in `src/rulesets/dnd35e/types/system/creature_system.types.ts`**:
+```typescript
+/** Declarative rule for a spell/tag interaction exception against a creature's magic immunity (e.g. Golems). */
+export const DnD35MagicImmunityExceptionSchema = z.object({
+  triggerTagsAny: z.array(z.string()).min(1),
+  bypassesImmunity: z.boolean().default(false),
+  healsHpPerDamageDivisor: z.number().int().positive().optional(),
+  slowsRounds: z.number().int().positive().optional(),
+  breaksSlow: z.boolean().optional(),
+  breaksHaste: z.boolean().optional(),
+  specialEffectDescription: z.string()
+});
+export type DnD35MagicImmunityException = z.infer<typeof DnD35MagicImmunityExceptionSchema>;
+```
+Add `magicImmunityExceptions: z.array(DnD35MagicImmunityExceptionSchema).optional()` to `DnD35RaceDefinitionSchema` and `DnD35ArchetypeSchema`.
+2. **Populate `magicImmunityExceptions` in Tier 3 JSONs**:
+   - `public/data/rulesets/dnd35e/races/flesh_golem.json` (`electricity` heals 1/3 & breaks slow; `fire`/`cold` slows 3 rounds)
+   - `public/data/rulesets/dnd35e/races/iron_golem.json` (`fire` heals 1/3; `electricity` slows 3 rounds; `rust` bypasses immunity)
+   - `public/data/rulesets/dnd35e/races/clay_golem.json` (`acid` heals 1/3; `disintegrate`/`earthquake` bypasses immunity)
+   - `public/data/rulesets/dnd35e/races/stone_golem.json` (`stone_to_flesh`/`transmute` bypasses immunity)
+3. **Refactor `evaluateGolemMagicInteraction` in `src/rulesets/dnd35e/family_synthesizer.ts`**:
+   - Accept either a declarative `ReadonlyArray<DnD35MagicImmunityException>` or look up the race definition from `systemContent` / default declarative table without hardcoded `if (golemArchetypeId === 'flesh_golem')` branches!
+
+### Task 128.2: Evict Hardcoded `src/rulesets/dnd35e/templates/srd_templates.ts`
+1. Delete `src/rulesets/dnd35e/templates/srd_templates.ts` (`134 lines`) and remove `export * from './templates/srd_templates.ts';` from `src/rulesets/dnd35e/templates.ts`.
+2. Update `tests/dnd35e_phase21_primitives.test.ts` to retrieve `fiendish`, `skeleton`, and `zombie` templates directly from the loaded campaign's `systemContent` via `getDnD35Template(campaign.systemContent, 'fiendish')!`.
+
+### Task 128.3: Evict Pure Re-Export Shims (`builder_hydrator.ts` & Multi-Hop Re-Exports)
+1. Delete `src/rulesets/dnd35e/builder/builder_hydrator.ts` (`3 lines`) and import `applyCharacterCreationToPlayer` (`./builder/builder_hydrator_creation.ts`) and `applyLevelUpToActor` (`./builder/builder_hydrator_levelup.ts`) directly in `character_builder.ts` and UI callers.
+2. Remove redundant multi-hop re-exports of `level_ledger.ts` and `progression.ts` functions from `character_builder.ts` where callers now import directly from `level_ledger.ts` or `progression.ts`.
 
 ---
 
-### Step 4: HUD Stance Dock Aura Projection & Max-Lines Cleanup
-- **Files**:
-  - `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`
-  - `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`
-  - `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts`
-  - `src/rulesets/dnd35e/progression/ledger_modifiers.ts`
-- **Implementation**:
-  1. Update `buildActorStanceModes` in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` to accept `auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>` and append each option (resolving `isActive` via `resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions)`).
-  2. In `DnD35UIAdapter.getHotbarData` (`src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`), pass `evaluateActiveSpellAuraContributions(state, entityId).stanceGroupOptions` into `buildActorStanceModes`.
-  3. Trim redundant blank/comment lines in `weapon_profile_parser.ts` (309 -> <295 lines) and `ledger_modifiers.ts` (309 -> <295 lines) so `lint_applet` reports **0 errors and 0 warnings**.
+## 4. Cascading Effects Matrix (Rule 15)
 
----
-
-### Step 5: End-to-End Regression Test Suite (`tests/dnd35e_m126_lifecycle_pipeline.test.ts`)
-- **Files**:
-  - `tests/dnd35e_m126_lifecycle_pipeline.test.ts` (New test suite)
-  - `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, `docs/MILESTONES.md`
-- **Tests to Verify**:
-  1. **TurnStart Reaction Quota Reset**: Defender triggers `1/round` retaliation rider in Round 1 -> blocked on second hit in Round 1 -> `runActorTurnStart` runs at start of defender's Round 2 turn -> retaliation rider fires again in Round 2.
-  2. **Per-Step Mobile Emanation Sync & Automatic Aura Entry Save**: Caster with active *Blade Tempest Invocation* moves 5 ft toward an Evil enemy -> field position syncs immediately on the step -> Evil enemy automatically rolls Will save / SR and records `'failed'` or `'saved'` in `field.auraSaveMemory`.
-  3. **5-Phase Combat Exchange — Live Flanking (`+4`) & Shadowy Illumination (`20%` Miss Chance)**: Attacker with *Coordinated Host* (`+2` flanking modifier) flanks an enemy with an ally -> receives `+4` flanking bonus on `resolveDnD35eMeleeAttack`; attacking into *Night's Battlefield* shadowy illumination without darkvision/low-light vision applies `20%` concealment miss chance.
-  4. **5-Phase Combat Exchange — Live Cleave Follow-up Execution**: Attacker with `cleave` drops Goblin A (`<= 0` HP) and automatically executes a free Cleave strike against adjacent Goblin B in the same attack action.
-  5. **HUD Stance Dock Aura Projection**: `DnD35UIAdapter.getHotbarData` projects *Blade Tempest Invocation*'s 3 `battle_cadence` stances (`spectral_assault`, `flurry_of_steel`, `divine_celerity`) into `hotbar.stanceModes` with default selection active.
-
----
-
-## 3. Cascading Effects Matrix
-
-| Change | Upstream (Callers / Emitters) | Downstream (Consumers / Renderers) | Lateral (Mirrors / Registries) |
+| Change | Upstream (Callers / Importers) | Downstream (Consumers / Validators) | Lateral (Sibling Configs / Docs / Tests) |
 | :--- | :--- | :--- | :--- |
-| **`src/systems/lifecycle.system.ts` (`runActorTurnStart`, `runActorMovementStep`)** | `processTurn` (`game-loop.ts`), `processMoveIntent` (`movement.system.ts`) | `resetTriggeredReactionsForNewRound`, `syncAnchoredFieldsForEntity`, `RulesetContract.onActorTurnStart` / `onActorMovementStep` | Shared by `classic` and `dnd35e` cartridges |
-| **`src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`** | `dnd35eRulesetContract` (`dnd35e_ruleset.ts`), `applyIntentWithCost` (`intent_cost_resolver.ts`) | `createRoundActionBudget`, `consumeMovementStepFt`, `evaluateActorAuraEntrySaves` | Eliminates all D&D 3.5e imports from `intent_cost_resolver.ts` |
-| **`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`** | `resolveDnD35eMeleeAttack` (`dnd35e_combat_adapter.ts`) | `isFlankingTarget`, `resolveEffectiveTileIllumination`, `evaluateConcealmentAndSenses`, `resolveRetaliationRiders`, `resolveCleaveFollowupEligibility` | Shrinks `dnd35e_combat_adapter.ts` from 398 lines to ~160 lines |
-| **Aura Stance Projection in `buildActorStanceModes`** | `DnD35UIAdapter.getHotbarData` (`dnd35e_ui_adapter.ts`) | `console_hotbar.ui.ts`, `onToggleStance` | Unifies feat-granted and spell-aura-granted stance toggles |
+| **1. Evict cartridge barrel from `src/rulesets/registry.ts` & scope `.dependency-cruiser.cjs`** | `20` `src/rendering/ui/dnd35e_*.ts` files, `classic_ui_registration.ts`, `tests/dnd35e_phase26_ui_and_showcase.test.ts`, `tests/ruleset_validators.test.ts` | `.dependency-cruiser.cjs` (`bun run lint:arch`), `knip` (`bun run lint:deadcode`) | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| **2. Delete `src/editor/simulation/fuzzer.types.ts`** | `narrative_fuzzer.ts`, `narrative_fuzzer_async.ts`, `fuzzer_invariants.ts`, `fuzzer_telemetry.ts`, `worker.types.ts`, `worker_bridge.ts`, `fuzzer.worker.ts` | `tsc --noEmit`, `knip`, `run-validator.ts` | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| **3. Move `default_ui_adapter.ts` $\rightarrow$ `src/rulesets/classic/ui/classic_ui_adapter.ts` & rename `*_ui_registration.ts`** | `src/main.ts`, `src/rendering/ui/classic_ui_registration.ts`, `src/rendering/ui/dnd35e_ui_registration.ts`, `tests/console_ui_architecture.test.ts`, `tests/dnd35e_phase26_ui_and_showcase.test.ts` | `cartridge_ui_registry.ts`, `run-validator.ts` SSOT parity | `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
+| **4. Deduplicate `FLANKING_ATTACK_BONUS` & `FEET_PER_GRID_SQUARE`** | `combat_exchange_phases.ts`, `dag_resolver.ts`, `dnd35e_lifecycle_adapter.ts` | `cover_senses.ts`, `grid_geometry.ts` | `tests/dnd35e_m126_lifecycle_pipeline.test.ts` |
+| **5. Declarative `magicImmunityExceptions` & delete `srd_templates.ts` / `builder_hydrator.ts`** | `family_synthesizer.ts`, `templates.ts`, `character_builder.ts`, `tests/dnd35e_phase21_primitives.test.ts`, `tests/dnd35e_phase22_bestiary.test.ts` | `creature_system.types.ts`, `run-validator.ts` | `public/data/rulesets/dnd35e/races/{flesh,iron,clay,stone}_golem.json`, `docs/ssot/ssot_dnd35e.json`, `docs/MILESTONES.md` |
+
+---
+
+## 5. Verification Plan (`verify.sh` 8-Stage Pipeline)
+1. `[1/8]` `bun x tsc --noEmit` (0 errors)
+2. `[2/8]` `bun run format` (Prettier clean)
+3. `[3/8]` `bun run lint --fix` (0 errors, 0 warnings, all files `< 300` code lines)
+4. `[4/8]` `bun run lint:arch` (0 architectural violations in `.dependency-cruiser.cjs`)
+5. `[5/8]` `bun run lint:deadcode` (0 unused files or exports in `knip`)
+6. `[6/8]` `bun test` (All 198+ tests passing across all 31 test suites)
+7. `[7/8]` `bun run build` (Production Vite bundle clean)
+8. `[8/8]` `bun run scripts/run-validator.ts` (0 campaign, ruleset JSON, or SSOT registry parity errors)

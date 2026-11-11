@@ -8,7 +8,7 @@ import { createEquipItemAction } from '../../actions/inventory.actions.ts';
 import type { Verb } from '../../constants/verbs.constants.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import { DnD35UIAdapter } from '../../rulesets/registry.ts';
+import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { UICharacterSheetModel, UIInventoryModel } from '../../types/ui_adapter.types.ts';
 import { hideConsoleItemInspectCard, showConsoleItemInspectCard } from './console_inspect_card.ui.ts';

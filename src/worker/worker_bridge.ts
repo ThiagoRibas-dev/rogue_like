@@ -1,6 +1,6 @@
 import type { CampaignData } from '../types/campaign.types.ts';
 import type { DirectorContext } from '../types/encounter.types.ts';
-import type { FuzzerOptions, FuzzerReport } from '../editor/simulation/fuzzer.types.ts';
+import type { FuzzerOptions, FuzzerReport } from '../types/fuzzer.types.ts';
 import type { GeneratedArea } from '../map/generator.ts';
 import { generateAreaAsync } from '../map/generator_async.ts';
 import { runNarrativeFuzzerAsync } from '../editor/simulation/narrative_fuzzer_async.ts';

@@ -5,7 +5,7 @@ import {
   setConsoleThemeMode,
   subscribeConsoleThemeChange
 } from '../src/rendering/ui/console_theme.ts';
-import { DefaultSciFiUIAdapter } from '../src/rulesets/default/ui/default_ui_adapter.ts';
+import { DefaultSciFiUIAdapter } from '../src/rulesets/classic/ui/classic_ui_adapter.ts';
 import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
 import { type DnD35ExtendedActorData, DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 

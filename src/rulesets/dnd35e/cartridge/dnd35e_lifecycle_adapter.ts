@@ -15,12 +15,10 @@ import { getEffectiveStats } from '../../../utils/stats.ts';
 import { consumeMovementStepFt, createRoundActionBudget } from '../action_economy.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { resolveAuraFirstEntrySaveAndSr } from '../magic/spell_aura_resolver.ts';
+import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
-
-/** Standard grid step distance in feet (`5`). */
-const STANDARD_STEP_DISTANCE_FT = 5;
 
 /** Standard full round energy cost (`100`). */
 const FULL_ROUND_ENERGY_COST = 100;
@@ -174,7 +172,7 @@ export function onDnD35eActorMovementStep(
   for (const candId of nextState.entities) {
     const field = getComponent(nextState, candId, ComponentType.Field) as FieldComponent | undefined;
     if (!field || field.anchorEntityId !== entityId || !field.spellId) continue;
-    const radiusTiles = field.radiusFt !== undefined ? Math.floor(field.radiusFt / STANDARD_STEP_DISTANCE_FT) : 0;
+    const radiusTiles = field.radiusFt !== undefined ? Math.floor(field.radiusFt / FEET_PER_GRID_SQUARE) : 0;
     if (radiusTiles > maxAnchoredRadiusTiles) {
       maxAnchoredRadiusTiles = radiusTiles;
     }
@@ -252,7 +250,7 @@ export function resolveDnD35eActionEnergyCost(
       isDifficult = mCost > 100;
     }
 
-    const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, STANDARD_STEP_DISTANCE_FT, isDifficult);
+    const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, FEET_PER_GRID_SQUARE, isDifficult);
     if (stepResult.allowed) {
       const nextState = setDnD35EntityData(state, intent.entityId, {
         ...dndData,

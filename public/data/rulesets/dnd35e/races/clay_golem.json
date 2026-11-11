@@ -83,6 +83,24 @@
     "skillRanks": {},
     "hasPounce": false,
     "singleActionsOnly": false,
+    "magicImmunityExceptions": [
+      {
+        "triggerTagsAny": [
+          "acid"
+        ],
+        "effectType": "heal_per_damage_divisor",
+        "damageDivisor": 3,
+        "description": "Magical acid repairs 1 HP per 3 damage."
+      },
+      {
+        "triggerTagsAny": [
+          "disintegrate",
+          "earthquake"
+        ],
+        "effectType": "bypass_immunity",
+        "description": "Disintegrate or Earthquake affects Clay Golem normally."
+      }
+    ],
     "cr": 10
   }
 }

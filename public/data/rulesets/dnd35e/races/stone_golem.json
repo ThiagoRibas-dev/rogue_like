@@ -81,6 +81,16 @@
     "skillRanks": {},
     "hasPounce": false,
     "singleActionsOnly": false,
+    "magicImmunityExceptions": [
+      {
+        "triggerTagsAny": [
+          "stone_to_flesh",
+          "transmute"
+        ],
+        "effectType": "bypass_immunity",
+        "description": "Transmutation effects affect Stone Golem normally."
+      }
+    ],
     "cr": 11
   }
 }

@@ -351,18 +351,37 @@ describe('Phase 22: D&D 3.5e System Content Pillar 1 (Milestones 106-109)', () =
       expect(hugeEarth.tracks[0]?.refCurve).toBe('poor');
       expect(hugeEarth.abilityScores.str).toBe(29); // 17 + 12
 
-      // Golem magic immunity
-      const fleshGolemCold = evaluateGolemMagicInteraction('flesh_golem', ['cold'], 30);
+      // Declarative Golem magic immunity exceptions (from races/*_golem.json)
+      const fleshGolemCold = evaluateGolemMagicInteraction('flesh_golem', ['cold'], 30, mockSystemContent);
       expect(fleshGolemCold.isImmune).toBe(true);
       expect(fleshGolemCold.slowsRounds).toBe(3);
 
-      const fleshGolemElec = evaluateGolemMagicInteraction('flesh_golem', ['electricity'], 30);
+      const fleshGolemElec = evaluateGolemMagicInteraction(
+        getDnD35Race(mockSystemContent, 'flesh_golem')!,
+        ['electricity'],
+        30
+      );
       expect(fleshGolemElec.isImmune).toBe(true);
       expect(fleshGolemElec.healsHpAmount).toBe(10); // 30 / 3
 
-      const ironGolemFire = evaluateGolemMagicInteraction('iron_golem', ['fire'], 45);
+      const ironGolemFire = evaluateGolemMagicInteraction('iron_golem', ['fire'], 45, mockSystemContent);
       expect(ironGolemFire.isImmune).toBe(true);
       expect(ironGolemFire.healsHpAmount).toBe(15); // 45 / 3
+
+      const clayGolemDisintegrate = evaluateGolemMagicInteraction(
+        'clay_golem',
+        ['disintegrate'],
+        40,
+        mockSystemContent
+      );
+      expect(clayGolemDisintegrate.isImmune).toBe(false);
+
+      const stoneGolemTransmute = evaluateGolemMagicInteraction(
+        getDnD35Race(mockSystemContent, 'stone_golem')!,
+        ['stone_to_flesh'],
+        0
+      );
+      expect(stoneGolemTransmute.isImmune).toBe(false);
     });
   });
 

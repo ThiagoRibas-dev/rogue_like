@@ -11,6 +11,7 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
 import {
   evaluateConcealmentAndSenses,
+  FLANKING_ATTACK_BONUS,
   isFlankingTarget,
   resolveEffectiveTileIllumination
 } from '../spatial/cover_senses.ts';
@@ -19,9 +20,6 @@ import { evaluateDnD35eEntityDAG, type DnD35EntityDAGResult } from '../cartridge
 import { resolveAttackRoll } from './attack_roll.ts';
 import type { DnD35ResolvedStrikeProfile } from './attack_routine.ts';
 import { resolveCleaveFollowupEligibility } from './cleave_whirlwind.ts';
-
-/** Standard flanking attack bonus in D&D 3.5e (PHB p. 153). */
-const BASE_FLANKING_BONUS = 2;
 
 /** Context resolved during Phase 1 (`PreAttackPhase`) of a strike exchange. */
 export interface PreAttackContext {
@@ -92,7 +90,7 @@ export function resolveStrikePreAttackContext(
 
     isFlanking = isFlankingTarget(attackerPos, threateningAllyPositions, defenderPos, defenderImmuneFlanking);
     if (isFlanking) {
-      flankingBonus = attackerEval.dagResult.flankingBonus ?? BASE_FLANKING_BONUS;
+      flankingBonus = attackerEval.dagResult.flankingBonus ?? FLANKING_ATTACK_BONUS;
     }
   }
 

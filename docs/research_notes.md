@@ -1,71 +1,83 @@
-# Milestone 126 Research Notes — Unified Console Turn/Step Lifecycle Windows & Composable Cartridge Combat Exchange Pipeline
+# Research Notes — Phase 29: SSOT Architectural Hygiene, Cartridge Boundary Purification & Declarative Monster/Template De-Hardcoding (Milestones 127 & 128)
 
-## 1. Core Architectural Standards & Golden Rules Reiteration
-1. **Three-Tier Placement Heuristic (Rule 16)**:
-   - **Tier 1 — Core Console Engine (`src/core/`, `src/systems/`, `src/types/`)**: Owns ruleset-agnostic turn scheduling, actor turn-start/turn-end lifecycle windows (`runActorTurnStart`, `runActorMovementStep`, `runActorTurnEnd`), per-round reaction counter resets (`resetTriggeredReactionsForNewRound`), and mobile field anchor synchronization (`syncAnchoredFieldsForEntity`). Tier 1 Console modules must **never** hardcode `if (rulesetId === 'dnd35e')` branches or import D&D 3.5e action-budget math directly.
-   - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`)**: Owns the 5-tier 6-second action economy (`DnD35ActionBudget`), automatic spell aura first-entry saving throw / Spell Resistance resolution (`evaluateActorAuraEntrySaves`), and the composable 5-phase **Combat Exchange Pipeline** (`combat_exchange_pipeline.ts`).
-   - **Tier 3 — System Content (`public/data/rulesets/dnd35e/*.json`)**: Declarative JSON definitions for spells, feats, items, and enhancements consumed by Tier 2 phases without hardcoded branches.
-2. **Universal Actor Symmetry (Rule 18)**:
-   - Player characters and AI monsters must pass through the exact same `TurnStart`, `MovementStep`, and `CombatExchangePipeline` windows. AI actors must receive round action budgets, reaction quota resets, aura entry saves, and flanking/illumination modifiers identically to the player.
-3. **ECS Serialization Purity & TypeScript Strictness (Rules 11, 12, Section 4)**:
-   - Zero `any`, zero magic values, explicit return types, `exactOptionalPropertyTypes: true` compliance, and pure JSON-serializable ECS components.
-   - All files must adhere to the 300-line ESLint `max-lines` budget.
-
----
-
-## 2. Empirical Codebase Audit & Root-Cause Findings
-
-### Finding 1: Cartridge Leakage & Player/AI Asymmetry in `src/core/loop/intent_cost_resolver.ts`
-- **Current State (`intent_cost_resolver.ts:11–16, 43–125`)**:
-  - `intent_cost_resolver.ts` (a Tier 1 Console module) directly imports `getDnD35EntityData`, `setDnD35EntityData`, `createRoundActionBudget`, and `consumeMovementStepFt` from `../../rulesets/registry.ts`.
-  - Lines `43–115` check `if (state.campaign?.manifest?.rulesetId === 'dnd35e' && state.engineMode === EngineMode.TurnBased)` and then gate the entire 5-tier action budget logic behind `if (isPlayer)`.
-  - Meanwhile, `processTurn(entityId)` in `src/core/game-loop.ts:108–250` runs `processStatusEffectsTick(state, entityId)`, ticks AI cooldowns inline (`lines 203–218`), and never invokes `resetTriggeredReactionsForNewRound` or any cartridge `onActorTurnStart` hook.
-- **Architectural Impact**:
-  - `TacticalDoctrineComponent.triggeredUsesThisRound` (used by `retaliation_rider`s like *Blade Tempest Invocation*) is never cleared at the start of an actor's new round.
-  - AI actors in D&D 3.5e never initialize or refresh `DnD35ActionBudget`.
-  - Tier 1 Console is coupled to Tier 2 D&D 3.5e action-economy internals.
-
-### Finding 2: Delayed Mobile Emanation Sync & Missing Automatic Aura Entry Hook
-- **Current State (`src/systems/field.system.ts:79–90`, `src/systems/movement.system.ts:229–251`)**:
-  - `processMoveIntent` updates `PositionComponent` on the moving entity (`movement.system.ts:235`), but mobile fields with `anchorEntityId === entityId` only update their position inside `processFieldsTick` (`field.system.ts:80–90`) *after* the action and state stabilization complete.
-  - Furthermore, when an actor moves onto a tile covered by an active spell emanation field (or when a caster with an anchored emanation moves so the field now covers a new enemy), `resolveAuraFirstEntrySaveAndSr` (`src/rulesets/dnd35e/magic/spell_aura_resolver.ts:204`) is never called automatically.
-- **Architectural Impact**:
-  - During a multi-step move turn (`energyCost === 0` while `movementRemainingFt > 0`), `processFieldsTick` runs on each intent, which erroneously ticks down `field.duration` on every 5-ft step of a 30-ft move instead of only when the actor's turn actually advances!
-  - Hostile enemies entering *Blade Tempest Invocation*'s 30-ft emanation do not automatically roll their initial Will save / Spell Resistance check unless `resolveAuraFirstEntrySaveAndSr` is invoked on step/turn-start.
-
-### Finding 3: Monolithic Procedural Combat Script in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`
-- **Current State (`dnd35e_combat_adapter.ts:39–326`)**:
-  - `resolveDnD35eMeleeAttack` is a 288-line function inside a 398-line file (exceeding the 300-line ESLint threshold).
-  - It interleaves pre-attack checks, strike iteration, weapon damage rider rolling (`lines 199–250`), defender retaliation rider resolution (`lines 251–305`), and Cleave eligibility checks (`lines 307–319`).
-  - Crucially:
-    1. It does **not** call `resolveEffectiveTileIllumination` + `evaluateConcealmentAndSenses` to apply ambient/field shadowy illumination miss chance (`20%`) or darkness total concealment (`50%`) when the defender lacks explicit `concealmentMissChancePercent` modifiers.
-    2. It does **not** call `isFlankingTarget` or add `attackerEval.dagResult.flankingBonus` (`+2` base + `flanking_attack_bonus` modifiers) when an allied combatant threatens the opposite side of the defender.
-    3. When `resolveCleaveFollowupEligibility` returns `true` (`line 310`), it only logs `[Cleave] Dropped foe grants a free follow-up melee strike!` without actually executing the follow-up strike against an adjacent hostile target!
-
-### Finding 4: HUD Stance Dock Missing Aura-Granted Stance Groups
-- **Current State (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts:35–123`, `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts:115–135`)**:
-  - `buildActorStanceModes` inspects `dndData.feats` for `activatedAbilities` with `toggleGroup`, but does not accept `auraStanceOptions: ReadonlyArray<ConsoleStanceGroupOption>` from `evaluateActiveSpellAuraContributions`.
-  - Consequently, while *Blade Tempest Invocation* is active on the caster, `battle_cadence` stance options (`spectral_assault`, `flurry_of_steel`, `divine_celerity`) are returned by `evaluateActiveSpellAuraContributions(state, entityId).stanceGroupOptions`, but not displayed in the HUD Stance Dock unless passed into `buildActorStanceModes`.
+## 1. Core Architectural Rules & Standards Reiteration (`AGENTS.md` & `ARCHITECTURE.md`)
+- **Rule 11 (Zero `any`) & Rule 12 (No Magic Values):** Strict TypeScript (`exactOptionalPropertyTypes: true`), explicit return types, and named constants or JSON-driven registries for all gameplay values.
+- **Rule 15 (Cascading Effects Matrix):** Enumerate all **Upstream** callers, **Downstream** consumers, and **Lateral** mirrors (including SSOT JSONs, `.dependency-cruiser.cjs`, and test suites).
+- **Rule 16 (Three-Tier Placement Heuristic):**
+  - **Tier 1 (`src/core/`, `src/systems/`, `src/types/`, `src/rulesets/registry.ts`):** Pure Console engine primitives and cartridge-agnostic contract registries. Must never re-export or hardcode ruleset-specific symbols.
+  - **Tier 2 (`src/rulesets/<id>/`, Cartridge UI views):** Ruleset mathematical resolvers, adapters, and cartridge-owned UI modals/inspectors.
+  - **Tier 3 (`public/data/rulesets/<id>/*.json`):** Declarative JSON data (races, archetypes, templates, spells, items) parameterizing Tier 2 resolvers.
+- **Rule 17 & Rule 18 (No Hardcoded Content Spaghetti & Composable Templates):** Tier 2 resolvers (`family_synthesizer.ts`, `templates.ts`) must never hardcode `if (golemArchetypeId === 'flesh_golem')` branches or TypeScript copies of creature templates (`CELESTIAL_TEMPLATE`, `FIENDISH_TEMPLATE`, etc.) that duplicate Tier 3 JSON registries (`templates.json`, `races.json`).
+- **No Barrel Files (`AGENTS.md §8` & `.dependency-cruiser.cjs`):** Pure re-export shims (`modifiers.ts`, `attack_resolver.ts`, `builder_hydrator.ts`) and cross-tier smuggling barrels (`src/rulesets/registry.ts` lines 55–166) must be evicted in favor of direct canonical imports.
 
 ---
 
-## 3. SSOT Ownership & Old-Brain Eviction Table
+## 2. Empirical Codebase Audit Findings
 
-| Responsibility | Old Location (Evicted / Refactored) | Canonical New Owner (SSOT) | Tier |
-| :--- | :--- | :--- | :---: |
-| **Actor Turn-Start / Turn-End / Step Orchestration & Reaction Quota Reset** | Inline in `src/core/game-loop.ts` & `src/core/loop/intent_cost_resolver.ts` | `src/systems/lifecycle.system.ts` (`runActorTurnStart`, `runActorMovementStep`, `runActorTurnEnd`) | Tier 1 Console |
-| **Immediate Mobile Field Anchor Position Sync** | Delayed inside `processFieldsTick` (`src/systems/field.system.ts`) | `src/systems/field.system.ts` (`syncAnchoredFieldsForEntity`, called immediately on movement step) | Tier 1 Console |
-| **D&D 3.5e Round Action Budget Lifecycle & Aura Entry Save/SR Triggering** | Hardcoded player-only block in `src/core/loop/intent_cost_resolver.ts:43–115` | `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (`onDnD35eActorTurnStart`, `onDnD35eActorMovementStep`, `onDnD35eActorActionCost`, `evaluateActorAuraEntrySaves`) | Tier 2 Cartridge |
-| **5-Phase Combat Strike Exchange (Pre-Attack Geometry/Senses, Roll, On-Hit Riders, Retaliation, Cleave Follow-up)** | Inline monolith in `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts:137–320` | `src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts` (`executeCombatStrikeExchange`, `resolveStrikePreAttackContext`, `applyOnHitDamageRiders`, `applyPostStrikeRetaliation`, `resolveOnDropCleaveFollowup`) | Tier 2 Cartridge |
-| **HUD Stance Dock Projection (Feats + Active Spell Auras)** | Feat-only loop in `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts:105–120` | `src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` (`buildActorStanceModes` accepting `auraStanceOptions`) | Tier 2 Cartridge |
+### Finding 1: Tier-Boundary Smuggling in `src/rulesets/registry.ts` (Milestone 127)
+- **Current State:** `src/rulesets/registry.ts` is a Tier 1 Console module (`tier1_console` in `ssot_console.json`). Lines 1–53 implement the canonical `RulesetContract` registry (`registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset`). However, **lines 55–166 (`112 lines`) re-export 60+ D&D 3.5e-specific symbols** (`applyCharacterCreationToPlayer`, `WIZARD_BONUS_ITEM_CREATION_AND_MASTERY_FEATS`, `FAVORED_ENEMY_BONUS_STEP`, `evaluateDnD35eEntityDAG`, `DnD35UIAdapter`, etc.) plus `DefaultSciFiUIAdapter`.
+- **Root Cause Discovery:**
+  - `.dependency-cruiser.cjs` rule `no-direct-cartridge-imports-outside-registry` blocks `from: '^src/(core|systems|actions|rendering|map)/'` $\rightarrow$ `to: '^src/rulesets/(classic|dnd35e)/'`.
+  - Because `21` Tier 2 Cartridge UI files (`src/rendering/ui/dnd35e_*.ts` and `src/rendering/ui/classic_ui_adapter.ts`) reside inside `src/rendering/ui/`, they were blocked from importing `src/rulesets/dnd35e/*` directly—so 60+ cartridge internals were smuggled through `src/rulesets/registry.ts`.
+  - Every genuine Tier 1 Console caller (`hud.ui.ts`, `inspect_tooltip.ts`, `editor_*.ts`, `combat.system.ts`, `damage.system.ts`, `death.system.ts`, `apply.system.ts`, `social.system.ts`, `zap.system.ts`, `lifecycle.system.ts`, `system_content_loader.ts`, `session_dom.ts`, `campaign_validator.ts`, `stats.ts`) ONLY imports `getRuleset`, `getAllRulesets`, or `getActiveRuleset`!
+- **Clean Architecture Solution:**
+  - Scope `.dependency-cruiser.cjs` `no-direct-cartridge-imports-outside-registry` so Tier 1 Console modules (`src/(core|systems|actions|map)/` and non-cartridge `src/rendering/`) remain strictly forbidden from importing `src/rulesets/(classic|dnd35e)/`, while Tier 2 Cartridge UI modules (`src/rendering/ui/dnd35e_*.ts` and `src/rendering/ui/classic_ui_adapter.ts`) are permitted to import their own cartridge modules directly (with `no-cross-ruleset-imports` extended to prevent `dnd35e_*.ts` from importing `classic` and vice versa).
+  - Evict all 112 lines of cartridge-specific re-exports from `src/rulesets/registry.ts`, restoring `registry.ts` to a pure 53-line Tier 1 `RulesetContract` registry.
+
+### Finding 2: Exact File Duplication & Split UI Adapter Naming (Milestone 127)
+1. **Byte-for-Byte Duplicate `fuzzer.types.ts`:**
+   - `src/types/fuzzer.types.ts` (`40 lines`, `1,183 bytes`) and `src/editor/simulation/fuzzer.types.ts` (`40 lines`, `1,183 bytes`) are 100% identical.
+   - Currently, `7` files (`narrative_fuzzer.ts`, `narrative_fuzzer_async.ts`, `fuzzer_invariants.ts`, `fuzzer_telemetry.ts`, `worker.types.ts`, `worker_bridge.ts`, `fuzzer.worker.ts`) import `src/editor/simulation/fuzzer.types.ts`, while `0` files import `src/types/fuzzer.types.ts`.
+   - Furthermore, `src/worker/*.ts` importing upward from `src/editor/simulation/fuzzer.types.ts` couples the worker layer to the editor directory.
+   - **Solution:** Delete `src/editor/simulation/fuzzer.types.ts` and point all 7 importers to the canonical `src/types/fuzzer.types.ts`.
+2. **Orphan `src/rulesets/default/` Folder & Duplicate `dnd35e_ui_adapter.ts` Basename:**
+   - `src/rulesets/default/ui/default_ui_adapter.ts` lives in a folder named `default` even though the ruleset ID and directory for the classic ruleset is `src/rulesets/classic/`. Moving it to `src/rulesets/classic/ui/classic_ui_adapter.ts` (and renaming `src/rendering/ui/classic_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/classic_ui_registration.ts`, and `src/rendering/ui/dnd35e_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/dnd35e_ui_registration.ts`) eliminates the phantom `src/rulesets/default/` directory and resolves the duplicate `dnd35e_ui_adapter.ts` basename in `SSOT_DND35E.md`.
+3. **Duplicate Tactical Constants:**
+   - `FLANKING_ATTACK_BONUS = 2` in `src/rulesets/dnd35e/spatial/cover_senses.ts` is duplicated as `BASE_FLANKING_BONUS = 2` in `combat_exchange_phases.ts` and `DEFAULT_FLANKING_BONUS = 2` in `modifiers/dag_resolver.ts`.
+   - `FEET_PER_GRID_SQUARE = 5` in `src/rulesets/dnd35e/spatial/grid_geometry.ts` is duplicated as `STANDARD_STEP_DISTANCE_FT = 5` in `dnd35e_lifecycle_adapter.ts`.
+
+### Finding 3: SSOT Taxonomy & Domain Fragmentation (Milestone 127)
+- **`docs/ssot/ssot_console.json`:**
+  - `src/ai/*.behavior.ts` (5 AI behavior modules) are misclassified under `"Core Console: App Entry & Wiring"` alongside `main.ts` and `vite-env.d.ts` instead of `"Core Console: ECS Systems & Simulation"`.
+  - Orphan 1–2 file domains (`"Core Console: ECS Systems & Game Loop"` [2 files], `"Core Console: Map Generation & Spatial"` [2 files], `"Core Console: Foundation & Data Types"` [1 file]) split single logical domains across multiple headers.
+- **`docs/ssot/ssot_dnd35e.json`:**
+  - `"D&D 3.5e: Core Cartridge & Progression"` is a 55-file monolith mixing Character Builder, Horizon 2 Level Ledger, Skills/Verbs, Archetype/Race/Template hydration, and Cartridge Adapters, while `"D&D 3.5e: Core Cartridge & Ruleset Contract"` (1 file), `"D&D 3.5e: Combat Simulation & Resolution"` (2 files), and `"D&D 3.5e: Layer 1 — Math & Multipliers"` (2 files) are tiny orphan headers.
+  - Consolidating orphan headers and partitioning the 55-file mega-bucket into clean architectural domains (`Core Cartridge & Adapters`, `Layer 2 — Progression, Classes & Level Ledger`, `Layer 2 — Character Builder & Level-Up`, `Layer 2 — Archetypes, Races, Templates & Families`, `Layer 4 — Skills & Skill Verbs`) makes `SSOT_DND35E.md` immediately scannable and authoritative.
+
+### Finding 4: Hardcoded Golem Magic Immunity & Duplicate SRD Templates in TypeScript (Milestone 128)
+1. **Hardcoded `evaluateGolemMagicInteraction` in `src/rulesets/dnd35e/family_synthesizer.ts`:**
+   - Currently hardcodes `if (golemArchetypeId === 'flesh_golem')`, `if (golemArchetypeId === 'iron_golem')`, `if (golemArchetypeId === 'clay_golem')`, `if (golemArchetypeId === 'stone_golem')` with magic literals (`Math.floor(spellDamageAmount / 3)`, `slowsRounds: 3`).
+   - Per Rules 16–19, Golem spell-immunity exceptions belong in Tier 3 JSON (`magicImmunityExceptions` on `DnD35RaceDefinition` / `DnD35Archetype` in `public/data/rulesets/dnd35e/races/*.json`), evaluated by a generic, data-driven resolver that reads the creature's declarative exception rules.
+2. **Duplicate Hardcoded Templates in `src/rulesets/dnd35e/templates/srd_templates.ts`:**
+   - `srd_templates.ts` (`134 lines`) hardcodes TypeScript constant copies (`CELESTIAL_TEMPLATE`, `FIENDISH_TEMPLATE`, `SKELETON_TEMPLATE`, `ZOMBIE_TEMPLATE`, `LICH_TEMPLATE`) that duplicate `public/data/rulesets/dnd35e/templates.json`.
+   - Zero runtime files in `src/` use `srd_templates.ts`; only `tests/dnd35e_phase21_primitives.test.ts` imports `FIENDISH_TEMPLATE`, `SKELETON_TEMPLATE`, and `ZOMBIE_TEMPLATE`.
+   - **Solution:** Update `tests/dnd35e_phase21_primitives.test.ts` to read templates from the loaded campaign's `systemContent.templates` (`getDnD35Template`), and delete the redundant `src/rulesets/dnd35e/templates/srd_templates.ts` file!
+3. **Pure Re-Export Barrel Shims (`builder_hydrator.ts`, `attack_resolver.ts`, `modifiers.ts`):**
+   - `src/rulesets/dnd35e/builder/builder_hydrator.ts` (`3 lines`), `src/rulesets/dnd35e/combat/attack_resolver.ts` (`6 lines`), and `src/rulesets/dnd35e/modifiers.ts` (`6 lines`) contain zero logic of their own—they are pure re-export barrels left over from earlier file splits.
+   - Evicting `builder_hydrator.ts` (and optionally folding or directly importing the sub-modules of `attack_resolver.ts` / `modifiers.ts`) removes unnecessary indirection hops.
 
 ---
 
-## 4. Cascading Effects Matrix
+## 3. Proposed Phase 29 Milestone Breakdown
 
-| Change | Upstream (Callers / Emitters) | Downstream (Consumers / Renderers) | Lateral (Mirrors / Registries) |
+- **Milestone 127: Cartridge Boundary Purification, Duplicate Eviction & SSOT Domain Rebalancing**
+  1. Evict all 112 lines of D&D 3.5e / Classic re-exports from `src/rulesets/registry.ts` and refine `.dependency-cruiser.cjs` so Tier 2 UI files (`dnd35e_*.ts`, `classic_ui_registration.ts`) import directly from their own cartridge modules while Tier 1 Console modules remain strictly isolated.
+  2. Delete duplicate `src/editor/simulation/fuzzer.types.ts` and point all 7 simulation/worker importers to `src/types/fuzzer.types.ts`.
+  3. Move `src/rulesets/default/ui/default_ui_adapter.ts` $\rightarrow$ `src/rulesets/classic/ui/classic_ui_adapter.ts` (removing the orphan `src/rulesets/default/` directory) and rename `src/rendering/ui/{dnd35e,classic}_ui_adapter.ts` $\rightarrow$ `src/rendering/ui/{dnd35e,classic}_ui_registration.ts` to eliminate duplicate filenames.
+  4. Deduplicate `FLANKING_ATTACK_BONUS` and `FEET_PER_GRID_SQUARE` across D&D 3.5e modules and rebalance `ssot_console.json` & `ssot_dnd35e.json` domains.
+
+- **Milestone 128: Declarative Magic-Immunity Exceptions, Template JSON Unification & Barrel Shim Eviction**
+  1. Replace hardcoded `if (golemArchetypeId === ...)` branches in `evaluateGolemMagicInteraction` (`family_synthesizer.ts`) with declarative `magicImmunityExceptions` schemas on `DnD35RaceDefinition` / `DnD35Archetype` and data entries in `flesh_golem.json`, `iron_golem.json`, `clay_golem.json`, and `stone_golem.json`.
+  2. Delete the redundant hardcoded `src/rulesets/dnd35e/templates/srd_templates.ts` (`134 lines`) and migrate `tests/dnd35e_phase21_primitives.test.ts` to use the canonical Tier 3 `templates.json` registry (`getDnD35Template`).
+  3. Evict pure 3-line/6-line pass-through barrel shims (`src/rulesets/dnd35e/builder/builder_hydrator.ts` and multi-hop re-exports in `character_builder.ts`) and verify 100% SSOT and architectural lint parity.
+
+---
+
+## 4. Preliminary Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Importers) | Downstream (Consumers / Validators) | Lateral (Sibling Configs / Docs / Tests) |
 | :--- | :--- | :--- | :--- |
-| **`RulesetContract` optional lifecycle hooks (`onActorTurnStart`, `onActorMovementStep`, `resolveActionEnergyCost`)** | `src/core/game-loop.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/systems/lifecycle.system.ts` | `dnd35eRulesetContract` (`dnd35e_ruleset.ts`), `dnd35e_lifecycle_adapter.ts` | `classicRulesetContract` (uses default Console behavior with zero changes) |
-| **`syncAnchoredFieldsForEntity` & step-gated `processFieldsTick`** | `src/systems/movement.system.ts`, `src/systems/lifecycle.system.ts` | `evaluateActiveSpellAuraContributions`, `resolveEffectiveTileIllumination`, `evaluateActorAuraEntrySaves` | All spatial fields (`fields.json`, `spatial_field` spell units) |
-| **5-Phase `CombatExchangePipeline` (`combat_exchange_pipeline.ts`)** | `resolveDnD35eMeleeAttack` (`dnd35e_combat_adapter.ts`) | `resolveAttackRoll`, `resolveEffectiveTileIllumination`, `isFlankingTarget`, `resolveRetaliationRiders`, `DamageComponent` | Cleave/Great Cleave feats, *Blade Tempest Invocation*, *Bane*/*Flaming* weapons |
-| **Aura-Granted Stances in `buildActorStanceModes`** | `DnD35UIAdapter.getHotbarData` (`dnd35e_ui_adapter.ts`) | `console_hotbar.ui.ts`, `onToggleStance` (`src/rendering/ui/dnd35e_ui_adapter.ts`) | Feat-granted stances, `battle_cadence` spell stances |
+| **1. Evict cartridge barrel from `src/rulesets/registry.ts`** | `20` `src/rendering/ui/dnd35e_*.ts` files, `classic_ui_registration.ts`, `tests/dnd35e_phase26_ui_and_showcase.test.ts`, `tests/ruleset_validators.test.ts` | `.dependency-cruiser.cjs` (`no-direct-cartridge-imports-outside-registry`, `no-cross-ruleset-imports`), `knip` deadcode check | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| **2. Delete `src/editor/simulation/fuzzer.types.ts`** | `narrative_fuzzer.ts`, `narrative_fuzzer_async.ts`, `fuzzer_invariants.ts`, `fuzzer_telemetry.ts`, `worker.types.ts`, `worker_bridge.ts`, `fuzzer.worker.ts` | `tsc --noEmit`, `knip`, `run-validator.ts` SSOT parity | `docs/ssot/ssot_console.json`, `docs/SSOT_CONSOLE.md` |
+| **3. Relocate `default_ui_adapter.ts` $\rightarrow$ `src/rulesets/classic/ui/classic_ui_adapter.ts` & rename `*_ui_registration.ts`** | `src/main.ts`, `src/rendering/ui/classic_ui_registration.ts`, `tests/console_ui_architecture.test.ts` | `cartridge_ui_registry.ts`, `run-validator.ts` SSOT parity | `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
+| **4. Declarative `magicImmunityExceptions` & delete `srd_templates.ts`** | `family_synthesizer.ts`, `templates.ts`, `tests/dnd35e_phase21_primitives.test.ts`, `tests/dnd35e_phase22_bestiary.test.ts` | `creature_system.types.ts`, `dnd35e_validator.ts`, `run-validator.ts` | `public/data/rulesets/dnd35e/races/{flesh,iron,clay,stone}_golem.json`, `docs/ssot/ssot_dnd35e.json` |

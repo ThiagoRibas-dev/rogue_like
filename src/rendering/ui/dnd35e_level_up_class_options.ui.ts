@@ -1,10 +1,7 @@
-import {
-  collectClassFeaturesUpToLevel,
-  type DnD35ClassDefinition,
-  type DnD35EntityData,
-  type DnD35SystemContent,
-  type LevelUpChoice
-} from '../../rulesets/registry.ts';
+import type { LevelUpChoice } from '../../rulesets/dnd35e/character_builder.ts';
+import { collectClassFeaturesUpToLevel } from '../../rulesets/dnd35e/progression.ts';
+import type { DnD35EntityData } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35ClassDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 /**
  * Renders mid-level class choices (ACFs, Combat Style, Favored Enemy additions & boosts,

@@ -8,7 +8,7 @@ import { createEquipItemAction, createUnequipItemAction } from '../../actions/in
 import { getComponent } from '../../core/ecs.ts';
 import { getGameState, queuePlayerIntent, setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
-import { DefaultSciFiUIAdapter } from '../../rulesets/registry.ts';
+import { DefaultSciFiUIAdapter } from '../../rulesets/classic/ui/classic_ui_adapter.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import { type CartridgeUIDefinition, closeCartridgeModal, registerCartridgeUI } from './cartridge_ui_registry.ts';

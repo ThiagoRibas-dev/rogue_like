@@ -6,15 +6,16 @@
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import {
+  getSpontaneousConversionTargets,
+  type SpellLevelSlotSummary
+} from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
 import type {
   DnD35ClassSpellbookState,
   DnD35EntityData,
-  DnD35PreparedSlotEntry,
-  DnD35SpellDefinition,
-  DnD35SystemContent,
-  SpellLevelSlotSummary
-} from '../../rulesets/registry.ts';
-import { getSpontaneousConversionTargets } from '../../rulesets/registry.ts';
+  DnD35PreparedSlotEntry
+} from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35SpellDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { castPreparedSlot, unprepareSpecificSlot } from './dnd35e_spellbook_actions.ts';
 
 export function renderPreparedSlotsPane(

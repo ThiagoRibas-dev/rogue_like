@@ -11,34 +11,15 @@ import {
   isFeatAllowedInSlot
 } from './builder/builder_core.ts';
 import { computeClassSpellSelectionBudget, isSpellSelectableForDraft } from './builder/builder_spells.ts';
-import {
-  applyNegativeLevelsToActor,
-  applyPermanentLevelDrainToActor,
-  buildActorSpellbooksByClass,
-  buildClassAndDomainEffectModifiers,
-  collectActiveClassFeaturesAndPools,
-  collectActiveGrantedAndVirtualFeats,
-  rebuildActorStateFromLevelHistory
-} from './level_ledger.ts';
-import { collectClassFeaturesUpToLevel, computeNpcClassCrContribution } from './progression.ts';
+import { collectClassFeaturesUpToLevel } from './progression.ts';
 import type { DnD35Alignment } from './types/dnd35e.types.ts';
 import type { DnD35SystemContent } from './types/dnd35e_system.types.ts';
-
-export {
-  applyNegativeLevelsToActor,
-  applyPermanentLevelDrainToActor,
-  buildActorSpellbooksByClass,
-  buildClassAndDomainEffectModifiers,
-  collectActiveClassFeaturesAndPools,
-  collectActiveGrantedAndVirtualFeats,
-  computeNpcClassCrContribution,
-  rebuildActorStateFromLevelHistory
-};
 
 export * from './builder/builder_core.ts';
 export * from './builder/builder_spells.ts';
 export * from './builder/builder_validation.ts';
-export * from './builder/builder_hydrator.ts';
+export * from './builder/builder_hydrator_creation.ts';
+export * from './builder/builder_hydrator_levelup.ts';
 
 /**
  * Sanitizes a `CharacterCreationDraft` whenever `raceId`, `classId`, `domains`, or `prohibitedSchools` changes.

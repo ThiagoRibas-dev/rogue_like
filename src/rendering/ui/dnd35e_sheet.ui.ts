@@ -9,7 +9,8 @@
 
 import { getComponent } from '../../core/ecs.ts';
 import { getGameState } from '../../core/game-loop.ts';
-import { DnD35UIAdapter, evaluateDnD35eEntityDAG } from '../../rulesets/registry.ts';
+import { evaluateDnD35eEntityDAG } from '../../rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
+import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { getConsoleThemeMode } from './console_theme.ts';

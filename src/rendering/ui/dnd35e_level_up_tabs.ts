@@ -1,13 +1,14 @@
 import {
   type ClassSpellSelectionBudget,
   computeClassSpellSelectionBudget,
-  computeEffectiveClassCastingLevel,
-  type DnD35ClassDefinition,
-  type DnD35EntityData,
-  type DnD35SystemContent,
-  getEligibleBaseCastingClassesForPrestige,
   type LevelUpChoice
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import {
+  computeEffectiveClassCastingLevel,
+  getEligibleBaseCastingClassesForPrestige
+} from '../../rulesets/dnd35e/progression.ts';
+import type { DnD35EntityData } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35ClassDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 
 /** Descriptor for a per-class spell learning tab during Level-Up. */
 export interface SpellTabDescriptor {

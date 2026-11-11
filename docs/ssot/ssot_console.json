@@ -179,7 +179,7 @@
     ]
   },
   "src/ai/flee.behavior.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
     "responsibility": "Flee behavior: runs away from the nearest hostile entity if HP is below the threshold.",
     "canonicalEntryPoints": [
@@ -194,7 +194,7 @@
     ]
   },
   "src/ai/hunt.behavior.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
     "responsibility": "Hunt behavior: finds the nearest hostile entity within aggroRadius.",
     "canonicalEntryPoints": [
@@ -209,7 +209,7 @@
     ]
   },
   "src/ai/ranged.behavior.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
     "responsibility": "Ranged behavior: finds the nearest hostile entity within range.",
     "canonicalEntryPoints": [
@@ -224,7 +224,7 @@
     ]
   },
   "src/ai/spell.behavior.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
     "responsibility": "Spell casting behavior: evaluates a list of abilities and casts the first valid one",
     "canonicalEntryPoints": [
@@ -239,7 +239,7 @@
     ]
   },
   "src/ai/wander.behavior.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
     "responsibility": "Wander behavior: picks a random adjacent direction.",
     "canonicalEntryPoints": [
@@ -1430,25 +1430,6 @@
       "Do not duplicate or bypass exports from src/editor/simulation/fuzzer_telemetry.ts."
     ]
   },
-  "src/editor/simulation/fuzzer.types.ts": {
-    "domain": "Core Console: Campaign Editor Subsystem",
-    "tier": "tier1_console",
-    "responsibility": "Module implementation for src/editor/simulation/fuzzer.types.ts",
-    "canonicalEntryPoints": [
-      "FuzzerOptions",
-      "FuzzerErrorType",
-      "FuzzerError",
-      "FuzzerTelemetry",
-      "FuzzerReport"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/editor/simulation/fuzzer.types.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/editor/simulation/fuzzer.types.ts."
-    ]
-  },
   "src/editor/simulation/narrative_fuzzer_async.ts": {
     "domain": "Core Console: Campaign Editor Subsystem",
     "tier": "tier1_console",
@@ -2297,6 +2278,135 @@
       "Do not duplicate or bypass exports from src/rendering/ui/balance_lab.ui.ts."
     ]
   },
+  "src/rendering/ui/cartridge_ui_registry.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Console UI Slot & Modal Host API allowing ruleset cartridges to register modals, dock commands, HUD alerts, and panel slots without Console coupling.",
+    "canonicalEntryPoints": [
+      "CartridgeDockCommandDescriptor",
+      "CartridgeHudAlertDescriptor",
+      "CartridgeModalDescriptor",
+      "CartridgeUIDefinition",
+      "registerCartridgeUI",
+      "getCartridgeUI",
+      "getActiveCartridgeUI",
+      "isCartridgeModalOpen",
+      "openCartridgeModal",
+      "closeCartridgeModal",
+      "toggleCartridgeModal",
+      "applyCartridgeNewGameHook",
+      "renderActiveCartridgeModal",
+      "renderCartridgeHudPanel",
+      "renderCartridgeInspectorExtension"
+    ],
+    "ownershipBoundary": {
+      "includes": "Generic slot/modal host API, cartridge UI registration, and ruleset-agnostic modal/dock/alert orchestration.",
+      "excludes": "Ruleset-specific UI rendering or ruleset domain logic."
+    },
+    "antiPatterns": [
+      "Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files."
+    ]
+  },
+  "src/rendering/ui/classic_ui_registration.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_ui",
+    "responsibility": "Registers the Classic / Sci-Fi CartridgeUIDefinition (modals, dock commands, hotbar wiring) into the Console Cartridge UI Registry.",
+    "canonicalEntryPoints": [
+      "renderClassicSheetModal",
+      "registerClassicUIAdapter",
+      "classicUIDefinition"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_registration.ts.",
+      "excludes": "Headless Classic UI data projection (owned by src/rulesets/classic/ui/classic_ui_adapter.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_registration.ts."
+    ]
+  },
+  "src/rendering/ui/console_dossier.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Generic 3-Column Master Dossier modal rendering Bio/Attributes/Saves, Center View Tabs, and Right Inspector Pane driven by ICartridgeUIAdapter.",
+    "canonicalEntryPoints": [
+      "renderConsoleMasterDossier"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_dossier.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_dossier.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_hotbar.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Generic 12-slot action hotbar with 10-bank pagination and combat stance dock bar.",
+    "canonicalEntryPoints": [
+      "renderConsoleHotbar"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_hotbar.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_hotbar.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_inspect_card.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Floating Item Examine Popover card displaying lore, base stats, and special properties.",
+    "canonicalEntryPoints": [
+      "showConsoleItemInspectCard",
+      "hideConsoleItemInspectCard"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_inspect_card.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_inspect_card.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_inventory.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Reactive anatomical equipment slot paper doll (supporting multi-limb and melded slots) and compact 10x4 inventory stash grid.",
+    "canonicalEntryPoints": [
+      "renderReactivePaperDollWidget",
+      "renderCompactStashWidget",
+      "renderConsoleInventoryView"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_inventory.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_inventory.ui.ts."
+    ]
+  },
+  "src/rendering/ui/console_theme.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Global Skin Token Engine for parchment tabletop and retro CRT sci-fi themes.",
+    "canonicalEntryPoints": [
+      "getConsoleThemeMode",
+      "getConsoleThemeTokens",
+      "setConsoleThemeMode",
+      "subscribeConsoleThemeChange",
+      "syncGlobalConsoleTheme",
+      "applyConsoleTheme"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/console_theme.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/console_theme.ts."
+    ]
+  },
   "src/rendering/ui/controls.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2517,6 +2627,21 @@
       "Do not duplicate or bypass exports from src/rendering/ui/editor_object_renderer.ts."
     ]
   },
+  "src/rendering/ui/equipment.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders interactive anatomical paper doll slot cards across HUD, Inventory, and Character Sheet views.",
+    "canonicalEntryPoints": [
+      "renderAnatomicalPaperDoll"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/equipment.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/equipment.ui.ts."
+    ]
+  },
   "src/rendering/ui/faction_matrix_editor.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2562,23 +2687,6 @@
       "Do not duplicate or bypass exports from src/rendering/ui/hud_alerts.ui.ts."
     ]
   },
-  "src/rendering/ui/hud_dock.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "2D Tiles vs. ASCII runtime toggle, and foldable side-panel controls.",
-    "canonicalEntryPoints": [
-      "setHudDockDisplayRef",
-      "toggleRenderMode",
-      "renderHudDock"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/hud_dock.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/hud_dock.ui.ts."
-    ]
-  },
   "src/rendering/ui/hud_bottom_dock.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
@@ -2594,6 +2702,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/hud_bottom_dock.ui.ts."
+    ]
+  },
+  "src/rendering/ui/hud_dock.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "2D Tiles vs. ASCII runtime toggle, and foldable side-panel controls.",
+    "canonicalEntryPoints": [
+      "setHudDockDisplayRef",
+      "toggleRenderMode",
+      "renderHudDock"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/hud_dock.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/hud_dock.ui.ts."
     ]
   },
   "src/rendering/ui/hud.ui.ts": {
@@ -2787,6 +2912,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/quest.ui.ts."
+    ]
+  },
+  "src/rendering/ui/resizable_panels.ui.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Manages interactive drag splitters, CSS layout variables, and persistent sidebar dimensions.",
+    "canonicalEntryPoints": [
+      "applyPanelLayoutSettings",
+      "initResizablePanels"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/resizable_panels.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/resizable_panels.ui.ts."
     ]
   },
   "src/rendering/ui/settings.ui.ts": {
@@ -3066,7 +3207,7 @@
     ]
   },
   "src/rulesets/classic/classic_combat.ts": {
-    "domain": "Core Console: Ruleset Cartridge Registry",
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
     "tier": "tier1_console",
     "responsibility": "Faction standing penalty applied when an actor attacks a member of a faction.",
     "canonicalEntryPoints": [
@@ -3084,7 +3225,7 @@
     ]
   },
   "src/rulesets/classic/classic_ruleset.ts": {
-    "domain": "Core Console: Ruleset Cartridge Registry",
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
     "tier": "tier1_console",
     "responsibility": "The canonical `classic` ruleset cartridge encapsulating Milestones 1–81 mechanics.",
     "canonicalEntryPoints": [
@@ -3099,7 +3240,7 @@
     ]
   },
   "src/rulesets/classic/classic_stats.ts": {
-    "domain": "Core Console: Ruleset Cartridge Registry",
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
     "tier": "tier1_console",
     "responsibility": "Default actor speed when ActorComponent is absent.",
     "canonicalEntryPoints": [
@@ -3116,7 +3257,7 @@
     ]
   },
   "src/rulesets/classic/classic_validator.ts": {
-    "domain": "Core Console: Ruleset Cartridge Registry",
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
     "tier": "tier1_console",
     "responsibility": "Validates Classic roguelike ruleset invariants for a campaign.",
     "canonicalEntryPoints": [
@@ -3130,26 +3271,37 @@
       "Do not duplicate or bypass exports from src/rulesets/classic/classic_validator.ts."
     ]
   },
+  "src/rulesets/classic/ui/classic_ui_adapter.ts": {
+    "domain": "Ruleset Cartridge: Classic Sci-Fi",
+    "tier": "tier2_cartridge",
+    "responsibility": "Projects Classic / Sci-Fi ECS state into the unified Tier 1 Console UI models (Character Sheet, Inventory, Hotbar).",
+    "canonicalEntryPoints": [
+      "DefaultSciFiUIAdapter"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/classic/ui/classic_ui_adapter.ts.",
+      "excludes": "DOM manipulation or direct modal registration (owned by src/rendering/ui/classic_ui_registration.ts)."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/classic/ui/classic_ui_adapter.ts."
+    ]
+  },
   "src/rulesets/registry.ts": {
     "domain": "Core Console: Ruleset Cartridge Registry",
     "tier": "tier1_console",
-    "responsibility": "Internal map of registered Ruleset Cartridges keyed by RulesetId.",
+    "responsibility": "Pure Tier 1 Console Ruleset Cartridge Registry exposing only RulesetContract registration and lookup.",
     "canonicalEntryPoints": [
       "registerRuleset",
       "getRuleset",
       "getAllRulesets",
-      "getActiveRuleset",
-      "applyCharacterCreationToPlayer",
-      "applyLevelUpToActor",
-      "applyNegativeLevelsToActor",
-      "applyPermanentLevelDrainToActor"
+      "getActiveRuleset"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/registry.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
+      "includes": "Registering and resolving active RulesetContract instances by RulesetId.",
+      "excludes": "Re-exporting cartridge-specific internal functions, types, or UI adapters."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/registry.ts."
+      "Never re-export concrete cartridge internals (e.g. dnd35e or classic symbols) through src/rulesets/registry.ts."
     ]
   },
   "src/systems/ai.system.ts": {
@@ -3483,6 +3635,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/ledger.system.ts."
+    ]
+  },
+  "src/systems/lifecycle.system.ts": {
+    "domain": "Core Console: ECS Systems & Game Loop",
+    "tier": "tier1_console",
+    "responsibility": "Coordinates symmetric turn-start, movement-step, and intent energy cost lifecycle windows for player and AI actors across ruleset cartridges.",
+    "canonicalEntryPoints": [
+      "runActorTurnStart",
+      "runActorMovementStep",
+      "resolveActorActionEnergyCost"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/lifecycle.system.ts.",
+      "excludes": "Cartridge-specific rule evaluation or hardcoded ruleset checks."
+    },
+    "antiPatterns": [
+      "Do not branch on rulesetId inside Console lifecycle systems."
     ]
   },
   "src/systems/map.system.ts": {
@@ -3904,6 +4073,27 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/social.system.ts."
+    ]
+  },
+  "src/systems/stance.system.ts": {
+    "domain": "Core Console: ECS Systems & Game Loop",
+    "tier": "tier1_console",
+    "responsibility": "Provides Tier 1 Console stance group toggling, semantic stance tag projection, and per-round triggered reaction quota tracking on TacticalDoctrineComponent.",
+    "canonicalEntryPoints": [
+      "ConsoleStanceGroupOption",
+      "toggleConsoleStanceGroup",
+      "resolveActiveStanceInGroup",
+      "projectConsoleStanceSelfTags",
+      "canUseTriggeredReactionThisRound",
+      "incrementTriggeredReactionUse",
+      "resetTriggeredReactionsForNewRound"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/stance.system.ts.",
+      "excludes": "Cartridge-specific math or ruleset content."
+    },
+    "antiPatterns": [
+      "Do not hardcode ruleset-specific stance names in Console systems."
     ]
   },
   "src/systems/status-effect.system.ts": {
@@ -4858,6 +5048,30 @@
       "Do not duplicate or bypass exports from src/types/trigger.types.ts."
     ]
   },
+  "src/types/ui_adapter.types.ts": {
+    "domain": "Core Console: Foundation & Data Types",
+    "tier": "tier1_console",
+    "responsibility": "Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData.",
+    "canonicalEntryPoints": [
+      "ICartridgeUIAdapter",
+      "UICharacterSheetModel",
+      "UIInventoryModel",
+      "UIInventoryItem",
+      "UIAnatomicalSlotDescriptor",
+      "UIAttackGroupModel",
+      "UISkillRowModel",
+      "UIFeatureEntryModel",
+      "UILevelHistoryRowModel",
+      "UIInspectData"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/types/ui_adapter.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/types/ui_adapter.types.ts."
+    ]
+  },
   "src/utils/a11y.ts": {
     "domain": "Core Console: Utility Helpers",
     "tier": "tier1_console",
@@ -5023,7 +5237,7 @@
     ]
   },
   "src/worker/fuzzer.worker.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: Web Workers & Async Simulation",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/worker/fuzzer.worker.ts",
     "canonicalEntryPoints": [],
@@ -5036,7 +5250,7 @@
     ]
   },
   "src/worker/map.worker.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: Web Workers & Async Simulation",
     "tier": "tier1_console",
     "responsibility": "Module implementation for src/worker/map.worker.ts",
     "canonicalEntryPoints": [],
@@ -5049,7 +5263,7 @@
     ]
   },
   "src/worker/worker_bridge.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: Web Workers & Async Simulation",
     "tier": "tier1_console",
     "responsibility": "Checks whether Web Workers are supported in the current runtime environment.",
     "canonicalEntryPoints": [
@@ -5064,7 +5278,7 @@
     ]
   },
   "src/worker/worker.types.ts": {
-    "domain": "Core Console: App Entry & Wiring",
+    "domain": "Core Console: Web Workers & Async Simulation",
     "tier": "tier1_console",
     "responsibility": "Serializable director context for thread boundaries without Set/Map.",
     "canonicalEntryPoints": [
@@ -5083,243 +5297,6 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/worker/worker.types.ts."
-    ]
-  },
-  "src/rendering/ui/cartridge_ui_registry.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Console UI Slot & Modal Host API allowing ruleset cartridges to register modals, dock commands, HUD alerts, and panel slots without Console coupling.",
-    "canonicalEntryPoints": [
-      "CartridgeDockCommandDescriptor",
-      "CartridgeHudAlertDescriptor",
-      "CartridgeModalDescriptor",
-      "CartridgeUIDefinition",
-      "registerCartridgeUI",
-      "getCartridgeUI",
-      "getActiveCartridgeUI",
-      "isCartridgeModalOpen",
-      "openCartridgeModal",
-      "closeCartridgeModal",
-      "toggleCartridgeModal",
-      "applyCartridgeNewGameHook",
-      "renderActiveCartridgeModal",
-      "renderCartridgeHudPanel",
-      "renderCartridgeInspectorExtension"
-    ],
-    "ownershipBoundary": {
-      "includes": "Generic slot/modal host API, cartridge UI registration, and ruleset-agnostic modal/dock/alert orchestration.",
-      "excludes": "Ruleset-specific UI rendering or ruleset domain logic."
-    },
-    "antiPatterns": [
-      "Never hardcode cartridge-specific UIModes or ruleset modal imports inside Tier 1 Console files."
-    ]
-  },
-  "src/rendering/ui/equipment.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Renders interactive anatomical paper doll slot cards across HUD, Inventory, and Character Sheet views.",
-    "canonicalEntryPoints": [
-      "renderAnatomicalPaperDoll"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/equipment.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/equipment.ui.ts."
-    ]
-  },
-  "src/rendering/ui/resizable_panels.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Manages interactive drag splitters, CSS layout variables, and persistent sidebar dimensions.",
-    "canonicalEntryPoints": [
-      "applyPanelLayoutSettings",
-      "initResizablePanels"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/resizable_panels.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/resizable_panels.ui.ts."
-    ]
-  },
-  "src/rendering/ui/console_theme.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Global Skin Token Engine for parchment tabletop and retro CRT sci-fi themes.",
-    "canonicalEntryPoints": [
-      "getConsoleThemeMode",
-      "getConsoleThemeTokens",
-      "setConsoleThemeMode",
-      "subscribeConsoleThemeChange",
-      "syncGlobalConsoleTheme",
-      "applyConsoleTheme"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/console_theme.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/console_theme.ts."
-    ]
-  },
-  "src/rendering/ui/console_dossier.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Generic 3-Column Master Dossier modal rendering Bio/Attributes/Saves, Center View Tabs, and Right Inspector Pane driven by ICartridgeUIAdapter.",
-    "canonicalEntryPoints": [
-      "renderConsoleMasterDossier"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/console_dossier.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/console_dossier.ui.ts."
-    ]
-  },
-  "src/rendering/ui/classic_ui_adapter.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Classic Sci-Fi ruleset UI definition and modal bridge registering DefaultSciFiUIAdapter in cartridge UI registry.",
-    "canonicalEntryPoints": [
-      "renderClassicSheetModal",
-      "registerClassicUIAdapter",
-      "classicUIDefinition"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/classic_ui_adapter.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/classic_ui_adapter.ts."
-    ]
-  },
-  "src/rendering/ui/console_hotbar.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Generic 12-slot action hotbar with 10-bank pagination and combat stance dock bar.",
-    "canonicalEntryPoints": [
-      "renderConsoleHotbar"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/console_hotbar.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/console_hotbar.ui.ts."
-    ]
-  },
-  "src/rendering/ui/console_inventory.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Reactive anatomical equipment slot paper doll (supporting multi-limb and melded slots) and compact 10x4 inventory stash grid.",
-    "canonicalEntryPoints": [
-      "renderReactivePaperDollWidget",
-      "renderCompactStashWidget",
-      "renderConsoleInventoryView"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/console_inventory.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/console_inventory.ui.ts."
-    ]
-  },
-  "src/rendering/ui/console_inspect_card.ui.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Floating Item Examine Popover card displaying lore, base stats, and special properties.",
-    "canonicalEntryPoints": [
-      "showConsoleItemInspectCard",
-      "hideConsoleItemInspectCard"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/console_inspect_card.ui.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/console_inspect_card.ui.ts."
-    ]
-  },
-  "src/rulesets/default/ui/default_ui_adapter.ts": {
-    "domain": "Core Console: Rendering & UI Views",
-    "tier": "tier1_console",
-    "responsibility": "Implements ICartridgeUIAdapter for Default Sci-Fi ruleset using retro-crt skin.",
-    "canonicalEntryPoints": [
-      "DefaultSciFiUIAdapter"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rulesets/default/ui/default_ui_adapter.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rulesets/default/ui/default_ui_adapter.ts."
-    ]
-  },
-  "src/types/ui_adapter.types.ts": {
-    "domain": "Core Console: Foundation & Data Types",
-    "tier": "tier1_console",
-    "responsibility": "Type definitions for ICartridgeUIAdapter, UICharacterSheetModel, UIInventoryModel, UIAnatomicalSlotDescriptor, UIAttackGroupModel, and UIInspectData.",
-    "canonicalEntryPoints": [
-      "ICartridgeUIAdapter",
-      "UICharacterSheetModel",
-      "UIInventoryModel",
-      "UIInventoryItem",
-      "UIAnatomicalSlotDescriptor",
-      "UIAttackGroupModel",
-      "UISkillRowModel",
-      "UIFeatureEntryModel",
-      "UILevelHistoryRowModel",
-      "UIInspectData"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/types/ui_adapter.types.ts.",
-      "excludes": "External state mutation or unrelated subsystem logic."
-    },
-    "antiPatterns": [
-      "Do not duplicate or bypass exports from src/types/ui_adapter.types.ts."
-    ]
-  },
-  "src/systems/stance.system.ts": {
-    "domain": "Core Console: ECS Systems & Game Loop",
-    "tier": "tier1_console",
-    "responsibility": "Provides Tier 1 Console stance group toggling, semantic stance tag projection, and per-round triggered reaction quota tracking on TacticalDoctrineComponent.",
-    "canonicalEntryPoints": [
-      "ConsoleStanceGroupOption",
-      "toggleConsoleStanceGroup",
-      "resolveActiveStanceInGroup",
-      "projectConsoleStanceSelfTags",
-      "canUseTriggeredReactionThisRound",
-      "incrementTriggeredReactionUse",
-      "resetTriggeredReactionsForNewRound"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/stance.system.ts.",
-      "excludes": "Cartridge-specific math or ruleset content."
-    },
-    "antiPatterns": [
-      "Do not hardcode ruleset-specific stance names in Console systems."
-    ]
-  },
-  "src/systems/lifecycle.system.ts": {
-    "domain": "Core Console: ECS Systems & Game Loop",
-    "tier": "tier1_console",
-    "responsibility": "Coordinates symmetric turn-start, movement-step, and intent energy cost lifecycle windows for player and AI actors across ruleset cartridges.",
-    "canonicalEntryPoints": [
-      "runActorTurnStart",
-      "runActorMovementStep",
-      "resolveActorActionEnergyCost"
-    ],
-    "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/systems/lifecycle.system.ts.",
-      "excludes": "Cartridge-specific rule evaluation or hardcoded ruleset checks."
-    },
-    "antiPatterns": [
-      "Do not branch on rulesetId inside Console lifecycle systems."
     ]
   }
 }

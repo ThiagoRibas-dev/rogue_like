@@ -1,25 +1,23 @@
 import { getComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
+import { computeAbilityModifier } from '../../rulesets/dnd35e/abilities.ts';
 import {
-  type AbilityId,
-  ALL_ABILITY_IDS,
-  aggregateProgressionChassis,
   applyLevelUpToActor,
   buildPostLevelUpPrerequisiteContext,
   buildPrerequisiteContextForActor,
   calculateLevelSkillPointBudget,
   calculateSkillAllocationCost,
-  computeAbilityModifier,
   computeLevelUpFeatSlots,
-  computeXpThresholdForLevel,
   getActorEverClassSkillIds,
-  getDnD35EntityData,
-  getDnD35SystemContent,
   getEffectiveClassSkillIds,
   type LevelUpChoice,
   validateLevelUpStep
-} from '../../rulesets/registry.ts';
+} from '../../rulesets/dnd35e/character_builder.ts';
+import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../../rulesets/dnd35e/progression.ts';
+import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { type AbilityId, ALL_ABILITY_IDS } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { ComponentType, type FighterComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { closeCartridgeModal, isCartridgeModalOpen } from './cartridge_ui_registry.ts';

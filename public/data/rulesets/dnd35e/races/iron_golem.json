@@ -81,6 +81,31 @@
     "skillRanks": {},
     "hasPounce": false,
     "singleActionsOnly": false,
+    "magicImmunityExceptions": [
+      {
+        "triggerTagsAny": [
+          "fire"
+        ],
+        "effectType": "heal_per_damage_divisor",
+        "damageDivisor": 3,
+        "description": "Magical fire repairs 1 HP per 3 damage."
+      },
+      {
+        "triggerTagsAny": [
+          "electricity"
+        ],
+        "effectType": "slow",
+        "slowRounds": 3,
+        "description": "Magical electricity slows the Iron Golem for 3 rounds."
+      },
+      {
+        "triggerTagsAny": [
+          "rust"
+        ],
+        "effectType": "bypass_immunity",
+        "description": "Rusting attacks affect the Iron Golem normally."
+      }
+    ],
     "cr": 13
   }
 }
