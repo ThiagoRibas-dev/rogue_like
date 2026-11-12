@@ -756,6 +756,22 @@
       "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner.ts."
     ]
   },
+  "src/core/ecs/ecs_spawner_equipment.ts": {
+    "domain": "Core Console: ECS, Loop, RNG & Loader",
+    "tier": "tier1_console",
+    "responsibility": "Actor anatomical equipment initialization and default armament equipping.",
+    "canonicalEntryPoints": [
+      "initializeActorEquipmentAndInventory",
+      "equipActorDefaultArmaments"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/core/ecs/ecs_spawner_equipment.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/core/ecs/ecs_spawner_equipment.ts."
+    ]
+  },
   "src/core/game-loop.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",

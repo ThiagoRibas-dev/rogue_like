@@ -143,6 +143,16 @@ export function hydrateRaceAsArchetype(
   const weaponCritMultiplier = raceDef.weaponCritMultiplier ?? primaryNatural?.critMultiplier ?? 2;
   const weaponBypassTags = raceDef.weaponBypassTags ?? [weaponDamageType];
 
+  const totalHd = Math.max(
+    1,
+    tracks.reduce((sum, t) => sum + t.levels, 0)
+  );
+  let spellResistance = raceDef.spellResistance;
+  if (raceDef.spellResistanceFormula) {
+    const computedSr = raceDef.spellResistanceFormula.base + raceDef.spellResistanceFormula.perHitDie * totalHd;
+    spellResistance = Math.max(spellResistance ?? 0, computedSr);
+  }
+
   const totalNpcLevels = tracks.filter((t) => t.trackCategory === 'npc').reduce((s, t) => s + t.levels, 0);
   const computedCr =
     raceDef.cr ?? (baseHdCount === 0 && totalNpcLevels > 0 ? computeNpcClassCrContribution(totalNpcLevels, false) : 1);
@@ -164,7 +174,7 @@ export function hydrateRaceAsArchetype(
     energyResistance: raceDef.energyResistances ?? {},
     immunities: raceDef.immunities ?? [],
     vulnerabilities: raceDef.vulnerabilities ?? [],
-    ...(raceDef.spellResistance !== undefined ? { spellResistance: raceDef.spellResistance } : {}),
+    ...(spellResistance !== undefined ? { spellResistance } : {}),
     feats: raceDef.feats ?? [],
     skillRanks: raceDef.skillRanks ?? {},
     creatureType: raceDef.creatureType,
@@ -185,8 +195,9 @@ export function hydrateRaceAsArchetype(
           }
         : {}),
     movementModes: raceDef.movementModes ?? { land: raceDef.baseLandSpeedFt },
-    ...(raceDef.anatomyBodyPlan !== undefined ? { anatomyBodyPlan: raceDef.anatomyBodyPlan } : {}),
+    anatomyBodyPlan: raceDef.anatomyBodyPlan ?? 'humanoid_biped',
     naturalWeapons: raceDef.naturalWeapons ?? [],
+    defaultEquipment: raceDef.defaultEquipment ?? [],
     hasPounce: raceDef.hasPounce ?? false,
     singleActionsOnly: raceDef.singleActionsOnly ?? false,
     advancementRanges: raceDef.rhdProgression?.advancementRanges ?? [],

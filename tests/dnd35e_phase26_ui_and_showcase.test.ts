@@ -216,7 +216,7 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
       ...clericDraft,
       classId: 'fighter',
       domains: [],
-      selectedFeats: ['power_attack', 'cleave', 'weapon_focus_longsword']
+      selectedFeats: ['power_attack', 'cleave', 'weapon_focus:longsword']
     };
     const fighterValidation = validateCharacterCreationStep(fighterDraft, 'feats', sys);
     expect(fighterValidation.valid).toBe(true);

@@ -1,4 +1,5 @@
-import { evaluateEffectBundle } from './srd_registry.ts';
+import { buildCreatureTypeAndSubtypeModifiers } from './semantic_tags.ts';
+import { evaluateEffectBundle } from './effect_bundle.ts';
 import type { DnD35EntityData, HitDieTrack, StatModifier } from './types/dnd35e.types.ts';
 import type { DnD35CreatureTypeEngine, DnD35RaceDefinition } from './types/dnd35e_system.types.ts';
 
@@ -13,6 +14,68 @@ export interface AppliedRaceResult {
 
 /** Minimum intelligence score for sentient playable characters (`3`). */
 const MIN_SENTIENT_INT = 3;
+
+/**
+ * Evaluates all declarative racial mechanics on a `DnD35RaceDefinition` (trait bundles,
+ * tag-conditional modifiers, and racial save bonuses), returning resolved `StatModifier`s
+ * with hierarchical `sourcePath` provenance and any granted tags.
+ *
+ * @param race SRD Race definition.
+ * @param suppressedBundles Optional list of suppressed effect bundle IDs.
+ * @returns Object with generated `statModifiers` and `grantedTags`.
+ */
+export function evaluateRacialModifiers(
+  race: DnD35RaceDefinition,
+  suppressedBundles: ReadonlyArray<string> = []
+): {
+  readonly statModifiers: ReadonlyArray<StatModifier>;
+  readonly grantedTags: ReadonlyArray<string>;
+} {
+  const statModifiers: StatModifier[] = [];
+  const grantedTags: string[] = [];
+  const raceRootPath = `race:${race.id}`;
+
+  if (race.unencumberedSpeedInHeavyArmor) {
+    grantedTags.push('trait:unencumbered_speed');
+  }
+
+  for (const bundle of race.traitBundles ?? []) {
+    const evalRes = evaluateEffectBundle(bundle, raceRootPath, suppressedBundles);
+    if (!evalRes.isActive) continue;
+    statModifiers.push(...evalRes.statModifiers);
+    grantedTags.push(...evalRes.grantedTags);
+  }
+
+  for (const cm of race.conditionalModifiers ?? []) {
+    statModifiers.push({
+      targetStat: cm.target,
+      value: cm.value,
+      bonusType: cm.type,
+      sourceId: `race:${race.id}:${cm.id}`,
+      sourcePath: `${raceRootPath}/trait:${cm.id}`,
+      origin: 'ex',
+      condition: cm.condition
+    });
+  }
+
+  if (race.saveBonuses) {
+    for (const saveKey of ['fort', 'ref', 'will'] as const) {
+      const val = race.saveBonuses[saveKey];
+      if (val !== undefined) {
+        statModifiers.push({
+          targetStat: `save_${saveKey}`,
+          value: val,
+          bonusType: 'racial',
+          sourceId: `race:${race.id}:save_${saveKey}`,
+          sourcePath: `${raceRootPath}/save:${saveKey}`,
+          origin: 'ex'
+        });
+      }
+    }
+  }
+
+  return { statModifiers, grantedTags };
+}
 
 /**
  * Applies an SRD 3.5e Race Definition to a base actor entity data record,
@@ -79,21 +142,34 @@ export function applyRaceToActorChassis(
     racialHdCount = rhdCount;
     const hitDieSides = race.racialHitDice?.hitDieSides ?? creatureTypeEngine?.hitDieSides ?? 8;
     const babCurve = race.racialHitDice?.babCurve ?? creatureTypeEngine?.babCurve ?? 'three_quarters';
-    const fortCurve =
+    let fortCurve =
       race.rhdProgression?.saveCurveOverrides?.fortCurve ??
       race.racialHitDice?.fortCurve ??
       creatureTypeEngine?.fortCurve ??
       'good';
-    const refCurve =
+    let refCurve =
       race.rhdProgression?.saveCurveOverrides?.refCurve ??
       race.racialHitDice?.refCurve ??
       creatureTypeEngine?.refCurve ??
       'poor';
-    const willCurve =
+    let willCurve =
       race.rhdProgression?.saveCurveOverrides?.willCurve ??
       race.racialHitDice?.willCurve ??
       creatureTypeEngine?.willCurve ??
       'poor';
+
+    if (creatureTypeEngine?.goodSaveBySubtype) {
+      for (const sub of race.subtypes) {
+        const subSaves = creatureTypeEngine.goodSaveBySubtype[sub];
+        if (subSaves) {
+          fortCurve = subSaves.fortCurve;
+          refCurve = subSaves.refCurve;
+          willCurve = subSaves.willCurve;
+          break;
+        }
+      }
+    }
+
     const skillPointsPerLevel = race.racialHitDice?.skillPointsPerLevel ?? creatureTypeEngine?.skillPointsPerLevel ?? 2;
 
     const racialTrack: HitDieTrack = {
@@ -160,70 +236,30 @@ export function applyRaceToActorChassis(
     }
   }
 
-  // Subtypes & Trait Bundles
-  const extraTraits = race.unencumberedSpeedInHeavyArmor ? ['trait:unencumbered_speed'] : [];
-  const statModifiers: StatModifier[] = [...(base.statModifiers ?? [])];
+  // Subtypes & Racial Effect Providers
   const raceRootPath = `race:${race.id}`;
   const suppressedBundles = base.suppressedBundleIds ?? [];
+  const racialMods = evaluateRacialModifiers(race, suppressedBundles);
+  const subtypes = Array.from(new Set([...(base.subtypes ?? []), ...race.subtypes, ...racialMods.grantedTags]));
 
-  for (const bundle of race.traitBundles ?? []) {
-    const evalRes = evaluateEffectBundle(bundle, raceRootPath, suppressedBundles);
-    if (!evalRes.isActive) continue;
-    statModifiers.push(...evalRes.statModifiers);
-    extraTraits.push(...evalRes.grantedTags);
-  }
+  const chaScore = nextScores['cha']?.base;
+  const chaMod = chaScore !== null && chaScore !== undefined ? Math.floor((chaScore - 10) / 2) : 0;
+  const creatureTypeMods = buildCreatureTypeAndSubtypeModifiers(race.creatureType, subtypes, chaMod, raceRootPath);
 
-  const subtypes = Array.from(new Set([...(base.subtypes ?? []), ...race.subtypes, ...extraTraits]));
+  const statModifiers: StatModifier[] = [
+    ...(base.statModifiers ?? []),
+    ...racialMods.statModifiers,
+    ...creatureTypeMods
+  ];
 
-  for (const cm of race.conditionalModifiers ?? []) {
-    statModifiers.push({
-      targetStat: cm.target,
-      value: cm.value,
-      bonusType: cm.type,
-      sourceId: `race:${race.id}:${cm.id}`,
-      sourcePath: `${raceRootPath}/trait:${cm.id}`,
-      origin: 'ex',
-      condition: cm.condition
-    });
-  }
-
-  if (race.saveBonuses) {
-    if (race.saveBonuses.fort !== undefined) {
-      statModifiers.push({
-        targetStat: 'save_fort',
-        value: race.saveBonuses.fort,
-        bonusType: 'racial',
-        sourceId: `race:${race.id}:save_fort`,
-        sourcePath: `${raceRootPath}/save:fort`,
-        origin: 'ex'
-      });
-    }
-    if (race.saveBonuses.ref !== undefined) {
-      statModifiers.push({
-        targetStat: 'save_ref',
-        value: race.saveBonuses.ref,
-        bonusType: 'racial',
-        sourceId: `race:${race.id}:save_ref`,
-        sourcePath: `${raceRootPath}/save:ref`,
-        origin: 'ex'
-      });
-    }
-    if (race.saveBonuses.will !== undefined) {
-      statModifiers.push({
-        targetStat: 'save_will',
-        value: race.saveBonuses.will,
-        bonusType: 'racial',
-        sourceId: `race:${race.id}:save_will`,
-        sourcePath: `${raceRootPath}/save:will`,
-        origin: 'ex'
-      });
-    }
-  }
+  const racialBonusFeats = race.defaultClassLevels && race.defaultClassLevels.length > 0 ? [] : (race.feats ?? []);
+  const feats = Array.from(new Set([...(base.feats ?? []), ...racialBonusFeats]));
 
   const ecl = totalHd + (race.levelAdjustment ?? 0);
 
   const updatedEntityData: DnD35EntityData = {
     ...base,
+    raceId: race.id,
     creatureType: race.creatureType,
     subtypes,
     sizeCategory: race.size,
@@ -235,6 +271,10 @@ export function applyRaceToActorChassis(
     senses,
     movementModes,
     levelAdjustment: race.levelAdjustment,
+    anatomyBodyPlan: race.anatomyBodyPlan ?? base.anatomyBodyPlan ?? 'humanoid_biped',
+    naturalWeapons: race.naturalWeapons.length > 0 ? race.naturalWeapons : base.naturalWeapons,
+    hasPounce: race.hasPounce || base.hasPounce,
+    feats,
     statModifiers
   };
 

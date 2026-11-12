@@ -63,6 +63,23 @@
       "goblin"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "morningstar",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "leather_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "light_wooden_shield",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "javelin"
+      }
+    ],
     "weaponDice": "1d8",
     "weaponDamageType": "bludgeoning",
     "weaponCritThreatMin": 20,
@@ -74,7 +91,7 @@
     "shieldBonus": 1,
     "feats": [
       "alertness",
-      "weapon_focus_morningstar"
+      "weapon_focus:morningstar"
     ],
     "skillRanks": {
       "hide": 4,

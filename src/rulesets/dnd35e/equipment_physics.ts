@@ -14,6 +14,7 @@ import {
   parseEquippedItem,
   type ResolvedActorWeapons
 } from './equipment/weapon_profile_parser.ts';
+import { getDnD35EntityData } from './srd_registry.ts';
 import type { CreatureSizeCategory, DnD35EntityData } from './types/dnd35e.types.ts';
 import type { DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
 
@@ -36,7 +37,7 @@ export function resolveAllEquippedWeaponProfiles(
   effectiveWielderSizeOverride?: CreatureSizeCategory
 ): ResolvedActorWeapons {
   const rulesetComp = getComponent(state, entityId, ComponentType.RulesetData);
-  const dndData = (rulesetComp?.rulesetId === 'dnd35e' ? rulesetComp.payload : undefined) as
+  const dndData = (rulesetComp?.rulesetId === 'dnd35e' ? rulesetComp.payload : getDnD35EntityData(state, entityId)) as
     Partial<DnD35EntityData> | undefined;
   const wielderSize = effectiveWielderSizeOverride ?? dndData?.sizeCategory ?? 'medium';
 

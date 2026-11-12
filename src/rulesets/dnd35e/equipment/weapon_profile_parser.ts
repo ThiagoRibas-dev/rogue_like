@@ -16,10 +16,12 @@ import type {
 import type {
   DnD35ClassDefinition,
   DnD35DamageType,
+  DnD35FeatDefinition,
   DnD35ItemDefinition,
   DnD35ItemEnhancement,
   DnD35WeaponDamageRider
 } from '../types/dnd35e_system.types.ts';
+import { buildFeatEffectModifiers } from '../progression/ledger_modifiers.ts';
 import {
   computeExpandedCritThreatMin,
   evaluateNonproficiencyPenalty,
@@ -162,8 +164,7 @@ export function parseEquippedItem(
   ] as const satisfies ReadonlyArray<SpecialMaterialType>) {
     if (declaredMat === mat || itemTags.includes(mat) || itemTags.includes(`material:${mat}`)) {
       finalItemDef = applyMaterialPhysics(finalItemDef, mat) as DnD35ItemDefinition;
-      const adjustments = computeMaterialEquipmentStats(mat);
-      weaponPenalty += adjustments.weaponDamagePenalty;
+      weaponPenalty += computeMaterialEquipmentStats(mat).weaponDamagePenalty;
     }
   }
 
@@ -225,8 +226,16 @@ export function parseEquippedItem(
     if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= DEFAULT_CRIT_THREAT_MIN) critThreatMin = parsed;
   }
 
+  const existingMods = dndData?.statModifiers ?? [];
+  const hasFeatMods = existingMods.some((m) => (m.sourcePath ?? '').startsWith('feat:'));
+  const sysFeats = state.campaign.systemContent?.['feats'] as Record<string, DnD35FeatDefinition> | undefined;
+  const derivedFeatMods =
+    !hasFeatMods && (dndData?.feats?.length ?? 0) > 0 && sysFeats
+      ? buildFeatEffectModifiers(dndData?.feats ?? [], sysFeats, dndData?.suppressedBundleIds ?? [])
+      : [];
   const candidateCritMods: StatModifier[] = [
-    ...(dndData?.statModifiers ?? []).filter((m) => m.targetStat === 'crit_threat_doubling')
+    ...existingMods.filter((m) => m.targetStat === 'crit_threat_doubling'),
+    ...derivedFeatMods.filter((m) => m.targetStat === 'crit_threat_doubling')
   ];
   if (magicalProps?.keen === true || itemTags.includes('keen') || enhancementsList.includes('keen')) {
     candidateCritMods.push({
@@ -236,26 +245,6 @@ export function parseEquippedItem(
       sourceId: `item:${baseItemDef.id}:keen`,
       sourcePath: `item:${baseItemDef.id}/keen`,
       origin: 'magical',
-      condition: { effectTagsAny: [`weapon:${baseWeaponId}`, `weapon:${baseItemDef.id}`] }
-    });
-  }
-  const feats = dndData?.feats ?? [];
-  const hasImprovedCrit = feats.some(
-    (f) =>
-      f === 'improved_critical' ||
-      f === `improved_critical:${baseWeaponId}` ||
-      f === `improved_critical_${baseWeaponId}` ||
-      f === `improved_critical:${baseItemDef.id}` ||
-      f === `improved_critical_${baseItemDef.id}`
-  );
-  if (hasImprovedCrit && !candidateCritMods.some((m) => (m.sourcePath ?? '').startsWith('feat:improved_critical'))) {
-    candidateCritMods.push({
-      targetStat: 'crit_threat_doubling',
-      value: 1,
-      bonusType: 'threat_expansion',
-      sourceId: `feat:improved_critical:${baseWeaponId}`,
-      sourcePath: `feat:improved_critical/${baseWeaponId}`,
-      origin: 'ex',
       condition: { effectTagsAny: [`weapon:${baseWeaponId}`, `weapon:${baseItemDef.id}`] }
     });
   }

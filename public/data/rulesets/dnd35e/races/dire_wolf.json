@@ -74,7 +74,7 @@
     "feats": [
       "alertness",
       "run",
-      "weapon_focus_bite"
+      "weapon_focus:bite"
     ],
     "skillRanks": {
       "listen": 7,

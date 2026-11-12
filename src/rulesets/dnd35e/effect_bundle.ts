@@ -161,25 +161,6 @@ export function parseParameterizedFeatId(rawFeatId: string): {
     const targetId = rawFeatId.slice(colonIdx + 1);
     return targetId.length > 0 ? { baseFeatId, targetId } : { baseFeatId };
   }
-  const KNOWN_PARAMETERIZED_FEAT_PREFIXES = [
-    'weapon_focus_',
-    'weapon_specialization_',
-    'greater_weapon_focus_',
-    'greater_weapon_specialization_',
-    'improved_critical_',
-    'exotic_weapon_proficiency_',
-    'skill_focus_',
-    'spell_focus_',
-    'greater_spell_focus_',
-    'ability_focus_'
-  ];
-  for (const prefix of KNOWN_PARAMETERIZED_FEAT_PREFIXES) {
-    if (rawFeatId.startsWith(prefix)) {
-      const baseFeatId = prefix.slice(0, -1);
-      const targetId = rawFeatId.slice(prefix.length);
-      return { baseFeatId, targetId };
-    }
-  }
   return { baseFeatId: rawFeatId };
 }
 

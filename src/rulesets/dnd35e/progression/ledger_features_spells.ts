@@ -1,5 +1,5 @@
 import { collectClassFeaturesUpToLevel, computeEffectiveClassCastingLevel, getClassLevelRow } from '../progression.ts';
-import { isActivationConditionMet } from '../srd_registry.ts';
+import { isActivationConditionMet } from '../effect_bundle.ts';
 import type {
   DnD35CharacterLevelRecord,
   DnD35ClassSpellbookState,

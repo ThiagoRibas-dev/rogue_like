@@ -5,7 +5,7 @@ import {
   isActivationConditionMet,
   parseParameterizedFeatId,
   resolveFeatEffectBundle
-} from '../srd_registry.ts';
+} from '../effect_bundle.ts';
 import type { HitDieTrack, StatModifier, StatModifierCondition } from '../types/dnd35e.types.ts';
 import type {
   DnD35ClassDefinition,

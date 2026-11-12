@@ -1624,7 +1624,8 @@
     "responsibility": "Result of applying an SRD 3.5e Race Definition to an actor's chassis.",
     "canonicalEntryPoints": [
       "AppliedRaceResult",
-      "applyRaceToActorChassis"
+      "applyRaceToActorChassis",
+      "evaluateRacialModifiers"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/races.ts.",
@@ -2073,7 +2074,7 @@
   "src/rulesets/dnd35e/types/system/base_system.types.ts": {
     "domain": "D&D 3.5e: Ruleset Types & Schemas",
     "tier": "tier1_types",
-    "responsibility": "Foundational schemas for abilities, BAB/Save curves, sizes, damage types, riders, senses, and dragon/elemental families.",
+    "responsibility": "Foundational schemas for abilities, BAB/Save curves, sizes, damage types, riders, senses, and movement modes.",
     "canonicalEntryPoints": [
       "RawAbilityScoresSchema",
       "RawAbilityScores",
@@ -2100,15 +2101,7 @@
       "DnD35SensoryProfileSchema",
       "DnD35SensoryProfile",
       "DnD35MovementModesSchema",
-      "DnD35MovementModes",
-      "DnD35DragonAgeCategorySchema",
-      "DnD35DragonAgeCategory",
-      "DnD35DragonVarietySchema",
-      "DnD35DragonVariety",
-      "DnD35ElementalStepSchema",
-      "DnD35ElementalStep",
-      "DnD35DragonFamiliesDataSchema",
-      "DnD35DragonFamiliesData"
+      "DnD35MovementModes"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/types/system/base_system.types.ts.",
@@ -2125,6 +2118,8 @@
     "canonicalEntryPoints": [
       "DnD35ArchetypeSchema",
       "DnD35Archetype",
+      "DnD35DefaultEquipmentEntrySchema",
+      "DnD35DefaultEquipmentEntry",
       "DnD35TemplateHdTierSchema",
       "DnD35TemplateHdTier",
       "DnD35TemplateSchema",

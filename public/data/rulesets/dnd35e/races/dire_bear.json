@@ -87,7 +87,7 @@
       "endurance",
       "run",
       "toughness",
-      "weapon_focus_claw"
+      "weapon_focus:claw"
     ],
     "skillRanks": {
       "listen": 7,

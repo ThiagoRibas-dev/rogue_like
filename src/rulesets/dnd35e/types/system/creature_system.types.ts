@@ -20,6 +20,13 @@ import {
   DnD35RuleOverrideEntrySchema
 } from './effect_system.types.ts';
 
+/** Zod schema for an actor's default equipped or inventory armament entry. */
+export const DnD35DefaultEquipmentEntrySchema = z.object({
+  itemId: z.string(),
+  equipSlot: z.string().optional()
+});
+export type DnD35DefaultEquipmentEntry = z.infer<typeof DnD35DefaultEquipmentEntrySchema>;
+
 /** Zod schema for a declarative System Content creature/character archetype (`archetypes.json` or hydrated from `races/<id>.json`). */
 export const DnD35ArchetypeSchema = z.object({
   archetypeId: z.string(),
@@ -48,6 +55,7 @@ export const DnD35ArchetypeSchema = z.object({
   movementModes: DnD35MovementModesSchema.optional(),
   anatomyBodyPlan: z.enum(['humanoid_biped', 'quadruped', 'marilith_6arm', 'avian', 'serpentine']).optional(),
   naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  defaultEquipment: z.array(DnD35DefaultEquipmentEntrySchema).default([]),
   hasPounce: z.boolean().default(false),
   singleActionsOnly: z.boolean().default(false),
   advancementRanges: z.array(DnD35AdvancementRangeSchema).default([]),
@@ -62,7 +70,6 @@ export const DnD35TemplateHdTierSchema = z.object({
   minHd: z.number().int().positive(),
   maxHd: z.number().int().positive().optional(),
   damageReduction: DnD35DamageReductionSchema.optional(),
-  energyResistance: z.record(z.string(), z.number().int().nonnegative()).optional(),
   energyResistances: z.record(z.string(), z.number().int().nonnegative()).optional(),
   crAdjustment: z.number().optional()
 });
@@ -96,8 +103,7 @@ export const DnD35TemplateSchema = z.object({
   naturalArmorBonusDelta: z.number().int().default(0),
   sizeTieredNaturalArmor: z.record(SizeCategorySchema, z.number().int().nonnegative()).optional(),
   damageReduction: DnD35DamageReductionSchema.optional(),
-  energyResistance: z.record(z.string(), z.number().int().nonnegative()).default({}),
-  energyResistances: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  energyResistances: z.record(z.string(), z.number().int().nonnegative()).default({}),
   hdTieredScaling: z.array(DnD35TemplateHdTierSchema).optional(),
   spellResistanceFormula: z
     .object({
@@ -199,24 +205,14 @@ export const DnD35RaceDefinitionSchema = z.object({
       skillPointsPerLevel: z.number().int().nonnegative()
     })
     .optional(),
-  defaultClassLevels: z
-    .array(
-      z.object({
-        classId: z.string(),
-        levels: z.number().int().positive()
-      })
-    )
-    .default([]),
+  defaultClassLevels: z.array(z.object({ classId: z.string(), levels: z.number().int().positive() })).default([]),
   levelAdjustment: z.number().int().nonnegative().default(0),
   favoredClass: z.string().default('fighter'),
   bonusFeatAtFirstLevel: z.boolean().default(false),
   extraSkillPointsFirstLevel: z.number().int().nonnegative().default(0),
   extraSkillPointsPerLevel: z.number().int().nonnegative().default(0),
   spellResistanceFormula: z
-    .object({
-      base: z.number().int().nonnegative(),
-      perHitDie: z.number().int().nonnegative()
-    })
+    .object({ base: z.number().int().nonnegative(), perHitDie: z.number().int().nonnegative() })
     .optional(),
   spellResistance: z.number().int().nonnegative().optional(),
   damageReduction: DnD35DamageReductionSchema.optional(),
@@ -224,11 +220,7 @@ export const DnD35RaceDefinitionSchema = z.object({
   immunities: z.array(z.string()).default([]),
   vulnerabilities: z.array(z.string()).default([]),
   saveBonuses: z
-    .object({
-      fort: z.number().int().optional(),
-      ref: z.number().int().optional(),
-      will: z.number().int().optional()
-    })
+    .object({ fort: z.number().int().optional(), ref: z.number().int().optional(), will: z.number().int().optional() })
     .optional(),
   conditionalModifiers: z.array(DnD35RacialConditionalModifierSchema).default([]),
   traitBundles: z.array(DnD35EffectBundleSchema).default([]),
@@ -236,6 +228,7 @@ export const DnD35RaceDefinitionSchema = z.object({
   automaticLanguages: z.array(z.string()).default(['common']),
   anatomyBodyPlan: z.enum(['humanoid_biped', 'quadruped', 'marilith_6arm', 'avian', 'serpentine']).optional(),
   naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  defaultEquipment: z.array(DnD35DefaultEquipmentEntrySchema).default([]),
   weaponDice: z.string().optional(),
   weaponDamageType: DnD35DamageTypeSchema.optional(),
   weaponCritThreatMin: z.number().int().min(1).max(20).optional(),

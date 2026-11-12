@@ -182,7 +182,7 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
   }
 
   const energyResistance: Record<string, number> = { ...base.energyResistance };
-  const baseTemplateResistances = { ...(template.energyResistance ?? {}), ...(template.energyResistances ?? {}) };
+  const baseTemplateResistances = template.energyResistances ?? {};
   for (const [key, val] of Object.entries(baseTemplateResistances)) {
     energyResistance[key] = Math.max(energyResistance[key] ?? 0, val);
   }
@@ -195,7 +195,7 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
             damageReduction = tier.damageReduction;
           }
         }
-        const tierResistances = { ...(tier.energyResistance ?? {}), ...(tier.energyResistances ?? {}) };
+        const tierResistances = tier.energyResistances ?? {};
         for (const [key, val] of Object.entries(tierResistances)) {
           energyResistance[key] = Math.max(energyResistance[key] ?? 0, typeof val === 'number' ? val : 0);
         }

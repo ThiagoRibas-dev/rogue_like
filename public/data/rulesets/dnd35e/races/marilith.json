@@ -84,6 +84,32 @@
         "critMultiplier": 2
       }
     ],
+    "defaultEquipment": [
+      {
+        "itemId": "longsword",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "longsword",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "longsword",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "longsword",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "longsword",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "longsword",
+        "equipSlot": "off_hand"
+      }
+    ],
     "weaponDice": "2d6",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 19,
@@ -101,7 +127,7 @@
       "multiattack",
       "multiweapon_fighting",
       "power_attack",
-      "weapon_focus_longsword"
+      "weapon_focus:longsword"
     ],
     "skillRanks": {
       "concentration": 19,

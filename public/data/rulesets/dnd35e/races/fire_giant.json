@@ -56,6 +56,16 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "greatsword",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "half_plate",
+        "equipSlot": "torso"
+      }
+    ],
     "weaponDice": "3d6",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 19,

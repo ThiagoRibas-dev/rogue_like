@@ -1,7 +1,6 @@
 /** Canonical SRD Feat IDs loaded from `public/data/rulesets/dnd35e/feats/<id>.json`. */
 export const FEAT_IDS: ReadonlyArray<string> = [
   'ability_focus',
-  'ability_focus_poison',
   'acrobatic',
   'agile',
   'alertness',
@@ -118,13 +117,6 @@ export const FEAT_IDS: ReadonlyArray<string> = [
   'two_weapon_fighting',
   'weapon_finesse',
   'weapon_focus',
-  'weapon_focus_bite',
-  'weapon_focus_claw',
-  'weapon_focus_greataxe',
-  'weapon_focus_greatclub',
-  'weapon_focus_longsword',
-  'weapon_focus_morningstar',
-  'weapon_focus_spikes',
   'weapon_specialization',
   'whirlwind_attack',
   'widen_spell',

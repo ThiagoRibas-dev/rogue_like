@@ -54,6 +54,23 @@
       "goblin"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "longsword",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "studded_leather_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "light_steel_shield",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "javelin"
+      }
+    ],
     "weaponDice": "1d8",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 19,

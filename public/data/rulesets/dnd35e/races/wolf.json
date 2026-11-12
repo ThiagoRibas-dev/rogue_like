@@ -89,7 +89,7 @@
     "shieldBonus": 0,
     "feats": [
       "track",
-      "weapon_focus_bite"
+      "weapon_focus:bite"
     ],
     "skillRanks": {
       "listen": 3,

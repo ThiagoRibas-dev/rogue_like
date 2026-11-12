@@ -1,14 +1,20 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore, createAbilityScoreState } from './abilities.ts';
 import { hydrateRaceAsArchetype } from './archetype/race_hydrator.ts';
+import { synthesizeDragonFromRaceTier, synthesizeElementalFromRaceTier } from './family_synthesizer.ts';
 import {
-  synthesizeDragonFromRaceTier,
-  synthesizeElementalArchetype,
-  synthesizeElementalFromRaceTier,
-  synthesizeTrueDragonArchetype
-} from './family_synthesizer.ts';
+  buildClassAndDomainEffectModifiers,
+  collectActiveGrantedAndVirtualFeats
+} from './progression/ledger_modifiers.ts';
+import { collectActiveClassFeaturesAndPools } from './progression/ledger_features_spells.ts';
+import { evaluateRacialModifiers } from './races.ts';
 import { buildCreatureTypeAndSubtypeModifiers } from './semantic_tags.ts';
-import type { AbilityScoresRecord, DnD35EntityData } from './types/dnd35e.types.ts';
-import type { DnD35Archetype, DnD35DragonFamiliesData, DnD35RaceDefinition } from './types/dnd35e_system.types.ts';
+import type { AbilityScoresRecord, DnD35EntityData, StatModifier } from './types/dnd35e.types.ts';
+import type {
+  DnD35Archetype,
+  DnD35ClassDefinition,
+  DnD35DomainDefinition,
+  DnD35RaceDefinition
+} from './types/dnd35e_system.types.ts';
 
 export * from './archetype/race_hydrator.ts';
 
@@ -53,6 +59,11 @@ export function hydrateArchetypeData(
   const archetype: DnD35Archetype =
     'archetypeId' in archetypeOrRace ? archetypeOrRace : hydrateRaceAsArchetype(systemContent, archetypeOrRace);
 
+  const raceDef: DnD35RaceDefinition | undefined =
+    'id' in archetypeOrRace && 'creatureType' in archetypeOrRace
+      ? (archetypeOrRace as DnD35RaceDefinition)
+      : (systemContent?.['races'] as Record<string, DnD35RaceDefinition> | undefined)?.[archetype.archetypeId];
+
   const tracks =
     levelOverride !== undefined && archetype.tracks.length > 0
       ? [{ ...archetype.tracks[0]!, levels: Math.max(1, levelOverride) }, ...archetype.tracks.slice(1)]
@@ -71,7 +82,10 @@ export function hydrateArchetypeData(
 
   const abilityScores = buildAbilityScoresRecord(archetype.abilityScores);
   const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(abilityScores.cha));
-  const subtypes = archetype.subtypes ?? [];
+
+  const racialMods = raceDef ? evaluateRacialModifiers(raceDef) : { statModifiers: [], grantedTags: [] };
+  const subtypes = Array.from(new Set([...(archetype.subtypes ?? []), ...racialMods.grantedTags]));
+
   const providerMods = buildCreatureTypeAndSubtypeModifiers(
     archetype.creatureType,
     subtypes,
@@ -80,8 +94,30 @@ export function hydrateArchetypeData(
     systemContent
   );
 
+  let classAndDomainMods: ReadonlyArray<StatModifier> = [];
+  let grantedFeats: ReadonlyArray<string> = [];
+  let scalingPools: Record<string, number> | undefined;
+  let activeClassFeatures: ReadonlyArray<string> | undefined;
+
+  const classesDict = systemContent?.['classes'] as Record<string, DnD35ClassDefinition> | undefined;
+  if (
+    classesDict &&
+    tracks.some((t) => t.trackCategory === 'pc' || t.trackCategory === 'npc' || t.trackCategory === 'prestige')
+  ) {
+    const domainsDict = (systemContent?.['domains'] as Record<string, DnD35DomainDefinition> | undefined) ?? {};
+    const featPoolSummary = collectActiveClassFeaturesAndPools(tracks, [], classesDict);
+    classAndDomainMods = buildClassAndDomainEffectModifiers(tracks, [], [], classesDict, domainsDict);
+    grantedFeats = collectActiveGrantedAndVirtualFeats(tracks, [], [], classesDict, domainsDict);
+    scalingPools = featPoolSummary.scalingPools;
+    activeClassFeatures = featPoolSummary.activeFeatureIds;
+  }
+
+  const mergedFeats = Array.from(new Set([...archetype.feats, ...grantedFeats]));
+  const allStatModifiers = [...providerMods, ...racialMods.statModifiers, ...classAndDomainMods];
+
   return {
     archetypeId: archetype.archetypeId,
+    ...(raceDef !== undefined ? { raceId: raceDef.id } : {}),
     sizeCategory: archetype.sizeCategory,
     abilityScores,
     tracks,
@@ -102,11 +138,13 @@ export function hydrateArchetypeData(
     tempHp: 0,
     isStable: true,
     conditions: [],
-    feats: archetype.feats,
+    feats: mergedFeats,
     skillRanks: archetype.skillRanks,
     ...(archetype.creatureType !== undefined ? { creatureType: archetype.creatureType } : {}),
     subtypes,
     levelAdjustment: archetype.levelAdjustment ?? 0,
+    ...(scalingPools !== undefined ? { scalingPools } : {}),
+    ...(activeClassFeatures !== undefined ? { activeClassFeatures } : {}),
     ...(archetype.senses !== undefined ? { senses: archetype.senses } : {}),
     ...(archetype.movementModes !== undefined
       ? {
@@ -122,11 +160,11 @@ export function hydrateArchetypeData(
           }
         }
       : {}),
-    ...(archetype.anatomyBodyPlan !== undefined ? { anatomyBodyPlan: archetype.anatomyBodyPlan } : {}),
+    anatomyBodyPlan: archetype.anatomyBodyPlan ?? 'humanoid_biped',
     naturalWeapons: archetype.naturalWeapons ?? [],
     hasPounce: archetype.hasPounce ?? false,
     singleActionsOnly: archetype.singleActionsOnly ?? false,
-    statModifiers: providerMods
+    statModifiers: allStatModifiers
   };
 }
 
@@ -156,6 +194,7 @@ export const DEFAULT_PLAYER_ARCHETYPE: DnD35Archetype = {
   weaponCritMultiplier: 2,
   weaponBypassTags: ['slashing'],
   naturalWeapons: [],
+  defaultEquipment: [],
   hasPounce: false,
   singleActionsOnly: false,
   advancementRanges: [],
@@ -196,6 +235,7 @@ export const DEFAULT_CREATURE_ARCHETYPE: DnD35Archetype = {
   weaponCritMultiplier: 2,
   weaponBypassTags: ['slashing'],
   naturalWeapons: [],
+  defaultEquipment: [],
   hasPounce: false,
   singleActionsOnly: false,
   advancementRanges: [],
@@ -213,7 +253,7 @@ export const DEFAULT_CREATURE_ARCHETYPE: DnD35Archetype = {
 /**
  * Resolves a `DnD35Archetype` by ID from unified `races/<id>.json` (including Dragon age category
  * tiers `dragon_<variety>_<age>` and Elemental size steps `elemental_<element>_<step>`),
- * or falls back to `archetypes` / `dragonFamilies` if provided.
+ * or falls back to `archetypes` if provided.
  */
 export function getDnD35Archetype(
   systemContent: Record<string, unknown> | undefined,
@@ -239,15 +279,10 @@ export function getDnD35Archetype(
   if (archetypeId.startsWith('dragon_')) {
     const parts = archetypeId.split('_');
     if (parts.length >= 3) {
-      const varietyId = parts[1]!;
+      const dragonRace = races?.[`dragon_${parts[1]!}`];
       const ageCategoryId = parts.slice(2).join('_');
-      const dragonRace = races?.[`dragon_${varietyId}`];
-      if (dragonRace && dragonRace.rhdProgression?.tiers?.some((t) => t.tierId === ageCategoryId)) {
+      if (dragonRace?.rhdProgression?.tiers?.some((t) => t.tierId === ageCategoryId)) {
         return synthesizeDragonFromRaceTier(dragonRace, ageCategoryId);
-      }
-      const dragonFamilies = systemContent?.['dragonFamilies'] as DnD35DragonFamiliesData | undefined;
-      if (dragonFamilies?.varieties?.[varietyId] && dragonFamilies?.ageCategories?.[ageCategoryId]) {
-        return synthesizeTrueDragonArchetype(dragonFamilies, varietyId, ageCategoryId);
       }
     }
   }
@@ -255,15 +290,10 @@ export function getDnD35Archetype(
   if (archetypeId.startsWith('elemental_')) {
     const parts = archetypeId.split('_');
     if (parts.length >= 3) {
-      const elementId = parts[1] as 'air' | 'earth' | 'fire' | 'water';
+      const elementalRace = races?.[`elemental_${parts[1]}`];
       const stepId = parts.slice(2).join('_');
-      const elementalRace = races?.[`elemental_${elementId}`];
-      if (elementalRace && elementalRace.rhdProgression?.tiers?.some((t) => t.tierId === stepId)) {
+      if (elementalRace?.rhdProgression?.tiers?.some((t) => t.tierId === stepId)) {
         return synthesizeElementalFromRaceTier(elementalRace, stepId);
-      }
-      const dragonFamilies = systemContent?.['dragonFamilies'] as DnD35DragonFamiliesData | undefined;
-      if (dragonFamilies?.elementalSteps?.[stepId]) {
-        return synthesizeElementalArchetype(dragonFamilies, elementId, stepId);
       }
     }
   }

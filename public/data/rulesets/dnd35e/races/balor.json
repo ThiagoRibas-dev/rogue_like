@@ -71,6 +71,16 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "longsword",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "whip",
+        "equipSlot": "off_hand"
+      }
+    ],
     "weaponDice": "2d6",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 19,
@@ -84,10 +94,11 @@
     "shieldBonus": 0,
     "feats": [
       "cleave",
+      "exotic_weapon_proficiency:whip",
       "improved_initiative",
       "power_attack",
       "two_weapon_fighting",
-      "weapon_focus_longsword"
+      "weapon_focus:longsword"
     ],
     "skillRanks": {
       "concentration": 23,

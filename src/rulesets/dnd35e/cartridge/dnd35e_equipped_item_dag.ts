@@ -4,8 +4,8 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { NaturalWeaponLimbEntry } from '../combat/attack_resolver.ts';
 import { computeMaterialEquipmentStats } from '../equipment/special_materials.ts';
 import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
-import { scaleWeaponDamageDice } from '../equipment_physics.ts';
-import { evaluateEffectBundle } from '../srd_registry.ts';
+import { scaleWeaponDamageDice } from '../equipment/weapon_scaling.ts';
+import { evaluateEffectBundle } from '../effect_bundle.ts';
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35ItemDefinition, DnD35ItemEnhancement } from '../types/dnd35e_system.types.ts';
 
@@ -260,7 +260,9 @@ export function buildActorNaturalWeaponLimbs(
     }
 
     let limbGroupId: string | undefined;
-    if (nw.naturalType === 'claw' || nw.naturalType === 'slam') limbGroupId = availableHandLimbs[0] ?? 'hand_main';
+    if (nw.naturalType === 'tail_slap' || nw.naturalType === 'tail_sweep' || nw.id.includes('tail'))
+      limbGroupId = 'tail';
+    else if (nw.naturalType === 'claw' || nw.naturalType === 'slam') limbGroupId = availableHandLimbs[0] ?? 'hand_main';
     else if (nw.naturalType === 'bite' || nw.naturalType === 'gore') limbGroupId = 'head';
     naturalLimbs.push({
       id: nw.id,

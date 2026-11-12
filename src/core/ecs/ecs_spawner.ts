@@ -7,7 +7,6 @@ import {
   type AIComponent,
   type PlayerComponent,
   type InventoryComponent,
-  type EquipmentComponent,
   type QuestLogComponent,
   type LockComponent,
   type InteractableComponent,
@@ -20,6 +19,7 @@ import type { Intent } from '../../types/intents/intent.union.ts';
 import { rollFacetValue, rollPersonalityValue } from '../rng.ts';
 import { addComponent, createEntity, getComponent, removeComponent } from './ecs_core.ts';
 import { spawnItem, promoteEntity } from './ecs_item_promoter.ts';
+import { equipActorDefaultArmaments, initializeActorEquipmentAndInventory } from './ecs_spawner_equipment.ts';
 
 export { spawnItem, promoteEntity };
 
@@ -122,26 +122,7 @@ export function spawnEntity(
     });
   }
 
-  if (template.inventoryConfig) {
-    const inventoryCmp: InventoryComponent = {
-      type: ComponentType.Inventory,
-      items: [],
-      baseCapacity: template.inventoryConfig.baseCapacity
-    };
-    nextState = addComponent(nextState, entityId, inventoryCmp);
-  }
-
-  if (template.equipmentSlots) {
-    const equipmentCmp: EquipmentComponent = {
-      type: ComponentType.Equipment,
-      slots: template.equipmentSlots.map((slotType, index) => ({
-        id: `${slotType}_${index}`,
-        slotType,
-        equippedItem: null
-      }))
-    };
-    nextState = addComponent(nextState, entityId, equipmentCmp);
-  }
+  nextState = initializeActorEquipmentAndInventory(nextState, entityId, templateId, template);
 
   if (template.persistent) {
     nextState = addComponent(nextState, entityId, {
@@ -336,6 +317,8 @@ export function spawnEntity(
       }
     }
   }
+
+  nextState = equipActorDefaultArmaments(nextState, entityId, templateId, x, y);
 
   return [nextState, entityId];
 }

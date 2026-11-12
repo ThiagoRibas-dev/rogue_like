@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { CampaignData } from '../../../types/campaign.types.ts';
-import { DnD35AlignmentSchema, DnD35DragonFamiliesDataSchema } from './system/base_system.types.ts';
+import { DnD35AlignmentSchema } from './system/base_system.types.ts';
 import {
   DnD35AcfSwapSchema,
   DnD35ActivatedAbilityDescriptorSchema,
@@ -183,8 +183,7 @@ export const DnD35SystemContentSchema = z.object({
   templates: z.record(z.string(), DnD35TemplateSchema).default({}),
   races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),
   creatureTypes: z.record(z.string(), DnD35CreatureTypeEngineSchema).default({}),
-  subtypes: z.record(z.string(), DnD35SubtypeDefinitionSchema).default({}),
-  dragonFamilies: DnD35DragonFamiliesDataSchema.optional()
+  subtypes: z.record(z.string(), DnD35SubtypeDefinitionSchema).default({})
 });
 /** Inferred type for D&D 3.5e System Content registries. */
 export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;

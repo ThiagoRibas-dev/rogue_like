@@ -54,6 +54,23 @@
       "goblin"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "morningstar",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "leather_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "light_wooden_shield",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "shortbow"
+      }
+    ],
     "weaponDice": "1d4",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 19,

@@ -102,7 +102,7 @@ describe('Milestone 115.1: Declarative Rule-Override Routing, Codified Threat Ex
       domains: [],
       prohibitedSchools: [],
       skillRanks: {},
-      selectedFeats: ['weapon_focus_longsword', 'weapon_specialization_longsword'],
+      selectedFeats: ['weapon_focus:longsword', 'weapon_specialization:longsword'],
       knownSpells: []
     });
 

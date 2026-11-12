@@ -52,6 +52,23 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "battleaxe",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "leather_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "heavy_steel_shield",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "shortbow"
+      }
+    ],
     "weaponDice": "1d8",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 20,

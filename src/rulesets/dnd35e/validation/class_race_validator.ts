@@ -107,12 +107,12 @@ export function validateDnD35eClassesRacesTemplates(
       }
       if (i > 0) {
         const prev = classDef.progression[i - 1]!;
-        if (
+        const isDecreasing =
           row.bab < prev.bab ||
           row.fortSave < prev.fortSave ||
           row.refSave < prev.refSave ||
-          row.willSave < prev.willSave
-        ) {
+          row.willSave < prev.willSave;
+        if (isDecreasing) {
           errors.push({
             path: `systemContent.classes.${classKey}.progression[${i}]`,
             message: `Class "${classKey}" level ${row.level} has decreasing BAB or base save compared to level ${prev.level}.`,
@@ -225,6 +225,15 @@ export function validateDnD35eClassesRacesTemplates(
         });
       }
     }
+    for (const eq of raceDef.defaultEquipment ?? []) {
+      if (!sys.items[eq.itemId]) {
+        errors.push({
+          path: `systemContent.races.${raceKey}.defaultEquipment`,
+          message: `Race "${raceKey}" references unknown item "${eq.itemId}" in defaultEquipment.`,
+          severity: 'error'
+        });
+      }
+    }
     const tiers = raceDef.rhdProgression?.tiers ?? [];
     for (let i = 0; i < tiers.length; i++) {
       const tier = tiers[i]!;
@@ -282,6 +291,15 @@ export function validateDnD35eClassesRacesTemplates(
         message: `Archetype "${archKey}" references unknown creatureType "${archDef.creatureType}".`,
         severity: 'error'
       });
+    }
+    for (const eq of archDef.defaultEquipment ?? []) {
+      if (!sys.items[eq.itemId]) {
+        errors.push({
+          path: `systemContent.archetypes.${archKey}.defaultEquipment`,
+          message: `Archetype "${archKey}" references unknown item "${eq.itemId}" in defaultEquipment.`,
+          severity: 'error'
+        });
+      }
     }
   }
 }

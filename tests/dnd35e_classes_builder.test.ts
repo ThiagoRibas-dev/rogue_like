@@ -396,7 +396,7 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
       pointBuyBudget: 28,
       baseAbilityScores: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
       skillRanks: { jump: 4, climb: 4 },
-      selectedFeats: ['power_attack', 'cleave', 'weapon_focus_longsword'],
+      selectedFeats: ['power_attack', 'cleave', 'weapon_focus:longsword'],
       knownSpells: [],
       equipmentPackageId: 'martial_vanguard'
     });

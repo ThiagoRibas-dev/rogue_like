@@ -52,6 +52,16 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "greatclub",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "hide_armor",
+        "equipSlot": "torso"
+      }
+    ],
     "weaponDice": "2d8",
     "weaponDamageType": "bludgeoning",
     "weaponCritThreatMin": 20,

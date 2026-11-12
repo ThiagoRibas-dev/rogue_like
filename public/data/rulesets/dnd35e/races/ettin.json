@@ -50,6 +50,20 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "morningstar",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "morningstar",
+        "equipSlot": "off_hand"
+      },
+      {
+        "itemId": "leather_armor",
+        "equipSlot": "torso"
+      }
+    ],
     "weaponDice": "2d6",
     "weaponDamageType": "bludgeoning",
     "weaponCritThreatMin": 20,

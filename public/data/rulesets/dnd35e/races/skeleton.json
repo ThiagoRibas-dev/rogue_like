@@ -57,7 +57,29 @@
     "automaticLanguages": [
       "common"
     ],
-    "naturalWeapons": [],
+    "naturalWeapons": [
+      {
+        "id": "claw",
+        "name": "Claw",
+        "naturalType": "claw",
+        "isPrimary": true,
+        "count": 2,
+        "damageDice": "1d4",
+        "damageType": "slashing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      }
+    ],
+    "defaultEquipment": [
+      {
+        "itemId": "scimitar",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "heavy_steel_shield",
+        "equipSlot": "off_hand"
+      }
+    ],
     "weaponDice": "1d6",
     "weaponDamageType": "slashing",
     "weaponCritThreatMin": 18,

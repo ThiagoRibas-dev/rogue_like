@@ -1888,5 +1888,36 @@ Purify Tier 1 vs. Tier 2 dependency boundaries, evict cross-tier re-export smugg
   - Deleted `src/rulesets/dnd35e/templates/srd_templates.ts` (`CELESTIAL_TEMPLATE`, `FIENDISH_TEMPLATE`, `SKELETON_TEMPLATE`, `ZOMBIE_TEMPLATE`, `LICH_TEMPLATE`) and updated `tests/dnd35e_phase21_primitives.test.ts` to query `getDnD35Template` from Tier 3 System Content (`public/data/rulesets/dnd35e/templates/*.json`).
 - [x] **Evict Pure Pass-Through Re-Export Shims (`builder_hydrator.ts`, Multi-Hop Re-Exports)**:
   - Removed pure pass-through barrel shim `src/rulesets/dnd35e/builder/builder_hydrator.ts` and multi-hop re-exports in `character_builder.ts`, verifying 0 errors across all 8 stages of `verify.sh`.
+- [x] **Symmetrical Parameterized Feat Unification (`public/data/rulesets/dnd35e/feats/`, `races/*.json`, `system_content_feat_ids.ts`)**:
+  - Deleted redundant static feat JSON files (`weapon_focus_*.json`, `ability_focus_poison.json`) and migrated all monster race definitions and test suites to universal parameterized feat IDs (`weapon_focus:<weaponId>`, `ability_focus:<abilityId>`).
+
+---
+
+# 🚀 Phase 30: Universal Actor Symmetry, Unified Race/Archetype Hydration & Real Monster Armament Equipping
+
+Eliminate remaining structural asymmetries between Players, NPCs, and Creatures in accordance with **AGENTS.md Rule 18** (*Universal Actor Symmetry & Composable Diffs*): unify the split race/archetype hydration pipelines, evaluate class features and modifiers for non-player `defaultClassLevels`, initialize anatomical `EquipmentComponent` slots from `anatomyBodyPlan` for all actors, and equip armed monsters with real items in `EquipmentComponent` so weapon-targeted feats (`weapon_focus:<weaponId>`) and sizing physics operate identically across all actors.
+
+## 🟢 Milestone 129: Unified Race & Actor Hydration Pipeline, Class Ledger Parity & Legacy Schema Eviction
+
+- [x] **Unify Race Hydration Pipeline (`src/rulesets/dnd35e/races.ts`, `src/rulesets/dnd35e/archetype/race_hydrator.ts`, `src/rulesets/dnd35e/archetype_resolver.ts`)**:
+  - Ensure both `applyRaceToActorChassis` and `hydrateRaceAsArchetype` / `hydrateArchetypeData` evaluate the full set of racial mechanics: `race.traitBundles` (`evaluateEffectBundle`), `race.conditionalModifiers`, `race.saveBonuses`, `race.spellResistanceFormula`, `buildCreatureTypeAndSubtypeModifiers`, and `creatureTypeEngine.goodSaveBySubtype`.
+  - Prevent Monster Manual 1st-level Warrior feats (`raceDef.feats` when `raceDef.defaultClassLevels.length > 0`) from leaking onto Player Characters during character creation (`builder_hydrator_creation.ts`).
+- [x] **Class Feature & Modifier Parity for Non-Player `defaultClassLevels` (`src/rulesets/dnd35e/archetype/race_hydrator.ts`, `src/rulesets/dnd35e/archetype_resolver.ts`)**:
+  - Evaluate `collectActiveClassFeaturesAndPools`, `buildClassAndDomainEffectModifiers`, and `collectActiveGrantedAndVirtualFeats` when hydrating non-player actors with `defaultClassLevels` or `options.classLevels`.
+- [x] **Evict Legacy Feat Prefix Fallbacks, Duplicate `improved_critical` Injection & Dead Schemas (`effect_bundle.ts`, `weapon_profile_parser.ts`, `dragon_synthesizer.ts`, `elemental_synthesizer.ts`, `creature_system.types.ts`, `templates.ts`)**:
+  - Remove `KNOWN_PARAMETERIZED_FEAT_PREFIXES` underscore fallback from `parseParameterizedFeatId` in `effect_bundle.ts`.
+  - Remove duplicate `hasImprovedCrit` injection from `parseEquippedItem` in `weapon_profile_parser.ts`.
+  - Remove dead `DnD35DragonFamiliesData` legacy fallbacks from `dragon_synthesizer.ts`, `elemental_synthesizer.ts`, `archetype_resolver.ts`, `base_system.types.ts`, and `dnd35e_system.types.ts`.
+  - Remove duplicate singular `energyResistance` key from `DnD35TemplateSchema` and `DnD35TemplateHdTierSchema` (standardizing on `energyResistances` in template JSON schemas).
+
+## 🟢 Milestone 130: Anatomical Equipment Slot Auto-Initialization & Declarative Monster/NPC Armament Loadouts
+
+- [x] **Anatomical `EquipmentComponent` & `InventoryComponent` Initialization on Actor Spawn (`src/core/ecs/ecs_spawner.ts`, `src/systems/inventory/equipment_slots.ts`)**:
+  - Wire `buildAnatomyEquipmentSlots(bodyPlan)` into `spawnEntity` so every Actor automatically receives anatomical `EquipmentComponent` slots with linked `limbGroupId`s (`humanoid_biped`, `quadruped`, `marilith_6arm`, `avian`, `serpentine`) and an `InventoryComponent`.
+- [x] **Declarative `defaultEquipment` Loadouts & Natural Weapon Completion (`creature_system.types.ts`, `public/data/rulesets/dnd35e/races/*.json`, `races.json`, `ecs_spawner.ts`)**:
+  - Add `defaultEquipment` (`ReadonlyArray<{ itemId: string; equipSlot?: string }>`) to `DnD35RaceDefinitionSchema` and `DnD35ArchetypeSchema`, and auto-equip `defaultEquipment` items into `EquipmentComponent` slots when spawning non-player actors.
+  - Populate `defaultEquipment` across armed SRD bestiary races (`orc`, `goblin`, `hobgoblin`, `kobold`, `bugbear`, `gnoll`, `ogre`, `hill_giant`, `stone_giant`, `frost_giant`, `fire_giant`, `ettin`, `minotaur`, `balor`, `marilith`, `skeleton`) and add missing natural weapons (`skeleton` claw, `zombie` slam, `manticore` spikes) so `resolveAllEquippedWeaponProfiles` and weapon-targeted feats (`weapon_focus:greataxe`, `weapon_focus:longsword`, `weapon_focus:greatclub`, `weapon_focus:morningstar`, `weapon_focus:spikes`) resolve through the real equipment & natural weapon pipeline.
+
+
 
 

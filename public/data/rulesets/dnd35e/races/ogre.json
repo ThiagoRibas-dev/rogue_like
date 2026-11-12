@@ -63,6 +63,19 @@
       "common"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "greatclub",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "hide_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "javelin"
+      }
+    ],
     "weaponDice": "2d8",
     "weaponDamageType": "bludgeoning",
     "weaponCritThreatMin": 20,
@@ -74,7 +87,7 @@
     "shieldBonus": 0,
     "feats": [
       "toughness",
-      "weapon_focus_greatclub"
+      "weapon_focus:greatclub"
     ],
     "skillRanks": {
       "climb": 4,

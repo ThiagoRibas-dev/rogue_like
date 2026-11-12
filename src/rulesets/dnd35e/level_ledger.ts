@@ -20,7 +20,7 @@ import {
   type ResolvedActiveCombatRules
 } from './progression/ledger_modifiers.ts';
 import { buildSkillRankThresholdModifiers } from './skills.ts';
-import { projectDnD35ActorSemanticTags } from './srd_registry.ts';
+import { projectDnD35ActorSemanticTags } from './semantic_tags.ts';
 import type {
   AbilityScoresRecord,
   DnD35CharacterLevelRecord,

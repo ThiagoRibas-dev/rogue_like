@@ -11,7 +11,7 @@
 - [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
 - [Core Console: ECS Systems & Simulation (57 files)](#core-console-ecs-systems-simulation)
-- [Core Console: ECS, Loop, RNG & Loader (37 files)](#core-console-ecs-loop-rng-loader)
+- [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
 - [Core Console: Map Generation & Director (8 files)](#core-console-map-generation-director)
@@ -194,7 +194,7 @@
 
 ## Core Console: ECS, Loop, RNG & Loader
 
-**Modules in this domain:** 37
+**Modules in this domain:** 38
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -208,6 +208,7 @@
 | `src/core/ecs/ecs_core.ts` | `tier1_console` | Core entity lifecycle, component store, spatial index, and query operations. | `createEntity`, `updateSpatialIndex`, `addComponent`, `removeComponent`, `getComponent`, `queryEntities`, `removeEntity` | **Includes:** Pure implementation and exports for src/core/ecs/ecs_core.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/ecs/ecs_core.ts. |
 | `src/core/ecs/ecs_item_promoter.ts` | `tier1_console` | Spawns item entities on the map and promotes generic entities to named persistent actors. | `spawnItem`, `promoteEntity` | **Includes:** Pure implementation and exports for src/core/ecs/ecs_item_promoter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/ecs/ecs_item_promoter.ts. |
 | `src/core/ecs/ecs_lifecycle.ts` | `tier1_console` | Ownership traversal, limbo movement, controller link ticking, and resource pool management. | `collectOwnedEntityIds`, `tickControllerLinksAndOverlays`, `consumeResourcePool`, `refreshResourcePools`, `moveToLimbo` | **Includes:** Pure implementation and exports for src/core/ecs/ecs_lifecycle.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/ecs/ecs_lifecycle.ts. |
+| `src/core/ecs/ecs_spawner_equipment.ts` | `tier1_console` | Actor anatomical equipment initialization and default armament equipping. | `initializeActorEquipmentAndInventory`, `equipActorDefaultArmaments` | **Includes:** Pure implementation and exports for src/core/ecs/ecs_spawner_equipment.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/ecs/ecs_spawner_equipment.ts. |
 | `src/core/ecs/ecs_spawner.ts` | `tier1_console` | Template spawning, item instancing, and entity promotion logic. | `spawnEntity`, `spawnItem`, `promoteEntity` | **Includes:** Pure implementation and exports for src/core/ecs/ecs_spawner.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/ecs/ecs_spawner.ts. |
 | `src/core/game-loop.ts` | `tier1_console` | Sets/updates the global GameState and triggers state change listeners. | `setGameState`, `getGameState`, `onStateChange`, `queuePlayerIntent`, `processTurn`, `applyIntentWithCost` | **Includes:** Pure implementation and exports for src/core/game-loop.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/game-loop.ts. |
 | `src/core/hover_state.ts` | `tier1_console` | Kept strictly outside GameState so mouse movement never pollutes save serialization or deterministic replay state. | `GridCoord`, `TransientHoverState`, `getHoverState`, `setHoveredTile`, `setContextMenuAnchor` | **Includes:** Pure implementation and exports for src/core/hover_state.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/hover_state.ts. |

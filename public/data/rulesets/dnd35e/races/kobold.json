@@ -55,6 +55,19 @@
       "draconic"
     ],
     "naturalWeapons": [],
+    "defaultEquipment": [
+      {
+        "itemId": "spear",
+        "equipSlot": "main_hand"
+      },
+      {
+        "itemId": "leather_armor",
+        "equipSlot": "torso"
+      },
+      {
+        "itemId": "sling"
+      }
+    ],
     "weaponDice": "1d6",
     "weaponDamageType": "piercing",
     "weaponCritThreatMin": 20,

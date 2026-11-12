@@ -71,6 +71,17 @@
         "damageType": "piercing",
         "critThreatMin": 20,
         "critMultiplier": 2
+      },
+      {
+        "id": "spikes",
+        "name": "Spikes",
+        "naturalType": "tail_slap",
+        "isPrimary": false,
+        "count": 6,
+        "damageDice": "1d8",
+        "damageType": "piercing",
+        "critThreatMin": 20,
+        "critMultiplier": 2
       }
     ],
     "weaponDice": "2d4",
@@ -85,7 +96,7 @@
     "feats": [
       "flyby_attack",
       "multiattack",
-      "weapon_focus_spikes"
+      "weapon_focus:spikes"
     ],
     "skillRanks": {
       "listen": 5,
