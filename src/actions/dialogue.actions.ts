@@ -14,7 +14,7 @@ import { rng } from '../core/rng.ts';
 import { DEFAULT_DEFLECTION_LINES } from '../constants/knowledge.constants.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { applyConsequence } from '../systems/trigger.system.ts';
-import { startDialogue } from '../systems/dialogue.system.ts';
+import { resolveDialogueTree, startDialogue } from '../systems/dialogue.system.ts';
 import { transferKnowledge } from '../systems/knowledge.system.ts';
 export { transferKnowledge };
 
@@ -40,7 +40,7 @@ export function processSelectDialogueOptionIntent(
   }
 
   const { treeId, currentNodeId, npcEntityId } = state.activeDialogue;
-  const tree = state.campaign.dialogues[treeId];
+  const tree = resolveDialogueTree(state, treeId, npcEntityId);
   if (!tree) return { state, success: false };
 
   const node = tree.nodes[currentNodeId];
@@ -172,7 +172,7 @@ export function processAskAboutIntent(
   if (!state.activeDialogue) return { state, success: false };
 
   const { npcEntityId, treeId, currentNodeId } = state.activeDialogue;
-  const tree = state.campaign.dialogues[treeId];
+  const tree = resolveDialogueTree(state, treeId, npcEntityId);
   if (!tree) return { state, success: false };
 
   const currentNode = tree.nodes[currentNodeId];
@@ -244,7 +244,7 @@ export function processGossipIntent(state: GameState, intent: GossipIntent): { s
   if (!state.activeDialogue) return { state, success: false };
 
   const { npcEntityId, treeId, currentNodeId } = state.activeDialogue;
-  const tree = state.campaign.dialogues[treeId];
+  const tree = resolveDialogueTree(state, treeId, npcEntityId);
   if (!tree) return { state, success: false };
 
   const currentNode = tree.nodes[currentNodeId];

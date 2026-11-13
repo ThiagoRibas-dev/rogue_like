@@ -6,6 +6,8 @@ import {
 } from '../types/intents/combat.intents.ts';
 import { getComponent } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
+import { isHostile } from '../utils/faction.ts';
+import { assignCompanionCommandTarget } from './companion_commands.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 
 /**
@@ -81,12 +83,38 @@ export function processMoveTargetIntent(
  */
 export function processFireAimedIntent(
   state: GameState,
-  _intent: FireAimedIntent
+  intent: FireAimedIntent
 ): { state: GameState; success: boolean } {
   if (!state.targetingMode?.active) return { state, success: false };
 
   const targetX = state.targetingMode.x;
   const targetY = state.targetingMode.y;
+  const context = state.targetingMode.context;
+
+  if (context?.verb === 'order_target') {
+    const entitiesAtTile = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
+    const hostileTargetId = entitiesAtTile.find(
+      (id) =>
+        id !== intent.entityId &&
+        getComponent(state, id, ComponentType.Fighter) !== undefined &&
+        isHostile(state, intent.entityId, id)
+    );
+
+    const assigned =
+      hostileTargetId !== undefined
+        ? assignCompanionCommandTarget(state, intent.entityId, hostileTargetId, context.companionEntityId)
+        : {
+            state: addMessage(
+              state,
+              'There is no hostile target there for your companions.',
+              MessageLogCategory.System
+            ),
+            success: false
+          };
+
+    const { targetingMode: _targetingMode, ...restState } = assigned.state;
+    return { state: restState as GameState, success: false };
+  }
 
   // In Milestone 3, we just log a message as a stub, since Combat comes in M4.
   const stateWithMsg = addMessage(

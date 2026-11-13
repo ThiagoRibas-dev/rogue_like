@@ -174,6 +174,12 @@ export const AIBehaviorEntrySchema = z.discriminatedUnion('behaviorId', [
     spellId: z.string(),
     weightModifiers: z.record(z.string(), z.number()).optional()
   }),
+  z.object({
+    behaviorId: z.literal('follow'),
+    followDistance: z.number().int().positive().optional(),
+    leashRadius: z.number().int().positive().optional(),
+    weightModifiers: z.record(z.string(), z.number()).optional()
+  }),
   z.object({ behaviorId: z.literal('wander'), weightModifiers: z.record(z.string(), z.number()).optional() })
 ]);
 /** Inferred type for an AI behavior entry. */

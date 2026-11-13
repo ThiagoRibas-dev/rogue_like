@@ -5,11 +5,12 @@ import { ComponentType, type DialogueComponent } from '../types/components.types
 import { startDialogue } from './dialogue.system.ts';
 import { isHostile } from '../utils/faction.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+import { COMPANION_ORDERS_DIALOGUE_ID, isPlayerControlledCompanion } from './companion_commands.system.ts';
 
 /**
  * Handles processing of an InteractIntent.
- * Validates if the target is hostile, resolves their DialogueComponent,
- * and boots the Dialogue system.
+ * Validates if the target is hostile, resolves their DialogueComponent (or falls back to
+ * companion command dialogue for controlled allies), and boots the Dialogue system.
  *
  * @param state The current GameState.
  * @param intent The InteractIntent.
@@ -24,6 +25,9 @@ export function processInteractIntent(
   const dialogueComp = getComponent(state, targetId, ComponentType.Dialogue) as DialogueComponent | undefined;
 
   if (!dialogueComp) {
+    if (isPlayerControlledCompanion(state, entityId, targetId)) {
+      return startDialogue(state, targetId, COMPANION_ORDERS_DIALOGUE_ID);
+    }
     return {
       state: addMessage(state, 'They have nothing to say.', MessageLogCategory.System),
       success: false

@@ -16,6 +16,7 @@ export interface ToggleTargetingIntent extends BaseIntent {
     | {
         readonly verb: string;
         readonly toolEntityId?: EntityId;
+        readonly companionEntityId?: EntityId;
       }
     | undefined;
 }

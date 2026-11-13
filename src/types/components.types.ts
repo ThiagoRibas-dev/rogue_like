@@ -76,6 +76,7 @@ export type {
   ChronicleComponent,
   NemesisComponent,
   InteractionScoreComponent,
+  CompanionStance,
   ControllerLinkComponent,
   ResourceRefreshCycle,
   ResourcePoolEntry,

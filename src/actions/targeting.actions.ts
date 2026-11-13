@@ -14,7 +14,7 @@ import {
  */
 export function createToggleTargetingAction(
   entityId: EntityId,
-  context?: { verb: string; toolEntityId?: EntityId }
+  context?: { verb: string; toolEntityId?: EntityId; companionEntityId?: EntityId }
 ): ToggleTargetingIntent {
   return {
     type: IntentType.ToggleTargeting,

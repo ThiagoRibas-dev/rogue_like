@@ -10,6 +10,8 @@ import {
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { parseWikiSegments } from '../../utils/text.ts';
 import { evaluateCondition } from '../../systems/trigger.system.ts';
+import { resolveDialogueTree } from '../../systems/dialogue.system.ts';
+import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
 import { GameEventType, type DialogueSelectedEvent } from '../../types/events.types.ts';
 
 function appendWikiSegments(container: HTMLElement, text: string): void {
@@ -44,7 +46,7 @@ export function renderDialoguePanel(state: GameState): void {
   }
 
   const { treeId, currentNodeId, npcEntityId } = state.activeDialogue;
-  const tree = state.campaign.dialogues[treeId];
+  const tree = resolveDialogueTree(state, treeId, npcEntityId);
   if (!tree) {
     overlay.classList.add('hidden');
     return;
@@ -58,20 +60,7 @@ export function renderDialoguePanel(state: GameState): void {
 
   overlay.classList.remove('hidden');
 
-  // Find NPC name
-  let npcName = 'Unknown';
-  // Try to find a renderable or specific component if possible. In our case, entity templates have names but we don't store names on instances directly unless it's in a specific component.
-  // Wait, if it's persistent we might have it. Or we can just look at RenderableComponent's glyph or something, but name isn't there.
-  // We'll just say "Stranger" for now, or fetch from campaign entities if we added an id.
-  const renderable = getComponent(state, npcEntityId, ComponentType.Renderable);
-  if (renderable) {
-    // Attempt to match glyph to entity template name if we really wanted to, but this is a hack.
-    const template = Object.values(state.campaign.entities).find(
-      (e) => e.glyph === renderable.glyph && e.fg === renderable.fg
-    );
-    if (template) npcName = template.name;
-  }
-
+  const npcName = resolveEntityDisplayName(state, npcEntityId);
   const titleEl = overlay.querySelector('.modal-title');
   if (titleEl) titleEl.textContent = npcName;
 

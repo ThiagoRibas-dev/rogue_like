@@ -11,13 +11,16 @@ import { wanderBehavior } from '../ai/wander.behavior.ts';
 import { fleeBehavior } from '../ai/flee.behavior.ts';
 import { rangedBehavior } from '../ai/ranged.behavior.ts';
 import { spellBehavior } from '../ai/spell.behavior.ts';
+import { followBehavior } from '../ai/follow.behavior.ts';
+import { sanitizeCompanionControllerLink } from '../ai/companion_targeting.ts';
 
 const BEHAVIOR_REGISTRY: Record<string, AIBehaviorFn> = {
   hunt: huntBehavior,
   wander: wanderBehavior,
   flee: fleeBehavior,
   ranged: rangedBehavior,
-  spell: spellBehavior
+  spell: spellBehavior,
+  follow: followBehavior
 };
 
 /**
@@ -88,7 +91,7 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
   // Sort descending by score
   evaluatedBehaviors.sort((a, b) => b.score - a.score);
 
-  let nextState = state;
+  let nextState = sanitizeCompanionControllerLink(state, entityId);
 
   // Run behavior pipeline in prioritized order
   for (const { entry } of evaluatedBehaviors) {

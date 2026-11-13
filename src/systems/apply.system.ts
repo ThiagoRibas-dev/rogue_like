@@ -14,6 +14,13 @@ import { getActiveRuleset } from '../rulesets/registry.ts';
 import { processQuestEvent } from './quest.system.ts';
 import type { EntityId } from '../types/game-state.types.ts';
 import type { ApplyIntentTarget, VerbOption } from '../types/intents/interaction.intents.ts';
+import {
+  COMPANION_ORDERS_DIALOGUE_ID,
+  getValidCompanionVerbsForTarget,
+  isPlayerControlledCompanion,
+  processCompanionVerbIntent
+} from './companion_commands.system.ts';
+import { startDialogue } from './dialogue.system.ts';
 /**
  * Emits an 'interact' quest event when the player successfully interacts with an entity target.
  */
@@ -50,6 +57,24 @@ export function processApplyIntent(
 
   if (intent.verb === 'intimidate' || intent.verb === 'persuade' || intent.verb === 'feint') {
     return processSocialIntent(state, intent);
+  }
+
+  if (intent.verb === 'command') {
+    if (
+      intent.target.type === 'entity' &&
+      isPlayerControlledCompanion(state, intent.entityId, intent.target.entityId)
+    ) {
+      return startDialogue(state, intent.target.entityId, COMPANION_ORDERS_DIALOGUE_ID);
+    }
+    return {
+      state: addMessage(state, 'You can only command your own companions.', MessageLogCategory.System),
+      success: false
+    };
+  }
+
+  const companionOutcome = processCompanionVerbIntent(state, intent);
+  if (companionOutcome !== null) {
+    return companionOutcome;
   }
 
   const activeRuleset = getActiveRuleset(state);
@@ -140,6 +165,11 @@ export function getValidVerbsForTarget(
     for (const verb of activeRuleset.getValidRulesetVerbsForTarget(state, sourceEntityId, target)) {
       validVerbs.add(verb);
     }
+  }
+
+  // 4. Add Console companion command verbs
+  for (const verb of getValidCompanionVerbsForTarget(state, sourceEntityId, target)) {
+    validVerbs.add(verb);
   }
 
   return Array.from(validVerbs);

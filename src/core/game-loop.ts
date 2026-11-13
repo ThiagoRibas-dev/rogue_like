@@ -4,7 +4,7 @@ import type { Intent } from '../types/intents/intent.union.ts';
 import { getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
 import { recordAISample } from './performance.ts';
-import { lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
+import { addActor, lockEngine, setTurnDuration, unlockEngine } from './scheduler.ts';
 import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from './input_queue.ts';
 import { markDirtyFromStateDiff } from './presentation_queue.ts';
 import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
@@ -49,6 +49,14 @@ export function onStateChange(callback: (state: GameState) => void): void {
 function updateState(newState: GameState): void {
   const prevState = currentState;
   currentState = newState;
+
+  if (prevState === null || prevState.entities !== newState.entities) {
+    for (const id of newState.entities) {
+      if (getComponent(newState, id, ComponentType.Actor) !== undefined) {
+        addActor(id);
+      }
+    }
+  }
 
   markDirtyFromStateDiff(prevState, newState);
 

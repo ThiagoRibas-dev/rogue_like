@@ -4,6 +4,8 @@ import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
   ComponentType,
   type ChronicleComponent,
+  type CompanionStance,
+  type ControllerLinkComponent,
   type FieldComponent,
   type FighterComponent,
   type IdentityComponent,
@@ -23,6 +25,13 @@ import type { InspectSectionDTO, InspectTooltipDTO } from './viewport_snapshot.t
 
 /** Default patience threshold when none is explicitly set on a MemoryComponent. */
 const DEFAULT_PATIENCE_THRESHOLD = 5;
+
+const STANCE_TOOLTIP_LABELS: Readonly<Record<CompanionStance, string>> = {
+  aggressive: 'Aggressive',
+  defensive: 'Defensive',
+  passive: 'Passive',
+  hold: 'Hold Position'
+};
 
 /**
  * Resolves the human-readable display name for any entity reactively from its ECS components
@@ -199,6 +208,26 @@ function appendEntityComponentSections(state: GameState, entityId: EntityId, sec
       for (const loreLine of activeRuleset.projectInspectLoreLines(state, entityId)) {
         sections.push({ type: 'desc', value: loreLine.value, color: loreLine.color });
       }
+    }
+  }
+
+  const controllerLink = getComponent(state, entityId, ComponentType.ControllerLink) as
+    ControllerLinkComponent | undefined;
+  if (controllerLink) {
+    const stance = controllerLink.stance ?? 'defensive';
+    sections.push({
+      type: 'stat',
+      label: 'Stance',
+      value: STANCE_TOOLTIP_LABELS[stance],
+      color: '#88ccff'
+    });
+    if (controllerLink.commandTargetId !== undefined) {
+      sections.push({
+        type: 'stat',
+        label: 'Target',
+        value: resolveEntityDisplayName(state, controllerLink.commandTargetId),
+        color: '#ffaa44'
+      });
     }
   }
 

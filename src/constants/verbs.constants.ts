@@ -30,7 +30,13 @@ export type Verb =
   | 'ransom'
   | 'gift'
   | 'apologize'
-  | 'argue';
+  | 'argue'
+  | 'command'
+  | 'order_attack'
+  | 'order_defend'
+  | 'order_follow'
+  | 'order_hold'
+  | 'order_target';
 
 /**
  * Read-only array of all valid interaction verbs in the game engine.
@@ -64,5 +70,11 @@ export const VERBS: ReadonlyArray<Verb> = [
   'ransom',
   'gift',
   'apologize',
-  'argue'
+  'argue',
+  'command',
+  'order_attack',
+  'order_defend',
+  'order_follow',
+  'order_hold',
+  'order_target'
 ];

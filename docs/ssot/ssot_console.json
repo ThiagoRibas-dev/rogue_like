@@ -178,6 +178,22 @@
       "Do not duplicate or bypass exports from src/actions/targeting.actions.ts."
     ]
   },
+  "src/ai/companion_targeting.ts": {
+    "domain": "Core Console: AI Behavior Trees & Tactics",
+    "tier": "tier1_console",
+    "responsibility": "Companion tactical target resolution, leash bounds, stance filtering, and stale focus-target sanitization.",
+    "canonicalEntryPoints": [
+      "resolveAITarget",
+      "sanitizeCompanionControllerLink"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/ai/companion_targeting.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/ai/companion_targeting.ts."
+    ]
+  },
   "src/ai/flee.behavior.ts": {
     "domain": "Core Console: AI Behavior Trees & Tactics",
     "tier": "tier1_console",
@@ -191,6 +207,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/ai/flee.behavior.ts."
+    ]
+  },
+  "src/ai/follow.behavior.ts": {
+    "domain": "Core Console: AI Behavior Trees & Tactics",
+    "tier": "tier1_console",
+    "responsibility": "Follow behavior: routes controlled companions toward their controller while respecting hold stance and obstacles.",
+    "canonicalEntryPoints": [
+      "computeNextStepToward",
+      "followBehavior"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/ai/follow.behavior.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/ai/follow.behavior.ts."
     ]
   },
   "src/ai/hunt.behavior.ts": {
@@ -3383,6 +3415,28 @@
       "Do not duplicate or bypass exports from src/systems/combat.system.ts."
     ]
   },
+  "src/systems/companion_commands.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Companion command verbs, tactical stance switching, focus-target directives, and dynamic companion orders dialogue synthesis.",
+    "canonicalEntryPoints": [
+      "isPlayerControlledCompanion",
+      "getPlayerCompanions",
+      "setCompanionStance",
+      "assignCompanionCommandTarget",
+      "buildCompanionOrdersDialogueTree",
+      "getValidCompanionVerbsForTarget",
+      "beginCompanionTargetSelection",
+      "processCompanionVerbIntent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/companion_commands.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/companion_commands.system.ts."
+    ]
+  },
   "src/systems/damage.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
@@ -3420,6 +3474,7 @@
     "tier": "tier1_console",
     "responsibility": "Initializes and transitions the game state into an active dialogue tree session with an NPC.",
     "canonicalEntryPoints": [
+      "resolveDialogueTree",
       "startDialogue"
     ],
     "ownershipBoundary": {

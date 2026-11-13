@@ -20,6 +20,7 @@ import { processApplyIntent } from './apply.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processInteractIntent } from './intent.system.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
+import { isPlayerControlledCompanion } from './companion_commands.system.ts';
 
 /**
  * Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.
@@ -196,6 +197,47 @@ export function processMoveIntent(
     if (isBlocked) {
       if (defenderId === undefined && blockedByEntityId !== undefined) {
         const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
+        const originTile = state.map.tiles[coordToIndex(position.x, position.y, state.map.width)];
+        const originTileDef = originTile ? state.campaign.tiles[originTile.tileId] : undefined;
+        if (
+          !dialogueComp &&
+          isPlayerControlledCompanion(state, entityId, blockedByEntityId) &&
+          canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId))
+        ) {
+          let nextState = addComponent(state, entityId, {
+            type: ComponentType.Position,
+            x: targetX,
+            y: targetY
+          });
+          nextState = addComponent(nextState, blockedByEntityId, {
+            type: ComponentType.Position,
+            x: position.x,
+            y: position.y
+          });
+          nextState = runActorMovementStep(
+            nextState,
+            entityId,
+            { x: position.x, y: position.y },
+            { x: targetX, y: targetY }
+          );
+          nextState = runActorMovementStep(
+            nextState,
+            blockedByEntityId,
+            { x: targetX, y: targetY },
+            { x: position.x, y: position.y }
+          );
+
+          const isPlayerMover = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
+          if (isPlayerMover) {
+            nextState = { ...nextState, fovNeedsUpdate: true };
+            const identity = getComponent(nextState, blockedByEntityId, ComponentType.Identity);
+            const companionName = identity ? identity.name : 'your companion';
+            nextState = addMessage(nextState, `You swap places with ${companionName}.`, MessageLogCategory.System);
+          }
+
+          return { state: nextState, success: true };
+        }
+
         if (dialogueComp) {
           return processInteractIntent(state, {
             type: IntentType.Interact,

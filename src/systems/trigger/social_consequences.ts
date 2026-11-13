@@ -8,6 +8,34 @@ import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.
 import { getComponent, addComponent } from '../../core/ecs.ts';
 import { executeSay } from '../message.system.ts';
 import { transferKnowledge } from '../knowledge.system.ts';
+import {
+  assignCompanionCommandTarget,
+  beginCompanionTargetSelection,
+  isPlayerControlledCompanion,
+  setCompanionStance
+} from '../companion_commands.system.ts';
+
+function getTargetMemory(
+  state: GameState,
+  consequence: { readonly _npcEntityId?: EntityId | undefined; readonly entityId?: EntityId | undefined }
+): { readonly ownerId: EntityId; readonly memory: MemoryComponent } | null {
+  const ownerId = consequence._npcEntityId ?? consequence.entityId;
+  if (ownerId === undefined) return null;
+  const memory = getComponent(state, ownerId, ComponentType.Memory) as MemoryComponent | undefined;
+  return memory ? { ownerId, memory } : null;
+}
+
+function resolveConsequenceTargetEntityId(event: GameEvent, targetId?: string): EntityId | undefined {
+  if (targetId === 'event.entityId' && 'entityId' in event) {
+    return (event as unknown as { entityId: EntityId }).entityId;
+  }
+  if (targetId) return parseInt(targetId, 10) as EntityId;
+  if (event.type === GameEventType.ReactionResolved) {
+    const targetPayload = (event as unknown as { target?: ApplyIntentTarget }).target;
+    if (targetPayload?.type === 'entity') return targetPayload.entityId;
+  }
+  return undefined;
+}
 
 /**
  * Consequence appliers specific to NPCs, social interactions, and memory.
@@ -18,19 +46,15 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'modify_standing' }>
   ): GameState => {
-    const amount = consequence.amount;
-    const factionId = consequence.factionId;
-    const memoryOwnerId = consequence._npcEntityId ?? consequence.entityId;
-
-    if (memoryOwnerId === undefined || !factionId || !amount) return state;
-
-    const memory = getComponent(state, memoryOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (!memory) return state;
-
-    const newStanding = (memory.factionStandings[factionId] ?? 0) + amount;
-    const newMemory = { ...memory, factionStandings: { ...memory.factionStandings, [factionId]: newStanding } };
-
-    return addComponent(state, memoryOwnerId, newMemory);
+    const { amount, factionId } = consequence;
+    if (!factionId || !amount) return state;
+    const target = getTargetMemory(state, consequence);
+    if (!target) return state;
+    const newStanding = (target.memory.factionStandings[factionId] ?? 0) + amount;
+    return addComponent(state, target.ownerId, {
+      ...target.memory,
+      factionStandings: { ...target.memory.factionStandings, [factionId]: newStanding }
+    });
   },
 
   set_fact: (
@@ -38,17 +62,12 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'set_fact' }>
   ): GameState => {
-    const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
-    if (memOwnerId === undefined) return state;
-
-    const memory = getComponent(state, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (memory && !memory.facts.includes(consequence.target)) {
-      return addComponent(state, memOwnerId, {
-        ...memory,
-        facts: [...memory.facts, consequence.target]
-      });
-    }
-    return state;
+    const target = getTargetMemory(state, consequence);
+    if (!target || target.memory.facts.includes(consequence.target)) return state;
+    return addComponent(state, target.ownerId, {
+      ...target.memory,
+      facts: [...target.memory.facts, consequence.target]
+    });
   },
 
   change_faction: (
@@ -56,26 +75,10 @@ export const socialConsequences = {
     event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'change_faction' }>
   ): GameState => {
-    let eId: EntityId | undefined;
-    if (consequence.targetId) {
-      eId = parseInt(consequence.targetId) as EntityId;
-    } else if (event.type === GameEventType.ReactionResolved) {
-      const targetPayload = (event as unknown as { target: { type: string; entityId?: EntityId } }).target;
-      if (targetPayload.type === 'entity') {
-        eId = targetPayload.entityId;
-      }
-    }
-
-    if (eId === undefined) return state;
-
+    const eId = resolveConsequenceTargetEntityId(event, consequence.targetId);
+    if (eId === undefined || Number.isNaN(eId)) return state;
     const faction = getComponent(state, eId, ComponentType.Faction) as FactionComponent | undefined;
-    if (faction) {
-      return addComponent(state, eId, {
-        ...faction,
-        factionId: consequence.factionId
-      });
-    }
-    return state;
+    return faction ? addComponent(state, eId, { ...faction, factionId: consequence.factionId }) : state;
   },
 
   record_interaction: (
@@ -83,22 +86,18 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'record_interaction' }>
   ): GameState => {
-    const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
-    if (memOwnerId === undefined) return state;
-    const memory = getComponent(state, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (memory) {
-      const nextMemory: MemoryComponent = {
-        ...memory,
-        timesTalked: consequence.interactionType === 'talk' ? (memory.timesTalked ?? 0) + 1 : memory.timesTalked,
-        timesTraded: consequence.interactionType === 'trade' ? (memory.timesTraded ?? 0) + 1 : memory.timesTraded,
-        timesIntimidated:
-          consequence.interactionType === 'intimidate' ? (memory.timesIntimidated ?? 0) + 1 : memory.timesIntimidated,
-        timesHelped: consequence.interactionType === 'help' ? (memory.timesHelped ?? 0) + 1 : memory.timesHelped,
-        timesBetrayed: consequence.interactionType === 'betray' ? (memory.timesBetrayed ?? 0) + 1 : memory.timesBetrayed
-      };
-      return addComponent(state, memOwnerId, nextMemory);
-    }
-    return state;
+    const target = getTargetMemory(state, consequence);
+    if (!target) return state;
+    const { ownerId, memory } = target;
+    const kind = consequence.interactionType;
+    return addComponent(state, ownerId, {
+      ...memory,
+      timesTalked: kind === 'talk' ? (memory.timesTalked ?? 0) + 1 : memory.timesTalked,
+      timesTraded: kind === 'trade' ? (memory.timesTraded ?? 0) + 1 : memory.timesTraded,
+      timesIntimidated: kind === 'intimidate' ? (memory.timesIntimidated ?? 0) + 1 : memory.timesIntimidated,
+      timesHelped: kind === 'help' ? (memory.timesHelped ?? 0) + 1 : memory.timesHelped,
+      timesBetrayed: kind === 'betray' ? (memory.timesBetrayed ?? 0) + 1 : memory.timesBetrayed
+    });
   },
 
   set_patience: (
@@ -106,13 +105,10 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'set_patience' }>
   ): GameState => {
-    const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
-    if (memOwnerId === undefined) return state;
-    const memory = getComponent(state, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (memory) {
-      return addComponent(state, memOwnerId, { ...memory, patienceThreshold: consequence.value });
-    }
-    return state;
+    const target = getTargetMemory(state, consequence);
+    return target
+      ? addComponent(state, target.ownerId, { ...target.memory, patienceThreshold: consequence.value })
+      : state;
   },
 
   modify_knowledge: (
@@ -120,24 +116,20 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'modify_knowledge' }>
   ): GameState => {
-    const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
-    if (memOwnerId === undefined) return state;
-    const memory = getComponent(state, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (memory) {
-      const nextKnowledge = { ...(memory.knowledge ?? {}) };
-      if (consequence.action === 'add' && consequence.knowledgeType && consequence.description) {
-        nextKnowledge[consequence.knowledgeId] = {
-          id: consequence.knowledgeId,
-          type: consequence.knowledgeType,
-          description: consequence.description,
-          tags: consequence.tags ?? []
-        };
-      } else if (consequence.action === 'remove') {
-        delete nextKnowledge[consequence.knowledgeId];
-      }
-      return addComponent(state, memOwnerId, { ...memory, knowledge: nextKnowledge });
+    const target = getTargetMemory(state, consequence);
+    if (!target) return state;
+    const nextKnowledge = { ...(target.memory.knowledge ?? {}) };
+    if (consequence.action === 'add' && consequence.knowledgeType && consequence.description) {
+      nextKnowledge[consequence.knowledgeId] = {
+        id: consequence.knowledgeId,
+        type: consequence.knowledgeType,
+        description: consequence.description,
+        tags: consequence.tags ?? []
+      };
+    } else if (consequence.action === 'remove') {
+      delete nextKnowledge[consequence.knowledgeId];
     }
-    return state;
+    return addComponent(state, target.ownerId, { ...target.memory, knowledge: nextKnowledge });
   },
 
   set_social_state: (
@@ -145,18 +137,14 @@ export const socialConsequences = {
     _event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'set_social_state' }>
   ): GameState => {
-    const memOwnerId = consequence._npcEntityId ?? consequence.entityId;
-    if (memOwnerId === undefined) return state;
-    const memory = getComponent(state, memOwnerId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (memory) {
-      const nextMemory: MemoryComponent = {
-        ...memory,
-        annoyedDuration: consequence.state === 'annoyed' ? consequence.duration : memory.annoyedDuration,
-        gratefulDuration: consequence.state === 'grateful' ? consequence.duration : memory.gratefulDuration
-      };
-      return addComponent(state, memOwnerId, nextMemory);
-    }
-    return state;
+    const target = getTargetMemory(state, consequence);
+    if (!target) return state;
+    const { ownerId, memory } = target;
+    return addComponent(state, ownerId, {
+      ...memory,
+      annoyedDuration: consequence.state === 'annoyed' ? consequence.duration : memory.annoyedDuration,
+      gratefulDuration: consequence.state === 'grateful' ? consequence.duration : memory.gratefulDuration
+    });
   },
 
   transfer_knowledge: (
@@ -167,32 +155,21 @@ export const socialConsequences = {
     const npcId = consequence._npcEntityId ?? consequence.entityId;
     const playerId = consequence._playerEntityId;
     if (npcId === undefined || playerId === undefined) return state;
-
     const npcMemory = getComponent(state, npcId, ComponentType.Memory) as MemoryComponent | undefined;
-    if (!npcMemory) return state;
-
-    const item = npcMemory.knowledge?.[consequence.knowledgeId];
+    const item = npcMemory?.knowledge?.[consequence.knowledgeId];
     if (!item) return state;
 
     let nextState = transferKnowledge(state, npcId, playerId, consequence.knowledgeId);
+    if (!consequence.addToInvestigationBoard) return nextState;
 
-    if (consequence.addToInvestigationBoard) {
-      const clueText = `${item.type}: ${item.description}`;
-      const playerMemory = getComponent(nextState, playerId, ComponentType.Memory) as MemoryComponent | undefined;
-
-      if (playerMemory && !playerMemory.knowledge?.[clueText]) {
-        const nextKnowledge = { ...(playerMemory.knowledge ?? {}) };
-        nextKnowledge[clueText] = {
-          id: item.id,
-          type: item.type,
-          description: item.description,
-          tags: item.tags
-        };
-        nextState = addComponent(nextState, playerId, {
-          ...playerMemory,
-          knowledge: nextKnowledge
-        });
-      }
+    const clueText = `${item.type}: ${item.description}`;
+    const playerMemory = getComponent(nextState, playerId, ComponentType.Memory) as MemoryComponent | undefined;
+    if (playerMemory && !playerMemory.knowledge?.[clueText]) {
+      const nextKnowledge = {
+        ...(playerMemory.knowledge ?? {}),
+        [clueText]: { id: item.id, type: item.type, description: item.description, tags: item.tags }
+      };
+      nextState = addComponent(nextState, playerId, { ...playerMemory, knowledge: nextKnowledge });
     }
     return nextState;
   },
@@ -203,49 +180,30 @@ export const socialConsequences = {
     consequence: Extract<ConsequenceAction, { type: 'modify_relationship_axis' }>,
     apply: (state: GameState, event: GameEvent, consequence: ConsequenceAction) => GameState
   ): GameState => {
-    let eId = consequence._npcEntityId;
-    if (eId === undefined) {
-      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-        eId = (event as unknown as { entityId: EntityId }).entityId;
-      } else if (consequence.targetId) {
-        eId = parseInt(consequence.targetId) as EntityId;
-      } else if (event.type === GameEventType.ReactionResolved) {
-        const targetPayload = (event as unknown as { target?: { type: string; entityId?: EntityId } }).target;
-        if (targetPayload && targetPayload.type === 'entity') {
-          eId = targetPayload.entityId;
-        }
-      }
-    }
-
-    if (eId === undefined) return state;
-
+    const eId = consequence._npcEntityId ?? resolveConsequenceTargetEntityId(event, consequence.targetId);
+    if (eId === undefined || Number.isNaN(eId)) return state;
     const memory = getComponent(state, eId, ComponentType.Memory) as MemoryComponent | undefined;
     if (!memory) return state;
 
     const currentAxes = memory.relationshipAxes ?? {};
     const newValue = Math.max(-100, Math.min(100, (currentAxes[consequence.axis] ?? 0) + consequence.amount));
-
-    const newMemory = {
+    let nextState = addComponent(state, eId, {
       ...memory,
       relationshipAxes: { ...currentAxes, [consequence.axis]: newValue }
-    };
-
-    let nextState = addComponent(state, eId, newMemory);
+    });
 
     for (const threshold of nextState.campaign.relationshipThresholds ?? []) {
-      if (threshold.axis === consequence.axis) {
-        let conditionMet = false;
-        if (threshold.operator === '>=') conditionMet = newValue >= threshold.value;
-        else if (threshold.operator === '<=') conditionMet = newValue <= threshold.value;
-        else if (threshold.operator === '==') conditionMet = newValue === threshold.value;
-
-        if (conditionMet) {
-          nextState = apply(nextState, event, {
-            ...threshold.consequence,
-            _npcEntityId: eId,
-            targetId: eId.toString()
-          } as ConsequenceAction);
-        }
+      if (threshold.axis !== consequence.axis) continue;
+      const met =
+        (threshold.operator === '>=' && newValue >= threshold.value) ||
+        (threshold.operator === '<=' && newValue <= threshold.value) ||
+        (threshold.operator === '==' && newValue === threshold.value);
+      if (met) {
+        nextState = apply(nextState, event, {
+          ...threshold.consequence,
+          _npcEntityId: eId,
+          targetId: eId.toString()
+        } as ConsequenceAction);
       }
     }
     return nextState;
@@ -256,28 +214,48 @@ export const socialConsequences = {
     event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'force_say' }>
   ): GameState => {
-    let eId: EntityId | undefined;
-    if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-      eId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetId) {
-      eId = parseInt(consequence.targetId) as EntityId;
-    } else {
-      if (event.type === GameEventType.ReactionResolved) {
-        const rxEvent = event as unknown as { target: ApplyIntentTarget };
-        if (rxEvent.target.type === 'entity') {
-          eId = rxEvent.target.entityId;
-        }
+    const eId = resolveConsequenceTargetEntityId(event, consequence.targetId);
+    if (eId === undefined || Number.isNaN(eId)) return state;
+    const sayResult = executeSay(state, eId, consequence.message);
+    return { ...sayResult.state, events: [...sayResult.state.events, sayResult.event] };
+  },
+
+  set_companion_stance: (
+    state: GameState,
+    _event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'set_companion_stance' }>
+  ): GameState => {
+    const parsedTargetId =
+      consequence.targetId !== undefined ? (parseInt(consequence.targetId, 10) as EntityId) : undefined;
+    const companionId =
+      parsedTargetId !== undefined && !Number.isNaN(parsedTargetId)
+        ? parsedTargetId
+        : (consequence._npcEntityId ?? consequence.entityId);
+    return companionId !== undefined ? setCompanionStance(state, companionId, consequence.stance) : state;
+  },
+
+  order_companion_target: (
+    state: GameState,
+    _event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'order_companion_target' }>
+  ): GameState => {
+    const controllerId =
+      consequence._playerEntityId ??
+      state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+    if (controllerId === undefined) return state;
+
+    const parsedId = consequence.targetId !== undefined ? (parseInt(consequence.targetId, 10) as EntityId) : undefined;
+    if (parsedId !== undefined && !Number.isNaN(parsedId)) {
+      if (isPlayerControlledCompanion(state, controllerId, parsedId)) {
+        return beginCompanionTargetSelection(state, controllerId, parsedId);
       }
+      return assignCompanionCommandTarget(state, controllerId, parsedId).state;
     }
 
-    if (eId !== undefined) {
-      const sayResult = executeSay(state, eId, consequence.message);
-      return {
-        ...sayResult.state,
-        events: [...sayResult.state.events, sayResult.event]
-      };
-    }
-    return state;
+    const npcId = consequence._npcEntityId;
+    const specificId =
+      npcId !== undefined && isPlayerControlledCompanion(state, controllerId, npcId) ? npcId : undefined;
+    return beginCompanionTargetSelection(state, controllerId, specificId);
   }
 } satisfies Partial<
   Record<

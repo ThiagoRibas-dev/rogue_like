@@ -13,6 +13,10 @@ import {
   createToggleSettingsAction
 } from '../../actions/core.actions.ts';
 import { getActiveCartridgeUI } from '../../rendering/ui/cartridge_ui_registry.ts';
+import { resolveDialogueTree } from '../../systems/dialogue.system.ts';
+import { evaluateCondition } from '../../systems/trigger.system.ts';
+import { GameEventType, type DialogueSelectedEvent } from '../../types/events.types.ts';
+import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { handleInventoryKey } from './inventory_input.ts';
 
@@ -26,11 +30,13 @@ interface ModalBinding {
   readonly shortcut?: ActionType;
 }
 
+/** Max digit shortcut key index supported in modal dialogue option selection (`1`-`9`). */
+const MAX_NUMERIC_DIALOGUE_SHORTCUT = 9;
+
 /**
  * All modal overlays that intercept input while open.
  *
- * `Inventory` and `VerbMenu` are deliberately absent: both have bespoke key
- * semantics and are handled by dedicated branches below.
+ * `Inventory`, `VerbMenu`, `Dialogue`, `Trade`, and `Services` are handled by dedicated branches below.
  */
 const MODAL_BINDINGS: ReadonlyArray<ModalBinding> = [
   { mode: UIMode.Debug, buildToggleIntent: createToggleDebugAction },
@@ -49,7 +55,16 @@ const MODAL_BINDINGS: ReadonlyArray<ModalBinding> = [
  * @returns True when the mode is a modal overlay.
  */
 export function isModalUIMode(mode: UIMode): boolean {
-  if (mode === UIMode.Inventory || mode === UIMode.VerbMenu || mode === UIMode.CartridgeModal) return true;
+  if (
+    mode === UIMode.Inventory ||
+    mode === UIMode.VerbMenu ||
+    mode === UIMode.CartridgeModal ||
+    mode === UIMode.Dialogue ||
+    mode === UIMode.Trade ||
+    mode === UIMode.Services
+  ) {
+    return true;
+  }
   return MODAL_BINDINGS.some((binding) => binding.mode === mode);
 }
 
@@ -69,6 +84,19 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 
   if (state.uiMode === UIMode.Inventory) {
     handleInventoryKey(event, state, playerEntityId);
+    return;
+  }
+
+  if (state.uiMode === UIMode.Dialogue) {
+    handleDialogueKey(event, state, playerEntityId);
+    return;
+  }
+
+  if (state.uiMode === UIMode.Trade || state.uiMode === UIMode.Services) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      setGameState({ ...state, uiMode: UIMode.Game, activeTrade: undefined, activeService: undefined });
+    }
     return;
   }
 
@@ -127,6 +155,57 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
 }
 
 /**
+ * Handles keyboard input inside an active Dialogue overlay:
+ * Escape closes dialogue cleanly, and digit keys `1`-`9` trigger visible dialogue options.
+ */
+function handleDialogueKey(event: KeyboardEvent, state: GameState, playerEntityId: EntityId): void {
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    queuePlayerIntent({
+      type: IntentType.CloseDialogue,
+      entityId: playerEntityId,
+      isImmediate: true
+    });
+    return;
+  }
+
+  if (!state.activeDialogue || event.key.length !== 1) return;
+
+  const numericSelection = Number.parseInt(event.key, 10);
+  if (!Number.isInteger(numericSelection) || numericSelection < 1 || numericSelection > MAX_NUMERIC_DIALOGUE_SHORTCUT) {
+    return;
+  }
+
+  const { treeId, currentNodeId, npcEntityId } = state.activeDialogue;
+  const tree = resolveDialogueTree(state, treeId, npcEntityId);
+  const node = tree?.nodes[currentNodeId];
+  if (!node) return;
+
+  const visibleOptions = node.options.filter((option) => {
+    if (!option.conditions || option.conditions.length === 0) return true;
+    const evalEvent: DialogueSelectedEvent = {
+      type: GameEventType.DialogueSelected,
+      dialogueId: treeId,
+      optionId: option.id
+    };
+    return option.conditions.every((cond) =>
+      evaluateCondition(state, evalEvent, { ...cond, _npcEntityId: npcEntityId, _playerEntityId: playerEntityId })
+    );
+  });
+
+  const selectedOption = visibleOptions[numericSelection - 1];
+  if (!selectedOption) return;
+
+  event.preventDefault();
+  queuePlayerIntent({
+    type: IntentType.SelectDialogueOption,
+    entityId: playerEntityId,
+    optionId: selectedOption.id,
+    isImmediate: true
+  });
+}
+
+/**
  * Handles the contextual verb menu: numeric selection, Enter for the first verb, Escape to cancel.
  *
  * @param event The originating KeyboardEvent.
@@ -151,8 +230,8 @@ function handleVerbMenuKey(event: KeyboardEvent, state: GameState, playerEntityI
     const verb = availableVerbs[numericSelection - 1];
     if (verb !== undefined) {
       event.preventDefault();
-      queuePlayerIntent(createApplyAction(playerEntityId, verb, target, toolEntityId));
       setGameState({ ...state, uiMode: UIMode.Game, verbMenu: undefined });
+      queuePlayerIntent(createApplyAction(playerEntityId, verb, target, toolEntityId));
       return;
     }
   }
@@ -163,6 +242,6 @@ function handleVerbMenuKey(event: KeyboardEvent, state: GameState, playerEntityI
   if (firstVerb === undefined) return;
 
   event.preventDefault();
-  queuePlayerIntent(createApplyAction(playerEntityId, firstVerb, target, toolEntityId));
   setGameState({ ...state, uiMode: UIMode.Game, verbMenu: undefined });
+  queuePlayerIntent(createApplyAction(playerEntityId, firstVerb, target, toolEntityId));
 }

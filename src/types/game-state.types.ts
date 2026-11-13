@@ -216,6 +216,7 @@ export interface GameState {
           | {
               readonly verb: string;
               readonly toolEntityId?: EntityId;
+              readonly companionEntityId?: EntityId;
             }
           | undefined;
       }

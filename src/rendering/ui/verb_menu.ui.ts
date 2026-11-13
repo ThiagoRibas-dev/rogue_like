@@ -97,8 +97,8 @@ export function renderVerbMenu(state: GameState): void {
           li.addEventListener('click', (e) => {
             e.stopPropagation();
             setContextMenuAnchor(null);
-            queuePlayerIntent(createApplyAction(playerEntityId, option.verb, target, toolEntityId));
             setGameState({ ...state, uiMode: UIMode.Game, verbMenu: undefined });
+            queuePlayerIntent(createApplyAction(playerEntityId, option.verb, target, toolEntityId));
           });
         }
       }

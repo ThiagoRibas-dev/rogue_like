@@ -238,6 +238,15 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     type: z.literal('compile_scheme'),
     recipeId: z.string(),
     targetRef: z.string()
+  }),
+  z.object({
+    type: z.literal('set_companion_stance'),
+    stance: z.enum(['aggressive', 'defensive', 'passive', 'hold']),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('order_companion_target'),
+    targetId: z.string().optional()
   })
 ]);
 

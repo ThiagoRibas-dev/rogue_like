@@ -1,79 +1,58 @@
-# Research Notes — Phase 30: Universal Actor Symmetry, Unified Race/Archetype Hydration & Real Monster Armament Equipping (Milestones 129 & 130)
+# Phase 31 (Milestone 131) Research Notes — Companion AI, Tactical Stance Packages & Command Directives
 
-## 1. Core Architectural Rules & Standards Reiterated
-- **Rule 11 & 12 (Strict TypeScript & Zero Magic Values):** Zero `any`, `exactOptionalPropertyTypes: true`, explicit return types on all functions, and named constants or declarative JSON definitions for all gameplay parameters.
-- **Rule 15 (Three-Axis Cascading Effects Mapping):** Every change to behavior, ordering, or data shape must map Upstream (callers, emitters, data authors, tests), Downstream (renderers, validators, serializers, DAG resolvers), and Lateral (sibling JSONs, editor schemas, SSOT docs) effects.
-- **Rule 16 (Three-Tier Placement Heuristic):**
-  - Tier 1 (`src/core/`, `src/systems/`, `src/types/`): Console-level anatomical `EquipmentSlotInstance[]` initialization (`buildAnatomyEquipmentSlots`).
-  - Tier 2 (`src/rulesets/dnd35e/`): Symmetrical D&D 3.5e race/class hydration, DAG evaluation, and equipment physics.
-  - Tier 3 (`public/data/rulesets/dnd35e/*.json`): Declarative race definitions, `defaultEquipment` loadouts, and natural weapon descriptors.
-- **Rule 18 (Universal Actor Symmetry & Composable Diffs):** Every actor (PC, NPC, animal, 6-armed Marilith, or dragon) is composed of the exact same building blocks: Racial Hit Dice / Base Race, Class tracks, Anatomical Equipment Slots, Natural & Manufactured Weapons, Skills, Feats, and Abilities.
-- **Rule 19 & 20 (Unified Effect Providers & Three-Horizon Boundaries):** All modifiers carry hierarchical `sourcePath` provenance across Horizon 1 (`levelHistory`), Horizon 2 (aggregated progression layers), and Horizon 3 (live equipment & tag projection).
+## 1. Rules & Architectural Constraints (`AGENTS.md` & `ARCHITECTURE.md`)
+- **Rule 11 & 12 (Strict TypeScript & Zero Magic Values):** No `any`, explicit return types on all functions, and named constants for all gameplay/tactical distances (`DEFAULT_COMPANION_FOLLOW_DISTANCE = 2`, `DEFAULT_COMPANION_LEASH_RADIUS = 8`, `DEFAULT_COMPANION_DEFEND_RADIUS = 3`).
+- **Rule 15 (Cascading Effects Matrix):** Every change to `ControllerLinkComponent`, `AIBehaviorEntrySchema`, `Verb`, `ConsequenceActionSchema`, `movement.system.ts`, `game-loop.ts`, and `companions.ts` must be mapped across **Upstream**, **Downstream**, and **Lateral** axes.
+- **Rule 16 (Three-Tier Placement Heuristic):** Push generic RPG simulation primitives (companion stances, focus-target directives, `follow` behavior, leash/stance target filtering, corridor position-swapping, and command verbs/dialogues) into **Tier 1 — Core Console Engine** so any ruleset cartridge (`classic`, `dnd35e`, or custom) inherits full companion AI and control without cartridge duplication.
+- **Rule 18 (Universal Actor Symmetry):** Companions, familiars, cohorts, and summons are standard Actors using the same `AIComponent`, `ControllerLinkComponent`, `FactionComponent`, `AttitudeComponent`, `EquipmentComponent`, and `InventoryComponent` as any other Actor.
 
 ---
 
-## 2. Detailed Audit Findings & Root Causes
+## 2. Three-Tier Placement Analysis (Console vs. Cartridge vs. Content)
 
-### Finding 1: Split Race Hydration Pipelines (`applyRaceToActorChassis` vs. `hydrateRaceAsArchetype` + `hydrateArchetypeData`)
-- **Current State:**
-  - **Player Path (`src/rulesets/dnd35e/races.ts` $\to$ `applyRaceToActorChassis`)**:
-    - Evaluates `race.traitBundles` via `evaluateEffectBundle`, `race.conditionalModifiers`, `race.saveBonuses`, and `race.spellResistanceFormula`.
-    - **Missing**: Does not call `buildCreatureTypeAndSubtypeModifiers` (from `src/rulesets/dnd35e/semantic_tags.ts`), meaning a player of a race with `outsider` type (`aasimar`, `tiefling`) or specific subtypes (`elf`, `orc`, `goblinoid`, `fire`, `cold`) does not receive automatic Creature Type / Subtype `traitBundles` or modifiers during `applyRaceToActorChassis`. Also does not inspect `creatureTypeEngine.goodSaveBySubtype` when constructing RHD tracks.
-  - **Monster/NPC Path (`src/rulesets/dnd35e/archetype/race_hydrator.ts` $\to$ `hydrateRaceAsArchetype` $\to$ `hydrateArchetypeData` in `src/rulesets/dnd35e/archetype_resolver.ts`)**:
-    - Calls `buildCreatureTypeAndSubtypeModifiers` and checks `ctEngine.goodSaveBySubtype`.
-    - **Missing**: Drops `race.traitBundles`, `race.conditionalModifiers`, `race.saveBonuses`, and `race.spellResistanceFormula`! If a `dwarf`, `elf`, `gnome`, `halfling`, `drow`, or `svirfneblin` is hydrated via `getDnD35Archetype` + `hydrateArchetypeData` (e.g., as an NPC or monster), its racial save bonuses, conditional AC/attack bonuses against giants/orcs, and dynamic SR formula (`11 + HD`) are silently lost.
-- **Playable Monster-Race Feat Contamination (`builder_hydrator_creation.ts`)**:
-  - `orc.json`, `goblin.json`, `hobgoblin.json`, and `kobold.json` have `"isPlayableRace": true` alongside Monster Manual 1st-level Warrior defaults (`"defaultClassLevels": [{ "classId": "warrior", "levels": 1 }]` and `"feats": ["weapon_focus:greataxe"]` / `["alertness"]`).
-  - While `builder_hydrator_creation.ts` resets `withBaseAbilities.feats = []`, any future unification of racial bonus feats vs. default Warrior feats must distinguish true racial bonus feats from default Monster Manual Warrior 1 feats when `defaultClassLevels.length > 0`.
-
-### Finding 2: Non-Player `defaultClassLevels` Bypass Class Feature & Modifier Evaluation
-- **Current State:**
-  - In `src/rulesets/dnd35e/archetype/race_hydrator.ts` (lines 87–122), `requestedClassLevels` (from `raceDef.defaultClassLevels` or `options.classLevels`) only constructs bare `DnD35ProgressionTrack` entries (`levels`, `hitDieSides`, `babCurve`, `fortCurve`, `refCurve`, `willCurve`, `skillPointsPerLevel`).
-  - When `hydrateArchetypeData` (`src/rulesets/dnd35e/archetype_resolver.ts`) turns that `DnD35Archetype` into `DnD35EntityData`, it never calls `collectActiveClassFeaturesAndPools`, `buildClassAndDomainEffectModifiers`, `collectActiveGrantedAndVirtualFeats`, or `buildFeatEffectModifiers` from `src/rulesets/dnd35e/level_ledger.ts`.
-  - Consequently, an NPC or monster hydrated with class levels (e.g., `barbarian`, `fighter`, `monk`, `ranger`, `warrior`) does not get its class feature modifiers (`activeClassFeatures`, `scalingPools`, `classAndDomainMods`) on `DnD35EntityData`.
-
-### Finding 3: Baked-In Statblock Armaments vs. Real Equipped Items (`defaultEquipment`) & Missing Natural Weapons
-- **Current State:**
-  - `resolveAllEquippedWeaponProfiles` (`src/rulesets/dnd35e/equipment_physics.ts` lines 97–105) inspects `EquipmentComponent.slots`. When no weapon item entity is equipped in a hand slot, it returns `buildUnarmedProfile` (`1d3` bludgeoning, `weaponItemId: 'unarmed_strike'`).
-  - Armed monster races (`orc`, `goblin`, `hobgoblin`, `kobold`, `bugbear`, `gnoll`, `ogre`, `hill_giant`, `stone_giant`, `frost_giant`, `fire_giant`, `ettin`, `minotaur`, `balor`, `marilith`, `skeleton`) currently rely on legacy flat fields (`weaponDice`, `armorBonus`, `shieldBonus`) in `races/<id>.json` and have no equipped items when spawned.
-  - Because `resolveAllEquippedWeaponProfiles` returns `unarmed_strike` for unequipped actors:
-    1. Their melee strikes use `1d3` unarmed damage instead of their SRD weapon (`greataxe`, `greatclub`, `morningstar`, `longsword`, etc.) unless they have `naturalWeapons`.
-    2. Their parameterized weapon feats (`weapon_focus:greataxe`, `weapon_focus:greatclub`, `weapon_focus:morningstar`, `weapon_focus:longsword`) never match `weapon:unarmed_strike`!
-    3. `marilith` (`anatomyBodyPlan: "marilith_6arm"`, `feats: [..., "multiweapon_fighting", "weapon_focus:longsword"]`) has no longswords equipped across its 6 hands.
-    4. `manticore.json` has `"weapon_focus:spikes"` in `feats`, but its `naturalWeapons` array only lists `claw` and `bite` (missing `spikes`).
-    5. `skeleton.json` and `zombie.json` in `races/` have `naturalWeapons: []` (unlike `templates/skeleton.json` and `templates/zombie.json`, which grant `claw` and `slam`).
-
-### Finding 4: `buildAnatomyEquipmentSlots` Not Wired Into `spawnEntity` (`src/core/ecs/ecs_spawner.ts`)
-- **Current State:**
-  - `buildAnatomyEquipmentSlots(bodyPlan)` in `src/systems/inventory/equipment_slots.ts` defines complete anatomical slot graphs with `limbGroupId` links (`arm_group_1`..`arm_group_6`, `foreleg_left`, etc.) for all 5 body plans (`humanoid_biped`, `quadruped`, `marilith_6arm`, `avian`, `serpentine`).
-  - However, `spawnEntity` in `src/core/ecs/ecs_spawner.ts` only creates an `EquipmentComponent` if `template.equipmentSlots` is explicitly present on the campaign entity template (`entities.json`), and even then it constructs naive `{ id: "${slotType}_${index}", slotType, equippedItem: null }` records without `limbGroupId`!
-  - Non-player actors in `dnd35e-crypt/entities.json` omit `equipmentSlots` and `inventoryConfig`, so spawned monsters lack `EquipmentComponent` and `InventoryComponent` entirely.
-
-### Finding 5: Legacy Feat Prefix Fallbacks, Duplicate `improved_critical` Injection & Dead Schemas
-- **`src/rulesets/dnd35e/effect_bundle.ts` (lines 164–182)**: `parseParameterizedFeatId` still loops over `KNOWN_PARAMETERIZED_FEAT_PREFIXES` (`weapon_focus_`, `weapon_specialization_`, etc.) for underscore-delimited feat IDs that have been completely eliminated.
-- **`src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` (lines 242–261)**: `parseEquippedItem` manually checks `feats.some(f => f === 'improved_critical:...')` and injects a duplicate `crit_threat_doubling` modifier, which is already handled canonically by `buildFeatEffectModifiers` + `resolveActorAttackRoutine` (`attack_routine.ts`).
-- **`src/rulesets/dnd35e/families/dragon_synthesizer.ts` & `elemental_synthesizer.ts`**: Retain 150+ lines of dead fallback code for `DnD35DragonFamiliesData` (`dragon_families.json`), which was replaced by `races/dragon_*.json` and `races/elemental_*.json` in Milestone 108.
-- **`src/rulesets/dnd35e/types/system/creature_system.types.ts` & `templates.ts`**: `DnD35TemplateSchema` and `DnD35TemplateHdTierSchema` define both `energyResistance` and `energyResistances`, even though all 9 `public/data/rulesets/dnd35e/templates/*.json` files use `energyResistances`.
-
----
-
-## 3. SSOT Ownership & Old-Brain Eviction Table
-
-| Responsibility | Canonical Owner (SSOT) | Old-Brain / Duplicate Location to Evict |
-| :--- | :--- | :--- |
-| Racial trait bundle, conditional modifier, save bonus, SR formula & creatureType/subtype modifier evaluation | `src/rulesets/dnd35e/races.ts` (`evaluateRacialModifiersAndSenses` / `applyRaceToActorChassis`) shared by `hydrateArchetypeData` (`src/rulesets/dnd35e/archetype_resolver.ts`) | Divergent ad-hoc subsets in `races.ts` vs. `race_hydrator.ts` / `archetype_resolver.ts` |
-| Parameterized feat ID parsing (`baseFeatId:targetId`) | `src/rulesets/dnd35e/effect_bundle.ts` (`parseParameterizedFeatId` colon-syntax only) | `KNOWN_PARAMETERIZED_FEAT_PREFIXES` underscore fallback in `effect_bundle.ts` and `improved_critical_*` check in `weapon_profile_parser.ts` |
-| Critical threat range expansion (`'threat_expansion'`) | `src/rulesets/dnd35e/progression/ledger_modifiers.ts` (`buildFeatEffectModifiers`) + `src/rulesets/dnd35e/combat/attack_routine.ts` | Duplicate `hasImprovedCrit` injection in `src/rulesets/dnd35e/equipment/weapon_profile_parser.ts` |
-| True Dragon & Elemental tier synthesis | `synthesizeDragonFromRaceTier` (`dragon_synthesizer.ts`) & `synthesizeElementalFromRaceTier` (`elemental_synthesizer.ts`) | Legacy `DnD35DragonFamiliesData` branches in `dragon_synthesizer.ts`, `elemental_synthesizer.ts`, `archetype_resolver.ts`, `base_system.types.ts`, and `dnd35e_system.types.ts` |
-| Template energy resistance schema key | `energyResistances` in `DnD35TemplateSchema` & `DnD35TemplateHdTierSchema` (`creature_system.types.ts`) | Duplicate singular `energyResistance` property on `DnD35TemplateSchema` & `DnD35TemplateHdTierSchema` |
-| Actor anatomical slot topology & default armament equipping | `buildAnatomyEquipmentSlots` (`src/systems/inventory/equipment_slots.ts`) invoked by `spawnEntity` (`src/core/ecs/ecs_spawner.ts`) + `defaultEquipment` in `races/*.json` | Unwired `buildAnatomyEquipmentSlots` and unequipped armed monsters falling back to `1d3` unarmed strikes |
-
----
-
-## 4. Cascading Effects Matrix (AGENTS.md Rule 15)
-
-| Change | Upstream (Callers, Data Authors, Fixtures) | Downstream (Resolvers, Validators, Renderers, Save Schemas) | Lateral (Sibling JSONs, Bundled Monoliths, SSOT Docs) |
+| Capability / Responsibility | Tier | Canonical Owner | Rationale |
 | :--- | :--- | :--- | :--- |
-| **1. Unify Race & Class Hydration (`races.ts`, `race_hydrator.ts`, `archetype_resolver.ts`)** | `applyCharacterCreationToPlayer`, `getDnD35EntityData`, `syncActorCompanionsAndFamiliars`, `tests/dnd35e_phase22_bestiary.test.ts` | `evaluateDnD35eEntityDAG` receives complete racial `traitBundles`, `conditionalModifiers`, `saveBonuses`, `spellResistance`, and class feature modifiers for both PCs and NPCs/monsters | `builder_hydrator_creation.ts` filters out default Warrior feats when `raceDef.defaultClassLevels.length > 0` so PCs don't inherit Monster Manual Warrior feats |
-| **2. Evict `KNOWN_PARAMETERIZED_FEAT_PREFIXES`, duplicate `hasImprovedCrit`, `DnD35DragonFamiliesData`, & template `energyResistance`** | `parseParameterizedFeatId`, `parseEquippedItem`, `synthesizeTrueDragonArchetype`, `synthesizeElementalArchetype`, `applyCreatureTemplate` | `evaluateDnD35eEntityDAG` & `resolveActorAttackRoutine` resolve `improved_critical:<weapon>` via `buildFeatEffectModifiers`; `dnd35e_validator.ts` validates templates using `energyResistances` | `public/data/rulesets/dnd35e/templates/*.json` & `templates.json` already use `energyResistances`; check `tests/dnd35e_equipment_m115.test.ts` for any direct `parseEquippedItem` crit test |
-| **3. Auto-Initialize Anatomical `EquipmentComponent` & `defaultEquipment` in `spawnEntity` (`ecs_spawner.ts`, `races/*.json`)** | `spawnEntity` callers (map generator, encounter director, summons, tests), `public/data/rulesets/dnd35e/races/*.json` | `resolveAllEquippedWeaponProfiles`, `collectEquippedItemDAGContributions`, `resolveActorAttackRoutine`, `collectOwnedEntityIds` (traverses equipped items on floor transition/limbo), Paper Doll UI | Sync modular `public/data/rulesets/dnd35e/races/<id>.json` and monolith `public/data/rulesets/dnd35e/races.json`; update `dnd35e_validator.ts` to verify `defaultEquipment` item IDs exist in `items` registry |
+| **`ControllerLinkComponent` Tactical Directives (`stance`, `commandTargetId`, `followDistance`, `leashRadius`)** | **Tier 1 (Console)** | `src/types/components/actor_components.types.ts` | Any ruleset can have pets, drones, hirelings, cohorts, animal companions, or summons. Storing stance and focus-target state on `ControllerLinkComponent` keeps it serializable (`JSON.stringify` safe) and ruleset-agnostic. |
+| **`follow` AI Behavior & Obstacle-Sliding Step Resolver** | **Tier 1 (Console)** | `src/ai/follow.behavior.ts`, `src/systems/ai.system.ts`, `src/types/campaign/entity.ts` | Stepping toward `controllerEntityId` when distance $> \text{followDistance}$ (and holding position when `stance === 'hold'`) is a universal spatial AI primitive. |
+| **Leash, Stance & Focus-Target Filtering (`resolveAITarget`)** | **Tier 1 (Console)** | `src/ai/companion_targeting.ts`, `src/ai/{hunt,ranged,spell}.behavior.ts` | Filtering candidate hostiles by `stance` (`'aggressive'`, `'defensive'`, `'passive'`, `'hold'`), prioritizing `commandTargetId`, and returning `null` when exceeding `leashRadius` (so `follow` takes over) applies to all AI behaviors across all rulesets. |
+| **Corridor Friendly Bump-Swap** | **Tier 1 (Console)** | `src/systems/movement.system.ts` | Swapping positions when a controller bumps into a friendly `ControllerLink` actor prevents 1-tile corridor deadlocks in any dungeon campaign. |
+| **Companion Command Verbs, Dynamic Command Dialogue, Targeting Integration & Dialogue Consequences** | **Tier 1 (Console)** | `src/constants/verbs.constants.ts`, `src/systems/companion_commands.system.ts`, `src/systems/apply.system.ts`, `src/systems/targeting.system.ts`, `src/types/trigger.types.ts`, `src/systems/trigger/social_consequences.ts` | Right-click context verbs (`command`, `order_attack`, `order_defend`, `order_follow`, `order_hold`, `order_target`), built-in companion command dialogue, and `set_companion_stance` / `order_companion_target` dialogue consequences work identically across all campaigns. |
+| **Mid-Session Actor Scheduler Auto-Enrollment (`addActor`)** | **Tier 1 (Console)** | `src/core/game-loop.ts` | Currently, actors spawned after initial bootstrap (such as companions spawned during Character Creation or Level-Up) are not registered in `ROT.Scheduler.Action`. Auto-enrolling any new `Actor` in `updateState` fixes this globally while keeping Tier 2 spawners pure. |
+| **D&D 3.5e Companion & Familiar Spawning (`AIComponent`, Adjacent Placement, Equipment Init)** | **Tier 2 (Cartridge)** | `src/rulesets/dnd35e/companions.ts` | `syncActorCompanionsAndFamiliars` / `upsertLinkedServantActor` computes D&D 3.5e Bonus HD, Natural Armor, and Familiar scaling, then attaches `AIComponent` (`profileId: 'companion_default'`), places new companions on an adjacent walkable tile, and preserves `stance`/`commandTargetId` across level-ups. |
+| **`companion_default` AI Profile Definition** | **Tier 3 (Content)** | `public/data/campaigns/*/ai.json`, `src/editor/blank_slate_campaign.ts` | Data-driven AI profile combining `hunt` (`aggroRadius: 6`) + `follow` (`followDistance: 2`, `leashRadius: 8`). |
+
+---
+
+## 3. Existing Codebase Findings & Gaps Discovered
+
+1. **Gap 1 — Missing `AIComponent` on Spawned Companions (`src/rulesets/dnd35e/companions.ts`)**:
+   - `upsertLinkedServantActor` (lines 264–298) creates a new entity with `Actor`, `Position`, `Renderable`, `ControllerLink`, `Faction` (`'player'`), `Attitude` (`'helpful'`), `Identity`, `Fighter`, and `RulesetData`, **but never attaches `ComponentType.AI` (`AIComponent`)**.
+   - In `processAITurn` (`src/systems/ai.system.ts`, line 34), `if (!ai || !pos) return { intent: null, state };`, causing companions to do nothing on their turns.
+2. **Gap 2 — Missing Scheduler Registration (`addActor`) for Mid-Session Spawns (`src/core/game-loop.ts` & `src/rulesets/dnd35e/companions.ts`)**:
+   - `bootstrap.ts` calls `addActor(id)` for initial entities *before* the player completes the D&D 3.5e Character Creation modal (`applyCharacterCreationToPlayer`) or Level-Up modal (`applyLevelUpToActor`).
+   - When `syncActorCompanionsAndFamiliars` creates a companion entity inside `applyCharacterCreationToPlayer` or `applyLevelUpToActor`, `addActor(entId)` is never called, so `ROT.Scheduler.Action` never schedules the companion's turns until the player changes floors (`processChangeAreaIntent`)!
+   - **Solution**: In `updateState` (`src/core/game-loop.ts`), whenever `prevState === null || prevState.entities !== newState.entities`, iterate `newState.entities` and call `addActor(id)` (which is already an $O(1)$ no-op if `actors.has(id)`) for every entity possessing `ComponentType.Actor`.
+3. **Gap 3 — Stacked Spawn Position (`src/rulesets/dnd35e/companions.ts`)**:
+   - Line 267 of `companions.ts` places newly created companions at `{ x: masterPos.x, y: masterPos.y }` (stacked directly on the player's tile) instead of an adjacent walkable, unoccupied tile.
+4. **Gap 4 — Corridor Blocking (`src/systems/movement.system.ts`)**:
+   - Lines 196–225 of `movement.system.ts`: when moving into a non-hostile actor (`blockedByEntityId`) that lacks `DialogueComponent` and `InteractableComponent`, `processMoveIntent` blocks movement with `"Something is in the way."`.
+   - If `blockedByEntityId` has a `ControllerLinkComponent` with `controllerEntityId === entityId` (or vice versa when controlled by the player), and both actors can traverse each other's tiles (`canTraverseTile`), swapping their `PositionComponent`s and firing `runActorMovementStep` for both actors resolves corridor deadlocks cleanly.
+5. **Gap 5 — Dynamic Companion Command Dialogue & Verb Menu Integration**:
+   - `renderDialoguePanel` (`src/rendering/ui/dialogue.ui.ts`) and `processSelectDialogueOptionIntent` (`src/actions/dialogue.actions.ts`) look up `state.campaign.dialogues[treeId]`.
+   - If we provide a helper `resolveDialogueTree(state, treeId, npcEntityId)` used by `startDialogue`, `dialogue.actions.ts`, and `dialogue.ui.ts` that synthesizes the built-in `__companion_orders__` `DialogueTree` when `treeId === '__companion_orders__'`, then:
+     - We don't need to pollute every campaign's `dialogues.json` with hardcoded system nodes.
+     - The dialogue dynamically displays the companion's name, current stance (`Aggressive`, `Defensive`, `Passive`, `Hold`), and current focus target!
+     - Even better, because options in `__companion_orders__` use standard `ConsequenceAction`s (`set_companion_stance`, `order_companion_target`), custom campaign dialogues in `dialogues.json` can also use those exact same consequences!
+
+---
+
+## 4. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Emitters / Data Authors) | Downstream (Consumers / Renderers / Validators / Save Schemas) | Lateral (Sibling Campaign JSONs / Kits / Docs) |
+| :--- | :--- | :--- | :--- |
+| **`ControllerLinkComponent` (`stance`, `commandTargetId`, `followDistance`, `leashRadius`)** | `syncActorCompanionsAndFamiliars` (`companions.ts`), `companion_commands.system.ts`, `social_consequences.ts`, `processAITurn` (stale target cleanup) | `followBehavior`, `resolveAITarget` (`hunt`, `ranged`, `spell`), `buildInspectTooltip` (`inspect_tooltip.ts`), `save_roundtrip.test.ts` (JSON serializable primitives only) | `src/types/components/actor_components.types.ts` |
+| **`AIBehaviorEntrySchema` (`follow` variant)** | `ai.json` across all campaigns, `blank_slate_campaign.ts` | `processAITurn` (`BEHAVIOR_REGISTRY`), `campaign_validator.ts`, `scripts/generate-ai-prompt-kit.ts` | `public/data/campaigns/{default,dnd35e-crypt,megacampaign,shroudgarde}/ai.json` |
+| **`Verb` & `VERBS` (`command`, `order_attack`, `order_defend`, `order_follow`, `order_hold`, `order_target`)** | `getValidVerbsForTarget` (`apply.system.ts`), `mouse_input.ts` (right-click verb menu), `verb_menu.ui.ts` | `processApplyIntent` (`apply.system.ts` $\to$ `processCompanionVerbIntent`), `targeting.system.ts` (`processFireAimedIntent`), `mouse_input.ts` (`handleCanvasLeftClick`) | `src/constants/verbs.constants.ts` |
+| **`ConsequenceActionSchema` (`set_companion_stance`, `order_companion_target`)** | `__companion_orders__` dialogue tree, custom campaign `dialogues.json` / `triggers.json` | `trigger.system.ts` (`consequenceAppliers` exhaustive map), `social_consequences.ts`, `dialogue.validator.ts`, `trigger.validator.ts` | `src/types/trigger.types.ts`, `src/types/dialogue.types.ts` |
+| **Corridor Friendly Bump-Swap (`processMoveIntent`)** | Player `MoveIntent` into tile occupied by a linked companion (`ControllerLinkComponent`) | `updateSpatialIndex`, `runActorMovementStep`, message log (`"You swap places with <Name>."`) | `src/systems/movement.system.ts` |
+| **Mid-Session Scheduler Auto-Enrollment (`updateState` in `game-loop.ts`)** | `applyCharacterCreationToPlayer`, `applyLevelUpToActor`, `spawn_entity` triggers | `ROT.Scheduler.Action` (`addActor`), `processTurn` | `src/core/game-loop.ts`, `src/core/scheduler.ts` |

@@ -752,6 +752,23 @@ To prevent combinatorial explosions in weapon statblocks and ensure character pr
    - Weapon strike profiles emit canonical base weapon tags (`weapon:<baseWeaponId>`) alongside variant item tags (`weapon:<itemId>`).
    - Parameterized weapon feats (*Weapon Focus*, *Weapon Specialization*, *Improved Critical*) and Cleric *War Domain* deity favored weapons check against the base weapon chassis, preserving bonuses across mundane, masterwork, and magic weapon tiers.
 
+### 9.15 Tier 1 Console Companion AI, Tactical Stances & Command Directives (Milestone 131)
+
+To keep companion, familiar, summon, and party-member AI completely ruleset-agnostic while letting cartridges and campaigns parameterize behavior purely through data:
+
+1. **Tactical State on `ControllerLinkComponent` (`src/types/components/actor_components.types.ts`)**:
+   - Stores `stance?: 'aggressive' | 'defensive' | 'passive' | 'hold'`, `commandTargetId?: EntityId`, `followDistance?: number`, and `leashRadius?: number` directly on the Tier 1 Console link component.
+   - `sanitizeCompanionControllerLink` (`src/ai/companion_targeting.ts`) auto-clears stale or dead `commandTargetId`s at the start of `processAITurn`.
+
+2. **Shared Target Filtering & `follow` Behavior (`src/ai/companion_targeting.ts`, `src/ai/follow.behavior.ts`)**:
+   - `resolveAITarget` unifies target selection across `huntBehavior`, `rangedBehavior`, and `spellBehavior`: enforcing `passive` attack suppression, prioritizing `commandTargetId`, enforcing `leashRadius` return-to-master priority over distant enemies, restricting `defensive` engagements to hostiles near controller or self, and preventing `hold` movement.
+   - `followBehavior` paths linked companions toward `controllerEntityId` via `ROT.Path.AStar` (with distance-ranked step fallback and `canTraverseTile` checks) whenever Chebyshev distance exceeds `followDistance`.
+
+3. **Zero-Cycle Player Directives & Corridor Swap (`src/systems/companion_commands.system.ts`, `src/systems/movement.system.ts`, `src/core/game-loop.ts`)**:
+   - `companion_commands.system.ts` owns the `command` / `order_*` verbs, synthetic `__companion_orders__` dialogue tree (resolved via `resolveDialogueTree` across dialogue UI and actions), and `order_target` aiming designation without importing downstream systems (`apply.system.ts`, `dialogue.system.ts`, `targeting.system.ts`), keeping the Tier 1 system import graph acyclic.
+   - Declarative dialogue/trigger consequences (`set_companion_stance`, `order_companion_target`) allow campaign JSON authors to command allied NPCs via conversation nodes.
+   - Bumping into a friendly `ControllerLink` companion lacking a custom `DialogueComponent` swaps positions cleanly when both tiles are traversable, preventing corridor deadlocks, while `updateState` in `game-loop.ts` auto-enrolls mid-session spawned `Actor`s into `ROT.Scheduler.Action`.
+
 ---
 
 ## 10. Key Design Decisions

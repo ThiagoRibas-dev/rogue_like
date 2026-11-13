@@ -3,9 +3,8 @@ import { type Intent } from '../types/intents/intent.union.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
-import { isHostile } from '../utils/faction.ts';
 import { computeFOV } from '../map/fov.ts';
-import { coordToIndex } from '../utils/grid.ts';
+import { resolveAITarget } from './companion_targeting.ts';
 
 interface AbilityDef {
   readonly effectId: string;
@@ -16,9 +15,7 @@ interface AbilityDef {
 
 /**
  * Spell casting behavior: evaluates a list of abilities and casts the first valid one
- * on the nearest hostile target in range.
- * Note: Cooldowns are not fully implemented in state yet, so they act as simple priority
- * lists for MVP. In the future, track cooldowns on the AI component.
+ * on the highest-priority hostile target in range.
  */
 export function spellBehavior(
   state: GameState,
@@ -37,32 +34,10 @@ export function spellBehavior(
   const aiComp = getComponent(state, entityId, ComponentType.AI);
   const cooldowns = aiComp?.cooldowns ?? {};
 
-  // Find nearest hostile
-  let nearestTarget: EntityId | undefined;
-  let minDistance = Infinity;
+  const resolved = resolveAITarget(state, entityId, maxRange, fov, false);
+  if (!resolved) return null;
 
-  for (const id of state.entities) {
-    if (id === entityId) continue;
-
-    const otherPos = getComponent(state, id, ComponentType.Position);
-    const otherFighter = getComponent(state, id, ComponentType.Fighter);
-
-    if (otherPos && otherFighter && isHostile(state, entityId, id)) {
-      const targetIndex = coordToIndex(otherPos.x, otherPos.y, state.map.width);
-      if (!fov.has(targetIndex)) continue;
-
-      const dx = otherPos.x - pos.x;
-      const dy = otherPos.y - pos.y;
-      const distance = Math.max(Math.abs(dx), Math.abs(dy));
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestTarget = id;
-      }
-    }
-  }
-
-  if (!nearestTarget) return null;
+  const minDistance = resolved.distance;
 
   // Try to use the first ability that is in range and not on cooldown
   for (const ability of abilities) {

@@ -4,13 +4,13 @@
 
 ## Table of Contents
 
-- [Core Console: AI Behavior Trees & Tactics (5 files)](#core-console-ai-behavior-trees-tactics)
+- [Core Console: AI Behavior Trees & Tactics (7 files)](#core-console-ai-behavior-trees-tactics)
 - [Core Console: Action Pipeline & Commands (10 files)](#core-console-action-pipeline-commands)
 - [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
-- [Core Console: ECS Systems & Simulation (57 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (58 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
@@ -26,11 +26,13 @@
 
 ## Core Console: AI Behavior Trees & Tactics
 
-**Modules in this domain:** 5
+**Modules in this domain:** 7
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/ai/companion_targeting.ts` | `tier1_console` | Companion tactical target resolution, leash bounds, stance filtering, and stale focus-target sanitization. | `resolveAITarget`, `sanitizeCompanionControllerLink` | **Includes:** Pure implementation and exports for src/ai/companion_targeting.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/companion_targeting.ts. |
 | `src/ai/flee.behavior.ts` | `tier1_console` | Flee behavior: runs away from the nearest hostile entity if HP is below the threshold. | `fleeBehavior` | **Includes:** Pure implementation and exports for src/ai/flee.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/flee.behavior.ts. |
+| `src/ai/follow.behavior.ts` | `tier1_console` | Follow behavior: routes controlled companions toward their controller while respecting hold stance and obstacles. | `computeNextStepToward`, `followBehavior` | **Includes:** Pure implementation and exports for src/ai/follow.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/follow.behavior.ts. |
 | `src/ai/hunt.behavior.ts` | `tier1_console` | Hunt behavior: finds the nearest hostile entity within aggroRadius. | `huntBehavior` | **Includes:** Pure implementation and exports for src/ai/hunt.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/hunt.behavior.ts. |
 | `src/ai/ranged.behavior.ts` | `tier1_console` | Ranged behavior: finds the nearest hostile entity within range. | `rangedBehavior` | **Includes:** Pure implementation and exports for src/ai/ranged.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/ranged.behavior.ts. |
 | `src/ai/spell.behavior.ts` | `tier1_console` | Spell casting behavior: evaluates a list of abilities and casts the first valid one | `spellBehavior` | **Includes:** Pure implementation and exports for src/ai/spell.behavior.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/ai/spell.behavior.ts. |
@@ -130,7 +132,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 57
+**Modules in this domain:** 58
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -138,9 +140,10 @@
 | `src/systems/apply.system.ts` | `tier1_console` | Processes an ApplyIntent, which represents a generic attempt by an actor | `processApplyIntent`, `getValidVerbsForTarget`, `getVerbOptionsForTarget` | **Includes:** Pure implementation and exports for src/systems/apply.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/apply.system.ts. |
 | `src/systems/chronicle.system.ts` | `tier1_console` | Records a reference to an important ledger event in an entity's chronicle. | `recordChronicleEvent`, `promoteEntity` | **Includes:** Pure implementation and exports for src/systems/chronicle.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/chronicle.system.ts. |
 | `src/systems/combat.system.ts` | `tier1_console` | Processes a MeleeAttackIntent by delegating to the active ruleset cartridge. | `processMeleeAttackIntent` | **Includes:** Pure implementation and exports for src/systems/combat.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/combat.system.ts. |
+| `src/systems/companion_commands.system.ts` | `tier1_console` | Companion command verbs, tactical stance switching, focus-target directives, and dynamic companion orders dialogue synthesis. | `isPlayerControlledCompanion`, `getPlayerCompanions`, `setCompanionStance`, `assignCompanionCommandTarget`, `buildCompanionOrdersDialogueTree`, `getValidCompanionVerbsForTarget`, `beginCompanionTargetSelection`, `processCompanionVerbIntent` | **Includes:** Pure implementation and exports for src/systems/companion_commands.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/companion_commands.system.ts. |
 | `src/systems/damage.system.ts` | `tier1_console` | Duration in milliseconds for floating combat text overlays. | `addFloatingText`, `processDamageSystem` | **Includes:** Pure implementation and exports for src/systems/damage.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/damage.system.ts. |
 | `src/systems/death.system.ts` | `tier1_console` | Helper to grant XP to an entity and handle level ups by delegating to the | `grantXp`, `processDeathSystem` | **Includes:** Pure implementation and exports for src/systems/death.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/death.system.ts. |
-| `src/systems/dialogue.system.ts` | `tier1_console` | Initializes and transitions the game state into an active dialogue tree session with an NPC. | `startDialogue` | **Includes:** Pure implementation and exports for src/systems/dialogue.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/dialogue.system.ts. |
+| `src/systems/dialogue.system.ts` | `tier1_console` | Initializes and transitions the game state into an active dialogue tree session with an NPC. | `resolveDialogueTree`, `startDialogue` | **Includes:** Pure implementation and exports for src/systems/dialogue.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/dialogue.system.ts. |
 | `src/systems/effects.system.ts` | `tier1_console` | Applies an item effect to a target entity, interpreting the declarative | `applyItemEffect`, `processUseItemIntent`, `processUseAbilityIntent` | **Includes:** Pure implementation and exports for src/systems/effects.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/effects.system.ts. |
 | `src/systems/effects/spatial_effects.ts` | `tier1_console` | Evaluates item effect target filters and resolves nearest-target, PBAoE, and status item effects. | `matchesTargetFilters`, `resolveDamageNearestEffect`, `resolveDamageAreaEffect`, `resolveApplyStatusEffect` | **Includes:** Pure implementation and exports for src/systems/effects/spatial_effects.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/effects/spatial_effects.ts. |
 | `src/systems/field.system.ts` | `tier1_console` | Helper to spawn a field at a given position. | `spawnField`, `processFieldsTick`, `ActiveFieldQueryResult`, `queryActiveFieldsAtPosition` | **Includes:** Pure implementation and exports for src/systems/field.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/field.system.ts. |

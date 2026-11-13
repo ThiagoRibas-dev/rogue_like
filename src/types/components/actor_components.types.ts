@@ -228,6 +228,15 @@ export interface InteractionScoreComponent {
 }
 
 /**
+ * Tactical stance package governing a controlled companion or minion's AI behavior.
+ * - `'aggressive'`: Proactively hunts any hostile within aggroRadius (up to leashRadius from controller).
+ * - `'defensive'`: Only engages hostiles within defendRadius of the controller or close to self; otherwise follows.
+ * - `'passive'`: Never initiates attacks; only follows the controller.
+ * - `'hold'`: Holds current tile without moving; only attacks adjacent hostiles in melee (or ranged if capable).
+ */
+export type CompanionStance = 'aggressive' | 'defensive' | 'passive' | 'hold';
+
+/**
  * Component linking an entity to its controller/master (minions, companions, familiars, eidolons, summons, party members).
  */
 export interface ControllerLinkComponent {
@@ -237,6 +246,10 @@ export interface ControllerLinkComponent {
   readonly tags: ReadonlyArray<string>;
   readonly shareInitiative?: boolean | undefined;
   readonly expirationTurn?: number | undefined;
+  readonly stance?: CompanionStance | undefined;
+  readonly commandTargetId?: EntityId | undefined;
+  readonly followDistance?: number | undefined;
+  readonly leashRadius?: number | undefined;
 }
 
 /**

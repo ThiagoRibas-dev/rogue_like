@@ -241,6 +241,13 @@ export function createBlankSlateCampaign(
       melee_aggro: {
         id: 'melee_aggro',
         behaviors: [{ behaviorId: 'hunt' }, { behaviorId: 'wander' }]
+      },
+      companion_default: {
+        id: 'companion_default',
+        behaviors: [
+          { behaviorId: 'hunt', aggroRadius: 6 },
+          { behaviorId: 'follow', followDistance: 2, leashRadius: 8 }
+        ]
       }
     },
     dialogues: {},

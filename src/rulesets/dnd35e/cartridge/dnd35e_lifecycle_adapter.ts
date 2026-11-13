@@ -23,6 +23,9 @@ import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
 /** Standard full round energy cost (`100`). */
 const FULL_ROUND_ENERGY_COST = 100;
 
+/** Baseline D&D 3.5e land speed in feet (`30 ft` = `6` five-foot squares per Move action). */
+const BASELINE_LAND_SPEED_FT = 30;
+
 /** Default caster level fallback when not specified on FieldComponent (`1`). */
 const DEFAULT_CASTER_LEVEL = 1;
 
@@ -197,6 +200,7 @@ export function onDnD35eActorMovementStep(
 /**
  * Resolves D&D 3.5e 5-tier action budget consumption and energy cost for an intent in TurnBased mode.
  * Returns `energyCost: 0` while movement or actions remain in the round, or `100` when the round completes.
+ * Non-player actors pay speed-normalized step energy for `Move` intents so they pace fairly with player rounds.
  *
  * @param state Current immutable GameState.
  * @param intent The intent being executed.
@@ -215,19 +219,25 @@ export function resolveDnD35eActionEnergyCost(
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   if (!isPlayer) {
     const dndData = getDnD35EntityData(state, intent.entityId);
-    if (dndData.actionBudget) {
-      const nextState = setDnD35EntityData(state, intent.entityId, {
-        ...dndData,
-        actionBudget: undefined
-      });
-      return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
+    const nextState = dndData.actionBudget
+      ? setDnD35EntityData(state, intent.entityId, {
+          ...dndData,
+          actionBudget: undefined
+        })
+      : state;
+    if (intent.type === IntentType.Move) {
+      const perStepEnergyCost = Math.max(
+        1,
+        Math.round((baseEnergyCost * FEET_PER_GRID_SQUARE) / BASELINE_LAND_SPEED_FT)
+      );
+      return { state: nextState, energyCost: perStepEnergyCost };
     }
-    return { state, energyCost: baseEnergyCost };
+    return { state: nextState, energyCost: dndData.actionBudget ? FULL_ROUND_ENERGY_COST : baseEnergyCost };
   }
 
   const dndData = getDnD35EntityData(state, intent.entityId);
   const stats = getEffectiveStats(state, intent.entityId);
-  const actorSpeedFt = stats.speed > 0 ? stats.speed : 30;
+  const actorSpeedFt = stats.speed > 0 ? stats.speed : BASELINE_LAND_SPEED_FT;
   let currentBudget = dndData.actionBudget;
 
   if (!currentBudget) {
