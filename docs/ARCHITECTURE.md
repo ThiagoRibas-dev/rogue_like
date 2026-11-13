@@ -41,31 +41,37 @@ graph TD
     end
 
     subgraph Core Loop
-        GL[Game Loop]:::core
+        GL[Game Loop & Lifecycle Windows]:::core
         Intent(Intent / Action)
         AR[Action Registry]:::core
-        SCH[ROT.Scheduler.Speed]:::core
+        SCH[ROT.Scheduler.Action]:::core
     end
 
     subgraph Systems Layer
         SysMap[Map System]:::sys
         SysMove[Movement System]:::sys
-        SysCombat[Combat System]:::sys
+        SysCombat[Combat / Lifecycle Systems]:::sys
         SysDeath[Death System]:::sys
-        SysScheme[Scheme System]:::sys
+        SysAI[AI & Companion Orders]:::sys
+        SysScheme[Scheme / World Systems]:::sys
         SysQuest[Quest System]:::sys
+    end
+
+    subgraph Ruleset Cartridges
+        RC[RulesetContract Registry]:::core
+        DND[D&D 3.5e / Classic Cartridges]:::sys
     end
 
     subgraph State & Data
         ECS[(Global GameState)]:::ecs
         Dict[[O_1 Dictionary<br/>Record<string, Component>]]:::ecs
-        JSON[Campaign JSON Data]:::data
+        JSON[Campaign & Ruleset JSON Data]:::data
     end
 
     subgraph Render Layer
         Render[ROT.js Canvas Renderer]:::output
         FOV[FOV Shadowcasting]:::output
-        DOM[HTML UI Overlays]:::output
+        DOM[Console Host UI & Cartridge Slots]:::output
     end
 
     %% Input to Core
@@ -73,11 +79,15 @@ graph TD
     UI --> |Click| GL
     GL --> |Generates| Intent
 
-    %% Core to Systems
+    %% Core to Systems & Cartridges
     Intent --> |Dispatched via| AR
     AR --> SysMap
     AR --> SysMove
     AR --> SysCombat
+    AR --> SysAI
+    SysCombat --> |Delegates ruleset math| RC
+    GL --> |TurnStart / Step / EnergyCost| RC
+    RC --> DND
 
     %% Systems interacting with ECS
     SysMove --> |1. getComponent| Dict
@@ -89,18 +99,18 @@ graph TD
 
     %% State to Render
     Dict --- ECS
-    ECS --> |Current State| Render
-    ECS --> |Current State| DOM
+    ECS --> |ViewportSnapshot| Render
+    ECS --> |DTO / CartridgeUIAdapter| DOM
     Render --> FOV
 
     %% Scheduler loop
     ECS --> SCH
-    SCH --> |AI Turns| GL
+    SCH --> |AI Turns| SysAI
     SCH --> |Background Ticks| SysScheme
 
     %% JSON Validation
-    JSON -.-> |Defines rules/stats| SysCombat
-    JSON -.-> |Defines map rules| SysMap
+    JSON -.-> |Defines rules/stats| DND
+    JSON -.-> |Defines campaign world| SysMap
 ```
 
 ---
@@ -117,14 +127,16 @@ We use a low-overhead, framework-free ECS:
 - **Systems** are pure functions that query components using `getComponent`, process game state changes, and return new state via `addComponent` / `removeComponent`.
 - **Entity Ownership**: Components (like `InventoryComponent`) do not "contain" other entities; they store `EntityId`s as foreign keys. When migrating entities between state boundaries, the engine must traverse and package these owned "child" entities to prevent orphaned references.
 
-### 4.2 Game Loop & Scheduler
+### 4.2 Game Loop, Lifecycle Windows & Scheduler
 
-Turn management uses `ROT.Scheduler.Speed` (wrapped in `src/core/scheduler.ts`), chosen over `ROT.Scheduler.Simple` to support varied entity speeds (haste, slow, weapon weight) without future refactoring. Input is decoupled from the engine: keyboard and DOM listeners push `Intents` into a bounded FIFO player intent queue (`src/core/input_queue.ts`). When an entity's turn arrives via `act()`, it pops from the queue or calls `engine.lock()` to await input — enabling seamless RTwP and future multiplayer without restructuring the engine loop. Immediate non-turn intents (e.g. camera zoom, toggle pause) execute immediately without consuming an actor turn step.
+Turn management uses `ROT.Scheduler.Action` (wrapped in `src/core/scheduler.ts`), chosen over `ROT.Scheduler.Simple` to support variable action durations (haste, slow, movement speeds, multi-step round budgets) cleanly across Turn-Based and RTwP modes. Input is decoupled from the engine: keyboard and DOM listeners push `Intents` into a bounded FIFO player intent queue (`src/core/input_queue.ts`). When an entity's turn arrives via `act()`, it pops from the queue or calls `engine.lock()` to await input — enabling seamless RTwP and future multiplayer without restructuring the engine loop. Immediate non-turn intents (e.g. camera zoom, toggle pause, UI modals) bypass world stabilization in `src/core/loop/intent_cost_resolver.ts` and execute immediately with `energyCost = 0`. Mid-session spawned `Actor` entities (such as companions and summons) are idempotently auto-enrolled in `ROT.Scheduler.Action` via `addActor(id)` inside `game-loop.ts`'s `updateState()`.
 
 - **Cooperative Frame-Budgeted Scheduler (`src/core/scheduler.ts`)**: Slices turn execution against a 4ms budget (`FRAME_BUDGET_MS = 4` measured with `performance.now()`). If a turn storm or multi-actor AI turn exceeds 4ms, the scheduler yields control back to the browser event loop via `setTimeout(..., 0)` while holding `isTurnProcessing = true` and `engine.lock()`. This guarantees the browser can present frames at 60Hz without input interleaving or re-entrant state corruption.
-- **Bounded RTwP Frame Drain**: In Real-Time with Pause mode, `rtwpLoop()` accumulates delta time between animation frames and drains turns in bounded sub-steps. To eliminate "spiral-of-death" frame freezes (e.g., when a browser tab is backgrounded or when physics/AI lags behind real time), the drain loop enforces hard caps: `MAX_RTWP_DRAIN_ITERATIONS = 10` sub-steps per frame, `FRAME_BUDGET_MS = 4` execution cutoff, and clamps accumulated time to `MAX_ACCUMULATED_RTWP_TIME = 1000ms`.
+- **Bounded RTwP Frame Drain & Area-Transition Integrity**: In Real-Time with Pause mode, `rtwpLoop()` accumulates delta time between animation frames and drains turns in bounded sub-steps (`MAX_RTWP_DRAIN_ITERATIONS = 10`, `FRAME_BUDGET_MS = 4`, `MAX_ACCUMULATED_RTWP_TIME = 1000ms`). When changing floors/areas in RTwP mode (`src/systems/map.system.ts`), the engine invokes `resetSchedulerActors()` rather than `clearScheduler()` so stale floor actors are flushed without locking the engine or cancelling the active `requestAnimationFrame` ticker.
+- **Unified Actor Lifecycle Windows (`src/systems/lifecycle.system.ts`)**: Player and AI turns share canonical Console lifecycle hooks (`runActorTurnStart`, `runActorMovementStep`, `resolveActorActionEnergyCost`), resetting per-round Console triggered reaction quotas and delegating optional ruleset turn/step/action-budget hooks through `RulesetContract` (`onActorTurnStart`, `onActorMovementStep`, `resolveActionEnergyCost`).
+- **Event-Cursor State Stabilization (`src/core/state_stabilizer.ts`)**: Iterative stabilization loops advance a strict `processedEventIndex` cursor into `processGlobalTriggers(nextState, processedEventIndex)` so every emitted event is evaluated at most once across cascading reaction/trigger chains without runaway trigger recursion.
 - **Tiered World Simulation Cadence (`src/core/simulation_cadence.ts`)**: Rather than ticking heavy narrative and macro systems on every actor turn sub-step, world simulation is partitioned across three hierarchical cadences:
-  - **Tier 1 (Micro / Immediate)**: Runs every actor turn in the active area: FOV calculation, movement, combat resolution, reactions, and immediate triggers.
+  - **Tier 1 (Micro / Immediate)**: Runs every actor turn in the active area: FOV calculation, movement, combat resolution, reactions, anchored spatial fields (`processFieldsTick`), and immediate triggers.
   - **Tier 2 (Local Narrative)**: Ticks every 10 turns (`LOCAL_NARRATIVE_TICK_INTERVAL = 10`): updates local NPC thought bubbles, decrements dramatic delay counters, decays recent rumors, and cleans expired temporary memories.
   - **Tier 3 (Macro / Global)**: Executes on coarse intervals: Nemesis & Rivalry hierarchy power struggles (`RIVALRY_TICK_INTERVAL = 25`), Villain Schemes and Phase Block progression (`SCHEME_TICK_INTERVAL = 50`), and Global World Events & Faction Schisms (`WORLD_EVENT_TICK_INTERVAL = 100`).
 
@@ -132,7 +144,7 @@ Turn management uses `ROT.Scheduler.Speed` (wrapped in `src/core/scheduler.ts`),
 
 All interactions flow through pure data `Intents` pushed into command queues, resolved by a stateless `ActionRegistry` mapping `IntentType` → `ActionHandler`. This replaces OOP Command objects (which would put method closures into the serializable `GameState`) while providing the same architectural decoupling without a massive `switch` router.
 
-All entity interactions funnel through a single `ApplyIntent` carrying a `verb` (e.g., `apply`, `kick`, `zap`), optional `toolEntityId`, and a polymorphic target — replacing bespoke intents like `InteractIntent` and `UseItemIntent`.
+Entity interactions funnel through a unified `ApplyIntent` carrying a `verb` (covering world verbs like `apply`, `throw`, `kick`, `open`, `close`, `lock`, `unlock`, `zap`, ruleset skill verbs like `search`, `disarm`, `heal`, `persuade`, `intimidate`, `feint`, and companion command verbs like `command`, `order_attack`, `order_defend`, `order_follow`, `order_hold`, `order_target`), optional `toolEntityId`, and a polymorphic target.
 
 ### 4.4 Determinism & RNG
 
@@ -258,7 +270,7 @@ To prevent frame budget overruns ($>16.6\text{ms}$ render or $>4\text{ms}$ turn 
   - **Render Domain Breakdown (`RenderSubsystemsSample`)**: Instruments `renderPresenterFrame` across `snapshotBuildMs`, `canvasDrawMs` (with `drawCalls` and `fullRedraw`), `overlaysMs`, `hudDomainMs`, `logDomainMs`, `inventoryDomainMs`, `modalsDomainMs`, and `debugDomainMs` with a 120-frame rolling window (`computeRenderRollingStats`).
   - **One-Click Diagnostic Export (`triggerTelemetryDownload`)**: The Settings menu exposes a **Download Telemetry** button that exports `buildTelemetryExportPayload(state, getRenderDebugMetrics())` as a structured JSON file combining session state, entity/spatial bucket counts, rolling/peak timings, render debug metrics (`missingSprites`, early returns), and recent turn/render/AI sample histories.
 - **Hot-Path Schema Memoization & Stateless Derived-Stat Invariants**:
-  - **Zero Uncached Zod Parsing in Turn/Render Loops**: Validating large ruleset registries (e.g., 752 D&D 3.5e SRD definitions in `campaign.systemContent`) with Zod `.safeParse()` takes ~34ms per call. `getDnD35SystemContent(campaign)` and `parseDnD35SystemContent(raw)` memoize the validated `DnD35SystemContent` in a `WeakMap<object, DnD35SystemContent | null>` keyed on the `campaign.systemContent` reference, reducing hot-path lookups to $O(1)$ ($<0.001\text{ms}$) while automatically re-validating whenever the Campaign Editor (`applyPatch` deep-clone) or a test replaces the object reference.
+  - **Zero Uncached Zod Parsing in Turn/Render Loops**: Validating large ruleset registries (745+ modular D&D 3.5e SRD definitions in `campaign.systemContent`) with Zod `.safeParse()` takes ~34ms per call. `getDnD35SystemContent(campaign)` and `parseDnD35SystemContent(raw)` memoize the validated `DnD35SystemContent` in a `WeakMap<object, DnD35SystemContent | null>` keyed on the `campaign.systemContent` reference, reducing hot-path lookups to $O(1)$ ($<0.001\text{ms}$) while automatically re-validating whenever the Campaign Editor (`applyPatch` deep-clone) or a test replaces the object reference.
   - **Zero Derived Entity State Caching (`AGENTS.md` §9)**: Derived actor calculations (`evaluateDnD35eEntityDAG`, `computeDnD35eEffectiveStats`) remain 100% stateless and are recomputed fresh (~0.04ms) from live `state.components`, `state.campaign.items`, and `state.campaign.entities` on every query, guaranteeing that equipment swaps, status conditions, tactical stances, and editor overrides can never go out of sync with `GameState`.
 
 ---
@@ -310,10 +322,13 @@ A declarative `StatusEffectDefinition` registry describes effects (duration, sta
 - **Inventory**: The player's `InventoryComponent` holds item `EntityId`s. Pickup removes `PositionComponent`; drop restores it.
 - **"Bonus at Query Time"**: Equipment bonuses are _never_ baked into `FighterComponent`. `getEffectiveStats()` dynamically sums base stats with equipment and status effect bonuses on demand, preventing desyncs from forced item removal and composing cleanly with future modifiers (level-ups, curses).
 
-### 6.4 Reactions & Triggers
+- **Console Stances, Quotas & Ruleset Combat Delegation (`src/systems/stance.system.ts`, `src/systems/combat.system.ts`)**: `stance.system.ts` manages Tier 1 Console stance groups (`activeStanceGroups`), self-tag projections, and per-round triggered reaction quotas (`triggeredUsesThisRound`), reset automatically on each actor's `TurnStart` window (`lifecycle.system.ts`). Ruleset-specific melee exchanges, damage mitigation, and XP awards delegate cleanly through `RulesetContract`.
 
-- **Reaction System**: `reaction.system.ts` evaluates `reactions.json` against source/target entities, matching on `tags` and `verbs` rather than entity IDs — enabling designers to author new mechanics entirely in data. Matched reactions delegate to the Trigger System for consequence execution (e.g., `change_area`, `apply_item_effect`, `emit_event`).
-- **Trigger System**: `trigger.system.ts` acts as an orchestrator that executes data-driven `TriggerDefinition`s (`WHEN [event] IF [conditions] THEN [consequences]`). To maintain clean architecture, specific event routing and execution are delegated to domain-specific modules (`player.ts`, `quest.ts`, `social.ts`, `systemic.ts`) within `src/systems/trigger/`.
+### 6.4 Reactions, Anchored Spatial Fields & Triggers
+
+- **Reaction System**: `reaction.system.ts` evaluates `reactions.json` against source/target entities, matching on `tags` and `verbs` rather than entity IDs — enabling designers to author new mechanics entirely in data. Matched reactions delegate to the Trigger System for consequence execution (e.g., `change_area`, `apply_item_effect`, `emit_event`, `set_companion_stance`, `order_companion_target`).
+- **Anchored Spatial Fields (`src/systems/field.system.ts`)**: `FieldComponent` supports stationary zones and `anchorEntityId`-bound mobile emanations synchronized on every `MovementStep` (`syncAnchoredFieldsForEntity`), handling illumination overrides, duration expiry, and ruleset aura entry hooks.
+- **Trigger System**: `trigger.system.ts` acts as an orchestrator that executes data-driven `TriggerDefinition`s (`WHEN [event] IF [conditions] THEN [consequences]`). To maintain clean architecture, specific event routing and execution are delegated to domain-specific modules (`player.ts`, `quest.ts`, `social.ts`, `social_consequences.ts`, `systemic.ts`) within `src/systems/trigger/`.
 - **Trigger Composer**: `trigger-composer.system.ts` handles runtime trigger generation, compiling reusable templates (`TriggerTemplate`) loaded from `trigger_templates.json` into valid `TriggerDefinition`s using global variable bindings (e.g., `$NEMESIS_NAME`) with support for numeric/boolean auto-unquoting, and injecting/removing them dynamically at runtime while safely rebuilding optimization routing buckets. Pair with an interactive editor panel in `editor_ui.ts` for previewing and baking.
 - **Pacing Governor & Drama Director**: The Trigger System leverages a global `DramaTracker` (stored in the immutable `GameState`) to enforce pacing limits on emergent narrative events. Triggers can specify a `dramaCost` and cooldown periods. The pacing governor ensures events don't overwhelm the player, and executing a trigger checks these limits first. If blocked, the system can execute optional `fallbackConsequences`.
 - **Interactive Terrain**: Doors, traps, shallow water, and other terrain features define interactions and movement costs directly in JSON definitions.
@@ -322,11 +337,13 @@ A declarative `StatusEffectDefinition` registry describes effects (duration, sta
 
 ## 7. AI & Social Layer
 
-### 7.1 Composable AI Pipeline & Factions
+### 7.1 Composable AI Pipeline, Companion Tactics & Factions
 
-AI logic is split into discrete modules (`hunt`, `flee`, `ranged`, `wander`) composed into data-driven AI Profiles. During an entity's turn, behaviors are evaluated in priority order until one returns an executable `Intent` — replacing monolithic `if/else` blocks and allowing complex types (e.g., cowardly mage) to be built by mixing behaviors in data.
+AI logic is split into discrete modules in `src/ai/` (`hunt`, `ranged`, `spell`, `follow`, `flee`, `wander`) composed into data-driven AI Profiles (`BEHAVIOR_REGISTRY` in `src/systems/ai.system.ts`). During an entity's turn, behaviors are evaluated in priority order until one returns an executable `Intent` — replacing monolithic `if/else` blocks and allowing complex archetypes (e.g., cowardly mage, tactical animal companion) to be built by mixing behaviors in data.
 
-**Factions as Global Entities:** Factions are modeled as standard ECS Global Entities rather than hardcoded lookup tables. This allows them to naturally possess a `ChronicleComponent` (tracking their historical world events like schisms and alliances), `TagsComponent`, and `MemoryComponent`. Hostility is resolved via a `HOSTILITY_MATRIX` lookup between `FactionId`s, replacing hardcoded "player vs monster" logic and enabling infighting, neutral NPCs, and allied summons. AI modules utilize FOV for line-of-sight checks, and `AIComponent` tracks ability cooldowns.
+**Companion Stances, Follow Routing & Focus Orders (`src/ai/companion_targeting.ts`, `src/ai/follow.behavior.ts`, `src/systems/companion_commands.system.ts`)**: Allied entities linked via `ControllerLinkComponent` evaluate tactical directives (`stance: 'aggressive' | 'defensive' | 'passive' | 'hold'`, `commandTargetId`, `followDistance`, `leashRadius`) uniformly through `resolveAITarget` across `hunt`, `ranged`, and `spell`, while `followBehavior` routes toward the controller via `ROT.Path.AStar` and `canTraverseTile`. Players issue orders via right-click verbs (`command`, `order_attack`, `order_defend`, `order_follow`, `order_hold`, `order_target`), targeting mode, or the synthetic `__companion_orders__` dialogue tree, and swap positions cleanly when bumping into controlled allies in corridors.
+
+**Factions as Global Entities & Attitude Resolution (`src/utils/faction.ts`)**: Factions are modeled as standard ECS Global Entities rather than hardcoded lookup tables. This allows them to naturally possess a `ChronicleComponent` (tracking their historical world events like schisms and alliances), `TagsComponent`, and `MemoryComponent`. Hostility and allied behavior resolve via `getFactionRelation` / `isHostile` combining `FactionComponent`, `HOSTILITY_MATRIX`, and 5-tier `AttitudeComponent`, enabling infighting, neutral NPCs, and allied summons/companions. AI modules utilize FOV for line-of-sight checks, and `AIComponent` tracks ability cooldowns.
 
 **Memory Separation of Concerns**: AI combat tracking data (like `grudges`) is kept strictly separated from narrative state tracking (like boolean `facts` for dialogues). Mixing them creates brittle code that can falsely trigger AI hostility.
 
@@ -350,7 +367,7 @@ Entities with a `ShopComponent` act as merchants. `getEffectivePrice` dynamicall
 
 ### 7.5 Scheme Simulator & Investigation
 
-`scheme.system.ts` ticks independently within the `ROT.Scheduler.Speed` loop. Villains pursue JSON-defined `SchemeRecipe`s that are dynamically assembled at runtime by the Scheme Compiler using `PhaseBlock`s. As the player defeats minions, combat drops randomized clues; `investigation.system.ts` updates the `MemoryComponent.knowledge` on the player entity. The Investigation Board UI acts as a filtered view of the player's knowledge (specifically targeting the `clue` type and `scheme` tags), allowing the player to naturally review discovered evidence and expose active schemes without duplicating state. Schemes feature dynamic resilience: recruitment utilizes MICE-based profiling mapped to NPC personality facets, node disruption triggers local repair and confession logic based on `compromiseScore`, and escalating countermeasures trigger via `conspiracyAwareness`. Schemes survive mastermind deaths by transferring ownership and continuing in a leaderless momentum state.
+`scheme.system.ts` ticks independently within the `ROT.Scheduler.Action` loop. Villains pursue JSON-defined `SchemeRecipe`s that are dynamically assembled at runtime by the Scheme Compiler using `PhaseBlock`s. As the player defeats minions, combat drops randomized clues; `investigation.system.ts` updates the `MemoryComponent.knowledge` on the player entity. The Investigation Board UI acts as a filtered view of the player's knowledge (specifically targeting the `clue` type and `scheme` tags), allowing the player to naturally review discovered evidence and expose active schemes without duplicating state. Schemes feature dynamic resilience: recruitment utilizes MICE-based profiling mapped to NPC personality facets, node disruption triggers local repair and confession logic based on `compromiseScore`, and escalating countermeasures trigger via `conspiracyAwareness`. Schemes survive mastermind deaths by transferring ownership and continuing in a leaderless momentum state.
 
 ### 7.6 Rivalry & Power Struggles
 
@@ -370,18 +387,23 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 
 ## 8. Rendering & UI
 
+*For UI standards, dark-fantasy theme architecture, and `ICartridgeUIAdapter` contracts, see [`docs/UI_UX_STANDARDS.md`](./UI_UX_STANDARDS.md).*
+
 - **Decoupled 60Hz Presentation Loop & Presenter**: Simulation step loops do not invoke DOM panel updates or canvas draws directly. Instead, `startGlobalPresenterLoop()` in `src/core/session_controller.ts` runs on `requestAnimationFrame` at 60Hz, consuming dirty domains flagged in `src/core/presentation_queue.ts` via `markDirtyFromStateDiff()`. Frame updates dispatch selectively to affected UI panels and canvas passes through `renderPresenterFrame()` in `src/rendering/presenter.ts`. Transient visual effects (VFX) expire at 60Hz in the presentation loop and tag `PresentationDomain.VFX` without triggering state persistence cascades.
 - **Presentational Viewport Projector (`src/rendering/viewport_snapshot.ts`)**: Projects the simulation state into an immutable `ViewportSnapshot` DTO (`buildViewportSnapshot(state, viewportW, viewportH)`). Isolates all reads of `GameState`, `spatialIndex`, `cachedFov`, entity component queries, z-ordering, crosshairs, tooltips, and fog metrics, keeping the rendering layer purely presentational.
 - **Pure Dumb Canvas Renderer (`src/rendering/renderer.ts`)**: Translates presentational `ViewportSnapshot` cells into characters/colors on `ROT.Display`. Features zero imports from `src/core/ecs.ts`, `src/types/components.types.ts`, or `src/types/game-state.types.ts`. Implements cell-level dirty diffing against the previous frame snapshot (`prevSnapshot`), redrawing only modified cells via `drawCell()` to avoid wasteful full-screen `display.clear()` sweeps. Full redraws are triggered via `invalidateViewportSnapshot()` only during area transitions, campaign switches, and zoom changes.
-- **Decomposed DOM View Layers (`src/rendering/ui/`)**: Specialized presentational views consume pre-computed DTOs from `ViewportSnapshot`:
-  - `src/rendering/ui/inspect_view.ui.ts`: Manages `#inspect-tooltip` and `#inspect-panel` positioning and DOM updates.
-  - `src/rendering/ui/vfx_overlay.ui.ts`: Manages `#effects-overlay` floating combat text and `#fog-overlay` 2D canvas fog.
+- **Unified Console UI Host & Views (`src/rendering/ui/`)**: Specialized presentational views consume pre-computed DTOs from `ViewportSnapshot` and `ICartridgeUIAdapter` (`src/rendering/ui/cartridge_ui_registry.ts`, registered by `dnd35e_ui_registration.ts` and `classic_ui_registration.ts`):
+  - `console_dossier.ui.ts`: 4-tab Master Character Dossier projected from live ruleset adapters.
+  - `console_inventory.ui.ts` & `equipment.ui.ts`: Symmetrical Paper Doll + 12-slot stash & ground loot grids.
+  - `console_hotbar.ui.ts` & `hud_bottom_dock.ui.ts`: Tactical stance toggles, variable dial steppers, hotbar quickslots (`Digit1`–`Digit0`, isolated from numpad movement), action budget pips, `[END TURN]` control, and dynamically gated dock buttons.
+  - `console_inspect_card.ui.ts` & `inspect_view.ui.ts`: Floating inspect cards/panels with viewport boundary clamping and optional ruleset Monster Lore lines.
+  - `console_theme.ts`: Runtime dark-fantasy skin switching and font scaling.
+  - `vfx_overlay.ui.ts`: Manages `#effects-overlay` floating combat text and `#fog-overlay` 2D canvas fog.
 - **Fog of War**: Uses a transparent overlay `<canvas>` in sprite mode to dim out-of-sight tiles, while in ASCII mode it falls back to native foreground color dimming.
 - **Camera**: Handles viewport offsets, keeping the player centered on maps larger than the screen.
-- **UI & HUD**: HTML overlays (health, logs, status) in modularized `src/rendering/ui/`, acting as a pure "dumb" View layer decoupled from ECS logic.
 - **Styling**: CSS modularized by domain in `src/styles/`, aggregated via `@import` in `index.css`.
 - **View Controls**: CSS 3D transforms (Rotate 45°, 3D Tilt) on the canvas wrapper for 2.5D visuals without complicating the 2D renderer.
-- **Aspect Ratio & Zoom**: Controlled programmatically by syncing `ROT.Display` grid dimensions and font size. Aspect ratio constants are injected as a CSS custom property `--game-aspect-ratio`. Resizing expands the display grid to fit viewport constraints, avoiding letterboxing.
+- **Aspect Ratio & Viewport-Proportional Zoom (`src/constants/display.constants.ts`, `src/rendering/display.ts`)**: Controlled programmatically by syncing `ROT.Display` grid dimensions and tile pixel/font span (`DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT = 0.04` scaled by `state.zoomLevel` in `[MIN_ZOOM_LEVEL = 0.5, MAX_ZOOM_LEVEL = 3.0]` with `ZOOM_STEP_DELTA = 0.2`) so tile scale stays proportional across resolutions. Aspect ratio constants are injected via `--game-aspect-ratio`.
 
 ### 8.1 RTwP Auto-Pause Pipeline (`src/core/auto_pause.ts`)
 
@@ -403,12 +425,12 @@ The Nemesis Surfacing system makes hierarchy events, rivalries, and combat encou
 - **API**: `openModal()` / `closeTopModal()` / `toggleModal()` mutate `uiMode` and RTwP pause state together; `pushModal()` / `popModal()` / `getCurrentModal()` / `hasModalsOpen()` / `clearModals()` expose the stack.
 - **Pause invariant**: The pause state in force when the outermost modal opened is restored when the stack empties. A manual pause therefore survives opening and closing any overlay. When no baseline exists (a save loaded with a modal `uiMode`), the pause flag is left untouched rather than force-resumed.
 - **Lifecycle**: `clearModals()` runs on new game and save load (`src/core/bootstrap.ts`) so persisted `uiMode` can never desync from an empty stack.
-- **Input**: `src/core/input/modal_input.ts` replaces per-mode Escape handlers with a declarative `MODAL_BINDINGS` table. Modal overlays consume all input; another modal's shortcut opens it on top, enabling nesting (e.g. Dossier over Investigation).
+- **Input (`src/core/input/modal_input.ts`)**: `MODAL_BINDINGS` handles stackable panels (`Debug`, `Settings`, `Factions`, `Quests`, `Investigation`, `Dossier`, `Ledger`), while dedicated modal handlers process `UIMode.CartridgeModal` (delegating dock shortcuts & Escape policy to `CartridgeModalDescriptor`), `UIMode.Dialogue` (`Escape` closes, digit keys `1`–`9` select visible options including synthetic companion orders), `UIMode.Trade` / `UIMode.Services` (`Escape` returns to `Game`), `UIMode.Inventory`, and `UIMode.VerbMenu` (`1`–`N`, `Enter`, `Escape`). Modal overlays consume all input; another modal's shortcut opens it on top, enabling nesting (e.g. Dossier over Investigation).
 
 ### 8.3 Contextual Verb Illumination
 
-- `getVerbOptionsForTarget()` in `src/systems/apply.system.ts` returns every engine `Verb` flagged `valid`, delegating validity to `getValidVerbsForTarget()` so interaction resolution has a single source of truth.
-- `GameState.verbMenu.verbOptions` carries that DTO to `renderVerbMenu()`, which lists all verbs: applicable ones are illuminated and numerically numbered, inapplicable ones are dimmed and unselectable. Numbering stays aligned with `availableVerbs`, so keyboard selection logic is unchanged.
+- `getVerbOptionsForTarget()` in `src/systems/apply.system.ts` returns every engine `Verb` flagged `valid`, delegating validity to `getValidVerbsForTarget()` (including dungeon skill verbs and companion tactical orders `command` / `order_attack` / `order_defend` / `order_follow` / `order_hold` / `order_target`) so interaction resolution has a single source of truth.
+- `GameState.verbMenu.verbOptions` carries that DTO to `renderVerbMenu()`, which lists all verbs: applicable ones are illuminated and numerically numbered, inapplicable ones are dimmed and unselectable. Numbering stays aligned with `availableVerbs`, so keyboard selection logic (`1`–`N` / `Enter`) is unchanged.
 - `verbMenu` is not part of `SerializedGameState` and load forces `VerbMenu → Game`, so the richer DTO is migration-free.
 
 ### 8.4 Investigation Board Filtering
@@ -467,9 +489,8 @@ src/
 - **Isolated Ruleset Schemas & Components**: Each cartridge under `src/rulesets/<rulesetId>/` defines its own strict TypeScript interfaces, ECS component payloads, and Zod campaign schemas—avoiding "Uber-Component" optional-property bloat and obeying the **Rule of Three** (only promoting concepts to the shared `RulesetContract` when multiple cartridges share a concrete port).
 - **Shared Core Spatial Upgrades**: Tactical grid capabilities discovered during ruleset engineering (such as $N\times N$ creature footprints, multi-entity tile occupancy for `Tiny` creatures, reach rings, and Bresenham corner-to-corner cover raycasting) are implemented in `src/map/` and `src/core/` with backward-compatible defaults (`1×1` footprint for `classic`) so every ruleset benefits from spatial engine enhancements.
 - **End-User & Campaign Hierarchy (`New Game -> Ruleset Selection -> Campaign Selection`)**: Every campaign manifest (`campaign.json`) declares a `rulesetId` (`"classic"`, `"dnd35e"`, etc.). Players first select a Ruleset and then choose among campaigns bound to that ruleset; the Campaign Editor similarly scopes its forms and validators to the active campaign's `rulesetId`.
-- **Git Branching & Merge Policy**:
-  - **Core Engine & Multi-Ruleset Infrastructure (Phase 13, `Milestones 82–84`)** is developed directly on `master`.
-  - **Individual Ruleset Cartridges (e.g., Phases 14–20, `Milestones 85–100` for `dnd35e`)** are developed on dedicated ruleset branches (such as `DND35`) inside `src/rulesets/<rulesetId>/` and merged back into `master` upon completion.
+- **Git Integration Trunk**:
+  - Multi-ruleset infrastructure (`Phase 13`) and the D&D 3.5e cartridge (`Phases 14–31`, originally developed on the `DND35` branch) are integrated onto `main` behind the strict `RulesetContract` boundary.
 
 ### 9.2 Three-Tier Separation: Rules Engine vs. System Content vs. Campaign Content (Milestone 100)
 
@@ -480,7 +501,7 @@ Every ruleset follows a strict **3-Tier Separation** between mechanical laws, ru
    - Contains **zero** hardcoded classes, creature statblocks, feat tables, skill lists, or spell definitions in `.ts` files.
 2. **Tier 2 — System Content ("Core Rulebooks" — `public/data/rulesets/<rulesetId>/`)**:
    - Declarative JSON registries shared across all campaigns that use `<rulesetId>`:
-     - For `dnd35e`: `archetypes.json` (SRD statblocks), `classes.json` + modular per-class `classes/<classId>.json` files (progression curves, HD, class features, ACFs, and Prestige Classes shallow-merged under `key: 'classes'`), `domains.json` (22 SRD Cleric Domains), `skills.json` (key abilities and ACP), `feats.json` (AST prerequisite trees), and `spells.json` (Vancian spell definitions).
+     - For `dnd35e`: **745** modular JSON files shallow-merged into `campaign.systemContent` across `classes/` (26 core, NPC, and prestige classes), `races/` (75 playable races, monster chassis, True Dragon & Elemental ladders), `domains/` (22 Cleric domains), `skills/` (50 SRD skills), `feats/` (121 feats), `spells/` (254 modular spells across levels 0–9), `items/` (149 mundane/magic items), `templates/` (13 templates), `creature_types/` (15 creature type engines), and `subtypes/` (20 subtypes), plus `item_enhancements.json` (16 first-class enhancements).
      - For other cartridges (e.g. `classic`): Cartridge-specific registries declared via `RulesetContract.getSystemContentFiles()` without fabricating dummy files for foreign concepts like feats or spells (`classic` returns `[]`).
      - Optional base `items.json`, `entities.json`, `status.json`, and `effects.json` shared across all campaigns of that ruleset.
 3. **Tier 3 — Campaign Content ("Adventure Modules" — `public/data/campaigns/<campaignId>/`)**:
@@ -619,8 +640,8 @@ To complete Universal Actor Symmetry (**AGENTS.md Rule 18**) and Unified Effect 
      4. **1-HD Humanoid Replacement**: Races with `rhdProgression.baseHdCount === 0` replace their racial HD with their 1st class level (defaulting to `warrior` 1 for standard monster manual Orc/Goblin/Kobold/Hobgoblin statblocks).
      5. **Template Class-Level Stripping (`stripClassLevels: true`)**: *Skeleton* and *Zombie* templates strip all `'pc' | 'npc' | 'prestige'` tracks while retaining `'racial_hd'` tracks (dropping 0-RHD creatures to 1 base racial HD before Undead conversion/doubling).
 
-4. **Fully Modularized `creature_types/`, `subtypes/`, `domains/`, `skills/` (42 SRD Skills), and `spells/` Registries**:
-   - `creature_types/<id>.json` (15 files), `subtypes/<id>.json` (20 files with `traitBundle`), `domains/<id>.json` (22 files with `grantedPowerBundle`), `skills/<id>.json` (all 42 SRD skills with `actions`, `synergyFromSkills`, `synergyNotes`, `retryAllowed` / `take10Allowed` / `take20Allowed` flags, and `rankThresholdModifiers` evaluated via `buildSkillRankThresholdModifiers`), and `spells/<id>.json` (with `levelByClass` and `levelByDomain` class/domain spell-list tagging validated in `dnd35e_validator.ts`).
+4. **Modularized `creature_types/`, `subtypes/`, `domains/`, `skills/` (50 SRD Skills), and `spells/` (254 Spells) Registries**:
+   - `creature_types/<id>.json` (15 files), `subtypes/<id>.json` (20 files with `traitBundle`), `domains/<id>.json` (22 files with `grantedPowerBundle`), `skills/<id>.json` (expanded to all 50 SRD skills in Milestone 113 with `actions`, `synergyFromSkills`, `synergyNotes`, `retryAllowed` / `take10Allowed` / `take20Allowed` flags, and `effectBundle` / `rankThresholdModifiers` evaluated via `buildSkillRankThresholdModifiers` and wired to active dungeon/combat verbs in `skill_verbs.ts`), and `spells/<id>.json` (expanded across Milestones 116–117 to 254 modular 0th–9th level spells with `levelByClass`, `levelByDomain`, `levelByAccessTag`, and 100% 22-domain spell list coverage validated in `dnd35e_validator.ts`).
 
 ### 9.9 Combat Sequence & Inventory Wiring, Declarative Doctrine Descriptors, Level-Up Decoupling & Multi-Mode Floor Traversal (Milestone 112.6)
 
@@ -671,11 +692,11 @@ To ensure that weapon handedness, size penalties, limb occupation, and per-strik
 
 ### 9.11 Single Source of Truth (SSOT) Architecture & Continuous Parity Engine (Milestone 112.8)
 
-To eliminate "split-brain" architecture risks, duplicate implementations, and architectural drift across 284+ source files, the codebase is governed by machine-readable Single Source of Truth (SSOT) registries and automated parity enforcement:
+To eliminate "split-brain" architecture risks, duplicate implementations, and architectural drift across **432** source files, the codebase is governed by machine-readable Single Source of Truth (SSOT) registries and automated parity enforcement:
 
 1. **Two-Tier SSOT Registries (`docs/ssot/`)**:
-   - `docs/ssot/ssot_console.json`: Maps 251 Core Console files across actions, app wiring, editor, constants, ECS systems, engine types, map generation, rendering/UI views, and utility helpers.
-   - `docs/ssot/ssot_dnd35e.json`: Maps 33 D&D 3.5e Cartridge files across core progression, math/multipliers, 4-stage stat DAG, spatial geometry, combat maneuvers, Vancian magic, and tactical UI.
+   - `docs/ssot/ssot_console.json`: Maps **307** Core Console & Classic files across actions, AI behavior trees, app wiring, editor, constants, ECS systems, engine types, map generation, rendering/UI views, workers, and utility helpers.
+   - `docs/ssot/ssot_dnd35e.json`: Maps **125** D&D 3.5e Cartridge files across cartridge adapters, core progression, character builder/ledger, math/multipliers, 4-stage stat DAG, spatial geometry, combat maneuvers, Vancian magic, races/bestiary, and tactical UI.
    - Every file entry defines its domain, tier (`tier1_console`, `tier1_types`, `tier2_cartridge`, `tier2_ui`), primary responsibility, canonical entry points, explicit ownership boundary (`includes` / `excludes`), and forbidden anti-patterns.
 
 2. **Automated Markdown Projection (`scripts/map-codebase.ts`)**:
@@ -687,19 +708,18 @@ To eliminate "split-brain" architecture risks, duplicate implementations, and ar
    - Verifies that `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` are in sync with the JSON registries.
    - Enforced automatically in `scripts/run-validator.ts` and automated test suites.
 
-### 9.12 Console UI Slot & Modal Host API, Resizable Panels & D&D 3.5e Tactical UI (Phase 26, Milestones 118–119)
+### 9.12 Console UI Slot & Modal Host API, Unified Master Dossier & D&D 3.5e Tactical UI (Phase 26, Milestones 118–120)
 
 To allow ruleset cartridges (`dnd35e`, `classic`, and future systems) to inject custom modals, side-stack HUD panels, command dock items, and RimWorld-style alert ribbons without leaking ruleset-specific `UIMode` enum members or cartridge imports into Tier 1 Console modules (`AGENTS.md` Rule 16), the rendering layer exposes a generic **Console UI Slot & Modal Host API**:
 
 1. **Console UI Slot & Modal Host API (`src/rendering/ui/cartridge_ui_registry.ts`, `src/core/modal_manager.ts`)**:
    - Replaces hardcoded cartridge `UIMode` values with a single generic `UIMode.CartridgeModal = 'cartridge_modal'` paired with `GameState.activeCartridgeModalId?: string | undefined` and `IntentType.ToggleCartridgeModal`.
-   - `registerCartridgeUIAdapter(adapter: CartridgeUIAdapter)` registers a cartridge's `modals` (`CartridgeModalDescriptor`), `dockCommands` (`CartridgeDockCommandDescriptor`), `projectAlerts`, and `renderHudLeftSlot`.
-   - `presenter.ts`, `session_dom.ts`, `session_controller.ts`, `modal_input.ts`, `shortcut_input.ts`, `hud_alerts.ui.ts`, and `hud_dock.ui.ts` query the registry dynamically by `state.campaign.manifest.rulesetId` with zero direct cartridge imports.
+   - `registerCartridgeUIAdapter` registers each cartridge's `ICartridgeUIAdapter` (`src/rendering/ui/dnd35e_ui_registration.ts` & `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`; `src/rendering/ui/classic_ui_registration.ts` & `src/rulesets/classic/ui/classic_ui_adapter.ts`), supplying `modals`, `dockCommands`, `projectAlerts`, `projectHotbarData`, `projectMasterDossierData`, and `projectInspectCardData`.
+   - `presenter.ts`, `session_dom.ts`, `session_controller.ts`, `modal_input.ts`, `shortcut_input.ts`, `hud_alerts.ui.ts`, and `hud_bottom_dock.ui.ts` query the registry dynamically by `state.campaign.manifest.rulesetId` with zero direct cartridge imports.
 
-2. **D&D 3.5e Cartridge UI Adapter & Views (`src/rendering/ui/dnd35e_ui_adapter.ts`)**:
-   - **Tactical Doctrine & Maneuver Bar (`dnd35e_doctrine_bar.ui.ts`, `dnd35e_doctrine_actions.ts`)**: Renders compact sliders for `variable_dial` feats (*Power Attack*, *Combat Expertise*), stance buttons (*Fighting Defensively*, *Total Defense*), 1H/2H grip toggles, and 5-tier action budget pips (`STD`, `MOV`, `SWF`, `AoO`) inside `#hud-cartridge-panel-slot`.
-   - **Visual Anatomical Paper Doll (`equipment.ui.ts`)**: Renders interactive slot cards (`Head`, `Eyes`, `Neck`, `Shoulders`, `Torso`, `Body`, `Waist`, `Wrists`, `Hands`, `Ring L/R`, `Feet`, `Main Hand`, `Off Hand`) shared across both the Inventory modal and the Character Sheet Equipment tab.
-   - **7-Tab Character Sheet (`dnd35e_sheet.ui.ts`, `dnd35e_sheet_overview_tab.ui.ts`, `dnd35e_sheet_skills_tab.ui.ts`, `dnd35e_sheet_feats_abilities_tab.ui.ts`)**: Surfaces 4-Stage Topological Stat DAG breakdowns (`Full / Touch / Flat-Footed AC`, active/shadowed modifiers, `sourcePath` provenance), Saving Throws, Full-Attack Routine strike cards, chronological `levelHistory`, Anatomical Paper Doll, and a 50-skill table with interactive `[Use]` buttons routing through `createApplyAction`.
+2. **Unified Console Host Views & D&D 3.5e Projections**:
+   - **Tactical HUD Hotbar & Bottom Dock (`console_hotbar.ui.ts`, `hud_bottom_dock.ui.ts`, `dnd35e_doctrine_actions.ts`)**: Renders compact steppers for `variable_dial` abilities (*Power Attack*, *Combat Expertise*), stance group toggles (*Fighting Defensively*, *Total Defense*, `1H/2H` grip, and active spell stances like *Battle Cadence*), quickslots, `[END TURN]` control, and 5-tier action budget pips (`STD`, `MOV`, `SWF`, `AoO`) directly from live `ICartridgeUIAdapter` projections.
+   - **Unified 4-Tab Master Character Dossier & Symmetrical Paper Doll (`console_dossier.ui.ts`, `console_inventory.ui.ts`, `equipment.ui.ts`)**: Projects live 4-Stage Topological Stat DAG breakdowns (`Full / Touch / Flat-Footed AC`, active/shadowed modifiers, `sourcePath` provenance), Saving Throws, Full-Attack Routine strike cards, chronological `levelHistory`, dual-column symmetrical Paper Doll with 12-slot stash & ground loot grids, and a 50-skill interactive table, alongside the ruleset's detailed `dnd35e_sheet.ui.ts` inspector tabs.
    - **Class-Tabbed Vancian Spellbook (`dnd35e_spellbook.ui.ts`, `dnd35e_spellbook_actions.ts`)**: Renders per-class spellbook tabs from `spellbooksByClass`, daily Level 0–9 slot preparation/unpreparation, and 8-hour rest (`executeEightHourRest`).
 
 3. **Resizable Layout Panels (`src/rendering/ui/resizable_panels.ui.ts`, `src/styles/layout.css`, `src/core/settings.ts`)**:
@@ -768,6 +788,25 @@ To keep companion, familiar, summon, and party-member AI completely ruleset-agno
    - `companion_commands.system.ts` owns the `command` / `order_*` verbs, synthetic `__companion_orders__` dialogue tree (resolved via `resolveDialogueTree` across dialogue UI and actions), and `order_target` aiming designation without importing downstream systems (`apply.system.ts`, `dialogue.system.ts`, `targeting.system.ts`), keeping the Tier 1 system import graph acyclic.
    - Declarative dialogue/trigger consequences (`set_companion_stance`, `order_companion_target`) allow campaign JSON authors to command allied NPCs via conversation nodes.
    - Bumping into a friendly `ControllerLink` companion lacking a custom `DialogueComponent` swaps positions cleanly when both tiles are traversable, preventing corridor deadlocks, while `updateState` in `game-loop.ts` auto-enrolls mid-session spawned `Actor`s into `ROT.Scheduler.Action`.
+
+### 9.16 Console Stance Groups, Lifecycle Windows, 5-Phase Combat Pipeline & Mobile Spell Auras (Milestones 125–126)
+
+1. **Tier 1 Console Stance Groups & Lifecycle Windows (`src/systems/stance.system.ts`, `src/systems/lifecycle.system.ts`, `src/systems/field.system.ts`)**:
+   - `TacticalDoctrineComponent` tracks mutually exclusive stance groups (`activeStanceGroups`) and per-round triggered reaction quotas (`triggeredUsesThisRound`), reset cleanly on every actor's `TurnStart` window (`runActorTurnStart`).
+   - `runActorMovementStep` synchronizes anchored mobile emanations (`syncAnchoredFieldsForEntity`) immediately on each 5-ft step and triggers `RulesetContract.onActorMovementStep` (evaluating first-entry aura saves and Spell Resistance checks into `field.auraSaveMemory`).
+
+2. **Tier 2 5-Phase Combat Exchange Pipeline (`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`, `combat_exchange_phases.ts`)**:
+   - Decomposes `resolveDnD35eMeleeAttack` into 5 composable phases: `PreAttackPhase` (illumination precedence via `resolveEffectiveTileIllumination`, concealment, flanking), `StrikeRollPhase` (fortification, crit immunity, Blind-Fight), `OnHitRidersPhase` (`Flaming`, *Bane*, *Holy*), `PostStrikeReactionPhase` (`resolveRetaliationRiders` in `retaliation_resolver.ts`), and `OnDropFollowupPhase` (*Cleave* / *Great Cleave*), alongside isolated iterative spell-attack strikes (`spell_strike_resolver.ts`) and showcase spell *Blade Tempest Invocation*.
+
+### 9.17 Cartridge Boundary Purification, Declarative Golem Exceptions & Monster Armaments (Milestones 127–130)
+
+1. **Strict Tier 1 / Tier 2 Cartridge Isolation (`src/rulesets/registry.ts`, `.dependency-cruiser.cjs`)**:
+   - `src/rulesets/registry.ts` exports strictly the Tier 1 `RulesetContract` registry (`registerRuleset`, `getRuleset`, `getAllRulesets`, `getActiveRuleset`), eliminating cross-tier barrel re-exports, duplicate types, and pass-through shims (`no-direct-cartridge-imports-outside-registry`, `no-cross-cartridge-ui-imports`).
+   - Declarative Tier 3 JSON rules (`magicImmunityExceptions` on golem races, `templates/*.json` replacing hardcoded TS templates, parameterized `weapon_focus:<weaponId>` / `ability_focus:<abilityId>` feats) eliminated remaining TypeScript content hardcoding.
+
+2. **Universal Actor Symmetry & Monster Armament Initialization (`src/rulesets/dnd35e/archetype/race_hydrator.ts`, `src/core/ecs/ecs_spawner.ts`, `races/*.json`)**:
+   - Unified playable and non-player hydration (`applyRaceToActorChassis` and `hydrateRaceAsArchetype`) so PCs, NPCs, companions, and monsters evaluate identical racial `traitBundles`, `defaultClassLevels` class ledger tracks, and Creature Type/Subtype modifiers.
+   - `spawnEntity` auto-initializes anatomical `EquipmentComponent` slots (`buildAnatomyEquipmentSlots(bodyPlan)`) and `InventoryComponent` for every `Actor`, equipping `defaultEquipment` loadouts across armed bestiary races so weapon sizing and `weapon:<baseWeaponId>` feats resolve identically for monsters and players.
 
 ---
 
