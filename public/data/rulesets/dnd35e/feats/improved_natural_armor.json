@@ -8,9 +8,18 @@
       "mode": "stacking"
     },
     "prerequisites": {
-      "type": "min_ability",
-      "ability": "con",
-      "minScore": 13
+      "type": "and",
+      "children": [
+        {
+          "type": "min_natural_armor",
+          "minBonus": 1
+        },
+        {
+          "type": "min_ability",
+          "ability": "con",
+          "minScore": 13
+        }
+      ]
     },
     "modifiers": [
       {

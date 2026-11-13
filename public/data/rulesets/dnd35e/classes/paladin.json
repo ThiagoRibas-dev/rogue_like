@@ -123,6 +123,9 @@
         "name": "Turn Undead",
         "category": "su",
         "description": "Channel positive energy to turn or destroy undead as a cleric of three levels lower (3 + CHA mod/day).",
+        "grantedTags": [
+          "feature:turn_or_rebuke"
+        ],
         "scalingPoolContribution": {
           "poolId": "turn_undead_effective_level",
           "multiplier": 1,

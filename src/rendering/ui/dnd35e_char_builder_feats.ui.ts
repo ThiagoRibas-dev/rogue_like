@@ -1,7 +1,6 @@
 import { getComponent } from '../../core/ecs.ts';
 import {
-  applyCharacterCreationToPlayer,
-  buildPrerequisiteContextForActor,
+  buildCreationDraftPrerequisiteContext,
   type CharacterCreationDraft,
   computeFirstLevelFeatSlotBudget,
   type FeatSlotDescriptor,
@@ -9,7 +8,6 @@ import {
 } from '../../rulesets/dnd35e/character_builder.ts';
 import { getCanonicalBaseWeapons } from '../../rulesets/dnd35e/equipment_physics.ts';
 import { evaluatePrerequisiteAST, type PrerequisiteEvalContext } from '../../rulesets/dnd35e/prerequisites.ts';
-import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import {
   type DnD35FeatDefinition,
   type DnD35SystemContent,
@@ -19,7 +17,10 @@ import { ComponentType } from '../../types/components.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderFeatInspector } from './dnd35e_inspector.ui.ts';
 
-function getTargetedWeaponOptions(sys: DnD35SystemContent): ReadonlyArray<string> {
+function getTargetedWeaponOptions(sys: DnD35SystemContent, featId?: string): ReadonlyArray<string> {
+  if (featId === 'rapid_reload') {
+    return ['hand_crossbow', 'light_crossbow', 'heavy_crossbow'];
+  }
   const canonicalIds = getCanonicalBaseWeapons(sys).map((w) => w.id);
   const extraWeapons = ['unarmed_strike', 'bite', 'claw'];
   return Array.from(new Set([...canonicalIds, ...extraWeapons]));
@@ -37,6 +38,7 @@ const TARGETED_SCHOOLS: ReadonlyArray<string> = [
 
 let inspectedFeatId = 'power_attack';
 let featFilterMode: 'all' | 'eligible' | 'fighter' | 'combat' | 'magic' = 'all';
+const selectedTargetByFeatId: Record<string, string> = {};
 
 function classifyFeatCategory(feat: DnD35FeatDefinition): {
   readonly isFighterBonus: boolean;
@@ -161,6 +163,7 @@ export function renderSharedFeatsStep(
     const matchingSelected = config.selectedFeatIds.filter((f) => f === feat.id || f.startsWith(`${feat.id}:`));
     const isSelected = matchingSelected.length > 0;
     const isTargeted = feat.repeatable?.mode === 'targeted';
+    const isStacking = feat.repeatable?.mode === 'stacking';
 
     let targetSelect: HTMLSelectElement | undefined;
     if (isTargeted) {
@@ -170,7 +173,7 @@ export function renderSharedFeatsStep(
       const tCat = feat.repeatable?.targetCategory;
       const opts =
         tCat === 'weapon'
-          ? getTargetedWeaponOptions(sys)
+          ? getTargetedWeaponOptions(sys, feat.id)
           : tCat === 'school'
             ? TARGETED_SCHOOLS
             : Object.keys(sys.skills ?? {});
@@ -180,16 +183,32 @@ export function renderSharedFeatsStep(
         oEl.textContent = opt.replace(/_/g, ' ');
         targetSelect.appendChild(oEl);
       }
+      if (selectedTargetByFeatId[feat.id] && opts.includes(selectedTargetByFeatId[feat.id]!)) {
+        targetSelect.value = selectedTargetByFeatId[feat.id]!;
+      }
       targetSelect.addEventListener('click', (e) => e.stopPropagation());
+      targetSelect.addEventListener('change', () => {
+        if (targetSelect) {
+          selectedTargetByFeatId[feat.id] = targetSelect.value;
+          inspectedFeatId = feat.id;
+          config.onRefresh();
+        }
+      });
     }
 
     const curTarget = targetSelect?.value;
+    const candidateId = isTargeted && curTarget ? `${feat.id}:${curTarget}` : feat.id;
     const evalCtx: PrerequisiteEvalContext = {
       ...config.prereqCtx,
       feats: chainedFeats,
       ...(curTarget ? { targetId: curTarget } : {})
     };
-    const alreadyOwned = config.alreadyOwnedFeatIds.includes(feat.id);
+    const alreadyOwned = isStacking
+      ? false
+      : isTargeted
+        ? config.alreadyOwnedFeatIds.includes(candidateId)
+        : config.alreadyOwnedFeatIds.includes(feat.id);
+    const alreadyPickedCurrentTarget = isTargeted && config.selectedFeatIds.includes(candidateId);
     const allowedInSlot = activeSlot ? isFeatAllowedInSlot(feat, activeSlot) : true;
     const meets = activeSlot?.ignorePrerequisites
       ? true
@@ -203,8 +222,14 @@ export function renderSharedFeatsStep(
     if (featFilterMode === 'combat' && !cat.isCombat) continue;
     if (featFilterMode === 'magic' && !cat.isMagic) continue;
 
-    const canToggle =
-      isSelected || (!alreadyOwned && allowedInSlot && meets && config.selectedFeatIds.length < config.totalSlots);
+    const canAddMore =
+      !alreadyOwned &&
+      !alreadyPickedCurrentTarget &&
+      allowedInSlot &&
+      meets &&
+      config.selectedFeatIds.length < config.totalSlots &&
+      (!isSelected || isStacking || isTargeted);
+    const canToggle = isSelected || canAddMore;
 
     const row = document.createElement('div');
     row.className = `dnd35-list-item${isSelected ? ' selected' : ''}${inspectedFeatId === feat.id ? ' inspected' : ''}`;
@@ -217,10 +242,12 @@ export function renderSharedFeatsStep(
     const fighterTag = cat.isFighterBonus ? ' [Fighter]' : '';
     const targetBadge =
       matchingSelected.length > 0
-        ? ` (${matchingSelected
-            .map((m) => (m.includes(':') ? m.split(':')[1] : ''))
-            .filter(Boolean)
-            .join(', ')})`
+        ? isStacking && matchingSelected.length > 1
+          ? ` (x${matchingSelected.length})`
+          : ` (${matchingSelected
+              .map((m) => (m.includes(':') ? m.split(':')[1] : ''))
+              .filter(Boolean)
+              .join(', ')})`
         : '';
     label.textContent = `${alreadyOwned ? '✔ [Owned]' : isSelected ? '☑' : meets && allowedInSlot ? '🟢' : '🔴'} ${feat.name}${targetBadge}${fighterTag}`;
 
@@ -228,8 +255,24 @@ export function renderSharedFeatsStep(
     actionWrap.style.display = 'flex';
     actionWrap.style.alignItems = 'center';
 
-    if (!isSelected && targetSelect) {
+    if (targetSelect && (!isSelected || isTargeted)) {
       actionWrap.appendChild(targetSelect);
+    }
+
+    if ((isStacking || isTargeted) && isSelected && canAddMore) {
+      const addMoreBtn = document.createElement('button');
+      addMoreBtn.type = 'button';
+      addMoreBtn.className = 'modal-btn';
+      addMoreBtn.style.padding = '3px 8px';
+      addMoreBtn.style.fontSize = '0.74rem';
+      addMoreBtn.style.marginRight = '4px';
+      addMoreBtn.textContent = '+ Add';
+      addMoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        inspectedFeatId = feat.id;
+        config.onUpdateSelectedFeats([...config.selectedFeatIds, candidateId]);
+      });
+      actionWrap.appendChild(addMoreBtn);
     }
 
     const toggleBtn = document.createElement('button');
@@ -242,11 +285,23 @@ export function renderSharedFeatsStep(
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       inspectedFeatId = feat.id;
-      const finalFeatId = isTargeted && targetSelect ? `${feat.id}:${targetSelect.value}` : feat.id;
-      const nextFeats = isSelected
-        ? config.selectedFeatIds.filter((id) => id !== feat.id && !id.startsWith(`${feat.id}:`))
-        : [...config.selectedFeatIds, finalFeatId];
-      config.onUpdateSelectedFeats(nextFeats);
+      if (isSelected) {
+        if (isStacking) {
+          const idx = config.selectedFeatIds.lastIndexOf(feat.id);
+          const nextFeats = idx >= 0 ? config.selectedFeatIds.filter((_, i) => i !== idx) : [...config.selectedFeatIds];
+          config.onUpdateSelectedFeats(nextFeats);
+          return;
+        }
+        if (isTargeted && alreadyPickedCurrentTarget) {
+          config.onUpdateSelectedFeats(config.selectedFeatIds.filter((id) => id !== candidateId));
+          return;
+        }
+        config.onUpdateSelectedFeats(
+          config.selectedFeatIds.filter((id) => id !== feat.id && !id.startsWith(`${feat.id}:`))
+        );
+        return;
+      }
+      config.onUpdateSelectedFeats([...config.selectedFeatIds, candidateId]);
     });
 
     actionWrap.appendChild(toggleBtn);
@@ -257,7 +312,12 @@ export function renderSharedFeatsStep(
 
   const activeFeat = sys.feats[inspectedFeatId] ?? allFeats[0];
   if (activeFeat) {
-    renderFeatInspector(rightPane, activeFeat, { ...config.prereqCtx, feats: chainedFeats });
+    const activeTarget = selectedTargetByFeatId[activeFeat.id];
+    renderFeatInspector(rightPane, activeFeat, {
+      ...config.prereqCtx,
+      feats: chainedFeats,
+      ...(activeTarget ? { targetId: activeTarget } : {})
+    });
   }
 
   stage.appendChild(leftPane);
@@ -286,9 +346,8 @@ export function renderCharBuilderFeatsStep(
   const race = sys.races[draft.raceId];
   const cls = sys.classes[draft.classId];
   const budget = computeFirstLevelFeatSlotBudget(race, cls, draft.selectedAcfs);
-  const previewState = applyCharacterCreationToPlayer(state, playerId, draft);
-  const dndData = getDnD35EntityData(previewState, playerId);
-  const prereqCtx = buildPrerequisiteContextForActor(dndData, sys.classes);
+  const basePrereqCtx = buildCreationDraftPrerequisiteContext(draft, sys, []);
+  const prereqCtx = buildCreationDraftPrerequisiteContext(draft, sys, draft.selectedFeats);
 
   const parts = budget.slots.map((s) => s.label);
 
@@ -297,7 +356,7 @@ export function renderCharBuilderFeatsStep(
     slotSummaryLabel: `Feats Selected: ${draft.selectedFeats.length} / ${budget.totalSlots} (${parts.join(' + ')})`,
     totalSlots: budget.totalSlots,
     slots: budget.slots,
-    alreadyOwnedFeatIds: [],
+    alreadyOwnedFeatIds: basePrereqCtx.feats,
     selectedFeatIds: draft.selectedFeats,
     prereqCtx,
     onUpdateSelectedFeats: (nextFeats) => updateDraft({ ...draft, selectedFeats: nextFeats }),

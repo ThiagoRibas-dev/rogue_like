@@ -85,7 +85,7 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
   if (!sys || playerId === undefined) return;
 
   const dndData = getDnD35EntityData(state, playerId);
-  const prereqCtx = buildPrerequisiteContextForActor(dndData, sys.classes);
+  const prereqCtx = buildPrerequisiteContextForActor(dndData, sys.classes, sys);
   const currentChassis = aggregateProgressionChassis(dndData.tracks, 0, dndData.levelAdjustment ?? 0);
   const nextCharLevel = currentChassis.totalHD + 1;
 
@@ -276,6 +276,7 @@ export function renderDnD35eLevelUpModal(state: GameState): void {
         selectedSpells: curClassPicks,
         prohibitedSchools: dndData.prohibitedSchools ?? [],
         domains: dndData.domains ?? [],
+        alignment: dndData.alignment,
         onUpdateSelectedSpells: (nextSpells) => {
           const nextByClass = { ...(levelUpDraft.learnedSpellsByClass ?? {}), [targetClassId]: nextSpells };
           levelUpDraft = {

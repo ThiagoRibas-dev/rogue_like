@@ -159,13 +159,14 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
       pointBuyBudget: 28,
       baseAbilityScores: { str: 10, dex: 14, con: 14, int: 16, wis: 12, cha: 10 },
       skillRanks: { concentration: 4, spellcraft: 4, knowledge_arcana: 4 },
-      selectedFeats: ['scribe_scroll', 'combat_casting'],
+      selectedFeats: ['spell_focus:evocation', 'combat_casting'],
       knownSpells: ['magic_missile', 'mage_armor', 'shield', 'burning_hands'],
       equipmentPackageId: 'arcane_scholar'
     };
 
     state = applyCharacterCreationToPlayer(state, playerId, wizardDraft, sys);
     let dndData = getDnD35EntityData(state, playerId);
+    expect(dndData.feats).toContain('scribe_scroll');
     const initialPreparedCount = dndData.spellbooksByClass?.['wizard']?.preparedSpellIds.length ?? 0;
 
     // Prepare magic_missile
@@ -187,10 +188,11 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
     expect(restedFighter.hp).toBeGreaterThan(1);
   });
 
-  it('rejects Power Attack for Level 1 Clerics (BAB +0) and enforces strict AST prerequisite validation', () => {
+  it('enforces SRD Power Attack (STR 13+, no BAB requirement) and Weapon Focus (BAB +1 and weapon proficiency)', () => {
     const campaign = loadCampaignFromDisk('dnd35e-crypt');
     const sys = getDnD35SystemContent(campaign)!;
 
+    // Level 1 Cleric (BAB +0) with STR 16 meets SRD Power Attack (STR 13+)
     const clericDraft: CharacterCreationDraft = {
       raceId: 'human',
       classId: 'cleric',
@@ -207,11 +209,22 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
       equipmentPackageId: 'divine_crusader'
     };
 
-    const validation = validateCharacterCreationStep(clericDraft, 'feats', sys);
-    expect(validation.valid).toBe(false);
-    expect(validation.reason).toContain('Prerequisites not met for feat: Power Attack');
+    const clericValid = validateCharacterCreationStep(clericDraft, 'feats', sys);
+    expect(clericValid.valid).toBe(true);
 
-    // Fighter at Level 1 has BAB +1, so Human Fighter with STR 16 meets Power Attack, Cleave & Weapon Focus (3 slots total)
+    // Level 1 Cleric with STR 12 fails Power Attack
+    const lowStrClericValidation = validateCharacterCreationStep(
+      {
+        ...clericDraft,
+        baseAbilityScores: { str: 12, dex: 14, con: 14, int: 10, wis: 16, cha: 10 }
+      },
+      'feats',
+      sys
+    );
+    expect(lowStrClericValidation.valid).toBe(false);
+    expect(lowStrClericValidation.reason).toContain('Prerequisites not met for feat: Power Attack');
+
+    // Fighter at Level 1 has BAB +1 and martial weapon proficiency, meeting Power Attack, Cleave & Weapon Focus (Longsword)
     const fighterDraft: CharacterCreationDraft = {
       ...clericDraft,
       classId: 'fighter',

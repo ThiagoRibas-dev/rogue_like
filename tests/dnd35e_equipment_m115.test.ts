@@ -415,7 +415,8 @@ describe('Milestone 115: Complete SRD Weapons, Armors, Special Materials, Magic 
       abilityScores: { str: 14, dex: 14, con: 14, int: 10, wis: 10, cha: 10 },
       tags: [],
       casterLevel: 0,
-      sizeCategory: 'medium' as const
+      sizeCategory: 'medium' as const,
+      classLevels: { fighter: 4 }
     };
 
     const weaponSpecDef = sys.feats['weapon_specialization']!;

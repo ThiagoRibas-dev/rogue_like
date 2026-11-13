@@ -43,7 +43,13 @@
         },
         {
           "type": "has_feat",
-          "featId": "weapon_focus"
+          "featId": "weapon_focus",
+          "targetIdsAny": [
+            "longbow",
+            "shortbow",
+            "composite_longbow",
+            "composite_shortbow"
+          ]
         },
         {
           "type": "min_spell_level",

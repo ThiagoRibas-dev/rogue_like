@@ -35,8 +35,8 @@
     "proficiencies": {
       "weapons": [
         "club",
-        "crossbow_light",
-        "crossbow_heavy",
+        "light_crossbow",
+        "heavy_crossbow",
         "dagger",
         "handaxe",
         "javelin",

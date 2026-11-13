@@ -4,11 +4,25 @@
     "name": "Fiendish Creature",
     "kind": "inherited",
     "targetCreatureTypes": [
+      "aberration",
       "animal",
-      "vermin",
-      "magical_beast",
+      "dragon",
+      "fey",
+      "giant",
       "humanoid",
-      "monstrous_humanoid"
+      "magical_beast",
+      "monstrous_humanoid",
+      "ooze",
+      "plant",
+      "vermin"
+    ],
+    "allowedAlignments": [
+      "LN",
+      "N",
+      "CN",
+      "LE",
+      "NE",
+      "CE"
     ],
     "convertTypeMap": {
       "animal": "magical_beast",

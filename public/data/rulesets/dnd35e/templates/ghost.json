@@ -4,10 +4,21 @@
     "name": "Ghost",
     "kind": "acquired",
     "targetCreatureTypes": [
+      "aberration",
+      "animal",
+      "dragon",
+      "fey",
+      "giant",
       "humanoid",
+      "magical_beast",
       "monstrous_humanoid",
-      "giant"
+      "plant"
     ],
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "cha",
+      "minScore": 6
+    },
     "resultCreatureType": "undead",
     "addSubtypes": [
       "incorporeal",

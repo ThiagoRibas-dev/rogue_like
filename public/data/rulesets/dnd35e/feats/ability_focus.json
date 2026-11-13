@@ -8,6 +8,10 @@
       "mode": "targeted",
       "targetCategory": "ability"
     },
+    "prerequisites": {
+      "type": "has_tag",
+      "tag": "trait:special_attack"
+    },
     "modifiers": [
       {
         "id": "special_ability_save_dc_bonus",

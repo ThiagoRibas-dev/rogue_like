@@ -29,18 +29,27 @@
       "type": "and",
       "children": [
         {
-          "type": "min_skill_ranks",
-          "skillId": "knowledge_arcana",
-          "minRanks": 10
+          "type": "min_skill_count_at_ranks",
+          "skillPrefix": "knowledge_",
+          "minRanks": 10,
+          "minCount": 2
         },
         {
           "type": "has_feat",
-          "featId": "skill_focus"
+          "featId": "skill_focus",
+          "targetPrefix": "knowledge_"
+        },
+        {
+          "type": "min_feat_count",
+          "pool": "metamagic_or_item_creation",
+          "minCount": 3
         },
         {
           "type": "min_spell_level",
           "tradition": "any",
-          "minSpellLevel": 3
+          "minSpellLevel": 3,
+          "school": "divination",
+          "minSchoolSpellCount": 7
         }
       ]
     },

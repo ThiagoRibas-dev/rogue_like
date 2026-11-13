@@ -7,6 +7,10 @@
     "repeatable": {
       "mode": "stacking"
     },
+    "prerequisites": {
+      "type": "has_tag",
+      "tag": "feature:turn_or_rebuke"
+    },
     "modifiers": [
       {
         "id": "extra_turn_attempts_per_day",

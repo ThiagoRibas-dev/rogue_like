@@ -8,12 +8,12 @@
       "type": "and",
       "children": [
         {
-          "type": "has_feat",
-          "featId": "armor_proficiency_light"
+          "type": "has_proficiency",
+          "scope": "armor_light"
         },
         {
-          "type": "has_feat",
-          "featId": "armor_proficiency_medium"
+          "type": "has_proficiency",
+          "scope": "armor_medium"
         }
       ]
     },

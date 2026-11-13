@@ -24,6 +24,13 @@
       "type": "and",
       "children": [
         {
+          "type": "not",
+          "child": {
+            "type": "has_tag",
+            "tag": "type:dragon"
+          }
+        },
+        {
           "type": "min_skill_ranks",
           "skillId": "knowledge_arcana",
           "minRanks": 8
@@ -31,7 +38,8 @@
         {
           "type": "min_spell_level",
           "tradition": "arcane",
-          "minSpellLevel": 1
+          "minSpellLevel": 1,
+          "castingMode": "spontaneous"
         }
       ]
     },

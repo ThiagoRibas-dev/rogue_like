@@ -61,12 +61,12 @@
     "proficiencies": {
       "weapons": [
         "club",
-        "crossbow_hand",
-        "crossbow_light",
-        "Crossbow_heavy",
+        "hand_crossbow",
+        "light_crossbow",
+        "heavy_crossbow",
         "dagger",
         "dart",
-        "mace_light",
+        "light_mace",
         "morningstar",
         "quarterstaff",
         "rapier",

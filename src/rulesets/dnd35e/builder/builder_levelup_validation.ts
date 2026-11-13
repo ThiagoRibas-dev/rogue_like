@@ -56,10 +56,39 @@ export function validateLevelUpStep(
     if (nextClassLevel > classDef.maxLevel) {
       return { valid: false, reason: `Already at maximum level (${classDef.maxLevel}) for ${classDef.name}.` };
     }
+    if (classDef.allowedAlignments && classDef.allowedAlignments.length > 0) {
+      if (dndData.alignment !== undefined && !classDef.allowedAlignments.includes(dndData.alignment)) {
+        return {
+          valid: false,
+          reason: `${classDef.name} requires alignment in: ${classDef.allowedAlignments.join(', ')}.`
+        };
+      }
+    }
+    const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes, sysContent);
     if (classDef.prerequisites) {
-      const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes);
       if (!evaluatePrerequisiteAST(classDef.prerequisites, prereqCtx)) {
         return { valid: false, reason: `Prerequisites not met for ${classDef.name}.` };
+      }
+    }
+    for (const acfId of choice.selectedAcfs ?? []) {
+      const acf = classDef.acfSwaps.find((a) => a.acfId === acfId && a.level === nextClassLevel);
+      if (!acf) {
+        return {
+          valid: false,
+          reason: `Invalid Alternate Class Feature "${acfId}" for ${classDef.name} level ${nextClassLevel}.`
+        };
+      }
+      if (acf.requiredArcaneSchool && dndData.arcaneSchool !== acf.requiredArcaneSchool) {
+        return {
+          valid: false,
+          reason: `${acf.name} requires ${acf.requiredArcaneSchool} school specialization.`
+        };
+      }
+      if (acf.prerequisites && !evaluatePrerequisiteAST(acf.prerequisites, prereqCtx)) {
+        return {
+          valid: false,
+          reason: `Prerequisites not met for Alternate Class Feature: ${acf.name}.`
+        };
       }
     }
     if (newTotalHd % ABILITY_SCORE_INCREASE_HD_STEP === 0 && !choice.abilityScoreIncrease) {
@@ -186,8 +215,14 @@ export function validateLevelUpStep(
       if (slot && !isFeatAllowedInSlot(featDef, slot)) {
         return { valid: false, reason: `Feat ${featDef.name} is not permitted in ${slot.label}.` };
       }
+      if (featDef.repeatable?.mode === 'targeted' && !targetId) {
+        return { valid: false, reason: `Feat ${featDef.name} requires a specific target selection.` };
+      }
+      const ctx = buildPostLevelUpPrerequisiteContext(dndData, choice, classDef, sysContent, accumulatedFeats);
+      if (featDef.repeatable?.mode !== 'stacking' && ctx.feats.includes(featId)) {
+        return { valid: false, reason: `Duplicate non-stacking feat selected: ${featDef.name}` };
+      }
       if (!slot?.ignorePrerequisites && featDef.prerequisites) {
-        const ctx = buildPostLevelUpPrerequisiteContext(dndData, choice, classDef, sysContent, accumulatedFeats);
         const evalCtx: PrerequisiteEvalContext = targetId ? { ...ctx, targetId } : ctx;
         if (!evaluatePrerequisiteAST(featDef.prerequisites, evalCtx)) {
           return { valid: false, reason: `Prerequisites not met for feat: ${featDef.name}` };
@@ -222,7 +257,8 @@ export function validateLevelUpStep(
       dndData.prohibitedSchools ?? [],
       dndData.domains ?? [],
       existingKnown,
-      sysContent
+      sysContent,
+      dndData.alignment
     );
     const selectedForClass =
       choice.learnedSpellsByClass?.[targetClassId] ??
@@ -232,7 +268,8 @@ export function validateLevelUpStep(
       budget,
       dndData.prohibitedSchools ?? [],
       dndData.domains ?? [],
-      sysContent
+      sysContent,
+      dndData.alignment
     );
   }
 

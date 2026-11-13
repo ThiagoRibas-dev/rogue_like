@@ -3,6 +3,19 @@
     "templateId": "half_dragon_black",
     "name": "Half-Dragon (Black)",
     "kind": "inherited",
+    "targetCreatureTypes": [
+      "aberration",
+      "animal",
+      "dragon",
+      "fey",
+      "giant",
+      "humanoid",
+      "magical_beast",
+      "monstrous_humanoid",
+      "ooze",
+      "plant",
+      "vermin"
+    ],
     "resultCreatureType": "dragon",
     "addSubtypes": [],
     "abilityScoreModifiers": {

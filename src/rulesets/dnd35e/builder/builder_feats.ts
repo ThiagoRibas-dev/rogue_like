@@ -193,11 +193,11 @@ export function computeLevelUpFeatSlots(
   }
 
   for (const fId of activeFeatures) {
-    if (fId.startsWith('fighter_bonus_feat')) {
+    if (fId.startsWith('fighter_bonus_feat') || fId === 'ek_bonus_fighter_feat') {
       slots.push({
         slotIndex: slotIndex++,
         poolType: 'fighter_bonus',
-        label: `Fighter Bonus Feat (Fighter ${nextClassLevel})`
+        label: `Fighter Bonus Feat (${classDef.name} ${nextClassLevel})`
       });
     } else if (fId.startsWith('wizard_bonus_feat')) {
       slots.push({

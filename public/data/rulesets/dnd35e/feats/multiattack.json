@@ -4,6 +4,10 @@
     "name": "Multiattack",
     "description": "Secondary natural attacks take only a -2 penalty instead of -5.",
     "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_natural_attacks",
+      "minCount": 3
+    },
     "ruleOverrides": [
       {
         "id": "secondary_natural_attack_penalty",

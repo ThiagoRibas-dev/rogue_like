@@ -1,4 +1,5 @@
-import type { LevelUpChoice } from '../../rulesets/dnd35e/character_builder.ts';
+import { buildPrerequisiteContextForActor, type LevelUpChoice } from '../../rulesets/dnd35e/character_builder.ts';
+import { evaluatePrerequisiteAST } from '../../rulesets/dnd35e/prerequisites.ts';
 import { collectClassFeaturesUpToLevel } from '../../rulesets/dnd35e/progression.ts';
 import type { DnD35EntityData } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35ClassDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
@@ -24,7 +25,13 @@ export function renderLevelUpClassOptions(
   sys: DnD35SystemContent,
   onUpdateDraft: (next: LevelUpChoice) => void
 ): void {
-  const eligibleAcfs = activeCls.acfSwaps.filter((a) => a.level === nextClassLevel);
+  const prereqCtx = buildPrerequisiteContextForActor(dndData, sys.classes, sys);
+  const eligibleAcfs = activeCls.acfSwaps.filter((a) => {
+    if (a.level !== nextClassLevel) return false;
+    if (a.requiredArcaneSchool && dndData.arcaneSchool !== a.requiredArcaneSchool) return false;
+    if (a.prerequisites && !evaluatePrerequisiteAST(a.prerequisites, prereqCtx)) return false;
+    return true;
+  });
   for (const acf of eligibleAcfs) {
     const isChecked = (levelUpDraft.selectedAcfs ?? []).includes(acf.acfId);
     const acfBtn = document.createElement('button');

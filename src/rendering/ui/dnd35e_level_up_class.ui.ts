@@ -65,8 +65,12 @@ export function renderLevelUpClassStage(
     const curLevel = existingTrack ? existingTrack.levels : 0;
     const isAdvancing = levelUpDraft.classId === cls.id;
     const atCap = curLevel >= cls.maxLevel;
+    const meetsAlign =
+      !cls.allowedAlignments || cls.allowedAlignments.length === 0
+        ? true
+        : cls.allowedAlignments.includes(dndData.alignment ?? 'N');
     const meetsPrereq = cls.prerequisites ? evaluatePrerequisiteAST(cls.prerequisites, prereqCtx) : true;
-    const isEligible = !atCap && meetsPrereq;
+    const isEligible = !atCap && meetsAlign && meetsPrereq;
 
     const row = document.createElement('div');
     row.className = `dnd35-list-item${isAdvancing ? ' selected' : ''}${!isEligible ? ' disabled' : ''}`;
@@ -87,7 +91,13 @@ export function renderLevelUpClassStage(
     const metaSpan = document.createElement('span');
     metaSpan.style.fontSize = '0.74rem';
     metaSpan.style.color = 'var(--crpg-text-dim, #9da7b3)';
-    const reasonText = atCap ? 'At Maximum Level' : !meetsPrereq ? 'Prerequisites Not Met' : 'Eligible';
+    const reasonText = atCap
+      ? 'At Maximum Level'
+      : !meetsAlign
+        ? `Requires Alignment: ${cls.allowedAlignments?.join('/')}`
+        : !meetsPrereq
+          ? 'Prerequisites Not Met'
+          : 'Eligible';
     metaSpan.textContent = `d${cls.hitDieSides} HD • ${cls.isPrestige ? 'Prestige' : 'Base'} • ${reasonText}`;
 
     row.appendChild(titleSpan);

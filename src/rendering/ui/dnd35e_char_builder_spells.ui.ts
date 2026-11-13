@@ -6,7 +6,7 @@ import {
   getSpellLevelForClass,
   isSpellSelectableForDraft
 } from '../../rulesets/dnd35e/character_builder.ts';
-import type { DnD35SpellSchool } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
+import type { DnD35Alignment, DnD35SpellSchool } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import { type DnD35SystemContent, getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import type { GameState } from '../../types/game-state.types.ts';
 import { renderSpellInspector } from './dnd35e_inspector.ui.ts';
@@ -25,6 +25,7 @@ export interface SharedClassSpellStepConfig {
   readonly selectedSpells: ReadonlyArray<string>;
   readonly prohibitedSchools: ReadonlyArray<DnD35SpellSchool>;
   readonly domains: ReadonlyArray<string>;
+  readonly alignment?: DnD35Alignment | undefined;
   readonly onUpdateSelectedSpells: (nextSpells: string[]) => void;
   readonly onRefresh: () => void;
 }
@@ -138,8 +139,14 @@ export function renderSharedClassSpellStep(
 
   const eligibleSpells = Object.values(sys.spells).filter(
     (sp) =>
-      isSpellSelectableForDraft(sp, config.classId, budget.maxCastableLevel, config.prohibitedSchools, config.domains)
-        .selectable
+      isSpellSelectableForDraft(
+        sp,
+        config.classId,
+        budget.maxCastableLevel,
+        config.prohibitedSchools,
+        config.domains,
+        config.alignment
+      ).selectable
   );
 
   if (!eligibleSpells.some((s) => s.id === inspectedSpellId) && eligibleSpells.length > 0) {
@@ -152,7 +159,8 @@ export function renderSharedClassSpellStep(
       config.classId,
       budget.maxCastableLevel,
       config.prohibitedSchools,
-      config.domains
+      config.domains,
+      config.alignment
     );
     const effLvl = check.effectiveLevel ?? spell.level;
     if (spellLevelFilter !== 'all' && effLvl !== spellLevelFilter) continue;
@@ -228,7 +236,17 @@ export function renderCharBuilderSpellsStep(
   if (!cls || !race) return;
 
   const intMod = computeAbilityModifier(draft.baseAbilityScores.int + (race.abilityAdjustments.int ?? 0));
-  const budget = computeClassSpellSelectionBudget(cls, 0, 1, intMod, draft.prohibitedSchools, draft.domains, [], sys);
+  const budget = computeClassSpellSelectionBudget(
+    cls,
+    0,
+    1,
+    intMod,
+    draft.prohibitedSchools,
+    draft.domains,
+    [],
+    sys,
+    draft.alignment
+  );
 
   renderSharedClassSpellStep(container, sys, {
     scrollPrefix: 'char',
@@ -240,6 +258,7 @@ export function renderCharBuilderSpellsStep(
     selectedSpells: draft.knownSpells,
     prohibitedSchools: draft.prohibitedSchools,
     domains: draft.domains,
+    alignment: draft.alignment,
     onUpdateSelectedSpells: (nextSpells) => updateDraft({ ...draft, knownSpells: nextSpells }),
     onRefresh: () => updateDraft(draft)
   });

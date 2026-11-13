@@ -1,5 +1,59 @@
-import type { DnD35SpellSchool } from '../types/dnd35e.types.ts';
+import type { DnD35Alignment, DnD35SpellSchool } from '../types/dnd35e.types.ts';
 import type { DnD35ClassDefinition, DnD35SpellDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+
+/** Divine spellcasting classes subject to SRD aligned spell restrictions (`[Good]`, `[Evil]`, `[Lawful]`, `[Chaotic]`). */
+const DIVINE_ALIGNED_RESTRICTED_CLASSES: ReadonlySet<string> = new Set([
+  'cleric',
+  'druid',
+  'paladin',
+  'blackguard',
+  'ranger',
+  'adept'
+]);
+
+/**
+ * Checks whether a spell's alignment descriptors (`good`, `evil`, `lawful`, `chaotic`)
+ * are permitted for a divine caster of `alignment` in `classId`.
+ * Per D&D 3.5e SRD, Clerics, Druids, Paladins, Rangers, Adepts, and Blackguards cannot cast spells
+ * with an alignment descriptor opposed to their alignment.
+ *
+ * @param spell Spell definition.
+ * @param classId Casting class ID.
+ * @param alignment Actor's alignment (optional).
+ * @returns `{ allowed: boolean; reason?: string }`.
+ */
+export function isSpellAlignmentAllowedForActor(
+  spell: DnD35SpellDefinition,
+  classId: string,
+  alignment?: DnD35Alignment
+): { readonly allowed: boolean; readonly reason?: string } {
+  if (!alignment || !DIVINE_ALIGNED_RESTRICTED_CLASSES.has(classId)) {
+    return { allowed: true };
+  }
+  const descriptors = (spell.descriptors ?? []).map((d) => d.toLowerCase());
+  if (descriptors.length === 0) {
+    return { allowed: true };
+  }
+
+  const isGood = alignment.endsWith('G');
+  const isEvil = alignment.endsWith('E');
+  const isLawful = alignment.startsWith('L');
+  const isChaotic = alignment.startsWith('C');
+
+  if (isGood && descriptors.includes('evil')) {
+    return { allowed: false, reason: 'Good divine casters cannot cast [Evil] spells' };
+  }
+  if (isEvil && descriptors.includes('good')) {
+    return { allowed: false, reason: 'Evil divine casters cannot cast [Good] spells' };
+  }
+  if (isLawful && (descriptors.includes('chaotic') || descriptors.includes('chaos'))) {
+    return { allowed: false, reason: 'Lawful divine casters cannot cast [Chaotic] spells' };
+  }
+  if (isChaotic && (descriptors.includes('lawful') || descriptors.includes('law'))) {
+    return { allowed: false, reason: 'Chaotic divine casters cannot cast [Lawful] spells' };
+  }
+  return { allowed: true };
+}
 
 /**
  * Returns the spell level of a spell for a given class (or Cleric domain), or `null` if the spell is not on that class's spell list.
@@ -38,13 +92,14 @@ export function getSpellLevelForClass(
 
 /**
  * Checks whether a spell is legal for a character creation draft or level-up given their class,
- * maximum castable spell level, Cleric domains, and Wizard prohibited schools.
+ * maximum castable spell level, Cleric domains, Wizard prohibited schools, and alignment.
  *
  * @param spell Spell definition.
  * @param classId Class identifier.
  * @param maxCastableLevel Highest spell level the class can cast at this level (`0` or `1` at level 1).
  * @param prohibitedSchools Wizard prohibited schools.
  * @param domainIds Selected Cleric domains.
+ * @param alignment Optional actor alignment for SRD divine aligned spell restrictions.
  * @returns `{ selectable: boolean; effectiveLevel: number | null; reason?: string }`.
  */
 export function isSpellSelectableForDraft(
@@ -52,7 +107,8 @@ export function isSpellSelectableForDraft(
   classId: string,
   maxCastableLevel: number,
   prohibitedSchools: ReadonlyArray<DnD35SpellSchool> = [],
-  domainIds: ReadonlyArray<string> = []
+  domainIds: ReadonlyArray<string> = [],
+  alignment?: DnD35Alignment
 ): { readonly selectable: boolean; readonly effectiveLevel: number | null; readonly reason?: string } {
   const effectiveLevel = getSpellLevelForClass(spell, classId, domainIds);
   if (effectiveLevel === null) {
@@ -70,6 +126,14 @@ export function isSpellSelectableForDraft(
       selectable: false,
       effectiveLevel,
       reason: `Prohibited school (${spell.school})`
+    };
+  }
+  const alignCheck = isSpellAlignmentAllowedForActor(spell, classId, alignment);
+  if (!alignCheck.allowed) {
+    return {
+      selectable: false,
+      effectiveLevel,
+      ...(alignCheck.reason !== undefined ? { reason: alignCheck.reason } : {})
     };
   }
   return { selectable: true, effectiveLevel };
@@ -127,7 +191,8 @@ export function computeClassSpellSelectionBudget(
   prohibitedSchools: ReadonlyArray<DnD35SpellSchool>,
   domainIds: ReadonlyArray<string>,
   alreadyKnownSpellIds: ReadonlyArray<string>,
-  sysContent: DnD35SystemContent
+  sysContent: DnD35SystemContent,
+  alignment?: DnD35Alignment
 ): ClassSpellSelectionBudget {
   const mode = resolveClassSpellAcquisitionMode(classDef);
   if (
@@ -181,7 +246,8 @@ export function computeClassSpellSelectionBudget(
     Object.values(sysContent.spells).filter(
       (sp) =>
         !alreadyKnownSpellIds.includes(sp.id) &&
-        isSpellSelectableForDraft(sp, classDef.id, maxCastableLevel, prohibitedSchools, domainIds).selectable &&
+        isSpellSelectableForDraft(sp, classDef.id, maxCastableLevel, prohibitedSchools, domainIds, alignment)
+          .selectable &&
         getSpellLevelForClass(sp, classDef.id, domainIds) === lvl
     );
 
@@ -266,7 +332,8 @@ export function validateClassSpellSelection(
   budget: ClassSpellSelectionBudget,
   prohibitedSchools: ReadonlyArray<DnD35SpellSchool>,
   domainIds: ReadonlyArray<string>,
-  sysContent: DnD35SystemContent
+  sysContent: DnD35SystemContent,
+  alignment?: DnD35Alignment
 ): { readonly valid: boolean; readonly reason?: string } {
   if (!budget.requiresManualSelection) {
     return { valid: true };
@@ -279,7 +346,14 @@ export function validateClassSpellSelection(
     if (!sp) {
       return { valid: false, reason: `Unknown spell "${spId}".` };
     }
-    const sel = isSpellSelectableForDraft(sp, budget.classId, budget.maxCastableLevel, prohibitedSchools, domainIds);
+    const sel = isSpellSelectableForDraft(
+      sp,
+      budget.classId,
+      budget.maxCastableLevel,
+      prohibitedSchools,
+      domainIds,
+      alignment
+    );
     if (!sel.selectable) {
       return { valid: false, reason: `${sp.name}: ${sel.reason ?? 'Not selectable'}` };
     }

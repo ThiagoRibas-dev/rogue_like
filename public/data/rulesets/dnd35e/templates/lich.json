@@ -6,6 +6,24 @@
     "targetCreatureTypes": [
       "humanoid"
     ],
+    "allowedAlignments": [
+      "LE",
+      "NE",
+      "CE"
+    ],
+    "prerequisites": {
+      "type": "and",
+      "children": [
+        {
+          "type": "min_caster_level",
+          "minCasterLevel": 11
+        },
+        {
+          "type": "has_feat",
+          "featId": "craft_wondrous_item"
+        }
+      ]
+    },
     "resultCreatureType": "undead",
     "addSubtypes": [
       "augmented_humanoid"

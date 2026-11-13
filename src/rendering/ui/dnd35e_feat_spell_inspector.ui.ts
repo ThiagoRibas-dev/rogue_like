@@ -34,12 +34,81 @@ export function createInspectorBadge(text: string, color = 'var(--crpg-text-main
   return span;
 }
 
+function formatPrerequisiteLeafLabel(node: PrerequisiteNode, ctx: PrerequisiteEvalContext): string {
+  switch (node.type) {
+    case 'min_ability':
+      return `${node.ability.toUpperCase()} ${node.minScore}+`;
+    case 'min_bab':
+      return `Base Attack Bonus +${node.minBab}`;
+    case 'min_skill_ranks':
+      return `Skill ${node.skillId}: ${node.minRanks}+ ranks`;
+    case 'min_skill_count_at_ranks':
+      return `${node.minCount}+ ${node.skillPrefix.replace(/_/g, '')} skills at ${node.minRanks}+ ranks`;
+    case 'has_feat': {
+      if (node.targetId === '$selected') {
+        return `Feat: ${node.featId} (${ctx.targetId ?? 'selected target'})`;
+      }
+      if (node.targetId) {
+        return `Feat: ${node.featId} (${node.targetId})`;
+      }
+      if (node.targetPrefix) {
+        return `Feat: ${node.featId} (any ${node.targetPrefix.replace(/_/g, '')})`;
+      }
+      if (node.targetIdsAny && node.targetIdsAny.length > 0) {
+        return `Feat: ${node.featId} (${node.targetIdsAny.join(' / ')})`;
+      }
+      return `Feat: ${node.featId}`;
+    }
+    case 'min_feat_count':
+      return `${node.minCount}+ ${node.pool.replace(/_/g, ' ')} feats`;
+    case 'min_caster_level':
+      return `Caster Level ${node.minCasterLevel}+`;
+    case 'min_class_level':
+      return `${node.classId} Level ${node.minLevel}+`;
+    case 'min_character_level':
+      return `Character Level ${node.minLevel}+`;
+    case 'has_proficiency':
+      return node.scope === 'selected_weapon'
+        ? `Proficiency with ${ctx.targetId ?? 'selected weapon'}`
+        : `Proficiency: ${node.scope.replace(/_/g, ' ')}`;
+    case 'min_natural_attacks':
+      return `${node.minCount}+ Natural Attacks`;
+    case 'min_hands':
+      return `${node.minHands}+ Hands`;
+    case 'min_natural_armor':
+      return `Natural Armor +${node.minBonus} or higher`;
+    case 'min_fly_speed':
+      return `Fly Speed (${node.minSpeedFt > 1 ? `${node.minSpeedFt} ft+` : 'any'})`;
+    case 'min_sla_caster_level':
+      return `Spell-Like Ability at Caster Level ${node.minCasterLevel}+`;
+    case 'has_tag':
+      return `Trait/Feature: ${node.tag}`;
+    case 'size_in':
+      return `Size: ${node.allowedSizes.join(', ')}`;
+    case 'race_in':
+      return `Race: ${node.allowedRaces.join(', ')}`;
+    case 'alignment_in':
+      return `Alignment: ${node.allowedAlignments.join(', ')}`;
+    case 'min_spell_level': {
+      const modeStr = node.castingMode ? `${node.castingMode} ` : '';
+      const schoolStr =
+        node.school && node.minSchoolSpellCount ? ` (${node.minSchoolSpellCount}+ ${node.school} spells)` : '';
+      return `Cast ${node.minSpellLevel}th-level ${modeStr}${node.tradition} spells${schoolStr}`;
+    }
+    case 'not':
+      return `Not (${formatPrerequisiteLeafLabel(node.child, ctx)})`;
+    case 'and':
+    case 'or':
+      return node.children.map((c) => formatPrerequisiteLeafLabel(c, ctx)).join(node.type === 'and' ? ' AND ' : ' OR ');
+  }
+}
+
 function renderPrerequisiteNodeChecklist(
   node: PrerequisiteNode,
   ctx: PrerequisiteEvalContext,
   container: HTMLElement
 ): void {
-  if (node.type === 'and' || node.type === 'or') {
+  if (node.type === 'and') {
     for (const child of node.children) {
       renderPrerequisiteNodeChecklist(child, ctx, container);
     }
@@ -49,12 +118,7 @@ function renderPrerequisiteNodeChecklist(
   const row = document.createElement('div');
   row.style.color = met ? 'var(--crpg-success)' : 'var(--crpg-danger)';
   row.style.fontSize = '0.82rem';
-  let label: string = node.type;
-  if (node.type === 'min_ability') label = `${node.ability.toUpperCase()} ${node.minScore}+`;
-  else if (node.type === 'min_bab') label = `Base Attack Bonus +${node.minBab}`;
-  else if (node.type === 'has_feat') label = `Feat: ${node.featId}`;
-  else if (node.type === 'min_skill_ranks') label = `Skill ${node.skillId}: ${node.minRanks}+ ranks`;
-  else if (node.type === 'min_caster_level') label = `Caster Level ${node.minCasterLevel}+`;
+  const label = formatPrerequisiteLeafLabel(node, ctx);
   row.textContent = `${met ? '🟢' : '🔴'} Requires ${label}`;
   container.appendChild(row);
 }

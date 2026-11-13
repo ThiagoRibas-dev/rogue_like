@@ -4,11 +4,24 @@
     "name": "Celestial Creature",
     "kind": "inherited",
     "targetCreatureTypes": [
+      "aberration",
       "animal",
-      "vermin",
-      "magical_beast",
+      "dragon",
+      "fey",
+      "giant",
       "humanoid",
-      "monstrous_humanoid"
+      "magical_beast",
+      "monstrous_humanoid",
+      "plant",
+      "vermin"
+    ],
+    "allowedAlignments": [
+      "LG",
+      "NG",
+      "CG",
+      "LN",
+      "N",
+      "CN"
     ],
     "convertTypeMap": {
       "animal": "magical_beast",

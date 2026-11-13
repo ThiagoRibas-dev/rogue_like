@@ -12,12 +12,17 @@
       "type": "and",
       "children": [
         {
+          "type": "has_proficiency",
+          "scope": "selected_weapon"
+        },
+        {
           "type": "has_feat",
           "featId": "weapon_focus"
         },
         {
-          "type": "min_bab",
-          "minBab": 4
+          "type": "min_class_level",
+          "classId": "fighter",
+          "minLevel": 4
         }
       ]
     },

@@ -183,7 +183,8 @@ export function rebuildActorStateFromLevelHistory(
     levelHistory,
     currentData.domains ?? [],
     currentData.prohibitedSchools ?? [],
-    sysContent
+    sysContent,
+    currentData.alignment
   );
   for (const sb of Object.values(spellbooksByClass)) {
     for (const spId of sb.knownSpellIds) {

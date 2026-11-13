@@ -12,7 +12,8 @@
       "modifiers": [],
       "ruleOverrides": [],
       "grantedTags": [
-        "domain:plant"
+        "domain:plant",
+        "feature:turn_or_rebuke"
       ],
       "grantedFeats": [],
       "virtualFeatGrants": [],

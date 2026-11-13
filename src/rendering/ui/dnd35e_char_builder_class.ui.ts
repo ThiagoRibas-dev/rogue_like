@@ -156,14 +156,19 @@ export function renderClassStep(
     });
 
     for (const acf of activeCls.acfSwaps.filter((a) => a.level === 1)) {
+      const meetsSchool = !acf.requiredArcaneSchool || draftState.arcaneSchool === acf.requiredArcaneSchool;
       const isChecked = draftState.selectedAcfs.includes(acf.acfId);
       const acfBtn = document.createElement('button');
       acfBtn.type = 'button';
       acfBtn.className = 'modal-btn';
       acfBtn.style.fontSize = '0.78rem';
       acfBtn.style.borderColor = isChecked ? 'var(--crpg-success, #2ecc71)' : 'var(--border-color)';
-      acfBtn.textContent = `${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})`;
+      const schoolReqSuffix =
+        acf.requiredArcaneSchool && !meetsSchool ? ` [Requires ${acf.requiredArcaneSchool} specialist]` : '';
+      acfBtn.textContent = `${isChecked ? '☑' : '☐'} [ACF] ${acf.name} (Replaces ${acf.replacesFeature} → ${acf.grantedFeature})${schoolReqSuffix}`;
+      acfBtn.disabled = !meetsSchool && !isChecked;
       acfBtn.addEventListener('click', () => {
+        if (!meetsSchool && !isChecked) return;
         const nextAcfs = isChecked
           ? draftState.selectedAcfs.filter((id) => id !== acf.acfId)
           : [...draftState.selectedAcfs, acf.acfId];

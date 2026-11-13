@@ -8,6 +8,10 @@
       "mode": "targeted",
       "targetCategory": "weapon"
     },
+    "prerequisites": {
+      "type": "has_proficiency",
+      "scope": "selected_weapon"
+    },
     "ruleOverrides": [
       {
         "id": "rapid_reload_crossbow",

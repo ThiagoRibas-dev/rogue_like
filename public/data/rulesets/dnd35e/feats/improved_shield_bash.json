@@ -5,8 +5,8 @@
     "description": "Retain your shield bonus to AC when performing a shield bash.",
     "isFighterBonusFeat": true,
     "prerequisites": {
-      "type": "has_feat",
-      "featId": "shield_proficiency"
+      "type": "has_proficiency",
+      "scope": "shield"
     },
     "ruleOverrides": [
       {

@@ -1,6 +1,8 @@
+import { isSpellAlignmentAllowedForActor } from '../builder/builder_spells.ts';
 import { collectClassFeaturesUpToLevel, computeEffectiveClassCastingLevel, getClassLevelRow } from '../progression.ts';
 import { isActivationConditionMet } from '../effect_bundle.ts';
 import type {
+  DnD35Alignment,
   DnD35CharacterLevelRecord,
   DnD35ClassSpellbookState,
   DnD35SpellSchool,
@@ -103,7 +105,8 @@ export function buildActorSpellbooksByClass(
   levelHistory: ReadonlyArray<DnD35CharacterLevelRecord>,
   domains: ReadonlyArray<string>,
   prohibitedSchools: ReadonlyArray<DnD35SpellSchool>,
-  sysContent: DnD35SystemContent
+  sysContent: DnD35SystemContent,
+  alignment?: DnD35Alignment
 ): Readonly<Record<string, DnD35ClassSpellbookState>> {
   const spellbooks: Record<string, DnD35ClassSpellbookState> = {};
 
@@ -140,6 +143,9 @@ export function buildActorSpellbooksByClass(
     if (spellAcquisitionMode === 'prayerbook_full_list') {
       if (maxCastableSpellLevel >= 0) {
         for (const spell of Object.values(sysContent.spells)) {
+          if (!isSpellAlignmentAllowedForActor(spell, classDef.id, alignment).allowed) {
+            continue;
+          }
           const classLvl = spell.levelByClass[classDef.id];
           if (classLvl !== undefined && classLvl <= maxCastableSpellLevel) {
             knownSet.add(spell.id);

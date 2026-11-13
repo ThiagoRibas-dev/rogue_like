@@ -164,20 +164,26 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(mysticTheurge?.prerequisites).toBeDefined();
     expect(assassin?.prerequisites).toBeDefined();
 
-    // Arcane Archer requires Elf/Half-Elf, BAB +6, feats, and 1st-level arcane spells
+    // Arcane Archer requires Elf/Half-Elf, BAB +6, bow Weapon Focus, and 1st-level arcane spells
     if (arcaneArcher?.prerequisites) {
       const validArcherCtx = {
         abilityScores: { str: 14, dex: 18, con: 12, int: 14, wis: 10, cha: 10 },
         totalBab: 6,
         casterLevel: 1,
         sizeCategory: 'medium' as const,
-        feats: ['point_blank_shot', 'precise_shot', 'weapon_focus'],
+        feats: ['point_blank_shot', 'precise_shot', 'weapon_focus:longbow'],
         skillRanks: {},
         tags: [],
         raceId: 'elf',
         maxArcaneSpellLevel: 1
       };
       expect(evaluatePrerequisiteAST(arcaneArcher.prerequisites, validArcherCtx)).toBe(true);
+      expect(
+        evaluatePrerequisiteAST(arcaneArcher.prerequisites, {
+          ...validArcherCtx,
+          feats: ['point_blank_shot', 'precise_shot', 'weapon_focus:dagger']
+        })
+      ).toBe(false);
       expect(
         evaluatePrerequisiteAST(arcaneArcher.prerequisites, { ...validArcherCtx, raceId: 'human' })
       ).toBe(false);
@@ -343,7 +349,7 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(leveledDnd.tracks[0]?.levels).toBe(2);
     expect(leveledDnd.skillRanks['concentration']).toBe(5);
 
-    const prereqCtx = buildPrerequisiteContextForActor(leveledDnd, sys.classes);
+    const prereqCtx = buildPrerequisiteContextForActor(leveledDnd, sys.classes, sys);
     expect(prereqCtx.maxDivineSpellLevel).toBeGreaterThanOrEqual(1);
   });
 
@@ -490,7 +496,7 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(postDrainFighter.attack).toBe(4); // Fighter 4 (4) + Rogue 1 (0) = 4
   });
 
-  it('evaluates NPC Class CR scaling, Domain grantedPowerBundle atomic suppression, Ranger virtualFeatGrants with activationCondition, and Skill rankThresholdModifiers', () => {
+  it('evaluates NPC Class CR scaling, Domain grantedPowerBundle atomic suppression, Ranger Endurance grant, and Skill rankThresholdModifiers', () => {
     const campaign = loadCampaignFromDisk('dnd35e-crypt');
     const sys = getDnD35SystemContent(campaign);
     expect(sys).not.toBeNull();
@@ -554,11 +560,11 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     );
     expect(chaosModsSuppressed.length).toBe(0);
 
-    // 3. Ranger combat_style_1 virtualFeatGrants (ignorePrerequisites: true) & activationCondition (deactivates in medium/heavy armor)
+    // 3. Ranger grants Track at Lv 1 and Endurance at Lv 3
     const rangerTrack = {
       trackId: 'ranger',
       trackCategory: 'pc' as const,
-      levels: 2,
+      levels: 3,
       hitDieSides: 8 as const,
       babCurve: 'full' as const,
       fortCurve: 'good' as const,
@@ -566,7 +572,7 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
       willCurve: 'poor' as const,
       skillPointsPerLevel: 6
     };
-    const rangerLightArmorFeats = collectActiveGrantedAndVirtualFeats(
+    const rangerFeats = collectActiveGrantedAndVirtualFeats(
       [rangerTrack],
       [],
       [],
@@ -575,20 +581,8 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
       [],
       ['armor:light']
     );
-    expect(rangerLightArmorFeats).toContain('track');
-    expect(rangerLightArmorFeats).toContain('two_weapon_fighting');
-
-    const rangerHeavyArmorFeats = collectActiveGrantedAndVirtualFeats(
-      [rangerTrack],
-      [],
-      [],
-      sys.classes,
-      sys.domains,
-      [],
-      ['armor:heavy']
-    );
-    expect(rangerHeavyArmorFeats).toContain('track');
-    expect(rangerHeavyArmorFeats).not.toContain('two_weapon_fighting');
+    expect(rangerFeats).toContain('track');
+    expect(rangerFeats).toContain('endurance');
 
     // 4. Skill actions & rankThresholdModifiers (5+ ranks in Tumble unlocks +1 dodge AC when fighting defensively)
     expect(sys.skills['tumble']?.actions.length).toBeGreaterThanOrEqual(2);
@@ -661,10 +655,11 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(take20Appraise.allowed).toBe(false);
     expect(take20Appraise.blockedReason).toBe('take_20_prohibited');
 
-    // 3. Class spell-list and prohibited school filtering
+    // 3. Class spell-list, prohibited school, and aligned spell filtering
     const magicMissile = sys.spells['magic_missile']!;
     const cureLight = sys.spells['cure_light_wounds']!;
     const burningHands = sys.spells['burning_hands']!;
+    const protectionFromGood = sys.spells['protection_from_good']!;
 
     // Cleric cannot select Magic Missile
     expect(isSpellSelectableForDraft(magicMissile, 'cleric', 1, [], []).selectable).toBe(false);
@@ -673,6 +668,9 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     // Cleric with Fire domain can select Burning Hands
     expect(isSpellSelectableForDraft(burningHands, 'cleric', 1, [], []).selectable).toBe(false);
     expect(isSpellSelectableForDraft(burningHands, 'cleric', 1, [], ['fire']).selectable).toBe(true);
+    // Good Cleric (NG) cannot select [Evil] spell Protection from Good
+    expect(isSpellSelectableForDraft(protectionFromGood, 'cleric', 1, [], [], 'NG').selectable).toBe(false);
+    expect(isSpellSelectableForDraft(protectionFromGood, 'cleric', 1, [], [], 'LE').selectable).toBe(true);
     // Wizard with Evocation prohibited cannot select Magic Missile
     expect(isSpellSelectableForDraft(magicMissile, 'wizard', 1, ['evocation'], []).selectable).toBe(false);
     expect(getSpellLevelForClass(cureLight, 'paladin')).toBe(1);
@@ -720,10 +718,11 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(sys).not.toBeNull();
     if (!sys) return;
 
-    // 1. Wizard with Abrupt Jaunt ACF suppresses Familiar
+    // 1. Wizard with Abrupt Jaunt ACF suppresses Familiar and requires Conjuration specialist
     const jauntAcf = sys.classes['wizard']?.acfSwaps.find((s) => s.acfId === 'wizard_abrupt_jaunt_1');
     expect(jauntAcf).toBeDefined();
     expect(jauntAcf?.replacesFeature).toBe('summon_familiar');
+    expect(jauntAcf?.requiredArcaneSchool).toBe('conjuration');
 
     const wizardActiveBase = collectClassFeaturesUpToLevel(sys.classes['wizard']!, 1, []);
     expect(wizardActiveBase).toContain('summon_familiar');
@@ -756,6 +755,106 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
     expect(weasel?.masterEffectBundle?.category).toBe('ex');
     expect(weasel?.masterEffectBundle?.modifiers[0]?.target).toBe('save_ref');
     expect(weasel?.masterEffectBundle?.virtualFeatGrants[0]?.featId).toBe('alertness');
+  });
+
+  it('enforces full SRD prerequisite alignment across Feats, Prestige Classes, Half-Caster CL, Composite Bow equivalence, and Monster/SLA feats', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = getDnD35SystemContent(campaign)!;
+
+    // 1. Composite Bow equivalence: Weapon Focus (longbow) satisfies Weapon Specialization (composite_longbow)
+    const specDef = sys.feats['weapon_specialization']!;
+    expect(
+      evaluatePrerequisiteAST(specDef.prerequisites!, {
+        abilityScores: { str: 14, dex: 16, con: 12, int: 10, wis: 10, cha: 10 },
+        totalBab: 4,
+        casterLevel: 0,
+        sizeCategory: 'medium',
+        feats: ['weapon_focus:longbow'],
+        skillRanks: {},
+        tags: [],
+        classLevels: { fighter: 4 },
+        targetId: 'composite_longbow'
+      })
+    ).toBe(true);
+
+    // 2. Loremaster SRD prerequisites: 2 Knowledge skills at 10+ ranks, Skill Focus (Knowledge), 3 metamagic/item creation feats, 7 divination spells including 3rd-level
+    const loremasterDef = sys.classes['loremaster']!;
+    const validLoremasterCtx = {
+      abilityScores: { str: 10, dex: 12, con: 12, int: 18, wis: 12, cha: 10 },
+      totalBab: 3,
+      casterLevel: 7,
+      sizeCategory: 'medium' as const,
+      feats: ['skill_focus:knowledge_arcana', 'scribe_scroll', 'empower_spell', 'extend_spell'],
+      skillRanks: { knowledge_arcana: 10, knowledge_history: 10 },
+      tags: [],
+      maxArcaneSpellLevel: 4,
+      metamagicOrItemCreationFeatCount: 3,
+      spellCountBySchool: { divination: 7 },
+      maxSpellLevelBySchool: { divination: 3 }
+    };
+    expect(evaluatePrerequisiteAST(loremasterDef.prerequisites!, validLoremasterCtx)).toBe(true);
+    expect(
+      evaluatePrerequisiteAST(loremasterDef.prerequisites!, {
+        ...validLoremasterCtx,
+        spellCountBySchool: { divination: 6 }
+      })
+    ).toBe(false);
+
+    // 3. Dragon Disciple SRD prerequisites: non-dragon + spontaneous arcane casting + Knowledge (arcana) 8 ranks
+    const ddDef = sys.classes['dragon_disciple']!;
+    const validDdCtx = {
+      abilityScores: { str: 14, dex: 12, con: 14, int: 12, wis: 10, cha: 16 },
+      totalBab: 3,
+      casterLevel: 5,
+      sizeCategory: 'medium' as const,
+      feats: [],
+      skillRanks: { knowledge_arcana: 8 },
+      tags: ['type:humanoid'],
+      maxArcaneSpellLevel: 2,
+      maxSpontaneousArcaneSpellLevel: 2
+    };
+    expect(evaluatePrerequisiteAST(ddDef.prerequisites!, validDdCtx)).toBe(true);
+    // Prepared-only wizard fails Dragon Disciple
+    expect(
+      evaluatePrerequisiteAST(ddDef.prerequisites!, {
+        ...validDdCtx,
+        maxSpontaneousArcaneSpellLevel: 0
+      })
+    ).toBe(false);
+    // Dragon creature fails Dragon Disciple
+    expect(
+      evaluatePrerequisiteAST(ddDef.prerequisites!, {
+        ...validDdCtx,
+        tags: ['type:dragon']
+      })
+    ).toBe(false);
+
+    // 4. Monster & SLA Feats: Multiattack (3+ natural attacks), Multiweapon Fighting (3+ hands, DEX 13), Quicken SLA (SLA at CL 10+)
+    expect(
+      evaluatePrerequisiteAST(sys.feats['multiattack']!.prerequisites!, {
+        ...validDdCtx,
+        naturalAttackCount: 3
+      })
+    ).toBe(true);
+    expect(
+      evaluatePrerequisiteAST(sys.feats['multiattack']!.prerequisites!, {
+        ...validDdCtx,
+        naturalAttackCount: 2
+      })
+    ).toBe(false);
+    expect(
+      evaluatePrerequisiteAST(sys.feats['multiweapon_fighting']!.prerequisites!, {
+        ...validDdCtx,
+        abilityScores: { ...validDdCtx.abilityScores, dex: 15 },
+        handCount: 4
+      })
+    ).toBe(true);
+    expect(
+      evaluatePrerequisiteAST(sys.feats['quicken_spell_like_ability']!.prerequisites!, {
+        ...validDdCtx,
+        maxSlaCasterLevel: 10
+      })
+    ).toBe(true);
   });
 });
 

@@ -7,6 +7,10 @@
       "humanoid",
       "monstrous_humanoid"
     ],
+    "prerequisites": {
+      "type": "min_character_level",
+      "minLevel": 5
+    },
     "resultCreatureType": "undead",
     "addSubtypes": [
       "augmented_humanoid"

@@ -73,6 +73,17 @@
     "anatomyBodyPlan": "marilith_6arm",
     "naturalWeapons": [
       {
+        "id": "slam",
+        "name": "Slam",
+        "naturalType": "slam",
+        "isPrimary": true,
+        "count": 6,
+        "damageDice": "1d8",
+        "damageType": "bludgeoning",
+        "critThreatMin": 20,
+        "critMultiplier": 2
+      },
+      {
         "id": "tail_slam",
         "name": "Tail Slam",
         "naturalType": "slam",

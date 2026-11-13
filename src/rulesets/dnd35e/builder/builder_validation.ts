@@ -15,10 +15,19 @@ import {
   validateSpecialistSchoolSelection
 } from './builder_core.ts';
 import { validateLevelUpStep } from './builder_levelup_validation.ts';
-import { buildPostLevelUpPrerequisiteContext, buildPrerequisiteContextForActor } from './builder_prereq_context.ts';
+import {
+  buildCreationDraftPrerequisiteContext,
+  buildPostLevelUpPrerequisiteContext,
+  buildPrerequisiteContextForActor
+} from './builder_prereq_context.ts';
 import { computeClassSpellSelectionBudget, validateClassSpellSelection } from './builder_spells.ts';
 
-export { buildPostLevelUpPrerequisiteContext, buildPrerequisiteContextForActor, validateLevelUpStep };
+export {
+  buildCreationDraftPrerequisiteContext,
+  buildPostLevelUpPrerequisiteContext,
+  buildPrerequisiteContextForActor,
+  validateLevelUpStep
+};
 
 /**
  * Validates a specific step of the Character Creation draft.
@@ -48,6 +57,25 @@ export function validateCharacterCreationStep(
         return {
           valid: false,
           reason: `${classDef.name} requires alignment in: ${classDef.allowedAlignments.join(', ')}.`
+        };
+      }
+    }
+    const prereqCtx = buildCreationDraftPrerequisiteContext(draft, sysContent);
+    for (const acfId of draft.selectedAcfs) {
+      const acf = classDef.acfSwaps.find((a) => a.acfId === acfId && a.level === 1);
+      if (!acf) {
+        return { valid: false, reason: `Invalid Alternate Class Feature "${acfId}" for ${classDef.name} level 1.` };
+      }
+      if (acf.requiredArcaneSchool && draft.arcaneSchool !== acf.requiredArcaneSchool) {
+        return {
+          valid: false,
+          reason: `${acf.name} requires ${acf.requiredArcaneSchool} school specialization.`
+        };
+      }
+      if (acf.prerequisites && !evaluatePrerequisiteAST(acf.prerequisites, prereqCtx)) {
+        return {
+          valid: false,
+          reason: `Prerequisites not met for Alternate Class Feature: ${acf.name}.`
         };
       }
     }
@@ -130,25 +158,6 @@ export function validateCharacterCreationStep(
       };
     }
 
-    const prereqCtx: PrerequisiteEvalContext = {
-      abilityScores: {
-        str: draft.baseAbilityScores.str + (raceDef.abilityAdjustments.str ?? 0),
-        dex: draft.baseAbilityScores.dex + (raceDef.abilityAdjustments.dex ?? 0),
-        con: draft.baseAbilityScores.con + (raceDef.abilityAdjustments.con ?? 0),
-        int: draft.baseAbilityScores.int + (raceDef.abilityAdjustments.int ?? 0),
-        wis: draft.baseAbilityScores.wis + (raceDef.abilityAdjustments.wis ?? 0),
-        cha: draft.baseAbilityScores.cha + (raceDef.abilityAdjustments.cha ?? 0)
-      },
-      totalBab: classDef.progression[0]?.bab ?? 0,
-      skillRanks: draft.skillRanks,
-      feats: [],
-      tags: [`type:${raceDef.creatureType}`, `size:${raceDef.size}`],
-      casterLevel: classDef.castingMode !== 'none' ? 1 : 0,
-      sizeCategory: raceDef.size,
-      alignment: draft.alignment,
-      raceId: draft.raceId
-    };
-
     const accumulatedFeats: string[] = [];
     for (let i = 0; i < draft.selectedFeats.length; i++) {
       const featId = draft.selectedFeats[i]!;
@@ -161,12 +170,15 @@ export function validateCharacterCreationStep(
       if (slot && !isFeatAllowedInSlot(featDef, slot)) {
         return { valid: false, reason: `Feat ${featDef.name} is not permitted in ${slot.label}.` };
       }
+      if (featDef.repeatable?.mode === 'targeted' && !targetId) {
+        return { valid: false, reason: `Feat ${featDef.name} requires a specific target selection.` };
+      }
+      const baseCtx = buildCreationDraftPrerequisiteContext(draft, sysContent, accumulatedFeats);
+      if (featDef.repeatable?.mode !== 'stacking' && baseCtx.feats.includes(featId)) {
+        return { valid: false, reason: `Duplicate non-stacking feat selected: ${featDef.name}` };
+      }
       if (!slot?.ignorePrerequisites && featDef.prerequisites) {
-        const ctx: PrerequisiteEvalContext = {
-          ...prereqCtx,
-          feats: accumulatedFeats,
-          ...(targetId ? { targetId } : {})
-        };
+        const ctx: PrerequisiteEvalContext = targetId ? { ...baseCtx, targetId } : baseCtx;
         if (!evaluatePrerequisiteAST(featDef.prerequisites, ctx)) {
           return { valid: false, reason: `Prerequisites not met for feat: ${featDef.name}` };
         }
@@ -187,14 +199,16 @@ export function validateCharacterCreationStep(
       draft.prohibitedSchools,
       draft.domains,
       [],
-      sysContent
+      sysContent,
+      draft.alignment
     );
     return validateClassSpellSelection(
       draft.knownSpells,
       spellBudget,
       draft.prohibitedSchools,
       draft.domains,
-      sysContent
+      sysContent,
+      draft.alignment
     );
   }
 

@@ -93,6 +93,9 @@
         "name": "Wild Shape",
         "category": "su",
         "description": "Turn into a Small or Medium animal and back again (scales to Large at 8th, Tiny at 11th, Plant at 12th, Huge at 15th, Elemental at 16th).",
+        "grantedTags": [
+          "feature:wild_shape"
+        ],
         "resourcePool": {
           "poolId": "wild_shape",
           "maxBase": 1,

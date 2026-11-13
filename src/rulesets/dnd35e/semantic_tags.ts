@@ -174,6 +174,46 @@ export function projectDnD35ActorSemanticTags(
     if (featId === 'illiteracy') {
       tags.add('trait:illiterate');
     }
+    if (featId === 'wild_shape_1' || featId.startsWith('wild_shape')) {
+      tags.add('feature:wild_shape');
+    }
+    if (featId === 'turn_or_rebuke_undead' || featId === 'turn_undead_paladin' || featId === 'command_undead') {
+      tags.add('feature:turn_or_rebuke');
+    }
+    if (featId.startsWith('sneak_attack') || featId.startsWith('smite_') || featId === 'death_attack') {
+      tags.add('trait:special_attack');
+    }
+    if (classRegistry) {
+      for (const track of dndData.tracks) {
+        const detail = classRegistry[track.trackId]?.featureDetails?.[featId];
+        if (detail?.grantedTags) {
+          for (const gTag of detail.grantedTags) {
+            tags.add(gTag);
+          }
+        }
+      }
+    }
+  }
+
+  for (const domId of dndData.domains ?? []) {
+    if (
+      domId === 'air' ||
+      domId === 'earth' ||
+      domId === 'fire' ||
+      domId === 'water' ||
+      domId === 'plant' ||
+      domId === 'sun'
+    ) {
+      tags.add('feature:turn_or_rebuke');
+    }
+  }
+
+  if ((dndData.movementModes?.fly ?? 0) > 0) {
+    tags.add('movement:fly');
+  }
+
+  if (dndData.hasPounce === true || (dndData.naturalWeapons ?? []).some((nw) => (nw.riders?.length ?? 0) > 0)) {
+    tags.add('trait:special_attack');
   }
 
   if (skillRegistry) {

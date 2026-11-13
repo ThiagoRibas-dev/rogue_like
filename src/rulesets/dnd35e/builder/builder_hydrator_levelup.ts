@@ -40,10 +40,45 @@ export function applyLevelUpToActor(
     };
   }
 
+  if (classDef.allowedAlignments && classDef.allowedAlignments.length > 0) {
+    if (dndData.alignment !== undefined && !classDef.allowedAlignments.includes(dndData.alignment)) {
+      return {
+        state,
+        success: false,
+        errorReason: `${classDef.name} requires alignment in: ${classDef.allowedAlignments.join(', ')}.`
+      };
+    }
+  }
+
+  const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes, sysContent);
   if (classDef.prerequisites) {
-    const prereqCtx = buildPrerequisiteContextForActor(dndData, sysContent.classes);
     if (!evaluatePrerequisiteAST(classDef.prerequisites, prereqCtx)) {
       return { state, success: false, errorReason: `Prerequisites not met for ${classDef.name}.` };
+    }
+  }
+
+  for (const acfId of choice.selectedAcfs ?? []) {
+    const acf = classDef.acfSwaps.find((a) => a.acfId === acfId && a.level === nextClassLevel);
+    if (!acf) {
+      return {
+        state,
+        success: false,
+        errorReason: `Invalid Alternate Class Feature "${acfId}" for ${classDef.name} level ${nextClassLevel}.`
+      };
+    }
+    if (acf.requiredArcaneSchool && dndData.arcaneSchool !== acf.requiredArcaneSchool) {
+      return {
+        state,
+        success: false,
+        errorReason: `${acf.name} requires ${acf.requiredArcaneSchool} school specialization.`
+      };
+    }
+    if (acf.prerequisites && !evaluatePrerequisiteAST(acf.prerequisites, prereqCtx)) {
+      return {
+        state,
+        success: false,
+        errorReason: `Prerequisites not met for Alternate Class Feature: ${acf.name}.`
+      };
     }
   }
 

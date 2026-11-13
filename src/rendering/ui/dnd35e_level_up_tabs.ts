@@ -76,7 +76,8 @@ export function computeLevelUpSpellTabs(
       dndData.prohibitedSchools ?? [],
       dndData.domains ?? [],
       existingKnown,
-      sys
+      sys,
+      dndData.alignment
     );
     if (spBudget.requiresManualSelection) {
       spellTabs.push({

@@ -47,6 +47,11 @@
           "minRanks": 5
         },
         {
+          "type": "min_skill_ranks",
+          "skillId": "knowledge_religion",
+          "minRanks": 2
+        },
+        {
           "type": "has_feat",
           "featId": "power_attack"
         },
@@ -123,6 +128,27 @@
         "name": "Aura of Despair",
         "category": "su",
         "description": "Radiate a malign aura that causes enemies within 10 feet to take a -2 penalty on all saving throws."
+      },
+      "command_undead": {
+        "id": "command_undead",
+        "name": "Command Undead",
+        "category": "su",
+        "description": "Rebuke or command undead as an evil cleric of two levels lower (3 + CHA mod/day).",
+        "grantedTags": [
+          "feature:turn_or_rebuke"
+        ],
+        "scalingPoolContribution": {
+          "poolId": "turn_undead_effective_level",
+          "multiplier": 1,
+          "offset": -2,
+          "minClassLevel": 3
+        },
+        "resourcePool": {
+          "poolId": "turn_undead",
+          "maxBase": 3,
+          "abilityModStat": "cha",
+          "refreshCycle": "rest_8h"
+        }
       }
     },
     "acfSwaps": [],

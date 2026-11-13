@@ -67,12 +67,15 @@
             "armor:medium",
             "armor:heavy"
           ]
-        },
-        "virtualFeatGrants": [
-          {
-            "featId": "two_weapon_fighting",
-            "ignorePrerequisites": true
-          }
+        }
+      },
+      "endurance": {
+        "id": "endurance",
+        "name": "Endurance",
+        "category": "bonus_feat",
+        "description": "Gain Endurance as a bonus feat at 3rd level.",
+        "grantedFeats": [
+          "endurance"
         ]
       },
       "improved_combat_style": {

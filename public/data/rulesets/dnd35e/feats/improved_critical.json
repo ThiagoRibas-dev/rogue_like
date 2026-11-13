@@ -9,8 +9,17 @@
       "targetCategory": "weapon"
     },
     "prerequisites": {
-      "type": "min_bab",
-      "minBab": 8
+      "type": "and",
+      "children": [
+        {
+          "type": "has_proficiency",
+          "scope": "selected_weapon"
+        },
+        {
+          "type": "min_bab",
+          "minBab": 8
+        }
+      ]
     },
     "modifiers": [
       {

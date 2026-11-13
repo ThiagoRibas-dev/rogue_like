@@ -4,6 +4,10 @@
     "name": "Empower Spell-Like Ability",
     "description": "Use a chosen spell-like ability as an empowered spell-like ability (+50% variable numeric effects) three times per day.",
     "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_sla_caster_level",
+      "minCasterLevel": 6
+    },
     "ruleOverrides": [
       {
         "id": "empower_sla_3_per_day",

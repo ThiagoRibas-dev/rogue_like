@@ -23,6 +23,10 @@
       "type": "and",
       "children": [
         {
+          "type": "has_proficiency",
+          "scope": "martial_all"
+        },
+        {
           "type": "min_spell_level",
           "tradition": "arcane",
           "minSpellLevel": 3

@@ -4,6 +4,10 @@
     "name": "Hover",
     "description": "Halt forward momentum while flying and hover in place regardless of maneuverability.",
     "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_fly_speed",
+      "minSpeedFt": 1
+    },
     "ruleOverrides": [
       {
         "id": "fly_hover_in_place",

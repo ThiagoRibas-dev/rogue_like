@@ -4,12 +4,16 @@
     "name": "Skeleton",
     "kind": "acquired",
     "targetCreatureTypes": [
-      "humanoid",
-      "monstrous_humanoid",
+      "aberration",
       "animal",
       "dragon",
+      "fey",
+      "giant",
+      "humanoid",
       "magical_beast",
-      "giant"
+      "monstrous_humanoid",
+      "plant",
+      "vermin"
     ],
     "resultCreatureType": "undead",
     "addSubtypes": [],

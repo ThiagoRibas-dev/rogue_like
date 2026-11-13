@@ -5,7 +5,11 @@
     "creatureType": "aberration",
     "subtypes": [],
     "size": "large",
-    "baseLandSpeedFt": 30,
+    "baseLandSpeedFt": 5,
+    "movementModes": {
+      "land": 5,
+      "fly": 20
+    },
     "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
       "str": 0,

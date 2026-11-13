@@ -6,6 +6,10 @@
     "subtypes": [],
     "size": "large",
     "baseLandSpeedFt": 30,
+    "movementModes": {
+      "land": 30,
+      "fly": 50
+    },
     "unencumberedSpeedInHeavyArmor": false,
     "abilityAdjustments": {
       "str": 10,

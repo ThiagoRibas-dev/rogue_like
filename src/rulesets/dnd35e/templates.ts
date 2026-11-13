@@ -1,4 +1,6 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from './abilities.ts';
+import { buildPrerequisiteContextForActor } from './builder/builder_prereq_context.ts';
+import { evaluatePrerequisiteAST } from './prerequisites.ts';
 import { buildCreatureTypeAndSubtypeModifiers } from './semantic_tags.ts';
 import type {
   AbilityId,
@@ -7,7 +9,7 @@ import type {
   HitDieTrack,
   StatModifier
 } from './types/dnd35e.types.ts';
-import type { DnD35Template } from './types/dnd35e_system.types.ts';
+import type { DnD35SystemContent, DnD35Template } from './types/dnd35e_system.types.ts';
 
 /** Undead Hit Die sides (`d12`). */
 const UNDEAD_HIT_DIE_SIDES = 12;
@@ -19,14 +21,70 @@ const MINDLESS_UNDEAD_WIS = 10;
 const MINDLESS_UNDEAD_CHA = 1;
 
 /**
+ * Validates whether a creature (`DnD35EntityData`) satisfies all SRD prerequisites
+ * (`targetCreatureTypes`, `allowedAlignments`, and declarative `prerequisites` AST) for a template.
+ *
+ * @param base Base creature `DnD35EntityData`.
+ * @param template Template definition.
+ * @param sysContent Optional D&D 3.5e system content for caster level & proficiency evaluation.
+ * @returns `{ valid: boolean; reason?: string }`.
+ */
+export function validateTemplatePrerequisites(
+  base: DnD35EntityData,
+  template: DnD35Template,
+  sysContent?: Readonly<DnD35SystemContent>
+): { readonly valid: boolean; readonly reason?: string } {
+  if (
+    template.targetCreatureTypes &&
+    template.targetCreatureTypes.length > 0 &&
+    base.creatureType &&
+    !template.targetCreatureTypes.includes(base.creatureType)
+  ) {
+    return {
+      valid: false,
+      reason: `Template "${template.name}" cannot be applied to creature type "${base.creatureType}". Allowed: ${template.targetCreatureTypes.join(', ')}`
+    };
+  }
+  if (
+    template.allowedAlignments &&
+    template.allowedAlignments.length > 0 &&
+    base.alignment !== undefined &&
+    !template.allowedAlignments.includes(base.alignment)
+  ) {
+    return {
+      valid: false,
+      reason: `Template "${template.name}" requires alignment in: ${template.allowedAlignments.join(', ')}.`
+    };
+  }
+  if (template.prerequisites) {
+    const prereqCtx = buildPrerequisiteContextForActor(base, sysContent?.classes ?? {}, sysContent);
+    if (!evaluatePrerequisiteAST(template.prerequisites, prereqCtx)) {
+      return {
+        valid: false,
+        reason: `Template "${template.name}" prerequisites not met.`
+      };
+    }
+  }
+  return { valid: true };
+}
+
+/**
  * Applies an inherited or acquired creature template to an existing D&D 3.5e actor chassis,
  * producing a new immutable DnD35EntityData with all transformations applied.
  *
  * @param base Base entity data chassis.
  * @param template Template definition containing creature type shifts, stat deltas, and traits.
+ * @param options Optional settings (`enforcePrerequisites`, `sysContent`).
  * @returns Transformed DnD35EntityData.
  */
-export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Template): DnD35EntityData {
+export function applyCreatureTemplate(
+  base: DnD35EntityData,
+  template: DnD35Template,
+  options?: {
+    readonly enforcePrerequisites?: boolean;
+    readonly sysContent?: Readonly<DnD35SystemContent>;
+  }
+): DnD35EntityData {
   if (
     template.targetCreatureTypes &&
     template.targetCreatureTypes.length > 0 &&
@@ -36,6 +94,12 @@ export function applyCreatureTemplate(base: DnD35EntityData, template: DnD35Temp
     throw new Error(
       `Template "${template.name}" cannot be applied to creature type "${base.creatureType}". Allowed: ${template.targetCreatureTypes.join(', ')}`
     );
+  }
+  if (options?.enforcePrerequisites) {
+    const check = validateTemplatePrerequisites(base, template, options.sysContent);
+    if (!check.valid) {
+      throw new Error(check.reason ?? `Template "${template.name}" prerequisites not met.`);
+    }
   }
 
   let creatureType = template.resultCreatureType ?? base.creatureType;

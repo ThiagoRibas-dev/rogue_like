@@ -3,6 +3,32 @@
     "templateId": "half_fiend",
     "name": "Half-Fiend",
     "kind": "inherited",
+    "targetCreatureTypes": [
+      "aberration",
+      "animal",
+      "dragon",
+      "fey",
+      "giant",
+      "humanoid",
+      "magical_beast",
+      "monstrous_humanoid",
+      "ooze",
+      "plant",
+      "vermin"
+    ],
+    "allowedAlignments": [
+      "LN",
+      "N",
+      "CN",
+      "LE",
+      "NE",
+      "CE"
+    ],
+    "prerequisites": {
+      "type": "min_ability",
+      "ability": "int",
+      "minScore": 4
+    },
     "resultCreatureType": "outsider",
     "addSubtypes": [
       "native",

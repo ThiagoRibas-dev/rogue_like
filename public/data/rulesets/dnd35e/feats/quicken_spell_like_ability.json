@@ -4,6 +4,10 @@
     "name": "Quicken Spell-Like Ability",
     "description": "Use a chosen spell-like ability as a swift action three times per day.",
     "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_sla_caster_level",
+      "minCasterLevel": 10
+    },
     "ruleOverrides": [
       {
         "id": "quicken_sla_3_per_day",

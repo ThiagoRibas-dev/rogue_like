@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   BabCurveIdSchema,
   DnD35AdvancementRangeSchema,
+  DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
   DnD35DamageTypeSchema,
   DnD35MagicImmunityExceptionSchema,
@@ -17,7 +18,8 @@ import {
   DnD35DeclarativeModifierSchema,
   DnD35EffectBundleSchema,
   DnD35RacialConditionalModifierSchema,
-  DnD35RuleOverrideEntrySchema
+  DnD35RuleOverrideEntrySchema,
+  PrerequisiteNodeSchema
 } from './effect_system.types.ts';
 
 /** Zod schema for an actor's default equipped or inventory armament entry. */
@@ -81,6 +83,8 @@ export const DnD35TemplateSchema = z.object({
   name: z.string(),
   kind: z.enum(['inherited', 'acquired']),
   targetCreatureTypes: z.array(z.string()).optional(),
+  allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
+  prerequisites: PrerequisiteNodeSchema.optional(),
   resultCreatureType: z.string().optional(),
   convertTypeMap: z.record(z.string(), z.string()).optional(),
   addSubtypes: z.array(z.string()).default([]),

@@ -6,7 +6,8 @@
     "isFighterBonusFeat": false,
     "prerequisites": {
       "type": "has_feat",
-      "featId": "spell_focus"
+      "featId": "spell_focus",
+      "targetId": "conjuration"
     },
     "modifiers": [
       {

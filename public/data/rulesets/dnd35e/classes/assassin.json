@@ -72,9 +72,9 @@
     },
     "proficiencies": {
       "weapons": [
-        "crossbow_hand",
-        "crossbow_light",
-        "crossbow_heavy",
+        "hand_crossbow",
+        "light_crossbow",
+        "heavy_crossbow",
         "dagger",
         "dart",
         "rapier",

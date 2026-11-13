@@ -9,8 +9,17 @@
       "targetCategory": "weapon"
     },
     "prerequisites": {
-      "type": "min_bab",
-      "minBab": 4
+      "type": "and",
+      "children": [
+        {
+          "type": "min_natural_attacks",
+          "minCount": 1
+        },
+        {
+          "type": "min_bab",
+          "minBab": 4
+        }
+      ]
     },
     "ruleOverrides": [
       {

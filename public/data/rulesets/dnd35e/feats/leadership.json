@@ -4,6 +4,10 @@
     "name": "Leadership",
     "description": "Attract a loyal cohort and devoted followers to assist you.",
     "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_character_level",
+      "minLevel": 6
+    },
     "ruleOverrides": [
       {
         "id": "leadership_cohort",

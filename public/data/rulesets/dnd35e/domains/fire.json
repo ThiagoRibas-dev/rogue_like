@@ -12,7 +12,8 @@
       "modifiers": [],
       "ruleOverrides": [],
       "grantedTags": [
-        "domain:fire"
+        "domain:fire",
+        "feature:turn_or_rebuke"
       ],
       "grantedFeats": [],
       "virtualFeatGrants": [],
