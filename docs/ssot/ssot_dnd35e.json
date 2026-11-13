@@ -1179,7 +1179,9 @@
       "buildClassAndDomainEffectModifiers",
       "rebuildActorStateFromLevelHistory",
       "applyPermanentLevelDrainToActor",
-      "applyNegativeLevelsToActor"
+      "applyNegativeLevelsToActor",
+      "buildActorResourcePoolsComponent",
+      "syncActorResourcePoolsComponent"
     ],
     "ownershipBoundary": {
       "includes": "Rebuilding tracks, skillRanks, permanent feats, scalingPools (Turn Undead, Uncanny Dodge, Familiar effective levels), spellbooksByClass, and preserving conditional EffectBundle modifiers for Horizon 3 DAG evaluation.",
@@ -1597,6 +1599,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/ledger_modifiers.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/progression/ledger_resource_pools.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Hydrates ComponentType.ResourcePool from active class features and domains that explicitly declare resourcePool definitions, preserving remaining charges across rebuilds.",
+    "canonicalEntryPoints": [
+      "buildActorResourcePoolsComponent",
+      "syncActorResourcePoolsComponent"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/progression/ledger_resource_pools.ts.",
+      "excludes": "Passive scalingPool progression math or UI hotbar projection."
+    },
+    "antiPatterns": [
+      "Do not project passive scalingPools into ResourcePoolComponent entries."
     ]
   },
   "src/rulesets/dnd35e/progression/prestige_casting.ts": {

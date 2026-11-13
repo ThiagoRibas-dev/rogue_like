@@ -1,10 +1,12 @@
 import * as ROT from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
-import { canTraverseTile } from '../systems/movement.system.ts';
+import { canTraverseTile, processMoveIntent } from '../systems/movement.system.ts';
+import { shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { ComponentType, type MovementModes, type PropertyOverlayComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
+import { isHostile } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { DEFAULT_COMPANION_FOLLOW_DISTANCE } from './companion_targeting.ts';
 
@@ -181,4 +183,65 @@ export function followBehavior(
     dx: step.dx,
     dy: step.dy
   };
+}
+
+/**
+ * Checks whether `companionId` is currently adjacent (`distance <= 1`) to a living hostile target.
+ */
+function hasAdjacentHostile(state: GameState, companionId: EntityId): boolean {
+  const pos = getComponent(state, companionId, ComponentType.Position);
+  if (!pos) return false;
+
+  for (const otherId of state.entities) {
+    if (otherId === companionId) continue;
+    const otherFighter = getComponent(state, otherId, ComponentType.Fighter);
+    const otherPos = getComponent(state, otherId, ComponentType.Position);
+    if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
+    if (!isHostile(state, companionId, otherId)) continue;
+    const dist = Math.max(Math.abs(otherPos.x - pos.x), Math.abs(otherPos.y - pos.y));
+    if (dist <= 1) return true;
+  }
+  return false;
+}
+
+/**
+ * Advances `shareInitiative` companions by one follow step after `controllerId` completes a
+ * zero-energy mid-round movement step in Turn-Based mode, keeping companions in formation during
+ * exploration without interrupting active melee engagements.
+ *
+ * @param state Current GameState after the controller's move.
+ * @param controllerId Controller EntityId (the moving player).
+ * @returns Updated GameState with linked companions stepped via `followBehavior`.
+ */
+export function syncShareInitiativeCompanionsOnMove(state: GameState, controllerId: EntityId): GameState {
+  let runningState = state;
+  const candidates = [...runningState.entities];
+
+  for (const companionId of candidates) {
+    if (companionId === controllerId) continue;
+    const link = getComponent(runningState, companionId, ComponentType.ControllerLink);
+    if (!link || link.controllerEntityId !== controllerId) continue;
+    if (link.shareInitiative === false || link.stance === 'hold') continue;
+
+    const fighter = getComponent(runningState, companionId, ComponentType.Fighter);
+    if (fighter && fighter.hp <= 0) continue;
+    if (isHostile(runningState, companionId, controllerId)) continue;
+    if (shouldSkipTurn(runningState, companionId)) continue;
+    if (hasAdjacentHostile(runningState, companionId)) continue;
+
+    const intent = followBehavior(runningState, companionId, {
+      followDistance: link.followDistance ?? DEFAULT_COMPANION_FOLLOW_DISTANCE
+    });
+    if (intent && intent.type === IntentType.Move) {
+      const moveResult = processMoveIntent(runningState, intent);
+      if (moveResult.success) {
+        runningState = moveResult.state;
+        if (moveResult.events && moveResult.events.length > 0) {
+          runningState = { ...runningState, events: [...runningState.events, ...moveResult.events] };
+        }
+      }
+    }
+  }
+
+  return runningState;
 }

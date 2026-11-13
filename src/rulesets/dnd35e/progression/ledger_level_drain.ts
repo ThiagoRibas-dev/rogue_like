@@ -7,6 +7,7 @@ import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35CharacterLevelRecord, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { buildNegativeLevelModifiers, HP_PENALTY_PER_NEGATIVE_LEVEL } from './ledger_features_spells.ts';
+import { syncActorResourcePoolsComponent } from './ledger_resource_pools.ts';
 
 /**
  * Applies permanent level drain to an actor, popping the last `levelsDrained` records
@@ -37,7 +38,8 @@ export function applyPermanentLevelDrainToActor(
   const updatedHistory = history.slice(0, remainingCount);
 
   const updatedData = rebuildFn(dndData, updatedHistory, sysContent);
-  const nextState = setDnD35EntityData(state, entityId, updatedData);
+  let nextState = setDnD35EntityData(state, entityId, updatedData);
+  nextState = syncActorResourcePoolsComponent(nextState, entityId, updatedData, sysContent);
 
   const fighter = getComponent(nextState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   if (!fighter) {

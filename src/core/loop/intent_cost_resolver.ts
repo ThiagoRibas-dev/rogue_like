@@ -1,6 +1,7 @@
 import { dispatchAction } from '../../actions/action.registry.ts';
+import { syncShareInitiativeCompanionsOnMove } from '../../ai/follow.behavior.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import { type GameState } from '../../types/game-state.types.ts';
+import { EngineMode, type GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ActionResult, Intent } from '../../types/intents/intent.union.ts';
 import { getComponent, tickControllerLinksAndOverlays } from '../ecs.ts';
@@ -61,6 +62,16 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
 
   if (result.events && result.events.length > 0) {
     nextState = { ...nextState, events: [...nextState.events, ...result.events] };
+  }
+
+  const isPlayerMove =
+    intent.type === IntentType.Move &&
+    result.success &&
+    energyCost === 0 &&
+    nextState.engineMode === EngineMode.TurnBased &&
+    getComponent(nextState, intent.entityId, ComponentType.Player) !== undefined;
+  if (isPlayerMove) {
+    nextState = syncShareInitiativeCompanionsOnMove(nextState, intent.entityId);
   }
   const tAfterDispatch = performance.now();
 

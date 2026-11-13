@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { getComponent } from '../src/core/ecs.ts';
 import {
   getConsoleThemeMode,
   getConsoleThemeTokens,
@@ -7,7 +8,12 @@ import {
 } from '../src/rendering/ui/console_theme.ts';
 import { DefaultSciFiUIAdapter } from '../src/rulesets/classic/ui/classic_ui_adapter.ts';
 import { createAbilityScoreState } from '../src/rulesets/dnd35e/abilities.ts';
+import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
+import { applyPermanentLevelDrainToActor } from '../src/rulesets/dnd35e/level_ledger.ts';
+import { getDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { type DnD35ExtendedActorData, DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
+import { ComponentType } from '../src/types/components.types.ts';
+import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 describe('Console UI Architecture & Cartridge Adapter Suite', () => {
   it('toggles ConsoleThemeMode and updates skin tokens dynamically', () => {
@@ -73,7 +79,19 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
       ],
       skillRanks: { tumble: 15, search: 10 },
       feats: ['power_attack', 'weapon_finesse'],
-      scalingPools: { turn_undead: 4 },
+      scalingPools: { animal_companion_effective_level: 4 },
+      resourcePools: {
+        type: ComponentType.ResourcePool,
+        pools: {
+          turn_undead: {
+            current: 4,
+            max: 4,
+            resetOnRest: true,
+            label: 'Turn Undead',
+            refreshCycle: 'rest_8h'
+          }
+        }
+      },
       goldCurrency: 21386
     };
 
@@ -89,15 +107,79 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     expect(inv.currentWeightLbs).toBe(0);
     expect(inv.goldCurrency).toBe(21386);
 
-    // Actor has power_attack and turn_undead pool, but NOT combat_expertise
+    // Actor has power_attack and explicit turn_undead ResourcePool, NOT combat_expertise or passive scalingPools modes
     const hotbar = adapter.getHotbarData(dummyActor);
     expect(hotbar.stanceModes.some((s) => s.id === 'power_attack' && s.maxNumericValue === 15)).toBe(true);
     expect(hotbar.stanceModes.some((s) => s.id === 'combat_expertise')).toBe(false);
     expect(hotbar.stanceModes.some((s) => s.id === 'fighting_defensively')).toBe(true);
     expect(hotbar.stanceModes.some((s) => s.id === 'pool:turn_undead')).toBe(true);
+    expect(hotbar.stanceModes.some((s) => s.id === 'pool:animal_companion_effective_level')).toBe(false);
     expect(hotbar.slots.some((sl) => sl.actionPayload?.kind === 'skill' && sl.actionPayload.id === 'search')).toBe(
       true
     );
+  });
+
+  it('hydrates declared ResourcePoolComponent entries without projecting passive Druid scalingPools to hotbar modes', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const adapter = new DnD35UIAdapter();
+
+    const druidBase = buildGameState(campaign);
+    const druidId = druidBase.entities.find((id) => getComponent(druidBase, id, ComponentType.Player) !== undefined)!;
+    const druidState = applyCharacterCreationToPlayer(druidBase, druidId, {
+      raceId: 'human',
+      classId: 'druid',
+      alignment: 'neutral_good',
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 25,
+      baseAbilityScores: { str: 10, dex: 12, con: 14, int: 10, wis: 16, cha: 10 },
+      selectedAcfs: [],
+      domains: [],
+      prohibitedSchools: [],
+      skillRanks: { handle_animal: 4, survival: 4 },
+      selectedFeats: ['spell_focus_conjuration'],
+      knownSpells: [],
+      equipmentPackageId: 'druid_standard',
+      animalCompanionId: 'wolf'
+    });
+    const druidDnd = getDnD35EntityData(druidState, druidId);
+    expect(druidDnd.scalingPools?.animal_companion_effective_level).toBe(1);
+    const druidHotbar = adapter.getHotbarData({
+      ...druidDnd,
+      resourcePools: getComponent(druidState, druidId, ComponentType.ResourcePool)
+    });
+    expect(druidHotbar.stanceModes.some((s) => s.id === 'pool:animal_companion_effective_level')).toBe(false);
+
+    const clericBase = buildGameState(campaign);
+    const clericId = clericBase.entities.find((id) => getComponent(clericBase, id, ComponentType.Player) !== undefined)!;
+    const clericState = applyCharacterCreationToPlayer(clericBase, clericId, {
+      raceId: 'human',
+      classId: 'cleric',
+      alignment: 'lawful_good',
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 25,
+      baseAbilityScores: { str: 14, dex: 10, con: 14, int: 10, wis: 16, cha: 14 },
+      selectedAcfs: [],
+      domains: ['healing', 'sun'],
+      prohibitedSchools: [],
+      skillRanks: { concentration: 4, knowledge_religion: 4 },
+      selectedFeats: ['extra_turning'],
+      knownSpells: [],
+      equipmentPackageId: 'cleric_standard'
+    });
+    const clericPools = getComponent(clericState, clericId, ComponentType.ResourcePool);
+    // 3 base + 2 CHA + 4 Extra Turning = 9
+    expect(clericPools?.pools.turn_undead?.max).toBe(9);
+    const clericHotbar = adapter.getHotbarData({
+      ...getDnD35EntityData(clericState, clericId),
+      resourcePools: clericPools
+    });
+    expect(clericHotbar.stanceModes.some((s) => s.id === 'pool:turn_undead' && s.label.includes('(9/9)'))).toBe(true);
+
+    const drained = applyPermanentLevelDrainToActor(clericState, clericId, 1);
+    expect(drained.success).toBe(true);
+    const drainedPools = getComponent(drained.state, clericId, ComponentType.ResourcePool);
+    expect(drainedPools?.pools.turn_undead).toBeUndefined();
+    expect(drainedPools?.pools.domain_greater_turning?.max).toBe(1);
   });
 
   it('evaluates Default / Classic Cartridge UI Adapter models without fake items', () => {

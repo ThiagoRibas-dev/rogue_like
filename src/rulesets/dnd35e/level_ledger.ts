@@ -287,6 +287,11 @@ export function applyPermanentLevelDrainToActor(
 }
 
 export {
+  buildActorResourcePoolsComponent,
+  syncActorResourcePoolsComponent
+} from './progression/ledger_resource_pools.ts';
+
+export {
   applyNegativeLevelsToActor,
   buildCombatRuleOverridesFromActiveRules,
   collectActiveFeatRuleOverrides,

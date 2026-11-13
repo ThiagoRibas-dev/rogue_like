@@ -3,7 +3,7 @@ import { ComponentType, type FighterComponent } from '../../../types/components.
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import { syncActorCompanionsAndFamiliars } from '../companions.ts';
-import { rebuildActorStateFromLevelHistory } from '../level_ledger.ts';
+import { rebuildActorStateFromLevelHistory, syncActorResourcePoolsComponent } from '../level_ledger.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { dndFloor } from '../math/multipliers.ts';
 import { evaluatePrerequisiteAST } from '../prerequisites.ts';
@@ -134,6 +134,7 @@ export function applyLevelUpToActor(
   const nextChassis = aggregateProgressionChassis(updatedData.tracks, nextConMod, updatedData.levelAdjustment ?? 0);
 
   let nextState = setDnD35EntityData(state, entityId, updatedData);
+  nextState = syncActorResourcePoolsComponent(nextState, entityId, updatedData, sysContent);
   nextState = syncActorCompanionsAndFamiliars(nextState, entityId);
 
   const fighter = getComponent(nextState, entityId, ComponentType.Fighter) as FighterComponent | undefined;

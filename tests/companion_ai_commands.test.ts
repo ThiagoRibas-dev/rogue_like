@@ -3,11 +3,13 @@ import { addComponent, createEntity, getComponent } from '../src/core/ecs.ts';
 import { getGameState, setGameState } from '../src/core/game-loop.ts';
 import { handleModalKey, isModalUIMode } from '../src/core/input/modal_input.ts';
 import { clearInputQueue } from '../src/core/input_queue.ts';
+import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
 import { cancelPendingSave } from '../src/core/persistence_service.ts';
 import { clearScheduler, initEngine } from '../src/core/scheduler.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
 import { onDnD35eActorTurnStart, resolveDnD35eActionEnergyCost } from '../src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts';
 import { syncActorCompanionsAndFamiliars } from '../src/rulesets/dnd35e/companions.ts';
+import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { processAITurn } from '../src/systems/ai.system.ts';
 import { getValidVerbsForTarget, getVerbOptionsForTarget, processApplyIntent } from '../src/systems/apply.system.ts';
 import { COMPANION_ORDERS_DIALOGUE_ID } from '../src/systems/companion_commands.system.ts';
@@ -17,7 +19,7 @@ import { processFireAimedIntent } from '../src/systems/targeting.system.ts';
 import { applyConsequence } from '../src/systems/trigger.system.ts';
 import { ComponentType, type ControllerLinkComponent } from '../src/types/components.types.ts';
 import { GameEventType } from '../src/types/events.types.ts';
-import { UIMode, type EntityId, type GameState } from '../src/types/game-state.types.ts';
+import { EngineMode, UIMode, type EntityId, type GameState } from '../src/types/game-state.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
 import type { ApplyIntent, MeleeAttackIntent, MoveIntent } from '../src/types/intents/intent.union.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
@@ -467,5 +469,125 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
       100
     );
     expect(attackCost.energyCost).toBe(100);
+  });
+
+  test('Druid Turn-Based movement uses 30 ft tactical speed and walks Wolf companion alongside mid-round moves', () => {
+    const { state: baseState, playerId } = buildOpenArenaState('dnd35e-crypt');
+    const created = applyCharacterCreationToPlayer(baseState, playerId, {
+      raceId: 'human',
+      classId: 'druid',
+      alignment: 'neutral_good',
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 25,
+      baseAbilityScores: { str: 10, dex: 12, con: 14, int: 10, wis: 16, cha: 10 },
+      selectedAcfs: [],
+      domains: [],
+      prohibitedSchools: [],
+      skillRanks: { handle_animal: 4, survival: 4 },
+      selectedFeats: ['spell_focus_conjuration'],
+      knownSpells: [],
+      equipmentPackageId: 'druid_standard',
+      animalCompanionId: 'wolf'
+    });
+
+    const companionId = created.entities.find(
+      (id) => getComponent(created, id, ComponentType.ControllerLink)?.controllerEntityId === playerId
+    );
+    expect(companionId).toBeDefined();
+
+    // Wolf JSON defaults to 30 ft land speed (17 ticks/step), and scales to 10 ticks/step when given 50 ft land speed
+    const wolfTurnState = onDnD35eActorTurnStart(
+      { ...created, engineMode: EngineMode.TurnBased },
+      companionId!
+    );
+    const wolfBaseCost = resolveDnD35eActionEnergyCost(
+      wolfTurnState,
+      { type: IntentType.Move, entityId: companionId!, dx: 1, dy: 0 },
+      100
+    );
+    expect(wolfBaseCost.energyCost).toBe(17);
+
+    const fastWolfState = setDnD35EntityData(wolfTurnState, companionId!, {
+      ...getDnD35EntityData(wolfTurnState, companionId!),
+      movementModes: { land: 50 }
+    });
+    const fastWolfCost = resolveDnD35eActionEnergyCost(
+      fastWolfState,
+      { type: IntentType.Move, entityId: companionId!, dx: 1, dy: 0 },
+      100
+    );
+    expect(fastWolfCost.energyCost).toBe(10);
+
+    // Place companion at (3, 5) behind player at (5, 5), then move player right 5 times in TurnBased mode
+    let simState: GameState = {
+      ...created,
+      engineMode: EngineMode.TurnBased
+    };
+    simState = addComponent(simState, companionId!, { type: ComponentType.Position, x: 3, y: 5 });
+    simState = onDnD35eActorTurnStart(simState, playerId);
+
+    const step1 = applyIntentWithCost(simState, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(step1.success).toBe(true);
+    expect(step1.energyCost).toBe(0);
+
+    const dndAfterStep1 = getDnD35EntityData(step1.state, playerId);
+    expect(dndAfterStep1.actionBudget?.movementRemainingFt).toBe(25);
+
+    const compAfterStep1 = getComponent(step1.state, companionId!, ComponentType.Position)!;
+    // Player is now at (6, 5); companion moved from (3, 5) to (4, 5) to maintain followDistance 2
+    expect(compAfterStep1.x).toBe(4);
+    expect(compAfterStep1.y).toBe(5);
+
+    // Continue walking east through step 11 (mid-round zero-cost steps) and verify companion stays within followDistance 2
+    simState = step1.state;
+    let totalEnergyCost = step1.energyCost;
+    for (let step = 2; step <= 11; step++) {
+      const res = applyIntentWithCost(simState, {
+        type: IntentType.Move,
+        entityId: playerId,
+        dx: 1,
+        dy: 0
+      });
+      expect(res.success).toBe(true);
+      expect(res.energyCost).toBe(0);
+      simState = res.state;
+      totalEnergyCost += res.energyCost;
+    }
+    expect(totalEnergyCost).toBe(0);
+    const compAfterMidRound = getComponent(simState, companionId!, ComponentType.Position)!;
+    const playerAfterMidRound = getComponent(simState, playerId, ComponentType.Position)!;
+    const midRoundGap = Math.max(
+      Math.abs(playerAfterMidRound.x - compAfterMidRound.x),
+      Math.abs(playerAfterMidRound.y - compAfterMidRound.y)
+    );
+    expect(midRoundGap).toBeLessThanOrEqual(2);
+
+    // Step 12 completes the 60 ft Double Move (12 * 5 ft = 60 ft at 30 ft land speed) and commits full-round energyCost 100
+    const step12 = applyIntentWithCost(simState, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(step12.success).toBe(true);
+    expect(step12.energyCost).toBe(100);
+
+    // At the end of the round the scheduler invokes the companion's AI turn to close any remaining gap
+    const compTurn = processAITurn(step12.state, companionId!);
+    expect(compTurn.intent?.type).toBe(IntentType.Move);
+    const compMove = applyIntentWithCost(compTurn.state, compTurn.intent!);
+    expect(compMove.success).toBe(true);
+    const compAfterCatchup = getComponent(compMove.state, companionId!, ComponentType.Position)!;
+    const playerAfterWalk = getComponent(compMove.state, playerId, ComponentType.Position)!;
+    const finalGap = Math.max(
+      Math.abs(playerAfterWalk.x - compAfterCatchup.x),
+      Math.abs(playerAfterWalk.y - compAfterCatchup.y)
+    );
+    expect(finalGap).toBeLessThanOrEqual(2);
   });
 });

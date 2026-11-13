@@ -197,6 +197,18 @@ export function onDnD35eActorMovementStep(
   return nextState;
 }
 
+function computeActorTacticalLandSpeedFt(
+  state: GameState,
+  entityId: EntityId,
+  baseLandSpeedFt: number | undefined
+): number {
+  const actor = getComponent(state, entityId, ComponentType.Actor);
+  const stats = getEffectiveStats(state, entityId);
+  const baseActorSpeed = actor?.speed ?? FULL_ROUND_ENERGY_COST;
+  const speedBonusFt = stats.speed - baseActorSpeed;
+  return Math.max(FEET_PER_GRID_SQUARE, (baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT) + speedBonusFt);
+}
+
 /**
  * Resolves D&D 3.5e 5-tier action budget consumption and energy cost for an intent in TurnBased mode.
  * Returns `energyCost: 0` while movement or actions remain in the round, or `100` when the round completes.
@@ -226,18 +238,15 @@ export function resolveDnD35eActionEnergyCost(
         })
       : state;
     if (intent.type === IntentType.Move) {
-      const perStepEnergyCost = Math.max(
-        1,
-        Math.round((baseEnergyCost * FEET_PER_GRID_SQUARE) / BASELINE_LAND_SPEED_FT)
-      );
+      const npcLandSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
+      const perStepEnergyCost = Math.max(1, Math.round((baseEnergyCost * FEET_PER_GRID_SQUARE) / npcLandSpeedFt));
       return { state: nextState, energyCost: perStepEnergyCost };
     }
     return { state: nextState, energyCost: dndData.actionBudget ? FULL_ROUND_ENERGY_COST : baseEnergyCost };
   }
 
   const dndData = getDnD35EntityData(state, intent.entityId);
-  const stats = getEffectiveStats(state, intent.entityId);
-  const actorSpeedFt = stats.speed > 0 ? stats.speed : BASELINE_LAND_SPEED_FT;
+  const actorSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
   let currentBudget = dndData.actionBudget;
 
   if (!currentBudget) {

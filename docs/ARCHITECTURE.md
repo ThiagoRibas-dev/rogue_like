@@ -789,6 +789,11 @@ To keep companion, familiar, summon, and party-member AI completely ruleset-agno
    - Declarative dialogue/trigger consequences (`set_companion_stance`, `order_companion_target`) allow campaign JSON authors to command allied NPCs via conversation nodes.
    - Bumping into a friendly `ControllerLink` companion lacking a custom `DialogueComponent` swaps positions cleanly when both tiles are traversable, preventing corridor deadlocks, while `updateState` in `game-loop.ts` auto-enrolls mid-session spawned `Actor`s into `ROT.Scheduler.Action`.
 
+4. **Turn-Based Pacing, Tactical Land Speed & Declarative `ResourcePoolComponent` (`src/core/loop/intent_cost_resolver.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`, `src/rulesets/dnd35e/progression/ledger_resource_pools.ts`)**:
+   - `applyIntentWithCost` invokes `syncShareInitiativeCompanionsOnMove` whenever a `TurnBased` player `MoveIntent` succeeds with `energyCost === 0`, stepping living, non-holding `shareInitiative` companions not already adjacent to a hostile target smoothly alongside mid-round moves.
+   - `resolveDnD35eActionEnergyCost` resolves `actorSpeedFt` from `dndData.movementModes?.land` plus net DAG speed modifiers (keeping `30 ft` = `6` squares per Move action / `12` per Double Move) and scales AI `!isPlayer` movement step energy proportionally (`5 ft` step per tick slice).
+   - `buildActorResourcePoolsComponent` / `syncActorResourcePoolsComponent` hydrates `ComponentType.ResourcePool` strictly from active class features and domains declaring a `resourcePool` schema in JSON, keeping passive `scalingPools` (`animal_companion_effective_level`, `familiar_master_effective_level`, `uncanny_dodge_effective_level`) out of hotbar consumable modes.
+
 ### 9.16 Console Stance Groups, Lifecycle Windows, 5-Phase Combat Pipeline & Mobile Spell Auras (Milestones 125–126)
 
 1. **Tier 1 Console Stance Groups & Lifecycle Windows (`src/systems/stance.system.ts`, `src/systems/lifecycle.system.ts`, `src/systems/field.system.ts`)**:

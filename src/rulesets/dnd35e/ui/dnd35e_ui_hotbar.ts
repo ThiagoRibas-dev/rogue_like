@@ -91,15 +91,12 @@ export function buildActorStanceModes(
   );
   if (resourcePools) {
     for (const [id, entry] of Object.entries(resourcePools.pools)) {
+      if (entry.max <= 0) continue;
       modes.push({
         id: `pool:${id}`,
         label: `${entry.label ?? id.replace(/_/g, ' ')} (${entry.current}/${entry.max})`,
         isActive: entry.current > 0
       });
-    }
-  } else if (dndData.scalingPools) {
-    for (const [id, max] of Object.entries(dndData.scalingPools)) {
-      if (max > 0) modes.push({ id: `pool:${id}`, label: `${id.replace(/_/g, ' ')} (${max}/day)`, isActive: false });
     }
   }
 

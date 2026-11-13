@@ -12,7 +12,8 @@ import { syncActorCompanionsAndFamiliars } from '../companions.ts';
 import {
   buildClassAndDomainEffectModifiers,
   collectActiveGrantedAndVirtualFeats,
-  rebuildActorStateFromLevelHistory
+  rebuildActorStateFromLevelHistory,
+  syncActorResourcePoolsComponent
 } from '../level_ledger.ts';
 import {
   aggregateProgressionChassis,
@@ -178,6 +179,7 @@ export function applyCharacterCreationToPlayer(
   const conMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedData.abilityScores.con));
   const chassis = aggregateProgressionChassis(updatedData.tracks, conMod, updatedData.levelAdjustment ?? 0);
   let runningState = setDnD35EntityData(state, entityId, updatedData);
+  runningState = syncActorResourcePoolsComponent(runningState, entityId, updatedData, sysContent);
 
   const inventory = getComponent(runningState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
   const equipment = getComponent(runningState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
