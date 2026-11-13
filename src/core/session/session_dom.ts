@@ -26,6 +26,7 @@ import {
   createSetZoomLevelAction
 } from '../../actions/core.actions.ts';
 import { createDebugFastForwardSchemesAction, createDebugPromoteAction } from '../../actions/debug.actions.ts';
+import { ZOOM_STEP_DELTA } from '../../constants/display.constants.ts';
 import { initRNG } from '../rng.ts';
 
 export let selectedRulesetId: RulesetId = 'classic';
@@ -221,11 +222,11 @@ export function bindDOMControls(display: ROT.Display): void {
   });
   document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
     const pId = getPlayerId();
-    if (pId) queuePlayerIntent(createSetZoomLevelAction(pId, 0.2));
+    if (pId) queuePlayerIntent(createSetZoomLevelAction(pId, ZOOM_STEP_DELTA));
   });
   document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
     const pId = getPlayerId();
-    if (pId) queuePlayerIntent(createSetZoomLevelAction(pId, -0.2));
+    if (pId) queuePlayerIntent(createSetZoomLevelAction(pId, -ZOOM_STEP_DELTA));
   });
 
   document.getElementById('btn-debug-ff-schemes')?.addEventListener('click', () => {

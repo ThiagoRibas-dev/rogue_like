@@ -1,12 +1,29 @@
 import * as ROT from 'rot-js';
 import { type GameState } from '../types/game-state.types.ts';
-import { GAME_ASPECT_RATIO } from '../constants/display.constants.ts';
+import {
+  DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT,
+  GAME_ASPECT_RATIO,
+  MIN_ASCII_FONT_SIZE_PX
+} from '../constants/display.constants.ts';
 import { type CampaignData } from '../types/campaign.types.ts';
 import { recordDrawCommand } from './render_debug.ts';
 import { buildProceduralSpriteAtlas, isEffectiveSpriteMode } from './procedural_sprites.ts';
 import { compositeAtlas, mountDisplayWithFogOverlay } from './sprite_atlas.ts';
 
 export * from './sprite_atlas.ts';
+
+/**
+ * Default procedural sprite cell dimension (px) when no custom spritesheet is configured.
+ */
+const DEFAULT_PROCEDURAL_TILE_PX = 32;
+
+/**
+ * Pixel dimensions of the active map viewport container.
+ */
+interface ViewportPixelBounds {
+  readonly width: number;
+  readonly height: number;
+}
 
 /**
  * Internal interface representing a ROT.js rectangular layout backend
@@ -33,6 +50,23 @@ function isRectBackend(obj: unknown): obj is RectBackend {
     '_spacingY' in obj &&
     typeof (obj as { readonly _spacingY: unknown })._spacingY === 'number'
   );
+}
+
+/**
+ * Resolves the live viewport pixel bounds from `#game-canvas-wrapper` or `window`,
+ * returning `undefined` in headless environments without DOM dimensions.
+ */
+function resolveViewportPixelBounds(): ViewportPixelBounds | undefined {
+  if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+    const wrapper = document.getElementById('game-canvas-wrapper');
+    if (wrapper && wrapper.clientWidth > 0 && wrapper.clientHeight > 0) {
+      return { width: wrapper.clientWidth, height: wrapper.clientHeight };
+    }
+  }
+  if (typeof window !== 'undefined' && window.innerWidth > 0 && window.innerHeight > 0) {
+    return { width: window.innerWidth, height: window.innerHeight };
+  }
+  return undefined;
 }
 
 /**
@@ -133,6 +167,12 @@ export function drawCell(
   }> = []
 ): void {
   if (isSpriteMode) {
+    if (entities.length === 0 && !baseTile.spriteId && baseTile.glyph === ' ') {
+      display.draw(x, y, '', baseTile.fg, baseTile.bg);
+      recordDrawCommand(x, y, '', true);
+      return;
+    }
+
     const tileMap = display.getOptions().tileMap as Record<string, [number, number]> | undefined;
 
     const getSprite = (id: string | undefined, glyph: string): string => {
@@ -163,8 +203,9 @@ export function drawCell(
 }
 
 /**
- * Synchronizes the ROT.js Display grid width, height, and font size based on
- * the active campaign's theme settings, the current zoom level, and the global aspect ratio.
+ * Synchronizes the ROT.js Display grid width, height, font size, and canvas CSS scale
+ * so that at `zoomLevel = 1.0`, each tile occupies a consistent percentage of the viewport
+ * (`DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT`) regardless of screen resolution.
  *
  * @param display The ROT.js Display instance.
  * @param state The current immutable GameState.
@@ -172,15 +213,20 @@ export function drawCell(
  */
 export function syncDisplayLayout(display: ROT.Display, state: GameState): void {
   const theme = state.campaign.theme;
-  const baseCols = theme.ui.displayWidth;
-  const baseRows = theme.ui.displayHeight;
   const baseFontSize = theme.ui.fontSize;
   const fontFamily = theme.ui.fontFamily;
-
-  const activeFontSize = Math.round(baseFontSize * state.zoomLevel);
-
   const spriteConfig = theme.spriteSheets;
   const isSpriteMode = isEffectiveSpriteMode(state.campaign);
+
+  const viewportBounds = resolveViewportPixelBounds();
+  const targetTilePercent = DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT * state.zoomLevel;
+  const referenceSpanPx = viewportBounds ? Math.min(viewportBounds.width, viewportBounds.height) : undefined;
+  const targetTileSpanPx = referenceSpanPx !== undefined ? Math.max(1, referenceSpanPx * targetTilePercent) : undefined;
+
+  const activeFontSize =
+    targetTileSpanPx !== undefined
+      ? Math.max(MIN_ASCII_FONT_SIZE_PX, Math.round(targetTileSpanPx))
+      : Math.max(MIN_ASCII_FONT_SIZE_PX, Math.round(baseFontSize * state.zoomLevel));
 
   if (!isSpriteMode) {
     display.setOptions({
@@ -203,30 +249,46 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
       cellHeight = firstConfig.tileHeight;
     }
   } else if (isSpriteMode) {
-    cellWidth = 32;
-    cellHeight = 32;
+    cellWidth = DEFAULT_PROCEDURAL_TILE_PX;
+    cellHeight = DEFAULT_PROCEDURAL_TILE_PX;
   } else {
     cellWidth = activeFontSize;
     cellHeight = activeFontSize;
   }
 
-  const baseColsAtZoom = Math.max(1, Math.round(baseCols / state.zoomLevel));
-  const baseRowsAtZoom = Math.max(1, Math.round(baseRows / state.zoomLevel));
+  const safeCellW = Math.max(1, cellWidth);
+  const safeCellH = Math.max(1, cellHeight);
 
-  const targetRatio = GAME_ASPECT_RATIO * (cellHeight / cellWidth);
-  const currentRatio = baseColsAtZoom / baseRowsAtZoom;
+  let finalCols: number;
+  let finalRows: number;
 
-  let finalCols = baseColsAtZoom;
-  let finalRows = baseRowsAtZoom;
-
-  if (currentRatio < targetRatio) {
-    finalCols = Math.max(1, Math.round(baseRowsAtZoom * targetRatio));
-  } else if (currentRatio > targetRatio) {
-    finalRows = Math.max(1, Math.round(baseColsAtZoom / targetRatio));
+  if (viewportBounds !== undefined && targetTileSpanPx !== undefined) {
+    if (!isSpriteMode) {
+      finalCols = Math.max(1, Math.round(viewportBounds.width / safeCellW));
+      finalRows = Math.max(1, Math.round(viewportBounds.height / safeCellH));
+    } else {
+      const tileAspectRatio = safeCellW / safeCellH;
+      finalRows = Math.max(1, Math.round(viewportBounds.height / targetTileSpanPx));
+      finalCols = Math.max(1, Math.round(viewportBounds.width / (targetTileSpanPx * tileAspectRatio)));
+    }
+  } else {
+    const targetRatio = GAME_ASPECT_RATIO * (safeCellH / safeCellW);
+    finalRows = Math.max(1, Math.round(1 / targetTilePercent));
+    finalCols = Math.max(1, Math.round(finalRows * targetRatio));
   }
 
   display.setOptions({
     width: finalCols,
     height: finalRows
   });
+
+  const canvas =
+    typeof display.getContainer === 'function' ? (display.getContainer() as HTMLCanvasElement | null) : null;
+  if (canvas && viewportBounds !== undefined) {
+    const intrinsicW = Math.max(1, finalCols * safeCellW);
+    const intrinsicH = Math.max(1, finalRows * safeCellH);
+    const scale = Math.min(viewportBounds.width / intrinsicW, viewportBounds.height / intrinsicH);
+    canvas.style.width = `${Math.max(1, Math.round(intrinsicW * scale))}px`;
+    canvas.style.height = `${Math.max(1, Math.round(intrinsicH * scale))}px`;
+  }
 }

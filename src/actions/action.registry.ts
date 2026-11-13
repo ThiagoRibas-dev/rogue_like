@@ -3,6 +3,7 @@ import type { Intent } from '../types/intents/intent.union.ts';
 import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
 import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
+import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from '../constants/display.constants.ts';
 import { assertNever } from '../utils/assert.ts';
 import { closeTopModal, getCurrentModal, openModal, toggleModal } from '../core/modal_manager.ts';
 import { switchEngineMode } from '../core/scheduler.ts';
@@ -159,7 +160,9 @@ export function dispatchAction(
       };
 
     case IntentType.SetZoomLevel: {
-      const nextZoom = Math.max(0.5, Math.min(3.0, state.zoomLevel + intent.zoomDelta));
+      const ZOOM_ROUNDING_FACTOR = 100;
+      const clampedZoom = Math.max(MIN_ZOOM_LEVEL, Math.min(MAX_ZOOM_LEVEL, state.zoomLevel + intent.zoomDelta));
+      const nextZoom = Math.round(clampedZoom * ZOOM_ROUNDING_FACTOR) / ZOOM_ROUNDING_FACTOR;
       return {
         state: { ...state, zoomLevel: nextZoom },
         success: false
