@@ -1,5 +1,5 @@
 /**
- * @file D&D 3.5e Standardized Tabbed Character Sheet Modal.
+ * @file D&D 3.5e Standardized Tabbed Character Sheet Modal (Milestone 134).
  * Orchestrates:
  * - Tab Header Bar: [ Character ] | [ Progression & Features ] | [ Companions (N) ]
  * - Tab 1: Character (3 Equal-Width Columns — 1fr : 1fr : 1fr)
