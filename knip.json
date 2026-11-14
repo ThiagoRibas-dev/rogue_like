@@ -15,9 +15,6 @@
     "src/rendering/ui/loading_overlay.ui.ts",
     "src/rendering/ui/trade.ui.ts",
     "src/rendering/ui/where_used.ui.ts",
-    "src/systems/procedural-quest.system.ts",
-    "src/systems/shop.system.ts",
-    "src/types/fuzzer.types.ts",
     "src/types/generation.types.ts",
     "src/utils/trade.ts"
   ],
