@@ -301,25 +301,55 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_quickcast.ui.ts."
     ]
   },
-  "src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts": {
+  "src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders Feats, Special Abilities & Domains, Progression Tracks, and Conditions tabs for the Character Sheet.",
+    "responsibility": "Renders Attacks & Weapons routine, Combat Maneuvers, Abilities & Pools, and Tactical Stances for Tab 1 Column 2 of the Character Sheet.",
     "canonicalEntryPoints": [
-      "renderSheetFeatsAndFeaturesTab"
+      "renderSheetAttacksTab"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Companions, Familiars, Cohorts & Summons roster table for Tab 3 of the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetCompanionsTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders Reactive Paper Doll and uniform 5-column Backpack Stash grid for Tab 1 Column 3 of the Character Sheet.",
+    "canonicalEntryPoints": [
+      "renderSheetEquipmentTab"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders Ability Scores, AC Breakdown, Saving Throws, and Full Attack Routine preview for the Character Sheet.",
+    "responsibility": "Renders Identity, Vitals, Defenses & Saves, Active Conditions, Ability Scores, and Skills for Tab 1 Column 1 of the Character Sheet.",
     "canonicalEntryPoints": [
       "renderSheetOverviewTab"
     ],
@@ -331,27 +361,28 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts."
     ]
   },
-  "src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts": {
+  "src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Renders the Character Sheet Skills table with ranks, modifiers, and interactive Use Skill buttons.",
+    "responsibility": "Renders Feats & Traits on the left and Level Progression ledger table on the right for Tab 2 of the Character Sheet.",
     "canonicalEntryPoints": [
-      "renderSheetSkillsTab"
+      "renderSheetProgressionTab"
     ],
     "ownershipBoundary": {
-      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts.",
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts.",
       "excludes": "External state mutation or unrelated subsystem logic."
     },
     "antiPatterns": [
-      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts."
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_sheet.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "7-tab Heroic Character Sheet modal orchestrating Overview, Progression, Equipment Paper Doll, Skills, Feats, Special Abilities, and Conditions.",
+    "responsibility": "Standardized 3-tab Heroic Character Sheet modal orchestrating Character (3 equal columns), Progression & Features, and Companions & Summons.",
     "canonicalEntryPoints": [
-      "renderDnD35eSheetModal"
+      "renderDnD35eSheetModal",
+      "SheetTabId"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_sheet.ui.ts.",

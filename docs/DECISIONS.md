@@ -506,3 +506,22 @@ This document records architectural decisions whose rationale is **non-obvious o
   - `huntBehavior` checks `canActorPerformIntent(MeleeAttack) || hasActorMovementInProgress(state, entityId)` before stepping toward targets at `distance > 1`, while `wanderBehavior` aborts when `hasActorActedThisTurn` is true.
   - *Rationale*: Checking `hasActorActedThisTurn` alone in `huntBehavior` cannot distinguish a ranged archer/caster who spent its Standard action (`movementRemainingFt === 0`, `hasActedThisRound === true` — who must hold position) from a melee hunter/zombie mid-way through a started Move or Double Move (`movementRemainingFt >= 5` — who must keep stepping into melee). Separating `hasActorMovementInProgress` solves both cases cleanly across all rulesets.
 
+---
+
+### Standardized 3-Tab Character Sheet, Direct Terminology & Reactive Inventory Integration (Milestone 134)
+
+- **Decision 1: Direct Terminology & Balanced 3-Column Layout (`1fr : 1fr : 1fr`) on Tab 1**:
+  - Replaced fragmented, verbose headers (such as "Pen and Paper Skills" or "Tactical Overview") with standardized, direct labels: `SKILLS`, `ATTACKS & MANEUVERS`, `PAPERDOLL & EQUIPMENT`, `ACTIVE ABILITIES & POOLS`, and `LEVEL PROGRESSION`.
+  - Set Tab 1 (`Character`) to 3 equal-width columns (`repeat(3, minmax(0, 1fr))`) to accommodate Identity/Vitals/Defenses/Conditions/Skills in Column 1, Attacks/Maneuvers/Abilities/Stances in Column 2, and Paper Doll/Equipment/Backpack in Column 3 without vertical cramping or horizontal scrollbars.
+  - *Rationale*: D&D 3.5e character state is dense; previously, players had to flip between separate tabs to inspect skills, equipment, or active traits. Consolidating the core adventuring snapshot onto a single screen provides instant situational awareness during exploration and combat.
+
+- **Decision 2: Seamless Tier 1 Console Widget Embedding Without Cartridge Leakage (Rule 16)**:
+  - Tab 1 Column 3 directly embeds the Tier 1 `console_inventory.ui.ts` widget (Paper Doll + Backpack grid + sort/filter toolbar + inspect card).
+  - The Cartridge adapter constructs a generic `UIInventoryModel` and attaches standard `ConsoleInventoryCallbacks` (`onEquipItem`, `onUnequipItem`, `onUseItem`, `onHoverItem`, `onSelectWeaponSet`).
+  - *Rationale*: Violating Rule 16 by duplicating paper doll or backpack logic inside the Cartridge would create split-brain inventory bugs and maintenance drift. Reusing the Console widget preserves clean architectural boundaries while ensuring full feature parity (12 slots, 4 weapon sets, sorting, filtering, hover inspection).
+
+- **Decision 3: Dismiss Modal Before Dispatching Active Ability Intents (`closeCartridgeModal` + `UseAbility`)**:
+  - When clicking `[Use]` on an active ability in Column 2 (e.g. *Turn Undead*, *Smite Evil*), the UI immediately closes the cartridge modal using `closeCartridgeModal(liveState)` before dispatching `queueIntent({ type: IntentType.UseAbility, ... })`.
+  - *Rationale*: Targeted abilities require map interaction (such as reticle aiming or spatial targeting overlay). If the full-screen modal remained open, the player would not see the targeting reticle or map changes. Closing the modal synchronously clears the overlay and puts the player immediately into targeting mode.
+
+

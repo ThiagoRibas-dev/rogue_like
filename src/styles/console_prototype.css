@@ -177,11 +177,11 @@
   min-height: 0;
 }
 
-/* --- 3-Column Master Dossier Grid --- */
+/* --- 3-Column Master Dossier Grid (1fr : 1fr : 1fr) --- */
 .crpg-three-col-grid {
   display: grid;
-  grid-template-columns: 300px 435px 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
   align-items: stretch;
   flex: 1;
   min-height: 0;
@@ -1626,4 +1626,370 @@
   font-family: var(--crpg-font-header);
   color: var(--crpg-gold);
   margin-bottom: 6px;
+}
+
+/* =========================================================================
+   Standardized 3-Tab Character Sheet & Tactical Overhaul Styles
+   ========================================================================= */
+
+.crpg-sheet-tab-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--crpg-border-inner);
+  padding-bottom: 6px;
+}
+
+.crpg-sheet-tab-btn {
+  font-family: var(--crpg-font-header);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--crpg-text-dim);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease-in-out;
+}
+
+.crpg-sheet-tab-btn:hover {
+  color: var(--crpg-text-header);
+  background: var(--crpg-bg-subpanel);
+}
+
+.crpg-sheet-tab-btn.active {
+  background: var(--crpg-bg-subpanel);
+  color: var(--crpg-gold);
+  border: 1px solid var(--crpg-border-gold);
+  box-shadow: 0 0 6px rgba(212, 175, 55, 0.25);
+}
+
+/* Identity Subline & Vitals Grid */
+.crpg-identity-subline {
+  font-family: var(--crpg-font-mono);
+  font-size: 0.72rem;
+  color: var(--crpg-text-dim);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.crpg-vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.crpg-vital-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  font-family: var(--crpg-font-mono);
+  font-size: 0.72rem;
+}
+
+.crpg-vital-label {
+  color: var(--crpg-text-dim);
+  font-weight: 700;
+}
+
+.crpg-vital-val {
+  color: var(--crpg-text-header);
+  font-weight: 600;
+}
+
+/* Active Conditions Strip */
+.crpg-conditions-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0 6px 0;
+  min-height: 24px;
+  align-items: center;
+}
+
+.crpg-condition-chip {
+  font-family: var(--crpg-font-mono);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+.crpg-condition-chip.normal {
+  background: rgba(166, 227, 161, 0.12);
+  color: #a6e3a1;
+  border: 1px solid rgba(166, 227, 161, 0.35);
+}
+
+.crpg-condition-chip.debuff {
+  background: rgba(243, 139, 168, 0.15);
+  color: #f38ba8;
+  border: 1px solid rgba(243, 139, 168, 0.4);
+  cursor: help;
+}
+
+.crpg-condition-chip.buff {
+  background: rgba(137, 180, 250, 0.15);
+  color: #89b4fa;
+  border: 1px solid rgba(137, 180, 250, 0.4);
+  cursor: help;
+}
+
+/* Ability Scores 2-Column Grid */
+.crpg-attr-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.crpg-attr-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  font-family: var(--crpg-font-mono);
+  font-size: 0.72rem;
+}
+
+.crpg-attr-label {
+  color: var(--crpg-text-dim);
+  font-weight: 700;
+}
+
+.crpg-attr-score {
+  font-weight: 700;
+  color: var(--crpg-text-header);
+}
+
+.crpg-attr-mod {
+  color: var(--crpg-gold);
+}
+
+/* Skills Header Bar & Scroll Wrapper */
+.crpg-skills-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.crpg-filter-toggle-btn {
+  font-family: var(--crpg-font-mono);
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  color: var(--crpg-text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.crpg-filter-toggle-btn:hover {
+  color: var(--crpg-gold);
+  border-color: var(--crpg-border-gold);
+}
+
+.crpg-skills-wrap-scroll {
+  max-height: 175px;
+  overflow-y: auto;
+  border: 1px solid var(--crpg-border-inner);
+  margin-top: 2px;
+}
+
+/* Maneuvers Table */
+.crpg-maneuver-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.crpg-maneuver-row {
+  display: flex;
+  align-items: center;
+  padding: 2px 6px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  font-family: var(--crpg-font-mono);
+  font-size: 0.72rem;
+}
+
+.crpg-maneuver-name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--crpg-text-main);
+}
+
+.crpg-maneuver-mod {
+  font-weight: 700;
+  color: var(--crpg-gold);
+  width: 36px;
+  text-align: right;
+}
+
+.crpg-maneuver-note {
+  font-size: 0.65rem;
+  color: var(--crpg-text-dim);
+  margin-left: 8px;
+}
+
+/* Abilities & Pools List */
+.crpg-pool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 6px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.crpg-pool-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 6px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  font-family: var(--crpg-font-mono);
+  font-size: 0.72rem;
+  gap: 6px;
+}
+
+.crpg-pool-label {
+  flex: 1;
+  font-weight: 600;
+  color: var(--crpg-text-main);
+  text-transform: capitalize;
+}
+
+.crpg-pool-count {
+  color: var(--crpg-gold);
+  font-weight: 700;
+}
+
+.crpg-pool-use-btn {
+  font-family: var(--crpg-font-header);
+  font-size: 0.68rem;
+  padding: 2px 8px;
+  background: var(--crpg-bg-panel);
+  border: 1px solid var(--crpg-border-gold);
+  color: var(--crpg-gold);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.crpg-pool-use-btn:hover:not(:disabled) {
+  background: var(--crpg-border-gold);
+  color: var(--crpg-bg-main);
+}
+
+.crpg-pool-use-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--crpg-border-inner);
+  color: var(--crpg-text-dim);
+}
+
+/* Stances Grid */
+.crpg-stance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.crpg-stance-btn {
+  font-family: var(--crpg-font-mono);
+  font-size: 0.65rem;
+  padding: 4px 2px;
+  background: var(--crpg-bg-subpanel);
+  border: 1px solid var(--crpg-border-inner);
+  color: var(--crpg-text-dim);
+  cursor: pointer;
+  border-radius: 2px;
+  text-align: center;
+}
+
+.crpg-stance-btn.active {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--crpg-gold);
+  border-color: var(--crpg-border-gold);
+  font-weight: 700;
+}
+
+/* Progression Tab 2-Column Grid */
+.crpg-two-col-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Companions Tab */
+.crpg-companions-tab-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  background: var(--crpg-bg-panel);
+  border: 1px solid var(--crpg-border-outer);
+  box-shadow: inset 0 0 0 1px var(--crpg-border-inner);
+  padding: 10px;
+}
+
+.crpg-companions-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.crpg-companions-table td {
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
+.crpg-companion-name-cell strong {
+  color: var(--crpg-gold);
+  font-family: var(--crpg-font-header);
+}
+
+.crpg-stance-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 2px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.crpg-stance-badge.aggressive {
+  background: rgba(243, 139, 168, 0.2);
+  color: #f38ba8;
+}
+
+.crpg-stance-badge.defensive {
+  background: rgba(137, 180, 250, 0.2);
+  color: #89b4fa;
+}
+
+.crpg-stance-badge.passive,
+.crpg-stance-badge.hold {
+  background: rgba(249, 226, 175, 0.2);
+  color: #f9e2af;
+}
+
+.crpg-companions-empty {
+  padding: 32px 16px;
+  text-align: center;
+  font-style: italic;
 }

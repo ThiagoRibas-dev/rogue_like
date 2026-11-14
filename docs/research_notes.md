@@ -1,141 +1,141 @@
-# Research Notes — Phase 33 Post-Implementation Audit & 3 Gameplay/UI Bug Investigations
+# Research Notes — Standardized Tabbed Character Sheet & Tactical Dossier Overhaul
 
-## 1. Executive Summary & Audit of Phase 33 / Milestone 133
+## 1. Executive Summary & Design Alignment
 
-### 1.1 Phase 33 / Milestone 133 Implementation Audit
-We audited all files touched in Phase 33 (**Entity-Agnostic Console Turn Model, Cartridge Action Economy & Per-Entity Action Budgets**):
-- **Tier 1 Console Agnosticism (`src/types/ruleset.types.ts`, `src/systems/lifecycle.system.ts`, `src/actions/action.registry.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/core/game-loop.ts`, `src/core/scheduler.ts`)**:
-  - Zero `if (isPlayer)` action-economy or turn-continuation branches remain in Console turn orchestration.
-  - All entities (Player, hostile monsters, companions, and summons) pass through the identical 5-hook cartridge lifecycle (`onActorTurnStart` → `resolveActionCost` → `onPostActionBudget` → `canContinueTurn` → `onActorTurnEnd`).
-  - `verify.sh` passes all 8 stages (`237/237` tests in `bun test`, `0` TypeScript errors, `0` architectural lint errors, `0` deadcode errors, `0` validator/SSOT parity errors).
-- **Audit Finding — 2 Advisory ESLint `max-lines` Warnings**:
-  - `lint_applet` reported 0 errors and 2 advisory `max-lines` warnings (>300 lines of code):
-    1. `src/rulesets/dnd35e/action_economy.ts` (313 lines vs. 300 max)
-    2. `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (408 lines vs. 300 max)
-  - **Remediation Plan**: Extract the per-entity turn-budget lifecycle helpers from `dnd35e_lifecycle_adapter.ts` and `action_economy.ts` into a dedicated helper module (`src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`) so every file sits well below 300 lines with 0 ESLint warnings.
-
----
-
-## 2. Bug 1 Investigation: "Turn Undead is a stance."
-
-### 2.1 Root Cause Analysis
-1. **Unconditional Projection of `ResourcePoolComponent` into `stanceModes` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` lines 92–101)**:
-   In `buildActorStanceModes`:
-   ```ts
-   if (resourcePools) {
-     for (const [id, entry] of Object.entries(resourcePools.pools)) {
-       if (entry.max <= 0) continue;
-       modes.push({
-         id: `pool:${id}`,
-         label: `${entry.label ?? id.replace(/_/g, ' ')} (${entry.current}/${entry.max})`,
-         isActive: entry.current > 0
-       });
-     }
-   }
-   ```
-   Every entry in an actor's `ResourcePoolComponent` (`turn_undead`, `rage`, `smite_evil`, `lay_on_hands`, `domain_greater_turning`, `domain_destruction_smite`, `domain_turn_air`, `domain_protective_ward`, etc.) is unconditionally pushed into `stanceModes` (the **Stances & Combat Modes** strip above the hotbar) with `isActive: entry.current > 0`.
-2. **Broken Click Handler (`src/rulesets/dnd35e/ui/dnd35e_ui_registration.ts` line 200)**:
-   When the player clicks `◉ Turn or Rebuke Undead (5/5)` in the Stances bar, `onToggleStance` sees `stanceId.includes(':')` (`'pool:turn_undead'`) and calls `toggleConsoleStanceGroup(docComp, 'pool', 'turn_undead', false)` — treating `pool` as a radio-button stance group in `TacticalDoctrineComponent.activeStances` without expending a charge from `ResourcePoolComponent`, without spending a Standard Action, and without resolving Turn Undead.
-3. **Missing Hotbar Projection & Execution for Activated Class/Domain Abilities**:
-   `buildActorHotbarSlots` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` lines 139–260) currently populates hotbar slots from:
-   1. Equipped Weapons (`kind: 'weapon'`)
-   2. Prepared / Spontaneous Spells (`kind: 'spell'`)
-   3. Active Skills (`kind: 'skill'`)
-   4. Consumables (`kind: 'item'`)
-   Even though `UIHotbarSlot['actionPayload']` (`src/types/ui_adapter.types.ts` line 199) already defines `kind: 'ability'`, `buildActorHotbarSlots` never projects `ResourcePoolComponent` abilities into hotbar slots, and `onExecuteHotbarSlot` (`dnd35e_ui_registration.ts` line 229) has no branch for `payload.kind === 'ability'`.
-
-### 2.2 Architectural Classification (`AGENTS.md` Rule 19 & Rule 21)
-- **Layer C (`ResourcePoolComponent`) + Layer D (Domain Resolver)**:
-  - Turn/Rebuke Undead (`poolId: 'turn_undead'`) and other daily-use class/domain pools (`lay_on_hands`, `smite_evil`, `rage`, `domain_*`) are **activated abilities** with daily charges (`current / max`), **not** persistent modal stances like *Power Attack*, *Combat Expertise*, *Fighting Defensively*, or *Total Defense*.
-  - `buildActorStanceModes` must only project true toggleable combat stances/modes.
-  - `buildActorHotbarSlots` should project `ResourcePoolComponent` entries as `kind: 'ability'` hotbar slots showing remaining charges (`entry.current / entry.max`), and `onExecuteHotbarSlot` should execute them (expending 1 charge via `consumeResourcePool`, consuming the appropriate action cost from `actionBudget`, and resolving the ability—including a D&D 3.5e 60-ft burst Turn/Rebuke Undead resolver against undead actors in line of effect).
-  - Additionally, `executeSpellbookRest` (`src/rendering/ui/dnd35e_spellbook_actions.ts`) should invoke `refreshResourcePools(state, playerId, 'rest_8h')` so daily pools (`turn_undead`, `rage`, `lay_on_hands`, etc.) recharge on an 8-hour rest.
+### 1.1 Objective
+Standardize and overhaul the D&D 3.5e Character Sheet modal (`#dnd35e-sheet-overlay`) into a clean, 3-tab responsive CRPG dossier:
+1. **Tab 1: Character (3 Equal-Width Columns — `1fr : 1fr : 1fr`)**:
+   - **Column 1 (`crpg-sheet-col-identity-skills`)**: Adventurer Identity & Level, Vitals Meters (HP/XP/Init/Speed), Defenses & Saves (AC, Flat-footed, Touch, Fort, Ref, Will, BAB, Grapple), **Active Conditions Strip** (interactive condition badges with mechanical breakdown tooltips, collapsing to `[ Normal ]` when healthy), 6 Ability Scores (Score + Mod), and **Skills** (filter for All vs. Trained, class-skill markers, total bonuses, and ranks).
+   - **Column 2 (`crpg-sheet-col-attacks-abilities`)**: Attacks & Weapons (Full-Attack and natural attack routines with damage/crit profiles), Maneuvers (Trip, Disarm, Sunder, Bull Rush, Grapple modifiers and provoke tags), Abilities & Pools (Turn Undead, Smite Evil, Rage, Domain powers with remaining charges and `[Use]` buttons that close the sheet and enter targeting/action mode), and Tactical Stances (Power Attack, Fighting Defensively).
+   - **Column 3 (`crpg-sheet-col-equipment-backpack`)**: Equipment Paper Doll (12 anatomical slots, 4 quick weapon sets), Backpack (uniform 5-column dynamic scrollable grid with high-contrast `[a-z]` hotkey badges, load telemetry, gold display, category tabs, sorting dropdown, and full inspection cards).
+2. **Tab 2: Progression & Features**:
+   - **Column 1 (`crpg-sheet-col-feats-traits`)**: Feats list (with categories and badges) + Class, Domain & Racial Traits.
+   - **Column 2 (`crpg-sheet-col-level-matrix`)**: Level Progression (Horizon 1 ledger table: Level, Class/Racial HD, HP gained, Skill points allocated, Feats and features chosen).
+3. **Tab 3: Companions & Summons**:
+   - Active companions, familiars, cohorts, and summons table queried via `getPlayerCompanions(state, playerId)`: Name, Creature Type/HD, HP Meter, Tactical Stance (`aggressive`, `defensive`, `passive`, `hold`), Spatial Status (Following, distance), and a clean empty state when no companions are summoned.
+4. **Direct Terminology**:
+   - Strip all verbose, academic, or "Pen and Paper" language: `"Pen & Paper Skills"` → **`SKILLS`**, `"Combat Maneuvers"` → **`MANEUVERS`**, `"Paperdoll & Equipment"` → **`EQUIPMENT`**, `"Full-Attack & Natural Weapon Routine"` → **`ATTACKS`**, `"Level-by-Level Advancement Matrix (Horizon 1)"` → **`LEVEL PROGRESSION`**.
 
 ---
 
-## 3. Bug 2 Investigation: "Can only memorize spells from one of two domains in the domain spell slot."
+## 2. Architectural Standards & Golden Rules Verification
 
-### 3.1 Root Cause Analysis
-1. **Asymmetric Representation of Domain Spells in System JSON (`domains/*.json` vs. `spells/*.json`)**:
-   - Every domain definition in `public/data/rulesets/dnd35e/domains/<domainId>.json` defines its complete 1st–9th level spell list in `domainSpells: Record<string, string>` (e.g., `protection.json` has `"1": "sanctuary"`, `"2": "shield_other"`, `"3": "protection_from_energy"`).
-   - However, in `public/data/rulesets/dnd35e/spells/<spellId>.json`, almost all spell files have an **empty** `"levelByDomain": {}` object! Only ~10 spells across the entire registry (such as `cure_light_wounds`, `cure_serious_wounds`, `burning_hands`, `spiritual_weapon`, `produce_flame`, `enlarge_person`, `inflict_moderate_wounds`, `desecrate`) populate `levelByDomain`.
-2. **Split-Brain Domain Lookup in UI & Progression vs. Slot Validator**:
-   - `src/rulesets/dnd35e/magic/spellbook_slots.ts` (`resolveSpellLevelForClass`, lines 242–255) checks **both** `spDef.levelByDomain?.[domId]` **and** `sys?.domains?.[domId]?.domainSpells?.[String(spellLevel)] === spellId`.
-   - **By contrast, three upstream modules only check `spell.levelByDomain[domId]` and ignore `sys.domains[domId].domainSpells`**:
-     1. **`src/rendering/ui/dnd35e_spellbook_known.ui.ts` (lines 54–60 & line 118)**:
-        - Line 54: When collecting `spellsAtLevel` for `sum.spellLevel`, if a domain spell is not on the Cleric class list at `sum.spellLevel` (or is an arcane spell granted by a domain like *Magic Aura*, *Identify*, *Fly*, *Fireball*, *Stoneskin*), it checks `if (sp.levelByDomain[domId] === sum.spellLevel)`. Because `sp.levelByDomain` is `{}` for most spells, non-Cleric domain spells don't even appear in the right pane!
-        - Line 52: Furthermore, if a spell IS on the Cleric spell list at a *different* level than its domain level, `if (clsLvl === sum.spellLevel)` is an `if / else if` that short-circuits before checking whether the spell is also a domain spell at `sum.spellLevel`.
-        - **Line 118 (The Direct Cause of the Bug)**:
-          ```ts
-          const isDomainSpell = dndData.domains?.some((domId: string) => sp.levelByDomain?.[domId] === sum.spellLevel);
-          ```
-          Because `sp.levelByDomain` is `{}` for almost all spells outside the `healing` / `fire` domains, `isDomainSpell` evaluates to `false` for the Cleric's other domain! When `isDomainSpell` is `false`:
-          - The `[+ Dom]` button is never rendered (line 137: `if (hasOpenDomain && isDomainSpell)`).
-          - Clicking the spell row when only the `+1 Domain` slot is open refuses to prepare the spell into the `'domain'` slot (`const targetKind = hasOpenStandard ? 'standard' : hasOpenDomain && isDomainSpell ? 'domain' : null;`).
-     2. **`src/rulesets/dnd35e/progression/ledger_features_spells.ts` (lines 154–160)**:
-        `buildActorSpellbooksByClass` only checks `spell.levelByDomain[domId]` when adding domain spells to a Cleric's `knownSpellIds`.
-     3. **`src/rulesets/dnd35e/builder/builder_spell_eligibility.ts` (lines 60–65)**:
-        `resolveSpellLevelForClass` only checks `spell.levelByDomain[domId]` without checking `sysContent.domains[domId]?.domainSpells`.
-
-### 3.2 Canonical Fix
-- Extract a single canonical helper in `src/rulesets/dnd35e/magic/spellbook_slots.ts` (or `builder_spell_eligibility.ts`):
-  - `isActorDomainSpellAtLevel(spellId: string, spellDef: DnD35SpellDefinition | undefined, spellLevel: number, actorDomains: ReadonlyArray<string>, domainRegistry: Readonly<Record<string, DnD35DomainDefinition>> | undefined): boolean`
-  - Returns `true` if for any `domId` in `actorDomains`, either `spellDef?.levelByDomain?.[domId] === spellLevel` OR `domainRegistry?.[domId]?.domainSpells?.[String(spellLevel)] === spellId`.
-- Replace all ad-hoc `sp.levelByDomain?.[domId]` checks in `dnd35e_spellbook_known.ui.ts`, `ledger_features_spells.ts`, and `builder_spell_eligibility.ts` with this canonical helper so both selected Cleric domains can always be prepared into the `+1 Domain` slot.
+- **ECS Purity (Rule 4, 16):** The Character Sheet UI remains a pure projection of the ECS state and ruleset DAG evaluation (`evaluateDnD35eEntityDAG`, `getDnD35EntityData`, `getPlayerCompanions`). It stores no duplicate gameplay state inside DOM elements.
+- **Rule 11 (Zero `any`):** All new interfaces, helper return types, and tab descriptor unions (`SheetTabId = 'character' | 'progression' | 'companions'`) use strict typing with zero `any`.
+- **Rule 12 (Zero Magic Numbers):** Stash dimensions (`STASH_GRID_COLS = 5`), tab definitions, and slot identifiers use named constants.
+- **Rule 15 (Cascading Effects Across 3 Axes):** All upstream callers (modal opening keys `[C]` / `[I]`, bottom dock button), downstream consumers (tab renders, attack ledgers, inspect cards, tooltips), and lateral mirrors (CSS classes, SSOT registries) are audited in Section 5.
+- **Rule 21 (Zero Content-ID Branching):** Condition badges, pool abilities, and feats are rendered generically through their data definitions (`dndData.conditions`, `ResourcePoolComponent`, `systemContent.feats`), with zero hardcoded `if (featId === '...')` or `if (condition === '...')` special-casing in presentation logic.
 
 ---
 
-## 4. Bug 3 Investigation: Inventory UI Alignment, Fixed Slot Limit, Unreadable Hotkeys & Deforming Columns
+## 3. Component & Module Breakdown
 
-### 4.1 Root Cause Analysis Across All 4 Reported Symptoms
-1. **Symptom A: "The visible slots don't seem to align with the actual inventory slots."**
-   - **In `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts` (`getInventoryData`, lines 86–94) & `src/rendering/ui/console_inventory.ui.ts` (`renderCompactStashWidget`, lines 245–260)**:
-     - `getInventoryData` pushes **all** `inventory.items` (including **equipped** items that are already displayed in the Paper Doll slots) into `stashItems`.
-     - `renderCompactStashWidget` defaults `activeSort` to `'price_desc'` (sorting items by gold value descending: `b.priceGp - a.priceGp`) instead of inventory slot index (`inventoryIndex`). Thus, cell 0 in the grid is the most expensive item, NOT `inventory.items[0]` (`[a]`).
-   - **In `src/rendering/ui/inventory.ui.ts` (`renderInventoryPanel`, line 84)**:
-     - Inside `for (let index = 0; index < maxSlots; index++)`, line 84 executes `if (isEquipped) continue;` **before** creating the `.inv-grid-slot` element. Every equipped item causes the loop to skip rendering a grid cell altogether, shrinking the total number of rendered squares and shifting the visible cells so the top-left square starts at `c` or `d` instead of `a`!
-   - **In `src/core/input/modal_input.ts` (line 103)**:
-     - Pressing `[I]` opens `UIMode.Inventory` (which calls `handleInventoryKey`), whereas clicking `"Pack (I)"` in the Command Dock or pressing `[C]` opens `UIMode.CartridgeModal` (`activeCartridgeModalId = 'inventory'` or `'character_sheet'`), which does **not** forward `a–z` / `Shift+a–z` keys to `handleInventoryKey`.
-2. **Symptom B: "The number of slots seems limited to a fixed number."**
-   - `console_inventory.ui.ts` hardcodes `COMPACT_STASH_COLS = 10` and `COMPACT_STASH_MIN_CELLS = 40` (4 rows of 10 tiny cells) with no scroll container.
-   - `inventory.ui.ts` hardcodes `const maxSlots = Math.max(20, inventory.capacity);` and loses 1 visible slot per equipped item due to `if (isEquipped) continue;`.
-3. **Symptom C: "I can't see the keys one presses to use the buttons since the inventory squares are so small."**
-   - In `console_inventory.ui.ts`, cramming 10 columns (`COMPACT_STASH_COLS = 10`) into Column 3 of the Character Sheet makes each cell ~28–34px wide (`min-height: 34px; max-height: 40px`, `.crpg-cell-name { font-size: 0.45rem }`).
-   - Furthermore, even though `mapEntityItemToUI` (`src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts` line 84) computes `hotkeyLabel` (`'a'`, `'b'`, `'c'`...), `renderCompactStashWidget` (`console_inventory.ui.ts` lines 279–291) **never renders `item.hotkeyLabel` inside `.crpg-stash-cell`**!
-4. **Symptom D: "The columns deform depending on the items instead of being uniform. We can have a 5 x (dynamic max) grid with a scroll bar if necessary."**
-   - In `src/styles/console_prototype.css` line 925:
-     ```css
-     .crpg-stash-matrix-compact {
-       display: grid;
-       grid-template-columns: repeat(10, 1fr);
-     ```
-     In CSS Grid, `1fr` is equivalent to `minmax(auto, 1fr)`. Because `.crpg-stash-cell` lacks `min-width: 0; overflow: hidden;` and contains `<span class="crpg-cell-name">`, any column with an item expands its `auto` minimum width to the text's intrinsic width while empty columns collapse—causing columns to deform unevenly!
+### 3.1 Tab Bar & Shell Orchestration (`src/rendering/ui/dnd35e_sheet.ui.ts`)
+- Maintain a local reactive state variable `let currentActiveTab: SheetTabId = 'character';`.
+- When rendering `shell`, prepend a standardized CRPG tab header:
+  - `[ ⚔ Character ]`
+  - `[ 📜 Progression & Features ]`
+  - `[ 🐾 Companions (N) ]` (dynamic count indicator)
+- Clicking a tab updates `currentActiveTab` and re-renders the active tab content within the shell without rebuilding the entire modal overlay.
 
-### 4.2 Proposed Architecture: Uniform 5 × Dynamic Scrollable Backpack Grid
-1. **5 × (Dynamic Max) Grid with Vertical Scrollbar**:
-   - Change `COMPACT_STASH_COLS` from `10` to `5` (`const STASH_GRID_COLS = 5; const STASH_MIN_ROWS = 4; // 20 minimum visible slots`).
-   - Compute dynamic cell count as a clean multiple of 5 rows that always includes at least 1 extra empty row below the last item:
-     `const totalRows = Math.max(STASH_MIN_ROWS, Math.ceil((displayedItems.length + 1) / STASH_GRID_COLS));`
-     `const cellTotal = totalRows * STASH_GRID_COLS;`
-   - In `src/styles/console_prototype.css` (and `src/styles/inventory.css`):
-     - Set `grid-template-columns: repeat(5, minmax(0, 1fr));` on `.crpg-stash-matrix-compact` and `.inventory-grid`.
-     - Add `max-height: 290px; overflow-y: auto; overflow-x: hidden;` on the grid container so it scrolls vertically as rows grow dynamically.
-     - Set `min-width: 0; overflow: hidden; height: 56px;` on `.crpg-stash-cell` so all 5 columns are strictly uniform (`minmax(0, 1fr)`) and never deform regardless of item names.
-2. **1-to-1 Inventory Slot Alignment & Default Slot Order**:
-   - Add `'slot_asc'` (`"Slot [a–z]"`) as the **default** sort option (`activeSort = 'slot_asc'`) in `console_inventory.ui.ts` so visible slots align directly with `inventoryIndex` (`[a]`, `[b]`, `[c]`...).
-   - Filter equipped items out of the unequipped Backpack grid in `getInventoryData` (or separate equipped items into the Paper Doll while keeping backpack slots strictly aligned with `inventory.items` indices), and in `inventory.ui.ts` fix the loop so unequipped items pack into sequential visible cells without reducing `maxSlots` below a full `5 × N` grid.
-3. **Clear, Readable Keybind Badges (`[a]`–`[z]`) & Action Hints**:
-   - With 5 columns instead of 10, each cell is twice as wide (~62–70px × 56px).
-   - Render a high-contrast key badge `<span class="crpg-cell-hotkey">[a]</span>` in the top-left corner of every occupied slot (using `item.hotkeyLabel`), a large centered icon (`1.25rem`), a readable item name (`0.64rem`), and a subtle action hint bar / footer note (`Click or [a-z]: Use/Equip • [Shift+a-z]: Drop`).
-   - In `modal_input.ts`, allow `handleInventoryKey` to process `[a-z]` / `[Shift+a-z]` when the D&D 3.5e `inventory` modal is open (`state.uiMode === UIMode.CartridgeModal && state.activeCartridgeModalId === 'inventory'`).
+### 3.2 Tab 1 — Column 1: Identity, Defenses, Active Conditions, Abilities & Skills (`dnd35e_sheet_overview_tab.ui.ts`)
+- **Adventurer Banner:** Name, Title, Alignment, Race, Class/ECL summary, XP bar, HP bar.
+- **Defenses & Saves:** AC (Full, Touch, Flat-Footed), Saves (Fort, Ref, Will), BAB, Grapple, Speed, Initiative.
+- **Active Conditions Strip:**
+  - Evaluates `dndData.conditions` and `StatusEffectsComponent.activeEffects`.
+  - When empty: displays `[ Normal ]` or `[ None ]` in muted green.
+  - When active: displays crisp condition chips (e.g., `[ Shaken -2 ]`, `[ Fatigued ]`, `[ Entangled ]`, `[ Bless ]`) with tooltips summarizing their exact penalty breakdown (`summarizeConditionEffects`).
+- **Ability Scores:** 6 scores (STR, DEX, CON, INT, WIS, CHA) with base score and signed modifier (`+X`).
+- **Skills Table:**
+  - Filter button (`All Skills` / `Trained Only`).
+  - Columns: `CS` (Class Skill indicator), `Skill Name`, `Key` (governing ability), `Total` (signed bonus), `Rnks` (purchased ranks).
+  - Scrollable container so it fits cleanly in the bottom half of Column 1 without pushing the column out of view.
+
+### 3.3 Tab 1 — Column 2: Attacks, Maneuvers, Abilities & Pools, Stances (`dnd35e_sheet_attacks_tab.ui.ts`)
+- **Attacks & Weapons:**
+  - Full-Attack routine chains (Iterative BAB attacks, manufactured + natural off-hands).
+  - Damage dice, critical threat/multiplier, damage type.
+- **Maneuvers:**
+  - Trip (+mod, `[provokes AoO]`), Disarm (+mod, `[vs ATK]`), Sunder (+mod), Bull Rush (+mod), Grapple (+mod).
+- **Abilities & Pools (`kind: 'ability'`):**
+  - Displays daily resources from `ResourcePoolComponent` (`turn_undead`, `smite_evil`, `rage`, `wild_shape`, `domain_*`).
+  - Remaining charges (`current / max`).
+  - Clickable `[Use]` button:
+    1. Closes the Character Sheet modal via `setGameState(closeCartridgeModal(getGameState()))`.
+    2. Queues `IntentType.UseAbility` with `effectId: 'pool:<id>'`.
+    3. Triggers presentation updates / targeting reticle if applicable.
+- **Stances:**
+  - Toggle buttons for active combat stances (Power Attack, Fighting Defensively).
+
+### 3.4 Tab 1 — Column 3: Equipment & Backpack (`dnd35e_sheet_equipment_tab.ui.ts`)
+- **Reactive Paper Doll:**
+  - 12 anatomical equipment slots (`head`, `neck`, `torso`, `armor`, `cloak`, `arms`, `hands`, `waist`, `legs`, `feet`, `ring_1`, `ring_2`).
+  - 4 quick weapon set switcher buttons (`[Set I]`, `[Set II]`, `[Set III]`, `[Set IV]`).
+  - Hover tooltips linked to `showConsoleItemInspectCard`.
+- **Backpack Grid:**
+  - 5 equal columns (`repeat(5, minmax(0, 1fr))`) with dynamic row expansion and vertical scrollbar (`max-height: 280px`).
+  - Large, readable slots with `[a-z]` hotkey labels, item icons, and stack counts.
+  - Category filters: `[All]`, `[Weapons]`, `[Armor]`, `[Potions]`, `[Scrolls]`, `[Misc]`.
+  - Sorting dropdown (`Slot [a-z]`, `Name`, `Weight`, `Value`).
+  - Load status (`Light / Medium / Heavy`) and total gold display.
+
+### 3.5 Tab 2: Progression & Features (`dnd35e_sheet_progression_tab.ui.ts`)
+- **Column 1 — Feats & Traits:**
+  - Complete list of acquired feats with category tags (`[Combat]`, `[Metamagic]`, `[General]`).
+  - Class, Domain, and Racial traits (Auras, Turn Undead mastery, Proficiencies, bonus feats).
+- **Column 2 — Level Progression Matrix:**
+  - Table of historical level gains: `Level`, `Class / HD`, `HP Gained`, `Skill Points Spent`, `Feats & Choices Acquired`.
+
+### 3.6 Tab 3: Companions & Summons (`dnd35e_sheet_companions_tab.ui.ts`)
+- Queries active player companions via `getPlayerCompanions(state, playerId)`.
+- Renders a clean companion roster table:
+  - Companion Name & Title
+  - Creature Type & HD / Level
+  - Current / Max HP bar
+  - Tactical Stance dropdown or badge (`Aggressive`, `Defensive`, `Passive`, `Hold`)
+  - Spatial status (Following, tile distance from master)
+- If `companions.length === 0`, displays an atmospheric empty state: *"No active animal companions, familiars, cohorts, or summons."*
 
 ---
 
-## 5. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 4. Anti-Hardcoding & Declarative Purity Audit (Rule 21)
 
-| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Modals / Tests / Docs) |
+| Feature / Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| **1. Move `ResourcePoolComponent` entries from `stanceModes` to `hotbar.slots` (`kind: 'ability'`) + Execute Turn Undead / Pool Abilities** | `DnD35UIAdapter.getHotbarData`, `buildActorStanceModes`, `buildActorHotbarSlots` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`) | `onExecuteHotbarSlot` (`dnd35e_ui_registration.ts`), `consumeResourcePool` / `refreshResourcePools` (`ecs_lifecycle.ts`), `executeSpellbookRest` (`dnd35e_spellbook_actions.ts`) | `tests/console_ui_architecture.test.ts` (update test expecting `pool:turn_undead` in `stanceModes` to assert it is in `hotbar.slots` with `kind: 'ability'`) |
-| **2. Canonical Domain Spell Resolution (`domains[domId].domainSpells` + `spell.levelByDomain[domId]`)** | `public/data/rulesets/dnd35e/domains/*.json`, `public/data/rulesets/dnd35e/spells/*.json`, `buildActorSpellbooksByClass` (`ledger_features_spells.ts`) | `renderKnownSpellsPane` (`dnd35e_spellbook_known.ui.ts`), `resolveSpellLevelForClass` (`spellbook_slots.ts`, `builder_spell_eligibility.ts`) | `tests/dnd35e_spellbook_slots.test.ts` (add test verifying a Cleric with 2 domains can prepare spells from **both** domains into the `'domain'` slot) |
-| **3. Uniform 5 × Dynamic Scrollable Inventory Grid with Readable `[a-z]` Key Badges & Slot Alignment** | `DnD35UIAdapter.getInventoryData` (`dnd35e_ui_adapter.ts`), `mapEntityItemToUI` (`dnd35e_ui_projection.ts`), `handleModalKey` (`modal_input.ts`) | `renderCompactStashWidget` (`console_inventory.ui.ts`), `renderInventoryPanel` (`inventory.ui.ts`), `.crpg-stash-matrix-compact` (`console_prototype.css`), `.inventory-grid` (`inventory.css`) | `console_dossier.ui.ts` (also renders `renderCompactStashWidget`), `dnd35e_sheet_skills_tab.ui.ts` |
-| **4. Split `dnd35e_lifecycle_adapter.ts` & `action_economy.ts` (<300 lines)** | `dnd35e_ruleset.ts`, `dnd35e_combat_adapter.ts` | `lint_applet` / `bun run lint`, `docs/ssot/ssot_dnd35e.json` | `docs/SSOT_DND35E.md` |
+| **Active Conditions** | Hardcoding `if (cond === 'shaken') label = '-2 ATK'` in TS | Querying `summarizeConditionEffects(dndData.conditions)` + `state.campaign.status[eff.effectId]` definitions | **YES** — New conditions added in JSON/ruleset automatically project correct badges and penalties |
+| **Abilities & Pools** | Hardcoding `if (classId === 'cleric') renderTurnUndead()` | Querying actor's `ResourcePoolComponent.pools` generically | **YES** — Any class, race, or feat adding a pool automatically renders in Column 2 |
+| **Combat Maneuvers** | Hardcoded switch on character class | Computing baseline maneuver modifiers via BAB + STR/DEX + Size modifier formula | **YES** — Any actor with BAB/stats computes maneuvers symmetrically |
+| **Companions List** | Hardcoding player minion entity IDs | Querying `getPlayerCompanions(state, playerId)` via `ControllerLinkComponent` | **YES** — Any creature linked via `ControllerLinkComponent` appears in the roster |
+
+---
+
+## 5. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers) | Lateral (Sibling Systems / Docs / Tests) |
+| :--- | :--- | :--- | :--- |
+| **Tabbed Modal Shell (`dnd35e_sheet.ui.ts`)** | `dnd35e_ui_registration.ts` (`renderDnD35eSheetModal`), modal manager | Sub-tab renderers (`renderSheetCharacterTab`, `renderSheetProgressionTab`, `renderSheetCompanionsTab`) | Update `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
+| **Active Conditions in Tab 1 Col 1** | `dndData.conditions`, `StatusEffectsComponent` | `dnd35e_sheet_overview_tab.ui.ts`, CSS badge classes | Tooltip inspect card (`console_inspect_card.ui.ts`) |
+| **Skills in Tab 1 Col 1** | `UICharacterSheetModel.skillRows` (`dnd35e_ui_char_sheet.ts`) | `dnd35e_sheet_overview_tab.ui.ts` | Relocated out of old `dnd35e_sheet_skills_tab.ui.ts` |
+| **Attacks, Maneuvers, Pools in Tab 1 Col 2** | `UICharacterSheetModel.attackGroups`, `ResourcePoolComponent` | `dnd35e_sheet_attacks_tab.ui.ts`, `queuePlayerIntent` | `onExecuteHotbarSlot` parity in `dnd35e_ui_registration.ts` |
+| **Equipment & 5-Col Backpack in Tab 1 Col 3** | `UIInventoryModel`, `EquipmentComponent`, `InventoryComponent` | `dnd35e_sheet_equipment_tab.ui.ts`, `renderReactivePaperDollWidget`, `renderCompactStashWidget` | `src/styles/console_prototype.css` (`.crpg-three-col-grid`, `.crpg-stash-matrix-compact`) |
+| **Tab 2: Progression & Features** | `dndData.feats`, `dndData.levelHistory`, `systemContent.feats` | `dnd35e_sheet_progression_tab.ui.ts` | Feat inspection tooltips |
+| **Tab 3: Companions Roster** | `getPlayerCompanions`, `ControllerLinkComponent`, `FighterComponent` | `dnd35e_sheet_companions_tab.ui.ts` | `companion_commands.system.ts` |
+
+---
+
+## 6. Verification Plan
+
+1. **Strict TypeScript & Build Checks:**
+   - `bun x tsc --noEmit`
+   - `compile_applet`
+   - `lint_applet` (verifying 0 errors and all files under 300 lines)
+2. **Automated Regression Suite:**
+   - Run `bun test` to ensure all 237+ tests pass.
+3. **Manual Test Scenarios:**
+   - Open Character Sheet via `[C]` or `[I]`: Verify Tab 1 renders with 3 equal-width columns.
+   - Tab 1 Column 1: Check Adventurer stats, Defenses & Saves, Active Conditions (`[ Normal ]`), Ability Scores, and scrollable Skills table with Trained filter.
+   - Tab 1 Column 2: Check Attacks & Weapons, Maneuvers table, Abilities & Pools (e.g. Turn Undead 9/9 with `[Use]` button), and Stances.
+   - Click `[Use]` on an ability: Verify the Character Sheet closes and the game enters ability execution/targeting mode.
+   - Tab 1 Column 3: Check Paper Doll (12 slots, 4 weapon sets) and 5-column Backpack with high-contrast `[a-z]` hotkey labels and sorting.
+   - Tab 2: Switch to "Progression & Features", verify Feats/Traits on left and Level Progression ledger table on right.
+   - Tab 3: Switch to "Companions", verify active companions or the clean empty state when none are present.

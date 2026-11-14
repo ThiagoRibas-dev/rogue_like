@@ -1992,3 +1992,36 @@ Decouple the Tier 1 Console turn loop from ruleset action-economy assumptions an
   - Gated `huntBehavior` distance steps on `canActorPerformIntent(MeleeAttack) || hasActorMovementInProgress`, enabling multi-step `Move + Attack`, `Double Move`, and `Full-Attack` turns while stopping ranged casters/archers from charging into melee after spending their Standard action; capped `wanderBehavior` to one unacted step per round.
 - [x] **Verification & Regression Suite (`tests/dnd35e_npc_action_budget.test.ts`, `tests/companion_ai_commands.test.ts`)**:
   - Updated `tests/companion_ai_commands.test.ts` and added 6 integration tests in `tests/dnd35e_npc_action_budget.test.ts` verifying once-per-round status/cooldown ticking on moving NPCs, prevention of the "Move 25 ft + Full-Attack" exploit, Full-Attack when starting adjacent, per-entity `singleActionsOnly` / `nauseated` / `extra_standard_actions` budgets, ranged caster hold-position behavior, and full 8-stage `./verify.sh` parity.
+
+---
+
+# 🚀 Phase 34: Standardized CRPG Character Sheet, 3-Tab Structural Architecture & Reactive Inventory Integration
+
+Re-architect the D&D 3.5e Character Sheet (`src/rendering/ui/dnd35e_sheet*.ui.ts`) into a cohesive, standardized 3-tab CRPG modal with balanced 3-column distribution on Tab 1, direct terminology, live interactive abilities/stances, reactive paper doll / inventory integration, and party companion roster tracking.
+
+## 🟢 Milestone 134: Standardized 3-Column Character Sheet, Active Abilities / Stances, Paper Doll & Companions Roster (Complete)
+
+- [x] **Standardized 3-Tab Architecture & Direct Terminology (`src/rendering/ui/dnd35e_sheet.ui.ts`, `src/styles/console_prototype.css`)**:
+  - Restructured the Character Sheet modal into 3 standardized tabs: `⚔ Character`, `📜 Progression & Features`, and `🐾 Companions (N)` (displaying live active companion count).
+  - Enforced a uniform typographic hierarchy across all views (`--fs-primary` 15–16px bold for hero stats and titles, `--fs-secondary` 12px semibold for row labels, and `--fs-tertiary` 10px monospace/muted for details, tags, and hotkey badges).
+  - Adopted direct, crisp headers (`SKILLS`, `ATTACKS & MANEUVERS`, `PAPERDOLL & EQUIPMENT`, `ACTIVE ABILITIES & POOLS`, `LEVEL PROGRESSION`) across all columns, dropping verbose legacy labels.
+- [x] **Tab 1 Column 1: Identity, Vitals, Defenses, Active Conditions & Filterable Skills (`src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts`)**:
+  - Rendered identity header (Name, Alignment, Race, Class, Level, ECL), HP / XP bars, and defense summary (AC, Touch, Flat-Footed, Saves, BAB, Grapple).
+  - Added dedicated **Active Conditions** strip with interactive badges and comprehensive penalty breakdowns via `summarizeConditionEffects`, falling back to `[ Normal ]` when unhindered.
+  - Rendered 2-column Ability Scores grid with base scores and modifiers.
+  - Implemented compact, scrollable Skills table with `[All / Trained]` toggle, cross-class indicator (`[*]`), key ability prefix, total modifier, and purchased ranks.
+- [x] **Tab 1 Column 2: Attacks, Combat Maneuvers, Active Abilities & Tactical Stances (`src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts`)**:
+  - Projected full-attack weapon routine with manufactured and natural weapons, attack modifiers, damage expressions, crit threat/multipliers, and damage types.
+  - Implemented Combat Maneuvers table detailing Trip, Disarm, Sunder, Bull Rush, and Grapple with bonuses and behavioral tags (`[provokes]`, `[vs ATK]`, `[2x vs obj]`).
+  - Added Active Abilities & Scaling Pools (e.g., *Turn Undead*, *Smite Evil*, *Wild Shape*) with clickable `[Use]` buttons that immediately close the sheet modal (`closeCartridgeModal`) and queue `IntentType.UseAbility` (or transition to targeting/aiming mode).
+  - Integrated Tactical Stances (Fighting Defensively, Power Attack) bound dynamically to `TacticalDoctrineComponent`.
+- [x] **Tab 1 Column 3: Reactive 12-Slot Paper Doll & 5-Column Backpack (`src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts`)**:
+  - Integrated Tier 1 Console Paper Doll supporting 12 anatomical equipment slots (Head, Neck, Cloak, Body, Wrist, Shield, Main-Hand, Off-Hand, Ring L, Ring R, Legs, Feet) and 4 swappable weapon set toggles (`[Set I]`–`[Set IV]`).
+  - Integrated 5-column scrollable Backpack grid with high-contrast `[a-z]` hotkey badges, category filtering (`[All]`, `[Wpn]`, `[Arm]`, `[Pot]`, `[Scr]`, `[Key]`), slot/type/az sorting, carry load gauge (Light/Medium/Heavy), and inspect card tooltips.
+  - Maintained strict Tier 1/Tier 2 boundaries: consumed generic `UIInventoryModel` and `ConsoleInventoryCallbacks` without leaking ruleset types into Tier 1 Console widgets.
+- [x] **Tab 2 & Tab 3: Progression Ledger, Feats, Traits & Party Companions Roster (`src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts`, `src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts`)**:
+  - Tab 2 displays categorized Feats and Traits on the left and an immutable level-by-level advancement ledger (Horizon 1) on the right detailing Class/RHD, HP rolls, skill point budgets, and feats/features gained.
+  - Tab 3 queries `getPlayerCompanions(state, playerId)` and renders an interactive companion roster with Name, Creature Type, HD, HP, Stance badge (`Aggressive`, `Defensive`, `Passive`, `Hold`), Distance/Location, and an atmospheric empty state.
+- [x] **Legacy Eviction & SSOT Synchronization (`docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md`)**:
+  - Evicted obsolete split tabs `src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts` and `src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts`, keeping all files under 250 LOC and passing Knip dead code audits and SSOT parity checks.
+
