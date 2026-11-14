@@ -54,6 +54,7 @@ export interface DnD35EntityDAGResult {
   readonly hasBlindFight: boolean;
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
+  readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
 }
 
 /**
@@ -82,7 +83,15 @@ export function evaluateDnD35eEntityDAG(
   const sysContent = getDnD35SystemContent(state.campaign);
   const selfTags =
     prehydrated?.selfTags ??
-    projectDnD35ActorSemanticTags(dndData, existingTags, situationalContext, sysContent?.classes, sysContent?.skills);
+    projectDnD35ActorSemanticTags(
+      dndData,
+      existingTags,
+      situationalContext,
+      sysContent?.classes,
+      sysContent?.skills,
+      sysContent?.domains,
+      sysContent?.feats
+    );
   const condSummary = summarizeConditionEffects(dndData.conditions);
 
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
@@ -188,7 +197,7 @@ export function evaluateDnD35eEntityDAG(
     dagResult.effectiveSize === dndData.sizeCategory
       ? resolvedWeapons
       : resolveAllEquippedWeaponProfiles(state, entityId, dagResult.effectiveSize);
-  const naturalLimbs = buildActorNaturalWeaponLimbs(state, entityId, dndData, dagResult.effectiveSize);
+  const naturalLimbs = buildActorNaturalWeaponLimbs(state, entityId, dndData, dagResult.effectiveSize, extraModifiers);
 
   const strMod = dagResult.effectiveAbilityModifiers.str;
   const dexMod = dagResult.effectiveAbilityModifiers.dex;
@@ -232,7 +241,8 @@ export function evaluateDnD35eEntityDAG(
     attackRoutine,
     hasBlindFight: activeCombatRules.hasBlindFight,
     hasCleave: activeCombatRules.hasCleave,
-    hasGreatCleave: activeCombatRules.hasGreatCleave
+    hasGreatCleave: activeCombatRules.hasGreatCleave,
+    statModifiers: extraModifiers
   };
 }
 

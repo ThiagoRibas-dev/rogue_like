@@ -126,7 +126,10 @@ export function collectActorProficiencies(
     }
   }
 
-  if (domains.includes('war') && deityFavoredWeaponId) {
+  const grantsDeityWeaponProf = domains.some(
+    (domId) => sysContent?.domains[domId]?.grantsDeityFavoredWeaponProficiencyAndFocus === true
+  );
+  if (grantsDeityWeaponProf && deityFavoredWeaponId) {
     weaponIds.add(deityFavoredWeaponId);
   }
 
@@ -149,16 +152,22 @@ export function collectActorProficiencies(
   if (sysContent) {
     for (const [itemId, itemDef] of Object.entries(sysContent.items)) {
       const profCat = itemDef.weaponStats?.proficiencyCategory;
-      if (profCat && weaponCategories.has(profCat)) {
+      const isMartial2HEquivalent =
+        itemDef.weaponStats?.isExotic1HMartial2H === true && weaponCategories.has('martial');
+      if ((profCat && weaponCategories.has(profCat)) || isMartial2HEquivalent) {
         weaponIds.add(itemId);
       }
     }
   }
 
-  if (weaponIds.has('longbow')) weaponIds.add('composite_longbow');
-  if (weaponIds.has('composite_longbow')) weaponIds.add('longbow');
-  if (weaponIds.has('shortbow')) weaponIds.add('composite_shortbow');
-  if (weaponIds.has('composite_shortbow')) weaponIds.add('shortbow');
+  if (sysContent) {
+    for (const wId of Array.from(weaponIds)) {
+      const equivId = sysContent.items[wId]?.weaponStats?.proficiencyEquivalentWeaponId;
+      if (equivId) {
+        weaponIds.add(equivId);
+      }
+    }
+  }
 
   return {
     proficientWeaponCategories: Array.from(weaponCategories),

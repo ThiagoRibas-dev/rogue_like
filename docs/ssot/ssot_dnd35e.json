@@ -39,8 +39,11 @@
     "tier": "tier2_ui",
     "responsibility": "Renders feat category classification and parameterized target dropdowns for Character Creation and Level-Up.",
     "canonicalEntryPoints": [
+      "CANONICAL_NATURAL_WEAPONS",
+      "CANONICAL_SPECIAL_ATTACKS",
       "getTargetedWeaponOptions",
       "classifyFeatCategory",
+      "getFeatTargetOptions",
       "buildFeatTargetSelect"
     ],
     "ownershipBoundary": {
@@ -1028,6 +1031,7 @@
       "CombatManeuverResult",
       "resolveCombatManeuver",
       "shouldTriggerOnHitRider",
+      "resolveSpecialAbilitySaveDc",
       "applyConditionWithEscalation"
     ],
     "ownershipBoundary": {
@@ -1234,6 +1238,7 @@
     "tier": "tier2_cartridge",
     "responsibility": "Computes weapon damage dice size-progression tables and the 3-step weapon effort ladder vs. wielder size.",
     "canonicalEntryPoints": [
+      "stepDamageDiceLadder",
       "scaleWeaponDamageDice",
       "evaluateWeaponWieldingProfile"
     ],

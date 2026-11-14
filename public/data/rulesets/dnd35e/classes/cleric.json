@@ -64,7 +64,9 @@
         "category": "su",
         "description": "Channel positive or negative energy to turn, destroy, rebuke, or command undead (3 + CHA mod/day).",
         "grantedTags": [
-          "feature:turn_or_rebuke"
+          "feature:turn_or_rebuke",
+          "trait:special_attack",
+          "special_attack:turn_undead"
         ],
         "scalingPoolContribution": {
           "poolId": "turn_undead_effective_level",

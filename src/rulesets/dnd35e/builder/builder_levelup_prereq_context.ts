@@ -6,11 +6,13 @@ import {
   collectClassFeaturesUpToLevel
 } from '../progression.ts';
 import { collectClassChoiceFeats } from '../progression/ledger_choices.ts';
+import { evaluateRacialModifiers } from '../races.ts';
 import { projectDnD35ActorSemanticTags } from '../semantic_tags.ts';
 import type { AbilityId, DnD35CharacterLevelRecord, DnD35EntityData, HitDieTrack } from '../types/dnd35e.types.ts';
 import type { DnD35ClassDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import type { LevelUpChoice } from './builder_core.ts';
 import {
+  collectActorNaturalWeaponIds,
   computeActorSpellcastingPrereqMetrics,
   computeMaxSlaCasterLevel,
   countActorNaturalAttacks,
@@ -81,14 +83,19 @@ export function buildPostLevelUpPrerequisiteContext(
     tracks: simulatedTracks,
     activeClassFeatures: combinedActiveFeatures,
     domains: combinedDomains,
-    skillRanks: simulatedSkills
+    skillRanks: simulatedSkills,
+    feats: Array.from(new Set([...(dndData.feats ?? []), ...accumulatedFeatsThisLevel]))
   };
+  const raceDef = dndData.raceId ? sysContent.races[dndData.raceId] : undefined;
+  const racialTags = raceDef ? evaluateRacialModifiers(raceDef, dndData.suppressedBundleIds).grantedTags : [];
   const activeTags = projectDnD35ActorSemanticTags(
     simulatedDndForTags,
-    [],
+    racialTags,
     undefined,
     sysContent.classes,
-    sysContent.skills
+    sysContent.skills,
+    sysContent.domains,
+    sysContent.feats
   );
 
   const choiceFeats = collectClassChoiceFeats(
@@ -189,6 +196,7 @@ export function buildPostLevelUpPrerequisiteContext(
     proficientArmorCategories: profs.proficientArmorCategories,
     proficientShieldCategories: profs.proficientShieldCategories,
     naturalAttackCount: countActorNaturalAttacks(dndData),
+    naturalWeaponIds: collectActorNaturalWeaponIds(dndData.naturalWeapons),
     handCount,
     naturalArmorBonus: dndData.naturalArmorBonus,
     flySpeedFt: dndData.movementModes?.fly ?? 0,

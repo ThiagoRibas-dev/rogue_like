@@ -37,6 +37,7 @@ export const DnD35WeaponStatsSchema = z.object({
   isFinesseEligible: z.boolean().default(false),
   cannotTwoHandStr: z.boolean().default(false),
   isExotic1HMartial2H: z.boolean().default(false),
+  proficiencyEquivalentWeaponId: z.string().optional(),
   familiaritySubtypes: z.array(z.string()).default([]),
   maneuverTags: z
     .array(z.enum(['trip', 'disarm', 'brace_vs_charge', 'monk', 'nonlethal_only', 'composite_str']))

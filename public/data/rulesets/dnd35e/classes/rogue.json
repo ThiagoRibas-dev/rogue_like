@@ -56,7 +56,11 @@
         "id": "sneak_attack_1d6",
         "name": "Sneak Attack",
         "category": "ex",
-        "description": "Deal extra precision damage (+1d6 at 1st level, increasing by +1d6 every two rogue levels) when target is flanked or denied DEX bonus to AC."
+        "description": "Deal extra precision damage (+1d6 at 1st level, increasing by +1d6 every two rogue levels) when target is flanked or denied DEX bonus to AC.",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:sneak_attack"
+        ]
       },
       "trapfinding": {
         "id": "trapfinding",

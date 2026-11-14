@@ -1,7 +1,13 @@
 import { rollD20 } from '../math/dice.ts';
+import { resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
 import { resolveOpposedCheck } from '../skills.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
-import type { CreatureSizeCategory, DnD35ConditionId, OnHitRiderDescriptor } from '../types/dnd35e.types.ts';
+import type {
+  CreatureSizeCategory,
+  DnD35ConditionId,
+  OnHitRiderDescriptor,
+  StatModifier
+} from '../types/dnd35e.types.ts';
 
 /** Single-limb grapple penalty (`-20`) allowing a monster with Improved Grab to not be considered grappled itself. */
 export const SINGLE_LIMB_IMPROVED_GRAB_PENALTY = -20;
@@ -175,6 +181,31 @@ export function shouldTriggerOnHitRider(
   if (rider.delivery === 'contact') return true;
   if (rider.delivery === 'injury') return damageDealtAfterDR > 0;
   return false;
+}
+
+/**
+ * Resolves the effective saving throw DC for a special attack or on-hit rider by applying
+ * any active `special_ability_save_dc` modifiers (e.g. Ability Focus) scoped to `ability:<abilityId>`.
+ *
+ * @param baseDc Baseline saving throw DC (e.g. `10 + 1/2 HD + ability mod`).
+ * @param abilityId Canonical special attack identifier (e.g. `'breath_weapon'`, `'poison'`).
+ * @param statModifiers Active `StatModifier`s on the attacking entity.
+ * @param selfTags Optional active semantic self-tags on the attacking entity.
+ * @returns Effective saving throw DC.
+ */
+export function resolveSpecialAbilitySaveDc(
+  baseDc: number,
+  abilityId: string,
+  statModifiers: ReadonlyArray<StatModifier> = [],
+  selfTags: ReadonlyArray<string> = []
+): number {
+  const dcMods = statModifiers.filter((m) => m.targetStat === 'special_ability_save_dc');
+  if (dcMods.length === 0) return baseDc;
+  const breakdown = resolveTypedModifiersWithBreakdown(dcMods, {
+    selfTags,
+    effectTags: [`ability:${abilityId}`]
+  });
+  return baseDc + breakdown.total;
 }
 
 /**

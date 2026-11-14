@@ -84,8 +84,16 @@ export function evaluatePrerequisiteAST(node: PrerequisiteNode, context: Prerequ
       const count = context.feats.filter((f) => FALLBACK_METAMAGIC_CRAFT_FEATS.has(f.split(':')[0]!)).length;
       return count >= node.minCount;
     }
-    case 'has_tag':
+    case 'has_tag': {
+      if (node.tag.includes('$selected')) {
+        if (context.targetId !== undefined) {
+          return context.tags.includes(node.tag.replace('$selected', context.targetId));
+        }
+        const prefix = node.tag.replace('$selected', '');
+        return context.tags.some((t) => t.startsWith(prefix));
+      }
       return context.tags.includes(node.tag);
+    }
     case 'min_caster_level':
       return context.casterLevel >= node.minCasterLevel;
     case 'min_class_level':
@@ -94,8 +102,14 @@ export function evaluatePrerequisiteAST(node: PrerequisiteNode, context: Prerequ
       return (context.characterLevel ?? 1) >= node.minLevel;
     case 'has_proficiency':
       return evaluateProficiencyPrerequisite(node, context);
-    case 'min_natural_attacks':
-      return (context.naturalAttackCount ?? 0) >= node.minCount;
+    case 'min_natural_attacks': {
+      const hasCount = (context.naturalAttackCount ?? 0) >= node.minCount;
+      if (!hasCount) return false;
+      if (context.targetId !== undefined && context.naturalWeaponIds !== undefined) {
+        return context.naturalWeaponIds.includes(context.targetId);
+      }
+      return true;
+    }
     case 'min_hands':
       return (context.handCount ?? 2) >= node.minHands;
     case 'min_natural_armor':

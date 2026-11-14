@@ -813,6 +813,20 @@ To keep companion, familiar, summon, and party-member AI completely ruleset-agno
    - Unified playable and non-player hydration (`applyRaceToActorChassis` and `hydrateRaceAsArchetype`) so PCs, NPCs, companions, and monsters evaluate identical racial `traitBundles`, `defaultClassLevels` class ledger tracks, and Creature Type/Subtype modifiers.
    - `spawnEntity` auto-initializes anatomical `EquipmentComponent` slots (`buildAnatomyEquipmentSlots(bodyPlan)`) and `InventoryComponent` for every `Actor`, equipping `defaultEquipment` loadouts across armed bestiary races so weapon sizing and `weapon:<baseWeaponId>` feats resolve identically for monsters and players.
 
+### 9.18 Declarative Targeted Feats, Special Attack Tagging & Natural Damage Stepping
+
+Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`docs/dnd35e/SPECIAL_ATTACKS_AND_TAGS.md`](./dnd35e/SPECIAL_ATTACKS_AND_TAGS.md):
+
+1. **Declarative Targeted Feat Option Pools (`DnD35FeatRepeatableSchema`, `src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts`)**:
+   - `repeatable` descriptors support `targetCategory: 'weapon' | 'natural_weapon' | 'school' | 'skill' | 'ability'`, `weaponProficiencyFilter: 'simple' | 'martial' | 'exotic'`, and `allowedTargets: string[]`.
+   - UI feat row pickers (`getFeatTargetOptions`, `getTargetedWeaponOptions`) and `resolveFeatEffectBundle` (`src/rulesets/dnd35e/effect_bundle.ts`) derive target pools and `effectTagsAll` bindings strictly from schema metadata with zero feat-ID branching.
+2. **Declarative Special Attack & Domain Tag Harvesting (`src/rulesets/dnd35e/races.ts`, `src/rulesets/dnd35e/semantic_tags.ts`, `src/rulesets/dnd35e/combat/maneuvers_conditions.ts`)**:
+   - `breathWeapon`, `OnHitRiderDescriptor`, templates, domains (`grantedPowerBundle`), and class `featureDetails` declare `grantedTags` (such as `"trait:special_attack"` and `"feature:turn_or_rebuke"`), harvested generically by `evaluateRacialModifiers` and `projectDnD35ActorSemanticTags`.
+   - `resolveSpecialAbilitySaveDc` resolves `special_ability_save_dc` modifiers scoped via `ability:<id>` tags (e.g., *Ability Focus*).
+3. **Two-Handed Martial Equivalence & Natural Weapon Size-Step Scaling (`src/rulesets/dnd35e/builder/builder_prereq_proficiencies.ts`, `src/rulesets/dnd35e/equipment_physics.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`)**:
+   - `collectActorProficiencies` derives two-handed martial proficiency eligibility directly from `itemDef.weaponStats.isExotic1HMartial2H === true` when the actor holds `'martial'` category proficiency, while `evaluateNonproficiencyPenalty` enforces `'two_handed'` vs `'one_handed'` grip rules cleanly.
+   - `buildActorNaturalWeaponLimbs` applies `natural_damage_size_step` modifiers (scoped via `weapon:<naturalWeaponId>`) through `stepDamageDiceLadder` (`src/rulesets/dnd35e/equipment/weapon_scaling.ts`).
+
 ---
 
 ## 10. Key Design Decisions

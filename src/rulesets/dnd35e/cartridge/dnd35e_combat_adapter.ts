@@ -59,14 +59,18 @@ export function resolveDnD35eMeleeAttack(
     [],
     attackerSituational,
     sysContent?.classes,
-    sysContent?.skills
+    sysContent?.skills,
+    sysContent?.domains,
+    sysContent?.feats
   );
   const defenderSelfTags = projectDnD35ActorSemanticTags(
     defenderData,
     [],
     defenderSituational,
     sysContent?.classes,
-    sysContent?.skills
+    sysContent?.skills,
+    sysContent?.domains,
+    sysContent?.feats
   );
 
   const attackerEval = evaluateDnD35eEntityDAG(

@@ -12,7 +12,10 @@
       "modifiers": [],
       "ruleOverrides": [],
       "grantedTags": [
-        "domain:sun"
+        "domain:sun",
+        "feature:turn_or_rebuke",
+        "trait:special_attack",
+        "special_attack:turn_undead"
       ],
       "grantedFeats": [],
       "virtualFeatGrants": [],

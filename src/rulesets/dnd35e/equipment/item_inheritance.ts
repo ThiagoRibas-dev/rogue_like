@@ -173,8 +173,7 @@ export function evaluateNonproficiencyPenalty(
           (wId) =>
             f === `exotic_weapon_proficiency_${wId}` ||
             f === `exotic_weapon_proficiency:${wId}` ||
-            f === `proficiency:weapon:${wId}` ||
-            f === `martial_weapon_proficiency:${wId}`
+            f === `proficiency:weapon:${wId}`
         )
     );
     return hasExoticProficiency ? 0 : NONPROFICIENCY_ATTACK_PENALTY;

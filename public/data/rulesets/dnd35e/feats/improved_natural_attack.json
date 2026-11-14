@@ -6,7 +6,7 @@
     "isFighterBonusFeat": false,
     "repeatable": {
       "mode": "targeted",
-      "targetCategory": "weapon"
+      "targetCategory": "natural_weapon"
     },
     "prerequisites": {
       "type": "and",
@@ -21,11 +21,12 @@
         }
       ]
     },
-    "ruleOverrides": [
+    "modifiers": [
       {
         "id": "natural_weapon_damage_step_up",
-        "ruleKey": "natural_weapon_damage_step_up",
-        "value": 1
+        "target": "natural_damage_size_step",
+        "value": 1,
+        "type": "untyped"
       }
     ]
   }

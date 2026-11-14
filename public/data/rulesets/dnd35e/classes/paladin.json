@@ -55,6 +55,10 @@
         "name": "Smite Evil",
         "category": "su",
         "description": "Add CHA bonus to attack roll and paladin level to damage roll against an evil foe (1/day at 1st, +1/day every 5 levels).",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:smite"
+        ],
         "resourcePool": {
           "poolId": "smite_evil",
           "maxBase": 1,
@@ -124,7 +128,9 @@
         "category": "su",
         "description": "Channel positive energy to turn or destroy undead as a cleric of three levels lower (3 + CHA mod/day).",
         "grantedTags": [
-          "feature:turn_or_rebuke"
+          "feature:turn_or_rebuke",
+          "trait:special_attack",
+          "special_attack:turn_undead"
         ],
         "scalingPoolContribution": {
           "poolId": "turn_undead_effective_level",

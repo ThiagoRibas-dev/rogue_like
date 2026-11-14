@@ -1,4 +1,5 @@
 import { getIterativeBabSequence } from '../progression.ts';
+import type { OnHitRiderDescriptor } from '../types/dnd35e.types.ts';
 import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
 
 /** Secondary natural weapon attack penalty without Multiattack (`-5`). */
@@ -43,6 +44,7 @@ export interface NaturalWeaponLimbEntry {
   readonly damageType?: DnD35DamageType | undefined;
   readonly critThreatMin?: number | undefined;
   readonly critMultiplier?: number | undefined;
+  readonly riders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;
 }
 
 /**

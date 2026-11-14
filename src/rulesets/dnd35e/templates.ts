@@ -106,8 +106,9 @@ export function applyCreatureTemplate(
   if (template.convertTypeMap && base.creatureType && template.convertTypeMap[base.creatureType]) {
     creatureType = template.convertTypeMap[base.creatureType]!;
   }
+  const grantedTags = template.grantedTags ?? [];
   const existingSubtypes = base.subtypes ?? [];
-  const mergedSubtypes = Array.from(new Set([...existingSubtypes, ...template.addSubtypes]));
+  const mergedSubtypes = Array.from(new Set([...existingSubtypes, ...template.addSubtypes, ...grantedTags]));
   const sizeCategory = template.sizeCategoryChange ?? base.sizeCategory;
 
   const isMindlessTemplate =
@@ -285,7 +286,6 @@ export function applyCreatureTemplate(
     : base.naturalWeapons;
   const levelAdjustment = (base.levelAdjustment ?? 0) + (template.levelAdjustmentDelta ?? 0);
 
-  const grantedTags = template.grantedTags ?? [];
   const isZombie = template.templateId === 'zombie' || grantedTags.includes('single_actions_only');
   const singleActionsOnly = isZombie ? true : (base.singleActionsOnly ?? false);
 

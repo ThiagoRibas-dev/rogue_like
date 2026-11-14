@@ -1945,4 +1945,25 @@ Establish a ruleset-agnostic **Tier 1 Console** companion AI and command archite
   - Added `companion_default` AI profile (`[{ behaviorId: 'hunt', aggroRadius: 6 }, { behaviorId: 'follow', followDistance: 2, leashRadius: 8 }]`) across all 4 campaign `ai.json` registries and `blank_slate_campaign.ts`.
   - Added integration tests in `tests/companion_ai_commands.test.ts` and verified 100% pass across `./verify.sh` (`213/213` tests, 432 SSOT source files, 745 ruleset files, 4 campaigns).
 
+---
+
+# 🚀 Phase 32: Live On-Hit Rider Combat Pipeline, Owned-Target Prerequisite Gating & Rule 21 Legacy Eviction
+
+Complete live natural weapon `OnHitRiderDescriptor` execution inside the combat exchange pipeline, enforce per-target ownership gating (`Ability Focus` and `Improved Natural Attack`), and eliminate remaining legacy Rule 21 content-ID branches across cartridge resolvers and builders.
+
+## 🟢 Milestone 132: Post-Audit Remediation — Live On-Hit Rider Pipeline, Owned-Target Gating & Rule 21 Eviction (Complete)
+
+- [x] **Live `OnHitRiderDescriptor` Combat Pipeline Wiring (`src/rulesets/dnd35e/combat/{full_attack_sequence,attack_routine,combat_exchange_pipeline}.ts`, `src/rulesets/dnd35e/cartridge/{dnd35e_equipped_item_dag,dnd35e_dag_adapter}.ts`)**:
+  - Threaded `NaturalWeaponDescriptor.riders` from `buildActorNaturalWeaponLimbs` through `NaturalWeaponLimbEntry.riders` and `DnD35ResolvedStrikeProfile.onHitRiders`.
+  - Wired `onHitRiders` evaluation inside Phase 3 (`OnHitRidersPhase`) of `executeCombatStrikeExchange`, gating `'injury'` riders through `mitigateIncomingDamage` + `shouldTriggerOnHitRider`, enforcing `immunities` and CON-nonability Fortitude immunity, resolving dynamic save DCs via `resolveSpecialAbilitySaveDc` (+2 bonus from `ability_focus:<ability>` via `StatModifier`s on `DnD35EntityDAGResult.statModifiers`), rolling `resolveSavingThrow`, and applying `'paralyzed'`, `negativeLevels`, and `'sickened'` payloads on failed saves.
+- [x] **Owned-Target Prerequisite Gating & Dropdown Filtering (`prerequisite_types.ts`, `prerequisites.ts`, `builder_prereq_{helpers,context}.ts`, `builder_{draft,levelup}_prereq_context.ts`, `races.ts`, `semantic_tags.ts`, `dnd35e_char_builder_feat_row.ui.ts`, `dnd35e_char_builder_feats.ui.ts`, `dnd35e_feat_spell_inspector.ui.ts`)**:
+  - Added `naturalWeaponIds` to `PrerequisiteEvalContext` (populated via `collectActorNaturalWeaponIds` across runtime actor, creation draft, and level-up contexts) and updated `min_natural_attacks` to require ownership of `context.targetId` when evaluated for a target (`Improved Natural Attack`).
+  - Projected specific `special_attack:<id>` semantic tags across `races.ts` (`breath_weapon`, `rider.type`, `rider.riderId`), `semantic_tags.ts` (`pounce`, `riders`, `featDef.effectBundle.grantedTags`), `templates/half_dragon_*.json`, `classes/{rogue,assassin,paladin,blackguard,cleric}.json`, `domains/sun.json`, and `feats/stunning_fist.json`.
+  - Added `$selected` tag interpolation (`special_attack:$selected`) in `evaluatePrerequisiteAST` and updated `ability_focus.json` prerequisites plus `getFeatTargetOptions` / `buildFeatTargetSelect` / `formatPrerequisiteLeafLabel` to filter dropdown choices cleanly to owned special attacks and owned natural weapons.
+- [x] **Evict Pre-Existing Legacy Rule 21 Content-ID Branches (`effect_bundle.ts`, `builder_prereq_proficiencies.ts`, `progression/ledger_choices.ts`, `semantic_tags.ts`, `item_system.types.ts`, `effect_system.types.ts`, `domains/war.json`, `classes/ranger.json`, `items/*bow.json`)**:
+  - Evicted feat-ID prefix/substring branching in `resolveFeatEffectBundle` (`effect_bundle.ts`) in favor of `featDef.repeatable?.targetCategory` and `baseBundle.category === 'proficiency'`.
+  - Added `proficiencyEquivalentWeaponId` (`DnD35WeaponStatsSchema`), `grantsDeityFavoredWeaponProficiencyAndFocus` (`DnD35DomainDefinitionSchema`), and `combatStyleFeatByChoice` (`DnD35ClassFeatureDetailSchema`), replacing hardcoded bow, War domain, and Ranger combat style ID checks in `builder_prereq_proficiencies.ts` and `ledger_choices.ts`.
+  - Removed the hardcoded `'illiteracy'` exception in `semantic_tags.ts` so `barbarian.json` `activationCondition: { selfTagsNone: ['trait:literate'] }` governs tag projection purely via `isActivationConditionMet`.
+  - Expanded regression coverage in `tests/dnd35e_feat_mechanics_fixes.test.ts` and updated `docs/dnd35e/SPECIAL_ATTACKS_AND_TAGS.md` and `docs/DECISIONS.md`.
+
 

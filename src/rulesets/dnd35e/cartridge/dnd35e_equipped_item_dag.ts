@@ -4,8 +4,9 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { NaturalWeaponLimbEntry } from '../combat/attack_resolver.ts';
 import { computeMaterialEquipmentStats } from '../equipment/special_materials.ts';
 import { resolveEffectiveItemDefinition } from '../equipment/item_inheritance.ts';
-import { scaleWeaponDamageDice } from '../equipment/weapon_scaling.ts';
+import { scaleWeaponDamageDice, stepDamageDiceLadder } from '../equipment/weapon_scaling.ts';
 import { evaluateEffectBundle } from '../effect_bundle.ts';
+import { resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35ItemDefinition, DnD35ItemEnhancement } from '../types/dnd35e_system.types.ts';
 
@@ -210,13 +211,15 @@ export function collectEquippedItemDAGContributions(
  * @param entityId - Actor entity ID
  * @param dndData - Hydrated actor D&D 3.5e data
  * @param effectiveSize - Resolved effective size category
+ * @param activeModifiers - Optional active StatModifiers (defaults to `dndData.statModifiers`)
  * @returns Array of natural weapon limb entries for full-attack resolution
  */
 export function buildActorNaturalWeaponLimbs(
   state: GameState,
   entityId: EntityId,
   dndData: DnD35EntityData,
-  effectiveSize: CreatureSizeCategory
+  effectiveSize: CreatureSizeCategory,
+  activeModifiers: ReadonlyArray<StatModifier> = dndData.statModifiers ?? []
 ): ReadonlyArray<NaturalWeaponLimbEntry> {
   const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
   const handSlotLimbGroups: string[] = [];
@@ -237,10 +240,15 @@ export function buildActorNaturalWeaponLimbs(
     }
   }
   const availableHandLimbs = handSlotLimbGroups.length > 0 ? handSlotLimbGroups : ['hand_main', 'hand_off'];
+  const stepMods = activeModifiers.filter((m) => m.targetStat === 'natural_damage_size_step');
 
   const naturalLimbs: NaturalWeaponLimbEntry[] = [];
   for (const nw of dndData.naturalWeapons ?? []) {
-    const scaledDice = scaleWeaponDamageDice(nw.damageDice, dndData.sizeCategory, effectiveSize);
+    const sizeScaledDice = scaleWeaponDamageDice(nw.damageDice, dndData.sizeCategory, effectiveSize);
+    const natTags = Array.from(new Set([`weapon:${nw.id}`, `weapon:${nw.naturalType}`]));
+    const stepBonus =
+      stepMods.length > 0 ? resolveTypedModifiersWithBreakdown(stepMods, { effectTags: natTags }).total : 0;
+    const scaledDice = stepDamageDiceLadder(sizeScaledDice, stepBonus);
     if ((nw.naturalType === 'claw' || nw.naturalType === 'slam') && nw.count > 1) {
       for (let cIdx = 0; cIdx < nw.count; cIdx++) {
         const limbGroupId = availableHandLimbs[cIdx] ?? (cIdx === 0 ? 'hand_main' : `hand_off_${cIdx}`);
@@ -253,7 +261,8 @@ export function buildActorNaturalWeaponLimbs(
           dice: scaledDice,
           damageType: nw.damageType,
           critThreatMin: nw.critThreatMin,
-          critMultiplier: nw.critMultiplier
+          critMultiplier: nw.critMultiplier,
+          ...(nw.riders !== undefined ? { riders: nw.riders } : {})
         });
       }
       continue;
@@ -273,7 +282,8 @@ export function buildActorNaturalWeaponLimbs(
       dice: scaledDice,
       damageType: nw.damageType,
       critThreatMin: nw.critThreatMin,
-      critMultiplier: nw.critMultiplier
+      critMultiplier: nw.critMultiplier,
+      ...(nw.riders !== undefined ? { riders: nw.riders } : {})
     });
   }
   return naturalLimbs;

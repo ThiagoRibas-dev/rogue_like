@@ -262,6 +262,7 @@ export interface OnHitRiderDescriptor {
   readonly initialEffectDescription: string;
   readonly secondaryEffectDescription?: string | undefined;
   readonly secondaryDelayRounds?: number | undefined;
+  readonly grantedTags?: ReadonlyArray<string> | undefined;
 }
 
 /**

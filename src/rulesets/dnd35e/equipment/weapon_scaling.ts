@@ -62,18 +62,15 @@ const ALTERNATE_DICE_LADDER_D12: ReadonlyArray<string> = [
 ];
 
 /**
- * Scales a weapon's base damage dice from a base creature size to a target creature size.
+ * Steps a base damage dice expression along the canonical D&D 3.5e weapon damage ladder
+ * by `stepDiff` size/virtual-size steps (MM p. 291 & p. 304).
+ *
+ * @param baseDice Base weapon or natural attack damage dice string (e.g. `'1d6'`).
+ * @param stepDiff Number of steps to advance (positive) or decrease (negative).
+ * @returns Scaled damage dice string.
  */
-export function scaleWeaponDamageDice(
-  baseDice: string,
-  baseSize: CreatureSizeCategory,
-  targetSize: CreatureSizeCategory
-): string {
-  if (baseSize === targetSize) return baseDice;
-
-  const baseRank = SIZE_METRICS[baseSize].rankIndex;
-  const targetRank = SIZE_METRICS[targetSize].rankIndex;
-  const stepDiff = targetRank - baseRank;
+export function stepDamageDiceLadder(baseDice: string, stepDiff: number): string {
+  if (stepDiff === 0) return baseDice;
 
   let ladder = DICE_PROGRESSION_LADDER;
   if (baseDice === '1d8') ladder = ALTERNATE_DICE_LADDER_D8;
@@ -87,6 +84,21 @@ export function scaleWeaponDamageDice(
 
   const newIndex = Math.max(0, Math.min(ladder.length - 1, index + stepDiff));
   return ladder[newIndex]!;
+}
+
+/**
+ * Scales a weapon's base damage dice from a base creature size to a target creature size.
+ */
+export function scaleWeaponDamageDice(
+  baseDice: string,
+  baseSize: CreatureSizeCategory,
+  targetSize: CreatureSizeCategory
+): string {
+  if (baseSize === targetSize) return baseDice;
+
+  const baseRank = SIZE_METRICS[baseSize].rankIndex;
+  const targetRank = SIZE_METRICS[targetSize].rankIndex;
+  return stepDamageDiceLadder(baseDice, targetRank - baseRank);
 }
 
 const EFFORT_LADDER: ReadonlyArray<'light' | 'one_handed' | 'two_handed'> = ['light', 'one_handed', 'two_handed'];

@@ -7,7 +7,7 @@ import {
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
+import { evaluateNonproficiencyPenalty, resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import {
   buildUnarmedProfile,
   type EquippedWeaponProfile,
@@ -16,7 +16,7 @@ import {
 } from './equipment/weapon_profile_parser.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
 import type { CreatureSizeCategory, DnD35EntityData } from './types/dnd35e.types.ts';
-import type { DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
+import type { DnD35ClassDefinition, DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
 
 export * from './equipment/special_materials.ts';
 export * from './equipment/weapon_scaling.ts';
@@ -171,10 +171,28 @@ export function resolveAllEquippedWeaponProfiles(
     occupiedLimbGroups.add(parsedPrimary.limbGroupId ?? 'hand_main');
     occupiedLimbGroups.add(secondHandLimb);
 
+    const classesRegistry = state.campaign.systemContent?.['classes'] as
+      Record<string, DnD35ClassDefinition> | undefined;
+    const rawWeaponDef = parsedPrimary.weaponItemId
+      ? (state.campaign.items[parsedPrimary.weaponItemId] as DnD35ItemDefinition | undefined)
+      : undefined;
+    const twoHandedNonprof = parsedPrimary.isExotic1HMartial2H
+      ? evaluateNonproficiencyPenalty(
+          parsedPrimary.weaponItemId,
+          parsedPrimary.baseWeaponId,
+          parsedPrimary.isExotic1HMartial2H,
+          'two_handed',
+          dndData,
+          rawWeaponDef?.weaponStats?.familiaritySubtypes ?? [],
+          rawWeaponDef?.weaponStats?.proficiencyCategory,
+          classesRegistry
+        )
+      : parsedPrimary.nonproficiencyPenalty;
+
     const primaryWeapon: EquippedWeaponProfile = {
       ...parsedPrimary,
       handedness: 'two_handed',
-      nonproficiencyPenalty: parsedPrimary.isExotic1HMartial2H ? 0 : parsedPrimary.nonproficiencyPenalty
+      nonproficiencyPenalty: twoHandedNonprof
     };
 
     return {

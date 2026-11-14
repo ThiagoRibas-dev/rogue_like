@@ -1,10 +1,12 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import type { PrerequisiteEvalContext } from '../prerequisites.ts';
+import { evaluateRacialModifiers } from '../races.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { projectDnD35ActorSemanticTags } from '../semantic_tags.ts';
 import type { AbilityId, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35ClassDefinition, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import {
+  collectActorNaturalWeaponIds,
   computeActorSpellcastingPrereqMetrics,
   computeMaxSlaCasterLevel,
   countActorNaturalAttacks,
@@ -42,12 +44,19 @@ export function buildPrerequisiteContextForActor(
     cha: computeEffectiveAbilityScore(dndData.abilityScores.cha)
   };
 
-  const baseTags = projectDnD35ActorSemanticTags(dndData, [], undefined, classRegistry, sysContent?.skills);
   const raceDefForTags = dndData.raceId ? sysContent?.races[dndData.raceId] : undefined;
-  const activeTags =
-    raceDefForTags?.breathWeapon !== undefined && !baseTags.includes('trait:special_attack')
-      ? [...baseTags, 'trait:special_attack']
-      : baseTags;
+  const racialTags = raceDefForTags
+    ? evaluateRacialModifiers(raceDefForTags, dndData.suppressedBundleIds).grantedTags
+    : [];
+  const activeTags = projectDnD35ActorSemanticTags(
+    dndData,
+    racialTags,
+    undefined,
+    classRegistry,
+    sysContent?.skills,
+    sysContent?.domains,
+    sysContent?.feats
+  );
 
   const classLevels: Record<string, number> = {};
   let characterLevel = 0;
@@ -107,6 +116,7 @@ export function buildPrerequisiteContextForActor(
     proficientArmorCategories: profs.proficientArmorCategories,
     proficientShieldCategories: profs.proficientShieldCategories,
     naturalAttackCount: countActorNaturalAttacks(dndData),
+    naturalWeaponIds: collectActorNaturalWeaponIds(dndData.naturalWeapons),
     handCount,
     naturalArmorBonus: dndData.naturalArmorBonus,
     flySpeedFt: dndData.movementModes?.fly ?? 0,

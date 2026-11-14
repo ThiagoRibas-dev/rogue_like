@@ -76,7 +76,14 @@ export function applyCharacterCreationToPlayer(
   const levelOneTrack = buildHitDieTrackFromClass(classDef, 1);
   const nextTracks: ReadonlyArray<HitDieTrack> = [...withRace.tracks, levelOneTrack];
   const suppressedIds = currentData.suppressedBundleIds ?? [];
-  const activeTags = projectDnD35ActorSemanticTags(withRace);
+  const activeTags = projectDnD35ActorSemanticTags(
+    withRace,
+    [],
+    undefined,
+    sysContent.classes,
+    sysContent.skills,
+    sysContent.domains
+  );
   const classAndDomainMods = buildClassAndDomainEffectModifiers(
     nextTracks,
     draft.selectedAcfs,

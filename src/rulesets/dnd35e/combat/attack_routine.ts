@@ -8,7 +8,7 @@ import {
   type NaturalWeaponLimbEntry
 } from './full_attack_sequence.ts';
 import { resolveTypedModifiers, resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
-import type { StatModifier, StatResolutionBreakdown } from '../types/dnd35e.types.ts';
+import type { OnHitRiderDescriptor, StatModifier, StatResolutionBreakdown } from '../types/dnd35e.types.ts';
 import { computeExpandedCritThreatMin } from '../equipment/weapon_profile_parser.ts';
 import { computeStrikeDoctrineDamageBonus, evaluateTacticalDoctrineModifiers } from './tactical_doctrine.ts';
 
@@ -31,6 +31,7 @@ export interface DnD35ResolvedStrikeProfile {
   readonly critMultiplier: number;
   readonly bypassTags: ReadonlyArray<string>;
   readonly damageRiders?: ReadonlyArray<DnD35WeaponDamageRider> | undefined;
+  readonly onHitRiders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;
   readonly critThreatBreakdown?: StatResolutionBreakdown | undefined;
   readonly weaponId?: string | undefined;
   readonly baseWeaponId?: string | undefined;
@@ -310,6 +311,7 @@ export function resolveActorAttackRoutine(params: {
         critThreatMin: critMin,
         critMultiplier: natLimb?.critMultiplier ?? 2,
         bypassTags: [natLimb?.damageType ?? 'slashing'],
+        ...(natLimb?.riders !== undefined ? { onHitRiders: natLimb.riders } : {}),
         critThreatBreakdown,
         naturalWeaponId: entry.naturalWeaponId
       });

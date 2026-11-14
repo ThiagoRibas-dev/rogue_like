@@ -15,7 +15,11 @@ import type { DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
 import { resolveAttackRoll } from './attack_roll.ts';
 import type { DnD35ResolvedStrikeProfile } from './attack_routine.ts';
-import { resolveOnDropCleaveFollowup, resolveStrikePreAttackContext } from './combat_exchange_phases.ts';
+import {
+  resolveNaturalWeaponOnHitRiders,
+  resolveOnDropCleaveFollowup,
+  resolveStrikePreAttackContext
+} from './combat_exchange_phases.ts';
 import { resolveRetaliationRiders } from './retaliation_resolver.ts';
 
 /** Parameters for executing a single strike exchange through the 5-phase combat pipeline. */
@@ -35,6 +39,7 @@ export interface StrikeExchangeParams {
   readonly defenderHpRemaining: number;
   readonly cleavesUsedThisTurn: number;
   readonly forcedAttackRoll?: number | undefined;
+  readonly forcedRiderSaveRoll?: number | undefined;
 }
 
 /** Result of executing a single strike exchange. */
@@ -203,6 +208,23 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     `[d20: ${rollResult.naturalAttackRoll} + ${preContext.effectiveAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${preContext.strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType}${riderText} damage!`,
     MessageLogCategory.CombatHit
   );
+
+  if (strike.onHitRiders && strike.onHitRiders.length > 0) {
+    runningState = resolveNaturalWeaponOnHitRiders({
+      state: runningState,
+      defenderId,
+      onHitRiders: strike.onHitRiders,
+      rawPhysicalDamage: rollResult.totalDamage,
+      weaponDamageType,
+      bypassTags,
+      attackerData,
+      defenderData,
+      attackerSelfTags,
+      attackerEval,
+      defenderEval,
+      ...(params.forcedRiderSaveRoll !== undefined ? { forcedRiderSaveRoll: params.forcedRiderSaveRoll } : {})
+    });
+  }
 
   // Phase 4: PostStrikeReactionPhase (Retaliation Riders & Defender Doctrine)
   const attackerPos = getComponent(runningState, attackerId, ComponentType.Position) as PositionComponent | undefined;

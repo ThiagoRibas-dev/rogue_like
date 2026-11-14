@@ -15,6 +15,12 @@ export interface AppliedRaceResult {
 /** Minimum intelligence score for sentient playable characters (`3`). */
 const MIN_SENTIENT_INT = 3;
 
+/** Default semantic tags emitted by special attack descriptors when omitted in JSON. */
+const DEFAULT_SPECIAL_ATTACK_TAGS: ReadonlyArray<string> = ['trait:special_attack'];
+
+/** Default semantic tags emitted by racial breathWeapon descriptors when omitted in JSON. */
+const DEFAULT_BREATH_WEAPON_TAGS: ReadonlyArray<string> = ['trait:special_attack', 'special_attack:breath_weapon'];
+
 /**
  * Evaluates all declarative racial mechanics on a `DnD35RaceDefinition` (trait bundles,
  * tag-conditional modifiers, and racial save bonuses), returning resolved `StatModifier`s
@@ -37,6 +43,18 @@ export function evaluateRacialModifiers(
 
   if (race.unencumberedSpeedInHeavyArmor) {
     grantedTags.push('trait:unencumbered_speed');
+  }
+
+  if (race.breathWeapon) {
+    grantedTags.push(...(race.breathWeapon.grantedTags ?? DEFAULT_BREATH_WEAPON_TAGS));
+  }
+
+  for (const nw of race.naturalWeapons ?? []) {
+    for (const rider of nw.riders ?? []) {
+      grantedTags.push(...(rider.grantedTags ?? DEFAULT_SPECIAL_ATTACK_TAGS));
+      grantedTags.push(`special_attack:${rider.type}`);
+      grantedTags.push(`special_attack:${rider.riderId}`);
+    }
   }
 
   for (const bundle of race.traitBundles ?? []) {

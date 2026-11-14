@@ -110,7 +110,10 @@ export function rebuildActorStateFromLevelHistory(
     preliminaryData,
     featurePoolSummary.grantedTags,
     undefined,
-    sysContent.classes
+    sysContent.classes,
+    sysContent.skills,
+    sysContent.domains,
+    sysContent.feats
   );
 
   const bundleGrantedFeats = collectActiveGrantedAndVirtualFeats(

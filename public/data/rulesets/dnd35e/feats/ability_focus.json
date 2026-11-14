@@ -9,8 +9,17 @@
       "targetCategory": "ability"
     },
     "prerequisites": {
-      "type": "has_tag",
-      "tag": "trait:special_attack"
+      "type": "and",
+      "children": [
+        {
+          "type": "has_tag",
+          "tag": "trait:special_attack"
+        },
+        {
+          "type": "has_tag",
+          "tag": "special_attack:$selected"
+        }
+      ]
     },
     "modifiers": [
       {

@@ -2,6 +2,8 @@
 
 A modern, highly-extensible, browser-based traditional roguelike and tactical CRPG engine featuring **Turn-Based** and **Real-Time with Pause (RTwP)** modes, a **Three-Tier Pluggable Ruleset Cartridge Architecture (`RulesetContract`)**, a full **D&D 3.5e SRD Cartridge**, **Tactical Companion AI & Stances**, **Systemic Narrative** simulation, and a **Data-Driven** JSON architecture. Built with **TypeScript (strict mode)**, **Vite**, and **ROT.js**.
 
+Latest live deployment playable in your browser at **[https://thiagoribas-dev.github.io/rogue_like/](https://thiagoribas-dev.github.io/rogue_like/)**.
+
 ---
 
 ## ✨ Current Features

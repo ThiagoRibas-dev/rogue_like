@@ -67,6 +67,10 @@
             "armor:medium",
             "armor:heavy"
           ]
+        },
+        "combatStyleFeatByChoice": {
+          "archery": "rapid_shot",
+          "two_weapon": "two_weapon_fighting"
         }
       },
       "endurance": {
@@ -88,6 +92,10 @@
             "armor:medium",
             "armor:heavy"
           ]
+        },
+        "combatStyleFeatByChoice": {
+          "archery": "manyshot",
+          "two_weapon": "improved_two_weapon_fighting"
         }
       },
       "combat_style_mastery": {
@@ -100,6 +108,10 @@
             "armor:medium",
             "armor:heavy"
           ]
+        },
+        "combatStyleFeatByChoice": {
+          "archery": "improved_precise_shot",
+          "two_weapon": "greater_two_weapon_fighting"
         }
       },
       "animal_companion_ranger": {

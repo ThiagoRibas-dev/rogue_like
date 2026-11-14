@@ -33,6 +33,16 @@
         "ruleKey": "stunning_fist_attack",
         "value": true
       }
-    ]
+    ],
+    "effectBundle": {
+      "bundleId": "feat_stunning_fist",
+      "name": "Stunning Fist",
+      "category": "feat",
+      "usageMode": "passive",
+      "grantedTags": [
+        "trait:special_attack",
+        "special_attack:stun"
+      ]
+    }
   }
 }

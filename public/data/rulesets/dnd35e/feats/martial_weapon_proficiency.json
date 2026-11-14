@@ -6,7 +6,8 @@
     "isFighterBonusFeat": false,
     "repeatable": {
       "mode": "targeted",
-      "targetCategory": "weapon"
+      "targetCategory": "weapon",
+      "weaponProficiencyFilter": "martial"
     },
     "effectBundle": {
       "bundleId": "feat_martial_weapon_proficiency",

@@ -182,7 +182,14 @@ export function evaluateActorSkillCheck(
 
   const condSummary = summarizeConditionEffects(dndData.conditions);
   const situationalContext = resolveEntitySituationalTagContext(state, actorId, dndData);
-  const selfTags = projectDnD35ActorSemanticTags(dndData, [], situationalContext, sys?.classes, sys?.skills);
+  const selfTags = projectDnD35ActorSemanticTags(
+    dndData,
+    [],
+    situationalContext,
+    sys?.classes,
+    sys?.skills,
+    sys?.domains
+  );
 
   const dagResult = evaluateDnD35ActorStatDAG({
     baseSize: dndData.sizeCategory,

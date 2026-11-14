@@ -15,11 +15,18 @@ import {
   isFlankingTarget,
   resolveEffectiveTileIllumination
 } from '../spatial/cover_senses.ts';
-import type { DnD35EntityData, SensoryProfile } from '../types/dnd35e.types.ts';
+import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
+import type { DnD35DamageType, DnD35EntityData, OnHitRiderDescriptor, SensoryProfile } from '../types/dnd35e.types.ts';
 import { evaluateDnD35eEntityDAG, type DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
 import { resolveAttackRoll } from './attack_roll.ts';
 import type { DnD35ResolvedStrikeProfile } from './attack_routine.ts';
 import { resolveCleaveFollowupEligibility } from './cleave_whirlwind.ts';
+import { mitigateIncomingDamage, resolveSavingThrow } from './damage_vitality.ts';
+import {
+  applyConditionWithEscalation,
+  resolveSpecialAbilitySaveDc,
+  shouldTriggerOnHitRider
+} from './maneuvers_conditions.ts';
 
 /** Context resolved during Phase 1 (`PreAttackPhase`) of a strike exchange. */
 export interface PreAttackContext {
@@ -250,4 +257,106 @@ export function resolveOnDropCleaveFollowup(
     state: nextState,
     cleavesUsed: cleavesCount + 1
   };
+}
+
+/**
+ * Evaluates natural weapon `OnHitRiderDescriptor` effects (poison, paralysis, disease, curse, energy drain)
+ * against post-DR physical damage, immunities, and `resolveSpecialAbilitySaveDc` modifiers.
+ */
+export function resolveNaturalWeaponOnHitRiders(params: {
+  readonly state: GameState;
+  readonly defenderId: EntityId;
+  readonly onHitRiders: ReadonlyArray<OnHitRiderDescriptor>;
+  readonly rawPhysicalDamage: number;
+  readonly weaponDamageType: DnD35DamageType;
+  readonly bypassTags: ReadonlyArray<string>;
+  readonly attackerData: DnD35EntityData;
+  readonly defenderData: DnD35EntityData;
+  readonly attackerSelfTags: ReadonlyArray<string>;
+  readonly attackerEval: DnD35EntityDAGResult;
+  readonly defenderEval: DnD35EntityDAGResult;
+  readonly forcedRiderSaveRoll?: number | undefined;
+}): GameState {
+  let runningState = params.state;
+  const { defenderData } = params;
+  const physMitigation = mitigateIncomingDamage({
+    rawDamage: params.rawPhysicalDamage,
+    damageType: params.weaponDamageType,
+    attackBypassTags: params.bypassTags,
+    ...(defenderData.damageReduction !== undefined ? { damageReduction: defenderData.damageReduction } : {}),
+    energyResistance: defenderData.energyResistance,
+    immunities: defenderData.immunities,
+    vulnerabilities: defenderData.vulnerabilities
+  });
+  const defenderConNull = defenderData.abilityScores.con.base === null;
+  const activeAttackerMods = params.attackerEval.statModifiers ?? params.attackerData.statModifiers ?? [];
+
+  for (const rider of params.onHitRiders) {
+    if (!shouldTriggerOnHitRider(rider, physMitigation.finalDamage, true)) continue;
+    const isImmune =
+      defenderData.immunities.includes(rider.type) ||
+      defenderData.immunities.includes(rider.riderId) ||
+      (rider.saveType === 'fort' && defenderConNull);
+    if (isImmune) {
+      runningState = addMessage(
+        runningState,
+        `[${rider.initialEffectDescription}] Target is immune to ${rider.type}!`,
+        MessageLogCategory.CombatMiss
+      );
+      continue;
+    }
+
+    const baseDc = resolveSpecialAbilitySaveDc(rider.dc, rider.type, activeAttackerMods, params.attackerSelfTags);
+    const effectiveDc =
+      rider.riderId !== rider.type
+        ? Math.max(
+            baseDc,
+            resolveSpecialAbilitySaveDc(rider.dc, rider.riderId, activeAttackerMods, params.attackerSelfTags)
+          )
+        : baseDc;
+
+    const saveBonus = params.defenderEval.dagResult.saves[rider.saveType];
+    const saveRes = resolveSavingThrow({
+      saveType: rider.saveType,
+      baseSave: saveBonus,
+      abilityModifier: 0,
+      dc: effectiveDc,
+      ...(params.forcedRiderSaveRoll !== undefined ? { forcedNaturalRoll: params.forcedRiderSaveRoll } : {})
+    });
+
+    if (saveRes.success) {
+      runningState = addMessage(
+        runningState,
+        `[${rider.saveType.toUpperCase()} Save vs ${rider.initialEffectDescription} (DC ${effectiveDc}): d20(${saveRes.naturalRoll}) + ${saveBonus} = ${saveRes.total} — SAVED!]`,
+        MessageLogCategory.CombatMiss
+      );
+      continue;
+    }
+
+    runningState = addMessage(
+      runningState,
+      `[${rider.saveType.toUpperCase()} Save vs ${rider.initialEffectDescription} (DC ${effectiveDc}): d20(${saveRes.naturalRoll}) + ${saveBonus} = ${saveRes.total} — FAILED!]`,
+      MessageLogCategory.CombatHit
+    );
+    const curDefData = getDnD35EntityData(runningState, params.defenderId);
+    if (rider.type === 'energy_drain') {
+      runningState = setDnD35EntityData(runningState, params.defenderId, {
+        ...curDefData,
+        negativeLevels: (curDefData.negativeLevels ?? 0) + 1
+      });
+    } else if (
+      rider.type === 'paralysis' ||
+      rider.type === 'poison' ||
+      rider.type === 'disease' ||
+      rider.type === 'curse'
+    ) {
+      const nextCondition = rider.type === 'paralysis' ? 'paralyzed' : 'sickened';
+      runningState = setDnD35EntityData(runningState, params.defenderId, {
+        ...curDefData,
+        conditions: applyConditionWithEscalation(curDefData.conditions, nextCondition)
+      });
+    }
+  }
+
+  return runningState;
 }

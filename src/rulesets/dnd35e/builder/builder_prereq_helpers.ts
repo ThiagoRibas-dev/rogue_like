@@ -228,6 +228,20 @@ export function countActorNaturalAttacks(dndData: DnD35EntityData): number {
 }
 
 /**
+ * Collects unique natural weapon types and IDs possessed by an actor for target-specific prerequisite gating.
+ */
+export function collectActorNaturalWeaponIds(
+  naturalWeapons?: ReadonlyArray<{ readonly id: string; readonly naturalType: string }>
+): ReadonlyArray<string> {
+  const ids = new Set<string>();
+  for (const nw of naturalWeapons ?? []) {
+    ids.add(nw.naturalType);
+    ids.add(nw.id);
+  }
+  return Array.from(ids);
+}
+
+/**
  * Computes maximum Spell-Like Ability (SLA) Caster Level on an actor.
  */
 export function computeMaxSlaCasterLevel(

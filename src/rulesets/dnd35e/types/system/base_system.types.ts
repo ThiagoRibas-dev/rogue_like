@@ -93,7 +93,8 @@ export const OnHitRiderDescriptorSchema = z.object({
   dc: z.number().int().positive(),
   initialEffectDescription: z.string(),
   secondaryEffectDescription: z.string().optional(),
-  secondaryDelayRounds: z.number().int().positive().optional()
+  secondaryDelayRounds: z.number().int().positive().optional(),
+  grantedTags: z.array(z.string()).optional()
 });
 /** Inferred type for on-hit rider descriptors. */
 export type OnHitRiderDescriptor = z.infer<typeof OnHitRiderDescriptorSchema>;

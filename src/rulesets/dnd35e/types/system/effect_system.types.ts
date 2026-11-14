@@ -208,7 +208,8 @@ export const DnD35ClassFeatureDetailSchema = z.object({
       refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
     })
     .optional(),
-  bonusFeatPool: z.array(z.string()).optional()
+  bonusFeatPool: z.array(z.string()).optional(),
+  combatStyleFeatByChoice: z.record(z.string(), z.string()).optional()
 });
 export type DnD35ClassFeatureDetail = z.infer<typeof DnD35ClassFeatureDetailSchema>;
 
@@ -233,6 +234,7 @@ export const DnD35DomainDefinitionSchema = z.object({
   name: z.string(),
   grantedPowerDescription: z.string(),
   allowedAlignments: z.array(DnD35AlignmentSchema).optional(),
+  grantsDeityFavoredWeaponProficiencyAndFocus: z.boolean().optional(),
   grantedPowerBundle: DnD35EffectBundleSchema.optional(),
   classSkillsAdded: z.array(z.string()).default([]),
   featGrants: z.array(z.string()).default([]),

@@ -104,11 +104,17 @@ export function renderSharedFeatsStep(
     const isStacking = feat.repeatable?.mode === 'stacking';
 
     const targetSelect = isTargeted
-      ? buildFeatTargetSelect(sys, feat, selectedTargetByFeatId, (nextVal) => {
-          selectedTargetByFeatId[feat.id] = nextVal;
-          inspectedFeatId = feat.id;
-          config.onRefresh();
-        })
+      ? buildFeatTargetSelect(
+          sys,
+          feat,
+          selectedTargetByFeatId,
+          (nextVal) => {
+            selectedTargetByFeatId[feat.id] = nextVal;
+            inspectedFeatId = feat.id;
+            config.onRefresh();
+          },
+          config.prereqCtx
+        )
       : undefined;
 
     const curTarget = targetSelect?.value;

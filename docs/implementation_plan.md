@@ -1,205 +1,275 @@
-# Implementation Plan — End-to-End D&D 3.5e Spell Casting, NWN2-Style Quickcast Menu, Targeting & Modularity Cleanup
+# Implementation Plan: Milestone 132 Post-Audit Remediation & Milestone Documentation
 
-## 1. Architectural Alignment & SSOT Ownership Table
-
-Per `AGENTS.md` Rules 15–20 and `docs/SSOT_CONSOLE.md` / `docs/SSOT_DND35E.md`:
-
-| Responsibility | Canonical Owner (SSOT) | Legacy / Stub Code Evicted |
-| :--- | :--- | :--- |
-| **Generic Aimed Action Hook** | `src/types/ruleset.types.ts` (`RulesetContract.resolveAimedAction`) & `src/systems/targeting.system.ts` (`processFireAimedIntent`) | Evicts the Milestone 3 `"You target the tile at X, Y."` stub in `targeting.system.ts` when an active ruleset provides `resolveAimedAction`. |
-| **AoE Blast Preview on Viewport** | `src/rendering/viewport_snapshot.ts` & `src/rendering/tactical_snapshot.ts` | Evicts single-tile-only cursor highlighting when `targetingMode.radius > 0`. |
-| **Runtime Spell Execution & Effect Application** | `src/rulesets/dnd35e/magic/spell_cast_resolver.ts` & `src/rulesets/dnd35e/magic/spell_cast_effects.ts` | Evicts text-only stub behaviour in `castPreparedSlot` / `castSpontaneousSpell` (`src/rendering/ui/dnd35e_spellbook_actions.ts`). |
-| **NWN2-Style Quickcast View-Model** | `src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts` | Pure Tier 2 view-model computing on-the-fly metamagic slot shifts, Cleric/Druid spontaneous conversions, Warlock essences/invocations, and grouped prepared slot counts. |
-| **NWN2-Style Quickcast HUD Overlay & Cast Initiation** | `src/rendering/ui/dnd35e_quickcast.ui.ts` & `src/rendering/ui/dnd35e_spell_cast_ui.ts` | Evicts the bug in `dnd35e_ui_registration.ts` where clicking a hotbar spell called `unprepareSpellSlot` instead of casting. |
+## 1. Architectural Rules & Standards
+- **ECS Purity & Immutability**: All component states remain JSON-serializable records; state updates return new objects.
+- **TypeScript Strictness (`AGENTS.md` Rules 10–14)**: Zero `any`, explicit return types on all functions, named constants/enums, exhaustive `switch` (`assertNever`), flat control flow.
+- **Rule 15 (Cascading Effects Matrix)**: Upstream, downstream, and lateral impacts are mapped below.
+- **Rule 17 (StatModifier vs. RuleOverride Boundary)**: Numeric save DC bonuses (`special_ability_save_dc`) and damage size steps (`natural_damage_size_step`) use `StatModifier` and `resolveTypedModifiersWithBreakdown`.
+- **Rule 21 (Zero Content-ID or Bespoke-Property Branching — "New Content Mod" Litmus Test)**: All legacy content-ID branches in touched files (`effect_bundle.ts`, `ledger_choices.ts`, `builder_prereq_proficiencies.ts`, `semantic_tags.ts`) are replaced with declarative schema properties and Tier 3 JSON definitions.
 
 ---
 
-## 2. Step-by-Step Implementation Plan & Code Snippets
-
-### Phase 1: Tier 1 Console Targeting Context, Ruleset Hook & AoE Preview
-
-#### Step 1.1: Extend `TargetingContext` (`src/types/game-state.types.ts` & `src/types/intents/combat.intents.ts`)
-Add optional spell/ability targeting metadata to `GameState['targetingMode']` and `ToggleTargetingIntent['context']`:
-```ts
-// In src/types/game-state.types.ts (lines 118-125) & src/types/intents/combat.intents.ts (lines 20-26):
-readonly context?: {
-  readonly verb?: string;
-  readonly itemId?: EntityId;
-  readonly abilityId?: string;
-  readonly companionId?: EntityId;
-  readonly spellId?: string;
-  readonly classId?: string;
-  readonly slotId?: string;
-  readonly spellLevel?: number;
-  readonly convertedSpellId?: string;
-  readonly metamagicFeatIds?: ReadonlyArray<string>;
-  readonly aoeShape?: 'burst' | 'emanation' | 'spread' | 'cone' | 'line';
-};
-```
-
-#### Step 1.2: Add `resolveAimedAction` to `RulesetContract` (`src/types/ruleset.types.ts`) & Delegate in `src/systems/targeting.system.ts`
-```ts
-// In src/types/ruleset.types.ts:
-readonly resolveAimedAction?: (
-  state: GameState,
-  actorId: EntityId,
-  targetPos: { readonly x: number; readonly y: number },
-  context: NonNullable<NonNullable<GameState['targetingMode']>['context']>
-) => { readonly state: GameState; readonly success: boolean };
-```
-```ts
-// In src/systems/targeting.system.ts (inside processFireAimedIntent):
-const context = state.targetingMode.context;
-if (context && state.activeRuleset?.resolveAimedAction && context.verb === 'cast_spell') {
-  const { targetingMode: _removed, ...restState } = state;
-  const result = state.activeRuleset.resolveAimedAction(
-    restState as GameState,
-    intent.entityId,
-    targetCursor,
-    context
-  );
-  return { state: result.state, turnConsumed: result.success };
-}
-```
-
-#### Step 1.3: Project AoE Blast Radius in `src/rendering/viewport_snapshot.ts` & `src/rendering/tactical_snapshot.ts`
-When `state.targetingMode?.active` has `radius > 0`, highlight tiles within Euclidean radius `dx * dx + dy * dy <= radius * radius` around `targetingMode.cursor` so the player sees the exact AoE footprint before confirming.
-
----
-
-### Phase 2: Tier 2 D&D 3.5e Runtime Spell Cast Execution (`spell_cast_resolver.ts` & `spell_cast_effects.ts`)
-
-#### Step 2.1: Create `src/rulesets/dnd35e/magic/spell_cast_effects.ts` (<250 lines)
-Handles applying evaluated `DnD35SpellEffectUnit`s and top-level `spell.effectBundle` to each affected target entity:
-- **`damage`**: Uses `evaluateMetamagicDamage("${unit.diceCount}d${unit.diceSides}+${unit.flatBonus}", metamagic)` multiplied by `Math.max(1, unit.projectileCount)` (with `half` reduction on successful save), queues `DamageComponent` with `unit.damageType`, and runs `processDnD35eDamage`.
-- **`healing`**: Rolls healing dice (or maximizes/empowers if metamagic applies), restores `FighterComponent.hp` (or damages undead if `unit.invertsForUndead` and target has `type:undead`).
-- **`stat_bundle` & Top-Level `spell.effectBundle`**: Revokes any prior modifiers on the target matching `"spell:${spell.id}:"` via `revokeModifiersByPathPrefix`, then materializes and appends `StatModifier`s (`materializeSpellUnitModifiers` + `materializeTopLevelSpellModifiers`).
-- **`condition`**: Removes any `unit.curesConditions` and adds `unit.conditionId` to `targetDnd.conditions`.
-- **`ability_harm`**: Appends ability penalty/damage `StatModifier` to `targetDnd.statModifiers`.
-- **`spatial_field`**: Spawns a field entity with `FieldComponent` at `targetPos` (or anchored to `casterId`).
-- **`dispel`**: Runs `resolveDispelCheck` against active `"spell:"` sourcePaths on the target and revokes dispelled paths.
-- **`summon`**: Spawns the summoned creature on the nearest open tile to `targetPos` with `ControllerLinkComponent` (`controllerId: casterId`, `aiProfileId: 'companion_default'`).
-- **`spell_strike`**: Invokes `resolveIterativeSpellStrike`.
-
-#### Step 2.2: Create `src/rulesets/dnd35e/magic/spell_cast_resolver.ts` (<260 lines)
-Exports `executeDnD35eSpellCast(state, casterId, targetPos, castContext)` and `computeSpellRangeTiles(range, casterLevel, enlarged)`:
-```ts
-export interface DnD35SpellCastContext {
-  readonly classId: string;
-  readonly spellId: string;
-  readonly slotId?: string | undefined;
-  readonly spellLevel?: number | undefined;
-  readonly convertedSpellId?: string | undefined;
-  readonly metamagicFeatIds?: ReadonlyArray<string> | undefined;
-}
-```
-1. Looks up `effectiveSpellId = castContext.convertedSpellId ?? castContext.spellId` in `systemContent.spells`.
-2. Evaluates `MetamagicSpellModifiers` from `castContext.metamagicFeatIds` (`empower_spell`, `maximize_spell`, `extend_spell`, `widen_spell`, `silent_spell`, `still_spell`, `enlarge_spell`, `quicken_spell`).
-3. Validates range (`computeSpellRangeTiles`) and action economy on `dndData.actionBudget` (`swift` if `quicken_spell` or `castingTime === 'swift'`, `full_round` if spontaneous metamagic or `castingTime === 'full_round'`, else `standard`).
-4. Expends the prepared slot (`slotId`) or spontaneous slot (`spellLevel`) in `dndData.spellbooksByClass[classId]`.
-5. Enumerates affected targets (`[casterId]` for `personal`, actor at `targetPos` for single-target/touch/ray, or all actors in `computeAoEAffectedSquares` / radius for AoE spells).
-6. Runs `resolveCastPipeline` (including Arcane Spell Failure % from equipped armor/shield when `book.castingTradition === 'arcane'`, Silence, Deafened, Spell Resistance, and Saving Throws `fort` / `ref` / `will` via `evaluateDnD35eEntityDAG` + `rollD20('save', ...)`), and delegates effect application to `applyResolvedSpellEffectsToTarget`.
-7. Wires `resolveAimedAction` on `dnd35eRuleset` in `src/rulesets/dnd35e/dnd35e_ruleset.ts` to call `executeDnD35eSpellCast`.
-
----
-
-### Phase 3: NWN2-Style Quickcast Menu & Unified Spell Cast UI (`dnd35e_quickcast_model.ts`, `dnd35e_quickcast.ui.ts`, `dnd35e_spell_cast_ui.ts`)
-
-#### Step 3.1: Create Pure Quickcast View-Model (`src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts`, <260 lines)
-Builds the NWN2-style Quickcast matrix for any entity:
-```ts
-export interface QuickcastModifierToggle {
-  readonly id: string;
-  readonly label: string;
-  readonly shortBadge: string;
-  readonly kind: 'metamagic' | 'spontaneous_cure' | 'spontaneous_inflict' | 'spontaneous_sna' | 'essence';
-  readonly slotLevelBump: number;
-  readonly isActive: boolean;
-}
-
-export interface QuickcastSpellTile {
-  readonly spellId: string;
-  readonly spellName: string;
-  readonly school: string;
-  readonly classId: string;
-  readonly baseLevel: number;
-  readonly effectiveSlotLevel: number;
-  readonly remainingCount: number; // -1 for at-will / infinite
-  readonly slotId?: string | undefined;
-  readonly convertedSpellId?: string | undefined;
-  readonly metamagicFeatIds: ReadonlyArray<string>;
-  readonly rangeLabel: string;
-  readonly saveDc: number;
-  readonly isDisabled: boolean;
-}
-
-export interface QuickcastLevelRow {
-  readonly spellLevel: number;
-  readonly tiles: ReadonlyArray<QuickcastSpellTile>;
-}
-
-export interface QuickcastClassSection {
-  readonly classId: string;
-  readonly className: string;
-  readonly castingMode: 'prepared' | 'spontaneous' | 'innate';
-  readonly isCollapsed: boolean;
-  readonly rows: ReadonlyArray<QuickcastLevelRow>;
-}
-```
-- **Prepared Casters**: Stacks identical unexpended `preparedSlots` at each level into a single `QuickcastSpellTile` with `remainingCount = matchingUnexpendedSlots.length` and `slotId = matchingUnexpendedSlots[0].slotId`. When Cleric *Spontaneous Cure/Inflict* or Druid *Spontaneous SNA* is toggled active in the top modifier tray, each row `1–9` displays the converted spell (*Cure Light Wounds* .. *Mass Cure Critical Wounds* or *Summon Nature's Ally I–IX*) with `remainingCount` equal to total unexpended non-domain slots at that level!
-- **Spontaneous Casters**: Sums `slotLevelBump` across active metamagic toggles, places each known spell into row `effectiveSlotLevel = baseLevel + totalMetamagicBump` (omitting spells exceeding `maxCastableSpellLevel` or `9`), and sets `remainingCount = Math.max(0, totalDailySlots - usedSlots)` (`-1` for Level 0 at-will or invocations).
-- **Empty Row Omission**: Automatically omits any level row `0–9` that has `0` available tiles (matching NWN2's compact layout).
-
-#### Step 3.2: Create Unified Cast Initiator (`src/rendering/ui/dnd35e_spell_cast_ui.ts`, <180 lines)
-Exports `initiateSpellCastFromUI(state, playerId, request)`:
-- Checks if the spell is self-only (`spell.range === 'personal'` or `spell.targeting.mode === 'personal'` or self-anchored emanation):
-  - Closes any full-screen modal (`spellbook`), executes `executeDnD35eSpellCast` immediately at the player's position, and refreshes the UI.
-- Otherwise (requires aiming at a target or AoE tile):
-  - Closes any open modal (`closeCartridgeModal`), activates `processToggleTargetingIntent` with `verb: 'cast_spell'`, `range` in tiles, `radius` in tiles (doubled if `widen_spell` is active), and full `context` (`spellId`, `classId`, `slotId`, `spellLevel`, `convertedSpellId`, `metamagicFeatIds`, `aoeShape`).
-
-#### Step 3.3: Create Floating NWN2 Quickcast HUD Panel (`src/rendering/ui/dnd35e_quickcast.ui.ts`, `index.html`, `src/styles/dnd35e_modals.css`)
-- Adds `#dnd35e-quickcast-overlay` to `index.html` and registers `quickcast` in `dnd35eUIDefinition` (`defaultKey: 'q'`, dock button `⚡ Quickcast`).
-- Renders the NWN2-authentic floating panel:
-  - **Header**: `QUICKCAST` title + close button.
-  - **Top Modifier Tray**: 2-row icon grid of the character's Metamagic Feats (`+1`, `+2`, `+3`, `+4` badges), Cleric Spontaneous `Cure` / `Inflict` toggles, Druid Spontaneous `SNA` toggle, and Warlock Essences.
-  - **Class Accordion Bars**: Collapsible `- WIZARD`, `- CLERIC`, `- SORCERER` headers.
-  - **`0–9` Level Spine & Square Spell Tiles**: Left column of `0..9` level badges paired with horizontal rows of school-colored spell tiles, each showing an icon glyph, compact name, hover tooltip, and bottom-right remaining count badge (`3`, `11`, `∞`).
-
-#### Step 3.4: Wire Bottom Hotbar & Spellbook Modal Buttons (`dnd35e_ui_hotbar.ts`, `dnd35e_ui_registration.ts`, `dnd35e_spellbook_panes.ui.ts`, `dnd35e_spellbook_known.ui.ts`)
-- Update `buildDnD35eHotbarSlots` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`) to read unexpended `preparedSlots` (grouped with `×N` badge) and spontaneous known spells (with remaining slot count), passing `slotId` / `spellLevel` in `actionPayload`.
-- Fix `onExecuteHotbarSlot` (`src/rendering/ui/dnd35e_ui_registration.ts`) so clicking a hotbar spell calls `initiateSpellCastFromUI` instead of `unprepareSpellSlot`.
-- Update `[Cast]` and `[Conv → ...]` buttons in `dnd35e_spellbook_panes.ui.ts` and `dnd35e_spellbook_known.ui.ts` to call `initiateSpellCastFromUI`.
-
----
-
-### Phase 4: ESLint `max-lines` (<300 Lines) Modularity Cleanup
-Split the 7 files exceeding 300 lines into focused sub-modules with barrel re-exports:
-1. `src/rulesets/dnd35e/character/builder_prereq_context.ts` → extract helpers to `src/rulesets/dnd35e/character/builder_prereq_helpers.ts`.
-2. `src/rulesets/dnd35e/progression/prerequisites.ts` → extract evaluators to `src/rulesets/dnd35e/progression/prerequisite_evaluators.ts`.
-3. `src/rulesets/dnd35e/types/effect_system.types.ts` → extract spell effect schemas to `src/rulesets/dnd35e/types/spell_effect.types.ts`.
-4. `src/rulesets/dnd35e/validation/class_race_validator.ts` → extract race/template validator to `src/rulesets/dnd35e/validation/race_template_validator.ts`.
-5. `src/rulesets/dnd35e/character/builder_spells.ts` → extract helpers to `src/rulesets/dnd35e/character/builder_spells_helpers.ts`.
-6. `src/rendering/ui/dnd35e_char_builder_feats.ui.ts` → extract feat row renderer to `src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts`.
-7. `src/rendering/ui/dnd35e_spellbook_actions.ts` → move casting initiation to `src/rendering/ui/dnd35e_spell_cast_ui.ts`.
-
----
-
-## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 2. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
 | Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Renderers / Validators / Saves) | Lateral (Sibling Modules / Docs / SSOT) |
 | :--- | :--- | :--- | :--- |
-| **1. `TargetingContext` & `RulesetContract.resolveAimedAction`** | `dnd35e_spell_cast_ui.ts`, `dnd35e_quickcast.ui.ts`, `dnd35e_ui_registration.ts`, `mouse_input.ts`, `input_handler.ts` | `processFireAimedIntent`, `dnd35eRuleset.resolveAimedAction`, `viewport_snapshot.ts`, `tactical_snapshot.ts` | `order_target` companion targeting in `targeting.system.ts` (preserved) |
-| **2. `executeDnD35eSpellCast` (`spell_cast_resolver.ts` & `spell_cast_effects.ts`)** | `dnd35eRuleset.resolveAimedAction`, `initiateSpellCastFromUI` | `resolveCastPipeline`, `evaluateSpellEffectUnitsForTarget`, `evaluateMetamagicDamage`, `computeAoEAffectedSquares`, `processDnD35eDamage`, `FieldComponent`, `ControllerLinkComponent`, `dndData.statModifiers`, `dndData.actionBudget`, `dndData.spellbooksByClass` | `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md`, unit tests in `tests/dnd35e_spell_casting.test.ts` |
-| **3. NWN2 Quickcast HUD Overlay (`dnd35e_quickcast_model.ts`, `dnd35e_quickcast.ui.ts`, `index.html`)** | Dock command `⚡ Quickcast` (`[Q]`), metamagic/conversion toggles, spell icon clicks | Calls `initiateSpellCastFromUI`, updates `targetingMode` or executes personal spell | `dnd35e_spellbook.ui.ts`, `dnd35e_ui_hotbar.ts`, `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
-| **4. Hotbar & Spellbook Cast Wiring (`dnd35e_ui_hotbar.ts`, `dnd35e_ui_registration.ts`, `dnd35e_spellbook_actions.ts`)** | Player clicks on Hotbar `[1]-[0]` or Spellbook `[Cast]` / `[Conv → ...]` buttons | Closes modal (`closeCartridgeModal`), enters `targetingMode` or casts immediately, updates HUD hotbar & spellbook slot pips | `console_hotbar.ui.ts` |
-| **5. ESLint `max-lines` Modularity Split (7 files)** | All existing callers of the 7 split modules | Barrel re-exports preserve 100% of existing import paths; `bun run lint` achieves 0 warnings and 0 errors | `docs/ssot/ssot_console.json`, `docs/ssot/ssot_dnd35e.json` |
+| **1. Live `OnHitRiderDescriptor` Combat Pipeline Wiring** | `NaturalWeaponDescriptor.riders` in `races/*.json` & `templates/*.json`; `buildActorNaturalWeaponLimbs` (`dnd35e_equipped_item_dag.ts`); `resolveActorAttackRoutine` (`attack_routine.ts`) | `executeCombatStrikeExchange` (`combat_exchange_pipeline.ts`); `shouldTriggerOnHitRider` & `resolveSpecialAbilitySaveDc` (`maneuvers_conditions.ts`); `resolveSavingThrow` & `mitigateIncomingDamage` (`damage_vitality.ts`) | `DnD35ResolvedStrikeProfile`, `NaturalWeaponLimbEntry`, combat log messages, `tests/dnd35e_feat_mechanics_fixes.test.ts` |
+| **2. Owned-Target Prerequisite Gating & Dropdown Filtering (`Ability Focus` & `Improved Natural Attack`)** | `builder_prereq_context.ts`, `builder_draft_prereq_context.ts`, `builder_levelup_prereq_context.ts`, `races.ts`, `templates.ts`, `semantic_tags.ts`, `ability_focus.json`, `stunning_fist.json` | `evaluatePrerequisiteAST` (`prerequisites.ts`), `getFeatTargetOptions` & `buildFeatTargetSelect` (`dnd35e_char_builder_feat_row.ui.ts`), `renderSharedFeatsStep` (`dnd35e_char_builder_feats.ui.ts`), `renderFeatInspector` (`dnd35e_feat_spell_inspector.ui.ts`) | `docs/dnd35e/SPECIAL_ATTACKS_AND_TAGS.md`, `half_dragon_*.json`, `rogue.json`, `assassin.json`, `paladin.json`, `blackguard.json`, `sun.json` |
+| **3. Rule 21 Legacy Content-ID Fallback Eviction** | `effect_bundle.ts`, `ledger_choices.ts`, `builder_prereq_proficiencies.ts`, `semantic_tags.ts`, `domains/war.json`, `classes/ranger.json`, `*bow.json` | `DnD35DomainDefinitionSchema`, `DnD35ClassFeatureDetailSchema`, `DnD35WeaponStatsSchema`, `run-validator.ts` | `docs/DECISIONS.md`, `docs/ARCHITECTURE.md` |
+| **4. Milestone Documentation (`docs/MILESTONES.md`)** | Completed M132 tasks & verification metrics | Project roadmap tracking (`docs/MILESTONES.md`) | `docs/SSOT_DND35E.md`, `docs/ssot/ssot_dnd35e.json` |
 
 ---
 
-## 4. Verification Plan (`verify.sh`)
-1. Write unit tests in `tests/dnd35e_spell_casting.test.ts` covering:
-   - Personal spell immediate execution (*Mage Armor* applying `+4 armor` modifier with `"spell:mage_armor:..."` `sourcePath`).
-   - Targeted & AoE spell execution via `resolveAimedAction` (*Magic Missile* projectile damage, *Fireball* AoE Reflex save + SR check, *Cure Light Wounds* healing + undead inversion).
-   - Quickcast View-Model (`buildDnD35eQuickcastModel`) grouping prepared slots (`×N`), shifting spontaneous spells by active metamagic (`Empower Spell +2`), and Cleric/Druid spontaneous conversion mode.
-2. Update `docs/ssot/ssot_console.json` and `docs/ssot/ssot_dnd35e.json` and regenerate `docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md` via `bun scripts/map-codebase.ts`.
-3. Run `./verify.sh` across all 8 stages (`tsc --noEmit`, `format`, `lint`, `lint:arch`, `lint:deadcode`, `bun test`, `bun run build`, `run-validator.ts`) and verify 0 errors and 0 lint warnings.
+## 3. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
+
+| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
+| :--- | :--- | :--- | :---: |
+| **Weapon / Skill / School / Ability Target Binding (`effect_bundle.ts`)** | `featDef.id.startsWith('weapon_') \|\| featDef.id === 'improved_critical' \|\| featDef.id.includes('weapon_proficiency')` | Strictly read `featDef.repeatable?.targetCategory` (`'weapon' \| 'natural_weapon' \| 'skill' \| 'school' \| 'ability'`) and `baseBundle.category === 'proficiency'` | **YES** |
+| **Composite & Standard Bow Proficiency Equivalence (`builder_prereq_proficiencies.ts`)** | `if (weaponIds.has('longbow')) weaponIds.add('composite_longbow')` | `proficiencyEquivalentWeaponId?: string` on `DnD35WeaponStatsSchema` authored in `longbow.json`, `composite_longbow.json`, `shortbow.json`, `composite_shortbow.json` | **YES** |
+| **War Domain Deity Favored Weapon Grants (`ledger_choices.ts`)** | `if (domains.includes('war') && deityFavoredWeaponId)` | `grantsDeityFavoredWeaponProficiencyAndFocus?: boolean` on `DnD35DomainDefinitionSchema` authored in `domains/war.json` | **YES** |
+| **Ranger Combat Style Virtual Feat Progression (`ledger_choices.ts`)** | `if (combatStyle === 'archery') { if (activeFeatures.includes('combat_style')) ... }` | `combatStyleFeatByChoice?: Record<string, string>` on `DnD35ClassFeatureDetailSchema` authored on `combat_style`, `improved_combat_style`, and `combat_style_mastery` in `classes/ranger.json`, gated by `isActivationConditionMet` | **YES** |
+| **Barbarian Illiteracy Suppression by Literacy (`semantic_tags.ts`)** | `if (featId === 'illiteracy' && tags.has('trait:literate')) continue;` | `activationCondition: { selfTagsNone: ['trait:literate'] }` already declared on `illiteracy` in `classes/barbarian.json`, evaluated by `isActivationConditionMet` | **YES** |
+| **Owned Special Attack & Natural Weapon Target Gating (`prerequisites.ts`, `dnd35e_char_builder_feat_row.ui.ts`)** | Hardcoding `if (feat.id === 'ability_focus')` or monster-specific lookup tables | `special_attack:<id>` tags in `grantedTags` + `"tag": "special_attack:$selected"` AST interpolation + `PrerequisiteEvalContext.naturalWeaponIds` | **YES** |
+
+---
+
+## 4. Detailed Step-by-Step Implementation & Code Snippets
+
+### Diff 1: Thread `onHitRiders` Through Attack Routine & Execute in `combat_exchange_pipeline.ts`
+
+1. **`src/rulesets/dnd35e/combat/full_attack_sequence.ts`**:
+   - Add `readonly riders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;` to `NaturalWeaponLimbEntry`.
+2. **`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`**:
+   - In `buildActorNaturalWeaponLimbs`, pass `...(nw.riders !== undefined ? { riders: nw.riders } : {})` onto each pushed `NaturalWeaponLimbEntry`.
+3. **`src/rulesets/dnd35e/combat/attack_routine.ts`**:
+   - Add `readonly onHitRiders?: ReadonlyArray<OnHitRiderDescriptor> | undefined;` to `DnD35ResolvedStrikeProfile` and populate it from `natLimb?.riders` on natural weapon strikes.
+4. **`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`**:
+   - In Phase 3 (`OnHitRidersPhase`), after calculating physical damage, evaluate `strike.onHitRiders` (if any):
+   ```ts
+   if (strike.onHitRiders && strike.onHitRiders.length > 0) {
+     const physMitigation = mitigateIncomingDamage({
+       rawDamage: rollResult.totalDamage,
+       damageType: weaponDamageType,
+       attackBypassTags: bypassTags,
+       ...(defenderData.damageReduction !== undefined ? { damageReduction: defenderData.damageReduction } : {}),
+       energyResistance: defenderData.energyResistance,
+       immunities: defenderData.immunities,
+       vulnerabilities: defenderData.vulnerabilities
+     });
+     const defenderConNull = defenderData.abilityScores.con.base === null;
+
+     for (const rider of strike.onHitRiders) {
+       if (!shouldTriggerOnHitRider(rider, physMitigation.finalDamage, true)) {
+         continue;
+       }
+       const isImmune =
+         defenderData.immunities.includes(rider.type) ||
+         defenderData.immunities.includes(rider.riderId) ||
+         (rider.saveType === 'fort' && defenderConNull);
+       if (isImmune) {
+         runningState = addMessage(
+           runningState,
+           `[${rider.initialEffectDescription}] Target is immune to ${rider.type}!`,
+           MessageLogCategory.CombatMiss
+         );
+         continue;
+       }
+
+       const dcWithType = resolveSpecialAbilitySaveDc(
+         rider.dc,
+         rider.type,
+         attackerData.statModifiers ?? [],
+         attackerSelfTags
+       );
+       const effectiveDc =
+         rider.riderId !== rider.type
+           ? Math.max(
+               dcWithType,
+               resolveSpecialAbilitySaveDc(rider.dc, rider.riderId, attackerData.statModifiers ?? [], attackerSelfTags)
+             )
+           : dcWithType;
+
+       const saveBonus = defenderEval.dagResult.saves[rider.saveType];
+       const saveRes = resolveSavingThrow({
+         saveType: rider.saveType,
+         baseSave: saveBonus,
+         abilityModifier: 0,
+         dc: effectiveDc
+       });
+
+       if (saveRes.success) {
+         runningState = addMessage(
+           runningState,
+           `[${rider.saveType.toUpperCase()} Save vs ${rider.initialEffectDescription} (DC ${effectiveDc}): d20(${saveRes.naturalRoll}) + ${saveBonus} = ${saveRes.total} — SAVED!]`,
+           MessageLogCategory.CombatMiss
+         );
+       } else {
+         runningState = addMessage(
+           runningState,
+           `[${rider.saveType.toUpperCase()} Save vs ${rider.initialEffectDescription} (DC ${effectiveDc}): d20(${saveRes.naturalRoll}) + ${saveBonus} = ${saveRes.total} — FAILED!]`,
+           MessageLogCategory.CombatHit
+         );
+         const defRulesetComp = getComponent(runningState, defenderId, ComponentType.RulesetData);
+         if (defRulesetComp && defRulesetComp.rulesetId === 'dnd35e') {
+           const curDefData = defRulesetComp.payload as DnD35EntityData;
+           if (rider.type === 'paralysis') {
+             runningState = addComponent(runningState, defenderId, {
+               ...defRulesetComp,
+               payload: {
+                 ...curDefData,
+                 conditions: applyConditionWithEscalation(curDefData.conditions, 'paralyzed')
+               }
+             });
+           } else if (rider.type === 'energy_drain') {
+             runningState = addComponent(runningState, defenderId, {
+               ...defRulesetComp,
+               payload: {
+                 ...curDefData,
+                 negativeLevels: (curDefData.negativeLevels ?? 0) + 1
+               }
+             });
+           } else if (rider.type === 'poison' || rider.type === 'disease' || rider.type === 'curse') {
+             runningState = addComponent(runningState, defenderId, {
+               ...defRulesetComp,
+               payload: {
+                 ...curDefData,
+                 conditions: applyConditionWithEscalation(curDefData.conditions, 'sickened')
+               }
+             });
+           }
+         }
+       }
+     }
+   }
+   ```
+
+---
+
+### Diff 2: Target-Specific Prerequisite Gating & Owned-Target Dropdown Filtering (`Ability Focus` & `Improved Natural Attack`)
+
+1. **`src/rulesets/dnd35e/prerequisite_types.ts`**:
+   - Add `readonly naturalWeaponIds?: ReadonlyArray<string> | undefined;` to `PrerequisiteEvalContext`.
+2. **`src/rulesets/dnd35e/builder/builder_prereq_helpers.ts`, `builder_prereq_context.ts`, `builder_draft_prereq_context.ts`, `builder_levelup_prereq_context.ts`**:
+   - Add helper `collectActorNaturalWeaponIds(naturalWeapons)`:
+     ```ts
+     export function collectActorNaturalWeaponIds(
+       naturalWeapons?: ReadonlyArray<{ readonly id: string; readonly naturalType: string }>
+     ): ReadonlyArray<string> {
+       const ids = new Set<string>();
+       for (const nw of naturalWeapons ?? []) {
+         ids.add(nw.naturalType);
+         ids.add(nw.id);
+       }
+       return Array.from(ids);
+     }
+     ```
+   - Populate `naturalWeaponIds` in `buildPrerequisiteContextForActor`, `buildCreationDraftPrerequisiteContext`, and `buildPostLevelUpPrerequisiteContext`.
+3. **Specific `special_attack:<id>` Tag Projection (`races.ts`, `templates.ts`, `semantic_tags.ts`, and Tier 3 JSONs)**:
+   - In `races.ts` (`evaluateRacialModifiers`):
+     - When `race.breathWeapon` is present, emit `race.breathWeapon.grantedTags ?? ['trait:special_attack', 'special_attack:breath_weapon']`.
+     - For each `rider` in `nw.riders`, emit `...(rider.grantedTags ?? ['trait:special_attack'])`, `special_attack:${rider.type}`, and `special_attack:${rider.riderId}`.
+   - In `semantic_tags.ts` (`projectDnD35ActorSemanticTags`):
+     - For each `rider` in `nw.riders`, emit `...(rider.grantedTags ?? ['trait:special_attack'])`, `special_attack:${rider.type}`, and `special_attack:${rider.riderId}`.
+     - When `dndData.hasPounce === true`, emit `'trait:special_attack'` and `'special_attack:pounce'`.
+   - In `templates.ts`:
+     - When `template.breathWeapon` is present, emit `...(template.breathWeapon.grantedTags ?? ['trait:special_attack', 'special_attack:breath_weapon'])`.
+   - In `public/data/rulesets/dnd35e/templates/half_dragon_{red,black,gold,silver}.json`, `classes/{rogue,assassin,paladin,blackguard}.json`, `domains/sun.json`, and `feats/stunning_fist.json`:
+     - Add corresponding `special_attack:<id>` tags (`special_attack:breath_weapon`, `special_attack:sneak_attack`, `special_attack:death_attack`, `special_attack:smite`, `special_attack:turn_undead`, `special_attack:stun`).
+4. **`src/rulesets/dnd35e/prerequisites.ts` & `src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts`**:
+   - In `evaluatePrerequisiteAST`:
+     ```ts
+     case 'has_tag': {
+       if (node.tag.includes('$selected')) {
+         if (context.targetId !== undefined) {
+           return context.tags.includes(node.tag.replace('$selected', context.targetId));
+         }
+         const prefix = node.tag.replace('$selected', '');
+         return context.tags.some((t) => t.startsWith(prefix));
+       }
+       return context.tags.includes(node.tag);
+     }
+     case 'min_natural_attacks': {
+       const hasCount = (context.naturalAttackCount ?? 0) >= node.minCount;
+       if (!hasCount) return false;
+       if (context.targetId !== undefined && context.naturalWeaponIds !== undefined) {
+         return context.naturalWeaponIds.includes(context.targetId);
+       }
+       return true;
+     }
+     ```
+   - In `formatPrerequisiteLeafLabel` (`dnd35e_feat_spell_inspector.ui.ts`):
+     - Format `has_tag` with `$selected` cleanly (`Trait/Feature: ${node.tag.replace('$selected', ctx.targetId ?? 'selected target')}`).
+     - Format `min_natural_attacks` when `ctx.targetId` is present (`${node.minCount}+ Natural Attacks (${ctx.targetId})`).
+   - Update `public/data/rulesets/dnd35e/feats/ability_focus.json`:
+     ```json
+     "prerequisites": {
+       "type": "and",
+       "children": [
+         {
+           "type": "has_tag",
+           "tag": "trait:special_attack"
+         },
+         {
+           "type": "has_tag",
+           "tag": "special_attack:$selected"
+         }
+       ]
+     }
+     ```
+5. **`src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts` & `src/rendering/ui/dnd35e_char_builder_feats.ui.ts`**:
+   - Pass optional `prereqCtx?: PrerequisiteEvalContext` into `getTargetedWeaponOptions`, `getFeatTargetOptions`, and `buildFeatTargetSelect`:
+     - When `repeatable?.targetCategory === 'natural_weapon'`: if `prereqCtx?.naturalWeaponIds && prereqCtx.naturalWeaponIds.length > 0`, return `prereqCtx.naturalWeaponIds`; otherwise return `CANONICAL_NATURAL_WEAPONS`.
+     - When `repeatable?.targetCategory === 'ability'`: extract owned special attack IDs from `prereqCtx?.tags` (`t.startsWith('special_attack:')`); if non-empty, return those owned target IDs; otherwise return `CANONICAL_SPECIAL_ATTACKS`.
+
+---
+
+### Diff 3: Evict Legacy Rule 21 Content-ID Branches (`effect_bundle.ts`, `builder_prereq_proficiencies.ts`, `ledger_choices.ts`, `semantic_tags.ts`)
+
+1. **`src/rulesets/dnd35e/effect_bundle.ts`**:
+   - Replace lines 200–213 and 275–278 in `resolveFeatEffectBundle` with strictly declarative `targetCategory` and `baseBundle.category` checks:
+   ```ts
+   const targetCategory = featDef.repeatable?.targetCategory;
+   const isWeaponTargeted = targetCategory === 'weapon' || targetCategory === 'natural_weapon';
+   const isSkillTargeted = targetCategory === 'skill';
+   const isSchoolTargeted = targetCategory === 'school';
+   const isAbilityTargeted = targetCategory === 'ability';
+   ```
+   and:
+   ```ts
+   const nextGrantedTags = [...baseBundle.grantedTags];
+   if (isWeaponTargeted && baseBundle.category === 'proficiency') {
+     nextGrantedTags.push(`proficiency:weapon:${targetId}`);
+   }
+   ```
+2. **`src/rulesets/dnd35e/types/system/item_system.types.ts`, `builder_prereq_proficiencies.ts`, & `*bow.json`**:
+   - Add `proficiencyEquivalentWeaponId: z.string().optional()` to `DnD35WeaponStatsSchema`.
+   - Author `"proficiencyEquivalentWeaponId"` in `longbow.json` (`"composite_longbow"`), `composite_longbow.json` (`"longbow"`), `shortbow.json` (`"composite_shortbow"`), and `composite_shortbow.json` (`"shortbow"`).
+   - In `builder_prereq_proficiencies.ts`, replace lines 160–163 (`if (weaponIds.has('longbow')) ...`) with:
+   ```ts
+   if (sysContent) {
+     for (const wId of Array.from(weaponIds)) {
+       const equivId = sysContent.items[wId]?.weaponStats?.proficiencyEquivalentWeaponId;
+       if (equivId) {
+         weaponIds.add(equivId);
+       }
+     }
+   }
+   ```
+3. **`src/rulesets/dnd35e/types/system/effect_system.types.ts`, `progression/ledger_choices.ts`, `domains/war.json`, & `classes/ranger.json`**:
+   - Add `combatStyleFeatByChoice: z.record(z.string(), z.string()).optional()` to `DnD35ClassFeatureDetailSchema`.
+   - Add `grantsDeityFavoredWeaponProficiencyAndFocus: z.boolean().optional()` to `DnD35DomainDefinitionSchema`.
+   - Author `"grantsDeityFavoredWeaponProficiencyAndFocus": true` in `public/data/rulesets/dnd35e/domains/war.json`.
+   - Author `"combatStyleFeatByChoice"` on `combat_style` (`{"archery": "rapid_shot", "two_weapon": "two_weapon_fighting"}`), `improved_combat_style` (`{"archery": "manyshot", "two_weapon": "improved_two_weapon_fighting"}`), and `combat_style_mastery` (`{"archery": "improved_precise_shot", "two_weapon": "greater_two_weapon_fighting"}`) in `public/data/rulesets/dnd35e/classes/ranger.json`.
+   - In `src/rulesets/dnd35e/progression/ledger_choices.ts` (`collectClassChoiceFeats`), replace the hardcoded `domains.includes('war')` and `combatStyle === 'archery' | 'two_weapon'` blocks with declarative evaluation against `sysContent?.domains` and `sysContent?.classes` (with fallback only when `sysContent === undefined` in unit tests).
+4. **`src/rulesets/dnd35e/semantic_tags.ts`**:
+   - Remove `if (featId === 'illiteracy' && tags.has('trait:literate')) continue;` and let `isActivationConditionMet(detail.activationCondition, currentTagSnapshot)` govern tag emission, only adding `feature:${featId}` when the feature's `activationCondition` passes across its owning class track.
+
+---
+
+### Diff 4: Update `docs/MILESTONES.md`, `docs/DECISIONS.md`, & `tests/dnd35e_feat_mechanics_fixes.test.ts`
+- Append **Phase 32 / Milestone 132** to `docs/MILESTONES.md`.
+- Add unit tests in `tests/dnd35e_feat_mechanics_fixes.test.ts` covering:
+  1. Live `executeCombatStrikeExchange` with a Giant Spider (`bite` + `spider_venom` injury poison rider) and `ability_focus:poison`, verifying that `resolveSpecialAbilitySaveDc` increases the Fortitude save DC from `14` to `16` and that DR absorbing all physical damage suppresses the `'injury'` rider.
+  2. Target-specific prerequisite validation and dropdown filtering for `Ability Focus` (`special_attack:$selected`) and `Improved Natural Attack` (`naturalWeaponIds`).
+  3. Declarative `war.json`, `ranger.json`, and bow `proficiencyEquivalentWeaponId` resolution.
+- Run `./verify.sh` across all 8 stages to confirm 0 errors.

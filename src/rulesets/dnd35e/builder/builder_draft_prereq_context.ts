@@ -1,10 +1,13 @@
+import { isActivationConditionMet, parseParameterizedFeatId } from '../effect_bundle.ts';
 import type { PrerequisiteEvalContext } from '../prerequisites.ts';
 import { buildHitDieTrackFromClass, collectClassFeaturesUpToLevel } from '../progression.ts';
 import { collectClassChoiceFeats } from '../progression/ledger_choices.ts';
+import { evaluateRacialModifiers } from '../races.ts';
 import type { AbilityId, HitDieTrack } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import type { CharacterCreationDraft } from './builder_core.ts';
 import {
+  collectActorNaturalWeaponIds,
   computeActorSpellcastingPrereqMetrics,
   countMetamagicAndItemCreationFeats,
   DEFAULT_HAND_COUNT,
@@ -55,53 +58,40 @@ export function buildCreationDraftPrerequisiteContext(
   const simulatedTracks: HitDieTrack[] = [buildHitDieTrackFromClass(classDef, 1)];
   const activeFeatures = collectClassFeaturesUpToLevel(classDef, 1, draft.selectedAcfs);
 
-  const tags = new Set<string>([`size:${raceDef.size}`, raceDef.creatureType, `type:${raceDef.creatureType}`]);
+  const racialEval = evaluateRacialModifiers(raceDef);
+  const tags = new Set<string>([
+    `size:${raceDef.size}`,
+    raceDef.creatureType,
+    `type:${raceDef.creatureType}`,
+    ...racialEval.grantedTags
+  ]);
   for (const sub of raceDef.subtypes ?? []) {
     tags.add(sub);
     tags.add(`subtype:${sub}`);
   }
-  for (const bundle of raceDef.traitBundles ?? []) {
-    for (const gTag of bundle.grantedTags ?? []) {
-      tags.add(gTag);
-    }
+  if (classDef.grantsLiteracy !== false) {
+    tags.add('trait:literate');
   }
+  const tagSnapshot = Array.from(tags);
   for (const fId of activeFeatures) {
     tags.add(`feature:${fId}`);
-    if (fId === 'turn_or_rebuke_undead' || fId === 'turn_undead_paladin' || fId === 'command_undead') {
-      tags.add('feature:turn_or_rebuke');
-    }
-    if (fId === 'wild_shape_1' || fId.startsWith('wild_shape')) {
-      tags.add('feature:wild_shape');
-    }
-    if (fId.startsWith('sneak_attack') || fId.startsWith('smite_') || fId === 'death_attack') {
-      tags.add('trait:special_attack');
-    }
     const detail = classDef.featureDetails[fId];
-    for (const gTag of detail?.grantedTags ?? []) {
+    if (!detail || !isActivationConditionMet(detail.activationCondition, tagSnapshot)) {
+      continue;
+    }
+    for (const gTag of detail.grantedTags ?? []) {
       tags.add(gTag);
     }
   }
   for (const domId of draft.domains) {
+    tags.add(`domain:${domId}`);
     const domDef = sysContent.domains[domId];
     for (const gTag of domDef?.grantedPowerBundle?.grantedTags ?? []) {
       tags.add(gTag);
     }
-    if (
-      domId === 'air' ||
-      domId === 'earth' ||
-      domId === 'fire' ||
-      domId === 'water' ||
-      domId === 'plant' ||
-      domId === 'sun'
-    ) {
-      tags.add('feature:turn_or_rebuke');
-    }
   }
   if ((raceDef.movementModes?.fly ?? 0) > 0) {
     tags.add('movement:fly');
-  }
-  if (raceDef.breathWeapon !== undefined) {
-    tags.add('trait:special_attack');
   }
   const activeTags = Array.from(tags);
 
@@ -137,13 +127,26 @@ export function buildCreationDraftPrerequisiteContext(
     activeTags
   );
   const allFeats = Array.from(new Set([...autoGrantedFeats, ...choiceFeats, ...accumulatedFeatsThisStep]));
+  const featTagSnapshot = Array.from(tags);
+  for (const rawFeatId of allFeats) {
+    const parsed = parseParameterizedFeatId(rawFeatId);
+    const featDef = sysContent.feats[rawFeatId] ?? sysContent.feats[parsed.baseFeatId];
+    const bundle = featDef?.effectBundle;
+    if (!bundle || !isActivationConditionMet(bundle.activationCondition, featTagSnapshot)) {
+      continue;
+    }
+    for (const gTag of bundle.grantedTags ?? []) {
+      tags.add(gTag);
+    }
+  }
+  const activeTagsWithFeats = Array.from(tags);
 
   const profs = collectActorProficiencies(
     simulatedTracks,
     sysContent.classes,
     raceDef.id,
     allFeats,
-    activeTags,
+    activeTagsWithFeats,
     draft.domains,
     draft.deityFavoredWeaponId,
     sysContent
@@ -171,7 +174,7 @@ export function buildCreationDraftPrerequisiteContext(
     totalBab: classDef.progression[0]?.bab ?? 0,
     skillRanks: draft.skillRanks,
     feats: allFeats,
-    tags: activeTags,
+    tags: activeTagsWithFeats,
     casterLevel: castingMetrics.casterLevel,
     sizeCategory: raceDef.size,
     alignment: draft.alignment,
@@ -189,6 +192,7 @@ export function buildCreationDraftPrerequisiteContext(
     proficientArmorCategories: profs.proficientArmorCategories,
     proficientShieldCategories: profs.proficientShieldCategories,
     naturalAttackCount,
+    naturalWeaponIds: collectActorNaturalWeaponIds(raceDef.naturalWeapons),
     handCount,
     naturalArmorBonus: raceDef.naturalArmorBonus ?? 0,
     flySpeedFt: raceDef.movementModes?.fly ?? 0,

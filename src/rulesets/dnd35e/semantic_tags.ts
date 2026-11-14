@@ -1,5 +1,5 @@
 import { projectConsoleStanceSelfTags } from '../../systems/stance.system.ts';
-import { evaluateEffectBundle } from './effect_bundle.ts';
+import { evaluateEffectBundle, isActivationConditionMet, parseParameterizedFeatId } from './effect_bundle.ts';
 import { appendSourcePath } from './modifiers.ts';
 import {
   HEAVY_ARMOR_BONUS_THRESHOLD,
@@ -10,6 +10,8 @@ import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from './type
 import type {
   DnD35ClassDefinition,
   DnD35CreatureTypeEngine,
+  DnD35DomainDefinition,
+  DnD35FeatDefinition,
   DnD35SkillDefinition,
   DnD35SubtypeDefinition
 } from './types/dnd35e_system.types.ts';
@@ -28,6 +30,9 @@ export const CONSTRUCT_BONUS_HP_BY_SIZE: Readonly<Partial<Record<CreatureSizeCat
 
 /** Standard 5-rank threshold for Balance/Tumble acrobatics trait projection when skillRegistry is omitted. */
 export const DEFAULT_ACROBATIC_SKILL_THRESHOLD_RANKS = 5;
+
+/** Default semantic tags emitted by on-hit rider descriptors when omitted in JSON. */
+const DEFAULT_RIDER_SPECIAL_ATTACK_TAGS: ReadonlyArray<string> = ['trait:special_attack'];
 
 /**
  * Emits declarative `StatModifier` entries for an actor's Creature Type (`type:construct` bonus HP by size)
@@ -123,6 +128,8 @@ export function buildCreatureTypeAndSubtypeModifiers(
  * @param situationalContext Live situational equipment and encumbrance context.
  * @param classRegistry Optional loaded class definitions.
  * @param skillRegistry Optional loaded skill definitions.
+ * @param domainRegistry Optional loaded domain definitions.
+ * @param featRegistry Optional loaded feat definitions.
  * @returns Deduplicated array of projected semantic tags.
  */
 export function projectDnD35ActorSemanticTags(
@@ -130,7 +137,9 @@ export function projectDnD35ActorSemanticTags(
   existingTags: ReadonlyArray<string> = [],
   situationalContext?: SituationalTagContext,
   classRegistry?: Readonly<Record<string, DnD35ClassDefinition>>,
-  skillRegistry?: Readonly<Record<string, DnD35SkillDefinition>>
+  skillRegistry?: Readonly<Record<string, DnD35SkillDefinition>>,
+  domainRegistry?: Readonly<Record<string, DnD35DomainDefinition>>,
+  featRegistry?: Readonly<Record<string, DnD35FeatDefinition>>
 ): ReadonlyArray<string> {
   const tags = new Set<string>(existingTags);
   tags.add(`size:${dndData.sizeCategory}`);
@@ -167,44 +176,50 @@ export function projectDnD35ActorSemanticTags(
   }
 
   for (const featId of dndData.activeClassFeatures ?? []) {
-    if (featId === 'illiteracy' && tags.has('trait:literate')) {
-      continue;
-    }
-    tags.add(`feature:${featId}`);
-    if (featId === 'illiteracy') {
-      tags.add('trait:illiterate');
-    }
-    if (featId === 'wild_shape_1' || featId.startsWith('wild_shape')) {
-      tags.add('feature:wild_shape');
-    }
-    if (featId === 'turn_or_rebuke_undead' || featId === 'turn_undead_paladin' || featId === 'command_undead') {
-      tags.add('feature:turn_or_rebuke');
-    }
-    if (featId.startsWith('sneak_attack') || featId.startsWith('smite_') || featId === 'death_attack') {
-      tags.add('trait:special_attack');
-    }
     if (classRegistry) {
+      const currentTagSnapshot = Array.from(tags);
+      let matchingDetailFound = false;
+      let anyDetailActivated = false;
       for (const track of dndData.tracks) {
         const detail = classRegistry[track.trackId]?.featureDetails?.[featId];
-        if (detail?.grantedTags) {
-          for (const gTag of detail.grantedTags) {
-            tags.add(gTag);
-          }
+        if (!detail) continue;
+        matchingDetailFound = true;
+        if (!isActivationConditionMet(detail.activationCondition, currentTagSnapshot)) {
+          continue;
+        }
+        anyDetailActivated = true;
+        for (const gTag of detail.grantedTags ?? []) {
+          tags.add(gTag);
         }
       }
+      if (!matchingDetailFound || anyDetailActivated) {
+        tags.add(`feature:${featId}`);
+      }
+    } else {
+      tags.add(`feature:${featId}`);
     }
   }
 
   for (const domId of dndData.domains ?? []) {
-    if (
-      domId === 'air' ||
-      domId === 'earth' ||
-      domId === 'fire' ||
-      domId === 'water' ||
-      domId === 'plant' ||
-      domId === 'sun'
-    ) {
-      tags.add('feature:turn_or_rebuke');
+    tags.add(`domain:${domId}`);
+    const domDef = domainRegistry?.[domId];
+    for (const gTag of domDef?.grantedPowerBundle?.grantedTags ?? []) {
+      tags.add(gTag);
+    }
+  }
+
+  if (featRegistry) {
+    const featTagSnapshot = Array.from(tags);
+    const suppressed = dndData.suppressedBundleIds ?? [];
+    for (const rawFeatId of dndData.feats ?? []) {
+      const parsed = parseParameterizedFeatId(rawFeatId);
+      const featDef = featRegistry[rawFeatId] ?? featRegistry[parsed.baseFeatId];
+      const bundle = featDef?.effectBundle;
+      if (!bundle || suppressed.includes(bundle.bundleId)) continue;
+      if (!isActivationConditionMet(bundle.activationCondition, featTagSnapshot)) continue;
+      for (const gTag of bundle.grantedTags ?? []) {
+        tags.add(gTag);
+      }
     }
   }
 
@@ -212,8 +227,19 @@ export function projectDnD35ActorSemanticTags(
     tags.add('movement:fly');
   }
 
-  if (dndData.hasPounce === true || (dndData.naturalWeapons ?? []).some((nw) => (nw.riders?.length ?? 0) > 0)) {
+  if (dndData.hasPounce === true) {
     tags.add('trait:special_attack');
+    tags.add('special_attack:pounce');
+  }
+
+  for (const nw of dndData.naturalWeapons ?? []) {
+    for (const rider of nw.riders ?? []) {
+      for (const rTag of rider.grantedTags ?? DEFAULT_RIDER_SPECIAL_ATTACK_TAGS) {
+        tags.add(rTag);
+      }
+      tags.add(`special_attack:${rider.type}`);
+      tags.add(`special_attack:${rider.riderId}`);
+    }
   }
 
   if (skillRegistry) {

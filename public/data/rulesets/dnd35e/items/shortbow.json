@@ -26,7 +26,8 @@
       "critMultiplier": 3,
       "rangeIncrementFt": 60,
       "reachFt": 5,
-      "strikesAdjacent": true
+      "strikesAdjacent": true,
+      "proficiencyEquivalentWeaponId": "composite_shortbow"
     },
     "equippable": {
       "slot": "hand",

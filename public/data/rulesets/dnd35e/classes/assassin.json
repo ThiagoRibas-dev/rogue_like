@@ -88,11 +88,25 @@
       "shields": []
     },
     "featureDetails": {
+      "sneak_attack_1d6": {
+        "id": "sneak_attack_1d6",
+        "name": "Sneak Attack",
+        "category": "ex",
+        "description": "Deal extra precision damage (+1d6 at 1st level, increasing by +1d6 every two assassin levels) when target is flanked or denied DEX bonus to AC.",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:sneak_attack"
+        ]
+      },
       "death_attack": {
         "id": "death_attack",
         "name": "Death Attack",
         "category": "ex",
-        "description": "After studying a victim for 3 rounds, a sneak attack with a melee weapon can paralyze or kill the target (Fortitude DC 10 + assassin level + INT mod)."
+        "description": "After studying a victim for 3 rounds, a sneak attack with a melee weapon can paralyze or kill the target (Fortitude DC 10 + assassin level + INT mod).",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:death_attack"
+        ]
       },
       "poison_use": {
         "id": "poison_use",

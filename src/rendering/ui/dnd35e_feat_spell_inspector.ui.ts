@@ -72,7 +72,9 @@ function formatPrerequisiteLeafLabel(node: PrerequisiteNode, ctx: PrerequisiteEv
         ? `Proficiency with ${ctx.targetId ?? 'selected weapon'}`
         : `Proficiency: ${node.scope.replace(/_/g, ' ')}`;
     case 'min_natural_attacks':
-      return `${node.minCount}+ Natural Attacks`;
+      return ctx.targetId !== undefined && ctx.naturalWeaponIds !== undefined
+        ? `${node.minCount}+ Natural Attacks (${ctx.targetId})`
+        : `${node.minCount}+ Natural Attacks`;
     case 'min_hands':
       return `${node.minHands}+ Hands`;
     case 'min_natural_armor':
@@ -82,7 +84,9 @@ function formatPrerequisiteLeafLabel(node: PrerequisiteNode, ctx: PrerequisiteEv
     case 'min_sla_caster_level':
       return `Spell-Like Ability at Caster Level ${node.minCasterLevel}+`;
     case 'has_tag':
-      return `Trait/Feature: ${node.tag}`;
+      return node.tag.includes('$selected')
+        ? `Trait/Feature: ${node.tag.replace('$selected', ctx.targetId ?? 'selected target')}`
+        : `Trait/Feature: ${node.tag}`;
     case 'size_in':
       return `Size: ${node.allowedSizes.join(', ')}`;
     case 'race_in':

@@ -253,7 +253,8 @@ export const DnD35RaceDefinitionSchema = z.object({
       rangeFtAtMedium: z.number().int().positive(),
       damageType: DnD35DamageTypeSchema,
       dieType: z.union([z.literal('d4'), z.literal('d6'), z.literal('d8'), z.literal('d10')]),
-      saveType: z.enum(['fort', 'ref', 'will'])
+      saveType: z.enum(['fort', 'ref', 'will']),
+      grantedTags: z.array(z.string()).optional()
     })
     .optional(),
   cr: z.number().optional()

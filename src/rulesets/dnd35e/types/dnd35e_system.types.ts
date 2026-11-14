@@ -131,7 +131,9 @@ export type DnD35SkillDefinition = z.infer<typeof DnD35SkillDefinitionSchema>;
 /** Repeatable feat configuration distinguishing stacking vs targeted mechanics. */
 export const DnD35FeatRepeatableSchema = z.object({
   mode: z.enum(['stacking', 'targeted']),
-  targetCategory: z.enum(['weapon', 'school', 'skill', 'ability']).optional()
+  targetCategory: z.enum(['weapon', 'natural_weapon', 'school', 'skill', 'ability']).optional(),
+  weaponProficiencyFilter: z.enum(['simple', 'martial', 'exotic']).optional(),
+  allowedTargets: z.array(z.string()).optional()
 });
 export type DnD35FeatRepeatable = z.infer<typeof DnD35FeatRepeatableSchema>;
 

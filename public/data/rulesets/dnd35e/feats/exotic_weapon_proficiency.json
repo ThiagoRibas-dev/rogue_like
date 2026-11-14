@@ -6,7 +6,8 @@
     "isFighterBonusFeat": true,
     "repeatable": {
       "mode": "targeted",
-      "targetCategory": "weapon"
+      "targetCategory": "weapon",
+      "weaponProficiencyFilter": "exotic"
     },
     "prerequisites": {
       "type": "min_bab",

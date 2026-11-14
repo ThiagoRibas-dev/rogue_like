@@ -108,5 +108,6 @@ export interface PrerequisiteEvalContext {
   readonly spellCountBySchool?: Readonly<Partial<Record<DnD35SpellSchool, number>>> | undefined;
   readonly maxSpellLevelBySchool?: Readonly<Partial<Record<DnD35SpellSchool, number>>> | undefined;
   readonly arcaneSchool?: DnD35SpellSchool | 'universal' | undefined;
+  readonly naturalWeaponIds?: ReadonlyArray<string> | undefined;
   readonly targetId?: string | undefined;
 }

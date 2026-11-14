@@ -198,25 +198,19 @@ export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?:
   }
 
   const targetCategory = featDef.repeatable?.targetCategory;
-  const isWeaponTargeted =
-    targetCategory === 'weapon' ||
-    featDef.id.startsWith('weapon_') ||
-    featDef.id.startsWith('greater_weapon_') ||
-    featDef.id === 'improved_critical' ||
-    featDef.id.includes('weapon_proficiency');
-
-  const isSkillTargeted = targetCategory === 'skill' || featDef.id.startsWith('skill_');
-  const isSchoolTargeted =
-    targetCategory === 'school' || featDef.id.startsWith('spell_focus') || featDef.id.startsWith('greater_spell_focus');
-  const isAbilityTargeted = targetCategory === 'ability' || featDef.id.startsWith('ability_focus');
+  const isWeaponTargeted = targetCategory === 'weapon' || targetCategory === 'natural_weapon';
+  const isSkillTargeted = targetCategory === 'skill';
+  const isSchoolTargeted = targetCategory === 'school';
+  const isAbilityTargeted = targetCategory === 'ability';
 
   const transformedModifiers: DnD35DeclarativeModifier[] = baseBundle.modifiers.map((mod) => {
     if (isWeaponTargeted) {
       const isAttackMod = mod.target === 'attack' || mod.target === 'strike_attack';
       const isDamageMod = mod.target === 'damage' || mod.target === 'strike_damage';
       const isCritMod = mod.target === 'crit_threat_doubling';
+      const isNaturalStepMod = mod.target === 'natural_damage_size_step';
 
-      if (isAttackMod || isDamageMod || isCritMod) {
+      if (isAttackMod || isDamageMod || isCritMod || isNaturalStepMod) {
         const nextTarget = isAttackMod ? 'strike_attack' : isDamageMod ? 'strike_damage' : mod.target;
         const existingTags = mod.condition?.effectTagsAll ?? [];
         const weaponTag = `weapon:${targetId}`;
@@ -271,7 +265,7 @@ export function resolveFeatEffectBundle(featDef: DnD35FeatDefinition, targetId?:
   });
 
   const nextGrantedTags = [...baseBundle.grantedTags];
-  if (isWeaponTargeted && (featDef.id.includes('weapon_proficiency') || featDef.id.startsWith('proficiency_'))) {
+  if (isWeaponTargeted && baseBundle.category === 'proficiency') {
     nextGrantedTags.push(`proficiency:weapon:${targetId}`);
   }
 

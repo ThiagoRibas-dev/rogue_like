@@ -26,7 +26,8 @@
       "critMultiplier": 3,
       "rangeIncrementFt": 100,
       "reachFt": 5,
-      "strikesAdjacent": true
+      "strikesAdjacent": true,
+      "proficiencyEquivalentWeaponId": "composite_longbow"
     },
     "equippable": {
       "slot": "hand",

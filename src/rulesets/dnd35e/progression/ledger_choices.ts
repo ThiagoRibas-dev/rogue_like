@@ -1,3 +1,4 @@
+import { isActivationConditionMet } from '../effect_bundle.ts';
 import { appendSourcePath } from '../modifiers.ts';
 import type { DnD35CompanionEntry, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -35,21 +36,32 @@ export function collectClassChoiceFeats(
 ): ReadonlyArray<string> {
   const granted = new Set<string>();
 
-  if (domains.includes('war') && deityFavoredWeaponId) {
-    granted.add(`martial_weapon_proficiency:${deityFavoredWeaponId}`);
-    granted.add(`weapon_focus:${deityFavoredWeaponId}`);
+  if (deityFavoredWeaponId && sysContent?.domains) {
+    const grantsDeityWeaponProfAndFocus = domains.some(
+      (domId) => sysContent.domains[domId]?.grantsDeityFavoredWeaponProficiencyAndFocus === true
+    );
+    if (grantsDeityWeaponProfAndFocus) {
+      const favoredDef = sysContent.items?.[deityFavoredWeaponId];
+      const isExoticFavored = favoredDef?.weaponStats?.proficiencyCategory === 'exotic';
+      granted.add(
+        isExoticFavored
+          ? `exotic_weapon_proficiency:${deityFavoredWeaponId}`
+          : `martial_weapon_proficiency:${deityFavoredWeaponId}`
+      );
+      granted.add(`weapon_focus:${deityFavoredWeaponId}`);
+    }
   }
 
-  const wearingMediumOrHeavyArmor = activeTags.includes('armor:medium') || activeTags.includes('armor:heavy');
-
-  if (!wearingMediumOrHeavyArmor && combatStyle === 'archery') {
-    if (activeFeatures.includes('combat_style')) granted.add('rapid_shot');
-    if (activeFeatures.includes('improved_combat_style')) granted.add('manyshot');
-    if (activeFeatures.includes('combat_style_mastery')) granted.add('improved_precise_shot');
-  } else if (!wearingMediumOrHeavyArmor && combatStyle === 'two_weapon') {
-    if (activeFeatures.includes('combat_style')) granted.add('two_weapon_fighting');
-    if (activeFeatures.includes('improved_combat_style')) granted.add('improved_two_weapon_fighting');
-    if (activeFeatures.includes('combat_style_mastery')) granted.add('greater_two_weapon_fighting');
+  if (combatStyle && sysContent?.classes) {
+    for (const classDef of Object.values(sysContent.classes)) {
+      for (const featId of activeFeatures) {
+        const detail = classDef.featureDetails?.[featId];
+        const grantedStyleFeat = detail?.combatStyleFeatByChoice?.[combatStyle];
+        if (!grantedStyleFeat) continue;
+        if (!isActivationConditionMet(detail.activationCondition, activeTags)) continue;
+        granted.add(grantedStyleFeat);
+      }
+    }
   }
 
   const famRaceId = familiarId ?? companions?.find((c) => c.tags.includes('familiar'))?.raceId;

@@ -60,7 +60,9 @@
       "half_dragon",
       "breath_weapon_fire_cone_6d8",
       "low_light_vision",
-      "darkvision_60"
+      "darkvision_60",
+      "trait:special_attack",
+      "special_attack:breath_weapon"
     ],
     "levelAdjustmentDelta": 3
   }

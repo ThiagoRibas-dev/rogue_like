@@ -117,11 +117,25 @@
         "name": "Smite Good",
         "category": "su",
         "description": "Add CHA bonus to attack roll and blackguard level to damage roll against a good foe.",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:smite"
+        ],
         "resourcePool": {
           "poolId": "smite_good",
           "maxBase": 1,
           "refreshCycle": "rest_8h"
         }
+      },
+      "sneak_attack_1d6": {
+        "id": "sneak_attack_1d6",
+        "name": "Sneak Attack",
+        "category": "ex",
+        "description": "Deal extra precision damage (+1d6 at 4th level, increasing every three blackguard levels) when target is flanked or denied DEX bonus to AC.",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:sneak_attack"
+        ]
       },
       "aura_of_despair": {
         "id": "aura_of_despair",
@@ -135,7 +149,9 @@
         "category": "su",
         "description": "Rebuke or command undead as an evil cleric of two levels lower (3 + CHA mod/day).",
         "grantedTags": [
-          "feature:turn_or_rebuke"
+          "feature:turn_or_rebuke",
+          "trait:special_attack",
+          "special_attack:turn_undead"
         ],
         "scalingPoolContribution": {
           "poolId": "turn_undead_effective_level",
