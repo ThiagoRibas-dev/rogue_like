@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { CampaignData } from './campaign.types.ts';
 import type { GameEvent } from './events.types.ts';
-import type { EntityId, GameState } from './game-state.types.ts';
+import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
 import type { MeleeAttackIntent } from './intents/combat.intents.ts';
 import type { ApplyIntent, ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Intent } from './intents/intent.union.ts';
@@ -265,4 +265,19 @@ export interface RulesetContract {
     intent: Intent,
     baseEnergyCost: number
   ): { readonly state: GameState; readonly energyCost: number };
+
+  /**
+   * Optional hook resolving an aimed targeting action (e.g. spell cast or targeted ability) confirmed at `targetPos`.
+   * @param state The current GameState (with targetingMode already cleared).
+   * @param actorId The acting entity ID.
+   * @param targetPos The confirmed world tile coordinates.
+   * @param context The active TargetingContext metadata.
+   * @returns Updated GameState and whether the aimed action succeeded/consumed an action.
+   */
+  resolveAimedAction?(
+    state: GameState,
+    actorId: EntityId,
+    targetPos: { readonly x: number; readonly y: number },
+    context: TargetingContext
+  ): { readonly state: GameState; readonly success: boolean };
 }

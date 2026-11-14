@@ -34,6 +34,23 @@
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_class.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders feat category classification and parameterized target dropdowns for Character Creation and Level-Up.",
+    "canonicalEntryPoints": [
+      "getTargetedWeaponOptions",
+      "classifyFeatCategory",
+      "buildFeatTargetSelect"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_char_builder_feats.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -266,6 +283,21 @@
       "Never maintain separate inline Skills or Feats step implementations in dnd35e_level_up.ui.ts; always reuse the parameterized step components from dnd35e_char_builder_steps.ui.ts."
     ]
   },
+  "src/rendering/ui/dnd35e_quickcast.ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Renders the NWN2-style Quickcast HUD Overlay with metamagic/rod/spontaneous conversion toggles, collapsible class headers, and Level 0..9 compact spell tiles.",
+    "canonicalEntryPoints": [
+      "renderDnD35eQuickcastModal"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_quickcast.ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_quickcast.ui.ts."
+    ]
+  },
   "src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
@@ -324,6 +356,23 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet.ui.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_spell_cast_ui.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Initiates spell casting from Quickcast, Hotbar, or Spellbook UI by entering targeting mode or immediately firing personal-range spells.",
+    "canonicalEntryPoints": [
+      "SpellCastUIRequest",
+      "initiateSpellCastFromUI",
+      "dispatchSpellCastFromLiveUI"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_spell_cast_ui.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rendering/ui/dnd35e_spell_cast_ui.ts."
     ]
   },
   "src/rendering/ui/dnd35e_spellbook_actions.ts": {
@@ -520,6 +569,21 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_core.ts."
     ]
   },
+  "src/rulesets/dnd35e/builder/builder_draft_prereq_context.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Synthesizes a PrerequisiteEvalContext for a 1st-level CharacterCreationDraft.",
+    "canonicalEntryPoints": [
+      "buildCreationDraftPrerequisiteContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_draft_prereq_context.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_draft_prereq_context.ts."
+    ]
+  },
   "src/rulesets/dnd35e/builder/builder_feats.ts": {
     "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
@@ -570,6 +634,21 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_hydrator_levelup.ts."
     ]
   },
+  "src/rulesets/dnd35e/builder/builder_levelup_prereq_context.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Synthesizes a post-level-up PrerequisiteEvalContext for an actor advancing a chosen class.",
+    "canonicalEntryPoints": [
+      "buildPostLevelUpPrerequisiteContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_levelup_prereq_context.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_levelup_prereq_context.ts."
+    ]
+  },
   "src/rulesets/dnd35e/builder/builder_levelup_validation.ts": {
     "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
@@ -599,6 +678,56 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_prereq_context.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_prereq_helpers.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Shared spell-level, SLA, domain, and class-feature aggregation helpers for PrerequisiteEvalContext builders.",
+    "canonicalEntryPoints": [
+      "countMetamagicAndItemCreationFeats",
+      "computeActorSpellcastingPrereqMetrics",
+      "countActorNaturalAttacks",
+      "computeMaxSlaCasterLevel"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_prereq_helpers.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_prereq_helpers.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_prereq_proficiencies.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves weapon, armor, and shield proficiency tags from class features, racial traits, and selected feats for PrerequisiteEvalContext.",
+    "canonicalEntryPoints": [
+      "collectActorProficiencies"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_prereq_proficiencies.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_prereq_proficiencies.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/builder/builder_spell_eligibility.ts": {
+    "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
+    "tier": "tier2_cartridge",
+    "responsibility": "Determines spell level and school/alignment eligibility for Character Creation and Level-Up drafts.",
+    "canonicalEntryPoints": [
+      "getSpellLevelForClass",
+      "isSpellSelectableForDraft",
+      "resolveClassSpellAcquisitionMode"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/builder/builder_spell_eligibility.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/builder/builder_spell_eligibility.ts."
     ]
   },
   "src/rulesets/dnd35e/builder/builder_spells.ts": {
@@ -1264,6 +1393,79 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_effects.ts."
     ]
   },
+  "src/rulesets/dnd35e/magic/spell_cast_effects.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Applies evaluated DnD35SpellEffectUnits and top-level effectBundles onto a target entity with same-spell modifier replacement and undead healing inversion.",
+    "canonicalEntryPoints": [
+      "ApplySpellEffectsContext",
+      "applyResolvedSpellEffectsToTarget"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_cast_effects.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_effects.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_cast_helpers.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Range calculators, metamagic/rod summarizers, 5-tier action budget consumers, slot expenditure, melee threat detection, and AoE target enumeration for runtime spell casting.",
+    "canonicalEntryPoints": [
+      "DnD35SpellCastContext",
+      "computeSpellRangeTiles",
+      "summarizeMetamagic",
+      "consumeSpellActionBudget",
+      "expendCasterSpellSlot",
+      "isCasterThreatenedInMelee",
+      "enumerateSpellTargets",
+      "collectEquippedArcaneSpellFailure"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_cast_helpers.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_helpers.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_cast_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "End-to-end runtime D&D 3.5e spell cast resolver orchestrating range, action economy, slot expenditure, resolveCastPipeline, SR, saves, AoE targets, and damage/buff application.",
+    "canonicalEntryPoints": [
+      "executeDnD35eSpellCast",
+      "computeSpellRangeTiles",
+      "summarizeMetamagic",
+      "DnD35SpellCastContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_cast_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_resolver.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/spell_cast_units.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Specialized runtime spell unit executors for spatial_field, dispel, summon, spell_strike, save_or_die, and energy_drain effect units.",
+    "canonicalEntryPoints": [
+      "QueueDamageFn",
+      "BuildDiceFn",
+      "applySpecialSpellUnit"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/spell_cast_units.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_units.ts."
+    ]
+  },
   "src/rulesets/dnd35e/magic/spell_modifiers.ts": {
     "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
     "tier": "tier2_cartridge",
@@ -1475,6 +1677,40 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/modifiers/stacking_engine.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/prerequisite_proficiency.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Canonical SRD base weapon catalogs, weapon group resolvers, and weapon/armor/shield proficiency evaluators for prerequisite ASTs.",
+    "canonicalEntryPoints": [
+      "getEquivalentBowWeaponId",
+      "hasTargetedFeatInList",
+      "evaluateProficiencyPrerequisite"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/prerequisite_proficiency.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/prerequisite_proficiency.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/prerequisite_types.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Recursive PrerequisiteNode AST types, PrerequisiteEvalContext, and ProficiencyPrerequisiteScope interfaces.",
+    "canonicalEntryPoints": [
+      "ProficiencyPrerequisiteScope",
+      "PrerequisiteNode",
+      "PrerequisiteEvalContext"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/prerequisite_types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/prerequisite_types.ts."
     ]
   },
   "src/rulesets/dnd35e/prerequisites.ts": {
@@ -2220,6 +2456,21 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/item_system.types.ts."
     ]
   },
+  "src/rulesets/dnd35e/types/system/prerequisite_schema.types.ts": {
+    "domain": "D&D 3.5e: Ruleset Types & Schemas",
+    "tier": "tier1_types",
+    "responsibility": "Recursive Zod schema for declarative D&D 3.5e PrerequisiteNode ASTs.",
+    "canonicalEntryPoints": [
+      "PrerequisiteNodeSchema"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/types/system/prerequisite_schema.types.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/prerequisite_schema.types.ts."
+    ]
+  },
   "src/rulesets/dnd35e/types/system/spell_system.types.ts": {
     "domain": "D&D 3.5e: Ruleset Types & Schemas",
     "tier": "tier1_types",
@@ -2246,6 +2497,42 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/types/system/spell_system.types.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Pure NWN2-style Quickcast HUD view-model builder projecting metamagic/rod/spontaneous conversion toggles and Level 0..9 class spell tiles.",
+    "canonicalEntryPoints": [
+      "QuickcastUIState",
+      "QuickcastSpellTile",
+      "QuickcastLevelRow",
+      "QuickcastClassSection",
+      "QuickcastPanelViewModel",
+      "buildDnD35eQuickcastModel"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_quickcast_model.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/ui/dnd35e_quickcast_modifiers.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Collects metamagic feat toggles, metamagic rods in inventory, and Cleric/Druid spontaneous conversion toggles for the Quickcast HUD.",
+    "canonicalEntryPoints": [
+      "QuickcastModifierToggle",
+      "collectQuickcastModifierToggles"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/ui/dnd35e_quickcast_modifiers.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/ui/dnd35e_quickcast_modifiers.ts."
     ]
   },
   "src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts": {
@@ -2329,6 +2616,21 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/validation/class_race_validator.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/validation/prerequisite_validator.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Recursively validates feat, skill, class, race, spell, and domain IDs inside PrerequisiteNode ASTs.",
+    "canonicalEntryPoints": [
+      "validatePrerequisiteNodeReferences"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/validation/prerequisite_validator.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/validation/prerequisite_validator.ts."
     ]
   },
   "src/rulesets/dnd35e/wild_shape.ts": {

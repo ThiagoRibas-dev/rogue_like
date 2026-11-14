@@ -1,11 +1,12 @@
+import { getComponent } from '../core/ecs.ts';
+import { getRuleset } from '../rulesets/registry.ts';
+import { ComponentType } from '../types/components.types.ts';
 import { type GameState } from '../types/game-state.types.ts';
 import {
-  type ToggleTargetingIntent,
+  type FireAimedIntent,
   type MoveTargetIntent,
-  type FireAimedIntent
+  type ToggleTargetingIntent
 } from '../types/intents/combat.intents.ts';
-import { getComponent } from '../core/ecs.ts';
-import { ComponentType } from '../types/components.types.ts';
 import { isHostile } from '../utils/faction.ts';
 import { assignCompanionCommandTarget } from './companion_commands.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -17,7 +18,8 @@ export function processToggleTargetingIntent(
   state: GameState,
   intent: ToggleTargetingIntent
 ): { state: GameState; success: boolean } {
-  if (state.targetingMode?.active) {
+  const isAlreadyActive = state.targetingMode?.active === true;
+  if (isAlreadyActive && intent.context === undefined) {
     // Turn off targeting mode
     const { targetingMode: _targetingMode, ...restState } = state;
     return {
@@ -26,9 +28,14 @@ export function processToggleTargetingIntent(
     };
   }
 
-  // Turn on targeting mode, default target to the entity's current position
+  // Turn on targeting mode (or switch active targeting context), defaulting cursor to the entity's current position
   const pos = getComponent(state, intent.entityId, ComponentType.Position);
   if (!pos) return { state, success: false };
+
+  const spellLabel =
+    (intent.context?.convertedSpellId ?? intent.context?.spellId)
+      ? ` for ${(intent.context.convertedSpellId ?? intent.context.spellId ?? '').replace(/_/g, ' ')}`
+      : '';
 
   return {
     state: addMessage(
@@ -38,10 +45,12 @@ export function processToggleTargetingIntent(
           active: true,
           x: pos.x,
           y: pos.y,
+          ...(intent.radius !== undefined ? { radius: intent.radius } : {}),
+          ...(intent.maxRangeTiles !== undefined ? { maxRangeTiles: intent.maxRangeTiles } : {}),
           context: intent.context
         }
       },
-      'Targeting mode active. Move cursor to aim.',
+      `Targeting mode active${spellLabel}. Move cursor or click to aim.`,
       MessageLogCategory.System
     ),
     success: false
@@ -116,7 +125,12 @@ export function processFireAimedIntent(
     return { state: restState as GameState, success: false };
   }
 
-  // In Milestone 3, we just log a message as a stub, since Combat comes in M4.
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  if (context && ruleset.resolveAimedAction) {
+    const { targetingMode: _targetingMode, ...restState } = state;
+    return ruleset.resolveAimedAction(restState as GameState, intent.entityId, { x: targetX, y: targetY }, context);
+  }
+
   const stateWithMsg = addMessage(
     state,
     `You target the tile at ${targetX}, ${targetY}.`,

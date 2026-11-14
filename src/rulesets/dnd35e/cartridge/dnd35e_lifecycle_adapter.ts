@@ -297,12 +297,15 @@ export function resolveDnD35eActionEnergyCost(
     return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
   }
 
-  // Standard action (attack, spell, skill)
+  // Standard / Swift / Full-Round action (attack, spell, skill)
   const updatedDndData = getDnD35EntityData(state, intent.entityId);
   const postActionBudget = updatedDndData.actionBudget ?? currentBudget;
-  const canKeepMoving = postActionBudget.movementRemainingFt > 0;
+  const hasActionsLeft =
+    postActionBudget.movementRemainingFt > 0 ||
+    postActionBudget.standardRemaining > 0 ||
+    postActionBudget.moveRemaining > 0;
 
-  if (!canKeepMoving) {
+  if (!hasActionsLeft) {
     const nextState = setDnD35EntityData(state, intent.entityId, {
       ...updatedDndData,
       actionBudget: undefined

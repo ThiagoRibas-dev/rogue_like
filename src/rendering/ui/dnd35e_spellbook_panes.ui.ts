@@ -16,7 +16,8 @@ import type {
   DnD35PreparedSlotEntry
 } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35SpellDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { castPreparedSlot, unprepareSpecificSlot } from './dnd35e_spellbook_actions.ts';
+import { dispatchSpellCastFromLiveUI } from './dnd35e_spell_cast_ui.ts';
+import { unprepareSpecificSlot } from './dnd35e_spellbook_actions.ts';
 
 export function renderPreparedSlotsPane(
   container: HTMLElement,
@@ -104,9 +105,12 @@ export function renderPreparedSlotsPane(
           castBtn.className = 'skill-use-btn';
           castBtn.textContent = 'Cast';
           castBtn.addEventListener('click', () => {
-            const next = castPreparedSlot(state, playerId, classId, slot.slotId);
-            setGameState(next);
-            markAllDomainsDirty();
+            dispatchSpellCastFromLiveUI(playerId, {
+              classId,
+              spellId: slot.preparedSpellId!,
+              slotId: slot.slotId,
+              spellLevel: slot.spellLevel
+            });
           });
           actions.appendChild(castBtn);
 
@@ -119,9 +123,13 @@ export function renderPreparedSlotsPane(
               convBtn.className = 'skill-use-btn';
               convBtn.textContent = `Conv → ${opt.label}`;
               convBtn.addEventListener('click', () => {
-                const next = castPreparedSlot(state, playerId, classId, slot.slotId, opt.spellId);
-                setGameState(next);
-                markAllDomainsDirty();
+                dispatchSpellCastFromLiveUI(playerId, {
+                  classId,
+                  spellId: slot.preparedSpellId!,
+                  slotId: slot.slotId,
+                  spellLevel: slot.spellLevel,
+                  convertedSpellId: opt.spellId
+                });
               });
               actions.appendChild(convBtn);
             }

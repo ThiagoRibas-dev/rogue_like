@@ -20,9 +20,10 @@ import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd
 import { applyDoctrineUpdate } from './dnd35e_doctrine_actions.ts';
 import { toggleConsoleStanceGroup } from '../../systems/stance.system.ts';
 import { canPlayerLevelUpDnD35e, renderDnD35eLevelUpModal } from './dnd35e_level_up.ui.ts';
+import { renderDnD35eQuickcastModal } from './dnd35e_quickcast.ui.ts';
 import { renderDnD35eSheetModal as renderSheetModalImpl } from './dnd35e_sheet.ui.ts';
+import { initiateSpellCastFromUI } from './dnd35e_spell_cast_ui.ts';
 import { renderDnD35eSpellbookModal as renderSpellbookModalImpl } from './dnd35e_spellbook.ui.ts';
-import { unprepareSpellSlot } from './dnd35e_spellbook_actions.ts';
 import { triggerQuickBeltSlot } from './hud_bottom_dock.ui.ts';
 
 const FIXED_EXPERTISE_CAP = 5;
@@ -113,6 +114,17 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       icon: '🎒',
       modalId: 'character_sheet',
       defaultKey: 'i'
+    },
+    {
+      id: 'dnd35e_quickcast',
+      label: 'Quickcast',
+      icon: '⚡',
+      modalId: 'quickcast',
+      defaultKey: 'z',
+      isAvailable: (state: GameState, playerId: EntityId): boolean => {
+        const dndData = getDnD35EntityData(state, playerId);
+        return Object.keys(dndData.spellbooksByClass ?? {}).length > 0;
+      }
     },
     {
       id: 'dnd35e_spellbook',
@@ -242,8 +254,14 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       if (verb) {
         queuePlayerIntent(createApplyAction(playerId, verb, { type: 'self' }));
       }
-    } else if (payload.kind === 'spell' && payload.classId && payload.slotIdx !== undefined) {
-      setGameState(unprepareSpellSlot(state, playerId, payload.classId, payload.slotIdx));
+    } else if (payload.kind === 'spell' && payload.classId) {
+      initiateSpellCastFromUI(state, playerId, {
+        classId: payload.classId,
+        spellId: payload.id,
+        ...(payload.slotId !== undefined ? { slotId: payload.slotId } : {}),
+        ...(payload.spellLevel !== undefined ? { spellLevel: payload.spellLevel } : {}),
+        ...(payload.convertedSpellId !== undefined ? { convertedSpellId: payload.convertedSpellId } : {})
+      });
     }
   },
 
@@ -271,6 +289,12 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       overlayElementId: 'dnd35e-spellbook-overlay',
       allowEscapeClose: true,
       render: renderDnD35eSpellbookModal
+    },
+    quickcast: {
+      modalId: 'quickcast',
+      overlayElementId: 'dnd35e-quickcast-overlay',
+      allowEscapeClose: true,
+      render: renderDnD35eQuickcastModal
     }
   }
 };

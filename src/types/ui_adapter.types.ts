@@ -201,6 +201,10 @@ export interface UIHotbarSlot {
         readonly entityId?: number | undefined;
         readonly classId?: string | undefined;
         readonly slotIdx?: number | undefined;
+        readonly slotId?: string | undefined;
+        readonly spellLevel?: number | undefined;
+        readonly convertedSpellId?: string | undefined;
+        readonly remainingCount?: number | undefined;
       }
     | undefined;
 }

@@ -159,8 +159,15 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
       }
 
       let highlight: { glyph: string; fg: string; bg: string } | undefined;
-      if (state.targetingMode?.active && state.targetingMode.x === mapX && state.targetingMode.y === mapY) {
-        highlight = { glyph: 'X', fg: '#000000', bg: '#ffff00' };
+      if (state.targetingMode?.active) {
+        const dx = mapX - state.targetingMode.x;
+        const dy = mapY - state.targetingMode.y;
+        const radius = state.targetingMode.radius ?? 0;
+        if (dx === 0 && dy === 0) {
+          highlight = { glyph: 'X', fg: '#000000', bg: '#ffff00' };
+        } else if (radius > 0 && dx * dx + dy * dy <= radius * radius) {
+          highlight = { glyph: '*', fg: '#ffdd88', bg: '#7c2d12' };
+        }
       } else if (state.inspectMode?.active && state.inspectMode.x === mapX && state.inspectMode.y === mapY) {
         highlight = { glyph: 'X', fg: '#000000', bg: '#00ffff' };
       }

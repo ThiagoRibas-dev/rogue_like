@@ -117,7 +117,10 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       const match = cartridgeUI.dockCommands.find(
         (cmd) => isAction(event, cmd.id as ActionType) || event.key.toLowerCase() === cmd.defaultKey.toLowerCase()
       );
-      if (match && match.modalId !== activeModalId) {
+      if (match) {
+        if (match.modalId !== activeModalId && match.isAvailable && !match.isAvailable(state, playerEntityId)) {
+          return;
+        }
         event.preventDefault();
         queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, match.modalId));
         return;

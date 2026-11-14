@@ -229,12 +229,14 @@ export function getSpontaneousConversionTargets(
   classId: string,
   spellLevel: number,
   dndData: Partial<DnD35EntityData>,
-  systemContent: DnD35SystemContent | undefined
+  systemContent: DnD35SystemContent | undefined,
+  preferredPolarity?: 'positive' | 'negative'
 ): ReadonlyArray<SpontaneousConversionOption> {
   const options: SpontaneousConversionOption[] = [];
+  const hasSpell = (id: string): boolean =>
+    !systemContent?.spells || Object.keys(systemContent.spells).length === 0 || systemContent.spells[id] !== undefined;
 
   if (classId === 'cleric') {
-    // Check Domain Spontaneity ACF
     const hasDomainSpontaneity = dndData.selectedAcfs?.some(
       (a) => a === 'cleric_domain_spontaneity_1' || a === 'domain_spontaneity'
     );
@@ -242,23 +244,26 @@ export function getSpontaneousConversionTargets(
       for (const domId of dndData.domains ?? []) {
         const domDef = systemContent?.domains?.[domId];
         const spId = domDef?.domainSpells?.[String(spellLevel)];
-        if (spId) {
+        if (spId && hasSpell(spId)) {
           options.push({ spellId: spId, label: `Domain: ${domDef.name}` });
         }
       }
       if (options.length > 0) return options;
     }
 
-    // Standard spontaneous cure / inflict
+    const isGood = dndData.alignment?.endsWith('G') ?? false;
     const isEvil = dndData.alignment?.endsWith('E') ?? false;
-    const targetMap = isEvil ? INFLICT_SPELLS_BY_LEVEL : CURE_SPELLS_BY_LEVEL;
-    const targetSpell = targetMap[spellLevel];
-    if (targetSpell) {
-      options.push({ spellId: targetSpell, label: isEvil ? 'Inflict Wounds' : 'Cure Wounds' });
+    if ((isGood || (!isEvil && preferredPolarity !== 'negative')) && CURE_SPELLS_BY_LEVEL[spellLevel]) {
+      const sp = CURE_SPELLS_BY_LEVEL[spellLevel]!;
+      if (hasSpell(sp)) options.push({ spellId: sp, label: 'Cure Wounds' });
+    }
+    if ((isEvil || (!isGood && preferredPolarity !== 'positive')) && INFLICT_SPELLS_BY_LEVEL[spellLevel]) {
+      const sp = INFLICT_SPELLS_BY_LEVEL[spellLevel]!;
+      if (hasSpell(sp)) options.push({ spellId: sp, label: 'Inflict Wounds' });
     }
   } else if (classId === 'druid') {
     const targetSpell = SUMMON_NATURES_ALLY_BY_LEVEL[spellLevel];
-    if (targetSpell) {
+    if (targetSpell && hasSpell(targetSpell)) {
       options.push({ spellId: targetSpell, label: "Summon Nature's Ally" });
     }
   }

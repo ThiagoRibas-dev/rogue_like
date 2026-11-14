@@ -1,4 +1,4 @@
-import type { EntityId } from '../types/game-state.types.ts';
+import type { EntityId, TargetingContext } from '../types/game-state.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import {
   type ToggleTargetingIntent,
@@ -9,17 +9,21 @@ import {
 /**
  * Creates an intent to toggle targeting mode.
  * @param entityId The entity aiming.
- * @param context Optional context about the targeting intent (e.g. throwing an item).
+ * @param context Optional context about the targeting intent (e.g. throwing an item or casting a spell).
+ * @param options Optional targeting geometry (AoE radius in tiles and max range in tiles).
  * @returns The ToggleTargetingIntent.
  */
 export function createToggleTargetingAction(
   entityId: EntityId,
-  context?: { verb: string; toolEntityId?: EntityId; companionEntityId?: EntityId }
+  context?: TargetingContext,
+  options?: { readonly radius?: number | undefined; readonly maxRangeTiles?: number | undefined }
 ): ToggleTargetingIntent {
   return {
     type: IntentType.ToggleTargeting,
     entityId,
     isImmediate: true,
+    ...(options?.radius !== undefined ? { radius: options.radius } : {}),
+    ...(options?.maxRangeTiles !== undefined ? { maxRangeTiles: options.maxRangeTiles } : {}),
     context
   };
 }

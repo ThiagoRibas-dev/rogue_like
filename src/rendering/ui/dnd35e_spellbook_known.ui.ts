@@ -13,7 +13,8 @@ import type {
   DnD35PreparedSlotEntry
 } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35SpellDefinition, DnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { castSpontaneousSpell, prepareSpellIntoSlot } from './dnd35e_spellbook_actions.ts';
+import { dispatchSpellCastFromLiveUI } from './dnd35e_spell_cast_ui.ts';
+import { prepareSpellIntoSlot } from './dnd35e_spellbook_actions.ts';
 
 /**
  * Renders the right pane showing all known spells grouped by spell level,
@@ -162,9 +163,11 @@ export function renderKnownSpellsPane(
         castBtn.textContent = `✨ Cast (Uses Lv ${sum.spellLevel})`;
         castBtn.disabled = remaining <= 0;
         castBtn.addEventListener('click', () => {
-          const next = castSpontaneousSpell(state, playerId, classId, sp.id, sum.spellLevel);
-          setGameState(next);
-          markAllDomainsDirty();
+          dispatchSpellCastFromLiveUI(playerId, {
+            classId,
+            spellId: sp.id,
+            spellLevel: sum.spellLevel
+          });
         });
         right.appendChild(castBtn);
       }

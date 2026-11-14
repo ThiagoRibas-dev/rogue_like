@@ -60,3 +60,6 @@ vite.config.ts.timestamp-*
 
 # Generated AI prompt kit (regenerate with: bun scripts/generate-ai-prompt-kit.ts)
 ai-prompt-kit/
+
+# AI Studio IDE runtime metadata
+.aistudio/

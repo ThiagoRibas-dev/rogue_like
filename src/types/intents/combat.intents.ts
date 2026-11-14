@@ -1,6 +1,6 @@
 import type { IntentType } from './intent.enum.ts';
 import type { BaseIntent } from './core.intents.ts';
-import type { EntityId } from '../game-state.types.ts';
+import type { EntityId, TargetingContext } from '../game-state.types.ts';
 
 /** Intent to execute a melee attack against a defender entity. */
 export interface MeleeAttackIntent extends BaseIntent {
@@ -12,13 +12,9 @@ export interface MeleeAttackIntent extends BaseIntent {
 export interface ToggleTargetingIntent extends BaseIntent {
   readonly type: IntentType.ToggleTargeting;
   readonly isImmediate: true;
-  readonly context?:
-    | {
-        readonly verb: string;
-        readonly toolEntityId?: EntityId;
-        readonly companionEntityId?: EntityId;
-      }
-    | undefined;
+  readonly radius?: number | undefined;
+  readonly maxRangeTiles?: number | undefined;
+  readonly context?: TargetingContext | undefined;
 }
 
 /** Intent to move the targeting cursor in manual aiming mode. */

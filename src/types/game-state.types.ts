@@ -165,6 +165,20 @@ export interface TelemetryMetrics {
   readonly questsCompleted: number;
 }
 
+/** Metadata carried while spatial targeting mode is active. */
+export interface TargetingContext {
+  readonly verb: string;
+  readonly toolEntityId?: EntityId | undefined;
+  readonly companionEntityId?: EntityId | undefined;
+  readonly spellId?: string | undefined;
+  readonly classId?: string | undefined;
+  readonly slotId?: string | undefined;
+  readonly spellLevel?: number | undefined;
+  readonly convertedSpellId?: string | undefined;
+  readonly metamagicFeatIds?: ReadonlyArray<string> | undefined;
+  readonly aoeShape?: 'single' | 'burst' | 'emanation' | 'spread' | 'cone' | 'line' | 'cylinder' | 'wall' | undefined;
+}
+
 /**
  * Immutable shape of the global game state.
  */
@@ -211,14 +225,9 @@ export interface GameState {
         readonly active: boolean;
         readonly x: number;
         readonly y: number;
-        readonly radius?: number;
-        readonly context?:
-          | {
-              readonly verb: string;
-              readonly toolEntityId?: EntityId;
-              readonly companionEntityId?: EntityId;
-            }
-          | undefined;
+        readonly radius?: number | undefined;
+        readonly maxRangeTiles?: number | undefined;
+        readonly context?: TargetingContext | undefined;
       }
     | undefined;
   readonly inspectMode?:

@@ -161,16 +161,66 @@ export function buildActorHotbarSlots(
     }
   }
   for (const [classId, book] of Object.entries(dndData.spellbooksByClass ?? {})) {
-    const spells = book.castingMode === 'spontaneous' ? book.knownSpellIds : book.preparedSpellIds;
-    spells.forEach((spellId, slotIdx) => {
-      const name = sys?.spells?.[spellId]?.name ?? spellId.replace(/_/g, ' ');
-      candidates.push({
-        label: name,
-        iconUrl: '✨',
-        tooltipTitle: `${name} (${classId.toUpperCase()})`,
-        actionPayload: { kind: 'spell', id: spellId, classId, slotIdx }
+    if (book.castingMode === 'prepared') {
+      const preparedGroups = new Map<string, { spellId: string; slotId?: string; count: number; level?: number }>();
+      if (book.preparedSlots && book.preparedSlots.length > 0) {
+        for (const s of book.preparedSlots) {
+          if (s.expended || !s.preparedSpellId) continue;
+          const key = `${s.spellLevel}:${s.preparedSpellId}`;
+          const prev = preparedGroups.get(key);
+          if (prev) {
+            prev.count += 1;
+          } else {
+            preparedGroups.set(key, { spellId: s.preparedSpellId, slotId: s.slotId, count: 1, level: s.spellLevel });
+          }
+        }
+      } else {
+        for (const spId of book.preparedSpellIds) {
+          const prev = preparedGroups.get(spId);
+          if (prev) prev.count += 1;
+          else preparedGroups.set(spId, { spellId: spId, count: 1 });
+        }
+      }
+      let slotIdx = 0;
+      for (const grp of preparedGroups.values()) {
+        const spDef = sys?.spells?.[grp.spellId];
+        const name = spDef?.name ?? grp.spellId.replace(/_/g, ' ');
+        candidates.push({
+          label: grp.count > 1 ? `${name} ×${grp.count}` : name,
+          iconUrl: '✨',
+          tooltipTitle: `Cast ${name} (${classId.toUpperCase()}, ${grp.count} left)`,
+          actionPayload: {
+            kind: 'spell',
+            id: grp.spellId,
+            classId,
+            slotIdx,
+            ...(grp.slotId !== undefined ? { slotId: grp.slotId } : {}),
+            ...(grp.level !== undefined ? { spellLevel: grp.level } : {}),
+            remainingCount: grp.count
+          }
+        });
+        slotIdx++;
+      }
+    } else {
+      const usedMap = book.spontaneousSlotsUsedByLevel ?? {};
+      book.knownSpellIds.forEach((spellId, slotIdx) => {
+        const spDef = sys?.spells?.[spellId];
+        const name = spDef?.name ?? spellId.replace(/_/g, ' ');
+        const lvl = spDef?.levelByClass[classId] ?? spDef?.level ?? 0;
+        const total = book.spellsPerDay[String(lvl)] ?? 0;
+        const isAtWill = (lvl === 0 && total === 0) || classId === 'warlock' || classId === 'innate';
+        const rem = isAtWill ? -1 : Math.max(0, total - (usedMap[String(lvl)] ?? 0));
+        if (!isAtWill && total <= 0) return;
+        const suffix = rem < 0 ? '∞' : `${rem}`;
+        candidates.push({
+          label: `${name} (${suffix})`,
+          iconUrl: '✨',
+          isDisabled: rem === 0,
+          tooltipTitle: `Cast ${name} (${classId.toUpperCase()} Lv ${lvl}, ${suffix} left)`,
+          actionPayload: { kind: 'spell', id: spellId, classId, slotIdx, spellLevel: lvl, remainingCount: rem }
+        });
       });
-    });
+    }
   }
   for (const [skillId, ranks] of Object.entries(dndData.skillRanks ?? {})) {
     if (ranks > 0 && ACTIVE_SKILL_IDS.has(skillId)) {

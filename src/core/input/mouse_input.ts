@@ -8,7 +8,11 @@ import type * as ROT from 'rot-js';
 import { createMoveAction, createWaitAction } from '../../actions/core.actions.ts';
 import { createApplyAction } from '../../actions/interaction.actions.ts';
 import { createPickUpAction } from '../../actions/inventory.actions.ts';
-import { createFireAimedAction, createToggleTargetingAction } from '../../actions/targeting.actions.ts';
+import {
+  createFireAimedAction,
+  createMoveTargetAction,
+  createToggleTargetingAction
+} from '../../actions/targeting.actions.ts';
 import { getCameraOffset } from '../../rendering/camera.ts';
 import { setHudDockDisplayRef } from '../../rendering/ui/hud_dock.ui.ts';
 import { getValidVerbsForTarget, getVerbOptionsForTarget } from '../../systems/apply.system.ts';
@@ -185,6 +189,18 @@ export function bindCanvasMouseControls(display: ROT.Display): void {
       if (state.uiMode !== UIMode.Game && state.uiMode !== UIMode.VerbMenu) return;
 
       const coords = resolveEventWorldCoords(event, display, state);
+      if (
+        state.targetingMode?.active &&
+        coords &&
+        (state.targetingMode.x !== coords.mapX || state.targetingMode.y !== coords.mapY)
+      ) {
+        const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+        if (playerId !== undefined) {
+          queuePlayerIntent(
+            createMoveTargetAction(playerId, coords.mapX - state.targetingMode.x, coords.mapY - state.targetingMode.y)
+          );
+        }
+      }
       if (setHoveredTile(coords ? { x: coords.mapX, y: coords.mapY } : null)) {
         recordHoverTileChange();
         markDomainDirty(PresentationDomain.Map);

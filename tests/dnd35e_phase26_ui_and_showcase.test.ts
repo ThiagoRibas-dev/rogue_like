@@ -43,7 +43,8 @@ describe('Phase 26 (M118 & M119): Console Slot/Modal Host API, D&D 3.5e Tactical
       'char_creation',
       'level_up',
       'character_sheet',
-      'spellbook'
+      'spellbook',
+      'quickcast'
     ]);
 
     // Test new game hook opens char_creation via generic CartridgeModal

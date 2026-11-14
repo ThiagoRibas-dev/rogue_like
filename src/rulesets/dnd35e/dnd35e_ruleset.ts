@@ -20,6 +20,7 @@ import {
   validateDnD35eWandActivation
 } from './skill_verbs.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
+import { executeDnD35eSpellCast } from './magic/spell_cast_resolver.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
 
@@ -151,5 +152,18 @@ export const dnd35eRulesetContract: RulesetContract = {
   projectInspectLoreLines: projectDnD35eInspectLoreLines,
   onActorTurnStart: onDnD35eActorTurnStart,
   onActorMovementStep: onDnD35eActorMovementStep,
-  resolveActionEnergyCost: resolveDnD35eActionEnergyCost
+  resolveActionEnergyCost: resolveDnD35eActionEnergyCost,
+  resolveAimedAction(state, actorId, targetPos, context) {
+    if (context.verb === 'cast_spell' && context.spellId && context.classId) {
+      return executeDnD35eSpellCast(state, actorId, targetPos, {
+        classId: context.classId,
+        spellId: context.spellId,
+        slotId: context.slotId,
+        spellLevel: context.spellLevel,
+        convertedSpellId: context.convertedSpellId,
+        metamagicFeatIds: context.metamagicFeatIds
+      });
+    }
+    return { state, success: false };
+  }
 };

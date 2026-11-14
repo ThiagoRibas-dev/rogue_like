@@ -945,3 +945,242 @@ body[data-no-animations='true'] * {
   justify-content: space-between;
   align-items: center;
 }
+
+/* NWN2-Style Floating Quickcast HUD Overlay */
+.quickcast-hud-overlay {
+  position: fixed;
+  top: 72px;
+  left: 24px;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.quickcast-hud-overlay.hidden {
+  display: none;
+}
+
+.quickcast-panel {
+  pointer-events: auto;
+  width: 390px;
+  max-width: 92vw;
+  max-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(16, 19, 27, 0.94) 0%, rgba(10, 12, 17, 0.96) 100%);
+  border: 2px solid var(--border-brass);
+  outline: 2px solid #000;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 224, 150, 0.16),
+    6px 6px 0 rgba(0, 0, 0, 0.85);
+  color: #e6dfd2;
+}
+
+.quickcast-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, #252834 0%, #14161e 100%);
+  border-bottom: 1px solid var(--border-brass);
+}
+
+.quickcast-panel-title {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  color: #f3d078;
+}
+
+.quickcast-close-btn {
+  background: transparent;
+  border: 1px solid #4d5464;
+  color: #c9d1d9;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.quickcast-close-btn:hover {
+  border-color: #f3d078;
+  color: #f3d078;
+}
+
+.quickcast-panel-body {
+  padding: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quickcast-modifier-tray {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(8, 10, 14, 0.78);
+  border: 1px solid #383e4d;
+}
+
+.quickcast-mod-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  background: #181c26;
+  border: 1px solid #484f60;
+  color: #b8c2d0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+
+.quickcast-mod-btn.active {
+  border-color: #f1c40f;
+  background: rgba(241, 196, 15, 0.2);
+  color: #fff2be;
+  box-shadow: 0 0 6px rgba(241, 196, 15, 0.35);
+}
+
+.quickcast-mod-badge {
+  background: #0a0c10;
+  border: 1px solid #596275;
+  padding: 0 4px;
+  font-weight: 700;
+  color: #f3d078;
+}
+
+.quickcast-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quickcast-class-header {
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  background: linear-gradient(180deg, #524d46 0%, #34302b 100%);
+  border: 1px solid #756b5d;
+  color: #f5efe4;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+}
+
+.quickcast-empty-row {
+  padding: 6px 8px;
+  font-size: 0.74rem;
+  color: #8b949e;
+  font-style: italic;
+}
+
+.quickcast-level-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.quickcast-level-badge {
+  width: 26px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #5e2a24 0%, #3a1714 100%);
+  border: 1px solid #8c4a40;
+  color: #fff3d6;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+
+.quickcast-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: 1;
+}
+
+.quickcast-spell-tile {
+  position: relative;
+  width: 40px;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: linear-gradient(180deg, #242936 0%, #141720 100%);
+  border: 1px solid #596378;
+  color: #f0f4f8;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.quickcast-spell-tile:hover:not(:disabled) {
+  border-color: #f3d078;
+  box-shadow: 0 0 6px rgba(243, 208, 120, 0.45);
+}
+
+.quickcast-spell-tile.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.quickcast-spell-tile.school-evocation {
+  border-color: #c0392b;
+  background: linear-gradient(180deg, #3c1814 0%, #1e0c0a 100%);
+}
+.quickcast-spell-tile.school-conjuration {
+  border-color: #2980b9;
+  background: linear-gradient(180deg, #162e42 0%, #0b1824 100%);
+}
+.quickcast-spell-tile.school-abjuration {
+  border-color: #d4ac0d;
+  background: linear-gradient(180deg, #3a3214 0%, #1d190a 100%);
+}
+.quickcast-spell-tile.school-necromancy {
+  border-color: #7d3c98;
+  background: linear-gradient(180deg, #2b1636 0%, #160a1c 100%);
+}
+.quickcast-spell-tile.school-transmutation {
+  border-color: #27ae60;
+  background: linear-gradient(180deg, #163622 0%, #0b1c11 100%);
+}
+
+.quickcast-spell-glyph {
+  font-size: 0.92rem;
+  line-height: 1;
+}
+
+.quickcast-spell-name {
+  font-family: var(--font-mono);
+  font-size: 0.48rem;
+  line-height: 1;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.quickcast-spell-count {
+  position: absolute;
+  right: 2px;
+  bottom: 1px;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow:
+    1px 1px 0 #000,
+    -1px -1px 0 #000;
+}
