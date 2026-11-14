@@ -98,9 +98,16 @@ export function computeClassSpellSelectionBudget(
     Object.values(sysContent.spells).filter(
       (sp) =>
         !alreadyKnownSpellIds.includes(sp.id) &&
-        isSpellSelectableForDraft(sp, classDef.id, maxCastableLevel, prohibitedSchools, domainIds, alignment)
-          .selectable &&
-        getSpellLevelForClass(sp, classDef.id, domainIds) === lvl
+        isSpellSelectableForDraft(
+          sp,
+          classDef.id,
+          maxCastableLevel,
+          prohibitedSchools,
+          domainIds,
+          alignment,
+          sysContent.domains
+        ).selectable &&
+        getSpellLevelForClass(sp, classDef.id, domainIds, [], sysContent.domains) === lvl
     );
 
   if (mode === 'spellbook_scribed') {
@@ -204,7 +211,8 @@ export function validateClassSpellSelection(
       budget.maxCastableLevel,
       prohibitedSchools,
       domainIds,
-      alignment
+      alignment,
+      sysContent.domains
     );
     if (!sel.selectable) {
       return { valid: false, reason: `${sp.name}: ${sel.reason ?? 'Not selectable'}` };
@@ -214,7 +222,7 @@ export function validateClassSpellSelection(
   if (budget.freePickCount > 0) {
     const validLvlPicks = manualPicks.filter((spId) => {
       const sp = sysContent.spells[spId];
-      const lvl = sp ? getSpellLevelForClass(sp, budget.classId, domainIds) : null;
+      const lvl = sp ? getSpellLevelForClass(sp, budget.classId, domainIds, [], sysContent.domains) : null;
       return lvl !== null && lvl >= 1 && lvl <= budget.maxCastableLevel;
     });
     if (validLvlPicks.length !== budget.freePickCount) {
@@ -230,7 +238,7 @@ export function validateClassSpellSelection(
   for (const spId of manualPicks) {
     const sp = sysContent.spells[spId];
     if (!sp) continue;
-    const lvl = getSpellLevelForClass(sp, budget.classId, domainIds);
+    const lvl = getSpellLevelForClass(sp, budget.classId, domainIds, [], sysContent.domains);
     if (lvl !== null) {
       countsByLevel[lvl] = (countsByLevel[lvl] ?? 0) + 1;
     }

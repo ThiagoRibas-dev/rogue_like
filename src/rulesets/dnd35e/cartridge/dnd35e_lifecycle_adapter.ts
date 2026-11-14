@@ -7,24 +7,28 @@ import {
   type FighterComponent,
   type PositionComponent
 } from '../../../types/components.types.ts';
-import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
-import { IntentType } from '../../../types/intents/intent.enum.ts';
-import type { Intent } from '../../../types/intents/intent.union.ts';
-import { coordToIndex } from '../../../utils/grid.ts';
-import { getEffectiveStats } from '../../../utils/stats.ts';
-import { consumeMovementStepFt, createRoundActionBudget } from '../action_economy.ts';
-import { aggregateProgressionChassis } from '../progression.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { resolveAuraFirstEntrySaveAndSr } from '../magic/spell_aura_resolver.ts';
+import { aggregateProgressionChassis } from '../progression.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
+import {
+  canDnD35eActorPerformIntent,
+  hasDnD35eActorActedThisTurn,
+  hasDnD35eActorMovementInProgress,
+  hydrateEntityRoundActionBudget,
+  resolveDnD35eActionEnergyCost
+} from './dnd35e_turn_budget.ts';
 
-/** Standard full round energy cost (`100`). */
-const FULL_ROUND_ENERGY_COST = 100;
-
-/** Baseline D&D 3.5e land speed in feet (`30 ft` = `6` five-foot squares per Move action). */
-const BASELINE_LAND_SPEED_FT = 30;
+export {
+  canDnD35eActorPerformIntent,
+  hasDnD35eActorActedThisTurn,
+  hasDnD35eActorMovementInProgress,
+  hydrateEntityRoundActionBudget,
+  resolveDnD35eActionEnergyCost
+};
 
 /** Default caster level fallback when not specified on FieldComponent (`1`). */
 const DEFAULT_CASTER_LEVEL = 1;
@@ -60,7 +64,6 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
     const memoryKey = String(occupantId);
     if (field.auraSaveMemory?.[memoryKey] !== undefined) continue;
 
-    // Check if any unit in the spell requires a save or SR for enemies
     for (const unit of spell.effectUnits) {
       if (unit.targetRole !== 'secondary_enemy' && unit.targetRole !== 'area_occupant') continue;
       if (!unit.savingThrow && !unit.allowsSpellResistance) continue;
@@ -123,7 +126,7 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
 
 /**
  * D&D 3.5e Ruleset Turn-Start hook:
- * 1. Refreshes a fresh 6-second `DnD35ActionBudget` (`createRoundActionBudget`).
+ * 1. Hydrates a fresh per-entity 6-second `DnD35ActionBudget` (`hydrateEntityRoundActionBudget`).
  * 2. Evaluates active aura entry saves for the actor.
  *
  * @param state Current immutable GameState.
@@ -132,22 +135,14 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
  */
 export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): GameState {
   const dndData = getDnD35EntityData(state, entityId);
-  const dexMod = Math.floor(((dndData.abilityScores?.dex?.base ?? 10) - 10) / 2);
-  const hasReflexes = dndData.feats?.includes('combat_reflexes') ?? false;
+  const freshBudget = hydrateEntityRoundActionBudget(state, entityId);
 
-  const freshBudget = createRoundActionBudget({
-    dexModifier: dexMod,
-    hasCombatReflexes: hasReflexes,
-    isFlatFooted: dndData.conditions?.includes('flat_footed') ?? false
-  });
-
-  let nextState = setDnD35EntityData(state, entityId, {
+  const nextState = setDnD35EntityData(state, entityId, {
     ...dndData,
     actionBudget: freshBudget
   });
 
-  nextState = evaluateActorAuraEntrySaves(nextState, entityId);
-  return nextState;
+  return evaluateActorAuraEntrySaves(nextState, entityId);
 }
 
 /**
@@ -195,123 +190,4 @@ export function onDnD35eActorMovementStep(
   }
 
   return nextState;
-}
-
-function computeActorTacticalLandSpeedFt(
-  state: GameState,
-  entityId: EntityId,
-  baseLandSpeedFt: number | undefined
-): number {
-  const actor = getComponent(state, entityId, ComponentType.Actor);
-  const stats = getEffectiveStats(state, entityId);
-  const baseActorSpeed = actor?.speed ?? FULL_ROUND_ENERGY_COST;
-  const speedBonusFt = stats.speed - baseActorSpeed;
-  return Math.max(FEET_PER_GRID_SQUARE, (baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT) + speedBonusFt);
-}
-
-/**
- * Resolves D&D 3.5e 5-tier action budget consumption and energy cost for an intent in TurnBased mode.
- * Returns `energyCost: 0` while movement or actions remain in the round, or `100` when the round completes.
- * Non-player actors pay speed-normalized step energy for `Move` intents so they pace fairly with player rounds.
- *
- * @param state Current immutable GameState.
- * @param intent The intent being executed.
- * @param baseEnergyCost Baseline cost.
- * @returns Updated GameState and effective energy cost.
- */
-export function resolveDnD35eActionEnergyCost(
-  state: GameState,
-  intent: Intent,
-  baseEnergyCost: number
-): { readonly state: GameState; readonly energyCost: number } {
-  if (state.engineMode !== EngineMode.TurnBased || baseEnergyCost <= 0) {
-    return { state, energyCost: baseEnergyCost };
-  }
-
-  const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  if (!isPlayer) {
-    const dndData = getDnD35EntityData(state, intent.entityId);
-    const nextState = dndData.actionBudget
-      ? setDnD35EntityData(state, intent.entityId, {
-          ...dndData,
-          actionBudget: undefined
-        })
-      : state;
-    if (intent.type === IntentType.Move) {
-      const npcLandSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
-      const perStepEnergyCost = Math.max(1, Math.round((baseEnergyCost * FEET_PER_GRID_SQUARE) / npcLandSpeedFt));
-      return { state: nextState, energyCost: perStepEnergyCost };
-    }
-    return { state: nextState, energyCost: dndData.actionBudget ? FULL_ROUND_ENERGY_COST : baseEnergyCost };
-  }
-
-  const dndData = getDnD35EntityData(state, intent.entityId);
-  const actorSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
-  let currentBudget = dndData.actionBudget;
-
-  if (!currentBudget) {
-    const dexMod = Math.floor(((dndData.abilityScores?.dex?.base ?? 10) - 10) / 2);
-    const hasReflexes = dndData.feats?.includes('combat_reflexes') ?? false;
-    currentBudget = createRoundActionBudget({
-      dexModifier: dexMod,
-      hasCombatReflexes: hasReflexes,
-      isFlatFooted: dndData.conditions?.includes('flat_footed') ?? false
-    });
-  }
-
-  if (intent.type === IntentType.Move) {
-    const posAfter = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
-    let isDifficult = false;
-    if (posAfter) {
-      const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-      const tile = state.map.tiles[tileIdx];
-      const mCost = tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100;
-      isDifficult = mCost > 100;
-    }
-
-    const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, FEET_PER_GRID_SQUARE, isDifficult);
-    if (stepResult.allowed) {
-      const nextState = setDnD35EntityData(state, intent.entityId, {
-        ...dndData,
-        actionBudget: stepResult.budget
-      });
-      const hasMoreBudget =
-        stepResult.budget.movementRemainingFt > 0 ||
-        stepResult.budget.moveRemaining > 0 ||
-        stepResult.budget.standardRemaining > 0;
-      return { state: nextState, energyCost: hasMoreBudget ? 0 : FULL_ROUND_ENERGY_COST };
-    } else {
-      const nextState = setDnD35EntityData(state, intent.entityId, {
-        ...dndData,
-        actionBudget: undefined
-      });
-      return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-    }
-  }
-
-  if (intent.type === IntentType.Wait) {
-    const nextState = setDnD35EntityData(state, intent.entityId, {
-      ...dndData,
-      actionBudget: undefined
-    });
-    return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-  }
-
-  // Standard / Swift / Full-Round action (attack, spell, skill)
-  const updatedDndData = getDnD35EntityData(state, intent.entityId);
-  const postActionBudget = updatedDndData.actionBudget ?? currentBudget;
-  const hasActionsLeft =
-    postActionBudget.movementRemainingFt > 0 ||
-    postActionBudget.standardRemaining > 0 ||
-    postActionBudget.moveRemaining > 0;
-
-  if (!hasActionsLeft) {
-    const nextState = setDnD35EntityData(state, intent.entityId, {
-      ...updatedDndData,
-      actionBudget: undefined
-    });
-    return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-  }
-
-  return { state, energyCost: 0 };
 }

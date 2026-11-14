@@ -28,26 +28,32 @@ import { processLedgerSystem } from '../../systems/ledger.system.ts';
  */
 export function applyIntentWithCost(state: GameState, intent: Intent): ActionResult {
   const turnTime0 = performance.now();
+  const posBefore = getComponent(state, intent.entityId, ComponentType.Position);
   const result = dispatchAction(state, intent);
   let nextState = result.state;
+  const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
+  const didDisplaceTile =
+    posBefore !== undefined && posAfter !== undefined && (posBefore.x !== posAfter.x || posBefore.y !== posAfter.y);
 
   let baseEnergyCost = 100;
   if (!result.success) {
     baseEnergyCost = 0;
   } else if ('isImmediate' in intent && intent.isImmediate) {
     baseEnergyCost = 0;
-  } else if (intent.type === IntentType.Move) {
-    const posAfter = getComponent(nextState, intent.entityId, ComponentType.Position);
-    if (posAfter) {
-      const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-      const tile = state.map.tiles[tileIdx];
-      if (tile) {
-        baseEnergyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
-      }
+  } else if (intent.type === IntentType.Move && didDisplaceTile && posAfter) {
+    const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
+    const tile = state.map.tiles[tileIdx];
+    if (tile) {
+      baseEnergyCost = state.campaign.tiles[tile.tileId]?.movementCost ?? 100;
     }
   }
 
-  const costResult = resolveActorActionEnergyCost(nextState, intent, baseEnergyCost);
+  const intentForCost: Intent =
+    intent.type === IntentType.Move && result.success && !didDisplaceTile
+      ? { type: IntentType.Interact, entityId: intent.entityId, targetId: intent.entityId }
+      : intent;
+
+  const costResult = resolveActorActionEnergyCost(nextState, intentForCost, baseEnergyCost, state);
   nextState = costResult.state;
   let energyCost = costResult.energyCost;
 
@@ -67,6 +73,7 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   const isPlayerMove =
     intent.type === IntentType.Move &&
     result.success &&
+    didDisplaceTile &&
     energyCost === 0 &&
     nextState.engineMode === EngineMode.TurnBased &&
     getComponent(nextState, intent.entityId, ComponentType.Player) !== undefined;

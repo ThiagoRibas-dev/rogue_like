@@ -127,12 +127,15 @@ export function consumeSpellActionBudget(
 
   if (meta.isQuickened || castingTime === 'swift' || castingTime === 'immediate') {
     if (budget.swiftRemaining < 1) return { allowed: false, reason: 'No Swift action remaining this round.' };
-    return { allowed: true, budget: { ...budget, swiftRemaining: budget.swiftRemaining - 1 } };
+    return {
+      allowed: true,
+      budget: { ...budget, swiftRemaining: budget.swiftRemaining - 1, hasActedThisRound: true }
+    };
   }
 
   const spMetaAction = getSpontaneousMetamagicActionType(isSpontaneous, meta.hasNonQuickenMetamagic);
   if (castingTime === 'full_round' || castingTime === '1_round' || spMetaAction === 'full_round') {
-    if (budget.standardRemaining < 1 || budget.moveRemaining < 1) {
+    if (budget.standardRemaining < 1 || budget.moveRemaining < 1 || budget.distanceMovedThisRoundFt > 5) {
       return { allowed: false, reason: 'Requires a Full-Round Action (Standard + Move).' };
     }
     return {
@@ -142,13 +145,25 @@ export function consumeSpellActionBudget(
         standardRemaining: 0,
         moveRemaining: 0,
         movementRemainingFt: 0,
-        canMoveFurtherThisRound: false
+        canMoveFurtherThisRound: false,
+        hasActedThisRound: true
       }
     };
   }
 
   if (budget.standardRemaining < 1) return { allowed: false, reason: 'No Standard action remaining this round.' };
-  return { allowed: true, budget: { ...budget, standardRemaining: budget.standardRemaining - 1 } };
+  const movedBeforeCast = budget.distanceMovedThisRoundFt > 0;
+  return {
+    allowed: true,
+    budget: {
+      ...budget,
+      standardRemaining: budget.standardRemaining - 1,
+      movementRemainingFt: movedBeforeCast ? 0 : budget.movementRemainingFt,
+      fiveFootStepAvailable: movedBeforeCast ? false : budget.fiveFootStepAvailable,
+      canMoveFurtherThisRound: movedBeforeCast ? budget.moveRemaining > 0 : budget.canMoveFurtherThisRound,
+      hasActedThisRound: true
+    }
+  };
 }
 
 /** Expends the appropriate prepared or spontaneous daily spell slot on the caster's class spellbook. */

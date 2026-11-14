@@ -1966,4 +1966,29 @@ Complete live natural weapon `OnHitRiderDescriptor` execution inside the combat 
   - Removed the hardcoded `'illiteracy'` exception in `semantic_tags.ts` so `barbarian.json` `activationCondition: { selfTagsNone: ['trait:literate'] }` governs tag projection purely via `isActivationConditionMet`.
   - Expanded regression coverage in `tests/dnd35e_feat_mechanics_fixes.test.ts` and updated `docs/dnd35e/SPECIAL_ATTACKS_AND_TAGS.md` and `docs/DECISIONS.md`.
 
+---
 
+# 🚀 Phase 33: Entity-Agnostic Console Turn Model, Cartridge Action Economy & Per-Entity Action Budgets
+
+Decouple the Tier 1 Console turn loop from ruleset action-economy assumptions and eliminate `isPlayer` special-casing across turn lifecycle, action budget evaluation, and round progression so that:
+1. **Tier 1 Console (`src/core/game-loop.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/systems/lifecycle.system.ts`)** manages only turn start/end boundaries, intra-turn continuation (`energyCost === 0` keeps the active entity's turn open; `energyCost > 0` concludes the turn and advances `ROT.Scheduler.Action`), and intent supply (asynchronous human input queue vs. synchronous AI controller).
+2. **Tier 2 Cartridge (`src/rulesets/<id>/`)** defines the ruleset's general action model (e.g., D&D 3.5e 6-second round with `Standard`, `Move`, `Swift/Immediate`, `5-Foot Step`, `movementRemainingFt`, and `AoO` quotas; or future AP / 3-Action / Action+Bonus models) and resolves action resource consumption identically for all actors (player, companions, summons, enemies).
+3. **Per-Entity Action Resources & Budget Modifiers** attach directly to each entity and hydrate dynamically at turn start from that entity's traits, conditions, and `StatModifier`s (e.g., `trait:single_actions_only` / `staggered` / `slowed` single-action restrictions, or `extra_standard_actions` / `extra_move_actions` / `extra_swift_actions` grants), while AI behaviors query action availability to chain intra-round actions (`Move + Attack`, `Double Move`, `Full-Attack`, `Swift + Standard`) and terminate their turn cleanly when no further valid actions remain.
+
+## 🟢 Milestone 133: Entity-Agnostic Turn Lifecycle, Symmetric Cartridge Action Budgets & AI Intra-Round Execution (Complete)
+
+- [x] **Tier 1 Entity-Agnostic Console Turn Loop (`src/core/game-loop.ts`, `src/core/scheduler.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/systems/lifecycle.system.ts`, `src/types/ruleset.types.ts`)**:
+  - Unified `turnStartProcessedForActor` latching across all actors so `runActorTurnStart` (status effect ticks, AI cooldown ticks, reaction resets, and `ruleset.onActorTurnStart`) executes strictly once per turn and remains latched across all `energyCost === 0` intra-turn actions (`MAX_INTRA_TURN_ACTIONS = 24` safety cap).
+  - Updated `src/core/scheduler.ts` (`activeContinuationActor` + `currentScheduleActor`) so `setTurnDuration(<= 0)` preserves active actor continuation across Turn-0 scheduler actors without hitting `ROT.Scheduler.Action`'s `0 || 1` coercion.
+  - Isolated `Player` vs. `AI` / `Scheme` differences strictly to **Intent Supply** (waiting on `inputQueue` vs. invoking `processAITurn` with an implicit turn-ending `Wait` when `processAITurn` returns `null` or fails), and scoped `'You wait a moment.'` to `Player` in `action.registry.ts`.
+  - Added tile-displacement detection (`didDisplaceTile`) + `preActionState` threading in `intent_cost_resolver.ts` so bump-attacks/bump-doors neither trigger false companion steps nor double-consume movement.
+  - Exposed `canActorPerformIntent`, `hasActorActedThisTurn`, and `hasActorMovementInProgress` on `RulesetContract` and `lifecycle.system.ts`.
+- [x] **Tier 2 Cartridge Action Model & Per-Entity Action Budget Hydration (`src/rulesets/dnd35e/action_economy.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`, `src/rulesets/dnd35e/magic/spell_cast_helpers.ts`, `src/rulesets/dnd35e/templates.ts`)**:
+  - Removed the `if (!isPlayer)` bypass in `resolveDnD35eActionEnergyCost` so all actors consume their own `DnD35ActionBudget` symmetrically across every `IntentType` (exhaustive `assertNever`).
+  - Added `hydrateEntityRoundActionBudget` to initialize each entity's `DnD35ActionBudget` at turn start from its DAG/tags, conditions (`nauseated`, `staggered`, `flat_footed`), vitality status, off-turn immediate reactions, and `StatModifier`s (`extra_standard_actions`, `extra_move_actions`, `extra_swift_actions`, `extra_aoo`).
+  - Enforced `moveRemaining >= 1` for Full-Round attacks/spells and PHB p. 138 post-attack/spell partial movement forfeiture, and evicted remaining Rule 21 `templateId === 'skeleton' | 'zombie'` branches in `templates.ts`.
+- [x] **Budget-Aware AI Behaviors & Intra-Round Chaining (`src/systems/ai.system.ts`, `src/ai/{hunt,wander}.behavior.ts`)**:
+  - Gated AI behavior intent selection against `canActorPerformIntent` and scoped AI barks to `!hasActorActedThisTurn`.
+  - Gated `huntBehavior` distance steps on `canActorPerformIntent(MeleeAttack) || hasActorMovementInProgress`, enabling multi-step `Move + Attack`, `Double Move`, and `Full-Attack` turns while stopping ranged casters/archers from charging into melee after spending their Standard action; capped `wanderBehavior` to one unacted step per round.
+- [x] **Verification & Regression Suite (`tests/dnd35e_npc_action_budget.test.ts`, `tests/companion_ai_commands.test.ts`)**:
+  - Updated `tests/companion_ai_commands.test.ts` and added 6 integration tests in `tests/dnd35e_npc_action_budget.test.ts` verifying once-per-round status/cooldown ticking on moving NPCs, prevention of the "Move 25 ft + Full-Attack" exploit, Full-Attack when starting adjacent, per-entity `singleActionsOnly` / `nauseated` / `extra_standard_actions` budgets, ranged caster hold-position behavior, and full 8-stage `./verify.sh` parity.

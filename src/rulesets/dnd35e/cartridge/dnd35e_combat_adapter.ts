@@ -98,20 +98,26 @@ export function resolveDnD35eMeleeAttack(
   }
 
   const actionBudget = attackerData.actionBudget;
+  if (actionBudget && actionBudget.standardRemaining < 1) {
+    return { state, success: false };
+  }
+
   const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
-  const isFullAttack = distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT;
+  const isFullAttack =
+    distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && (actionBudget ? actionBudget.moveRemaining >= 1 : true);
   const strikes = isFullAttack ? attackerEval.attackRoutine.strikes : attackerEval.attackRoutine.strikes.slice(0, 1);
 
   if (strikes.length === 0) {
     return { state, success: false };
   }
 
-  // Consume standard action in actionBudget if present
+  // Consume Standard (or Full-Round) action in actionBudget if present
   let updatedAttackerData = attackerData;
   if (actionBudget) {
     const nextStd = isFullAttack ? 0 : Math.max(0, actionBudget.standardRemaining - 1);
     const nextMove = isFullAttack ? 0 : actionBudget.moveRemaining;
-    const nextRemainingFt = isFullAttack ? 0 : actionBudget.movementRemainingFt;
+    const movedBeforeAttack = distanceMovedFt > 0;
+    const nextRemainingFt = isFullAttack || movedBeforeAttack ? 0 : actionBudget.movementRemainingFt;
     updatedAttackerData = {
       ...attackerData,
       actionBudget: {
@@ -120,7 +126,8 @@ export function resolveDnD35eMeleeAttack(
         moveRemaining: nextMove,
         movementRemainingFt: nextRemainingFt,
         fiveFootStepAvailable: false,
-        canMoveFurtherThisRound: !isFullAttack && nextRemainingFt > 0
+        canMoveFurtherThisRound: !isFullAttack && (nextMove > 0 || !movedBeforeAttack) && (nextMove > 0 || nextStd > 0),
+        hasActedThisRound: true
       }
     };
   }

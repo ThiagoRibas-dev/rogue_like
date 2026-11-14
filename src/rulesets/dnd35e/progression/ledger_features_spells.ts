@@ -1,4 +1,5 @@
 import { isSpellAlignmentAllowedForActor } from '../builder/builder_spells.ts';
+import { collectActorDomainSpellIds } from '../magic/spellbook_slots.ts';
 import { collectClassFeaturesUpToLevel, computeEffectiveClassCastingLevel, getClassLevelRow } from '../progression.ts';
 import { isActivationConditionMet } from '../effect_bundle.ts';
 import type {
@@ -140,6 +141,11 @@ export function buildActorSpellbooksByClass(
             : 'spellbook_scribed';
 
     const knownSet = new Set<string>();
+    const grantsDomainSlots =
+      row?.domainSpellSlots !== undefined ||
+      classDef.id === 'cleric' ||
+      classDef.progression.some((r) => r.domainSpellSlots !== undefined);
+
     if (spellAcquisitionMode === 'prayerbook_full_list') {
       if (maxCastableSpellLevel >= 0) {
         for (const spell of Object.values(sysContent.spells)) {
@@ -149,14 +155,18 @@ export function buildActorSpellbooksByClass(
           const classLvl = spell.levelByClass[classDef.id];
           if (classLvl !== undefined && classLvl <= maxCastableSpellLevel) {
             knownSet.add(spell.id);
-            continue;
           }
-          if (classDef.id === 'cleric') {
-            for (const domId of domains) {
-              const domLvl = spell.levelByDomain[domId];
-              if (domLvl !== undefined && domLvl <= maxCastableSpellLevel) {
-                knownSet.add(spell.id);
-              }
+        }
+        if (grantsDomainSlots && domains.length > 0) {
+          for (const domSpellId of collectActorDomainSpellIds(
+            domains,
+            sysContent.domains,
+            sysContent.spells,
+            maxCastableSpellLevel
+          )) {
+            const spDef = sysContent.spells[domSpellId];
+            if (!spDef || isSpellAlignmentAllowedForActor(spDef, classDef.id, alignment).allowed) {
+              knownSet.add(domSpellId);
             }
           }
         }

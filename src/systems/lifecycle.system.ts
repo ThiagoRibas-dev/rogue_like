@@ -97,19 +97,69 @@ export function runActorMovementStep(
  * Delegates to ruleset-specific action cost resolution if provided; otherwise falls back to
  * default Console energy cost calculation.
  *
- * @param state Current immutable GameState.
+ * @param state Current immutable GameState (post-intent execution).
  * @param intent The intent being applied.
  * @param baseEnergyCost The baseline energy cost calculated by Console.
+ * @param preActionState Optional GameState snapshot captured prior to intent execution.
  * @returns Updated GameState and effective energy cost.
  */
 export function resolveActorActionEnergyCost(
   state: GameState,
   intent: Intent,
-  baseEnergyCost: number
+  baseEnergyCost: number,
+  preActionState?: GameState
 ): { readonly state: GameState; readonly energyCost: number } {
   const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
   if (ruleset.resolveActionEnergyCost) {
-    return ruleset.resolveActionEnergyCost(state, intent, baseEnergyCost);
+    return ruleset.resolveActionEnergyCost(state, intent, baseEnergyCost, preActionState);
   }
   return { state, energyCost: baseEnergyCost };
+}
+
+/**
+ * Checks whether an actor currently has sufficient intra-turn action resources in the active ruleset
+ * to execute `intent`. Defaults to `true` when the ruleset does not enforce intra-turn budgets.
+ *
+ * @param state Current immutable GameState.
+ * @param intent Candidate Intent to evaluate.
+ * @returns True if the actor can perform the intent.
+ */
+export function canActorPerformIntent(state: GameState, intent: Intent): boolean {
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  if (ruleset.canActorPerformIntent) {
+    return ruleset.canActorPerformIntent(state, intent);
+  }
+  return true;
+}
+
+/**
+ * Returns true if the actor has already expended any movement or action resources during their
+ * active turn in the current ruleset. Defaults to `false` when not tracked by the ruleset.
+ *
+ * @param state Current immutable GameState.
+ * @param entityId The acting entity ID.
+ * @returns True if the actor has already acted this turn.
+ */
+export function hasActorActedThisTurn(state: GameState, entityId: EntityId): boolean {
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  if (ruleset.hasActorActedThisTurn) {
+    return ruleset.hasActorActedThisTurn(state, entityId);
+  }
+  return false;
+}
+
+/**
+ * Returns true if the actor is currently mid-way through an active multi-step movement pool
+ * in the current ruleset (e.g. leftover walking feet from a started Move action).
+ *
+ * @param state Current immutable GameState.
+ * @param entityId The acting entity ID.
+ * @returns True if movement is currently in progress.
+ */
+export function hasActorMovementInProgress(state: GameState, entityId: EntityId): boolean {
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  if (ruleset.hasActorMovementInProgress) {
+    return ruleset.hasActorMovementInProgress(state, entityId);
+  }
+  return false;
 }

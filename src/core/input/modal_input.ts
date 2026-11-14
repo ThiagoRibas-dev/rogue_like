@@ -113,7 +113,8 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       return;
     }
 
-    if (cartridgeUI?.dockCommands) {
+    const hasModifierKey = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
+    if (!hasModifierKey && cartridgeUI?.dockCommands) {
       const match = cartridgeUI.dockCommands.find(
         (cmd) => isAction(event, cmd.id as ActionType) || event.key.toLowerCase() === cmd.defaultKey.toLowerCase()
       );
@@ -127,12 +128,19 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       }
     }
 
-    const nestedBinding = MODAL_BINDINGS.find(
-      (candidate) => candidate.shortcut !== undefined && isAction(event, candidate.shortcut)
-    );
-    if (nestedBinding !== undefined) {
-      event.preventDefault();
-      queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
+    if (!hasModifierKey) {
+      const nestedBinding = MODAL_BINDINGS.find(
+        (candidate) => candidate.shortcut !== undefined && isAction(event, candidate.shortcut)
+      );
+      if (nestedBinding !== undefined) {
+        event.preventDefault();
+        queuePlayerIntent(nestedBinding.buildToggleIntent(playerEntityId));
+        return;
+      }
+    }
+
+    if (activeModalId === 'inventory' || activeModalId === 'character_sheet') {
+      handleInventoryKey(event, state, playerEntityId);
     }
     return;
   }

@@ -485,3 +485,24 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Added `$selected` tag interpolation (`"tag": "special_attack:$selected"`) and `PrerequisiteEvalContext.naturalWeaponIds` to `prerequisites.ts` so *Ability Focus* and *Improved Natural Attack* validate and filter their UI target `<select>` dropdowns strictly against capabilities actually possessed by the actor (`special_attack:<id>` and owned `naturalWeaponIds`).
   - Replaced legacy content-ID branches in `effect_bundle.ts` (strictly `targetCategory` + `baseBundle.category === 'proficiency'`), `builder_prereq_proficiencies.ts` (`DnD35WeaponStatsSchema.proficiencyEquivalentWeaponId` + `DnD35DomainDefinitionSchema.grantsDeityFavoredWeaponProficiencyAndFocus`), `ledger_choices.ts` (`DnD35ClassFeatureDetailSchema.combatStyleFeatByChoice`), and `semantic_tags.ts` (pure `isActivationConditionMet` evaluation).
   - *Rationale*: Having `OnHitRiderDescriptor` only in schema without live strike execution left monster poison/paralysis/energy drain dormant in combat; lacking per-target ownership gating allowed characters with one special attack or natural weapon to select feats targeting unrelated abilities/limbs. Completing these pipelines while purging remaining legacy branches brings the entire feat/proficiency/combat stack into full Rule 21 compliance.
+
+---
+
+### Entity-Agnostic Console Turn Model, Scheduler Continuation & Per-Entity Action Budgets (Milestone 133)
+
+- **Decision 1: Track Intra-Turn Continuation Explicitly in `scheduler.ts` (`activeContinuationActor`) Rather Than Passing `0` to `ROT.Scheduler.Action.setDuration`**:
+  - Calling `ROT.Scheduler.Action.setDuration(0)` falls back to `this._duration || this._defaultDuration` (`0 || 1`), silently advancing scheduler time by `1` tick and letting other Turn-0 actors (`key = 1`) preempt a mid-round actor.
+  - `src/core/scheduler.ts` now tracks `currentScheduleActor` and latches `activeContinuationActor` whenever `setTurnDuration(duration <= 0)` is called, clearing both references on `initEngine`, `removeActor`, `resetSchedulerActors`, and `clearScheduler`.
+  - *Rationale*: Zero-cost intra-turn actions (`energyCost === 0`, e.g. 5-ft grid steps or Swift actions within a 6-second round) must keep the acting entity's turn latched so `turnStartProcessedForActor` (`status-effect.system.ts`, AI cooldowns) executes strictly once per round without Turn-0 priority inversion.
+
+- **Decision 2: Isolate Console Turn Boundaries from Cartridge Action Models & Hydrate Per-Entity Budgets Dynamically**:
+  - Removed the `if (!isPlayer)` fractional energy bypass from `resolveDnD35eActionEnergyCost` and unified `turnStartProcessedForActor` in `game-loop.ts`, keeping `isPlayer` scoped solely to intent supply (`inputQueue` vs. `processAITurn`).
+  - Added `hydrateEntityRoundActionBudget` (`dnd35e_lifecycle_adapter.ts`) to initialize each entity's `DnD35ActionBudget` at turn start from its traits (`singleActionsOnly`, `trait:single_actions_only`), conditions (`nauseated`, `staggered`, `flat_footed`), vitality status, off-turn immediate reactions, and Layer B `StatModifier`s (`extra_standard_actions`, `extra_move_actions`, `extra_swift_actions`, `extra_aoo`).
+  - Replaced legacy `template.templateId === 'skeleton' | 'zombie'` branches in `templates.ts` with declarative `grantedTags.includes('mindless')`, `stripClassLevels`, `hdMultiplier`, and `'single_actions_only'`.
+  - *Rationale*: Console should own no inherent action economy; cartridges define the general round/AP rules and entities own their action resources. Treating NPCs identically to the player eliminates the "Move 25 ft + Full-Attack" exploit, fixes per-step status effect ticks on moving enemies, and unlocks heterogeneous creature economies (Zombies, Chokers, Haste, future 3-Action/AP rulesets).
+
+- **Decision 3: Distinguish Active Movement Pools (`hasActorMovementInProgress`) from Generic Action Commitment (`hasActorActedThisTurn`) in AI Gating**:
+  - Exposed `canActorPerformIntent`, `hasActorActedThisTurn`, and `hasActorMovementInProgress` via `RulesetContract` and `lifecycle.system.ts`.
+  - `huntBehavior` checks `canActorPerformIntent(MeleeAttack) || hasActorMovementInProgress(state, entityId)` before stepping toward targets at `distance > 1`, while `wanderBehavior` aborts when `hasActorActedThisTurn` is true.
+  - *Rationale*: Checking `hasActorActedThisTurn` alone in `huntBehavior` cannot distinguish a ranged archer/caster who spent its Standard action (`movementRemainingFt === 0`, `hasActedThisRound === true` — who must hold position) from a melee hunter/zombie mid-way through a started Move or Double Move (`movementRemainingFt >= 5` — who must keep stepping into melee). Separating `hasActorMovementInProgress` solves both cases cleanly across all rulesets.
+

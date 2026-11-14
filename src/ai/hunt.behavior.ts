@@ -5,12 +5,14 @@ import { ComponentType } from '../types/components.types.ts';
 import { getComponent } from '../core/ecs.ts';
 import { DEFAULT_AI_AGGRO_RADIUS, resolveAITarget } from './companion_targeting.ts';
 import { computeNextStepToward } from './follow.behavior.ts';
+import { canActorPerformIntent, hasActorMovementInProgress } from '../systems/lifecycle.system.ts';
 
 /**
  * Hunt behavior: finds the highest-priority hostile entity within aggroRadius
  * (respecting companion stances, focus-target orders, and leash bounds).
- * If adjacent, returns a MeleeAttackIntent.
- * If further (and not holding position), returns a path-aware MoveIntent towards the target.
+ * If adjacent, returns a MeleeAttackIntent (when attack action is available).
+ * If further (and not holding position), returns a path-aware MoveIntent towards the target
+ * only when the actor can still attack upon arrival or is continuing an active Move pool.
  */
 export function huntBehavior(
   state: GameState,
@@ -21,16 +23,25 @@ export function huntBehavior(
   const resolved = resolveAITarget(state, entityId, aggroRadius, undefined, true);
   if (!resolved) return null;
 
+  const attackIntent: Intent = {
+    type: IntentType.MeleeAttack,
+    entityId,
+    defenderId: resolved.targetId
+  };
+
   if (resolved.distance === 1) {
-    return {
-      type: IntentType.MeleeAttack,
-      entityId,
-      defenderId: resolved.targetId
-    };
+    return canActorPerformIntent(state, attackIntent) ? attackIntent : null;
   }
 
   const link = getComponent(state, entityId, ComponentType.ControllerLink);
   if (link?.stance === 'hold') {
+    return null;
+  }
+
+  // Prevent ranged/caster units (or already-attacked units) from starting a fresh melee charge
+  // after spending their Standard action, while still allowing mid-move entities to finish stepping.
+  const canStillAttack = canActorPerformIntent(state, attackIntent);
+  if (!canStillAttack && !hasActorMovementInProgress(state, entityId)) {
     return null;
   }
 
@@ -40,10 +51,11 @@ export function huntBehavior(
   const step = computeNextStepToward(state, entityId, pos.x, pos.y, pos.x + resolved.dx, pos.y + resolved.dy);
   if (!step) return null;
 
-  return {
+  const moveIntent: Intent = {
     type: IntentType.Move,
     entityId,
     dx: step.dx,
     dy: step.dy
   };
+  return canActorPerformIntent(state, moveIntent) ? moveIntent : null;
 }

@@ -3,7 +3,7 @@ import type { Verb } from '../constants/verbs.constants.ts';
 import type { CampaignData } from './campaign.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
-import type { MeleeAttackIntent } from './intents/combat.intents.ts';
+import type { MeleeAttackIntent, UseAbilityIntent } from './intents/combat.intents.ts';
 import type { ApplyIntent, ApplyIntentTarget } from './intents/interaction.intents.ts';
 import type { Intent } from './intents/intent.union.ts';
 
@@ -255,16 +255,45 @@ export interface RulesetContract {
 
   /**
    * Optional hook resolving ruleset-specific action budget consumption and turn energy cost (`0` if turn continues, `> 0` if turn ends).
-   * @param state The current GameState.
+   * @param state The current GameState (after intent execution).
    * @param intent The intent being applied.
    * @param baseEnergyCost The baseline energy cost computed by Console.
+   * @param preActionState Optional GameState snapshot captured before the intent handler executed.
    * @returns Updated GameState and effective energy cost.
    */
   resolveActionEnergyCost?(
     state: GameState,
     intent: Intent,
-    baseEnergyCost: number
+    baseEnergyCost: number,
+    preActionState?: GameState
   ): { readonly state: GameState; readonly energyCost: number };
+
+  /**
+   * Optional hook checking whether an actor currently has sufficient intra-turn action resources
+   * to execute a candidate Intent during their active turn.
+   * @param state The current GameState.
+   * @param intent Candidate Intent to check.
+   * @returns True if the actor can currently perform the intent.
+   */
+  canActorPerformIntent?(state: GameState, intent: Intent): boolean;
+
+  /**
+   * Optional hook returning true if the actor has already expended any movement or action
+   * resources during their current turn.
+   * @param state The current GameState.
+   * @param entityId The acting entity ID.
+   * @returns True if the actor has already acted or moved this turn.
+   */
+  hasActorActedThisTurn?(state: GameState, entityId: EntityId): boolean;
+
+  /**
+   * Optional hook returning true if the actor is mid-way through a multi-step movement pool
+   * that still has remaining movement distance in their active turn.
+   * @param state The current GameState.
+   * @param entityId The acting entity ID.
+   * @returns True if the actor still has an active in-progress move pool.
+   */
+  hasActorMovementInProgress?(state: GameState, entityId: EntityId): boolean;
 
   /**
    * Optional hook resolving an aimed targeting action (e.g. spell cast or targeted ability) confirmed at `targetPos`.
@@ -280,4 +309,17 @@ export interface RulesetContract {
     targetPos: { readonly x: number; readonly y: number },
     context: TargetingContext
   ): { readonly state: GameState; readonly success: boolean };
+
+  /**
+   * Optional hook resolving a ruleset-specific `UseAbilityIntent` (e.g., class or domain resource-pool abilities).
+   * Returns `null` if the intent is not handled by the ruleset.
+   *
+   * @param state The current GameState.
+   * @param intent The UseAbilityIntent to resolve.
+   * @returns `{ state, success }` or `null`.
+   */
+  resolveUseAbility?(
+    state: GameState,
+    intent: UseAbilityIntent
+  ): { readonly state: GameState; readonly success: boolean } | null;
 }

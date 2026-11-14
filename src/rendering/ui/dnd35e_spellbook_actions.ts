@@ -4,7 +4,7 @@
  * spontaneous conversion (Cure/Inflict, SNA), and 8-hour rest recovery.
  */
 
-import { addComponent, getComponent } from '../../core/ecs.ts';
+import { addComponent, getComponent, refreshResourcePools } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
@@ -219,9 +219,11 @@ export function executeEightHourRest(state: GameState, playerId: EntityId): Game
     } as RulesetDataComponent);
   }
 
+  nextState = refreshResourcePools(nextState, playerId, 'rest_8h');
+
   nextState = addMessage(
     nextState,
-    'Rest completed (8 hours). All daily spell slots refreshed and vitality restored.',
+    'Rest completed (8 hours). All daily spell slots and daily abilities refreshed.',
     MessageLogCategory.System
   );
   return nextState;

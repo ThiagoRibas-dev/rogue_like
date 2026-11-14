@@ -827,6 +827,22 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
    - `collectActorProficiencies` derives two-handed martial proficiency eligibility directly from `itemDef.weaponStats.isExotic1HMartial2H === true` when the actor holds `'martial'` category proficiency, while `evaluateNonproficiencyPenalty` enforces `'two_handed'` vs `'one_handed'` grip rules cleanly.
    - `buildActorNaturalWeaponLimbs` applies `natural_damage_size_step` modifiers (scoped via `weapon:<naturalWeaponId>`) through `stepDamageDiceLadder` (`src/rulesets/dnd35e/equipment/weapon_scaling.ts`).
 
+### 9.19 Entity-Agnostic Console Turn Model, Zero-Cost Continuation & Per-Entity Action Budgets (Milestone 133)
+
+1. **Entity-Agnostic Console Turn Lifecycle & Scheduler Continuation (`src/core/game-loop.ts`, `src/core/scheduler.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/systems/lifecycle.system.ts`)**:
+   - `processTurn(entityId)` maintains `turnStartProcessedForActor` latching and `MAX_INTRA_TURN_ACTIONS = 24` safety bounds identically for all actors (player, companions, and hostile NPCs). `isPlayer` is isolated strictly to **intent supply** (`inputQueue` vs. `processAITurn` + implicit `Wait`).
+   - Because `ROT.Scheduler.Action.setDuration(0)` internally coerces `0` to `_defaultDuration (1)`, `scheduler.ts` intercepts `setTurnDuration(duration <= 0)` via `activeContinuationActor` so intra-turn sub-actions never surrender turn priority or advance scheduler time.
+   - `applyIntentWithCost` detects non-displacing `MoveIntent` bumps (`!didDisplaceTile`)—passing `preActionState` to `resolveActorActionEnergyCost`, remapping bump-doors to `IntentType.Interact` for cost accounting, and gating `syncShareInitiativeCompanionsOnMove` strictly on `didDisplaceTile`.
+   - `RulesetContract` exposes `canActorPerformIntent`, `hasActorActedThisTurn`, and `hasActorMovementInProgress` via `src/systems/lifecycle.system.ts` so Console AI behaviors respect cartridge budgets without importing cartridge modules.
+
+2. **Symmetric Cartridge Action Economy & Per-Entity Budget Hydration (`src/rulesets/dnd35e/action_economy.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`, `src/rulesets/dnd35e/magic/spell_cast_helpers.ts`)**:
+   - `hydrateEntityRoundActionBudget` builds each entity's 6-second `DnD35ActionBudget` dynamically at turn start from traits (`singleActionsOnly`, `trait:single_actions_only`), conditions (`nauseated`, `staggered`, `flat_footed`), vitality status, off-turn immediate reactions, and `StatModifier`s (`extra_standard_actions`, `extra_move_actions`, `extra_swift_actions`, `extra_aoo`).
+   - `resolveDnD35eActionEnergyCost` handles every `IntentType` symmetrically across all entities (`energyCost: 0` while actions/feet remain; `100` on turn completion), while `resolveDnD35eMeleeAttack` and `consumeSpellActionBudget` enforce `moveRemaining >= 1` for Full-Round actions and PHB p. 138 post-attack/spell partial movement forfeiture.
+
+3. **Budget-Aware AI Execution (`src/systems/ai.system.ts`, `src/ai/hunt.behavior.ts`, `src/ai/wander.behavior.ts`)**:
+   - `processAITurn` validates candidate intents against `canActorPerformIntent` and restricts barks to `!hasActorActedThisTurn`.
+   - `huntBehavior` checks `canActorPerformIntent(attack)` or `hasActorMovementInProgress` before stepping toward distant targets, preventing ranged casters/archers who already spent their Standard action from charging into melee, while `wanderBehavior` caps movement to one unacted wander per round.
+
 ---
 
 ## 10. Key Design Decisions

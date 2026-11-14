@@ -14,6 +14,7 @@ import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType, type TacticalDoctrineComponent } from '../../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
+import { IntentType } from '../../types/intents/intent.enum.ts';
 import { type CartridgeUIDefinition, closeCartridgeModal, registerCartridgeUI } from './cartridge_ui_registry.ts';
 import { hideConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd35e_char_builder.ui.ts';
@@ -254,6 +255,14 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       if (verb) {
         queuePlayerIntent(createApplyAction(playerId, verb, { type: 'self' }));
       }
+    } else if (payload.kind === 'ability') {
+      queuePlayerIntent({
+        type: IntentType.UseAbility,
+        entityId: playerId,
+        effectId: `pool:${payload.id}`,
+        abilityName: slot.label
+      });
+      markAllDomainsDirty();
     } else if (payload.kind === 'spell' && payload.classId) {
       initiateSpellCastFromUI(state, playerId, {
         classId: payload.classId,

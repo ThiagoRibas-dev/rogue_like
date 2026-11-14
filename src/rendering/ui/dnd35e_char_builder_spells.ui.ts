@@ -75,7 +75,7 @@ export function renderSharedClassSpellStep(
   for (const spId of manualSelected) {
     const sp = sys.spells[spId];
     if (!sp) continue;
-    const lvl = getSpellLevelForClass(sp, config.classId, config.domains) ?? sp.level;
+    const lvl = getSpellLevelForClass(sp, config.classId, config.domains, [], sys.domains) ?? sp.level;
     pickedByLevel[lvl] = (pickedByLevel[lvl] ?? 0) + 1;
     if (lvl >= 1) nonZeroPicked += 1;
   }
@@ -145,7 +145,8 @@ export function renderSharedClassSpellStep(
         budget.maxCastableLevel,
         config.prohibitedSchools,
         config.domains,
-        config.alignment
+        config.alignment,
+        sys.domains
       ).selectable
   );
 
@@ -160,7 +161,8 @@ export function renderSharedClassSpellStep(
       budget.maxCastableLevel,
       config.prohibitedSchools,
       config.domains,
-      config.alignment
+      config.alignment,
+      sys.domains
     );
     const effLvl = check.effectiveLevel ?? spell.level;
     if (spellLevelFilter !== 'all' && effLvl !== spellLevelFilter) continue;

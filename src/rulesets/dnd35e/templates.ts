@@ -111,8 +111,7 @@ export function applyCreatureTemplate(
   const mergedSubtypes = Array.from(new Set([...existingSubtypes, ...template.addSubtypes, ...grantedTags]));
   const sizeCategory = template.sizeCategoryChange ?? base.sizeCategory;
 
-  const isMindlessTemplate =
-    template.grantedTags.includes('mindless') || template.templateId === 'skeleton' || template.templateId === 'zombie';
+  const isMindlessTemplate = template.grantedTags.includes('mindless');
   const nextScores: Record<
     string,
     { base: number | null; inherentBonus: number; damage: number; drain: number; tempPenalty: number }
@@ -200,11 +199,10 @@ export function applyCreatureTemplate(
         )
       : 1;
   let nextTracks: ReadonlyArray<HitDieTrack> = base.tracks;
-  const shouldStripClassLevels =
-    template.stripClassLevels === true || template.templateId === 'skeleton' || template.templateId === 'zombie';
+  const shouldStripClassLevels = template.stripClassLevels === true;
 
   if (shouldStripClassLevels) {
-    const hdMult = template.hdMultiplier ?? (template.templateId === 'zombie' ? 2 : 1);
+    const hdMult = template.hdMultiplier ?? 1;
     const bonusHd = template.bonusHitDice ?? 0;
     const undeadHd = Math.max(1, Math.floor(baseRacialLevels * hdMult) + bonusHd);
     nextTracks = [
@@ -286,8 +284,9 @@ export function applyCreatureTemplate(
     : base.naturalWeapons;
   const levelAdjustment = (base.levelAdjustment ?? 0) + (template.levelAdjustmentDelta ?? 0);
 
-  const isZombie = template.templateId === 'zombie' || grantedTags.includes('single_actions_only');
-  const singleActionsOnly = isZombie ? true : (base.singleActionsOnly ?? false);
+  const isSingleActionsOnly =
+    grantedTags.includes('single_actions_only') || grantedTags.includes('trait:single_actions_only');
+  const singleActionsOnly = isSingleActionsOnly ? true : (base.singleActionsOnly ?? false);
 
   const resolvedAbilityScores = nextScores as unknown as AbilityScoresRecord;
   const chaMod = computeAbilityModifier(computeEffectiveAbilityScore(resolvedAbilityScores.cha));

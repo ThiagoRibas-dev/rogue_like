@@ -1,8 +1,20 @@
+import {
+  type CandidateAoOReactor,
+  filterAndOrderAoOReactors,
+  MAX_AOO_CHAIN_DEPTH,
+  resolveImmediateDefenseReaction,
+  useImmediateAction
+} from './action_economy_reactions.ts';
 import { FEET_PER_GRID_SQUARE } from './spatial/grid_geometry.ts';
 import type { DnD35ActionBudget } from './types/dnd35e.types.ts';
 
-/** Maximum recursion depth for nested Attacks of Opportunity (`AoO` chains). */
-export const MAX_AOO_CHAIN_DEPTH = 4;
+export {
+  type CandidateAoOReactor,
+  filterAndOrderAoOReactors,
+  MAX_AOO_CHAIN_DEPTH,
+  resolveImmediateDefenseReaction,
+  useImmediateAction
+};
 
 /** Default number of Attacks of Opportunity per round without Combat Reflexes (`1`). */
 const DEFAULT_AOO_PER_ROUND = 1;
@@ -13,41 +25,145 @@ const DIFFICULT_TERRAIN_MULTIPLIER = 2;
 /**
  * Creates a fresh 6-second tactical round `DnD35ActionBudget` for an actor at the start
  * of their turn.
- * - If `immediateUsedOffTurn === true` from the prior round, the actor's `swiftRemaining`
- *   for this turn is automatically consumed (`0`).
- * - With `hasCombatReflexes === true`, `aooMax = Math.max(1, 1 + dexModifier)`.
  *
  * @param options Actor parameters for the new round.
  * @returns Initialized `DnD35ActionBudget`.
  */
 export function createRoundActionBudget(options: {
   readonly dexModifier: number;
-  readonly hasCombatReflexes: boolean;
-  readonly isFlatFooted: boolean;
+  readonly hasCombatReflexes?: boolean;
+  readonly isFlatFooted?: boolean;
   readonly immediateUsedOffTurn?: boolean;
   readonly isSurpriseRound?: boolean;
+  readonly singleActionOnly?: boolean;
+  readonly isNauseated?: boolean;
+  readonly extraStandardActions?: number;
+  readonly extraMoveActions?: number;
+  readonly extraSwiftActions?: number;
+  readonly extraAoO?: number;
 }): DnD35ActionBudget {
-  const aooMax = options.hasCombatReflexes
+  const hasCombatReflexes = options.hasCombatReflexes === true;
+  const isFlatFooted = options.isFlatFooted === true;
+  const baseAoo = hasCombatReflexes
     ? Math.max(DEFAULT_AOO_PER_ROUND, DEFAULT_AOO_PER_ROUND + options.dexModifier)
     : DEFAULT_AOO_PER_ROUND;
+  const aooMax = Math.max(0, baseAoo + (options.extraAoO ?? 0));
   const consumedSwift = options.immediateUsedOffTurn === true;
 
+  if (options.isNauseated === true) {
+    return {
+      standardRemaining: 0,
+      moveRemaining: Math.max(0, 1 + (options.extraMoveActions ?? 0)),
+      movementRemainingFt: 0,
+      swiftRemaining: 0,
+      immediateUsedOffTurn: false,
+      fiveFootStepAvailable: true,
+      canMoveFurtherThisRound: true,
+      distanceMovedThisRoundFt: 0,
+      aooRemaining: aooMax,
+      aooMax,
+      isFlatFooted,
+      hasCombatReflexes,
+      reactorsThisOpportunity: [],
+      movementAoOReactorsThisRound: [],
+      hasActedThisRound: false
+    };
+  }
+
+  const isSingleActionRestricted = options.isSurpriseRound === true || options.singleActionOnly === true;
+  const baseStandard = 1;
+  const baseMove = isSingleActionRestricted ? 0 : 1;
+
   return {
-    standardRemaining: 1,
-    moveRemaining: options.isSurpriseRound === true ? 0 : 1,
+    standardRemaining: Math.max(0, baseStandard + (options.extraStandardActions ?? 0)),
+    moveRemaining: Math.max(0, baseMove + (options.extraMoveActions ?? 0)),
     movementRemainingFt: 0,
-    swiftRemaining: consumedSwift ? 0 : 1,
+    swiftRemaining: consumedSwift ? 0 : Math.max(0, 1 + (options.extraSwiftActions ?? 0)),
     immediateUsedOffTurn: false,
     fiveFootStepAvailable: true,
     canMoveFurtherThisRound: true,
     distanceMovedThisRoundFt: 0,
     aooRemaining: aooMax,
     aooMax,
-    isFlatFooted: options.isFlatFooted,
-    hasCombatReflexes: options.hasCombatReflexes,
+    isFlatFooted,
+    hasCombatReflexes,
     reactorsThisOpportunity: [],
-    movementAoOReactorsThisRound: []
+    movementAoOReactorsThisRound: [],
+    hasActedThisRound: false
   };
+}
+
+/**
+ * Consumes a Standard action from `budget`. If the actor has already moved this round
+ * (`distanceMovedThisRoundFt > 0`), any remaining partial movement pool from that earlier Move
+ * action is forfeited in accordance with PHB p. 138 (unless another Move action remains).
+ *
+ * @param budget Current `DnD35ActionBudget`.
+ * @returns Updated `DnD35ActionBudget` and whether a Standard action was available.
+ */
+export function consumeStandardActionFromBudget(budget: DnD35ActionBudget): {
+  readonly allowed: boolean;
+  readonly budget: DnD35ActionBudget;
+} {
+  if (budget.standardRemaining < 1) {
+    return { allowed: false, budget };
+  }
+  const nextStd = budget.standardRemaining - 1;
+  const movedAlready = budget.distanceMovedThisRoundFt > 0;
+  const nextMovementFt = movedAlready ? 0 : budget.movementRemainingFt;
+  return {
+    allowed: true,
+    budget: {
+      ...budget,
+      standardRemaining: nextStd,
+      movementRemainingFt: nextMovementFt,
+      fiveFootStepAvailable: movedAlready ? false : budget.fiveFootStepAvailable,
+      canMoveFurtherThisRound: movedAlready ? budget.moveRemaining > 0 : budget.canMoveFurtherThisRound,
+      hasActedThisRound: true
+    }
+  };
+}
+
+/**
+ * Consumes a non-walking Move action (e.g. picking up/equipping an item or interacting with a door),
+ * downgrading a Standard action if no Move action remains and clearing any unspent partial walking feet.
+ *
+ * @param budget Current `DnD35ActionBudget`.
+ * @returns Updated `DnD35ActionBudget` and whether a Move (or convertible Standard) action was available.
+ */
+export function consumeMoveActionFromBudget(budget: DnD35ActionBudget): {
+  readonly allowed: boolean;
+  readonly budget: DnD35ActionBudget;
+} {
+  if (budget.moveRemaining > 0) {
+    const nextMove = budget.moveRemaining - 1;
+    return {
+      allowed: true,
+      budget: {
+        ...budget,
+        moveRemaining: nextMove,
+        movementRemainingFt: 0,
+        fiveFootStepAvailable: false,
+        canMoveFurtherThisRound: nextMove > 0 || budget.standardRemaining > 0,
+        hasActedThisRound: true
+      }
+    };
+  }
+  if (budget.standardRemaining > 0) {
+    const nextStd = budget.standardRemaining - 1;
+    return {
+      allowed: true,
+      budget: {
+        ...budget,
+        standardRemaining: nextStd,
+        movementRemainingFt: 0,
+        fiveFootStepAvailable: false,
+        canMoveFurtherThisRound: nextStd > 0,
+        hasActedThisRound: true
+      }
+    };
+  }
+  return { allowed: false, budget };
 }
 
 /**
@@ -77,7 +193,6 @@ export function downgradeStandardToMove(budget: DnD35ActionBudget): {
  * Consumes a single grid step (`stepDistanceFt`, e.g. `5` or `10` ft) from the actor's
  * current `movementRemainingFt`, automatically starting a `Move` action (or downgrading
  * `Standard -> Move` for a Double Move) when needed.
- * Automatically sets `fiveFootStepAvailable = false` once `distanceMovedThisRoundFt > 0`.
  *
  * @param budget Current `DnD35ActionBudget`.
  * @param actorSpeedFt Actor's tactical movement speed in feet (e.g. `30`).
@@ -125,7 +240,8 @@ export function consumeMovementStepFt(
       ...nextBudget,
       movementRemainingFt: nextBudget.movementRemainingFt - effectiveCostFt,
       distanceMovedThisRoundFt: nextBudget.distanceMovedThisRoundFt + effectiveCostFt,
-      fiveFootStepAvailable: false
+      fiveFootStepAvailable: false,
+      hasActedThisRound: true
     }
   };
 }
@@ -157,167 +273,8 @@ export function takeFiveFootStep(
       fiveFootStepAvailable: false,
       canMoveFurtherThisRound: false,
       movementRemainingFt: 0,
-      distanceMovedThisRoundFt: FEET_PER_GRID_SQUARE
-    }
-  };
-}
-
-/**
- * Uses a `Swift` or `Immediate` action per `/docs/dnd35e/rules/actions/action-types.md`:
- * - Cannot use an `Immediate` action while `isFlatFooted === true`.
- * - Using an `Immediate` action on-turn consumes `swiftRemaining`.
- * - Using an `Immediate` action off-turn sets `immediateUsedOffTurn = true`, which will
- *   consume the actor's `Swift` action on their next turn.
- *
- * @param budget Current `DnD35ActionBudget`.
- * @param isOnTurn True if used during the actor's own turn.
- * @returns `{ allowed: boolean, budget: DnD35ActionBudget }`.
- */
-export function useImmediateAction(
-  budget: DnD35ActionBudget,
-  isOnTurn: boolean
-): {
-  readonly allowed: boolean;
-  readonly budget: DnD35ActionBudget;
-} {
-  if (budget.isFlatFooted) {
-    return { allowed: false, budget };
-  }
-
-  if (isOnTurn) {
-    if (budget.swiftRemaining < 1) {
-      return { allowed: false, budget };
-    }
-    return {
-      allowed: true,
-      budget: {
-        ...budget,
-        swiftRemaining: budget.swiftRemaining - 1
-      }
-    };
-  }
-
-  if (budget.immediateUsedOffTurn) {
-    return { allowed: false, budget };
-  }
-
-  return {
-    allowed: true,
-    budget: {
-      ...budget,
-      immediateUsedOffTurn: true
-    }
-  };
-}
-
-/** Descriptor for a candidate reactor threatening a provoking actor. */
-export interface CandidateAoOReactor {
-  readonly reactorId: number;
-  readonly aooRemaining: number;
-  readonly isFlatFooted: boolean;
-  readonly hasCombatReflexes: boolean;
-  readonly isArmedOrThreatening: boolean;
-  readonly targetHasCover: boolean;
-  readonly targetHasTotalConcealment: boolean;
-}
-
-/**
- * Resolves Pre-Action Attacks of Opportunity (`AoO`) in **Last-In, First-Out (LIFO)** order
- * before the provoking action completes, enforcing:
- * 1. `Armed Threat Gate`, `Cover` block, and `Total Concealment (50%)` block.
- * 2. `Flat-Footed` block unless the reactor has `Combat Reflexes`.
- * 3. `One AoO Per Opportunity` (`reactorsThisOpportunity`).
- * 4. `Movement Provocation Deduplication` (`movementAoOReactorsThisRound`): leaving multiple
- *    threatened squares in the same round only provokes ONE movement AoO per reactor, whereas
- *    a subsequent non-movement provocation (e.g. casting a spell) is a new opportunity.
- *
- * @param opportunityKind `'movement' | 'action'`.
- * @param provokerBudget Current `DnD35ActionBudget` of the provoking actor.
- * @param candidates Ordered list of candidate reactors.
- * @returns Eligible reactor IDs in LIFO execution order and updated `provokerBudget`.
- */
-export function filterAndOrderAoOReactors(
-  opportunityKind: 'movement' | 'action',
-  provokerBudget: DnD35ActionBudget,
-  candidates: ReadonlyArray<CandidateAoOReactor>
-): {
-  readonly lifoReactorIds: ReadonlyArray<number>;
-  readonly updatedProvokerBudget: DnD35ActionBudget;
-} {
-  const accepted: number[] = [];
-  const nextOpportunityReactors = [...provokerBudget.reactorsThisOpportunity];
-  const nextMovementReactors = [...provokerBudget.movementAoOReactorsThisRound];
-
-  for (const c of candidates) {
-    if (accepted.length >= MAX_AOO_CHAIN_DEPTH) break;
-    if (c.aooRemaining < 1 || !c.isArmedOrThreatening) continue;
-    if (c.targetHasCover || c.targetHasTotalConcealment) continue;
-    if (c.isFlatFooted && !c.hasCombatReflexes) continue;
-    if (nextOpportunityReactors.includes(c.reactorId)) continue;
-    if (opportunityKind === 'movement' && nextMovementReactors.includes(c.reactorId)) {
-      continue;
-    }
-
-    accepted.push(c.reactorId);
-    nextOpportunityReactors.push(c.reactorId);
-    if (opportunityKind === 'movement') {
-      nextMovementReactors.push(c.reactorId);
-    }
-  }
-
-  return {
-    lifoReactorIds: [...accepted].reverse(),
-    updatedProvokerBudget: {
-      ...provokerBudget,
-      reactorsThisOpportunity: nextOpportunityReactors,
-      movementAoOReactorsThisRound: nextMovementReactors
-    }
-  };
-}
-
-/**
- * Resolves whether an actor can take an Immediate Action (such as Feather Fall, Wings of Cover, or Abrupt Jaunt).
- * Consumes the character's current swift action if it is their turn, or marks immediateUsedOffTurn if taken off-turn,
- * which will consume their swift action on their next turn.
- *
- * @param budget Current DnD35ActionBudget of the reactor.
- * @param isActorTurn Whether the reaction is being taken during the reactor's own turn.
- * @returns Result with allowed flag and updated DnD35ActionBudget.
- */
-export function resolveImmediateDefenseReaction(
-  budget: DnD35ActionBudget,
-  isActorTurn: boolean
-): {
-  readonly allowed: boolean;
-  readonly updatedBudget: DnD35ActionBudget;
-} {
-  if (budget.isFlatFooted) {
-    return { allowed: false, updatedBudget: budget };
-  }
-
-  if (isActorTurn) {
-    if (budget.swiftRemaining < 1) {
-      return { allowed: false, updatedBudget: budget };
-    }
-    return {
-      allowed: true,
-      updatedBudget: {
-        ...budget,
-        swiftRemaining: budget.swiftRemaining - 1
-      }
-    };
-  }
-
-  // Off-turn immediate action
-  if (budget.immediateUsedOffTurn) {
-    return { allowed: false, updatedBudget: budget };
-  }
-
-  return {
-    allowed: true,
-    updatedBudget: {
-      ...budget,
-      immediateUsedOffTurn: true
+      distanceMovedThisRoundFt: FEET_PER_GRID_SQUARE,
+      hasActedThisRound: true
     }
   };
 }

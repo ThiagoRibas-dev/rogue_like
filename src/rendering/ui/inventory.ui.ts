@@ -70,11 +70,17 @@ export function renderInventoryPanel(state: GameState): void {
   renderAnatomicalPaperDoll(paperdoll, state, playerEntityId, { compact: false });
   equipPanel.appendChild(paperdoll);
 
-  // --- Backpack Panel (Grid Layout) ---
+  // --- Backpack Panel (Uniform 5 x Dynamic Max Grid) ---
   const gridContainer = document.createElement('div');
   gridContainer.className = 'inventory-grid';
 
-  for (let i = 0; i < effectiveCapacity; i++) {
+  const BACKPACK_GRID_COLS = 5;
+  const BACKPACK_MIN_ROWS = 4;
+  const occupiedOrCapacity = Math.max(effectiveCapacity, inventory.items.length);
+  const totalSlots =
+    Math.max(BACKPACK_MIN_ROWS, Math.ceil((occupiedOrCapacity + 1) / BACKPACK_GRID_COLS)) * BACKPACK_GRID_COLS;
+
+  for (let i = 0; i < totalSlots; i++) {
     const itemEntityId = inventory.items[i];
 
     const slotDiv = document.createElement('div');
@@ -84,12 +90,11 @@ export function renderInventoryPanel(state: GameState): void {
     if (i < 26) {
       const label = document.createElement('span');
       label.className = 'inv-grid-label';
-      label.textContent = String.fromCharCode(97 + i);
+      label.textContent = `[${String.fromCharCode(97 + i)}]`;
       slotDiv.appendChild(label);
     }
 
     if (itemEntityId !== undefined) {
-      // It has an item
       const isEquipped = equipment?.slots.some((s) => s.equippedItem === itemEntityId) ?? false;
       if (isEquipped) {
         slotDiv.classList.add('inv-equipped-grid');
@@ -107,8 +112,8 @@ export function renderInventoryPanel(state: GameState): void {
         const icon = document.createElement('span');
         icon.className = 'inv-item-icon';
         if (displayName) {
-          icon.textContent = displayName.substring(0, 3);
-          icon.style.fontSize = '0.7rem';
+          icon.textContent = displayName.substring(0, 6);
+          icon.style.fontSize = '0.68rem';
         } else {
           icon.textContent = renderable ? renderable.glyph : '?';
         }

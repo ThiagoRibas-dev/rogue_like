@@ -4,6 +4,8 @@ import type { UseAbilityIntent } from '../types/intents/combat.intents.ts';
 import type { DebugFastForwardSchemesIntent } from '../types/intents/debug.intents.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from '../constants/display.constants.ts';
+import { ComponentType } from '../types/components.types.ts';
+import { getComponent } from '../core/ecs.ts';
 import { assertNever } from '../utils/assert.ts';
 import { closeTopModal, getCurrentModal, openModal, toggleModal } from '../core/modal_manager.ts';
 import { switchEngineMode } from '../core/scheduler.ts';
@@ -63,8 +65,13 @@ export function dispatchAction(
   switch (intent.type) {
     case IntentType.Move:
       return processMoveIntent(state, intent);
-    case IntentType.Wait:
-      return { state: addMessage(state, 'You wait a moment.', MessageLogCategory.System), success: true };
+    case IntentType.Wait: {
+      const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
+      return {
+        state: isPlayer ? addMessage(state, 'You wait a moment.', MessageLogCategory.System) : state,
+        success: true
+      };
+    }
     case IntentType.ChangeArea:
       return processChangeAreaIntent(state, intent);
     case IntentType.MeleeAttack:

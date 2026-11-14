@@ -47,13 +47,14 @@ export function isSpellAlignmentAllowedForActor(
 }
 
 /**
- * Returns the spell level of a spell for a given class (or Cleric domain), or `null` if not on the class list.
+ * Returns the spell level of a spell for a given class (or any owned domain), or `null` if not on the class list.
  */
 export function getSpellLevelForClass(
   spell: DnD35SpellDefinition,
   classId: string,
   domainIds: ReadonlyArray<string> = [],
-  actorAccessTags: ReadonlyArray<string> = []
+  actorAccessTags: ReadonlyArray<string> = [],
+  domainRegistry?: Readonly<Record<string, { readonly domainSpells?: Readonly<Record<string, string>> } | undefined>>
 ): number | null {
   const classLevel = spell.levelByClass[classId];
   if (classLevel !== undefined) return classLevel;
@@ -61,6 +62,15 @@ export function getSpellLevelForClass(
     for (const domId of domainIds) {
       const domLvl = spell.levelByDomain[domId] ?? spell.levelByAccessTag?.[`domain:${domId}`];
       if (domLvl !== undefined) return domLvl;
+      const domSpells = domainRegistry?.[domId]?.domainSpells;
+      if (domSpells) {
+        for (const [lvlKey, spId] of Object.entries(domSpells)) {
+          if (spId === spell.id) {
+            const parsed = Number(lvlKey);
+            if (!Number.isNaN(parsed)) return parsed;
+          }
+        }
+      }
     }
   }
   const classTagLvl = spell.levelByAccessTag?.[`class:${classId}`];
@@ -83,9 +93,10 @@ export function isSpellSelectableForDraft(
   maxCastableLevel: number,
   prohibitedSchools: ReadonlyArray<DnD35SpellSchool> = [],
   domainIds: ReadonlyArray<string> = [],
-  alignment?: DnD35Alignment
+  alignment?: DnD35Alignment,
+  domainRegistry?: Readonly<Record<string, { readonly domainSpells?: Readonly<Record<string, string>> } | undefined>>
 ): { readonly selectable: boolean; readonly effectiveLevel: number | null; readonly reason?: string } {
-  const effectiveLevel = getSpellLevelForClass(spell, classId, domainIds);
+  const effectiveLevel = getSpellLevelForClass(spell, classId, domainIds, [], domainRegistry);
   if (effectiveLevel === null) {
     return { selectable: false, effectiveLevel: null, reason: 'Not on class spell list' };
   }

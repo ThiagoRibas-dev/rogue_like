@@ -153,10 +153,11 @@ function buildPreparedRows(
     const tiles: QuickcastSpellTile[] = [];
     for (const [spellId, group] of grouped.entries()) {
       const sp = sys?.spells?.[spellId];
-      const baseLvl = sp?.levelByClass[classId] ?? sp?.level ?? lvl;
+      const firstSlot = group[0]!;
+      const baseLvl = firstSlot.slotKind === 'domain' ? lvl : (sp?.levelByClass[classId] ?? sp?.level ?? lvl);
       tiles.push(
         makeTile(spellId, sp, classId, baseLvl, lvl, group.length, BASE_SPELL_DC + baseLvl + govAbMod, activeRodIds, {
-          slotId: group[0]!.slotId
+          slotId: firstSlot.slotId
         })
       );
     }

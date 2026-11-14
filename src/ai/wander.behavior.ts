@@ -1,3 +1,4 @@
+import { canActorPerformIntent, hasActorActedThisTurn } from '../systems/lifecycle.system.ts';
 import { type GameState, type EntityId } from '../types/game-state.types.ts';
 import { type Intent } from '../types/intents/intent.union.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
@@ -15,21 +16,26 @@ const DIRECTIONS = [
 ];
 
 /**
- * Wander behavior: picks a random adjacent direction.
- * Note: the movement system will handle blocking/bumping.
+ * Wander behavior: picks a random adjacent direction once at the start of an idle actor's turn.
+ * Respects `wanders: false`, prevents multi-step random drifting within the same round, and
+ * validates movement eligibility against the active ruleset budget.
  */
 export function wanderBehavior(
-  _state: GameState,
+  state: GameState,
   entityId: EntityId,
-  _params: Readonly<Record<string, unknown>>
+  params: Readonly<Record<string, unknown>>
 ): Intent | null {
+  if (params.wanders === false) return null;
+  if (hasActorActedThisTurn(state, entityId)) return null;
+
   const randomDir = ROT.RNG.getItem(DIRECTIONS);
   if (!randomDir) return null;
 
-  return {
+  const moveIntent: Intent = {
     type: IntentType.Move,
     entityId,
     dx: randomDir.dx,
     dy: randomDir.dy
   };
+  return canActorPerformIntent(state, moveIntent) ? moveIntent : null;
 }

@@ -485,16 +485,19 @@
   "src/rulesets/dnd35e/action_economy.ts": {
     "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
-    "responsibility": "Maximum recursion depth for nested Attacks of Opportunity (`AoO` chains).",
+    "responsibility": "Pure D&D 3.5e 6-second round action economy math (Standard, Move, Swift/Immediate, 5-Foot Step, AoO LIFO ordering, and per-entity action modifiers).",
     "canonicalEntryPoints": [
       "MAX_AOO_CHAIN_DEPTH",
       "createRoundActionBudget",
+      "consumeStandardActionFromBudget",
+      "consumeMoveActionFromBudget",
       "downgradeStandardToMove",
       "consumeMovementStepFt",
       "takeFiveFootStep",
       "useImmediateAction",
       "CandidateAoOReactor",
-      "filterAndOrderAoOReactors"
+      "filterAndOrderAoOReactors",
+      "resolveImmediateDefenseReaction"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/action_economy.ts.",
@@ -502,6 +505,25 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/action_economy.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/action_economy_reactions.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Pure D&D 3.5e Immediate Action and Pre-Action Attack of Opportunity (AoO) LIFO reaction resolution.",
+    "canonicalEntryPoints": [
+      "MAX_AOO_CHAIN_DEPTH",
+      "useImmediateAction",
+      "CandidateAoOReactor",
+      "filterAndOrderAoOReactors",
+      "resolveImmediateDefenseReaction"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/action_economy_reactions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/action_economy_reactions.ts."
     ]
   },
   "src/rulesets/dnd35e/archetype_resolver.ts": {
@@ -840,12 +862,16 @@
   "src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
     "tier": "tier2_cartridge",
-    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: resets per-round action budget, triggers aura first-entry saving throw and Spell Resistance checks, consumes movement budget, and gates intent energy costs.",
+    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: hydrates per-entity action budgets from traits/conditions/StatModifiers, evaluates aura entry saves, resolves symmetric round energy costs, and checks action availability.",
     "canonicalEntryPoints": [
       "evaluateActorAuraEntrySaves",
+      "hydrateEntityRoundActionBudget",
       "onDnD35eActorTurnStart",
       "onDnD35eActorMovementStep",
-      "resolveDnD35eActionEnergyCost"
+      "resolveDnD35eActionEnergyCost",
+      "canDnD35eActorPerformIntent",
+      "hasDnD35eActorActedThisTurn",
+      "hasDnD35eActorMovementInProgress"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.",
@@ -853,6 +879,27 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+    "tier": "tier2_cartridge",
+    "responsibility": "Hydrates per-entity 5-tier round action budgets and resolves symmetric TurnBased intent energy costs and availability.",
+    "canonicalEntryPoints": [
+      "FULL_ROUND_ENERGY_COST",
+      "hydrateEntityRoundActionBudget",
+      "finalizeBudgetAfterAction",
+      "resolveDnD35eActionEnergyCost",
+      "canDnD35eActorPerformIntent",
+      "hasDnD35eActorActedThisTurn",
+      "hasDnD35eActorMovementInProgress"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts."
     ]
   },
   "src/rulesets/dnd35e/character_builder.ts": {
@@ -1040,6 +1087,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/maneuvers_conditions.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/pool_ability_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Executes activated class/domain ResourcePoolComponent abilities (Turn/Rebuke Undead 60-ft LoE bursts, Lay on Hands healing, and daily buff pools) using Standard Actions.",
+    "canonicalEntryPoints": [
+      "TURN_UNDEAD_RANGE_FT",
+      "executeDnD35eResourcePoolAbility"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/combat/pool_ability_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/pool_ability_resolver.ts."
     ]
   },
   "src/rulesets/dnd35e/combat/retaliation_resolver.ts": {
@@ -1508,6 +1571,8 @@
     "tier": "tier2_cartridge",
     "responsibility": "Computes Level 0..9 slot matrices, ability bonus slots, specialist school slots, domain bonus slots, and spontaneous conversion targets.",
     "canonicalEntryPoints": [
+      "isActorDomainSpellAtLevel",
+      "collectActorDomainSpellIds",
       "computeClassLevelSlotSummaries",
       "reconcilePreparedSlots",
       "getSpontaneousConversionTargets"

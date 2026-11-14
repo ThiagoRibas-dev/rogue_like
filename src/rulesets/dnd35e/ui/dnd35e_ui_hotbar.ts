@@ -1,6 +1,6 @@
 /**
  * @file Pure hotbar and stance-mode projection helpers for the D&D 3.5e Cartridge UI Adapter.
- * Projects combat stances, scaling resource pools, and the 12-slot NWN2-style hotbar from live ECS state.
+ * Projects combat stances, activated class/domain abilities, and the 12-slot NWN2-style hotbar from live ECS state.
  */
 
 import { getComponent } from '../../../core/ecs.ts';
@@ -14,6 +14,7 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { UIActionEconomyPip, UIHotbarSlot, UIStanceModeEntry } from '../../../types/ui_adapter.types.ts';
 import { type ConsoleStanceGroupOption, resolveActiveStanceInGroup } from '../../../systems/stance.system.ts';
+import { extractActorTacticalDials, type TacticalDialDescriptor } from '../combat/tactical_doctrine.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
 import { type DnD35FeatDefinition, getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { mapEntityItemToUI } from './dnd35e_ui_projection.ts';
@@ -30,14 +31,12 @@ export const ACTIVE_SKILL_IDS: ReadonlySet<string> = new Set([
   'tumble'
 ]);
 
-import { extractActorTacticalDials, type TacticalDialDescriptor } from '../combat/tactical_doctrine.ts';
-
-/** Projects dynamic combat stances and class-feature scaling pools from an actor's live build. */
+/** Projects dynamic combat stances and toggle groups (excluding activated daily-use resource pools). */
 export function buildActorStanceModes(
   dndData: Partial<DnD35EntityData>,
   bab: number,
   doctrine?: TacticalDoctrineComponent,
-  resourcePools?: ResourcePoolComponent,
+  _resourcePools?: ResourcePoolComponent,
   sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>,
   auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>
 ): ReadonlyArray<UIStanceModeEntry> {
@@ -59,9 +58,7 @@ export function buildActorStanceModes(
       if (typeof legacyVal === 'number') currentVal = legacyVal;
     }
 
-    let maxVal = bab;
-    if (dial.maxCapRule === 'fixed_5') maxVal = Math.min(5, bab);
-
+    const maxVal = dial.maxCapRule === 'fixed_5' ? Math.min(5, bab) : bab;
     modes.push({
       id: dial.abilityId,
       label: dial.name ?? dial.abilityId.replace(/_/g, ' '),
@@ -89,28 +86,16 @@ export function buildActorStanceModes(
     },
     { id: 'two_handed_grip', label: is2H ? '2H Grip' : '1H Grip', isActive: is2H, tooltipText: 'Toggle Grip Mode' }
   );
-  if (resourcePools) {
-    for (const [id, entry] of Object.entries(resourcePools.pools)) {
-      if (entry.max <= 0) continue;
-      modes.push({
-        id: `pool:${id}`,
-        label: `${entry.label ?? id.replace(/_/g, ' ')} (${entry.current}/${entry.max})`,
-        isActive: entry.current > 0
-      });
-    }
-  }
 
-  // Active Console Stance Groups (e.g. Battle Cadence, Martial Stances)
   const activeGroups = doctrine?.activeStanceGroups ?? {};
   for (const featId of dndData.feats ?? []) {
     const featDef = sysFeats?.[featId];
     for (const act of featDef?.activatedAbilities ?? []) {
       if (act.toggleGroup) {
-        const isActive = activeGroups[act.toggleGroup] === act.abilityId;
         modes.push({
           id: act.abilityId,
           label: act.name,
-          isActive,
+          isActive: activeGroups[act.toggleGroup] === act.abilityId,
           groupId: act.toggleGroup,
           tooltipText: `${act.name} (${act.toggleGroup})`
         });
@@ -135,11 +120,21 @@ export function buildActorStanceModes(
   return modes;
 }
 
-/** Builds the 12-slot NWN2-style hotbar dynamically from the actor's equipped weapons, spells, skills, and consumables. */
+function getPoolAbilityIcon(poolId: string): string {
+  const normalized = poolId.toLowerCase();
+  if (normalized.includes('turn') || normalized.includes('rebuke')) return '☀️';
+  if (normalized.includes('rage')) return '🔥';
+  if (normalized.includes('lay_on_hands') || normalized.includes('heal')) return '💛';
+  if (normalized.includes('smite')) return '⚡';
+  return '🌟';
+}
+
+/** Builds the 12-slot NWN2-style hotbar dynamically from equipped weapons, spells, resource abilities, skills, and consumables. */
 export function buildActorHotbarSlots(
-  dndData: Partial<DnD35EntityData>,
+  dndData: Partial<DnD35EntityData> & { readonly resourcePools?: ResourcePoolComponent | undefined },
   state?: GameState,
-  entityId?: EntityId
+  entityId?: EntityId,
+  resourcePools?: ResourcePoolComponent
 ): ReadonlyArray<UIHotbarSlot> {
   const candidates: Array<Omit<UIHotbarSlot, 'slotIndex' | 'keyLabel'>> = [];
   const sys = state ? getDnD35SystemContent(state.campaign) : undefined;
@@ -160,6 +155,26 @@ export function buildActorHotbarSlots(
       }
     }
   }
+
+  const effectivePools = resourcePools ?? dndData.resourcePools;
+  if (effectivePools) {
+    for (const [poolId, entry] of Object.entries(effectivePools.pools)) {
+      if (entry.max <= 0) continue;
+      const displayName = entry.label ?? poolId.replace(/_/g, ' ');
+      candidates.push({
+        label: `${displayName} (${entry.current}/${entry.max})`,
+        iconUrl: getPoolAbilityIcon(poolId),
+        isDisabled: entry.current <= 0,
+        tooltipTitle: `${displayName}: ${entry.current}/${entry.max} uses remaining (Standard Action)`,
+        actionPayload: {
+          kind: 'ability',
+          id: poolId,
+          remainingCount: entry.current
+        }
+      });
+    }
+  }
+
   for (const [classId, book] of Object.entries(dndData.spellbooksByClass ?? {})) {
     if (book.castingMode === 'prepared') {
       const preparedGroups = new Map<string, { spellId: string; slotId?: string; count: number; level?: number }>();
@@ -168,11 +183,8 @@ export function buildActorHotbarSlots(
           if (s.expended || !s.preparedSpellId) continue;
           const key = `${s.spellLevel}:${s.preparedSpellId}`;
           const prev = preparedGroups.get(key);
-          if (prev) {
-            prev.count += 1;
-          } else {
-            preparedGroups.set(key, { spellId: s.preparedSpellId, slotId: s.slotId, count: 1, level: s.spellLevel });
-          }
+          if (prev) prev.count += 1;
+          else preparedGroups.set(key, { spellId: s.preparedSpellId, slotId: s.slotId, count: 1, level: s.spellLevel });
         }
       } else {
         for (const spId of book.preparedSpellIds) {
@@ -259,22 +271,16 @@ export function buildActorHotbarSlots(
   });
 }
 
-/**
- * Projects live 5-tier action pips dynamically from an actor's DnD35ActionBudget.
- */
+/** Projects live 5-tier action pips dynamically from an actor's DnD35ActionBudget. */
 export function buildActorActionPips(dndData: Partial<DnD35EntityData>): ReadonlyArray<UIActionEconomyPip> {
   const budget = dndData.actionBudget;
-  if (!budget) {
-    return DND35E_ACTION_PIPS;
-  }
-
+  if (!budget) return DND35E_ACTION_PIPS;
   const movLabel =
     budget.movementRemainingFt > 0
       ? `MOV ${budget.movementRemainingFt}ft`
       : budget.moveRemaining > 0
         ? 'MOV'
         : 'MOV 0ft';
-
   return [
     {
       id: 'std',

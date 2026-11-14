@@ -6,7 +6,11 @@
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import type { SpellLevelSlotSummary } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
+import {
+  collectActorDomainSpellIds,
+  isActorDomainSpellAtLevel,
+  type SpellLevelSlotSummary
+} from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
 import type {
   DnD35ClassSpellbookState,
   DnD35EntityData,
@@ -31,15 +35,13 @@ export function renderKnownSpellsPane(
   dndData: Partial<DnD35EntityData>,
   sys: DnD35SystemContent | undefined
 ): void {
+  const hasDomainAccess =
+    (dndData.domains?.length ?? 0) > 0 &&
+    (book.domainSpellSlots !== undefined || summaries.some((s) => s.domainSlots > 0));
   const allSpellIds = new Set<string>(book.knownSpellIds);
-  if (classId === 'cleric') {
-    for (const domId of dndData.domains ?? []) {
-      const domDef = sys?.domains?.[domId];
-      if (domDef?.domainSpells) {
-        for (const spId of Object.values(domDef.domainSpells)) {
-          allSpellIds.add(spId);
-        }
-      }
+  if (hasDomainAccess) {
+    for (const spId of collectActorDomainSpellIds(dndData.domains, sys?.domains, spellRegistry)) {
+      allSpellIds.add(spId);
     }
   }
 
@@ -49,15 +51,11 @@ export function renderKnownSpellsPane(
       const sp = spellRegistry[id];
       if (!sp) continue;
       const clsLvl = sp.levelByClass?.[classId];
-      if (clsLvl === sum.spellLevel) {
+      const matchesClass = clsLvl === sum.spellLevel;
+      const matchesDomain =
+        hasDomainAccess && isActorDomainSpellAtLevel(sp.id, sp, sum.spellLevel, dndData.domains, sys?.domains);
+      if (matchesClass || matchesDomain) {
         spellsAtLevel.push(sp);
-      } else if (classId === 'cleric' && sp.levelByDomain) {
-        for (const domId of dndData.domains ?? []) {
-          if (sp.levelByDomain[domId] === sum.spellLevel) {
-            spellsAtLevel.push(sp);
-            break;
-          }
-        }
       }
     }
 
@@ -113,9 +111,9 @@ export function renderKnownSpellsPane(
         });
         right.appendChild(prepBtn);
 
-        // Domain prep button
-        if (classId === 'cleric' && sum.domainSlots > 0) {
-          const isDomainSpell = dndData.domains?.some((domId: string) => sp.levelByDomain?.[domId] === sum.spellLevel);
+        // Domain prep button across ALL owned domains (1..N)
+        if (hasDomainAccess && sum.domainSlots > 0) {
+          const isDomainSpell = isActorDomainSpellAtLevel(sp.id, sp, sum.spellLevel, dndData.domains, sys?.domains);
           if (isDomainSpell) {
             const openDomSlot = slots.find(
               (s: DnD35PreparedSlotEntry) =>

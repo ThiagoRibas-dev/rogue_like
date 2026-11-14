@@ -65,8 +65,8 @@ export const playerConsequences = {
     const rxEvent = event as unknown as { sourceId: EntityId; target: unknown };
     const sourceId = rxEvent.sourceId;
 
-    const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId } | undefined;
-    const itemEntityId = targetPayload?.itemEntityId;
+    const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId; entityId?: EntityId } | undefined;
+    const itemEntityId = targetPayload?.itemEntityId ?? targetPayload?.entityId;
 
     if (itemEntityId === undefined) return state;
 
@@ -104,8 +104,8 @@ export const playerConsequences = {
     const rxEvent = event as unknown as { sourceId: EntityId; target: unknown };
     const sourceId = rxEvent.sourceId;
 
-    const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId } | undefined;
-    const itemEntityId = targetPayload?.itemEntityId;
+    const targetPayload = rxEvent.target as { type: string; itemEntityId?: EntityId; entityId?: EntityId } | undefined;
+    const itemEntityId = targetPayload?.itemEntityId ?? targetPayload?.entityId;
 
     if (itemEntityId === undefined) return state;
 

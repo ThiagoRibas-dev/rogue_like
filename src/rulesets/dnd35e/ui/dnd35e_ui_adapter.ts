@@ -88,8 +88,10 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       const isEquipped = equipment?.slots.some((s) => s.equippedItem === itemEntityId) ?? false;
       const uiItem = mapEntityItemToUI(state, itemEntityId, isEquipped, idx);
       if (uiItem) {
-        stashItems.push(uiItem);
         currentWeightLbs += uiItem.weightLbs;
+        if (!isEquipped) {
+          stashItems.push(uiItem);
+        }
       }
     });
 
@@ -135,11 +137,11 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
         dndData,
         chassis.totalBab,
         doctrine,
-        resourcePools,
+        undefined,
         sys?.feats,
         auraContrib?.stanceGroupOptions
       ),
-      slots: buildActorHotbarSlots(dndData, state, entityId),
+      slots: buildActorHotbarSlots(dndData, state, entityId, resourcePools),
       actionPips: buildActorActionPips(dndData)
     };
   }

@@ -19,6 +19,7 @@ import {
   resolveDamageAreaEffect,
   resolveApplyStatusEffect
 } from './effects/spatial_effects.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
 
 /**
  * Applies an item effect to a target entity, interpreting the declarative
@@ -229,6 +230,14 @@ export function processUseAbilityIntent(
   state: GameState,
   intent: UseAbilityIntent
 ): { state: GameState; success: boolean } {
+  const activeRuleset = getActiveRuleset(state);
+  if (activeRuleset.resolveUseAbility) {
+    const rulesetOutcome = activeRuleset.resolveUseAbility(state, intent);
+    if (rulesetOutcome !== null) {
+      return { state: rulesetOutcome.state, success: rulesetOutcome.success };
+    }
+  }
+
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
   const userName = isPlayer
     ? 'You'

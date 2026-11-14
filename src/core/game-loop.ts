@@ -1,5 +1,6 @@
 import { ComponentType } from '../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { getComponent } from './ecs.ts';
 import { recordIntent } from './replay.ts';
@@ -8,26 +9,35 @@ import { addActor, lockEngine, setTurnDuration, unlockEngine } from './scheduler
 import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from './input_queue.ts';
 import { markDirtyFromStateDiff } from './presentation_queue.ts';
 import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
+import { DEFAULT_ACTOR_TURN_DURATION } from '../constants/scheduler.constants.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { processHungerTick } from '../systems/hunger.system.ts';
 import { shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
-import { runActorTurnStart } from '../systems/lifecycle.system.ts';
+import { resolveActorActionEnergyCost, runActorTurnStart } from '../systems/lifecycle.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { applyIntentWithCost } from './loop/intent_cost_resolver.ts';
 
 export { applyIntentWithCost };
 
+/** Safety cap preventing infinite synchronous AI intra-turn loops (`24`). */
+const MAX_INTRA_TURN_ACTIONS = 24;
+
+/** Fallback energy duration when an active turn concludes without a specific speed cost (`10`). */
+const RTWP_IDLE_WAIT_DURATION = 10;
+
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;
 let turnStartProcessedForActor: EntityId | null = null;
+let intraTurnActionCount = 0;
 
 /**
  * Sets/updates the global GameState and triggers state change listeners.
  */
 export function setGameState(state: GameState): void {
   turnStartProcessedForActor = null;
+  intraTurnActionCount = 0;
   updateState(state);
 }
 
@@ -112,6 +122,15 @@ export function queuePlayerIntent(intent: Intent): void {
   }
 }
 
+function concludeSkippedTurn(state: GameState, entityId: EntityId): GameState {
+  const waitCost = resolveActorActionEnergyCost(
+    state,
+    { type: IntentType.Wait, entityId },
+    DEFAULT_ACTOR_TURN_DURATION
+  );
+  return waitCost.state;
+}
+
 /**
  * Called by ROT.Engine when it is an actor's turn.
  */
@@ -124,6 +143,7 @@ export function processTurn(entityId: EntityId): void {
 
   if (turnStartProcessedForActor !== entityId) {
     turnStartProcessedForActor = entityId;
+    intraTurnActionCount = 0;
     const stateAfterTurnStart = runActorTurnStart(state, entityId);
     if (stateAfterTurnStart !== state) {
       updateState(stateAfterTurnStart);
@@ -134,10 +154,15 @@ export function processTurn(entityId: EntityId): void {
   const fighter = getComponent(state, entityId, ComponentType.Fighter);
   if (!fighter && getComponent(state, entityId, ComponentType.Actor)) {
     turnStartProcessedForActor = null;
-    setTurnDuration(100);
+    intraTurnActionCount = 0;
+    const settledState = concludeSkippedTurn(state, entityId);
+    if (settledState !== state) {
+      updateState(settledState);
+    }
+    setTurnDuration(DEFAULT_ACTOR_TURN_DURATION);
     if (
-      getComponent(state, entityId, ComponentType.Player) !== undefined &&
-      state.engineMode === EngineMode.TurnBased
+      getComponent(settledState, entityId, ComponentType.Player) !== undefined &&
+      settledState.engineMode === EngineMode.TurnBased
     ) {
       unlockEngine();
     }
@@ -148,12 +173,17 @@ export function processTurn(entityId: EntityId): void {
 
   if (shouldSkipTurn(state, entityId)) {
     turnStartProcessedForActor = null;
+    intraTurnActionCount = 0;
+    const settledState = concludeSkippedTurn(state, entityId);
     if (isPlayer) {
-      updateState(addMessage(state, `You are unable to act and skip your turn!`, MessageLogCategory.System));
-      setTurnDuration(100);
-      if (state.engineMode === EngineMode.TurnBased) unlockEngine();
+      updateState(addMessage(settledState, `You are unable to act and skip your turn!`, MessageLogCategory.System));
+      setTurnDuration(DEFAULT_ACTOR_TURN_DURATION);
+      if (settledState.engineMode === EngineMode.TurnBased) unlockEngine();
     } else {
-      setTurnDuration(100);
+      if (settledState !== state) {
+        updateState(settledState);
+      }
+      setTurnDuration(DEFAULT_ACTOR_TURN_DURATION);
     }
     return;
   }
@@ -168,6 +198,7 @@ export function processTurn(entityId: EntityId): void {
 
           if (result.energyCost > 0) {
             turnStartProcessedForActor = null;
+            intraTurnActionCount = 0;
             nextState = processHungerTick(nextState, entityId, result.energyCost);
             setTurnDuration(result.energyCost);
           } else {
@@ -189,68 +220,89 @@ export function processTurn(entityId: EntityId): void {
     if (state.engineMode === EngineMode.TurnBased) {
       lockEngine();
       return;
-    } else {
-      turnStartProcessedForActor = null;
-      setTurnDuration(10);
-      const nextState = processHungerTick(state, entityId, 10);
-      updateState(nextState);
-      return;
     }
-  } else {
+
     turnStartProcessedForActor = null;
-    if (getComponent(state, entityId, ComponentType.Scheme)) {
-      try {
-        const nextState = processSchemeTurn(state, entityId);
-        if (nextState !== state) {
-          updateState(nextState);
-        }
+    intraTurnActionCount = 0;
+    setTurnDuration(RTWP_IDLE_WAIT_DURATION);
+    const nextState = processHungerTick(state, entityId, RTWP_IDLE_WAIT_DURATION);
+    updateState(nextState);
+    return;
+  }
 
-        const stats = getEffectiveStats(state, entityId);
-        const speed = Math.max(1, stats.speed);
-        setTurnDuration(Math.max(1, Math.round(10000 / speed)));
-      } catch (e) {
-        console.error(`Scheme Turn Error for ${entityId}:`, e);
-        setTurnDuration(100);
+  if (getComponent(state, entityId, ComponentType.Scheme)) {
+    turnStartProcessedForActor = null;
+    intraTurnActionCount = 0;
+    try {
+      const nextState = processSchemeTurn(state, entityId);
+      if (nextState !== state) {
+        updateState(nextState);
       }
+
+      const stats = getEffectiveStats(state, entityId);
+      const speed = Math.max(1, stats.speed);
+      setTurnDuration(Math.max(1, Math.round((DEFAULT_ACTOR_TURN_DURATION * DEFAULT_ACTOR_TURN_DURATION) / speed)));
+    } catch (e) {
+      console.error(`Scheme Turn Error for ${entityId}:`, e);
+      setTurnDuration(DEFAULT_ACTOR_TURN_DURATION);
+    }
+    return;
+  }
+
+  let aiTurnState = state;
+
+  try {
+    const aiTime0 = performance.now();
+    const hitCap = intraTurnActionCount >= MAX_INTRA_TURN_ACTIONS;
+    const aiResult = hitCap ? { intent: null, state: aiTurnState } : processAITurn(aiTurnState, entityId);
+    recordAISample({
+      entityId,
+      durationMs: performance.now() - aiTime0,
+      intentType: aiResult.intent?.type ?? 'none'
+    });
+
+    aiTurnState = aiResult.state;
+    const intent = aiResult.intent;
+
+    if (intent !== null) {
+      const result = applyIntentWithCost(aiTurnState, intent);
+      if (result.success && result.energyCost === 0) {
+        intraTurnActionCount += 1;
+        if (result.state !== state) {
+          updateState(result.state);
+        }
+        setTurnDuration(0);
+        return;
+      }
+
+      const finalActionResult = result.success
+        ? result
+        : applyIntentWithCost(result.state, { type: IntentType.Wait, entityId });
+      const finalDuration =
+        finalActionResult.energyCost > 0 ? finalActionResult.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+      turnStartProcessedForActor = null;
+      intraTurnActionCount = 0;
+      const nextState = processHungerTick(finalActionResult.state, entityId, finalDuration);
+      if (nextState !== state) {
+        updateState(nextState);
+      }
+      setTurnDuration(finalDuration);
       return;
     }
 
-    let aiTurnState = state;
-
-    try {
-      const aiTime0 = performance.now();
-      const aiResult = processAITurn(aiTurnState, entityId);
-      recordAISample({
-        entityId,
-        durationMs: performance.now() - aiTime0,
-        intentType: aiResult.intent?.type ?? 'none'
-      });
-
-      aiTurnState = aiResult.state;
-      const intent = aiResult.intent;
-
-      if (intent !== null) {
-        const result = applyIntentWithCost(aiTurnState, intent);
-        let nextState = result.state;
-        if (result.energyCost > 0) {
-          nextState = processHungerTick(nextState, entityId, result.energyCost);
-          setTurnDuration(result.energyCost);
-        } else {
-          setTurnDuration(100);
-        }
-        if (nextState !== state) {
-          updateState(nextState);
-        }
-      } else {
-        const nextState = processHungerTick(state, entityId, 100);
-        if (nextState !== state) {
-          updateState(nextState);
-        }
-        setTurnDuration(100);
-      }
-    } catch (e) {
-      console.error(`AI Turn Error for ${entityId}:`, e);
-      setTurnDuration(100);
+    const waitResult = applyIntentWithCost(aiTurnState, { type: IntentType.Wait, entityId });
+    const endDuration = waitResult.energyCost > 0 ? waitResult.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+    turnStartProcessedForActor = null;
+    intraTurnActionCount = 0;
+    const nextState = processHungerTick(waitResult.state, entityId, endDuration);
+    if (nextState !== state) {
+      updateState(nextState);
     }
+    setTurnDuration(endDuration);
+  } catch (e) {
+    console.error(`AI Turn Error for ${entityId}:`, e);
+    turnStartProcessedForActor = null;
+    intraTurnActionCount = 0;
+    setTurnDuration(DEFAULT_ACTOR_TURN_DURATION);
   }
 }

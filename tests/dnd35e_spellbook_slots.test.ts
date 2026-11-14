@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'bun:test';
+import { addComponent, getComponent } from '../src/core/ecs.ts';
+import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
+import { executeEightHourRest } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
+import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
 import {
+  collectActorDomainSpellIds,
   computeClassLevelSlotSummaries,
   getSpontaneousConversionTargets,
+  isActorDomainSpellAtLevel,
   reconcilePreparedSlots
 } from '../src/rulesets/dnd35e/magic/spellbook_slots.ts';
+import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import type { DnD35ClassSpellbookState, DnD35EntityData } from '../src/rulesets/dnd35e/types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
+import { ComponentType } from '../src/types/components.types.ts';
+import { EngineMode } from '../src/types/game-state.types.ts';
+import { IntentType } from '../src/types/intents/intent.enum.ts';
+import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
   const mockSystemContent: DnD35SystemContent = {
@@ -104,7 +115,17 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     };
 
     const dndData: Partial<DnD35EntityData> = {
-      tracks: [{ trackId: 'cleric', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+      tracks: [
+        {
+          trackId: 'cleric',
+          levels: 1,
+          babCurve: 'medium',
+          fortCurve: 'good',
+          refCurve: 'poor',
+          willCurve: 'good',
+          skillPointsPerLevel: 2
+        }
+      ],
       domains: ['war']
     };
 
@@ -237,5 +258,102 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     const targets = getSpontaneousConversionTargets('cleric', 1, dndData, mockSystemContent);
     expect(targets.length).toBe(1);
     expect(targets[0]!.spellId).toBe('cure_light_wounds');
+  });
+
+  it('resolves domain spells across 3+ domains from both domainSpells and levelByDomain', () => {
+    const domains = {
+      healing: { domainSpells: { '1': 'cure_light_wounds', '2': 'cure_moderate_wounds' } },
+      sun: { domainSpells: { '1': 'endure_elements', '2': 'heat_metal' } },
+      travel: { domainSpells: { '1': 'longstrider', '2': 'locate_object' } }
+    };
+    const spells = {
+      cure_light_wounds: { id: 'cure_light_wounds', levelByDomain: {} },
+      endure_elements: { id: 'endure_elements', levelByDomain: {} },
+      longstrider: { id: 'longstrider', levelByDomain: {} },
+      searing_light: { id: 'searing_light', levelByDomain: { sun: 3 } }
+    };
+    const actorDomains = ['healing', 'sun', 'travel'];
+
+    expect(isActorDomainSpellAtLevel('cure_light_wounds', spells.cure_light_wounds, 1, actorDomains, domains)).toBe(true);
+    expect(isActorDomainSpellAtLevel('endure_elements', spells.endure_elements, 1, actorDomains, domains)).toBe(true);
+    expect(isActorDomainSpellAtLevel('longstrider', spells.longstrider, 1, actorDomains, domains)).toBe(true);
+    expect(isActorDomainSpellAtLevel('searing_light', spells.searing_light, 3, actorDomains, domains)).toBe(true);
+
+    const collected = collectActorDomainSpellIds(actorDomains, domains, spells, 3);
+    expect(collected).toContain('cure_light_wounds');
+    expect(collected).toContain('endure_elements');
+    expect(collected).toContain('longstrider');
+    expect(collected).toContain('searing_light');
+  });
+
+  it('executes Turn Undead pool ability with Standard Action + charge cost and refreshes on 8-hour rest', () => {
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const baseState = { ...buildGameState(campaign), engineMode: EngineMode.TurnBased };
+    const playerId = baseState.entities.find((id) => getComponent(baseState, id, ComponentType.Player) !== undefined)!;
+    let clericState = applyCharacterCreationToPlayer(baseState, playerId, {
+      raceId: 'human',
+      classId: 'cleric',
+      alignment: 'lawful_good',
+      abilityMethod: 'point_buy',
+      pointBuyBudget: 25,
+      baseAbilityScores: { str: 14, dex: 10, con: 14, int: 10, wis: 16, cha: 14 },
+      selectedAcfs: [],
+      domains: ['healing', 'sun'],
+      prohibitedSchools: [],
+      skillRanks: { concentration: 4, knowledge_religion: 4 },
+      selectedFeats: ['extra_turning'],
+      knownSpells: [],
+      equipmentPackageId: 'cleric_standard'
+    });
+    const playerPos = getComponent(clericState, playerId, ComponentType.Position)!;
+    // Place an adjacent hostile undead creature within 60 ft LoE
+    const undeadId = clericState.entities.find((id) => {
+      if (id === playerId) return false;
+      const dnd = getDnD35EntityData(clericState, id);
+      return dnd.creatureType === 'undead' || dnd.raceId?.includes('skeleton') || dnd.raceId?.includes('zombie');
+    });
+    if (undeadId !== undefined) {
+      clericState = addComponent(clericState, undeadId, {
+        type: ComponentType.Position,
+        x: playerPos.x + 1,
+        y: playerPos.y
+      });
+    }
+
+    const poolsBefore = getComponent(clericState, playerId, ComponentType.ResourcePool)!;
+    expect(poolsBefore.pools.turn_undead?.current).toBe(9);
+
+    const turnOutcome = applyIntentWithCost(clericState, {
+      type: IntentType.UseAbility,
+      entityId: playerId,
+      effectId: 'pool:turn_undead',
+      abilityName: 'Turn Undead'
+    });
+    expect(turnOutcome.success).toBe(true);
+    expect(turnOutcome.energyCost).toBe(0); // Move action still remains in the round
+    const afterTurn = turnOutcome.state;
+    const poolsAfter = getComponent(afterTurn, playerId, ComponentType.ResourcePool)!;
+    expect(poolsAfter.pools.turn_undead?.current).toBe(8);
+    expect(getDnD35EntityData(afterTurn, playerId).actionBudget?.standardRemaining).toBe(0);
+    expect(getDnD35EntityData(afterTurn, playerId).actionBudget?.hasActedThisRound).toBe(true);
+
+    // Calling again in same round without Standard Action returns success: false without burning another charge
+    const blockedRetry = applyIntentWithCost(afterTurn, {
+      type: IntentType.UseAbility,
+      entityId: playerId,
+      effectId: 'pool:turn_undead',
+      abilityName: 'Turn Undead'
+    });
+    expect(blockedRetry.success).toBe(false);
+    expect(blockedRetry.energyCost).toBe(0);
+    expect(getComponent(blockedRetry.state, playerId, ComponentType.ResourcePool)?.pools.turn_undead?.current).toBe(8);
+
+    // Clear budget and verify 8-hour rest refreshes rest_8h pools
+    const preRest = setDnD35EntityData(blockedRetry.state, playerId, {
+      ...getDnD35EntityData(blockedRetry.state, playerId),
+      actionBudget: undefined
+    });
+    const afterRest = executeEightHourRest(preRest, playerId);
+    expect(getComponent(afterRest, playerId, ComponentType.ResourcePool)?.pools.turn_undead?.current).toBe(9);
   });
 });

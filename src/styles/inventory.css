@@ -185,14 +185,19 @@
 /* --- Grid Inventory --- */
 .inventory-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 5px;
   padding: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .inv-grid-slot {
-  width: 44px;
-  height: 44px;
+  width: 100%;
+  height: 54px;
+  min-width: 0;
+  overflow: hidden;
   background: var(--bg-socket);
   border: 1px solid #3c4250;
   box-shadow:
@@ -202,7 +207,8 @@
   position: relative;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
+  padding: 14px 3px 4px;
   cursor: pointer;
 }
 
@@ -225,14 +231,19 @@
   position: absolute;
   top: 2px;
   left: 4px;
-  font-size: 0.62rem;
-  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #ffd166;
   pointer-events: none;
 }
 
 .inv-item-icon {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-family: var(--font-mono);
   font-weight: bold;
   text-shadow: 1px 1px 0 #000;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

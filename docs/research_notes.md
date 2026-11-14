@@ -1,100 +1,141 @@
-# Research Notes: Milestone 132 Post-Audit Remediation & Milestone Documentation
+# Research Notes — Phase 33 Post-Implementation Audit & 3 Gameplay/UI Bug Investigations
 
-## 1. Rules & Standards Acknowledgment (`AGENTS.md` & `docs/ARCHITECTURE.md`)
-- **ECS Purity & Immutability**: All component data remain plain JSON-serializable records; state changes return new objects without mutating inputs.
-- **Strict TypeScript & Zero Magic Values (`AGENTS.md` Rules 10–14)**: Zero `any`, explicit return types on every function, named constants/enums, exhaustive `switch` (`assertNever`), flat control flow.
-- **Three-Tier Architecture (Rule 16)**:
-  - **Tier 1 (Console Engine)**: Ruleset-agnostic ECS, turn loop, and UI shells remain untouched.
-  - **Tier 2 (Cartridge & Cartridge UI)**: Combat Exchange Pipeline (`combat_exchange_pipeline.ts`), Prerequisite AST evaluator (`prerequisites.ts`, `prerequisite_proficiency.ts`), Effect Bundle resolver (`effect_bundle.ts`), Class Choice Feat collector (`ledger_choices.ts`), Semantic Tag projector (`semantic_tags.ts`), and Feat Row UI (`dnd35e_char_builder_feat_row.ui.ts`).
-  - **Tier 3 (System Content JSON)**: `ability_focus.json`, `improved_natural_attack.json`, `domains/war.json`, `classes/ranger.json`, `items/{longbow,shortbow,composite_longbow,composite_shortbow}.json`, `feats/stunning_fist.json`, and `docs/MILESTONES.md`.
-- **Rule 17 (StatModifier vs. RuleOverride Boundary)**:
-  - Numeric DC bonuses (`special_ability_save_dc`) and damage size steps (`natural_damage_size_step`) are resolved exclusively via `StatModifier` and `resolveTypedModifiersWithBreakdown`.
-- **Rule 19 (4-Layer Decision Matrix & Provenance)**:
-  - Layer A (`Semantic Tags`): `trait:special_attack` and `special_attack:<id>` predicates.
-  - Layer B (`Effect Bundles`): `resolveFeatEffectBundle` and domain/class feature bundles with `sourcePath`.
-  - Layer D (`Domain Resolvers`): `executeCombatStrikeExchange` and `resolveSpecialAbilitySaveDc`.
-- **Rule 21 (Zero Content-ID or Bespoke-Property Branching — "New Content Mod" Litmus Test)**:
-  - Every remaining legacy content-ID branch in touched files (`effect_bundle.ts`, `ledger_choices.ts`, `builder_prereq_proficiencies.ts`, `semantic_tags.ts`) must be replaced with declarative schema fields in Tier 3 JSON.
-- **Pre-Execution Gate (Step 3 of 6-Step Kickoff Flow)**:
-  - **STOP after compiling this research document and wait for explicit User confirmation before drafting the Implementation Plan or writing code.**
+## 1. Executive Summary & Audit of Phase 33 / Milestone 133
+
+### 1.1 Phase 33 / Milestone 133 Implementation Audit
+We audited all files touched in Phase 33 (**Entity-Agnostic Console Turn Model, Cartridge Action Economy & Per-Entity Action Budgets**):
+- **Tier 1 Console Agnosticism (`src/types/ruleset.types.ts`, `src/systems/lifecycle.system.ts`, `src/actions/action.registry.ts`, `src/core/loop/intent_cost_resolver.ts`, `src/core/game-loop.ts`, `src/core/scheduler.ts`)**:
+  - Zero `if (isPlayer)` action-economy or turn-continuation branches remain in Console turn orchestration.
+  - All entities (Player, hostile monsters, companions, and summons) pass through the identical 5-hook cartridge lifecycle (`onActorTurnStart` → `resolveActionCost` → `onPostActionBudget` → `canContinueTurn` → `onActorTurnEnd`).
+  - `verify.sh` passes all 8 stages (`237/237` tests in `bun test`, `0` TypeScript errors, `0` architectural lint errors, `0` deadcode errors, `0` validator/SSOT parity errors).
+- **Audit Finding — 2 Advisory ESLint `max-lines` Warnings**:
+  - `lint_applet` reported 0 errors and 2 advisory `max-lines` warnings (>300 lines of code):
+    1. `src/rulesets/dnd35e/action_economy.ts` (313 lines vs. 300 max)
+    2. `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` (408 lines vs. 300 max)
+  - **Remediation Plan**: Extract the per-entity turn-budget lifecycle helpers from `dnd35e_lifecycle_adapter.ts` and `action_economy.ts` into a dedicated helper module (`src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`) so every file sits well below 300 lines with 0 ESLint warnings.
 
 ---
 
-## 2. Research Findings & Subsystem Mapping
+## 2. Bug 1 Investigation: "Turn Undead is a stance."
 
-### Task 1: Live Combat Pipeline Integration for Creature `OnHitRiderDescriptor`s & `resolveSpecialAbilitySaveDc`
-1. **Current State & Gap**:
-   - Ten SRD bestiary races/templates (`ghoul.json`, `ghast.json`, `giant_spider.json`, `giant_centipede.json`, `dire_rat.json`, `wight.json`, `mummy.json`, `medusa.json`, `gelatinous_cube.json`, `vampire.json`) author `riders: OnHitRiderDescriptor[]` on their `naturalWeapons` entries (`poison`, `disease`, `paralysis`, `energy_drain`, `curse`).
-   - `maneuvers_conditions.ts` exports `shouldTriggerOnHitRider(rider, damageDealtAfterDR, attackHit)` and `resolveSpecialAbilitySaveDc(baseDc, abilityId, statModifiers, selfTags)`.
-   - However:
-     1. `NaturalWeaponLimbEntry` (`src/rulesets/dnd35e/combat/full_attack_sequence.ts`) and `buildActorNaturalWeaponLimbs` (`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`) do not carry `riders?: ReadonlyArray<OnHitRiderDescriptor>` forward from `dndData.naturalWeapons`.
-     2. `DnD35ResolvedStrikeProfile` (`src/rulesets/dnd35e/combat/attack_routine.ts`) only carries `damageRiders?: ReadonlyArray<DnD35WeaponDamageRider>` (for elemental dice like *Flaming*), not `onHitRiders?: ReadonlyArray<OnHitRiderDescriptor>`.
-     3. `executeCombatStrikeExchange` (`src/rulesets/dnd35e/combat/combat_exchange_pipeline.ts`, Phase 3 `OnHitRidersPhase`) never evaluates `strike.onHitRiders`.
-2. **Interaction with Existing Systems**:
-   - When a natural strike (or weapon enhancement with `onHitRiders`) hits in `executeCombatStrikeExchange`:
-     - Physical damage penetration against defender DR is computed via `mitigateIncomingDamage` (`src/rulesets/dnd35e/combat/damage_vitality.ts`).
-     - `shouldTriggerOnHitRider(rider, mitigatedPhysical.finalDamage, true)` checks whether the rider triggers (`'contact'` triggers on any hit; `'injury'` requires `finalDamage > 0` after DR).
-     - `resolveSpecialAbilitySaveDc` resolves the effective save DC against both `ability:${rider.type}` and `ability:${rider.riderId}` so `ability_focus:poison` (or `ability_focus:spider_venom`) adds `+2` DC.
-     - `resolveSavingThrow` rolls the defender's `fort` / `ref` / `will` save (`defenderEval.dagResult.saves[rider.saveType]`) and logs the roll result to the combat message log.
-     - On a failed save (when not immune via `defenderData.immunities` or undead/construct trait rules), condition/level consequences (`paralyzed` condition on `paralysis`, `negativeLevels + 1` on `energy_drain`, `sickened` or status log on `poison`/`disease`/`curse`) are applied to the defender's `RulesetDataComponent`.
+### 2.1 Root Cause Analysis
+1. **Unconditional Projection of `ResourcePoolComponent` into `stanceModes` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` lines 92–101)**:
+   In `buildActorStanceModes`:
+   ```ts
+   if (resourcePools) {
+     for (const [id, entry] of Object.entries(resourcePools.pools)) {
+       if (entry.max <= 0) continue;
+       modes.push({
+         id: `pool:${id}`,
+         label: `${entry.label ?? id.replace(/_/g, ' ')} (${entry.current}/${entry.max})`,
+         isActive: entry.current > 0
+       });
+     }
+   }
+   ```
+   Every entry in an actor's `ResourcePoolComponent` (`turn_undead`, `rage`, `smite_evil`, `lay_on_hands`, `domain_greater_turning`, `domain_destruction_smite`, `domain_turn_air`, `domain_protective_ward`, etc.) is unconditionally pushed into `stanceModes` (the **Stances & Combat Modes** strip above the hotbar) with `isActive: entry.current > 0`.
+2. **Broken Click Handler (`src/rulesets/dnd35e/ui/dnd35e_ui_registration.ts` line 200)**:
+   When the player clicks `◉ Turn or Rebuke Undead (5/5)` in the Stances bar, `onToggleStance` sees `stanceId.includes(':')` (`'pool:turn_undead'`) and calls `toggleConsoleStanceGroup(docComp, 'pool', 'turn_undead', false)` — treating `pool` as a radio-button stance group in `TacticalDoctrineComponent.activeStances` without expending a charge from `ResourcePoolComponent`, without spending a Standard Action, and without resolving Turn Undead.
+3. **Missing Hotbar Projection & Execution for Activated Class/Domain Abilities**:
+   `buildActorHotbarSlots` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts` lines 139–260) currently populates hotbar slots from:
+   1. Equipped Weapons (`kind: 'weapon'`)
+   2. Prepared / Spontaneous Spells (`kind: 'spell'`)
+   3. Active Skills (`kind: 'skill'`)
+   4. Consumables (`kind: 'item'`)
+   Even though `UIHotbarSlot['actionPayload']` (`src/types/ui_adapter.types.ts` line 199) already defines `kind: 'ability'`, `buildActorHotbarSlots` never projects `ResourcePoolComponent` abilities into hotbar slots, and `onExecuteHotbarSlot` (`dnd35e_ui_registration.ts` line 229) has no branch for `payload.kind === 'ability'`.
 
----
-
-### Task 2: Target-Specific Prerequisite Gating & Owned-Target Dropdown Filtering (`Ability Focus` & `Improved Natural Attack`)
-1. **Current State & Gap**:
-   - `improved_natural_attack.json` checks `{ "type": "min_natural_attacks", "minCount": 1 }` + `{ "type": "min_bab", "minBab": 4 }`. It does not check whether the actor actually possesses the selected natural weapon (`ctx.targetId`), and `getFeatTargetOptions` in `dnd35e_char_builder_feat_row.ui.ts` always lists all 8 `CANONICAL_NATURAL_WEAPONS`.
-   - `ability_focus.json` checks `{ "type": "has_tag", "tag": "trait:special_attack" }`. It does not verify that the actor possesses the specific special attack selected in the dropdown (`ctx.targetId`), and `getFeatTargetOptions` always lists all 11 `CANONICAL_SPECIAL_ATTACKS`.
-2. **Declarative Design**:
-   - **Natural Weapon Target Validation & Dropdown**:
-     - Extend `PrerequisiteEvalContext` (`src/rulesets/dnd35e/prerequisite_types.ts`) with `readonly naturalWeaponIds?: ReadonlyArray<string> | undefined`.
-     - Populate `naturalWeaponIds` in `buildPrerequisiteContextForActor`, `buildCreationDraftPrerequisiteContext`, and `buildPostLevelUpPrerequisiteContext` from `dndData.naturalWeapons` / `raceDef.naturalWeapons` (collecting deduplicated `nw.naturalType` and `nw.id`).
-     - In `evaluatePrerequisiteAST` (`src/rulesets/dnd35e/prerequisites.ts`), under `case 'min_natural_attacks'`: if `context.targetId !== undefined && context.naturalWeaponIds !== undefined`, require `(context.naturalAttackCount ?? 0) >= node.minCount && context.naturalWeaponIds.includes(context.targetId)`.
-     - In `getFeatTargetOptions` (`src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts`), accept `prereqCtx?: PrerequisiteEvalContext`; when `targetCategory === 'natural_weapon'` and `prereqCtx?.naturalWeaponIds && prereqCtx.naturalWeaponIds.length > 0`, return `prereqCtx.naturalWeaponIds` (falling back to `CANONICAL_NATURAL_WEAPONS` when the actor has no natural weapons so the inspector still displays the red unmet prerequisite).
-   - **Special Attack Target Validation & Dropdown**:
-     - Emit specific `special_attack:<id>` tags alongside `trait:special_attack`:
-       - Natural weapon `OnHitRiderDescriptor`s in `races.ts`, `templates.ts`, and `semantic_tags.ts` emit `special_attack:${rider.type}` and `special_attack:${rider.riderId}` in addition to `rider.grantedTags ?? ['trait:special_attack']`.
-       - `breathWeapon` in `races.ts`, `templates.ts`, and `half_dragon_*.json` emits `special_attack:breath_weapon` alongside `trait:special_attack`.
-       - Class features and domains (`rogue.json` -> `special_attack:sneak_attack`, `assassin.json` -> `special_attack:death_attack`, `paladin.json` / `blackguard.json` -> `special_attack:smite`, `sun.json` -> `special_attack:turn_undead`) and feats (`stunning_fist.json` -> `special_attack:stun`) emit their corresponding `special_attack:<id>` tag in `grantedTags`.
-     - Support `$selected` target interpolation in `case 'has_tag'` in `evaluatePrerequisiteAST` (`src/rulesets/dnd35e/prerequisites.ts`) and `formatPrerequisiteLeafLabel` (`src/rendering/ui/dnd35e_feat_spell_inspector.ui.ts`), matching the existing `$selected` convention in `case 'has_feat'`:
-       - When `node.tag` contains `$selected` (e.g. `"special_attack:$selected"`):
-         - If `context.targetId !== undefined`, check `context.tags.includes(node.tag.replace('$selected', context.targetId))`.
-         - If `context.targetId === undefined`, check `context.tags.some((t) => t.startsWith(node.tag.replace('$selected', '')))`.
-     - Update `public/data/rulesets/dnd35e/feats/ability_focus.json` prerequisites to require both `trait:special_attack` and `special_attack:$selected`.
-     - In `getFeatTargetOptions` (`src/rendering/ui/dnd35e_char_builder_feat_row.ui.ts`), when `targetCategory === 'ability'` and `prereqCtx?.tags` contains `special_attack:<id>` tags, extract those `<id>`s so the dropdown offers the actor's owned special attacks (falling back to `CANONICAL_SPECIAL_ATTACKS` if none are owned).
+### 2.2 Architectural Classification (`AGENTS.md` Rule 19 & Rule 21)
+- **Layer C (`ResourcePoolComponent`) + Layer D (Domain Resolver)**:
+  - Turn/Rebuke Undead (`poolId: 'turn_undead'`) and other daily-use class/domain pools (`lay_on_hands`, `smite_evil`, `rage`, `domain_*`) are **activated abilities** with daily charges (`current / max`), **not** persistent modal stances like *Power Attack*, *Combat Expertise*, *Fighting Defensively*, or *Total Defense*.
+  - `buildActorStanceModes` must only project true toggleable combat stances/modes.
+  - `buildActorHotbarSlots` should project `ResourcePoolComponent` entries as `kind: 'ability'` hotbar slots showing remaining charges (`entry.current / entry.max`), and `onExecuteHotbarSlot` should execute them (expending 1 charge via `consumeResourcePool`, consuming the appropriate action cost from `actionBudget`, and resolving the ability—including a D&D 3.5e 60-ft burst Turn/Rebuke Undead resolver against undead actors in line of effect).
+  - Additionally, `executeSpellbookRest` (`src/rendering/ui/dnd35e_spellbook_actions.ts`) should invoke `refreshResourcePools(state, playerId, 'rest_8h')` so daily pools (`turn_undead`, `rage`, `lay_on_hands`, etc.) recharge on an 8-hour rest.
 
 ---
 
-### Task 3: Evict Pre-Existing Legacy Rule 21 Content-ID Branches in Touched/Adjacent Files
-1. **`src/rulesets/dnd35e/effect_bundle.ts` (`resolveFeatEffectBundle`)**:
-   - Every targeted feat in `public/data/rulesets/dnd35e/feats/*.json` now declares `repeatable.targetCategory` (`'weapon' | 'natural_weapon' | 'skill' | 'school' | 'ability'`), and both `exotic_weapon_proficiency.json` and `martial_weapon_proficiency.json` declare `effectBundle.category: "proficiency"`.
-   - We can remove all string-prefix fallbacks (`featDef.id.startsWith('weapon_')`, `featDef.id.startsWith('greater_weapon_')`, `featDef.id === 'improved_critical'`, `featDef.id.includes('weapon_proficiency')`, `featDef.id.startsWith('skill_')`, `featDef.id.startsWith('spell_focus')`, `featDef.id.startsWith('ability_focus')`) and replace the line 276 check with `if (isWeaponTargeted && baseBundle.category === 'proficiency')`.
-2. **`src/rulesets/dnd35e/builder/builder_prereq_proficiencies.ts` & `src/rulesets/dnd35e/prerequisite_proficiency.ts`**:
-   - Add `proficiencyEquivalentWeaponId: z.string().optional()` to `DnD35WeaponStatsSchema` (`src/rulesets/dnd35e/types/system/item_system.types.ts`) and author it in `longbow.json` (`"composite_longbow"`), `composite_longbow.json` (`"longbow"`), `shortbow.json` (`"composite_shortbow"`), and `composite_shortbow.json` (`"shortbow"`).
-   - Update `collectActorProficiencies` in `builder_prereq_proficiencies.ts` to expand `weaponIds` declaratively via `itemDef.weaponStats?.proficiencyEquivalentWeaponId` instead of hardcoded `if (weaponIds.has('longbow'))` checks.
-3. **`src/rulesets/dnd35e/progression/ledger_choices.ts`, `public/data/rulesets/dnd35e/domains/war.json`, and `public/data/rulesets/dnd35e/classes/ranger.json`**:
-   - Add `grantsDeityFavoredWeaponProficiencyAndFocus: z.boolean().optional()` to `DnD35DomainDefinitionSchema` (`effect_system.types.ts`) and set it to `true` in `domains/war.json`.
-   - Add `combatStyleFeatByChoice: z.record(z.string(), z.string()).optional()` to `DnD35ClassFeatureDetailSchema` (`effect_system.types.ts`) and author `{ "archery": "rapid_shot", "two_weapon": "two_weapon_fighting" }` (and the level 6 / 11 equivalents) on `combat_style`, `improved_combat_style`, and `combat_style_mastery` in `classes/ranger.json`.
-   - Update `collectClassChoiceFeats` in `ledger_choices.ts` to read `domDef.grantsDeityFavoredWeaponProficiencyAndFocus` and `featureDetail.combatStyleFeatByChoice[combatStyle]` (gated by `isActivationConditionMet(featureDetail.activationCondition, activeTags)`), eliminating `domains.includes('war')` and `combatStyle === 'archery' | 'two_weapon'` branches.
-4. **`src/rulesets/dnd35e/semantic_tags.ts`**:
-   - Remove the redundant `if (featId === 'illiteracy' && tags.has('trait:literate')) continue;` check (line 176), since `barbarian.json` already defines `"activationCondition": { "selfTagsNone": ["trait:literate"] }` on `illiteracy`, which is evaluated by `isActivationConditionMet` on line 185.
+## 3. Bug 2 Investigation: "Can only memorize spells from one of two domains in the domain spell slot."
+
+### 3.1 Root Cause Analysis
+1. **Asymmetric Representation of Domain Spells in System JSON (`domains/*.json` vs. `spells/*.json`)**:
+   - Every domain definition in `public/data/rulesets/dnd35e/domains/<domainId>.json` defines its complete 1st–9th level spell list in `domainSpells: Record<string, string>` (e.g., `protection.json` has `"1": "sanctuary"`, `"2": "shield_other"`, `"3": "protection_from_energy"`).
+   - However, in `public/data/rulesets/dnd35e/spells/<spellId>.json`, almost all spell files have an **empty** `"levelByDomain": {}` object! Only ~10 spells across the entire registry (such as `cure_light_wounds`, `cure_serious_wounds`, `burning_hands`, `spiritual_weapon`, `produce_flame`, `enlarge_person`, `inflict_moderate_wounds`, `desecrate`) populate `levelByDomain`.
+2. **Split-Brain Domain Lookup in UI & Progression vs. Slot Validator**:
+   - `src/rulesets/dnd35e/magic/spellbook_slots.ts` (`resolveSpellLevelForClass`, lines 242–255) checks **both** `spDef.levelByDomain?.[domId]` **and** `sys?.domains?.[domId]?.domainSpells?.[String(spellLevel)] === spellId`.
+   - **By contrast, three upstream modules only check `spell.levelByDomain[domId]` and ignore `sys.domains[domId].domainSpells`**:
+     1. **`src/rendering/ui/dnd35e_spellbook_known.ui.ts` (lines 54–60 & line 118)**:
+        - Line 54: When collecting `spellsAtLevel` for `sum.spellLevel`, if a domain spell is not on the Cleric class list at `sum.spellLevel` (or is an arcane spell granted by a domain like *Magic Aura*, *Identify*, *Fly*, *Fireball*, *Stoneskin*), it checks `if (sp.levelByDomain[domId] === sum.spellLevel)`. Because `sp.levelByDomain` is `{}` for most spells, non-Cleric domain spells don't even appear in the right pane!
+        - Line 52: Furthermore, if a spell IS on the Cleric spell list at a *different* level than its domain level, `if (clsLvl === sum.spellLevel)` is an `if / else if` that short-circuits before checking whether the spell is also a domain spell at `sum.spellLevel`.
+        - **Line 118 (The Direct Cause of the Bug)**:
+          ```ts
+          const isDomainSpell = dndData.domains?.some((domId: string) => sp.levelByDomain?.[domId] === sum.spellLevel);
+          ```
+          Because `sp.levelByDomain` is `{}` for almost all spells outside the `healing` / `fire` domains, `isDomainSpell` evaluates to `false` for the Cleric's other domain! When `isDomainSpell` is `false`:
+          - The `[+ Dom]` button is never rendered (line 137: `if (hasOpenDomain && isDomainSpell)`).
+          - Clicking the spell row when only the `+1 Domain` slot is open refuses to prepare the spell into the `'domain'` slot (`const targetKind = hasOpenStandard ? 'standard' : hasOpenDomain && isDomainSpell ? 'domain' : null;`).
+     2. **`src/rulesets/dnd35e/progression/ledger_features_spells.ts` (lines 154–160)**:
+        `buildActorSpellbooksByClass` only checks `spell.levelByDomain[domId]` when adding domain spells to a Cleric's `knownSpellIds`.
+     3. **`src/rulesets/dnd35e/builder/builder_spell_eligibility.ts` (lines 60–65)**:
+        `resolveSpellLevelForClass` only checks `spell.levelByDomain[domId]` without checking `sysContent.domains[domId]?.domainSpells`.
+
+### 3.2 Canonical Fix
+- Extract a single canonical helper in `src/rulesets/dnd35e/magic/spellbook_slots.ts` (or `builder_spell_eligibility.ts`):
+  - `isActorDomainSpellAtLevel(spellId: string, spellDef: DnD35SpellDefinition | undefined, spellLevel: number, actorDomains: ReadonlyArray<string>, domainRegistry: Readonly<Record<string, DnD35DomainDefinition>> | undefined): boolean`
+  - Returns `true` if for any `domId` in `actorDomains`, either `spellDef?.levelByDomain?.[domId] === spellLevel` OR `domainRegistry?.[domId]?.domainSpells?.[String(spellLevel)] === spellId`.
+- Replace all ad-hoc `sp.levelByDomain?.[domId]` checks in `dnd35e_spellbook_known.ui.ts`, `ledger_features_spells.ts`, and `builder_spell_eligibility.ts` with this canonical helper so both selected Cleric domains can always be prepared into the `+1 Domain` slot.
 
 ---
 
-### Task 4: Update `docs/MILESTONES.md`
-- Append **Phase 32 / Milestone 132** to `docs/MILESTONES.md` documenting:
-  - Golden Rule 21 (*Zero Content-ID or Bespoke-Property Branching / "New Content Mod" Litmus Test*) and workflow audit tables in `AGENTS.md`.
-  - Declarative `Ability Focus` (`grantedTags`, `special_attack:$selected` prerequisite, `resolveSpecialAbilitySaveDc`, and live `OnHitRiderDescriptor` saving throw execution in `combat_exchange_pipeline.ts`).
-  - `Bastard Sword` & Weapon Proficiency Category filtering (`weaponProficiencyFilter`, `isExotic1HMartial2H` two-handed martial equivalence in `equipment_physics.ts` & `builder_prereq_proficiencies.ts`, `proficiencyEquivalentWeaponId`).
-  - `Improved Natural Attack` `StatModifier` (`natural_damage_size_step`), `stepDamageDiceLadder` integration, and owned natural-weapon target filtering/validation.
-  - Legacy content-ID fallback eviction across `effect_bundle.ts`, `ledger_choices.ts`, `builder_prereq_proficiencies.ts`, and `semantic_tags.ts`.
+## 4. Bug 3 Investigation: Inventory UI Alignment, Fixed Slot Limit, Unreadable Hotkeys & Deforming Columns
+
+### 4.1 Root Cause Analysis Across All 4 Reported Symptoms
+1. **Symptom A: "The visible slots don't seem to align with the actual inventory slots."**
+   - **In `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts` (`getInventoryData`, lines 86–94) & `src/rendering/ui/console_inventory.ui.ts` (`renderCompactStashWidget`, lines 245–260)**:
+     - `getInventoryData` pushes **all** `inventory.items` (including **equipped** items that are already displayed in the Paper Doll slots) into `stashItems`.
+     - `renderCompactStashWidget` defaults `activeSort` to `'price_desc'` (sorting items by gold value descending: `b.priceGp - a.priceGp`) instead of inventory slot index (`inventoryIndex`). Thus, cell 0 in the grid is the most expensive item, NOT `inventory.items[0]` (`[a]`).
+   - **In `src/rendering/ui/inventory.ui.ts` (`renderInventoryPanel`, line 84)**:
+     - Inside `for (let index = 0; index < maxSlots; index++)`, line 84 executes `if (isEquipped) continue;` **before** creating the `.inv-grid-slot` element. Every equipped item causes the loop to skip rendering a grid cell altogether, shrinking the total number of rendered squares and shifting the visible cells so the top-left square starts at `c` or `d` instead of `a`!
+   - **In `src/core/input/modal_input.ts` (line 103)**:
+     - Pressing `[I]` opens `UIMode.Inventory` (which calls `handleInventoryKey`), whereas clicking `"Pack (I)"` in the Command Dock or pressing `[C]` opens `UIMode.CartridgeModal` (`activeCartridgeModalId = 'inventory'` or `'character_sheet'`), which does **not** forward `a–z` / `Shift+a–z` keys to `handleInventoryKey`.
+2. **Symptom B: "The number of slots seems limited to a fixed number."**
+   - `console_inventory.ui.ts` hardcodes `COMPACT_STASH_COLS = 10` and `COMPACT_STASH_MIN_CELLS = 40` (4 rows of 10 tiny cells) with no scroll container.
+   - `inventory.ui.ts` hardcodes `const maxSlots = Math.max(20, inventory.capacity);` and loses 1 visible slot per equipped item due to `if (isEquipped) continue;`.
+3. **Symptom C: "I can't see the keys one presses to use the buttons since the inventory squares are so small."**
+   - In `console_inventory.ui.ts`, cramming 10 columns (`COMPACT_STASH_COLS = 10`) into Column 3 of the Character Sheet makes each cell ~28–34px wide (`min-height: 34px; max-height: 40px`, `.crpg-cell-name { font-size: 0.45rem }`).
+   - Furthermore, even though `mapEntityItemToUI` (`src/rulesets/dnd35e/ui/dnd35e_ui_projection.ts` line 84) computes `hotkeyLabel` (`'a'`, `'b'`, `'c'`...), `renderCompactStashWidget` (`console_inventory.ui.ts` lines 279–291) **never renders `item.hotkeyLabel` inside `.crpg-stash-cell`**!
+4. **Symptom D: "The columns deform depending on the items instead of being uniform. We can have a 5 x (dynamic max) grid with a scroll bar if necessary."**
+   - In `src/styles/console_prototype.css` line 925:
+     ```css
+     .crpg-stash-matrix-compact {
+       display: grid;
+       grid-template-columns: repeat(10, 1fr);
+     ```
+     In CSS Grid, `1fr` is equivalent to `minmax(auto, 1fr)`. Because `.crpg-stash-cell` lacks `min-width: 0; overflow: hidden;` and contains `<span class="crpg-cell-name">`, any column with an item expands its `auto` minimum width to the text's intrinsic width while empty columns collapse—causing columns to deform unevenly!
+
+### 4.2 Proposed Architecture: Uniform 5 × Dynamic Scrollable Backpack Grid
+1. **5 × (Dynamic Max) Grid with Vertical Scrollbar**:
+   - Change `COMPACT_STASH_COLS` from `10` to `5` (`const STASH_GRID_COLS = 5; const STASH_MIN_ROWS = 4; // 20 minimum visible slots`).
+   - Compute dynamic cell count as a clean multiple of 5 rows that always includes at least 1 extra empty row below the last item:
+     `const totalRows = Math.max(STASH_MIN_ROWS, Math.ceil((displayedItems.length + 1) / STASH_GRID_COLS));`
+     `const cellTotal = totalRows * STASH_GRID_COLS;`
+   - In `src/styles/console_prototype.css` (and `src/styles/inventory.css`):
+     - Set `grid-template-columns: repeat(5, minmax(0, 1fr));` on `.crpg-stash-matrix-compact` and `.inventory-grid`.
+     - Add `max-height: 290px; overflow-y: auto; overflow-x: hidden;` on the grid container so it scrolls vertically as rows grow dynamically.
+     - Set `min-width: 0; overflow: hidden; height: 56px;` on `.crpg-stash-cell` so all 5 columns are strictly uniform (`minmax(0, 1fr)`) and never deform regardless of item names.
+2. **1-to-1 Inventory Slot Alignment & Default Slot Order**:
+   - Add `'slot_asc'` (`"Slot [a–z]"`) as the **default** sort option (`activeSort = 'slot_asc'`) in `console_inventory.ui.ts` so visible slots align directly with `inventoryIndex` (`[a]`, `[b]`, `[c]`...).
+   - Filter equipped items out of the unequipped Backpack grid in `getInventoryData` (or separate equipped items into the Paper Doll while keeping backpack slots strictly aligned with `inventory.items` indices), and in `inventory.ui.ts` fix the loop so unequipped items pack into sequential visible cells without reducing `maxSlots` below a full `5 × N` grid.
+3. **Clear, Readable Keybind Badges (`[a]`–`[z]`) & Action Hints**:
+   - With 5 columns instead of 10, each cell is twice as wide (~62–70px × 56px).
+   - Render a high-contrast key badge `<span class="crpg-cell-hotkey">[a]</span>` in the top-left corner of every occupied slot (using `item.hotkeyLabel`), a large centered icon (`1.25rem`), a readable item name (`0.64rem`), and a subtle action hint bar / footer note (`Click or [a-z]: Use/Equip • [Shift+a-z]: Drop`).
+   - In `modal_input.ts`, allow `handleInventoryKey` to process `[a-z]` / `[Shift+a-z]` when the D&D 3.5e `inventory` modal is open (`state.uiMode === UIMode.CartridgeModal && state.activeCartridgeModalId === 'inventory'`).
 
 ---
 
-## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+## 5. Cascading Effects Matrix (`AGENTS.md` Rule 15)
 
-| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Renderers / Validators / Saves) | Lateral (Sibling Modules / Docs / SSOT) |
+| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Modals / Tests / Docs) |
 | :--- | :--- | :--- | :--- |
-| **1. `OnHitRiderDescriptor` Combat Pipeline Wiring** | `NaturalWeaponDescriptor.riders` in `races/*.json` & `templates/*.json`; `buildActorNaturalWeaponLimbs` (`dnd35e_equipped_item_dag.ts`); `resolveActorAttackRoutine` (`attack_routine.ts`) | `executeCombatStrikeExchange` (`combat_exchange_pipeline.ts`); `shouldTriggerOnHitRider` & `resolveSpecialAbilitySaveDc` (`maneuvers_conditions.ts`); `resolveSavingThrow` (`damage_vitality.ts`) | `DnD35ResolvedStrikeProfile`, `NaturalWeaponLimbEntry`, combat log messages, unit tests |
-| **2. Target-Specific Prerequisite Gating & Dropdown Filtering (`Ability Focus` & `Improved Natural Attack`)** | `builder_prereq_context.ts`, `builder_draft_prereq_context.ts`, `builder_levelup_prereq_context.ts`, `races.ts`, `templates.ts`, `semantic_tags.ts`, `ability_focus.json` | `evaluatePrerequisiteAST` (`prerequisites.ts`), `getFeatTargetOptions` & `buildFeatTargetSelect` (`dnd35e_char_builder_feat_row.ui.ts`), `renderSharedFeatsStep` (`dnd35e_char_builder_feats.ui.ts`), `renderFeatInspector` (`dnd35e_feat_spell_inspector.ui.ts`) | `docs/dnd35e/SPECIAL_ATTACKS_AND_TAGS.md`, `half_dragon_*.json`, `rogue.json`, `assassin.json`, `paladin.json`, `blackguard.json`, `sun.json` |
-| **3. Rule 21 Legacy Content-ID Fallback Eviction** | `effect_bundle.ts`, `ledger_choices.ts`, `builder_prereq_proficiencies.ts`, `semantic_tags.ts`, `domains/war.json`, `classes/ranger.json`, `*bow.json` | `DnD35DomainDefinitionSchema`, `DnD35ClassFeatureDetailSchema`, `DnD35WeaponStatsSchema`, `run-validator.ts` | `docs/DECISIONS.md`, `docs/ARCHITECTURE.md` |
-| **4. Milestone Documentation (`docs/MILESTONES.md`)** | Completed M132 tasks & verification metrics | Project roadmap tracking (`docs/MILESTONES.md`) | `docs/SSOT_DND35E.md`, `docs/ssot/ssot_dnd35e.json` |
+| **1. Move `ResourcePoolComponent` entries from `stanceModes` to `hotbar.slots` (`kind: 'ability'`) + Execute Turn Undead / Pool Abilities** | `DnD35UIAdapter.getHotbarData`, `buildActorStanceModes`, `buildActorHotbarSlots` (`src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts`) | `onExecuteHotbarSlot` (`dnd35e_ui_registration.ts`), `consumeResourcePool` / `refreshResourcePools` (`ecs_lifecycle.ts`), `executeSpellbookRest` (`dnd35e_spellbook_actions.ts`) | `tests/console_ui_architecture.test.ts` (update test expecting `pool:turn_undead` in `stanceModes` to assert it is in `hotbar.slots` with `kind: 'ability'`) |
+| **2. Canonical Domain Spell Resolution (`domains[domId].domainSpells` + `spell.levelByDomain[domId]`)** | `public/data/rulesets/dnd35e/domains/*.json`, `public/data/rulesets/dnd35e/spells/*.json`, `buildActorSpellbooksByClass` (`ledger_features_spells.ts`) | `renderKnownSpellsPane` (`dnd35e_spellbook_known.ui.ts`), `resolveSpellLevelForClass` (`spellbook_slots.ts`, `builder_spell_eligibility.ts`) | `tests/dnd35e_spellbook_slots.test.ts` (add test verifying a Cleric with 2 domains can prepare spells from **both** domains into the `'domain'` slot) |
+| **3. Uniform 5 × Dynamic Scrollable Inventory Grid with Readable `[a-z]` Key Badges & Slot Alignment** | `DnD35UIAdapter.getInventoryData` (`dnd35e_ui_adapter.ts`), `mapEntityItemToUI` (`dnd35e_ui_projection.ts`), `handleModalKey` (`modal_input.ts`) | `renderCompactStashWidget` (`console_inventory.ui.ts`), `renderInventoryPanel` (`inventory.ui.ts`), `.crpg-stash-matrix-compact` (`console_prototype.css`), `.inventory-grid` (`inventory.css`) | `console_dossier.ui.ts` (also renders `renderCompactStashWidget`), `dnd35e_sheet_skills_tab.ui.ts` |
+| **4. Split `dnd35e_lifecycle_adapter.ts` & `action_economy.ts` (<300 lines)** | `dnd35e_ruleset.ts`, `dnd35e_combat_adapter.ts` | `lint_applet` / `bun run lint`, `docs/ssot/ssot_dnd35e.json` | `docs/SSOT_DND35E.md` |

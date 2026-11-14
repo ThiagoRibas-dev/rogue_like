@@ -450,25 +450,32 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
     expect(detourMove.dx === 1 && detourMove.dy === 0).toBe(false);
   });
 
-  test('resolveDnD35eActionEnergyCost scales !isPlayer MoveIntent per-step energy instead of 100-tick round cost', () => {
+  test('resolveDnD35eActionEnergyCost applies symmetric DnD35ActionBudget rules to companions and NPCs', () => {
     const { state: baseState, playerId } = buildOpenArenaState('dnd35e-crypt');
     const { state: sEnemy, enemyId } = spawnEnemy(baseState, 8, 5);
     const { state: s1, companionId } = spawnCompanion(sEnemy, playerId, 6, 5, 'defensive');
     const turnStartedState = onDnD35eActorTurnStart(s1, companionId);
 
+    // Step 1 consumes 5 ft from the companion's Move action (30 ft speed -> 25 ft left, 0 round energy)
     const moveCost = resolveDnD35eActionEnergyCost(
       turnStartedState,
       { type: IntentType.Move, entityId: companionId, dx: 1, dy: 0 },
       100
     );
-    expect(moveCost.energyCost).toBe(17);
+    expect(moveCost.energyCost).toBe(0);
+    const budgetAfterMove = getDnD35EntityData(moveCost.state, companionId).actionBudget;
+    expect(budgetAfterMove?.moveRemaining).toBe(0);
+    expect(budgetAfterMove?.movementRemainingFt).toBe(25);
+    expect(budgetAfterMove?.standardRemaining).toBe(1);
 
-    const attackCost = resolveDnD35eActionEnergyCost(
-      turnStartedState,
+    // Attacking after moving spends the remaining Standard action (and forfeits leftover feet) -> round complete (100)
+    const attackAfterMove = resolveDnD35eActionEnergyCost(
+      moveCost.state,
       { type: IntentType.MeleeAttack, entityId: companionId, defenderId: enemyId },
       100
     );
-    expect(attackCost.energyCost).toBe(100);
+    expect(attackAfterMove.energyCost).toBe(100);
+    expect(getDnD35EntityData(attackAfterMove.state, companionId).actionBudget).toBeUndefined();
   });
 
   test('Druid Turn-Based movement uses 30 ft tactical speed and walks Wolf companion alongside mid-round moves', () => {
@@ -495,7 +502,7 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
     );
     expect(companionId).toBeDefined();
 
-    // Wolf JSON defaults to 30 ft land speed (17 ticks/step), and scales to 10 ticks/step when given 50 ft land speed
+    // Wolf consumes 5 ft from its 30 ft (or 50 ft) land speed movement pool per intra-round step (energyCost 0)
     const wolfTurnState = onDnD35eActorTurnStart(
       { ...created, engineMode: EngineMode.TurnBased },
       companionId!
@@ -505,7 +512,8 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
       { type: IntentType.Move, entityId: companionId!, dx: 1, dy: 0 },
       100
     );
-    expect(wolfBaseCost.energyCost).toBe(17);
+    expect(wolfBaseCost.energyCost).toBe(0);
+    expect(getDnD35EntityData(wolfBaseCost.state, companionId!).actionBudget?.movementRemainingFt).toBe(25);
 
     const fastWolfState = setDnD35EntityData(wolfTurnState, companionId!, {
       ...getDnD35EntityData(wolfTurnState, companionId!),
@@ -516,7 +524,8 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
       { type: IntentType.Move, entityId: companionId!, dx: 1, dy: 0 },
       100
     );
-    expect(fastWolfCost.energyCost).toBe(10);
+    expect(fastWolfCost.energyCost).toBe(0);
+    expect(getDnD35EntityData(fastWolfCost.state, companionId!).actionBudget?.movementRemainingFt).toBe(45);
 
     // Place companion at (3, 5) behind player at (5, 5), then move player right 5 times in TurnBased mode
     let simState: GameState = {

@@ -112,8 +112,16 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
     expect(hotbar.stanceModes.some((s) => s.id === 'power_attack' && s.maxNumericValue === 15)).toBe(true);
     expect(hotbar.stanceModes.some((s) => s.id === 'combat_expertise')).toBe(false);
     expect(hotbar.stanceModes.some((s) => s.id === 'fighting_defensively')).toBe(true);
-    expect(hotbar.stanceModes.some((s) => s.id === 'pool:turn_undead')).toBe(true);
+    expect(hotbar.stanceModes.some((s) => s.id === 'pool:turn_undead')).toBe(false);
     expect(hotbar.stanceModes.some((s) => s.id === 'pool:animal_companion_effective_level')).toBe(false);
+    expect(
+      hotbar.slots.some(
+        (sl) =>
+          sl.actionPayload?.kind === 'ability' &&
+          sl.actionPayload.id === 'turn_undead' &&
+          sl.label.includes('(4/4)')
+      )
+    ).toBe(true);
     expect(hotbar.slots.some((sl) => sl.actionPayload?.kind === 'skill' && sl.actionPayload.id === 'search')).toBe(
       true
     );
@@ -173,7 +181,28 @@ describe('Console UI Architecture & Cartridge Adapter Suite', () => {
       ...getDnD35EntityData(clericState, clericId),
       resourcePools: clericPools
     });
-    expect(clericHotbar.stanceModes.some((s) => s.id === 'pool:turn_undead' && s.label.includes('(9/9)'))).toBe(true);
+    expect(clericHotbar.stanceModes.some((s) => s.id === 'pool:turn_undead')).toBe(false);
+    expect(
+      clericHotbar.slots.some(
+        (sl) =>
+          sl.actionPayload?.kind === 'ability' &&
+          sl.actionPayload.id === 'turn_undead' &&
+          sl.label.includes('(9/9)')
+      )
+    ).toBe(true);
+
+    // Inventory projection excludes equipped items from stashItems while preserving weight and hotkey indices
+    const clericInvModel = adapter.getInventoryData({ state: clericState, entityId: clericId });
+    expect(clericInvModel.stashItems.every((it) => !it.isEquipped)).toBe(true);
+    expect(clericInvModel.currentWeightLbs).toBeGreaterThan(0);
+    const rawInv = getComponent(clericState, clericId, ComponentType.Inventory);
+    for (const stashItem of clericInvModel.stashItems) {
+      expect(stashItem.inventoryIndex).toBeDefined();
+      expect(rawInv?.items[stashItem.inventoryIndex!]).toBe(stashItem.entityId);
+      if (stashItem.inventoryIndex! < 26) {
+        expect(stashItem.hotkeyLabel).toBe(String.fromCharCode(97 + stashItem.inventoryIndex!));
+      }
+    }
 
     const drained = applyPermanentLevelDrainToActor(clericState, clericId, 1);
     expect(drained.success).toBe(true);

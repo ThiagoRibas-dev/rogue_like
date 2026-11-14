@@ -156,7 +156,7 @@ export function renderSheetSkillsTab(
     onUseItem: (_itemId, item) => {
       if (item?.entityId !== undefined) {
         queuePlayerIntent(
-          createApplyAction(playerId, 'apply', { type: 'entity', entityId: item.entityId as EntityId })
+          createApplyAction(playerId, 'apply', { type: 'item', itemEntityId: item.entityId as EntityId })
         );
         markAllDomainsDirty();
       }

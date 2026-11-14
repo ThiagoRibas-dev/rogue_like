@@ -29,6 +29,84 @@ export interface SpellLevelSlotSummary {
 }
 
 /**
+ * Returns true if `spellId` is granted at `spellLevel` by ANY domain in `actorDomains` (`1..N` domains),
+ * checking both `spellDef.levelByDomain[domId]` and `domainRegistry[domId].domainSpells[String(spellLevel)]`.
+ * Supports actors with any number of domains gained from base classes, multiclassing, prestige classes, or feats.
+ *
+ * @param spellId Spell identifier.
+ * @param spellDef Optional spell definition with `levelByDomain`.
+ * @param spellLevel Target spell level (0..9).
+ * @param actorDomains All domain IDs owned by the actor (`0..N`).
+ * @param domainRegistry Campaign/ruleset domain registry mapping `domId -> { domainSpells }`.
+ * @returns True if any owned domain grants `spellId` at `spellLevel`.
+ */
+export function isActorDomainSpellAtLevel(
+  spellId: string,
+  spellDef: { readonly levelByDomain?: Readonly<Record<string, number>> } | undefined,
+  spellLevel: number,
+  actorDomains: ReadonlyArray<string> | undefined,
+  domainRegistry:
+    Readonly<Record<string, { readonly domainSpells?: Readonly<Record<string, string>> } | undefined>> | undefined
+): boolean {
+  if (!actorDomains || actorDomains.length === 0) return false;
+  const lvlKey = String(spellLevel);
+  for (const domId of actorDomains) {
+    if (spellDef?.levelByDomain?.[domId] === spellLevel) return true;
+    if (domainRegistry?.[domId]?.domainSpells?.[lvlKey] === spellId) return true;
+  }
+  return false;
+}
+
+/**
+ * Collects all spell IDs granted by ANY domain in `actorDomains` (`1..N` domains) up to `maxSpellLevel`,
+ * inspecting both `domainRegistry[domId].domainSpells` and `spellRegistry[spId].levelByDomain`.
+ *
+ * @param actorDomains All domain IDs owned by the actor (`0..N`).
+ * @param domainRegistry Domain registry.
+ * @param spellRegistry Optional spell registry to scan `levelByDomain` declarations.
+ * @param maxSpellLevel Optional inclusive cap on spell level (default `9`).
+ * @returns Deduplicated array of granted domain spell IDs.
+ */
+export function collectActorDomainSpellIds(
+  actorDomains: ReadonlyArray<string> | undefined,
+  domainRegistry:
+    Readonly<Record<string, { readonly domainSpells?: Readonly<Record<string, string>> } | undefined>> | undefined,
+  spellRegistry?: Readonly<
+    Record<string, { readonly id?: string; readonly levelByDomain?: Readonly<Record<string, number>> } | undefined>
+  >,
+  maxSpellLevel = MAX_SPELL_LEVEL
+): ReadonlyArray<string> {
+  if (!actorDomains || actorDomains.length === 0) return [];
+  const ids = new Set<string>();
+
+  for (const domId of actorDomains) {
+    const domDef = domainRegistry?.[domId];
+    if (domDef?.domainSpells) {
+      for (const [lvlKey, spId] of Object.entries(domDef.domainSpells)) {
+        const lvl = Number(lvlKey);
+        if (!Number.isNaN(lvl) && lvl <= maxSpellLevel && spId) {
+          ids.add(spId);
+        }
+      }
+    }
+  }
+
+  if (spellRegistry) {
+    for (const [spKey, sp] of Object.entries(spellRegistry)) {
+      if (!sp?.levelByDomain) continue;
+      for (const domId of actorDomains) {
+        const domLvl = sp.levelByDomain[domId];
+        if (domLvl !== undefined && domLvl <= maxSpellLevel) {
+          ids.add(sp.id ?? spKey);
+        }
+      }
+    }
+  }
+
+  return Array.from(ids);
+}
+
+/**
  * Computes slot matrix across all levels (0..9) for a class track.
  */
 export function computeClassLevelSlotSummaries(
@@ -59,9 +137,9 @@ export function computeClassLevelSlotSummaries(
     const bonusSlots = canCast && lvl > 0 ? computeBonusSpellSlots(abScore, lvl) : 0;
     const generalSlots = canCast ? baseSlots + bonusSlots : 0;
 
-    // Cleric domain bonus slot
-    const domainSlots =
-      (progRow?.domainSpellSlots?.[lvlKey] ?? 0) > 0 && (dndData.domains?.length ?? 0) > 0 && canCast ? 1 : 0;
+    // Domain bonus slot (from class progression or spellbook state for any domain-granting class)
+    const progDomainSlots = progRow?.domainSpellSlots?.[lvlKey] ?? book.domainSpellSlots?.[lvlKey] ?? 0;
+    const domainSlots = progDomainSlots > 0 && (dndData.domains?.length ?? 0) > 0 && canCast ? progDomainSlots : 0;
 
     // Wizard specialist school slot
     const specialistSlots =
@@ -241,11 +319,23 @@ export function getSpontaneousConversionTargets(
       (a) => a === 'cleric_domain_spontaneity_1' || a === 'domain_spontaneity'
     );
     if (hasDomainSpontaneity) {
+      const seen = new Set<string>();
       for (const domId of dndData.domains ?? []) {
         const domDef = systemContent?.domains?.[domId];
+        const domLabel = `Domain: ${domDef?.name ?? domId}`;
         const spId = domDef?.domainSpells?.[String(spellLevel)];
-        if (spId && hasSpell(spId)) {
-          options.push({ spellId: spId, label: `Domain: ${domDef.name}` });
+        if (spId && !seen.has(spId) && hasSpell(spId)) {
+          seen.add(spId);
+          options.push({ spellId: spId, label: domLabel });
+        }
+        if (systemContent?.spells) {
+          for (const [candKey, candDef] of Object.entries(systemContent.spells)) {
+            const resolvedId = candDef.id ?? candKey;
+            if (!seen.has(resolvedId) && candDef.levelByDomain?.[domId] === spellLevel) {
+              seen.add(resolvedId);
+              options.push({ spellId: resolvedId, label: domLabel });
+            }
+          }
         }
       }
       if (options.length > 0) return options;

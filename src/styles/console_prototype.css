@@ -922,25 +922,29 @@
 
 .crpg-stash-matrix-compact {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 2px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
   background: var(--crpg-border-inner);
   border: 2px solid var(--crpg-border-outer);
-  padding: 2px;
+  padding: 4px;
+  max-height: 268px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .crpg-stash-cell {
-  aspect-ratio: 1 / 1;
-  min-height: 34px;
-  max-height: 40px;
+  width: 100%;
+  height: 58px;
+  min-width: 0;
+  overflow: hidden;
   background: var(--crpg-bg-socket-empty);
   border: 1px solid rgba(90, 75, 55, 0.35);
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1px;
+  justify-content: flex-end;
+  padding: 14px 3px 3px;
 }
 
 .crpg-stash-cell.occupied {
@@ -954,15 +958,43 @@
   box-shadow: inset 0 0 8px rgba(255, 215, 100, 0.35);
 }
 
+.crpg-cell-hotkey {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-family: var(--crpg-font-mono);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: #ffd166;
+  background: rgba(0, 0, 0, 0.72);
+  padding: 0 3px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.crpg-cell-action {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-family: var(--crpg-font-mono);
+  font-size: 0.54rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #c7bba4;
+  pointer-events: none;
+}
+
 .crpg-cell-icon {
-  font-size: 1.05rem;
+  font-size: 1.12rem;
   line-height: 1;
 }
 
 .crpg-cell-name {
-  font-size: 0.45rem;
+  font-size: 0.6rem;
   color: #e8dfd1;
   text-align: center;
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -971,10 +1003,10 @@
 
 .crpg-cell-qty {
   position: absolute;
-  bottom: 0;
-  right: 2px;
+  bottom: 12px;
+  right: 3px;
   font-family: var(--crpg-font-mono);
-  font-size: 0.55rem;
+  font-size: 0.58rem;
   font-weight: 800;
   color: #fff;
   text-shadow: 1px 1px 0 #000;

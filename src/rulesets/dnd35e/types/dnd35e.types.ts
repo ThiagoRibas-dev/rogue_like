@@ -198,6 +198,7 @@ export interface DnD35ActionBudget {
   readonly hasCombatReflexes: boolean;
   readonly reactorsThisOpportunity: ReadonlyArray<number>;
   readonly movementAoOReactorsThisRound: ReadonlyArray<number>;
+  readonly hasActedThisRound?: boolean | undefined;
 }
 
 /** Damage types supported by the D&D 3.5e damage & resistance pipeline. */

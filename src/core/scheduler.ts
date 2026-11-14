@@ -24,6 +24,8 @@ const actors = new Map<EntityId, SchedulerActor>();
 
 let isEngineLocked = true;
 let isTurnProcessing = false;
+let currentScheduleActor: SchedulerActor | null = null;
+let activeContinuationActor: SchedulerActor | null = null;
 let accumulatedTime = 0;
 let lastFrameTime = 0;
 let rtwpLoopId = 0;
@@ -37,6 +39,8 @@ export function initEngine(): void {
   actors.clear();
   isEngineLocked = true;
   isTurnProcessing = false;
+  currentScheduleActor = null;
+  activeContinuationActor = null;
   accumulatedTime = 0;
   if (sliceYieldTimerId !== null) {
     clearTimeout(sliceYieldTimerId);
@@ -148,12 +152,16 @@ function runTurnBasedLoop(): void {
       return;
     }
 
-    const actor = scheduler.next();
+    const actor =
+      activeContinuationActor && actors.has(activeContinuationActor.id) ? activeContinuationActor : scheduler.next();
     if (!actor) break;
+    currentScheduleActor = actor;
+    activeContinuationActor = null;
     try {
       actor.act();
     } catch (e) {
       console.error(`Error in turn-based loop for actor ${actor.id}:`, e);
+      activeContinuationActor = null;
       removeActor(actor.id);
     }
   }
@@ -197,13 +205,17 @@ function rtwpLoop(time: number): void {
     }
 
     const prevTime = scheduler.getTime();
-    const actor = scheduler.next();
+    const actor =
+      activeContinuationActor && actors.has(activeContinuationActor.id) ? activeContinuationActor : scheduler.next();
     if (!actor) break;
+    currentScheduleActor = actor;
+    activeContinuationActor = null;
 
     try {
       actor.act();
     } catch (e) {
       console.error(`Error in RTwP loop for actor ${actor.id}:`, e);
+      activeContinuationActor = null;
       removeActor(actor.id);
     }
 
@@ -227,6 +239,12 @@ export function addActor(id: EntityId, repeat: boolean = true, initialDuration: 
  * Evicts an entity from the scheduler queue.
  */
 export function removeActor(id: EntityId): void {
+  if (activeContinuationActor?.id === id) {
+    activeContinuationActor = null;
+  }
+  if (currentScheduleActor?.id === id) {
+    currentScheduleActor = null;
+  }
   const actor = actors.get(id);
   if (actor) {
     scheduler.remove(actor);
@@ -236,8 +254,15 @@ export function removeActor(id: EntityId): void {
 
 /**
  * Injects step duration weights back into scheduling actions.
+ * When `duration <= 0`, latches the active actor for immediate intra-turn continuation
+ * without advancing scheduler time (`ROT.Scheduler.Action` coerces `0` to `1`).
  */
 export function setTurnDuration(duration: number): void {
+  if (duration <= 0) {
+    activeContinuationActor = currentScheduleActor;
+    return;
+  }
+  activeContinuationActor = null;
   scheduler.setDuration(duration);
 }
 
@@ -248,6 +273,8 @@ export function setTurnDuration(duration: number): void {
 export function resetSchedulerActors(): void {
   scheduler.clear();
   actors.clear();
+  currentScheduleActor = null;
+  activeContinuationActor = null;
   accumulatedTime = 0;
   if (sliceYieldTimerId !== null) {
     clearTimeout(sliceYieldTimerId);
@@ -261,6 +288,8 @@ export function resetSchedulerActors(): void {
 export function clearScheduler(): void {
   scheduler.clear();
   actors.clear();
+  currentScheduleActor = null;
+  activeContinuationActor = null;
   isEngineLocked = true;
   isTurnProcessing = false;
   if (sliceYieldTimerId !== null) {

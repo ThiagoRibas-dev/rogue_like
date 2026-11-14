@@ -13,6 +13,7 @@ import { rangedBehavior } from '../ai/ranged.behavior.ts';
 import { spellBehavior } from '../ai/spell.behavior.ts';
 import { followBehavior } from '../ai/follow.behavior.ts';
 import { sanitizeCompanionControllerLink } from '../ai/companion_targeting.ts';
+import { canActorPerformIntent, hasActorActedThisTurn } from './lifecycle.system.ts';
 
 const BEHAVIOR_REGISTRY: Record<string, AIBehaviorFn> = {
   hunt: huntBehavior,
@@ -52,15 +53,18 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
     ];
     const randomDir = rng.getItem(directions);
     if (randomDir) {
-      return {
-        intent: {
-          type: IntentType.Move,
-          entityId,
-          dx: randomDir.dx,
-          dy: randomDir.dy
-        },
-        state
+      const confusedMove: Intent = {
+        type: IntentType.Move,
+        entityId,
+        dx: randomDir.dx,
+        dy: randomDir.dy
       };
+      if (canActorPerformIntent(state, confusedMove)) {
+        return {
+          intent: confusedMove,
+          state
+        };
+      }
     }
     return { intent: null, state };
   }
@@ -106,8 +110,12 @@ export function processAITurn(state: GameState, entityId: EntityId): { intent: I
 
       const intent = behaviorFn(nextState, entityId, params);
       if (intent !== null) {
-        // AI decided to do this. Check if they should bark.
-        if (profile.barks && profile.barks[entry.behaviorId]) {
+        if (!canActorPerformIntent(nextState, intent)) {
+          continue;
+        }
+
+        // AI decided to do this. Check if they should bark (only on first action of the round).
+        if (!hasActorActedThisTurn(nextState, entityId) && profile.barks && profile.barks[entry.behaviorId]) {
           const barkList = profile.barks[entry.behaviorId]!;
           // 25% chance to bark if they have barks for this behavior
           if (barkList.length > 0 && rng.getUniform() < 0.25) {
