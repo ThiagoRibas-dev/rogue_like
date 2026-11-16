@@ -5,7 +5,7 @@ import type { ApplyIntentTarget } from '../../../types/intents/interaction.inten
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import { evaluateDnD35ActorStatDAG } from '../modifiers.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
-import { resolveSkillCheck, type SkillCheckDefinition, type SkillCheckResult } from '../skills.ts';
+import { getBardicKnackFloor, resolveSkillCheck, type SkillCheckDefinition, type SkillCheckResult } from '../skills.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
 import type { AbilityId, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -236,6 +236,7 @@ export function evaluateActorSkillCheck(
     });
   }
 
+  const knackFloor = getBardicKnackFloor(dndData);
   const check = resolveSkillCheck({
     definition,
     rawRanks: dndData.skillRanks[skillId] ?? 0,
@@ -244,7 +245,8 @@ export function evaluateActorSkillCheck(
     armorCheckPenalty: 0,
     modifiers: skillModifiers,
     dc,
-    takeMode
+    takeMode,
+    ...(knackFloor !== undefined ? { minSkillRanksFloor: knackFloor } : {})
   });
 
   return { check, dndData };

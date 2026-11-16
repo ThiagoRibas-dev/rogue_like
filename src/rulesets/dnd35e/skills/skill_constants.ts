@@ -117,6 +117,7 @@ export interface SkillCheckParams {
   readonly isThreatenedOrDistracted?: boolean;
   readonly carriesPenaltyOnFailure?: boolean;
   readonly forcedNaturalRoll?: number;
+  readonly minSkillRanksFloor?: number | undefined;
 }
 
 /** Result of a resolved Skill Check or Ability Check. */

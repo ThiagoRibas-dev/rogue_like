@@ -9,6 +9,9 @@ const TUMBLE_SYNERGY_MIN_RANKS = 5;
 
 const FIXED_CAP_FIVE = 5;
 
+/** Attack roll penalty incurred when executing Monk's Decisive Strike stance (`2`, PHB II p. 51). */
+export const DECISIVE_STRIKE_ATTACK_PENALTY = 2;
+
 /**
  * Declarative descriptor for a variable doctrine dial (e.g., Power Attack, Combat Expertise).
  */
@@ -166,6 +169,10 @@ export function evaluateTacticalDoctrineModifiers(
   if (doctrine.fightingDefensively === true) {
     attackPenalty += 4;
     dodgeAcBonus += hasTumbleSynergy ? 3 : 2;
+  }
+
+  if (doctrine.decisiveStrike === true) {
+    attackPenalty += DECISIVE_STRIKE_ATTACK_PENALTY;
   }
 
   return {

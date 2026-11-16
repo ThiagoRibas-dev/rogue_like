@@ -4,9 +4,14 @@
  * executes `resolveCastPipeline`, saving throws, SR, AoE geometry, and damage/buff application.
  */
 
-import { getComponent } from '../../../core/ecs.ts';
+import { consumeResourcePool, getComponent } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import { ComponentType, type FighterComponent, type PositionComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type FighterComponent,
+  type PositionComponent,
+  type ResourcePoolComponent
+} from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateSpellEffectUnitsForTarget } from './spell_effects.ts';
 import { applyResolvedSpellEffectsToTarget } from './spell_cast_effects.ts';
@@ -78,11 +83,26 @@ export function executeDnD35eSpellCast(
     };
   }
 
+  const poolComp = getComponent(state, casterId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined;
+  const metamagicPool = poolComp?.pools['metamagic_specialist'];
+  const hasMetamagicSpecialistTrait =
+    casterDag.selfTags.includes('trait:metamagic_specialist') ||
+    (casterDag.dndData.activeClassFeatures ?? []).includes('metamagic_specialist') ||
+    (casterDag.dndData.feats ?? []).includes('metamagic_specialist');
+  const shouldUseMetamagicSpecialist =
+    book.castingMode === 'spontaneous' &&
+    meta.hasNonQuickenMetamagic &&
+    !meta.isQuickened &&
+    hasMetamagicSpecialistTrait &&
+    metamagicPool !== undefined &&
+    metamagicPool.current >= 1;
+
   const actionRes = consumeSpellActionBudget(
     casterDag.dndData.actionBudget,
     spell.castingTime,
     book.castingMode === 'spontaneous',
-    meta
+    meta,
+    shouldUseMetamagicSpecialist
   );
   if (!actionRes.allowed) {
     return {
@@ -105,6 +125,16 @@ export function executeDnD35eSpellCast(
     spellbooksByClass: { ...(rawCasterDnd.spellbooksByClass ?? {}), [castContext.classId]: slotRes.updatedBook },
     ...(actionRes.budget !== undefined ? { actionBudget: actionRes.budget } : {})
   });
+
+  if (shouldUseMetamagicSpecialist) {
+    const poolRes = consumeResourcePool(runningState, casterId, 'metamagic_specialist', 1);
+    runningState = poolRes.state;
+    runningState = addMessage(
+      runningState,
+      'Metamagic Specialist: Spontaneous metamagic cast as standard action.',
+      MessageLogCategory.CombatHit
+    );
+  }
 
   const govAbState = casterDag.dagResult.effectiveAbilities[book.governingAbility];
   const govAbScore =

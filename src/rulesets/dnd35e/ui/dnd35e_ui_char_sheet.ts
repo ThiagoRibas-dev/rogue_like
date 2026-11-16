@@ -23,6 +23,7 @@ import { getActorEverClassSkillIds } from '../builder/builder_core.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../progression.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
+import { getBardicKnackFloor } from '../skills.ts';
 import type { AbilityId, AbilityScoreState, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { ACTIVE_SKILL_IDS } from './dnd35e_ui_hotbar.ts';
@@ -97,8 +98,11 @@ function computePassiveSkillModifier(
   allSkillRanks: Readonly<Record<string, number>>,
   abilityMod: number,
   statModifiers: ReadonlyArray<StatModifier>,
-  conditions: ReadonlyArray<string>
-): { readonly totalModifier: number; readonly miscModifier: number } {
+  conditions: ReadonlyArray<string>,
+  minSkillRanksFloor?: number | undefined
+): { readonly totalModifier: number; readonly effectiveRanks: number; readonly miscModifier: number } {
+  const effectiveRanks =
+    minSkillRanksFloor !== undefined && minSkillRanksFloor > 0 ? Math.max(ranks, minSkillRanksFloor) : ranks;
   let synergyBonus = 0;
   for (const sourceSkillId of skill.synergyFromSkills ?? []) {
     if ((allSkillRanks[sourceSkillId] ?? 0) >= SYNERGY_RANK_THRESHOLD) {
@@ -118,7 +122,8 @@ function computePassiveSkillModifier(
       : 0;
   const miscModifier = synergyBonus + statSkillBonus + fearPenalty;
   return {
-    totalModifier: ranks + abilityMod + miscModifier,
+    totalModifier: effectiveRanks + abilityMod + miscModifier,
+    effectiveRanks,
     miscModifier
   };
 }
@@ -172,25 +177,27 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
   const allRanks = dndData.skillRanks ?? {};
   const statModifiers = evalResult?.dndData.statModifiers ?? dndData.statModifiers ?? [];
   const conditions = dndData.conditions ?? [];
+  const knackFloor = getBardicKnackFloor(dndData);
   const skillRows: UISkillRowModel[] =
     sys && state && entityId !== undefined
       ? Object.values(sys.skills).map((skill) => {
           const ranks = allRanks[skill.id] ?? 0;
           const abMod = effMod?.[skill.keyAbility] ?? 0;
-          const { totalModifier, miscModifier } = computePassiveSkillModifier(
+          const { totalModifier, effectiveRanks, miscModifier } = computePassiveSkillModifier(
             skill,
             ranks,
             allRanks,
             abMod,
             statModifiers,
-            conditions
+            conditions,
+            knackFloor
           );
           return {
             id: skill.id,
             name: skill.name,
             keyAbility: skill.keyAbility.toUpperCase(),
             totalModifier,
-            ranks,
+            ranks: effectiveRanks,
             abilityModifier: abMod,
             miscModifier,
             isClassSkill: everClassSkills.has(skill.id),

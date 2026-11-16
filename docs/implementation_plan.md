@@ -1,227 +1,122 @@
-# Implementation Plan — Standardized Tabbed Character Sheet Overhaul
+# Milestone 137 Implementation Plan — Core Class ACF Expansion (Druid, Sorcerer, Bard) & Regression Parity
 
-## 1. Architectural Guardrails & Console/Cartridge Tier Boundary Discipline
+## 1. Overview & Architectural Alignment
+Milestone 137 completes **Phase 33 (Alternate Class Features & Runtime Mechanics)** by authoring and wiring the remaining 5 core class ACFs for **Druid** (*Druidic Avenger*, *Shapeshift*), **Sorcerer** (*Metamagic Specialist*), and **Bard** (*Bardic Knack*, *Healing Hymn*), backed by end-to-end regression parity across Milestones 135–137.
 
-### 1.1 Strict Three-Tier Separation (No Cartridge Leaks into Console)
-Per the User's explicit instruction (*"Let's just be careful not to leak Cartridge into the Console"*):
-- **Tier 1 — Core Console (`src/core/`, `src/systems/`, `src/types/`, generic UI widgets in `src/rendering/ui/console_*.ts`)**:
-  - Contains only ruleset-agnostic simulation, ECS data models, input dispatchers, and generic UI widgets (`console_inventory.ui.ts`, `console_inspect_card.ui.ts`, `console_theme.ts`).
-  - **Zero Cartridge Imports**: Console modules MUST NEVER import from `src/rulesets/dnd35e/` or `src/rendering/ui/dnd35e_*.ui.ts`.
-  - Generic UI components consume only unified view models from `src/types/ui_adapter.types.ts` (`UIInventoryModel`, `UICharacterSheetModel`, `UIInspectData`).
-- **Tier 2 — Cartridge UI (`src/rendering/ui/dnd35e_sheet*.ui.ts`, `src/rulesets/dnd35e/ui/`)**:
-  - The D&D 3.5e Character Sheet is a registered Cartridge Modal (`modalId: 'character_sheet'`) hosted inside `#dnd35e-sheet-overlay`.
-  - Consumes Tier 1 Console widgets (`renderReactivePaperDollWidget`, `renderCompactStashWidget`, `showConsoleItemInspectCard`) by passing pure `UIInventoryModel` instances without altering Console contracts.
-  - Queries Tier 2 D&D 3.5e ruleset systems (`evaluateDnD35eEntityDAG`, `getDnD35EntityData`, `summarizeConditionEffects`, `DnD35UIAdapter`) purely within `src/rendering/ui/dnd35e_*.ui.ts` and `src/rulesets/dnd35e/`.
+### SSOT Ownership & New Module Table
+| Responsibility | Canonical Owner | Tier |
+| :--- | :--- | :--- |
+| Multi-feature ACF swap schema (`alsoReplacesFeatures`) | `src/rulesets/dnd35e/types/system/effect_system.types.ts` | Tier 2 Schema |
+| Multi-feature ACF progression filtering & validation | `src/rulesets/dnd35e/progression/class_features_xp.ts`, `src/rulesets/dnd35e/validation/class_race_validator.ts` | Tier 2 Progression / Validation |
+| Druid *Shapeshift* swift-action form overlays (`predator`, `aerial`, `ferocious_slayer`, `normal`) | `src/rulesets/dnd35e/shapeshift.ts` (re-exported from `wild_shape.ts` & `dnd35e_ruleset.ts`) | Tier 2 Form Resolver |
+| Sorcerer *Metamagic Specialist* spontaneous casting time reduction & pool consumption | `src/rulesets/dnd35e/magic/spell_cast_helpers.ts`, `src/rulesets/dnd35e/magic/spell_cast_resolver.ts` | Tier 2 Magic |
+| Bard *Bardic Knack* untrained/low-rank skill floor (`Math.max(1, Math.floor(level / 2))`) | `src/rulesets/dnd35e/skills.ts`, `src/rulesets/dnd35e/skills/skill_verb_helpers.ts`, `src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts` | Tier 2 Skills & UI |
+| Bard *Healing Hymn* performance status & `+performRanks` conjuration healing bonus | `src/rulesets/dnd35e/combat/pool_ability_resolver.ts`, `src/rulesets/dnd35e/magic/spell_cast_effects.ts` | Tier 2 Magic & Pools |
+| Declarative ACF definitions (`druid.json`, `sorcerer.json`, `bard.json`) | `public/data/rulesets/dnd35e/classes/{druid,sorcerer,bard}.json` | Tier 3 Content |
 
 ---
 
-## 2. SSOT Ownership & Module Architecture
-
-| Module | Responsibility | Ownership | Line Budget |
+## 2. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
+| Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| `src/rendering/ui/dnd35e_sheet.ui.ts` | Master Character Sheet Modal Orchestrator: manages active tab state (`'character' \| 'progression' \| 'companions'`), renders the 3-tab bar, and routes to tab views. | `tier2_ui` | < 120 lines |
-| `src/rendering/ui/dnd35e_sheet_overview_tab.ui.ts` | **Tab 1 Column 1 (`crpg-sheet-col-identity-skills`)**: Adventurer identity, vitals meters, Defenses & Saves, Active Conditions strip (with tooltips), 6 Ability Scores, and scrollable Skills table with Trained filter. | `tier2_ui` | < 250 lines |
-| `src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts` *(new)* | **Tab 1 Column 2 (`crpg-sheet-col-attacks-abilities`)**: Attacks & Weapons (routine ledger), Maneuvers table, Abilities & Pools with clickable `[Use]` buttons that close the sheet and trigger ability execution/targeting, and Tactical Stances. | `tier2_ui` | < 250 lines |
-| `src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts` *(new)* | **Tab 1 Column 3 (`crpg-sheet-col-equipment-backpack`)**: Reactive Paper Doll (12 slots, 4 weapon sets) + uniform 5-column dynamic scrollable Backpack grid with `[a-z]` key badges, category filters, and sorting. | `tier2_ui` | < 200 lines |
-| `src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts` *(new)* | **Tab 2 (`Progression & Features`)**: 2 wide columns displaying Feats & Traits on the left, and the Horizon 1 Level-by-Level Matrix on the right. | `tier2_ui` | < 220 lines |
-| `src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts` *(new)* | **Tab 3 (`Companions & Summons`)**: Table of player-controlled companions via `getPlayerCompanions` with stance, HP, status, and clean empty state. | `tier2_ui` | < 160 lines |
-| `src/styles/console_prototype.css` | Styling for the 3-tab bar, 3 equal columns (`repeat(3, 1fr)`), active condition chips, and typography hierarchy. | `styles` | — |
-
-*Note: Existing legacy files `dnd35e_sheet_feats_abilities_tab.ui.ts` and `dnd35e_sheet_skills_tab.ui.ts` will have their responsibilities cleanly migrated to the modular tab files above, ensuring every file stays strictly below the 300-line limit.*
+| Single ACF trading multiple progression features (*Druidic Avenger* trading `animal_companion` + `wild_empathy`; *Shapeshift* trading `animal_companion` + `wild_shape_*`) | Hardcoding `if (acfId === 'druid_shapeshift_1')` in `resolveActiveClassFeatures` | Generic `alsoReplacesFeatures: string[]` on `DnD35AcfSwapSchema` evaluated uniformly in `resolveActiveClassFeatures` and `validateDnD35eClassesRacesTemplates` | **Yes** — any JSON ACF can replace multiple features declaratively. |
+| *Druidic Avenger* Fast Movement (`+10 ft`), `+2` Survival, and scaling `rage` pool (`1/day + 1 per 5 levels`) | Custom Druid class-ID checks in movement/skill/rage resolvers | `featureDetails.druidic_avenger` declaring `modifiers` (`speed +10`, `skill:survival +2`), `grantedTags` (`trait:druidic_avenger`, `trait:fast_movement`, `feature:rage_1`), and `resourcePool` (`poolId: "rage"`, `maxBase: 1`, `perClassLevel: 0.2`) | **Yes** — resolved entirely by existing DAG and `ResourcePoolComponent` builders. |
+| *Shapeshift* Predator / Aerial / Ferocious Slayer forms | Hardcoding form stats inside `attack_resolver.ts` | `PropertyOverlayComponent` (`overlayId: 'acf:shapeshift'`) + `TacticalDoctrineComponent.activeStanceGroups['druid_shapeshift_form']` projecting typed `StatModifier`s, `sizeCategoryOverride`, `movementModesOverride`, and `naturalWeapons` | **Yes** — reuses the universal `PropertyOverlayComponent` & stance group pipeline. |
+| *Metamagic Specialist* spontaneous metamagic without full-round casting time increase (`3 + INT mod / day`) | Checking `classId === 'sorcerer'` in `consumeSpellActionBudget` | Checking semantic tag `trait:metamagic_specialist` / `feature:metamagic_specialist` + remaining charges in `ResourcePoolComponent.pools['metamagic_specialist']` | **Yes** — any spontaneous class or feat granting `trait:metamagic_specialist` and the `metamagic_specialist` pool works identically. |
+| *Bardic Knack* effective rank floor (`max(1, floor(level / 2))`) | Hardcoding `trackId === 'bard'` in `resolveSkillCheck` | `scalingPoolContribution: { poolId: "bardic_knack_level", multiplier: 1 }` on `featureDetails.bardic_knack` + `trait:bardic_knack` evaluated by `resolveBardicKnackSkillBonus` | **Yes** — scales from `scalingPools.bardic_knack_level` (with track fallback). |
+| *Healing Hymn* `+performRanks` bonus on healing spells while performing | Hardcoding spell IDs (`spellId === 'cure_light_wounds'`) | Inspecting `unit.type === 'healing'` in `applySingleSpellUnit` and checking for any non-hostile performer within `30 ft` with `trait:healing_hymn` and active performance status | **Yes** — works automatically for all Conjuration (Healing) spells. |
 
 ---
 
-## 3. Step-by-Step Implementation Details
-
-### Step 1: Active Tab Orchestration & Tab Bar (`src/rendering/ui/dnd35e_sheet.ui.ts`)
-1. Define the discriminated union of tabs:
-   ```ts
-   export type SheetTabId = 'character' | 'progression' | 'companions';
-   let currentSheetTab: SheetTabId = 'character';
-   ```
-2. Render a sleek CRPG tab strip above the tab content:
-   - `[ ⚔ Character ]`
-   - `[ 📜 Progression & Features ]`
-   - `[ 🐾 Companions (${companionCount}) ]`
-3. Route rendering based on `currentSheetTab`:
-   - `'character'`: Renders a 3-equal-width column grid (`.crpg-three-col-grid`), invoking:
-     - `renderSheetOverviewTab(grid, liveState, playerId, evalResult, sheetModel)` (Col 1)
-     - `renderSheetAttacksTab(grid, liveState, playerId, sheetModel)` (Col 2)
-     - `renderSheetEquipmentTab(grid, liveState, playerId, invData)` (Col 3)
-   - `'progression'`: Renders `renderSheetProgressionTab(shell, liveState, playerId, sheetModel, dndData)`.
-   - `'companions'`: Renders `renderSheetCompanionsTab(shell, liveState, playerId)`.
-
-### Step 2: Tab 1 Column 1 — Identity, Defenses, Active Conditions & Skills (`dnd35e_sheet_overview_tab.ui.ts`)
-1. **Adventurer Identity & Vitals**: Name, Alignment, Race, Class/ECL summary, XP bar, and HP meter.
-2. **Defenses & Saves**: AC (Full, Flat-footed, Touch), Saves (Fort, Ref, Will), BAB, Grapple, Speed, Initiative.
-3. **Active Conditions Strip**:
-   - Query `dndData.conditions` and `StatusEffectsComponent.activeEffects`.
-   - If empty: render `<span class="crpg-condition-chip normal">[ Normal ]</span>`.
-   - If non-empty: render interactive chips `<span class="crpg-condition-chip debuff">[ Shaken -2 ]</span>` with tooltip on hover displaying penalty breakdown from `summarizeConditionEffects`.
-4. **Ability Scores**: STR, DEX, CON, INT, WIS, CHA with base score and signed modifier.
-5. **Skills**:
-   - Direct heading: `SKILLS`.
-   - Filter toggle: `[ All Skills / Trained Only ]`.
-   - Compact table in scrollable wrapper: `CS`, `Skill Name`, `Key`, `Total`, `Rnks`.
-
-### Step 3: Tab 1 Column 2 — Attacks, Maneuvers, Abilities & Pools (`src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts`)
-1. **Attacks & Weapons**:
-   - Full-Attack routine chains from `sheetModel.attackGroups`.
-   - Damage formula, critical threats, and damage types.
-2. **Maneuvers**:
-   - Trip (+mod, `[provokes]`), Disarm (+mod, `[vs ATK]`), Sunder (+mod), Bull Rush (+mod), Grapple (+mod).
-3. **Abilities & Pools**:
-   - Direct heading: `ABILITIES & POOLS`.
-   - Daily charges from `ResourcePoolComponent` (`turn_undead`, `smite_evil`, `rage`, `wild_shape`, `domain_*`).
-   - Clickable `[Use]` button:
-     ```ts
-     useBtn.addEventListener('click', () => {
-       // 1. Close the modal
-       setGameState(closeCartridgeModal(getGameState()));
-       // 2. Dispatch the ability intent
-       queuePlayerIntent({
-         type: IntentType.UseAbility,
-         entityId: playerId,
-         effectId: `pool:${poolId}`,
-         abilityName: entry.label ?? poolId
-       });
-       markAllDomainsDirty();
-     });
-     ```
-4. **Stances**:
-   - Direct heading: `STANCES`.
-   - Toggles for Power Attack, Fighting Defensively.
-
-### Step 4: Tab 1 Column 3 — Equipment & Uniform 5-Col Backpack (`src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts`)
-1. **Reactive Paper Doll**:
-   - Render 12 anatomical slots (`head`, `neck`, `torso`, `armor`, `cloak`, `arms`, `hands`, `waist`, `legs`, `feet`, `ring_1`, `ring_2`).
-   - 4 quick weapon set switcher buttons (`[Set I]`–`[Set IV]`).
-2. **Backpack**:
-   - Direct heading: `BACKPACK`.
-   - Load telemetry (`Light / Medium / Heavy`) and total gold display.
-   - Category filter tabs (`[All]`, `[Wpn]`, `[Arm]`, `[Pot]`, `[Scr]`, `[Key]`).
-   - Sort dropdown (`Slot [a-z]`, `Name`, `Weight`, `Value`).
-   - Dynamic 5-column grid with vertical scrollbar:
-     - High-contrast `[a-z]` hotkey badge in top-left of occupied cells.
-     - Hover inspection linked to `showConsoleItemInspectCard`.
-
-### Step 5: Tab 2 — Progression & Features (`src/rendering/ui/dnd35e_sheet_progression_tab.ui.ts`)
-1. **Column 1 — Feats & Traits**:
-   - Acquired feats with category tags (`[Combat]`, `[Metamagic]`, `[General]`).
-   - Class, Domain, and Racial traits (Auras, Turn Undead progression, proficiencies).
-2. **Column 2 — Level Progression Matrix**:
-   - Direct heading: `LEVEL PROGRESSION`.
-   - Horizon 1 ledger table: `Level`, `Class / HD`, `HP Gained`, `Skill Points`, `Feats & Features Acquired`.
-
-### Step 6: Tab 3 — Companions & Summons (`src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts`)
-1. Query companions via `getPlayerCompanions(state, playerId)`.
-2. Render table:
-   - Companion Name & Title
-   - Creature Type / HD
-   - HP Bar
-   - Stance Badge (`Aggressive`, `Defensive`, `Passive`, `Hold`)
-   - Status / Distance (`Following (Adjacent)`, `Following (3 tiles)`)
-3. Atmospheric empty state if `companions.length === 0`:
-   - *"No active animal companions, familiars, cohorts, or summons."*
-
-### Step 7: CSS & Typographic Standards (`src/styles/console_prototype.css`)
-1. Enforce strict 3 equal columns:
-   ```css
-   .crpg-three-col-grid {
-     display: grid;
-     grid-template-columns: 1fr 1fr 1fr;
-     gap: 12px;
-     height: 100%;
-     min-height: 0;
-   }
-   ```
-2. Tab bar styling:
-   ```css
-   .crpg-sheet-tab-bar {
-     display: flex;
-     gap: 8px;
-     margin-bottom: 12px;
-     border-bottom: 1px solid var(--border-color, #45475a);
-     padding-bottom: 6px;
-   }
-   .crpg-sheet-tab-btn {
-     font-family: 'Cinzel', serif;
-     font-weight: 600;
-     padding: 6px 14px;
-     border-radius: 4px;
-     background: transparent;
-     color: #a6adc8;
-     cursor: pointer;
-   }
-   .crpg-sheet-tab-btn.active {
-     background: #313244;
-     color: #cdd6f4;
-     border-bottom: 2px solid #89b4fa;
-   }
-   ```
-3. Condition chips styling:
-   ```css
-   .crpg-conditions-strip {
-     display: flex;
-     flex-wrap: wrap;
-     gap: 4px;
-     margin: 6px 0;
-   }
-   .crpg-condition-chip {
-     font-family: 'JetBrains Mono', monospace;
-     font-size: 0.65rem;
-     padding: 2px 6px;
-     border-radius: 3px;
-     font-weight: 600;
-   }
-   .crpg-condition-chip.normal {
-     background: rgba(166, 227, 161, 0.15);
-     color: #a6e3a1;
-     border: 1px solid rgba(166, 227, 161, 0.3);
-   }
-   .crpg-condition-chip.debuff {
-     background: rgba(243, 139, 168, 0.15);
-     color: #f38ba8;
-     border: 1px solid rgba(243, 139, 168, 0.3);
-     cursor: help;
-   }
-   ```
-
----
-
-## 4. Cascading Effects Matrix (`AGENTS.md` Rule 15)
-
-| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers) | Lateral (Sibling Systems / Docs / Tests) |
+## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
+| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling JSONs / Docs / SSOT) |
 | :--- | :--- | :--- | :--- |
-| **Tabbed Modal Shell (`dnd35e_sheet.ui.ts`)** | `dnd35e_ui_registration.ts`, `modal_manager.ts`, `modal_input.ts` (`[C]` / `[I]`) | `renderSheetOverviewTab`, `renderSheetAttacksTab`, `renderSheetEquipmentTab`, `renderSheetProgressionTab`, `renderSheetCompanionsTab` | Update `docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md` |
-| **Tab 1 Column 1: Identity, Conditions & Skills** | `dndData.conditions`, `StatusEffectsComponent`, `dnd35e_ui_char_sheet.ts` | `dnd35e_sheet_overview_tab.ui.ts` | `console_inspect_card.ui.ts` |
-| **Tab 1 Column 2: Attacks, Maneuvers & Pool Abilities** | `sheetModel.attackGroups`, `ResourcePoolComponent`, `TacticalDoctrineComponent` | `dnd35e_sheet_attacks_tab.ui.ts`, `queuePlayerIntent` | `pool_ability_resolver.ts`, `dnd35e_ruleset.ts` |
-| **Tab 1 Column 3: Paper Doll & 5-Col Backpack** | `UIInventoryModel`, `EquipmentComponent`, `InventoryComponent` | `dnd35e_sheet_equipment_tab.ui.ts`, `console_inventory.ui.ts` | `src/styles/console_prototype.css` |
-| **Tab 2: Progression & Features** | `dndData.feats`, `dndData.levelHistory`, `systemContent.feats` | `dnd35e_sheet_progression_tab.ui.ts` | `dnd35e_feat_spell_inspector.ui.ts` |
-| **Tab 3: Companions Roster** | `getPlayerCompanions`, `ControllerLinkComponent`, `FighterComponent` | `dnd35e_sheet_companions_tab.ui.ts` | `companion_commands.system.ts` |
+| Add `alsoReplacesFeatures` to `DnD35AcfSwapSchema` | `druid.json`, `sorcerer.json`, `bard.json` | `resolveActiveClassFeatures` (`class_features_xp.ts`), `validateDnD35eClassesRacesTemplates` (`class_race_validator.ts`) | All existing class JSONs default `alsoReplacesFeatures` to `[]` seamlessly |
+| Add `src/rulesets/dnd35e/shapeshift.ts` & wire `resolveEffectiveEntityDataWithOverlays` naturalWeapons override | `dnd35eRulesetContract.resolveUseAbility`, `wild_shape.ts`, `evaluateDnD35eEntityDAG` | `buildActorNaturalWeaponLimbs` (`dnd35e_equipped_item_dag.ts`), `buildActorStanceModes` (`dnd35e_ui_hotbar.ts`), `canDnD35eActorPerformIntent` (`dnd35e_turn_budget.ts`) | Register `src/rulesets/dnd35e/shapeshift.ts` in `docs/ssot/ssot_dnd35e.json` and run `bun scripts/map-codebase.ts` |
+| Wire `metamagic_specialist` in `consumeSpellActionBudget` & `executeDnD35eSpellCast` | `executeDnD35eSpellCast` (`spell_cast_resolver.ts`) | `consumeSpellActionBudget` (`spell_cast_helpers.ts`), `ResourcePoolComponent` (`metamagic_specialist` pool) | `sorcerer.json` (`metamagic_specialist` feature & ACF swap) |
+| Wire `resolveBardicKnackSkillBonus` & `resolveHealingHymnBonus` | `evaluateActorSkillCheck`, `computePassiveSkillModifier`, `executeDnD35eResourcePoolAbility`, `applySingleSpellUnit` | Skill checks, Character Sheet skill rows, `healing` spell effect units | `bard.json` (`bardic_knack` & `healing_hymn` features & ACF swaps) |
 
 ---
 
-## 5. Anti-Hardcoding & Declarative Purity Audit (`AGENTS.md` Rule 21)
+## 4. Step-by-Step Implementation Plan
 
-| Feature / Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
-| :--- | :--- | :--- | :--- |
-| **Active Conditions** | Hardcoding `if (cond === 'shaken')` labels in TS | Querying `summarizeConditionEffects(dndData.conditions)` + `state.campaign.status` definitions | **YES** — New conditions added in JSON/ruleset automatically project correct badges and penalties |
-| **Abilities & Pools** | Hardcoding `if (classId === 'cleric') renderTurnUndead()` | Querying actor's `ResourcePoolComponent.pools` generically | **YES** — Any class, race, or feat adding a pool automatically renders in Column 2 |
-| **Combat Maneuvers** | Hardcoded switch on character class | Computing baseline maneuver modifiers via BAB + STR/DEX + Size modifier formula | **YES** — Any actor with BAB/stats computes maneuvers symmetrically |
-| **Companions List** | Hardcoding player minion entity IDs | Querying `getPlayerCompanions(state, playerId)` via `ControllerLinkComponent` | **YES** — Any creature linked via `ControllerLinkComponent` appears in the roster |
+### Step 1: Multi-Feature ACF Schema & Validator Support
+- **`src/rulesets/dnd35e/types/system/effect_system.types.ts`**:
+  - Add `alsoReplacesFeatures: z.array(z.string()).default([])` to `DnD35AcfSwapSchema`.
+- **`src/rulesets/dnd35e/progression/class_features_xp.ts`**:
+  - Update `resolveActiveClassFeatures` to remove both `swap.replacesFeature` and any feature in `swap.alsoReplacesFeatures ?? []`.
+- **`src/rulesets/dnd35e/validation/class_race_validator.ts`**:
+  - Validate that every feature ID in `acf.alsoReplacesFeatures ?? []` exists in `grantedFeatures` for the class.
 
----
+### Step 2: Author Druid, Sorcerer, and Bard ACF JSON Definitions
+- **`public/data/rulesets/dnd35e/classes/druid.json`**:
+  - Add `featureDetails.druidic_avenger`:
+    - `modifiers`: `+10 ft` `speed` (when not in heavy armor/load) and `+2` `skill:survival`.
+    - `grantedTags`: `["trait:druidic_avenger", "trait:fast_movement", "feature:rage_1"]`.
+    - `resourcePool`: `{ "poolId": "rage", "maxBase": 1, "perClassLevel": 0.2, "refreshCycle": "rest_8h" }`.
+  - Add `featureDetails.shapeshift`:
+    - `category: "su"`, `usageMode: "toggle"`, `grantedTags: ["trait:shapeshift"]`.
+    - `activatedAbilities`: `shapeshift_predator` (L1+), `shapeshift_aerial` (L5+), `shapeshift_ferocious_slayer` (L8+) in `toggleGroup: "druid_shapeshift_form"` (`actionCost: "swift"`).
+  - Add `acfSwaps`:
+    - `druid_druidic_avenger_1` (Level 1, replaces `animal_companion`, `alsoReplacesFeatures: ["wild_empathy"]`, grants `druidic_avenger`).
+    - `druid_shapeshift_1` (Level 1, replaces `animal_companion`, `alsoReplacesFeatures: ["wild_shape_1", "wild_shape_2", "wild_shape_3", "wild_shape_large", "wild_shape_4", "wild_shape_tiny", "wild_shape_plant", "wild_shape_5", "wild_shape_huge", "wild_shape_elemental_1", "wild_shape_6", "wild_shape_elemental_2", "wild_shape_elemental_3_huge"]`, grants `shapeshift`).
+    - `druid_shapeshift_5` (Level 5, replaces `wild_shape_1`, `alsoReplacesFeatures: ["animal_companion", "wild_shape_2", "wild_shape_3", "wild_shape_large", "wild_shape_4", "wild_shape_tiny", "wild_shape_plant", "wild_shape_5", "wild_shape_huge", "wild_shape_elemental_1", "wild_shape_6", "wild_shape_elemental_2", "wild_shape_elemental_3_huge"]`, grants `shapeshift`).
+- **`public/data/rulesets/dnd35e/classes/sorcerer.json`**:
+  - Add `featureDetails.metamagic_specialist`:
+    - `category: "ex"`, `usageMode: "triggered"`, `grantedTags: ["trait:metamagic_specialist"]`.
+    - `ruleOverrides`: `[{ "id": "metamagic_specialist_rapid", "ruleKey": "spontaneous_metamagic_no_time_increase", "value": true, "priority": 20 }]`.
+    - `resourcePool`: `{ "poolId": "metamagic_specialist", "maxBase": 3, "abilityModStat": "int", "refreshCycle": "rest_8h" }`.
+  - Add `acfSwaps`:
+    - `sorcerer_metamagic_specialist_1` (Level 1, replaces `summon_familiar`, grants `metamagic_specialist`).
+- **`public/data/rulesets/dnd35e/classes/bard.json`**:
+  - Add `featureDetails.bardic_knack`:
+    - `category: "ex"`, `usageMode: "passive"`, `grantedTags: ["trait:bardic_knack"]`.
+    - `scalingPoolContribution`: `{ "poolId": "bardic_knack_level", "multiplier": 1, "offset": 0, "minClassLevel": 1 }`.
+  - Add `featureDetails.healing_hymn`:
+    - `category: "su"`, `usageMode: "activated"`, `grantedTags: ["trait:healing_hymn"]`.
+    - `activatedAbilities`: `[{ "abilityId": "healing_hymn", "name": "Healing Hymn", "actionCost": "standard", "usageLimitPoolId": "bardic_music" }]`.
+  - Add `acfSwaps`:
+    - `bard_bardic_knack_1` (Level 1, replaces `bardic_knowledge`, grants `bardic_knack`).
+    - `bard_healing_hymn_1` (Level 1, replaces `fascinate`, grants `healing_hymn`).
 
-## 6. Verification Pipeline
+### Step 3: Druid *Shapeshift* Runtime Resolver (`src/rulesets/dnd35e/shapeshift.ts` & `wild_shape.ts`)
+- Create `src/rulesets/dnd35e/shapeshift.ts` (re-exported from `wild_shape.ts` and `dnd35e_ruleset.ts`):
+  - Define `DnD35ShapeshiftFormId = 'predator' | 'aerial' | 'ferocious_slayer' | 'normal'`.
+  - Implement `executeDruidShapeshift(state, actorId, formId)`:
+    - Validates `trait:shapeshift` / `feature:shapeshift` and Druid level requirement (`1` for `'predator'`, `5` for `'aerial'`, `8` for `'ferocious_slayer'`).
+    - In TurnBased mode, consumes 1 Swift Action (`consumeSwiftOrImmediateActionFromBudget(budget, 'swift')`).
+    - Applies/updates `PropertyOverlayComponent` (`overlayId: 'acf:shapeshift'`) and `TacticalDoctrineComponent.activeStanceGroups['druid_shapeshift_form']`:
+      - **Predator Form**: `+4` enhancement STR, `+4` natural armor AC, `+20 ft` speed (`50 ft` land speed), primary `1d6` Bite natural weapon, `form:shapeshift_predator`.
+      - **Aerial Form**: `+2` enhancement STR, `+2` natural armor AC, `+2` competence Reflex save, `40 ft` fly speed (`movement:fly`), primary `1d6` Talon natural weapon, `form:shapeshift_aerial`.
+      - **Ferocious Slayer Form**: `sizeCategoryOverride: 'large'`, `+8` enhancement STR, `+8` natural armor AC, `+10 ft` speed (`40 ft` land speed), primary `1d8` Bite + secondary `2x 1d6` Claw natural weapons, `form:shapeshift_ferocious_slayer`.
+      - **Normal Form**: Removes `'acf:shapeshift'` overlay and clears `activeStanceGroups['druid_shapeshift_form']`.
+  - Support `statOverrides.naturalWeapons` in `resolveEffectiveEntityDataWithOverlays` (`src/rulesets/dnd35e/wild_shape.ts`) so form overlays seamlessly inject their natural weapons into `dndData.naturalWeapons`.
+  - Wire `shapeshift:<formId>` in `dnd35eRulesetContract.resolveUseAbility`, `canDnD35eActorPerformIntent`, and `resolveDnD35eActionEnergyCost` (`0` world energy cost as a swift action), and project Shapeshift stances in `buildActorStanceModes` (`dnd35e_ui_hotbar.ts`).
 
-We will execute the complete 8-stage verification pipeline upon completion:
-1. `bun x tsc --noEmit`
-2. `bun run format`
-3. `bun run lint --fix`
-4. `bun run lint:arch`
-5. `bun run lint:deadcode`
-6. `bun test` (all 237+ tests passing)
-7. `bun run build`
-8. `bun run scripts/run-validator.ts`
-All files will be verified to sit strictly below 300 lines with zero `any` and zero magic values.
+### Step 4: Sorcerer *Metamagic Specialist* Runtime Wiring (`spell_cast_helpers.ts` & `spell_cast_resolver.ts`)
+- Update `consumeSpellActionBudget` in `src/rulesets/dnd35e/magic/spell_cast_helpers.ts` to accept an optional `bypassSpontaneousMetamagicTimeIncrease = false` parameter.
+- In `executeDnD35eSpellCast` (`src/rulesets/dnd35e/magic/spell_cast_resolver.ts`):
+  - Check if `book.castingMode === 'spontaneous' && meta.hasNonQuickenMetamagic && !meta.isQuickened`.
+  - If the caster has `trait:metamagic_specialist` or `feature:metamagic_specialist` and `ResourcePoolComponent.pools['metamagic_specialist']?.current >= 1`:
+    - Pass `bypassSpontaneousMetamagicTimeIncrease = true` to `consumeSpellActionBudget` (retaining `'standard'` action casting time instead of `'full_round'`).
+    - Expend `1` charge from `metamagic_specialist` via `consumeResourcePool(runningState, casterId, 'metamagic_specialist', 1)`.
+
+### Step 5: Bard *Bardic Knack* & *Healing Hymn* Runtime Wiring (`skills.ts`, `pool_ability_resolver.ts`, `spell_cast_effects.ts`)
+- **Bardic Knack**:
+  - Add `resolveBardicKnackSkillBonus(dndData, selfTags, skillId, wholeRanks, trainedOnly)` in `src/rulesets/dnd35e/skills.ts`:
+    - Computes `knackLevel = dndData.scalingPools?.['bardic_knack_level'] ?? bardTrackLevels`.
+    - Computes `knackFloor = Math.max(1, Math.floor(knackLevel / 2))`.
+    - When the actor has `trait:bardic_knack` or `feature:bardic_knack`, `wholeRanks < knackFloor`, and (`!trainedOnly || wholeRanks >= 1`), returns an untyped `StatModifier` with `value: knackFloor - wholeRanks` (`sourceId: 'class:bard:bardic_knack'`, `sourcePath: 'class:bard/feature:bardic_knack/skill_floor'`).
+  - Wire into `evaluateActorSkillCheck` (`src/rulesets/dnd35e/skills/skill_verb_helpers.ts`) and `computePassiveSkillModifier` (`src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts`).
+- **Healing Hymn**:
+  - In `executeDnD35eResourcePoolAbility` (`src/rulesets/dnd35e/combat/pool_ability_resolver.ts`), when `poolId === 'bardic_music'` or `'healing_hymn'` and the actor has `trait:healing_hymn` / `feature:healing_hymn`, apply `status:healing_hymn_active` (duration `5` rounds) alongside `pool_bardic_music_active`.
+  - In `applySingleSpellUnit` (`src/rulesets/dnd35e/magic/spell_cast_effects.ts`), inside `case 'healing'`, compute `healingHymnBonus = resolveHealingHymnBonus(runningState, casterId)` (checking the caster and any non-hostile ally within `30 ft` who has `trait:healing_hymn` / `feature:healing_hymn` and active performance status `status:healing_hymn_active` / `status:pool_bardic_music_active` / `status:bardic_music_active`, returning `Math.max(0, Math.floor(performRanks))`) and add it to `amount`.
+
+### Step 6: Comprehensive Regression Suite, Documentation & 8-Stage Verification
+- Extend `tests/dnd35e_m136_acf_mechanics.test.ts` (or add `tests/dnd35e_m137_acf_mechanics.test.ts`) testing all 5 Milestone 137 ACFs end-to-end:
+  1. Druid *Druidic Avenger*: replaces `animal_companion` and `wild_empathy`, grants `+10 ft` Fast Movement, `+2` Survival, and scaling `rage` pool (`1/day` at L1, `2/day` at L5) activating `status:rage_active` (`+4 STR, +4 CON, +2 Will, -2 AC`).
+  2. Druid *Shapeshift*: replaces `animal_companion` and `wild_shape_*`; swift-action transformation into Predator Form (`+4` STR, `+4` natural armor, `50 ft` speed, `1d6` bite), Aerial Form at L5 (`+2` STR, `+2` natural armor, `+2` Ref, `40 ft` fly, `1d6` talon), Ferocious Slayer Form at L8 (`large` size, `+8` STR, `+8` natural armor, `1d8` bite + `2x 1d6` claws), and reverting to Normal form.
+  3. Sorcerer *Metamagic Specialist*: replaces `summon_familiar` (suppressing familiar scaling pool), grants `3 + INT mod` uses/day in `metamagic_specialist` pool, casts Empowered/Silent spontaneous spell as a Standard Action (even after moving) while decrementing `metamagic_specialist` pool, and reverts to Full-Round casting time when pool reaches `0`.
+  4. Bard *Bardic Knack*: replaces `bardic_knowledge`, adds `max(1, floor(bardLevel / 2))` on untrained (`0`-rank) skill checks (`+1` at L1, `+3` at L6) while respecting `trainedOnly` restrictions when `rawRanks === 0`.
+  5. Bard *Healing Hymn*: replaces `fascinate`, activating `pool:bardic_music` applies `healing_hymn_active`, and casting *Cure Light Wounds* by self or a nearby ally within `30 ft` adds `+performRanks` to HP restored (and positive-energy damage against undead).
+- Sync `docs/ssot/ssot_dnd35e.json`, run `bun scripts/map-codebase.ts`, update `docs/MILESTONES.md`, `docs/DECISIONS.md`, and `docs/ARCHITECTURE.md`, and run `./verify.sh`.

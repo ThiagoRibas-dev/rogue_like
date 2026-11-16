@@ -53,7 +53,8 @@ export function resolveActiveClassFeatures(
   for (const acfId of activeAcfIds) {
     const swap = classDef.acfSwaps.find((s) => s.acfId === acfId);
     if (swap) {
-      active = active.filter((f) => f !== swap.replacesFeature);
+      const removedSet = new Set<string>([swap.replacesFeature, ...(swap.alsoReplacesFeatures ?? [])]);
+      active = active.filter((f) => !removedSet.has(f));
       if (!active.includes(swap.grantedFeature)) {
         active.push(swap.grantedFeature);
       }

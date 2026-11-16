@@ -129,6 +129,45 @@
         "name": "Mighty Rage",
         "category": "ex",
         "description": "Rage bonuses increase to +8 STR, +8 CON, and +4 morale bonus on Will saves."
+      },
+      "whirling_frenzy": {
+        "id": "whirling_frenzy",
+        "name": "Whirling Frenzy",
+        "category": "ex",
+        "description": "+4 STR, +2 dodge bonus to AC and Reflex saves, and 1 extra attack at highest BAB with -2 penalty on all attacks.",
+        "resourcePool": {
+          "poolId": "whirling_frenzy",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h"
+        },
+        "grantedTags": [
+          "feature:whirling_frenzy",
+          "stance:whirling_frenzy"
+        ]
+      },
+      "pounce": {
+        "id": "pounce",
+        "name": "Lion Spirit Totem (Pounce)",
+        "category": "ex",
+        "description": "Can make a full attack at the end of a charge.",
+        "grantedTags": [
+          "trait:special_attack",
+          "special_attack:pounce",
+          "feature:pounce"
+        ]
+      },
+      "improved_trip": {
+        "id": "improved_trip",
+        "name": "Wolf Totem (Improved Trip)",
+        "category": "bonus_feat",
+        "description": "Gain Improved Trip as a bonus feat without needing Combat Expertise.",
+        "grantedFeats": [
+          "improved_trip"
+        ],
+        "grantedTags": [
+          "feature:wolf_totem",
+          "feature:improved_trip"
+        ]
       }
     },
     "acfSwaps": [

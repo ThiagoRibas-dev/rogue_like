@@ -843,6 +843,19 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
    - `processAITurn` validates candidate intents against `canActorPerformIntent` and restricts barks to `!hasActorActedThisTurn`.
    - `huntBehavior` checks `canActorPerformIntent(attack)` or `hasActorMovementInProgress` before stepping toward distant targets, preventing ranged casters/archers who already spent their Standard action from charging into melee, while `wanderBehavior` caps movement to one unacted wander per round.
 
+### 9.20 Relational Flanking Graph, Immediate Reaction Policies & Active ACF Combat Pipeline (Milestone 136)
+
+1. **Relational Flanking Graph & Continuous Status Synchronization (`src/rulesets/dnd35e/spatial/flanking_graph.ts`)**:
+   - `syncSpatialFlankingGraph` recomputes living combatant flanking edges (`flankingTargetIds` / `flankedByEntityIds` in `DnD35EntityData.flankingRelations`) and synchronizes `'flanking'` / `'flanked'` status effects on every movement step, teleport, Bull Rush, turn start, and Distracting Attack hit.
+   - `evaluateEntityFlankingTarget` composes standard `180°` opposite-square flanking with declarative overrides (`trait:offset_flanking`, `trait:island_of_blades`, `trait:adaptable_flanker`, `trait:flank_alone` / `rule:flank_alone`, `status:distracted_flanked`) and immunities (`trait:all_around_vision`, `trait:immune_flanking`, `improved_uncanny_dodge`).
+
+2. **Two-Step Targeting & Configurable Off-Turn Immediate Reactions (`src/rulesets/dnd35e/combat/immediate_reactions.ts`, `src/types/components/actor_components.types.ts`)**:
+   - `TacticalDoctrineComponent.reactionPolicies` stores per-ability immediate reaction triggers (`'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move'`), evaluated on movement adjacency and prior to incoming attacks.
+   - `pool:abrupt_jaunt` initiates two-step spatial targeting (`maxRangeTiles: 2`) without burning Swift/Immediate actions until `FireAimed` confirms an unoccupied walkable destination within Line of Effect, while `pool:invisible_fist` applies 1-round `invisible_active` (`trait:invisible`) with a 3-round `invisible_fist_cooldown`.
+
+3. **Active Combat & Stance ACF Pipelines (`src/rulesets/dnd35e/combat/{bull_rush_resolver,combat_acf_riders,attack_routine,combat_exchange_pipeline}.ts`)**:
+   - Integrates **Pounce** (full attack after `>= 10 ft` Charge), **Bull Rush & Dungeon Crasher Tiers 1 & 2** (`4d6 + 2*STR` at L2, `8d6 + 3*STR` at L6 on wall collision), **Penetrating Strike** (`floor(N/2)d6` sneak attack on flanked crit-immune foes), **Charging Smite** (`+CHA` attack, `3 * smiteLevel` damage, pool refund on miss), **Distracting Attack**, **Whirling Frenzy**, and **Decisive Strike** (`2x` single strike + AoO multiplier buff).
+
 ---
 
 ## 10. Key Design Decisions

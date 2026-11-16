@@ -87,7 +87,63 @@ export function buildActorStanceModes(
     { id: 'two_handed_grip', label: is2H ? '2H Grip' : '1H Grip', isActive: is2H, tooltipText: 'Toggle Grip Mode' }
   );
 
+  const features = dndData.activeClassFeatures ?? [];
+  if (features.includes('decisive_strike')) {
+    modes.push({
+      id: 'decisive_strike',
+      label: 'Decisive 2x',
+      isActive: (doctrine?.decisiveStrike ?? false) && !(doctrine?.totalDefense ?? false),
+      tooltipText: 'Decisive Strike (-2 Attack, single strike dealing 2x damage + 2x AoO damage)'
+    });
+  }
+  if (features.includes('whirling_frenzy')) {
+    modes.push({
+      id: 'whirling_frenzy',
+      label: 'Whirling Frenzy',
+      isActive: doctrine?.whirlingFrenzy ?? false,
+      tooltipText: 'Whirling Frenzy (+4 STR, +2 Dodge AC/Ref, +1 Extra Strike at -2 Atk)'
+    });
+  }
+
   const activeGroups = doctrine?.activeStanceGroups ?? {};
+  if (features.includes('shapeshift')) {
+    const druidTrack = dndData.tracks?.find((t) => t.trackId === 'druid');
+    const druidLevel = Math.max(1, druidTrack?.levels ?? dndData.tracks?.reduce((sum, t) => sum + t.levels, 0) ?? 1);
+    const activeForm = activeGroups['druid_shapeshift_form'];
+
+    modes.push({
+      id: 'shapeshift_normal',
+      label: 'Normal Form',
+      isActive: !activeForm || activeForm === 'normal',
+      groupId: 'druid_shapeshift_form',
+      tooltipText: 'Normal Form (Revert to normal humanoid form as a swift action)'
+    });
+    modes.push({
+      id: 'shapeshift_predator',
+      label: 'Predator Form',
+      isActive: activeForm === 'predator',
+      groupId: 'druid_shapeshift_form',
+      tooltipText: 'Predator Form (+4 STR, +4 Natural Armor, 50 ft speed, 1d6 Bite)'
+    });
+    if (druidLevel >= 5) {
+      modes.push({
+        id: 'shapeshift_aerial',
+        label: 'Aerial Form',
+        isActive: activeForm === 'aerial',
+        groupId: 'druid_shapeshift_form',
+        tooltipText: 'Aerial Form (+2 STR, +2 Natural Armor, +2 Ref, 40 ft Fly, 1d6 Talon)'
+      });
+    }
+    if (druidLevel >= 8) {
+      modes.push({
+        id: 'shapeshift_ferocious_slayer',
+        label: 'Ferocious Slayer',
+        isActive: activeForm === 'ferocious_slayer',
+        groupId: 'druid_shapeshift_form',
+        tooltipText: 'Ferocious Slayer Form (Large, +8 STR, +8 Natural Armor, 40 ft speed, 1d8 Bite + 2x 1d6 Claws)'
+      });
+    }
+  }
   for (const featId of dndData.feats ?? []) {
     const featDef = sysFeats?.[featId];
     for (const act of featDef?.activatedAbilities ?? []) {
@@ -161,11 +217,13 @@ export function buildActorHotbarSlots(
     for (const [poolId, entry] of Object.entries(effectivePools.pools)) {
       if (entry.max <= 0) continue;
       const displayName = entry.label ?? poolId.replace(/_/g, ' ');
+      const isImmediatePool = poolId === 'abrupt_jaunt' || poolId === 'invisible_fist';
+      const actionTypeLabel = isImmediatePool ? 'Immediate Action' : 'Standard Action';
       candidates.push({
         label: `${displayName} (${entry.current}/${entry.max})`,
         iconUrl: getPoolAbilityIcon(poolId),
         isDisabled: entry.current <= 0,
-        tooltipTitle: `${displayName}: ${entry.current}/${entry.max} uses remaining (Standard Action)`,
+        tooltipTitle: `${displayName}: ${entry.current}/${entry.max} uses remaining (${actionTypeLabel})`,
         actionPayload: {
           kind: 'ability',
           id: poolId,

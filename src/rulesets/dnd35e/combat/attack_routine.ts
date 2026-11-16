@@ -12,6 +12,9 @@ import type { OnHitRiderDescriptor, StatModifier, StatResolutionBreakdown } from
 import { computeExpandedCritThreatMin } from '../equipment/weapon_profile_parser.ts';
 import { computeStrikeDoctrineDamageBonus, evaluateTacticalDoctrineModifiers } from './tactical_doctrine.ts';
 
+const WHIRLING_FRENZY_FALLBACK_ATK_PENALTY = -2;
+const DECISIVE_STRIKE_DAMAGE_MULTIPLIER = 2;
+
 /**
  * Resolved profile for an individual attack strike within an actor's attack routine.
  */
@@ -36,6 +39,7 @@ export interface DnD35ResolvedStrikeProfile {
   readonly weaponId?: string | undefined;
   readonly baseWeaponId?: string | undefined;
   readonly naturalWeaponId?: string | undefined;
+  readonly damageMultiplier?: number | undefined;
 }
 
 /**
@@ -88,7 +92,16 @@ export function resolveActorAttackRoutine(params: {
     doctrineAtkPenalty = doctrineEval.attackPenalty;
   }
 
+  const whirlingActive =
+    params.doctrine?.whirlingFrenzy === true ||
+    (params.selfTags?.includes('status:pool_whirling_frenzy_active') ?? false) ||
+    (params.selfTags?.includes('status:whirling_frenzy_active') ?? false);
   const extraFullBabMods = (params.statModifiers ?? []).filter((m) => m.targetStat === 'extra_full_bab_attacks');
+  const hasWhirlingAtkMod = (params.statModifiers ?? []).some((m) => m.sourceId === 'whirling_frenzy_attack');
+  const hasWhirlingExtraMod = extraFullBabMods.some((m) => m.sourceId === 'whirling_frenzy_extra_attack');
+  const whirlingFallbackPenalty = whirlingActive && !hasWhirlingAtkMod ? WHIRLING_FRENZY_FALLBACK_ATK_PENALTY : 0;
+  const whirlingFallbackExtra = whirlingActive && !hasWhirlingExtraMod ? 1 : 0;
+
   const primaryWeaponTags = primary.weaponItemId
     ? [`weapon:${primary.weaponItemId}`, ...(primary.baseWeaponId ? [`weapon:${primary.baseWeaponId}`] : [])]
     : undefined;
@@ -99,12 +112,12 @@ export function resolveActorAttackRoutine(params: {
   });
   const extraPrimaryFullBabAttacks = Math.max(
     0,
-    (params.overrides?.extraPrimaryFullBabAttacks ?? 0) + extraFullBabFromMods
+    (params.overrides?.extraPrimaryFullBabAttacks ?? 0) + extraFullBabFromMods + whirlingFallbackExtra
   );
 
   const seq = buildFullAttackSequence({
     totalBab: params.totalBab,
-    baseAttackModifier: params.baseAttackModifier + doctrineAtkPenalty,
+    baseAttackModifier: params.baseAttackModifier + doctrineAtkPenalty + whirlingFallbackPenalty,
     isPureNaturalRoutine,
     hasOffHandWeapon: hasOffHand,
     offHandIsLight,
@@ -316,6 +329,23 @@ export function resolveActorAttackRoutine(params: {
         naturalWeaponId: entry.naturalWeaponId
       });
     }
+  }
+
+  if (params.doctrine?.decisiveStrike === true && params.doctrine.totalDefense !== true && strikes.length > 0) {
+    const primaryStrike = strikes[0]!;
+    return {
+      isPureNaturalRoutine,
+      gripMode: params.resolvedWeapons.gripMode,
+      occupiedLimbGroupIds: params.resolvedWeapons.occupiedLimbGroupIds,
+      strikes: [
+        {
+          ...primaryStrike,
+          index: 0,
+          label: `${primaryStrike.label} [Decisive Strike 2x]`,
+          damageMultiplier: DECISIVE_STRIKE_DAMAGE_MULTIPLIER
+        }
+      ]
+    };
   }
 
   return {

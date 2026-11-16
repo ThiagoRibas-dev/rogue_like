@@ -20,6 +20,7 @@ import { evaluateCover } from '../spatial/cover_senses.ts';
 import { measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
+import { executeInvisibleFistImmediate, initiateAbruptJauntTargeting } from './immediate_reactions.ts';
 
 /** Maximum burst range of Turn/Rebuke Undead in feet (`60 ft`, PHB p. 159). */
 export const TURN_UNDEAD_RANGE_FT = 60;
@@ -222,6 +223,14 @@ export function executeDnD35eResourcePoolAbility(
     };
   }
 
+  const normalizedId = poolId.toLowerCase();
+  if (normalizedId === 'invisible_fist') {
+    return executeInvisibleFistImmediate(state, actorId, true);
+  }
+  if (normalizedId === 'abrupt_jaunt') {
+    return initiateAbruptJauntTargeting(state, actorId);
+  }
+
   const dndData = getDnD35EntityData(state, actorId);
   let nextBudget = dndData.actionBudget;
   if (state.engineMode === EngineMode.TurnBased) {
@@ -251,8 +260,6 @@ export function executeDnD35eResourcePoolAbility(
       actionBudget: nextBudget
     });
   }
-
-  const normalizedId = poolId.toLowerCase();
   if (normalizedId.includes('turn') || normalizedId.includes('rebuke')) {
     return {
       state: resolveTurnUndeadPool(nextState, actorId, normalizedId, label),
@@ -279,15 +286,27 @@ export function executeDnD35eResourcePoolAbility(
     }
   }
 
-  const buffStatusId = normalizedId.includes('rage') ? 'rage_active' : `pool_${normalizedId}_active`;
+  const hasHealingHymn =
+    (dndData.activeClassFeatures ?? []).includes('healing_hymn') ||
+    (dndData.feats ?? []).includes('healing_hymn') ||
+    normalizedId === 'healing_hymn';
+
+  let buffStatusId: string;
+  if (normalizedId.includes('rage')) {
+    buffStatusId = 'rage_active';
+  } else if (normalizedId === 'healing_hymn' || (normalizedId === 'bardic_music' && hasHealingHymn)) {
+    buffStatusId = 'healing_hymn_active';
+  } else {
+    buffStatusId = `pool_${normalizedId}_active`;
+  }
   nextState = applyStatusEffect(nextState, actorId, buffStatusId, POOL_BUFF_DURATION_ROUNDS, actorId);
   nextState = addFloatingText(nextState, actorId, label.toUpperCase(), '#ffd166');
+  const activationMsg =
+    buffStatusId === 'healing_hymn_active'
+      ? `Activated ${label} (${entry.current - 1}/${entry.max} uses remaining): Healing spells within 30 ft are empowered.`
+      : `Activated ${label} (${entry.current - 1}/${entry.max} uses remaining).`;
   return {
-    state: addMessage(
-      nextState,
-      `Activated ${label} (${entry.current - 1}/${entry.max} uses remaining).`,
-      MessageLogCategory.System
-    ),
+    state: addMessage(nextState, activationMsg, MessageLogCategory.System),
     success: true
   };
 }

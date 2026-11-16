@@ -65,6 +65,22 @@
         "name": "Wizard Bonus Feat",
         "category": "bonus_feat",
         "description": "Gain a bonus metamagic feat, item creation feat, or Spell Mastery."
+      },
+      "abrupt_jaunt": {
+        "id": "abrupt_jaunt",
+        "name": "Immediate Magic: Abrupt Jaunt",
+        "category": "sp",
+        "description": "Teleport up to 10 ft as an immediate action INT bonus times per day.",
+        "resourcePool": {
+          "poolId": "abrupt_jaunt",
+          "maxBase": 0,
+          "abilityModStat": "int",
+          "refreshCycle": "rest_8h"
+        },
+        "grantedTags": [
+          "feature:abrupt_jaunt",
+          "ability:abrupt_jaunt"
+        ]
       }
     },
     "acfSwaps": [

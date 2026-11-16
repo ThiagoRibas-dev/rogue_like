@@ -20,6 +20,13 @@ import {
   resolveOnDropCleaveFollowup,
   resolveStrikePreAttackContext
 } from './combat_exchange_phases.ts';
+import {
+  finalizeStrikeAcfStateUpdates,
+  resolvePrecisionDamageOnHit,
+  resolveSmiteAndChargeContext,
+  resolveSneakAttackDiceCount
+} from './combat_acf_riders.ts';
+import { summarizeConditionEffects } from './maneuvers_conditions.ts';
 import { resolveRetaliationRiders } from './retaliation_resolver.ts';
 
 /** Parameters for executing a single strike exchange through the 5-phase combat pipeline. */
@@ -40,6 +47,7 @@ export interface StrikeExchangeParams {
   readonly cleavesUsedThisTurn: number;
   readonly forcedAttackRoll?: number | undefined;
   readonly forcedRiderSaveRoll?: number | undefined;
+  readonly isChargeAttack?: boolean | undefined;
 }
 
 /** Result of executing a single strike exchange. */
@@ -108,22 +116,36 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     !bypassTags.includes('ghost_touch') &&
     !bypassTags.includes('bypass:incorporeal');
   const targetImmuneToCrits =
-    defenderData.abilityScores.con.base === null ||
-    defenderData.immunities.includes('critical_hits') ||
+    defenderData.abilityScores?.con?.base === null ||
+    (defenderData.immunities?.includes('critical_hits') ?? false) ||
     defenderSelfTags.includes('type:elemental') ||
     defenderSelfTags.includes('type:ooze') ||
     defenderSelfTags.includes('type:plant') ||
     defenderSelfTags.includes('subtype:swarm') ||
     isIncorporealWithoutGhostTouch;
 
+  const smiteCtx = resolveSmiteAndChargeContext({
+    attackerData,
+    attackerSelfTags,
+    defenderSelfTags,
+    attackerChaMod:
+      attackerEval.dagResult.effectiveAbilityModifiers?.cha ??
+      Math.floor(((attackerData.abilityScores?.cha?.base ?? 10) - 10) / 2),
+    isChargeAttack: params.isChargeAttack === true || attackerSelfTags.includes('stance:charge')
+  });
+  const strikeDmgMult =
+    strike.damageMultiplier ?? (attackerSelfTags.includes('status:decisive_strike_aoo_active') ? 2 : 1);
+  const isDecisiveStrike = strikeDmgMult > 1;
+
   // Phase 2: StrikeRollPhase (Attack Roll, Confirmation & Fortification)
   const rollResult = resolveAttackRoll({
-    attackBonus: preContext.effectiveAttackBonus,
+    attackBonus: preContext.effectiveAttackBonus + smiteCtx.smiteAttackBonus,
     targetAC,
     weaponDice: strike.weaponDice,
     strModifier: 0,
     handedness: 'one_handed',
-    flatDamageBonus: strike.strDamageBonus + strike.doctrineDamageBonus + strike.flatDamageBonus,
+    flatDamageBonus:
+      strike.strDamageBonus + strike.doctrineDamageBonus + strike.flatDamageBonus + smiteCtx.smiteDamageBonus,
     critThreatMin: strike.critThreatMin,
     critMultiplier: strike.critMultiplier,
     targetImmuneToCrits,
@@ -139,9 +161,18 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     const missReason = rollResult.missedDueToConcealment ? ' (Missed due to Concealment!)' : '';
     runningState = addMessage(
       runningState,
-      `[d20: ${rollResult.naturalAttackRoll} + ${preContext.effectiveAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}] ${preContext.strikeLabel} misses${missReason}!`,
+      `[d20: ${rollResult.naturalAttackRoll} + ${preContext.effectiveAttackBonus + smiteCtx.smiteAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}] ${preContext.strikeLabel} misses${missReason}!`,
       MessageLogCategory.CombatMiss
     );
+    runningState = finalizeStrikeAcfStateUpdates({
+      state: runningState,
+      attackerId,
+      defenderId,
+      attackerSelfTags,
+      hit: false,
+      smiteCtx,
+      isDecisiveStrike
+    });
     return {
       state: runningState,
       hit: false,
@@ -153,16 +184,48 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
 
   // Phase 3: OnHitRidersPhase (Weapon Damage Riders & Damage Queueing)
   const existingDamage = getComponent(runningState, defenderId, ComponentType.Damage) as DamageComponent | undefined;
+  const multipliedBaseDamage = rollResult.totalDamage * strikeDmgMult;
   const newInstances = [
     {
-      amount: rollResult.totalDamage,
+      amount: multipliedBaseDamage,
       sourceEntityId: attackerId,
       tags: ['melee', 'physical', weaponDamageType, ...bypassTags]
     }
   ];
 
-  let riderText = '';
+  let riderText = smiteCtx.smiteDamageBonus > 0 ? ` [Smite +${smiteCtx.smiteDamageBonus}]` : '';
   let totalRiderDamage = 0;
+
+  const defenderCond = summarizeConditionEffects(defenderData.conditions ?? []);
+  const defenderHasUncanny =
+    defenderSelfTags.includes('feature:uncanny_dodge') || defenderSelfTags.includes('feature:improved_uncanny_dodge');
+  const nonFlatFootedDeniedDex = (defenderData.conditions ?? []).some(
+    (c) => c === 'blinded' || c === 'stunned' || c === 'helpless' || c === 'paralyzed' || c === 'unconscious'
+  );
+  const isTargetDeniedDex =
+    attackerSelfTags.includes('trait:invisible') ||
+    nonFlatFootedDeniedDex ||
+    (defenderCond.losesDexToAC && !defenderHasUncanny);
+
+  const sneakRes = resolvePrecisionDamageOnHit({
+    sneakAttackDice: resolveSneakAttackDiceCount(attackerData, attackerSelfTags),
+    isFlanking: preContext.isFlanking,
+    isTargetDeniedDex,
+    targetImmuneToCrits,
+    fortificationNegated: rollResult.precisionNegated === true,
+    concealmentMissChance: preContext.concealmentMissChance,
+    attackerSelfTags
+  });
+  if (sneakRes.damage > 0) {
+    newInstances.push({
+      amount: sneakRes.damage,
+      sourceEntityId: attackerId,
+      tags: ['melee', 'physical', 'precision', weaponDamageType, ...bypassTags]
+    });
+    totalRiderDamage += sneakRes.damage;
+    riderText += ` + ${sneakRes.damage} ${sneakRes.usedPenetratingStrike ? 'Penetrating' : 'Sneak'} (${sneakRes.diceUsed}d6)`;
+  }
+
   if (strike.damageRiders && strike.damageRiders.length > 0) {
     for (const rider of strike.damageRiders) {
       if (
@@ -201,13 +264,22 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
     instances: existingDamage ? [...existingDamage.instances, ...newInstances] : newInstances
   });
 
-  currentDefenderHp -= rollResult.totalDamage + totalRiderDamage;
+  currentDefenderHp -= multipliedBaseDamage + totalRiderDamage;
   const critText = rollResult.isCriticalConfirmed ? ' CRITICAL HIT!' : '';
   runningState = addMessage(
     runningState,
-    `[d20: ${rollResult.naturalAttackRoll} + ${preContext.effectiveAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${preContext.strikeLabel} deals ${rollResult.totalDamage} ${weaponDamageType}${riderText} damage!`,
+    `[d20: ${rollResult.naturalAttackRoll} + ${preContext.effectiveAttackBonus + smiteCtx.smiteAttackBonus} = ${rollResult.totalAttackRoll} vs AC ${targetAC}]${critText} ${preContext.strikeLabel} deals ${multipliedBaseDamage} ${weaponDamageType}${riderText} damage!`,
     MessageLogCategory.CombatHit
   );
+  runningState = finalizeStrikeAcfStateUpdates({
+    state: runningState,
+    attackerId,
+    defenderId,
+    attackerSelfTags,
+    hit: true,
+    smiteCtx,
+    isDecisiveStrike
+  });
 
   if (strike.onHitRiders && strike.onHitRiders.length > 0) {
     runningState = resolveNaturalWeaponOnHitRiders({

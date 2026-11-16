@@ -46,6 +46,7 @@ export interface AttackResolutionResult {
   readonly totalDamage: number;
   readonly baseMultipliedDamage: number;
   readonly unmultipliedExtraDamage: number;
+  readonly precisionNegated?: boolean;
 }
 
 /**
@@ -196,6 +197,7 @@ export function resolveAttackRoll(params: AttackRollParams): AttackResolutionRes
     ...(confirmTotalRoll !== undefined ? { confirmTotalRoll } : {}),
     totalDamage: Math.max(1, baseMultipliedDamage + unmultipliedExtraDamage),
     baseMultipliedDamage,
-    unmultipliedExtraDamage
+    unmultipliedExtraDamage,
+    precisionNegated
   };
 }

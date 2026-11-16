@@ -82,9 +82,11 @@ export interface PropertyOverlayLayer {
   readonly priority: number;
   readonly durationTurns?: number | undefined;
   readonly statOverrides?: Readonly<Record<string, number>> | undefined;
+  readonly statModifiers?: ReadonlyArray<unknown> | undefined;
   readonly sizeCategoryOverride?: string | undefined;
   readonly creatureTypeOverride?: string | undefined;
   readonly movementModesOverride?: MovementModes | undefined;
+  readonly naturalWeaponsOverride?: ReadonlyArray<unknown> | undefined;
   readonly grantedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedSlots?: ReadonlyArray<string> | undefined;
@@ -100,9 +102,11 @@ export interface PropertyOverlayComponent {
   readonly priority: number;
   readonly durationTurns?: number | undefined;
   readonly statOverrides?: Readonly<Record<string, number>> | undefined;
+  readonly statModifiers?: ReadonlyArray<unknown> | undefined;
   readonly sizeCategoryOverride?: string | undefined;
   readonly creatureTypeOverride?: string | undefined;
   readonly movementModesOverride?: MovementModes | undefined;
+  readonly naturalWeaponsOverride?: ReadonlyArray<unknown> | undefined;
   readonly grantedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedSlots?: ReadonlyArray<string> | undefined;

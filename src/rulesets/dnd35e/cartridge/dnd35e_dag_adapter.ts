@@ -14,6 +14,7 @@ import {
   extractActorTacticalDials,
   resolveActorAttackRoutine
 } from '../combat/attack_resolver.ts';
+import { collectRageAndFrenzyModifiers } from '../combat/combat_acf_riders.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import {
@@ -155,6 +156,7 @@ export function evaluateDnD35eEntityDAG(
       ...(contextOverride?.selfTags ?? [])
     ])
   );
+  extraModifiers.push(...collectRageAndFrenzyModifiers(mergedSelfTags, doctrine));
 
   const dagResult = evaluateDnD35ActorStatDAG({
     baseSize: dndData.sizeCategory,

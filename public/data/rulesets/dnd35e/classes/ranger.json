@@ -143,6 +143,16 @@
         "name": "Hide in Plain Sight",
         "category": "ex",
         "description": "Use the Hide skill in any sort of natural terrain, even while being observed."
+      },
+      "distracting_attack": {
+        "id": "distracting_attack",
+        "name": "Distracting Attack",
+        "category": "ex",
+        "description": "Whenever you hit an enemy with a weapon attack, that enemy is treated as flanked by your allies until the start of your next turn.",
+        "grantedTags": [
+          "feature:distracting_attack",
+          "trait:distracting_attack"
+        ]
       }
     },
     "acfSwaps": [

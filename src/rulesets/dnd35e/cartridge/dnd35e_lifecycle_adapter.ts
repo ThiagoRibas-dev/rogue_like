@@ -8,8 +8,14 @@ import {
   type PositionComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { evaluateAdjacentEnemyReactionsOnMove } from '../combat/immediate_reactions.ts';
 import { resolveAuraFirstEntrySaveAndSr } from '../magic/spell_aura_resolver.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
+import {
+  DISTRACTED_FLANKED_STATUS_ID,
+  removeStatusEffectById,
+  syncSpatialFlankingGraph
+} from '../spatial/flanking_graph.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -137,10 +143,15 @@ export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): Ga
   const dndData = getDnD35EntityData(state, entityId);
   const freshBudget = hydrateEntityRoundActionBudget(state, entityId);
 
-  const nextState = setDnD35EntityData(state, entityId, {
+  let nextState = setDnD35EntityData(state, entityId, {
     ...dndData,
     actionBudget: freshBudget
   });
+
+  for (const otherId of nextState.entities) {
+    nextState = removeStatusEffectById(nextState, otherId, DISTRACTED_FLANKED_STATUS_ID, entityId);
+  }
+  nextState = syncSpatialFlankingGraph(nextState);
 
   return evaluateActorAuraEntrySaves(nextState, entityId);
 }
@@ -188,6 +199,9 @@ export function onDnD35eActorMovementStep(
       }
     }
   }
+
+  nextState = syncSpatialFlankingGraph(nextState);
+  nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
 
   return nextState;
 }

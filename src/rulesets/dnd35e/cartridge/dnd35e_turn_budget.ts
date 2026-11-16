@@ -1,5 +1,10 @@
 import { getComponent } from '../../../core/ecs.ts';
-import { ComponentType, type FighterComponent, type PositionComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type FighterComponent,
+  type PositionComponent,
+  type PropertyOverlayComponent
+} from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import { IntentType } from '../../../types/intents/intent.enum.ts';
 import type { Intent } from '../../../types/intents/intent.union.ts';
@@ -91,10 +96,12 @@ function computeActorTacticalLandSpeedFt(
   baseLandSpeedFt: number | undefined
 ): number {
   const actor = getComponent(state, entityId, ComponentType.Actor);
+  const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
   const stats = getEffectiveStats(state, entityId);
   const baseActorSpeed = actor?.speed ?? FULL_ROUND_ENERGY_COST;
   const speedBonusFt = stats.speed - baseActorSpeed;
-  return Math.max(FEET_PER_GRID_SQUARE, (baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT) + speedBonusFt);
+  const effectiveLandFt = overlay?.movementModesOverride?.land ?? baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT;
+  return Math.max(FEET_PER_GRID_SQUARE, effectiveLandFt + speedBonusFt);
 }
 
 /**
@@ -187,9 +194,32 @@ export function resolveDnD35eActionEnergyCost(
       return finalizeBudgetAfterAction(state, intent.entityId, dndData, stepResult.budget);
     }
 
+    case IntentType.UseAbility: {
+      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
+        const hasActionsLeft =
+          currentBudget.movementRemainingFt > 0 ||
+          currentBudget.standardRemaining > 0 ||
+          currentBudget.moveRemaining > 0;
+        if (!hasActionsLeft) {
+          const nextState = dndData.actionBudget
+            ? setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined })
+            : state;
+          return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
+        }
+        return { state, energyCost: 0 };
+      }
+      if (budgetAlreadyMutated) {
+        return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      }
+      const stdRes = consumeStandardActionFromBudget(currentBudget);
+      if (!stdRes.allowed) {
+        const nextState = setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined });
+        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
+      }
+      return finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget);
+    }
     case IntentType.MeleeAttack:
     case IntentType.FireAimed:
-    case IntentType.UseAbility:
     case IntentType.Apply: {
       if (budgetAlreadyMutated) {
         return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
@@ -282,12 +312,20 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
         budget.canMoveFurtherThisRound &&
         (budget.movementRemainingFt >= FEET_PER_GRID_SQUARE || budget.moveRemaining > 0 || budget.standardRemaining > 0)
       );
+    case IntentType.UseAbility: {
+      const isImmediatePool = intent.effectId === 'pool:abrupt_jaunt' || intent.effectId === 'pool:invisible_fist';
+      const isSwiftAbility = isImmediatePool || intent.effectId.startsWith('shapeshift');
+      return isSwiftAbility ? budget.swiftRemaining >= 1 : budget.standardRemaining >= 1;
+    }
     case IntentType.MeleeAttack:
-    case IntentType.UseAbility:
     case IntentType.Apply:
       return budget.standardRemaining >= 1;
-    case IntentType.FireAimed:
-      return budget.standardRemaining >= 1 || budget.swiftRemaining >= 1;
+    case IntentType.FireAimed: {
+      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
+        return budget.swiftRemaining >= 1;
+      }
+      return budget.standardRemaining >= 1;
+    }
     case IntentType.PickUp:
     case IntentType.EquipItem:
     case IntentType.UnequipItem:

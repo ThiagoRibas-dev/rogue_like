@@ -186,11 +186,22 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       const nextTD = !currentTD;
       applyDoctrineUpdate(state, playerId, {
         totalDefense: nextTD,
-        fightingDefensively: nextTD ? false : currentFD
+        fightingDefensively: nextTD ? false : currentFD,
+        ...(nextTD ? { decisiveStrike: false } : {})
       });
     } else if (stanceId === 'two_handed_grip') {
       applyDoctrineUpdate(state, playerId, {
         gripMode: currentGrip === 'two_handed' ? 'one_handed' : 'two_handed'
+      });
+    } else if (stanceId === 'decisive_strike') {
+      const nextDS = !(docComp?.decisiveStrike ?? false);
+      applyDoctrineUpdate(state, playerId, {
+        decisiveStrike: nextDS,
+        totalDefense: nextDS ? false : currentTD
+      });
+    } else if (stanceId === 'whirling_frenzy') {
+      applyDoctrineUpdate(state, playerId, {
+        whirlingFrenzy: !(docComp?.whirlingFrenzy ?? false)
       });
     } else {
       const hotbar = dndAdapter.getHotbarData({ state, entityId: playerId }, 1);

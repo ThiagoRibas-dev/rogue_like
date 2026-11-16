@@ -102,9 +102,60 @@
             "type": "competence"
           }
         ]
+      },
+      "bardic_knack": {
+        "id": "bardic_knack",
+        "name": "Bardic Knack",
+        "category": "ex",
+        "usageMode": "passive",
+        "description": "Add floor(bard level / 2, min 1) as an effective rank floor / untyped bonus on untrained or low-rank skill checks. Trades Bardic Knowledge.",
+        "grantedTags": [
+          "trait:bardic_knack"
+        ],
+        "scalingPoolContribution": {
+          "poolId": "bardic_knack_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 1
+        }
+      },
+      "healing_hymn": {
+        "id": "healing_hymn",
+        "name": "Healing Hymn",
+        "category": "su",
+        "usageMode": "activated",
+        "description": "Perform to enhance healing magic: any Conjuration (Healing) spell cast by yourself or an ally within 30 ft gains a bonus to HP restored equal to your Perform ranks. Trades Fascinate.",
+        "grantedTags": [
+          "trait:healing_hymn"
+        ],
+        "activatedAbilities": [
+          {
+            "abilityId": "healing_hymn",
+            "name": "Healing Hymn",
+            "actionCost": "standard",
+            "usageLimitPoolId": "bardic_music"
+          }
+        ]
       }
     },
-    "acfSwaps": [],
+    "acfSwaps": [
+      {
+        "acfId": "bard_bardic_knack_1",
+        "name": "Bardic Knack",
+        "replacesFeature": "bardic_knowledge",
+        "grantedFeature": "bardic_knack",
+        "level": 1,
+        "description": "Gain Bardic Knack (effective rank floor equal to floor(bard level / 2), min 1, on untrained skill checks) in exchange for Bardic Knowledge."
+      },
+      {
+        "acfId": "bard_healing_hymn_1",
+        "name": "Healing Hymn",
+        "replacesFeature": "fascinate",
+        "grantedFeature": "healing_hymn",
+        "level": 1,
+        "description": "Gain Healing Hymn (+Perform ranks to healing spells cast by self or allies within 30 ft while performing) in exchange for Fascinate."
+      }
+    ],
     "progression": [
       {
         "level": 1,

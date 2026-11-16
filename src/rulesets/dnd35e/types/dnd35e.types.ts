@@ -339,6 +339,7 @@ export interface DnD35EntityData {
   readonly favoredClass?: string | undefined;
   readonly selectedAcfs?: ReadonlyArray<string> | undefined;
   readonly domains?: ReadonlyArray<string> | undefined;
+  readonly spontaneousDomainId?: string | undefined;
   readonly arcaneSchool?: DnD35SpellSchool | undefined;
   readonly prohibitedSchools?: ReadonlyArray<DnD35SpellSchool> | undefined;
   readonly favoredEnemies?: ReadonlyArray<{ readonly creatureType: string; readonly bonus: number }> | undefined;
@@ -359,6 +360,15 @@ export interface DnD35EntityData {
   readonly companions?: ReadonlyArray<DnD35CompanionEntry> | undefined;
   readonly rogueSpecialAbilities?: ReadonlyArray<string> | undefined;
   readonly actionBudget?: DnD35ActionBudget | undefined;
+  readonly flankingRelations?: DnD35FlankingRelations | undefined;
+}
+
+/** Relational flanking tracking lists maintained on each combatant entity. */
+export interface DnD35FlankingRelations {
+  /** Entity IDs that this actor is currently flanking. */
+  readonly flankingTargetIds: ReadonlyArray<number>;
+  /** Entity IDs that are currently flanking this actor. */
+  readonly flankedByEntityIds: ReadonlyArray<number>;
 }
 
 /** Bonded companion, familiar, mount, cohort, or hireling registered to an actor. */

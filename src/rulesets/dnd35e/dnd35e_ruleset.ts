@@ -20,7 +20,9 @@ import {
   validateDnD35eWandActivation
 } from './skill_verbs.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
+import { executeAbruptJauntTeleport } from './combat/immediate_reactions.ts';
 import { executeDnD35eResourcePoolAbility } from './combat/pool_ability_resolver.ts';
+import { executeDruidShapeshift, type DnD35ShapeshiftFormId } from './shapeshift.ts';
 import { executeDnD35eSpellCast } from './magic/spell_cast_resolver.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
@@ -171,12 +173,28 @@ export const dnd35eRulesetContract: RulesetContract = {
         metamagicFeatIds: context.metamagicFeatIds
       });
     }
+    if (context.verb === 'abrupt_jaunt') {
+      return executeAbruptJauntTeleport(state, actorId, targetPos.x, targetPos.y, true);
+    }
     return { state, success: false };
   },
   resolveUseAbility(state, intent) {
     if (intent.effectId.startsWith('pool:')) {
       const poolId = intent.effectId.slice('pool:'.length);
       return executeDnD35eResourcePoolAbility(state, intent.entityId, poolId);
+    }
+    if (intent.effectId.startsWith('shapeshift:')) {
+      const formId = intent.effectId.slice('shapeshift:'.length) as DnD35ShapeshiftFormId;
+      return executeDruidShapeshift(state, intent.entityId, formId);
+    }
+    if (
+      intent.effectId === 'shapeshift_predator' ||
+      intent.effectId === 'shapeshift_aerial' ||
+      intent.effectId === 'shapeshift_ferocious_slayer' ||
+      intent.effectId === 'shapeshift_normal'
+    ) {
+      const formId = intent.effectId.replace('shapeshift_', '') as DnD35ShapeshiftFormId;
+      return executeDruidShapeshift(state, intent.entityId, formId);
     }
     return null;
   }

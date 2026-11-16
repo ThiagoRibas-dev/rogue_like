@@ -76,6 +76,24 @@ export function validateDnD35eClassesRacesTemplates(
           severity: 'error'
         });
       }
+      for (const extraFeat of acf.alsoReplacesFeatures ?? []) {
+        if (!grantedFeatures.has(extraFeat)) {
+          errors.push({
+            path: `systemContent.classes.${classKey}.acfSwaps.${acf.acfId}.alsoReplacesFeatures`,
+            message: `ACF "${acf.acfId}" on class "${classKey}" also replaces feature "${extraFeat}" which is never granted in progression.`,
+            severity: 'error'
+          });
+        }
+      }
+      const hasFeatureDetail = classDef.featureDetails && classDef.featureDetails[acf.grantedFeature] !== undefined;
+      const hasFeatEntry = sys.feats && sys.feats[acf.grantedFeature] !== undefined;
+      if (!hasFeatureDetail && !hasFeatEntry) {
+        errors.push({
+          path: `systemContent.classes.${classKey}.acfSwaps.${acf.acfId}.grantedFeature`,
+          message: `ACF "${acf.acfId}" on class "${classKey}" grants feature "${acf.grantedFeature}" which is missing from both class featureDetails and systemContent.feats.`,
+          severity: 'error'
+        });
+      }
       if (acf.prerequisites) {
         validatePrerequisiteNodeReferences(
           acf.prerequisites,

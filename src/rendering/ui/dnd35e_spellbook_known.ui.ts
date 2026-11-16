@@ -7,6 +7,7 @@ import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import {
+  canPrepareSpellInDomainSlot,
   collectActorDomainSpellIds,
   isActorDomainSpellAtLevel,
   type SpellLevelSlotSummary
@@ -111,10 +112,10 @@ export function renderKnownSpellsPane(
         });
         right.appendChild(prepBtn);
 
-        // Domain prep button across ALL owned domains (1..N)
+        // Domain prep button across ALL owned domains (1..N) + Cure/Inflict when Spontaneous Domain Casting is active
         if (hasDomainAccess && sum.domainSlots > 0) {
-          const isDomainSpell = isActorDomainSpellAtLevel(sp.id, sp, sum.spellLevel, dndData.domains, sys?.domains);
-          if (isDomainSpell) {
+          const isDomainEligible = canPrepareSpellInDomainSlot(sp.id, sp, sum.spellLevel, dndData, sys, classId);
+          if (isDomainEligible) {
             const openDomSlot = slots.find(
               (s: DnD35PreparedSlotEntry) =>
                 s.spellLevel === sum.spellLevel && s.slotKind === 'domain' && !s.preparedSpellId

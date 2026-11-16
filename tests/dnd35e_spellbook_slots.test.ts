@@ -4,6 +4,7 @@ import { applyIntentWithCost } from '../src/core/loop/intent_cost_resolver.ts';
 import { executeEightHourRest } from '../src/rendering/ui/dnd35e_spellbook_actions.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/builder/builder_hydrator_creation.ts';
 import {
+  canPrepareSpellInDomainSlot,
   collectActorDomainSpellIds,
   computeClassLevelSlotSummaries,
   getSpontaneousConversionTargets,
@@ -250,7 +251,7 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     expect(lv1.totalSlots).toBe(3);
   });
 
-  it('returns spontaneous conversion options for Cleric (Cure Wounds)', () => {
+  it('returns spontaneous conversion options for Cleric (Cure Wounds) and Spontaneous Domain Casting (PHB II p. 37)', () => {
     const dndData: Partial<DnD35EntityData> = {
       alignment: 'LG'
     };
@@ -258,6 +259,36 @@ describe('D&D 3.5e Spellbook Slot & Spontaneous Casting Engine', () => {
     const targets = getSpontaneousConversionTargets('cleric', 1, dndData, mockSystemContent);
     expect(targets.length).toBe(1);
     expect(targets[0]!.spellId).toBe('cure_light_wounds');
+
+    // Load full system content from disk to test Spontaneous Domain Casting (PHB II p. 37)
+    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const sys = campaign.systemContent as unknown as DnD35SystemContent;
+    const domainCastCleric: Partial<DnD35EntityData> = {
+      alignment: 'LG',
+      domains: ['good', 'war'],
+      spontaneousDomainId: 'war',
+      selectedAcfs: ['cleric_domain_spontaneity_1'],
+      activeClassFeatures: ['domain_spontaneity']
+    };
+
+    // Converts only into the chosen War domain (not Good domain), and includes lower-level War domain spells at L2
+    const lv1Targets = getSpontaneousConversionTargets('cleric', 1, domainCastCleric, sys);
+    expect(lv1Targets.map((t) => t.spellId)).toEqual(['magic_weapon']);
+
+    const lv2Targets = getSpontaneousConversionTargets('cleric', 2, domainCastCleric, sys);
+    expect(lv2Targets.map((t) => t.spellId)).toEqual(['spiritual_weapon', 'magic_weapon']);
+
+    // Allows preparing Cure Wounds spells into domain slots when Spontaneous Domain Casting is active
+    expect(canPrepareSpellInDomainSlot('cure_light_wounds', sys.spells?.['cure_light_wounds'], 1, domainCastCleric, sys, 'cleric')).toBe(true);
+    expect(canPrepareSpellInDomainSlot('inflict_light_wounds', sys.spells?.['inflict_light_wounds'], 1, domainCastCleric, sys, 'cleric')).toBe(false);
+
+    // Standard LG Cleric with Good + War (neither of which grants Cure Light Wounds at L1) cannot prepare Cure Light Wounds in a domain slot
+    const standardCleric: Partial<DnD35EntityData> = {
+      alignment: 'LG',
+      domains: ['good', 'war'],
+      activeClassFeatures: ['spontaneous_casting']
+    };
+    expect(canPrepareSpellInDomainSlot('cure_light_wounds', sys.spells?.['cure_light_wounds'], 1, standardCleric, sys, 'cleric')).toBe(false);
   });
 
   it('resolves domain spells across 3+ domains from both domainSpells and levelByDomain', () => {

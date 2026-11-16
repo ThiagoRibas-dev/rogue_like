@@ -17,6 +17,8 @@ import type {
 } from './types/dnd35e.types.ts';
 import { SIZE_METRICS } from './spatial/grid_geometry.ts';
 
+export * from './shapeshift.ts';
+
 /** Number of combat rounds in 1 hour (`600`). */
 const ROUNDS_PER_HOUR = 600;
 
@@ -197,9 +199,13 @@ export function resolveEffectiveEntityDataWithOverlays(
       priority: overlay.priority,
       ...(overlay.durationTurns !== undefined ? { durationTurns: overlay.durationTurns } : {}),
       ...(overlay.statOverrides !== undefined ? { statOverrides: overlay.statOverrides } : {}),
+      ...(overlay.statModifiers !== undefined ? { statModifiers: overlay.statModifiers } : {}),
       ...(overlay.sizeCategoryOverride !== undefined ? { sizeCategoryOverride: overlay.sizeCategoryOverride } : {}),
       ...(overlay.creatureTypeOverride !== undefined ? { creatureTypeOverride: overlay.creatureTypeOverride } : {}),
       ...(overlay.movementModesOverride !== undefined ? { movementModesOverride: overlay.movementModesOverride } : {}),
+      ...(overlay.naturalWeaponsOverride !== undefined
+        ? { naturalWeaponsOverride: overlay.naturalWeaponsOverride }
+        : {}),
       ...(overlay.grantedTags !== undefined ? { grantedTags: overlay.grantedTags } : {}),
       ...(overlay.suppressedTags !== undefined ? { suppressedTags: overlay.suppressedTags } : {}),
       ...(overlay.suppressedSlots !== undefined ? { suppressedSlots: overlay.suppressedSlots } : {})
@@ -215,6 +221,7 @@ export function resolveEffectiveEntityDataWithOverlays(
   let sizeCategory = baseData.sizeCategory;
   let creatureType = baseData.creatureType;
   let movementModes = baseData.movementModes;
+  let naturalWeapons = baseData.naturalWeapons;
   const overlayModifiers: StatModifier[] = [...(baseData.statModifiers ?? [])];
 
   for (const layer of layersToApply) {
@@ -241,6 +248,12 @@ export function resolveEffectiveEntityDataWithOverlays(
       }
     }
 
+    if (layer.statModifiers !== undefined) {
+      for (const mod of layer.statModifiers as ReadonlyArray<StatModifier>) {
+        overlayModifiers.push(mod);
+      }
+    }
+
     if (layer.sizeCategoryOverride !== undefined) {
       sizeCategory = layer.sizeCategoryOverride as CreatureSizeCategory;
       overlayModifiers.push({
@@ -258,6 +271,9 @@ export function resolveEffectiveEntityDataWithOverlays(
     if (layer.movementModesOverride !== undefined) {
       movementModes = layer.movementModesOverride;
     }
+    if (layer.naturalWeaponsOverride !== undefined) {
+      naturalWeapons = layer.naturalWeaponsOverride as ReadonlyArray<NaturalWeaponDescriptor>;
+    }
   }
 
   return {
@@ -267,6 +283,7 @@ export function resolveEffectiveEntityDataWithOverlays(
     sizeCategory,
     statModifiers: overlayModifiers,
     ...(creatureType !== undefined ? { creatureType } : {}),
-    ...(movementModes !== undefined ? { movementModes } : {})
+    ...(movementModes !== undefined ? { movementModes } : {}),
+    ...(naturalWeapons !== undefined ? { naturalWeapons } : {})
   };
 }

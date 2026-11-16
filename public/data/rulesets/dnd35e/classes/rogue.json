@@ -60,7 +60,13 @@
         "grantedTags": [
           "trait:special_attack",
           "special_attack:sneak_attack"
-        ]
+        ],
+        "scalingPoolContribution": {
+          "poolId": "sneak_attack_dice",
+          "multiplier": 0.5,
+          "offset": 0.5,
+          "minClassLevel": 1
+        }
       },
       "trapfinding": {
         "id": "trapfinding",
@@ -178,6 +184,16 @@
         "name": "Slippery Mind",
         "category": "ex",
         "description": "Gain a second saving throw on the following round against enchantment spells and effects."
+      },
+      "penetrating_strike": {
+        "id": "penetrating_strike",
+        "name": "Penetrating Strike",
+        "category": "ex",
+        "description": "Whenever you flank a creature that is immune to extra damage from sneak attacks, you still deal extra damage equal to half your normal sneak attack dice.",
+        "grantedTags": [
+          "feature:penetrating_strike",
+          "trait:penetrating_strike"
+        ]
       }
     },
     "acfSwaps": [

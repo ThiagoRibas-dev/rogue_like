@@ -155,6 +155,34 @@ describe('Ruleset-Specific Content & Cartridge Validators', () => {
       expect(errors.some((e) => e.path.includes('replacesFeature'))).toBe(true);
     });
 
+    test('detects ACF granting a feature not defined in featureDetails or systemContent.feats', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+      const barbarian = sys.classes['barbarian']!;
+      const mutatedSys: DnD35SystemContent = {
+        ...sys,
+        classes: {
+          ...sys.classes,
+          barbarian: {
+            ...barbarian,
+            acfSwaps: [
+              ...barbarian.acfSwaps,
+              {
+                acfId: 'unbacked_grant_swap',
+                name: 'Unbacked Grant Swap',
+                replacesFeature: 'fast_movement',
+                grantedFeature: 'nonexistent_mythic_speed',
+                level: 1,
+                modifiers: []
+              }
+            ]
+          }
+        }
+      };
+      const errors = validateDnD35eSystemContentIntegrity(mutatedSys);
+      expect(errors.some((e) => e.path.includes('grantedFeature'))).toBe(true);
+    });
+
     test('detects unknown favoredClass in race definition', () => {
       const campaign = loadCampaignFromDisk('dnd35e-crypt');
       const sys = getDnD35SystemContent(campaign)!;

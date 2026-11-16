@@ -159,6 +159,31 @@
         "name": "Perfect Self",
         "category": "su",
         "description": "Become a magical creature (Outsider [native]) and gain Damage Reduction 10/magic."
+      },
+      "decisive_strike": {
+        "id": "decisive_strike",
+        "name": "Decisive Strike",
+        "category": "ex",
+        "description": "Make a single unarmed attack as a full-round action at -2 that deals double damage on hit (and double damage on AoOs until next turn).",
+        "grantedTags": [
+          "feature:decisive_strike",
+          "stance:decisive_strike"
+        ]
+      },
+      "invisible_fist": {
+        "id": "invisible_fist",
+        "name": "Invisible Fist",
+        "category": "su",
+        "description": "Turn invisible for 1 round as an immediate action every 3 rounds.",
+        "resourcePool": {
+          "poolId": "invisible_fist",
+          "maxBase": 1,
+          "refreshCycle": "round"
+        },
+        "grantedTags": [
+          "feature:invisible_fist",
+          "ability:invisible_fist"
+        ]
       }
     },
     "acfSwaps": [

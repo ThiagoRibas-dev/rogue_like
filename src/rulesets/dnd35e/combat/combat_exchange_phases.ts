@@ -8,13 +8,13 @@ import {
   type PositionComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
-import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
+import { isHostile } from '../../../utils/faction.ts';
 import {
   evaluateConcealmentAndSenses,
   FLANKING_ATTACK_BONUS,
-  isFlankingTarget,
   resolveEffectiveTileIllumination
 } from '../spatial/cover_senses.ts';
+import { evaluateEntityFlankingTarget } from '../spatial/flanking_graph.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35DamageType, DnD35EntityData, OnHitRiderDescriptor, SensoryProfile } from '../types/dnd35e.types.ts';
 import { evaluateDnD35eEntityDAG, type DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -33,6 +33,7 @@ export interface PreAttackContext {
   readonly effectiveAttackBonus: number;
   readonly strikeLabel: string;
   readonly concealmentMissChance: number;
+  readonly isFlanking: boolean;
 }
 
 /**
@@ -72,30 +73,17 @@ export function resolveStrikePreAttackContext(
   let flankingBonus = 0;
   let isFlanking = false;
   if (attackerPos && defenderPos) {
-    const threateningAllyPositions: Array<{ readonly x: number; readonly y: number }> = [];
-    for (const otherId of state.entities) {
-      if (otherId === attackerId || otherId === defenderId) continue;
-      const otherFighter = getComponent(state, otherId, ComponentType.Fighter) as FighterComponent | undefined;
-      const otherPos = getComponent(state, otherId, ComponentType.Position) as PositionComponent | undefined;
-      if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
-
-      const isAlly =
-        getFactionRelation(state, attackerId, otherId) === 'friendly' ||
-        (!isHostile(state, attackerId, otherId) && isHostile(state, otherId, defenderId));
-      if (!isAlly) continue;
-
-      const distToDef = Math.max(Math.abs(otherPos.x - defenderPos.x), Math.abs(otherPos.y - defenderPos.y));
-      if (distToDef <= 1) {
-        threateningAllyPositions.push({ x: otherPos.x, y: otherPos.y });
-      }
-    }
-
-    const defenderImmuneFlanking =
-      defenderSelfTags.includes('trait:all_around_vision') ||
-      defenderSelfTags.includes('trait:immune_flanking') ||
-      defenderData.immunities.includes('flanking');
-
-    isFlanking = isFlankingTarget(attackerPos, threateningAllyPositions, defenderPos, defenderImmuneFlanking);
+    isFlanking = evaluateEntityFlankingTarget({
+      state,
+      attackerId,
+      defenderId,
+      attackerPos,
+      defenderPos,
+      attackerData,
+      defenderData,
+      attackerSelfTags,
+      defenderSelfTags
+    });
     if (isFlanking) {
       flankingBonus = attackerEval.dagResult.flankingBonus ?? FLANKING_ATTACK_BONUS;
     }
@@ -139,7 +127,8 @@ export function resolveStrikePreAttackContext(
   return {
     effectiveAttackBonus: strike.attackBonus + flankingBonus,
     strikeLabel,
-    concealmentMissChance
+    concealmentMissChance,
+    isFlanking
   };
 }
 

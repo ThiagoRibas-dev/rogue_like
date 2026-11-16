@@ -23,6 +23,7 @@ import {
 import {
   applyNegativeLevelsToActor,
   applyPermanentLevelDrainToActor,
+  buildActorResourcePoolsComponent,
   buildClassAndDomainEffectModifiers,
   collectActiveGrantedAndVirtualFeats
 } from '../src/rulesets/dnd35e/level_ledger.ts';
@@ -34,6 +35,12 @@ import {
   getClassLevelRow,
   resolveActiveClassFeatures
 } from '../src/rulesets/dnd35e/progression.ts';
+import { projectDnD35ActorSemanticTags } from '../src/rulesets/dnd35e/semantic_tags.ts';
+import {
+  getSpontaneousConversionTargets,
+  resolveActiveSpontaneousConversionModes
+} from '../src/rulesets/dnd35e/magic/spellbook_slots.ts';
+import type { DnD35SpontaneousConversionMode } from '../src/rulesets/dnd35e/types/system/effect_system.types.ts';
 import {
   buildSkillRankThresholdModifiers,
   computeSkillSynergyBonus,
@@ -855,6 +862,197 @@ describe('Phase 23: D&D 3.5e Core 11 Classes, 5 NPC Classes, Prestige Classes, A
         maxSlaCasterLevel: 10
       })
     ).toBe(true);
+  });
+
+  describe('Milestone 135: ACF Declarative Schema Alignment, featureDetails Binding & Rule 21 Anti-Hardcoding', () => {
+    it('Wolf Totem Barbarian grants Improved Trip bonus feat without requiring Combat Expertise', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const state = buildGameState(campaign);
+      const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+
+      const createdState = applyCharacterCreationToPlayer(state, playerId, {
+        raceId: 'human',
+        classId: 'barbarian',
+        alignment: 'CN',
+        selectedAcfs: ['barbarian_wolf_totem_2'],
+        domains: [],
+        prohibitedSchools: [],
+        abilityMethod: 'point_buy',
+        pointBuyBudget: 28,
+        baseAbilityScores: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
+        skillRanks: { climb: 4, jump: 4, listen: 4, survival: 4 },
+        selectedFeats: ['power_attack', 'cleave'],
+        knownSpells: [],
+        equipmentPackageId: 'barbarian_tribal'
+      });
+
+      const dndLv1 = getDnD35EntityData(createdState, playerId);
+      expect(dndLv1.feats).not.toContain('improved_trip');
+
+      const leveled = applyLevelUpToActor(createdState, playerId, {
+        classId: 'barbarian',
+        hpMethod: 'average',
+        addedSkillRanks: { climb: 1, jump: 1, listen: 1, survival: 1 },
+        selectedFeats: [],
+        learnedSpells: []
+      });
+      expect(leveled.success).toBe(true);
+
+      const dndLv2 = getDnD35EntityData(leveled.state, playerId);
+      expect(dndLv2.activeClassFeatures).toContain('improved_trip');
+      expect(dndLv2.activeClassFeatures).not.toContain('uncanny_dodge');
+      expect(dndLv2.feats).toContain('improved_trip');
+    });
+
+    it('Whirling Frenzy Barbarian replaces Rage pool with Whirling Frenzy pool', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+      const state = buildGameState(campaign);
+      const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+
+      const createdState = applyCharacterCreationToPlayer(state, playerId, {
+        raceId: 'human',
+        classId: 'barbarian',
+        alignment: 'CN',
+        selectedAcfs: ['barbarian_whirling_frenzy_1'],
+        domains: [],
+        prohibitedSchools: [],
+        abilityMethod: 'point_buy',
+        pointBuyBudget: 28,
+        baseAbilityScores: { str: 16, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
+        skillRanks: { climb: 4, jump: 4, listen: 4, survival: 4 },
+        selectedFeats: ['power_attack', 'cleave'],
+        knownSpells: [],
+        equipmentPackageId: 'barbarian_tribal'
+      });
+
+      const dnd = getDnD35EntityData(createdState, playerId);
+      expect(dnd.activeClassFeatures).toContain('whirling_frenzy');
+      expect(dnd.activeClassFeatures).not.toContain('rage_1');
+
+      const poolsComp = buildActorResourcePoolsComponent(dnd, sys);
+      expect(poolsComp.pools['whirling_frenzy']).toBeDefined();
+      expect(poolsComp.pools['whirling_frenzy']!.max).toBe(1);
+      expect(poolsComp.pools['rage']).toBeUndefined();
+    });
+
+    it('Wizard Abrupt Jaunt ACF hydrates resource pool scaled by INT modifier', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+      const state = buildGameState(campaign);
+      const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+
+      const createdState = applyCharacterCreationToPlayer(state, playerId, {
+        raceId: 'human',
+        classId: 'wizard',
+        alignment: 'TN',
+        selectedAcfs: ['wizard_abrupt_jaunt_1'],
+        domains: [],
+        arcaneSchool: 'conjuration',
+        prohibitedSchools: ['enchantment', 'illusion'],
+        abilityMethod: 'point_buy',
+        pointBuyBudget: 28,
+        baseAbilityScores: { str: 10, dex: 14, con: 14, int: 16, wis: 12, cha: 8 },
+        skillRanks: { concentration: 4, spellcraft: 4, knowledge_arcana: 4 },
+        selectedFeats: ['scribe_scroll', 'improved_initiative'],
+        knownSpells: ['mage_armor', 'grease', 'magic_missile'],
+        equipmentPackageId: 'wizard_scholar'
+      });
+
+      const dnd = getDnD35EntityData(createdState, playerId);
+      expect(dnd.activeClassFeatures).toContain('abrupt_jaunt');
+      expect(dnd.activeClassFeatures).not.toContain('summon_familiar');
+
+      const poolsComp = buildActorResourcePoolsComponent(dnd, sys);
+      expect(poolsComp.pools['abrupt_jaunt']).toBeDefined();
+      expect(poolsComp.pools['abrupt_jaunt']!.max).toBe(3);
+    });
+
+    it('Cleric Domain Spontaneity ACF enables domain conversion targets declaratively', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+
+      const baseDnd: Partial<DnD35EntityData> = {
+        tracks: [{ trackId: 'cleric', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+        domains: ['war'],
+        alignment: 'LG',
+        selectedAcfs: []
+      };
+      const baseTargets = getSpontaneousConversionTargets('cleric', 1, baseDnd, sys);
+      expect(baseTargets.some((t) => t.spellId === 'cure_light_wounds')).toBe(true);
+
+      const acfDnd: Partial<DnD35EntityData> = {
+        tracks: [{ trackId: 'cleric', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+        domains: ['war'],
+        alignment: 'LG',
+        selectedAcfs: ['cleric_domain_spontaneity_1']
+      };
+      const acfTargets = getSpontaneousConversionTargets('cleric', 1, acfDnd, sys);
+      expect(acfTargets.some((t) => t.spellId === 'magic_weapon')).toBe(true);
+      expect(acfTargets.some((t) => t.spellId === 'cure_light_wounds')).toBe(false);
+    });
+
+    it('Lion Spirit Totem Barbarian projects special_attack:pounce tag via semantic tags', () => {
+      const dndWithPounce = {
+        sizeCategory: 'medium',
+        tracks: [],
+        activeClassFeatures: ['pounce', 'rage_1', 'illiteracy'],
+        hasPounce: false
+      } as unknown as DnD35EntityData;
+      const tags = projectDnD35ActorSemanticTags(dndWithPounce, []);
+      expect(tags).toContain('special_attack:pounce');
+      expect(tags).toContain('trait:special_attack');
+    });
+
+    it('resolveActiveSpontaneousConversionModes resolves declarative mode per class feature details', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+
+      const baseCleric: Partial<DnD35EntityData> = {
+        tracks: [{ trackId: 'cleric', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+        selectedAcfs: []
+      };
+      const baseModes: ReadonlyArray<DnD35SpontaneousConversionMode> = resolveActiveSpontaneousConversionModes('cleric', baseCleric, sys);
+      expect(baseModes).toEqual(['cure_or_inflict']);
+
+      const acfCleric: Partial<DnD35EntityData> = {
+        tracks: [{ trackId: 'cleric', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+        selectedAcfs: ['cleric_domain_spontaneity_1']
+      };
+      const acfModes = resolveActiveSpontaneousConversionModes('cleric', acfCleric, sys);
+      expect(acfModes).toEqual(['domain']);
+
+      const druid: Partial<DnD35EntityData> = {
+        tracks: [{ trackId: 'druid', levels: 1, babCurve: 'medium', fortCurve: 'good', refCurve: 'poor', willCurve: 'good', skillPointsPerLevel: 2 }],
+        selectedAcfs: []
+      };
+      const druidModes = resolveActiveSpontaneousConversionModes('druid', druid, sys);
+      expect(druidModes).toEqual(['summon_nature_ally']);
+    });
+
+    it('Fighter Dungeon Crasher ACF grants competence modifiers vs traps', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sys = getDnD35SystemContent(campaign)!;
+
+      const mods = buildClassAndDomainEffectModifiers(
+        [{ trackId: 'fighter', levels: 2, babCurve: 'good', fortCurve: 'good', refCurve: 'poor', willCurve: 'poor', skillPointsPerLevel: 2 }],
+        ['fighter_dungeon_crasher_2'],
+        [],
+        sys.classes,
+        sys.domains
+      );
+
+      const trapSaveMod = mods.find((m) => m.targetStat === 'save_trap');
+      const trapAcMod = mods.find((m) => m.targetStat === 'ac_trap');
+
+      expect(trapSaveMod).toBeDefined();
+      expect(trapSaveMod?.value).toBe(2);
+      expect(trapSaveMod?.bonusType).toBe('competence');
+
+      expect(trapAcMod).toBeDefined();
+      expect(trapAcMod?.value).toBe(2);
+      expect(trapAcMod?.bonusType).toBe('competence');
+    });
   });
 });
 

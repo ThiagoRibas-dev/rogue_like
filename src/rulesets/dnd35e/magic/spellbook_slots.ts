@@ -12,7 +12,8 @@ import type {
   DnD35EntityData,
   DnD35PreparedSlotEntry
 } from '../types/dnd35e.types.ts';
-import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import type { DnD35SpontaneousConversionMode, DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { collectClassFeaturesUpToLevel } from '../progression.ts';
 
 const MAX_SPELL_LEVEL = 9;
 
@@ -151,7 +152,6 @@ export function computeClassLevelSlotSummaries(
       dndData.arcaneSchool !== 'universal'
         ? 1
         : 0;
-
     const totalSlots = generalSlots + domainSlots + specialistSlots;
     const saveDc = 10 + lvl + abMod;
 
@@ -180,9 +180,7 @@ export function reconcilePreparedSlots(
   spellsRegistry?: Readonly<Record<string, { readonly levelByClass?: Readonly<Record<string, number>> } | undefined>>
 ): ReadonlyArray<DnD35PreparedSlotEntry> {
   const existingMap = new Map<string, DnD35PreparedSlotEntry>();
-  for (const s of book.preparedSlots ?? []) {
-    existingMap.set(s.slotId, s);
-  }
+  for (const s of book.preparedSlots ?? []) existingMap.set(s.slotId, s);
 
   const legacyPool =
     (book.preparedSlots === undefined || book.preparedSlots.length === 0) && book.preparedSpellIds.length > 0
@@ -191,9 +189,7 @@ export function reconcilePreparedSlots(
 
   const takeLegacySpellForLevel = (spellLevel: number): string | undefined => {
     if (legacyPool.length === 0) return undefined;
-    if (!spellsRegistry) {
-      return spellLevel === 0 ? legacyPool.shift() : undefined;
-    }
+    if (!spellsRegistry) return spellLevel === 0 ? legacyPool.shift() : undefined;
     const idx = legacyPool.findIndex((spId) => {
       const def = spellsRegistry[spId];
       const lv = def?.levelByClass?.[book.classId] ?? def?.levelByClass?.['sorcerer_wizard'];
@@ -205,53 +201,34 @@ export function reconcilePreparedSlots(
   };
 
   const result: DnD35PreparedSlotEntry[] = [];
-
   for (const sum of summaries) {
     if (!sum.canCast) continue;
-
-    // General slots
     for (let i = 0; i < sum.generalSlots; i++) {
       const slotId = `lv${sum.spellLevel}_gen_${i}`;
       const existing = existingMap.get(slotId);
       if (existing) {
         result.push(existing);
       } else {
-        const seededSpellId = takeLegacySpellForLevel(sum.spellLevel);
+        const seeded = takeLegacySpellForLevel(sum.spellLevel);
         result.push({
           slotId,
           spellLevel: sum.spellLevel,
           slotKind: 'general',
-          ...(seededSpellId !== undefined ? { preparedSpellId: seededSpellId } : {}),
+          ...(seeded ? { preparedSpellId: seeded } : {}),
           expended: false
         });
       }
     }
-
-    // Domain slots
     for (let i = 0; i < sum.domainSlots; i++) {
       const slotId = `lv${sum.spellLevel}_dom_${i}`;
-      const existing = existingMap.get(slotId);
       result.push(
-        existing ?? {
-          slotId,
-          spellLevel: sum.spellLevel,
-          slotKind: 'domain',
-          expended: false
-        }
+        existingMap.get(slotId) ?? { slotId, spellLevel: sum.spellLevel, slotKind: 'domain', expended: false }
       );
     }
-
-    // Specialist slots
     for (let i = 0; i < sum.specialistSlots; i++) {
       const slotId = `lv${sum.spellLevel}_spec_${i}`;
-      const existing = existingMap.get(slotId);
       result.push(
-        existing ?? {
-          slotId,
-          spellLevel: sum.spellLevel,
-          slotKind: 'specialist',
-          expended: false
-        }
+        existingMap.get(slotId) ?? { slotId, spellLevel: sum.spellLevel, slotKind: 'specialist', expended: false }
       );
     }
   }
@@ -300,6 +277,61 @@ export interface SpontaneousConversionOption {
   readonly label: string;
 }
 
+/** Resolves active spontaneous conversion modes for a class from its declarative `featureDetails`. */
+export function resolveActiveSpontaneousConversionModes(
+  classId: string,
+  dndData: Partial<DnD35EntityData>,
+  systemContent: DnD35SystemContent | undefined
+): ReadonlyArray<DnD35SpontaneousConversionMode> {
+  const classDef = systemContent?.classes?.[classId];
+  const featureDetails = classDef?.featureDetails;
+  if (classDef && featureDetails && Object.keys(featureDetails).length > 0) {
+    const track = dndData.tracks?.find((t) => t.trackId === classId);
+    const level = track ? Math.max(1, track.levels) : 1;
+    const activeFeatures = dndData.activeClassFeatures?.length
+      ? dndData.activeClassFeatures
+      : collectClassFeaturesUpToLevel(classDef, level, dndData.selectedAcfs ?? []);
+
+    const modes = new Set<DnD35SpontaneousConversionMode>();
+    for (const featId of activeFeatures) {
+      const mode = featureDetails[featId]?.spontaneousConversionMode;
+      if (mode) modes.add(mode);
+    }
+    if (modes.size > 0) return Array.from(modes);
+  }
+
+  if (classId === 'cleric') return ['cure_or_inflict'];
+  if (classId === 'druid') return ['summon_nature_ally'];
+  return [];
+}
+
+/**
+ * Returns true if `spellId` is eligible to be prepared into a `domain` spell slot at `spellLevel`.
+ * Standard clerics may prepare any spell granted at `spellLevel` by their owned domains.
+ * Clerics with the *Spontaneous Domain Casting* ACF (`spontaneousConversionMode === 'domain'`, PHB II p. 37)
+ * may ALSO prepare their alignment-appropriate *Cure* or *Inflict* spell of `spellLevel` in their domain spell slots.
+ */
+export function canPrepareSpellInDomainSlot(
+  spellId: string,
+  spellDef: { readonly levelByDomain?: Readonly<Record<string, number>> } | undefined,
+  spellLevel: number,
+  dndData: Partial<DnD35EntityData>,
+  systemContent: DnD35SystemContent | undefined,
+  classId = 'cleric'
+): boolean {
+  if (isActorDomainSpellAtLevel(spellId, spellDef, spellLevel, dndData.domains, systemContent?.domains)) {
+    return true;
+  }
+  const modes = resolveActiveSpontaneousConversionModes(classId, dndData, systemContent);
+  if (!modes.includes('domain')) return false;
+
+  const isGood = dndData.alignment?.endsWith('G') ?? false;
+  const isEvil = dndData.alignment?.endsWith('E') ?? false;
+  if (!isEvil && CURE_SPELLS_BY_LEVEL[spellLevel] === spellId) return true;
+  if (!isGood && INFLICT_SPELLS_BY_LEVEL[spellLevel] === spellId) return true;
+  return false;
+}
+
 /**
  * Returns available spontaneous conversion spells for a prepared slot.
  */
@@ -314,16 +346,20 @@ export function getSpontaneousConversionTargets(
   const hasSpell = (id: string): boolean =>
     !systemContent?.spells || Object.keys(systemContent.spells).length === 0 || systemContent.spells[id] !== undefined;
 
-  if (classId === 'cleric') {
-    const hasDomainSpontaneity = dndData.selectedAcfs?.some(
-      (a) => a === 'cleric_domain_spontaneity_1' || a === 'domain_spontaneity'
-    );
-    if (hasDomainSpontaneity) {
+  const modes = resolveActiveSpontaneousConversionModes(classId, dndData, systemContent);
+
+  if (modes.includes('domain')) {
+    const ownedDomains = dndData.domains ?? [];
+    const chosenDomId =
+      dndData.spontaneousDomainId && ownedDomains.includes(dndData.spontaneousDomainId)
+        ? dndData.spontaneousDomainId
+        : (dndData.spontaneousDomainId ?? ownedDomains[0]);
+    if (chosenDomId) {
       const seen = new Set<string>();
-      for (const domId of dndData.domains ?? []) {
-        const domDef = systemContent?.domains?.[domId];
-        const domLabel = `Domain: ${domDef?.name ?? domId}`;
-        const spId = domDef?.domainSpells?.[String(spellLevel)];
+      const domDef = systemContent?.domains?.[chosenDomId];
+      const domLabel = `Domain: ${domDef?.name ?? chosenDomId}`;
+      for (let lvl = spellLevel; lvl >= 1; lvl--) {
+        const spId = domDef?.domainSpells?.[String(lvl)];
         if (spId && !seen.has(spId) && hasSpell(spId)) {
           seen.add(spId);
           options.push({ spellId: spId, label: domLabel });
@@ -331,16 +367,18 @@ export function getSpontaneousConversionTargets(
         if (systemContent?.spells) {
           for (const [candKey, candDef] of Object.entries(systemContent.spells)) {
             const resolvedId = candDef.id ?? candKey;
-            if (!seen.has(resolvedId) && candDef.levelByDomain?.[domId] === spellLevel) {
+            if (!seen.has(resolvedId) && candDef.levelByDomain?.[chosenDomId] === lvl) {
               seen.add(resolvedId);
               options.push({ spellId: resolvedId, label: domLabel });
             }
           }
         }
       }
-      if (options.length > 0) return options;
     }
+    if (options.length > 0) return options;
+  }
 
+  if (modes.includes('cure_or_inflict')) {
     const isGood = dndData.alignment?.endsWith('G') ?? false;
     const isEvil = dndData.alignment?.endsWith('E') ?? false;
     if ((isGood || (!isEvil && preferredPolarity !== 'negative')) && CURE_SPELLS_BY_LEVEL[spellLevel]) {
@@ -351,7 +389,9 @@ export function getSpontaneousConversionTargets(
       const sp = INFLICT_SPELLS_BY_LEVEL[spellLevel]!;
       if (hasSpell(sp)) options.push({ spellId: sp, label: 'Inflict Wounds' });
     }
-  } else if (classId === 'druid') {
+  }
+
+  if (modes.includes('summon_nature_ally')) {
     const targetSpell = SUMMON_NATURES_ALLY_BY_LEVEL[spellLevel];
     if (targetSpell && hasSpell(targetSpell)) {
       options.push({ spellId: targetSpell, label: "Summon Nature's Ally" });

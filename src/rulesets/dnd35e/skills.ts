@@ -17,6 +17,49 @@ export * from './skills/skill_synergies.ts';
 export * from './skills/specialized_skill_checks.ts';
 
 /**
+ * Computes effective skill ranks granted by the Bardic Knack alternative class feature (PHB II p. 35).
+ * When an actor has Bardic Knack, they can use 1/2 their Bard level (rounded down, minimum 1)
+ * in place of their ranks in any skill check, including trained-only skills.
+ *
+ * @param rawRanks Actual ranks invested in the skill.
+ * @param bardLevel Total levels in the Bard class.
+ * @returns Effective whole ranks for the check (either rawRanks or knack ranks, whichever is higher).
+ */
+export function resolveBardicKnackEffectiveRanks(rawRanks: number, bardLevel: number): number {
+  if (bardLevel <= 0) return rawRanks;
+  const knackRanks = Math.max(1, Math.floor(bardLevel / 2));
+  return Math.max(rawRanks, knackRanks);
+}
+
+/**
+ * Resolves the Bardic Knack rank floor for an actor (`floor(bardLevel / 2)`, minimum 1),
+ * or `undefined` if the actor does not possess the Bardic Knack ACF.
+ *
+ * @param dndData Actor's DnD35EntityData or minimal partial progression record.
+ * @returns Minimum skill rank floor if Bardic Knack is active, else undefined.
+ */
+export function getBardicKnackFloor(dndData: {
+  readonly tracks?: ReadonlyArray<{ readonly trackId: string; readonly levels: number }> | undefined;
+  readonly activeClassFeatures?: ReadonlyArray<string> | undefined;
+  readonly feats?: ReadonlyArray<string> | undefined;
+  readonly scalingPools?: Readonly<Record<string, number>> | undefined;
+}): number | undefined {
+  const poolLevel = dndData.scalingPools?.['bardic_knack_level'] ?? 0;
+  const hasKnack =
+    poolLevel > 0 ||
+    (dndData.activeClassFeatures ?? []).includes('bardic_knack') ||
+    (dndData.feats ?? []).includes('bardic_knack');
+  if (!hasKnack) return undefined;
+
+  if (poolLevel > 0) {
+    return Math.max(1, Math.floor(poolLevel / 2));
+  }
+  const bardTrack = (dndData.tracks ?? []).find((t) => t.trackId === 'bard');
+  const bardLevel = bardTrack ? bardTrack.levels : (dndData.tracks ?? []).reduce((sum, t) => sum + t.levels, 0);
+  return Math.max(1, Math.floor(bardLevel / 2));
+}
+
+/**
  * Resolves a D&D 3.5e Skill Check with support for half-rank rounding ($\lfloor \text{ranks} \rfloor$),
  * `trainedOnly` gating, 5-rank `+2` synergy, `acpMultiplier` (`0 | 1 | 2`, e.g. Swim's `2x ACP`),
  * and `Take 10 / Take 20` validation.
@@ -26,7 +69,12 @@ export * from './skills/specialized_skill_checks.ts';
  * @returns Complete `SkillCheckResult`.
  */
 export function resolveSkillCheck(params: SkillCheckParams): SkillCheckResult {
-  const wholeRanks = dndFloor(Math.max(0, params.rawRanks));
+  const rawRanks = params.rawRanks;
+  const effectiveRanks =
+    params.minSkillRanksFloor !== undefined && params.minSkillRanksFloor > 0
+      ? Math.max(rawRanks, params.minSkillRanksFloor)
+      : rawRanks;
+  const wholeRanks = dndFloor(Math.max(0, effectiveRanks));
 
   if (params.definition.trainedOnly && wholeRanks < 1) {
     return {

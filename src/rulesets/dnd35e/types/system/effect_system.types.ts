@@ -172,7 +172,7 @@ export type DnD35EffectBundle = z.infer<typeof DnD35EffectBundleSchema>;
 export const DnD35ScalingPoolContributionSchema = z.object({
   poolId: z.string(),
   multiplier: z.number().default(1),
-  offset: z.number().int().default(0),
+  offset: z.number().default(0),
   minClassLevel: z.number().int().positive().default(1)
 });
 export type DnD35ScalingPoolContribution = z.infer<typeof DnD35ScalingPoolContributionSchema>;
@@ -209,15 +209,18 @@ export const DnD35ClassFeatureDetailSchema = z.object({
     })
     .optional(),
   bonusFeatPool: z.array(z.string()).optional(),
-  combatStyleFeatByChoice: z.record(z.string(), z.string()).optional()
+  combatStyleFeatByChoice: z.record(z.string(), z.string()).optional(),
+  spontaneousConversionMode: z.enum(['cure_or_inflict', 'domain', 'summon_nature_ally']).optional()
 });
 export type DnD35ClassFeatureDetail = z.infer<typeof DnD35ClassFeatureDetailSchema>;
+export type DnD35SpontaneousConversionMode = 'cure_or_inflict' | 'domain' | 'summon_nature_ally';
 
 /** Zod schema for an Alternate Class Feature (ACF) swap. */
 export const DnD35AcfSwapSchema = z.object({
   acfId: z.string(),
   name: z.string(),
   replacesFeature: z.string(),
+  alsoReplacesFeatures: z.array(z.string()).default([]),
   grantedFeature: z.string(),
   level: z.number().int().positive(),
   description: z.string().optional(),

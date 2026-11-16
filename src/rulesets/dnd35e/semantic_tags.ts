@@ -162,14 +162,15 @@ export function projectDnD35ActorSemanticTags(
     if (alignUpper === 'N' || alignUpper.includes('N')) tags.add('alignment:neutral');
   }
 
-  const hasClassTracks = dndData.tracks.some((t) => t.levels > 0 && t.trackCategory !== 'racial_hd');
-  const hasLiterateClass = dndData.tracks.some((t) => {
-    if (t.levels <= 0 || t.trackCategory === 'racial_hd') return false;
-    if (classRegistry && classRegistry[t.trackId]) {
-      return classRegistry[t.trackId]!.grantsLiteracy !== false;
-    }
-    return true;
-  });
+  const hasClassTracks = dndData.tracks?.some((t) => t.levels > 0 && t.trackCategory !== 'racial_hd') ?? false;
+  const hasLiterateClass =
+    dndData.tracks?.some((t) => {
+      if (t.levels <= 0 || t.trackCategory === 'racial_hd') return false;
+      if (classRegistry && classRegistry[t.trackId]) {
+        return classRegistry[t.trackId]!.grantsLiteracy !== false;
+      }
+      return true;
+    }) ?? false;
 
   if (dndData.spentLiteracySkillPoints === true || hasLiterateClass || !hasClassTracks) {
     tags.add('trait:literate');
@@ -227,7 +228,7 @@ export function projectDnD35ActorSemanticTags(
     tags.add('movement:fly');
   }
 
-  if (dndData.hasPounce === true) {
+  if (dndData.hasPounce === true || dndData.activeClassFeatures?.includes('pounce') === true) {
     tags.add('trait:special_attack');
     tags.add('special_attack:pounce');
   }
@@ -292,6 +293,13 @@ export function projectDnD35ActorSemanticTags(
   if (situationalContext?.doctrine) {
     for (const stanceTag of projectConsoleStanceSelfTags(situationalContext.doctrine)) {
       tags.add(stanceTag);
+    }
+  }
+
+  for (const statusId of situationalContext?.activeStatusEffectIds ?? []) {
+    tags.add(`status:${statusId}`);
+    if (statusId === 'invisible_active') {
+      tags.add('trait:invisible');
     }
   }
 

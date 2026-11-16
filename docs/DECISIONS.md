@@ -524,4 +524,62 @@ This document records architectural decisions whose rationale is **non-obvious o
   - When clicking `[Use]` on an active ability in Column 2 (e.g. *Turn Undead*, *Smite Evil*), the UI immediately closes the cartridge modal using `closeCartridgeModal(liveState)` before dispatching `queueIntent({ type: IntentType.UseAbility, ... })`.
   - *Rationale*: Targeted abilities require map interaction (such as reticle aiming or spatial targeting overlay). If the full-screen modal remained open, the player would not see the targeting reticle or map changes. Closing the modal synchronously clears the overlay and puts the player immediately into targeting mode.
 
+---
+
+### Declarative ACF `featureDetails` Binding, Spontaneous Conversion & Rule 21 Compliance (Milestone 135)
+
+- **Decision 1: Bind All Base Class ACF Swaps to Declarative `featureDetails` Across Class JSONs**:
+  - Populated complete `featureDetails` for all 10 existing Alternate Class Features across `barbarian.json`, `cleric.json`, `fighter.json`, `monk.json`, `paladin.json`, `ranger.json`, `rogue.json`, and `wizard.json`, plus Druid spontaneous summoning in `druid.json`.
+  - Configured Wolf Totem Barbarian with `grantedFeats: ["improved_trip"]` so `collectActiveGrantedAndVirtualFeats` awards Improved Trip without requiring Combat Expertise prerequisites.
+  - Configured Specialist Conjurer Abrupt Jaunt with `resourcePool` (`poolId: 'abrupt_jaunt'`, `maxBase: 0`, `abilityModStat: 'int'`, `refreshCycle: 'rest_8h'`), Whirling Frenzy with `resourcePool` (`poolId: 'whirling_frenzy'`, `maxBase: 1`, `refreshCycle: 'rest_8h'`), and Fighter Dungeon Crasher with competence modifiers (`save_trap: 2`, `ac_trap: 2`).
+  - *Rationale*: Previously, selecting an ACF added its ID to `activeClassFeatures`, but because `featureDetails` entries were missing in the class JSON files, downstream systems (`buildActorResourcePoolsComponent`, `collectActiveGrantedAndVirtualFeats`, `resolveTypedModifiersWithBreakdown`) resolved `undefined`. Declaring them in JSON restores pure ECS data-driven hydration across all classes.
+
+- **Decision 2: Rule 21 Declarative `spontaneousConversionMode` on `DnD35ClassFeatureDetailSchema`**:
+  - Added `spontaneousConversionMode?: 'cure_or_inflict' | 'domain' | 'summon_nature_ally'` to `DnD35ClassFeatureDetailSchema` and exported `resolveActiveSpontaneousConversionModes`.
+  - In `spellbook_slots.ts`, completely evicted the hardcoded `a === 'cleric_domain_spontaneity_1' || a === 'domain_spontaneity'` content-ID check in `getSpontaneousConversionTargets`.
+  - *Rationale*: Hardcoding class-specific feature IDs violated Rule 21 ("New Content Mod" Litmus Test). With `spontaneousConversionMode`, any class, ACF, or prestige class added by a campaign mod author can grant spontaneous casting of cure/inflict spells, domain spells, or summon nature's ally purely through JSON configuration without modifying TypeScript logic.
+
+- **Decision 3: Cross-Reference Validation Hardening for ACF `grantedFeature` in `class_race_validator.ts`**:
+  - Extended the system content integrity validator to verify that every `grantedFeature` specified in `classDef.acfSwaps` exists either in `classDef.featureDetails` or in `sys.feats` (for direct feat grants).
+  - *Rationale*: ACFs operate by substituting feature IDs at level milestones. If a campaign or ruleset author creates an ACF swap pointing to an unindexed feature ID, the error would fail silently at runtime. Catching missing `featureDetails` at build/test time prevents silent gameplay regressions.
+
+- **Decision 4: Dynamic Tag Projection for Pounce and Special Attacks in `semantic_tags.ts`**:
+  - Projected `special_attack:pounce` and `trait:special_attack` whenever `dndData.hasPounce === true` OR `dndData.activeClassFeatures?.includes('pounce') === true`.
+  - *Rationale*: Both monster templates/archetypes (setting `hasPounce: true`) and base class ACFs (Lion Spirit Totem adding `pounce` to `activeClassFeatures`) share the identical underlying combat capability. Projecting canonical semantic tags ensures downstream attack resolvers, prerequisite validators, and UI projectors treat PCs and monsters symmetrically per Rule 18.
+
+---
+
+### Relational Flanking Graph, Immediate Reaction Policies & Active ACF Combat Pipeline (Milestone 136)
+
+- **Decision 1: Explicit Relational Flanking Graph (`flankingRelations`) & Synchronized `'flanking'` / `'flanked'` Statuses (`src/rulesets/dnd35e/spatial/flanking_graph.ts`)**:
+  - Replaced the isolated ad-hoc flanking loop in `combat_exchange_phases.ts` with `evaluateEntityFlankingTarget` and `syncSpatialFlankingGraph`, persisting `flankingTargetIds` / `flankedByEntityIds` on `DnD35EntityData.flankingRelations` and synchronizing `'flanking'` and `'flanked'` status effects whenever actors step, teleport (`Abrupt Jaunt`), get Bull-Rushed, suffer `distracted_flanked`, or start a turn.
+  - *Rationale*: Treating flanking purely as a transient strike-time boolean prevents abilities, AI, status bars, and team-based effects from inspecting who flanks whom, and fails to compose with geometry overrides (`trait:offset_flanking`, `trait:flank_alone`), target debuffs (`status:distracted_flanked`), and defender immunities (`improved_uncanny_dodge`, `trait:all_around_vision`).
+
+- **Decision 2: Configurable Off-Turn Reaction Policies (`TacticalDoctrineComponent.reactionPolicies`) & Two-Step `Abrupt Jaunt` Targeting (`src/rulesets/dnd35e/combat/immediate_reactions.ts`)**:
+  - Extended `TacticalDoctrineComponent` with `reactionPolicies?: Readonly<Record<string, ImmediateReactionPolicy>>` supporting `'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move'`, alongside interactive UI toggles/cyclers in the Attacks Tab and hotbar stance bar.
+  - Routed on-turn `pool:abrupt_jaunt` activation through a zero-cost `targetingMode` initiation (`maxRangeTiles: 2`, `context: { verb: 'abrupt_jaunt' }`) confirmed via `FireAimedIntent`, reserving Swift/Immediate budget checks strictly for immediate-action intents in `canDnD35eActorPerformIntent` so Standard-action NPC abilities stay properly gated.
+  - *Rationale*: Off-turn Immediate Actions in a roguelike cannot interrupt gameplay with blocking popups on every enemy step or swing without breaking flow; declarative per-ability reaction policies preserve crisp turn-based/RTwP pacing while giving Conjurers and Monks full tactical agency.
+
+- **Decision 3: Modular Combat ACF Engines Under the 300-Line Ceiling (`bull_rush_resolver.ts`, `combat_acf_riders.ts`, `attack_routine.ts`)**:
+  - Isolated spatial Bull Rush push-back + Dungeon Crasher Tier 1/2 wall-slam math (`4d6 + 2*STR` at L2, `8d6 + 3*STR` at L6) into `bull_rush_resolver.ts`, and Sneak Attack / Penetrating Strike / Charging Smite / Distracting Attack / Whirling Frenzy modifier evaluation into `combat_acf_riders.ts`.
+  - Allowed non-integer scaling pool `offset` (`z.number().default(0)` in `DnD35ScalingPoolContributionSchema`) so Rogue's odd-level `sneak_attack_1d6` (`0.5 * level + 0.5`) hydrates cleanly into `scalingPools.sneak_attack_dice`.
+  - *Rationale*: Keeping new combat riders modular respects the 300-line ESLint threshold, obeys Rule 21 data-driven scaling pools/tags, and composes cleanly into the 5-phase `executeCombatStrikeExchange` pipeline.
+
+---
+
+### Multi-Feature ACF Swaps, Form Overlays & Runtime ACF Hooks (Milestone 137)
+
+- **Decision 1: Declarative `alsoReplacesFeatures` Array on `DnD35AcfSwapSchema`**:
+  - Extended `DnD35AcfSwapSchema` with `alsoReplacesFeatures: z.array(z.string()).default([])`, resolved by `resolveActiveClassFeatures` and cross-checked in `class_race_validator.ts`.
+  - *Rationale*: ACFs like *Druidic Avenger* (`UA p. 51`) trade multiple base features (`animal_companion` and `wild_empathy`) for a single feature package. Adding `alsoReplacesFeatures` preserves backwards compatibility with single-feature `replacesFeature` swaps while modeling multi-feature trades cleanly in JSON.
+
+- **Decision 2: Druid *Shapeshift* via Console `PropertyOverlayComponent.statModifiers` / `naturalWeaponsOverride` & `TacticalDoctrineComponent` Stance Groups**:
+  - Extended `PropertyOverlayComponent` / `PropertyOverlayLayer` with `statModifiers` and `naturalWeaponsOverride` so `resolveEffectiveEntityDataWithOverlays` projects typed enhancement/competence bonuses (`+4`/`+2`/`+8` `enhancement` to STR and Natural Armor, `+2` `competence` to Reflex in Aerial Form) and form-specific natural weapons (Bite, Talon, Bite + Claws) without overwriting base ability scores (`statOverrides`), and hydrates the round `actionBudget` on TurnBased swift-action invocation.
+  - *Rationale*: Reusing `PropertyOverlayComponent` with typed `statModifiers` ensures non-destructive, priority-layered transformations that obey D&D 3.5e enhancement stacking rules rather than replacing base scores like Wild Shape's `statOverrides`.
+
+- **Decision 3: Declarative Runtime Hooks for *Metamagic Specialist*, *Bardic Knack*, *Healing Hymn*, and Cleric *Spontaneous Domain Casting* (*PHB II* p. 37)**:
+  - *Spontaneous Domain Casting* (*PHB II* p. 37): Distinguished the Level 1 Cleric ACF (*Spontaneous Domain Casting*, replacing standard *Cure*/*Inflict* conversion with free spontaneous conversion into a single chosen domain `spontaneousDomainId ?? domains[0]` and allowing *Cure*/*Inflict* preparation in `domain` spell slots via `canPrepareSpellInDomainSlot`) from the *Complete Divine* `[Divine]` feat *Domain Spontaneity*.
+  - *Metamagic Specialist*: `consumeSpellActionBudget` accepts `bypassSpontaneousMetamagicTimeIncrease` gated on `trait:metamagic_specialist` + remaining `metamagic_specialist` pool charges (`3 + INT mod`), preserving Move actions on spontaneous metamagic casts.
+  - *Bardic Knack*: `resolveSkillCheck` and `computePassiveSkillModifier` support `minSkillRanksFloor = max(1, floor(bardLevel / 2))` via `getBardicKnackFloor` (reading `scalingPools.bardic_knack_level` first per Rule 19 Layer C), enabling untrained checks in `trainedOnly` skills and reflecting effective ranks on the character sheet.
+  - *Healing Hymn*: Activating `bardic_music` / `healing_hymn` with `healing_hymn` applies `healing_hymn_active`, and `resolveHealingHymnBonus` grants `+Perform ranks` to `healing` spell units cast within `30 ft` of a non-hostile active performer before save halving and undead positive-energy inversion.
 

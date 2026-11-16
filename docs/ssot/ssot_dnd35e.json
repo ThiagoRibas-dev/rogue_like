@@ -1011,6 +1011,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/attack_routine.ts."
     ]
   },
+  "src/rulesets/dnd35e/combat/bull_rush_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves spatial Bull Rush push distances along movement vectors and triggers Dungeon Crasher Tier 1/2 wall-slam damage.",
+    "canonicalEntryPoints": [
+      "BullRushImpactResult",
+      "resolveDungeonCrasherProfile",
+      "resolveBullRushImpact"
+    ],
+    "ownershipBoundary": {
+      "includes": "Opposed Bull Rush grid push simulation, obstacle detection, wall-slam Dungeon Crasher damage calculation, and Spatial Flanking Graph resync.",
+      "excludes": "Generic combat maneuver roll math (owned by maneuvers_conditions.ts)."
+    },
+    "antiPatterns": [
+      "Never hardcode Dungeon Crasher damage multipliers inside UI or generic intent handlers."
+    ]
+  },
   "src/rulesets/dnd35e/combat/cleave_whirlwind.ts": {
     "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
     "tier": "tier2_cartridge",
@@ -1025,6 +1042,29 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/cleave_whirlwind.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/combat/combat_acf_riders.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves ACF strike riders and combat stance modifiers: Sneak Attack, Penetrating Strike, Smite Evil, Charging Smite, Distracting Attack, Whirling Frenzy, and Rage.",
+    "canonicalEntryPoints": [
+      "SMITE_EVIL_ACTIVE_STATUS_ID",
+      "CHARGE_MOVEMENT_MIN_FT",
+      "WHIRLING_FRENZY_ATTACK_PENALTY",
+      "SmiteStrikeContext",
+      "resolveSmiteAndChargeContext",
+      "resolveSneakAttackDiceCount",
+      "resolvePrecisionDamageOnHit",
+      "finalizeStrikeAcfStateUpdates",
+      "collectRageAndFrenzyModifiers"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure ACF strike rider evaluation, post-strike pool/status updates, and Rage/Whirling Frenzy StatModifier emission.",
+      "excludes": "Iterative BAB sequencing (owned by attack_routine.ts) or spatial flanking geometry (owned by flanking_graph.ts)."
+    },
+    "antiPatterns": [
+      "Never gate Rage or Whirling Frenzy bonuses on passive stance feature tags without checking live activation state."
     ]
   },
   "src/rulesets/dnd35e/combat/combat_exchange_phases.ts": {
@@ -1097,6 +1137,31 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/combat/full_attack_sequence.ts."
     ]
   },
+  "src/rulesets/dnd35e/combat/immediate_reactions.ts": {
+    "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
+    "tier": "tier2_cartridge",
+    "responsibility": "Executes Immediate Action defensive abilities (Invisible Fist, Abrupt Jaunt two-step targeting & teleport) and evaluates armed off-turn reaction policies.",
+    "canonicalEntryPoints": [
+      "ABRUPT_JAUNT_MAX_TILES",
+      "INVISIBLE_FIST_DURATION_ROUNDS",
+      "INVISIBLE_FIST_COOLDOWN_ROUNDS",
+      "INVISIBLE_ACTIVE_STATUS_ID",
+      "INVISIBLE_FIST_COOLDOWN_STATUS_ID",
+      "executeInvisibleFistImmediate",
+      "initiateAbruptJauntTargeting",
+      "executeAbruptJauntTeleport",
+      "evaluateOffTurnImmediateReactions",
+      "getNextReactionTrigger",
+      "evaluateAdjacentEnemyReactionsOnMove"
+    ],
+    "ownershipBoundary": {
+      "includes": "Immediate action cooldown/line-of-effect validation, off-turn reaction policy dispatch, and targeting initiation for Abrupt Jaunt.",
+      "excludes": "Generic TurnBased energy deduction (owned by dnd35e_turn_budget.ts)."
+    },
+    "antiPatterns": [
+      "Never deduct Standard Actions or daily charges before Abrupt Jaunt two-step targeting confirms a valid destination."
+    ]
+  },
   "src/rulesets/dnd35e/combat/maneuvers_conditions.ts": {
     "domain": "D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage",
     "tier": "tier2_cartridge",
@@ -1158,6 +1223,7 @@
     "tier": "tier2_cartridge",
     "responsibility": "Evaluates Power Attack, Combat Expertise, and Fighting Defensively modifiers, per-strike doctrine damage scaling, and carrying capacity encumbrance.",
     "canonicalEntryPoints": [
+      "DECISIVE_STRIKE_ATTACK_PENALTY",
       "evaluateTacticalDoctrineModifiers",
       "computeStrikeDoctrineDamageBonus",
       "computeEncumbranceState"
@@ -1497,6 +1563,8 @@
     "tier": "tier2_cartridge",
     "responsibility": "Applies evaluated DnD35SpellEffectUnits and top-level effectBundles onto a target entity with same-spell modifier replacement and undead healing inversion.",
     "canonicalEntryPoints": [
+      "HEALING_HYMN_RADIUS_FT",
+      "resolveHealingHymnBonus",
       "ApplySpellEffectsContext",
       "applyResolvedSpellEffectsToTarget"
     ],
@@ -1606,6 +1674,8 @@
       "collectActorDomainSpellIds",
       "computeClassLevelSlotSummaries",
       "reconcilePreparedSlots",
+      "resolveActiveSpontaneousConversionModes",
+      "canPrepareSpellInDomainSlot",
       "getSpontaneousConversionTargets"
     ],
     "ownershipBoundary": {
@@ -2031,6 +2101,27 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/semantic_tags.ts."
     ]
   },
+  "src/rulesets/dnd35e/shapeshift.ts": {
+    "domain": "D&D 3.5e: Races, Templates, Bestiary & Companions",
+    "tier": "tier2_cartridge",
+    "responsibility": "Druid Shapeshift Alternate Class Feature runtime form resolver (PHB II p. 39) managing swift-action Predator, Aerial, and Ferocious Slayer combat overlays and stance groups.",
+    "canonicalEntryPoints": [
+      "SHAPESHIFT_OVERLAY_SOURCE",
+      "SHAPESHIFT_OVERLAY_PRIORITY",
+      "SHAPESHIFT_STANCE_GROUP_ID",
+      "DnD35ShapeshiftFormId",
+      "SHAPESHIFT_FORM_MIN_LEVELS",
+      "isDruidShapeshiftEligible",
+      "executeDruidShapeshift"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/shapeshift.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/shapeshift.ts."
+    ]
+  },
   "src/rulesets/dnd35e/skill_verbs.ts": {
     "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
     "tier": "tier2_cartridge",
@@ -2062,6 +2153,8 @@
       "TAKE_10_VALUE",
       "TAKE_20_VALUE",
       "TAKE_20_DURATION_MULTIPLIER",
+      "resolveBardicKnackEffectiveRanks",
+      "getBardicKnackFloor",
       "resolveSkillCheck",
       "resolveDiplomacyCheck",
       "resolveMonsterLoreCheck",
@@ -2201,6 +2294,26 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/cover_senses.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/spatial/flanking_graph.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
+    "tier": "tier2_cartridge",
+    "responsibility": "Maintains relational flanking pairs (flankingTargetIds / flankedByEntityIds), supports offset/solo/distracted flanking overrides and flanking immunities, and syncs flanking/flanked status effects.",
+    "canonicalEntryPoints": [
+      "FLANKING_STATUS_ID",
+      "FLANKED_STATUS_ID",
+      "DISTRACTED_FLANKED_STATUS_ID",
+      "removeStatusEffectById",
+      "evaluateEntityFlankingTarget",
+      "syncSpatialFlankingGraph"
+    ],
+    "ownershipBoundary": {
+      "includes": "Relational flanking graph evaluation, Uncanny Dodge / All-Around Vision immunity checks, and StatusEffectsComponent synchronization.",
+      "excludes": "Low-level ray/corner geometry helpers (owned by cover_senses.ts)."
+    },
+    "antiPatterns": [
+      "Never hardcode specific feat or ACF IDs for flanking overrides; always evaluate semantic tags."
     ]
   },
   "src/rulesets/dnd35e/spatial/grid_geometry.ts": {
@@ -2386,6 +2499,7 @@
       "NaturalWeaponDescriptor",
       "DnD35Alignment",
       "DnD35SpellSchool",
+      "DnD35FlankingRelations",
       "DnD35EntityData"
     ],
     "ownershipBoundary": {

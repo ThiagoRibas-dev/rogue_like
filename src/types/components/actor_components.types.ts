@@ -281,9 +281,18 @@ export interface ResourcePoolComponent {
  */
 export type WeaponGripMode = 'one_handed' | 'two_handed' | 'double_weapon_twf';
 
+/** Trigger condition for an armed off-turn Immediate Action reaction ability. */
+export type ImmediateReactionTrigger = 'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move';
+
+/** Configuration for an armed Immediate Action reaction ability (e.g. 'abrupt_jaunt', 'invisible_fist'). */
+export interface ImmediateReactionPolicy {
+  readonly enabled: boolean;
+  readonly trigger: ImmediateReactionTrigger;
+}
+
 /**
  * Component storing active tactical stances and combat trade-offs (Power Attack, Combat Expertise, Fighting Defensively)
- * as well as data-driven doctrine settings and weapon grip mode.
+ * as well as data-driven doctrine settings, weapon grip mode, and armed off-turn reaction policies.
  */
 export interface TacticalDoctrineComponent {
   readonly type: ComponentType.TacticalDoctrine;
@@ -291,10 +300,14 @@ export interface TacticalDoctrineComponent {
   readonly combatExpertiseAmount?: number | undefined;
   readonly fightingDefensively?: boolean | undefined;
   readonly totalDefense?: boolean | undefined;
+  readonly decisiveStrike?: boolean | undefined;
+  readonly whirlingFrenzy?: boolean | undefined;
   readonly gripMode?: WeaponGripMode | undefined;
   readonly settings?: Readonly<Record<string, boolean | number | string>> | undefined;
   /** Active stance ID keyed by mutually exclusive stance group ID (e.g. { blade_tempest_cadence: 'flurry_of_steel' }). */
   readonly activeStanceGroups?: Readonly<Record<string, string>> | undefined;
   /** Per-round usage counter for triggered or retaliatory abilities (reset at round start). */
   readonly triggeredUsesThisRound?: Readonly<Record<string, number>> | undefined;
+  /** Armed off-turn Immediate Action reaction policies keyed by pool/ability ID. */
+  readonly reactionPolicies?: Readonly<Record<string, ImmediateReactionPolicy>> | undefined;
 }

@@ -2025,3 +2025,54 @@ Re-architect the D&D 3.5e Character Sheet (`src/rendering/ui/dnd35e_sheet*.ui.ts
 - [x] **Legacy Eviction & SSOT Synchronization (`docs/ssot/ssot_dnd35e.json`, `docs/SSOT_DND35E.md`)**:
   - Evicted obsolete split tabs `src/rendering/ui/dnd35e_sheet_feats_abilities_tab.ui.ts` and `src/rendering/ui/dnd35e_sheet_skills_tab.ui.ts`, keeping all files under 250 LOC and passing Knip dead code audits and SSOT parity checks.
 
+---
+
+# 🚀 Phase 35: Alternate Class Features (ACF) Mechanics, Declarative Capabilities & Core Class Expansion
+
+Bridge the execution gap between ACF progression selection and live gameplay mechanics: bind all ACF swaps to declarative `featureDetails` (tags, bonus feats, stat modifiers, and resource pools), wire combat and tactical execution pipelines (Pounce charge attack routines, Whirling Frenzy stances, Dungeon Crasher wall impacts, Decisive Strike multipliers, Penetrating Strike precision damage on immune targets, and Abrupt Jaunt teleports), eliminate Rule 21 content-ID branching in spontaneous spellcasting, and expand missing ACF selections across the remaining core base classes (Druid, Sorcerer, Bard).
+
+## 🟢 Milestone 135: ACF Declarative Schema Alignment, `featureDetails` Binding & Rule 21 Anti-Hardcoding (Complete)
+
+- [x] **Declarative `featureDetails` Binding for All Base Class ACFs (`public/data/rulesets/dnd35e/classes/*.json`, `src/rulesets/dnd35e/types/system/class_system.types.ts`)**:
+  - Complete `featureDetails` entries for all existing 10 ACFs across `barbarian.json`, `cleric.json`, `fighter.json`, `monk.json`, `paladin.json`, `ranger.json`, `rogue.json`, and `wizard.json` so `grantedFeature` IDs (`pounce`, `improved_trip`, `whirling_frenzy`, `domain_spontaneity`, `dungeon_crasher_1`, `decisive_strike`, `invisible_fist`, `charging_smite`, `distracting_attack`, `penetrating_strike`, `abrupt_jaunt`) resolve real data instead of returning `undefined`.
+  - Wire `grantedFeats: ["improved_trip"]` for Wolf Totem Barbarian (`barbarian_wolf_totem_2`) in `barbarian.json` so `collectActiveGrantedAndVirtualFeats` awards Improved Trip without requiring Combat Expertise.
+  - Wire `grantedTags: ["special_attack:pounce"]` on `pounce` in `barbarian.json`, and ensure `hasPounce` evaluation in `level_ledger.ts` / `semantic_tags.ts` is driven dynamically from `activeClassFeatures.includes('pounce')` across all level-ups and archetype hydrations.
+  - Wire `resourcePool` on `wizard_abrupt_jaunt_1` (`poolId: 'abrupt_jaunt'`, `maxBase: 0`, `abilityModStat: 'int'`, `refreshCycle: 'rest_8h'`) and `barbarian_whirling_frenzy_1` (`poolId: 'whirling_frenzy'`, `maxBase: 1`, `refreshCycle: 'rest_8h'`).
+- [x] **Rule 21 Declarative Spontaneous Conversion Refactoring (`src/rulesets/dnd35e/types/system/effect_system.types.ts`, `src/rulesets/dnd35e/magic/spellbook_slots.ts`, `public/data/rulesets/dnd35e/classes/cleric.json`)**:
+  - Extend `DnD35ClassFeatureDetailSchema` with optional declarative `spontaneousConversionMode?: 'cure_or_inflict' | 'domain' | 'summon_nature_ally'`.
+  - Evict the hardcoded `a === 'cleric_domain_spontaneity_1' || a === 'domain_spontaneity'` content-ID check in `getSpontaneousConversionTargets` (`spellbook_slots.ts`) in favor of querying the active features' declarative conversion capabilities (`resolveActiveSpontaneousConversionModes`), converting into the Cleric's single chosen domain (`spontaneousDomainId ?? domains[0]`) and permitting *Cure* / *Inflict* preparation in `domain` spell slots (`canPrepareSpellInDomainSlot`, PHB II p. 37 *Spontaneous Domain Casting*).
+- [x] **Cross-Reference Validation Hardening (`src/rulesets/dnd35e/validation/class_race_validator.ts`)**:
+  - Add validator checks verifying that every `grantedFeature` in `classDef.acfSwaps` is registered either in `classDef.featureDetails` or exists in `systemContent.feats` (for direct feat grants).
+  - Add validator checks ensuring any ACF declaring a `resourcePool` or `modifiers` conforms to the effect bundle / DAG schema.
+
+## 🟢 Milestone 136: Active ACF Mechanical Pipeline Integration (Combat, Stances, Relational Flanking & Immediate Reactions) (Complete)
+
+- [x] **Relational Flanking Graph & `flanking` / `flanked` Status Synchronization (`src/rulesets/dnd35e/spatial/flanking_graph.ts`, `src/rulesets/dnd35e/types/dnd35e.types.ts`)**:
+  - Track directional flanking pairs (`flankingTargetIds`, `flankedByEntityIds`) on `DnD35EntityData.flankingRelations` and keep `'flanking'` / `'flanked'` status effects synced automatically across movement steps, Bull Rush pushes, Abrupt Jaunt teleports, Distracting Attack hits, and turn starts.
+  - Support declarative overrides (`trait:offset_flanking`, `trait:island_of_blades`, `trait:adaptable_flanker`, `trait:flank_alone` / `rule:flank_alone`, `status:distracted_flanked`) and defender immunities (`trait:all_around_vision`, `trait:immune_flanking`, `improved_uncanny_dodge` rogue-level threshold).
+- [x] **Combat Pipeline Integration: Pounce, Bull Rush & Dungeon Crasher (Tiers 1 & 2), Penetrating Strike, Charging Smite & Distracting Attack (`src/rulesets/dnd35e/combat/{bull_rush_resolver,combat_acf_riders,combat_exchange_pipeline}.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts`, `public/data/rulesets/dnd35e/classes/{fighter,rogue,paladin}.json`)**:
+  - **Pounce**: Enforces full-attack execution at the conclusion of a Charge move (`>= 10 ft`) when the actor possesses `special_attack:pounce` or `hasPounce`.
+  - **Bull Rush & Dungeon Crasher Tiers 1 & 2**: Resolves spatial push-back on Bull Rush and triggers wall-slam bludgeoning damage (`4d6 + 2 * STR` at Fighter Level 2 via `dungeon_crasher_1`; `8d6 + 3 * STR` at Fighter Level 6 via `dungeon_crasher_2`).
+  - **Penetrating Strike**: When flanking a target immune to critical hits/sneak attacks (or fortification-negated), rolls `floor(N/2)d6` precision damage; wired Rogue `sneak_attack_*` `scalingPoolContribution` (`sneak_attack_dice`).
+  - **Charging Smite**: Grants `+CHA` attack and `+3 * smiteLevel` damage on Charge Smite Evil strikes against `alignment:evil` targets, refunding `1` `smite_evil` pool charge on miss or non-evil target.
+  - **Distracting Attack**: Applies `distracted_flanked` to hit targets until the start of the Ranger's next turn, updating the Relational Flanking Graph immediately.
+- [x] **Tactical Stances, Two-Step Targeting & Off-Turn Immediate Reaction Policies (`src/rulesets/dnd35e/combat/{immediate_reactions,attack_routine,tactical_doctrine}.ts`, `src/types/components/actor_components.types.ts`, `src/rulesets/dnd35e/cartridge/{dnd35e_dag_adapter,dnd35e_lifecycle_adapter,dnd35e_turn_budget}.ts`, `src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts`)**:
+  - **Whirling Frenzy**: Evaluates `doctrine.whirlingFrenzy` and `status:pool_whirling_frenzy_active` (`+4/+6/+8 STR`, `+2/+3/+4 dodge AC/Ref`, `+1` full-BAB strike at `-2` penalty).
+  - **Decisive Strike**: Collapses full-round routine to a single strike at `-2` dealing `2x` damage and granting `decisive_strike_aoo_active` for AoOs until next turn.
+  - **Invisible Fist**: Consumes an Immediate Action, grants `invisible_active` (`trait:invisible`) for 1 round, and enforces a 3-round `invisible_fist_cooldown`.
+  - **Abrupt Jaunt & Configurable Reaction Policies**: Implements interactive two-step targeting (`maxRangeTiles: 2`, confirmed via `FireAimed` without premature action expenditure) alongside `TacticalDoctrineComponent.reactionPolicies` (`off`, `before_melee_attack`, `before_any_attack`, `on_enemy_adjacent_move`) hooked into movement steps, melee attacks, hotbar stances, and character sheet cyclers, verified with `tests/dnd35e_m136_acf_mechanics.test.ts`.
+
+## 🟢 Milestone 137: Core Class ACF Expansion (Druid, Sorcerer, Bard) & Regression Parity (Complete)
+
+- [x] **Author Core Base Class ACFs (`public/data/rulesets/dnd35e/classes/{druid,sorcerer,bard}.json`)**:
+  - **Druid**:
+    - *Druidic Avenger* (Unearthed Arcana p. 51): Trades animal companion and wild empathy (via `alsoReplacesFeatures`) for Fast Movement (`+10 ft`), Rage (`1/day` at L1 + `1/day` per 5 levels), and `+2` Survival bonus.
+    - *Shapeshift* (PHB II p. 39): Trades Wild Shape and animal companion for at-will swift-action Predator (L1), Aerial (L5), and Ferocious Slayer (L8) form combat stat overlays (`src/rulesets/dnd35e/shapeshift.ts`) with typed `statModifiers` (`+4`/`+2`/`+8` enhancement to STR and Natural Armor, `+2` competence to Reflex in Aerial Form), natural weapons (`naturalWeaponsOverride`), movement mode overrides, and hotbar stance modes.
+  - **Sorcerer**:
+    - *Metamagic Specialist* (PHB II p. 61): Trades summon familiar to apply metamagic feats without increasing spontaneous casting time (`consumeSpellActionBudget` bypass + `metamagic_specialist` pool `3 + INT mod` uses/day).
+  - **Bard**:
+    - *Bardic Knack* (PHB II p. 35): Trades Bardic Knowledge to use `max(1, floor(bardLevel / 2))` (via `scalingPools.bardic_knack_level`) as an effective skill rank floor across skill checks (including trained-only skills) and character sheet projections.
+    - *Healing Hymn* (Complete Champion p. 47): Trades Fascinate to apply `healing_hymn_active` when performing and add `+Perform ranks` to healing spells cast by self or allies within `30 ft` (including positive-energy damage against undead).
+- [x] **Testing, SSOT Documentation & Full Parity Verification (`tests/dnd35e_m137_acf_mechanics.test.ts`, `docs/SSOT_DND35E.md`, `docs/DECISIONS.md`)**:
+  - Authored unit + end-to-end integration tests in `tests/dnd35e_m137_acf_mechanics.test.ts` and `tests/dnd35e_spellbook_slots.test.ts` covering all Druid, Sorcerer, Bard, and Cleric ACFs alongside existing M135/M136 ACF suites.
+  - Updated `docs/DECISIONS.md`, synced `docs/ssot/ssot_dnd35e.json` (`map-codebase.ts`), and passed all 8 stages of `./verify.sh`.

@@ -36,9 +36,42 @@
           "offset": 0,
           "minClassLevel": 1
         }
+      },
+      "metamagic_specialist": {
+        "id": "metamagic_specialist",
+        "name": "Metamagic Specialist",
+        "category": "ex",
+        "usageMode": "triggered",
+        "description": "Apply metamagic feats to spontaneous spells without increasing their casting time (usable 3 + INT modifier times per day). Trades Summon Familiar.",
+        "grantedTags": [
+          "trait:metamagic_specialist"
+        ],
+        "ruleOverrides": [
+          {
+            "id": "metamagic_specialist_rapid",
+            "ruleKey": "spontaneous_metamagic_no_time_increase",
+            "value": true,
+            "priority": 20
+          }
+        ],
+        "resourcePool": {
+          "poolId": "metamagic_specialist",
+          "maxBase": 3,
+          "abilityModStat": "int",
+          "refreshCycle": "rest_8h"
+        }
       }
     },
-    "acfSwaps": [],
+    "acfSwaps": [
+      {
+        "acfId": "sorcerer_metamagic_specialist_1",
+        "name": "Metamagic Specialist",
+        "replacesFeature": "summon_familiar",
+        "grantedFeature": "metamagic_specialist",
+        "level": 1,
+        "description": "Apply metamagic feats to spontaneous spells without increasing their casting time (usable 3 + INT mod times/day) in exchange for Summon Familiar."
+      }
+    ],
     "progression": [
       {
         "level": 1,

@@ -82,6 +82,8 @@ export type {
   ResourcePoolEntry,
   ResourcePoolComponent,
   WeaponGripMode,
+  ImmediateReactionTrigger,
+  ImmediateReactionPolicy,
   TacticalDoctrineComponent
 } from './components/actor_components.types.ts';
 

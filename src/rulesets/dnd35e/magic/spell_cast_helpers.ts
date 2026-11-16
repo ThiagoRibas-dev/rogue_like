@@ -121,7 +121,8 @@ export function consumeSpellActionBudget(
   budget: DnD35ActionBudget | undefined,
   castingTime: DnD35SpellDefinition['castingTime'],
   isSpontaneous: boolean,
-  meta: MetamagicSummary
+  meta: MetamagicSummary,
+  bypassSpontaneousMetamagicTimeIncrease = false
 ): { readonly allowed: boolean; readonly budget?: DnD35ActionBudget | undefined; readonly reason?: string } {
   if (!budget) return { allowed: true };
 
@@ -133,7 +134,9 @@ export function consumeSpellActionBudget(
     };
   }
 
-  const spMetaAction = getSpontaneousMetamagicActionType(isSpontaneous, meta.hasNonQuickenMetamagic);
+  const spMetaAction = bypassSpontaneousMetamagicTimeIncrease
+    ? 'standard'
+    : getSpontaneousMetamagicActionType(isSpontaneous, meta.hasNonQuickenMetamagic);
   if (castingTime === 'full_round' || castingTime === '1_round' || spMetaAction === 'full_round') {
     if (budget.standardRemaining < 1 || budget.moveRemaining < 1 || budget.distanceMovedThisRoundFt > 5) {
       return { allowed: false, reason: 'Requires a Full-Round Action (Standard + Move).' };

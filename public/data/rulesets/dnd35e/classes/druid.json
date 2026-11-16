@@ -107,9 +107,144 @@
         "name": "Venom Immunity",
         "category": "ex",
         "description": "Immunity to all organic poisons."
+      },
+      "spontaneous_summon_natures_ally": {
+        "id": "spontaneous_summon_natures_ally",
+        "name": "Spontaneous Summon Nature's Ally",
+        "category": "su",
+        "description": "Channel stored spell energy into Summon Nature's Ally spells of the same spell level.",
+        "spontaneousConversionMode": "summon_nature_ally"
+      },
+      "druidic_avenger": {
+        "id": "druidic_avenger",
+        "name": "Druidic Avenger",
+        "category": "ex",
+        "description": "Gain Fast Movement (+10 ft speed when not heavily armored or encumbered), +2 Survival, and Rage (1/day at 1st level, scaling by +1/day per 5 levels). Trades Animal Companion and Wild Empathy.",
+        "grantedTags": [
+          "trait:druidic_avenger",
+          "trait:fast_movement",
+          "feature:rage_1"
+        ],
+        "modifiers": [
+          {
+            "id": "druidic_avenger_fast_movement",
+            "target": "speed",
+            "value": 10,
+            "type": "untyped",
+            "condition": {
+              "selfTagsNone": [
+                "armor:heavy",
+                "load:heavy"
+              ]
+            }
+          },
+          {
+            "id": "druidic_avenger_survival",
+            "target": "skill:survival",
+            "value": 2,
+            "type": "untyped"
+          }
+        ],
+        "resourcePool": {
+          "poolId": "rage",
+          "maxBase": 1,
+          "perClassLevel": 0.2,
+          "refreshCycle": "rest_8h"
+        }
+      },
+      "shapeshift": {
+        "id": "shapeshift",
+        "name": "Shapeshift",
+        "category": "su",
+        "usageMode": "toggle",
+        "description": "At will as a swift action, assume a predator, aerial, or ferocious slayer combat form (or revert to normal form) gaining strength, natural armor, movement, and natural weapons. Trades Animal Companion and Wild Shape.",
+        "grantedTags": [
+          "trait:shapeshift"
+        ],
+        "activatedAbilities": [
+          {
+            "abilityId": "shapeshift_predator",
+            "name": "Shapeshift: Predator Form",
+            "actionCost": "swift",
+            "toggleGroup": "druid_shapeshift_form",
+            "grantsSelfTag": "form:shapeshift_predator"
+          },
+          {
+            "abilityId": "shapeshift_aerial",
+            "name": "Shapeshift: Aerial Form",
+            "actionCost": "swift",
+            "toggleGroup": "druid_shapeshift_form",
+            "grantsSelfTag": "form:shapeshift_aerial"
+          },
+          {
+            "abilityId": "shapeshift_ferocious_slayer",
+            "name": "Shapeshift: Ferocious Slayer Form",
+            "actionCost": "swift",
+            "toggleGroup": "druid_shapeshift_form",
+            "grantsSelfTag": "form:shapeshift_ferocious_slayer"
+          }
+        ]
       }
     },
-    "acfSwaps": [],
+    "acfSwaps": [
+      {
+        "acfId": "druid_druidic_avenger_1",
+        "name": "Druidic Avenger",
+        "replacesFeature": "animal_companion",
+        "alsoReplacesFeatures": [
+          "wild_empathy"
+        ],
+        "grantedFeature": "druidic_avenger",
+        "level": 1,
+        "description": "Gain Fast Movement (+10 ft), +2 Survival, and Rage 1/day (scaling) in exchange for Animal Companion and Wild Empathy."
+      },
+      {
+        "acfId": "druid_shapeshift_1",
+        "name": "Shapeshift (1st Level)",
+        "replacesFeature": "animal_companion",
+        "alsoReplacesFeatures": [
+          "wild_shape_1",
+          "wild_shape_2",
+          "wild_shape_3",
+          "wild_shape_large",
+          "wild_shape_4",
+          "wild_shape_tiny",
+          "wild_shape_plant",
+          "wild_shape_5",
+          "wild_shape_huge",
+          "wild_shape_elemental_1",
+          "wild_shape_6",
+          "wild_shape_elemental_2",
+          "wild_shape_elemental_3_huge"
+        ],
+        "grantedFeature": "shapeshift",
+        "level": 1,
+        "description": "Gain swift-action at-will Shapeshift (Predator, Aerial, Ferocious Slayer forms) in exchange for Animal Companion and Wild Shape."
+      },
+      {
+        "acfId": "druid_shapeshift_5",
+        "name": "Shapeshift (5th Level)",
+        "replacesFeature": "wild_shape_1",
+        "alsoReplacesFeatures": [
+          "animal_companion",
+          "wild_shape_2",
+          "wild_shape_3",
+          "wild_shape_large",
+          "wild_shape_4",
+          "wild_shape_tiny",
+          "wild_shape_plant",
+          "wild_shape_5",
+          "wild_shape_huge",
+          "wild_shape_elemental_1",
+          "wild_shape_6",
+          "wild_shape_elemental_2",
+          "wild_shape_elemental_3_huge"
+        ],
+        "grantedFeature": "shapeshift",
+        "level": 5,
+        "description": "Gain swift-action at-will Shapeshift in exchange for Wild Shape and Animal Companion."
+      }
+    ],
     "progression": [
       {
         "level": 1,

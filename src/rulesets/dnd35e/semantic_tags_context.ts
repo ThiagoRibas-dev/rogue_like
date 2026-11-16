@@ -3,6 +3,7 @@ import {
   ComponentType,
   type EquipmentComponent,
   type ItemComponent,
+  type StatusEffectsComponent,
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
@@ -18,6 +19,7 @@ export interface SituationalTagContext {
   readonly isMetalArmorOrShield?: boolean | undefined;
   readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
   readonly doctrine?: TacticalDoctrineComponent | undefined;
+  readonly activeStatusEffectIds?: ReadonlyArray<string> | undefined;
 }
 
 /** Minimum armor bonus threshold heuristic for Heavy Armor when no item tag is present. */
@@ -134,12 +136,17 @@ export function resolveEntitySituationalTagContext(
 
   const doctrine = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
+  const statuses = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  const activeStatusEffectIds = statuses
+    ? statuses.activeEffects.filter((e) => e.duration > 0).map((e) => e.effectId)
+    : [];
 
   return {
     armorCategory,
     hasShield,
     isMetalArmorOrShield,
     loadCategory: 'light',
-    ...(doctrine !== undefined ? { doctrine } : {})
+    ...(doctrine !== undefined ? { doctrine } : {}),
+    ...(activeStatusEffectIds.length > 0 ? { activeStatusEffectIds } : {})
   };
 }

@@ -5,13 +5,17 @@ import {
   ComponentType,
   type DamageComponent,
   type FighterComponent,
-  type PropertyOverlayComponent
+  type PropertyOverlayComponent,
+  type TagsComponent
 } from '../../../types/components.types.ts';
 import { GameEventType } from '../../../types/events.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { MeleeAttackIntent } from '../../../types/intents/combat.intents.ts';
+import { consumeStandardActionFromBudget } from '../action_economy.ts';
+import { CHARGE_MOVEMENT_MIN_FT } from '../combat/combat_acf_riders.ts';
 import { executeCombatStrikeExchange } from '../combat/combat_exchange_pipeline.ts';
 import { evaluateVitalityStatus, mitigateIncomingDamage } from '../combat/damage_vitality.ts';
+import { evaluateOffTurnImmediateReactions } from '../combat/immediate_reactions.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
 import { getDnD35EntityData, resolveDamageTypeFromTags, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -41,22 +45,48 @@ export function resolveDnD35eMeleeAttack(
     return { state, success: false };
   }
 
+  const reactionRes = evaluateOffTurnImmediateReactions(state, 'before_melee_attack', attackerId, defenderId);
+  let activeState = reactionRes.state;
   const attackerData = resolveEffectiveEntityDataWithOverlays(
-    getDnD35EntityData(state, attackerId),
-    getComponent(state, attackerId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
-  );
-  const defenderData = resolveEffectiveEntityDataWithOverlays(
-    getDnD35EntityData(state, defenderId),
-    getComponent(state, defenderId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
+    getDnD35EntityData(activeState, attackerId),
+    getComponent(activeState, attackerId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
   );
 
-  const sysContent = getDnD35SystemContent(state.campaign);
-  const attackerSituational = resolveEntitySituationalTagContext(state, attackerId, attackerData);
-  const defenderSituational = resolveEntitySituationalTagContext(state, defenderId, defenderData);
+  if (reactionRes.defenderTeleportedOutOfReach) {
+    const budget = attackerData.actionBudget;
+    if (budget && budget.standardRemaining >= 1) {
+      const stdRes = consumeStandardActionFromBudget(budget);
+      activeState = setDnD35EntityData(activeState, attackerId, {
+        ...attackerData,
+        actionBudget: stdRes.budget
+      });
+    }
+    return {
+      state: addMessage(
+        activeState,
+        'Melee attack swings through empty space as defender blinks away!',
+        MessageLogCategory.CombatMiss
+      ),
+      success: true
+    };
+  }
+
+  const defenderData = resolveEffectiveEntityDataWithOverlays(
+    getDnD35EntityData(activeState, defenderId),
+    getComponent(activeState, defenderId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined
+  );
+
+  const sysContent = getDnD35SystemContent(activeState.campaign);
+  const attackerSituational = resolveEntitySituationalTagContext(activeState, attackerId, attackerData);
+  const defenderSituational = resolveEntitySituationalTagContext(activeState, defenderId, defenderData);
+  const atkRawTags =
+    (getComponent(activeState, attackerId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
+  const defRawTags =
+    (getComponent(activeState, defenderId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
 
   const attackerSelfTags = projectDnD35ActorSemanticTags(
     attackerData,
-    [],
+    atkRawTags,
     attackerSituational,
     sysContent?.classes,
     sysContent?.skills,
@@ -65,7 +95,7 @@ export function resolveDnD35eMeleeAttack(
   );
   const defenderSelfTags = projectDnD35ActorSemanticTags(
     defenderData,
-    [],
+    defRawTags,
     defenderSituational,
     sysContent?.classes,
     sysContent?.skills,
@@ -74,41 +104,44 @@ export function resolveDnD35eMeleeAttack(
   );
 
   const attackerEval = evaluateDnD35eEntityDAG(
-    state,
+    activeState,
     attackerId,
     { targetTags: defenderSelfTags },
     { dndData: attackerData, selfTags: attackerSelfTags }
   );
   const defenderEval = evaluateDnD35eEntityDAG(
-    state,
+    activeState,
     defenderId,
     { targetTags: attackerSelfTags },
     { dndData: defenderData, selfTags: defenderSelfTags }
   );
 
   if (!attackerEval || !defenderEval) {
-    return { state, success: false };
+    return { state: activeState, success: false };
   }
 
   if (!attackerEval.canAttack) {
     return {
-      state: addMessage(state, 'Cannot attack while in Total Defense stance!', MessageLogCategory.CombatMiss),
+      state: addMessage(activeState, 'Cannot attack while in Total Defense stance!', MessageLogCategory.CombatMiss),
       success: false
     };
   }
 
   const actionBudget = attackerData.actionBudget;
   if (actionBudget && actionBudget.standardRemaining < 1) {
-    return { state, success: false };
+    return { state: activeState, success: false };
   }
 
   const distanceMovedFt = actionBudget?.distanceMovedThisRoundFt ?? 0;
+  const hasPounce = attackerSelfTags.includes('special_attack:pounce') || attackerData.hasPounce === true;
+  const isChargeAttack = distanceMovedFt >= CHARGE_MOVEMENT_MIN_FT;
   const isFullAttack =
-    distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && (actionBudget ? actionBudget.moveRemaining >= 1 : true);
+    (isChargeAttack && hasPounce) ||
+    (distanceMovedFt <= FIVE_FOOT_STEP_MAX_DISTANCE_FT && (actionBudget ? actionBudget.moveRemaining >= 1 : true));
   const strikes = isFullAttack ? attackerEval.attackRoutine.strikes : attackerEval.attackRoutine.strikes.slice(0, 1);
 
   if (strikes.length === 0) {
-    return { state, success: false };
+    return { state: activeState, success: false };
   }
 
   // Consume Standard (or Full-Round) action in actionBudget if present
@@ -132,7 +165,7 @@ export function resolveDnD35eMeleeAttack(
     };
   }
 
-  let runningState = actionBudget ? setDnD35EntityData(state, attackerId, updatedAttackerData) : state;
+  let runningState = actionBudget ? setDnD35EntityData(activeState, attackerId, updatedAttackerData) : activeState;
   let anyStrikeAttempted = false;
   let defenderHpRemaining = targetFighter.hp;
   let cleavesUsedThisTurn = 0;
@@ -155,7 +188,8 @@ export function resolveDnD35eMeleeAttack(
       attackerEval,
       defenderEval,
       defenderHpRemaining,
-      cleavesUsedThisTurn
+      cleavesUsedThisTurn,
+      isChargeAttack
     });
 
     runningState = exchangeRes.state;

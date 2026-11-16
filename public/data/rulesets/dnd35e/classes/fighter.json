@@ -38,6 +38,78 @@
         "name": "Fighter Bonus Feat",
         "category": "bonus_feat",
         "description": "Gain a bonus combat feat selected from the Fighter Bonus Feat list."
+      },
+      "dungeon_crasher_1": {
+        "id": "dungeon_crasher_1",
+        "name": "Dungeon Crasher",
+        "category": "ex",
+        "description": "+2 competence bonus on saves and AC vs. traps, and 4d6 + (2 * STR) damage when bull-rushing foes into a wall or solid obstacle.",
+        "grantedTags": [
+          "feature:dungeon_crasher",
+          "trait:dungeon_crasher_1"
+        ],
+        "modifiers": [
+          {
+            "id": "dungeon_crasher_save_trap",
+            "target": "save_trap",
+            "value": 2,
+            "type": "competence"
+          },
+          {
+            "id": "dungeon_crasher_ac_trap",
+            "target": "ac_trap",
+            "value": 2,
+            "type": "competence"
+          },
+          {
+            "id": "dungeon_crasher_1_dice",
+            "target": "dungeon_crasher_dice",
+            "value": 4,
+            "type": "untyped"
+          },
+          {
+            "id": "dungeon_crasher_1_str_mult",
+            "target": "dungeon_crasher_str_mult",
+            "value": 2,
+            "type": "untyped"
+          }
+        ]
+      },
+      "dungeon_crasher_2": {
+        "id": "dungeon_crasher_2",
+        "name": "Dungeon Crasher (Improved)",
+        "category": "ex",
+        "description": "+4 competence bonus on saves and AC vs. traps, and 8d6 + (3 * STR) damage when bull-rushing foes into a wall or solid obstacle.",
+        "grantedTags": [
+          "feature:dungeon_crasher",
+          "trait:dungeon_crasher_2"
+        ],
+        "modifiers": [
+          {
+            "id": "dungeon_crasher_2_save_trap",
+            "target": "save_trap",
+            "value": 4,
+            "type": "competence"
+          },
+          {
+            "id": "dungeon_crasher_2_ac_trap",
+            "target": "ac_trap",
+            "value": 4,
+            "type": "competence"
+          },
+          {
+            "id": "dungeon_crasher_2_dice",
+            "target": "dungeon_crasher_dice",
+            "value": 8,
+            "type": "untyped"
+          },
+          {
+            "id": "dungeon_crasher_2_str_mult",
+            "target": "dungeon_crasher_str_mult",
+            "value": 3,
+            "type": "untyped"
+          }
+        ]
       }
     },
     "acfSwaps": [
@@ -48,6 +120,14 @@
         "grantedFeature": "dungeon_crasher_1",
         "level": 2,
         "description": "Replaces 2nd-level Fighter Bonus Feat with +2 competence bonus on saves/AC vs traps and 4d6 + 2x STR damage when bull rushing foes into solid walls."
+      },
+      {
+        "acfId": "fighter_dungeon_crasher_6",
+        "name": "Dungeon Crasher (Improved)",
+        "replacesFeature": "fighter_bonus_feat_6",
+        "grantedFeature": "dungeon_crasher_2",
+        "level": 6,
+        "description": "Replaces 6th-level Fighter Bonus Feat with +4 competence bonus on saves/AC vs traps and 8d6 + 3x STR damage when bull rushing foes into solid walls."
       }
     ],
     "progression": [

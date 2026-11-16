@@ -59,6 +59,12 @@
           "trait:special_attack",
           "special_attack:smite"
         ],
+        "scalingPoolContribution": {
+          "poolId": "smite_evil_damage_level",
+          "multiplier": 1,
+          "offset": 0,
+          "minClassLevel": 1
+        },
         "resourcePool": {
           "poolId": "smite_evil",
           "maxBase": 1,
@@ -144,6 +150,16 @@
           "abilityModStat": "cha",
           "refreshCycle": "rest_8h"
         }
+      },
+      "charging_smite": {
+        "id": "charging_smite",
+        "name": "Charging Smite",
+        "category": "su",
+        "description": "When smiting evil on a charge attack, deal an extra 2 points of damage per paladin level (+3 total per level); if the attack misses, the smite attempt is not wasted.",
+        "grantedTags": [
+          "feature:charging_smite",
+          "trait:charging_smite"
+        ]
       }
     },
     "acfSwaps": [

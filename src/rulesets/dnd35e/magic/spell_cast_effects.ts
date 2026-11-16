@@ -3,15 +3,23 @@
  * Applies evaluated `DnD35SpellEffectUnit`s and top-level `effectBundle`s.
  */
 
-import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addComponent, getComponent, queryEntities } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import { ComponentType, type DamageComponent, type FighterComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type DamageComponent,
+  type FighterComponent,
+  type PositionComponent,
+  type StatusEffectsComponent
+} from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { assertNever } from '../../../utils/assert.ts';
+import { isHostile } from '../../../utils/faction.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
+import { measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ConditionId, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -25,6 +33,51 @@ import {
 } from './spell_effects.ts';
 
 const MIN_ABILITY_SCORE_DEFAULT = 1;
+
+/** Maximum radius in feet for Healing Hymn performance aura (`30 ft`, Complete Champion p. 47). */
+export const HEALING_HYMN_RADIUS_FT = 30;
+
+/**
+ * Computes the bonus healing granted by an active Healing Hymn performed by the caster or
+ * a nearby ally within 30 feet (Complete Champion p. 47).
+ * Grants +1 HP per Perform rank of the highest-ranking active performer.
+ */
+export function resolveHealingHymnBonus(state: GameState, casterId: EntityId): number {
+  const casterPos = getComponent(state, casterId, ComponentType.Position) as PositionComponent | undefined;
+  let maxBonus = 0;
+
+  const candidateIds = queryEntities(state, [ComponentType.StatusEffects]);
+  for (const candidateId of candidateIds) {
+    const statusComp = getComponent(state, candidateId, ComponentType.StatusEffects) as
+      StatusEffectsComponent | undefined;
+    if (!statusComp || !statusComp.activeEffects.some((eff) => eff.effectId === 'healing_hymn_active')) {
+      continue;
+    }
+    if (candidateId !== casterId) {
+      if (isHostile(state, casterId, candidateId)) continue;
+      if (casterPos) {
+        const candidatePos = getComponent(state, candidateId, ComponentType.Position) as PositionComponent | undefined;
+        if (candidatePos) {
+          const dist = measureDnD35DistanceFt(casterPos.x, casterPos.y, candidatePos.x, candidatePos.y);
+          if (dist > HEALING_HYMN_RADIUS_FT) continue;
+        }
+      }
+    }
+
+    const singerDnd = getDnD35EntityData(state, candidateId);
+    let performRanks = singerDnd.skillRanks['perform'] ?? 0;
+    for (const [skillId, ranks] of Object.entries(singerDnd.skillRanks)) {
+      if (skillId.startsWith('perform') && ranks > performRanks) {
+        performRanks = ranks;
+      }
+    }
+    if (performRanks > maxBonus) {
+      maxBonus = performRanks;
+    }
+  }
+
+  return maxBonus;
+}
 
 /** Inputs required to apply resolved spell units onto a single target entity. */
 export interface ApplySpellEffectsContext {
@@ -126,6 +179,15 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
       const expr = buildScaledDiceExpression(unit.dice, 0, flatBonus);
       const unitMeta = unit.metamagicScalable ? metamagic : undefined;
       let amount = Math.max(1, evaluateMetamagicDamage(expr, unitMeta).totalDamage);
+      const hymnBonus = resolveHealingHymnBonus(runningState, casterId);
+      if (hymnBonus > 0) {
+        amount += hymnBonus;
+        runningState = addMessage(
+          runningState,
+          `Healing Hymn empowers healing (+${hymnBonus} HP).`,
+          MessageLogCategory.CombatHit
+        );
+      }
       if (saved && saveEffect === 'half') {
         amount = Math.floor(amount / 2);
       }

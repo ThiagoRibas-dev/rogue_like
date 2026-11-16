@@ -56,7 +56,18 @@
         "id": "spontaneous_casting",
         "name": "Spontaneous Cure / Inflict",
         "category": "su",
-        "description": "Convert any prepared non-domain spell into a Cure (or Inflict) spell of the same spell level."
+        "description": "Convert any prepared non-domain spell into a Cure (or Inflict) spell of the same spell level.",
+        "spontaneousConversionMode": "cure_or_inflict"
+      },
+      "domain_spontaneity": {
+        "id": "domain_spontaneity",
+        "name": "Spontaneous Domain Casting",
+        "category": "su",
+        "description": "Pick one of your two domains; lose any prepared non-domain spell to spontaneously cast a spell of that level or lower from that domain list, and prepare Cure or Inflict spells in domain spell slots (PHB II p. 37).",
+        "spontaneousConversionMode": "domain",
+        "grantedTags": [
+          "feature:domain_spontaneity"
+        ]
       },
       "turn_or_rebuke_undead": {
         "id": "turn_or_rebuke_undead",
@@ -85,11 +96,11 @@
     "acfSwaps": [
       {
         "acfId": "cleric_domain_spontaneity_1",
-        "name": "Domain Spontaneity",
+        "name": "Spontaneous Domain Casting",
         "replacesFeature": "spontaneous_casting",
         "grantedFeature": "domain_spontaneity",
         "level": 1,
-        "description": "Expend a Turn/Rebuke Undead attempt to spontaneously convert any prepared spell into a domain spell of the same level."
+        "description": "Replaces spontaneous Cure/Inflict casting: spontaneously convert prepared spells into spells from one chosen domain, and prepare Cure or Inflict spells in domain spell slots (PHB II p. 37)."
       }
     ],
     "progression": [
