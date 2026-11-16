@@ -1,15 +1,8 @@
 import { addComponent, getComponent } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { matchesEntityTagCondition } from '../../../systems/reaction.system.ts';
-import {
-  ComponentType,
-  type DamageComponent,
-  type IdentityComponent,
-  type PositionComponent,
-  type TacticalDoctrineComponent
-} from '../../../types/components.types.ts';
+import { ComponentType, type DamageComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
-import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -27,7 +20,7 @@ import {
   resolveSneakAttackDiceCount
 } from './combat_acf_riders.ts';
 import { summarizeConditionEffects } from './maneuvers_conditions.ts';
-import { resolveRetaliationRiders } from './retaliation_resolver.ts';
+import { applyPostStrikeRetaliationPhase } from './retaliation_resolver.ts';
 
 /** Parameters for executing a single strike exchange through the 5-phase combat pipeline. */
 export interface StrikeExchangeParams {
@@ -234,27 +227,21 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
       ) {
         continue;
       }
-      if (rider.trigger === 'on_hit' || (rider.trigger === 'on_crit' && rollResult.isCriticalConfirmed)) {
-        const diceExpr =
-          rider.trigger === 'on_crit' && rider.diceByCritMultiplier
-            ? (rider.diceByCritMultiplier[String(strike.critMultiplier)] ??
-              rider.diceByCritMultiplier['2'] ??
-              rider.dice)
-            : rider.dice;
-        if (diceExpr) {
-          const riderRoll = evaluateDiceExpression(diceExpr);
-          const riderAmount = Math.max(0, riderRoll.total);
-          if (riderAmount > 0) {
-            const isEnergy = ['fire', 'cold', 'electricity', 'acid', 'sonic'].includes(rider.damageType);
-            newInstances.push({
-              amount: riderAmount,
-              sourceEntityId: attackerId,
-              tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags]
-            });
-            totalRiderDamage += riderAmount;
-            riderText += ` + ${riderAmount} ${rider.damageType}`;
-          }
-        }
+      if (rider.trigger !== 'on_hit' && !(rider.trigger === 'on_crit' && rollResult.isCriticalConfirmed)) continue;
+      const diceExpr =
+        rider.trigger === 'on_crit' && rider.diceByCritMultiplier
+          ? (rider.diceByCritMultiplier[String(strike.critMultiplier)] ?? rider.diceByCritMultiplier['2'] ?? rider.dice)
+          : rider.dice;
+      const riderAmount = diceExpr ? Math.max(0, evaluateDiceExpression(diceExpr).total) : 0;
+      if (riderAmount > 0) {
+        const isEnergy = ['fire', 'cold', 'electricity', 'acid', 'sonic'].includes(rider.damageType);
+        newInstances.push({
+          amount: riderAmount,
+          sourceEntityId: attackerId,
+          tags: ['melee', isEnergy ? 'energy' : 'physical', rider.damageType, ...bypassTags]
+        });
+        totalRiderDamage += riderAmount;
+        riderText += ` + ${riderAmount} ${rider.damageType}`;
       }
     }
   }
@@ -299,59 +286,7 @@ export function executeCombatStrikeExchange(params: StrikeExchangeParams): Strik
   }
 
   // Phase 4: PostStrikeReactionPhase (Retaliation Riders & Defender Doctrine)
-  const attackerPos = getComponent(runningState, attackerId, ComponentType.Position) as PositionComponent | undefined;
-  const defenderPos = getComponent(runningState, defenderId, ComponentType.Position) as PositionComponent | undefined;
-  const distTiles =
-    attackerPos && defenderPos
-      ? Math.max(Math.abs(attackerPos.x - defenderPos.x), Math.abs(attackerPos.y - defenderPos.y))
-      : 1;
-
-  const defenderAuraContrib = evaluateActiveSpellAuraContributions(runningState, defenderId, defenderSelfTags);
-  const defenderDoctrine = getComponent(runningState, defenderId, ComponentType.TacticalDoctrine) as
-    TacticalDoctrineComponent | undefined;
-
-  if (defenderAuraContrib.retaliationRiders.length > 0) {
-    const attackerIdentity = getComponent(runningState, attackerId, ComponentType.Identity) as
-      IdentityComponent | undefined;
-    const defenderIdentity = getComponent(runningState, defenderId, ComponentType.Identity) as
-      IdentityComponent | undefined;
-    const retResult = resolveRetaliationRiders({
-      activeRiders: defenderAuraContrib.retaliationRiders,
-      defenderDoctrine,
-      triggerType: 'melee',
-      chebyshevDistanceTiles: distTiles,
-      attackerName: attackerIdentity?.name ?? 'Attacker',
-      defenderName: defenderIdentity?.name ?? 'Defender',
-      attackerDr: attackerData.damageReduction,
-      attackerEnergyResistance: attackerData.energyResistance,
-      attackerImmunities: attackerData.immunities,
-      attackerVulnerabilities: attackerData.vulnerabilities
-    });
-
-    if (retResult.updatedDefenderDoctrine) {
-      runningState = addComponent(runningState, defenderId, retResult.updatedDefenderDoctrine);
-    }
-
-    for (const msg of retResult.logMessages) {
-      runningState = addMessage(runningState, msg, MessageLogCategory.CombatHit);
-    }
-
-    if (retResult.totalDamageToAttacker > 0) {
-      const attackerExistingDmg = getComponent(runningState, attackerId, ComponentType.Damage) as
-        DamageComponent | undefined;
-      runningState = addComponent(runningState, attackerId, {
-        type: ComponentType.Damage,
-        instances: [
-          ...(attackerExistingDmg?.instances ?? []),
-          {
-            amount: retResult.totalDamageToAttacker,
-            sourceEntityId: defenderId,
-            tags: ['retaliation', 'force', 'spell']
-          }
-        ]
-      });
-    }
-  }
+  runningState = applyPostStrikeRetaliationPhase(runningState, attackerId, defenderId, attackerData, defenderSelfTags);
 
   // Phase 5: OnDropFollowupPhase (Cleave Follow-up Strikes)
   const foeDropped = currentDefenderHp <= 0;

@@ -31,6 +31,13 @@ export const ACTIVE_SKILL_IDS: ReadonlySet<string> = new Set([
   'tumble'
 ]);
 
+const SHAPESHIFT_STANCE_DEFS = [
+  ['shapeshift_normal', 'normal', 1, 'Normal Form', 'Revert to humanoid form (Swift)'],
+  ['shapeshift_predator', 'predator', 1, 'Predator Form', '+4 STR, +4 Nat AC, 50ft, 1d6 Bite'],
+  ['shapeshift_aerial', 'aerial', 5, 'Aerial Form', '+2 STR, +2 Nat AC, +2 Ref, 40ft Fly'],
+  ['shapeshift_ferocious_slayer', 'ferocious_slayer', 8, 'Ferocious Slayer', 'Large, +8 STR, +8 Nat AC, Bite+Claws']
+] as const;
+
 /** Projects dynamic combat stances and toggle groups (excluding activated daily-use resource pools). */
 export function buildActorStanceModes(
   dndData: Partial<DnD35EntityData>,
@@ -41,6 +48,9 @@ export function buildActorStanceModes(
   auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>
 ): ReadonlyArray<UIStanceModeEntry> {
   const modes: UIStanceModeEntry[] = [];
+  const addMode = (id: string, label: string, isActive: boolean, tooltipText: string, groupId?: string): void => {
+    modes.push({ id, label, isActive, ...(groupId ? { groupId } : {}), tooltipText });
+  };
   const dials: ReadonlyArray<TacticalDialDescriptor> = extractActorTacticalDials(
     dndData.feats ?? [],
     sysFeats,
@@ -48,141 +58,81 @@ export function buildActorStanceModes(
   );
 
   for (const dial of dials) {
-    let currentVal = 0;
-    if (doctrine?.settings) {
-      const settingVal = doctrine.settings[dial.abilityId] ?? doctrine.settings[`${dial.abilityId}_dial`];
-      if (typeof settingVal === 'number') currentVal = settingVal;
-    }
+    const settingVal = doctrine?.settings?.[dial.abilityId] ?? doctrine?.settings?.[`${dial.abilityId}_dial`];
+    let currentVal = typeof settingVal === 'number' ? settingVal : 0;
     if (currentVal === 0 && dial.legacyPropertyKey !== undefined && doctrine) {
       const legacyVal = doctrine[dial.legacyPropertyKey];
       if (typeof legacyVal === 'number') currentVal = legacyVal;
     }
-
     const maxVal = dial.maxCapRule === 'fixed_5' ? Math.min(5, bab) : bab;
+    const label = dial.name ?? dial.abilityId.replace(/_/g, ' ');
     modes.push({
       id: dial.abilityId,
-      label: dial.name ?? dial.abilityId.replace(/_/g, ' '),
+      label,
       isActive: currentVal > 0,
       numericValue: currentVal,
       minNumericValue: dial.min,
       maxNumericValue: maxVal,
-      tooltipText: `${dial.name ?? dial.abilityId} (Current: ${currentVal}, Max: ${maxVal})`
+      tooltipText: `${label} (Current: ${currentVal}, Max: ${maxVal})`
     });
   }
 
   const is2H = doctrine?.gripMode === 'two_handed';
-  modes.push(
-    {
-      id: 'fighting_defensively',
-      label: 'Fighting Def',
-      isActive: doctrine?.fightingDefensively ?? false,
-      tooltipText: 'Fighting Defensively (-4 Attack, +2 Dodge AC)'
-    },
-    {
-      id: 'total_defense',
-      label: 'Total Def',
-      isActive: doctrine?.totalDefense ?? false,
-      tooltipText: 'Total Defense (+4 Dodge AC, Standard Action)'
-    },
-    { id: 'two_handed_grip', label: is2H ? '2H Grip' : '1H Grip', isActive: is2H, tooltipText: 'Toggle Grip Mode' }
-  );
+  const fDef = doctrine?.fightingDefensively ?? false;
+  const tDef = doctrine?.totalDefense ?? false;
+  addMode('fighting_defensively', 'Fighting Def', fDef, 'Fighting Defensively (-4 Atk, +2 AC)');
+  addMode('total_defense', 'Total Def', tDef, 'Total Defense (+4 Dodge AC, Standard)');
+  addMode('two_handed_grip', is2H ? '2H Grip' : '1H Grip', is2H, 'Toggle Grip Mode');
 
   const features = dndData.activeClassFeatures ?? [];
   if (features.includes('decisive_strike')) {
-    modes.push({
-      id: 'decisive_strike',
-      label: 'Decisive 2x',
-      isActive: (doctrine?.decisiveStrike ?? false) && !(doctrine?.totalDefense ?? false),
-      tooltipText: 'Decisive Strike (-2 Attack, single strike dealing 2x damage + 2x AoO damage)'
-    });
+    addMode(
+      'decisive_strike',
+      'Decisive 2x',
+      (doctrine?.decisiveStrike ?? false) && !tDef,
+      'Decisive Strike (-2 Atk, 2x damage)'
+    );
   }
   if (features.includes('whirling_frenzy')) {
-    modes.push({
-      id: 'whirling_frenzy',
-      label: 'Whirling Frenzy',
-      isActive: doctrine?.whirlingFrenzy ?? false,
-      tooltipText: 'Whirling Frenzy (+4 STR, +2 Dodge AC/Ref, +1 Extra Strike at -2 Atk)'
-    });
+    addMode(
+      'whirling_frenzy',
+      'Whirling Frenzy',
+      doctrine?.whirlingFrenzy ?? false,
+      'Whirling Frenzy (+4 STR, +2 AC/Ref)'
+    );
   }
 
   const activeGroups = doctrine?.activeStanceGroups ?? {};
   if (features.includes('shapeshift')) {
     const druidTrack = dndData.tracks?.find((t) => t.trackId === 'druid');
     const druidLevel = Math.max(1, druidTrack?.levels ?? dndData.tracks?.reduce((sum, t) => sum + t.levels, 0) ?? 1);
-    const activeForm = activeGroups['druid_shapeshift_form'];
-
-    modes.push({
-      id: 'shapeshift_normal',
-      label: 'Normal Form',
-      isActive: !activeForm || activeForm === 'normal',
-      groupId: 'druid_shapeshift_form',
-      tooltipText: 'Normal Form (Revert to normal humanoid form as a swift action)'
-    });
-    modes.push({
-      id: 'shapeshift_predator',
-      label: 'Predator Form',
-      isActive: activeForm === 'predator',
-      groupId: 'druid_shapeshift_form',
-      tooltipText: 'Predator Form (+4 STR, +4 Natural Armor, 50 ft speed, 1d6 Bite)'
-    });
-    if (druidLevel >= 5) {
-      modes.push({
-        id: 'shapeshift_aerial',
-        label: 'Aerial Form',
-        isActive: activeForm === 'aerial',
-        groupId: 'druid_shapeshift_form',
-        tooltipText: 'Aerial Form (+2 STR, +2 Natural Armor, +2 Ref, 40 ft Fly, 1d6 Talon)'
-      });
-    }
-    if (druidLevel >= 8) {
-      modes.push({
-        id: 'shapeshift_ferocious_slayer',
-        label: 'Ferocious Slayer',
-        isActive: activeForm === 'ferocious_slayer',
-        groupId: 'druid_shapeshift_form',
-        tooltipText: 'Ferocious Slayer Form (Large, +8 STR, +8 Natural Armor, 40 ft speed, 1d8 Bite + 2x 1d6 Claws)'
-      });
+    const activeForm = activeGroups['druid_shapeshift_form'] ?? 'normal';
+    for (const [id, formKey, minLevel, label, tooltipText] of SHAPESHIFT_STANCE_DEFS) {
+      if (druidLevel >= minLevel) addMode(id, label, activeForm === formKey, tooltipText, 'druid_shapeshift_form');
     }
   }
+
   for (const featId of dndData.feats ?? []) {
-    const featDef = sysFeats?.[featId];
-    for (const act of featDef?.activatedAbilities ?? []) {
-      if (act.toggleGroup) {
-        modes.push({
-          id: act.abilityId,
-          label: act.name,
-          isActive: activeGroups[act.toggleGroup] === act.abilityId,
-          groupId: act.toggleGroup,
-          tooltipText: `${act.name} (${act.toggleGroup})`
-        });
-      }
+    for (const act of sysFeats?.[featId]?.activatedAbilities ?? []) {
+      const grp = act.toggleGroup;
+      if (grp) addMode(act.abilityId, act.name, activeGroups[grp] === act.abilityId, `${act.name} (${grp})`, grp);
     }
   }
 
-  if (auraStanceOptions && auraStanceOptions.length > 0) {
-    for (const opt of auraStanceOptions) {
-      if (modes.some((m) => m.id === opt.stanceId)) continue;
-      const activeStanceId = resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions, true);
-      modes.push({
-        id: opt.stanceId,
-        label: opt.label,
-        isActive: activeStanceId === opt.stanceId,
-        groupId: opt.groupId,
-        tooltipText: opt.tooltipText ?? `${opt.label} (${opt.groupId})`
-      });
-    }
+  for (const opt of auraStanceOptions ?? []) {
+    if (modes.some((m) => m.id === opt.stanceId)) continue;
+    const isActive = resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions, true) === opt.stanceId;
+    addMode(opt.stanceId, opt.label, isActive, opt.tooltipText ?? `${opt.label} (${opt.groupId})`, opt.groupId);
   }
-
   return modes;
 }
 
 function getPoolAbilityIcon(poolId: string): string {
-  const normalized = poolId.toLowerCase();
-  if (normalized.includes('turn') || normalized.includes('rebuke')) return '☀️';
-  if (normalized.includes('rage')) return '🔥';
-  if (normalized.includes('lay_on_hands') || normalized.includes('heal')) return '💛';
-  if (normalized.includes('smite')) return '⚡';
-  return '🌟';
+  const n = poolId.toLowerCase();
+  if (n.includes('turn') || n.includes('rebuke')) return '☀️';
+  if (n.includes('rage')) return '🔥';
+  if (n.includes('lay_on_hands') || n.includes('heal')) return '💛';
+  return n.includes('smite') ? '⚡' : '🌟';
 }
 
 /** Builds the 12-slot NWN2-style hotbar dynamically from equipped weapons, spells, resource abilities, skills, and consumables. */
@@ -193,83 +143,89 @@ export function buildActorHotbarSlots(
   resourcePools?: ResourcePoolComponent
 ): ReadonlyArray<UIHotbarSlot> {
   const candidates: Array<Omit<UIHotbarSlot, 'slotIndex' | 'keyLabel'>> = [];
+  const pushCand = (
+    label: string,
+    iconUrl: string,
+    tooltipTitle: string,
+    actionPayload: NonNullable<UIHotbarSlot['actionPayload']>,
+    isDisabled?: boolean
+  ): void => {
+    candidates.push({
+      label,
+      iconUrl,
+      tooltipTitle,
+      actionPayload,
+      ...(isDisabled !== undefined ? { isDisabled } : {})
+    });
+  };
   const sys = state ? getDnD35SystemContent(state.campaign) : undefined;
   const equip =
     state && entityId !== undefined
       ? (getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined)
       : undefined;
   for (const slot of equip?.slots ?? []) {
-    if (state && (slot.slotType === 'main_hand' || slot.slotType === 'off_hand') && slot.equippedItem !== null) {
-      const item = mapEntityItemToUI(state, slot.equippedItem, true);
-      if (item) {
-        candidates.push({
-          label: item.name,
-          iconUrl: item.iconUrl ?? '⚔️',
-          tooltipTitle: `${item.name} (${slot.id})`,
-          actionPayload: { kind: 'weapon', id: item.id, entityId: slot.equippedItem }
-        });
-      }
-    }
-  }
-
-  const effectivePools = resourcePools ?? dndData.resourcePools;
-  if (effectivePools) {
-    for (const [poolId, entry] of Object.entries(effectivePools.pools)) {
-      if (entry.max <= 0) continue;
-      const displayName = entry.label ?? poolId.replace(/_/g, ' ');
-      const isImmediatePool = poolId === 'abrupt_jaunt' || poolId === 'invisible_fist';
-      const actionTypeLabel = isImmediatePool ? 'Immediate Action' : 'Standard Action';
-      candidates.push({
-        label: `${displayName} (${entry.current}/${entry.max})`,
-        iconUrl: getPoolAbilityIcon(poolId),
-        isDisabled: entry.current <= 0,
-        tooltipTitle: `${displayName}: ${entry.current}/${entry.max} uses remaining (${actionTypeLabel})`,
-        actionPayload: {
-          kind: 'ability',
-          id: poolId,
-          remainingCount: entry.current
-        }
+    if (!state || (slot.slotType !== 'main_hand' && slot.slotType !== 'off_hand') || slot.equippedItem === null)
+      continue;
+    const item = mapEntityItemToUI(state, slot.equippedItem, true);
+    if (item) {
+      pushCand(item.name, item.iconUrl ?? '⚔️', `${item.name} (${slot.id})`, {
+        kind: 'weapon',
+        id: item.id,
+        entityId: slot.equippedItem
       });
     }
   }
 
+  const effectivePools = resourcePools ?? dndData.resourcePools;
+  for (const [poolId, entry] of Object.entries(effectivePools?.pools ?? {})) {
+    if (entry.max <= 0) continue;
+    const displayName = entry.label ?? poolId.replace(/_/g, ' ');
+    const actionType =
+      poolId === 'abrupt_jaunt' || poolId === 'invisible_fist' ? 'Immediate Action' : 'Standard Action';
+    pushCand(
+      `${displayName} (${entry.current}/${entry.max})`,
+      getPoolAbilityIcon(poolId),
+      `${displayName}: ${entry.current}/${entry.max} uses remaining (${actionType})`,
+      { kind: 'ability', id: poolId, remainingCount: entry.current },
+      entry.current <= 0
+    );
+  }
+
   for (const [classId, book] of Object.entries(dndData.spellbooksByClass ?? {})) {
     if (book.castingMode === 'prepared') {
-      const preparedGroups = new Map<string, { spellId: string; slotId?: string; count: number; level?: number }>();
+      const groups = new Map<string, { spellId: string; slotId?: string; count: number; level?: number }>();
       if (book.preparedSlots && book.preparedSlots.length > 0) {
         for (const s of book.preparedSlots) {
           if (s.expended || !s.preparedSpellId) continue;
           const key = `${s.spellLevel}:${s.preparedSpellId}`;
-          const prev = preparedGroups.get(key);
+          const prev = groups.get(key);
           if (prev) prev.count += 1;
-          else preparedGroups.set(key, { spellId: s.preparedSpellId, slotId: s.slotId, count: 1, level: s.spellLevel });
+          else groups.set(key, { spellId: s.preparedSpellId, slotId: s.slotId, count: 1, level: s.spellLevel });
         }
       } else {
         for (const spId of book.preparedSpellIds) {
-          const prev = preparedGroups.get(spId);
+          const prev = groups.get(spId);
           if (prev) prev.count += 1;
-          else preparedGroups.set(spId, { spellId: spId, count: 1 });
+          else groups.set(spId, { spellId: spId, count: 1 });
         }
       }
       let slotIdx = 0;
-      for (const grp of preparedGroups.values()) {
-        const spDef = sys?.spells?.[grp.spellId];
-        const name = spDef?.name ?? grp.spellId.replace(/_/g, ' ');
-        candidates.push({
-          label: grp.count > 1 ? `${name} ×${grp.count}` : name,
-          iconUrl: '✨',
-          tooltipTitle: `Cast ${name} (${classId.toUpperCase()}, ${grp.count} left)`,
-          actionPayload: {
+      for (const grp of groups.values()) {
+        const name = sys?.spells?.[grp.spellId]?.name ?? grp.spellId.replace(/_/g, ' ');
+        pushCand(
+          grp.count > 1 ? `${name} ×${grp.count}` : name,
+          '✨',
+          `Cast ${name} (${classId.toUpperCase()}, ${grp.count} left)`,
+          {
             kind: 'spell',
             id: grp.spellId,
             classId,
-            slotIdx,
+            slotIdx: slotIdx++,
             ...(grp.slotId !== undefined ? { slotId: grp.slotId } : {}),
             ...(grp.level !== undefined ? { spellLevel: grp.level } : {}),
             remainingCount: grp.count
           }
-        });
-        slotIdx++;
+        );
       }
     } else {
       const usedMap = book.spontaneousSlotsUsedByLevel ?? {};
@@ -279,29 +235,23 @@ export function buildActorHotbarSlots(
         const lvl = spDef?.levelByClass[classId] ?? spDef?.level ?? 0;
         const total = book.spellsPerDay[String(lvl)] ?? 0;
         const isAtWill = (lvl === 0 && total === 0) || classId === 'warlock' || classId === 'innate';
-        const rem = isAtWill ? -1 : Math.max(0, total - (usedMap[String(lvl)] ?? 0));
         if (!isAtWill && total <= 0) return;
+        const rem = isAtWill ? -1 : Math.max(0, total - (usedMap[String(lvl)] ?? 0));
         const suffix = rem < 0 ? '∞' : `${rem}`;
-        candidates.push({
-          label: `${name} (${suffix})`,
-          iconUrl: '✨',
-          isDisabled: rem === 0,
-          tooltipTitle: `Cast ${name} (${classId.toUpperCase()} Lv ${lvl}, ${suffix} left)`,
-          actionPayload: { kind: 'spell', id: spellId, classId, slotIdx, spellLevel: lvl, remainingCount: rem }
-        });
+        pushCand(
+          `${name} (${suffix})`,
+          '✨',
+          `Cast ${name} (${classId.toUpperCase()} Lv ${lvl}, ${suffix} left)`,
+          { kind: 'spell', id: spellId, classId, slotIdx, spellLevel: lvl, remainingCount: rem },
+          rem === 0
+        );
       });
     }
   }
   for (const [skillId, ranks] of Object.entries(dndData.skillRanks ?? {})) {
-    if (ranks > 0 && ACTIVE_SKILL_IDS.has(skillId)) {
-      const name = sys?.skills?.[skillId]?.name ?? skillId.replace(/_/g, ' ');
-      candidates.push({
-        label: name,
-        iconUrl: '🎯',
-        tooltipTitle: `Use Skill: ${name} (${ranks} ranks)`,
-        actionPayload: { kind: 'skill', id: skillId }
-      });
-    }
+    if (ranks <= 0 || !ACTIVE_SKILL_IDS.has(skillId)) continue;
+    const name = sys?.skills?.[skillId]?.name ?? skillId.replace(/_/g, ' ');
+    pushCand(name, '🎯', `Use Skill: ${name} (${ranks} ranks)`, { kind: 'skill', id: skillId });
   }
   const inv =
     state && entityId !== undefined
@@ -314,12 +264,7 @@ export function buildActorHotbarSlots(
     if (!state || equippedIds.has(itemId)) continue;
     const item = mapEntityItemToUI(state, itemId, false);
     if (item?.category === 'consumable') {
-      candidates.push({
-        label: item.name,
-        iconUrl: item.iconUrl ?? '🧪',
-        tooltipTitle: `Use ${item.name}`,
-        actionPayload: { kind: 'item', id: item.id, entityId: itemId }
-      });
+      pushCand(item.name, item.iconUrl ?? '🧪', `Use ${item.name}`, { kind: 'item', id: item.id, entityId: itemId });
     }
   }
   return Array.from({ length: HOTBAR_SLOT_COUNT }, (_, i) => {
@@ -331,44 +276,29 @@ export function buildActorHotbarSlots(
 
 /** Projects live 5-tier action pips dynamically from an actor's DnD35ActionBudget. */
 export function buildActorActionPips(dndData: Partial<DnD35EntityData>): ReadonlyArray<UIActionEconomyPip> {
-  const budget = dndData.actionBudget;
-  if (!budget) return DND35E_ACTION_PIPS;
+  const b = dndData.actionBudget;
+  if (!b) return DND35E_ACTION_PIPS;
+  const pip = (id: string, label: string, available: boolean, detailText: string): UIActionEconomyPip => ({
+    id,
+    label,
+    available,
+    detailText
+  });
   const movLabel =
-    budget.movementRemainingFt > 0
-      ? `MOV ${budget.movementRemainingFt}ft`
-      : budget.moveRemaining > 0
-        ? 'MOV'
-        : 'MOV 0ft';
+    b.movementRemainingFt > 0 ? `MOV ${b.movementRemainingFt}ft` : b.moveRemaining > 0 ? 'MOV' : 'MOV 0ft';
+  const movDetail =
+    b.movementRemainingFt > 0
+      ? `${b.movementRemainingFt} ft of movement remaining`
+      : b.moveRemaining > 0
+        ? 'Move Action Available'
+        : 'Move Action Spent';
+  const stdOk = b.standardRemaining > 0;
+  const swfOk = b.swiftRemaining > 0;
   return [
-    {
-      id: 'std',
-      label: 'STD',
-      available: budget.standardRemaining > 0,
-      detailText: budget.standardRemaining > 0 ? 'Standard Action Available' : 'Standard Action Spent'
-    },
-    {
-      id: 'mov',
-      label: movLabel,
-      available: budget.moveRemaining > 0 || budget.movementRemainingFt > 0,
-      detailText:
-        budget.movementRemainingFt > 0
-          ? `${budget.movementRemainingFt} ft of movement remaining`
-          : budget.moveRemaining > 0
-            ? 'Move Action Available'
-            : 'Move Action Spent'
-    },
-    {
-      id: 'swf',
-      label: 'SWF',
-      available: budget.swiftRemaining > 0,
-      detailText: budget.swiftRemaining > 0 ? 'Swift Action Available' : 'Swift Action Spent'
-    },
-    {
-      id: 'aoo',
-      label: `AoO (${budget.aooRemaining})`,
-      available: budget.aooRemaining > 0,
-      detailText: `${budget.aooRemaining} / ${budget.aooMax} Attacks of Opportunity Remaining`
-    }
+    pip('std', 'STD', stdOk, stdOk ? 'Standard Action Available' : 'Standard Action Spent'),
+    pip('mov', movLabel, b.moveRemaining > 0 || b.movementRemainingFt > 0, movDetail),
+    pip('swf', 'SWF', swfOk, swfOk ? 'Swift Action Available' : 'Swift Action Spent'),
+    pip('aoo', `AoO (${b.aooRemaining})`, b.aooRemaining > 0, `${b.aooRemaining}/${b.aooMax} AoO Remaining`)
   ];
 }
 

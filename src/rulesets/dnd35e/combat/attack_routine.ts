@@ -193,11 +193,15 @@ export function resolveActorAttackRoutine(params: {
       critThreatExpansionSteps = critThreatBreakdown.total;
     }
 
-    if (entry.attackSource === 'manufactured_primary') {
-      const strikeHandedness = primary.handedness;
-      const isNaturalOrUnarmed = !primary.isArmed;
+    if (entry.attackSource === 'manufactured_primary' || entry.attackSource === 'manufactured_offhand') {
+      const isOffHand = entry.attackSource === 'manufactured_offhand';
+      const wpn = isOffHand ? (offWeapon ?? primary) : primary;
+      if (isOffHand) offHandCounter++;
+
+      const strikeHandedness: AttackRollParams['handedness'] = isOffHand ? 'off_hand' : wpn.handedness;
+      const isNaturalOrUnarmed = !wpn.isArmed;
       const strDmg =
-        primary.cannotTwoHandStr && strikeHandedness === 'two_handed'
+        !isOffHand && wpn.cannotTwoHandStr && strikeHandedness === 'two_handed'
           ? computeHandednessStrDamage(params.strModifier, 'one_handed')
           : computeHandednessStrDamage(params.strModifier, strikeHandedness);
       const doctrineDmg = computeStrikeDoctrineDamageBonus(
@@ -205,92 +209,40 @@ export function resolveActorAttackRoutine(params: {
         params.totalBab,
         strikeHandedness,
         isNaturalOrUnarmed,
-        primary.cannotTwoHandStr
+        wpn.cannotTwoHandStr
       );
-      const primaryFinesseBonus =
-        primary.isFinesseEligible === true || primary.handedness === 'light' || isNaturalOrUnarmed ? finesseDelta : 0;
+      const wpnFinesseBonus =
+        wpn.isFinesseEligible === true || wpn.handedness === 'light' || isNaturalOrUnarmed ? finesseDelta : 0;
       const critMin =
         critThreatExpansionSteps > 0
-          ? computeExpandedCritThreatMin(primary.baseCritThreatMin ?? primary.critThreatMin, critThreatExpansionSteps)
-          : primary.critThreatMin;
+          ? computeExpandedCritThreatMin(wpn.baseCritThreatMin ?? wpn.critThreatMin, critThreatExpansionSteps)
+          : wpn.critThreatMin;
 
       strikes.push({
         index: i,
-        label: primary.weaponName,
-        attackSource: 'manufactured_primary',
+        label: wpn.weaponName,
+        attackSource: entry.attackSource,
         handedness: strikeHandedness,
         isNaturalOrUnarmed,
         attackBonus:
           entry.attackBonus +
-          primary.attackBonus +
-          primary.sizeAttackPenalty +
-          primary.nonproficiencyPenalty +
-          primaryFinesseBonus +
+          wpn.attackBonus +
+          wpn.sizeAttackPenalty +
+          wpn.nonproficiencyPenalty +
+          wpnFinesseBonus +
           strikeAttackMod,
-        weaponDice: primary.weaponDice,
-        weaponDamageType: primary.weaponDamageType,
+        weaponDice: wpn.weaponDice,
+        weaponDamageType: wpn.weaponDamageType,
         strDamageBonus: strDmg,
         doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus + primary.damageBonus + strikeDamageMod,
+        flatDamageBonus: params.flatDamageBonus + wpn.damageBonus + strikeDamageMod,
         critThreatMin: critMin,
-        critMultiplier: primary.critMultiplier,
-        bypassTags: primary.bypassTags,
-        damageRiders: primary.damageRiders,
+        critMultiplier: wpn.critMultiplier,
+        bypassTags: wpn.bypassTags,
+        damageRiders: wpn.damageRiders,
         critThreatBreakdown,
-        weaponId: primary.weaponItemId,
-        baseWeaponId: primary.baseWeaponId ?? primary.weaponItemId
-      });
-    } else if (entry.attackSource === 'manufactured_offhand') {
-      const currentOffWeapon = offWeapon ?? primary;
-      offHandCounter++;
-
-      const strikeHandedness: AttackRollParams['handedness'] = 'off_hand';
-      const isNaturalOrUnarmed = !currentOffWeapon.isArmed;
-      const strDmg = computeHandednessStrDamage(params.strModifier, strikeHandedness);
-      const doctrineDmg = computeStrikeDoctrineDamageBonus(
-        params.doctrine,
-        params.totalBab,
-        strikeHandedness,
-        isNaturalOrUnarmed,
-        currentOffWeapon.cannotTwoHandStr
-      );
-      const offFinesseBonus =
-        currentOffWeapon.isFinesseEligible === true || currentOffWeapon.handedness === 'light' || isNaturalOrUnarmed
-          ? finesseDelta
-          : 0;
-      const critMin =
-        critThreatExpansionSteps > 0
-          ? computeExpandedCritThreatMin(
-              currentOffWeapon.baseCritThreatMin ?? currentOffWeapon.critThreatMin,
-              critThreatExpansionSteps
-            )
-          : currentOffWeapon.critThreatMin;
-
-      strikes.push({
-        index: i,
-        label: currentOffWeapon.weaponName,
-        attackSource: 'manufactured_offhand',
-        handedness: strikeHandedness,
-        isNaturalOrUnarmed,
-        attackBonus:
-          entry.attackBonus +
-          currentOffWeapon.attackBonus +
-          currentOffWeapon.sizeAttackPenalty +
-          currentOffWeapon.nonproficiencyPenalty +
-          offFinesseBonus +
-          strikeAttackMod,
-        weaponDice: currentOffWeapon.weaponDice,
-        weaponDamageType: currentOffWeapon.weaponDamageType,
-        strDamageBonus: strDmg,
-        doctrineDamageBonus: doctrineDmg,
-        flatDamageBonus: params.flatDamageBonus + currentOffWeapon.damageBonus + strikeDamageMod,
-        critThreatMin: critMin,
-        critMultiplier: currentOffWeapon.critMultiplier,
-        bypassTags: currentOffWeapon.bypassTags,
-        damageRiders: currentOffWeapon.damageRiders,
-        critThreatBreakdown,
-        weaponId: currentOffWeapon.weaponItemId,
-        baseWeaponId: currentOffWeapon.baseWeaponId ?? currentOffWeapon.weaponItemId
+        weaponId: wpn.weaponItemId,
+        baseWeaponId: wpn.baseWeaponId ?? wpn.weaponItemId
       });
     } else {
       const isPrimary = entry.attackSource === 'natural_primary';

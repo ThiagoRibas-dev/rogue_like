@@ -25,15 +25,15 @@ Latest live deployment playable in your browser at **[https://thiagoribas-dev.gi
 - **Universal Actor Symmetry & Composable Creature Synthesis**:
   - **75 Unified Race/Bestiary Chassis (`races/`)** — 14 playable races/subraces plus monstrous species, True Dragon 12-age-category progressions, Elemental size ladders, 15 Creature Type Racial HD engines, 20 Subtypes, 13 Templates (*Skeleton*, *Zombie*, *Celestial*, *Fiendish*, *Half-Dragon*, *Ghost*, *Lich*, *Vampire*, etc.), and non-destructive `WildShapeOverlay` layers.
   - **Symmetrical Anatomical Equipment & Armaments** — All actors (PCs, NPCs, companions, monsters) auto-initialize anatomical `EquipmentComponent` slots from `anatomyBodyPlan` and equip declarative `defaultEquipment` loadouts.
-- **Classes, Feature-Driven Multiclassing & Unified Character Builder**:
-  - **26 Modular Classes (`classes/`)** — 11 Core Classes (Levels 1–20), 5 NPC Classes (*Adept*, *Aristocrat*, *Commoner*, *Expert*, *Warrior*), and 10 Prestige Classes with recursive AST prerequisite validation, Alternate Class Features (`acfSwaps`), declarative `scalingPoolContribution` stacking, and 22 Cleric Domains (`domains/`).
+- **Classes, Feature-Driven Multiclassing, Alternate Class Features (ACFs) & Unified Character Builder**:
+  - **26 Modular Classes (`classes/`)** — 11 Core Classes (Levels 1–20), 5 NPC Classes (*Adept*, *Aristocrat*, *Commoner*, *Expert*, *Warrior*), and 10 Prestige Classes with recursive AST prerequisite validation, fully wired Alternate Class Features (`acfSwaps` across all 11 core classes including *Lion/Wolf Totem*, *Whirling Frenzy*, *Spontaneous Domain Casting*, *Druidic Avenger*, *Shapeshift*, *Dungeon Crasher*, *Decisive Strike*, *Invisible Fist*, *Charging Smite*, *Distracting Attack*, *Penetrating Strike*, *Bardic Knack*, *Healing Hymn*, *Metamagic Specialist*, and *Abrupt Jaunt*), declarative `scalingPoolContribution` stacking, and 22 Cleric Domains (`domains/`).
   - **50 SRD Skills & 121 Feats** — Class vs. cross-class rank caps (`isEverClassSkill` vs. active-level cost), 5-rank synergies, active dungeon/combat skill verbs (`search`, `unlock`, `disarm`, `heal`, `persuade`, `intimidate`, `feint`), Monster Lore Knowledge gating, and parameterized feats (`weapon_focus:<baseWeaponId>`, `ability_focus:<abilityId>`).
   - **Composable Item Inheritance & First-Class Enhancements** — **149 items** (`items/`) + **16 enhancements** (`item_enhancements.json`) supporting `baseItemId` inheritance, runtime instance overrides, base weapon tag matching (`weapon:<baseWeaponId>`), and conditional `on_hit` / `on_crit` damage riders.
   - **Shared 2-Pane Builder & Level-Up Flow** — Mandatory step validation gating, point-buy / array / `4d6kh3` rolls, starting gear materialization, filterable Feat/Spell steps, isolated per-class `spellbooksByClass`, and reversible negative levels / permanent level drain.
-- **5-Phase Combat Pipeline, Maneuvers & Vancian Magic**:
+- **5-Phase Combat Pipeline, Relational Flanking, Immediate Reactions & Vancian Magic**:
   - **Composable 5-Phase Combat Exchange (`combat_exchange_pipeline.ts`)** — Executes `PreAttack` (illumination/concealment/flanking) $\to$ `StrikeRoll` (fortification/crit immunity) $\to$ `OnHitRiders` $\to$ `PostStrikeReaction` (target-side retaliation shields) $\to$ `OnDropFollowup` (*Cleave*/*Great Cleave*).
-  - **Action Economy, Weapon Physics & Maneuvers** — Discrete 5-ft step round tracking (`distanceMovedThisRoundFt`), 3-step effort ladder, `1H` / `2H` / `Double Weapon TWF` grip modes, multi-limb natural attack demotion, LIFO Attacks of Opportunity, and opposed Combat Maneuvers.
-  - **254 Modular Spells (Levels 0–9)** — Prepared/spontaneous per-class spellbooks, Divine prayerbook auto-access, 100% 22-domain spell list coverage, Metamagic feats, Concentration/Counterspelling, summoning chains, iterative spell strikes, and mobile spell aura emanations with illumination precedence and per-cast first-entry save/SR memory.
+  - **Action Economy, Relational Flanking Graph & Immediate Reactions** — Symmetric per-entity 6-second round budgets (`Standard`, `Move`, `Swift/Immediate`, `5-Foot Step`, `AoO`), directional `flankingRelations` graph (`flanking_graph.ts`) with declarative flanking overrides, configurable off-turn Immediate Action reaction policies (`off`, `before_melee_attack`, `before_any_attack`, `on_enemy_adjacent_move`), and opposed Combat Maneuvers (including spatial Bull Rush + *Dungeon Crasher* wall impacts).
+  - **254 Modular Spells (Levels 0–9)** — Prepared/spontaneous per-class spellbooks, Divine prayerbook auto-access, 100% 22-domain spell list coverage, declarative spontaneous conversion (`cure_or_inflict`, `domain`, `summon_nature_ally`), Metamagic feats, Concentration/Counterspelling, summoning chains, iterative spell strikes, and mobile spell aura emanations with illumination precedence and per-cast first-entry save/SR memory.
 
 ### 🗺️ Exploration, World & Map
 - **Procedural & Static Map Generation** — `ROT.Map.Digger` dungeons, cellular automata caves, Diffusion-Limited Aggregation (DLA) caverns with Voronoi sub-biomes, and hand-crafted static hubs.
@@ -97,7 +97,7 @@ This codebase enforces strict architectural guardrails verified automatically on
   - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: **745** modular JSON files (+ `item_enhancements.json` and root barrel files) parameterizing classes (26), races/bestiary (75), spells (254), templates (13), feats (121), items (149 + 16 enhancements), domains (22), skills (50), creature types (15), and subtypes (20).
 - **Unified Effect Providers & Hierarchical Provenance (`sourcePath`)**: Every mechanical emitter (size, creature type, subtype, race, template, class, feat, skill threshold, item enhancement, condition, armor/load, tactical stance, spatial field) projects semantic tags and emits `StatModifier`s / `RuleOverride`s carrying a slash-delimited `sourcePath` for atomic revocation.
 - **Programmatic SSOT Registries & Continuous Parity**:
-  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (**307 files**) or `docs/ssot/ssot_dnd35e.json` (**125 files**) — **432 source files** total with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
+  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (**307 files**) or `docs/ssot/ssot_dnd35e.json` (**154 files**) — **461 source files** total with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
   - Human-readable maps (`docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`) are generated programmatically via `bun run map:ssot` and verified for 100% disk and export parity by `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`.
 
 ---
@@ -114,7 +114,7 @@ This codebase enforces strict architectural guardrails verified automatically on
 │   ├── QUEST_AND_NARRATIVE_ARCHITECTURE.md   # Deep-dive quest, dialogue, and narrative dataflow spec
 │   ├── UI_UX_STANDARDS.md                    # Dark-fantasy UI/UX constitution & Cartridge UI Adapter standards
 │   ├── SSOT_CONSOLE.md                       # Auto-generated Core Console SSOT responsibility map (307 files)
-│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map (125 files)
+│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map (154 files)
 │   ├── ssot/                                 # Authoritative JSON SSOT registries (ssot_console.json, ssot_dnd35e.json)
 │   ├── dnd35e/                               # D&D 3.5e SRD domain reference specs
 │   ├── guides/                               # Campaign authoring and ruleset developer guides
@@ -123,7 +123,7 @@ This codebase enforces strict architectural guardrails verified automatically on
 │   ├── campaigns/                            # Built-in campaigns (default, dnd35e-crypt, megacampaign, shroudgarde)
 │   └── rulesets/dnd35e/                      # 745 modular D&D 3.5e SRD JSON data files (+ root enhancements)
 ├── scripts/                                  # Campaign validator, SSOT parity engine, file-length checker, and codebase mapper
-├── tests/                                    # Bun regression test suites (216 tests across 33 suites)
+├── tests/                                    # Bun regression test suites (267 tests across 41 suites)
 └── src/
     ├── actions/                              # Action handlers and verb dispatch registry
     ├── ai/                                   # Composable AI behaviors (hunt, ranged, spell, follow, flee, wander) & companion targeting
@@ -146,8 +146,8 @@ This codebase enforces strict architectural guardrails verified automatically on
 
 - **[`AGENTS.md`](./AGENTS.md)** — Golden Rules, TypeScript strictness standards, and development workflow.
 - **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** — Deep-dive system design and data flow across all engine subsystems.
-- **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M123+ ADRs).
-- **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and upcoming phases (Milestones 1–131).
+- **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M137 ADRs).
+- **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and upcoming phases (Milestones 1–137).
 - **[`docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md`](./docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md)** — End-to-end quest, dialogue, and procedural narrative lifecycle architecture.
 - **[`docs/UI_UX_STANDARDS.md`](./docs/UI_UX_STANDARDS.md)** — Theme skins, UI component contracts, and `ICartridgeUIAdapter` standards.
 - **[`docs/SSOT_CONSOLE.md`](./docs/SSOT_CONSOLE.md)** & **[`docs/SSOT_DND35E.md`](./docs/SSOT_DND35E.md)** — Canonical file ownership and entry-point maps.

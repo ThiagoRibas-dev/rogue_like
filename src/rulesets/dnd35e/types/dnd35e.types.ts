@@ -1,30 +1,18 @@
 import type { MovementModes } from '../../../types/components.types.ts';
-import type { AbilityId, AbilityScoresRecord, StatModifier, StatResolutionBreakdown } from './stats.types.ts';
+import type {
+  AbilityId,
+  AbilityScoresRecord,
+  ACBreakdownDTO,
+  CreatureSizeCategory,
+  HitDieTrack,
+  SaveType,
+  SensoryProfile,
+  StatModifier,
+  StatResolutionBreakdown
+} from './stats.types.ts';
 
 // Re-export all stats and modifier types
 export * from './stats.types.ts';
-
-/** Roll context governing whether natural 1 and natural 20 trigger automatic failure/success. */
-export type D20RollMode = 'attack' | 'save' | 'skill_check' | 'ability_check' | 'caster_level_check' | 'initiative';
-
-/** Detailed breakdown of a parsed and rolled dice expression (`NdX+C`, `4d6kh3`). */
-export interface DiceRollResult {
-  readonly expression: string;
-  readonly total: number;
-  readonly rolls: ReadonlyArray<number>;
-  readonly keptRolls: ReadonlyArray<number>;
-  readonly flatModifier: number;
-}
-
-/** Result of a single d20 roll with natural 1 / 20 evaluation. */
-export interface D20RollResult {
-  readonly mode: D20RollMode;
-  readonly naturalRoll: number;
-  readonly modifier: number;
-  readonly total: number;
-  readonly isAutoSuccess: boolean;
-  readonly isAutoFailure: boolean;
-}
 
 /** Complete resolved state of an actor across the 4-Stage Sub-Stat DAG. */
 export interface DnD35ResolvedActorStats {
@@ -48,43 +36,6 @@ export interface DnD35ResolvedActorStats {
   readonly fortificationPercent?: number | undefined;
   readonly concealmentMissChancePercent?: number | undefined;
   readonly flankingBonus?: number | undefined;
-}
-
-/** Itemized Armor Class triplet and breakdown DTO. */
-export interface ACBreakdownDTO {
-  readonly fullAC: number;
-  readonly touchAC: number;
-  readonly flatFootedAC: number;
-  readonly baseAC: number;
-  readonly dexContribution: number;
-  readonly sizeContribution: number;
-  readonly modifierTotal: number;
-}
-
-/** Base Attack Bonus progression curve identifiers. */
-export type BabCurveType = 'full' | 'three_quarters' | 'half';
-
-/** Base Saving Throw progression curve identifiers. */
-export type SaveCurveType = 'good' | 'poor';
-
-/** The three D&D 3.5e saving throw categories. */
-export type SaveType = 'fort' | 'ref' | 'will';
-
-/** A single Hit Die / Class Level track contributing to an entity's chassis. */
-export interface HitDieTrack {
-  readonly trackId: string;
-  readonly levels: number;
-  readonly hitDieSides: number;
-  readonly babCurve: BabCurveType;
-  readonly fortCurve: SaveCurveType;
-  readonly refCurve: SaveCurveType;
-  readonly willCurve: SaveCurveType;
-  readonly skillPointsPerLevel: number;
-  readonly explicitBab?: number | undefined;
-  readonly explicitFort?: number | undefined;
-  readonly explicitRef?: number | undefined;
-  readonly explicitWill?: number | undefined;
-  readonly trackCategory?: 'racial_hd' | 'pc' | 'npc' | 'prestige' | undefined;
 }
 
 /**
@@ -139,47 +90,6 @@ export interface DnD35ClassSpellbookState {
   readonly domainSpellSlots?: Readonly<Record<string, number>> | undefined;
   readonly preparedSlots?: ReadonlyArray<DnD35PreparedSlotEntry> | undefined;
   readonly spontaneousSlotsUsedByLevel?: Readonly<Record<string, number>> | undefined;
-}
-
-/** Aggregated progression chassis computed across all racial HD and class tracks. */
-export interface AggregatedChassis {
-  readonly totalHD: number;
-  readonly ecl: number;
-  readonly xpCurrentFloor: number;
-  readonly xpNextLevelThreshold: number;
-  readonly totalBab: number;
-  readonly iterativeBabSequence: ReadonlyArray<number>;
-  readonly baseSaves: Readonly<Record<SaveType, number>>;
-  readonly generalFeatSlots: number;
-  readonly abilityIncreaseCount: number;
-  readonly maxHp: number;
-}
-
-/** The 9 canonical D&D 3.5e creature size categories. */
-export type CreatureSizeCategory =
-  'fine' | 'diminutive' | 'tiny' | 'small' | 'medium' | 'large' | 'huge' | 'gargantuan' | 'colossal';
-
-/** Reach configuration in feet for an entity or weapon. */
-export interface ReachProfile {
-  readonly minReachFt: number;
-  readonly maxReachFt: number;
-  readonly hasFlexibleReach?: boolean;
-}
-
-/** Cover degrees evaluated by corner-to-corner raycasting. */
-export type CoverState = 'none' | 'soft' | 'standard' | 'improved' | 'total';
-
-/** Ambient tile illumination states. */
-export type IlluminationLevel = 'bright' | 'shadowy' | 'darkness';
-
-/** Multi-spectrum sensory profile for an observer entity. */
-export interface SensoryProfile {
-  readonly lowLightVision: boolean;
-  readonly darkvisionRangeFt: number;
-  readonly blindsenseRangeFt: number;
-  readonly blindsightRangeFt: number;
-  readonly tremorsenseRangeFt: number;
-  readonly scentRangeFt: number;
 }
 
 /** 6-second round 5-tier action economy and AoO budget state. */

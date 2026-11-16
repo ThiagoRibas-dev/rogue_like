@@ -38,16 +38,6 @@ export const INVISIBLE_ACTIVE_STATUS_ID = 'invisible_active';
 /** Status effect ID tracking the 3-round cooldown on Invisible Fist. */
 export const INVISIBLE_FIST_COOLDOWN_STATUS_ID = 'invisible_fist_cooldown';
 
-function buildIsWallAt(state: GameState): (x: number, y: number) => boolean {
-  return (x: number, y: number): boolean => {
-    if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
-    const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-    if (!tile) return true;
-    const def = state.campaign.tiles[tile.tileId];
-    return def === undefined || !def.transparent;
-  };
-}
-
 function isTileValidJauntDestination(
   state: GameState,
   actorId: EntityId,
@@ -58,159 +48,125 @@ function isTileValidJauntDestination(
   if (!isInBounds(targetX, targetY, state.map.width, state.map.height)) return false;
   const distTiles = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y));
   if (distTiles < 1 || distTiles > ABRUPT_JAUNT_MAX_TILES) return false;
-
   const tile = state.map.tiles[coordToIndex(targetX, targetY, state.map.width)];
-  const tileDef = tile ? state.campaign.tiles[tile.tileId] : undefined;
-  if (!tileDef?.walkable) return false;
+  if (!tile || !state.campaign.tiles[tile.tileId]?.walkable) return false;
 
   const occupants = state.spatialIndex.get(`${targetX},${targetY}`) ?? [];
   for (const occId of occupants) {
     if (occId === actorId) continue;
-    const isBlockingActor =
+    const isActor =
       getComponent(state, occId, ComponentType.Fighter) !== undefined ||
       getComponent(state, occId, ComponentType.Actor) !== undefined;
     const tags = (getComponent(state, occId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
-    if (isBlockingActor || tags.includes('solid')) return false;
+    if (isActor || tags.includes('solid')) return false;
   }
 
-  const cover = evaluateCover(actorPos, { x: targetX, y: targetY }, buildIsWallAt(state));
-  return !cover.blocksLineOfEffect;
+  const isWallAt = (x: number, y: number): boolean => {
+    if (!isInBounds(x, y, state.map.width, state.map.height)) return true;
+    const t = state.map.tiles[coordToIndex(x, y, state.map.width)];
+    return !t || !state.campaign.tiles[t.tileId]?.transparent;
+  };
+  return !evaluateCover(actorPos, { x: targetX, y: targetY }, isWallAt).blocksLineOfEffect;
 }
 
-/**
- * Executes Monk's **Invisible Fist** immediate action ability (`Exemplars of Evil p. 21`):
- * - Checks 3-round cooldown (`invisible_fist_cooldown`).
- * - Consumes an Immediate Action (`useImmediateAction`).
- * - Applies `invisible_active` (`1` round) and `invisible_fist_cooldown` (`3` rounds).
- */
-export function executeInvisibleFistImmediate(
+function tryConsumeImmediatePoolAndAction(
   state: GameState,
   actorId: EntityId,
+  poolId: string,
+  abilityName: string,
   isOnTurn: boolean
-): { readonly state: GameState; readonly success: boolean } {
+): { readonly state: GameState; readonly allowed: boolean } {
   const poolComp = getComponent(state, actorId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined;
-  const entry = poolComp?.pools['invisible_fist'];
-  if (!entry || entry.current <= 0) {
+  if ((poolComp?.pools[poolId]?.current ?? 0) <= 0) {
     return {
-      state: addMessage(state, 'Invisible Fist: No uses remaining.', MessageLogCategory.System),
-      success: false
+      state: addMessage(state, `${abilityName}: No uses remaining.`, MessageLogCategory.System),
+      allowed: false
     };
   }
-
-  const statuses = getComponent(state, actorId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
-  const cooldownEntry = statuses?.activeEffects.find((e) => e.effectId === INVISIBLE_FIST_COOLDOWN_STATUS_ID);
-  if (cooldownEntry && cooldownEntry.duration > 0) {
-    return {
-      state: addMessage(
-        state,
-        `Invisible Fist is on cooldown (${cooldownEntry.duration} rounds remaining).`,
-        MessageLogCategory.System
-      ),
-      success: false
-    };
-  }
-
   const dndData = getDnD35EntityData(state, actorId);
   const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
   const immRes = useImmediateAction(activeBudget, isOnTurn);
   if (!immRes.allowed && state.engineMode === EngineMode.TurnBased) {
     return {
-      state: addMessage(state, 'Invisible Fist: No Swift or Immediate Action available.', MessageLogCategory.System),
-      success: false
+      state: addMessage(state, `${abilityName}: No Swift or Immediate Action available.`, MessageLogCategory.System),
+      allowed: false
     };
   }
-
-  const consumed = consumeResourcePool(state, actorId, 'invisible_fist', 1);
+  const consumed = consumeResourcePool(state, actorId, poolId, 1);
   if (!consumed.allowed) {
     return {
-      state: addMessage(state, 'Invisible Fist: Unable to consume pool charge.', MessageLogCategory.System),
-      success: false
+      state: addMessage(state, `${abilityName}: Unable to consume pool charge.`, MessageLogCategory.System),
+      allowed: false
     };
   }
-
-  let nextState = consumed.state;
-  nextState = setDnD35EntityData(nextState, actorId, {
-    ...getDnD35EntityData(nextState, actorId),
+  const nextState = setDnD35EntityData(consumed.state, actorId, {
+    ...getDnD35EntityData(consumed.state, actorId),
     actionBudget: immRes.allowed ? immRes.budget : activeBudget
   });
+  return { state: nextState, allowed: true };
+}
 
-  nextState = applyStatusEffect(
-    nextState,
+/** Executes Monk's **Invisible Fist** immediate action ability (`Exemplars of Evil p. 21`). */
+export function executeInvisibleFistImmediate(
+  state: GameState,
+  actorId: EntityId,
+  isOnTurn: boolean
+): { readonly state: GameState; readonly success: boolean } {
+  const statuses = getComponent(state, actorId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  const cd = statuses?.activeEffects.find((e) => e.effectId === INVISIBLE_FIST_COOLDOWN_STATUS_ID);
+  if (cd && cd.duration > 0) {
+    const msg = `Invisible Fist is on cooldown (${cd.duration} rounds remaining).`;
+    return { state: addMessage(state, msg, MessageLogCategory.System), success: false };
+  }
+  const consumed = tryConsumeImmediatePoolAndAction(state, actorId, 'invisible_fist', 'Invisible Fist', isOnTurn);
+  if (!consumed.allowed) return { state: consumed.state, success: false };
+
+  let next = applyStatusEffect(
+    consumed.state,
     actorId,
     INVISIBLE_ACTIVE_STATUS_ID,
     INVISIBLE_FIST_DURATION_ROUNDS,
     actorId
   );
-  nextState = applyStatusEffect(
-    nextState,
-    actorId,
-    INVISIBLE_FIST_COOLDOWN_STATUS_ID,
-    INVISIBLE_FIST_COOLDOWN_ROUNDS,
-    actorId
-  );
-  nextState = addFloatingText(nextState, actorId, 'INVISIBLE!', '#a29bfe');
-  nextState = addMessage(
-    nextState,
-    `[Immediate Action] Invisible Fist turns you invisible for ${INVISIBLE_FIST_DURATION_ROUNDS} round (3-round cooldown)!`,
-    MessageLogCategory.System
-  );
-  return { state: nextState, success: true };
+  next = applyStatusEffect(next, actorId, INVISIBLE_FIST_COOLDOWN_STATUS_ID, INVISIBLE_FIST_COOLDOWN_ROUNDS, actorId);
+  next = addFloatingText(next, actorId, 'INVISIBLE!', '#a29bfe');
+  const log = `[Immediate Action] Invisible Fist turns you invisible for ${INVISIBLE_FIST_DURATION_ROUNDS} round (3-round cooldown)!`;
+  return { state: addMessage(next, log, MessageLogCategory.System), success: true };
 }
 
-/**
- * Initiates interactive two-step targeting mode (`maxRangeTiles: 2` = `10 ft`) for **Abrupt Jaunt**
- * without spending the Immediate Action or daily charge until the target tile is confirmed.
- */
+/** Initiates interactive two-step targeting mode (`maxRangeTiles: 2` = `10 ft`) for **Abrupt Jaunt**. */
 export function initiateAbruptJauntTargeting(
   state: GameState,
   actorId: EntityId
 ): { readonly state: GameState; readonly success: boolean } {
   const poolComp = getComponent(state, actorId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined;
-  const entry = poolComp?.pools['abrupt_jaunt'];
-  if (!entry || entry.current <= 0) {
+  if ((poolComp?.pools['abrupt_jaunt']?.current ?? 0) <= 0) {
     return {
       state: addMessage(state, 'Abrupt Jaunt: No uses remaining today.', MessageLogCategory.System),
       success: false
     };
   }
-
-  const dndData = getDnD35EntityData(state, actorId);
-  const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
-  const immCheck = useImmediateAction(activeBudget, true);
-  if (!immCheck.allowed && state.engineMode === EngineMode.TurnBased) {
-    return {
-      state: addMessage(state, 'Abrupt Jaunt: No Swift or Immediate Action available.', MessageLogCategory.System),
-      success: false
-    };
+  const activeBudget =
+    getDnD35EntityData(state, actorId).actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
+  if (!useImmediateAction(activeBudget, true).allowed && state.engineMode === EngineMode.TurnBased) {
+    const msg = 'Abrupt Jaunt: No Swift or Immediate Action available.';
+    return { state: addMessage(state, msg, MessageLogCategory.System), success: false };
   }
-
   const pos = getComponent(state, actorId, ComponentType.Position) as PositionComponent | undefined;
   if (!pos) return { state, success: false };
 
-  return {
-    state: addMessage(
-      {
-        ...state,
-        targetingMode: {
-          active: true,
-          x: pos.x,
-          y: pos.y,
-          maxRangeTiles: ABRUPT_JAUNT_MAX_TILES,
-          context: { verb: 'abrupt_jaunt' }
-        }
-      },
-      'Abrupt Jaunt active (10 ft immediate teleport). Select destination tile and confirm.',
-      MessageLogCategory.System
-    ),
-    success: true
+  const targetingMode = {
+    active: true,
+    x: pos.x,
+    y: pos.y,
+    maxRangeTiles: ABRUPT_JAUNT_MAX_TILES,
+    context: { verb: 'abrupt_jaunt' }
   };
+  const prompt = 'Abrupt Jaunt active (10 ft immediate teleport). Select destination tile and confirm.';
+  return { state: addMessage({ ...state, targetingMode }, prompt, MessageLogCategory.System), success: true };
 }
 
-/**
- * Executes Conjurer's **Abrupt Jaunt** immediate-action 10-ft spatial teleportation:
- * Validates range (`1..2` tiles), walkability, unoccupied tile, Line of Effect, pool charges, and
- * Immediate Action budget, then updates `PositionComponent`, `fovNeedsUpdate`, and the Relational Flanking Graph.
- */
+/** Executes Conjurer's **Abrupt Jaunt** immediate-action 10-ft spatial teleportation. */
 export function executeAbruptJauntTeleport(
   state: GameState,
   actorId: EntityId,
@@ -222,70 +178,28 @@ export function executeAbruptJauntTeleport(
   if (!actorPos) return { state, success: false };
 
   const poolComp = getComponent(state, actorId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined;
-  const entry = poolComp?.pools['abrupt_jaunt'];
-  if (!entry || entry.current <= 0) {
+  if ((poolComp?.pools['abrupt_jaunt']?.current ?? 0) <= 0) {
     return {
       state: addMessage(state, 'Abrupt Jaunt: No uses remaining today.', MessageLogCategory.System),
       success: false
     };
   }
-
   if (!isTileValidJauntDestination(state, actorId, actorPos, targetX, targetY)) {
-    return {
-      state: addMessage(
-        state,
-        'Abrupt Jaunt: Destination must be an unoccupied, visible walkable square within 10 ft.',
-        MessageLogCategory.System
-      ),
-      success: false
-    };
+    const err = 'Abrupt Jaunt: Destination must be an unoccupied, visible walkable square within 10 ft.';
+    return { state: addMessage(state, err, MessageLogCategory.System), success: false };
   }
 
-  const dndData = getDnD35EntityData(state, actorId);
-  const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
-  const immRes = useImmediateAction(activeBudget, isOnTurn);
-  if (!immRes.allowed && state.engineMode === EngineMode.TurnBased) {
-    return {
-      state: addMessage(state, 'Abrupt Jaunt: No Swift or Immediate Action available.', MessageLogCategory.System),
-      success: false
-    };
-  }
+  const consumed = tryConsumeImmediatePoolAndAction(state, actorId, 'abrupt_jaunt', 'Abrupt Jaunt', isOnTurn);
+  if (!consumed.allowed) return { state: consumed.state, success: false };
 
-  const consumed = consumeResourcePool(state, actorId, 'abrupt_jaunt', 1);
-  if (!consumed.allowed) {
-    return {
-      state: addMessage(state, 'Abrupt Jaunt: Unable to consume pool charge.', MessageLogCategory.System),
-      success: false
-    };
-  }
-
-  let nextState = consumed.state;
-  nextState = setDnD35EntityData(nextState, actorId, {
-    ...getDnD35EntityData(nextState, actorId),
-    actionBudget: immRes.allowed ? immRes.budget : activeBudget
-  });
-
-  nextState = addComponent(nextState, actorId, {
-    type: ComponentType.Position,
-    x: targetX,
-    y: targetY
-  });
-
-  if (getComponent(nextState, actorId, ComponentType.Player) !== undefined) {
-    nextState = { ...nextState, fovNeedsUpdate: true };
-  }
-
-  nextState = syncSpatialFlankingGraph(nextState);
-  const actorName =
-    (getComponent(nextState, actorId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Actor';
+  let next = addComponent(consumed.state, actorId, { type: ComponentType.Position, x: targetX, y: targetY });
+  if (getComponent(next, actorId, ComponentType.Player) !== undefined) next = { ...next, fovNeedsUpdate: true };
+  next = syncSpatialFlankingGraph(next);
+  const name = (getComponent(next, actorId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Actor';
   const distFt = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y)) * FEET_PER_GRID_SQUARE;
-  nextState = addFloatingText(nextState, actorId, 'JAUNT!', '#74b9ff');
-  nextState = addMessage(
-    nextState,
-    `[Immediate Action] ${actorName} abruptly jaunts ${distFt} ft to (${targetX}, ${targetY})!`,
-    MessageLogCategory.System
-  );
-  return { state: nextState, success: true };
+  next = addFloatingText(next, actorId, 'JAUNT!', '#74b9ff');
+  const log = `[Immediate Action] ${name} abruptly jaunts ${distFt} ft to (${targetX}, ${targetY})!`;
+  return { state: addMessage(next, log, MessageLogCategory.System), success: true };
 }
 
 function findBestEvadeTile(
@@ -296,13 +210,11 @@ function findBestEvadeTile(
 ): { readonly x: number; readonly y: number } | undefined {
   let bestTile: { readonly x: number; readonly y: number } | undefined;
   let bestDist = Math.max(Math.abs(defenderPos.x - threatPos.x), Math.abs(defenderPos.y - threatPos.y));
-
   for (let dy = -ABRUPT_JAUNT_MAX_TILES; dy <= ABRUPT_JAUNT_MAX_TILES; dy++) {
     for (let dx = -ABRUPT_JAUNT_MAX_TILES; dx <= ABRUPT_JAUNT_MAX_TILES; dx++) {
-      if (dx === 0 && dy === 0) continue;
       const cx = defenderPos.x + dx;
       const cy = defenderPos.y + dy;
-      if (!isTileValidJauntDestination(state, defenderId, defenderPos, cx, cy)) continue;
+      if ((dx === 0 && dy === 0) || !isTileValidJauntDestination(state, defenderId, defenderPos, cx, cy)) continue;
       const distFromThreat = Math.max(Math.abs(cx - threatPos.x), Math.abs(cy - threatPos.y));
       if (distFromThreat > bestDist) {
         bestDist = distFromThreat;
@@ -313,10 +225,7 @@ function findBestEvadeTile(
   return bestTile;
 }
 
-/**
- * Evaluates armed off-turn Immediate Action reaction policies on `defenderId` when a triggering
- * hostile event occurs (`on_enemy_adjacent_move`, `before_melee_attack`, or `before_any_attack`).
- */
+/** Evaluates armed off-turn Immediate Action reaction policies on `defenderId` when a hostile trigger occurs. */
 export function evaluateOffTurnImmediateReactions(
   state: GameState,
   triggerWindow: 'on_enemy_adjacent_move' | 'before_melee_attack' | 'before_any_attack',
@@ -326,74 +235,49 @@ export function evaluateOffTurnImmediateReactions(
   if (triggeringActorId === defenderId || !isHostile(state, triggeringActorId, defenderId)) {
     return { state, triggered: false, defenderTeleportedOutOfReach: false };
   }
+  const policies = (
+    getComponent(state, defenderId, ComponentType.TacticalDoctrine) as TacticalDoctrineComponent | undefined
+  )?.reactionPolicies;
+  if (!policies) return { state, triggered: false, defenderTeleportedOutOfReach: false };
 
-  const doctrine = getComponent(state, defenderId, ComponentType.TacticalDoctrine) as
-    TacticalDoctrineComponent | undefined;
-  const policies = doctrine?.reactionPolicies;
-  if (!policies) {
-    return { state, triggered: false, defenderTeleportedOutOfReach: false };
-  }
-
-  const matchesWindow = (policyTrigger: string): boolean => {
-    if (policyTrigger === 'off') return false;
-    if (policyTrigger === triggerWindow) return true;
-    return policyTrigger === 'before_any_attack' && triggerWindow === 'before_melee_attack';
-  };
-
-  let runningState = state;
-  let triggered = false;
-  let defenderTeleportedOutOfReach = false;
+  const matchesWindow = (t: string): boolean =>
+    t !== 'off' && (t === triggerWindow || (t === 'before_any_attack' && triggerWindow === 'before_melee_attack'));
 
   const jauntPolicy = policies['abrupt_jaunt'];
   if (jauntPolicy?.enabled && matchesWindow(jauntPolicy.trigger)) {
-    const defPos = getComponent(runningState, defenderId, ComponentType.Position) as PositionComponent | undefined;
-    const atkPos = getComponent(runningState, triggeringActorId, ComponentType.Position) as
-      PositionComponent | undefined;
-    if (defPos && atkPos) {
-      const evadeTile = findBestEvadeTile(runningState, defenderId, defPos, atkPos);
-      if (evadeTile) {
-        const res = executeAbruptJauntTeleport(runningState, defenderId, evadeTile.x, evadeTile.y, false);
-        if (res.success) {
-          runningState = res.state;
-          triggered = true;
-          const atkEval = evaluateDnD35eEntityDAG(runningState, triggeringActorId);
-          const atkSize = atkEval?.dagResult.effectiveSize ?? 'medium';
-          const atkReachFt = SIZE_METRICS[atkSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
-          const reachTiles = Math.max(1, Math.floor(atkReachFt / FEET_PER_GRID_SQUARE));
-          const newDist = Math.max(Math.abs(evadeTile.x - atkPos.x), Math.abs(evadeTile.y - atkPos.y));
-          defenderTeleportedOutOfReach = newDist > reachTiles;
-          return { state: runningState, triggered, defenderTeleportedOutOfReach };
-        }
+    const defPos = getComponent(state, defenderId, ComponentType.Position) as PositionComponent | undefined;
+    const atkPos = getComponent(state, triggeringActorId, ComponentType.Position) as PositionComponent | undefined;
+    const evadeTile = defPos && atkPos ? findBestEvadeTile(state, defenderId, defPos, atkPos) : undefined;
+    if (evadeTile && atkPos) {
+      const res = executeAbruptJauntTeleport(state, defenderId, evadeTile.x, evadeTile.y, false);
+      if (res.success) {
+        const atkSize = evaluateDnD35eEntityDAG(res.state, triggeringActorId)?.dagResult.effectiveSize ?? 'medium';
+        const reachTiles = Math.max(
+          1,
+          Math.floor((SIZE_METRICS[atkSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE) / FEET_PER_GRID_SQUARE)
+        );
+        const newDist = Math.max(Math.abs(evadeTile.x - atkPos.x), Math.abs(evadeTile.y - atkPos.y));
+        return { state: res.state, triggered: true, defenderTeleportedOutOfReach: newDist > reachTiles };
       }
     }
   }
 
   const invPolicy = policies['invisible_fist'];
   if (invPolicy?.enabled && matchesWindow(invPolicy.trigger)) {
-    const res = executeInvisibleFistImmediate(runningState, defenderId, false);
-    if (res.success) {
-      runningState = res.state;
-      triggered = true;
-    }
+    const res = executeInvisibleFistImmediate(state, defenderId, false);
+    if (res.success) return { state: res.state, triggered: true, defenderTeleportedOutOfReach: false };
   }
-
-  return { state: runningState, triggered, defenderTeleportedOutOfReach };
+  return { state, triggered: false, defenderTeleportedOutOfReach: false };
 }
 
 /** Cycles a reaction policy between `'off'`, `'before_melee_attack'`, `'before_any_attack'`, and `'on_enemy_adjacent_move'`. */
 export function getNextReactionTrigger(
   currentTrigger: string | undefined
 ): 'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move' {
-  switch (currentTrigger) {
-    case 'before_melee_attack':
-      return 'before_any_attack';
-    case 'before_any_attack':
-      return 'on_enemy_adjacent_move';
-    case 'on_enemy_adjacent_move':
-      return 'off';
-    default:
-      return 'before_melee_attack';
-  }
+  if (currentTrigger === 'before_melee_attack') return 'before_any_attack';
+  if (currentTrigger === 'before_any_attack') return 'on_enemy_adjacent_move';
+  if (currentTrigger === 'on_enemy_adjacent_move') return 'off';
+  return 'before_melee_attack';
 }
 
 /** Exposes living hostile adjacent defenders for movement-step reaction checks. */
@@ -407,12 +291,9 @@ export function evaluateAdjacentEnemyReactionsOnMove(
     if (candId === moverId) continue;
     const candFighter = getComponent(runningState, candId, ComponentType.Fighter) as FighterComponent | undefined;
     const candPos = getComponent(runningState, candId, ComponentType.Position) as PositionComponent | undefined;
-    if (!candFighter || candFighter.hp <= 0 || !candPos) continue;
-    if (!isHostile(runningState, moverId, candId)) continue;
-    const distTiles = Math.max(Math.abs(candPos.x - toPos.x), Math.abs(candPos.y - toPos.y));
-    if (distTiles <= 1) {
-      const res = evaluateOffTurnImmediateReactions(runningState, 'on_enemy_adjacent_move', moverId, candId);
-      runningState = res.state;
+    if (!candFighter || candFighter.hp <= 0 || !candPos || !isHostile(runningState, moverId, candId)) continue;
+    if (Math.max(Math.abs(candPos.x - toPos.x), Math.abs(candPos.y - toPos.y)) <= 1) {
+      runningState = evaluateOffTurnImmediateReactions(runningState, 'on_enemy_adjacent_move', moverId, candId).state;
     }
   }
   return runningState;

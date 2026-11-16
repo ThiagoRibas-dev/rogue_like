@@ -104,15 +104,24 @@ function computeActorTacticalLandSpeedFt(
   return Math.max(FEET_PER_GRID_SQUARE, effectiveLandFt + speedBonusFt);
 }
 
+function hasAnyRoundActionsRemaining(budget: DnD35ActionBudget): boolean {
+  return budget.movementRemainingFt > 0 || budget.standardRemaining > 0 || budget.moveRemaining > 0;
+}
+
+function clearBudgetAndEndRound(
+  state: GameState,
+  entityId: EntityId,
+  dndData: ReturnType<typeof getDnD35EntityData>
+): { readonly state: GameState; readonly energyCost: number } {
+  const nextState = dndData.actionBudget
+    ? setDnD35EntityData(state, entityId, { ...dndData, actionBudget: undefined })
+    : state;
+  return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
+}
+
 /**
  * Commits an updated `DnD35ActionBudget` onto `entityId` after spending an action, returning
  * `energyCost: FULL_ROUND_ENERGY_COST` if all actions/movement are exhausted or `0` otherwise.
- *
- * @param state Current immutable GameState.
- * @param entityId Acting entity ID.
- * @param dndData Entity's DnD35EntityData snapshot.
- * @param postBudget Updated round budget.
- * @returns Updated GameState and energy cost.
  */
 export function finalizeBudgetAfterAction(
   state: GameState,
@@ -120,17 +129,10 @@ export function finalizeBudgetAfterAction(
   dndData: ReturnType<typeof getDnD35EntityData>,
   postBudget: DnD35ActionBudget
 ): { readonly state: GameState; readonly energyCost: number } {
-  const hasActionsLeft =
-    postBudget.movementRemainingFt > 0 || postBudget.standardRemaining > 0 || postBudget.moveRemaining > 0;
-
-  if (!hasActionsLeft) {
-    const nextState = setDnD35EntityData(state, entityId, {
-      ...dndData,
-      actionBudget: undefined
-    });
+  if (!hasAnyRoundActionsRemaining(postBudget)) {
+    const nextState = setDnD35EntityData(state, entityId, { ...dndData, actionBudget: undefined });
     return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
   }
-
   const nextState = setDnD35EntityData(state, entityId, {
     ...dndData,
     actionBudget: postBudget.hasActedThisRound === true ? postBudget : { ...postBudget, hasActedThisRound: true }
@@ -141,12 +143,6 @@ export function finalizeBudgetAfterAction(
 /**
  * Resolves D&D 3.5e 5-tier action budget consumption and energy cost symmetrically for ALL actors in TurnBased mode.
  * Returns `energyCost: 0` while movement or actions remain in the round, or `100` when the round completes.
- *
- * @param state Current immutable GameState (post-intent execution).
- * @param intent The intent being executed.
- * @param baseEnergyCost Baseline cost.
- * @param preActionState Optional GameState snapshot captured prior to intent execution.
- * @returns Updated GameState and effective energy cost.
  */
 export function resolveDnD35eActionEnergyCost(
   state: GameState,
@@ -168,83 +164,52 @@ export function resolveDnD35eActionEnergyCost(
 
   switch (intent.type) {
     case IntentType.Wait:
-    case IntentType.ChangeArea: {
-      const nextState = dndData.actionBudget
-        ? setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined })
-        : state;
-      return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-    }
+    case IntentType.ChangeArea:
+      return clearBudgetAndEndRound(state, intent.entityId, dndData);
 
     case IntentType.Move: {
       const actorSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
       const posAfter = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
-      let isDifficult = false;
-      if (posAfter) {
-        const tileIdx = coordToIndex(posAfter.x, posAfter.y, state.map.width);
-        const tile = state.map.tiles[tileIdx];
-        const mCost = tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100;
-        isDifficult = mCost > 100;
-      }
-
+      const tile = posAfter ? state.map.tiles[coordToIndex(posAfter.x, posAfter.y, state.map.width)] : undefined;
+      const isDifficult = (tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100) > 100;
       const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, FEET_PER_GRID_SQUARE, isDifficult);
-      if (!stepResult.allowed) {
-        const nextState = setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined });
-        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-      }
+      if (!stepResult.allowed) return clearBudgetAndEndRound(state, intent.entityId, dndData);
       return finalizeBudgetAfterAction(state, intent.entityId, dndData, stepResult.budget);
     }
 
-    case IntentType.UseAbility: {
+    case IntentType.UseAbility:
       if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
-        const hasActionsLeft =
-          currentBudget.movementRemainingFt > 0 ||
-          currentBudget.standardRemaining > 0 ||
-          currentBudget.moveRemaining > 0;
-        if (!hasActionsLeft) {
-          const nextState = dndData.actionBudget
-            ? setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined })
-            : state;
-          return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-        }
-        return { state, energyCost: 0 };
+        return hasAnyRoundActionsRemaining(currentBudget)
+          ? { state, energyCost: 0 }
+          : clearBudgetAndEndRound(state, intent.entityId, dndData);
       }
-      if (budgetAlreadyMutated) {
-        return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
+      {
+        const stdRes = consumeStandardActionFromBudget(currentBudget);
+        return stdRes.allowed
+          ? finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget)
+          : clearBudgetAndEndRound(state, intent.entityId, dndData);
       }
-      const stdRes = consumeStandardActionFromBudget(currentBudget);
-      if (!stdRes.allowed) {
-        const nextState = setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined });
-        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-      }
-      return finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget);
-    }
+
     case IntentType.MeleeAttack:
     case IntentType.FireAimed:
     case IntentType.Apply: {
-      if (budgetAlreadyMutated) {
-        return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
-      }
+      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
       const stdRes = consumeStandardActionFromBudget(currentBudget);
-      if (!stdRes.allowed) {
-        const nextState = setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined });
-        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-      }
-      return finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget);
+      return stdRes.allowed
+        ? finalizeBudgetAfterAction(state, intent.entityId, dndData, stdRes.budget)
+        : clearBudgetAndEndRound(state, intent.entityId, dndData);
     }
 
     case IntentType.PickUp:
     case IntentType.EquipItem:
     case IntentType.UnequipItem:
     case IntentType.Interact: {
-      if (budgetAlreadyMutated) {
-        return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
-      }
+      if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
       const moveRes = consumeMoveActionFromBudget(currentBudget);
-      if (!moveRes.allowed) {
-        const nextState = setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined });
-        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-      }
-      return finalizeBudgetAfterAction(state, intent.entityId, dndData, moveRes.budget);
+      return moveRes.allowed
+        ? finalizeBudgetAfterAction(state, intent.entityId, dndData, moveRes.budget)
+        : clearBudgetAndEndRound(state, intent.entityId, dndData);
     }
 
     case IntentType.Drop:
@@ -277,30 +242,17 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.AskAbout:
     case IntentType.Gossip:
     case IntentType.ToggleLedger:
-    case IntentType.ToggleCartridgeModal: {
-      const hasActionsLeft =
-        currentBudget.movementRemainingFt > 0 || currentBudget.standardRemaining > 0 || currentBudget.moveRemaining > 0;
-      if (!hasActionsLeft) {
-        const nextState = dndData.actionBudget
-          ? setDnD35EntityData(state, intent.entityId, { ...dndData, actionBudget: undefined })
-          : state;
-        return { state: nextState, energyCost: FULL_ROUND_ENERGY_COST };
-      }
-      return { state, energyCost: 0 };
-    }
+    case IntentType.ToggleCartridgeModal:
+      return hasAnyRoundActionsRemaining(currentBudget)
+        ? { state, energyCost: 0 }
+        : clearBudgetAndEndRound(state, intent.entityId, dndData);
 
     default:
       return assertNever(intent);
   }
 }
 
-/**
- * Checks whether an entity's current `DnD35ActionBudget` permits executing `intent` in TurnBased mode.
- *
- * @param state Current immutable GameState.
- * @param intent Candidate Intent to evaluate.
- * @returns True if the entity has sufficient remaining action budget (or is not in TurnBased mode).
- */
+/** Checks whether an entity's current `DnD35ActionBudget` permits executing `intent` in TurnBased mode. */
 export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): boolean {
   if (state.engineMode !== EngineMode.TurnBased) return true;
   const budget = getDnD35EntityData(state, intent.entityId).actionBudget;
@@ -313,19 +265,19 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
         (budget.movementRemainingFt >= FEET_PER_GRID_SQUARE || budget.moveRemaining > 0 || budget.standardRemaining > 0)
       );
     case IntentType.UseAbility: {
-      const isImmediatePool = intent.effectId === 'pool:abrupt_jaunt' || intent.effectId === 'pool:invisible_fist';
-      const isSwiftAbility = isImmediatePool || intent.effectId.startsWith('shapeshift');
-      return isSwiftAbility ? budget.swiftRemaining >= 1 : budget.standardRemaining >= 1;
+      const isSwift =
+        intent.effectId === 'pool:abrupt_jaunt' ||
+        intent.effectId === 'pool:invisible_fist' ||
+        intent.effectId.startsWith('shapeshift');
+      return isSwift ? budget.swiftRemaining >= 1 : budget.standardRemaining >= 1;
     }
     case IntentType.MeleeAttack:
     case IntentType.Apply:
       return budget.standardRemaining >= 1;
-    case IntentType.FireAimed: {
-      if (state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt') {
-        return budget.swiftRemaining >= 1;
-      }
-      return budget.standardRemaining >= 1;
-    }
+    case IntentType.FireAimed:
+      return state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt'
+        ? budget.swiftRemaining >= 1
+        : budget.standardRemaining >= 1;
     case IntentType.PickUp:
     case IntentType.EquipItem:
     case IntentType.UnequipItem:
@@ -370,28 +322,17 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
   }
 }
 
-/**
- * Returns true if the entity has already expended any movement or action resources in its active round budget.
- *
- * @param state Current immutable GameState.
- * @param entityId The acting entity ID.
- * @returns True if the entity has already acted this turn.
- */
+/** Returns true if the entity has already expended any movement or action resources in its active round budget. */
 export function hasDnD35eActorActedThisTurn(state: GameState, entityId: EntityId): boolean {
   const budget = getDnD35EntityData(state, entityId).actionBudget;
-  if (!budget) return false;
-  return budget.hasActedThisRound === true || budget.distanceMovedThisRoundFt > 0 || budget.movementRemainingFt > 0;
+  return Boolean(
+    budget &&
+    (budget.hasActedThisRound === true || budget.distanceMovedThisRoundFt > 0 || budget.movementRemainingFt > 0)
+  );
 }
 
-/**
- * Returns true if the entity currently has leftover walking distance from an active Move action pool.
- *
- * @param state Current immutable GameState.
- * @param entityId The acting entity ID.
- * @returns True if `movementRemainingFt >= FEET_PER_GRID_SQUARE`.
- */
+/** Returns true if the entity currently has leftover walking distance from an active Move action pool. */
 export function hasDnD35eActorMovementInProgress(state: GameState, entityId: EntityId): boolean {
   const budget = getDnD35EntityData(state, entityId).actionBudget;
-  if (!budget) return false;
-  return budget.canMoveFurtherThisRound && budget.movementRemainingFt >= FEET_PER_GRID_SQUARE;
+  return Boolean(budget && budget.canMoveFurtherThisRound && budget.movementRemainingFt >= FEET_PER_GRID_SQUARE);
 }

@@ -1,8 +1,18 @@
+import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { canUseTriggeredReactionThisRound, incrementTriggeredReactionUse } from '../../../systems/stance.system.ts';
-import type { TacticalDoctrineComponent } from '../../../types/components.types.ts';
+import {
+  ComponentType,
+  type DamageComponent,
+  type IdentityComponent,
+  type PositionComponent,
+  type TacticalDoctrineComponent
+} from '../../../types/components.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
+import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { evaluateSpellScalingRule } from '../magic/spell_effects.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
-import type { DamageReductionRule } from '../types/dnd35e.types.ts';
+import type { DamageReductionRule, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
 import type { DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
 import { mitigateIncomingDamage } from './damage_vitality.ts';
@@ -30,15 +40,7 @@ export interface RetaliationResolutionResult {
 }
 
 /**
- * Resolves all active target-side `retaliation_rider` units protecting a defender when struck by an attacker:
- * 1. Verifies trigger condition (`melee_adjacent` / `melee_or_spell_adjacent` require Chebyshev tile distance `<= 1`).
- * 2. Verifies per-round quota (`canUseTriggeredReactionThisRound` against `unit.maxUsesPerRound`).
- * 3. Rolls `unit.dice + evaluateSpellScalingRule(unit.flatBonusScaling, casterLevel)` damage.
- * 4. Mitigates against attacker's energy resistance / immunities (and DR unless `unit.bypassesDr === true`).
- * 5. Increments the defender's per-round usage counter on `TacticalDoctrineComponent` without consuming AoOs.
- *
- * @param params Structured retaliation resolution inputs.
- * @returns Total damage dealt back to the attacker, updated defender doctrine, and combat log entries.
+ * Resolves all active target-side `retaliation_rider` units protecting a defender when struck by an attacker.
  */
 export function resolveRetaliationRiders(params: {
   readonly activeRiders: ReadonlyArray<ActiveRetaliationRiderEntry>;
@@ -108,4 +110,67 @@ export function resolveRetaliationRiders(params: {
     updatedDefenderDoctrine: runningDoctrine,
     logMessages
   };
+}
+
+/**
+ * Executes Phase 4 (`PostStrikeReactionPhase`) of the melee combat exchange pipeline,
+ * evaluating defender aura retaliation riders and queueing retaliation damage onto the attacker.
+ */
+export function applyPostStrikeRetaliationPhase(
+  state: GameState,
+  attackerId: EntityId,
+  defenderId: EntityId,
+  attackerData: DnD35EntityData,
+  defenderSelfTags: ReadonlyArray<string>
+): GameState {
+  const defenderAuraContrib = evaluateActiveSpellAuraContributions(state, defenderId, defenderSelfTags);
+  if (defenderAuraContrib.retaliationRiders.length === 0) return state;
+
+  let runningState = state;
+  const attackerPos = getComponent(runningState, attackerId, ComponentType.Position) as PositionComponent | undefined;
+  const defenderPos = getComponent(runningState, defenderId, ComponentType.Position) as PositionComponent | undefined;
+  const distTiles =
+    attackerPos && defenderPos
+      ? Math.max(Math.abs(attackerPos.x - defenderPos.x), Math.abs(attackerPos.y - defenderPos.y))
+      : 1;
+  const defenderDoctrine = getComponent(runningState, defenderId, ComponentType.TacticalDoctrine) as
+    TacticalDoctrineComponent | undefined;
+  const attackerName =
+    (getComponent(runningState, attackerId, ComponentType.Identity) as IdentityComponent | undefined)?.name ??
+    'Attacker';
+  const defenderName =
+    (getComponent(runningState, defenderId, ComponentType.Identity) as IdentityComponent | undefined)?.name ??
+    'Defender';
+
+  const retResult = resolveRetaliationRiders({
+    activeRiders: defenderAuraContrib.retaliationRiders,
+    defenderDoctrine,
+    triggerType: 'melee',
+    chebyshevDistanceTiles: distTiles,
+    attackerName,
+    defenderName,
+    attackerDr: attackerData.damageReduction,
+    attackerEnergyResistance: attackerData.energyResistance,
+    attackerImmunities: attackerData.immunities,
+    attackerVulnerabilities: attackerData.vulnerabilities
+  });
+
+  if (retResult.updatedDefenderDoctrine) {
+    runningState = addComponent(runningState, defenderId, retResult.updatedDefenderDoctrine);
+  }
+  for (const msg of retResult.logMessages) {
+    runningState = addMessage(runningState, msg, MessageLogCategory.CombatHit);
+  }
+  if (retResult.totalDamageToAttacker > 0) {
+    const attackerExistingDmg = getComponent(runningState, attackerId, ComponentType.Damage) as
+      DamageComponent | undefined;
+    runningState = addComponent(runningState, attackerId, {
+      type: ComponentType.Damage,
+      instances: [
+        ...(attackerExistingDmg?.instances ?? []),
+        { amount: retResult.totalDamageToAttacker, sourceEntityId: defenderId, tags: ['retaliation', 'force', 'spell'] }
+      ]
+    });
+  }
+  return runningState;
 }
