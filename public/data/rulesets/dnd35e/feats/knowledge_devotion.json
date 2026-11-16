@@ -1,0 +1,48 @@
+{
+  "knowledge_devotion": {
+    "id": "knowledge_devotion",
+    "name": "Knowledge Devotion",
+    "description": "You use your study of monster anatomy and weaknesses to strike true in combat. Whenever you fight a creature, you gain an insight bonus on attack rolls and damage rolls against that creature type based on your Knowledge check result (15 or less: +1; 16-25: +2; 26-30: +3; 31-35: +4; 36 or more: +5).",
+    "isFighterBonusFeat": false,
+    "prerequisites": {
+      "type": "min_skill_count_at_ranks",
+      "skillPrefix": "knowledge_",
+      "minRanks": 5,
+      "minCount": 1
+    },
+    "skillCheckCombatBonus": {
+      "skillPrefix": "knowledge_",
+      "bonusType": "insight",
+      "targets": [
+        "attack",
+        "damage"
+      ],
+      "baselineTake10": true,
+      "tiers": [
+        {
+          "maxCheck": 15,
+          "bonus": 1
+        },
+        {
+          "minCheck": 16,
+          "maxCheck": 25,
+          "bonus": 2
+        },
+        {
+          "minCheck": 26,
+          "maxCheck": 30,
+          "bonus": 3
+        },
+        {
+          "minCheck": 31,
+          "maxCheck": 35,
+          "bonus": 4
+        },
+        {
+          "minCheck": 36,
+          "bonus": 5
+        }
+      ]
+    }
+  }
+}

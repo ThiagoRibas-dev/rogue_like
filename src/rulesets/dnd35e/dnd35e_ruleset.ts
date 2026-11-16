@@ -187,13 +187,8 @@ export const dnd35eRulesetContract: RulesetContract = {
       const formId = intent.effectId.slice('shapeshift:'.length) as DnD35ShapeshiftFormId;
       return executeDruidShapeshift(state, intent.entityId, formId);
     }
-    if (
-      intent.effectId === 'shapeshift_predator' ||
-      intent.effectId === 'shapeshift_aerial' ||
-      intent.effectId === 'shapeshift_ferocious_slayer' ||
-      intent.effectId === 'shapeshift_normal'
-    ) {
-      const formId = intent.effectId.replace('shapeshift_', '') as DnD35ShapeshiftFormId;
+    if (intent.effectId.startsWith('shapeshift_')) {
+      const formId = intent.effectId.slice('shapeshift_'.length) as DnD35ShapeshiftFormId;
       return executeDruidShapeshift(state, intent.entityId, formId);
     }
     return null;

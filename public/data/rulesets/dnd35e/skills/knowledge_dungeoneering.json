@@ -30,6 +30,10 @@
         "onSuccessRuleOverrides": []
       }
     ],
+    "studiedCreatureTags": [
+      "type:aberration",
+      "type:ooze"
+    ],
     "rankThresholdModifiers": []
   }
 }

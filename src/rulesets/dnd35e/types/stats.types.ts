@@ -244,3 +244,37 @@ export interface SensoryProfile {
   readonly tremorsenseRangeFt: number;
   readonly scentRangeFt: number;
 }
+
+/** Complete diagnostic and numeric breakdown of a single resolved Ability Score. */
+export interface DnD35AbilityResolution {
+  readonly abilityId: AbilityId;
+  readonly rawState: AbilityScoreState;
+  readonly modifierBreakdown: StatResolutionBreakdown;
+  readonly effectiveScore: number | null;
+  readonly effectiveModifier: number;
+}
+
+/** Complete diagnostic and numeric breakdown of a single resolved Saving Throw. */
+export interface DnD35SaveResolution {
+  readonly saveType: SaveType;
+  readonly baseSave: number;
+  readonly abilityId: AbilityId;
+  readonly abilityModifier: number;
+  readonly modifierBreakdown: StatResolutionBreakdown;
+  readonly total: number;
+}
+
+/** Complete diagnostic and numeric breakdown of a single resolved Skill on an actor. */
+export interface DnD35SkillResolution {
+  readonly skillId: string;
+  readonly rawRanks: number;
+  readonly effectiveRanks: number;
+  readonly trained: boolean;
+  readonly keyAbility: AbilityId;
+  readonly keyAbilityModifier: number;
+  readonly synergyBonus: number;
+  readonly acpApplied: number;
+  readonly modifierBreakdown: StatResolutionBreakdown;
+  readonly miscModifier: number;
+  readonly totalModifier: number;
+}

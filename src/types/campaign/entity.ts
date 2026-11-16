@@ -83,7 +83,8 @@ export const EntityTemplateSchema = z.object({
     .optional(),
   trap: z
     .object({
-      triggerId: z.string()
+      triggerId: z.string(),
+      canReset: z.boolean().optional()
     })
     .optional(),
   lock: z

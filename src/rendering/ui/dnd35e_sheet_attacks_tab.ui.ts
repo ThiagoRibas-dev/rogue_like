@@ -8,9 +8,14 @@ import { getGameState, queuePlayerIntent, setGameState } from '../../core/game-l
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { evaluateDnD35eEntityDAG } from '../../rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import { aggregateProgressionChassis } from '../../rulesets/dnd35e/progression.ts';
+import { resolveResourcePoolActionCost } from '../../rulesets/dnd35e/progression/ledger_resource_pools.ts';
 import { SIZE_METRICS } from '../../rulesets/dnd35e/spatial/grid_geometry.ts';
-import { getNextReactionTrigger } from '../../rulesets/dnd35e/combat/immediate_reactions.ts';
+import {
+  getNextCounterspellReactionTrigger,
+  getNextReactionTrigger
+} from '../../rulesets/dnd35e/combat/immediate_reactions.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import {
   ComponentType,
@@ -22,13 +27,14 @@ import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { UICharacterSheetModel } from '../../types/ui_adapter.types.ts';
 import { closeCartridgeModal } from './cartridge_ui_registry.ts';
-import { applyDoctrineUpdate } from './dnd35e_doctrine_actions.ts';
+import { applyDoctrineUpdate, toggleDnD35eActorStance } from './dnd35e_doctrine_actions.ts';
 
 const REACTION_TRIGGER_LABELS: Readonly<Record<ImmediateReactionTrigger, string>> = {
   off: 'React: Off',
   before_melee_attack: 'React: Melee',
   before_any_attack: 'React: Any Atk',
-  on_enemy_adjacent_move: 'React: Adj Move'
+  on_enemy_adjacent_move: 'React: Adj Move',
+  on_enemy_spell_cast: 'React: Spell Cast'
 };
 
 const dndAdapter = new DnD35UIAdapter();
@@ -143,8 +149,9 @@ export function renderSheetAttacksTab(
 
   const pools = poolComp?.pools ?? {};
   const activePoolKeys = Object.keys(pools).filter((k) => (pools[k]?.max ?? 0) > 0);
+  const hasSpellbook = Object.keys(dndData.spellbooksByClass ?? {}).length > 0;
 
-  if (activePoolKeys.length === 0) {
+  if (activePoolKeys.length === 0 && !hasSpellbook) {
     const empty = document.createElement('div');
     empty.className = 'status-empty';
     empty.textContent = 'No daily pools or activated class abilities.';
@@ -184,7 +191,8 @@ export function renderSheetAttacksTab(
 
       row.append(label, count, useBtn);
 
-      if (poolId === 'abrupt_jaunt' || poolId === 'invisible_fist') {
+      const sysContent = getDnD35SystemContent(state.campaign);
+      if (resolveResourcePoolActionCost(poolId, entry, sysContent) === 'immediate') {
         const docComp = getComponent(state, playerId, ComponentType.TacticalDoctrine) as
           TacticalDoctrineComponent | undefined;
         const policy = docComp?.reactionPolicies?.[poolId];
@@ -211,6 +219,38 @@ export function renderSheetAttacksTab(
 
       poolList.appendChild(row);
     }
+  }
+
+  if (hasSpellbook) {
+    const docComp = getComponent(state, playerId, ComponentType.TacticalDoctrine) as
+      TacticalDoctrineComponent | undefined;
+    const csPolicy = docComp?.reactionPolicies?.['counterspell'];
+    const curCsTrigger: ImmediateReactionTrigger = csPolicy?.enabled ? csPolicy.trigger : 'off';
+    const csRow = document.createElement('div');
+    csRow.className = 'crpg-pool-row';
+    const csLabel = document.createElement('span');
+    csLabel.className = 'crpg-pool-label';
+    csLabel.textContent = 'Counterspell (Immediate)';
+    const csBtn = document.createElement('button');
+    csBtn.type = 'button';
+    csBtn.className = `crpg-stance-btn ${curCsTrigger === 'on_enemy_spell_cast' ? 'active' : ''}`;
+    csBtn.textContent = REACTION_TRIGGER_LABELS[curCsTrigger] ?? 'React: Off';
+    csBtn.title = 'Automatically counter hostile spells via Immediate Action + Spellcraft (DC 15 + spell level).';
+    csBtn.addEventListener('click', () => {
+      const live = getGameState() ?? state;
+      const liveDoc = getComponent(live, playerId, ComponentType.TacticalDoctrine) as
+        TacticalDoctrineComponent | undefined;
+      const nextTrigger = getNextCounterspellReactionTrigger(curCsTrigger);
+      applyDoctrineUpdate(live, playerId, {
+        reactionPolicies: {
+          ...(liveDoc?.reactionPolicies ?? {}),
+          counterspell: { enabled: nextTrigger !== 'off', trigger: nextTrigger }
+        }
+      });
+      markAllDomainsDirty();
+    });
+    csRow.append(csLabel, csBtn);
+    poolList.appendChild(csRow);
   }
   col.appendChild(poolList);
 
@@ -262,36 +302,27 @@ export function renderSheetAttacksTab(
 
   stanceGrid.append(pwrBtn, defBtn, totBtn);
 
-  const features = dndData.activeClassFeatures ?? [];
-  if (features.includes('decisive_strike')) {
-    const isDecisive = (doctrine?.decisiveStrike ?? false) && !isTotalDefense;
-    const dsBtn = document.createElement('button');
-    dsBtn.type = 'button';
-    dsBtn.className = `crpg-stance-btn ${isDecisive ? 'active' : ''}`;
-    dsBtn.textContent = `Decisive Strike (${isDecisive ? 'ON' : '-2/2x'})`;
-    dsBtn.addEventListener('click', () => {
+  const baselineStanceIds = new Set([
+    'power_attack',
+    'combat_expertise',
+    'fighting_defensively',
+    'total_defense',
+    'two_handed_grip'
+  ]);
+  const hotbarModel = dndAdapter.getHotbarData({ state, entityId: playerId });
+  for (const mode of hotbarModel.stanceModes) {
+    if (baselineStanceIds.has(mode.id)) continue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `crpg-stance-btn ${mode.isActive ? 'active' : ''}`;
+    btn.textContent = `${mode.label}${mode.isActive ? ' (ON)' : ''}`;
+    if (mode.tooltipText) btn.title = mode.tooltipText;
+    btn.addEventListener('click', () => {
       const live = getGameState() ?? state;
-      const nextDs = !isDecisive;
-      applyDoctrineUpdate(live, playerId, {
-        decisiveStrike: nextDs,
-        ...(nextDs ? { totalDefense: false } : {})
-      });
+      toggleDnD35eActorStance(live, playerId, mode.id, hotbarModel.stanceModes);
       markAllDomainsDirty();
     });
-    stanceGrid.appendChild(dsBtn);
-  }
-  if (features.includes('whirling_frenzy')) {
-    const isWhirling = doctrine?.whirlingFrenzy ?? false;
-    const wfBtn = document.createElement('button');
-    wfBtn.type = 'button';
-    wfBtn.className = `crpg-stance-btn ${isWhirling ? 'active' : ''}`;
-    wfBtn.textContent = `Whirling Frenzy (${isWhirling ? 'ON' : '+4/+2'})`;
-    wfBtn.addEventListener('click', () => {
-      const live = getGameState() ?? state;
-      applyDoctrineUpdate(live, playerId, { whirlingFrenzy: !isWhirling });
-      markAllDomainsDirty();
-    });
-    stanceGrid.appendChild(wfBtn);
+    stanceGrid.appendChild(btn);
   }
 
   col.appendChild(stanceGrid);

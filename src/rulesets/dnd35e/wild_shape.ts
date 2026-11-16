@@ -16,6 +16,9 @@ import type {
   StatModifier
 } from './types/dnd35e.types.ts';
 import { SIZE_METRICS } from './spatial/grid_geometry.ts';
+import type { DnD35RaceDefinition } from './types/dnd35e_system.types.ts';
+import { addFloatingText } from '../../systems/damage.system.ts';
+import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 
 export * from './shapeshift.ts';
 
@@ -25,6 +28,12 @@ const ROUNDS_PER_HOUR = 600;
 /** Default priority for Wild Shape base form overlay (`100`). */
 const WILD_SHAPE_OVERLAY_PRIORITY = 100;
 
+/** Baseline ability score used when a race lacks an explicit default score. */
+const WILD_SHAPE_DEFAULT_ABILITY_BASE = 10;
+
+/** Default land speed in feet when a race lacks an explicit speed. */
+const WILD_SHAPE_DEFAULT_SPEED_FT = 30;
+
 /**
  * Definition of a target animal, plant, or elemental form for Wild Shape.
  */
@@ -33,11 +42,7 @@ export interface WildShapeFormDefinition {
   readonly name: string;
   readonly creatureType: 'animal' | 'plant' | 'elemental';
   readonly sizeCategory: CreatureSizeCategory;
-  readonly physicalScores: {
-    readonly str: number;
-    readonly dex: number;
-    readonly con: number;
-  };
+  readonly physicalScores: { readonly str: number; readonly dex: number; readonly con: number };
   readonly naturalArmorBonus: number;
   readonly naturalWeapons: ReadonlyArray<NaturalWeaponDescriptor>;
   readonly landSpeedFt: number;
@@ -45,42 +50,23 @@ export interface WildShapeFormDefinition {
   readonly swimSpeedFt?: number | undefined;
 }
 
-/**
- * Checks if a Druid of the given level is eligible to Wild Shape into the specified form.
- * Level progression:
- * - Level 5: Small or Medium Animal
- * - Level 8: Large Animal
- * - Level 11: Tiny Animal
- * - Level 12: Plant (Small, Medium, Large)
- * - Level 15: Huge Animal or Plant
- * - Level 16: Small, Medium, Large Elemental
- * - Level 20: Huge Elemental
- */
 export function isWildShapeFormEligible(druidLevel: number, form: WildShapeFormDefinition): boolean {
   if (druidLevel < 5) return false;
-
+  const s = form.sizeCategory;
   if (form.creatureType === 'animal') {
-    if (form.sizeCategory === 'small' || form.sizeCategory === 'medium') return druidLevel >= 5;
-    if (form.sizeCategory === 'large') return druidLevel >= 8;
-    if (form.sizeCategory === 'tiny') return druidLevel >= 11;
-    if (form.sizeCategory === 'huge') return druidLevel >= 15;
-    return false;
+    if (s === 'small' || s === 'medium') return druidLevel >= 5;
+    if (s === 'large') return druidLevel >= 8;
+    if (s === 'tiny') return druidLevel >= 11;
+    return s === 'huge' && druidLevel >= 15;
   }
-
   if (form.creatureType === 'plant') {
     if (druidLevel < 12) return false;
-    if (form.sizeCategory === 'small' || form.sizeCategory === 'medium' || form.sizeCategory === 'large') return true;
-    if (form.sizeCategory === 'huge') return druidLevel >= 15;
-    return false;
+    return s === 'small' || s === 'medium' || s === 'large' || (s === 'huge' && druidLevel >= 15);
   }
-
   if (form.creatureType === 'elemental') {
     if (druidLevel < 16) return false;
-    if (form.sizeCategory === 'small' || form.sizeCategory === 'medium' || form.sizeCategory === 'large') return true;
-    if (form.sizeCategory === 'huge') return druidLevel >= 20;
-    return false;
+    return s === 'small' || s === 'medium' || s === 'large' || (s === 'huge' && druidLevel >= 20);
   }
-
   return false;
 }
 
@@ -143,6 +129,7 @@ export function applyWildShapeForm(
     sizeCategoryOverride: form.sizeCategory,
     creatureTypeOverride: form.creatureType,
     movementModesOverride,
+    ...(form.naturalWeapons.length > 0 ? { naturalWeaponsOverride: form.naturalWeapons } : {}),
     statOverrides: {
       str: form.physicalScores.str,
       dex: form.physicalScores.dex,
@@ -154,6 +141,136 @@ export function applyWildShapeForm(
 
   nextState = addComponent(nextState, entityId, overlay);
   return nextState;
+}
+
+/**
+ * Derives a `WildShapeFormDefinition` declaratively from a System Content `DnD35RaceDefinition`
+ * when its `creatureType` is `'animal'`, `'plant'`, or `'elemental'`.
+ *
+ * @param raceDef Declarative race definition from `races/*.json`.
+ * @returns Hydrated `WildShapeFormDefinition` or `null` if the race is not a Wild Shape creature type.
+ */
+export function deriveWildShapeFormFromRace(raceDef: DnD35RaceDefinition): WildShapeFormDefinition | null {
+  if (raceDef.creatureType !== 'animal' && raceDef.creatureType !== 'plant' && raceDef.creatureType !== 'elemental') {
+    return null;
+  }
+
+  const baseScores = raceDef.defaultAbilityScores;
+  const adj = raceDef.abilityAdjustments;
+  const str = baseScores?.str ?? WILD_SHAPE_DEFAULT_ABILITY_BASE + (adj?.str ?? 0);
+  const dex = baseScores?.dex ?? WILD_SHAPE_DEFAULT_ABILITY_BASE + (adj?.dex ?? 0);
+  const con = baseScores?.con ?? WILD_SHAPE_DEFAULT_ABILITY_BASE + (adj?.con ?? 0);
+  const landSpeedFt = raceDef.movementModes?.land ?? raceDef.baseLandSpeedFt ?? WILD_SHAPE_DEFAULT_SPEED_FT;
+
+  return {
+    formId: raceDef.id,
+    name: raceDef.name,
+    creatureType: raceDef.creatureType,
+    sizeCategory: raceDef.size,
+    physicalScores: { str, dex, con },
+    naturalArmorBonus: raceDef.naturalArmorBonus ?? 0,
+    naturalWeapons: raceDef.naturalWeapons ?? [],
+    landSpeedFt,
+    ...(raceDef.movementModes?.fly !== undefined ? { flySpeedFt: raceDef.movementModes.fly } : {}),
+    ...(raceDef.movementModes?.swim !== undefined ? { swimSpeedFt: raceDef.movementModes.swim } : {})
+  };
+}
+
+/**
+ * Selects the strongest (or explicitly requested) eligible `WildShapeFormDefinition` from loaded
+ * `races/*.json` definitions, enforcing both creature-type/size unlocks and the PHB HD <= Druid level cap.
+ *
+ * @param druidLevel Current effective Druid level.
+ * @param races Loaded race definitions registry.
+ * @param preferredFormId Optional specific race/form ID to assume.
+ * @returns Eligible `WildShapeFormDefinition` or `null`.
+ */
+export function selectBestEligibleWildShapeForm(
+  druidLevel: number,
+  races: Readonly<Record<string, DnD35RaceDefinition>>,
+  preferredFormId?: string
+): WildShapeFormDefinition | null {
+  const getRaceHd = (r: DnD35RaceDefinition): number =>
+    Math.max(1, r.rhdProgression?.baseHdCount || r.racialHitDice?.count || 1);
+
+  if (preferredFormId !== undefined) {
+    const preferredRace = races[preferredFormId];
+    if (!preferredRace) return null;
+    const form = deriveWildShapeFormFromRace(preferredRace);
+    if (!form) return null;
+    return getRaceHd(preferredRace) <= druidLevel && isWildShapeFormEligible(druidLevel, form) ? form : null;
+  }
+
+  const eligible: Array<{ readonly form: WildShapeFormDefinition; readonly score: number }> = [];
+  for (const raceDef of Object.values(races)) {
+    const form = deriveWildShapeFormFromRace(raceDef);
+    if (!form) continue;
+    const hd = getRaceHd(raceDef);
+    if (hd > druidLevel || !isWildShapeFormEligible(druidLevel, form)) continue;
+    const score = hd * 100 + form.physicalScores.str + form.naturalArmorBonus;
+    eligible.push({ form, score });
+  }
+
+  if (eligible.length === 0) return null;
+  eligible.sort((a, b) => b.score - a.score);
+  return eligible[0]!.form;
+}
+
+/**
+ * Executes a Druid Wild Shape activation or reversion from a `ResourcePoolComponent` slot,
+ * checking eligibility before consuming a daily charge and reverting for free per PHB p. 37.
+ */
+export function executeWildShapePoolActivation(params: {
+  readonly state: GameState;
+  readonly actorId: EntityId;
+  readonly druidLevel: number;
+  readonly races: Readonly<Record<string, DnD35RaceDefinition>>;
+  readonly label: string;
+  readonly consumeActionAndCharge: (
+    s: GameState,
+    spendCharge: boolean
+  ) => { readonly state: GameState; readonly allowed: boolean };
+}): { readonly state: GameState; readonly success: boolean } {
+  const { state, actorId, druidLevel, races, label, consumeActionAndCharge } = params;
+  const existingOverlay = getComponent(state, actorId, ComponentType.PropertyOverlay) as
+    PropertyOverlayComponent | undefined;
+  const isReverting = existingOverlay?.source.startsWith('wild_shape:') === true;
+
+  if (isReverting) {
+    const step = consumeActionAndCharge(state, false);
+    if (!step.allowed) return { state: step.state, success: false };
+    let nextState = revertWildShapeForm(step.state, actorId);
+    nextState = addFloatingText(nextState, actorId, 'NORMAL FORM', '#dfe6e9');
+    return {
+      state: addMessage(nextState, 'Reverted from Wild Shape to normal form.', MessageLogCategory.System),
+      success: true
+    };
+  }
+
+  const form = selectBestEligibleWildShapeForm(druidLevel, races);
+  if (!form) {
+    return {
+      state: addMessage(
+        state,
+        `${label}: No eligible creature form available at level ${druidLevel}.`,
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
+  const step = consumeActionAndCharge(state, true);
+  if (!step.allowed) return { state: step.state, success: false };
+  let nextState = applyWildShapeForm(step.state, actorId, form, druidLevel);
+  nextState = addFloatingText(nextState, actorId, form.name.toUpperCase(), '#55efc4');
+  return {
+    state: addMessage(
+      nextState,
+      `Wild Shaped into ${form.name} (${form.sizeCategory} ${form.creatureType})!`,
+      MessageLogCategory.System
+    ),
+    success: true
+  };
 }
 
 /**
@@ -228,12 +345,7 @@ export function resolveEffectiveEntityDataWithOverlays(
     const overrides = layer.statOverrides;
     if (overrides) {
       for (const s of ['str', 'dex', 'con', 'int', 'wis', 'cha'] as const) {
-        if (overrides[s] !== undefined) {
-          nextScores[s] = {
-            ...nextScores[s],
-            base: overrides[s]!
-          };
-        }
+        if (overrides[s] !== undefined) nextScores[s] = { ...nextScores[s], base: overrides[s]! };
       }
       if (overrides['naturalArmorBonus'] !== undefined) {
         naturalArmorBonus = overrides['naturalArmorBonus']!;
@@ -247,13 +359,9 @@ export function resolveEffectiveEntityDataWithOverlays(
         });
       }
     }
-
     if (layer.statModifiers !== undefined) {
-      for (const mod of layer.statModifiers as ReadonlyArray<StatModifier>) {
-        overlayModifiers.push(mod);
-      }
+      overlayModifiers.push(...(layer.statModifiers as ReadonlyArray<StatModifier>));
     }
-
     if (layer.sizeCategoryOverride !== undefined) {
       sizeCategory = layer.sizeCategoryOverride as CreatureSizeCategory;
       overlayModifiers.push({
@@ -265,12 +373,8 @@ export function resolveEffectiveEntityDataWithOverlays(
         origin: 'su'
       });
     }
-    if (layer.creatureTypeOverride !== undefined) {
-      creatureType = layer.creatureTypeOverride;
-    }
-    if (layer.movementModesOverride !== undefined) {
-      movementModes = layer.movementModesOverride;
-    }
+    if (layer.creatureTypeOverride !== undefined) creatureType = layer.creatureTypeOverride;
+    if (layer.movementModesOverride !== undefined) movementModes = layer.movementModesOverride;
     if (layer.naturalWeaponsOverride !== undefined) {
       naturalWeapons = layer.naturalWeaponsOverride as ReadonlyArray<NaturalWeaponDescriptor>;
     }

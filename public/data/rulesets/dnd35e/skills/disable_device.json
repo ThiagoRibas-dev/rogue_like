@@ -8,6 +8,8 @@
     "retryAllowed": true,
     "take10Allowed": true,
     "take20Allowed": false,
+    "isUsableActive": true,
+    "activeVerb": "disarm",
     "synergyFromSkills": [],
     "synergyNotes": "Disarming traps, jamming mechanical mechanisms, or sabotaging mechanical contraptions (Rogues required for magical traps).",
     "actions": [

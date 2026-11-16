@@ -8,6 +8,8 @@
     "retryAllowed": true,
     "take10Allowed": true,
     "take20Allowed": true,
+    "isUsableActive": true,
+    "activeVerb": "unlock",
     "synergyFromSkills": [],
     "synergyNotes": "Picking mechanical locks with thieves' tools without tripping keyhole alarms.",
     "actions": [

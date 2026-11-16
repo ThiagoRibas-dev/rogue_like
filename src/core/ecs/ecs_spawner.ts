@@ -67,7 +67,8 @@ export function spawnEntity(
     nextState = addComponent(nextState, entityId, {
       type: ComponentType.Trap,
       triggerId: template.trap.triggerId,
-      triggered: false
+      triggered: false,
+      canReset: template.trap.canReset ?? true
     });
   }
 

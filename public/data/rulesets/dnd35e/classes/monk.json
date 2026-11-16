@@ -164,10 +164,21 @@
         "id": "decisive_strike",
         "name": "Decisive Strike",
         "category": "ex",
+        "usageMode": "toggle",
         "description": "Make a single unarmed attack as a full-round action at -2 that deals double damage on hit (and double damage on AoOs until next turn).",
         "grantedTags": [
           "feature:decisive_strike",
           "stance:decisive_strike"
+        ],
+        "activatedAbilities": [
+          {
+            "abilityId": "decisive_strike",
+            "name": "Decisive Strike",
+            "shortLabel": "Decisive 2x",
+            "description": "Decisive Strike (-2 Atk, 2x damage)",
+            "actionCost": "full_round",
+            "doctrineToggleKey": "decisiveStrike"
+          }
         ]
       },
       "invisible_fist": {
@@ -178,7 +189,9 @@
         "resourcePool": {
           "poolId": "invisible_fist",
           "maxBase": 1,
-          "refreshCycle": "round"
+          "refreshCycle": "round",
+          "actionCost": "immediate",
+          "icon": "👻"
         },
         "grantedTags": [
           "feature:invisible_fist",

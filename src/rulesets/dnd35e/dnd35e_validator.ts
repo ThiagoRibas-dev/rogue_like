@@ -39,6 +39,19 @@ export function validateDnD35eSystemContentIntegrity(
         errors
       );
     }
+    if (featDef.skillCheckCombatBonus && Object.keys(sys.skills).length > 0) {
+      const prefix = featDef.skillCheckCombatBonus.skillPrefix;
+      const hasMatchingStudiedSkill = Object.values(sys.skills).some(
+        (s) => s.id.startsWith(prefix) && s.studiedCreatureTags.length > 0
+      );
+      if (!hasMatchingStudiedSkill) {
+        errors.push({
+          path: `systemContent.feats.${featKey}.skillCheckCombatBonus.skillPrefix`,
+          message: `Feat "${featKey}" skillCheckCombatBonus skillPrefix "${prefix}" matches no skills with studiedCreatureTags.`,
+          severity: 'error'
+        });
+      }
+    }
   }
 
   for (const [enhKey, enhDef] of Object.entries(sys.itemEnhancements ?? {})) {

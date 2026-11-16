@@ -3,7 +3,8 @@ import { DnD35DamageTypeSchema } from './base_system.types.ts';
 import {
   DnD35EffectBundleSchema,
   DnD35ModifierTagConditionSchema,
-  DnD35SpellStrikeDescriptorSchema
+  DnD35SpellStrikeDescriptorSchema,
+  DnD35TargetCategorySchema
 } from './effect_system.types.ts';
 
 /**
@@ -96,7 +97,8 @@ export const DnD35SpellTargetingSchema = z.object({
   maxTargetsScaling: DnD35SpellScalingRuleSchema.optional(),
   maxClusterSpanFt: z.number().int().positive().optional(),
   maxTargetHitDice: z.number().int().positive().optional(),
-  totalHitDicePool: z.number().int().positive().optional()
+  totalHitDicePool: z.number().int().positive().optional(),
+  validTargetCategories: z.array(DnD35TargetCategorySchema).optional()
 });
 export type DnD35SpellTargeting = z.infer<typeof DnD35SpellTargetingSchema>;
 
@@ -115,6 +117,7 @@ const SpellEffectUnitBaseSchema = z.object({
   targetRole: z
     .enum(['primary_target', 'secondary_enemy', 'secondary_ally', 'caster', 'area_occupant'])
     .default('primary_target'),
+  validTargetCategories: z.array(DnD35TargetCategorySchema).optional(),
   condition: DnD35ModifierTagConditionSchema.optional(),
   savingThrow: DnD35SpellSavingThrowSchema.optional(),
   allowsSpellResistance: z.boolean().optional(),

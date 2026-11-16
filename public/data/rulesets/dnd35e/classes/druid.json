@@ -99,7 +99,74 @@
         "resourcePool": {
           "poolId": "wild_shape",
           "maxBase": 1,
-          "refreshCycle": "rest_8h"
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
+        }
+      },
+      "wild_shape_2": {
+        "id": "wild_shape_2",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Gain an additional daily use of Wild Shape (2/day).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
+        }
+      },
+      "wild_shape_3": {
+        "id": "wild_shape_3",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Gain an additional daily use of Wild Shape (3/day).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
+        }
+      },
+      "wild_shape_4": {
+        "id": "wild_shape_4",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Gain an additional daily use of Wild Shape (4/day).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
+        }
+      },
+      "wild_shape_5": {
+        "id": "wild_shape_5",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Gain an additional daily use of Wild Shape (5/day).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
+        }
+      },
+      "wild_shape_6": {
+        "id": "wild_shape_6",
+        "name": "Wild Shape",
+        "category": "su",
+        "description": "Gain an additional daily use of Wild Shape (6/day).",
+        "resourcePool": {
+          "poolId": "wild_shape",
+          "maxBase": 1,
+          "refreshCycle": "rest_8h",
+          "actionCost": "standard",
+          "icon": "🐾"
         }
       },
       "venom_immunity": {
@@ -163,25 +230,172 @@
         ],
         "activatedAbilities": [
           {
-            "abilityId": "shapeshift_predator",
-            "name": "Shapeshift: Predator Form",
+            "abilityId": "shapeshift_normal",
+            "name": "Normal Form",
+            "shortLabel": "Normal Form",
+            "description": "Revert to humanoid form (Swift)",
+            "minClassLevel": 1,
             "actionCost": "swift",
             "toggleGroup": "druid_shapeshift_form",
-            "grantsSelfTag": "form:shapeshift_predator"
+            "isDefaultInGroup": true
+          },
+          {
+            "abilityId": "shapeshift_predator",
+            "name": "Shapeshift: Predator Form",
+            "shortLabel": "Predator Form",
+            "description": "+4 STR, +4 Nat AC, 50ft, 1d6 Bite",
+            "minClassLevel": 1,
+            "actionCost": "swift",
+            "toggleGroup": "druid_shapeshift_form",
+            "grantsSelfTag": "form:shapeshift_predator",
+            "formOverlay": {
+              "modifiers": [
+                {
+                  "id": "str",
+                  "target": "str",
+                  "value": 4,
+                  "type": "enhancement"
+                },
+                {
+                  "id": "natural_armor",
+                  "target": "natural_armor",
+                  "value": 4,
+                  "type": "enhancement"
+                }
+              ],
+              "movementModes": {
+                "land": 50
+              },
+              "naturalWeapons": [
+                {
+                  "id": "shapeshift_predator_bite",
+                  "name": "Bite",
+                  "naturalType": "bite",
+                  "isPrimary": true,
+                  "count": 1,
+                  "damageDice": "1d6",
+                  "damageType": "piercing",
+                  "critThreatMin": 20,
+                  "critMultiplier": 2
+                }
+              ],
+              "grantedTags": [
+                "trait:shapeshift_active",
+                "form:shapeshift_predator"
+              ]
+            }
           },
           {
             "abilityId": "shapeshift_aerial",
             "name": "Shapeshift: Aerial Form",
+            "shortLabel": "Aerial Form",
+            "description": "+2 STR, +2 Nat AC, +2 Ref, 40ft Fly",
+            "minClassLevel": 5,
             "actionCost": "swift",
             "toggleGroup": "druid_shapeshift_form",
-            "grantsSelfTag": "form:shapeshift_aerial"
+            "grantsSelfTag": "form:shapeshift_aerial",
+            "formOverlay": {
+              "modifiers": [
+                {
+                  "id": "str",
+                  "target": "str",
+                  "value": 2,
+                  "type": "enhancement"
+                },
+                {
+                  "id": "natural_armor",
+                  "target": "natural_armor",
+                  "value": 2,
+                  "type": "enhancement"
+                },
+                {
+                  "id": "ref",
+                  "target": "ref",
+                  "value": 2,
+                  "type": "competence"
+                }
+              ],
+              "movementModes": {
+                "land": 30,
+                "fly": 40
+              },
+              "naturalWeapons": [
+                {
+                  "id": "shapeshift_aerial_talon",
+                  "name": "Talon",
+                  "naturalType": "talon",
+                  "isPrimary": true,
+                  "count": 1,
+                  "damageDice": "1d6",
+                  "damageType": "slashing",
+                  "critThreatMin": 20,
+                  "critMultiplier": 2
+                }
+              ],
+              "grantedTags": [
+                "trait:shapeshift_active",
+                "form:shapeshift_aerial",
+                "movement:fly"
+              ]
+            }
           },
           {
             "abilityId": "shapeshift_ferocious_slayer",
             "name": "Shapeshift: Ferocious Slayer Form",
+            "shortLabel": "Ferocious Slayer",
+            "description": "Large, +8 STR, +8 Nat AC, Bite+Claws",
+            "minClassLevel": 8,
             "actionCost": "swift",
             "toggleGroup": "druid_shapeshift_form",
-            "grantsSelfTag": "form:shapeshift_ferocious_slayer"
+            "grantsSelfTag": "form:shapeshift_ferocious_slayer",
+            "formOverlay": {
+              "sizeCategory": "large",
+              "modifiers": [
+                {
+                  "id": "str",
+                  "target": "str",
+                  "value": 8,
+                  "type": "enhancement"
+                },
+                {
+                  "id": "natural_armor",
+                  "target": "natural_armor",
+                  "value": 8,
+                  "type": "enhancement"
+                }
+              ],
+              "movementModes": {
+                "land": 40
+              },
+              "naturalWeapons": [
+                {
+                  "id": "shapeshift_ferocious_bite",
+                  "name": "Bite",
+                  "naturalType": "bite",
+                  "isPrimary": true,
+                  "count": 1,
+                  "damageDice": "1d8",
+                  "damageType": "piercing",
+                  "critThreatMin": 20,
+                  "critMultiplier": 2
+                },
+                {
+                  "id": "shapeshift_ferocious_claw",
+                  "name": "Claw",
+                  "naturalType": "claw",
+                  "isPrimary": false,
+                  "count": 2,
+                  "damageDice": "1d6",
+                  "damageType": "slashing",
+                  "critThreatMin": 20,
+                  "critMultiplier": 2
+                }
+              ],
+              "grantedTags": [
+                "trait:shapeshift_active",
+                "form:shapeshift_ferocious_slayer"
+              ]
+            }
           }
         ]
       }

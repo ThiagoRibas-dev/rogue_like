@@ -20,6 +20,8 @@ import { evaluateCover } from '../spatial/cover_senses.ts';
 import { measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { executeWildShapePoolActivation } from '../wild_shape.ts';
 import { executeInvisibleFistImmediate, initiateAbruptJauntTargeting } from './immediate_reactions.ts';
 
 /** Maximum burst range of Turn/Rebuke Undead in feet (`60 ft`, PHB p. 159). */
@@ -216,13 +218,6 @@ export function executeDnD35eResourcePoolAbility(
   const entry = poolComp?.pools[poolId];
   const label = entry?.label ?? poolId.replace(/_/g, ' ');
 
-  if (!entry || entry.current <= 0) {
-    return {
-      state: addMessage(state, `${label}: No uses remaining today.`, MessageLogCategory.System),
-      success: false
-    };
-  }
-
   const normalizedId = poolId.toLowerCase();
   if (normalizedId === 'invisible_fist') {
     return executeInvisibleFistImmediate(state, actorId, true);
@@ -232,34 +227,71 @@ export function executeDnD35eResourcePoolAbility(
   }
 
   const dndData = getDnD35EntityData(state, actorId);
-  let nextBudget = dndData.actionBudget;
-  if (state.engineMode === EngineMode.TurnBased) {
-    const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(state, actorId);
-    const stdRes = consumeStandardActionFromBudget(activeBudget);
-    if (!stdRes.allowed) {
-      return {
-        state: addMessage(state, `${label}: No Standard Action remaining this round.`, MessageLogCategory.System),
-        success: false
-      };
+  const consumeStandardAndCharge = (
+    baseState: GameState,
+    spendCharge: boolean
+  ): { readonly state: GameState; readonly allowed: boolean } => {
+    let nextBudget = dndData.actionBudget;
+    if (baseState.engineMode === EngineMode.TurnBased) {
+      const activeBudget = dndData.actionBudget ?? hydrateEntityRoundActionBudget(baseState, actorId);
+      const stdRes = consumeStandardActionFromBudget(activeBudget);
+      if (!stdRes.allowed) {
+        return {
+          state: addMessage(baseState, `${label}: No Standard Action remaining this round.`, MessageLogCategory.System),
+          allowed: false
+        };
+      }
+      nextBudget = stdRes.budget;
     }
-    nextBudget = stdRes.budget;
+    let next = baseState;
+    if (spendCharge) {
+      if (!entry || entry.current <= 0) {
+        return {
+          state: addMessage(baseState, `${label}: No uses remaining today.`, MessageLogCategory.System),
+          allowed: false
+        };
+      }
+      const consumed = consumeResourcePool(baseState, actorId, poolId, 1);
+      if (!consumed.allowed) {
+        return {
+          state: addMessage(baseState, `${label}: Unable to expend pool charge.`, MessageLogCategory.System),
+          allowed: false
+        };
+      }
+      next = consumed.state;
+    }
+    if (nextBudget !== undefined) {
+      next = setDnD35EntityData(next, actorId, { ...getDnD35EntityData(next, actorId), actionBudget: nextBudget });
+    }
+    return { state: next, allowed: true };
+  };
+
+  if (normalizedId === 'wild_shape') {
+    const druidLevel = Math.max(
+      1,
+      dndData.scalingPools?.['wild_shape_level'] ??
+        dndData.tracks.find((t) => t.trackId === 'druid')?.levels ??
+        getEffectiveActorLevel(dndData)
+    );
+    return executeWildShapePoolActivation({
+      state,
+      actorId,
+      druidLevel,
+      races: getDnD35SystemContent(state.campaign)?.races ?? {},
+      label,
+      consumeActionAndCharge: consumeStandardAndCharge
+    });
   }
 
-  const consumed = consumeResourcePool(state, actorId, poolId, 1);
-  if (!consumed.allowed) {
+  if (!entry || entry.current <= 0) {
     return {
-      state: addMessage(state, `${label}: Unable to expend pool charge.`, MessageLogCategory.System),
+      state: addMessage(state, `${label}: No uses remaining today.`, MessageLogCategory.System),
       success: false
     };
   }
-
-  let nextState = consumed.state;
-  if (nextBudget !== undefined) {
-    nextState = setDnD35EntityData(nextState, actorId, {
-      ...getDnD35EntityData(nextState, actorId),
-      actionBudget: nextBudget
-    });
-  }
+  const step = consumeStandardAndCharge(state, true);
+  if (!step.allowed) return { state: step.state, success: false };
+  let nextState = step.state;
   if (normalizedId.includes('turn') || normalizedId.includes('rebuke')) {
     return {
       state: resolveTurnUndeadPool(nextState, actorId, normalizedId, label),

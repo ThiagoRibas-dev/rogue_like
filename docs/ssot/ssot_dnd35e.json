@@ -160,7 +160,8 @@
     "responsibility": "Pure state updates for TacticalDoctrineComponent (Power Attack, Combat Expertise, Fighting Defensively, Total Defense, Grip Mode).",
     "canonicalEntryPoints": [
       "updateActorTacticalDoctrine",
-      "applyDoctrineUpdate"
+      "applyDoctrineUpdate",
+      "toggleDnD35eActorStance"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rendering/ui/dnd35e_doctrine_actions.ts.",
@@ -1152,6 +1153,7 @@
       "executeAbruptJauntTeleport",
       "evaluateOffTurnImmediateReactions",
       "getNextReactionTrigger",
+      "getNextCounterspellReactionTrigger",
       "evaluateAdjacentEnemyReactionsOnMove"
     ],
     "ownershipBoundary": {
@@ -1588,6 +1590,8 @@
       "expendCasterSpellSlot",
       "isCasterThreatenedInMelee",
       "enumerateSpellTargets",
+      "predictSpellAoEVictims",
+      "matchesTargetCategoryFilter",
       "collectEquippedArcaneSpellFailure"
     ],
     "ownershipBoundary": {
@@ -1596,6 +1600,40 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/spell_cast_helpers.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/counterspell_interrupt.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates reactive off-turn counterspelling interrupts via Immediate Actions, Spellcraft checks, and prepared/spontaneous spell slot expenditure.",
+    "canonicalEntryPoints": [
+      "SPELLCRAFT_COUNTERSPELL_BASE_DC",
+      "evaluateReactiveCounterspellInterrupt"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/counterspell_interrupt.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/counterspell_interrupt.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/magic/target_category_filter.ts": {
+    "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
+    "tier": "tier2_cartridge",
+    "responsibility": "Evaluates composable validTargetCategories filters (allegiance and structural entity kinds), spell AoE target enumeration, and friendly-fire prediction.",
+    "canonicalEntryPoints": [
+      "isOffensiveDnD35Spell",
+      "matchesTargetCategoryFilter",
+      "enumerateSpellTargets",
+      "predictSpellAoEVictims"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/target_category_filter.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/magic/target_category_filter.ts."
     ]
   },
   "src/rulesets/dnd35e/magic/spell_cast_resolver.ts": {
@@ -2013,6 +2051,7 @@
     "tier": "tier2_cartridge",
     "responsibility": "Hydrates ComponentType.ResourcePool from active class features and domains that explicitly declare resourcePool definitions, preserving remaining charges across rebuilds.",
     "canonicalEntryPoints": [
+      "resolveResourcePoolActionCost",
       "buildActorResourcePoolsComponent",
       "syncActorResourcePoolsComponent"
     ],
@@ -2110,7 +2149,6 @@
       "SHAPESHIFT_OVERLAY_PRIORITY",
       "SHAPESHIFT_STANCE_GROUP_ID",
       "DnD35ShapeshiftFormId",
-      "SHAPESHIFT_FORM_MIN_LEVELS",
       "isDruidShapeshiftEligible",
       "executeDruidShapeshift"
     ],
@@ -2213,7 +2251,9 @@
     "responsibility": "Evaluates 5-rank skill synergies, skill rank caps, and rank-threshold modifier/tag grants.",
     "canonicalEntryPoints": [
       "computeSkillSynergyBonus",
-      "buildSkillRankThresholdModifiers"
+      "buildSkillRankThresholdModifiers",
+      "resolveActorSkillsSnapshot",
+      "buildKnowledgeDevotionModifiers"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/skills/skill_synergies.ts.",
@@ -2456,6 +2496,7 @@
       "DnD35FeatDefinition",
       "DnD35SystemContentSchema",
       "DnD35SystemContent",
+      "getLastLoadedDnD35SystemContent",
       "parseDnD35SystemContent",
       "getDnD35SystemContent"
     ],
@@ -2786,7 +2827,7 @@
     "tier": "tier2_ui",
     "responsibility": "Pure hotbar and stance-mode projection helpers for the D&D 3.5e Cartridge UI Adapter.",
     "canonicalEntryPoints": [
-      "ACTIVE_SKILL_IDS",
+      "isSkillUsableActive",
       "buildActorStanceModes",
       "buildActorHotbarSlots",
       "DND35E_ACTION_PIPS"
@@ -2857,6 +2898,9 @@
       "isWildShapeFormEligible",
       "applyWildShapeForm",
       "revertWildShapeForm",
+      "deriveWildShapeFormFromRace",
+      "selectBestEligibleWildShapeForm",
+      "executeWildShapePoolActivation",
       "resolveEffectiveEntityDataWithOverlays"
     ],
     "ownershipBoundary": {

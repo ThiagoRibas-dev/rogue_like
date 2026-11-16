@@ -19,7 +19,7 @@ import {
   collectActiveGrantedAndVirtualFeats,
   type ResolvedActiveCombatRules
 } from './progression/ledger_modifiers.ts';
-import { buildSkillRankThresholdModifiers } from './skills.ts';
+import { buildKnowledgeDevotionModifiers, buildSkillRankThresholdModifiers } from './skills.ts';
 import { projectDnD35ActorSemanticTags } from './semantic_tags.ts';
 import type {
   AbilityScoresRecord,
@@ -224,6 +224,16 @@ export function rebuildActorStateFromLevelHistory(
     sysContent
   );
   const featMods = buildFeatEffectModifiers(rebuiltFeats, sysContent.feats, suppressedIds, activeTags);
+  const knowledgeDevotionMods = sysContent.skills
+    ? buildKnowledgeDevotionModifiers(
+        rebuiltFeats,
+        skillRanks,
+        baseAbilities,
+        sysContent.feats,
+        sysContent.skills,
+        suppressedIds
+      )
+    : [];
   const skillThresholdMods = sysContent.skills ? buildSkillRankThresholdModifiers(skillRanks, sysContent.skills) : [];
   const negMods = buildNegativeLevelModifiers(currentData.negativeLevels ?? 0);
 
@@ -267,6 +277,7 @@ export function rebuildActorStateFromLevelHistory(
       ...classAndDomainMods,
       ...choiceMods,
       ...featMods,
+      ...knowledgeDevotionMods,
       ...skillThresholdMods,
       ...negMods
     ]

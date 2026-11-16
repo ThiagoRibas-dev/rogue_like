@@ -10,6 +10,7 @@ import { getComponent, addComponent, removeEntity } from '../../core/ecs.ts';
 import { processChangeAreaIntent } from '../map.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
+import { isHostile } from '../../utils/faction.ts';
 import { systemicEntityConsequences } from './systemic_entity.ts';
 
 /**
@@ -33,6 +34,13 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
 
     const trap = getComponent(nextState, id, ComponentType.Trap) as TrapComponent | undefined;
     if (trap && !trap.triggered) {
+      if (
+        trap.resetByEntityId !== undefined &&
+        (trap.resetByEntityId === entityId || !isHostile(nextState, trap.resetByEntityId, entityId))
+      ) {
+        continue;
+      }
+
       const nextTrap = { ...trap, triggered: true };
       nextState = addComponent(nextState, id, nextTrap);
 
@@ -58,7 +66,8 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
           {
             type: GameEventType.TrapTriggered,
             entityId: entityId,
-            triggerId: trap.triggerId
+            triggerId: trap.triggerId,
+            ...(trap.resetByEntityId !== undefined ? { resetByEntityId: trap.resetByEntityId } : {})
           }
         ]
       };
@@ -142,8 +151,10 @@ export const systemicConsequences = {
 
     const existingDamageComp = getComponent(state, eId, ComponentType.Damage) as DamageComponent | undefined;
 
+    const resetOwnerId = event.type === GameEventType.TrapTriggered ? event.resetByEntityId : undefined;
     const damageInstance: DamageInstance = {
       amount,
+      ...(resetOwnerId !== undefined ? { sourceEntityId: resetOwnerId } : {}),
       tags: ['trigger', 'physical']
     };
 

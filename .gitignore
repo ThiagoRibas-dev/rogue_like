@@ -50,6 +50,7 @@ Thumbs.db
 
 # Reference projects
 references/
+temp/
 
 # Misc
 *.txt

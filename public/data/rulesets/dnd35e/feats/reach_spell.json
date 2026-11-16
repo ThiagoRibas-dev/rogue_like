@@ -1,0 +1,12 @@
+{
+  "reach_spell": {
+    "id": "reach_spell",
+    "name": "Reach Spell",
+    "description": "You may cast a spell that normally has a range of touch at any distance up to Close range (25 ft. + 5 ft./2 levels) as a ray. A reach spell uses up a spell slot two levels higher than the spell's actual level.",
+    "isFighterBonusFeat": false,
+    "metamagicDescriptor": {
+      "slotLevelAdjustment": 2,
+      "projectTouchToCloseRange": true
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "improved_counterspell": {
+    "id": "improved_counterspell",
+    "name": "Improved Counterspell",
+    "description": "You understand the nuances of magic to such an extent that you can counter your opponents' spells with great efficiency. When counterspelling, you may use a spell of the same school that is one or more spell levels higher than the target spell.",
+    "isFighterBonusFeat": false,
+    "effectBundle": {
+      "bundleId": "feat_improved_counterspell",
+      "name": "Improved Counterspell",
+      "category": "feat",
+      "usageMode": "passive",
+      "grantedTags": [
+        "trait:improved_counterspell"
+      ]
+    },
+    "ruleOverrides": [
+      {
+        "id": "improved_counterspell_school",
+        "ruleKey": "counterspell_same_school_higher_level",
+        "value": true,
+        "priority": 10
+      }
+    ]
+  }
+}

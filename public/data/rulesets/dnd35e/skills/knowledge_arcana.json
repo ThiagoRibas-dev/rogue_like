@@ -30,6 +30,11 @@
         "onSuccessRuleOverrides": []
       }
     ],
+    "studiedCreatureTags": [
+      "type:construct",
+      "type:dragon",
+      "type:magical_beast"
+    ],
     "rankThresholdModifiers": []
   }
 }

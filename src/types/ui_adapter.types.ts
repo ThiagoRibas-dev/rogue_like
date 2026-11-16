@@ -205,6 +205,7 @@ export interface UIHotbarSlot {
         readonly spellLevel?: number | undefined;
         readonly convertedSpellId?: string | undefined;
         readonly remainingCount?: number | undefined;
+        readonly verb?: string | undefined;
       }
     | undefined;
 }

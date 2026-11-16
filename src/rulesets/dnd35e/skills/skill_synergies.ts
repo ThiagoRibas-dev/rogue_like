@@ -1,15 +1,27 @@
+import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import { dndFloor } from '../math/multipliers.ts';
-import { appendSourcePath } from '../modifiers.ts';
+import { appendSourcePath, resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
 import { evaluateEffectBundle } from '../srd_registry.ts';
-import type { StatModifier } from '../types/dnd35e.types.ts';
-import type { DnD35SkillDefinition } from '../types/dnd35e_system.types.ts';
+import {
+  type AbilityId,
+  type AbilityScoresRecord,
+  ALL_ABILITY_IDS,
+  type DnD35SkillResolution,
+  type StatModifier,
+  type StatQueryContext
+} from '../types/dnd35e.types.ts';
+import type { DnD35FeatDefinition, DnD35SkillDefinition } from '../types/dnd35e_system.types.ts';
 import {
   CLASS_SKILL_RANK_CAP_OFFSET,
   EPIC_SYNERGY_INITIAL_RANKS,
   EPIC_SYNERGY_INTERVAL_RANKS,
   SYNERGY_BONUS_AMOUNT,
-  SYNERGY_REQUIRED_RANKS
+  SYNERGY_REQUIRED_RANKS,
+  TAKE_10_VALUE
 } from './skill_constants.ts';
+
+/** Fear condition penalty (`-2`) applied to skill checks when shaken, frightened, or panicked. */
+const FEAR_CONDITION_SKILL_PENALTY = -2;
 
 /**
  * Computes maximum allowed skill ranks for a class skill (`HD + 3`) vs. cross-class skill (`(HD + 3) / 2`).
@@ -156,4 +168,169 @@ export function evaluateSkillRankThresholdEffects(
     statModifiers,
     grantedTags: Array.from(grantedTags)
   };
+}
+
+/** Parameters for resolving a complete actor skill breakdown map in a single pass. */
+export interface ResolveActorSkillsSnapshotParams {
+  readonly skillRanks: Readonly<Record<string, number>>;
+  readonly effectiveAbilityModifiers: Readonly<Record<AbilityId, number>>;
+  readonly isConNonability?: boolean | undefined;
+  readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
+  readonly conditions?: ReadonlyArray<string> | undefined;
+  readonly armorCheckPenalty?: number | undefined;
+  readonly minSkillRanksFloor?: number | undefined;
+  readonly skillRegistry?: Readonly<Record<string, DnD35SkillDefinition>> | undefined;
+  readonly context?: StatQueryContext | undefined;
+}
+
+/**
+ * Resolves the canonical `DnD35SkillResolution` breakdown for every skill in `skillRegistry`
+ * (plus any custom rank keys in `skillRanks`), incorporating Stage 2 `effectiveAbilityModifiers`,
+ * Undead `CON: null -> CHA` concentration substitution, Bardic Knack rank floors, 5-rank/epic synergies,
+ * equipped `armorCheckPenalty` (`acpMultiplier`), Fear condition penalties, and 18-type bonus stacking.
+ */
+export function resolveActorSkillsSnapshot(
+  params: ResolveActorSkillsSnapshotParams
+): Readonly<Record<string, DnD35SkillResolution>> {
+  const {
+    skillRanks,
+    effectiveAbilityModifiers,
+    isConNonability = false,
+    statModifiers = [],
+    conditions = [],
+    armorCheckPenalty = 0,
+    minSkillRanksFloor,
+    skillRegistry = {},
+    context
+  } = params;
+
+  const hasFearPenalty =
+    conditions.includes('shaken') || conditions.includes('frightened') || conditions.includes('panicked');
+  const sharedSkillMods = statModifiers.filter((m) => m.targetStat === 'skills');
+  const allSkillIds = new Set<string>([...Object.keys(skillRegistry), ...Object.keys(skillRanks)]);
+  const resolved: Record<string, DnD35SkillResolution> = {};
+
+  for (const skillId of allSkillIds) {
+    const def = skillRegistry[skillId];
+    const rawRanks = skillRanks[skillId] ?? 0;
+    const flooredInput =
+      minSkillRanksFloor !== undefined && minSkillRanksFloor > 0 ? Math.max(rawRanks, minSkillRanksFloor) : rawRanks;
+    const effectiveRanks = dndFloor(Math.max(0, flooredInput));
+    const baseKeyAbility: AbilityId = def?.keyAbility ?? 'int';
+    const keyAbility: AbilityId = skillId === 'concentration' && isConNonability ? 'cha' : baseKeyAbility;
+    const keyAbilityModifier = effectiveAbilityModifiers[keyAbility] ?? 0;
+    const synergyBonus = computeSkillSynergyBonus(def?.synergyFromSkills ?? [], skillRanks);
+    const acpMultiplier = def?.acpMultiplier ?? 0;
+    const acpApplied = -Math.abs(armorCheckPenalty) * acpMultiplier;
+
+    const targetKey = `skill:${skillId}`;
+    const specificMods = statModifiers.filter((m) => m.targetStat === targetKey);
+    const combinedMods: StatModifier[] = [...specificMods, ...sharedSkillMods];
+    if (hasFearPenalty && !combinedMods.some((m) => m.sourceId === 'condition_fear')) {
+      combinedMods.push({
+        targetStat: targetKey,
+        value: FEAR_CONDITION_SKILL_PENALTY,
+        bonusType: 'untyped',
+        sourceId: 'condition_fear',
+        sourcePath: 'condition:fear/skill_penalty',
+        origin: 'ex'
+      });
+    }
+
+    const modifierBreakdown = resolveTypedModifiersWithBreakdown(combinedMods, context);
+    const miscModifier = synergyBonus + modifierBreakdown.total + acpApplied;
+    const totalModifier = effectiveRanks + keyAbilityModifier + miscModifier;
+
+    resolved[skillId] = {
+      skillId,
+      rawRanks,
+      effectiveRanks,
+      trained: effectiveRanks >= 1,
+      keyAbility,
+      keyAbilityModifier,
+      synergyBonus,
+      acpApplied,
+      modifierBreakdown,
+      miscModifier,
+      totalModifier
+    };
+  }
+
+  return resolved;
+}
+
+/**
+ * Evaluates Knowledge Devotion and similar skill-check-scaled combat bonus feats
+ * (`skillCheckCombatBonus` descriptor paired with skill `studiedCreatureTags`).
+ * Reads the actor's canonical `resolvedSkills` snapshot (or computes it via `resolveActorSkillsSnapshot`)
+ * and emits tag-conditioned `StatModifier`s against `skillDef.studiedCreatureTags`.
+ */
+export function buildKnowledgeDevotionModifiers(
+  actorFeats: ReadonlyArray<string>,
+  skillRanks: Readonly<Record<string, number>>,
+  abilityScores: AbilityScoresRecord,
+  featRegistry: Readonly<Record<string, DnD35FeatDefinition>>,
+  skillRegistry: Readonly<Record<string, DnD35SkillDefinition>>,
+  suppressedBundleIds: ReadonlyArray<string> = [],
+  resolvedSkills?: Readonly<Record<string, DnD35SkillResolution>> | undefined,
+  statModifiers?: ReadonlyArray<StatModifier> | undefined
+): ReadonlyArray<StatModifier> {
+  let skillsMap = resolvedSkills;
+  if (!skillsMap) {
+    const effMods = {} as Record<AbilityId, number>;
+    for (const abId of ALL_ABILITY_IDS) {
+      const state = abilityScores[abId];
+      const modTotal = (statModifiers ?? [])
+        .filter((m) => m.targetStat === abId || m.targetStat === `ability:${abId}`)
+        .reduce((sum, m) => sum + m.value, 0);
+      effMods[abId] = computeAbilityModifier(computeEffectiveAbilityScore(state, modTotal));
+    }
+    skillsMap = resolveActorSkillsSnapshot({
+      skillRanks,
+      effectiveAbilityModifiers: effMods,
+      isConNonability: abilityScores.con.base === null,
+      statModifiers,
+      skillRegistry
+    });
+  }
+
+  const modifiers: StatModifier[] = [];
+  for (const rawFeatId of actorFeats) {
+    const baseId = rawFeatId.includes(':') ? rawFeatId.split(':')[0]! : rawFeatId;
+    if (suppressedBundleIds.includes(rawFeatId) || suppressedBundleIds.includes(baseId)) continue;
+    const featDef = featRegistry[rawFeatId] ?? featRegistry[baseId];
+    const cfg = featDef?.skillCheckCombatBonus;
+    if (!featDef || !cfg || cfg.tiers.length === 0) continue;
+
+    for (const skillDef of Object.values(skillRegistry)) {
+      if (!skillDef.id.startsWith(cfg.skillPrefix) || skillDef.studiedCreatureTags.length === 0) continue;
+      const investedRanks = dndFloor(Math.max(0, skillRanks[skillDef.id] ?? 0));
+      if (investedRanks < 1) continue;
+
+      const resolvedSkill = skillsMap[skillDef.id];
+      const skillTotalMod = resolvedSkill?.totalModifier ?? investedRanks;
+      const checkTotal = (cfg.baselineTake10 ? TAKE_10_VALUE : 0) + skillTotalMod;
+
+      const tier =
+        cfg.tiers.find(
+          (t) =>
+            (t.minCheck === undefined || checkTotal >= t.minCheck) &&
+            (t.maxCheck === undefined || checkTotal <= t.maxCheck)
+        ) ?? cfg.tiers[0];
+      if (!tier || tier.bonus === 0) continue;
+
+      for (const target of cfg.targets) {
+        modifiers.push({
+          targetStat: target as StatModifier['targetStat'],
+          value: tier.bonus,
+          bonusType: cfg.bonusType,
+          sourceId: `feat:${featDef.id}:${skillDef.id}:${target}`,
+          sourcePath: appendSourcePath(`feat:${featDef.id}`, `skill:${skillDef.id}/${target}`),
+          origin: 'ex',
+          condition: { targetTagsAny: skillDef.studiedCreatureTags }
+        });
+      }
+    }
+  }
+  return modifiers;
 }

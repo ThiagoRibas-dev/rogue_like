@@ -38,6 +38,8 @@ export interface TrapComponent {
   readonly type: ComponentType.Trap;
   readonly triggerId: string;
   readonly triggered: boolean;
+  readonly canReset?: boolean | undefined;
+  readonly resetByEntityId?: EntityId | undefined;
 }
 
 /**

@@ -14,9 +14,14 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { isHostile } from '../../../utils/faction.ts';
-import { computeAoEAffectedSquares, type AoETemplateShape } from './aoe_rest.ts';
 import { getSpontaneousMetamagicActionType, type MetamagicSpellModifiers } from './metamagic_dispel.ts';
 import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from './spellbook_slots.ts';
+
+export {
+  enumerateSpellTargets,
+  matchesTargetCategoryFilter,
+  predictSpellAoEVictims
+} from './target_category_filter.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ActionBudget, DnD35ClassSpellbookState } from '../types/dnd35e.types.ts';
@@ -47,17 +52,19 @@ export interface MetamagicSummary {
 export function computeSpellRangeTiles(
   range: DnD35SpellDefinition['range'],
   casterLevel: number,
-  rangeMultiplier = 1
+  rangeMultiplier = 1,
+  projectTouch = false
 ): number {
   if (range === 'personal') return 0;
-  if (range === 'touch') return 1;
+  if (range === 'touch' && !projectTouch) return 1;
   if (range === 'unlimited') return 999;
+  const effectiveRange = range === 'touch' && projectTouch ? 'close' : range;
   const rangeFt =
-    range === 'close'
+    effectiveRange === 'close'
       ? 25 + Math.floor(casterLevel / 2) * 5
-      : range === 'medium'
+      : effectiveRange === 'medium'
         ? 100 + casterLevel * 10
-        : range === 'long'
+        : effectiveRange === 'long'
           ? 400 + casterLevel * 40
           : 25;
   return Math.max(1, Math.floor((rangeFt * rangeMultiplier) / FEET_PER_GRID_SQUARE));
@@ -68,7 +75,16 @@ export function summarizeMetamagic(
   featIds: ReadonlyArray<string> | undefined,
   sysContent: DnD35SystemContent | undefined
 ): MetamagicSummary {
-  const flags = { empower: false, maximize: false, extend: false, widen: false, silent: false, still: false };
+  const flags = {
+    empower: false,
+    maximize: false,
+    extend: false,
+    widen: false,
+    silent: false,
+    still: false,
+    judicious: false,
+    projectTouch: false
+  };
   let isQuickened = false;
   let hasNonQuicken = false;
   let slotBump = 0;
@@ -107,6 +123,14 @@ export function summarizeMetamagic(
     }
     if (desc.suppressSomaticComponent) {
       flags.still = true;
+      hasNonQuicken = true;
+    }
+    if (desc.skipAlliesInAoE) {
+      flags.judicious = true;
+      hasNonQuicken = true;
+    }
+    if (desc.projectTouchToCloseRange) {
+      flags.projectTouch = true;
       hasNonQuicken = true;
     }
     if (desc.actionTimeOverride === 'swift') isQuickened = true;
@@ -247,60 +271,6 @@ export function collectEquippedArcaneSpellFailure(state: GameState, casterId: En
     totalAsf += def?.armorStats?.arcaneSpellFailure ?? 0;
   }
   return Math.min(100, totalAsf);
-}
-
-/** Enumerates all living actor EntityIds affected at `targetPos` or across an AoE template. */
-export function enumerateSpellTargets(
-  state: GameState,
-  casterId: EntityId,
-  casterPos: PositionComponent,
-  targetPos: { readonly x: number; readonly y: number },
-  spell: DnD35SpellDefinition,
-  areaMultiplier: number
-): ReadonlyArray<EntityId> {
-  const isSelfAnchoredField = spell.effectUnits.some((u) => u.type === 'spatial_field' && u.anchorToCaster);
-  if (spell.range === 'personal' || spell.targeting?.mode === 'personal' || isSelfAnchoredField) {
-    return [casterId];
-  }
-
-  const isArea =
-    spell.targeting?.mode === 'area' ||
-    spell.aoeShape === 'burst' ||
-    spell.aoeShape === 'spread' ||
-    spell.aoeShape === 'cone' ||
-    spell.aoeShape === 'line' ||
-    spell.aoeShape === 'emanation';
-
-  if (isArea && spell.aoeRadiusFt > 0) {
-    const shape: AoETemplateShape =
-      spell.aoeShape === 'cone' || spell.aoeShape === 'line' || spell.aoeShape === 'burst' ? spell.aoeShape : 'spread';
-    const origin = shape === 'cone' || shape === 'line' ? { x: casterPos.x, y: casterPos.y } : targetPos;
-    const isWallAt = (x: number, y: number): boolean => {
-      if (x < 0 || x >= state.map.width || y < 0 || y >= state.map.height) return true;
-      const tile = state.map.tiles[y * state.map.width + x];
-      return !tile || !(state.campaign.tiles[tile.tileId]?.walkable ?? false);
-    };
-    const affectedSquares = computeAoEAffectedSquares(
-      shape,
-      origin,
-      targetPos,
-      spell.aoeRadiusFt * areaMultiplier,
-      isWallAt
-    );
-    const squareKeys = new Set(affectedSquares.map((p) => `${p.x},${p.y}`));
-    return state.entities.filter((id) => {
-      const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
-      const p = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
-      return f !== undefined && f.hp > 0 && p !== undefined && squareKeys.has(`${p.x},${p.y}`);
-    });
-  }
-
-  const entitiesHere = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
-  const targetActor = entitiesHere.find((id) => {
-    const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
-    return f !== undefined && f.hp > 0;
-  });
-  return targetActor !== undefined ? [targetActor] : [];
 }
 
 /** Returns true if any living hostile creature threatens the caster within adjacent 5-ft melee reach. */

@@ -11,6 +11,7 @@ import { openModal } from '../../core/modal_manager.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { aggregateProgressionChassis } from '../../rulesets/dnd35e/progression.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { DnD35UIAdapter } from '../../rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
 import { ComponentType, type TacticalDoctrineComponent } from '../../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
@@ -18,8 +19,7 @@ import { IntentType } from '../../types/intents/intent.enum.ts';
 import { type CartridgeUIDefinition, closeCartridgeModal, registerCartridgeUI } from './cartridge_ui_registry.ts';
 import { hideConsoleItemInspectCard } from './console_inspect_card.ui.ts';
 import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd35e_char_builder.ui.ts';
-import { applyDoctrineUpdate } from './dnd35e_doctrine_actions.ts';
-import { toggleConsoleStanceGroup } from '../../systems/stance.system.ts';
+import { applyDoctrineUpdate, toggleDnD35eActorStance } from './dnd35e_doctrine_actions.ts';
 import { canPlayerLevelUpDnD35e, renderDnD35eLevelUpModal } from './dnd35e_level_up.ui.ts';
 import { renderDnD35eQuickcastModal } from './dnd35e_quickcast.ui.ts';
 import { renderDnD35eSheetModal as renderSheetModalImpl } from './dnd35e_sheet.ui.ts';
@@ -30,15 +30,6 @@ import { triggerQuickBeltSlot } from './hud_bottom_dock.ui.ts';
 const FIXED_EXPERTISE_CAP = 5;
 const dndAdapter = new DnD35UIAdapter();
 let closeListenersBound = false;
-
-const SKILL_VERB_MAP: Readonly<Record<string, Verb>> = {
-  search: 'search',
-  open_lock: 'unlock',
-  disable_device: 'disarm',
-  heal: 'heal',
-  intimidate: 'intimidate',
-  diplomacy: 'persuade'
-};
 
 function bindModalCloseButtons(): void {
   if (closeListenersBound) return;
@@ -164,57 +155,8 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
   getHotbarData: (state, playerId, bank) => dndAdapter.getHotbarData({ state, entityId: playerId }, bank),
 
   onToggleStance: (state, playerId, stanceId) => {
-    const docComp = getComponent(state, playerId, ComponentType.TacticalDoctrine) as
-      TacticalDoctrineComponent | undefined;
-    const currentPA = docComp?.powerAttackAmount ?? 0;
-    const currentCE = docComp?.combatExpertiseAmount ?? 0;
-    const currentFD = docComp?.fightingDefensively ?? false;
-    const currentTD = docComp?.totalDefense ?? false;
-    const currentGrip = docComp?.gripMode ?? 'one_handed';
-
-    if (stanceId === 'power_attack') {
-      applyDoctrineUpdate(state, playerId, { powerAttackAmount: currentPA > 0 ? 0 : 1 });
-    } else if (stanceId === 'combat_expertise') {
-      applyDoctrineUpdate(state, playerId, { combatExpertiseAmount: currentCE > 0 ? 0 : 1 });
-    } else if (stanceId === 'fighting_defensively') {
-      const nextFD = !currentFD;
-      applyDoctrineUpdate(state, playerId, {
-        fightingDefensively: nextFD,
-        totalDefense: nextFD ? false : currentTD
-      });
-    } else if (stanceId === 'total_defense') {
-      const nextTD = !currentTD;
-      applyDoctrineUpdate(state, playerId, {
-        totalDefense: nextTD,
-        fightingDefensively: nextTD ? false : currentFD,
-        ...(nextTD ? { decisiveStrike: false } : {})
-      });
-    } else if (stanceId === 'two_handed_grip') {
-      applyDoctrineUpdate(state, playerId, {
-        gripMode: currentGrip === 'two_handed' ? 'one_handed' : 'two_handed'
-      });
-    } else if (stanceId === 'decisive_strike') {
-      const nextDS = !(docComp?.decisiveStrike ?? false);
-      applyDoctrineUpdate(state, playerId, {
-        decisiveStrike: nextDS,
-        totalDefense: nextDS ? false : currentTD
-      });
-    } else if (stanceId === 'whirling_frenzy') {
-      applyDoctrineUpdate(state, playerId, {
-        whirlingFrenzy: !(docComp?.whirlingFrenzy ?? false)
-      });
-    } else {
-      const hotbar = dndAdapter.getHotbarData({ state, entityId: playerId }, 1);
-      const matchingMode = hotbar.stanceModes.find((m) => m.id === stanceId);
-      if (matchingMode?.groupId) {
-        const nextDoctrine = toggleConsoleStanceGroup(docComp, matchingMode.groupId, stanceId, false);
-        applyDoctrineUpdate(state, playerId, { activeStanceGroups: nextDoctrine.activeStanceGroups });
-      } else if (stanceId.includes(':')) {
-        const parts = stanceId.split(':');
-        const nextDoctrine = toggleConsoleStanceGroup(docComp, parts[0]!, parts[1]!, false);
-        applyDoctrineUpdate(state, playerId, { activeStanceGroups: nextDoctrine.activeStanceGroups });
-      }
-    }
+    const hotbar = dndAdapter.getHotbarData({ state, entityId: playerId }, 1);
+    toggleDnD35eActorStance(state, playerId, stanceId, hotbar.stanceModes);
   },
 
   onStepStance: (state, playerId, stanceId, delta) => {
@@ -262,7 +204,8 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
         createApplyAction(playerId, 'apply', { type: 'item', itemEntityId: payload.entityId as EntityId })
       );
     } else if (payload.kind === 'skill') {
-      const verb = SKILL_VERB_MAP[payload.id];
+      const verb = (payload.verb ?? getDnD35SystemContent(state.campaign)?.skills?.[payload.id]?.activeVerb) as
+        Verb | undefined;
       if (verb) {
         queuePlayerIntent(createApplyAction(playerId, verb, { type: 'self' }));
       }

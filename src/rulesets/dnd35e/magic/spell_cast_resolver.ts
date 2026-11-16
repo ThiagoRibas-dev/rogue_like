@@ -15,6 +15,7 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateSpellEffectUnitsForTarget } from './spell_effects.ts';
 import { applyResolvedSpellEffectsToTarget } from './spell_cast_effects.ts';
+import { evaluateReactiveCounterspellInterrupt } from './counterspell_interrupt.ts';
 import {
   collectEquippedArcaneSpellFailure,
   computeSpellRangeTiles,
@@ -23,9 +24,11 @@ import {
   enumerateSpellTargets,
   expendCasterSpellSlot,
   isCasterThreatenedInMelee,
+  matchesTargetCategoryFilter,
   summarizeMetamagic
 } from './spell_cast_helpers.ts';
 import { resolveCastPipeline } from './spellcasting.ts';
+import { isHostile } from '../../../utils/faction.ts';
 import { processDnD35eDamage } from '../cartridge/dnd35e_combat_adapter.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { rollD20 } from '../math/dice.ts';
@@ -68,7 +71,12 @@ export function executeDnD35eSpellCast(
   }
 
   const meta = summarizeMetamagic(castContext.metamagicFeatIds, sysContent);
-  const maxRangeTiles = computeSpellRangeTiles(spell.range, book.effectiveCasterLevel, meta.rangeMultiplier);
+  const maxRangeTiles = computeSpellRangeTiles(
+    spell.range,
+    book.effectiveCasterLevel,
+    meta.rangeMultiplier,
+    meta.flags.projectTouch
+  );
   const distTiles = Math.round(
     measureDnD35DistanceFt(casterPos.x, casterPos.y, targetPos.x, targetPos.y) / FEET_PER_GRID_SQUARE
   );
@@ -145,10 +153,6 @@ export function executeDnD35eSpellCast(
           govAbState.base + govAbState.inherentBonus - govAbState.damage - govAbState.drain - govAbState.tempPenalty
         );
   const govAbMod = casterDag.dagResult.effectiveAbilityModifiers[book.governingAbility];
-  const concRanks = casterDag.dndData.skillRanks['concentration'] ?? 0;
-  const concSkillMods = (casterDag.dndData.statModifiers ?? [])
-    .filter((m) => m.targetStat === 'skill:concentration' || m.targetStat === 'skills')
-    .reduce((sum, m) => sum + m.value, 0);
   const asfPercent = book.castingTradition === 'arcane' ? collectEquippedArcaneSpellFailure(runningState, casterId) : 0;
 
   const isThreatened =
@@ -157,7 +161,12 @@ export function executeDnD35eSpellCast(
     spell.castingTime !== 'immediate' &&
     isCasterThreatenedInMelee(runningState, casterId, casterPos);
   const combatCastingBonus = isThreatened && (casterDag.dndData.feats ?? []).includes('combat_casting') ? 4 : 0;
-  const concMod = concRanks + casterDag.dagResult.effectiveAbilityModifiers.con + concSkillMods + combatCastingBonus;
+  const concRes = casterDag.resolvedSkills['concentration'];
+  const concMod =
+    (concRes
+      ? concRes.totalModifier
+      : (casterDag.dndData.skillRanks['concentration'] ?? 0) + casterDag.dagResult.effectiveAbilityModifiers.con) +
+    combatCastingBonus;
 
   const basePipe = resolveCastPipeline({
     classification: spell.classification,
@@ -183,7 +192,21 @@ export function executeDnD35eSpellCast(
     };
   }
 
-  const targets = enumerateSpellTargets(runningState, casterId, casterPos, targetPos, spell, meta.areaMultiplier);
+  const counterRes = evaluateReactiveCounterspellInterrupt(runningState, casterId, casterPos, spell, sysContent);
+  if (counterRes.countered) {
+    return { state: counterRes.state, success: true };
+  }
+  runningState = counterRes.state;
+
+  const targets = enumerateSpellTargets(
+    runningState,
+    casterId,
+    casterPos,
+    targetPos,
+    spell,
+    meta.areaMultiplier,
+    meta.flags.judicious
+  );
   const castId = `cast_${runningState.globalTurn}_${spell.id}`;
   runningState = addMessage(runningState, `You cast ${spell.name}!`, MessageLogCategory.CombatHit);
 
@@ -217,8 +240,9 @@ export function executeDnD35eSpellCast(
 
   for (const targetId of targets) {
     const targetDag = evaluateDnD35eEntityDAG(runningState, targetId);
-    if (!targetDag) continue;
-    const targetSr = targetDag.dndData.spellResistance ?? 0;
+    const hasExplicitCategories = (spell.targeting?.validTargetCategories?.length ?? 0) > 0;
+    if (!targetDag && !hasExplicitCategories) continue;
+    const targetSr = targetDag?.dndData.spellResistance ?? 0;
     if (spell.allowsSpellResistance && targetSr > 0 && targetId !== casterId) {
       const srCheck = resolveCastPipeline({
         classification: spell.classification,
@@ -239,25 +263,38 @@ export function executeDnD35eSpellCast(
     }
 
     const targetFighter = getComponent(runningState, targetId, ComponentType.Fighter) as FighterComponent | undefined;
-    const targetChassis = aggregateProgressionChassis(targetDag.dndData.tracks, 0);
+    const targetChassis = targetDag ? aggregateProgressionChassis(targetDag.dndData.tracks, 0) : undefined;
     const units = evaluateSpellEffectUnitsForTarget(spell, {
       casterSelfTags: casterDag.selfTags,
-      targetTags: targetDag.selfTags,
+      targetTags: targetDag?.selfTags ?? [],
       metamagic: meta.flags,
       ...(targetFighter ? { targetCurrentHp: targetFighter.hp } : {}),
-      targetHitDice: targetChassis.totalHD
-    }).filter((u) => u.type !== 'spatial_field' && u.type !== 'summon');
+      ...(targetChassis ? { targetHitDice: targetChassis.totalHD } : {})
+    }).filter((u) => {
+      if (u.type === 'spatial_field' || u.type === 'summon') return false;
+      if (u.validTargetCategories && u.validTargetCategories.length > 0) {
+        if (!matchesTargetCategoryFilter(runningState, casterId, targetId, u.validTargetCategories)) return false;
+      }
+      if (
+        meta.flags.judicious &&
+        (u.type === 'damage' || u.type === 'save_or_die' || u.type === 'energy_drain' || u.type === 'ability_harm') &&
+        (targetId === casterId || !isHostile(runningState, casterId, targetId))
+      ) {
+        return false;
+      }
+      return true;
+    });
 
     const saveResultByUnitId: Record<string, boolean> = {};
     const topSave = spell.savingThrow;
-    if (topSave && topSave.saveType !== 'none' && targetId !== casterId) {
+    if (topSave && topSave.saveType !== 'none' && targetId !== casterId && targetDag) {
       const saveRoll = rollD20('save', targetDag.dagResult.saves[topSave.saveType]);
       saveResultByUnitId['top_level'] =
         !saveRoll.isAutoFailure && (saveRoll.isAutoSuccess || saveRoll.total >= basePipe.saveDC);
     }
     for (const u of units) {
       const uSave = u.savingThrow ?? topSave;
-      if (uSave && uSave.saveType !== 'none' && targetId !== casterId) {
+      if (uSave && uSave.saveType !== 'none' && targetId !== casterId && targetDag) {
         const roll = rollD20('save', targetDag.dagResult.saves[uSave.saveType]);
         saveResultByUnitId[u.unitId] = !roll.isAutoFailure && (roll.isAutoSuccess || roll.total >= basePipe.saveDC);
       }

@@ -134,15 +134,28 @@
         "id": "whirling_frenzy",
         "name": "Whirling Frenzy",
         "category": "ex",
+        "usageMode": "toggle",
         "description": "+4 STR, +2 dodge bonus to AC and Reflex saves, and 1 extra attack at highest BAB with -2 penalty on all attacks.",
         "resourcePool": {
           "poolId": "whirling_frenzy",
           "maxBase": 1,
-          "refreshCycle": "rest_8h"
+          "refreshCycle": "rest_8h",
+          "actionCost": "free",
+          "icon": "🌪️"
         },
         "grantedTags": [
           "feature:whirling_frenzy",
           "stance:whirling_frenzy"
+        ],
+        "activatedAbilities": [
+          {
+            "abilityId": "whirling_frenzy",
+            "name": "Whirling Frenzy",
+            "shortLabel": "Whirling Frenzy",
+            "description": "Whirling Frenzy (+4 STR, +2 AC/Ref)",
+            "actionCost": "free",
+            "doctrineToggleKey": "whirlingFrenzy"
+          }
         ]
       },
       "pounce": {

@@ -8,6 +8,8 @@
     "retryAllowed": true,
     "take10Allowed": true,
     "take20Allowed": false,
+    "isUsableActive": true,
+    "activeVerb": "heal",
     "synergyFromSkills": [],
     "synergyNotes": "Providing battlefield stabilization, treating lethal caltrop wounds, and countering poisons or diseases.",
     "actions": [

@@ -94,7 +94,7 @@ export function initiateSpellCastFromUI(state: GameState, playerId: EntityId, re
   const book = (dndData.spellbooksByClass ?? {})[request.classId];
   const casterLevel = book?.effectiveCasterLevel ?? 1;
   const meta = summarizeMetamagic(request.metamagicFeatIds, sysContent);
-  const maxRangeTiles = computeSpellRangeTiles(spell.range, casterLevel, meta.rangeMultiplier);
+  const maxRangeTiles = computeSpellRangeTiles(spell.range, casterLevel, meta.rangeMultiplier, meta.flags.projectTouch);
   const radiusTiles =
     spell.aoeRadiusFt > 0
       ? Math.max(1, Math.round((spell.aoeRadiusFt * meta.areaMultiplier) / FEET_PER_GRID_SQUARE))

@@ -30,10 +30,17 @@ import {
 import { DND35E_BASE_AC, evaluateDnD35ActorStatDAG } from '../modifiers.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
+import { getBardicKnackFloor } from '../skills.ts';
+import {
+  buildKnowledgeDevotionModifiers,
+  buildSkillRankThresholdModifiers,
+  resolveActorSkillsSnapshot
+} from '../skills/skill_synergies.ts';
 import { getDnD35EntityData, getEquippedItemBonuses } from '../srd_registry.ts';
 import type {
   DnD35EntityData,
   DnD35ResolvedActorStats,
+  DnD35SkillResolution,
   StatModifier,
   StatQueryContext
 } from '../types/dnd35e.types.ts';
@@ -52,6 +59,8 @@ export interface DnD35EntityDAGResult {
   readonly canAttack: boolean;
   readonly resolvedWeapons: ResolvedActorWeapons;
   readonly attackRoutine: DnD35ResolvedAttackRoutine;
+  readonly resolvedSkills: Readonly<Record<string, DnD35SkillResolution>>;
+  readonly armorCheckPenalty: number;
   readonly hasBlindFight: boolean;
   readonly hasCleave: boolean;
   readonly hasGreatCleave: boolean;
@@ -108,15 +117,18 @@ export function evaluateDnD35eEntityDAG(
 
   const itemContrib = collectEquippedItemDAGContributions(state, entityId, suppressedIds, selfTags);
   const auraContrib = evaluateActiveSpellAuraContributions(state, entityId, selfTags);
-  const extraModifiers: StatModifier[] = [
-    ...(dndData.statModifiers ?? []),
-    ...itemContrib.modifiers,
-    ...auraContrib.modifiers
-  ];
+  const baseStatMods = (dndData.statModifiers ?? []).filter(
+    (m) => !((m.sourcePath ?? '').startsWith('feat:') && (m.sourcePath ?? '').includes('/skill:'))
+  );
+  const extraModifiers: StatModifier[] = [...baseStatMods, ...itemContrib.modifiers, ...auraContrib.modifiers];
 
-  const hasFeatModsAlready = (dndData.statModifiers ?? []).some((m) => (m.sourcePath ?? '').startsWith('feat:'));
+  const hasFeatModsAlready = baseStatMods.some((m) => (m.sourcePath ?? '').startsWith('feat:'));
   if (!hasFeatModsAlready && (dndData.feats ?? []).length > 0 && sysContent?.feats) {
     extraModifiers.push(...buildFeatEffectModifiers(dndData.feats ?? [], sysContent.feats, suppressedIds, selfTags));
+  }
+  const hasSkillModsAlready = baseStatMods.some((m) => (m.sourcePath ?? '').startsWith('skill:'));
+  if (!hasSkillModsAlready && sysContent?.skills) {
+    extraModifiers.push(...buildSkillRankThresholdModifiers(dndData.skillRanks ?? {}, sysContent.skills));
   }
 
   const pushMod = (
@@ -158,7 +170,11 @@ export function evaluateDnD35eEntityDAG(
   );
   extraModifiers.push(...collectRageAndFrenzyModifiers(mergedSelfTags, doctrine));
 
-  const dagResult = evaluateDnD35ActorStatDAG({
+  const dagContext: StatQueryContext = {
+    ...contextOverride,
+    selfTags: mergedSelfTags
+  };
+  const buildDagInput = (mods: ReadonlyArray<StatModifier>): Parameters<typeof evaluateDnD35ActorStatDAG>[0] => ({
     baseSize: dndData.sizeCategory,
     rawAbilities: {
       str: {
@@ -188,12 +204,40 @@ export function evaluateDnD35eEntityDAG(
       (!condSummary.losesDexToAC &&
         (!mergedSelfTags.includes('self:balancing') || mergedSelfTags.includes('trait:balance_uncanny_flat_footed'))) ||
       mergedSelfTags.includes('feature:uncanny_dodge'),
-    statModifiers: extraModifiers,
-    context: {
-      ...contextOverride,
-      selfTags: mergedSelfTags
-    }
+    statModifiers: mods,
+    context: dagContext
   });
+
+  let dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers));
+
+  const resolvedSkills = resolveActorSkillsSnapshot({
+    skillRanks: dndData.skillRanks ?? {},
+    effectiveAbilityModifiers: dagResult.effectiveAbilityModifiers,
+    isConNonability: dndData.abilityScores.con.base === null,
+    statModifiers: extraModifiers,
+    conditions: dndData.conditions,
+    armorCheckPenalty: itemContrib.armorCheckPenalty,
+    minSkillRanksFloor: getBardicKnackFloor(dndData),
+    skillRegistry: sysContent?.skills,
+    context: dagContext
+  });
+
+  if ((dndData.feats ?? []).length > 0 && sysContent?.feats && sysContent?.skills) {
+    const kdMods = buildKnowledgeDevotionModifiers(
+      dndData.feats ?? [],
+      dndData.skillRanks ?? {},
+      dndData.abilityScores,
+      sysContent.feats,
+      sysContent.skills,
+      suppressedIds,
+      resolvedSkills,
+      extraModifiers
+    );
+    if (kdMods.length > 0) {
+      extraModifiers.push(...kdMods);
+      dagResult = evaluateDnD35ActorStatDAG(buildDagInput(extraModifiers));
+    }
+  }
 
   const finalWeapons =
     dagResult.effectiveSize === dndData.sizeCategory
@@ -241,6 +285,8 @@ export function evaluateDnD35eEntityDAG(
     canAttack: doctrineMod.canAttack,
     resolvedWeapons: finalWeapons,
     attackRoutine,
+    resolvedSkills,
+    armorCheckPenalty: itemContrib.armorCheckPenalty,
     hasBlindFight: activeCombatRules.hasBlindFight,
     hasCleave: activeCombatRules.hasCleave,
     hasGreatCleave: activeCombatRules.hasGreatCleave,

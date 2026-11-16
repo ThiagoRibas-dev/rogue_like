@@ -5,7 +5,40 @@ import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abiliti
 import { resolveTypedModifiers } from '../modifiers/stacking_engine.ts';
 import { collectClassFeaturesUpToLevel } from '../progression.ts';
 import type { AbilityId, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
-import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import { type DnD35SystemContent, getLastLoadedDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+
+/**
+ * Resolves the canonical action cost of a resource pool entry from the entry itself or from
+ * loaded class/domain `resourcePool` definitions (defaulting to `'standard'`).
+ *
+ * @param poolId Resource pool identifier.
+ * @param entry Optional `ResourcePoolEntry` on the entity.
+ * @param sysContent Optional parsed `DnD35SystemContent` registry.
+ * @returns Effective action cost string.
+ */
+export function resolveResourcePoolActionCost(
+  poolId: string,
+  entry?: ResourcePoolEntry,
+  sysContent?: DnD35SystemContent | null
+): NonNullable<ResourcePoolEntry['actionCost']> {
+  if (entry?.actionCost !== undefined) return entry.actionCost;
+  const effectiveSys = sysContent ?? getLastLoadedDnD35SystemContent();
+  if (!effectiveSys) return 'standard';
+  for (const cls of Object.values(effectiveSys.classes)) {
+    for (const detail of Object.values(cls.featureDetails ?? {})) {
+      if (detail.resourcePool?.poolId === poolId && detail.resourcePool.actionCost !== undefined) {
+        return detail.resourcePool.actionCost;
+      }
+    }
+  }
+  for (const dom of Object.values(effectiveSys.domains)) {
+    const rp = dom.resourcePool ?? dom.grantedPowerBundle?.resourcePool;
+    if (rp?.poolId === poolId && rp.actionCost !== undefined) {
+      return rp.actionCost;
+    }
+  }
+  return 'standard';
+}
 
 /** Canonical legacy statModifier target aliases mapped to `ResourcePoolComponent` pool IDs. */
 const POOL_MODIFIER_TARGET_ALIASES: Readonly<Record<string, ReadonlyArray<string>>> = {
@@ -79,7 +112,9 @@ export function buildActorResourcePoolsComponent(
         max: combinedMax,
         resetOnRest: rp.refreshCycle === 'rest_8h' || rp.refreshCycle === 'short_rest',
         label: detail.name,
-        refreshCycle: rp.refreshCycle
+        refreshCycle: rp.refreshCycle,
+        ...(rp.actionCost !== undefined ? { actionCost: rp.actionCost } : {}),
+        ...(rp.icon !== undefined ? { icon: rp.icon } : {})
       };
     }
   }
@@ -101,7 +136,9 @@ export function buildActorResourcePoolsComponent(
       max: combinedMax,
       resetOnRest: rp.refreshCycle === 'rest_8h' || rp.refreshCycle === 'short_rest',
       ...(domDef?.name !== undefined ? { label: domDef.name } : {}),
-      refreshCycle: rp.refreshCycle
+      refreshCycle: rp.refreshCycle,
+      ...(rp.actionCost !== undefined ? { actionCost: rp.actionCost } : {}),
+      ...(rp.icon !== undefined ? { icon: rp.icon } : {})
     };
   }
 

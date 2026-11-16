@@ -8,6 +8,8 @@
     "retryAllowed": true,
     "take10Allowed": true,
     "take20Allowed": true,
+    "isUsableActive": true,
+    "activeVerb": "search",
     "synergyFromSkills": [
       "knowledge_nature",
       "knowledge_architecture"

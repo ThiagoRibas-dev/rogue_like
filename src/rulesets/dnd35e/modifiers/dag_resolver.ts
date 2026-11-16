@@ -7,7 +7,9 @@ import {
   type AbilityScoreState,
   type ACBreakdownDTO,
   ALL_ABILITY_IDS,
+  type DnD35AbilityResolution,
   type DnD35ResolvedActorStats,
+  type DnD35SaveResolution,
   type SaveType,
   type StatModifier,
   type StatQueryContext,
@@ -74,12 +76,13 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     wis: 0,
     cha: 0
   };
+  const abilityBreakdownsPartial = {} as Record<AbilityId, DnD35AbilityResolution>;
 
   for (const abId of ALL_ABILITY_IDS) {
     const rawState = input.rawAbilities[abId];
     const abilityMods = modsByStat[abId] ?? [];
-    const typedBonusNet = resolveTypedModifiers(abilityMods, stageContext);
-    const effScore = computeEffectiveAbilityScore(rawState, typedBonusNet);
+    const modifierBreakdown = resolveTypedModifiersWithBreakdown(abilityMods, stageContext);
+    const effScore = computeEffectiveAbilityScore(rawState, modifierBreakdown.total);
     const effMod = computeAbilityModifier(effScore);
 
     effectiveAbilitiesPartial[abId] = {
@@ -90,6 +93,13 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
       tempPenalty: 0
     };
     effectiveAbilityModifiersPartial[abId] = effMod;
+    abilityBreakdownsPartial[abId] = {
+      abilityId: abId,
+      rawState,
+      modifierBreakdown,
+      effectiveScore: effScore,
+      effectiveModifier: effMod
+    };
   }
 
   // STAGE 3: Compound Defense Sub-Stats
@@ -264,14 +274,49 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const wisMod = effectiveAbilityModifiersPartial.wis;
 
   const sharedSaveMods = modsByStat['saves'] ?? [];
-  const fortMods = [...(modsByStat['fort'] ?? []), ...sharedSaveMods];
-  const refMods = [...(modsByStat['ref'] ?? []), ...sharedSaveMods];
-  const willMods = [...(modsByStat['will'] ?? []), ...sharedSaveMods];
+  const fortBreakdown = resolveTypedModifiersWithBreakdown(
+    [...(modsByStat['fort'] ?? []), ...sharedSaveMods],
+    stageContext
+  );
+  const refBreakdown = resolveTypedModifiersWithBreakdown(
+    [...(modsByStat['ref'] ?? []), ...sharedSaveMods],
+    stageContext
+  );
+  const willBreakdown = resolveTypedModifiersWithBreakdown(
+    [...(modsByStat['will'] ?? []), ...sharedSaveMods],
+    stageContext
+  );
 
   const saves: Record<SaveType, number> = {
-    fort: chassis.baseSaves.fort + conMod + resolveTypedModifiers(fortMods, stageContext),
-    ref: chassis.baseSaves.ref + dexMod + resolveTypedModifiers(refMods, stageContext),
-    will: chassis.baseSaves.will + wisMod + resolveTypedModifiers(willMods, stageContext)
+    fort: chassis.baseSaves.fort + conMod + fortBreakdown.total,
+    ref: chassis.baseSaves.ref + dexMod + refBreakdown.total,
+    will: chassis.baseSaves.will + wisMod + willBreakdown.total
+  };
+  const saveBreakdowns: Record<SaveType, DnD35SaveResolution> = {
+    fort: {
+      saveType: 'fort',
+      baseSave: chassis.baseSaves.fort,
+      abilityId: 'con',
+      abilityModifier: conMod,
+      modifierBreakdown: fortBreakdown,
+      total: saves.fort
+    },
+    ref: {
+      saveType: 'ref',
+      baseSave: chassis.baseSaves.ref,
+      abilityId: 'dex',
+      abilityModifier: dexMod,
+      modifierBreakdown: refBreakdown,
+      total: saves.ref
+    },
+    will: {
+      saveType: 'will',
+      baseSave: chassis.baseSaves.will,
+      abilityId: 'wis',
+      abilityModifier: wisMod,
+      modifierBreakdown: willBreakdown,
+      total: saves.will
+    }
   };
 
   const attackMods = modsByStat['attack'] ?? [];
@@ -307,6 +352,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     sizeWinningSourcePath: sizeResult.winningSourcePath,
     effectiveAbilities: effectiveAbilitiesPartial,
     effectiveAbilityModifiers: effectiveAbilityModifiersPartial,
+    abilityBreakdowns: abilityBreakdownsPartial,
     naturalArmorBreakdown,
     wornArmorBreakdown,
     wornShieldBreakdown,
@@ -318,6 +364,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     damageBonus,
     maxHp,
     saves,
+    saveBreakdowns,
     speed,
     flankingBonus,
     ...(fortificationPercent > 0 ? { fortificationPercent } : {}),

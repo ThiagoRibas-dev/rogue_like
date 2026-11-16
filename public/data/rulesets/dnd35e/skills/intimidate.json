@@ -8,6 +8,8 @@
     "retryAllowed": true,
     "take10Allowed": true,
     "take20Allowed": false,
+    "isUsableActive": true,
+    "activeVerb": "intimidate",
     "synergyFromSkills": [
       "bluff"
     ],

@@ -4,60 +4,69 @@
  */
 
 import { getComponent } from '../../../core/ecs.ts';
+import { type ConsoleStanceGroupOption, resolveActiveStanceInGroup } from '../../../systems/stance.system.ts';
 import {
   ComponentType,
   type EquipmentComponent,
   type InventoryComponent,
   type ResourcePoolComponent,
+  type ResourcePoolEntry,
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { UIActionEconomyPip, UIHotbarSlot, UIStanceModeEntry } from '../../../types/ui_adapter.types.ts';
-import { type ConsoleStanceGroupOption, resolveActiveStanceInGroup } from '../../../systems/stance.system.ts';
-import { extractActorTacticalDials, type TacticalDialDescriptor } from '../combat/tactical_doctrine.ts';
+import { extractActorTacticalDials } from '../combat/tactical_doctrine.ts';
+import { resolveResourcePoolActionCost } from '../progression/ledger_resource_pools.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
-import { type DnD35FeatDefinition, getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
+import {
+  type DnD35ClassDefinition,
+  type DnD35FeatDefinition,
+  type DnD35SkillDefinition,
+  getDnD35SystemContent,
+  getLastLoadedDnD35SystemContent
+} from '../types/dnd35e_system.types.ts';
 import { mapEntityItemToUI } from './dnd35e_ui_projection.ts';
 
 const HOTBAR_SLOT_COUNT = 12;
 
-export const ACTIVE_SKILL_IDS: ReadonlySet<string> = new Set([
-  'search',
-  'open_lock',
-  'disable_device',
-  'heal',
-  'intimidate',
-  'diplomacy',
-  'tumble'
-]);
+const ACTION_COST_LABELS: Readonly<Record<NonNullable<ResourcePoolEntry['actionCost']>, string>> = {
+  standard: 'Standard Action',
+  move: 'Move Action',
+  full_round: 'Full-Round Action',
+  swift: 'Swift Action',
+  immediate: 'Immediate Action',
+  free: 'Free Action',
+  none: 'Passive'
+};
 
-const SHAPESHIFT_STANCE_DEFS = [
-  ['shapeshift_normal', 'normal', 1, 'Normal Form', 'Revert to humanoid form (Swift)'],
-  ['shapeshift_predator', 'predator', 1, 'Predator Form', '+4 STR, +4 Nat AC, 50ft, 1d6 Bite'],
-  ['shapeshift_aerial', 'aerial', 5, 'Aerial Form', '+2 STR, +2 Nat AC, +2 Ref, 40ft Fly'],
-  ['shapeshift_ferocious_slayer', 'ferocious_slayer', 8, 'Ferocious Slayer', 'Large, +8 STR, +8 Nat AC, Bite+Claws']
-] as const;
+/** Resolves declaratively from loaded `skills/*.json` definitions whether a skill is actively usable from UI. */
+export function isSkillUsableActive(
+  skillId: string,
+  sysSkills?: Readonly<Record<string, DnD35SkillDefinition>>
+): boolean {
+  const def = (sysSkills ?? getLastLoadedDnD35SystemContent()?.skills)?.[skillId];
+  return def !== undefined && (def.isUsableActive === true || def.activeVerb !== undefined);
+}
 
 /** Projects dynamic combat stances and toggle groups (excluding activated daily-use resource pools). */
 export function buildActorStanceModes(
   dndData: Partial<DnD35EntityData>,
-  bab: number,
+  bab = 0,
   doctrine?: TacticalDoctrineComponent,
   _resourcePools?: ResourcePoolComponent,
   sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>,
-  auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>
+  auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>,
+  sysClasses?: Readonly<Record<string, DnD35ClassDefinition>>
 ): ReadonlyArray<UIStanceModeEntry> {
   const modes: UIStanceModeEntry[] = [];
+  const addedModeIds = new Set<string>();
   const addMode = (id: string, label: string, isActive: boolean, tooltipText: string, groupId?: string): void => {
+    if (addedModeIds.has(id)) return;
+    addedModeIds.add(id);
     modes.push({ id, label, isActive, ...(groupId ? { groupId } : {}), tooltipText });
   };
-  const dials: ReadonlyArray<TacticalDialDescriptor> = extractActorTacticalDials(
-    dndData.feats ?? [],
-    sysFeats,
-    dndData.suppressedBundleIds ?? []
-  );
 
-  for (const dial of dials) {
+  for (const dial of extractActorTacticalDials(dndData.feats ?? [], sysFeats, dndData.suppressedBundleIds ?? [])) {
     const settingVal = doctrine?.settings?.[dial.abilityId] ?? doctrine?.settings?.[`${dial.abilityId}_dial`];
     let currentVal = typeof settingVal === 'number' ? settingVal : 0;
     if (currentVal === 0 && dial.legacyPropertyKey !== undefined && doctrine) {
@@ -66,6 +75,7 @@ export function buildActorStanceModes(
     }
     const maxVal = dial.maxCapRule === 'fixed_5' ? Math.min(5, bab) : bab;
     const label = dial.name ?? dial.abilityId.replace(/_/g, ' ');
+    addedModeIds.add(dial.abilityId);
     modes.push({
       id: dial.abilityId,
       label,
@@ -84,43 +94,52 @@ export function buildActorStanceModes(
   addMode('total_defense', 'Total Def', tDef, 'Total Defense (+4 Dodge AC, Standard)');
   addMode('two_handed_grip', is2H ? '2H Grip' : '1H Grip', is2H, 'Toggle Grip Mode');
 
-  const features = dndData.activeClassFeatures ?? [];
-  if (features.includes('decisive_strike')) {
-    addMode(
-      'decisive_strike',
-      'Decisive 2x',
-      (doctrine?.decisiveStrike ?? false) && !tDef,
-      'Decisive Strike (-2 Atk, 2x damage)'
-    );
-  }
-  if (features.includes('whirling_frenzy')) {
-    addMode(
-      'whirling_frenzy',
-      'Whirling Frenzy',
-      doctrine?.whirlingFrenzy ?? false,
-      'Whirling Frenzy (+4 STR, +2 AC/Ref)'
-    );
-  }
-
   const activeGroups = doctrine?.activeStanceGroups ?? {};
-  if (features.includes('shapeshift')) {
-    const druidTrack = dndData.tracks?.find((t) => t.trackId === 'druid');
-    const druidLevel = Math.max(1, druidTrack?.levels ?? dndData.tracks?.reduce((sum, t) => sum + t.levels, 0) ?? 1);
-    const activeForm = activeGroups['druid_shapeshift_form'] ?? 'normal';
-    for (const [id, formKey, minLevel, label, tooltipText] of SHAPESHIFT_STANCE_DEFS) {
-      if (druidLevel >= minLevel) addMode(id, label, activeForm === formKey, tooltipText, 'druid_shapeshift_form');
+  const effectiveClasses = sysClasses ?? getLastLoadedDnD35SystemContent()?.classes;
+  for (const featureId of dndData.activeClassFeatures ?? []) {
+    for (const track of dndData.tracks ?? []) {
+      const detail = effectiveClasses?.[track.trackId]?.featureDetails?.[featureId];
+      if (!detail) continue;
+      const classLevel = Math.max(1, track.levels);
+      for (const act of detail.activatedAbilities ?? []) {
+        if (act.minClassLevel !== undefined && classLevel < act.minClassLevel) continue;
+        const label = act.shortLabel ?? act.name;
+        const tooltip = act.description ?? act.name;
+        if (act.doctrineToggleKey === 'decisiveStrike') {
+          addMode(act.abilityId, label, (doctrine?.decisiveStrike ?? false) && !tDef, tooltip);
+        } else if (act.doctrineToggleKey === 'whirlingFrenzy') {
+          addMode(act.abilityId, label, doctrine?.whirlingFrenzy ?? false, tooltip);
+        } else if (act.toggleGroup) {
+          const activeVal = activeGroups[act.toggleGroup];
+          const shortKey = act.abilityId.startsWith(`${featureId}_`)
+            ? act.abilityId.slice(featureId.length + 1)
+            : act.abilityId;
+          const isActive =
+            activeVal !== undefined
+              ? activeVal === act.abilityId || activeVal === shortKey
+              : act.isDefaultInGroup === true;
+          addMode(act.abilityId, label, isActive, tooltip, act.toggleGroup);
+        }
+      }
     }
   }
 
+  const effectiveFeats = sysFeats ?? getLastLoadedDnD35SystemContent()?.feats;
   for (const featId of dndData.feats ?? []) {
-    for (const act of sysFeats?.[featId]?.activatedAbilities ?? []) {
-      const grp = act.toggleGroup;
-      if (grp) addMode(act.abilityId, act.name, activeGroups[grp] === act.abilityId, `${act.name} (${grp})`, grp);
+    for (const act of effectiveFeats?.[featId]?.activatedAbilities ?? []) {
+      if (act.toggleGroup) {
+        addMode(
+          act.abilityId,
+          act.shortLabel ?? act.name,
+          activeGroups[act.toggleGroup] === act.abilityId,
+          act.description ?? `${act.name} (${act.toggleGroup})`,
+          act.toggleGroup
+        );
+      }
     }
   }
 
   for (const opt of auraStanceOptions ?? []) {
-    if (modes.some((m) => m.id === opt.stanceId)) continue;
     const isActive = resolveActiveStanceInGroup(doctrine, opt.groupId, auraStanceOptions, true) === opt.stanceId;
     addMode(opt.stanceId, opt.label, isActive, opt.tooltipText ?? `${opt.label} (${opt.groupId})`, opt.groupId);
   }
@@ -158,7 +177,7 @@ export function buildActorHotbarSlots(
       ...(isDisabled !== undefined ? { isDisabled } : {})
     });
   };
-  const sys = state ? getDnD35SystemContent(state.campaign) : undefined;
+  const sys = (state ? getDnD35SystemContent(state.campaign) : null) ?? getLastLoadedDnD35SystemContent() ?? undefined;
   const equip =
     state && entityId !== undefined
       ? (getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined)
@@ -176,15 +195,13 @@ export function buildActorHotbarSlots(
     }
   }
 
-  const effectivePools = resourcePools ?? dndData.resourcePools;
-  for (const [poolId, entry] of Object.entries(effectivePools?.pools ?? {})) {
+  for (const [poolId, entry] of Object.entries((resourcePools ?? dndData.resourcePools)?.pools ?? {})) {
     if (entry.max <= 0) continue;
     const displayName = entry.label ?? poolId.replace(/_/g, ' ');
-    const actionType =
-      poolId === 'abrupt_jaunt' || poolId === 'invisible_fist' ? 'Immediate Action' : 'Standard Action';
+    const actionType = ACTION_COST_LABELS[resolveResourcePoolActionCost(poolId, entry, sys)] ?? 'Standard Action';
     pushCand(
       `${displayName} (${entry.current}/${entry.max})`,
-      getPoolAbilityIcon(poolId),
+      entry.icon ?? getPoolAbilityIcon(poolId),
       `${displayName}: ${entry.current}/${entry.max} uses remaining (${actionType})`,
       { kind: 'ability', id: poolId, remainingCount: entry.current },
       entry.current <= 0
@@ -212,19 +229,20 @@ export function buildActorHotbarSlots(
       let slotIdx = 0;
       for (const grp of groups.values()) {
         const name = sys?.spells?.[grp.spellId]?.name ?? grp.spellId.replace(/_/g, ' ');
+        const payload: NonNullable<UIHotbarSlot['actionPayload']> = {
+          kind: 'spell',
+          id: grp.spellId,
+          classId,
+          slotIdx: slotIdx++,
+          ...(grp.slotId !== undefined ? { slotId: grp.slotId } : {}),
+          ...(grp.level !== undefined ? { spellLevel: grp.level } : {}),
+          remainingCount: grp.count
+        };
         pushCand(
           grp.count > 1 ? `${name} ×${grp.count}` : name,
           '✨',
           `Cast ${name} (${classId.toUpperCase()}, ${grp.count} left)`,
-          {
-            kind: 'spell',
-            id: grp.spellId,
-            classId,
-            slotIdx: slotIdx++,
-            ...(grp.slotId !== undefined ? { slotId: grp.slotId } : {}),
-            ...(grp.level !== undefined ? { spellLevel: grp.level } : {}),
-            remainingCount: grp.count
-          }
+          payload
         );
       }
     } else {
@@ -249,9 +267,14 @@ export function buildActorHotbarSlots(
     }
   }
   for (const [skillId, ranks] of Object.entries(dndData.skillRanks ?? {})) {
-    if (ranks <= 0 || !ACTIVE_SKILL_IDS.has(skillId)) continue;
-    const name = sys?.skills?.[skillId]?.name ?? skillId.replace(/_/g, ' ');
-    pushCand(name, '🎯', `Use Skill: ${name} (${ranks} ranks)`, { kind: 'skill', id: skillId });
+    if (ranks <= 0 || !isSkillUsableActive(skillId, sys?.skills)) continue;
+    const skillDef = sys?.skills?.[skillId];
+    const name = skillDef?.name ?? skillId.replace(/_/g, ' ');
+    pushCand(name, '🎯', `Use Skill: ${name} (${ranks} ranks)`, {
+      kind: 'skill',
+      id: skillId,
+      ...(skillDef?.activeVerb !== undefined ? { verb: skillDef.activeVerb } : {})
+    });
   }
   const inv =
     state && entityId !== undefined
@@ -278,12 +301,6 @@ export function buildActorHotbarSlots(
 export function buildActorActionPips(dndData: Partial<DnD35EntityData>): ReadonlyArray<UIActionEconomyPip> {
   const b = dndData.actionBudget;
   if (!b) return DND35E_ACTION_PIPS;
-  const pip = (id: string, label: string, available: boolean, detailText: string): UIActionEconomyPip => ({
-    id,
-    label,
-    available,
-    detailText
-  });
   const movLabel =
     b.movementRemainingFt > 0 ? `MOV ${b.movementRemainingFt}ft` : b.moveRemaining > 0 ? 'MOV' : 'MOV 0ft';
   const movDetail =
@@ -295,10 +312,20 @@ export function buildActorActionPips(dndData: Partial<DnD35EntityData>): Readonl
   const stdOk = b.standardRemaining > 0;
   const swfOk = b.swiftRemaining > 0;
   return [
-    pip('std', 'STD', stdOk, stdOk ? 'Standard Action Available' : 'Standard Action Spent'),
-    pip('mov', movLabel, b.moveRemaining > 0 || b.movementRemainingFt > 0, movDetail),
-    pip('swf', 'SWF', swfOk, swfOk ? 'Swift Action Available' : 'Swift Action Spent'),
-    pip('aoo', `AoO (${b.aooRemaining})`, b.aooRemaining > 0, `${b.aooRemaining}/${b.aooMax} AoO Remaining`)
+    {
+      id: 'std',
+      label: 'STD',
+      available: stdOk,
+      detailText: stdOk ? 'Standard Action Available' : 'Standard Action Spent'
+    },
+    { id: 'mov', label: movLabel, available: b.moveRemaining > 0 || b.movementRemainingFt > 0, detailText: movDetail },
+    { id: 'swf', label: 'SWF', available: swfOk, detailText: swfOk ? 'Swift Action Available' : 'Swift Action Spent' },
+    {
+      id: 'aoo',
+      label: `AoO (${b.aooRemaining})`,
+      available: b.aooRemaining > 0,
+      detailText: `${b.aooRemaining}/${b.aooMax} AoO Remaining`
+    }
   ];
 }
 

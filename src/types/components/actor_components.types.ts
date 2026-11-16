@@ -266,6 +266,8 @@ export interface ResourcePoolEntry {
   readonly resetOnRest: boolean;
   readonly label?: string | undefined;
   readonly refreshCycle?: ResourceRefreshCycle | undefined;
+  readonly actionCost?: 'standard' | 'move' | 'full_round' | 'swift' | 'immediate' | 'free' | 'none' | undefined;
+  readonly icon?: string | undefined;
 }
 
 /**
@@ -282,7 +284,8 @@ export interface ResourcePoolComponent {
 export type WeaponGripMode = 'one_handed' | 'two_handed' | 'double_weapon_twf';
 
 /** Trigger condition for an armed off-turn Immediate Action reaction ability. */
-export type ImmediateReactionTrigger = 'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move';
+export type ImmediateReactionTrigger =
+  'off' | 'before_melee_attack' | 'before_any_attack' | 'on_enemy_adjacent_move' | 'on_enemy_spell_cast';
 
 /** Configuration for an armed Immediate Action reaction ability (e.g. 'abrupt_jaunt', 'invisible_fist'). */
 export interface ImmediateReactionPolicy {

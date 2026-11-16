@@ -280,6 +280,11 @@ export function getNextReactionTrigger(
   return 'before_melee_attack';
 }
 
+/** Toggles the off-turn Counterspell reaction mode between `'off'` and `'on_enemy_spell_cast'`. */
+export function getNextCounterspellReactionTrigger(currentTrigger: string | undefined): 'off' | 'on_enemy_spell_cast' {
+  return currentTrigger === 'on_enemy_spell_cast' ? 'off' : 'on_enemy_spell_cast';
+}
+
 /** Exposes living hostile adjacent defenders for movement-step reaction checks. */
 export function evaluateAdjacentEnemyReactionsOnMove(
   state: GameState,

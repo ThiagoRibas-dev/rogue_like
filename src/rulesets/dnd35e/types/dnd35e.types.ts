@@ -4,6 +4,8 @@ import type {
   AbilityScoresRecord,
   ACBreakdownDTO,
   CreatureSizeCategory,
+  DnD35AbilityResolution,
+  DnD35SaveResolution,
   HitDieTrack,
   SaveType,
   SensoryProfile,
@@ -21,6 +23,7 @@ export interface DnD35ResolvedActorStats {
   readonly sizeWinningSourcePath: string;
   readonly effectiveAbilities: AbilityScoresRecord;
   readonly effectiveAbilityModifiers: Readonly<Record<AbilityId, number>>;
+  readonly abilityBreakdowns?: Readonly<Record<AbilityId, DnD35AbilityResolution>> | undefined;
   readonly naturalArmorBreakdown: StatResolutionBreakdown;
   readonly wornArmorBreakdown: StatResolutionBreakdown;
   readonly wornShieldBreakdown: StatResolutionBreakdown;
@@ -32,6 +35,7 @@ export interface DnD35ResolvedActorStats {
   readonly damageBonus: number;
   readonly maxHp: number;
   readonly saves: Readonly<Record<SaveType, number>>;
+  readonly saveBreakdowns?: Readonly<Record<SaveType, DnD35SaveResolution>> | undefined;
   readonly speed: number;
   readonly fortificationPercent?: number | undefined;
   readonly concealmentMissChancePercent?: number | undefined;

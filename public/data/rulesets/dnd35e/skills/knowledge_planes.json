@@ -30,6 +30,10 @@
         "onSuccessRuleOverrides": []
       }
     ],
+    "studiedCreatureTags": [
+      "type:elemental",
+      "type:outsider"
+    ],
     "rankThresholdModifiers": []
   }
 }

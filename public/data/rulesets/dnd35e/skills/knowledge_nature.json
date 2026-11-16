@@ -32,6 +32,14 @@
         "onSuccessRuleOverrides": []
       }
     ],
+    "studiedCreatureTags": [
+      "type:animal",
+      "type:fey",
+      "type:giant",
+      "type:monstrous_humanoid",
+      "type:plant",
+      "type:vermin"
+    ],
     "rankThresholdModifiers": []
   }
 }

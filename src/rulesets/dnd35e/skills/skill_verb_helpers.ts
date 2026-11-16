@@ -2,12 +2,19 @@ import { addComponent, getComponent } from '../../../core/ecs.ts';
 import { ComponentType, type PositionComponent, type RulesetDataComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { ApplyIntentTarget } from '../../../types/intents/interaction.intents.ts';
+import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import { evaluateDnD35ActorStatDAG } from '../modifiers.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
-import { getBardicKnackFloor, resolveSkillCheck, type SkillCheckDefinition, type SkillCheckResult } from '../skills.ts';
+import {
+  getBardicKnackFloor,
+  resolveActorSkillsSnapshot,
+  resolveSkillCheck,
+  type SkillCheckDefinition,
+  type SkillCheckResult
+} from '../skills.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
-import type { AbilityId, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
+import type { AbilityId, DnD35EntityData } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 /** Default Search DC (`20`) for hidden dungeon traps when not overridden on the entity. */
@@ -188,62 +195,63 @@ export function evaluateActorSkillCheck(
     situationalContext,
     sys?.classes,
     sys?.skills,
-    sys?.domains
+    sys?.domains,
+    sys?.feats
   );
 
-  const dagResult = evaluateDnD35ActorStatDAG({
-    baseSize: dndData.sizeCategory,
-    rawAbilities: {
-      str: {
-        ...dndData.abilityScores.str,
-        tempPenalty: (dndData.abilityScores.str?.tempPenalty ?? 0) + condSummary.strPenalty
+  const entityDag = evaluateDnD35eEntityDAG(state, actorId, undefined, { dndData, selfTags });
+  const dagResult =
+    entityDag?.dagResult ??
+    evaluateDnD35ActorStatDAG({
+      baseSize: dndData.sizeCategory,
+      rawAbilities: {
+        str: {
+          ...dndData.abilityScores.str,
+          tempPenalty: (dndData.abilityScores.str?.tempPenalty ?? 0) + condSummary.strPenalty
+        },
+        dex: {
+          ...dndData.abilityScores.dex,
+          tempPenalty: (dndData.abilityScores.dex?.tempPenalty ?? 0) + condSummary.dexPenalty
+        },
+        con: dndData.abilityScores.con,
+        int: dndData.abilityScores.int,
+        wis: dndData.abilityScores.wis,
+        cha: dndData.abilityScores.cha
       },
-      dex: {
-        ...dndData.abilityScores.dex,
-        tempPenalty: (dndData.abilityScores.dex?.tempPenalty ?? 0) + condSummary.dexPenalty
-      },
-      con: dndData.abilityScores.con,
-      int: dndData.abilityScores.int,
-      wis: dndData.abilityScores.wis,
-      cha: dndData.abilityScores.cha
-    },
-    tracks: dndData.tracks,
-    baseNaturalArmor: dndData.naturalArmorBonus,
-    armorBonus: dndData.armorBonus,
-    shieldBonus: dndData.shieldBonus,
-    statModifiers: dndData.statModifiers ?? [],
-    context: { selfTags }
-  });
-
-  const keyAbility: AbilityId = definition.keyAbility;
-  const keyAbilityModifier = dagResult.effectiveAbilityModifiers[keyAbility];
-
-  const skillModifiers: StatModifier[] = (dndData.statModifiers ?? []).filter(
-    (m) => m.targetStat === `skill:${skillId}` || m.targetStat === 'skills'
-  );
-  if (
-    dndData.conditions.includes('shaken') ||
-    dndData.conditions.includes('frightened') ||
-    dndData.conditions.includes('panicked')
-  ) {
-    skillModifiers.push({
-      targetStat: `skill:${skillId}`,
-      value: FEAR_SKILL_CHECK_PENALTY,
-      bonusType: 'untyped',
-      sourceId: 'condition_fear',
-      sourcePath: 'condition:fear/skill_penalty',
-      origin: 'ex'
+      tracks: dndData.tracks,
+      baseNaturalArmor: dndData.naturalArmorBonus,
+      armorBonus: dndData.armorBonus,
+      shieldBonus: dndData.shieldBonus,
+      statModifiers: dndData.statModifiers ?? [],
+      context: { selfTags }
     });
-  }
 
   const knackFloor = getBardicKnackFloor(dndData);
+  const resolvedSkills =
+    entityDag?.resolvedSkills ??
+    resolveActorSkillsSnapshot({
+      skillRanks: dndData.skillRanks,
+      effectiveAbilityModifiers: dagResult.effectiveAbilityModifiers,
+      isConNonability: dndData.abilityScores.con?.base === null,
+      statModifiers: entityDag?.statModifiers ?? dndData.statModifiers ?? [],
+      conditions: dndData.conditions,
+      armorCheckPenalty: entityDag?.armorCheckPenalty ?? 0,
+      minSkillRanksFloor: knackFloor,
+      skillRegistry: sys?.skills,
+      context: { selfTags }
+    });
+
+  const resolvedSkill = resolvedSkills[skillId];
+  const keyAbility: AbilityId = resolvedSkill?.keyAbility ?? definition.keyAbility;
+  const keyAbilityModifier = resolvedSkill?.keyAbilityModifier ?? dagResult.effectiveAbilityModifiers[keyAbility];
+
   const check = resolveSkillCheck({
-    definition,
+    definition: { ...definition, keyAbility },
     rawRanks: dndData.skillRanks[skillId] ?? 0,
     allSkillRanks: dndData.skillRanks,
     keyAbilityModifier,
-    armorCheckPenalty: 0,
-    modifiers: skillModifiers,
+    armorCheckPenalty: entityDag?.armorCheckPenalty ?? 0,
+    modifiers: resolvedSkill?.modifierBreakdown.activeModifiers ?? [],
     dc,
     takeMode,
     ...(knackFloor !== undefined ? { minSkillRanksFloor: knackFloor } : {})

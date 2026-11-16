@@ -3,11 +3,29 @@ import {
   DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
   DnD35DamageTypeSchema,
-  DnD35SensoryProfileSchema
+  DnD35MovementModesSchema,
+  DnD35SensoryProfileSchema,
+  NaturalWeaponDescriptorSchema,
+  SizeCategorySchema
 } from './base_system.types.ts';
 import { DnD35SpellSchoolSchema, PrerequisiteNodeSchema } from './prerequisite_schema.types.ts';
 
 export { PrerequisiteNodeSchema };
+
+/** Composable target categories selectable by spells, effect units, and activated abilities. */
+export const DnD35TargetCategorySchema = z.enum([
+  'self',
+  'ally',
+  'enemy',
+  'neutral',
+  'creature',
+  'object',
+  'door',
+  'wall',
+  'trap',
+  'corpse'
+]);
+export type DnD35TargetCategory = z.infer<typeof DnD35TargetCategorySchema>;
 
 /** Zod schema for tag-matching conditions on declarative modifiers and effect units. */
 export const DnD35ModifierTagConditionSchema = z.object({
@@ -98,17 +116,33 @@ export const DnD35SpellStrikeDescriptorSchema = z.object({
 });
 export type DnD35SpellStrikeDescriptor = z.infer<typeof DnD35SpellStrikeDescriptorSchema>;
 
+/** Zod schema for a declarative form transformation overlay (e.g., Druid Shapeshift forms). */
+export const DnD35FormOverlayDescriptorSchema = z.object({
+  sizeCategory: SizeCategorySchema.optional(),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  movementModes: DnD35MovementModesSchema.optional(),
+  naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),
+  grantedTags: z.array(z.string()).default([])
+});
+export type DnD35FormOverlayDescriptor = z.infer<typeof DnD35FormOverlayDescriptorSchema>;
+
 /** Zod schema for an activated, toggled, variable-dial, or spell-like ability granted by an Effect Bundle. */
 export const DnD35ActivatedAbilityDescriptorSchema = z.object({
   abilityId: z.string(),
   name: z.string(),
+  shortLabel: z.string().optional(),
+  description: z.string().optional(),
+  minClassLevel: z.number().int().positive().optional(),
   actionCost: z.enum(['standard', 'move', 'full_round', 'swift', 'immediate', 'free', 'none']).default('standard'),
   usageLimitPoolId: z.string().optional(),
   spellLikeSpellId: z.string().optional(),
   casterLevelFormula: z.enum(['character_level', 'class_level', 'racial_hd', 'half_class_level', 'fixed_1']).optional(),
   toggleGroup: z.string().optional(),
+  doctrineToggleKey: z.enum(['decisiveStrike', 'whirlingFrenzy']).optional(),
   grantsSelfTag: z.string().optional(),
   isDefaultInGroup: z.boolean().optional(),
+  validTargetCategories: z.array(DnD35TargetCategorySchema).optional(),
+  formOverlay: DnD35FormOverlayDescriptorSchema.optional(),
   spellStrike: DnD35SpellStrikeDescriptorSchema.optional(),
   variableDial: z
     .object({
@@ -162,7 +196,9 @@ export const DnD35EffectBundleSchema = z.object({
       maxBase: z.number().int().nonnegative(),
       perClassLevel: z.number().nonnegative().optional(),
       abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
-      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h'),
+      actionCost: z.enum(['standard', 'move', 'full_round', 'swift', 'immediate', 'free', 'none']).optional(),
+      icon: z.string().optional()
     })
     .optional()
 });
@@ -205,7 +241,9 @@ export const DnD35ClassFeatureDetailSchema = z.object({
       maxBase: z.number().int().nonnegative(),
       perClassLevel: z.number().nonnegative().optional(),
       abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
-      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h'),
+      actionCost: z.enum(['standard', 'move', 'full_round', 'swift', 'immediate', 'free', 'none']).optional(),
+      icon: z.string().optional()
     })
     .optional(),
   bonusFeatPool: z.array(z.string()).optional(),
@@ -247,7 +285,9 @@ export const DnD35DomainDefinitionSchema = z.object({
       poolId: z.string(),
       maxBase: z.number().int().nonnegative(),
       abilityModStat: z.enum(['str', 'dex', 'con', 'int', 'wis', 'cha']).optional(),
-      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h')
+      refreshCycle: z.enum(['round', 'encounter', 'short_rest', 'rest_8h']).default('rest_8h'),
+      actionCost: z.enum(['standard', 'move', 'full_round', 'swift', 'immediate', 'free', 'none']).optional(),
+      icon: z.string().optional()
     })
     .optional(),
   domainSpells: z.record(z.string(), z.string()).default({})

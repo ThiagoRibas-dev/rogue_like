@@ -11,6 +11,8 @@ export interface MetamagicSpellModifiers {
   readonly widen?: boolean | undefined;
   readonly silent?: boolean | undefined;
   readonly still?: boolean | undefined;
+  readonly judicious?: boolean | undefined;
+  readonly projectTouch?: boolean | undefined;
 }
 
 /**
@@ -168,6 +170,7 @@ export function resolveCounterspellAttempt(
   reactorSpell: string,
   targetSpell: string,
   options?: {
+    readonly isUniversalCounterspell?: boolean | undefined;
     readonly hasImprovedCounterspell?: boolean | undefined;
     readonly reactorSchool?: string | undefined;
     readonly targetSchool?: string | undefined;
@@ -179,7 +182,11 @@ export function resolveCounterspellAttempt(
     return true;
   }
 
-  if (reactorSpell === 'dispel_magic' || reactorSpell === 'greater_dispel_magic') {
+  if (
+    options?.isUniversalCounterspell === true ||
+    reactorSpell === 'dispel_magic' ||
+    reactorSpell === 'greater_dispel_magic'
+  ) {
     return true;
   }
 

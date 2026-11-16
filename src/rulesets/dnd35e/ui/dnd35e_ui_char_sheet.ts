@@ -23,17 +23,14 @@ import { getActorEverClassSkillIds } from '../builder/builder_core.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { aggregateProgressionChassis, computeXpThresholdForLevel } from '../progression.ts';
 import { getDnD35EntityData } from '../srd_registry.ts';
-import { getBardicKnackFloor } from '../skills.ts';
-import type { AbilityId, AbilityScoreState, DnD35EntityData, StatModifier } from '../types/dnd35e.types.ts';
+import { getBardicKnackFloor, resolveActorSkillsSnapshot } from '../skills.ts';
+import type { AbilityScoreState, DnD35EntityData } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
-import { ACTIVE_SKILL_IDS } from './dnd35e_ui_hotbar.ts';
+import { isSkillUsableActive } from './dnd35e_ui_hotbar.ts';
 import { buildActorFeatureEntries, buildAttackGroupsFromStrikes } from './dnd35e_ui_projection.ts';
 
 const DEFAULT_ABILITY_SCORE = 10;
 const BASE_AC_SCORE = 10;
-const SYNERGY_RANK_THRESHOLD = 5;
-const SYNERGY_BONUS_PER_SKILL = 2;
-const FEAR_SKILL_PENALTY = -2;
 
 export type EvaluatedDnD35EntityResult = ReturnType<typeof evaluateDnD35eEntityDAG>;
 
@@ -88,46 +85,6 @@ export function extractActorContext(actor: unknown): {
   return { dndData };
 }
 
-function computePassiveSkillModifier(
-  skill: {
-    readonly id: string;
-    readonly keyAbility: AbilityId;
-    readonly synergyFromSkills?: ReadonlyArray<string> | undefined;
-  },
-  ranks: number,
-  allSkillRanks: Readonly<Record<string, number>>,
-  abilityMod: number,
-  statModifiers: ReadonlyArray<StatModifier>,
-  conditions: ReadonlyArray<string>,
-  minSkillRanksFloor?: number | undefined
-): { readonly totalModifier: number; readonly effectiveRanks: number; readonly miscModifier: number } {
-  const effectiveRanks =
-    minSkillRanksFloor !== undefined && minSkillRanksFloor > 0 ? Math.max(ranks, minSkillRanksFloor) : ranks;
-  let synergyBonus = 0;
-  for (const sourceSkillId of skill.synergyFromSkills ?? []) {
-    if ((allSkillRanks[sourceSkillId] ?? 0) >= SYNERGY_RANK_THRESHOLD) {
-      synergyBonus += SYNERGY_BONUS_PER_SKILL;
-    }
-  }
-  let statSkillBonus = 0;
-  const targetKey = `skill:${skill.id}`;
-  for (const mod of statModifiers) {
-    if (mod.targetStat === targetKey || mod.targetStat === 'skills') {
-      statSkillBonus += mod.value;
-    }
-  }
-  const fearPenalty =
-    conditions.includes('shaken') || conditions.includes('frightened') || conditions.includes('panicked')
-      ? FEAR_SKILL_PENALTY
-      : 0;
-  const miscModifier = synergyBonus + statSkillBonus + fearPenalty;
-  return {
-    totalModifier: effectiveRanks + abilityMod + miscModifier,
-    effectiveRanks,
-    miscModifier
-  };
-}
-
 export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel {
   const { state, entityId, preEvalResult, dndData } = extractActorContext(actor);
   const evalResult =
@@ -175,46 +132,59 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
     ? new Set(getActorEverClassSkillIds(dndData as DnD35EntityData, primaryClassId, dndData.domains ?? [], sys))
     : new Set<string>();
   const allRanks = dndData.skillRanks ?? {};
-  const statModifiers = evalResult?.dndData.statModifiers ?? dndData.statModifiers ?? [];
-  const conditions = dndData.conditions ?? [];
-  const knackFloor = getBardicKnackFloor(dndData);
+  const resolvedSkills =
+    evalResult?.resolvedSkills ??
+    resolveActorSkillsSnapshot({
+      skillRanks: allRanks,
+      effectiveAbilityModifiers: {
+        str: strMod,
+        dex: dexMod,
+        con: conMod,
+        int: intMod,
+        wis: wisMod,
+        cha: chaMod
+      },
+      isConNonability: raw?.con?.base === null,
+      statModifiers: dndData.statModifiers ?? [],
+      conditions: dndData.conditions ?? [],
+      minSkillRanksFloor: getBardicKnackFloor(dndData),
+      skillRegistry: sys?.skills
+    });
+
   const skillRows: UISkillRowModel[] =
     sys && state && entityId !== undefined
       ? Object.values(sys.skills).map((skill) => {
-          const ranks = allRanks[skill.id] ?? 0;
-          const abMod = effMod?.[skill.keyAbility] ?? 0;
-          const { totalModifier, effectiveRanks, miscModifier } = computePassiveSkillModifier(
-            skill,
-            ranks,
-            allRanks,
-            abMod,
-            statModifiers,
-            conditions,
-            knackFloor
-          );
+          const res = resolvedSkills[skill.id];
+          const abMod = res?.keyAbilityModifier ?? effMod?.[skill.keyAbility] ?? 0;
+          const effectiveRanks = res?.effectiveRanks ?? allRanks[skill.id] ?? 0;
+          const miscModifier = res?.miscModifier ?? 0;
+          const totalModifier = res?.totalModifier ?? effectiveRanks + abMod;
           return {
             id: skill.id,
             name: skill.name,
-            keyAbility: skill.keyAbility.toUpperCase(),
+            keyAbility: (res?.keyAbility ?? skill.keyAbility).toUpperCase(),
             totalModifier,
             ranks: effectiveRanks,
             abilityModifier: abMod,
             miscModifier,
             isClassSkill: everClassSkills.has(skill.id),
-            isUsableActive: ACTIVE_SKILL_IDS.has(skill.id)
+            isUsableActive: isSkillUsableActive(skill.id, sys?.skills)
           };
         })
-      : Object.entries(allRanks).map(([id, ranks]) => ({
-          id,
-          name: id.replace(/_/g, ' ').toUpperCase(),
-          keyAbility: 'DEX',
-          totalModifier: ranks + dexMod,
-          ranks,
-          abilityModifier: dexMod,
-          miscModifier: 0,
-          isClassSkill: true,
-          isUsableActive: ACTIVE_SKILL_IDS.has(id)
-        }));
+      : Object.entries(allRanks).map(([id, ranks]) => {
+          const res = resolvedSkills[id];
+          return {
+            id,
+            name: id.replace(/_/g, ' ').toUpperCase(),
+            keyAbility: (res?.keyAbility ?? 'dex').toUpperCase(),
+            totalModifier: res?.totalModifier ?? ranks + dexMod,
+            ranks: res?.effectiveRanks ?? ranks,
+            abilityModifier: res?.keyAbilityModifier ?? dexMod,
+            miscModifier: res?.miscModifier ?? 0,
+            isClassSkill: true,
+            isUsableActive: isSkillUsableActive(id)
+          };
+        });
 
   const levelHistory: UILevelHistoryRowModel[] =
     (dndData.levelHistory ?? []).length > 0

@@ -75,7 +75,9 @@
           "poolId": "abrupt_jaunt",
           "maxBase": 0,
           "abilityModStat": "int",
-          "refreshCycle": "rest_8h"
+          "refreshCycle": "rest_8h",
+          "actionCost": "immediate",
+          "icon": "⚡"
         },
         "grantedTags": [
           "feature:abrupt_jaunt",

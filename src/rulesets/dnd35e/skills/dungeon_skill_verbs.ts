@@ -33,6 +33,9 @@ import {
   SEARCH_SCAN_RADIUS_TILES
 } from './skill_verb_helpers.ts';
 
+/** Margin above disarm DC required to safely invert ownership and reset a trap (`+5`). */
+const TRAP_RESET_MARGIN = 5;
+
 /**
  * Resolves dungeon exploration and first-aid skill verbs (`search`, `unlock`, `disarm`, `heal`).
  */
@@ -175,8 +178,28 @@ export function resolveDungeonSkillVerb(
       const disarmOutcome = resolveDisableTrapCheck(check.totalRoll, trapDc, isMagicTrap, hasTrapfinding);
 
       let nextState = state;
+      let wasReset = false;
       if (disarmOutcome.success && trapEntityId !== undefined && trapComp !== undefined) {
-        nextState = removeComponent(nextState, trapEntityId, ComponentType.Trap);
+        const hasLock = getComponent(nextState, trapEntityId, ComponentType.Lock) !== undefined;
+        if (!hasLock && trapComp.canReset !== false && check.totalRoll >= trapDc + TRAP_RESET_MARGIN) {
+          wasReset = true;
+          nextState = addComponent(nextState, trapEntityId, {
+            ...trapComp,
+            triggered: false,
+            resetByEntityId: intent.entityId
+          });
+          if (!getComponent(nextState, trapEntityId, ComponentType.Renderable)) {
+            nextState = addComponent(nextState, trapEntityId, {
+              type: ComponentType.Renderable,
+              glyph: '^',
+              fg: '#4ade80',
+              bg: 'transparent',
+              spriteId: 'trap'
+            });
+          }
+        } else {
+          nextState = removeComponent(nextState, trapEntityId, ComponentType.Trap);
+        }
       } else if (disarmOutcome.triggeredTrap && trapEntityId !== undefined && trapComp !== undefined) {
         nextState = addComponent(nextState, trapEntityId, {
           ...trapComp,
@@ -203,11 +226,13 @@ export function resolveDungeonSkillVerb(
               : 'Disable Device check failed'
           };
 
-      const msg = disarmOutcome.success
-        ? `You successfully disarm the mechanism (roll: ${check.totalRoll} vs DC ${trapDc})!`
-        : disarmOutcome.triggeredTrap
-          ? `Your Disable Device attempt goes awry (roll: ${check.totalRoll} vs DC ${trapDc}) and springs the trap!`
-          : `You fail to disarm the mechanism (roll: ${check.totalRoll} vs DC ${trapDc}).`;
+      const msg = wasReset
+        ? `You disarm and reset the trap against hostiles (roll: ${check.totalRoll} vs DC ${trapDc + TRAP_RESET_MARGIN})!`
+        : disarmOutcome.success
+          ? `You successfully disarm the mechanism (roll: ${check.totalRoll} vs DC ${trapDc})!`
+          : disarmOutcome.triggeredTrap
+            ? `Your Disable Device attempt goes awry (roll: ${check.totalRoll} vs DC ${trapDc}) and springs the trap!`
+            : `You fail to disarm the mechanism (roll: ${check.totalRoll} vs DC ${trapDc}).`;
 
       return {
         state: addMessage(nextState, msg, MessageLogCategory.System),

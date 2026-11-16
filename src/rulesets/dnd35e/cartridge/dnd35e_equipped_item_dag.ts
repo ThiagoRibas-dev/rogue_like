@@ -15,6 +15,7 @@ export interface EquippedItemDAGContributions {
   readonly modifiers: ReadonlyArray<StatModifier>;
   readonly grantedTags: ReadonlyArray<string>;
   readonly maxDexBonusCap: number | undefined;
+  readonly armorCheckPenalty: number;
   readonly hasStructuredArmorOrShield: boolean;
 }
 
@@ -71,12 +72,19 @@ export function collectEquippedItemDAGContributions(
 ): EquippedItemDAGContributions {
   const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
   if (!equipment) {
-    return { modifiers: [], grantedTags: [], maxDexBonusCap: undefined, hasStructuredArmorOrShield: false };
+    return {
+      modifiers: [],
+      grantedTags: [],
+      maxDexBonusCap: undefined,
+      armorCheckPenalty: 0,
+      hasStructuredArmorOrShield: false
+    };
   }
 
   const modifiers: StatModifier[] = [];
   const grantedTags: string[] = [];
   let maxDexBonusCap: number | undefined;
+  let armorCheckPenalty = 0;
   let hasStructuredArmorOrShield = false;
 
   for (const slot of equipment.slots) {
@@ -128,6 +136,19 @@ export function collectEquippedItemDAGContributions(
         const mithralDelta = isMithral ? computeMaterialEquipmentStats('mithral').maxDexBonusDelta : 0;
         const effectiveCap = itemDef.armorStats.maxDexBonus + mithralDelta;
         maxDexBonusCap = maxDexBonusCap === undefined ? effectiveCap : Math.min(maxDexBonusCap, effectiveCap);
+      }
+      const rawAcp = itemDef.armorStats.armorCheckPenalty ?? 0;
+      if (rawAcp < 0) {
+        const mat = itemDef.specialMaterial;
+        const matReduction =
+          isMithral || mat === 'mithral'
+            ? computeMaterialEquipmentStats('mithral').acpReduction
+            : mat === 'adamantine' || mat === 'darkwood'
+              ? computeMaterialEquipmentStats(mat).acpReduction
+              : enhVal > 0 || mat === 'masterwork' || itemTags.includes('masterwork')
+                ? 1
+                : 0;
+        armorCheckPenalty += Math.min(0, rawAcp + matReduction);
       }
     }
 
@@ -201,7 +222,7 @@ export function collectEquippedItemDAGContributions(
     }
   }
 
-  return { modifiers, grantedTags, maxDexBonusCap, hasStructuredArmorOrShield };
+  return { modifiers, grantedTags, maxDexBonusCap, armorCheckPenalty, hasStructuredArmorOrShield };
 }
 
 /**

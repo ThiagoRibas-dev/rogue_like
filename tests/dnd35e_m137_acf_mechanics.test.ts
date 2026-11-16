@@ -35,7 +35,7 @@ import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/s
 import type { DnD35EntityData, HitDieTrack } from '../src/rulesets/dnd35e/types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { projectCharacterSheetData } from '../src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts';
-import { buildActorStanceModes } from '../src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts';
+import { buildActorHotbarSlots, buildActorStanceModes, isSkillUsableActive } from '../src/rulesets/dnd35e/ui/dnd35e_ui_hotbar.ts';
 import type { CampaignData } from '../src/types/campaign.types.ts';
 import { resolveEffectiveEntityDataWithOverlays } from '../src/rulesets/dnd35e/wild_shape.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
@@ -159,6 +159,7 @@ describe('Milestone 137: Core Class ACF Expansion (Druid, Sorcerer, Bard)', () =
     });
 
     test('Shapeshift: Form eligibility by level', () => {
+      loadCampaignFromDisk('dnd35e-crypt');
       expect(isDruidShapeshiftEligible(1, 'predator')).toBe(true);
       expect(isDruidShapeshiftEligible(1, 'aerial')).toBe(false);
       expect(isDruidShapeshiftEligible(1, 'ferocious_slayer')).toBe(false);
@@ -654,6 +655,76 @@ describe('Milestone 137: Core Class ACF Expansion (Druid, Sorcerer, Bard)', () =
       const undeadAfter = (getComponent(undeadCast.state, undeadId, ComponentType.Fighter) as FighterComponent).hp;
       // Even on a successful Will save for half, (min 3 + 4 hymn = 7) -> floor(7 / 2) = 3 minimum positive-energy damage
       expect(30 - undeadAfter).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // 4. DECLARATIVE HOTBAR SKILLS & RACE-DRIVEN WILD SHAPE POOL
+  // ---------------------------------------------------------------------------
+  describe('Declarative Hotbar Skills & Race-Driven Wild Shape', () => {
+    test('Active skills and verbs are projected declaratively from skills/*.json', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const state = buildGameState(campaign);
+      const sysContent = getDnD35SystemContent(campaign)!;
+
+      expect(isSkillUsableActive('search', sysContent.skills)).toBe(true);
+      expect(isSkillUsableActive('tumble', sysContent.skills)).toBe(true);
+      expect(isSkillUsableActive('spot', sysContent.skills)).toBe(false);
+
+      const slots = buildActorHotbarSlots(
+        {
+          skillRanks: { search: 4, spot: 5, open_lock: 2 }
+        },
+        state
+      );
+      const searchSlot = slots.find((s) => s.actionPayload?.kind === 'skill' && s.actionPayload.id === 'search');
+      const openLockSlot = slots.find((s) => s.actionPayload?.kind === 'skill' && s.actionPayload.id === 'open_lock');
+      const spotSlot = slots.find((s) => s.actionPayload?.kind === 'skill' && s.actionPayload.id === 'spot');
+
+      expect(searchSlot?.actionPayload?.verb).toBe('search');
+      expect(openLockSlot?.actionPayload?.verb).toBe('unlock');
+      expect(spotSlot).toBeUndefined();
+    });
+
+    test('Wild Shape pool scales across druid levels 5..18 and transforms into race-derived form then reverts without extra charge', () => {
+      const campaign = loadCampaignFromDisk('dnd35e-crypt');
+      const sysContent = getDnD35SystemContent(campaign)!;
+      let state = buildGameState(campaign);
+      const [s1, druidId] = createEntity(state);
+      state = addComponent(s1, druidId, { type: ComponentType.Fighter, hp: 40, maxHp: 40, baseAttack: 6, xpGiven: 0 });
+      state = addComponent(state, druidId, { type: ComponentType.Actor, speed: 30 });
+
+      const druidTrackL8 = makeClassTrack(campaign, 'druid', 8);
+      const druidData: DnD35EntityData = {
+        ...getDnD35EntityData(state, druidId),
+        tracks: [druidTrackL8],
+        activeClassFeatures: collectClassFeaturesUpToLevel(sysContent.classes['druid']!, 8, [])
+      };
+      state = setDnD35EntityData(state, druidId, druidData);
+      state = syncActorResourcePoolsComponent(state, druidId, druidData, sysContent);
+
+      const poolBefore = getComponent(state, druidId, ComponentType.ResourcePool) as ResourcePoolComponent;
+      expect(poolBefore.pools['wild_shape']?.max).toBe(3); // Lv 5 (1), Lv 6 (+1), Lv 7 (+1)
+
+      const transformRes = executeDnD35eResourcePoolAbility(state, druidId, 'wild_shape');
+      expect(transformRes.success).toBe(true);
+      state = transformRes.state;
+
+      const overlay = getComponent(state, druidId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
+      expect(overlay?.source.startsWith('wild_shape:')).toBe(true);
+
+      const poolAfterTransform = getComponent(state, druidId, ComponentType.ResourcePool) as ResourcePoolComponent;
+      expect(poolAfterTransform.pools['wild_shape']?.current).toBe(2);
+
+      // Next round: reverting via wild_shape pool returns to normal form without expending an extra daily charge
+      state = setDnD35EntityData(state, druidId, { ...getDnD35EntityData(state, druidId), actionBudget: undefined });
+      const revertRes = executeDnD35eResourcePoolAbility(state, druidId, 'wild_shape');
+      expect(revertRes.success).toBe(true);
+      state = revertRes.state;
+
+      expect(getComponent(state, druidId, ComponentType.PropertyOverlay)).toBeUndefined();
+      const poolAfterRevert = getComponent(state, druidId, ComponentType.ResourcePool) as ResourcePoolComponent;
+      expect(poolAfterRevert.pools['wild_shape']?.current).toBe(2);
     });
   });
 });

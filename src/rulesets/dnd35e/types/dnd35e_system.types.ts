@@ -4,6 +4,7 @@ import { DnD35AlignmentSchema } from './system/base_system.types.ts';
 import {
   DnD35AcfSwapSchema,
   DnD35ActivatedAbilityDescriptorSchema,
+  DnD35BonusTypeSchema,
   DnD35ClassFeatureDetailSchema,
   DnD35DeclarativeModifierSchema,
   DnD35DomainDefinitionSchema,
@@ -119,9 +120,12 @@ export const DnD35SkillDefinitionSchema = z.object({
   retryAllowed: z.boolean().default(true),
   take10Allowed: z.boolean().default(true),
   take20Allowed: z.boolean().default(true),
+  isUsableActive: z.boolean().default(false),
+  activeVerb: z.string().optional(),
   synergyFromSkills: z.array(z.string()).default([]),
   synergyNotes: z.string().optional(),
   actions: z.array(DnD35SkillActionDescriptorSchema).default([]),
+  studiedCreatureTags: z.array(z.string()).default([]),
   rankThresholdModifiers: z.array(DnD35SkillRankThresholdGrantSchema).default([]),
   effectBundle: DnD35EffectBundleSchema.optional()
 });
@@ -148,9 +152,29 @@ export const DnD35MetamagicDescriptorSchema = z.object({
   empowerDamageMultiplier: z.number().positive().optional(),
   maximizeVariableDice: z.boolean().optional(),
   suppressVerbalComponent: z.boolean().optional(),
-  suppressSomaticComponent: z.boolean().optional()
+  suppressSomaticComponent: z.boolean().optional(),
+  skipAlliesInAoE: z.boolean().optional(),
+  projectTouchToCloseRange: z.boolean().optional()
 });
 export type DnD35MetamagicDescriptor = z.infer<typeof DnD35MetamagicDescriptorSchema>;
+
+/** Check-result scaling tier for skill-to-combat feats such as Knowledge Devotion. */
+export const DnD35SkillCheckCombatBonusTierSchema = z.object({
+  minCheck: z.number().int().optional(),
+  maxCheck: z.number().int().optional(),
+  bonus: z.number().int()
+});
+export type DnD35SkillCheckCombatBonusTier = z.infer<typeof DnD35SkillCheckCombatBonusTierSchema>;
+
+/** Declarative skill-check-scaled combat bonus descriptor (e.g., Knowledge Devotion). */
+export const DnD35SkillCheckCombatBonusSchema = z.object({
+  skillPrefix: z.string().default('knowledge_'),
+  bonusType: DnD35BonusTypeSchema.default('insight'),
+  targets: z.array(z.string()).default(['attack', 'damage']),
+  baselineTake10: z.boolean().default(true),
+  tiers: z.array(DnD35SkillCheckCombatBonusTierSchema)
+});
+export type DnD35SkillCheckCombatBonus = z.infer<typeof DnD35SkillCheckCombatBonusSchema>;
 
 /** Zod schema for a declarative feat definition (`feats.json` & `feats/<id>.json`). */
 export const DnD35FeatDefinitionSchema = z.object({
@@ -160,6 +184,7 @@ export const DnD35FeatDefinitionSchema = z.object({
   isFighterBonusFeat: z.boolean().default(false),
   repeatable: DnD35FeatRepeatableSchema.optional(),
   metamagicDescriptor: DnD35MetamagicDescriptorSchema.optional(),
+  skillCheckCombatBonus: DnD35SkillCheckCombatBonusSchema.optional(),
   prerequisites: PrerequisiteNodeSchema.optional(),
   effectBundle: DnD35EffectBundleSchema.optional(),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
@@ -197,6 +222,17 @@ export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;
  * while automatically invalidating if the Campaign Editor or a test replaces `systemContent`.
  */
 const systemContentCache = new WeakMap<object, DnD35SystemContent | null>();
+let lastLoadedSystemContent: DnD35SystemContent | null = null;
+
+/**
+ * Returns the most recently parsed `DnD35SystemContent` registry when pure helpers are invoked
+ * without an explicit `GameState` or `CampaignData` reference.
+ *
+ * @returns Last parsed `DnD35SystemContent`, or `null` if none has been loaded yet.
+ */
+export function getLastLoadedDnD35SystemContent(): DnD35SystemContent | null {
+  return lastLoadedSystemContent;
+}
 
 /**
  * Safely parses raw system content records into a validated DnD35SystemContent structure.
@@ -206,13 +242,19 @@ const systemContentCache = new WeakMap<object, DnD35SystemContent | null>();
 export function parseDnD35SystemContent(raw: unknown): DnD35SystemContent {
   if (typeof raw === 'object' && raw !== null) {
     const cached = systemContentCache.get(raw);
-    if (cached) return cached;
+    if (cached) {
+      lastLoadedSystemContent = cached;
+      return cached;
+    }
     const parsed = DnD35SystemContentSchema.parse(raw);
     systemContentCache.set(raw, parsed);
     systemContentCache.set(parsed, parsed);
+    lastLoadedSystemContent = parsed;
     return parsed;
   }
-  return DnD35SystemContentSchema.parse(raw ?? {});
+  const parsed = DnD35SystemContentSchema.parse(raw ?? {});
+  lastLoadedSystemContent = parsed;
+  return parsed;
 }
 
 /**
@@ -225,13 +267,16 @@ export function getDnD35SystemContent(campaign: CampaignData): DnD35SystemConten
   if (!campaign.systemContent || campaign.manifest?.rulesetId !== 'dnd35e') return null;
   const rawRef = campaign.systemContent;
   if (systemContentCache.has(rawRef)) {
-    return systemContentCache.get(rawRef) ?? null;
+    const cached = systemContentCache.get(rawRef) ?? null;
+    if (cached) lastLoadedSystemContent = cached;
+    return cached;
   }
   const result = DnD35SystemContentSchema.safeParse(rawRef);
   const parsed = result.success ? result.data : null;
   systemContentCache.set(rawRef, parsed);
   if (parsed) {
     systemContentCache.set(parsed, parsed);
+    lastLoadedSystemContent = parsed;
   }
   return parsed;
 }

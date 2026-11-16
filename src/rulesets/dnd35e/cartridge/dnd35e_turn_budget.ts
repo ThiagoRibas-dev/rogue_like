@@ -3,7 +3,8 @@ import {
   ComponentType,
   type FighterComponent,
   type PositionComponent,
-  type PropertyOverlayComponent
+  type PropertyOverlayComponent,
+  type ResourcePoolComponent
 } from '../../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
 import { IntentType } from '../../../types/intents/intent.enum.ts';
@@ -19,9 +20,11 @@ import {
 } from '../action_economy.ts';
 import { evaluateVitalityStatus } from '../combat/damage_vitality.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
+import { resolveResourcePoolActionCost } from '../progression/ledger_resource_pools.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ActionBudget, StatModifier } from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
 
 /** Standard full round energy cost (`100`). */
@@ -265,10 +268,14 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
         (budget.movementRemainingFt >= FEET_PER_GRID_SQUARE || budget.moveRemaining > 0 || budget.standardRemaining > 0)
       );
     case IntentType.UseAbility: {
-      const isSwift =
-        intent.effectId === 'pool:abrupt_jaunt' ||
-        intent.effectId === 'pool:invisible_fist' ||
-        intent.effectId.startsWith('shapeshift');
+      const poolId = intent.effectId.startsWith('pool:') ? intent.effectId.slice('pool:'.length) : undefined;
+      const poolComp = poolId
+        ? (getComponent(state, intent.entityId, ComponentType.ResourcePool) as ResourcePoolComponent | undefined)
+        : undefined;
+      const actionCost = poolId
+        ? resolveResourcePoolActionCost(poolId, poolComp?.pools[poolId], getDnD35SystemContent(state.campaign))
+        : undefined;
+      const isSwift = actionCost === 'immediate' || actionCost === 'swift' || intent.effectId.startsWith('shapeshift');
       return isSwift ? budget.swiftRemaining >= 1 : budget.standardRemaining >= 1;
     }
     case IntentType.MeleeAttack:

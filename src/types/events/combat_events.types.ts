@@ -35,6 +35,7 @@ export interface TrapTriggeredEvent extends BaseGameEvent {
   readonly type: GameEventType.TrapTriggered;
   readonly entityId: EntityId;
   readonly triggerId: string;
+  readonly resetByEntityId?: EntityId | undefined;
 }
 
 /** Fired when a background rivalry struggle is scheduled. */

@@ -30,6 +30,9 @@
         "onSuccessRuleOverrides": []
       }
     ],
+    "studiedCreatureTags": [
+      "type:undead"
+    ],
     "rankThresholdModifiers": []
   }
 }

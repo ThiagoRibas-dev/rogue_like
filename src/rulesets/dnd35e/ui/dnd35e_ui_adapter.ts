@@ -139,7 +139,8 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
         doctrine,
         undefined,
         sys?.feats,
-        auraContrib?.stanceGroupOptions
+        auraContrib?.stanceGroupOptions,
+        sys?.classes
       ),
       slots: buildActorHotbarSlots(dndData, state, entityId, resourcePools),
       actionPips: buildActorActionPips(dndData)
