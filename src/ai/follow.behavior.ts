@@ -1,9 +1,16 @@
 import * as ROT from 'rot-js';
 import { getComponent } from '../core/ecs.ts';
 import { canTraverseTile, processMoveIntent } from '../systems/movement.system.ts';
+import {
+  computeRectDistanceTiles,
+  getEntitySpatialProfile,
+  isFootprintDiagonalBlockedByHardCorner,
+  SIZE_DIFF_PASS_THROUGH_THRESHOLD
+} from '../systems/movement_footprint.ts';
 import { shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { ComponentType, type MovementModes, type PropertyOverlayComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
+import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { isHostile } from '../utils/faction.ts';
@@ -42,35 +49,91 @@ function getMovementModes(state: GameState, entityId: EntityId): MovementModes |
 /**
  * Checks whether a tile is unoccupied by another Fighter or Actor entity.
  */
-function isTileBlockedByActor(state: GameState, x: number, y: number, selfId: EntityId): boolean {
+function getCachedSpatialProfile(
+  state: GameState,
+  entityId: EntityId,
+  profileCache: Map<EntityId, ActorSpatialProfile>
+): ActorSpatialProfile {
+  const existing = profileCache.get(entityId);
+  if (existing) return existing;
+  const resolved = getEntitySpatialProfile(state, entityId);
+  profileCache.set(entityId, resolved);
+  return resolved;
+}
+
+/**
+ * Checks whether a tile is unoccupied by another Fighter or Actor entity.
+ */
+function isTileBlockedByActor(
+  state: GameState,
+  x: number,
+  y: number,
+  selfId: EntityId,
+  selfProfile: ActorSpatialProfile,
+  profileCache: Map<EntityId, ActorSpatialProfile>
+): boolean {
   const key = `${x},${y}`;
   const entitiesAtTile = state.spatialIndex.get(key);
   if (!entitiesAtTile || entitiesAtTile.length === 0) return false;
 
   for (const id of entitiesAtTile) {
     if (id === selfId) continue;
-    if (getComponent(state, id, ComponentType.Fighter) !== undefined) return true;
-    if (getComponent(state, id, ComponentType.Actor) !== undefined) return true;
+    const hasFighter = getComponent(state, id, ComponentType.Fighter) !== undefined;
+    const hasActor = getComponent(state, id, ComponentType.Actor) !== undefined;
+    if (!hasFighter && !hasActor) continue;
+    const otherProfile = getCachedSpatialProfile(state, id, profileCache);
+    if (otherProfile.isCompletelyFillingSpace) return true;
+    const sizeDiff = Math.abs(selfProfile.sizeRankIndex - otherProfile.sizeRankIndex);
+    const canMovePast =
+      otherProfile.isHelpless || selfProfile.canShareTile || sizeDiff >= SIZE_DIFF_PASS_THROUGH_THRESHOLD;
+    if (!canMovePast) {
+      return true;
+    }
   }
   return false;
 }
 
 /**
- * Checks whether a companion can step onto `(x, y)`.
+ * Checks whether a companion can step onto `(x, y)` respecting footprint squeezing and hard-corner diagonals.
  */
 function isStepPassable(
   state: GameState,
   x: number,
   y: number,
   entityId: EntityId,
-  movementModes: MovementModes | undefined
+  movementModes: MovementModes | undefined,
+  profile: ActorSpatialProfile,
+  profileCache: Map<EntityId, ActorSpatialProfile>,
+  prevX?: number,
+  prevY?: number
 ): boolean {
-  if (!isInBounds(x, y, state.map.width, state.map.height)) return false;
-  const tile = state.map.tiles[coordToIndex(x, y, state.map.width)];
-  if (!tile) return false;
-  const tileDef = state.campaign.tiles[tile.tileId];
-  if (!canTraverseTile(tileDef, movementModes)) return false;
-  return !isTileBlockedByActor(state, x, y, entityId);
+  const baseW = profile.baseWidth;
+  const baseH = profile.baseHeight;
+
+  if (
+    prevX !== undefined &&
+    prevY !== undefined &&
+    !profile.isIncorporeal &&
+    isFootprintDiagonalBlockedByHardCorner(state, prevX, prevY, baseW, baseH, x - prevX, y - prevY)
+  ) {
+    return false;
+  }
+
+  const minW = baseW >= 2 ? Math.ceil(baseW / 2) : baseW;
+  const minH = baseH >= 2 ? Math.ceil(baseH / 2) : baseH;
+  for (let dy = 0; dy < minH; dy++) {
+    for (let dx = 0; dx < minW; dx++) {
+      const tx = x + dx;
+      const ty = y + dy;
+      if (!isInBounds(tx, ty, state.map.width, state.map.height)) return false;
+      const tile = state.map.tiles[coordToIndex(tx, ty, state.map.width)];
+      if (!tile) return false;
+      const tileDef = state.campaign.tiles[tile.tileId];
+      if (!canTraverseTile(tileDef, movementModes)) return false;
+      if (isTileBlockedByActor(state, tx, ty, entityId, profile, profileCache)) return false;
+    }
+  }
+  return true;
 }
 
 /**
@@ -95,6 +158,8 @@ export function computeNextStepToward(
   goalY: number
 ): { readonly dx: number; readonly dy: number } | null {
   const movementModes = getMovementModes(state, entityId);
+  const profileCache = new Map<EntityId, ActorSpatialProfile>();
+  const selfProfile = getCachedSpatialProfile(state, entityId, profileCache);
 
   const astar = new ROT.Path.AStar(
     goalX,
@@ -102,7 +167,7 @@ export function computeNextStepToward(
     (x: number, y: number): boolean => {
       if (x === fromX && y === fromY) return true;
       if (x === goalX && y === goalY) return true;
-      return isStepPassable(state, x, y, entityId, movementModes);
+      return isStepPassable(state, x, y, entityId, movementModes, selfProfile, profileCache);
     },
     { topology: 8 }
   );
@@ -117,7 +182,7 @@ export function computeNextStepToward(
     if (
       nextStep &&
       !(nextStep.x === goalX && nextStep.y === goalY) &&
-      isStepPassable(state, nextStep.x, nextStep.y, entityId, movementModes)
+      isStepPassable(state, nextStep.x, nextStep.y, entityId, movementModes, selfProfile, profileCache, fromX, fromY)
     ) {
       return {
         dx: nextStep.x - fromX,
@@ -138,7 +203,19 @@ export function computeNextStepToward(
   for (const candidate of rankedCandidates) {
     if (candidate.distSq >= currentDistSq) continue;
     if (candidate.nx === goalX && candidate.ny === goalY) continue;
-    if (isStepPassable(state, candidate.nx, candidate.ny, entityId, movementModes)) {
+    if (
+      isStepPassable(
+        state,
+        candidate.nx,
+        candidate.ny,
+        entityId,
+        movementModes,
+        selfProfile,
+        profileCache,
+        fromX,
+        fromY
+      )
+    ) {
       return { dx: candidate.dx, dy: candidate.dy };
     }
   }
@@ -198,7 +275,16 @@ function hasAdjacentHostile(state: GameState, companionId: EntityId): boolean {
     const otherPos = getComponent(state, otherId, ComponentType.Position);
     if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
     if (!isHostile(state, companionId, otherId)) continue;
-    const dist = Math.max(Math.abs(otherPos.x - pos.x), Math.abs(otherPos.y - pos.y));
+    const dist = computeRectDistanceTiles(
+      pos.x,
+      pos.y,
+      pos.footprintWidth ?? 1,
+      pos.footprintHeight ?? 1,
+      otherPos.x,
+      otherPos.y,
+      otherPos.footprintWidth ?? 1,
+      otherPos.footprintHeight ?? 1
+    );
     if (dist <= 1) return true;
   }
   return false;

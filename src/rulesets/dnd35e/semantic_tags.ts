@@ -300,6 +300,8 @@ export function projectDnD35ActorSemanticTags(
     tags.add(`status:${statusId}`);
     if (statusId === 'invisible_active') {
       tags.add('trait:invisible');
+    } else if (statusId === 'squeezing') {
+      tags.add('condition:squeezing');
     }
   }
 

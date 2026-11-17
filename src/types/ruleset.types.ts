@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { Verb } from '../constants/verbs.constants.ts';
 import type { CampaignData } from './campaign.types.ts';
+import type { CardinalFacing } from './components/world_components.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
 import type { MeleeAttackIntent, UseAbilityIntent } from './intents/combat.intents.ts';
@@ -68,6 +69,22 @@ export interface EffectiveStats {
   readonly defense: number;
   readonly maxHp: number;
   readonly speed: number;
+}
+
+/**
+ * Ruleset-agnostic spatial footprint, reach, and traversal capabilities for an actor.
+ */
+export interface ActorSpatialProfile {
+  readonly baseWidth: number;
+  readonly baseHeight: number;
+  readonly sizeRankIndex: number;
+  readonly naturalReachTiles: number;
+  readonly canShareTile: boolean;
+  readonly subTileScale: number;
+  readonly isHelpless: boolean;
+  readonly isIncorporeal: boolean;
+  readonly isFlying: boolean;
+  readonly isCompletelyFillingSpace: boolean;
 }
 
 /**
@@ -322,4 +339,21 @@ export interface RulesetContract {
     state: GameState,
     intent: UseAbilityIntent
   ): { readonly state: GameState; readonly success: boolean } | null;
+
+  /**
+   * Optional hook returning ruleset-resolved spatial footprint, reach, size rank, and traversal flags.
+   *
+   * @param state The current GameState.
+   * @param entityId The actor entity ID.
+   * @param facing Optional movement facing used to orient non-square footprints.
+   */
+  resolveActorSpatialProfile?(state: GameState, entityId: EntityId, facing?: CardinalFacing): ActorSpatialProfile;
+
+  /**
+   * Optional hook synchronizing an entity's PositionComponent footprint and spatial index after spawn or size change.
+   *
+   * @param state The current GameState.
+   * @param entityId The entity ID to synchronize.
+   */
+  syncActorSpatialFootprint?(state: GameState, entityId: EntityId): GameState;
 }

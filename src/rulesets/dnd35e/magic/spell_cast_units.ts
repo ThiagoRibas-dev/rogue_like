@@ -10,6 +10,7 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
+import { syncDnD35eActorSpatialFootprint } from '../spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ConditionId } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -124,6 +125,7 @@ export function applySpecialSpellUnit(params: {
       }
       if (dispelledCount > 0) {
         runningState = setDnD35EntityData(runningState, targetId, { ...targetDnd, statModifiers: cleaned });
+        runningState = syncDnD35eActorSpatialFootprint(runningState, targetId);
         runningState = addMessage(
           runningState,
           `${spell.name} dispels ${dispelledCount} active spell effect(s)!`,

@@ -13,6 +13,7 @@ import {
   type ShopComponent
 } from '../../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../../types/game-state.types.ts';
+import { getActiveRuleset } from '../../rulesets/registry.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../../types/intents/ui.intents.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
@@ -320,6 +321,7 @@ export function spawnEntity(
   }
 
   nextState = equipActorDefaultArmaments(nextState, entityId, templateId, x, y);
+  nextState = getActiveRuleset(nextState).syncActorSpatialFootprint?.(nextState, entityId) ?? nextState;
 
   return [nextState, entityId];
 }

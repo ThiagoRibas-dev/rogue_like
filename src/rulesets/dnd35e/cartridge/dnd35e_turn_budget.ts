@@ -11,7 +11,6 @@ import { IntentType } from '../../../types/intents/intent.enum.ts';
 import type { Intent } from '../../../types/intents/intent.union.ts';
 import { assertNever } from '../../../utils/assert.ts';
 import { coordToIndex } from '../../../utils/grid.ts';
-import { getEffectiveStats } from '../../../utils/stats.ts';
 import {
   consumeMoveActionFromBudget,
   consumeMovementStepFt,
@@ -21,6 +20,7 @@ import {
 import { evaluateVitalityStatus } from '../combat/damage_vitality.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers/stacking_engine.ts';
 import { resolveResourcePoolActionCost } from '../progression/ledger_resource_pools.ts';
+import { computeTacticalLandSpeedWithArmor, resolveDnD35eActorSpatialProfile } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ActionBudget, StatModifier } from '../types/dnd35e.types.ts';
@@ -32,6 +32,15 @@ export const FULL_ROUND_ENERGY_COST = 100;
 
 /** Baseline D&D 3.5e land speed in feet (`30 ft` = `6` five-foot squares per Move action). */
 const BASELINE_LAND_SPEED_FT = 30;
+
+/** Tile registry baseline movement cost representing unobstructed normal terrain (`100`). */
+const NORMAL_TILE_MOVEMENT_COST = 100;
+
+/** Movement cost multiplier for Difficult Terrain (`2x`). */
+const DIFFICULT_TERRAIN_MOVEMENT_MULTIPLIER = 2;
+
+/** Movement cost multiplier while squeezing (`2x`, stacks multiplicatively with Difficult Terrain). */
+const SQUEEZING_MOVEMENT_MULTIPLIER = 2;
 
 function sumExtraActionModifier(
   mods: ReadonlyArray<StatModifier>,
@@ -57,7 +66,13 @@ export function hydrateEntityRoundActionBudget(state: GameState, entityId: Entit
   const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
   const conIsNull = dndData.abilityScores?.con?.base === null;
   const vitality = fighter
-    ? evaluateVitalityStatus(fighter.hp, dndData.nonlethalDamage, dndData.isStable, conIsNull)
+    ? evaluateVitalityStatus(
+        fighter.hp,
+        dndData.nonlethalDamage,
+        dndData.isStable,
+        conIsNull,
+        dag?.dagResult.deathHpThreshold
+      )
     : { status: 'healthy' as const };
 
   const dexMod =
@@ -100,11 +115,20 @@ function computeActorTacticalLandSpeedFt(
 ): number {
   const actor = getComponent(state, entityId, ComponentType.Actor);
   const overlay = getComponent(state, entityId, ComponentType.PropertyOverlay) as PropertyOverlayComponent | undefined;
-  const stats = getEffectiveStats(state, entityId);
+  const dagEval = evaluateDnD35eEntityDAG(state, entityId);
   const baseActorSpeed = actor?.speed ?? FULL_ROUND_ENERGY_COST;
-  const speedBonusFt = stats.speed - baseActorSpeed;
+  const resolvedSpeed = dagEval?.dagResult.speed ?? baseActorSpeed;
+  const speedBonusFt = resolvedSpeed - baseActorSpeed;
   const effectiveLandFt = overlay?.movementModesOverride?.land ?? baseLandSpeedFt ?? BASELINE_LAND_SPEED_FT;
-  return Math.max(FEET_PER_GRID_SQUARE, effectiveLandFt + speedBonusFt);
+  const unadjustedSpeedFt = effectiveLandFt + speedBonusFt;
+  const selfTags = dagEval?.selfTags ?? [];
+  const isMediumOrHeavyArmor =
+    selfTags.includes('armor:medium') ||
+    selfTags.includes('armor:heavy') ||
+    selfTags.includes('load:medium') ||
+    selfTags.includes('load:heavy');
+  const hasUnencumberedSpeedTrait = selfTags.includes('trait:unencumbered_speed');
+  return computeTacticalLandSpeedWithArmor(unadjustedSpeedFt, isMediumOrHeavyArmor, hasUnencumberedSpeedTrait);
 }
 
 function hasAnyRoundActionsRemaining(budget: DnD35ActionBudget): boolean {
@@ -172,10 +196,60 @@ export function resolveDnD35eActionEnergyCost(
 
     case IntentType.Move: {
       const actorSpeedFt = computeActorTacticalLandSpeedFt(state, intent.entityId, dndData.movementModes?.land);
+      const prePos = preActionState
+        ? (getComponent(preActionState, intent.entityId, ComponentType.Position) as PositionComponent | undefined)
+        : undefined;
       const posAfter = getComponent(state, intent.entityId, ComponentType.Position) as PositionComponent | undefined;
-      const tile = posAfter ? state.map.tiles[coordToIndex(posAfter.x, posAfter.y, state.map.width)] : undefined;
-      const isDifficult = (tile ? (state.campaign.tiles[tile.tileId]?.movementCost ?? 100) : 100) > 100;
-      const stepResult = consumeMovementStepFt(currentBudget, actorSpeedFt, FEET_PER_GRID_SQUARE, isDifficult);
+      const isDiagonal =
+        prePos !== undefined && posAfter !== undefined && prePos.x !== posAfter.x && prePos.y !== posAfter.y;
+      let maxTileCost = NORMAL_TILE_MOVEMENT_COST;
+      let hasLargeHelplessObstacle = false;
+      if (posAfter) {
+        const fw = Math.max(1, posAfter.footprintWidth ?? 1);
+        const fh = Math.max(1, posAfter.footprintHeight ?? 1);
+        for (let dy = 0; dy < fh; dy++) {
+          for (let dx = 0; dx < fw; dx++) {
+            const sqX = posAfter.x + dx;
+            const sqY = posAfter.y + dy;
+            if (sqX < 0 || sqX >= state.map.width || sqY < 0 || sqY >= state.map.height) continue;
+            const tile = state.map.tiles[coordToIndex(sqX, sqY, state.map.width)];
+            const tileCost = tile
+              ? (state.campaign.tiles[tile.tileId]?.movementCost ?? NORMAL_TILE_MOVEMENT_COST)
+              : NORMAL_TILE_MOVEMENT_COST;
+            if (tileCost > maxTileCost) {
+              maxTileCost = tileCost;
+            }
+            const occupants = state.spatialIndex.get(`${sqX},${sqY}`);
+            if (occupants) {
+              for (const otherId of occupants) {
+                if (otherId === intent.entityId) continue;
+                const otherProfile = resolveDnD35eActorSpatialProfile(state, otherId);
+                if (otherProfile.isHelpless && (otherProfile.baseWidth >= 2 || otherProfile.baseHeight >= 2)) {
+                  hasLargeHelplessObstacle = true;
+                }
+              }
+            }
+          }
+        }
+      }
+      let isAirborneOrIncorporeal = false;
+      if (maxTileCost > NORMAL_TILE_MOVEMENT_COST || hasLargeHelplessObstacle) {
+        const spatialProfile = resolveDnD35eActorSpatialProfile(state, intent.entityId, posAfter?.facing);
+        isAirborneOrIncorporeal = spatialProfile.isFlying || spatialProfile.isIncorporeal;
+      }
+      const isDifficult = maxTileCost > NORMAL_TILE_MOVEMENT_COST && !isAirborneOrIncorporeal;
+      const terrainMultiplier = isDifficult ? DIFFICULT_TERRAIN_MOVEMENT_MULTIPLIER : 1;
+      const helplessObstacleMultiplier =
+        hasLargeHelplessObstacle && !isAirborneOrIncorporeal ? DIFFICULT_TERRAIN_MOVEMENT_MULTIPLIER : 1;
+      const squeezingMultiplier = posAfter?.isSqueezing === true ? SQUEEZING_MOVEMENT_MULTIPLIER : 1;
+      const stepMultiplier = terrainMultiplier * squeezingMultiplier * helplessObstacleMultiplier;
+      const stepResult = consumeMovementStepFt(
+        currentBudget,
+        actorSpeedFt,
+        FEET_PER_GRID_SQUARE,
+        stepMultiplier,
+        isDiagonal
+      );
       if (!stepResult.allowed) return clearBudgetAndEndRound(state, intent.entityId, dndData);
       return finalizeBudgetAfterAction(state, intent.entityId, dndData, stepResult.budget);
     }

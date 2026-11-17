@@ -23,6 +23,7 @@ import { getDnD35EntityData } from './srd_registry.ts';
 import { executeAbruptJauntTeleport } from './combat/immediate_reactions.ts';
 import { executeDnD35eResourcePoolAbility } from './combat/pool_ability_resolver.ts';
 import { executeDruidShapeshift, type DnD35ShapeshiftFormId } from './shapeshift.ts';
+import { resolveDnD35eActorSpatialProfile, syncDnD35eActorSpatialFootprint } from './spatial/footprint_resolver.ts';
 import { executeDnD35eSpellCast } from './magic/spell_cast_resolver.ts';
 import { DND35E_SYSTEM_CONTENT_FILES } from './system_content_files.ts';
 import { getDnD35SystemContent, parseDnD35SystemContent } from './types/dnd35e_system.types.ts';
@@ -192,5 +193,7 @@ export const dnd35eRulesetContract: RulesetContract = {
       return executeDruidShapeshift(state, intent.entityId, formId);
     }
     return null;
-  }
+  },
+  resolveActorSpatialProfile: resolveDnD35eActorSpatialProfile,
+  syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint
 };

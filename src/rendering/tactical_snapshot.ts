@@ -9,7 +9,9 @@ import { MAX_UNIT_STATUS_PIPS } from '../constants/ui.constants.ts';
 import {
   ComponentType,
   type FighterComponent,
+  type IdentityComponent,
   type PositionComponent,
+  type RenderableComponent,
   type StatusEffectsComponent
 } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
@@ -97,18 +99,51 @@ export function buildTacticalViewportData(
 
   const unitBadges: TacticalUnitBadgeDTO[] = [];
 
+  const occupiedCellCounts = new Map<string, number>();
+  for (const entityId of state.entities) {
+    const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+    const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
+    if (!pos || !fighter) continue;
+    const fw = Math.max(1, pos.footprintWidth ?? 1);
+    const fh = Math.max(1, pos.footprintHeight ?? 1);
+    for (let dy = 0; dy < fh; dy++) {
+      for (let dx = 0; dx < fw; dx++) {
+        const key = `${pos.x + dx},${pos.y + dy}`;
+        occupiedCellCounts.set(key, (occupiedCellCounts.get(key) ?? 0) + 1);
+      }
+    }
+  }
+
   for (const entityId of state.entities) {
     const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
     const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
     if (!pos || !fighter) continue;
 
+    const fw = Math.max(1, pos.footprintWidth ?? 1);
+    const fh = Math.max(1, pos.footprintHeight ?? 1);
     const vx = pos.x - cameraX;
     const vy = pos.y - cameraY;
-    if (vx < 0 || vx >= viewportW || vy < 0 || vy >= viewportH) continue;
 
-    const tileIdx = coordToIndex(pos.x, pos.y, state.map.width);
-    const isVisible = state.map.isFullyExplored || visibleIndices.has(tileIdx);
-    if (!isVisible) continue;
+    if (vx + fw <= 0 || vx >= viewportW || vy + fh <= 0 || vy >= viewportH) continue;
+
+    let anyVisible = state.map.isFullyExplored;
+    let isSharedTile = false;
+    for (let dy = 0; dy < fh; dy++) {
+      for (let dx = 0; dx < fw; dx++) {
+        const sx = pos.x + dx;
+        const sy = pos.y + dy;
+        if (isInBounds(sx, sy, state.map.width, state.map.height)) {
+          const tileIdx = coordToIndex(sx, sy, state.map.width);
+          if (visibleIndices.has(tileIdx)) {
+            anyVisible = true;
+          }
+        }
+        if ((occupiedCellCounts.get(`${sx},${sy}`) ?? 0) > 1) {
+          isSharedTile = true;
+        }
+      }
+    }
+    if (!anyVisible) continue;
 
     const stats = getEffectiveStats(state, entityId);
     const maxHp = Math.max(1, stats.maxHp);
@@ -125,9 +160,22 @@ export function buildTacticalViewportData(
       }
     }
 
+    const renderable = getComponent(state, entityId, ComponentType.Renderable) as RenderableComponent | undefined;
+    const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
+
     unitBadges.push({
       vx,
       vy,
+      ...(fw > 1 ? { footprintW: fw } : {}),
+      ...(fh > 1 ? { footprintH: fh } : {}),
+      ...(pos.isSqueezing === true ? { isSqueezing: true } : {}),
+      ...(pos.subTileScale !== undefined && pos.subTileScale !== 1 ? { subTileScale: pos.subTileScale } : {}),
+      ...(isSharedTile ? { isSharedTile: true } : {}),
+      ...(renderable?.glyph !== undefined ? { glyph: renderable.glyph } : {}),
+      ...(identity?.colorOverride !== undefined || renderable?.fg !== undefined
+        ? { fg: identity?.colorOverride ?? renderable?.fg }
+        : {}),
+      ...(renderable?.spriteId !== undefined ? { spriteId: renderable.spriteId } : {}),
       hpRatio,
       attitude,
       statusColors

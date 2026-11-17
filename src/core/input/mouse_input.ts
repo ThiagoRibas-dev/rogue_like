@@ -16,9 +16,12 @@ import {
 import { getCameraOffset } from '../../rendering/camera.ts';
 import { setHudDockDisplayRef } from '../../rendering/ui/hud_dock.ui.ts';
 import { getValidVerbsForTarget, getVerbOptionsForTarget } from '../../systems/apply.system.ts';
+import { computeRectNearestDelta } from '../../systems/movement_footprint.ts';
 import { ComponentType, type PositionComponent } from '../../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
+import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
+import { isHostile } from '../../utils/faction.ts';
 import { coordToIndex, getBresenhamLine, isInBounds } from '../../utils/grid.ts';
 import { getComponent } from '../ecs.ts';
 import { getGameState, queuePlayerIntent, setGameState } from '../game-loop.ts';
@@ -67,12 +70,20 @@ function openContextVerbMenuAtTile(
   const entitiesOnTile = state.spatialIndex.get(`${mapX},${mapY}`) ?? [];
   const otherEntityId = entitiesOnTile.find((id) => id !== playerEntityId);
   const playerPos = getComponent(state, playerEntityId, ComponentType.Position) as PositionComponent | undefined;
+  const playerW = Math.max(1, playerPos?.footprintWidth ?? 1);
+  const playerH = Math.max(1, playerPos?.footprintHeight ?? 1);
+  const isPlayerFootprintTile =
+    playerPos !== undefined &&
+    mapX >= playerPos.x &&
+    mapX < playerPos.x + playerW &&
+    mapY >= playerPos.y &&
+    mapY < playerPos.y + playerH;
 
   let target: ApplyIntentTarget;
   if (otherEntityId !== undefined) {
     const isItem = getComponent(state, otherEntityId, ComponentType.Item) !== undefined;
     target = isItem ? { type: 'item', itemEntityId: otherEntityId } : { type: 'entity', entityId: otherEntityId };
-  } else if (playerPos && playerPos.x === mapX && playerPos.y === mapY) {
+  } else if (isPlayerFootprintTile) {
     target = { type: 'self' };
   } else {
     target = { type: 'tile', x: mapX, y: mapY };
@@ -108,14 +119,11 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
   // If targeting mode is active, move target to clicked tile and fire/throw
   if (state.targetingMode?.active) {
     const context = state.targetingMode.context;
-    setGameState({
-      ...state,
-      targetingMode: {
-        ...state.targetingMode,
-        x: mapX,
-        y: mapY
-      }
-    });
+    const dx = mapX - state.targetingMode.x;
+    const dy = mapY - state.targetingMode.y;
+    if (dx !== 0 || dy !== 0) {
+      queuePlayerIntent(createMoveTargetAction(playerEntityId, dx, dy));
+    }
     if (context?.verb === 'throw' && context.toolEntityId !== undefined) {
       queuePlayerIntent(
         createApplyAction(playerEntityId, 'throw', { type: 'tile', x: mapX, y: mapY }, context.toolEntityId)
@@ -130,12 +138,30 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
   const playerPos = getComponent(state, playerEntityId, ComponentType.Position) as PositionComponent | undefined;
   if (!playerPos) return;
 
-  const dx = mapX - playerPos.x;
-  const dy = mapY - playerPos.y;
+  const playerW = Math.max(1, playerPos.footprintWidth ?? 1);
+  const playerH = Math.max(1, playerPos.footprintHeight ?? 1);
+  const nearDelta = computeRectNearestDelta(playerPos.x, playerPos.y, playerW, playerH, mapX, mapY, 1, 1);
+  const dx = nearDelta.dx;
+  const dy = nearDelta.dy;
 
-  // Clicked on the player's own tile: pick up item if present, otherwise wait a turn
+  // Clicked on any square of the player's own footprint: attack shared-square hostile, pick up item, or wait
   if (dx === 0 && dy === 0) {
     const entitiesHere = state.spatialIndex.get(`${mapX},${mapY}`) ?? [];
+    const hostileHere = entitiesHere.find(
+      (id) =>
+        id !== playerEntityId &&
+        getComponent(state, id, ComponentType.Fighter) !== undefined &&
+        isHostile(state, playerEntityId, id)
+    );
+    if (hostileHere !== undefined) {
+      queuePlayerIntent({
+        type: IntentType.MeleeAttack,
+        entityId: playerEntityId,
+        defenderId: hostileHere
+      });
+      return;
+    }
+
     const hasItemOnTile = entitiesHere.some(
       (id) => id !== playerEntityId && getComponent(state, id, ComponentType.Item) !== undefined
     );
@@ -147,7 +173,7 @@ function handleCanvasLeftClick(state: GameState, playerEntityId: EntityId, mapX:
     return;
   }
 
-  // Orthogonal step (adjacent 4-way): direct MoveAction (handles walk, bump-attack, bump-talk, bump-door)
+  // Orthogonal step (adjacent 4-way from any footprint edge): direct MoveAction
   if (Math.abs(dx) + Math.abs(dy) === 1) {
     queuePlayerIntent(createMoveAction(playerEntityId, dx, dy));
     return;

@@ -130,10 +130,79 @@ export function renderTacticalOverlay(
     ctx.restore();
   }
 
-  // 2. Unit Micro Health Bars, Attitude Pips & Status Dots
+  const options = display.getOptions();
+  const isTileLayout = options.layout === 'tile';
+  const tileSet = options.tileSet ?? null;
+  const tileMap = options.tileMap;
+  const srcTileW = options.tileWidth ?? tileWidthPx;
+  const srcTileH = options.tileHeight ?? tileHeightPx;
+
+  // 2. Multi-Tile Footprints, Sub-Tile Scaling, Unit Micro Health Bars, Attitude Pips & Status Dots
   for (const badge of tactical.unitBadges) {
+    const fw = Math.max(1, badge.footprintW ?? 1);
+    const fh = Math.max(1, badge.footprintH ?? 1);
+    const subScale = badge.subTileScale ?? 1;
     const cellX = badge.vx * tileWidthPx;
     const cellY = badge.vy * tileHeightPx;
+    const boxW = fw * tileWidthPx;
+    const boxH = fh * tileHeightPx;
+    const isMultiTile = fw > 1 || fh > 1;
+    const isSubTile = !isMultiTile && subScale < 1;
+
+    if (isMultiTile) {
+      ctx.save();
+      ctx.fillStyle = TACTICAL_COLORS.footprintFill;
+      ctx.fillRect(Math.floor(cellX + 1), Math.floor(cellY + 1), Math.floor(boxW - 2), Math.floor(boxH - 2));
+      ctx.strokeStyle = badge.isSqueezing === true ? TACTICAL_COLORS.squeezingBorder : getAttitudeColor(badge.attitude);
+      ctx.lineWidth = 2;
+      if (badge.isSqueezing === true) {
+        ctx.setLineDash([4, 3]);
+      }
+      ctx.strokeRect(Math.floor(cellX + 1), Math.floor(cellY + 1), Math.floor(boxW - 2), Math.floor(boxH - 2));
+      ctx.restore();
+
+      const coords = badge.spriteId ? tileMap?.[badge.spriteId] : undefined;
+      if (isTileLayout && tileSet && coords) {
+        ctx.drawImage(
+          tileSet,
+          coords[0],
+          coords[1],
+          srcTileW,
+          srcTileH,
+          Math.floor(cellX + 2),
+          Math.floor(cellY + 2),
+          Math.max(4, Math.floor(boxW - 4)),
+          Math.max(4, Math.floor(boxH - 4))
+        );
+      } else if (badge.glyph) {
+        ctx.save();
+        const fontPx = Math.max(10, Math.floor(Math.min(boxW, boxH) * 0.62));
+        ctx.font = `bold ${fontPx}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = badge.fg ?? getAttitudeColor(badge.attitude);
+        ctx.fillText(badge.glyph, cellX + boxW / 2, cellY + boxH / 2);
+        ctx.restore();
+      }
+    } else if (isSubTile) {
+      const subW = Math.max(4, tileWidthPx * subScale);
+      const subH = Math.max(4, tileHeightPx * subScale);
+      const subX = badge.isSharedTile === true ? cellX + tileWidthPx - subW - 2 : cellX + (tileWidthPx - subW) / 2;
+      const subY = badge.isSharedTile === true ? cellY + tileHeightPx - subH - 2 : cellY + (tileHeightPx - subH) / 2;
+      const coords = badge.spriteId ? tileMap?.[badge.spriteId] : undefined;
+      if (isTileLayout && tileSet && coords) {
+        ctx.drawImage(tileSet, coords[0], coords[1], srcTileW, srcTileH, subX, subY, subW, subH);
+      } else if (badge.glyph) {
+        ctx.save();
+        const fontPx = Math.max(8, Math.floor(subH * 0.85));
+        ctx.font = `bold ${fontPx}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = badge.fg ?? getAttitudeColor(badge.attitude);
+        ctx.fillText(badge.glyph, subX + subW / 2, subY + subH / 2);
+        ctx.restore();
+      }
+    }
 
     // Draw hostility / attitude pip in top-left of non-player units
     if (badge.attitude !== 'player') {
@@ -147,7 +216,7 @@ export function renderTacticalOverlay(
       const color = badge.statusColors[i];
       if (!color) continue;
       const pipSize = Math.max(3, Math.floor(Math.min(tileWidthPx, tileHeightPx) * 0.16));
-      const px = cellX + tileWidthPx - 2 - (i + 1) * (pipSize + 2);
+      const px = cellX + boxW - 2 - (i + 1) * (pipSize + 2);
       const py = cellY + 2;
       ctx.fillStyle = color;
       ctx.fillRect(Math.floor(px), Math.floor(py), pipSize, pipSize);
@@ -157,9 +226,9 @@ export function renderTacticalOverlay(
     if (badge.hpRatio < 1 || badge.attitude === 'hostile') {
       const barH = Math.max(MIN_BAR_HEIGHT_PX, Math.floor(tileHeightPx * BAR_HEIGHT_RATIO));
       const padX = Math.max(1, Math.floor(tileWidthPx * 0.08));
-      const barW = Math.max(4, tileWidthPx - padX * 2);
+      const barW = Math.max(4, boxW - padX * 2);
       const barX = cellX + padX;
-      const barY = cellY + tileHeightPx - barH - 1;
+      const barY = cellY + boxH - barH - 1;
 
       ctx.fillStyle = TACTICAL_COLORS.hpBg;
       ctx.fillRect(Math.floor(barX), Math.floor(barY), Math.floor(barW), barH);

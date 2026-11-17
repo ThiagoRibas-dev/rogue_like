@@ -33,7 +33,11 @@ import { processDnD35eDamage } from '../cartridge/dnd35e_combat_adapter.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { rollD20 } from '../math/dice.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
-import { FEET_PER_GRID_SQUARE, measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import {
+  measureFootprintToFootprintDistanceFt,
+  measureFootprintToTileDistanceFt
+} from '../spatial/footprint_resolver.ts';
+import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
@@ -77,9 +81,34 @@ export function executeDnD35eSpellCast(
     meta.rangeMultiplier,
     meta.flags.projectTouch
   );
-  const distTiles = Math.round(
-    measureDnD35DistanceFt(casterPos.x, casterPos.y, targetPos.x, targetPos.y) / FEET_PER_GRID_SQUARE
+  const casterW = Math.max(1, casterPos.footprintWidth ?? 1);
+  const casterH = Math.max(1, casterPos.footprintHeight ?? 1);
+  let minDistanceFt = measureFootprintToTileDistanceFt(
+    casterPos.x,
+    casterPos.y,
+    casterW,
+    casterH,
+    targetPos.x,
+    targetPos.y
   );
+  const targetOccupants = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
+  for (const occId of targetOccupants) {
+    const occPos = getComponent(state, occId, ComponentType.Position) as PositionComponent | undefined;
+    if (occPos) {
+      const d = measureFootprintToFootprintDistanceFt(
+        casterPos.x,
+        casterPos.y,
+        casterW,
+        casterH,
+        occPos.x,
+        occPos.y,
+        occPos.footprintWidth ?? 1,
+        occPos.footprintHeight ?? 1
+      );
+      if (d < minDistanceFt) minDistanceFt = d;
+    }
+  }
+  const distTiles = Math.round(minDistanceFt / FEET_PER_GRID_SQUARE);
   if (spell.range !== 'personal' && distTiles > maxRangeTiles) {
     return {
       state: addMessage(

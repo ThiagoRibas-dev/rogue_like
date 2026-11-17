@@ -37,6 +37,29 @@ export const SizeCategorySchema = z.enum([
 /** Inferred type for D&D 3.5e size categories. */
 export type SizeCategory = z.infer<typeof SizeCategorySchema>;
 
+/** Zod schema for declarative rectangular footprint dimensions in 5-ft grid squares. */
+export const DnD35FootprintDimensionsSchema = z.object({
+  width: z.number().int().positive(),
+  height: z.number().int().positive()
+});
+/** Inferred type for declarative creature footprint dimensions. */
+export type DnD35FootprintDimensions = z.infer<typeof DnD35FootprintDimensionsSchema>;
+
+/** Zod schema mapping creature size categories to custom footprint dimensions (useful for advancing elongated monsters). */
+export const DnD35FootprintsBySizeSchema = z.object({
+  fine: DnD35FootprintDimensionsSchema.optional(),
+  diminutive: DnD35FootprintDimensionsSchema.optional(),
+  tiny: DnD35FootprintDimensionsSchema.optional(),
+  small: DnD35FootprintDimensionsSchema.optional(),
+  medium: DnD35FootprintDimensionsSchema.optional(),
+  large: DnD35FootprintDimensionsSchema.optional(),
+  huge: DnD35FootprintDimensionsSchema.optional(),
+  gargantuan: DnD35FootprintDimensionsSchema.optional(),
+  colossal: DnD35FootprintDimensionsSchema.optional()
+});
+/** Inferred type for per-size custom footprint overrides. */
+export type DnD35FootprintsBySize = z.infer<typeof DnD35FootprintsBySizeSchema>;
+
 /** Zod schema for D&D 3.5e damage types. */
 export const DnD35DamageTypeSchema = z.enum([
   'bludgeoning',

@@ -164,6 +164,11 @@ export function hydrateArchetypeData(
     naturalWeapons: archetype.naturalWeapons ?? [],
     hasPounce: archetype.hasPounce ?? false,
     singleActionsOnly: archetype.singleActionsOnly ?? false,
+    ...(archetype.isCompletelyFillingSpace !== undefined
+      ? { isCompletelyFillingSpace: archetype.isCompletelyFillingSpace }
+      : {}),
+    ...(archetype.footprint !== undefined ? { footprint: archetype.footprint } : {}),
+    ...(archetype.footprintsBySize !== undefined ? { footprintsBySize: archetype.footprintsBySize } : {}),
     statModifiers: allStatModifiers
   };
 }

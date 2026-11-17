@@ -7,6 +7,7 @@ import {
   ComponentType,
   type FieldComponent,
   type IdentityComponent,
+  type PositionComponent,
   type TemplateComponent
 } from '../types/components.types.ts';
 import { getAvailableSpriteKeys } from './sprite_keys.ts';
@@ -117,6 +118,16 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
             for (const entityId of sortedEntitiesAtTile) {
               const renderable = getComponent(state, entityId, ComponentType.Renderable);
               if (renderable) {
+                const entityPos = getComponent(state, entityId, ComponentType.Position) as
+                  PositionComponent | undefined;
+                const isMultiTileActor =
+                  entityPos !== undefined &&
+                  ((entityPos.footprintWidth ?? 1) > 1 || (entityPos.footprintHeight ?? 1) > 1);
+                const isSubTileActor =
+                  entityPos !== undefined &&
+                  entityPos.subTileScale !== undefined &&
+                  entityPos.subTileScale < 1 &&
+                  getComponent(state, entityId, ComponentType.Fighter) !== undefined;
                 const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
                 const entityFg = identity?.colorOverride ?? renderable.fg;
 
@@ -131,11 +142,21 @@ export function buildViewportSnapshot(state: GameState, viewportW: number, viewp
                       : `entity#${entityId}`;
                   if (renderable.spriteId === undefined) {
                     recordMissingSprite(`${label} (no-spriteId)`);
-                    glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                    if (!isMultiTileActor && !isSubTileActor) {
+                      glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                    }
                   } else if (!availableSpriteKeys.has(renderable.spriteId)) {
                     recordMissingSprite(`${label} (unresolved: ${renderable.spriteId})`);
-                    glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                    if (!isMultiTileActor && !isSubTileActor) {
+                      glyphOverlays.push({ vx, vy, glyph: renderable.glyph, fg: entityFg, bg: renderable.bg });
+                    }
                   }
+                }
+
+                // Multi-tile and sub-tile combat actors are rendered at true scaled dimensions
+                // on the tactical overlay canvas so secondary tiles do not duplicate 1x1 sprites.
+                if (isMultiTileActor || isSubTileActor) {
+                  continue;
                 }
 
                 entitiesAtTile.push({

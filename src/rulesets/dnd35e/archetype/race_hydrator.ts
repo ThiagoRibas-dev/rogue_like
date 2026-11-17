@@ -200,6 +200,11 @@ export function hydrateRaceAsArchetype(
     defaultEquipment: raceDef.defaultEquipment ?? [],
     hasPounce: raceDef.hasPounce ?? false,
     singleActionsOnly: raceDef.singleActionsOnly ?? false,
+    ...(raceDef.isCompletelyFillingSpace !== undefined
+      ? { isCompletelyFillingSpace: raceDef.isCompletelyFillingSpace }
+      : {}),
+    ...(raceDef.footprint !== undefined ? { footprint: raceDef.footprint } : {}),
+    ...(raceDef.footprintsBySize !== undefined ? { footprintsBySize: raceDef.footprintsBySize } : {}),
     advancementRanges: raceDef.rhdProgression?.advancementRanges ?? [],
     ...(raceDef.magicImmunityExceptions !== undefined
       ? { magicImmunityExceptions: raceDef.magicImmunityExceptions }

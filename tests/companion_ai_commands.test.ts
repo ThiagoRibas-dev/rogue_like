@@ -149,7 +149,7 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
       skillRanks: { handle_animal: 4, survival: 4 },
       selectedFeats: ['spell_focus_conjuration'],
       knownSpells: [],
-      equipmentPackageId: 'druid_standard',
+      equipmentPackageId: 'skirmisher_scout',
       animalCompanionId: 'wolf'
     });
 
@@ -493,7 +493,7 @@ describe('Companion AI, Stances, Focus-Target Directives & Corridor Swap', () =>
       skillRanks: { handle_animal: 4, survival: 4 },
       selectedFeats: ['spell_focus_conjuration'],
       knownSpells: [],
-      equipmentPackageId: 'druid_standard',
+      equipmentPackageId: 'skirmisher_scout',
       animalCompanionId: 'wolf'
     });
 

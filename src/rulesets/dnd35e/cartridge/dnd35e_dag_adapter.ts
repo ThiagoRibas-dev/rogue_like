@@ -67,12 +67,47 @@ export interface DnD35EntityDAGResult {
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
 }
 
+interface CachedEntityDAGEntry {
+  readonly entityMapRef: unknown;
+  readonly result: DnD35EntityDAGResult | undefined;
+}
+
+const defaultEntityDagCache = new WeakMap<GameState, Map<EntityId, CachedEntityDAGEntry>>();
+
 /**
  * Evaluates the full 4-Stage Topological Sub-Stat DAG for an entity in `GameState`,
  * incorporating active `PropertyOverlayComponent`s, equipped item bonuses, `TacticalDoctrineComponent`,
  * condition penalties, and optional contextual query flags (e.g. `targetTags` during combat).
  */
 export function evaluateDnD35eEntityDAG(
+  state: GameState,
+  entityId: EntityId,
+  contextOverride?: StatQueryContext,
+  prehydrated?: { readonly dndData: DnD35EntityData; readonly selfTags: ReadonlyArray<string> }
+): DnD35EntityDAGResult | undefined {
+  const canUseCache = contextOverride === undefined && prehydrated === undefined;
+  const entityMapRef = state.components.get(entityId);
+  if (canUseCache) {
+    const stateCache = defaultEntityDagCache.get(state);
+    const cached = stateCache?.get(entityId);
+    if (cached !== undefined && cached.entityMapRef === entityMapRef) {
+      return cached.result;
+    }
+  }
+
+  const result = evaluateDnD35eEntityDAGInternal(state, entityId, contextOverride, prehydrated);
+  if (canUseCache) {
+    let stateCache = defaultEntityDagCache.get(state);
+    if (!stateCache) {
+      stateCache = new Map<EntityId, CachedEntityDAGEntry>();
+      defaultEntityDagCache.set(state, stateCache);
+    }
+    stateCache.set(entityId, { entityMapRef, result });
+  }
+  return result;
+}
+
+function evaluateDnD35eEntityDAGInternal(
   state: GameState,
   entityId: EntityId,
   contextOverride?: StatQueryContext,

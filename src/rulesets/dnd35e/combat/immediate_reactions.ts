@@ -20,6 +20,7 @@ import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
 import { evaluateCover } from '../spatial/cover_senses.ts';
 import { syncSpatialFlankingGraph } from '../spatial/flanking_graph.ts';
+import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 
@@ -192,7 +193,12 @@ export function executeAbruptJauntTeleport(
   const consumed = tryConsumeImmediatePoolAndAction(state, actorId, 'abrupt_jaunt', 'Abrupt Jaunt', isOnTurn);
   if (!consumed.allowed) return { state: consumed.state, success: false };
 
-  let next = addComponent(consumed.state, actorId, { type: ComponentType.Position, x: targetX, y: targetY });
+  let next = addComponent(consumed.state, actorId, {
+    ...actorPos,
+    type: ComponentType.Position,
+    x: targetX,
+    y: targetY
+  });
   if (getComponent(next, actorId, ComponentType.Player) !== undefined) next = { ...next, fovNeedsUpdate: true };
   next = syncSpatialFlankingGraph(next);
   const name = (getComponent(next, actorId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Actor';
@@ -252,12 +258,19 @@ export function evaluateOffTurnImmediateReactions(
       const res = executeAbruptJauntTeleport(state, defenderId, evadeTile.x, evadeTile.y, false);
       if (res.success) {
         const atkSize = evaluateDnD35eEntityDAG(res.state, triggeringActorId)?.dagResult.effectiveSize ?? 'medium';
-        const reachTiles = Math.max(
-          1,
-          Math.floor((SIZE_METRICS[atkSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE) / FEET_PER_GRID_SQUARE)
+        const reachFt = SIZE_METRICS[atkSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
+        const evadePos = getComponent(res.state, defenderId, ComponentType.Position) as PositionComponent | undefined;
+        const newDistFt = measureFootprintToFootprintDistanceFt(
+          evadeTile.x,
+          evadeTile.y,
+          evadePos?.footprintWidth ?? 1,
+          evadePos?.footprintHeight ?? 1,
+          atkPos.x,
+          atkPos.y,
+          atkPos.footprintWidth ?? 1,
+          atkPos.footprintHeight ?? 1
         );
-        const newDist = Math.max(Math.abs(evadeTile.x - atkPos.x), Math.abs(evadeTile.y - atkPos.y));
-        return { state: res.state, triggered: true, defenderTeleportedOutOfReach: newDist > reachTiles };
+        return { state: res.state, triggered: true, defenderTeleportedOutOfReach: newDistFt > reachFt };
       }
     }
   }
@@ -292,12 +305,28 @@ export function evaluateAdjacentEnemyReactionsOnMove(
   toPos: { readonly x: number; readonly y: number }
 ): GameState {
   let runningState = state;
+  const moverPos = getComponent(runningState, moverId, ComponentType.Position) as PositionComponent | undefined;
+  const moverW = moverPos?.footprintWidth ?? 1;
+  const moverH = moverPos?.footprintHeight ?? 1;
   for (const candId of state.entities) {
     if (candId === moverId) continue;
     const candFighter = getComponent(runningState, candId, ComponentType.Fighter) as FighterComponent | undefined;
     const candPos = getComponent(runningState, candId, ComponentType.Position) as PositionComponent | undefined;
     if (!candFighter || candFighter.hp <= 0 || !candPos || !isHostile(runningState, moverId, candId)) continue;
-    if (Math.max(Math.abs(candPos.x - toPos.x), Math.abs(candPos.y - toPos.y)) <= 1) {
+    const candSize = evaluateDnD35eEntityDAG(runningState, candId)?.dagResult.effectiveSize ?? 'medium';
+    const candReachFt = SIZE_METRICS[candSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
+    if (candReachFt <= 0) continue;
+    const distFt = measureFootprintToFootprintDistanceFt(
+      candPos.x,
+      candPos.y,
+      candPos.footprintWidth ?? 1,
+      candPos.footprintHeight ?? 1,
+      toPos.x,
+      toPos.y,
+      moverW,
+      moverH
+    );
+    if (distFt <= FEET_PER_GRID_SQUARE) {
       runningState = evaluateOffTurnImmediateReactions(runningState, 'on_enemy_adjacent_move', moverId, candId).state;
     }
   }

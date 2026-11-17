@@ -74,6 +74,14 @@ export interface EquipmentComponent {
 }
 
 /**
+ * Declarative width/height grid dimensions for a creature footprint override.
+ */
+export interface FootprintOverrideDimensions {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
  * A single composable layer within a PropertyOverlayComponent stack.
  */
 export interface PropertyOverlayLayer {
@@ -87,6 +95,8 @@ export interface PropertyOverlayLayer {
   readonly creatureTypeOverride?: string | undefined;
   readonly movementModesOverride?: MovementModes | undefined;
   readonly naturalWeaponsOverride?: ReadonlyArray<unknown> | undefined;
+  readonly footprintOverride?: FootprintOverrideDimensions | undefined;
+  readonly footprintsBySizeOverride?: Readonly<Record<string, FootprintOverrideDimensions | undefined>> | undefined;
   readonly grantedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedSlots?: ReadonlyArray<string> | undefined;
@@ -107,6 +117,8 @@ export interface PropertyOverlayComponent {
   readonly creatureTypeOverride?: string | undefined;
   readonly movementModesOverride?: MovementModes | undefined;
   readonly naturalWeaponsOverride?: ReadonlyArray<unknown> | undefined;
+  readonly footprintOverride?: FootprintOverrideDimensions | undefined;
+  readonly footprintsBySizeOverride?: Readonly<Record<string, FootprintOverrideDimensions | undefined>> | undefined;
   readonly grantedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedTags?: ReadonlyArray<string> | undefined;
   readonly suppressedSlots?: ReadonlyArray<string> | undefined;

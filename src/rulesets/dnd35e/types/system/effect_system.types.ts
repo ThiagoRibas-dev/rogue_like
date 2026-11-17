@@ -3,6 +3,8 @@ import {
   DnD35AlignmentSchema,
   DnD35DamageReductionSchema,
   DnD35DamageTypeSchema,
+  DnD35FootprintDimensionsSchema,
+  DnD35FootprintsBySizeSchema,
   DnD35MovementModesSchema,
   DnD35SensoryProfileSchema,
   NaturalWeaponDescriptorSchema,
@@ -119,6 +121,8 @@ export type DnD35SpellStrikeDescriptor = z.infer<typeof DnD35SpellStrikeDescript
 /** Zod schema for a declarative form transformation overlay (e.g., Druid Shapeshift forms). */
 export const DnD35FormOverlayDescriptorSchema = z.object({
   sizeCategory: SizeCategorySchema.optional(),
+  footprint: DnD35FootprintDimensionsSchema.optional(),
+  footprintsBySize: DnD35FootprintsBySizeSchema.optional(),
   modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
   movementModes: DnD35MovementModesSchema.optional(),
   naturalWeapons: z.array(NaturalWeaponDescriptorSchema).default([]),

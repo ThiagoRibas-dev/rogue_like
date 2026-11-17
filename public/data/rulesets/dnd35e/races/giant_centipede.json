@@ -94,6 +94,11 @@
     },
     "hasPounce": false,
     "singleActionsOnly": false,
+    "footprintsBySize": {
+      "large": { "width": 1, "height": 2 },
+      "huge": { "width": 1, "height": 3 },
+      "gargantuan": { "width": 1, "height": 4 }
+    },
     "cr": 0.5
   }
 }

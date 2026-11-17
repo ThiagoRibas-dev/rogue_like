@@ -12,6 +12,8 @@ import {
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
+import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
+import { DND35E_DEATH_HP_THRESHOLD } from '../combat/damage_vitality.ts';
 import type { DnD35TargetCategory } from '../types/system/effect_system.types.ts';
 import type { DnD35SpellDefinition } from '../types/system/spell_system.types.ts';
 import { computeAoEAffectedSquares, type AoETemplateShape } from './aoe_rest.ts';
@@ -20,10 +22,26 @@ const ALLEGIANCE_CATEGORIES: ReadonlySet<DnD35TargetCategory> = new Set(['self',
 
 /** Returns true if a spell or its effect units contain harmful offensive effects. */
 export function isOffensiveDnD35Spell(spell: DnD35SpellDefinition): boolean {
-  if (spell.damageDice) return true;
-  return spell.effectUnits.some(
-    (u) => u.type === 'damage' || u.type === 'save_or_die' || u.type === 'energy_drain' || u.type === 'ability_harm'
-  );
+  if (spell.effectUnits.length > 0) {
+    return spell.effectUnits.some(
+      (u) => u.type === 'damage' || u.type === 'save_or_die' || u.type === 'energy_drain' || u.type === 'ability_harm'
+    );
+  }
+  return Boolean(spell.damageDice);
+}
+
+/**
+ * Determines whether an actor is alive (including `0 HP` Disabled and negative HP above its
+ * resolved `deathHpThreshold`, e.g. via Diehard or threshold-expanding feats/spells) and lacks `DeathComponent`.
+ */
+function isActorAliveForTargeting(state: GameState, candidateId: EntityId): boolean {
+  const fighter = getComponent(state, candidateId, ComponentType.Fighter) as FighterComponent | undefined;
+  if (!fighter) return false;
+  if (getComponent(state, candidateId, ComponentType.Death) !== undefined) return false;
+  const dag = evaluateDnD35eEntityDAG(state, candidateId);
+  const conIsNull = dag?.dndData.abilityScores?.con?.base === null;
+  const deathHpThreshold = dag?.dagResult.deathHpThreshold ?? (conIsNull ? 0 : DND35E_DEATH_HP_THRESHOLD);
+  return fighter.hp > deathHpThreshold;
 }
 
 /**
@@ -46,8 +64,8 @@ export function matchesTargetCategoryFilter(
   const item = getComponent(state, candidateId, ComponentType.Item);
   const tags = (getComponent(state, candidateId, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
 
-  const isLivingCreature = fighter !== undefined && fighter.hp > 0 && death === undefined;
-  const isCorpse = death !== undefined || (fighter !== undefined && fighter.hp <= 0) || tags.includes('corpse');
+  const isLivingCreature = isActorAliveForTargeting(state, candidateId);
+  const isCorpse = death !== undefined || (fighter !== undefined && !isLivingCreature) || tags.includes('corpse');
   const isDoor = lock !== undefined || tags.includes('door');
   const isWall = tags.includes('wall');
   const isTrap = trap !== undefined && !trap.triggered;
@@ -98,8 +116,7 @@ export function enumerateSpellTargets(
     if (validCategories !== undefined && validCategories.length > 0) {
       if (!matchesTargetCategoryFilter(state, casterId, id, validCategories)) return false;
     } else {
-      const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
-      if (f === undefined || f.hp <= 0) return false;
+      if (!isActorAliveForTargeting(state, id)) return false;
     }
     if (shouldSkipAllies && (id === casterId || !isHostile(state, casterId, id))) {
       return false;
@@ -134,13 +151,25 @@ export function enumerateSpellTargets(
     const squareKeys = new Set(affectedSquares.map((p) => `${p.x},${p.y}`));
     return state.entities.filter((id) => {
       const p = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
-      return p !== undefined && squareKeys.has(`${p.x},${p.y}`) && isEligible(id);
+      if (!p || !isEligible(id)) return false;
+      const w = Math.max(1, p.footprintWidth ?? 1);
+      const h = Math.max(1, p.footprintHeight ?? 1);
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          if (squareKeys.has(`${p.x + dx},${p.y + dy}`)) {
+            return true;
+          }
+        }
+      }
+      return false;
     });
   }
 
   const entitiesHere = state.spatialIndex.get(`${targetPos.x},${targetPos.y}`) ?? [];
-  const targetEntity = entitiesHere.find((id) => isEligible(id));
-  return targetEntity !== undefined ? [targetEntity] : [];
+  const eligibleHere = entitiesHere.filter((id) => isEligible(id));
+  if (eligibleHere.length === 0) return [];
+  const preferredActor = eligibleHere.find((id) => isActorAliveForTargeting(state, id));
+  return [preferredActor ?? eligibleHere[0]!];
 }
 
 /** Predicts hostile, allied, and self victims caught within a candidate spell cast footprint. */
@@ -159,10 +188,7 @@ export function predictSpellAoEVictims(
   readonly hitsSelf: boolean;
 } {
   const allTargetIds = enumerateSpellTargets(state, casterId, casterPos, targetPos, spell, areaMultiplier, skipAllies);
-  const livingActors = allTargetIds.filter((id) => {
-    const f = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
-    return f !== undefined && f.hp > 0;
-  });
+  const livingActors = allTargetIds.filter((id) => isActorAliveForTargeting(state, id));
   const hostileIds = livingActors.filter((id) => id !== casterId && isHostile(state, casterId, id));
   const allyIds = livingActors.filter((id) => id !== casterId && !isHostile(state, casterId, id));
   const hitsSelf = livingActors.includes(casterId);

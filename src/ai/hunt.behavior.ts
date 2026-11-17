@@ -6,6 +6,7 @@ import { getComponent } from '../core/ecs.ts';
 import { DEFAULT_AI_AGGRO_RADIUS, resolveAITarget } from './companion_targeting.ts';
 import { computeNextStepToward } from './follow.behavior.ts';
 import { canActorPerformIntent, hasActorMovementInProgress } from '../systems/lifecycle.system.ts';
+import { getEntitySpatialProfile } from '../systems/movement_footprint.ts';
 
 /**
  * Hunt behavior: finds the highest-priority hostile entity within aggroRadius
@@ -29,7 +30,8 @@ export function huntBehavior(
     defenderId: resolved.targetId
   };
 
-  if (resolved.distance === 1) {
+  const naturalReachTiles = getEntitySpatialProfile(state, entityId).naturalReachTiles;
+  if (resolved.distance <= naturalReachTiles) {
     return canActorPerformIntent(state, attackIntent) ? attackIntent : null;
   }
 

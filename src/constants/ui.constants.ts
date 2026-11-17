@@ -62,5 +62,7 @@ export const TACTICAL_COLORS = {
   torchMid: 'rgba(255, 145, 55, 0.04)',
   vignetteOuter: 'rgba(2, 4, 8, 0.42)',
   pathDot: 'rgba(0, 210, 211, 0.55)',
-  pathBlocked: 'rgba(255, 71, 87, 0.55)'
+  pathBlocked: 'rgba(255, 71, 87, 0.55)',
+  squeezingBorder: '#f59e0b',
+  footprintFill: 'rgba(15, 23, 42, 0.34)'
 } as const;

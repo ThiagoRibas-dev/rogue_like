@@ -1,7 +1,11 @@
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
+import { DND35E_DEATH_HP_THRESHOLD } from '../combat/damage_vitality.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { FLANKING_ATTACK_BONUS } from '../spatial/cover_senses.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
+
+/** SRD penalty (`-4`) applied to attack rolls and AC while squeezing in a narrow space. */
+const SQUEEZING_ATTACK_AND_AC_PENALTY = -4;
 import {
   type AbilityId,
   type AbilityScoreState,
@@ -222,7 +226,24 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   }
 
   const sizeAcMod = sizeEffectModifiers.filter((m) => m.targetStat === 'ac');
-  const allAcModifiers: StatModifier[] = [...standaloneAcModifiers, ...stage4EmittedMods, ...sizeAcMod];
+  const squeezingPenalty = stageSelfTagSet.has('condition:squeezing');
+  const squeezingAcMods: ReadonlyArray<StatModifier> = squeezingPenalty
+    ? [
+        {
+          targetStat: 'ac',
+          value: SQUEEZING_ATTACK_AND_AC_PENALTY,
+          bonusType: 'untyped',
+          sourceId: 'condition:squeezing:ac',
+          sourcePath: 'condition:squeezing/ac'
+        }
+      ]
+    : [];
+  const allAcModifiers: StatModifier[] = [
+    ...standaloneAcModifiers,
+    ...stage4EmittedMods,
+    ...sizeAcMod,
+    ...squeezingAcMods
+  ];
 
   const hasUncannyDodge = input.hasUncannyDodge === true;
   const effectiveMaxDex = input.maxDexBonus ?? stageContext.maxDexBonus;
@@ -319,7 +340,16 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     }
   };
 
-  const attackMods = modsByStat['attack'] ?? [];
+  const attackMods: StatModifier[] = [...(modsByStat['attack'] ?? [])];
+  if (stageSelfTagSet.has('condition:squeezing')) {
+    attackMods.push({
+      targetStat: 'attack',
+      value: SQUEEZING_ATTACK_AND_AC_PENALTY,
+      bonusType: 'untyped',
+      sourceId: 'condition:squeezing:attack',
+      sourcePath: 'condition:squeezing/attack'
+    });
+  }
   const sizeAtkMod = SIZE_METRICS[sizeResult.sizeCategory].attackAndAcModifier;
   const attackBonus = chassis.totalBab + strMod + sizeAtkMod + resolveTypedModifiers(attackMods, stageContext);
 
@@ -330,6 +360,14 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
   const maxHpBonus = resolveTypedModifiers(maxHpMods, stageContext);
   const baseHp = input.baseMaxHp !== undefined && input.baseMaxHp > 0 ? input.baseMaxHp : chassis.maxHp;
   const maxHp = baseHp + maxHpBonus;
+
+  const conIsNull = input.rawAbilities.con.base === null;
+  const deathThresholdMods = [
+    ...(modsByStat['death_hp_threshold'] ?? []),
+    ...(modsByStat['negative_hp_threshold'] ?? [])
+  ];
+  const rawDeathThresholdMod = resolveTypedModifiers(deathThresholdMods, stageContext);
+  const deathHpThreshold = conIsNull ? 0 : DND35E_DEATH_HP_THRESHOLD - Math.abs(rawDeathThresholdMod);
 
   const speedMods = [...(modsByStat['speed'] ?? []), ...(modsByStat['land_speed'] ?? [])];
   const speedBonus = resolveTypedModifiers(speedMods, stageContext);
@@ -363,6 +401,7 @@ export function evaluateDnD35ActorStatDAG(input: DnD35ActorStatDAGInput): DnD35R
     attackBonus,
     damageBonus,
     maxHp,
+    deathHpThreshold,
     saves,
     saveBreakdowns,
     speed,

@@ -36,8 +36,10 @@ function makeOpenArena(state: GameState): GameState {
 }
 
 describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
+  const sharedCampaign = loadCampaignFromDisk('dnd35e-crypt');
+
   test('1. Trap Resetting defaults to enabled at DC+5, honors canReset: false, and spares resetter & allies', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const campaign = sharedCampaign;
     let state = buildGameState(campaign);
 
     const [s1, rogueId] = createEntity(state);
@@ -131,7 +133,7 @@ describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
   });
 
   test('2. Composable target categories filter creatures, allies, enemies, doors, walls, and objects', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const campaign = sharedCampaign;
     let state = buildGameState(campaign);
 
     const [s1, casterId] = createEntity(state);
@@ -192,7 +194,7 @@ describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
   });
 
   test('3. Judicious Spell skips allies/self in AoE, Reach Spell projects Touch to Close, & AI avoids AoE friendly fire', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const campaign = sharedCampaign;
     const sysContent = getDnD35SystemContent(campaign)!;
     let state = makeOpenArena(buildGameState(campaign));
 
@@ -292,7 +294,7 @@ describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
   });
 
   test('4. Reactive Off-Turn Counterspelling toggles cleanly and counters enemy spells via Spellcraft + slot', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const campaign = sharedCampaign;
     const sysContent = getDnD35SystemContent(campaign)!;
     let state = makeOpenArena({ ...buildGameState(campaign), engineMode: EngineMode.TurnBased });
 
@@ -414,7 +416,7 @@ describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
   });
 
   test('5. Authentic Knowledge Devotion (Complete Champion p. 60) scales insight attack & damage by creature type', () => {
-    const campaign = loadCampaignFromDisk('dnd35e-crypt');
+    const campaign = sharedCampaign;
     const sysContent = getDnD35SystemContent(campaign)!;
     const kdFeat = sysContent.feats['knowledge_devotion']!;
     expect(kdFeat).toBeDefined();
@@ -515,5 +517,80 @@ describe('Incursion-Inspired Tactical & Systemic Enhancements', () => {
     expect(buffedUndeadDag.resolvedSkills['knowledge_religion']?.totalModifier).toBe(18);
     expect(buffedUndeadDag.dagResult.attackBonus - buffedAnimalDag.dagResult.attackBonus).toBe(3);
     expect(buffedUndeadDag.dagResult.damageBonus - buffedAnimalDag.dagResult.damageBonus).toBe(3);
+  });
+
+  test('targets and heals living actors at 0 or negative HP down to their DAG-resolved deathHpThreshold', () => {
+    const campaign = sharedCampaign;
+    let state = makeOpenArena(buildGameState(campaign));
+    const playerId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined)!;
+    state = addComponent(state, playerId, { type: ComponentType.Position, x: 5, y: 5 });
+
+    const clericBook = {
+      classId: 'cleric',
+      castingMode: 'prepared' as const,
+      castingTradition: 'divine' as const,
+      spellAcquisitionMode: 'prayerbook_full_list' as const,
+      governingAbility: 'wis' as const,
+      effectiveCasterLevel: 5,
+      maxCastableSpellLevel: 3,
+      knownSpellIds: ['cure_light_wounds'],
+      preparedSpellIds: ['cure_light_wounds', 'cure_light_wounds'],
+      preparedSlots: [
+        { slotId: 'clw_0', spellLevel: 1, slotKind: 'general' as const, preparedSpellId: 'cure_light_wounds', expended: false },
+        { slotId: 'clw_1', spellLevel: 1, slotKind: 'general' as const, preparedSpellId: 'cure_light_wounds', expended: false }
+      ],
+      spellsPerDay: { '1': 2 }
+    };
+
+    const rawDnd = getDnD35EntityData(state, playerId);
+    state = setDnD35EntityData(state, playerId, {
+      ...rawDnd,
+      abilityScores: {
+        ...rawDnd.abilityScores,
+        wis: { base: 16, inherentBonus: 0, damage: 0, drain: 0, tempPenalty: 0 }
+      },
+      spellbooksByClass: { cleric: clericBook }
+    });
+
+    // 1. Actor at -5 HP (above baseline -10 threshold) casts cure_light_wounds on self
+    const fighter = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
+    state = addComponent(state, playerId, { ...fighter, hp: -5, maxHp: 20 });
+
+    const res1 = executeDnD35eSpellCast(state, playerId, { x: 5, y: 5 }, {
+      classId: 'cleric',
+      spellId: 'cure_light_wounds',
+      slotId: 'clw_0'
+    });
+    expect(res1.success).toBe(true);
+    state = res1.state;
+    const hpAfter1 = (getComponent(state, playerId, ComponentType.Fighter) as FighterComponent).hp;
+    expect(hpAfter1).toBeGreaterThan(-5);
+
+    // 2. Actor with a 'death_hp_threshold' modifier (-10 -> -20) at -14 HP is still recognized as alive and healable
+    state = setDnD35EntityData(state, playerId, {
+      ...getDnD35EntityData(state, playerId),
+      statModifiers: [
+        {
+          targetStat: 'death_hp_threshold',
+          value: 10,
+          bonusType: 'untyped',
+          sourceId: 'feat:expanded_vitality_threshold',
+          sourcePath: 'feat:expanded_vitality_threshold/death_hp_threshold',
+          origin: 'ex'
+        }
+      ]
+    });
+    const dagWithExtendedThreshold = evaluateDnD35eEntityDAG(state, playerId)!;
+    expect(dagWithExtendedThreshold.dagResult.deathHpThreshold).toBe(-20);
+
+    state = addComponent(state, playerId, { ...fighter, hp: -14, maxHp: 20 });
+    const res2 = executeDnD35eSpellCast(state, playerId, { x: 5, y: 5 }, {
+      classId: 'cleric',
+      spellId: 'cure_light_wounds',
+      slotId: 'clw_1'
+    });
+    expect(res2.success).toBe(true);
+    const hpAfter2 = (getComponent(res2.state, playerId, ComponentType.Fighter) as FighterComponent).hp;
+    expect(hpAfter2).toBeGreaterThan(-14);
   });
 });

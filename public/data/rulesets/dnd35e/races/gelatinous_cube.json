@@ -96,6 +96,7 @@
     "skillRanks": {},
     "hasPounce": false,
     "singleActionsOnly": false,
+    "isCompletelyFillingSpace": true,
     "cr": 3
   }
 }

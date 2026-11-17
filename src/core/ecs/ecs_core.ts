@@ -34,13 +34,21 @@ export function updateSpatialIndex(state: GameState): GameState {
   for (const entityId of state.entities) {
     const pos = getComponent(state, entityId, ComponentType.Position);
     if (pos !== undefined) {
-      const key = `${pos.x},${pos.y}`;
-      let arr = newIndex.get(key);
-      if (!arr) {
-        arr = [];
-        newIndex.set(key, arr);
+      const footprintWidth = Math.max(1, pos.footprintWidth ?? 1);
+      const footprintHeight = Math.max(1, pos.footprintHeight ?? 1);
+      for (let dy = 0; dy < footprintHeight; dy++) {
+        for (let dx = 0; dx < footprintWidth; dx++) {
+          const key = `${pos.x + dx},${pos.y + dy}`;
+          let arr = newIndex.get(key);
+          if (!arr) {
+            arr = [];
+            newIndex.set(key, arr);
+          }
+          if (!arr.includes(entityId)) {
+            arr.push(entityId);
+          }
+        }
       }
-      arr.push(entityId);
     }
   }
   return {

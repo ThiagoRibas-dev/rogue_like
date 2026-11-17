@@ -1,113 +1,184 @@
-# Implementation Plan — Unified Entity Stat & Skill Breakdown Registry + Audit Fixes
+# Implementation Plan: Multi-Tile Creature Footprints, Dynamic Size Rendering, SRD Squeezing & Tactical Movement
 
-## 1. Overview & Architectural Alignment
-This plan implements the **Unified Entity Stat & Skill Breakdown Registry** across `DnD35ResolvedActorStats` and `DnD35EntityDAGResult`, eliminating 6 duplicate calculation sites where skills and sub-stats were manually recalculated, and resolves Audit Findings 1, 3, 4, and 5 (`AGENTS.md` Rules 15–21).
-
-### SSOT Ownership & Old-Brain Eviction Table
-| Responsibility | Evicted Duplicate / Old-Brain Site | Canonical Owner |
-| :--- | :--- | :--- |
-| Resolving per-skill breakdown (`rawRanks`, `effectiveRanks`, `keyAbilityModifier`, `synergyBonus`, `acpApplied`, `modifierBreakdown`, `totalModifier`) | `computePassiveSkillModifier` (`dnd35e_ui_char_sheet.ts`), manual sums in `spell_cast_resolver.ts` & `counterspell_interrupt.ts`, raw DAG call in `skill_verb_helpers.ts`, raw `.base` ability math in `buildKnowledgeDevotionModifiers` | `resolveActorSkillsSnapshot` (`src/rulesets/dnd35e/skills/skill_synergies.ts`), exposed on `DnD35EntityDAGResult.resolvedSkills` |
-| Resolving Stage 2 Ability & Stage 4 Save breakdowns (`abilityBreakdowns`, `saveBreakdowns`) | Overwritten `.base` in `dag_resolver.ts` | `evaluateDnD35ActorStatDAG` (`src/rulesets/dnd35e/modifiers/dag_resolver.ts`) |
-| Computing equipped Armor/Shield Check Penalty (`armorCheckPenalty`) | Hardcoded `armorCheckPenalty: 0` in `skill_verb_helpers.ts` & `counterspell_interrupt.ts` | `collectEquippedItemDAGContributions` (`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`) |
-| *Knowledge Devotion* check-to-combat scaling | Manual `computeAbilityModifier(rawScore)` in `skill_synergies.ts` | `buildKnowledgeDevotionModifiers` reading `resolvedSkills[skillDef.id].totalModifier` directly |
-| Universal counterspell & *Improved Counterspell* detection | String checks `includes('dispel')` & `includes('improved_counterspell')` | `candSpell?.effectUnits.some((u) => u.type === 'dispel')` + `improved_counterspell.json` (`trait:improved_counterspell`) |
+## 1. Architectural Overview
+This plan wires D&D 3.5e *Movement, Position, and Distance* and *Big and Little Creatures in Combat* end-to-end across Tier 1 (Console), Tier 2 (D&D 3.5e Cartridge), and Tier 3 (System Content JSON):
+1. **Default + Declarative Custom Footprints (`FootprintDimensions`) & Orientation Rotation:**
+   - Default footprint derived from Stage 1 `effectiveSize` in `SIZE_METRICS` (`Fine`–`Medium`: `1×1`, `Large`: `2×2`, `Huge`: `3×3`, `Gargantuan`: `4×4`, `Colossal`: `6×6`).
+   - Declarative `footprint: { width, height }` and `footprintsBySize` on races, templates, entity data, and form overlays.
+   - Automatic rotation along movement axis for elongated footprints (`width !== height`, e.g., `1×3` when moving North/South, `3×1` when moving East/West).
+2. **Multi-Tile `PositionComponent` & Live `spatialIndex` Synchronization:**
+   - `PositionComponent` carries `footprintWidth`, `footprintHeight`, `facing`, and `isSqueezing`.
+   - `updateSpatialIndex` indexes all occupied `(x + dx, y + dy)` squares for every entity.
+   - Dynamic size shifts (*Enlarge Person*, *Reduce Person*, *Righteous Might*, *Wild Shape*, *Shapeshift*) immediately sync the actor's `PositionComponent` footprint and `spatialIndex`.
+3. **SRD Squeezing & Tactical Movement Rules:**
+   - **Squeezing:** Large+ creatures (`normalWidth >= 2 || normalHeight >= 2`) moving into a narrow corridor at least half as wide as their normal space (`>= ceil(normalSpan / 2)`) compress their active footprint, set `isSqueezing: true`, pay `2×` movement cost per step, and take `-4` Attack / `-4` AC via the Stat DAG.
+   - **Hard-Corner Diagonals:** Block diagonal movement across impassable wall corners (`isDiagonalStepBlockedByHardCorner`), while permitting diagonal steps past creatures or pits.
+   - **Moving Through Squares & Size Sharing:**
+     - Friendly creature pass-through / swap.
+     - Helpless opponent (`unconscious`, `paralyzed`, `asleep`, or `hp < 0` dying/stable) square pass-through.
+     - `Tiny`, `Diminutive`, and `Fine` creatures (`canShareTileWithMedium: true`) can enter and share occupied squares, have `0 ft` natural reach, do not threaten adjacent squares, and cannot flank.
+     - Any creature can move through a square occupied by a creature $\ge 3$ size categories larger or smaller (`|rankA - rankB| >= 3`).
+   - **Armor/Encumbrance Speed, Multi-Tile Terrain Cost, Double Move & Minimum 1-Square Full-Round Move:**
+     - Apply SRD armor speed table (`30 ft -> 20 ft`, `20 ft -> 15 ft` unless the actor has `'trait:encumbered_speed_retention'`).
+     - Multi-tile footprint uses the highest movement cost among entered squares (ignored if flying or incorporeal); squeezing + difficult terrain multiplies (`2 × 2 = 4×`).
+     - Automatic Double Move (`standardRemaining` converted to a second Move action when `moveRemaining === 0 && standardRemaining >= 1`) and Minimum 1-Square (`5 ft`) Full-Round move.
+4. **Viewport & Tactical Canvas Multi-Tile Rendering:**
+   - Multi-tile creatures (`footprintW > 1 || footprintH > 1`) render a unified `W×H` footprint frame on `#tactical-overlay` (dashed amber when squeezing), a single scaled sprite spanning `W×H` tiles in Sprite Mode, structured footprint glyphs in ASCII Mode, and a single full-width health bar.
+   - `Tiny`, `Diminutive`, and `Fine` creatures render with sub-cell scaling (`0.55×`–`0.75×`).
 
 ---
 
-## 2. Declarative Purity & Anti-Hardcoding Audit Table (`AGENTS.md` Rule 21)
+## 2. Step-by-Step Implementation Tasks & Code Snippets
+
+### Step 1: Extend `PositionComponent` & Multi-Tile `updateSpatialIndex` (Tier 1 Console)
+- **Files:**
+  - [`src/types/components/world_components.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/types/components/world_components.types.ts)
+  - [`src/core/ecs/ecs_core.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/ecs/ecs_core.ts)
+- **Snippet (`world_components.types.ts` & `ecs_core.ts`):**
+```ts
+export interface PositionComponent {
+  readonly type: ComponentType.Position;
+  readonly x: number;
+  readonly y: number;
+  readonly footprintWidth?: number | undefined;
+  readonly footprintHeight?: number | undefined;
+  readonly facing?: 'north' | 'south' | 'east' | 'west' | undefined;
+  readonly isSqueezing?: boolean | undefined;
+}
+```
+```ts
+export function updateSpatialIndex(state: GameState): GameState {
+  const newIndex = new Map<string, EntityId[]>();
+  for (const entityId of state.entities) {
+    const pos = getComponent(state, entityId, ComponentType.Position);
+    if (pos !== undefined) {
+      const w = Math.max(1, pos.footprintWidth ?? 1);
+      const h = Math.max(1, pos.footprintHeight ?? 1);
+      for (let dy = 0; dy < h; dy++) {
+        for (let dx = 0; dx < w; dx++) {
+          const key = `${pos.x + dx},${pos.y + dy}`;
+          let arr = newIndex.get(key);
+          if (!arr) {
+            arr = [];
+            newIndex.set(key, arr);
+          }
+          if (!arr.includes(entityId)) {
+            arr.push(entityId);
+          }
+        }
+      }
+    }
+  }
+  return { ...state, spatialIndex: newIndex };
+}
+```
+
+### Step 2: Declarative Footprint Schemas, Orientation Rotation & Squeezing Geometry (Tier 2 & Tier 3)
+- **Files:**
+  - [`src/rulesets/dnd35e/types/system/base_system.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/types/system/base_system.types.ts)
+  - [`src/rulesets/dnd35e/types/system/creature_system.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/types/system/creature_system.types.ts)
+  - [`src/rulesets/dnd35e/types/system/effect_system.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/types/system/effect_system.types.ts)
+  - [`src/rulesets/dnd35e/types/dnd35e.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/types/dnd35e.types.ts)
+  - [`src/rulesets/dnd35e/spatial/grid_geometry.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/spatial/grid_geometry.ts)
+- **Snippet (`grid_geometry.ts`):**
+```ts
+export interface FootprintDimensions {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Resolves an entity's unsqueezed (width, height) footprint in 5-ft grid squares
+ * from its effective size category, optional custom footprint overrides, and movement facing.
+ */
+export function resolveEntityBaseFootprintDimensions(
+  effectiveSize: CreatureSizeCategory,
+  customFootprint?: FootprintDimensions,
+  footprintsBySize?: Partial<Record<CreatureSizeCategory, FootprintDimensions>>,
+  facing?: 'north' | 'south' | 'east' | 'west'
+): FootprintDimensions {
+  const bySize = footprintsBySize?.[effectiveSize];
+  const baseSpan = SIZE_METRICS[effectiveSize].footprintTiles;
+  const raw = bySize ?? customFootprint ?? { width: baseSpan, height: baseSpan };
+  if (raw.width === raw.height || !facing) {
+    return raw;
+  }
+  const shortSpan = Math.min(raw.width, raw.height);
+  const longSpan = Math.max(raw.width, raw.height);
+  return facing === 'east' || facing === 'west'
+    ? { width: longSpan, height: shortSpan }
+    : { width: shortSpan, height: longSpan };
+}
+```
+
+### Step 3: Squeezing Penalties (`-4 Atk / -4 AC`), Armor Tactical Speed, Double Move & Min 1-Sq Move
+- **Files:**
+  - [`src/rulesets/dnd35e/semantic_tags_context.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/semantic_tags_context.ts)
+  - [`src/rulesets/dnd35e/modifiers/dag_resolver.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/modifiers/dag_resolver.ts)
+  - [`src/rulesets/dnd35e/action_economy.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/action_economy.ts)
+  - [`src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts)
+- **Details:**
+  - When `pos?.isSqueezing === true`, inject `'condition:squeezing'` and apply `-4` penalty to Attack and `-4` penalty to AC (`SQUEEZING_ATTACK_AND_AC_PENALTY = -4`).
+  - In `consumeMovementStepFt`:
+    - Support `stepMultiplier` (`1` normal, `2` difficult terrain OR squeezing, `4` difficult terrain + squeezing).
+    - If `movementRemainingFt < stepCostFt` and `moveRemaining === 0` and `standardRemaining >= 1`, automatically convert `standardRemaining` into a second Move action (`Double Move`, adding `moveSpeedFt` to `movementRemainingFt`).
+    - Enforce the **Minimum 1-Square Full-Round Move** rule: if the actor has not moved yet this round (`distanceMovedThisRoundFt === 0`) and `stepCostFt > moveSpeedFt`, allow the 5-ft step by consuming both Move and Standard actions (`Full-Round Action`).
+
+### Step 4: Multi-Tile Collision, Squeezing Fit, Hard-Corner Diagonals & Size Sharing in `movement.system.ts`
+- **Files:**
+  - [`src/systems/movement.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/movement.system.ts)
+  - [`src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts)
+- **Details:**
+  - Block diagonal moves across hard wall corners (`isDiagonalStepBlockedByHardCorner`).
+  - Resolve target footprint placement:
+    1. Try full `W × H` footprint at `(targetX, targetY)` (with rotation applied if `width !== height`).
+    2. If blocked by walls and `max(W, H) >= 2`, try SRD Squeezing dimensions (`minWidth = Math.ceil(W / 2)`, `minHeight = Math.ceil(H / 2)`), setting `isSqueezing: true`.
+  - Filter `entitiesAtTarget` across all footprint squares with `id !== entityId`:
+    - Hostile creature in footprint:
+      - If helpless (`unconscious`, `paralyzed`, `asleep`, or `hp < 0`), or `|moverSizeRank - targetSizeRank| >= 3`: allow moving through if not ending movement on a non-shareable blocker; if direct bump, trigger melee attack (or allow Tiny creature to enter opponent's square and attack).
+    - Friendly creature: allow pass-through / swap.
+
+### Step 5: Multi-Tile & Sub-Tile Rendering in Viewport & Tactical Overlay
+- **Files:**
+  - [`src/rendering/viewport_snapshot.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/viewport_snapshot.types.ts)
+  - [`src/rendering/viewport_snapshot.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/viewport_snapshot.ts)
+  - [`src/rendering/tactical_snapshot.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/tactical_snapshot.ts)
+  - [`src/rendering/ui/tactical_overlay.ui.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/ui/tactical_overlay.ui.ts)
+- **Snippet (`viewport_snapshot.types.ts` & `tactical_overlay.ui.ts`):**
+```ts
+export interface TacticalUnitBadgeDTO {
+  readonly vx: number;
+  readonly vy: number;
+  readonly footprintW?: number | undefined;
+  readonly footprintH?: number | undefined;
+  readonly isSqueezing?: boolean | undefined;
+  readonly subTileScale?: number | undefined;
+  readonly spriteId?: string | undefined;
+  readonly hpRatio: number;
+  readonly attitude: TacticalAttitude;
+  readonly statusColors: ReadonlyArray<string>;
+}
+```
+- In `renderTacticalOverlay`:
+  - When `footprintW > 1 || footprintH > 1`, draw a footprint baseplate rectangle across `(vx * tileWidthPx, vy * tileHeightPx, footprintW * tileWidthPx, footprintH * tileHeightPx)` (dashed amber border when `isSqueezing === true`), draw the scaled sprite from the `ROT.Display` tileSet across the full `footprintW × footprintH` box in Sprite Mode, and span the health bar across `footprintW * tileWidthPx`.
+
+---
+
+## 3. Cascading Effects Matrix (Rule 15)
+
+| Change | Upstream (Callers / Emitters / Data) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling Systems / Tests / Saves) |
+| :--- | :--- | :--- | :--- |
+| **`PositionComponent` footprint & squeezing state** | `ecs_spawner.ts`, `movement.system.ts`, `spell_cast_effects.ts`, `wild_shape.ts`, `shapeshift.ts` | `updateSpatialIndex` (`ecs_core.ts`), `viewport_snapshot.ts`, `tactical_snapshot.ts`, `tactical_overlay.ui.ts` | `save_roundtrip.test.ts`, `state_immutability.test.ts` |
+| **Multi-tile `spatialIndex` & AoE deduplication** | `updateSpatialIndex` (`ecs_core.ts`) | `movement.system.ts`, `target_category_filter.ts` (`enumerateSpellTargets`), `systemic.ts` (`processTraps`) | `mouse_input.ts`, `inspect.system.ts` |
+| **SRD Squeezing (`-4 Atk / -4 AC`, `2x move cost`)** | `movement.system.ts` | `semantic_tags_context.ts`, `dag_resolver.ts`, `dnd35e_turn_budget.ts` | `tactical_overlay.ui.ts` |
+| **Hard-Corner Diagonals, Size Sharing ($\ge 3$ sizes / Tiny), Double Move & Min 1-Sq Move** | `movement.system.ts`, `action_economy.ts` | `dnd35e_turn_budget.ts`, `flanking_graph.ts` | `dnd35e_combat_traversal_wiring.test.ts`, `companion_ai_commands.test.ts` |
+
+---
+
+## 4. Declarative Purity & Anti-Hardcoding Audit Table (Rule 21)
+
 | Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| Universal counterspell eligibility (*Dispel Magic*, *Greater Dispel Magic*, custom dispel spells) | `if (spellId === 'dispel_magic' \|\| spellId.includes('dispel'))` | `options?.isUniversalCounterspell === true` derived from `spell.effectUnits.some((u) => u.type === 'dispel')` | **Yes** — any spell authored with a `'dispel'` effect unit automatically functions as a universal counterspell. |
-| *Improved Counterspell* same-school higher-level counterspelling | `if (feats.includes('improved_counterspell'))` | `public/data/rulesets/dnd35e/feats/improved_counterspell.json` granting `effectBundle.grantedTags: ["trait:improved_counterspell"]` | **Yes** — any feat, domain, or class feature granting `trait:improved_counterspell` enables same-school counterspelling. |
-| *Knowledge Devotion* tier calculation | Recalculating `10 + ranks + abilityMod` from raw `.base` | Reading `resolvedSkills[skillId].totalModifier` from the unified DAG | **Yes** — all typed bonuses, synergies, Bardic Knack, and temporary buffs/debuffs apply automatically. |
-
----
-
-## 3. Cascading Effects Matrix (`AGENTS.md` Rule 15)
-| Change | Upstream (Callers / Producers) | Downstream (Consumers / Renderers / Validators) | Lateral (Sibling JSONs / Docs / SSOT) |
-| :--- | :--- | :--- | :--- |
-| Add `DnD35AbilityResolution`, `DnD35SaveResolution`, `DnD35SkillResolution` to `dnd35e.types.ts` & `dag_resolver.ts` | `evaluateDnD35ActorStatDAG`, `evaluateDnD35eEntityDAG`, `collectEquippedItemDAGContributions` (`armorCheckPenalty`) | `dnd35e_ui_char_sheet.ts`, `skill_verb_helpers.ts`, `spell_cast_resolver.ts`, `counterspell_interrupt.ts`, `buildKnowledgeDevotionModifiers` | Update `docs/ssot/ssot_dnd35e.json` (`skill_synergies.ts`) |
-| Pass `meta.flags.projectTouch` in `dnd35e_spell_cast_ui.ts` | `initiateSpellCastFromUI` | Targeting overlay crosshair range for *Reach Spell* + touch spells | Matches `spell_cast_resolver.ts` |
-| Add `improved_counterspell.json` & declarative `isUniversalCounterspell` | `system_content_feat_ids.ts`, `metamagic_dispel.ts`, `counterspell_interrupt.ts` | Reactive counterspelling & `dnd35e_validator.ts` | 749 modular ruleset files validated in `run-validator.ts` |
-| Validate `skillCheckCombatBonus` in `dnd35e_validator.ts` | `validateDnD35eSystemContentIntegrity` | Catches invalid `skillPrefix` on custom devotion feats | `ruleset_validators.test.ts` |
-| Compact `dnd35e_ui_hotbar.ts` & `wild_shape.ts` <= 300 lines | `eslint` stage `[3/8]` | `0` errors and `0` warnings in `verify.sh` | No API or export changes |
-
----
-
-## 4. Step-by-Step Implementation Plan with Code Snippets
-
-### Step 1: Unified Breakdown Types & Stage 2/Stage 4 DAG Breakdowns (`dnd35e.types.ts`, `dag_resolver.ts`, `dnd35e_equipped_item_dag.ts`)
-1. **[`src/rulesets/dnd35e/types/dnd35e.types.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/types/dnd35e.types.ts)**:
-   ```ts
-   export interface DnD35AbilityResolution {
-     readonly abilityId: AbilityId;
-     readonly rawState: AbilityScoreState;
-     readonly modifierBreakdown: StatResolutionBreakdown;
-     readonly effectiveScore: number | null;
-     readonly effectiveModifier: number;
-   }
-
-   export interface DnD35SaveResolution {
-     readonly saveType: SaveType;
-     readonly baseSave: number;
-     readonly abilityId: AbilityId;
-     readonly abilityModifier: number;
-     readonly modifierBreakdown: StatResolutionBreakdown;
-     readonly total: number;
-   }
-
-   export interface DnD35SkillResolution {
-     readonly skillId: string;
-     readonly rawRanks: number;
-     readonly effectiveRanks: number;
-     readonly trained: boolean;
-     readonly keyAbility: AbilityId;
-     readonly keyAbilityModifier: number;
-     readonly synergyBonus: number;
-     readonly acpApplied: number;
-     readonly modifierBreakdown: StatResolutionBreakdown;
-     readonly miscModifier: number;
-     readonly totalModifier: number;
-   }
-   ```
-   Add `readonly abilityBreakdowns?: Readonly<Record<AbilityId, DnD35AbilityResolution>> | undefined;` and `readonly saveBreakdowns?: Readonly<Record<SaveType, DnD35SaveResolution>> | undefined;` to `DnD35ResolvedActorStats`.
-2. **[`src/rulesets/dnd35e/modifiers/dag_resolver.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/modifiers/dag_resolver.ts)**:
-   - Populate `abilityBreakdowns` in Stage 2 using `resolveTypedModifiersWithBreakdown(abilityMods, stageContext)` and preserve `rawState` (`inherentBonus`, `damage`, `drain`, `tempPenalty`) on `effectiveAbilities[abId]` while setting `base: effScore`.
-   - Populate `saveBreakdowns` in Stage 4 using `resolveTypedModifiersWithBreakdown`.
-3. **[`src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_equipped_item_dag.ts)**:
-   - Add `readonly armorCheckPenalty: number;` to `EquippedItemDAGContributions`, summing `itemDef.armorStats.armorCheckPenalty` (with Mithral / Masterwork ACP reduction via `computeMaterialEquipmentStats`, capped at `<= 0`).
-
-### Step 2: Canonical `resolveActorSkillsSnapshot` & Single-Pass DAG Wiring (`skill_synergies.ts`, `dnd35e_dag_adapter.ts`, `level_ledger.ts`)
-1. **[`src/rulesets/dnd35e/skills/skill_synergies.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/skills/skill_synergies.ts)**:
-   - Implement `resolveActorSkillsSnapshot(params)` computing `Record<string, DnD35SkillResolution>` for all skills in `skillRegistry` (plus any custom keys in `skillRanks`), handling:
-     - Bardic Knack floor (`minSkillRanksFloor`),
-     - Undead `CON: null -> CHA` substitution for `concentration`,
-     - `computeSkillSynergyBonus`,
-     - `acpApplied = -Math.abs(armorCheckPenalty) * skillDef.acpMultiplier`,
-     - `resolveTypedModifiersWithBreakdown` over `skill:<id>` + `skills` + Fear condition penalty (`shaken`/`frightened`/`panicked` $\rightarrow -2$),
-     - `totalModifier = effectiveRanks + keyAbilityModifier + miscModifier`.
-   - Update `buildKnowledgeDevotionModifiers` to accept `resolvedSkills?: Readonly<Record<string, DnD35SkillResolution>>` so when called from the DAG it reads `TAKE_10_VALUE + resolvedSkills[skillDef.id].totalModifier` directly!
-2. **[`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts)**:
-   - Add `readonly resolvedSkills: Readonly<Record<string, DnD35SkillResolution>>;` and `readonly armorCheckPenalty: number;` to `DnD35EntityDAGResult`.
-   - Resolve Stage 2 ability modifiers & `resolvedSkills` first, then evaluate `buildKnowledgeDevotionModifiers` using `resolvedSkills` (replacing any stale `feat:knowledge_devotion/skill:` modifiers in `extraModifiers`), and run `evaluateDnD35ActorStatDAG`.
-
-### Step 3: Evict All Duplicate Skill Calculation Sites (`dnd35e_ui_char_sheet.ts`, `skill_verb_helpers.ts`, `spell_cast_resolver.ts`, `counterspell_interrupt.ts`)
-1. **[`src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/ui/dnd35e_ui_char_sheet.ts)**:
-   - Delete `computePassiveSkillModifier`; read `evalResult?.resolvedSkills[skill.id]` (or `resolveActorSkillsSnapshot` when `evalResult` is absent).
-2. **[`src/rulesets/dnd35e/skills/skill_verb_helpers.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/skills/skill_verb_helpers.ts)**:
-   - In `evaluateActorSkillCheck`, evaluate `evaluateDnD35eEntityDAG(state, actorId)` and pass `dagEval.resolvedSkills[skillId]` / `dagEval.armorCheckPenalty` and `dagEval.statModifiers` into `resolveSkillCheck`.
-3. **[`src/rulesets/dnd35e/magic/spell_cast_resolver.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/spell_cast_resolver.ts)**:
-   - Replace manual `concRanks + conMod + concSkillMods` with `(casterDag.resolvedSkills['concentration']?.totalModifier ?? 0) + combatCastingBonus`.
-4. **[`src/rulesets/dnd35e/magic/counterspell_interrupt.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/magic/counterspell_interrupt.ts)**:
-   - Use `candDag.resolvedSkills['spellcraft']` and `candDag.statModifiers` in `evaluateReactiveCounterspellInterrupt`.
-
-### Step 4: Audit Findings 1, 3, 4, & 5 (`dnd35e_spell_cast_ui.ts`, `metamagic_dispel.ts`, `improved_counterspell.json`, `dnd35e_validator.ts`, `dnd35e_ui_hotbar.ts`, `wild_shape.ts`)
-1. **Finding 1 ([`src/rendering/ui/dnd35e_spell_cast_ui.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rendering/ui/dnd35e_spell_cast_ui.ts)):**
-   - Pass `meta.flags.projectTouch` as the 4th argument to `computeSpellRangeTiles`.
-2. **Finding 3 (`metamagic_dispel.ts`, `counterspell_interrupt.ts`, `improved_counterspell.json`):**
-   - Add `readonly isUniversalCounterspell?: boolean | undefined;` to `resolveCounterspellAttempt` options (`candSpell?.effectUnits.some((u) => u.type === 'dispel')`).
-   - Create `public/data/rulesets/dnd35e/feats/improved_counterspell.json`, add `'improved_counterspell'` to `system_content_feat_ids.ts`, and check `candDag.selfTags.includes('trait:improved_counterspell')` in `counterspell_interrupt.ts`.
-3. **Finding 4 ([`src/rulesets/dnd35e/dnd35e_validator.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/dnd35e_validator.ts)):**
-   - Validate that any feat with `skillCheckCombatBonus` has at least one skill in `sys.skills` matching `skillPrefix` with non-empty `studiedCreatureTags`.
-4. **Finding 5 (`dnd35e_ui_hotbar.ts` & `wild_shape.ts`):**
-   - Trim both files below 300 non-blank lines so `bun run lint` completes with **0 errors and 0 warnings**.
+| **Custom Non-Square Creature Footprints (e.g., Long Worm `1×3`)** | Hardcoding `if (raceId === 'purple_worm') return { width: 1, height: 3 }` in TypeScript | Declarative `footprint: { width, height }` and `footprintsBySize` fields in `DnD35RaceDefinitionSchema` and `DnD35FormOverlayDescriptorSchema` | **Yes** — any modder can author a new elongated or custom-shaped creature in JSON without touching `.ts` files. |
+| **Dwarf / Encumbered Armor Speed Retention** | Hardcoding `if (raceId === 'dwarf')` in speed resolver | Semantic tag `'trait:encumbered_speed_retention'` emitted declaratively by `dwarf.json` racial trait bundle | **Yes** — any new race, class feature, or magic item granting armor/load speed retention simply emits `'trait:encumbered_speed_retention'`. |
+| **Tiny/Diminutive/Fine Tile Sharing & `0 ft` Reach** | Hardcoding `if (raceId === 'rat' || raceId === 'toad')` | Derived strictly from `SIZE_METRICS[effectiveSize].canShareTileWithMedium` and `naturalReachTallFt === 0` | **Yes** — any creature or character reduced to Tiny+ automatically inherits tile-sharing and 0-ft reach rules. |

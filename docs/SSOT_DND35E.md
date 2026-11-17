@@ -10,7 +10,7 @@
 - [D&D 3.5e: Core Cartridge & Ruleset Contract (2 files)](#d-d-3-5e-core-cartridge-ruleset-contract)
 - [D&D 3.5e: Layer 1 — Math & Multipliers (2 files)](#d-d-3-5e-layer-1-math-multipliers)
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
-- [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (3 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
+- [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (4 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
 - [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (18 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
 - [D&D 3.5e: Layer 6 — Vancian Magic & Fields (14 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
 - [D&D 3.5e: Races, Templates, Bestiary & Companions (11 files)](#d-d-3-5e-races-templates-bestiary-companions)
@@ -128,12 +128,13 @@
 
 ## D&D 3.5e: Layer 3 — Spatial Geometry & Senses
 
-**Modules in this domain:** 3
+**Modules in this domain:** 4
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/rulesets/dnd35e/spatial/cover_senses.ts` | `tier2_cartridge` | AC bonus granted by Standard Cover or Soft Cover (`+4`). | `FLANKING_ATTACK_BONUS`, `SHOOTING_INTO_MELEE_PENALTY`, `CONCEALMENT_MISS_CHANCE_PERCENT`, `TOTAL_CONCEALMENT_MISS_CHANCE_PERCENT`, `CoverEvaluationResult`, `evaluateCover`, `isFlankingTarget`, `evaluateConcealmentAndSenses` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/cover_senses.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/cover_senses.ts. |
 | `src/rulesets/dnd35e/spatial/flanking_graph.ts` | `tier2_cartridge` | Maintains relational flanking pairs (flankingTargetIds / flankedByEntityIds), supports offset/solo/distracted flanking overrides and flanking immunities, and syncs flanking/flanked status effects. | `FLANKING_STATUS_ID`, `FLANKED_STATUS_ID`, `DISTRACTED_FLANKED_STATUS_ID`, `removeStatusEffectById`, `evaluateEntityFlankingTarget`, `syncSpatialFlankingGraph` | **Includes:** Relational flanking graph evaluation, Uncanny Dodge / All-Around Vision immunity checks, and StatusEffectsComponent synchronization.<br>**Excludes:** Low-level ray/corner geometry helpers (owned by cover_senses.ts). | • Never hardcode specific feat or ACF IDs for flanking overrides; always evaluate semantic tags. |
+| `src/rulesets/dnd35e/spatial/footprint_resolver.ts` | `tier2_cartridge` | Resolves D&D 3.5e size-driven & declarative rectangular footprints (with facing rotation), footprint-to-footprint distance, SRD armor tactical speed scaling, and PositionComponent spatialIndex synchronization. | `FootprintDimensions`, `SUB_TILE_SCALE_BY_SIZE`, `resolveEntityBaseFootprintDimensions`, `computeRectFootprintSquares`, `measureFootprintToFootprintDistanceFt`, `measureFootprintToTileDistanceFt`, `computeTacticalLandSpeedWithArmor`, `resolveDnD35eActorSpatialProfile`, `syncDnD35eActorSpatialFootprint` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/footprint_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/footprint_resolver.ts. |
 | `src/rulesets/dnd35e/spatial/grid_geometry.ts` | `tier2_cartridge` | Standard length of a single tactical grid square in D&D 3.5e (`5` feet). | `FEET_PER_GRID_SQUARE`, `SizeCategoryMetric`, `SIZE_METRICS`, `measureDnD35DistanceFt`, `isDiagonalStepBlockedByHardCorner`, `computeFootprintSquares`, `measureDistanceFromFootprintFt`, `computeThreatenedSquares` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/grid_geometry.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/grid_geometry.ts. |
 
 ## D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage

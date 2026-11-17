@@ -1,4 +1,9 @@
 import { addComponent, getComponent } from '../core/ecs.ts';
+import {
+  computeRectDistanceTiles,
+  computeRectNearestDelta,
+  getEntitySpatialProfile
+} from '../systems/movement_footprint.ts';
 import { ComponentType, type CompanionStance, type ControllerLinkComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import { isHostile } from '../utils/faction.ts';
@@ -96,14 +101,39 @@ function isCandidateTargetInRange(
     if (!fov.has(targetIndex)) return null;
   }
 
-  const dx = otherPos.x - attackerX;
-  const dy = otherPos.y - attackerY;
-  const distance = Math.max(Math.abs(dx), Math.abs(dy));
+  const attackerPos = getComponent(state, attackerId, ComponentType.Position);
+  const attackerW = attackerPos?.footprintWidth ?? 1;
+  const attackerH = attackerPos?.footprintHeight ?? 1;
+  const otherW = otherPos.footprintWidth ?? 1;
+  const otherH = otherPos.footprintHeight ?? 1;
+  const distance = computeRectDistanceTiles(
+    attackerX,
+    attackerY,
+    attackerW,
+    attackerH,
+    otherPos.x,
+    otherPos.y,
+    otherW,
+    otherH
+  );
+  const delta = computeRectNearestDelta(
+    attackerX,
+    attackerY,
+    attackerW,
+    attackerH,
+    otherPos.x,
+    otherPos.y,
+    otherW,
+    otherH
+  );
 
   if (distance > maxRange) return null;
-  if (stance === 'hold' && holdMeleeOnly && distance !== 1) return null;
+  if (stance === 'hold' && holdMeleeOnly) {
+    const reachTiles = getEntitySpatialProfile(state, attackerId).naturalReachTiles;
+    if (distance > reachTiles) return null;
+  }
 
-  return { targetId, distance, dx, dy };
+  return { targetId, distance, dx: delta.dx, dy: delta.dy };
 }
 
 /**

@@ -3814,6 +3814,28 @@
       "Do not duplicate or bypass exports from src/systems/movement.system.ts."
     ]
   },
+  "src/systems/movement_footprint.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Resolves multi-tile footprint placement, SRD squeezing compression, hard-corner diagonal wall checks, rectangular distance/delta helpers, and square-sharing / pass-through occupancy classification.",
+    "canonicalEntryPoints": [
+      "SIZE_DIFF_PASS_THROUGH_THRESHOLD",
+      "resolveCardinalFacing",
+      "computeRectDistanceTiles",
+      "computeRectNearestDelta",
+      "getEntitySpatialProfile",
+      "isFootprintDiagonalBlockedByHardCorner",
+      "resolveMovementFootprintPlacement",
+      "evaluateFootprintOccupancy"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/movement_footprint.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/movement_footprint.ts."
+    ]
+  },
   "src/systems/nemesis.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",

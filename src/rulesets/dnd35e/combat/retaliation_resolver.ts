@@ -12,6 +12,8 @@ import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { evaluateSpellScalingRule } from '../magic/spell_effects.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
+import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
+import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
 import type { DamageReductionRule, DnD35EntityData } from '../types/dnd35e.types.ts';
 import type { DnD35DamageType } from '../types/dnd35e_system.types.ts';
 import type { DnD35SpellEffectUnit } from '../types/system/spell_system.types.ts';
@@ -131,7 +133,18 @@ export function applyPostStrikeRetaliationPhase(
   const defenderPos = getComponent(runningState, defenderId, ComponentType.Position) as PositionComponent | undefined;
   const distTiles =
     attackerPos && defenderPos
-      ? Math.max(Math.abs(attackerPos.x - defenderPos.x), Math.abs(attackerPos.y - defenderPos.y))
+      ? Math.floor(
+          measureFootprintToFootprintDistanceFt(
+            attackerPos.x,
+            attackerPos.y,
+            attackerPos.footprintWidth ?? 1,
+            attackerPos.footprintHeight ?? 1,
+            defenderPos.x,
+            defenderPos.y,
+            defenderPos.footprintWidth ?? 1,
+            defenderPos.footprintHeight ?? 1
+          ) / FEET_PER_GRID_SQUARE
+        )
       : 1;
   const defenderDoctrine = getComponent(runningState, defenderId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;

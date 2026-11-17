@@ -2356,6 +2356,29 @@
       "Never hardcode specific feat or ACF IDs for flanking overrides; always evaluate semantic tags."
     ]
   },
+  "src/rulesets/dnd35e/spatial/footprint_resolver.ts": {
+    "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
+    "tier": "tier2_cartridge",
+    "responsibility": "Resolves D&D 3.5e size-driven & declarative rectangular footprints (with facing rotation), footprint-to-footprint distance, SRD armor tactical speed scaling, and PositionComponent spatialIndex synchronization.",
+    "canonicalEntryPoints": [
+      "FootprintDimensions",
+      "SUB_TILE_SCALE_BY_SIZE",
+      "resolveEntityBaseFootprintDimensions",
+      "computeRectFootprintSquares",
+      "measureFootprintToFootprintDistanceFt",
+      "measureFootprintToTileDistanceFt",
+      "computeTacticalLandSpeedWithArmor",
+      "resolveDnD35eActorSpatialProfile",
+      "syncDnD35eActorSpatialFootprint"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/spatial/footprint_resolver.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/footprint_resolver.ts."
+    ]
+  },
   "src/rulesets/dnd35e/spatial/grid_geometry.ts": {
     "domain": "D&D 3.5e: Layer 3 — Spatial Geometry & Senses",
     "tier": "tier2_cartridge",

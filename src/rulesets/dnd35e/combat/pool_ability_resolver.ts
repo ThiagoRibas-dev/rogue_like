@@ -17,7 +17,10 @@ import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { hydrateEntityRoundActionBudget } from '../cartridge/dnd35e_turn_budget.ts';
 import { evaluateDiceExpression, rollD20 } from '../math/dice.ts';
 import { evaluateCover } from '../spatial/cover_senses.ts';
-import { measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import {
+  measureFootprintToFootprintDistanceFt,
+  syncDnD35eActorSpatialFootprint
+} from '../spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35EntityData } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -140,7 +143,16 @@ function resolveTurnUndeadPool(state: GameState, actorId: EntityId, poolId: stri
     if (!fighter || fighter.hp <= 0 || !pos) continue;
     if (!isHostile(nextState, actorId, candId)) continue;
 
-    const distFt = measureDnD35DistanceFt(actorPos.x, actorPos.y, pos.x, pos.y);
+    const distFt = measureFootprintToFootprintDistanceFt(
+      actorPos.x,
+      actorPos.y,
+      actorPos.footprintWidth ?? 1,
+      actorPos.footprintHeight ?? 1,
+      pos.x,
+      pos.y,
+      pos.footprintWidth ?? 1,
+      pos.footprintHeight ?? 1
+    );
     if (distFt > TURN_UNDEAD_RANGE_FT) continue;
 
     const cover = evaluateCover(actorPos, pos, isWallAt);
@@ -273,7 +285,7 @@ export function executeDnD35eResourcePoolAbility(
         dndData.tracks.find((t) => t.trackId === 'druid')?.levels ??
         getEffectiveActorLevel(dndData)
     );
-    return executeWildShapePoolActivation({
+    const wsResult = executeWildShapePoolActivation({
       state,
       actorId,
       druidLevel,
@@ -281,6 +293,9 @@ export function executeDnD35eResourcePoolAbility(
       label,
       consumeActionAndCharge: consumeStandardAndCharge
     });
+    return wsResult.success
+      ? { state: syncDnD35eActorSpatialFootprint(wsResult.state, actorId), success: true }
+      : wsResult;
   }
 
   if (!entry || entry.current <= 0) {

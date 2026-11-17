@@ -117,6 +117,14 @@ export type TacticalAttitude = 'player' | 'hostile' | 'neutral' | 'friendly';
 export interface TacticalUnitBadgeDTO {
   readonly vx: number;
   readonly vy: number;
+  readonly footprintW?: number | undefined;
+  readonly footprintH?: number | undefined;
+  readonly isSqueezing?: boolean | undefined;
+  readonly subTileScale?: number | undefined;
+  readonly isSharedTile?: boolean | undefined;
+  readonly glyph?: string | undefined;
+  readonly fg?: string | undefined;
+  readonly spriteId?: string | undefined;
   readonly hpRatio: number;
   readonly attitude: TacticalAttitude;
   readonly statusColors: ReadonlyArray<string>;

@@ -48,6 +48,9 @@ export interface WildShapeFormDefinition {
   readonly landSpeedFt: number;
   readonly flySpeedFt?: number | undefined;
   readonly swimSpeedFt?: number | undefined;
+  readonly footprint?: { readonly width: number; readonly height: number } | undefined;
+  readonly footprintsBySize?:
+    Readonly<Record<string, { readonly width: number; readonly height: number } | undefined>> | undefined;
 }
 
 export function isWildShapeFormEligible(druidLevel: number, form: WildShapeFormDefinition): boolean {
@@ -130,6 +133,8 @@ export function applyWildShapeForm(
     creatureTypeOverride: form.creatureType,
     movementModesOverride,
     ...(form.naturalWeapons.length > 0 ? { naturalWeaponsOverride: form.naturalWeapons } : {}),
+    ...(form.footprint !== undefined ? { footprintOverride: form.footprint } : {}),
+    ...(form.footprintsBySize !== undefined ? { footprintsBySizeOverride: form.footprintsBySize } : {}),
     statOverrides: {
       str: form.physicalScores.str,
       dex: form.physicalScores.dex,
@@ -172,7 +177,9 @@ export function deriveWildShapeFormFromRace(raceDef: DnD35RaceDefinition): WildS
     naturalWeapons: raceDef.naturalWeapons ?? [],
     landSpeedFt,
     ...(raceDef.movementModes?.fly !== undefined ? { flySpeedFt: raceDef.movementModes.fly } : {}),
-    ...(raceDef.movementModes?.swim !== undefined ? { swimSpeedFt: raceDef.movementModes.swim } : {})
+    ...(raceDef.movementModes?.swim !== undefined ? { swimSpeedFt: raceDef.movementModes.swim } : {}),
+    ...(raceDef.footprint !== undefined ? { footprint: raceDef.footprint } : {}),
+    ...(raceDef.footprintsBySize !== undefined ? { footprintsBySize: raceDef.footprintsBySize } : {})
   };
 }
 
@@ -320,6 +327,10 @@ export function resolveEffectiveEntityDataWithOverlays(
       ...(overlay.sizeCategoryOverride !== undefined ? { sizeCategoryOverride: overlay.sizeCategoryOverride } : {}),
       ...(overlay.creatureTypeOverride !== undefined ? { creatureTypeOverride: overlay.creatureTypeOverride } : {}),
       ...(overlay.movementModesOverride !== undefined ? { movementModesOverride: overlay.movementModesOverride } : {}),
+      ...(overlay.footprintOverride !== undefined ? { footprintOverride: overlay.footprintOverride } : {}),
+      ...(overlay.footprintsBySizeOverride !== undefined
+        ? { footprintsBySizeOverride: overlay.footprintsBySizeOverride }
+        : {}),
       ...(overlay.naturalWeaponsOverride !== undefined
         ? { naturalWeaponsOverride: overlay.naturalWeaponsOverride }
         : {}),
@@ -339,6 +350,8 @@ export function resolveEffectiveEntityDataWithOverlays(
   let creatureType = baseData.creatureType;
   let movementModes = baseData.movementModes;
   let naturalWeapons = baseData.naturalWeapons;
+  let footprint = baseData.footprint;
+  let footprintsBySize = baseData.footprintsBySize;
   const overlayModifiers: StatModifier[] = [...(baseData.statModifiers ?? [])];
 
   for (const layer of layersToApply) {
@@ -375,6 +388,8 @@ export function resolveEffectiveEntityDataWithOverlays(
     }
     if (layer.creatureTypeOverride !== undefined) creatureType = layer.creatureTypeOverride;
     if (layer.movementModesOverride !== undefined) movementModes = layer.movementModesOverride;
+    if (layer.footprintOverride !== undefined) footprint = layer.footprintOverride;
+    if (layer.footprintsBySizeOverride !== undefined) footprintsBySize = layer.footprintsBySizeOverride;
     if (layer.naturalWeaponsOverride !== undefined) {
       naturalWeapons = layer.naturalWeaponsOverride as ReadonlyArray<NaturalWeaponDescriptor>;
     }
@@ -388,6 +403,8 @@ export function resolveEffectiveEntityDataWithOverlays(
     statModifiers: overlayModifiers,
     ...(creatureType !== undefined ? { creatureType } : {}),
     ...(movementModes !== undefined ? { movementModes } : {}),
+    ...(footprint !== undefined ? { footprint } : {}),
+    ...(footprintsBySize !== undefined ? { footprintsBySize } : {}),
     ...(naturalWeapons !== undefined ? { naturalWeapons } : {})
   };
 }

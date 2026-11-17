@@ -60,6 +60,7 @@ export function createRoundActionBudget(options: {
       fiveFootStepAvailable: true,
       canMoveFurtherThisRound: true,
       distanceMovedThisRoundFt: 0,
+      diagonalsMovedThisRound: 0,
       aooRemaining: aooMax,
       aooMax,
       isFlatFooted,
@@ -83,6 +84,7 @@ export function createRoundActionBudget(options: {
     fiveFootStepAvailable: true,
     canMoveFurtherThisRound: true,
     distanceMovedThisRoundFt: 0,
+    diagonalsMovedThisRound: 0,
     aooRemaining: aooMax,
     aooMax,
     isFlatFooted,
@@ -200,11 +202,15 @@ export function downgradeStandardToMove(budget: DnD35ActionBudget): {
  * @param isDifficultTerrain True if entering a Difficult Terrain square (`2x` cost).
  * @returns `{ allowed: boolean, budget: DnD35ActionBudget }`.
  */
+/** Alternating diagonal square multiplier (`2` = `10 ft` for every 2nd diagonal). */
+const EVEN_DIAGONAL_MULTIPLIER = 2;
+
 export function consumeMovementStepFt(
   budget: DnD35ActionBudget,
   actorSpeedFt: number,
   stepDistanceFt: number,
-  isDifficultTerrain = false
+  stepMultiplierOrDifficult: boolean | number = false,
+  isDiagonal = false
 ): {
   readonly allowed: boolean;
   readonly budget: DnD35ActionBudget;
@@ -213,7 +219,16 @@ export function consumeMovementStepFt(
     return { allowed: false, budget };
   }
 
-  const effectiveCostFt = isDifficultTerrain ? stepDistanceFt * DIFFICULT_TERRAIN_MULTIPLIER : stepDistanceFt;
+  const prevDiags = budget.diagonalsMovedThisRound ?? 0;
+  const diagonalBaseFt = isDiagonal && prevDiags % 2 === 1 ? stepDistanceFt * EVEN_DIAGONAL_MULTIPLIER : stepDistanceFt;
+  const multiplier =
+    typeof stepMultiplierOrDifficult === 'boolean'
+      ? stepMultiplierOrDifficult
+        ? DIFFICULT_TERRAIN_MULTIPLIER
+        : 1
+      : Math.max(1, stepMultiplierOrDifficult);
+  const effectiveCostFt = diagonalBaseFt * multiplier;
+  const nextDiags = isDiagonal ? prevDiags + 1 : prevDiags;
 
   let nextBudget = budget;
   while (nextBudget.movementRemainingFt < effectiveCostFt) {
@@ -230,6 +245,24 @@ export function consumeMovementStepFt(
         movementRemainingFt: nextBudget.movementRemainingFt + actorSpeedFt
       };
     } else {
+      // Minimum Movement rule (PHB p. 147): when hampered so even a Double Move cannot cover
+      // 1 square, a fresh actor may spend a Full-Round action (Move + Standard) to move 5 ft (1 square).
+      if (budget.distanceMovedThisRoundFt === 0 && budget.moveRemaining >= 1 && budget.standardRemaining >= 1) {
+        return {
+          allowed: true,
+          budget: {
+            ...budget,
+            standardRemaining: 0,
+            moveRemaining: 0,
+            movementRemainingFt: 0,
+            distanceMovedThisRoundFt: effectiveCostFt,
+            diagonalsMovedThisRound: nextDiags,
+            fiveFootStepAvailable: false,
+            canMoveFurtherThisRound: false,
+            hasActedThisRound: true
+          }
+        };
+      }
       return { allowed: false, budget };
     }
   }
@@ -240,6 +273,7 @@ export function consumeMovementStepFt(
       ...nextBudget,
       movementRemainingFt: nextBudget.movementRemainingFt - effectiveCostFt,
       distanceMovedThisRoundFt: nextBudget.distanceMovedThisRoundFt + effectiveCostFt,
+      diagonalsMovedThisRound: nextDiags,
       fiveFootStepAvailable: false,
       hasActedThisRound: true
     }
@@ -257,12 +291,14 @@ export function consumeMovementStepFt(
  */
 export function takeFiveFootStep(
   budget: DnD35ActionBudget,
-  isDifficultTerrain = false
+  isHamperedOrDifficultTerrain: boolean | number = false
 ): {
   readonly allowed: boolean;
   readonly budget: DnD35ActionBudget;
 } {
-  if (!budget.fiveFootStepAvailable || budget.distanceMovedThisRoundFt > 0 || isDifficultTerrain) {
+  const isHampered =
+    typeof isHamperedOrDifficultTerrain === 'boolean' ? isHamperedOrDifficultTerrain : isHamperedOrDifficultTerrain > 1;
+  if (!budget.fiveFootStepAvailable || budget.distanceMovedThisRoundFt > 0 || isHampered) {
     return { allowed: false, budget };
   }
 

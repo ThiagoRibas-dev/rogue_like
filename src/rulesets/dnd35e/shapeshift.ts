@@ -14,6 +14,7 @@ import {
 } from '../../types/components.types.ts';
 import { EngineMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { createRoundActionBudget } from './action_economy.ts';
+import { syncDnD35eActorSpatialFootprint } from './spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from './srd_registry.ts';
 import type { DnD35EntityData, StatModifier } from './types/dnd35e.types.ts';
 import {
@@ -133,6 +134,8 @@ function buildShapeshiftOverlayFromDescriptor(
     source: SHAPESHIFT_OVERLAY_SOURCE,
     priority: SHAPESHIFT_OVERLAY_PRIORITY,
     ...(formOverlay.sizeCategory !== undefined ? { sizeCategoryOverride: formOverlay.sizeCategory } : {}),
+    ...(formOverlay.footprint !== undefined ? { footprintOverride: formOverlay.footprint } : {}),
+    ...(formOverlay.footprintsBySize !== undefined ? { footprintsBySizeOverride: formOverlay.footprintsBySize } : {}),
     ...(statModifiers.length > 0 ? { statModifiers } : {}),
     ...(formOverlay.movementModes !== undefined ? { movementModesOverride: formOverlay.movementModes } : {}),
     ...(formOverlay.naturalWeapons.length > 0 ? { naturalWeaponsOverride: formOverlay.naturalWeapons } : {}),
@@ -242,6 +245,7 @@ export function executeDruidShapeshift(
     const newOverlay = buildShapeshiftOverlayFromDescriptor(formKey, ability.abilityId, ability.formOverlay);
     nextState = addComponent(nextState, actorId, newOverlay);
   }
+  nextState = syncDnD35eActorSpatialFootprint(nextState, actorId);
 
   // Update TacticalDoctrineComponent activeStanceGroups
   const existingDoctrine = getComponent(nextState, actorId, ComponentType.TacticalDoctrine) as

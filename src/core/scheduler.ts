@@ -1,6 +1,7 @@
 import * as ROT from 'rot-js';
 import { type EntityId, UIMode, EngineMode } from '../types/game-state.types.ts';
 import { processTurn, getGameState } from './game-loop.ts';
+import { hasPendingIntents } from './input_queue.ts';
 import { saveCheckpoint } from './persistence_service.ts';
 import {
   FRAME_BUDGET_MS,
@@ -178,8 +179,9 @@ function rtwpLoop(time: number): void {
 
   rtwpLoopId = requestAnimationFrame(rtwpLoop);
 
-  // If paused or showing a menu/inventory, do not accumulate time
-  if (state.rtwpState.paused || state.uiMode !== UIMode.Game || state.targetingMode?.active || isEngineLocked) {
+  // If paused or showing a menu/inventory, or awaiting targeting input without queued confirmation, do not accumulate time
+  const isWaitingForTarget = state.targetingMode?.active === true && !hasPendingIntents();
+  if (state.rtwpState.paused || state.uiMode !== UIMode.Game || isWaitingForTarget || isEngineLocked) {
     lastFrameTime = time;
     return;
   }

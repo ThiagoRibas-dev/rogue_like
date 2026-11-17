@@ -10,6 +10,7 @@ import {
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { getFactionRelation, isHostile } from '../../../utils/faction.ts';
 import { isFlankingTarget } from './cover_senses.ts';
+import { computeRectFootprintSquares, measureFootprintToFootprintDistanceFt } from './footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { projectDnD35ActorSemanticTags, resolveEntitySituationalTagContext } from '../semantic_tags.ts';
 import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from './grid_geometry.ts';
@@ -27,9 +28,6 @@ export const DISTRACTED_FLANKED_STATUS_ID = 'distracted_flanked';
 
 /** Sentinel duration for geometry-synchronized flanking statuses (managed by `syncSpatialFlankingGraph`). */
 const GEOMETRY_SYNC_STATUS_DURATION = 9999;
-
-/** Default melee reach in 5-ft grid tiles (`1` tile = `5 ft`). */
-const DEFAULT_REACH_TILES = 1;
 
 /** Minimum rogue-level advantage needed to out-flank Improved Uncanny Dodge (`4`). */
 const UNCANNY_DODGE_OUTFLANK_MARGIN = 4;
@@ -68,13 +66,23 @@ function getActiveStatusIds(state: GameState, entityId: EntityId): ReadonlyArray
   return statuses.activeEffects.filter((e) => e.duration > 0).map((e) => e.effectId);
 }
 
+interface SpatialFootprintRef {
+  readonly x: number;
+  readonly y: number;
+  readonly footprintWidth?: number | undefined;
+  readonly footprintHeight?: number | undefined;
+}
+
 function canThreatenTarget(
-  posA: { readonly x: number; readonly y: number },
-  posB: { readonly x: number; readonly y: number },
+  posA: SpatialFootprintRef,
+  posB: SpatialFootprintRef,
   reachTiles: number,
   tagsA: ReadonlyArray<string>,
   dataA: DnD35EntityData
 ): boolean {
+  if (reachTiles <= 0) {
+    return false;
+  }
   const conditions = dataA.conditions ?? [];
   if (
     conditions.includes('helpless') ||
@@ -85,8 +93,17 @@ function canThreatenTarget(
   ) {
     return false;
   }
-  const distTiles = Math.max(Math.abs(posA.x - posB.x), Math.abs(posA.y - posB.y));
-  return distTiles >= 1 && distTiles <= reachTiles;
+  const distFt = measureFootprintToFootprintDistanceFt(
+    posA.x,
+    posA.y,
+    posA.footprintWidth ?? 1,
+    posA.footprintHeight ?? 1,
+    posB.x,
+    posB.y,
+    posB.footprintWidth ?? 1,
+    posB.footprintHeight ?? 1
+  );
+  return distFt <= reachTiles * FEET_PER_GRID_SQUARE;
 }
 
 function isDefenderImmuneToFlanking(
@@ -133,8 +150,8 @@ export function evaluateEntityFlankingTarget(params: {
   readonly state: GameState;
   readonly attackerId: EntityId;
   readonly defenderId: EntityId;
-  readonly attackerPos: { readonly x: number; readonly y: number };
-  readonly defenderPos: { readonly x: number; readonly y: number };
+  readonly attackerPos: SpatialFootprintRef;
+  readonly defenderPos: SpatialFootprintRef;
   readonly attackerData: DnD35EntityData;
   readonly defenderData: DnD35EntityData;
   readonly attackerSelfTags: ReadonlyArray<string>;
@@ -156,7 +173,7 @@ export function evaluateEntityFlankingTarget(params: {
 
   const attackerReachFt =
     SIZE_METRICS[attackerData.sizeCategory ?? 'medium']?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
-  const attackerReach = Math.max(DEFAULT_REACH_TILES, Math.floor(attackerReachFt / FEET_PER_GRID_SQUARE));
+  const attackerReach = Math.floor(attackerReachFt / FEET_PER_GRID_SQUARE);
   if (!canThreatenTarget(attackerPos, defenderPos, attackerReach, attackerSelfTags, attackerData)) {
     return false;
   }
@@ -193,10 +210,28 @@ export function evaluateEntityFlankingTarget(params: {
 
     const otherData = getDnD35EntityData(state, otherId);
     const otherReachFt = SIZE_METRICS[otherData.sizeCategory ?? 'medium']?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
-    const otherReach = Math.max(DEFAULT_REACH_TILES, Math.floor(otherReachFt / FEET_PER_GRID_SQUARE));
-    const distToDef = Math.max(Math.abs(otherPos.x - defenderPos.x), Math.abs(otherPos.y - defenderPos.y));
-    if (distToDef >= 1 && distToDef <= otherReach) {
-      threateningAllyPositions.push({ x: otherPos.x, y: otherPos.y });
+    const otherReach = Math.floor(otherReachFt / FEET_PER_GRID_SQUARE);
+    if (otherReach <= 0) continue;
+    const distToDefFt = measureFootprintToFootprintDistanceFt(
+      otherPos.x,
+      otherPos.y,
+      otherPos.footprintWidth ?? 1,
+      otherPos.footprintHeight ?? 1,
+      defenderPos.x,
+      defenderPos.y,
+      defenderPos.footprintWidth ?? 1,
+      defenderPos.footprintHeight ?? 1
+    );
+    if (distToDefFt <= otherReach * FEET_PER_GRID_SQUARE) {
+      const allySquares = computeRectFootprintSquares(
+        otherPos.x,
+        otherPos.y,
+        otherPos.footprintWidth ?? 1,
+        otherPos.footprintHeight ?? 1
+      );
+      for (const sq of allySquares) {
+        threateningAllyPositions.push(sq);
+      }
     }
   }
 
@@ -213,7 +248,27 @@ export function evaluateEntityFlankingTarget(params: {
     return threateningAllyPositions.some((ally) => ally.x !== attackerPos.x || ally.y !== attackerPos.y);
   }
 
-  return isFlankingTarget(attackerPos, threateningAllyPositions, defenderPos, false);
+  const attackerSquares = computeRectFootprintSquares(
+    attackerPos.x,
+    attackerPos.y,
+    attackerPos.footprintWidth ?? 1,
+    attackerPos.footprintHeight ?? 1
+  );
+  const defenderSquares = computeRectFootprintSquares(
+    defenderPos.x,
+    defenderPos.y,
+    defenderPos.footprintWidth ?? 1,
+    defenderPos.footprintHeight ?? 1
+  );
+
+  for (const atkSq of attackerSquares) {
+    for (const defSq of defenderSquares) {
+      if (isFlankingTarget(atkSq, threateningAllyPositions, defSq, false)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**

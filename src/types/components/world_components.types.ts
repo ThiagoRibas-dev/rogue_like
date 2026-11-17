@@ -3,13 +3,22 @@ import type { EntityId } from '../game-state.types.ts';
 import type { Intent } from '../intents/intent.union.ts';
 import type { PhaseBlock } from '../campaign/social.ts';
 
+export type CardinalFacing = 'north' | 'south' | 'east' | 'west';
+
 /**
- * Component representing the coordinates of an entity on the grid.
+ * Component representing the coordinates and occupied spatial footprint of an entity on the grid.
  */
 export interface PositionComponent {
   readonly type: ComponentType.Position;
   readonly x: number;
   readonly y: number;
+  readonly footprintWidth?: number | undefined;
+  readonly footprintHeight?: number | undefined;
+  readonly facing?: CardinalFacing | undefined;
+  readonly isSqueezing?: boolean | undefined;
+  readonly sizeRankIndex?: number | undefined;
+  readonly canShareTile?: boolean | undefined;
+  readonly subTileScale?: number | undefined;
 }
 
 /**

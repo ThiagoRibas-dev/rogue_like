@@ -34,6 +34,7 @@ export interface DnD35ResolvedActorStats {
   readonly attackBonus: number;
   readonly damageBonus: number;
   readonly maxHp: number;
+  readonly deathHpThreshold?: number | undefined;
   readonly saves: Readonly<Record<SaveType, number>>;
   readonly saveBreakdowns?: Readonly<Record<SaveType, DnD35SaveResolution>> | undefined;
   readonly speed: number;
@@ -106,6 +107,7 @@ export interface DnD35ActionBudget {
   readonly fiveFootStepAvailable: boolean;
   readonly canMoveFurtherThisRound: boolean;
   readonly distanceMovedThisRoundFt: number;
+  readonly diagonalsMovedThisRound?: number | undefined;
   readonly aooRemaining: number;
   readonly aooMax: number;
   readonly isFlatFooted: boolean;
@@ -273,6 +275,10 @@ export interface DnD35EntityData {
   readonly animalCompanionId?: string | undefined;
   readonly companions?: ReadonlyArray<DnD35CompanionEntry> | undefined;
   readonly rogueSpecialAbilities?: ReadonlyArray<string> | undefined;
+  readonly footprint?: { readonly width: number; readonly height: number } | undefined;
+  readonly footprintsBySize?:
+    Readonly<Record<string, { readonly width: number; readonly height: number } | undefined>> | undefined;
+  readonly isCompletelyFillingSpace?: boolean | undefined;
   readonly actionBudget?: DnD35ActionBudget | undefined;
   readonly flankingRelations?: DnD35FlankingRelations | undefined;
 }

@@ -10,7 +10,7 @@
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
-- [Core Console: ECS Systems & Simulation (58 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (59 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
@@ -132,7 +132,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 58
+**Modules in this domain:** 59
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -161,6 +161,7 @@
 | `src/systems/map/map_generation_spawner.ts` | `tier1_console` | Generates a new area floor, runs the Encounter Director, and populates portals, items, and actors. | `generateAndPopulateAreaFloor` | **Includes:** Pure implementation and exports for src/systems/map/map_generation_spawner.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/map/map_generation_spawner.ts. |
 | `src/systems/map/map_wake_respawn.ts` | `tier1_console` | Builds Encounter Director context and wakes saved area floors with trickle-respawn logic. | `collectReservedTokensForArea`, `buildAreaDirectorContext`, `wakeSavedAreaFloor` | **Includes:** Pure implementation and exports for src/systems/map/map_wake_respawn.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/map/map_wake_respawn.ts. |
 | `src/systems/message.system.ts` | `tier1_console` | The maximum number of messages to keep in the GameState history. | `MAX_MESSAGE_LOG_LENGTH`, `MessageLogCategory`, `addMessage`, `executeSay` | **Includes:** Pure implementation and exports for src/systems/message.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/message.system.ts. |
+| `src/systems/movement_footprint.ts` | `tier1_console` | Resolves multi-tile footprint placement, SRD squeezing compression, hard-corner diagonal wall checks, rectangular distance/delta helpers, and square-sharing / pass-through occupancy classification. | `SIZE_DIFF_PASS_THROUGH_THRESHOLD`, `resolveCardinalFacing`, `computeRectDistanceTiles`, `computeRectNearestDelta`, `getEntitySpatialProfile`, `isFootprintDiagonalBlockedByHardCorner`, `resolveMovementFootprintPlacement`, `evaluateFootprintOccupancy` | **Includes:** Pure implementation and exports for src/systems/movement_footprint.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/movement_footprint.ts. |
 | `src/systems/movement.system.ts` | `tier1_console` | Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent. | `canTraverseTile`, `processMoveIntent` | **Includes:** Pure implementation and exports for src/systems/movement.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/movement.system.ts. |
 | `src/systems/nemesis.system.ts` | `tier1_console` | Nemesis System Facade | `getEntityBarks`, `processNemesisSystem`, `applyScar`, `evaluateCheatDeath`, `promoteNemesis`, `fillVacancy` | **Includes:** Pure implementation and exports for src/systems/nemesis.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/nemesis.system.ts. |
 | `src/systems/nemesis/nemesis_adaptation.ts` | `tier1_console` | Permanently applies a scar definition to an entity, altering their stats and traits. | `applyScar`, `evaluateCheatDeath`, `promoteNemesis`, `fillVacancy` | **Includes:** Pure implementation and exports for src/systems/nemesis/nemesis_adaptation.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/nemesis/nemesis_adaptation.ts. |

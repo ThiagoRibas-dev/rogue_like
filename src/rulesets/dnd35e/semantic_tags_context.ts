@@ -3,6 +3,7 @@ import {
   ComponentType,
   type EquipmentComponent,
   type ItemComponent,
+  type PositionComponent,
   type StatusEffectsComponent,
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
@@ -140,6 +141,10 @@ export function resolveEntitySituationalTagContext(
   const activeStatusEffectIds = statuses
     ? statuses.activeEffects.filter((e) => e.duration > 0).map((e) => e.effectId)
     : [];
+  const pos = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+  if (pos?.isSqueezing === true && !activeStatusEffectIds.includes('squeezing')) {
+    activeStatusEffectIds.push('squeezing');
+  }
 
   return {
     armorCategory,

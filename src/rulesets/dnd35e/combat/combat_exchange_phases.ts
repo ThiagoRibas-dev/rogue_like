@@ -15,6 +15,8 @@ import {
   resolveEffectiveTileIllumination
 } from '../spatial/cover_senses.ts';
 import { evaluateEntityFlankingTarget } from '../spatial/flanking_graph.ts';
+import { measureFootprintToFootprintDistanceFt } from '../spatial/footprint_resolver.ts';
+import { FEET_PER_GRID_SQUARE, SIZE_METRICS } from '../spatial/grid_geometry.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35DamageType, DnD35EntityData, OnHitRiderDescriptor, SensoryProfile } from '../types/dnd35e.types.ts';
 import { evaluateDnD35eEntityDAG, type DnD35EntityDAGResult } from '../cartridge/dnd35e_dag_adapter.ts';
@@ -170,14 +172,25 @@ export function resolveOnDropCleaveFollowup(
 
   let cleaveTargetId: EntityId | undefined;
   let cleaveTargetName = 'foe';
+  const attackerReachFt =
+    SIZE_METRICS[attackerEval.dagResult.effectiveSize]?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
   for (const candId of state.entities) {
     if (candId === droppedDefenderId || candId === attackerId) continue;
     const candFighter = getComponent(state, candId, ComponentType.Fighter) as FighterComponent | undefined;
     const candPos = getComponent(state, candId, ComponentType.Position) as PositionComponent | undefined;
     if (!candFighter || candFighter.hp <= 0 || !candPos) continue;
 
-    const candDist = Math.max(Math.abs(attackerPos.x - candPos.x), Math.abs(attackerPos.y - candPos.y));
-    if (candDist <= 1 && isHostile(state, attackerId, candId)) {
+    const candDistFt = measureFootprintToFootprintDistanceFt(
+      attackerPos.x,
+      attackerPos.y,
+      attackerPos.footprintWidth ?? 1,
+      attackerPos.footprintHeight ?? 1,
+      candPos.x,
+      candPos.y,
+      candPos.footprintWidth ?? 1,
+      candPos.footprintHeight ?? 1
+    );
+    if (candDistFt <= attackerReachFt && isHostile(state, attackerId, candId)) {
       cleaveTargetId = candId;
       const candIdentity = getComponent(state, candId, ComponentType.Identity) as IdentityComponent | undefined;
       if (candIdentity?.name) cleaveTargetName = candIdentity.name;

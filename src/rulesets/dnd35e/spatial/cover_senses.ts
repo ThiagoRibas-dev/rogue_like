@@ -201,8 +201,18 @@ export function isFlankingTarget(
  */
 export function evaluateConcealmentAndSenses(
   illumination: IlluminationLevel,
-  observerPos: { readonly x: number; readonly y: number },
-  targetPos: { readonly x: number; readonly y: number },
+  observerPos: {
+    readonly x: number;
+    readonly y: number;
+    readonly footprintWidth?: number | undefined;
+    readonly footprintHeight?: number | undefined;
+  },
+  targetPos: {
+    readonly x: number;
+    readonly y: number;
+    readonly footprintWidth?: number | undefined;
+    readonly footprintHeight?: number | undefined;
+  },
   senses: SensoryProfile,
   options?: {
     readonly targetInvisible?: boolean;
@@ -215,7 +225,26 @@ export function evaluateConcealmentAndSenses(
   readonly missChancePercent: 0 | 20 | 50;
   readonly blocksAoO: boolean;
 } {
-  const distanceFt = measureDnD35DistanceFt(observerPos.x, observerPos.y, targetPos.x, targetPos.y);
+  const obsW = Math.max(1, observerPos.footprintWidth ?? 1);
+  const obsH = Math.max(1, observerPos.footprintHeight ?? 1);
+  const tgtW = Math.max(1, targetPos.footprintWidth ?? 1);
+  const tgtH = Math.max(1, targetPos.footprintHeight ?? 1);
+  let distanceFt = Infinity;
+  for (let ody = 0; ody < obsH; ody++) {
+    for (let odx = 0; odx < obsW; odx++) {
+      for (let tdy = 0; tdy < tgtH; tdy++) {
+        for (let tdx = 0; tdx < tgtW; tdx++) {
+          const d = measureDnD35DistanceFt(
+            observerPos.x + odx,
+            observerPos.y + ody,
+            targetPos.x + tdx,
+            targetPos.y + tdy
+          );
+          if (d < distanceFt) distanceFt = d;
+        }
+      }
+    }
+  }
 
   // Blindsight within range negates darkness, invisibility, and blur concealment completely.
   if (senses.blindsightRangeFt >= distanceFt && distanceFt > 0) {

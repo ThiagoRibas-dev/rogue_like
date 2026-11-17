@@ -19,7 +19,10 @@ import { isHostile } from '../../../utils/faction.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { evaluateDiceExpression } from '../math/dice.ts';
 import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
-import { measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import {
+  measureFootprintToFootprintDistanceFt,
+  syncDnD35eActorSpatialFootprint
+} from '../spatial/footprint_resolver.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ConditionId, StatModifier } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -58,7 +61,16 @@ export function resolveHealingHymnBonus(state: GameState, casterId: EntityId): n
       if (casterPos) {
         const candidatePos = getComponent(state, candidateId, ComponentType.Position) as PositionComponent | undefined;
         if (candidatePos) {
-          const dist = measureDnD35DistanceFt(casterPos.x, casterPos.y, candidatePos.x, candidatePos.y);
+          const dist = measureFootprintToFootprintDistanceFt(
+            casterPos.x,
+            casterPos.y,
+            casterPos.footprintWidth ?? 1,
+            casterPos.footprintHeight ?? 1,
+            candidatePos.x,
+            candidatePos.y,
+            candidatePos.footprintWidth ?? 1,
+            candidatePos.footprintHeight ?? 1
+          );
           if (dist > HEALING_HYMN_RADIUS_FT) continue;
         }
       }
@@ -317,5 +329,5 @@ export function applyResolvedSpellEffectsToTarget(ctx: ApplySpellEffectsContext)
     );
   }
 
-  return runningState;
+  return syncDnD35eActorSpatialFootprint(runningState, ctx.targetId);
 }

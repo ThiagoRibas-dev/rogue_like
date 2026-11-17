@@ -3,8 +3,7 @@ import {
   ComponentType,
   type MovementModes,
   type PositionComponent,
-  type PropertyOverlayComponent,
-  type TagsComponent
+  type PropertyOverlayComponent
 } from '../types/components.types.ts';
 import type { TileDefinition } from '../types/campaign/world.ts';
 import { GameEventType } from '../types/events.types.ts';
@@ -13,7 +12,7 @@ import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { GameEvent } from '../types/events.types.ts';
 import { IntentType } from '../types/intents/intent.enum.ts';
 import type { MoveIntent } from '../types/intents/movement.intents.ts';
-import { isHostile } from '../utils/faction.ts';
+import { getFactionRelation } from '../utils/faction.ts';
 import { coordToIndex, isInBounds } from '../utils/grid.ts';
 import { processMeleeAttackIntent } from './combat.system.ts';
 import { processApplyIntent } from './apply.system.ts';
@@ -21,6 +20,34 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processInteractIntent } from './intent.system.ts';
 import { runActorMovementStep } from './lifecycle.system.ts';
 import { isPlayerControlledCompanion } from './companion_commands.system.ts';
+import { evaluateFootprintOccupancy, resolveMovementFootprintPlacement } from './movement_footprint.ts';
+import type { ActorSpatialProfile } from '../types/ruleset.types.ts';
+import type { CardinalFacing } from '../types/components/world_components.types.ts';
+
+function buildUpdatedPositionComponent(
+  anchorX: number,
+  anchorY: number,
+  width: number,
+  height: number,
+  facing: CardinalFacing | undefined,
+  isSqueezing: boolean,
+  profile: ActorSpatialProfile,
+  existingFacing?: CardinalFacing
+): PositionComponent {
+  const effectiveFacing = profile.baseWidth !== profile.baseHeight ? (facing ?? existingFacing) : undefined;
+  const isMultiTile = width > 1 || height > 1;
+  return {
+    type: ComponentType.Position,
+    x: anchorX,
+    y: anchorY,
+    ...(isMultiTile ? { footprintWidth: width, footprintHeight: height } : {}),
+    ...(effectiveFacing !== undefined ? { facing: effectiveFacing } : {}),
+    ...(isSqueezing ? { isSqueezing: true } : {}),
+    ...(profile.sizeRankIndex !== 0 ? { sizeRankIndex: profile.sizeRankIndex } : {}),
+    ...(profile.canShareTile ? { canShareTile: true } : {}),
+    ...(profile.subTileScale !== 1 ? { subTileScale: profile.subTileScale } : {})
+  };
+}
 
 /**
  * Resolves active movement modes on an entity from PropertyOverlayComponent or RulesetDataComponent.
@@ -121,27 +148,56 @@ export function processMoveIntent(
     return { state, success: false };
   }
 
-  // 1. Tile Traversal & Obstacle Collision
-  const tileDef = state.campaign.tiles[targetTile.tileId];
+  // 1. Multi-Tile Footprint Placement, Hard-Corner Diagonals & SRD Squeezing
   const movementModes = getEntityMovementModes(state, entityId);
-  const isTraversable = canTraverseTile(tileDef, movementModes);
+  const placement = resolveMovementFootprintPlacement({
+    state,
+    entityId,
+    fromPos: position,
+    dx,
+    dy,
+    canTraverse: (def) => canTraverseTile(def, movementModes)
+  });
 
-  if (!isTraversable) {
+  if (!placement.valid) {
     const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-    if (tileDef?.bumpTransition) {
-      // Bump to transition (e.g., open door)
-      const nextTiles = [...state.map.tiles];
-      nextTiles[targetTileIndex] = { ...targetTile, tileId: tileDef.bumpTransition };
-      const nextMap = { ...state.map, tiles: nextTiles };
-      let nextState: GameState = { ...state, map: nextMap, fovNeedsUpdate: true };
-      if (isPlayer) {
-        const msg = tileDef.interactMessage ?? 'You bump into it.';
-        nextState = addMessage(nextState, msg, MessageLogCategory.System);
+    const directTileDef = state.campaign.tiles[targetTile.tileId];
+    const bumpTileDef = directTileDef?.bumpTransition ? directTileDef : placement.blockedByObstacleDef;
+    if (bumpTileDef?.bumpTransition) {
+      let bumpIdx = targetTileIndex;
+      if (bumpTileDef !== directTileDef) {
+        const fw = Math.max(1, placement.width);
+        const fh = Math.max(1, placement.height);
+        for (let oy = 0; oy < fh; oy++) {
+          for (let ox = 0; ox < fw; ox++) {
+            const bx = targetX + ox;
+            const by = targetY + oy;
+            if (!isInBounds(bx, by, state.map.width, state.map.height)) continue;
+            const idx = coordToIndex(bx, by, state.map.width);
+            const t = state.map.tiles[idx];
+            if (t && state.campaign.tiles[t.tileId]?.bumpTransition) {
+              bumpIdx = idx;
+              break;
+            }
+          }
+        }
       }
-      return { state: nextState, success: true };
+      const nextTiles = [...state.map.tiles];
+      const existingBumpTile = nextTiles[bumpIdx];
+      if (existingBumpTile) {
+        nextTiles[bumpIdx] = { ...existingBumpTile, tileId: bumpTileDef.bumpTransition };
+        const nextMap = { ...state.map, tiles: nextTiles };
+        let nextState: GameState = { ...state, map: nextMap, fovNeedsUpdate: true };
+        if (isPlayer) {
+          const msg = bumpTileDef.interactMessage ?? 'You bump into it.';
+          nextState = addMessage(nextState, msg, MessageLogCategory.System);
+        }
+        return { state: nextState, success: true };
+      }
     }
 
     if (isPlayer) {
+      const tileDef = placement.blockedByObstacleDef ?? directTileDef;
       const obstacleName =
         tileDef?.tags?.includes('chasm') || tileDef?.tags?.includes('pit')
           ? 'a deep chasm'
@@ -156,139 +212,160 @@ export function processMoveIntent(
     return { state, success: false };
   }
 
-  // 2. Entity Collision
-  const targetKey = `${targetX},${targetY}`;
-  const entitiesAtTarget = state.spatialIndex.get(targetKey);
-  if (entitiesAtTarget !== undefined && entitiesAtTarget.length > 0) {
-    let defenderId: EntityId | undefined;
-    let isBlocked = false;
-    let blockedByEntityId: EntityId | undefined;
+  // 2. Entity Collision across Occupied Footprint
+  const occupancy = evaluateFootprintOccupancy({
+    state,
+    moverId: entityId,
+    moverPos: position,
+    targetX: placement.anchorX,
+    targetY: placement.anchorY,
+    targetW: placement.width,
+    targetH: placement.height
+  });
 
-    for (const id of entitiesAtTarget) {
-      if (getComponent(state, id, ComponentType.Fighter) !== undefined) {
-        if (isHostile(state, entityId, id)) {
-          defenderId = id;
-          isBlocked = true;
-          break;
-        } else {
-          isBlocked = true;
-          blockedByEntityId = id;
+  if (occupancy.meleeTargetId !== undefined) {
+    return processMeleeAttackIntent(state, {
+      type: IntentType.MeleeAttack,
+      entityId,
+      defenderId: occupancy.meleeTargetId
+    });
+  }
+
+  if (occupancy.blocked) {
+    const blockedByEntityId = occupancy.swapCandidateId ?? occupancy.solidBlockerId;
+    if (blockedByEntityId !== undefined) {
+      const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
+      const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
+      const originTile = state.map.tiles[coordToIndex(position.x, position.y, state.map.width)];
+      const originTileDef = originTile ? state.campaign.tiles[originTile.tileId] : undefined;
+      const blockerPos = getComponent(state, blockedByEntityId, ComponentType.Position);
+      const moverIsSingleTile = (position.footprintWidth ?? 1) === 1 && (position.footprintHeight ?? 1) === 1;
+      const blockerIsSingleTile =
+        blockerPos !== undefined && (blockerPos.footprintWidth ?? 1) === 1 && (blockerPos.footprintHeight ?? 1) === 1;
+      const canFriendlySwap =
+        !dialogueComp &&
+        !interactable &&
+        moverIsSingleTile &&
+        blockerIsSingleTile &&
+        (isPlayerControlledCompanion(state, entityId, blockedByEntityId) ||
+          getFactionRelation(state, entityId, blockedByEntityId) === 'friendly') &&
+        canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId));
+
+      if (canFriendlySwap) {
+        const moverProfile = placement.profile;
+        let nextState = addComponent(
+          state,
+          entityId,
+          buildUpdatedPositionComponent(
+            placement.anchorX,
+            placement.anchorY,
+            placement.width,
+            placement.height,
+            placement.facing,
+            placement.isSqueezing,
+            moverProfile,
+            position.facing
+          )
+        );
+        nextState = addComponent(nextState, blockedByEntityId, {
+          ...blockerPos,
+          type: ComponentType.Position,
+          x: position.x,
+          y: position.y
+        });
+        nextState = runActorMovementStep(
+          nextState,
+          entityId,
+          { x: position.x, y: position.y },
+          { x: placement.anchorX, y: placement.anchorY }
+        );
+        nextState = runActorMovementStep(
+          nextState,
+          blockedByEntityId,
+          { x: placement.anchorX, y: placement.anchorY },
+          { x: position.x, y: position.y }
+        );
+
+        const isPlayerMover = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
+        if (isPlayerMover) {
+          nextState = { ...nextState, fovNeedsUpdate: true };
+          const identity = getComponent(nextState, blockedByEntityId, ComponentType.Identity);
+          const companionName = identity ? identity.name : 'your ally';
+          nextState = addMessage(nextState, `You swap places with ${companionName}.`, MessageLogCategory.System);
         }
-      } else if (getComponent(state, id, ComponentType.Actor) !== undefined) {
-        isBlocked = true;
-        blockedByEntityId = id;
-      } else {
-        const tagsCmp = getComponent(state, id, ComponentType.Tags) as TagsComponent | undefined;
-        if (tagsCmp && tagsCmp.tags.includes('solid')) {
-          isBlocked = true;
-          blockedByEntityId = id;
-        }
+
+        return { state: nextState, success: true };
       }
-    }
 
-    if (defenderId !== undefined) {
-      return processMeleeAttackIntent(state, {
-        type: IntentType.MeleeAttack,
-        entityId,
-        defenderId
-      });
-    }
+      if (dialogueComp) {
+        return processInteractIntent(state, {
+          type: IntentType.Interact,
+          entityId,
+          targetId: blockedByEntityId
+        });
+      }
 
-    if (isBlocked) {
-      if (defenderId === undefined && blockedByEntityId !== undefined) {
-        const dialogueComp = getComponent(state, blockedByEntityId, ComponentType.Dialogue);
-        const originTile = state.map.tiles[coordToIndex(position.x, position.y, state.map.width)];
-        const originTileDef = originTile ? state.campaign.tiles[originTile.tileId] : undefined;
-        if (
-          !dialogueComp &&
-          isPlayerControlledCompanion(state, entityId, blockedByEntityId) &&
-          canTraverseTile(originTileDef, getEntityMovementModes(state, blockedByEntityId))
-        ) {
-          let nextState = addComponent(state, entityId, {
-            type: ComponentType.Position,
-            x: targetX,
-            y: targetY
-          });
-          nextState = addComponent(nextState, blockedByEntityId, {
-            type: ComponentType.Position,
-            x: position.x,
-            y: position.y
-          });
-          nextState = runActorMovementStep(
-            nextState,
+      if (interactable && interactable.type === ComponentType.Interactable && interactable.intents.length > 0) {
+        const firstIntent = interactable.intents[0];
+        if (firstIntent && firstIntent.type === IntentType.Apply) {
+          return processApplyIntent(state, {
+            type: IntentType.Apply,
             entityId,
-            { x: position.x, y: position.y },
-            { x: targetX, y: targetY }
-          );
-          nextState = runActorMovementStep(
-            nextState,
-            blockedByEntityId,
-            { x: targetX, y: targetY },
-            { x: position.x, y: position.y }
-          );
-
-          const isPlayerMover = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
-          if (isPlayerMover) {
-            nextState = { ...nextState, fovNeedsUpdate: true };
-            const identity = getComponent(nextState, blockedByEntityId, ComponentType.Identity);
-            const companionName = identity ? identity.name : 'your companion';
-            nextState = addMessage(nextState, `You swap places with ${companionName}.`, MessageLogCategory.System);
-          }
-
-          return { state: nextState, success: true };
-        }
-
-        if (dialogueComp) {
-          return processInteractIntent(state, {
-            type: IntentType.Interact,
-            entityId,
-            targetId: blockedByEntityId
+            verb: firstIntent.verb,
+            target: { type: 'entity', entityId: blockedByEntityId }
           });
         }
-
-        const interactable = getComponent(state, blockedByEntityId, ComponentType.Interactable);
-        if (interactable && interactable.type === ComponentType.Interactable && interactable.intents.length > 0) {
-          const firstIntent = interactable.intents[0];
-          if (firstIntent && firstIntent.type === IntentType.Apply) {
-            return processApplyIntent(state, {
-              type: IntentType.Apply,
-              entityId,
-              verb: firstIntent.verb,
-              target: { type: 'entity', entityId: blockedByEntityId }
-            });
-          }
-        }
       }
-
-      const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-      if (isPlayer) {
-        return { state: addMessage(state, 'Something is in the way.', MessageLogCategory.CombatHit), success: false };
-      }
-      return { state, success: false };
     }
+
+    const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+    if (isPlayer) {
+      return { state: addMessage(state, 'Something is in the way.', MessageLogCategory.CombatHit), success: false };
+    }
+    return { state, success: false };
   }
 
   // 3. Apply Movement
-  const nextPosition: PositionComponent = {
-    type: ComponentType.Position,
-    x: targetX,
-    y: targetY
-  };
+  const moverProfile = placement.profile;
+  const nextPosition = buildUpdatedPositionComponent(
+    placement.anchorX,
+    placement.anchorY,
+    placement.width,
+    placement.height,
+    placement.facing,
+    placement.isSqueezing,
+    moverProfile,
+    position.facing
+  );
 
   let nextState = addComponent(state, entityId, nextPosition);
-  nextState = runActorMovementStep(nextState, entityId, { x: position.x, y: position.y }, { x: targetX, y: targetY });
+  nextState = runActorMovementStep(
+    nextState,
+    entityId,
+    { x: position.x, y: position.y },
+    { x: placement.anchorX, y: placement.anchorY }
+  );
 
-  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+  const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
   if (isPlayer) {
     nextState = { ...nextState, fovNeedsUpdate: true };
+    if (placement.isSqueezing && position.isSqueezing !== true) {
+      nextState = addMessage(
+        nextState,
+        'You squeeze into the narrow space (-4 attack, -4 AC, double movement cost).',
+        MessageLogCategory.System
+      );
+    }
   }
 
-  const tileTags = state.campaign.tiles[targetTile.tileId]?.tags ?? [targetTile.tileId];
+  const enteredTile =
+    nextState.map.tiles[coordToIndex(placement.anchorX, placement.anchorY, nextState.map.width)] ?? targetTile;
+  const tileTags = nextState.campaign.tiles[enteredTile.tileId]?.tags ?? [enteredTile.tileId];
   const events = tileTags.map((tag) => ({
     type: GameEventType.TileEntered as const,
     entityId,
-    x: targetX,
-    y: targetY,
+    x: placement.anchorX,
+    y: placement.anchorY,
     tileTag: tag
   }));
 

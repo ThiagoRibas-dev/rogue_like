@@ -127,22 +127,25 @@ export function mitigateIncomingDamage(options: {
 
 /**
  * Evaluates a creature's `VitalityStatus` given its current HP, nonlethal damage,
- * stability flag, and whether `CON === null` (Undead/Constructs).
+ * stability flag, whether `CON === null` (Undead/Constructs), and its resolved `deathHpThreshold`.
  * - Undead and Constructs (`conIsNull === true`) are destroyed immediately at `0 HP`.
- * - Living creatures are `disabled` at `0 HP`, `dying`/`stable` at `-1 .. -9 HP`, and `dead` at `<= -10 HP`.
+ * - Living creatures are `disabled` at `0 HP`, `dying`/`stable` while `deathHpThreshold < currentHp < 0`,
+ *   and `dead` at `<= deathHpThreshold` (baseline `-10`, modifiable via `'death_hp_threshold'` StatModifiers).
  * - When `hp > 0`, `nonlethalDamage === hp` causes `staggered`, and `nonlethalDamage > hp` causes `unconscious` (`disabled` / knocked out).
  *
  * @param currentHp Current hit points.
  * @param nonlethalDamage Current nonlethal damage total.
  * @param isStable Whether a dying creature has stabilized.
  * @param conIsNull True if the entity has `CON: null` (Undead/Construct).
+ * @param deathHpThreshold Effective death HP threshold (defaults to `DND35E_DEATH_HP_THRESHOLD`).
  * @returns Resolved `VitalityStatus` and whether the entity is unconscious.
  */
 export function evaluateVitalityStatus(
   currentHp: number,
   nonlethalDamage: number,
   isStable: boolean,
-  conIsNull = false
+  conIsNull = false,
+  deathHpThreshold = DND35E_DEATH_HP_THRESHOLD
 ): {
   readonly status: VitalityStatus;
   readonly isUnconscious: boolean;
@@ -156,7 +159,7 @@ export function evaluateVitalityStatus(
     };
   }
 
-  if (currentHp <= DND35E_DEATH_HP_THRESHOLD) {
+  if (currentHp <= deathHpThreshold) {
     return { status: 'dead', isUnconscious: true, triggersMassiveDamageCheck: false };
   }
   if (currentHp < 0) {
@@ -179,16 +182,18 @@ export function evaluateVitalityStatus(
 }
 
 /**
- * Rolls the per-round `10%` stabilization check for a Dying creature (`-1 .. -9 HP`).
- * On failure, the creature loses `1 HP` (potentially reaching `-10` and dying).
+ * Rolls the per-round `10%` stabilization check for a Dying creature (`deathHpThreshold < currentHp < 0`).
+ * On failure, the creature loses `1 HP` (potentially reaching `deathHpThreshold` and dying).
  *
- * @param currentHp Current HP (`-1` to `-9`).
+ * @param currentHp Current negative HP.
  * @param forcedPercentRoll Optional deterministic `1..100` roll override.
+ * @param deathHpThreshold Effective death HP threshold (defaults to `DND35E_DEATH_HP_THRESHOLD`).
  * @returns `{ nextHp: number, isStable: boolean, isDead: boolean }`.
  */
 export function rollDyingStabilization(
   currentHp: number,
-  forcedPercentRoll?: number
+  forcedPercentRoll?: number,
+  deathHpThreshold = DND35E_DEATH_HP_THRESHOLD
 ): {
   readonly nextHp: number;
   readonly isStable: boolean;
@@ -207,7 +212,7 @@ export function rollDyingStabilization(
   return {
     nextHp,
     isStable: false,
-    isDead: nextHp <= DND35E_DEATH_HP_THRESHOLD
+    isDead: nextHp <= deathHpThreshold
   };
 }
 

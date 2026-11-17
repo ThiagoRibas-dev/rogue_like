@@ -266,7 +266,14 @@ export function processDnD35eDamage(state: GameState): GameState {
 
     const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
     const conIsNull = defenderData.abilityScores.con.base === null;
-    const vitality = evaluateVitalityStatus(newHp, defenderData.nonlethalDamage, defenderData.isStable, conIsNull);
+    const defenderDag = evaluateDnD35eEntityDAG(nextState, entityId);
+    const vitality = evaluateVitalityStatus(
+      newHp,
+      defenderData.nonlethalDamage,
+      defenderData.isStable,
+      conIsNull,
+      defenderDag?.dagResult.deathHpThreshold
+    );
 
     if (vitality.status === 'dead' || (!isPlayer && newHp <= 0)) {
       nextState = addComponent(nextState, entityId, {

@@ -218,6 +218,7 @@ export function processTurn(entityId: EntityId): void {
     }
 
     if (state.engineMode === EngineMode.TurnBased) {
+      setTurnDuration(0);
       lockEngine();
       return;
     }

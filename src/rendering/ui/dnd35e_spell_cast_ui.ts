@@ -43,7 +43,18 @@ export function initiateSpellCastFromUI(state: GameState, playerId: EntityId, re
     return;
   }
 
-  let nextState = state.uiMode === UIMode.CartridgeModal ? closeCartridgeModal(state) : state;
+  let nextState = state;
+  while (nextState.uiMode === UIMode.CartridgeModal || nextState.uiMode === UIMode.Inventory) {
+    const afterClose = closeCartridgeModal(nextState);
+    if (
+      afterClose.uiMode === nextState.uiMode &&
+      afterClose.activeCartridgeModalId === nextState.activeCartridgeModalId
+    ) {
+      nextState = { ...afterClose, uiMode: UIMode.Game };
+      break;
+    }
+    nextState = afterClose;
+  }
 
   const aoeShape =
     spell.aoeShape === 'burst' ||
