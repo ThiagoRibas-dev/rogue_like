@@ -133,7 +133,7 @@ Blueprints for monsters, NPCs, and interactive props.
 
 - **Key Fields**:
   - `id`: Unique identifier (e.g., `"goblin_scout"`).
-  - `archetypeId`: (Optional / Ruleset-specific) References a system archetype in `public/data/rulesets/<rulesetId>/archetypes.json` (e.g., `"player"`, `"skeleton"`, `"wolf"`). Required for D&D 3.5e campaigns (`rulesetId: "dnd35e"`).
+  - `archetypeId`: (Optional / Ruleset-specific) References a system race/archetype in `public/data/rulesets/<rulesetId>/races/*.json` (e.g., `"player"`, `"skeleton"`, `"wolf"`, `"gelatinous_cube"`, `"giant_centipede"`). Required for D&D 3.5e campaigns (`rulesetId: "dnd35e"`). Multi-tile races can also declare `footprint: { width, height }`, `footprintsBySize`, or `isCompletelyFillingSpace: true`.
   - `name`: Human-readable name.
   - `faction`: Faction ID (must resolve in `factions.json`).
   - `ai`: `{ "profileId": "hunt" }` (must resolve in `ai.json`).
@@ -141,6 +141,20 @@ Blueprints for monsters, NPCs, and interactive props.
   - `crCost`: Challenge Rating cost spent by the Encounter Director.
   - `roleTags`: List of tags for encounter budgeting (e.g., `["appetizer"]` or `["protein"]`).
   - `tags`: List of semantic matching tags (must be registered in `tag_registry.json`).
+
+### 4.2.1 World Clock, Area Environment & Respawn Escalation (`rules.json`, `areas.json`)
+
+- **`rules.json` (`worldClock` & `hunger`)**:
+  - `worldClock` (optional): Configures `secondsPerGlobalTurn` (default `6`), `startHour`, `hoursPerDay`, `waitTargets` (e.g. `["dawn", "night"]`), and `phases` (`id`, `label`, `startHour`, `skyIllumination`, `isNaturalSunlight`).
+  - `hunger.satiationLossPerStandardTurn` (optional): Controls per-turn satiation decay (`0.035` default = ~1 daily ration of `500` satiation per 24h; e.g. `apple` = `125`).
+- **`areas.json` (`environmentType`, Lighting & Respawn Escalation)**:
+  - `environmentType` (optional): `"outdoors" | "indoors" | "underground"`. Outdoors tracks diurnal `skyIllumination` and `isNaturalSunlight` (triggering *Light Blindness* / *Light Sensitivity*); underground defaults to `"darkness"`; omitting defaults to `"indoors"`/`"bright"`.
+  - `ambientIllumination` (optional): Explicit override (`"bright" | "shadowy" | "darkness"`).
+  - `respawnEscalationPerCycle` / `maxRespawnEscalation` (optional): Increment CR budget on lazy area respawn across elapsed cycles (`lastSpawnTurn`).
+
+### 4.2.2 Declarative D&D 3.5e Conditions (`conditions/*.json`)
+
+For `rulesetId: "dnd35e"`, canonical conditions live in `public/data/rulesets/dnd35e/conditions/<id>.json` (`DnD35ConditionDefinitionSchema`), supplying `grantedTags`, `modifiers`, `ruleOverrides`, and non-stacking `abilityPenalties` without TypeScript hardcoding.
 
 ### 4.3 Interactive Scripting Conditions & Consequences
 
@@ -246,13 +260,18 @@ The default campaign located in `public/data/campaigns/default/` serves as the f
       }
     }
     ```
-  - `areas.json`: Defines Dungeon Level 1 with a total `crBudget` of `15`, using that profile:
+  - `areas.json`: Defines Dungeon Level 1 with a total `crBudget` of `15`, explicit `environmentType`, and lazy respawn escalation:
     ```json
     "dungeon_1": {
       "id": "dungeon_1",
       "generatorType": "digger",
+      "dangerRating": 1,
       "crBudget": 15,
-      "encounterProfileId": "standard_dungeon"
+      "encounterProfileId": "standard_dungeon",
+      "environmentType": "underground",
+      "respawnTimerTurns": 10,
+      "respawnEscalationPerCycle": 3,
+      "maxRespawnEscalation": 15
     }
     ```
   - `spawn_pools.json`: Maps candidates to role tags and CR costs. The Director selects candidates matching the role weights until the budget is spent:

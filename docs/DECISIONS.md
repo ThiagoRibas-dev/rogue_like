@@ -585,7 +585,31 @@ This document records architectural decisions whose rationale is **non-obvious o
 
 ---
 
-### World Clock, Area Environment, Declarative `conditionEffects`, SRD Hunger & Light Mechanics
+### Incursion Tactical Mechanics, Composable Target Filtering & Single-Pass Skill Snapshots (Milestone 138)
+
+- **Decision 1: Host Single-Pass `resolveActorSkillsSnapshot` on `DnD35EntityDAGResult` (`src/rulesets/dnd35e/skills/skill_synergies.ts`, `dnd35e_dag_adapter.ts`)**:
+  - Consolidated skill check totals, ranks, ability modifiers, 5-rank synergies, ACP, active condition modifiers, Bardic Knack floors, and *Knowledge Devotion* bonuses onto a single `skillsSnapshot` computed during DAG evaluation, replacing duplicated per-caller calculations across Character Sheet tabs, active skill verbs, and combat resolvers.
+  - *Rationale*: Recomputing skill totals ad-hoc inside DOM renderers and dungeon verbs risked drift (especially for conditional synergies, `dazzled` penalties, and *Bardic Knack* rank floors) and repeated O(50 skills) scans. Centralizing `resolveActorSkillsSnapshot` guarantees identical numbers across HUD/Dossier display and live d20 rolls.
+
+- **Decision 2: Composable `TargetCategoryFilter` & Budget-Gated Reactive Counterspelling (`target_category_filter.ts`, `counterspell_interrupt.ts`)**:
+  - Introduced declarative target category predicates (`self`, `ally`, `enemy`, `door`, `trap`) shared by spatial metamagic (*Judicious Spell*, *Reach Spell*) and AI AoE targeting (`spell.behavior.ts`), alongside immediate-action-budget-gated off-turn counterspelling (`counterspell_interrupt.ts`, *Improved Counterspell*), *Knowledge Devotion* tag-scoped combat bonuses, and `Disable Device >= DC + 5` trap ownership inversion.
+  - *Rationale*: Hardcoding ally/enemy checks per spell or AI routine fails on summons, shifting factions, and metamagic overrides. Composing `target_category_filter.ts` lets both AI heuristics and AoE metamagic feats share identical spatial safety semantics, while binding counterspelling to `DnD35ActionBudget` prevents unlimited off-turn interrupts.
+
+---
+
+### Multi-Tile Creature Footprints, Dynamic `spatialIndex` Sync & SRD Squeezing (Milestone 139)
+
+- **Decision 1: Synchronize Multi-Tile Footprints Live in `GameState.spatialIndex` (`movement_footprint.ts`, `footprint_resolver.ts`)**:
+  - Separated Tier 1 $W \times H$ grid occupancy and cardinal facing rotation (`movement_footprint.ts`) from Tier 2 D&D 3.5e size/custom footprint derivation (`footprint_resolver.ts`, `footprint` / `footprintsBySize` / `isCompletelyFillingSpace` on races), synchronizing every occupied tile into `spatialIndex` on spawn, size shifts, and *Wild Shape*/*Shapeshift* changes.
+  - *Rationale*: Representing Large+ or elongated monsters (`giant_centipede`) as single-tile anchors with radius hacks breaks corridor bottlenecks, diagonal hard-corner rules, flanking geometry, and AoE intersection. Maintaining true occupied cell arrays in `spatialIndex` keeps movement collision, FOV targeting, and scaled canvas rendering strictly consistent.
+
+- **Decision 2: Tiered Pass-Through Physics, SRD Squeezing Penalties & Sub-Zero Healing (`movement.system.ts`, `dag_resolver.ts`, `damage_vitality.ts`)**:
+  - Kept friendly/helpless/size-differential (`>= 3` steps)/Tiny `0-ft` reach square pass-through rules in Tier 1 `movement.system.ts`, while projecting squeezing penalties (`-4` Atk / `-4` AC, `2x`/`4x` step cost) and armor speed scaling (`30 -> 20`, `20 -> 15`, `trait:unencumbered_speed`) through Tier 2 DAG/action budget layers; permitted healing living actors below `0 HP` down to `deathHpThreshold`.
+  - *Rationale*: Preserves clean Tier 1/Tier 2 boundary isolation (`AGENTS.md` Rule 16) while enforcing authentic D&D 3.5e corridor squeezing and rescuing dying (`-1..-9 HP`) creatures cleanly via positive-energy healing.
+
+---
+
+### World Clock, Area Environment, Declarative `conditionEffects`, SRD Hunger & Light Mechanics (Milestone 140)
 
 - **Decision 1: Declarative `conditionEffects` Registry (`conditions/*.json`) over Hardcoded `switch` Statements**:
   - Replaced the 19-case hardcoded `switch` inside `summarizeConditionEffects` (`maneuvers_conditions.ts`) and the Fear check inside `skill_synergies.ts` with `DnD35ConditionDefinitionSchema` entries in `public/data/rulesets/dnd35e/conditions/<id>.json`.
@@ -601,7 +625,7 @@ This document records architectural decisions whose rationale is **non-obvious o
 
 ---
 
-### Telemetry-Driven Turn & Render Loop Performance Optimization
+### Telemetry-Driven Turn & Render Loop Performance Optimization (Milestone 141)
 
 - **Decision 1: Cross-State, Budget-Resilient `evaluateDnD35eEntityDAG` Memoization Keyed by `CampaignData` (`dnd35e_dag_adapter.ts`)**:
   - Replaced `WeakMap<GameState, ...>` in `evaluateDnD35eEntityDAG` with `campaignEntityDagCache` (`WeakMap<object, Map<EntityId, CachedEntityDAGEntry>>`) keyed by `state.campaign`, caching per-entity DAG results across immutable `GameState` updates via component reference signatures, equipped item refs, active `Field` snapshots, environment profile, and structural `DnD35EntityData` checks (`isSameStructuralDndData` ignoring transient `actionBudget` and `flankingRelations`).

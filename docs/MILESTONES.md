@@ -2076,3 +2076,82 @@ Bridge the execution gap between ACF progression selection and live gameplay mec
 - [x] **Testing, SSOT Documentation & Full Parity Verification (`tests/dnd35e_m137_acf_mechanics.test.ts`, `docs/SSOT_DND35E.md`, `docs/DECISIONS.md`)**:
   - Authored unit + end-to-end integration tests in `tests/dnd35e_m137_acf_mechanics.test.ts` and `tests/dnd35e_spellbook_slots.test.ts` covering all Druid, Sorcerer, Bard, and Cleric ACFs alongside existing M135/M136 ACF suites.
   - Updated `docs/DECISIONS.md`, synced `docs/ssot/ssot_dnd35e.json` (`map-codebase.ts`), and passed all 8 stages of `./verify.sh`.
+
+---
+
+# 🚀 Phase 36: Incursion Tactical Mechanics, Spatial Metamagic, Reactive Counterspelling & Unified Stat/Skill Snapshots
+
+Port high-leverage tactical mechanics surfaced from the *Incursion* comparative audit (`docs/incursion/INCURSION_FEATURES_AND_MECHANICS.md`, `docs/incursion/INCURSION_SSOT.md`) using strictly composable Tier 2 predicates, unify actor skill snapshots onto the 4-Stage Topological Stat DAG, and modularize oversized cartridge modules.
+
+## 🟢 Milestone 138: Incursion Tactical Mechanics, Unified Stat/Skill Snapshot Registry & Module Hygiene (Complete)
+
+- [x] **Modular Type & Hot-Path Housekeeping (`src/rulesets/dnd35e/types/stats.types.ts`, `combat/`, `magic/`, `ui/`)**:
+  - Extracted `stats.types.ts` out of `dnd35e.types.ts` and streamlined `dnd35e_turn_budget.ts`, `attack_routine.ts`, `combat_exchange_pipeline.ts`, `immediate_reactions.ts`, `retaliation_resolver.ts`, `spellbook_slots.ts`, and `dnd35e_ui_hotbar.ts` cleanly beneath the 300-line ESLint threshold.
+- [x] **Unified Actor Skill Snapshot Registry on `DnD35EntityDAGResult` (`src/rulesets/dnd35e/skills/skill_synergies.ts`, `cartridge/dnd35e_dag_adapter.ts`, `modifiers/dag_resolver.ts`)**:
+  - Added single-pass `resolveActorSkillsSnapshot` (incorporating class/cross-class ranks, 5-rank synergies, ACP, condition modifiers, Bardic Knack floor, and *Knowledge Devotion* tiers) directly onto `DnD35EntityDAGResult`, eliminating redundant per-caller skill and ability calculations across character sheet tabs, skill verbs, and combat resolvers.
+- [x] **Composable Target Filtering, Spatial Metamagic & AI Friendly-Fire Avoidance (`src/rulesets/dnd35e/magic/target_category_filter.ts`, `public/data/rulesets/dnd35e/feats/{judicious_spell,reach_spell}.json`, `src/ai/spell.behavior.ts`)**:
+  - Implemented `target_category_filter.ts` evaluating relational target categories (`self`, `ally`, `enemy`, `door`, `trap`, etc.).
+  - Authored *Judicious Spell* (excludes allies from AoE blasts) and *Reach Spell* (projects melee touch spells up to 30 ft) and updated `spell.behavior.ts` with target-category AoE prediction to prevent AI friendly fire.
+- [x] **Off-Turn Reactive Counterspelling, *Knowledge Devotion* & Trap Ownership Inversion (`src/rulesets/dnd35e/magic/counterspell_interrupt.ts`, `public/data/rulesets/dnd35e/feats/{improved_counterspell,knowledge_devotion}.json`, `src/rulesets/dnd35e/skills/dungeon_skill_verbs.ts`)**:
+  - Implemented off-turn reactive counterspelling (`counterspell_interrupt.ts` + *Improved Counterspell*) gated by Immediate Action turn budget policies and Spellcraft identification checks.
+  - Authored *Knowledge Devotion* (*Complete Champion* p. 60) mapping Knowledge skill checks against studied creature types to typed attack/damage bonuses, and upgraded `Disable Device` (`>= DC + 5`) to reset and invert trap faction ownership cleanly.
+  - Added `tests/dnd35e_incursion_enhancements.test.ts` and `docs/incursion/INCURSION_SSOT.md`.
+
+---
+
+# 🚀 Phase 37: Multi-Tile Creature Footprints, SRD Squeezing, Tactical Speed Scaling & Scaled Canvas Rendering
+
+Extend the Tier 1 Console spatial index and Tier 2 D&D 3.5e geometry rules to support true $W \times H$ multi-tile creatures, elongated non-square footprints with cardinal auto-rotation, SRD squeezing and pass-through physics, armor speed adjustments, and proportional multi-tile canvas rendering.
+
+## 🟢 Milestone 139: Multi-Tile Footprints, SRD Squeezing, Tactical Movement & Scaled Rendering (Complete)
+
+- [x] **Multi-Tile Occupancy & Cardinal Auto-Rotation (`src/systems/movement_footprint.ts`, `src/rulesets/dnd35e/spatial/footprint_resolver.ts`, `src/core/ecs/ecs_core.ts`, `public/data/rulesets/dnd35e/races/{gelatinous_cube,giant_centipede}.json`)**:
+  - Implemented default (`Fine`–`Colossal`) square footprints plus declarative `footprint` / `footprintsBySize` / `isCompletelyFillingSpace` schemas on races/archetypes (`gelatinous_cube`, `giant_centipede`) with automatic cardinal rotation (`rotation: 0 | 90 | 180 | 270`).
+  - Synchronized multi-tile `GameState.spatialIndex` entries dynamically across entity spawn, size-step changes, and *Wild Shape* / *Shapeshift* form shifts.
+- [x] **SRD Squeezing, Hard-Corner Diagonals, Pass-Through Rules & Armor Tactical Speed (`src/systems/movement.system.ts`, `src/rulesets/dnd35e/action_economy.ts`, `src/rulesets/dnd35e/modifiers/dag_resolver.ts`)**:
+  - Implemented SRD Squeezing (`-4` Attack / `-4` AC, `2x` movement cost, `4x` on difficult terrain) when traversing corridors narrower than the creature's space, alongside hard-corner diagonal movement blocking and alternating `1-2-1-2` diagonal distance math.
+  - Implemented pass-through traversal for friendly actors, helpless foes, `>= 3` size category differentials, and Tiny/Diminutive/Fine `0-ft` reach square sharing.
+  - Applied SRD armor tactical speed scaling (`30 ft -> 20 ft`, `20 ft -> 15 ft`, bypassed by `trait:unencumbered_speed`) and allowed healing of living creatures below `0 HP` down to their DAG-resolved `deathHpThreshold` (`damage_vitality.ts`).
+- [x] **Scaled Multi-Tile Canvas Rendering & Regression Suite (`src/rendering/viewport_snapshot.ts`, `src/rendering/tactical_snapshot.ts`, `src/rendering/ui/tactical_overlay.ui.ts`, `tests/dnd35e_size_footprint_movement.test.ts`)**:
+  - Rendered multi-tile tactical bounding frames, full-width composite HP bars, and scaled sprites/glyphs (including sub-tile visual scaling for `Tiny`–`Fine` creatures) alongside comprehensive tests in `tests/dnd35e_size_footprint_movement.test.ts`.
+
+---
+
+# 🚀 Phase 38: Diurnal World Clock, Area Environment Lighting, Declarative `conditionEffects`, Bulk Rest/Wait & Light Exposure
+
+Unify global timekeeping across Turn-Based and RTwP modes, introduce explicit area environmental profiles and diurnal sky lighting, extract all 19 D&D 3.5e conditions into declarative JSON definitions, and wire bulk rest/wait simulation with SRD hunger pacing and Light Blindness/Sensitivity rules.
+
+## 🟢 Milestone 140: World Clock, Environment Lighting, Declarative `conditionEffects`, Rest Time-Skip & Cross-Area Wake Fixes (Complete)
+
+- [x] **Declarative `conditionEffects` Registry (`public/data/rulesets/dnd35e/conditions/*.json`, `conditions.json`, `src/rulesets/dnd35e/combat/condition_registry.ts`, `maneuvers_conditions.ts`)**:
+  - Extracted all 19 canonical D&D 3.5e conditions into modular JSON files conforming to `DnD35ConditionDefinitionSchema`, driving `summarizeConditionEffects`, `applyConditionWithEscalation`, and `buildConditionStatModifiers` (including `dazzled` `-1` Attack/Spot/Search) with zero hardcoded `switch` tables.
+- [x] **Tier 1 Diurnal World Clock & Area Environment Profiles (`src/systems/world_clock.system.ts`, `src/constants/world_clock.constants.ts`, `src/types/campaign/{meta,world}.ts`, `src/systems/lifecycle.system.ts`, `src/rendering/ui/hud.ui.ts`)**:
+  - Added configurable `rules.worldClock` (`dawn`, `day`, `dusk`, `night` phases, `secondsPerGlobalTurn: 6`) and explicit `AreaDefinition.environmentType` (`outdoors` | `indoors` | `underground`), `ambientIllumination`, `respawnEscalationPerCycle`, and `maxRespawnEscalation` across all 4 campaigns.
+  - Moved `globalTurn` advancement, controller overlay ticks, and cadence processing to Player Turn Start in `runActorTurnStart` for exact 1:1 6-second turn pacing across Turn-Based and RTwP modes, surfaced in the HUD clock readout.
+- [x] **Sync/Async Bulk Rest & Wait Simulation (`src/systems/world_time_skip.ts`, `src/systems/hunger.system.ts`, `src/systems/map/map_wake_respawn.ts`, `src/rendering/ui/dnd35e_rest_actions.ts`)**:
+  - Added `advanceWorldTimeBulk` and `advanceWorldTimeBulkAsync` supporting 8-hour rests and configurable `waitTargets` (`dawn`, `night`) with visible-hostile gating, loading-bar progress, `"While you rested:"` world event digests, SRD hunger drain (`satiationLossPerStandardTurn: 0.035`), food satiation scaling, and lazy cross-area respawn CR escalation.
+- [x] **Horizon 3 Light/Env Tags, Drow Light Blindness & Cross-Area Wake Remediation (`src/rulesets/dnd35e/spatial/{light_exposure,cover_senses}.ts`, `semantic_tags_context.ts`, `tests/dnd35e_day_night_environment.test.ts`)**:
+  - Projected `env:*`, `time:*`, and tile `light:*` (`light:sunlight`, `light:bright`, `light:shadowy`, `light:darkness`) tags driving Drow *Light Blindness* (1-round `blinded` + prolonged `dazzled` state machine), Kobold/Orc/Duergar *Light Sensitivity*, spell illumination overrides (*Light*, *Daylight*, *Darkness*), and conditional *Knowledge (Dungeoneering/Nature)* / *Survival* synergies.
+  - Fixed cross-area `areaIdOverride` lookups in `resolveAreaEnvironmentProfile`, preserved `savedTargetArea.lastSpawnTurn` across `wakeSavedAreaFloor`, summed total `tracks` levels during 8-hour rest HP recovery, and immediately cleared sunlight blindness inside `Darkness` spatial fields.
+
+---
+
+# 🚀 Phase 39: Telemetry-Driven Engine & Render Loop Optimization + Selection Modal UX
+
+Eliminate hot-path simulation and DOM redraw bottlenecks identified from live `perfTracker` session telemetry (`dnd35e-crypt`, turns `4906–4912`) while giving ruleset and campaign descriptions spacious, readable selection modals.
+
+## 🟢 Milestone 141: Turn Loop, Cross-State DAG Cache, Flanking Fast-Skip, Dirty-Domain Diffing & Modal Layout (Complete)
+
+- [x] **Cross-State, Budget-Resilient `evaluateDnD35eEntityDAG` Memoization (`src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts`)**:
+  - Replaced per-`GameState` DAG caching (which missed on every unrelated actor step) with `campaignEntityDagCache` (`WeakMap<object, Map<EntityId, CachedEntityDAGEntry>>`) keyed by `state.campaign`, invalidating strictly on structural component references, equipped item references, active `Field` snapshots (including `sourceFactionId`), or area environment changes while merging fresh transient `actionBudget` and `flankingRelations` on cache hits.
+- [x] **Spatial Reach Pre-Filtering & Movement-Step Fast-Skip (`src/rulesets/dnd35e/spatial/flanking_graph.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts`)**:
+  - Deferred `resolveEntitySituationalTagContext` and `projectDnD35ActorSemanticTags` inside `syncSpatialFlankingGraph` into a lazy per-sync cache invoked only for hostile pairs within `maxReachFt`.
+  - Guarded step-level flanking updates in `onDnD35eActorMovementStep` behind `hasRelevantFlankingNeighborForStep` (`12`-tile / `60`-ft neighborhood or pre-existing flanking edge).
+- [x] **Direct AI Turn Settlement & Debounced Persistence (`src/core/game-loop.ts`, `tests/dnd35e_npc_action_budget.test.ts`)**:
+  - Added `settleRemainingActorTurn` so AI actors concluding an intra-turn action with `intent: null` clear remaining `actionBudget` directly (running `processFieldsTick`, conditional stabilization, and player exploration updates when needed) without dispatching a duplicate `Wait` pass.
+  - Removed synchronous per-step `saveCheckpoint(nextState)` calls in favor of `updateState` debounced persistence and area-transition/game-over checkpoints.
+- [x] **Viewport/Player-Scoped Dirty Domains, Menu Render Guard & Selection Modal Sizing (`src/core/presentation_queue.ts`, `src/rendering/presenter.ts`, `index.html`, `tests/dirty_domains.test.ts`)**:
+  - Scoped `markDirtyFromStateDiff` (`classifyPresentationComponentDiff`) so off-screen NPC moves/turns outside `cachedFov` no longer trigger redundant `Entities`, `HUD`, or `Inventory` redraws.
+  - Gated `renderMenus` in `presenter.ts` to execute only when `state.uiMode !== UIMode.Game`.
+  - Expanded `#ruleset-selection-overlay` and `#campaign-selection-overlay` modals to `50vw x 100vh` centered with scrollable content panes (`index.html`), verified with `tests/dirty_domains.test.ts` and full 8-stage `./verify.sh` (`295/295` passing tests across 41 suites, `471` SSOT files).
+

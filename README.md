@@ -14,26 +14,29 @@ Latest live deployment playable in your browser at **[https://thiagoribas-dev.gi
 - **Tactical Companion AI, Stances & Orders (`ControllerLinkComponent`, `companion_commands.system.ts`)** — Spawned allies, animal companions, familiars, and summons follow their master (`follow` behavior), respect tactical stances (`aggressive`, `defensive`, `passive`, `hold`), execute focus-target commands (`order_target` via right-click verbs, targeting mode, or synthetic `__companion_orders__` dialogue), and swap tiles seamlessly in corridors.
 - **Console Stance Groups, Dock & Master Dossier** — Data-driven stance groups (`stance.system.ts`), bottom command dock (`hud_bottom_dock.ui.ts`), hotbar (`console_hotbar.ui.ts`), symmetrical Paper Doll (`console_inventory.ui.ts`), and Master Character Dossier (`console_dossier.ui.ts`).
 - **Viewport-Proportional Zoom & Theme System** — Dynamic resolution-independent tile sizing (`DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT`, 0.5×–3.0× zoom), optional 45°/3D perspective transforms, and switchable skins/font scaling (`console_theme.ts`).
-- **Performance Telemetry & Web Worker Concurrency** — Heavy procedural dungeon generation (`map.worker.ts`) and headless campaign fuzzing (`fuzzer.worker.ts`) run off the main thread; sub-domain turn/render telemetry (`perfTracker`) exports JSON diagnostics from Settings.
-- **Seeded Determinism & Cold Storage** — 100% reproducible runs via encapsulated `ROT.RNG` (`src/core/rng.ts`) and deterministic entity IDs, with `localStorage` auto-saves, JSON save import/export, and cross-floor Sleep/Wake entity serialization.
+- **Diurnal World Clock, Environment Lighting & Rest Simulation** — Configurable 6-second turn clock (`dawn`/`day`/`dusk`/`night`), explicit area `environmentType` (`outdoors`/`indoors`/`underground`), sync/async bulk rest & configurable `waitTargets` (`world_time_skip.ts`) with SRD hunger drain, `"While you rested:"` world event digests, and lazy cross-area respawn CR escalation (`map_wake_respawn.ts`).
+- **Multi-Tile Footprints & Pass-Through Physics (`movement_footprint.ts`)** — True $W \times H$ grid occupancy and cardinal auto-rotation synchronized live in `spatialIndex`, plus friendly, helpless, $\ge 3$ size-delta, and Tiny 0-ft reach pass-through rules.
+- **Performance Telemetry & Web Worker Concurrency** — Heavy procedural dungeon generation (`map.worker.ts`) and headless campaign fuzzing (`fuzzer.worker.ts`) run off the main thread; sub-domain turn/render telemetry (`perfTracker`) exports JSON diagnostics from Settings; viewport/player-scoped dirty-domain diffing (`presentation_queue.ts`) and menu gating (`presenter.ts`) prevent off-screen DOM redraws.
+- **Seeded Determinism & Cold Storage** — 100% reproducible runs via encapsulated `ROT.RNG` (`src/core/rng.ts`) and deterministic entity IDs, with `localStorage` auto-saves (debounced across intra-round steps), JSON save import/export, and cross-floor Sleep/Wake entity serialization.
 
 ### 🐉 D&D 3.5e SRD Cartridge (`src/rulesets/dnd35e/` — Tier 2 & Tier 3)
 - **4-Stage Stat Evaluation DAG (`evaluateDnD35eEntityDAG`) & 3-Horizon Boundary**:
-  - **Horizon 1 / Horizon 2 / Horizon 3** — Cleanly isolates immutable per-level ledger choices (`levelHistory`), deterministic progression rebuilds (`scalingPools`, `spellbooksByClass`), and live situational equipment/encumbrance self-tag projection (`projectDnD35ActorSemanticTags`).
-  - **Stage 1–4 Sub-Stat DAG** — Evaluates effective Size (`Fine` to `Colossal`) and overlays, Ability Scores, Compound Defenses (18-type bonus stacking across Full/Touch/Flat-Footed AC, Saves, BAB, Grapple, Initiative with `sourcePath` provenance), and Stage 4 complete `attackRoutine` synthesis.
-  - **WeakMap Schema Memoization** — Validated rulebook registries (`getDnD35SystemContent`) are cached via `WeakMap` for $O(1)$ hot-path reads while derived entity DAGs remain 100% stateless.
+  - **Horizon 1 / Horizon 2 / Horizon 3** — Cleanly isolates immutable per-level ledger choices (`levelHistory`), deterministic progression rebuilds (`scalingPools`, `spellbooksByClass`), and live situational equipment/encumbrance/environment/tile-light tag projection (`projectDnD35ActorSemanticTags`).
+  - **Stage 1–4 Sub-Stat DAG & Single-Pass Skill Snapshot** — Evaluates effective Size (`Fine` to `Colossal`) and overlays, Ability Scores, Compound Defenses (18-type bonus stacking across Full/Touch/Flat-Footed AC, Saves, BAB, Grapple, Initiative with `sourcePath` provenance), Stage 4 `attackRoutine` synthesis, and unified `resolveActorSkillsSnapshot` totals.
+  - **WeakMap Schema & Cross-State DAG Memoization** — Validated rulebook registries (`getDnD35SystemContent`) are cached via `WeakMap` for $O(1)$ hot-path reads, while `campaignEntityDagCache` reuses structural 4-stage DAG results across immutable `GameState` steps while merging fresh transient `actionBudget` and `flankingRelations`.
 - **Universal Actor Symmetry & Composable Creature Synthesis**:
   - **75 Unified Race/Bestiary Chassis (`races/`)** — 14 playable races/subraces plus monstrous species, True Dragon 12-age-category progressions, Elemental size ladders, 15 Creature Type Racial HD engines, 20 Subtypes, 13 Templates (*Skeleton*, *Zombie*, *Celestial*, *Fiendish*, *Half-Dragon*, *Ghost*, *Lich*, *Vampire*, etc.), and non-destructive `WildShapeOverlay` layers.
   - **Symmetrical Anatomical Equipment & Armaments** — All actors (PCs, NPCs, companions, monsters) auto-initialize anatomical `EquipmentComponent` slots from `anatomyBodyPlan` and equip declarative `defaultEquipment` loadouts.
 - **Classes, Feature-Driven Multiclassing, Alternate Class Features (ACFs) & Unified Character Builder**:
   - **26 Modular Classes (`classes/`)** — 11 Core Classes (Levels 1–20), 5 NPC Classes (*Adept*, *Aristocrat*, *Commoner*, *Expert*, *Warrior*), and 10 Prestige Classes with recursive AST prerequisite validation, fully wired Alternate Class Features (`acfSwaps` across all 11 core classes including *Lion/Wolf Totem*, *Whirling Frenzy*, *Spontaneous Domain Casting*, *Druidic Avenger*, *Shapeshift*, *Dungeon Crasher*, *Decisive Strike*, *Invisible Fist*, *Charging Smite*, *Distracting Attack*, *Penetrating Strike*, *Bardic Knack*, *Healing Hymn*, *Metamagic Specialist*, and *Abrupt Jaunt*), declarative `scalingPoolContribution` stacking, and 22 Cleric Domains (`domains/`).
-  - **50 SRD Skills & 121 Feats** — Class vs. cross-class rank caps (`isEverClassSkill` vs. active-level cost), 5-rank synergies, active dungeon/combat skill verbs (`search`, `unlock`, `disarm`, `heal`, `persuade`, `intimidate`, `feint`), Monster Lore Knowledge gating, and parameterized feats (`weapon_focus:<baseWeaponId>`, `ability_focus:<abilityId>`).
+  - **50 SRD Skills & 125 Feats** — Class vs. cross-class rank caps (`isEverClassSkill` vs. active-level cost), 5-rank synergies, active dungeon/combat skill verbs (`search`, `unlock`, `disarm` with `DC + 5` trap ownership inversion, `heal`, `persuade`, `intimidate`, `feint`), Monster Lore Knowledge gating, *Knowledge Devotion*, spatial metamagic (*Judicious Spell*, *Reach Spell*), *Improved Counterspell*, and parameterized feats (`weapon_focus:<baseWeaponId>`, `ability_focus:<abilityId>`).
+  - **19 Declarative Conditions & Light Exposure (`conditions/*.json`)** — Data-driven `conditionEffects` registry powering all 19 canonical D&D 3.5e conditions (including `dazzled`) plus Drow *Light Blindness* (`light_exposure.ts`) and Kobold/Orc/Duergar *Light Sensitivity* reactive to ambient sunlight and spell illumination fields.
   - **Composable Item Inheritance & First-Class Enhancements** — **149 items** (`items/`) + **16 enhancements** (`item_enhancements.json`) supporting `baseItemId` inheritance, runtime instance overrides, base weapon tag matching (`weapon:<baseWeaponId>`), and conditional `on_hit` / `on_crit` damage riders.
   - **Shared 2-Pane Builder & Level-Up Flow** — Mandatory step validation gating, point-buy / array / `4d6kh3` rolls, starting gear materialization, filterable Feat/Spell steps, isolated per-class `spellbooksByClass`, and reversible negative levels / permanent level drain.
-- **5-Phase Combat Pipeline, Relational Flanking, Immediate Reactions & Vancian Magic**:
+- **5-Phase Combat Pipeline, Relational Flanking, Multi-Tile Squeezing & Vancian Magic**:
   - **Composable 5-Phase Combat Exchange (`combat_exchange_pipeline.ts`)** — Executes `PreAttack` (illumination/concealment/flanking) $\to$ `StrikeRoll` (fortification/crit immunity) $\to$ `OnHitRiders` $\to$ `PostStrikeReaction` (target-side retaliation shields) $\to$ `OnDropFollowup` (*Cleave*/*Great Cleave*).
-  - **Action Economy, Relational Flanking Graph & Immediate Reactions** — Symmetric per-entity 6-second round budgets (`Standard`, `Move`, `Swift/Immediate`, `5-Foot Step`, `AoO`), directional `flankingRelations` graph (`flanking_graph.ts`) with declarative flanking overrides, configurable off-turn Immediate Action reaction policies (`off`, `before_melee_attack`, `before_any_attack`, `on_enemy_adjacent_move`), and opposed Combat Maneuvers (including spatial Bull Rush + *Dungeon Crasher* wall impacts).
-  - **254 Modular Spells (Levels 0–9)** — Prepared/spontaneous per-class spellbooks, Divine prayerbook auto-access, 100% 22-domain spell list coverage, declarative spontaneous conversion (`cure_or_inflict`, `domain`, `summon_nature_ally`), Metamagic feats, Concentration/Counterspelling, summoning chains, iterative spell strikes, and mobile spell aura emanations with illumination precedence and per-cast first-entry save/SR memory.
+  - **Action Economy, Relational Flanking, Squeezing & Immediate Reactions** — Symmetric per-entity 6-second round budgets (`Standard`, `Move`, `Swift/Immediate`, `5-Foot Step`, `AoO`), reach-filtered directional `flankingRelations` graph (`flanking_graph.ts`), SRD Squeezing (`-4` Atk / `-4` AC, `2x`/`4x` movement cost), armor tactical speed scaling & `1-2-1-2` diagonals, off-turn reactive counterspelling (`counterspell_interrupt.ts`), configurable Immediate Action reaction policies, and opposed Combat Maneuvers (including spatial Bull Rush + *Dungeon Crasher* wall impacts).
+  - **254 Modular Spells (Levels 0–9)** — Prepared/spontaneous per-class spellbooks, Divine prayerbook auto-access, 100% 22-domain spell list coverage, declarative spontaneous conversion (`cure_or_inflict`, `domain`, `summon_nature_ally`), Metamagic & composable target-category AoE filtering (`target_category_filter.ts`), Concentration/Counterspelling, summoning chains, iterative spell strikes, and mobile spell aura emanations with illumination precedence and per-cast first-entry save/SR memory.
 
 ### 🗺️ Exploration, World & Map
 - **Procedural & Static Map Generation** — `ROT.Map.Digger` dungeons, cellular automata caves, Diffusion-Limited Aggregation (DLA) caverns with Voronoi sub-biomes, and hand-crafted static hubs.
@@ -94,10 +97,10 @@ This codebase enforces strict architectural guardrails verified automatically on
 - **Three-Tier Placement Heuristic**:
   - **Tier 1 — Core Console Engine (`src/core/`, `src/ai/`, `src/systems/`, `src/types/`)**: Reusable RPG simulation primitives (ECS state, anatomical `EquipmentSlotInstance[]` body graphs, layered stat overlays, tag-conditional modifiers, spatial fields, companion AI & stance/focus-target commands, stance groups, lifecycle windows, and UI host slots).
   - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`, `src/rulesets/classic/`)**: Pure mathematical laws of the tabletop system (3-horizon stat pipeline, 4-stage stat DAG, 18-type bonus stacking, 5-phase combat exchange, full-attack & maneuver resolvers, Vancian spellcasting).
-  - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: **745** modular JSON files (+ `item_enhancements.json` and root barrel files) parameterizing classes (26), races/bestiary (75), spells (254), templates (13), feats (121), items (149 + 16 enhancements), domains (22), skills (50), creature types (15), and subtypes (20).
+  - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: **768** modular JSON files across 11 subfolders (plus `item_enhancements.json` and 11 root barrel JSONs = **780** total JSON files) parameterizing classes (26), races/bestiary (75), spells (254), conditions (19), templates (13), feats (125), items (149 + 16 enhancements), domains (22), skills (50), creature types (15), and subtypes (20).
 - **Unified Effect Providers & Hierarchical Provenance (`sourcePath`)**: Every mechanical emitter (size, creature type, subtype, race, template, class, feat, skill threshold, item enhancement, condition, armor/load, tactical stance, spatial field) projects semantic tags and emits `StatModifier`s / `RuleOverride`s carrying a slash-delimited `sourcePath` for atomic revocation.
 - **Programmatic SSOT Registries & Continuous Parity**:
-  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (**307 files**) or `docs/ssot/ssot_dnd35e.json` (**154 files**) — **461 source files** total with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
+  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (**311 files**) or `docs/ssot/ssot_dnd35e.json` (**160 files**) — **471 source files** total with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
   - Human-readable maps (`docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`) are generated programmatically via `bun run map:ssot` and verified for 100% disk and export parity by `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`.
 
 ---
@@ -113,17 +116,17 @@ This codebase enforces strict architectural guardrails verified automatically on
 │   ├── MILESTONES.md                         # Project roadmap and completed milestones
 │   ├── QUEST_AND_NARRATIVE_ARCHITECTURE.md   # Deep-dive quest, dialogue, and narrative dataflow spec
 │   ├── UI_UX_STANDARDS.md                    # Dark-fantasy UI/UX constitution & Cartridge UI Adapter standards
-│   ├── SSOT_CONSOLE.md                       # Auto-generated Core Console SSOT responsibility map (307 files)
-│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map (154 files)
+│   ├── SSOT_CONSOLE.md                       # Auto-generated Core Console SSOT responsibility map (311 files)
+│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map (160 files)
 │   ├── ssot/                                 # Authoritative JSON SSOT registries (ssot_console.json, ssot_dnd35e.json)
 │   ├── dnd35e/                               # D&D 3.5e SRD domain reference specs
 │   ├── guides/                               # Campaign authoring and ruleset developer guides
 │   └── archive/                              # Historical audits and design scratchpads
 ├── public/data/
 │   ├── campaigns/                            # Built-in campaigns (default, dnd35e-crypt, megacampaign, shroudgarde)
-│   └── rulesets/dnd35e/                      # 745 modular D&D 3.5e SRD JSON data files (+ root enhancements)
+│   └── rulesets/dnd35e/                      # 768 modular D&D 3.5e SRD JSON files (+ 12 root files = 780 total)
 ├── scripts/                                  # Campaign validator, SSOT parity engine, file-length checker, and codebase mapper
-├── tests/                                    # Bun regression test suites (267 tests across 41 suites)
+├── tests/                                    # Bun regression test suites (295 tests across 41 suites)
 └── src/
     ├── actions/                              # Action handlers and verb dispatch registry
     ├── ai/                                   # Composable AI behaviors (hunt, ranged, spell, follow, flee, wander) & companion targeting
@@ -146,12 +149,12 @@ This codebase enforces strict architectural guardrails verified automatically on
 
 - **[`AGENTS.md`](./AGENTS.md)** — Golden Rules, TypeScript strictness standards, and development workflow.
 - **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** — Deep-dive system design and data flow across all engine subsystems.
-- **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M137 ADRs).
-- **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and upcoming phases (Milestones 1–137).
+- **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M141 ADRs).
+- **[`docs/MILESTONES.md`](./docs/MILESTONES.md)** — Complete milestone history and upcoming phases (Milestones 1–141).
 - **[`docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md`](./docs/QUEST_AND_NARRATIVE_ARCHITECTURE.md)** — End-to-end quest, dialogue, and procedural narrative lifecycle architecture.
 - **[`docs/UI_UX_STANDARDS.md`](./docs/UI_UX_STANDARDS.md)** — Theme skins, UI component contracts, and `ICartridgeUIAdapter` standards.
 - **[`docs/SSOT_CONSOLE.md`](./docs/SSOT_CONSOLE.md)** & **[`docs/SSOT_DND35E.md`](./docs/SSOT_DND35E.md)** — Canonical file ownership and entry-point maps.
-- **[`docs/guides/CAMPAIGN_AUTHORING.md`](./docs/guides/CAMPAIGN_AUTHORING.md)** — Guide to creating custom campaigns and JSON mods.
+- **[`docs/guides/CREATOR_GUIDE.md`](./docs/guides/CREATOR_GUIDE.md)** & **[`docs/guides/MODDING.md`](./docs/guides/MODDING.md)** — Guides to authoring, validating, and modding custom campaigns.
 
 ---
 
