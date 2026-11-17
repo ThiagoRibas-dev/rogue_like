@@ -40,6 +40,24 @@
       "type:plant",
       "type:vermin"
     ],
-    "rankThresholdModifiers": []
+    "rankThresholdModifiers": [
+      {
+        "minRanks": 5,
+        "name": "Aboveground Survival Synergy",
+        "modifiers": [
+          {
+            "id": "nature_survival_aboveground",
+            "target": "skill:survival",
+            "value": 2,
+            "type": "untyped",
+            "condition": {
+              "selfTagsAny": ["env:aboveground", "env:outdoors"]
+            }
+          }
+        ],
+        "ruleOverrides": [],
+        "grantedTags": []
+      }
+    ]
   }
 }

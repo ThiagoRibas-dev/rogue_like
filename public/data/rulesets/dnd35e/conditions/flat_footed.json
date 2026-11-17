@@ -1,0 +1,12 @@
+{
+  "flat_footed": {
+    "id": "flat_footed",
+    "name": "Flat-Footed",
+    "description": "Especially vulnerable to attacks at the beginning of a battle. Loses Dexterity bonus to AC and cannot make attacks of opportunity.",
+    "grantedTags": ["condition:flat_footed"],
+    "modifiers": [],
+    "ruleOverrides": [
+      { "id": "flat_footed_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 }
+    ]
+  }
+}

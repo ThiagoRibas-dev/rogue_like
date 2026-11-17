@@ -1,6 +1,8 @@
 import { getComponent, queryEntities, spawnEntity, spawnItem } from '../../core/ecs.ts';
 import { rng } from '../../core/rng.ts';
 import { runEncounterDirector } from '../../map/encounter_director.ts';
+import { resolveAreaEnvironmentProfile } from '../world_clock.system.ts';
+import type { AreaDefinition } from '../../types/campaign.types.ts';
 import type { RoomBounds } from '../../types/encounter.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import {
@@ -70,17 +72,22 @@ export function buildAreaDirectorContext(
       : 1;
 
   let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
+  const envProfile = resolveAreaEnvironmentProfile(state);
+  const envAndTimeTags = [`time:${envProfile.clock.phaseId}`, `env:${envProfile.environmentType}`];
   const areaEntId = state.areaEntityIds[targetAreaId];
   if (areaEntId) {
     const tagsComp = getComponent(state, areaEntId, ComponentType.Tags) as TagsComponent | undefined;
     const budgetComp = getComponent(state, areaEntId, ComponentType.DirectorBudget) as
       DirectorBudgetComponent | undefined;
-    if (tagsComp || budgetComp) {
-      areaMutation = {
-        addedTags: tagsComp ? tagsComp.tags : [],
-        budgetModifier: budgetComp ? budgetComp.budgetModifier : 0
-      };
-    }
+    areaMutation = {
+      addedTags: Array.from(new Set([...(tagsComp?.tags ?? []), ...envAndTimeTags])),
+      budgetModifier: budgetComp ? budgetComp.budgetModifier : 0
+    };
+  } else {
+    areaMutation = {
+      addedTags: envAndTimeTags,
+      budgetModifier: 0
+    };
   }
 
   return {
@@ -158,7 +165,7 @@ export function wakeSavedAreaFloor(
     }
   }
 
-  // Check Respawn Timer
+  // Check Respawn Timer with elapsed-cycle CR budget escalation
   const areaDef = nextState.campaign.areas[targetAreaId];
   if (areaDef?.respawnTimerTurns && nextState.globalTurn - targetLastSpawnTurn >= areaDef.respawnTimerTurns) {
     const existingEntities = Array.from(nextComponents.entries())
@@ -169,7 +176,13 @@ export function wakeSavedAreaFloor(
       })
       .filter((e): e is { templateId: string; x: number; y: number } => e !== null);
 
-    const directorContext = buildAreaDirectorContext(nextState, targetAreaId, false);
+    const directorContext = buildAreaDirectorContextWithEscalation(
+      nextState,
+      targetAreaId,
+      false,
+      areaDef,
+      targetLastSpawnTurn
+    );
     const directorResult = runEncounterDirector(
       nextState.campaign,
       areaDef,
@@ -222,4 +235,94 @@ export function wakeSavedAreaFloor(
     nextComponents,
     targetLastSpawnTurn
   };
+}
+
+/**
+ * Computes Director context enriched with elapsed-cycle respawn budget escalation so areas
+ * spawn stronger or more numerous enemies after long stretches of elapsed world time.
+ */
+function buildAreaDirectorContextWithEscalation(
+  state: GameState,
+  targetAreaId: string,
+  includeReservedTokens: boolean,
+  areaDef: AreaDefinition,
+  lastSpawnTurn: number
+): ReturnType<typeof buildAreaDirectorContext> {
+  const base = buildAreaDirectorContext(state, targetAreaId, includeReservedTokens);
+  if (!areaDef.respawnTimerTurns || areaDef.respawnTimerTurns <= 0) return base;
+
+  const elapsedTurns = Math.max(0, state.globalTurn - lastSpawnTurn);
+  const elapsedCycles = Math.floor(elapsedTurns / areaDef.respawnTimerTurns);
+  const extraCycles = Math.max(0, elapsedCycles - 1);
+  const perCycle = areaDef.respawnEscalationPerCycle ?? 0;
+  if (extraCycles <= 0 || perCycle <= 0) return base;
+
+  const rawEscalation = extraCycles * perCycle;
+  const bonusBudget =
+    areaDef.maxRespawnEscalation !== undefined ? Math.min(areaDef.maxRespawnEscalation, rawEscalation) : rawEscalation;
+
+  return {
+    ...base,
+    areaMutation: {
+      addedTags: base.areaMutation?.addedTags ?? [],
+      budgetModifier: (base.areaMutation?.budgetModifier ?? 0) + bonusBudget
+    }
+  };
+}
+
+/**
+ * Evaluates and triggers lazy Encounter Director respawn on the currently active area
+ * after bulk world time advancement (such as resting or waiting) if `respawnTimerTurns` elapsed.
+ */
+export function triggerActiveAreaRespawnIfDue(state: GameState): {
+  readonly state: GameState;
+  readonly spawnedCount: number;
+} {
+  const areaDef = state.campaign.areas[state.currentAreaId];
+  if (!areaDef?.respawnTimerTurns || areaDef.tags?.includes('safe')) {
+    return { state, spawnedCount: 0 };
+  }
+  const elapsed = state.globalTurn - (state.lastSpawnTurn ?? 0);
+  if (elapsed < areaDef.respawnTimerTurns) {
+    return { state, spawnedCount: 0 };
+  }
+
+  const existingEntities = Array.from(state.components.entries())
+    .map(([_id, comps]) => {
+      const template = comps[ComponentType.Template] as TemplateComponent | undefined;
+      const pos = comps[ComponentType.Position] as PositionComponent | undefined;
+      return template && pos ? { templateId: template.templateId, x: pos.x, y: pos.y } : null;
+    })
+    .filter((e): e is { templateId: string; x: number; y: number } => e !== null);
+
+  const directorContext = buildAreaDirectorContextWithEscalation(
+    state,
+    state.currentAreaId,
+    false,
+    areaDef,
+    state.lastSpawnTurn ?? 0
+  );
+  const directorResult = runEncounterDirector(
+    state.campaign,
+    areaDef,
+    state.map,
+    state.activeRooms ?? [],
+    existingEntities,
+    directorContext
+  );
+
+  let nextState = { ...state, lastSpawnTurn: state.globalTurn };
+  let spawnedCount = 0;
+
+  for (const ent of directorResult.newEntities) {
+    if (nextState.campaign.items[ent.templateId]) {
+      [nextState] = spawnItem(nextState, ent.templateId, ent.x, ent.y);
+      spawnedCount++;
+    } else if (nextState.campaign.entities[ent.templateId]) {
+      [nextState] = spawnEntity(nextState, ent.templateId, ent.x, ent.y, ent.dynamicTraits);
+      spawnedCount++;
+    }
+  }
+
+  return { state: nextState, spawnedCount };
 }

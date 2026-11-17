@@ -6,6 +6,7 @@ import {
   DnD35ActivatedAbilityDescriptorSchema,
   DnD35BonusTypeSchema,
   DnD35ClassFeatureDetailSchema,
+  DnD35ConditionDefinitionSchema,
   DnD35DeclarativeModifierSchema,
   DnD35DomainDefinitionSchema,
   DnD35EffectBundleSchema,
@@ -210,7 +211,8 @@ export const DnD35SystemContentSchema = z.object({
   templates: z.record(z.string(), DnD35TemplateSchema).default({}),
   races: z.record(z.string(), DnD35RaceDefinitionSchema).default({}),
   creatureTypes: z.record(z.string(), DnD35CreatureTypeEngineSchema).default({}),
-  subtypes: z.record(z.string(), DnD35SubtypeDefinitionSchema).default({})
+  subtypes: z.record(z.string(), DnD35SubtypeDefinitionSchema).default({}),
+  conditionEffects: z.record(z.string(), DnD35ConditionDefinitionSchema).default({})
 });
 /** Inferred type for D&D 3.5e System Content registries. */
 export type DnD35SystemContent = z.infer<typeof DnD35SystemContentSchema>;

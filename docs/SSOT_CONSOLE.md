@@ -8,9 +8,9 @@
 - [Core Console: Action Pipeline & Commands (10 files)](#core-console-action-pipeline-commands)
 - [Core Console: App Entry & Wiring (2 files)](#core-console-app-entry-wiring)
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
-- [Core Console: Constants & Dictionaries (16 files)](#core-console-constants-dictionaries)
+- [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
-- [Core Console: ECS Systems & Simulation (59 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (61 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
@@ -100,7 +100,7 @@
 
 ## Core Console: Constants & Dictionaries
 
-**Modules in this domain:** 16
+**Modules in this domain:** 17
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -119,6 +119,7 @@
 | `src/constants/trigger.constants.ts` | `tier1_console` | Standard placeholder variable bindings for the Trigger Composer system. | `COMPOSER_PLACEHOLDERS`, `ALL_COMPOSER_PLACEHOLDERS`, `MAX_TRIGGER_LOOPS` | **Includes:** Pure implementation and exports for src/constants/trigger.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/trigger.constants.ts. |
 | `src/constants/ui.constants.ts` | `tier1_console` | Identifiers for different types of UI tooltips. | `UITooltipType`, `UIStatId`, `LogFilterCategory`, `LOG_FILTER_TABS`, `QUICK_BELT_SLOT_COUNT`, `MAX_UNIT_STATUS_PIPS`, `ALERT_CRITICAL_HP_RATIO`, `ALERT_LOW_HP_RATIO` | **Includes:** Pure implementation and exports for src/constants/ui.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/ui.constants.ts. |
 | `src/constants/verbs.constants.ts` | `tier1_console` | Canonical interaction verbs supported by the engine's ApplyIntent pipeline. | `Verb`, `VERBS` | **Includes:** Pure implementation and exports for src/constants/verbs.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/verbs.constants.ts. |
+| `src/constants/world_clock.constants.ts` | `tier1_console` | Constants for diurnal World Clock timing, bulk rest chunk sizing, SRD hunger scaling, and HUD clock badges. | `DEFAULT_CLOCK_START_HOUR`, `DEFAULT_SECONDS_PER_TURN`, `DEFAULT_HOURS_PER_DAY`, `BULK_CADENCE_STEP_SIZE`, `BULK_REST_CHUNK_TURNS`, `DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN`, `CLOCK_PHASE_ICONS`, `BULK_REST_PROGRESS_DOTS` | **Includes:** Pure implementation and exports for src/constants/world_clock.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/world_clock.constants.ts. |
 | `src/constants/world_events.constants.ts` | `tier1_console` | Generic flavor text events that can occur to Areas. | `AREA_NARRATIVE_EVENTS`, `FACTION_NARRATIVE_EVENTS` | **Includes:** Pure implementation and exports for src/constants/world_events.constants.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/constants/world_events.constants.ts. |
 
 ## Core Console: ECS Systems & Game Loop
@@ -132,7 +133,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 59
+**Modules in this domain:** 61
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -193,7 +194,9 @@
 | `src/systems/trigger/social.ts` | `tier1_console` | Condition evaluators specific to NPCs, social interactions, and memory. | `socialConditions`, `socialConsequences` | **Includes:** Pure implementation and exports for src/systems/trigger/social.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/trigger/social.ts. |
 | `src/systems/trigger/systemic_entity.ts` | `tier1_console` | Entity, spatial area, and scheme consequence appliers for the systemic trigger engine. | `systemicEntityConsequences` | **Includes:** Pure implementation and exports for src/systems/trigger/systemic_entity.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/trigger/systemic_entity.ts. |
 | `src/systems/trigger/systemic.ts` | `tier1_console` | Checks if the entity stepped on any physical traps. | `processTraps`, `systemicConsequences` | **Includes:** Pure implementation and exports for src/systems/trigger/systemic.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/trigger/systemic.ts. |
+| `src/systems/world_clock.system.ts` | `tier1_console` | Diurnal World Clock phase reading, area environment profile resolution, time-to-phase calculation, and visible-hostile rest gating. | `DEFAULT_WORLD_CLOCK_CONFIG`, `getEffectiveWorldClockConfig`, `getClockPhaseLabel`, `readWorldClock`, `formatWorldClockShort`, `resolveAreaEnvironmentProfile`, `computeTurnsUntilPhase`, `isActorThreatenedByVisibleHostiles` | **Includes:** Pure implementation and exports for src/systems/world_clock.system.ts.<br>**Excludes:** Bulk cadence mutation or ruleset-specific lighting mechanics. | • Do not duplicate or bypass exports from src/systems/world_clock.system.ts. |
 | `src/systems/world_events.system.ts` | `tier1_console` | Runs periodically to generate background narrative events for Regions and Factions. | `processWorldEvents` | **Includes:** Pure implementation and exports for src/systems/world_events.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/world_events.system.ts. |
+| `src/systems/world_time_skip.ts` | `tier1_console` | Bulk world-time advancement replaying macro-simulation cadences, O(entities) duration expiry, SRD hunger drain, and async progress callbacks. | `BulkTimeAdvanceResult`, `advanceWorldTimeBulk`, `advanceWorldTimeBulkAsync` | **Includes:** Pure implementation and exports for src/systems/world_time_skip.ts.<br>**Excludes:** DOM rendering or ruleset-specific rest healing formulas. | • Do not duplicate or bypass exports from src/systems/world_time_skip.ts. |
 | `src/systems/zap.system.ts` | `tier1_console` | Processes a Wand Zap. | `processWandZap` | **Includes:** Pure implementation and exports for src/systems/zap.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/zap.system.ts. |
 
 ## Core Console: ECS, Loop, RNG & Loader

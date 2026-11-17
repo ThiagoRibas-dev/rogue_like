@@ -281,6 +281,8 @@ export interface DnD35EntityData {
   readonly isCompletelyFillingSpace?: boolean | undefined;
   readonly actionBudget?: DnD35ActionBudget | undefined;
   readonly flankingRelations?: DnD35FlankingRelations | undefined;
+  /** Light Blindness acclimation state (`'blinded'` on abrupt entry, `'acclimated'` on turn start). */
+  readonly lightExposure?: 'blinded' | 'acclimated' | undefined;
 }
 
 /** Relational flanking tracking lists maintained on each combatant entity. */

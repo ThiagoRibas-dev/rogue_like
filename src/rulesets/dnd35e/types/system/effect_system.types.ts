@@ -95,6 +95,27 @@ export const DnD35RuleOverrideEntrySchema = z.object({
 });
 export type DnD35RuleOverrideEntry = z.infer<typeof DnD35RuleOverrideEntrySchema>;
 
+/** Declarative non-stacking STR/DEX ability penalty block emitted by a condition definition. */
+export const DnD35ConditionAbilityPenaltiesSchema = z.object({
+  str: z.number().int().nonnegative().default(0),
+  dex: z.number().int().nonnegative().default(0)
+});
+
+/** Zod schema for a declarative D&D 3.5e condition definition (`conditions/<id>.json`). */
+export const DnD35ConditionDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().default(''),
+  escalationGroup: z.string().optional(),
+  escalationOrder: z.number().int().nonnegative().optional(),
+  abilityPenaltyGroup: z.string().optional(),
+  grantedTags: z.array(z.string()).default([]),
+  modifiers: z.array(DnD35DeclarativeModifierSchema).default([]),
+  ruleOverrides: z.array(DnD35RuleOverrideEntrySchema).default([]),
+  abilityPenalties: DnD35ConditionAbilityPenaltiesSchema.optional()
+});
+export type DnD35ConditionDefinition = z.infer<typeof DnD35ConditionDefinitionSchema>;
+
 /** Zod schema for a structured or virtual feat grant (e.g., Ranger Combat Style or Monk Bonus Feats that bypass prerequisites). */
 export const DnD35FeatGrantDescriptorSchema = z.object({
   featId: z.string(),

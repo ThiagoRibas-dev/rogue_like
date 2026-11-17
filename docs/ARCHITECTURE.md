@@ -856,6 +856,17 @@ Per `AGENTS.md` Rule 21 (Zero Content-ID or Bespoke-Property Branching) and [`do
 3. **Active Combat & Stance ACF Pipelines (`src/rulesets/dnd35e/combat/{bull_rush_resolver,combat_acf_riders,attack_routine,combat_exchange_pipeline}.ts`)**:
    - Integrates **Pounce** (full attack after `>= 10 ft` Charge), **Bull Rush & Dungeon Crasher Tiers 1 & 2** (`4d6 + 2*STR` at L2, `8d6 + 3*STR` at L6 on wall collision), **Penetrating Strike** (`floor(N/2)d6` sneak attack on flanked crit-immune foes), **Charging Smite** (`+CHA` attack, `3 * smiteLevel` damage, pool refund on miss), **Distracting Attack**, **Whirling Frenzy**, and **Decisive Strike** (`2x` single strike + AoO multiplier buff).
 
+### 9.21 World Clock, Area Environment, Declarative `conditionEffects`, SRD Hunger & Light Mechanics
+
+1. **Tier 1 Console World Clock & Bulk Simulation (`src/systems/world_clock.system.ts`, `src/systems/world_time_skip.ts`, `src/systems/lifecycle.system.ts`, `src/systems/hunger.system.ts`)**:
+   - `runActorTurnStart` advances 1 global world turn (`globalTurn`, controller links/overlays, Tier 2/3 cadence, and ledger) strictly once per Player Turn Start across both **Turn-Based** and **RTwP** modes, independent of action energy costs.
+   - `AreaDefinitionSchema` declares `environmentType?: 'outdoors' | 'indoors' | 'underground'`, `ambientIllumination`, `respawnEscalationPerCycle`, and `maxRespawnEscalation`. `readWorldClock` and `resolveAreaEnvironmentProfile` resolve `'dawn' | 'day' | 'dusk' | 'night'` schedules from `rules.worldClock`, making outdoors track natural daylight (`'bright'`, sunlight) vs night (`'shadowy'`) and underground default to `'darkness'`.
+   - `advanceWorldTimeBulk` and `advanceWorldTimeBulkAsync` advance macro simulations (Knowledge/Rumors, Nemesis, Rivalry, World Events) across GCD cadence steps, fast-forward entity durations in $O(entities)$, apply `rules.hunger.satiationLossPerStandardTurn` (`0.035` default = ~1 daily ration of `500` satiation / 24h; apple = `125`), and trigger lazy respawn escalation (`triggerActiveAreaRespawnIfDue`). *Future Milestone Note*: Quest deadlines & expiration timers will integrate directly into `advanceWorldTimeBulk`.
+
+2. **Declarative `conditionEffects` Registry & D&D 3.5e Light Sensitivity / Blindness (`public/data/rulesets/dnd35e/conditions/*.json`, `src/rulesets/dnd35e/spatial/{cover_senses,light_exposure}.ts`)**:
+   - All 19 canonical D&D 3.5e conditions live in `conditions/*.json` (`DnD35ConditionDefinitionSchema`), driving `summarizeConditionEffects`, `applyConditionWithEscalation`, and `buildConditionStatModifiers` (including `dazzled` `-1` Attack/Spot/Search) with zero hardcoded `switch` branches.
+   - Horizon 3 projection (`semantic_tags_context.ts`, `semantic_tags.ts`) emits `env:*`, `time:*`, and tile `light:*` (`light:sunlight`, `light:bright`, `light:shadowy`, `light:darkness`) tags driving Drow `trait:light_blindness` (`light_exposure.ts` 1-round `blinded` state machine), Kobold/Orc/Duergar `trait:light_sensitivity`, and environment-conditional Knowledge Survival synergies.
+
 ---
 
 ## 10. Key Design Decisions

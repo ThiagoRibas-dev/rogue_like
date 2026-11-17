@@ -38,7 +38,7 @@
   "apple": {
     "id": "apple",
     "type": "satiate",
-    "value": 200,
+    "value": 125,
     "message": "It is sweet and refreshing."
   },
   "damage_nearest_10": {

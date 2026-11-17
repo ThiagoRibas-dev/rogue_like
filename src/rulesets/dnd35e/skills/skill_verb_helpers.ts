@@ -187,7 +187,7 @@ export function evaluateActorSkillCheck(
         synergyFromSkills: []
       });
 
-  const condSummary = summarizeConditionEffects(dndData.conditions);
+  const condSummary = summarizeConditionEffects(dndData.conditions, sys?.conditionEffects);
   const situationalContext = resolveEntitySituationalTagContext(state, actorId, dndData);
   const selfTags = projectDnD35ActorSemanticTags(
     dndData,
@@ -196,7 +196,8 @@ export function evaluateActorSkillCheck(
     sys?.classes,
     sys?.skills,
     sys?.domains,
-    sys?.feats
+    sys?.feats,
+    sys?.conditionEffects
   );
 
   const entityDag = evaluateDnD35eEntityDAG(state, actorId, undefined, { dndData, selfTags });
@@ -238,6 +239,7 @@ export function evaluateActorSkillCheck(
       armorCheckPenalty: entityDag?.armorCheckPenalty ?? 0,
       minSkillRanksFloor: knackFloor,
       skillRegistry: sys?.skills,
+      conditionRegistry: sys?.conditionEffects,
       context: { selfTags }
     });
 

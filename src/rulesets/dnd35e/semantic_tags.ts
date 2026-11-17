@@ -9,6 +9,7 @@ import {
 import type { CreatureSizeCategory, DnD35EntityData, StatModifier } from './types/dnd35e.types.ts';
 import type {
   DnD35ClassDefinition,
+  DnD35ConditionDefinition,
   DnD35CreatureTypeEngine,
   DnD35DomainDefinition,
   DnD35FeatDefinition,
@@ -130,6 +131,7 @@ export function buildCreatureTypeAndSubtypeModifiers(
  * @param skillRegistry Optional loaded skill definitions.
  * @param domainRegistry Optional loaded domain definitions.
  * @param featRegistry Optional loaded feat definitions.
+ * @param conditionRegistry Optional loaded condition definitions (`conditionEffects`).
  * @returns Deduplicated array of projected semantic tags.
  */
 export function projectDnD35ActorSemanticTags(
@@ -139,7 +141,8 @@ export function projectDnD35ActorSemanticTags(
   classRegistry?: Readonly<Record<string, DnD35ClassDefinition>>,
   skillRegistry?: Readonly<Record<string, DnD35SkillDefinition>>,
   domainRegistry?: Readonly<Record<string, DnD35DomainDefinition>>,
-  featRegistry?: Readonly<Record<string, DnD35FeatDefinition>>
+  featRegistry?: Readonly<Record<string, DnD35FeatDefinition>>,
+  conditionRegistry?: Readonly<Record<string, DnD35ConditionDefinition>>
 ): ReadonlyArray<string> {
   const tags = new Set<string>(existingTags);
   tags.add(`size:${dndData.sizeCategory}`);
@@ -296,12 +299,44 @@ export function projectDnD35ActorSemanticTags(
     }
   }
 
+  for (const condId of dndData.conditions ?? []) {
+    tags.add(`condition:${condId}`);
+    tags.add(`status:cond_${condId}`);
+    for (const cTag of conditionRegistry?.[condId]?.grantedTags ?? []) {
+      tags.add(cTag);
+    }
+  }
+
   for (const statusId of situationalContext?.activeStatusEffectIds ?? []) {
     tags.add(`status:${statusId}`);
     if (statusId === 'invisible_active') {
       tags.add('trait:invisible');
     } else if (statusId === 'squeezing') {
       tags.add('condition:squeezing');
+    }
+  }
+
+  if (situationalContext?.environmentType) {
+    tags.add(`env:${situationalContext.environmentType}`);
+    if (situationalContext.environmentType === 'outdoors' || situationalContext.environmentType === 'indoors') {
+      tags.add('env:aboveground');
+    }
+  }
+
+  if (situationalContext?.phaseId) {
+    tags.add(`time:${situationalContext.phaseId}`);
+  }
+
+  if (situationalContext?.lightReading) {
+    tags.add(`light:${situationalContext.lightReading.level}`);
+    if (situationalContext.lightReading.isSunlight) {
+      tags.add('light:sunlight');
+    }
+    const triggeredDazzled =
+      (tags.has('trait:light_blindness') && situationalContext.lightReading.isBright) ||
+      (tags.has('trait:light_sensitivity') && situationalContext.lightReading.isSunlight);
+    if (triggeredDazzled) {
+      tags.add('condition:dazzled');
     }
   }
 

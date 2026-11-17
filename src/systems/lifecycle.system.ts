@@ -1,10 +1,12 @@
-import { addComponent, getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent, tickControllerLinksAndOverlays } from '../core/ecs.ts';
+import { processTier2LocalCadence, processTier3GlobalCadence } from '../core/simulation_cadence.ts';
 import { resolveStateStabilization } from '../core/state_stabilizer.ts';
 import { getRuleset } from '../rulesets/registry.ts';
 import { ComponentType, type AIComponent, type TacticalDoctrineComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
 import type { Intent } from '../types/intents/intent.union.ts';
 import { syncAnchoredFieldsForEntity } from './field.system.ts';
+import { processLedgerSystem } from './ledger.system.ts';
 import { resetTriggeredReactionsForNewRound } from './stance.system.ts';
 import { processStatusEffectsTick } from './status-effect.system.ts';
 import { processTraps } from './trigger.system.ts';
@@ -50,7 +52,15 @@ export function runActorTurnStart(state: GameState, entityId: EntityId): GameSta
     }
   }
 
-  // 3. Delegate to active ruleset cartridge turn-start hook
+  // 3. If this is the Player's turn start, advance the world clock & macro cadences by 1 world turn (TB + RTwP)
+  if (getComponent(nextState, entityId, ComponentType.Player) !== undefined) {
+    nextState = tickControllerLinksAndOverlays(nextState);
+    nextState = processTier2LocalCadence(nextState, true);
+    nextState = processTier3GlobalCadence(nextState, true);
+    nextState = processLedgerSystem(nextState, true);
+  }
+
+  // 4. Delegate to active ruleset cartridge turn-start hook
   const ruleset = getRuleset(nextState.campaign?.manifest?.rulesetId);
   if (ruleset.onActorTurnStart) {
     nextState = ruleset.onActorTurnStart(nextState, entityId);

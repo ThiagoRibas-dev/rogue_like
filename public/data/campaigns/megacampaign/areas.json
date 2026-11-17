@@ -101,7 +101,8 @@
         ".": "stone_floor",
         ">": "stone_floor"
       }
-    }
+    },
+    "environmentType": "indoors"
   },
   "nethack_doom_1": {
     "id": "nethack_doom_1",
@@ -125,7 +126,8 @@
         "targetAreaId": "nethack_doom_2",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_2": {
     "id": "nethack_doom_2",
@@ -147,7 +149,8 @@
         "targetAreaId": "nethack_doom_3",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_3": {
     "id": "nethack_doom_3",
@@ -169,7 +172,8 @@
         "targetAreaId": "nethack_doom_4",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_4": {
     "id": "nethack_doom_4",
@@ -191,7 +195,8 @@
         "targetAreaId": "nethack_doom_5",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_5": {
     "id": "nethack_doom_5",
@@ -213,7 +218,8 @@
         "targetAreaId": "nethack_doom_6",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_6": {
     "id": "nethack_doom_6",
@@ -235,7 +241,8 @@
         "targetAreaId": "nethack_doom_7",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_7": {
     "id": "nethack_doom_7",
@@ -257,7 +264,8 @@
         "targetAreaId": "nethack_doom_8",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_8": {
     "id": "nethack_doom_8",
@@ -279,7 +287,8 @@
         "targetAreaId": "nethack_doom_9",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_9": {
     "id": "nethack_doom_9",
@@ -301,7 +310,8 @@
         "targetAreaId": "nethack_doom_10",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "nethack_doom_10": {
     "id": "nethack_doom_10",
@@ -325,7 +335,8 @@
         "targetX": 7,
         "targetY": 2
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_1": {
     "id": "incursion_goblin_1",
@@ -349,7 +360,8 @@
         "targetAreaId": "incursion_goblin_2",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_2": {
     "id": "incursion_goblin_2",
@@ -371,7 +383,8 @@
         "targetAreaId": "incursion_goblin_3",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_3": {
     "id": "incursion_goblin_3",
@@ -393,7 +406,8 @@
         "targetAreaId": "incursion_goblin_4",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_4": {
     "id": "incursion_goblin_4",
@@ -415,7 +429,8 @@
         "targetAreaId": "incursion_goblin_5",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_5": {
     "id": "incursion_goblin_5",
@@ -437,7 +452,8 @@
         "targetAreaId": "incursion_goblin_6",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_6": {
     "id": "incursion_goblin_6",
@@ -459,7 +475,8 @@
         "targetAreaId": "incursion_goblin_7",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_7": {
     "id": "incursion_goblin_7",
@@ -481,7 +498,8 @@
         "targetAreaId": "incursion_goblin_8",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_8": {
     "id": "incursion_goblin_8",
@@ -503,7 +521,8 @@
         "targetAreaId": "incursion_goblin_9",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_9": {
     "id": "incursion_goblin_9",
@@ -525,7 +544,8 @@
         "targetAreaId": "incursion_goblin_10",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_goblin_10": {
     "id": "incursion_goblin_10",
@@ -549,7 +569,8 @@
         "targetX": 7,
         "targetY": 2
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "incursion_place_of_sanctuary": {
     "id": "incursion_place_of_sanctuary",
@@ -586,7 +607,8 @@
         " ": "empty_space"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "indoors"
   },
   "incursion_lesser_vault_1": {
     "id": "incursion_lesser_vault_1",
@@ -647,7 +669,8 @@
       "entityLegend": {
         "G": "gnomish_wizard"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_parthenion": {
     "id": "incursion_parthenion",
@@ -715,7 +738,8 @@
         "+": "stone_floor"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_lesser_vault_2": {
     "id": "incursion_lesser_vault_2",
@@ -775,7 +799,8 @@
       "entityLegend": {
         "G": "gnomish_wizard"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_unholy_sepulchre": {
     "id": "incursion_unholy_sepulchre",
@@ -833,7 +858,8 @@
       "entityLegend": {
         "G": "gnomish_wizard"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_hellish_rift": {
     "id": "incursion_hellish_rift",
@@ -886,7 +912,8 @@
         "P": "stone_floor"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_floating_rock_1": {
     "id": "incursion_floating_rock_1",
@@ -931,7 +958,8 @@
       "entityLegend": {
         "G": "gnomish_wizard"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_entry_chamber_hells": {
     "id": "incursion_entry_chamber_hells",
@@ -968,7 +996,8 @@
         ">": "stone_floor"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_entry_chamber": {
     "id": "incursion_entry_chamber",
@@ -1033,7 +1062,8 @@
         ">": "stone_floor"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_the_goblin_encampment": {
     "id": "incursion_the_goblin_encampment",
@@ -1176,7 +1206,8 @@
         "W": "wraith",
         "N": "red_naga_hatchling"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "incursion_arena_chamber": {
     "id": "incursion_arena_chamber",
@@ -1233,6 +1264,7 @@
         ">": "stone_floor"
       },
       "entityLegend": {}
-    }
+    },
+    "environmentType": "underground"
   }
 }

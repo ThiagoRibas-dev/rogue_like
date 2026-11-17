@@ -34,6 +34,24 @@
       "type:aberration",
       "type:ooze"
     ],
-    "rankThresholdModifiers": []
+    "rankThresholdModifiers": [
+      {
+        "minRanks": 5,
+        "name": "Underground Survival Synergy",
+        "modifiers": [
+          {
+            "id": "dungeoneering_survival_underground",
+            "target": "skill:survival",
+            "value": 2,
+            "type": "untyped",
+            "condition": {
+              "selfTagsAll": ["env:underground"]
+            }
+          }
+        ],
+        "ruleOverrides": [],
+        "grantedTags": []
+      }
+    ]
   }
 }

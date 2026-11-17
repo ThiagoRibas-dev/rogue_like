@@ -10,8 +10,6 @@
     "take20Allowed": false,
     "synergyFromSkills": [
       "search",
-      "knowledge_nature",
-      "knowledge_dungeoneering",
       "knowledge_planes",
       "knowledge_geography"
     ],

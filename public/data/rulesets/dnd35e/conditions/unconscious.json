@@ -1,0 +1,15 @@
+{
+  "unconscious": {
+    "id": "unconscious",
+    "name": "Unconscious",
+    "description": "Knocked out and helpless. Unconsciousness can result from having current hit points between -1 and -9 or from nonlethal damage.",
+    "grantedTags": ["condition:unconscious", "condition:helpless"],
+    "modifiers": [
+      { "id": "unconscious_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "unconscious_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "unconscious_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "panicked": {
+    "id": "panicked",
+    "name": "Panicked",
+    "description": "A panicked creature must drop anything it holds and flee at top speed, taking a -2 penalty on all saving throws, skill checks, and ability checks.",
+    "escalationGroup": "fear",
+    "escalationOrder": 3,
+    "grantedTags": ["condition:panicked", "condition:fear"],
+    "modifiers": [
+      { "id": "panicked_attack", "target": "attack", "value": -2, "type": "untyped" },
+      { "id": "panicked_skills", "target": "skills", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

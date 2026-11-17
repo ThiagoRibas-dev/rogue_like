@@ -15,6 +15,7 @@
   },
   "hunger": {
     "maxSatiation": 2000,
+    "satiationLossPerStandardTurn": 0.035,
     "thresholds": {
       "satiated": 1500,
       "normal": 1000,

@@ -1,0 +1,15 @@
+{
+  "frightened": {
+    "id": "frightened",
+    "name": "Frightened",
+    "description": "A frightened creature flees from the source of its fear and takes a -2 penalty on all attack rolls, saving throws, skill checks, and ability checks.",
+    "escalationGroup": "fear",
+    "escalationOrder": 2,
+    "grantedTags": ["condition:frightened", "condition:fear"],
+    "modifiers": [
+      { "id": "frightened_attack", "target": "attack", "value": -2, "type": "untyped" },
+      { "id": "frightened_skills", "target": "skills", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

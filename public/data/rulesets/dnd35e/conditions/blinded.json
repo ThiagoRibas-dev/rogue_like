@@ -1,0 +1,14 @@
+{
+  "blinded": {
+    "id": "blinded",
+    "name": "Blinded",
+    "description": "The character cannot see. Takes a -2 penalty to Armor Class, loses Dexterity bonus to AC (if any), and opponents have total concealment.",
+    "grantedTags": ["condition:blinded"],
+    "modifiers": [
+      { "id": "blinded_ac", "target": "ac", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "blinded_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 }
+    ]
+  }
+}

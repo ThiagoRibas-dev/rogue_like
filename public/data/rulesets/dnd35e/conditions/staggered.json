@@ -1,0 +1,10 @@
+{
+  "staggered": {
+    "id": "staggered",
+    "name": "Staggered",
+    "description": "A staggered creature may take a single move action or standard action each round, but not both, nor can it take full-round actions.",
+    "grantedTags": ["condition:staggered"],
+    "modifiers": [],
+    "ruleOverrides": []
+  }
+}

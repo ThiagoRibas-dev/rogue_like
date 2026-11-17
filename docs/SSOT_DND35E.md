@@ -10,12 +10,13 @@
 - [D&D 3.5e: Core Cartridge & Ruleset Contract (2 files)](#d-d-3-5e-core-cartridge-ruleset-contract)
 - [D&D 3.5e: Layer 1 — Math & Multipliers (2 files)](#d-d-3-5e-layer-1-math-multipliers)
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
-- [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (4 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
+- [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (5 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
+- [D&D 3.5e: Layer 5 — Combat Maneuvers & Conditions (1 files)](#d-d-3-5e-layer-5-combat-maneuvers-conditions)
 - [D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage (18 files)](#d-d-3-5e-layer-5-combat-maneuvers-damage)
 - [D&D 3.5e: Layer 6 — Vancian Magic & Fields (14 files)](#d-d-3-5e-layer-6-vancian-magic-fields)
 - [D&D 3.5e: Races, Templates, Bestiary & Companions (11 files)](#d-d-3-5e-races-templates-bestiary-companions)
 - [D&D 3.5e: Ruleset Types & Schemas (9 files)](#d-d-3-5e-ruleset-types-schemas)
-- [D&D 3.5e: Tactical UI & Character Sheet (36 files)](#d-d-3-5e-tactical-ui-character-sheet)
+- [D&D 3.5e: Tactical UI & Character Sheet (37 files)](#d-d-3-5e-tactical-ui-character-sheet)
 
 ---
 
@@ -128,7 +129,7 @@
 
 ## D&D 3.5e: Layer 3 — Spatial Geometry & Senses
 
-**Modules in this domain:** 4
+**Modules in this domain:** 5
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -136,6 +137,15 @@
 | `src/rulesets/dnd35e/spatial/flanking_graph.ts` | `tier2_cartridge` | Maintains relational flanking pairs (flankingTargetIds / flankedByEntityIds), supports offset/solo/distracted flanking overrides and flanking immunities, and syncs flanking/flanked status effects. | `FLANKING_STATUS_ID`, `FLANKED_STATUS_ID`, `DISTRACTED_FLANKED_STATUS_ID`, `removeStatusEffectById`, `evaluateEntityFlankingTarget`, `syncSpatialFlankingGraph` | **Includes:** Relational flanking graph evaluation, Uncanny Dodge / All-Around Vision immunity checks, and StatusEffectsComponent synchronization.<br>**Excludes:** Low-level ray/corner geometry helpers (owned by cover_senses.ts). | • Never hardcode specific feat or ACF IDs for flanking overrides; always evaluate semantic tags. |
 | `src/rulesets/dnd35e/spatial/footprint_resolver.ts` | `tier2_cartridge` | Resolves D&D 3.5e size-driven & declarative rectangular footprints (with facing rotation), footprint-to-footprint distance, SRD armor tactical speed scaling, and PositionComponent spatialIndex synchronization. | `FootprintDimensions`, `SUB_TILE_SCALE_BY_SIZE`, `resolveEntityBaseFootprintDimensions`, `computeRectFootprintSquares`, `measureFootprintToFootprintDistanceFt`, `measureFootprintToTileDistanceFt`, `computeTacticalLandSpeedWithArmor`, `resolveDnD35eActorSpatialProfile`, `syncDnD35eActorSpatialFootprint` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/footprint_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/footprint_resolver.ts. |
 | `src/rulesets/dnd35e/spatial/grid_geometry.ts` | `tier2_cartridge` | Standard length of a single tactical grid square in D&D 3.5e (`5` feet). | `FEET_PER_GRID_SQUARE`, `SizeCategoryMetric`, `SIZE_METRICS`, `measureDnD35DistanceFt`, `isDiagonalStepBlockedByHardCorner`, `computeFootprintSquares`, `measureDistanceFromFootprintFt`, `computeThreatenedSquares` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/grid_geometry.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/spatial/grid_geometry.ts. |
+| `src/rulesets/dnd35e/spatial/light_exposure.ts` | `tier2_cartridge` | Evaluates SRD Light Blindness (1-round Blinded on abrupt bright-light entry, acclimation on turn start, reset in shadow/darkness) via semantic tags. | `evaluateActorLightExposure` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/spatial/light_exposure.ts.<br>**Excludes:** Race-ID branching or direct rendering calls. | • Never branch on race IDs; inspect semantic trait tags (`trait:light_blindness`). |
+
+## D&D 3.5e: Layer 5 — Combat Maneuvers & Conditions
+
+**Modules in this domain:** 1
+
+| File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `src/rulesets/dnd35e/combat/condition_registry.ts` | `tier2_cartridge` | Evaluates declarative conditionEffects JSON registries for escalation chains, stat modifiers, and aggregate combat/ability/action summaries. | `applyConditionWithEscalation`, `buildConditionStatModifiers`, `summarizeConditionEffects` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/combat/condition_registry.ts.<br>**Excludes:** Hardcoded condition effect switches or circular skill-resolution imports. | • Do not reintroduce hardcoded condition switch tables in TypeScript; declare effects in conditions/*.json. |
 
 ## D&D 3.5e: Layer 5 — Combat, Maneuvers & Damage
 
@@ -219,7 +229,7 @@
 
 ## D&D 3.5e: Tactical UI & Character Sheet
 
-**Modules in this domain:** 36
+**Modules in this domain:** 37
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -241,6 +251,7 @@
 | `src/rendering/ui/dnd35e_level_up_tabs.ts` | `tier2_ui` | Computes the Prestige Class spellcasting advancement slots and per-class spell tabs for a level-up draft. | `SpellTabDescriptor`, `computeLevelUpSpellTabs` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_level_up_tabs.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_level_up_tabs.ts. |
 | `src/rendering/ui/dnd35e_level_up.ui.ts` | `tier2_ui` | Orchestrates the interactive Level-Up modal shell, dynamic per-class step tabs, and level advancement commit. | `canPlayerLevelUpDnD35e`, `renderDnD35eLevelUpModal` | **Includes:** Level-Up modal framing, dynamic tab bar generation (including per-class spellbook tabs for multiclass/prestige advancement), and applyLevelUpToActor dispatch.<br>**Excludes:** Reusable Skills, Feats, and Spell selection step views (must delegate to dnd35e_char_builder_steps.ui.ts). | • Never maintain separate inline Skills or Feats step implementations in dnd35e_level_up.ui.ts; always reuse the parameterized step components from dnd35e_char_builder_steps.ui.ts. |
 | `src/rendering/ui/dnd35e_quickcast.ui.ts` | `tier2_ui` | Renders the NWN2-style Quickcast HUD Overlay with metamagic/rod/spontaneous conversion toggles, collapsible class headers, and Level 0..9 compact spell tiles. | `renderDnD35eQuickcastModal` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_quickcast.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_quickcast.ui.ts. |
+| `src/rendering/ui/dnd35e_rest_actions.ts` | `tier2_ui` | Executes 8-hour rest and configurable wait-until-phase actions with hostile gating, bulk world time advancement, and loading overlay progress. | `executeEightHourRest`, `executeWaitUntilPhase`, `applyRestActionAsync`, `applyWaitUntilPhaseAsync` | **Includes:** Rest recovery, wait actions, and async progress UI orchestration for D&D 3.5e.<br>**Excludes:** Slot preparation or combat resolution. | • Do not duplicate rest time advancement outside dnd35e_rest_actions.ts. |
 | `src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts` | `tier2_ui` | Renders Attacks & Weapons routine, Combat Maneuvers, Abilities & Pools, and Tactical Stances for Tab 1 Column 2 of the Character Sheet. | `renderSheetAttacksTab` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_attacks_tab.ui.ts. |
 | `src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts` | `tier2_ui` | Renders Companions, Familiars, Cohorts & Summons roster table for Tab 3 of the Character Sheet. | `renderSheetCompanionsTab` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_companions_tab.ui.ts. |
 | `src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts` | `tier2_ui` | Renders Reactive Paper Doll and uniform 5-column Backpack Stash grid for Tab 1 Column 3 of the Character Sheet. | `renderSheetEquipmentTab` | **Includes:** Pure implementation and exports for src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rendering/ui/dnd35e_sheet_equipment_tab.ui.ts. |

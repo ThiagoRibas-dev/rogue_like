@@ -135,9 +135,10 @@ function evaluateDnD35eEntityDAGInternal(
       sysContent?.classes,
       sysContent?.skills,
       sysContent?.domains,
-      sysContent?.feats
+      sysContent?.feats,
+      sysContent?.conditionEffects
     );
-  const condSummary = summarizeConditionEffects(dndData.conditions);
+  const condSummary = summarizeConditionEffects(dndData.conditions, sysContent?.conditionEffects);
 
   const rawChassis = aggregateProgressionChassis(dndData.tracks, 0);
   const { equipAttackBonus, equipArmorBonus } = getEquippedItemBonuses(state, entityId);
@@ -254,6 +255,7 @@ function evaluateDnD35eEntityDAGInternal(
     armorCheckPenalty: itemContrib.armorCheckPenalty,
     minSkillRanksFloor: getBardicKnackFloor(dndData),
     skillRegistry: sysContent?.skills,
+    conditionRegistry: sysContent?.conditionEffects,
     context: dagContext
   });
 

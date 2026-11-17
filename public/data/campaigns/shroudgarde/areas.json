@@ -52,7 +52,8 @@
         ".": "stone_floor",
         "+": "stone_floor"
       }
-    }
+    },
+    "environmentType": "outdoors"
   },
   "shroudgarde_courtyard": {
     "id": "shroudgarde_courtyard",
@@ -131,7 +132,8 @@
         "x": 10,
         "y": 6
       }
-    ]
+    ],
+    "environmentType": "outdoors"
   },
   "shroudgarde_inner_keep": {
     "id": "shroudgarde_inner_keep",
@@ -178,11 +180,12 @@
         "x": 10,
         "y": 2
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "forest_haunted": {
     "id": "forest_haunted",
-    "name": "La For\u00eat Hant\u00e9e",
+    "name": "La Forêt Hantée",
     "generatorType": "cellular",
     "dangerRating": 1,
     "crBudget": 20,
@@ -206,7 +209,8 @@
         "targetAreaId": "ravine_chaos",
         "direction": "portal"
       }
-    ]
+    ],
+    "environmentType": "outdoors"
   },
   "ravine_chaos": {
     "id": "ravine_chaos",
@@ -267,18 +271,19 @@
         "#####################"
       ],
       "legend": {
-        "#": "dense_trees",
-        ".": "grass_floor",
-        "<": "grass_floor",
         "1": "grass_floor",
         "2": "grass_floor",
         "3": "grass_floor",
         "4": "grass_floor",
         "5": "grass_floor",
+        "#": "dense_trees",
+        ".": "grass_floor",
+        "<": "grass_floor",
         "[": "grass_floor",
         "]": "grass_floor"
       }
-    }
+    },
+    "environmentType": "outdoors"
   },
   "cave_kobolds": {
     "id": "cave_kobolds",
@@ -297,7 +302,8 @@
         "direction": "up"
       }
     ],
-    "hotPathRadius": 2
+    "hotPathRadius": 2,
+    "environmentType": "underground"
   },
   "cave_norkers": {
     "id": "cave_norkers",
@@ -315,7 +321,8 @@
         "targetAreaId": "ravine_chaos",
         "direction": "up"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "cave_bugbears": {
     "id": "cave_bugbears",
@@ -333,7 +340,8 @@
         "targetAreaId": "ravine_chaos",
         "direction": "up"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "cave_scro": {
     "id": "cave_scro",
@@ -357,7 +365,8 @@
       }
     ],
     "dlaTargetFloorPercentage": 0.28,
-    "hotPathRadius": 2
+    "hotPathRadius": 2,
+    "environmentType": "underground"
   },
   "cave_ogre": {
     "id": "cave_ogre",
@@ -406,7 +415,8 @@
         "x": 10,
         "y": 4
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "marsh_mirrored": {
     "id": "marsh_mirrored",
@@ -445,7 +455,8 @@
         "targetAreaId": "water_temple_upper",
         "direction": "portal"
       }
-    ]
+    ],
+    "environmentType": "outdoors"
   },
   "golden_grain_inn": {
     "id": "golden_grain_inn",
@@ -507,7 +518,8 @@
         "x": 10,
         "y": 5
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "wet_caverns": {
     "id": "wet_caverns",
@@ -557,7 +569,8 @@
         "X": "serpent_gate"
       }
     },
-    "placedEntities": []
+    "placedEntities": [],
+    "environmentType": "underground"
   },
   "reptile_temple": {
     "id": "reptile_temple",
@@ -621,7 +634,8 @@
         "x": 12,
         "y": 4
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "shroudgarde_inn_cellar": {
     "id": "shroudgarde_inn_cellar",
@@ -671,7 +685,8 @@
         "x": 3,
         "y": 2
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "orlane_east": {
     "id": "orlane_east",
@@ -697,7 +712,8 @@
         "portalTemplateId": "wooden_door",
         "placementSide": "any"
       }
-    ]
+    ],
+    "environmentType": "outdoors"
   },
   "spire_level_air": {
     "id": "spire_level_air",
@@ -726,7 +742,8 @@
         "targetAreaId": "spire_level_earth",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "spire_level_earth": {
     "id": "spire_level_earth",
@@ -759,7 +776,8 @@
         "targetAreaId": "cave_scro",
         "direction": "portal"
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "spire_level_fire": {
     "id": "spire_level_fire",
@@ -818,7 +836,8 @@
         "x": 15,
         "y": 4
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "spire_level_water": {
     "id": "spire_level_water",
@@ -849,7 +868,8 @@
         "targetAreaId": "spire_gem_chamber",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "spire_gem_chamber": {
     "id": "spire_gem_chamber",
@@ -906,7 +926,8 @@
         "x": 10,
         "y": 3
       }
-    ]
+    ],
+    "environmentType": "indoors"
   },
   "water_temple_upper": {
     "id": "water_temple_upper",
@@ -938,7 +959,8 @@
         "targetAreaId": "water_temple_lower",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "water_temple_lower": {
     "id": "water_temple_lower",
@@ -970,7 +992,8 @@
         "targetAreaId": "water_temple_core",
         "direction": "portal"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "water_temple_core": {
     "id": "water_temple_core",
@@ -1023,7 +1046,8 @@
         "x": 10,
         "y": 4
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "water_temple_valve_room": {
     "id": "water_temple_valve_room",
@@ -1070,7 +1094,8 @@
         "x": 10,
         "y": 1
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "road_to_nulb": {
     "id": "road_to_nulb",
@@ -1098,7 +1123,8 @@
         "targetAreaId": "moathouse_surface",
         "direction": "portal"
       }
-    ]
+    ],
+    "environmentType": "outdoors"
   },
   "moathouse_surface": {
     "id": "moathouse_surface",
@@ -1142,7 +1168,8 @@
       "entityLegend": {
         "+": "wooden_door"
       }
-    }
+    },
+    "environmentType": "outdoors"
   },
   "moathouse_dungeons": {
     "id": "moathouse_dungeons",
@@ -1177,7 +1204,8 @@
         "x": 10,
         "y": 5
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "toee_level_1": {
     "id": "toee_level_1",
@@ -1206,7 +1234,8 @@
         "targetAreaId": "toee_level_2",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "toee_level_2": {
     "id": "toee_level_2",
@@ -1235,7 +1264,8 @@
         "targetAreaId": "toee_level_3",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "toee_level_3": {
     "id": "toee_level_3",
@@ -1264,7 +1294,8 @@
         "targetAreaId": "toee_level_4",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "toee_level_4": {
     "id": "toee_level_4",
@@ -1296,7 +1327,8 @@
         "targetAreaId": "toee_zuggtmoy_fane",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "toee_zuggtmoy_fane": {
     "id": "toee_zuggtmoy_fane",
@@ -1351,6 +1383,7 @@
         "x": 10,
         "y": 1
       }
-    ]
+    ],
+    "environmentType": "underground"
   }
 }

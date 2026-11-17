@@ -1,0 +1,14 @@
+{
+  "fatigued": {
+    "id": "fatigued",
+    "name": "Fatigued",
+    "description": "A fatigued character can neither run nor charge and takes a -2 penalty to Strength and Dexterity.",
+    "escalationGroup": "fatigue",
+    "escalationOrder": 1,
+    "abilityPenaltyGroup": "fatigue",
+    "grantedTags": ["condition:fatigued"],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "abilityPenalties": { "str": 2, "dex": 2 }
+  }
+}

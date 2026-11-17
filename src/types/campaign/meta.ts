@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { RulesetIdSchema } from '../ruleset.types.ts';
+import { AreaIlluminationEnum } from './world.ts';
 
 /** Zod schema for the campaign manifest. */
 export const CampaignManifestSchema = z.object({
@@ -48,6 +49,28 @@ export const AdvancementLevelSchema = z.object({
 /** Inferred type for level advancement requirements. */
 export type AdvancementLevel = z.infer<typeof AdvancementLevelSchema>;
 
+/** Zod schema for a single diurnal phase in `rules.worldClock`. */
+export const DayPhaseSchema = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  startHour: z.number().int().min(0).max(23),
+  skyIllumination: AreaIlluminationEnum,
+  isNaturalSunlight: z.boolean()
+});
+/** Inferred type for a diurnal clock phase entry. */
+export type DayPhaseConfig = z.infer<typeof DayPhaseSchema>;
+
+/** Zod schema for campaign-wide diurnal clock and time-wait configuration. */
+export const WorldClockConfigSchema = z.object({
+  secondsPerGlobalTurn: z.number().int().positive().default(6),
+  startHour: z.number().int().min(0).max(23).default(8),
+  hoursPerDay: z.number().int().positive().default(24),
+  waitTargets: z.array(z.string()).default(['dawn', 'night']),
+  phases: z.array(DayPhaseSchema).min(1)
+});
+/** Inferred type for campaign World Clock configuration. */
+export type WorldClockConfig = z.infer<typeof WorldClockConfigSchema>;
+
 /** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
@@ -66,6 +89,7 @@ export const RulesConfigSchema = z.object({
   }),
   hunger: z.object({
     maxSatiation: z.number().int().positive(),
+    satiationLossPerStandardTurn: z.number().nonnegative().optional(),
     thresholds: z.object({
       satiated: z.number().int().nonnegative(),
       normal: z.number().int().nonnegative(),
@@ -73,6 +97,7 @@ export const RulesConfigSchema = z.object({
       starving: z.number().int().nonnegative()
     })
   }),
+  worldClock: WorldClockConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),
     maxItemsPerRoom: z.number().int().nonnegative(),

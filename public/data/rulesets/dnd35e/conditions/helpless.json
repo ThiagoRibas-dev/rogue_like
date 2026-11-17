@@ -1,0 +1,15 @@
+{
+  "helpless": {
+    "id": "helpless",
+    "name": "Helpless",
+    "description": "A helpless character is paralyzed, held, bound, sleeping, unconscious, or otherwise completely at an opponent's mercy.",
+    "grantedTags": ["condition:helpless"],
+    "modifiers": [
+      { "id": "helpless_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "helpless_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "helpless_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

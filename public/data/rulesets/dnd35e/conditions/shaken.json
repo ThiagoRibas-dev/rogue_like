@@ -1,0 +1,15 @@
+{
+  "shaken": {
+    "id": "shaken",
+    "name": "Shaken",
+    "description": "A shaken character takes a -2 penalty on attack rolls, saving throws, skill checks, and ability checks.",
+    "escalationGroup": "fear",
+    "escalationOrder": 1,
+    "grantedTags": ["condition:shaken", "condition:fear"],
+    "modifiers": [
+      { "id": "shaken_attack", "target": "attack", "value": -2, "type": "untyped" },
+      { "id": "shaken_skills", "target": "skills", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

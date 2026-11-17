@@ -1,4 +1,6 @@
 import { getComponent } from '../../core/ecs.ts';
+import { resolveAreaEnvironmentProfile } from '../../systems/world_clock.system.ts';
+import type { AreaEnvironmentType } from '../../types/campaign.types.ts';
 import {
   ComponentType,
   type EquipmentComponent,
@@ -10,6 +12,7 @@ import {
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeMaterialEquipmentStats } from './equipment/special_materials.ts';
 import { resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
+import { resolveTileLightReading, type TileLightReading } from './spatial/cover_senses.ts';
 import type { DnD35EntityData } from './types/dnd35e.types.ts';
 import type { DnD35ItemDefinition } from './types/dnd35e_system.types.ts';
 
@@ -21,6 +24,9 @@ export interface SituationalTagContext {
   readonly loadCategory?: 'light' | 'medium' | 'heavy' | undefined;
   readonly doctrine?: TacticalDoctrineComponent | undefined;
   readonly activeStatusEffectIds?: ReadonlyArray<string> | undefined;
+  readonly environmentType?: AreaEnvironmentType | undefined;
+  readonly phaseId?: string | undefined;
+  readonly lightReading?: TileLightReading | undefined;
 }
 
 /** Minimum armor bonus threshold heuristic for Heavy Armor when no item tag is present. */
@@ -146,11 +152,23 @@ export function resolveEntitySituationalTagContext(
     activeStatusEffectIds.push('squeezing');
   }
 
+  const envProfile = resolveAreaEnvironmentProfile(state);
+  const lightReading: TileLightReading = pos
+    ? resolveTileLightReading(state, pos.x, pos.y)
+    : {
+        level: envProfile.illumination,
+        isBright: envProfile.illumination === 'bright',
+        isSunlight: envProfile.illumination === 'bright' && envProfile.isNaturalSunlight
+      };
+
   return {
     armorCategory,
     hasShield,
     isMetalArmorOrShield,
     loadCategory: 'light',
+    environmentType: envProfile.environmentType,
+    phaseId: envProfile.clock.phaseId,
+    lightReading,
     ...(doctrine !== undefined ? { doctrine } : {}),
     ...(activeStatusEffectIds.length > 0 ? { activeStatusEffectIds } : {})
   };

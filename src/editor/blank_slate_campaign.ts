@@ -52,6 +52,7 @@ export function createBlankSlateCampaign(
       },
       hunger: {
         maxSatiation: 1000,
+        satiationLossPerStandardTurn: 0.035,
         thresholds: {
           satiated: 800,
           normal: 300,

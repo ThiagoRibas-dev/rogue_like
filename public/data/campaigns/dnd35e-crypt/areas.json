@@ -20,6 +20,12 @@
         "direction": "down",
         "placementX": 4,
         "placementY": 7
+      },
+      {
+        "targetAreaId": "outer_crossroads",
+        "direction": "up",
+        "placementX": 1,
+        "placementY": 5
       }
     ],
     "placedEntities": [
@@ -67,7 +73,8 @@
       "entityLegend": {
         "+": "wooden_door"
       }
-    }
+    },
+    "environmentType": "indoors"
   },
   "dungeon_1": {
     "id": "dungeon_1",
@@ -90,7 +97,10 @@
         "targetAreaId": "dungeon_2",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground",
+    "respawnEscalationPerCycle": 3,
+    "maxRespawnEscalation": 15
   },
   "dungeon_2": {
     "id": "dungeon_2",
@@ -118,7 +128,8 @@
         "targetAreaId": "bandit_stronghold",
         "direction": "down"
       }
-    ]
+    ],
+    "environmentType": "underground"
   },
   "bandit_stronghold": {
     "id": "bandit_stronghold",
@@ -181,7 +192,8 @@
         "+": "wooden_door",
         "o": "bandit"
       }
-    }
+    },
+    "environmentType": "underground"
   },
   "shrine_vault_hub": {
     "id": "shrine_vault_hub",
@@ -248,6 +260,29 @@
       "entityLegend": {
         "+": "heavy_vault_door"
       }
-    }
+    },
+    "environmentType": "underground"
+  },
+  "outer_crossroads": {
+    "id": "outer_crossroads",
+    "name": "Twilight Borderlands Road",
+    "generatorType": "digger",
+    "dangerRating": 1,
+    "crBudget": 12,
+    "encounterProfileId": "standard_dungeon",
+    "environmentType": "outdoors",
+    "respawnTimerTurns": 20,
+    "respawnEscalationPerCycle": 2,
+    "maxRespawnEscalation": 10,
+    "tags": [
+      "camp",
+      "early_game"
+    ],
+    "connections": [
+      {
+        "targetAreaId": "safe_hub",
+        "direction": "down"
+      }
+    ]
   }
 }

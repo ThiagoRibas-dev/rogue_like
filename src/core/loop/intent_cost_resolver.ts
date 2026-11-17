@@ -4,7 +4,7 @@ import { ComponentType } from '../../types/components.types.ts';
 import { EngineMode, type GameState } from '../../types/game-state.types.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { ActionResult, Intent } from '../../types/intents/intent.union.ts';
-import { getComponent, tickControllerLinksAndOverlays } from '../ecs.ts';
+import { getComponent } from '../ecs.ts';
 import { pushTelemetryEvents } from '../telemetry.ts';
 import { recordTurnSample } from '../performance.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
@@ -16,8 +16,7 @@ import { coordToIndex } from '../../utils/grid.ts';
 import { resolveStateStabilization } from '../state_stabilizer.ts';
 import { processInvestigationEvents } from '../../systems/investigation.system.ts';
 import { processFieldsTick } from '../../systems/field.system.ts';
-import { processTier2LocalCadence, processTier3GlobalCadence } from '../simulation_cadence.ts';
-import { processLedgerSystem } from '../../systems/ledger.system.ts';
+import { processTier2LocalCadence } from '../simulation_cadence.ts';
 
 /**
  * Executes an intent and computes its energy cost based on success, ticking systemic narrative side effects.
@@ -106,15 +105,7 @@ export function applyIntentWithCost(state: GameState, intent: Intent): ActionRes
   const tAfterFields = performance.now();
 
   const isPlayerAction = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  const didGlobalTurnAdvance = isPlayerAction && energyCost > 0;
-
-  if (didGlobalTurnAdvance) {
-    nextState = tickControllerLinksAndOverlays(nextState);
-  }
-
-  nextState = processTier2LocalCadence(nextState, didGlobalTurnAdvance);
-  nextState = processTier3GlobalCadence(nextState, didGlobalTurnAdvance);
-  nextState = processLedgerSystem(nextState, didGlobalTurnAdvance);
+  nextState = processTier2LocalCadence(nextState, false);
   const tAfterCadence = performance.now();
 
   nextState = updateExploredTiles(nextState);

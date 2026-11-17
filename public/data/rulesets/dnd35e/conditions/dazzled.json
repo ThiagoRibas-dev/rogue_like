@@ -1,0 +1,14 @@
+{
+  "dazzled": {
+    "id": "dazzled",
+    "name": "Dazzled",
+    "description": "The creature is unable to see well because of overstimulation of the eyes. Takes a -1 penalty on attack rolls, Search checks, and Spot checks.",
+    "grantedTags": ["condition:dazzled"],
+    "modifiers": [
+      { "id": "dazzled_attack", "target": "attack", "value": -1, "type": "untyped" },
+      { "id": "dazzled_spot", "target": "skill:spot", "value": -1, "type": "untyped" },
+      { "id": "dazzled_search", "target": "skill:search", "value": -1, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

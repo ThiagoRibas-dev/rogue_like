@@ -583,3 +583,19 @@ This document records architectural decisions whose rationale is **non-obvious o
   - *Bardic Knack*: `resolveSkillCheck` and `computePassiveSkillModifier` support `minSkillRanksFloor = max(1, floor(bardLevel / 2))` via `getBardicKnackFloor` (reading `scalingPools.bardic_knack_level` first per Rule 19 Layer C), enabling untrained checks in `trainedOnly` skills and reflecting effective ranks on the character sheet.
   - *Healing Hymn*: Activating `bardic_music` / `healing_hymn` with `healing_hymn` applies `healing_hymn_active`, and `resolveHealingHymnBonus` grants `+Perform ranks` to `healing` spell units cast within `30 ft` of a non-hostile active performer before save halving and undead positive-energy inversion.
 
+---
+
+### World Clock, Area Environment, Declarative `conditionEffects`, SRD Hunger & Light Mechanics
+
+- **Decision 1: Declarative `conditionEffects` Registry (`conditions/*.json`) over Hardcoded `switch` Statements**:
+  - Replaced the 19-case hardcoded `switch` inside `summarizeConditionEffects` (`maneuvers_conditions.ts`) and the Fear check inside `skill_synergies.ts` with `DnD35ConditionDefinitionSchema` entries in `public/data/rulesets/dnd35e/conditions/<id>.json`.
+  - *Rationale*: Enables `dazzled` (`-1` Attack, `-1` Spot, `-1` Search) and Fear/Fatigue escalation chains to remain 100% data-driven without adding skill-ID lists or condition-ID switches in TypeScript (Rules 17 & 21).
+
+- **Decision 2: Player Turn Start World-Turn Increment (`lifecycle.system.ts`) Instead of Energy-Gated Increment**:
+  - Moved `globalTurn` advancement, `tickControllerLinksAndOverlays`, and Tier 2/3 cadence from `intent_cost_resolver.ts` (`didGlobalTurnAdvance`) to Player Turn Start inside `runActorTurnStart` (triggered once per player turn in both Turn-Based and RTwP).
+  - *Rationale*: Ensures 1 player turn equals 1 6-second world turn symmetrically in both modes without being distorted by Haste, Slow, or intra-turn zero-cost actions.
+
+- **Decision 3: Explicit `AreaDefinition.environmentType` + Configurable `rules.worldClock` & SRD Hunger**:
+  - Avoided tag-guessing (which misclassifies underground fortress areas carrying `"camp"` director tags) in favor of explicit `environmentType` (`'outdoors' | 'indoors' | 'underground'`, omitting defaults to `'indoors'`/`'bright'` for legacy compatibility), paired with `rules.hunger.satiationLossPerStandardTurn` (`0.035` default = 1 daily ration of `500` satiation / 24h; `apple` = `125`), lazy respawn CR escalation across elapsed cycles, and bulk rest/wait cadence replay with `"While you rested:"` message digests.
+  - *Future Milestone Note*: Quest deadlines and expiration timers are slated for a future milestone integrating directly with `advanceWorldTimeBulk`.
+

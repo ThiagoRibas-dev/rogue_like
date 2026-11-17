@@ -1,0 +1,13 @@
+{
+  "prone": {
+    "id": "prone",
+    "name": "Prone",
+    "description": "The character is on the ground. Takes a -4 penalty on melee attack rolls and -4 to AC against melee attacks.",
+    "grantedTags": ["condition:prone"],
+    "modifiers": [
+      { "id": "prone_attack", "target": "attack", "value": -4, "type": "untyped" },
+      { "id": "prone_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "sickened": {
+    "id": "sickened",
+    "name": "Sickened",
+    "description": "The character takes a -2 penalty on all attack rolls, weapon damage rolls, saving throws, skill checks, and ability checks.",
+    "grantedTags": ["condition:sickened"],
+    "modifiers": [
+      { "id": "sickened_attack", "target": "attack", "value": -2, "type": "untyped" },
+      { "id": "sickened_skills", "target": "skills", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": []
+  }
+}

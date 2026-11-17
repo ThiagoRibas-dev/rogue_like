@@ -28,6 +28,16 @@ export const FactionMatrixSchema = z.record(z.string(), z.record(z.string(), Fac
 /** Inferred type for the faction matrix registry. */
 export type FactionMatrix = z.infer<typeof FactionMatrixSchema>;
 
+/** Zod enum for physical area enclosure / setting classification. */
+export const AreaEnvironmentTypeEnum = z.enum(['outdoors', 'indoors', 'underground']);
+/** Inferred type for an area's physical environment classification. */
+export type AreaEnvironmentType = z.infer<typeof AreaEnvironmentTypeEnum>;
+
+/** Zod enum for baseline area ambient illumination levels. */
+export const AreaIlluminationEnum = z.enum(['bright', 'shadowy', 'darkness']);
+/** Inferred type for baseline area illumination level. */
+export type AreaIllumination = z.infer<typeof AreaIlluminationEnum>;
+
 /** Zod enum for generation strategies. */
 export const AreaGeneratorTypeEnum = z.enum(['digger', 'cellular', 'static', 'dla']);
 /** Inferred type representing an area generator type. */
@@ -108,6 +118,22 @@ export const AreaDefinitionSchema = z.object({
     .optional()
     .describe('Percentage (0-1) of map tiles to carve as floor for DLA.'),
   respawnTimerTurns: z.number().int().positive().optional(),
+  respawnEscalationPerCycle: z
+    .number()
+    .nonnegative()
+    .optional()
+    .describe('Additional CR budget added per elapsed respawnTimerTurns cycle.'),
+  maxRespawnEscalation: z
+    .number()
+    .nonnegative()
+    .optional()
+    .describe('Maximum cumulative CR budget escalation added by elapsed respawn cycles.'),
+  environmentType: AreaEnvironmentTypeEnum.optional().describe(
+    'Physical setting (outdoors follows day/night clock; indoors defaults bright; underground defaults darkness).'
+  ),
+  ambientIllumination: AreaIlluminationEnum.optional().describe(
+    'Explicit baseline illumination override for indoors or underground areas.'
+  ),
   hotPathRadius: z.number().int().nonnegative().optional().describe('Overrides the auto-calculated hot path thickness.')
 });
 /** Inferred type for an area definition. */

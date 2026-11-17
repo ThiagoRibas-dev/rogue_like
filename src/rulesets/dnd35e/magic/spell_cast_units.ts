@@ -11,6 +11,7 @@ import { evaluateDiceExpression } from '../math/dice.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { revokeModifiersByPathPrefix } from '../modifiers/provenance.ts';
 import { syncDnD35eActorSpatialFootprint } from '../spatial/footprint_resolver.ts';
+import { evaluateActorLightExposure } from '../spatial/light_exposure.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import type { DnD35ConditionId } from '../types/dnd35e.types.ts';
 import type { DnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -96,6 +97,13 @@ export function applySpecialSpellUnit(params: {
         y: anchorPos.y
       });
       nextState = addComponent(nextState, fieldEntityId, fieldComp);
+      if (unit.illuminationOverride?.level === 'bright') {
+        for (const actorId of nextState.entities) {
+          if (getComponent(nextState, actorId, ComponentType.Fighter)) {
+            nextState = evaluateActorLightExposure(nextState, actorId, 'move_or_field');
+          }
+        }
+      }
       return nextState;
     }
 

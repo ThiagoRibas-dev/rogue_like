@@ -67,14 +67,42 @@ export function collectOwnedEntityIds(state: GameState, rootEntityId: EntityId):
 }
 
 /**
- * Ticks duration counters on PropertyOverlayComponents and manages expiration of ControllerLinkComponents.
- * If an overlay expires (durationTurns <= 0), it is removed and any suppressed equipment slots are restored.
- * If a temporary summon controller link expires or its controller entity no longer exists, the summon entity is despawned.
+ * Restores any equipment slots marked `suppressed: true` on `entityId` (for example after an
+ * overlay transformation expires or ends).
+ *
+ * @param state Current immutable GameState.
+ * @param entityId Target actor entity ID.
+ * @returns Updated GameState with suppressed equipment slots restored.
+ */
+export function restoreSuppressedEquipmentSlots(state: GameState, entityId: EntityId): GameState {
+  const equipCmp = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (!equipCmp || !equipCmp.slots.some((s) => s.suppressed === true)) {
+    return state;
+  }
+
+  const restoredSlots = equipCmp.slots.map((slot) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { suppressed, ...rest } = slot;
+    return rest;
+  });
+
+  return addComponent(state, entityId, {
+    ...equipCmp,
+    slots: restoredSlots
+  });
+}
+
+/**
+ * Ticks duration counters on PropertyOverlayComponents by `elapsedTurns` and manages expiration
+ * of ControllerLinkComponents. Expired overlays restore suppressed equipment slots; expired
+ * temporary summons are despawned.
  *
  * @param state The current game state.
+ * @param elapsedTurns Number of turns elapsed (defaults to `1`).
  * @returns The updated game state.
  */
-export function tickControllerLinksAndOverlays(state: GameState): GameState {
+export function tickControllerLinksAndOverlays(state: GameState, elapsedTurns = 1): GameState {
+  if (elapsedTurns <= 0) return state;
   let nextState = state;
 
   for (const entityId of nextState.entities) {
@@ -82,22 +110,10 @@ export function tickControllerLinksAndOverlays(state: GameState): GameState {
     const overlay = getComponent(nextState, entityId, ComponentType.PropertyOverlay) as
       PropertyOverlayComponent | undefined;
     if (overlay && overlay.durationTurns !== undefined) {
-      const nextDuration = overlay.durationTurns - 1;
+      const nextDuration = overlay.durationTurns - elapsedTurns;
       if (nextDuration <= 0) {
         nextState = removeComponent(nextState, entityId, ComponentType.PropertyOverlay);
-        // Restore any equipment slots that were melded/suppressed by the overlay
-        const equipCmp = getComponent(nextState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
-        if (equipCmp && equipCmp.slots.some((s) => s.suppressed === true)) {
-          const restoredSlots = equipCmp.slots.map((slot) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { suppressed, ...rest } = slot;
-            return rest;
-          });
-          nextState = addComponent(nextState, entityId, {
-            ...equipCmp,
-            slots: restoredSlots
-          });
-        }
+        nextState = restoreSuppressedEquipmentSlots(nextState, entityId);
       } else {
         nextState = addComponent(nextState, entityId, {
           ...overlay,

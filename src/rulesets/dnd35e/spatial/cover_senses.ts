@@ -1,4 +1,5 @@
 import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
+import { resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import type { GameState } from '../../../types/game-state.types.ts';
 import { measureDnD35DistanceFt } from './grid_geometry.ts';
 import type { CoverState, IlluminationLevel, SensoryProfile } from '../types/dnd35e.types.ts';
@@ -285,27 +286,32 @@ export function evaluateConcealmentAndSenses(
   };
 }
 
+/** Tile illumination + sunlight/daylight descriptor reading returned by `resolveTileLightReading`. */
+export interface TileLightReading {
+  readonly level: IlluminationLevel;
+  readonly isBright: boolean;
+  readonly isSunlight: boolean;
+}
+
+/** Sunlight/daylight field descriptors recognized by Light Sensitivity mechanics. */
+const SUNLIGHT_FIELD_DESCRIPTORS: ReadonlySet<string> = new Set(['sunlight', 'daylight', 'field_daylight']);
+
 /**
- * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) at `(x, y)`
- * by comparing active `FieldComponent.illuminationOverride` descriptors at that coordinate against
- * `ambientIllumination`:
- * - Fields whose `yieldsToDescriptors` match an overlapping active field's `descriptors` (or `fieldType`)
- *   yield to that field (e.g. *Night's Battlefield* overrides mundane/bright light to `'shadowy'`, but
- *   yields to magical `darkness` or `daylight` fields).
- * - Otherwise, the highest `spellLevel` override wins.
- *
- * @param state Current immutable GameState.
- * @param x Grid X coordinate.
- * @param y Grid Y coordinate.
- * @param ambientIllumination Base ambient tile illumination (defaults to `'bright'`).
- * @returns Effective `IlluminationLevel`.
+ * Selects the winning active `illuminationOverride` descriptor at `(x, y)` after applying
+ * `yieldsToDescriptors` and spell-level priority rules.
  */
-export function resolveEffectiveTileIllumination(
+function resolveWinningFieldIlluminationOverride(
   state: GameState,
   x: number,
-  y: number,
-  ambientIllumination: IlluminationLevel = 'bright'
-): IlluminationLevel {
+  y: number
+):
+  | {
+      readonly fieldType: string;
+      readonly spellId: string | undefined;
+      readonly level: IlluminationLevel;
+      readonly descriptors: ReadonlyArray<string>;
+    }
+  | undefined {
   const activeFields = queryActiveFieldsAtPosition(state, x, y);
   const overrides = activeFields
     .map((f) => ({
@@ -323,9 +329,7 @@ export function resolveEffectiveTileIllumination(
       } => entry.override !== undefined
     );
 
-  if (overrides.length === 0) {
-    return ambientIllumination;
-  }
+  if (overrides.length === 0) return undefined;
 
   const allActiveDescriptors = new Set<string>();
   for (const entry of overrides) {
@@ -350,5 +354,58 @@ export function resolveEffectiveTileIllumination(
     }
   }
 
-  return winner.override.level;
+  return {
+    fieldType: winner.fieldType,
+    spellId: winner.spellId,
+    level: winner.override.level,
+    descriptors: winner.override.descriptors ?? []
+  };
+}
+
+/**
+ * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) AND whether the tile
+ * carries bright sunlight or *Daylight*-caliber radiance (`isSunlight`).
+ */
+export function resolveTileLightReading(
+  state: GameState,
+  x: number,
+  y: number,
+  ambientOverride?: IlluminationLevel
+): TileLightReading {
+  const envProfile = resolveAreaEnvironmentProfile(state);
+  const baselineLevel = ambientOverride ?? envProfile.illumination;
+  const winner = resolveWinningFieldIlluminationOverride(state, x, y);
+  const level = winner?.level ?? baselineLevel;
+  const isBright = level === 'bright';
+
+  const fieldGrantsSunlight =
+    winner !== undefined &&
+    (SUNLIGHT_FIELD_DESCRIPTORS.has(winner.fieldType) ||
+      (winner.spellId !== undefined && SUNLIGHT_FIELD_DESCRIPTORS.has(winner.spellId)) ||
+      winner.descriptors.some((d) => SUNLIGHT_FIELD_DESCRIPTORS.has(d)));
+
+  const naturalSunlightActive = ambientOverride === undefined && envProfile.isNaturalSunlight;
+  const isSunlight = isBright && (fieldGrantsSunlight || (winner === undefined && naturalSunlightActive));
+
+  return { level, isBright, isSunlight };
+}
+
+/**
+ * Resolves the effective `IlluminationLevel` (`'bright' | 'shadowy' | 'darkness'`) at `(x, y)`
+ * by comparing active `FieldComponent.illuminationOverride` descriptors against `ambientIllumination`
+ * (or the current area's environment & World Clock profile when `ambientIllumination` is omitted).
+ *
+ * @param state Current immutable GameState.
+ * @param x Grid X coordinate.
+ * @param y Grid Y coordinate.
+ * @param ambientIllumination Optional explicit ambient illumination override.
+ * @returns Effective `IlluminationLevel`.
+ */
+export function resolveEffectiveTileIllumination(
+  state: GameState,
+  x: number,
+  y: number,
+  ambientIllumination?: IlluminationLevel
+): IlluminationLevel {
+  return resolveTileLightReading(state, x, y, ambientIllumination).level;
 }

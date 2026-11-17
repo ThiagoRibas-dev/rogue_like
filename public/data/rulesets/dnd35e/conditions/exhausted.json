@@ -1,0 +1,14 @@
+{
+  "exhausted": {
+    "id": "exhausted",
+    "name": "Exhausted",
+    "description": "An exhausted character moves at half speed and takes a -6 penalty to Strength and Dexterity.",
+    "escalationGroup": "fatigue",
+    "escalationOrder": 2,
+    "abilityPenaltyGroup": "fatigue",
+    "grantedTags": ["condition:exhausted"],
+    "modifiers": [],
+    "ruleOverrides": [],
+    "abilityPenalties": { "str": 6, "dex": 6 }
+  }
+}

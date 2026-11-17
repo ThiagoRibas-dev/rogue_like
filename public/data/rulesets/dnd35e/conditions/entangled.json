@@ -1,0 +1,14 @@
+{
+  "entangled": {
+    "id": "entangled",
+    "name": "Entangled",
+    "description": "The character is ensnared. Moves at half speed, cannot run or charge, and takes a -2 penalty on all attack rolls and a -4 penalty to Dexterity.",
+    "grantedTags": ["condition:entangled"],
+    "modifiers": [
+      { "id": "entangled_attack", "target": "attack", "value": -2, "type": "untyped" }
+    ],
+    "ruleOverrides": [],
+    "abilityPenaltyGroup": "entanglement",
+    "abilityPenalties": { "str": 0, "dex": 4 }
+  }
+}

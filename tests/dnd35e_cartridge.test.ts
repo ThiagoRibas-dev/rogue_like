@@ -513,11 +513,12 @@ describe('D&D 3.5e Ruleset Cartridge — 6-Layer Pyramid & 3-Tier Separation Ver
     });
     expect(trip.opposedSuccess).toBe(true);
 
-    const c1 = applyConditionWithEscalation(['shaken'], 'shaken');
+    const cryptConditionsSys = getDnD35SystemContent(loadCampaignFromDisk('dnd35e-crypt'))?.conditionEffects;
+    const c1 = applyConditionWithEscalation(['shaken'], 'shaken', cryptConditionsSys);
     expect(c1).toEqual(['frightened']);
-    const c2 = applyConditionWithEscalation(c1, 'shaken');
+    const c2 = applyConditionWithEscalation(c1, 'shaken', cryptConditionsSys);
     expect(c2).toEqual(['panicked']);
-    expect(summarizeConditionEffects(['blinded']).losesDexToAC).toBe(true);
+    expect(summarizeConditionEffects(['blinded'], cryptConditionsSys).losesDexToAC).toBe(true);
   });
 
   test('Layer 6 (M97 & M98): Vancian bonus slots, 7-step Cast Pipeline, AoE geometry, and 8-Hour Rest retention', () => {

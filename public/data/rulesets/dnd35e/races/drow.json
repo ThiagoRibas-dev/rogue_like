@@ -41,7 +41,40 @@
       "will": 2
     },
     "conditionalModifiers": [],
-    "traitBundles": [],
+    "traitBundles": [
+      {
+        "bundleId": "light_blindness",
+        "name": "Light Blindness",
+        "category": "ex",
+        "usageMode": "passive",
+        "description": "Abrupt exposure to bright light blinds drow for 1 round. On subsequent rounds, they are dazzled (-1 penalty on attack rolls, Search checks, and Spot checks) as long as they remain in the affected area.",
+        "grantedTags": ["trait:light_blindness"],
+        "modifiers": [
+          {
+            "id": "light_blindness_dazzled_attack",
+            "target": "attack",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:bright"], "selfTagsNone": ["status:cond_dazzled"] }
+          },
+          {
+            "id": "light_blindness_dazzled_spot",
+            "target": "skill:spot",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:bright"], "selfTagsNone": ["status:cond_dazzled"] }
+          },
+          {
+            "id": "light_blindness_dazzled_search",
+            "target": "skill:search",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:bright"], "selfTagsNone": ["status:cond_dazzled"] }
+          }
+        ],
+        "ruleOverrides": []
+      }
+    ],
     "weaponFamiliarityIds": [
       "hand_crossbow",
       "rapier",

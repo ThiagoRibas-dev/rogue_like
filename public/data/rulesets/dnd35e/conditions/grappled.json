@@ -1,0 +1,10 @@
+{
+  "grappled": {
+    "id": "grappled",
+    "name": "Grappled",
+    "description": "Restrained by a creature, trap, or effect. Loses Dexterity bonus to AC against opponents not in the grapple and cannot move.",
+    "grantedTags": ["condition:grappled"],
+    "modifiers": [],
+    "ruleOverrides": []
+  }
+}

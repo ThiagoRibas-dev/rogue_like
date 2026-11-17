@@ -1,0 +1,15 @@
+{
+  "paralyzed": {
+    "id": "paralyzed",
+    "name": "Paralyzed",
+    "description": "A paralyzed character is frozen in place and unable to move or act, effectively helpless.",
+    "grantedTags": ["condition:paralyzed", "condition:helpless"],
+    "modifiers": [
+      { "id": "paralyzed_ac", "target": "ac", "value": -4, "type": "untyped" }
+    ],
+    "ruleOverrides": [
+      { "id": "paralyzed_loses_dex", "ruleKey": "loses_dex_to_ac", "value": true, "priority": 10 },
+      { "id": "paralyzed_no_actions", "ruleKey": "can_take_actions", "value": false, "priority": 10 }
+    ]
+  }
+}

@@ -595,6 +595,28 @@
       "Do not duplicate or bypass exports from src/constants/world_events.constants.ts."
     ]
   },
+  "src/constants/world_clock.constants.ts": {
+    "domain": "Core Console: Constants & Dictionaries",
+    "tier": "tier1_console",
+    "responsibility": "Constants for diurnal World Clock timing, bulk rest chunk sizing, SRD hunger scaling, and HUD clock badges.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CLOCK_START_HOUR",
+      "DEFAULT_SECONDS_PER_TURN",
+      "DEFAULT_HOURS_PER_DAY",
+      "BULK_CADENCE_STEP_SIZE",
+      "BULK_REST_CHUNK_TURNS",
+      "DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN",
+      "CLOCK_PHASE_ICONS",
+      "BULK_REST_PROGRESS_DOTS"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/constants/world_clock.constants.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/constants/world_clock.constants.ts."
+    ]
+  },
   "src/core/auto_pause_signals.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
@@ -4371,6 +4393,45 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/systems/world_events.system.ts."
+    ]
+  },
+  "src/systems/world_clock.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Diurnal World Clock phase reading, area environment profile resolution, time-to-phase calculation, and visible-hostile rest gating.",
+    "canonicalEntryPoints": [
+      "DEFAULT_WORLD_CLOCK_CONFIG",
+      "getEffectiveWorldClockConfig",
+      "getClockPhaseLabel",
+      "readWorldClock",
+      "formatWorldClockShort",
+      "resolveAreaEnvironmentProfile",
+      "computeTurnsUntilPhase",
+      "isActorThreatenedByVisibleHostiles"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/world_clock.system.ts.",
+      "excludes": "Bulk cadence mutation or ruleset-specific lighting mechanics."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/world_clock.system.ts."
+    ]
+  },
+  "src/systems/world_time_skip.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Bulk world-time advancement replaying macro-simulation cadences, O(entities) duration expiry, SRD hunger drain, and async progress callbacks.",
+    "canonicalEntryPoints": [
+      "BulkTimeAdvanceResult",
+      "advanceWorldTimeBulk",
+      "advanceWorldTimeBulkAsync"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/world_time_skip.ts.",
+      "excludes": "DOM rendering or ruleset-specific rest healing formulas."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/world_time_skip.ts."
     ]
   },
   "src/systems/zap.system.ts": {

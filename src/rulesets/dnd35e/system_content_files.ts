@@ -245,6 +245,28 @@ const RACE_IDS: ReadonlyArray<string> = [
   'elemental_water'
 ];
 
+const CONDITION_IDS: ReadonlyArray<string> = [
+  'blinded',
+  'dazzled',
+  'deafened',
+  'entangled',
+  'exhausted',
+  'fatigued',
+  'flat_footed',
+  'frightened',
+  'grappled',
+  'helpless',
+  'nauseated',
+  'panicked',
+  'paralyzed',
+  'prone',
+  'shaken',
+  'sickened',
+  'staggered',
+  'stunned',
+  'unconscious'
+];
+
 /**
  * Canonical list of System Content JSON file descriptors for the `dnd35e` ruleset cartridge.
  * Multiple descriptors sharing the same `key` are shallow-merged by `loader.ts`, `tests/helpers.ts`, and `run-validator.ts`.
@@ -270,5 +292,7 @@ export const DND35E_SYSTEM_CONTENT_FILES: ReadonlyArray<RulesetSystemFileDescrip
   ...SUBTYPE_IDS.map((id) => ({ key: 'subtypes', filename: `subtypes/${id}.json` })),
   { key: 'items', filename: 'items.json' },
   ...ITEM_IDS.map((id) => ({ key: 'items', filename: `items/${id}.json` })),
-  { key: 'itemEnhancements', filename: 'item_enhancements.json' }
+  { key: 'itemEnhancements', filename: 'item_enhancements.json' },
+  { key: 'conditionEffects', filename: 'conditions.json' },
+  ...CONDITION_IDS.map((id) => ({ key: 'conditionEffects', filename: `conditions/${id}.json` }))
 ];

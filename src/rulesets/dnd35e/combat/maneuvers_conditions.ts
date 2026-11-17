@@ -2,12 +2,14 @@ import { rollD20 } from '../math/dice.ts';
 import { resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
 import { resolveOpposedCheck } from '../skills.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
-import type {
-  CreatureSizeCategory,
-  DnD35ConditionId,
-  OnHitRiderDescriptor,
-  StatModifier
-} from '../types/dnd35e.types.ts';
+import {
+  applyConditionWithEscalation,
+  buildConditionStatModifiers,
+  summarizeConditionEffects
+} from './condition_registry.ts';
+import type { CreatureSizeCategory, OnHitRiderDescriptor, StatModifier } from '../types/dnd35e.types.ts';
+
+export { applyConditionWithEscalation, buildConditionStatModifiers, summarizeConditionEffects };
 
 /** Single-limb grapple penalty (`-20`) allowing a monster with Improved Grab to not be considered grappled itself. */
 export const SINGLE_LIMB_IMPROVED_GRAB_PENALTY = -20;
@@ -206,135 +208,4 @@ export function resolveSpecialAbilitySaveDc(
     effectTags: [`ability:${abilityId}`]
   });
   return baseDc + breakdown.total;
-}
-
-/**
- * Applies a condition to an entity's active condition list while enforcing canonical
- * D&D 3.5e escalation chains:
- * - Fear escalation: `shaken + shaken/frightened -> frightened`, `frightened + fear -> panicked`.
- * - Fatigue escalation: `fatigued + fatigued -> exhausted`.
- *
- * @param currentConditions Existing active `DnD35ConditionId` array.
- * @param incomingCondition Incoming `DnD35ConditionId`.
- * @returns Updated deduplicated `ReadonlyArray<DnD35ConditionId>`.
- */
-export function applyConditionWithEscalation(
-  currentConditions: ReadonlyArray<DnD35ConditionId>,
-  incomingCondition: DnD35ConditionId
-): ReadonlyArray<DnD35ConditionId> {
-  const next = new Array<DnD35ConditionId>(...currentConditions);
-
-  if (incomingCondition === 'shaken') {
-    if (next.includes('panicked')) return next;
-    if (next.includes('frightened')) {
-      return [...next.filter((c) => c !== 'frightened' && c !== 'shaken'), 'panicked'];
-    }
-    if (next.includes('shaken')) {
-      return [...next.filter((c) => c !== 'shaken'), 'frightened'];
-    }
-  }
-
-  if (incomingCondition === 'frightened') {
-    if (next.includes('panicked')) return next;
-    if (next.includes('shaken') || next.includes('frightened')) {
-      return [...next.filter((c) => c !== 'shaken' && c !== 'frightened'), 'panicked'];
-    }
-  }
-
-  if (incomingCondition === 'fatigued') {
-    if (next.includes('exhausted')) return next;
-    if (next.includes('fatigued')) {
-      return [...next.filter((c) => c !== 'fatigued'), 'exhausted'];
-    }
-  }
-
-  if (!next.includes(incomingCondition)) {
-    next.push(incomingCondition);
-  }
-  return next;
-}
-
-/**
- * Computes aggregate combat and stat penalties from an entity's active D&D 3.5e conditions.
- *
- * @param conditions Active `DnD35ConditionId` list.
- * @returns `{ meleeAttackPenalty: number, acPenalty: number, losesDexToAC: boolean, strPenalty: number, dexPenalty: number, canTakeActions: boolean }`.
- */
-export function summarizeConditionEffects(conditions: ReadonlyArray<DnD35ConditionId>): {
-  readonly meleeAttackPenalty: number;
-  readonly acPenalty: number;
-  readonly losesDexToAC: boolean;
-  readonly strPenalty: number;
-  readonly dexPenalty: number;
-  readonly canTakeActions: boolean;
-} {
-  let meleeAttackPenalty = 0;
-  let acPenalty = 0;
-  let losesDexToAC = false;
-  let strPenalty = 0;
-  let dexPenalty = 0;
-  let canTakeActions = true;
-
-  for (const c of conditions) {
-    switch (c) {
-      case 'blinded':
-        acPenalty -= 2;
-        losesDexToAC = true;
-        break;
-      case 'dazzled':
-        meleeAttackPenalty -= 1;
-        break;
-      case 'entangled':
-        meleeAttackPenalty -= 2;
-        dexPenalty = Math.max(dexPenalty, 4);
-        break;
-      case 'fatigued':
-        strPenalty = Math.max(strPenalty, 2);
-        dexPenalty = Math.max(dexPenalty, 2);
-        break;
-      case 'exhausted':
-        strPenalty = Math.max(strPenalty, 6);
-        dexPenalty = Math.max(dexPenalty, 6);
-        break;
-      case 'shaken':
-      case 'frightened':
-      case 'panicked':
-      case 'sickened':
-        meleeAttackPenalty -= 2;
-        break;
-      case 'prone':
-        meleeAttackPenalty -= 4;
-        acPenalty -= 4;
-        break;
-      case 'stunned':
-        acPenalty -= 2;
-        losesDexToAC = true;
-        canTakeActions = false;
-        break;
-      case 'helpless':
-      case 'paralyzed':
-      case 'unconscious':
-        acPenalty -= 4;
-        losesDexToAC = true;
-        canTakeActions = false;
-        break;
-      case 'flat_footed':
-        losesDexToAC = true;
-        break;
-      case 'deafened':
-      case 'grappled':
-      case 'nauseated':
-      case 'staggered':
-        break;
-    }
-  }
-
-  return {
-    meleeAttackPenalty,
-    acPenalty,
-    losesDexToAC,
-    strPenalty,
-    dexPenalty,
-    canTakeActions
-  };
 }

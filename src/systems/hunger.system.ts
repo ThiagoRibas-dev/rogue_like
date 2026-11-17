@@ -1,6 +1,10 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type HungerComponent, type FighterComponent } from '../types/components.types.ts';
 import { getComponent, addComponent } from '../core/ecs.ts';
+import {
+  DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN,
+  STANDARD_ENERGY_PER_TURN
+} from '../constants/world_clock.constants.ts';
 /**
  * Represents the status levels of nutritional satiation for the player.
  */
@@ -24,21 +28,22 @@ export function getHungerState(state: GameState, satiation: number): HungerState
 }
 
 /**
- * Processes hunger for an entity, reducing its satiation and applying starvation damage if necessary.
- * Designed to be called after an entity acts, passing the energy cost of their action.
+ * Processes hunger for an entity, reducing its satiation according to `rules.hunger.satiationLossPerStandardTurn`
+ * and applying starvation damage if satiation reaches the Starving threshold.
  *
  * @param state The current GameState.
  * @param entityId The entity to process hunger for.
- * @param energyCost The energy cost of the action just taken (100 = 1 standard turn).
+ * @param energyCost The energy cost of the elapsed action/time (`100` = `1` standard turn).
  * @returns The updated GameState.
  */
 export function processHungerTick(state: GameState, entityId: EntityId, energyCost: number): GameState {
   const hunger = getComponent(state, entityId, ComponentType.Hunger);
   if (!hunger || energyCost <= 0) return state;
 
-  // 1 energy = 0.01 satiation loss (so 100 energy = 1 satiation lost)
-  // Feel free to tweak this rate!
-  const satiationLoss = energyCost / 100;
+  const lossPerTurn =
+    state.campaign.rules.hunger.satiationLossPerStandardTurn ?? DEFAULT_SATIATION_LOSS_PER_STANDARD_TURN;
+  const standardTurns = energyCost / STANDARD_ENERGY_PER_TURN;
+  const satiationLoss = standardTurns * lossPerTurn;
   const newSatiation = Math.max(0, hunger.satiation - satiationLoss);
 
   const oldState = getHungerState(state, hunger.satiation);
@@ -65,8 +70,8 @@ export function processHungerTick(state: GameState, entityId: EntityId, energyCo
   if (newState === HungerState.Starving) {
     const fighter = getComponent(nextState, entityId, ComponentType.Fighter);
     if (fighter) {
-      // 1 damage per 100 energy spent while starving
-      const damage = Math.max(1, Math.floor(energyCost / 100));
+      // Scale starvation damage by standard turns spent while starving when non-satiated
+      const damage = Math.max(1, Math.floor(satiationLoss > 0 ? satiationLoss : standardTurns * lossPerTurn));
       const newHp = Math.max(0, fighter.hp - damage);
       const nextFighter: FighterComponent = { ...fighter, hp: newHp };
       nextState = addComponent(nextState, entityId, nextFighter);

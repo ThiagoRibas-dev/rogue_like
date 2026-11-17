@@ -65,7 +65,40 @@
         }
       }
     ],
-    "traitBundles": [],
+    "traitBundles": [
+      {
+        "bundleId": "light_sensitivity",
+        "name": "Light Sensitivity",
+        "category": "ex",
+        "usageMode": "passive",
+        "description": "Duergar are dazzled in bright sunlight or within the radius of a daylight spell (-1 penalty on attack rolls, Search checks, and Spot checks).",
+        "grantedTags": ["trait:light_sensitivity"],
+        "modifiers": [
+          {
+            "id": "light_sensitivity_dazzled_attack",
+            "target": "attack",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:sunlight"], "selfTagsNone": ["status:cond_dazzled"] }
+          },
+          {
+            "id": "light_sensitivity_dazzled_spot",
+            "target": "skill:spot",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:sunlight"], "selfTagsNone": ["status:cond_dazzled"] }
+          },
+          {
+            "id": "light_sensitivity_dazzled_search",
+            "target": "skill:search",
+            "value": -1,
+            "type": "untyped",
+            "condition": { "selfTagsAny": ["light:sunlight"], "selfTagsNone": ["status:cond_dazzled"] }
+          }
+        ],
+        "ruleOverrides": []
+      }
+    ],
     "weaponFamiliarityIds": [
       "dwarven_waraxe",
       "dwarven_urgrosh"

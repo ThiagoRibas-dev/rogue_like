@@ -18,6 +18,7 @@ import {
 } from '../spatial/flanking_graph.ts';
 import { syncDnD35eActorSpatialFootprint } from '../spatial/footprint_resolver.ts';
 import { FEET_PER_GRID_SQUARE } from '../spatial/grid_geometry.ts';
+import { evaluateActorLightExposure } from '../spatial/light_exposure.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../srd_registry.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
@@ -142,6 +143,7 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
  */
 export function onDnD35eActorTurnStart(state: GameState, entityId: EntityId): GameState {
   let nextState = syncDnD35eActorSpatialFootprint(state, entityId);
+  nextState = evaluateActorLightExposure(nextState, entityId, 'turn_start');
   const dndData = getDnD35EntityData(nextState, entityId);
   const freshBudget = hydrateEntityRoundActionBudget(nextState, entityId);
 
@@ -203,6 +205,7 @@ export function onDnD35eActorMovementStep(
   }
 
   nextState = syncSpatialFlankingGraph(nextState);
+  nextState = evaluateActorLightExposure(nextState, entityId, 'move_or_field');
   nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
 
   return nextState;

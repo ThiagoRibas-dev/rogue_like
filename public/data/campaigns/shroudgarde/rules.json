@@ -20,7 +20,8 @@
       "normal": 1000,
       "hungry": 300,
       "starving": 0
-    }
+    },
+    "satiationLossPerStandardTurn": 0.035
   },
   "spawning": {
     "maxMonstersPerRoom": 2,

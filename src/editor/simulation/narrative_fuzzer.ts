@@ -10,9 +10,10 @@ import type {
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import { getComponent, queryEntities, addComponent } from '../../core/ecs.ts';
+import { getComponent, queryEntities } from '../../core/ecs.ts';
 import { applyIntentWithCost } from '../../core/game-loop.ts';
-import { processStatusEffectsTick, shouldSkipTurn } from '../../systems/status-effect.system.ts';
+import { runActorTurnStart } from '../../systems/lifecycle.system.ts';
+import { shouldSkipTurn } from '../../systems/status-effect.system.ts';
 import { processDamageSystem } from '../../systems/damage.system.ts';
 import { processDeathSystem } from '../../systems/death.system.ts';
 import { processSchemeTurn } from '../../systems/scheme.system.ts';
@@ -38,8 +39,8 @@ export { processLedgerEvents, compileFuzzerReport } from './fuzzer_telemetry.ts'
 export function tickHeadlessTurn(state: GameState, entityId: EntityId): GameState {
   let tempState = state;
 
-  // 1. Tick status effects, damage, death
-  tempState = processStatusEffectsTick(tempState, entityId);
+  // 1. Canonical actor turn-start window (status effects, AI cooldowns, player world turn, ruleset hooks)
+  tempState = runActorTurnStart(tempState, entityId);
   tempState = processDamageSystem(tempState);
   tempState = processDeathSystem(tempState);
 
@@ -68,33 +69,16 @@ export function tickHeadlessTurn(state: GameState, entityId: EntityId): GameStat
     }
   } else {
     // AI Turn
-    let aiTurnState = tempState;
-    const aiComponent = getComponent(aiTurnState, entityId, ComponentType.AI);
-    if (aiComponent && aiComponent.cooldowns) {
-      const newCooldowns: Record<string, number> = {};
-      let changed = false;
-      for (const [key, val] of Object.entries(aiComponent.cooldowns)) {
-        if (val > 0) {
-          newCooldowns[key] = val - 1;
-          changed = true;
-        } else {
-          newCooldowns[key] = 0;
-        }
-      }
-      if (changed) {
-        aiTurnState = addComponent(aiTurnState, entityId, { ...aiComponent, cooldowns: newCooldowns });
-      }
-    }
-
+    const aiTurnState = tempState;
     const aiResult = processAITurn(aiTurnState, entityId);
-    aiTurnState = aiResult.state;
+    const nextAiState = aiResult.state;
     const intent = aiResult.intent;
 
     if (intent !== null) {
-      const result = applyIntentWithCost(aiTurnState, intent);
+      const result = applyIntentWithCost(nextAiState, intent);
       tempState = result.state;
     } else {
-      tempState = aiTurnState;
+      tempState = nextAiState;
     }
   }
 

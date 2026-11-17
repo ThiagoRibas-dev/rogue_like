@@ -4,7 +4,7 @@
  * spontaneous conversion (Cure/Inflict, SNA), and 8-hour rest recovery.
  */
 
-import { addComponent, getComponent, refreshResourcePools } from '../../core/ecs.ts';
+import { addComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
@@ -14,6 +14,9 @@ import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { executeEightHourRest } from './dnd35e_rest_actions.ts';
+
+export { executeEightHourRest };
 
 function ensureHydratedClassSlots(
   state: GameState,
@@ -176,61 +179,7 @@ export function unprepareSpellSlot(
 }
 
 /**
- * Triggers an 8-Hour Rest recovery for the hero.
- * Recharges all expended spell slots back to unexpended WITHOUT wiping memorized spells,
- * resets spontaneous slots, and heals vitality.
- */
-export function executeEightHourRest(state: GameState, playerId: EntityId): GameState {
-  const dndData = getDnD35EntityData(state, playerId);
-  const fighter = getComponent(state, playerId, ComponentType.Fighter);
-  if (!fighter) return state;
-
-  const healedHp = Math.min(fighter.maxHp, fighter.hp + Math.max(1, dndData.tracks.length));
-  let nextState = addComponent(state, playerId, { ...fighter, hp: healedHp });
-
-  const classBooks = dndData.spellbooksByClass ?? {};
-  let changed = false;
-  const refreshedBooks: Record<string, (typeof classBooks)[string]> = {};
-
-  for (const [cid, book] of Object.entries(classBooks)) {
-    let slots = book.preparedSlots;
-    if (slots && slots.length > 0) {
-      slots = slots.map((s) => (s.expended ? { ...s, expended: false } : s));
-    }
-    const preparedSpellIds = slots
-      ? slots.filter((s) => s.preparedSpellId !== undefined).map((s) => s.preparedSpellId!)
-      : book.preparedSpellIds;
-
-    refreshedBooks[cid] = {
-      ...book,
-      preparedSlots: slots,
-      preparedSpellIds,
-      spontaneousSlotsUsedByLevel: {}
-    };
-    changed = true;
-  }
-
-  if (changed) {
-    const updatedDndData = { ...dndData, spellbooksByClass: refreshedBooks };
-    nextState = addComponent(nextState, playerId, {
-      type: ComponentType.RulesetData,
-      rulesetId: 'dnd35e',
-      payload: updatedDndData
-    } as RulesetDataComponent);
-  }
-
-  nextState = refreshResourcePools(nextState, playerId, 'rest_8h');
-
-  nextState = addMessage(
-    nextState,
-    'Rest completed (8 hours). All daily spell slots and daily abilities refreshed.',
-    MessageLogCategory.System
-  );
-  return nextState;
-}
-
-/**
- * Helper to dispatch rest and update state.
+ * Helper to dispatch 8-hour rest and update state.
  */
 export function applyRestAction(state: GameState, playerId: EntityId): void {
   const next = executeEightHourRest(state, playerId);

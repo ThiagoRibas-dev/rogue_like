@@ -43,7 +43,13 @@
         "anchorToCaster": true,
         "blocksLoS": false,
         "blocksLoE": false,
-        "suppressedTags": []
+        "suppressedTags": [],
+        "illuminationOverride": {
+          "level": "bright",
+          "spellLevel": 3,
+          "descriptors": ["light", "daylight"],
+          "yieldsToDescriptors": []
+        }
       }
     ],
     "tags": [

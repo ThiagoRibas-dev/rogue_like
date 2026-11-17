@@ -4,19 +4,62 @@
  * prepared spells with cast/unprepare/convert buttons, and 8-hour rest recovery.
  */
 
+import { CLOCK_PHASE_ICONS } from '../../constants/world_clock.constants.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { getGameState } from '../../core/game-loop.ts';
+import { getClockPhaseLabel, getEffectiveWorldClockConfig } from '../../systems/world_clock.system.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import type { GameState } from '../../types/game-state.types.ts';
+import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { applyRestAction } from './dnd35e_spellbook_actions.ts';
+import { applyRestActionAsync, applyWaitUntilPhaseAsync } from './dnd35e_rest_actions.ts';
 import { renderPreparedSlotsPane, renderSpontaneousSlotsPane } from './dnd35e_spellbook_panes.ui.ts';
 import { renderKnownSpellsPane } from './dnd35e_spellbook_known.ui.ts';
 
 let selectedClassTab: string | undefined;
 let selectedLevelFilter = -1; // -1 = All levels
+
+/**
+ * Renders the 8-Hour Rest button plus declarative `rules.worldClock.waitTargets` time-skip buttons.
+ */
+function buildRestAndWaitControls(liveState: GameState, playerId: EntityId): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.style.display = 'flex';
+  wrap.style.gap = '6px';
+  wrap.style.flexWrap = 'wrap';
+
+  const restBtn = document.createElement('button');
+  restBtn.type = 'button';
+  restBtn.className = 'modal-btn spellbook-rest-btn';
+  restBtn.textContent = '💤 8-Hour Rest';
+  restBtn.title = 'Refresh daily spell slots, restore vitality, and advance world time 8 hours';
+  restBtn.addEventListener('click', () => {
+    void applyRestActionAsync(getGameState() ?? liveState, playerId, () => {
+      renderDnD35eSpellbookModal(getGameState() ?? liveState);
+    });
+  });
+  wrap.appendChild(restBtn);
+
+  const waitTargets = getEffectiveWorldClockConfig(liveState).waitTargets ?? ['dawn', 'night'];
+  for (const targetPhase of waitTargets) {
+    const label = getClockPhaseLabel(liveState, targetPhase);
+    const icon = CLOCK_PHASE_ICONS[targetPhase] ?? '⏳';
+    const waitBtn = document.createElement('button');
+    waitBtn.type = 'button';
+    waitBtn.className = 'modal-btn spellbook-wait-btn';
+    waitBtn.textContent = `${icon} Wait until ${label}`;
+    waitBtn.title = `Wait until ${label} (blocked when hostiles are visible)`;
+    waitBtn.addEventListener('click', () => {
+      void applyWaitUntilPhaseAsync(getGameState() ?? liveState, playerId, targetPhase, () => {
+        renderDnD35eSpellbookModal(getGameState() ?? liveState);
+      });
+    });
+    wrap.appendChild(waitBtn);
+  }
+
+  return wrap;
+}
 
 /**
  * Renders the Vancian Spellbook modal dialog into `#dnd35e-spellbook-body`.
@@ -52,16 +95,9 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     empty.textContent = 'This character possesses no spellcasting classes or grimoires.';
     content.appendChild(empty);
 
-    const restBtn = document.createElement('button');
-    restBtn.type = 'button';
-    restBtn.className = 'modal-btn';
-    restBtn.style.marginTop = '16px';
-    restBtn.textContent = '💤 Take 8-Hour Rest';
-    restBtn.addEventListener('click', () => {
-      applyRestAction(liveState, playerId);
-      renderDnD35eSpellbookModal(getGameState() ?? liveState);
-    });
-    content.appendChild(restBtn);
+    const controls = buildRestAndWaitControls(liveState, playerId);
+    controls.style.marginTop = '16px';
+    content.appendChild(controls);
     return;
   }
 
@@ -106,18 +142,7 @@ export function renderDnD35eSpellbookModal(state: GameState): void {
     tabContainer.appendChild(btn);
   }
   topBar.appendChild(tabContainer);
-
-  const restBtn = document.createElement('button');
-  restBtn.type = 'button';
-  restBtn.className = 'modal-btn spellbook-rest-btn';
-  restBtn.textContent = '💤 8-Hour Rest';
-  restBtn.title = 'Refresh daily spell slots and restore vital vitality';
-  restBtn.addEventListener('click', () => {
-    applyRestAction(liveState, playerId);
-    renderDnD35eSpellbookModal(getGameState() ?? liveState);
-  });
-  topBar.appendChild(restBtn);
-
+  topBar.appendChild(buildRestAndWaitControls(liveState, playerId));
   content.appendChild(topBar);
 
   // 2. Spell Level Filter Strip

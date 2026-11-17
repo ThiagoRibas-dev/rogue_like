@@ -3,6 +3,7 @@ import { ComponentType } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
 import { getActiveRuleset } from '../../rulesets/registry.ts';
+import { formatWorldClockShort, resolveAreaEnvironmentProfile } from '../../systems/world_clock.system.ts';
 import { LOG_FILTER_TABS, type LogFilterCategory, UITooltipType, UIStatId } from '../../constants/ui.constants.ts';
 
 let activeLogFilter: LogFilterCategory = 'all';
@@ -210,6 +211,18 @@ export function updateHUD(s: GameState): void {
   if (areaDepthTag !== null) {
     const danger = currentArea?.dangerRating;
     areaDepthTag.textContent = typeof danger === 'number' && danger > 0 ? `DANGER ${danger}` : 'SANCTUARY';
+  }
+
+  const worldClockChip = document.getElementById('world-clock-chip');
+  if (worldClockChip !== null) {
+    const env = resolveAreaEnvironmentProfile(s);
+    const envLabel =
+      env.environmentType === 'outdoors'
+        ? 'Outdoors'
+        : env.environmentType === 'underground'
+          ? 'Underground'
+          : 'Indoors';
+    worldClockChip.textContent = `${formatWorldClockShort(env.clock)} • ${envLabel}`;
   }
 
   const playerEntityId = s.entities.find((id) => getComponent(s, id, ComponentType.Player) !== undefined);

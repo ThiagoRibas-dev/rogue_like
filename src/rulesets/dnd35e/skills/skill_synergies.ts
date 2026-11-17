@@ -1,3 +1,4 @@
+import { buildConditionStatModifiers } from '../combat/condition_registry.ts';
 import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import { dndFloor } from '../math/multipliers.ts';
 import { appendSourcePath, resolveTypedModifiersWithBreakdown } from '../modifiers.ts';
@@ -6,11 +7,16 @@ import {
   type AbilityId,
   type AbilityScoresRecord,
   ALL_ABILITY_IDS,
+  type DnD35ConditionId,
   type DnD35SkillResolution,
   type StatModifier,
   type StatQueryContext
 } from '../types/dnd35e.types.ts';
-import type { DnD35FeatDefinition, DnD35SkillDefinition } from '../types/dnd35e_system.types.ts';
+import type {
+  DnD35ConditionDefinition,
+  DnD35FeatDefinition,
+  DnD35SkillDefinition
+} from '../types/dnd35e_system.types.ts';
 import {
   CLASS_SKILL_RANK_CAP_OFFSET,
   EPIC_SYNERGY_INITIAL_RANKS,
@@ -19,9 +25,6 @@ import {
   SYNERGY_REQUIRED_RANKS,
   TAKE_10_VALUE
 } from './skill_constants.ts';
-
-/** Fear condition penalty (`-2`) applied to skill checks when shaken, frightened, or panicked. */
-const FEAR_CONDITION_SKILL_PENALTY = -2;
 
 /**
  * Computes maximum allowed skill ranks for a class skill (`HD + 3`) vs. cross-class skill (`(HD + 3) / 2`).
@@ -180,6 +183,7 @@ export interface ResolveActorSkillsSnapshotParams {
   readonly armorCheckPenalty?: number | undefined;
   readonly minSkillRanksFloor?: number | undefined;
   readonly skillRegistry?: Readonly<Record<string, DnD35SkillDefinition>> | undefined;
+  readonly conditionRegistry?: Readonly<Record<string, DnD35ConditionDefinition>> | undefined;
   readonly context?: StatQueryContext | undefined;
 }
 
@@ -187,7 +191,7 @@ export interface ResolveActorSkillsSnapshotParams {
  * Resolves the canonical `DnD35SkillResolution` breakdown for every skill in `skillRegistry`
  * (plus any custom rank keys in `skillRanks`), incorporating Stage 2 `effectiveAbilityModifiers`,
  * Undead `CON: null -> CHA` concentration substitution, Bardic Knack rank floors, 5-rank/epic synergies,
- * equipped `armorCheckPenalty` (`acpMultiplier`), Fear condition penalties, and 18-type bonus stacking.
+ * equipped `armorCheckPenalty` (`acpMultiplier`), declarative Condition skill penalties, and 18-type bonus stacking.
  */
 export function resolveActorSkillsSnapshot(
   params: ResolveActorSkillsSnapshotParams
@@ -201,12 +205,21 @@ export function resolveActorSkillsSnapshot(
     armorCheckPenalty = 0,
     minSkillRanksFloor,
     skillRegistry = {},
+    conditionRegistry,
     context
   } = params;
 
-  const hasFearPenalty =
-    conditions.includes('shaken') || conditions.includes('frightened') || conditions.includes('panicked');
-  const sharedSkillMods = statModifiers.filter((m) => m.targetStat === 'skills');
+  const conditionSkillMods = buildConditionStatModifiers(
+    conditions as ReadonlyArray<DnD35ConditionId>,
+    conditionRegistry
+  ).filter((m) => m.targetStat === 'skills' || m.targetStat.startsWith('skill:'));
+  const existingSourceIds = new Set(statModifiers.map((m) => m.sourceId));
+  const missingConditionMods = conditionSkillMods.filter((m) => !existingSourceIds.has(m.sourceId));
+
+  const sharedSkillMods = [
+    ...statModifiers.filter((m) => m.targetStat === 'skills'),
+    ...missingConditionMods.filter((m) => m.targetStat === 'skills')
+  ];
   const allSkillIds = new Set<string>([...Object.keys(skillRegistry), ...Object.keys(skillRanks)]);
   const resolved: Record<string, DnD35SkillResolution> = {};
 
@@ -225,17 +238,8 @@ export function resolveActorSkillsSnapshot(
 
     const targetKey = `skill:${skillId}`;
     const specificMods = statModifiers.filter((m) => m.targetStat === targetKey);
-    const combinedMods: StatModifier[] = [...specificMods, ...sharedSkillMods];
-    if (hasFearPenalty && !combinedMods.some((m) => m.sourceId === 'condition_fear')) {
-      combinedMods.push({
-        targetStat: targetKey,
-        value: FEAR_CONDITION_SKILL_PENALTY,
-        bonusType: 'untyped',
-        sourceId: 'condition_fear',
-        sourcePath: 'condition:fear/skill_penalty',
-        origin: 'ex'
-      });
-    }
+    const specificCondMods = missingConditionMods.filter((m) => m.targetStat === targetKey);
+    const combinedMods: StatModifier[] = [...specificMods, ...specificCondMods, ...sharedSkillMods];
 
     const modifierBreakdown = resolveTypedModifiersWithBreakdown(combinedMods, context);
     const miscModifier = synergyBonus + modifierBreakdown.total + acpApplied;
