@@ -149,13 +149,6 @@ export function processChangeAreaIntent(
     targetRooms = savedTargetArea.rooms ?? [];
     targetLastSpawnTurn = savedTargetArea.lastSpawnTurn ?? 0;
 
-    // Delta Catch-Up on Area Wake
-    const lastVisited = savedTargetArea.lastVisitedTurn ?? savedTargetArea.lastSpawnTurn ?? 0;
-    const deltaTurns = Math.max(0, (state.globalTurn ?? 0) - lastVisited);
-    if (deltaTurns > 0) {
-      targetLastSpawnTurn = Math.min(state.globalTurn ?? 0, targetLastSpawnTurn + deltaTurns);
-    }
-
     const wakeResult = wakeSavedAreaFloor(
       state,
       targetAreaId,

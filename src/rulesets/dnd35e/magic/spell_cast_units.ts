@@ -97,7 +97,7 @@ export function applySpecialSpellUnit(params: {
         y: anchorPos.y
       });
       nextState = addComponent(nextState, fieldEntityId, fieldComp);
-      if (unit.illuminationOverride?.level === 'bright') {
+      if (unit.illuminationOverride !== undefined) {
         for (const actorId of nextState.entities) {
           if (getComponent(nextState, actorId, ComponentType.Fighter)) {
             nextState = evaluateActorLightExposure(nextState, actorId, 'move_or_field');

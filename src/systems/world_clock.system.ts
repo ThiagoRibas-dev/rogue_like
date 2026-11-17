@@ -122,12 +122,12 @@ export function formatWorldClockShort(clock: WorldClockReading): string {
 
 /**
  * Resolves the physical environment (`'outdoors' | 'indoors' | 'underground'`), ambient illumination,
- * and natural sunlight flag for `state.currentAreaId`.
+ * and natural sunlight flag for `areaIdOverride ?? state.currentAreaId`.
  * Areas omitting `environmentType` default cleanly to `'indoors'` + `'bright'` for legacy compatibility.
  */
-export function resolveAreaEnvironmentProfile(state: GameState): AreaEnvironmentProfile {
+export function resolveAreaEnvironmentProfile(state: GameState, areaIdOverride?: string): AreaEnvironmentProfile {
   const clock = readWorldClock(state);
-  const area = state.campaign.areas[state.currentAreaId];
+  const area = state.campaign.areas[areaIdOverride ?? state.currentAreaId];
   const environmentType: AreaEnvironmentType = area?.environmentType ?? 'indoors';
 
   if (environmentType === 'outdoors') {

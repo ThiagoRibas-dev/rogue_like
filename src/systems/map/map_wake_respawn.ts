@@ -72,7 +72,7 @@ export function buildAreaDirectorContext(
       : 1;
 
   let areaMutation: { addedTags: ReadonlyArray<string>; budgetModifier: number } | undefined = undefined;
-  const envProfile = resolveAreaEnvironmentProfile(state);
+  const envProfile = resolveAreaEnvironmentProfile(state, targetAreaId);
   const envAndTimeTags = [`time:${envProfile.clock.phaseId}`, `env:${envProfile.environmentType}`];
   const areaEntId = state.areaEntityIds[targetAreaId];
   if (areaEntId) {

@@ -12,7 +12,6 @@
   "ignore": [
     "src/editor/reference_index.ts",
     "src/rendering/ui/editor_object_renderer.ts",
-    "src/rendering/ui/loading_overlay.ui.ts",
     "src/rendering/ui/trade.ui.ts",
     "src/rendering/ui/where_used.ui.ts",
     "src/types/generation.types.ts",

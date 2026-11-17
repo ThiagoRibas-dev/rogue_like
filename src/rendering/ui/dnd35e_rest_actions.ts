@@ -60,7 +60,9 @@ function finalizeEightHourRestRecovery(bulkRes: BulkTimeAdvanceResult, playerId:
   const fighter = getComponent(nextState, playerId, ComponentType.Fighter);
   if (!fighter) return nextState;
 
-  const healedHp = Math.min(fighter.maxHp, fighter.hp + Math.max(1, dndData.tracks.length));
+  const totalTrackLevels = dndData.tracks.reduce((sum, t) => sum + t.levels, 0);
+  const effectiveLevel = Math.max(1, totalTrackLevels > 0 ? totalTrackLevels : fighter.level || 1);
+  const healedHp = Math.min(fighter.maxHp, fighter.hp + effectiveLevel);
   nextState = addComponent(nextState, playerId, { ...fighter, hp: healedHp });
 
   const abilities = dndData.abilityScores;

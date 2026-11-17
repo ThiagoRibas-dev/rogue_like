@@ -19,13 +19,14 @@ import { applyRaceToActorChassis } from '../src/rulesets/dnd35e/races.ts';
 import { consumeResourcePool } from '../src/core/ecs/ecs_lifecycle.ts';
 import { processUseItemIntent } from '../src/systems/effects.system.ts';
 import { runActorTurnStart } from '../src/systems/lifecycle.system.ts';
-import { triggerActiveAreaRespawnIfDue } from '../src/systems/map/map_wake_respawn.ts';
+import { processChangeAreaIntent } from '../src/systems/map.system.ts';
+import { buildAreaDirectorContext, triggerActiveAreaRespawnIfDue } from '../src/systems/map/map_wake_respawn.ts';
 import {
   computeTurnsUntilPhase,
   readWorldClock,
   resolveAreaEnvironmentProfile
 } from '../src/systems/world_clock.system.ts';
-import { ComponentType, type FighterComponent, type HungerComponent, type PositionComponent } from '../src/types/components.types.ts';
+import { ComponentType, type FighterComponent, type HungerComponent } from '../src/types/components.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
 import type { GameState } from '../src/types/game-state.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
@@ -197,6 +198,11 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     expect(resolveAreaEnvironmentProfile(outdoorDay).isNaturalSunlight).toBe(true);
     expect(resolveTileLightReading(outdoorDay, pPos.x, pPos.y).isSunlight).toBe(true);
 
+    // Cross-area Director context uses targetAreaId's environmentType ('underground') even while player is in 'safe_hub' ('outdoors')
+    const crossAreaCtx = buildAreaDirectorContext(outdoorDay, 'dungeon_1', false);
+    expect(crossAreaCtx.areaMutation?.addedTags).toContain('env:underground');
+    expect(crossAreaCtx.areaMutation?.addedTags).not.toContain('env:outdoors');
+
     const outdoorNight = { ...outdoorDay, globalTurn: 7200 };
     expect(resolveAreaEnvironmentProfile(outdoorNight).illumination).toBe('shadowy');
     expect(resolveAreaEnvironmentProfile(outdoorNight).isNaturalSunlight).toBe(false);
@@ -319,6 +325,32 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
       buildDice: (d) => d
     });
     expect(getDnD35EntityData(state, drowId).conditions).toContain('blinded');
+
+    // 5. Casting Darkness over an outdoor sunlight-blinded Drow (outside Daylight spell field) immediately clears light-induced blinded & lightExposure
+    let outdoorBlinded = withAreaEnvironment(state, 'outdoors');
+    outdoorBlinded = addComponent(outdoorBlinded, drowId, { type: ComponentType.Position, x: 25, y: 25 });
+    outdoorBlinded = onDnD35eActorMovementStep(outdoorBlinded, drowId, { x: 24, y: 25 }, { x: 25, y: 25 });
+    expect(getDnD35EntityData(outdoorBlinded, drowId).conditions).toContain('blinded');
+    const darknessSpell = sysContent.spells['darkness']!;
+    outdoorBlinded = applySpecialSpellUnit({
+      state: outdoorBlinded,
+      casterId: drowId,
+      targetId: drowId,
+      targetPos: { x: 25, y: 25 },
+      spell: darknessSpell,
+      unit: darknessSpell.effectUnits[0]!,
+      saved: false,
+      casterLevel: 3,
+      castId: 'test_darkness',
+      metamagic: { extend: false, empower: false, maximize: false, silent: false, still: false, widen: false, quicken: false, judicious: false, reach: false, heightenLevel: undefined },
+      casterAbilityMod: 0,
+      totalBab: 1,
+      sysContent,
+      queueDamage: (s) => s,
+      buildDice: (d) => d
+    });
+    expect(getDnD35EntityData(outdoorBlinded, drowId).conditions).not.toContain('blinded');
+    expect(getDnD35EntityData(outdoorBlinded, drowId).lightExposure).toBeUndefined();
   });
 
   test('Kobold/Orc Light Sensitivity reacts to sunlight & daylight (not torch light) and Rule 21 modded race works cleanly', () => {
@@ -436,12 +468,19 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     expect(underDag.resolvedSkills['survival']!.totalModifier).toBe(baseDag.resolvedSkills['survival']!.totalModifier + 2);
   });
 
-  test('Rest & Wait are gated by visible hostiles, advance world sims + SRD hunger + apple/ration values, and escalate respawn', () => {
+  test('Rest & Wait are gated by visible hostiles, heal 1 HP/totalLevel, advance SRD hunger, and wake-respawn saved floors', () => {
     let state = buildGameState(sharedCryptCampaign);
     const playerId = queryEntities(state, [ComponentType.Player])[0]!;
     const playerPos = getComponent(state, playerId, ComponentType.Position)!;
 
-    // Give player Turn Undead spent charge + damage + ability damage + expendable food items
+    // Give player Level 5 single-track chassis with 10/30 HP + Turn Undead spent charge
+    const baseDnd = getDnD35EntityData(state, playerId);
+    state = setDnD35EntityData(state, playerId, {
+      ...baseDnd,
+      tracks: [{ ...baseDnd.tracks[0]!, levels: 5 }]
+    });
+    const baseFighter = getComponent(state, playerId, ComponentType.Fighter)!;
+    state = addComponent(state, playerId, { ...baseFighter, hp: 10, maxHp: 30, level: 5 });
     state = addComponent(state, playerId, {
       type: ComponentType.ResourcePool,
       pools: {
@@ -465,7 +504,7 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     state = addComponent(state, goblinId, { type: ComponentType.Position, x: playerPos.x + 40, y: playerPos.y + 40 });
     state = { ...state, cachedFov: new Set<number>() };
 
-    // 2. Execute 8-hour rest -> advances 4800 turns, refreshes pools, loses SRD hunger (4800 * 0.035 = 168), doesn't starve
+    // 2. Execute 8-hour rest -> advances 4800 turns, heals +5 HP (1 HP * 5 levels), refreshes pools, loses SRD hunger
     const initialHunger = (getComponent(state, playerId, ComponentType.Hunger) as HungerComponent).satiation;
     const afterRest = executeEightHourRest(state, playerId);
     expect(afterRest.globalTurn).toBe(state.globalTurn + EIGHT_HOURS_IN_ROUNDS);
@@ -473,7 +512,7 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     const afterRestHunger = (getComponent(afterRest, playerId, ComponentType.Hunger) as HungerComponent).satiation;
     expect(afterRestHunger).toBeCloseTo(initialHunger - 4800 * 0.035, 2);
     const fighterAfterRest = getComponent(afterRest, playerId, ComponentType.Fighter) as FighterComponent;
-    expect(fighterAfterRest.hp).toBeGreaterThan(0);
+    expect(fighterAfterRest.hp).toBe(15);
 
     // 3. Test apple = 1/4 ration (125 vs 500 satiation) via live processUseItemIntent
     let foodState = addComponent(afterRest, playerId, { type: ComponentType.Hunger, satiation: 500 });
@@ -497,7 +536,7 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     const waited = executeWaitUntilPhase(afterRest, playerId, 'dawn');
     expect(readWorldClock(waited).phaseId).toBe('dawn');
 
-    // 5. Lazy Respawn triggers on non-safe area after elapsed respawn cycles
+    // 5. Lazy Respawn triggers on non-safe area after elapsed respawn cycles (both active and wakeSavedAreaFloor)
     const dungeonState: GameState = {
       ...waited,
       currentAreaId: 'dungeon_1',
@@ -505,5 +544,24 @@ describe('World Clock, Area Environment, Condition Effects, Hunger Scaling & D&D
     };
     const respawnCheck = triggerActiveAreaRespawnIfDue(dungeonState);
     expect(respawnCheck.state.lastSpawnTurn).toBe(dungeonState.globalTurn);
+
+    // Also verify returning to a saved floor after time elapsed in safe_hub updates lastSpawnTurn via wakeSavedAreaFloor
+    const enteredDungeon = processChangeAreaIntent(state, {
+      type: IntentType.ChangeArea,
+      entityId: playerId,
+      targetAreaId: 'dungeon_1'
+    }).state;
+    const backToHub = processChangeAreaIntent(enteredDungeon, {
+      type: IntentType.ChangeArea,
+      entityId: playerId,
+      targetAreaId: 'safe_hub'
+    }).state;
+    const restedInHub = executeEightHourRest(backToHub, playerId);
+    const reenteredDungeon = processChangeAreaIntent(restedInHub, {
+      type: IntentType.ChangeArea,
+      entityId: playerId,
+      targetAreaId: 'dungeon_1'
+    }).state;
+    expect(reenteredDungeon.lastSpawnTurn).toBe(restedInHub.globalTurn);
   });
 });
