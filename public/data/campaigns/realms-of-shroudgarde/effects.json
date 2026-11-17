@@ -1,0 +1,49 @@
+{
+  "heal_5": {
+    "id": "heal_5",
+    "type": "heal",
+    "value": 5,
+    "message": "You feel slightly rejuvenated."
+  },
+  "heal_15": {
+    "id": "heal_15",
+    "type": "heal",
+    "value": 15,
+    "message": "A warm radiant glow restores your vitality."
+  },
+  "heal_30": {
+    "id": "heal_30",
+    "type": "heal",
+    "value": 30,
+    "message": "Healing energy surges through your body."
+  },
+  "apply_haste_10": {
+    "id": "apply_haste_10",
+    "type": "apply_status",
+    "value": 0,
+    "statusId": "haste",
+    "duration": 10,
+    "message": "Time seems to slow around you!"
+  },
+  "apply_poison_5": {
+    "id": "apply_poison_5",
+    "type": "apply_status",
+    "value": 0,
+    "statusId": "poison",
+    "duration": 5,
+    "message": "Virulent toxin burns your veins!"
+  },
+  "damage_nearest_15": {
+    "id": "damage_nearest_15",
+    "type": "damage_nearest",
+    "value": 15,
+    "range": 6,
+    "message": "A searing lance of magic strikes your foe!"
+  },
+  "satiate_500": {
+    "id": "satiate_500",
+    "type": "satiate",
+    "value": 500,
+    "message": "You enjoy a hearty and nourishing meal."
+  }
+}

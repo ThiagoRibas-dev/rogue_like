@@ -5,6 +5,7 @@
  */
 
 import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
+import { formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
 import {
   ComponentType,
   type ActorComponent,
@@ -236,6 +237,9 @@ export class DefaultSciFiUIAdapter implements ICartridgeUIAdapter {
       }
     });
 
+    const balance = inventory?.currencyBalance ?? 0;
+    const currencyCfg = resolveCurrencyConfig(state);
+
     return {
       equippedSlots,
       anatomicalSlots: anatomicalSlots.length > 0 ? anatomicalSlots : DEFAULT_CLASSIC_SLOTS,
@@ -243,7 +247,8 @@ export class DefaultSciFiUIAdapter implements ICartridgeUIAdapter {
       stashItems,
       currentWeightLbs,
       maxWeightLbs: inventory?.baseCapacity ?? DEFAULT_MAX_WEIGHT_LBS,
-      goldCurrency: 0
+      goldCurrency: balance,
+      currencyFormatted: formatCurrency(balance, currencyCfg)
     };
   }
 

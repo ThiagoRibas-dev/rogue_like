@@ -10,15 +10,24 @@ import type {
 } from '../../types/ruleset.types.ts';
 import { processDnD35eDamage, resolveDnD35eMeleeAttack } from './cartridge/dnd35e_combat_adapter.ts';
 import { computeDnD35eEffectiveStats } from './cartridge/dnd35e_dag_adapter.ts';
+import { onDnD35eEntitySpawned } from './cartridge/dnd35e_spawn_hydrator.ts';
+import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
 import { DND35E_BASE_AC } from './modifiers.ts';
 import { calculateMulticlassXpMultiplier, computeXpThresholdForLevel } from './progression.ts';
+import { resolveDnD35eKillXpReward } from './progression/cr_xp_table.ts';
 import {
   getDnD35eValidVerbsForTarget,
   projectDnD35eInspectLoreLines,
   resolveDnD35eSkillVerb,
   validateDnD35eWandActivation
 } from './skill_verbs.ts';
+import {
+  evaluateDnD35eDialogueSkillCheck,
+  evaluateDnD35eTradePriceModifier,
+  getDnD35eActorSkillModifier,
+  resolveDnD35eTradeSocialSkill
+} from './skills/trade_social_checks.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
 import { executeAbruptJauntTeleport } from './combat/immediate_reactions.ts';
 import { executeDnD35eResourcePoolAbility } from './combat/pool_ability_resolver.ts';
@@ -197,5 +206,12 @@ export const dnd35eRulesetContract: RulesetContract = {
   },
   resolveActorSpatialProfile: resolveDnD35eActorSpatialProfile,
   syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint,
-  onWorldHourElapsed: onDnD35eWorldHourElapsed
+  onWorldHourElapsed: onDnD35eWorldHourElapsed,
+  getDefaultCurrencyConfig: () => DND35E_DEFAULT_CURRENCY_CONFIG,
+  evaluateTradePriceModifier: evaluateDnD35eTradePriceModifier,
+  resolveTradeSocialSkill: resolveDnD35eTradeSocialSkill,
+  evaluateDialogueSkillCheck: evaluateDnD35eDialogueSkillCheck,
+  getActorSkillModifier: getDnD35eActorSkillModifier,
+  onEntitySpawned: onDnD35eEntitySpawned,
+  resolveKillXpReward: resolveDnD35eKillXpReward
 };

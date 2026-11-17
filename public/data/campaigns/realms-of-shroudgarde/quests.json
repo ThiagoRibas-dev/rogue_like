@@ -1,0 +1,458 @@
+{
+  "quest_cleanse_crypts": {
+    "id": "quest_cleanse_crypts",
+    "title": "Cleanse the Sunless Crypts",
+    "description": "Venture into the Sunless Reliquary Upper Crypts and eliminate the undead menace.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Explore the Sunless Reliquary Upper Crypts.",
+        "type": "explore",
+        "targetId": "dungeon_1",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat restless skeletons.",
+        "type": "kill",
+        "targetId": "skeleton",
+        "requiredAmount": 3
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 500
+      },
+      {
+        "type": "item",
+        "itemId": "silver_coin",
+        "amount": 50
+      }
+    ]
+  },
+  "quest_investigate_trance": {
+    "id": "quest_investigate_trance",
+    "title": "The Whispering Trance",
+    "description": "Investigate the fungal trance afflicting villagers and locate its origin in the marsh.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Speak with Elena the Chronicler.",
+        "type": "talk",
+        "targetId": "elena_scholar",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Scout the Mirrored Marsh.",
+        "type": "explore",
+        "targetId": "marsh_mirrored",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 800
+      },
+      {
+        "type": "item",
+        "itemId": "coin_pouch_silver",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_caves_of_chaos": {
+    "id": "quest_caves_of_chaos",
+    "title": "Root Out the Ravine of Chaos",
+    "description": "Assault the monster dens in the Ravine of Chaos and eliminate the Ogre Chieftain.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Locate the entrance to the Ravine of Chaos.",
+        "type": "explore",
+        "targetId": "ravine_chaos",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat Korag the Ogre Chieftain.",
+        "type": "kill",
+        "targetId": "ogre_chieftain",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1200
+      },
+      {
+        "type": "item",
+        "itemId": "coin_pouch_gold",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_watchtower_defense": {
+    "id": "quest_watchtower_defense",
+    "title": "Reclaim the High Watchtower",
+    "description": "Drive out the bandit cutthroats occupying the High Watchtower beacon.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Ascend to the beacon peak of the High Watchtower.",
+        "type": "explore",
+        "targetId": "watchtower_f3",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat bandit cutthroats.",
+        "type": "kill",
+        "targetId": "bandit",
+        "requiredAmount": 3
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 600
+      },
+      {
+        "type": "item",
+        "itemId": "gold_coin",
+        "amount": 20
+      }
+    ]
+  },
+  "quest_spire_of_elements": {
+    "id": "quest_spire_of_elements",
+    "title": "Ascent of the Elemental Spire",
+    "description": "Conquer the 4 elemental trials in the Spire and reach the Apex Gem Chamber.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Reach the Chamber of Elemental Gems.",
+        "type": "explore",
+        "targetId": "spire_gem_chamber",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat a Stone Gargoyle sentinel.",
+        "type": "kill",
+        "targetId": "gargoyle",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 2000
+      },
+      {
+        "type": "item",
+        "itemId": "gem_ruby",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_moathouse_incursion": {
+    "id": "quest_moathouse_incursion",
+    "title": "Incursion at the Moathouse",
+    "description": "Infiltrate the ruined moathouse and put an end to Lareth the Beautiful.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Descend into the Moathouse Dungeons.",
+        "type": "explore",
+        "targetId": "moathouse_dungeons",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat Lareth the Beautiful.",
+        "type": "kill",
+        "targetId": "lareth_the_beautiful",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1500
+      },
+      {
+        "type": "item",
+        "itemId": "coin_pouch_gold",
+        "amount": 2
+      }
+    ]
+  },
+  "quest_temple_of_elemental_evil": {
+    "id": "quest_temple_of_elemental_evil",
+    "title": "The Temple of Elemental Evil",
+    "description": "Delve into TOEE and banish Zuggtmoy, Demon Queen of Fungi.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Reach the Fane of Zuggtmoy.",
+        "type": "explore",
+        "targetId": "toee_zuggtmoy_fane",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Destroy Zuggtmoy in her fane.",
+        "type": "kill",
+        "targetId": "zuggtmoy_queen",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 5000
+      },
+      {
+        "type": "item",
+        "itemId": "gem_diamond",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_water_temple_drain": {
+    "id": "quest_water_temple_drain",
+    "title": "Drain the Sunken Nave",
+    "description": "Locate the Drainage Valve Chamber in the flooded temple complex.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Enter the Drainage Valve Chamber.",
+        "type": "explore",
+        "targetId": "water_temple_valve_room",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1000
+      },
+      {
+        "type": "item",
+        "itemId": "gem_chalcedony",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_megadungeon_depths": {
+    "id": "quest_megadungeon_depths",
+    "title": "Depths of the Dungeons of Doom",
+    "description": "Delve 10 subterranean floors into the Dungeons of Doom.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Reach Depth 10 of the Dungeons of Doom.",
+        "type": "explore",
+        "targetId": "nethack_doom_10",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 3000
+      },
+      {
+        "type": "item",
+        "itemId": "platinum_coin",
+        "amount": 10
+      }
+    ]
+  },
+  "quest_goblin_warrens": {
+    "id": "quest_goblin_warrens",
+    "title": "Purge the Warren Citadel",
+    "description": "Assault the 10-level goblin warrens and breach the citadel.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Breach the Great Goblin Citadel.",
+        "type": "explore",
+        "targetId": "incursion_the_goblin_encampment",
+        "requiredAmount": 1
+      },
+      {
+        "id": "obj_2",
+        "description": "Defeat goblin brutes.",
+        "type": "kill",
+        "targetId": "goblin_brute",
+        "requiredAmount": 3
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 2500
+      },
+      {
+        "type": "item",
+        "itemId": "coin_pouch_gold",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_alden_lost_tome": {
+    "id": "quest_alden_lost_tome",
+    "title": "The Archmage`s Grimoire",
+    "description": "Retrieve Archmage Alden`s lost celestial grimoire from the top of his tower.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Reach the Arcane Tower Sanctum Sanctorum.",
+        "type": "explore",
+        "targetId": "wizard_tower_f4",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 900
+      },
+      {
+        "type": "item",
+        "itemId": "scroll_of_mage_armor",
+        "amount": 2
+      }
+    ]
+  },
+  "quest_barkeep_supplies": {
+    "id": "quest_barkeep_supplies",
+    "title": "Provisions for the Golden Grain",
+    "description": "Deliver iron rations and fresh grain to Barkeep Bertram.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Speak with Barkeep Bertram.",
+        "type": "talk",
+        "targetId": "barkeep_bertram",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 300
+      },
+      {
+        "type": "item",
+        "itemId": "ration_iron",
+        "amount": 4
+      }
+    ]
+  },
+  "quest_laurent_special_ore": {
+    "id": "quest_laurent_special_ore",
+    "title": "Adamantine of the Deep Vaults",
+    "description": "Mine raw adamantine from the subterranean vaults for Master Laurent.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Locate the Adamantine Hoard vault.",
+        "type": "explore",
+        "targetId": "incursion_lesser_vault_1",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1800
+      },
+      {
+        "type": "item",
+        "itemId": "gold_coin",
+        "amount": 50
+      }
+    ]
+  },
+  "quest_gem_appraisal": {
+    "id": "quest_gem_appraisal",
+    "title": "The Jeweler`s Challenge",
+    "description": "Bring rare gemstones to Silas for master appraisal.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Speak with Silas the Gem Trader.",
+        "type": "talk",
+        "targetId": "silas_merchant",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 600
+      },
+      {
+        "type": "item",
+        "itemId": "gem_chalcedony",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_sunless_relic_consecration": {
+    "id": "quest_sunless_relic_consecration",
+    "title": "Consecration of the Sunless Reliquary",
+    "description": "Defeat the Arch-Curate and recover the sacred relic.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Defeat the Sunless Arch-Curate.",
+        "type": "kill",
+        "targetId": "crypt_arch_curate",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 1400
+      },
+      {
+        "type": "item",
+        "itemId": "gem_sapphire",
+        "amount": 1
+      }
+    ]
+  },
+  "quest_slay_dragon_pyroclast": {
+    "id": "quest_slay_dragon_pyroclast",
+    "title": "Wrath of Pyroclast",
+    "description": "Descend to the deepest subterranean magma vault and slay Pyroclast the Red Wyrm.",
+    "objectives": [
+      {
+        "id": "obj_1",
+        "description": "Slay Pyroclast the Red Wyrm.",
+        "type": "kill",
+        "targetId": "red_dragon",
+        "requiredAmount": 1
+      }
+    ],
+    "rewards": [
+      {
+        "type": "xp",
+        "amount": 10000
+      },
+      {
+        "type": "item",
+        "itemId": "platinum_coin",
+        "amount": 50
+      }
+    ]
+  }
+}

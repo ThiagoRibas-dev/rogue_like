@@ -1,0 +1,72 @@
+{
+  "town_encounter": {
+    "id": "town_encounter",
+    "name": "Town Citizens & Guards",
+    "budgetAllocation": {
+      "protein": 0.5,
+      "appetizer": 0.2,
+      "side": 0.2,
+      "dessert": 0.1
+    }
+  },
+  "wilderness_encounter": {
+    "id": "wilderness_encounter",
+    "name": "Wilderness Predators & Bandits",
+    "budgetAllocation": {
+      "protein": 0.6,
+      "appetizer": 0.1,
+      "side": 0.2,
+      "dessert": 0.1
+    }
+  },
+  "cave_encounter": {
+    "id": "cave_encounter",
+    "name": "Cavern Denizens & Humanoids",
+    "budgetAllocation": {
+      "protein": 0.65,
+      "appetizer": 0.1,
+      "side": 0.15,
+      "dessert": 0.1
+    }
+  },
+  "tower_encounter": {
+    "id": "tower_encounter",
+    "name": "Tower Guardians & Constructs",
+    "budgetAllocation": {
+      "protein": 0.6,
+      "appetizer": 0.1,
+      "side": 0.2,
+      "dessert": 0.1
+    }
+  },
+  "shallow_crypt_encounter": {
+    "id": "shallow_crypt_encounter",
+    "name": "Crypt Undead & Vermin",
+    "budgetAllocation": {
+      "protein": 0.6,
+      "appetizer": 0.15,
+      "side": 0.15,
+      "dessert": 0.1
+    }
+  },
+  "temple_encounter": {
+    "id": "temple_encounter",
+    "name": "Temple Cultists & Elementals",
+    "budgetAllocation": {
+      "protein": 0.6,
+      "appetizer": 0.1,
+      "side": 0.2,
+      "dessert": 0.1
+    }
+  },
+  "deep_megadungeon_encounter": {
+    "id": "deep_megadungeon_encounter",
+    "name": "Deep Megadungeon Horrors",
+    "budgetAllocation": {
+      "protein": 0.7,
+      "appetizer": 0.1,
+      "side": 0.1,
+      "dessert": 0.1
+    }
+  }
+}

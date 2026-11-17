@@ -1,0 +1,33 @@
+{
+  "elite": {
+    "id": "elite",
+    "name": "Elite",
+    "crCostMultiplier": 1.5,
+    "statModifiers": {
+      "maxHp": 15,
+      "attack": 2
+    },
+    "tagsAdded": [
+      "elite"
+    ]
+  },
+  "regenerating": {
+    "id": "regenerating",
+    "name": "Regenerating",
+    "crCostModifier": 5,
+    "tagsAdded": [
+      "regenerating"
+    ]
+  },
+  "corrupted": {
+    "id": "corrupted",
+    "name": "Corrupted",
+    "crCostMultiplier": 1.25,
+    "statModifiers": {
+      "attack": 2
+    },
+    "tagsAdded": [
+      "corrupted"
+    ]
+  }
+}

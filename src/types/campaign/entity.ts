@@ -121,7 +121,34 @@ export const EntityTemplateSchema = z.object({
     )
     .optional(),
   archetypeId: z.string().optional(),
-  rulesetData: z.record(z.string(), z.unknown()).optional()
+  rulesetData: z.record(z.string(), z.unknown()).optional(),
+  defaultEquipment: z
+    .array(
+      z.object({
+        itemId: z.string(),
+        equipSlot: EquipmentSlotEnum.optional(),
+        dropOnDeath: z.boolean().default(true)
+      })
+    )
+    .optional(),
+  lootDrops: z
+    .array(
+      z.object({
+        itemId: z.string(),
+        chance: z.number().min(0).max(1).default(1),
+        minCount: z.number().int().positive().default(1),
+        maxCount: z.number().int().positive().default(1)
+      })
+    )
+    .optional(),
+  currencyDrop: z
+    .object({
+      denominationId: z.string().min(1),
+      minAmount: z.number().int().nonnegative(),
+      maxAmount: z.number().int().nonnegative(),
+      chance: z.number().min(0).max(1).default(1)
+    })
+    .optional()
 });
 /** Inferred type for an entity template definition. */
 export type EntityTemplate = z.infer<typeof EntityTemplateSchema>;

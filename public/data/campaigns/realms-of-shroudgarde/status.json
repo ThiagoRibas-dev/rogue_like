@@ -1,0 +1,47 @@
+{
+  "poison": {
+    "id": "poison",
+    "name": "Poisoned",
+    "description": "Taking periodic poison damage.",
+    "color": "#2ecc71",
+    "perTurnDamage": 2,
+    "flags": {}
+  },
+  "haste": {
+    "id": "haste",
+    "name": "Haste",
+    "description": "Moving and attacking with supernatural swiftness.",
+    "color": "#3498db",
+    "statModifiers": {
+      "speed": 30
+    },
+    "flags": {}
+  },
+  "confusion": {
+    "id": "confusion",
+    "name": "Confused",
+    "description": "Disoriented and erratic.",
+    "color": "#9b59b6",
+    "flags": {
+      "confused": true
+    }
+  },
+  "regeneration": {
+    "id": "regeneration",
+    "name": "Regenerating",
+    "description": "Slowly recovering health over time.",
+    "color": "#2ecc71",
+    "perTurnHeal": 2,
+    "flags": {}
+  },
+  "bless": {
+    "id": "bless",
+    "name": "Blessed",
+    "description": "Divine inspiration grants +1 to attack rolls.",
+    "color": "#f1c40f",
+    "statModifiers": {
+      "attack": 1
+    },
+    "flags": {}
+  }
+}

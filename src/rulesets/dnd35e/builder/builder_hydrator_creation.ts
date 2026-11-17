@@ -225,15 +225,26 @@ export function applyCharacterCreationToPlayer(
       }
     }
 
-    if (spawnedItemIds.length > 0) {
+    const latestInventory = getComponent(runningState, entityId, ComponentType.Inventory) as
+      InventoryComponent | undefined;
+    const baseBalance = latestInventory?.currencyBalance ?? 0;
+    const startingCp = Math.max(0, Math.round(equipPkg.startingGoldGp * 100));
+    if (latestInventory) {
       runningState = addComponent(runningState, entityId, {
-        ...inventory,
-        items: [...inventory.items, ...spawnedItemIds]
+        ...latestInventory,
+        items: spawnedItemIds.length > 0 ? [...latestInventory.items, ...spawnedItemIds] : latestInventory.items,
+        currencyBalance: baseBalance + startingCp
       });
     }
     if (equipment && updatedSlots.length > 0) {
       runningState = addComponent(runningState, entityId, { ...equipment, slots: updatedSlots });
     }
+  } else if (inventory) {
+    const startingCp = Math.max(0, Math.round(equipPkg.startingGoldGp * 100));
+    runningState = addComponent(runningState, entityId, {
+      ...inventory,
+      currencyBalance: (inventory.currencyBalance ?? 0) + startingCp
+    });
   }
 
   runningState = syncActorCompanionsAndFamiliars(runningState, entityId);

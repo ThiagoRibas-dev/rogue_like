@@ -71,6 +71,28 @@ export const WorldClockConfigSchema = z.object({
 /** Inferred type for campaign World Clock configuration. */
 export type WorldClockConfig = z.infer<typeof WorldClockConfigSchema>;
 
+/** Zod schema for a single monetary denomination (e.g. copper, silver, gold, platinum). */
+export const CurrencyDenominationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  abbreviation: z.string().min(1),
+  baseMultiplier: z.number().int().positive(),
+  color: z.string().optional(),
+  itemId: z.string().optional()
+});
+/** Inferred type for a single currency denomination. */
+export type CurrencyDenomination = z.infer<typeof CurrencyDenominationSchema>;
+
+/** Zod schema for campaign-wide base-unit multi-denomination currency configuration. */
+export const CurrencyConfigSchema = z.object({
+  baseUnitId: z.string().min(1),
+  defaultValueDenominationId: z.string().min(1).optional(),
+  denominations: z.array(CurrencyDenominationSchema).min(1),
+  displayOrder: z.array(z.string()).optional()
+});
+/** Inferred type for currency configuration. */
+export type CurrencyConfig = z.infer<typeof CurrencyConfigSchema>;
+
 /** Zod schema for campaign engine configuration rules. */
 export const RulesConfigSchema = z.object({
   map: z.object({
@@ -98,6 +120,7 @@ export const RulesConfigSchema = z.object({
     })
   }),
   worldClock: WorldClockConfigSchema.optional(),
+  currency: CurrencyConfigSchema.optional(),
   spawning: z.object({
     maxMonstersPerRoom: z.number().int().nonnegative(),
     maxItemsPerRoom: z.number().int().nonnegative(),

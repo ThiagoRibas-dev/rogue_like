@@ -1,6 +1,11 @@
 import { addComponent, getComponent, removeComponent } from './ecs_core.ts';
 import { spawnItem } from './ecs_item_promoter.ts';
-import { ComponentType, type EquipmentComponent, type InventoryComponent } from '../../types/components.types.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type InventoryComponent,
+  type TagsComponent
+} from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 import type { EntityTemplate } from '../../types/campaign/entity.ts';
 import { buildAnatomyEquipmentSlots, type AnatomyBodyPlan } from '../../systems/inventory/equipment_slots.ts';
@@ -109,8 +114,14 @@ export function equipActorDefaultArmaments(
   const sysArchetypes = state.campaign.systemContent?.['archetypes'] as
     Record<string, { defaultEquipment?: ReadonlyArray<{ itemId: string; equipSlot?: string }> }> | undefined;
 
-  const defaultEquipment =
+  const templateDefaultEquip = template?.defaultEquipment;
+  const archetypeDefaultEquip =
     sysRaces?.[archetypeKey]?.defaultEquipment ?? sysArchetypes?.[archetypeKey]?.defaultEquipment ?? [];
+  const defaultEquipment: ReadonlyArray<{
+    readonly itemId: string;
+    readonly equipSlot?: string | undefined;
+    readonly dropOnDeath?: boolean | undefined;
+  }> = templateDefaultEquip && templateDefaultEquip.length > 0 ? templateDefaultEquip : archetypeDefaultEquip;
 
   if (defaultEquipment.length === 0) return state;
 
@@ -127,6 +138,14 @@ export function equipActorDefaultArmaments(
     let itemEntityId: EntityId;
     [nextState, itemEntityId] = spawnItem(nextState, entry.itemId, x, y);
     nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
+    if (entry.dropOnDeath === false) {
+      const existingTags = getComponent(nextState, itemEntityId, ComponentType.Tags) as TagsComponent | undefined;
+      const mergedTags = Array.from(new Set([...(existingTags?.tags ?? []), 'no_drop']));
+      nextState = addComponent(nextState, itemEntityId, {
+        type: ComponentType.Tags,
+        tags: mergedTags
+      });
+    }
     spawnedItemIds.push(itemEntityId);
 
     if (entry.equipSlot && updatedSlots.length > 0) {
@@ -138,7 +157,10 @@ export function equipActorDefaultArmaments(
           if (targetSlotType === 'main_hand' || targetSlotType === 'off_hand') {
             return s.slotType === 'held' || s.slotType === 'hand';
           }
-          return targetSlotType === 'torso' ? s.slotType === 'body' : false;
+          if (targetSlotType === 'armor' || targetSlotType === 'torso') {
+            return s.slotType === 'torso' || s.slotType === 'body';
+          }
+          return false;
         });
       }
       if (slot) {

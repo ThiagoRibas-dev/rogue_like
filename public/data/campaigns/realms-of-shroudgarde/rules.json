@@ -1,0 +1,153 @@
+{
+  "map": {
+    "width": 80,
+    "height": 50,
+    "minRoomWidth": 4,
+    "maxRoomWidth": 10,
+    "minRoomHeight": 4,
+    "maxRoomHeight": 8,
+    "minCorridorLength": 3,
+    "maxCorridorLength": 10,
+    "dugPercentage": 0.25,
+    "waterScatterChance": 0.05,
+    "startingAreaId": "shroudgarde_courtyard",
+    "fovRadius": 8
+  },
+  "currency": {
+    "baseUnitId": "cp",
+    "defaultValueDenominationId": "gp",
+    "displayOrder": [
+      "pp",
+      "gp",
+      "ep",
+      "sp",
+      "cp"
+    ],
+    "denominations": [
+      {
+        "id": "cp",
+        "name": "Copper Piece",
+        "abbreviation": "cp",
+        "baseMultiplier": 1,
+        "color": "#b87333",
+        "itemId": "copper_coin"
+      },
+      {
+        "id": "sp",
+        "name": "Silver Piece",
+        "abbreviation": "sp",
+        "baseMultiplier": 10,
+        "color": "#bdc3c7",
+        "itemId": "silver_coin"
+      },
+      {
+        "id": "ep",
+        "name": "Electrum Piece",
+        "abbreviation": "ep",
+        "baseMultiplier": 50,
+        "color": "#d4e6f1",
+        "itemId": "electrum_coin"
+      },
+      {
+        "id": "gp",
+        "name": "Gold Piece",
+        "abbreviation": "gp",
+        "baseMultiplier": 100,
+        "color": "#f1c40f",
+        "itemId": "gold_coin"
+      },
+      {
+        "id": "pp",
+        "name": "Platinum Piece",
+        "abbreviation": "pp",
+        "baseMultiplier": 1000,
+        "color": "#e5e7e9",
+        "itemId": "platinum_coin"
+      }
+    ]
+  },
+  "hunger": {
+    "maxSatiation": 2000,
+    "satiationLossPerStandardTurn": 0.035,
+    "thresholds": {
+      "satiated": 1500,
+      "normal": 1000,
+      "hungry": 300,
+      "starving": 0
+    }
+  },
+  "worldClock": {
+    "secondsPerGlobalTurn": 6,
+    "startHour": 8,
+    "hoursPerDay": 24,
+    "waitTargets": [
+      "dawn",
+      "night"
+    ],
+    "phases": [
+      {
+        "id": "night",
+        "label": "Night",
+        "startHour": 0,
+        "skyIllumination": "shadowy",
+        "isNaturalSunlight": false
+      },
+      {
+        "id": "dawn",
+        "label": "Dawn",
+        "startHour": 5,
+        "skyIllumination": "shadowy",
+        "isNaturalSunlight": false
+      },
+      {
+        "id": "day",
+        "label": "Day",
+        "startHour": 7,
+        "skyIllumination": "bright",
+        "isNaturalSunlight": true
+      },
+      {
+        "id": "dusk",
+        "label": "Dusk",
+        "startHour": 18,
+        "skyIllumination": "shadowy",
+        "isNaturalSunlight": false
+      },
+      {
+        "id": "night",
+        "label": "Night",
+        "startHour": 20,
+        "skyIllumination": "shadowy",
+        "isNaturalSunlight": false
+      }
+    ]
+  },
+  "spawning": {
+    "maxMonstersPerRoom": 3,
+    "maxItemsPerRoom": 2,
+    "spawnWeights": {
+      "goblin": 40,
+      "orc": 30,
+      "skeleton": 25,
+      "zombie": 20,
+      "giant_rat": 25,
+      "bugbear": 15,
+      "ghoul": 10,
+      "troll": 5
+    },
+    "lootTable": {
+      "potion_of_cure_light_wounds": 35,
+      "potion_of_bulls_strength": 10,
+      "dagger": 15,
+      "short_sword": 12,
+      "longsword": 10,
+      "copper_coin": 40,
+      "silver_coin": 30,
+      "gold_coin": 20,
+      "coin_pouch_silver": 10,
+      "coin_pouch_gold": 5,
+      "gem_chalcedony": 5
+    },
+    "lootDropChance": 0.35
+  }
+}

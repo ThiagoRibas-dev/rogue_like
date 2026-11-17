@@ -951,6 +951,21 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts."
     ]
   },
+  "src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+    "tier": "tier2_cartridge",
+    "responsibility": "Hydrates newly spawned D&D 3.5e actor statblocks, tracks, creature templates, and derived FighterComponent combat HP/BAB/level stats.",
+    "canonicalEntryPoints": [
+      "onDnD35eEntitySpawned"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts."
+    ]
+  },
   "src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
     "tier": "tier2_cartridge",
@@ -1324,6 +1339,25 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/creature_advancement.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/currency.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+    "tier": "tier2_cartridge",
+    "responsibility": "Provides the D&D 3.5e canonical monetary standard (cp=1, sp=10, ep=50, gp=100, pp=1000) and default currency config.",
+    "canonicalEntryPoints": [
+      "DND35E_CP_PER_SP",
+      "DND35E_CP_PER_EP",
+      "DND35E_CP_PER_GP",
+      "DND35E_CP_PER_PP",
+      "DND35E_DEFAULT_CURRENCY_CONFIG"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/currency.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/currency.ts."
     ]
   },
   "src/rulesets/dnd35e/dnd35e_ruleset.ts": {
@@ -2020,6 +2054,23 @@
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression.ts."
     ]
   },
+  "src/rulesets/dnd35e/progression/cr_xp_table.ts": {
+    "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
+    "tier": "tier2_cartridge",
+    "responsibility": "Implements pure D&D 3.5e DMG Table 2-6 Challenge Rating vs ECL XP calculation and kill reward resolution.",
+    "canonicalEntryPoints": [
+      "computeDnD35eCrXp",
+      "resolveDnD35eEntityCr",
+      "resolveDnD35eKillXpReward"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/progression/cr_xp_table.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/cr_xp_table.ts."
+    ]
+  },
   "src/rulesets/dnd35e/progression/class_features_xp.ts": {
     "domain": "D&D 3.5e: Character Builder, Progression & Ledger",
     "tier": "tier2_cartridge",
@@ -2371,6 +2422,24 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/specialized_skill_checks.ts."
+    ]
+  },
+  "src/rulesets/dnd35e/skills/trade_social_checks.ts": {
+    "domain": "D&D 3.5e: Cartridge Adapters, Core & Validation",
+    "tier": "tier2_cartridge",
+    "responsibility": "Provides D&D 3.5e social skill and trade resolvers: evaluateDnD35eTradePriceModifier, resolveDnD35eTradeSocialSkill (Appraise, Diplomacy, Bluff, Intimidate), and dialogue skill checks.",
+    "canonicalEntryPoints": [
+      "evaluateDnD35eTradePriceModifier",
+      "resolveDnD35eTradeSocialSkill",
+      "evaluateDnD35eDialogueSkillCheck",
+      "getDnD35eActorSkillModifier"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rulesets/dnd35e/skills/trade_social_checks.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/trade_social_checks.ts."
     ]
   },
   "src/rulesets/dnd35e/spatial/cover_senses.ts": {

@@ -6,7 +6,7 @@ import {
   type PropertyOverlayComponent,
   type ResourcePoolComponent
 } from '../../../types/components.types.ts';
-import { EngineMode, type EntityId, type GameState } from '../../../types/game-state.types.ts';
+import { EngineMode, type EntityId, type GameState, UIMode } from '../../../types/game-state.types.ts';
 import { IntentType } from '../../../types/intents/intent.enum.ts';
 import type { Intent } from '../../../types/intents/intent.union.ts';
 import { assertNever } from '../../../utils/assert.ts';
@@ -271,6 +271,21 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.MeleeAttack:
     case IntentType.FireAimed:
     case IntentType.Apply: {
+      if (
+        intent.type === IntentType.Apply &&
+        state.uiMode === UIMode.Trade &&
+        (intent.verb === 'buy' ||
+          intent.verb === 'sell' ||
+          intent.verb === 'barter' ||
+          intent.verb === 'haggle' ||
+          intent.verb === 'appraise' ||
+          intent.verb === 'persuade' ||
+          intent.verb === 'intimidate')
+      ) {
+        return hasAnyRoundActionsRemaining(currentBudget)
+          ? { state, energyCost: 0 }
+          : clearBudgetAndEndRound(state, intent.entityId, dndData);
+      }
       if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
       const stdRes = consumeStandardActionFromBudget(currentBudget);
       return stdRes.allowed
@@ -312,6 +327,7 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.StartDialogue:
     case IntentType.SelectDialogueOption:
     case IntentType.CloseDialogue:
+    case IntentType.CloseTrade:
     case IntentType.ToggleQuests:
     case IntentType.ToggleInvestigation:
     case IntentType.ToggleDebug:
@@ -354,6 +370,19 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     }
     case IntentType.MeleeAttack:
     case IntentType.Apply:
+      if (
+        intent.type === IntentType.Apply &&
+        state.uiMode === UIMode.Trade &&
+        (intent.verb === 'buy' ||
+          intent.verb === 'sell' ||
+          intent.verb === 'barter' ||
+          intent.verb === 'haggle' ||
+          intent.verb === 'appraise' ||
+          intent.verb === 'persuade' ||
+          intent.verb === 'intimidate')
+      ) {
+        return true;
+      }
       return budget.standardRemaining >= 1;
     case IntentType.FireAimed:
       return state.targetingMode?.active && state.targetingMode.context?.verb === 'abrupt_jaunt'
@@ -389,6 +418,7 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     case IntentType.StartDialogue:
     case IntentType.SelectDialogueOption:
     case IntentType.CloseDialogue:
+    case IntentType.CloseTrade:
     case IntentType.ToggleQuests:
     case IntentType.ToggleInvestigation:
     case IntentType.ToggleDebug:

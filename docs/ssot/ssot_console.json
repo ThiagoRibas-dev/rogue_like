@@ -3483,6 +3483,33 @@
       "Do not duplicate or bypass exports from src/systems/damage.system.ts."
     ]
   },
+  "src/systems/currency.system.ts": {
+    "domain": "Core Console: ECS Systems & Simulation",
+    "tier": "tier1_console",
+    "responsibility": "Provides Tier 1 Console multi-denomination currency arithmetic, coin decomposition, balance management, wallet transactions, and item base value scaling.",
+    "canonicalEntryPoints": [
+      "DEFAULT_CONSOLE_CURRENCY_CONFIG",
+      "resolveCurrencyConfig",
+      "findCurrencyDenomination",
+      "getDenominationMultiplier",
+      "toBaseUnits",
+      "convertCurrency",
+      "resolveItemBaseValueInBaseUnits",
+      "decomposeToCoins",
+      "formatCurrency",
+      "getEntityCurrencyBalance",
+      "setEntityCurrencyBalance",
+      "addEntityCurrency",
+      "transferEntityCurrency"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/systems/currency.system.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not duplicate or bypass exports from src/systems/currency.system.ts."
+    ]
+  },
   "src/systems/death.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",

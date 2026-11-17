@@ -1,0 +1,38 @@
+{
+  "melee_aggressive": {
+    "id": "melee_aggressive",
+    "behaviors": [
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 6
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "patrol_guard": {
+    "id": "patrol_guard",
+    "behaviors": [
+      {
+        "behaviorId": "hunt",
+        "aggroRadius": 5
+      },
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "passive_npc": {
+    "id": "passive_npc",
+    "behaviors": [
+      {
+        "behaviorId": "wander"
+      }
+    ]
+  },
+  "stationary_vendor": {
+    "id": "stationary_vendor",
+    "behaviors": []
+  }
+}

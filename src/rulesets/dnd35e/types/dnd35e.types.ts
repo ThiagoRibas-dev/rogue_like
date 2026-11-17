@@ -285,6 +285,8 @@ export interface DnD35EntityData {
   readonly flankingRelations?: DnD35FlankingRelations | undefined;
   /** Light Blindness acclimation state (`'blinded'` on abrupt entry, `'acclimated'` on turn start). */
   readonly lightExposure?: 'blinded' | 'acclimated' | undefined;
+  /** Effective Challenge Rating stored on creatures/NPCs for DMG Table 2-6 XP computation. */
+  readonly cr?: number | undefined;
 }
 
 /** Relational flanking tracking lists maintained on each combatant entity. */

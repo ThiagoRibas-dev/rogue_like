@@ -33,6 +33,60 @@ export async function validateEntities(campaign: Readonly<CampaignData>): Promis
         });
       }
     }
+
+    if (entity.defaultEquipment) {
+      entity.defaultEquipment.forEach((entry, idx) => {
+        if (!campaign.items[entry.itemId]) {
+          errors.push({
+            severity: 'error',
+            message: `Entity template "${entityId}" defaultEquipment references unknown item: "${entry.itemId}"`,
+            path: `entities.${entityId}.defaultEquipment[${idx}].itemId`,
+            fixSuggestion: `Define "${entry.itemId}" in campaign items.json or system content items.`
+          });
+        }
+      });
+    }
+
+    if (entity.lootDrops) {
+      entity.lootDrops.forEach((drop, idx) => {
+        if (!campaign.items[drop.itemId]) {
+          errors.push({
+            severity: 'error',
+            message: `Entity template "${entityId}" lootDrops references unknown item: "${drop.itemId}"`,
+            path: `entities.${entityId}.lootDrops[${idx}].itemId`,
+            fixSuggestion: `Define "${drop.itemId}" in campaign items.json or system content items.`
+          });
+        }
+        if (drop.maxCount < drop.minCount) {
+          errors.push({
+            severity: 'error',
+            message: `Entity template "${entityId}" lootDrops[${idx}] has maxCount < minCount.`,
+            path: `entities.${entityId}.lootDrops[${idx}].maxCount`,
+            fixSuggestion: 'Set maxCount >= minCount.'
+          });
+        }
+      });
+    }
+
+    if (entity.currencyDrop) {
+      if (entity.currencyDrop.maxAmount < entity.currencyDrop.minAmount) {
+        errors.push({
+          severity: 'error',
+          message: `Entity template "${entityId}" currencyDrop has maxAmount < minAmount.`,
+          path: `entities.${entityId}.currencyDrop.maxAmount`,
+          fixSuggestion: 'Set maxAmount >= minAmount.'
+        });
+      }
+      const currencyCfg = campaign.rules.currency;
+      if (currencyCfg && !currencyCfg.denominations.some((d) => d.id === entity.currencyDrop!.denominationId)) {
+        errors.push({
+          severity: 'error',
+          message: `Entity template "${entityId}" currencyDrop references unknown denomination: "${entity.currencyDrop.denominationId}"`,
+          path: `entities.${entityId}.currencyDrop.denominationId`,
+          fixSuggestion: 'Use one of the denominations declared in campaign rules.currency.denominations.'
+        });
+      }
+    }
   }
 
   return errors;

@@ -1,10 +1,11 @@
 import type { ApplyFailedEvent, ApplyResolvedEvent, GameEvent } from '../types/events.types.ts';
 import { GameEventType } from '../types/events.types.ts';
-import type { GameState } from '../types/game-state.types.ts';
+import { UIMode, type GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { processProjectileThrow } from './projectile.system.ts';
 import { processWandZap } from './zap.system.ts';
+import { executeBuyItem, executeSellItem, executeTradeSocialAction } from './shop.system.ts';
 import { processSocialIntent } from './social.system.ts';
 import { processReactions, getValidReactionsForTarget } from './reaction.system.ts';
 import { VERBS, type Verb } from '../constants/verbs.constants.ts';
@@ -53,6 +54,39 @@ export function processApplyIntent(
 
   if (intent.verb === 'zap' && intent.toolEntityId) {
     return processWandZap(state, intent);
+  }
+
+  if (intent.verb === 'buy' && intent.target.type === 'entity' && intent.toolEntityId !== undefined) {
+    return executeBuyItem(state, intent.entityId, intent.target.entityId, intent.toolEntityId);
+  }
+
+  if (
+    (intent.verb === 'sell' || intent.verb === 'barter') &&
+    intent.target.type === 'entity' &&
+    intent.toolEntityId !== undefined
+  ) {
+    return executeSellItem(state, intent.entityId, intent.target.entityId, intent.toolEntityId);
+  }
+
+  if (intent.verb === 'appraise' && intent.target.type === 'entity') {
+    return executeTradeSocialAction(state, intent.entityId, intent.target.entityId, 'appraise');
+  }
+
+  if (intent.verb === 'haggle' && intent.target.type === 'entity') {
+    return executeTradeSocialAction(state, intent.entityId, intent.target.entityId, 'bluff');
+  }
+
+  if (
+    state.uiMode === UIMode.Trade &&
+    (intent.verb === 'persuade' || intent.verb === 'intimidate') &&
+    intent.target.type === 'entity'
+  ) {
+    return executeTradeSocialAction(
+      state,
+      intent.entityId,
+      intent.target.entityId,
+      intent.verb === 'persuade' ? 'diplomacy' : 'intimidate'
+    );
   }
 
   if (intent.verb === 'intimidate' || intent.verb === 'persuade' || intent.verb === 'feint') {

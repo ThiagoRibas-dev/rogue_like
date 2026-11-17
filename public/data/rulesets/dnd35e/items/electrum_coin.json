@@ -1,0 +1,21 @@
+{
+  "electrum_coin": {
+    "id": "electrum_coin",
+    "name": "Electrum Piece",
+    "unidentifiedName": "Electrum Piece",
+    "description": "An electrum coin struck from gold-silver alloy (1 ep = 50 cp).",
+    "glyph": "$",
+    "fg": "#d4af37",
+    "bg": "transparent",
+    "spriteId": "item_coin",
+    "weight": 0.02,
+    "baseValue": 0.5,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "ep",
+      "amount": 1
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

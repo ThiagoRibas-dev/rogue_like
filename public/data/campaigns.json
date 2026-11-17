@@ -43,6 +43,17 @@
       "source": "builtin",
       "author": "SRD 3.5e Cartridge Team",
       "rulesetId": "dnd35e"
+    },
+    {
+      "id": "realms-of-shroudgarde",
+      "name": "The Realms of Shroudgarde",
+      "description": "The definitive D&D 3.5e flagship campaign merging towns, wilderness roads, towers, shallow crypts, and deep subterranean vaults.",
+      "version": "1.0.0",
+      "mapSize": "80x50",
+      "startingAreaId": "shroudgarde_courtyard",
+      "source": "builtin",
+      "author": "D&D 3.5e Realms Team",
+      "rulesetId": "dnd35e"
     }
   ]
 }

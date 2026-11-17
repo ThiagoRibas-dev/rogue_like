@@ -1,0 +1,26 @@
+{
+  "fire_field": {
+    "id": "fire_field",
+    "name": "Roaring Flame",
+    "glyph": "^",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "tile_red_stone_floor_1_red_bg",
+    "duration": 5,
+    "tags": [
+      "fire"
+    ]
+  },
+  "poison_cloud": {
+    "id": "poison_cloud",
+    "name": "Noxious Vapor",
+    "glyph": "*",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "spriteId": "tile_blank_floor_dark_grey",
+    "duration": 6,
+    "tags": [
+      "poison"
+    ]
+  }
+}

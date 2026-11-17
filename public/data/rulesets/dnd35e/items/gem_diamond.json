@@ -1,0 +1,17 @@
+{
+  "gem_diamond": {
+    "id": "gem_diamond",
+    "name": "Flawless Diamond",
+    "unidentifiedName": "Sparkling Gemstone",
+    "description": "A sparkling, flawless diamond capable of focusing powerful restorative spells (worth 1000 gp).",
+    "glyph": "*",
+    "fg": "#ffffff",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.1,
+    "baseValue": 1000,
+    "currencyUnit": "gp",
+    "category": "tool",
+    "isArtifact": false
+  }
+}

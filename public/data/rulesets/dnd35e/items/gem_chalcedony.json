@@ -1,0 +1,17 @@
+{
+  "gem_chalcedony": {
+    "id": "gem_chalcedony",
+    "name": "Chalcedony Gem",
+    "unidentifiedName": "Polished Stone",
+    "description": "A translucent milky chalcedony gemstone favored by jewelers and appraisers (worth 50 gp).",
+    "glyph": "*",
+    "fg": "#a8d8ea",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.1,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "category": "tool",
+    "isArtifact": false
+  }
+}

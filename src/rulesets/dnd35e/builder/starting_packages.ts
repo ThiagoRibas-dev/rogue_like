@@ -11,6 +11,7 @@ export interface StartingEquipmentPackage {
   readonly weaponDamageType: 'slashing' | 'piercing' | 'bludgeoning';
   readonly armorBonus: number;
   readonly shieldBonus: number;
+  readonly startingGoldGp: number;
 }
 
 /** Canonical starting equipment packages selectable in Step 7 of Character Creation. */
@@ -18,7 +19,8 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
   {
     id: 'martial_vanguard',
     name: 'Martial Vanguard Kit',
-    description: 'Longsword (1d8 slashing), Scale Mail (+4 armor), Heavy Wooden Shield (+2 shield), Explorer Pack.',
+    description:
+      'Longsword (1d8 slashing), Scale Mail (+4 armor), Heavy Wooden Shield (+2 shield), Explorer Pack, 25 gp.',
     items: [
       { itemId: 'longsword', equipSlot: 'main_hand' },
       { itemId: 'scale_mail', equipSlot: 'torso' },
@@ -29,12 +31,13 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     weaponDice: '1d8',
     weaponDamageType: 'slashing',
     armorBonus: 4,
-    shieldBonus: 2
+    shieldBonus: 2,
+    startingGoldGp: 25
   },
   {
     id: 'skirmisher_scout',
     name: 'Skirmisher & Scout Kit',
-    description: 'Shortsword (1d6 piercing), Leather Armor (+3 armor), Thieves Tools, Backpack.',
+    description: 'Shortsword (1d6 piercing), Leather Armor (+3 armor), Thieves Tools, Backpack, 35 gp.',
     items: [
       { itemId: 'short_sword', equipSlot: 'main_hand' },
       { itemId: 'leather_armor', equipSlot: 'torso' },
@@ -45,12 +48,14 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     weaponDice: '1d6',
     weaponDamageType: 'piercing',
     armorBonus: 3,
-    shieldBonus: 0
+    shieldBonus: 0,
+    startingGoldGp: 35
   },
   {
     id: 'divine_templar',
     name: 'Divine Templar Kit',
-    description: 'Heavy Mace (1d8 bludgeoning), Chainmail (+5 armor), Heavy Shield (+2 shield), Wooden Holy Symbol.',
+    description:
+      'Heavy Mace (1d8 bludgeoning), Chainmail (+5 armor), Heavy Shield (+2 shield), Wooden Holy Symbol, 20 gp.',
     items: [
       { itemId: 'heavy_mace', equipSlot: 'main_hand' },
       { itemId: 'chainmail', equipSlot: 'torso' },
@@ -62,12 +67,13 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     weaponDice: '1d8',
     weaponDamageType: 'bludgeoning',
     armorBonus: 5,
-    shieldBonus: 2
+    shieldBonus: 2,
+    startingGoldGp: 20
   },
   {
     id: 'arcane_scholar',
     name: 'Arcane Scholar & Monk Kit',
-    description: 'Quarterstaff (1d6 bludgeoning), Scholar Robes (+0 armor), Backpack, Health Potion.',
+    description: 'Quarterstaff (1d6 bludgeoning), Scholar Robes (+0 armor), Backpack, Health Potion, 50 gp.',
     items: [
       { itemId: 'quarterstaff', equipSlot: 'main_hand' },
       { itemId: 'scholar_robes', equipSlot: 'torso' },
@@ -77,6 +83,7 @@ export const STARTING_EQUIPMENT_PACKAGES: ReadonlyArray<StartingEquipmentPackage
     weaponDice: '1d6',
     weaponDamageType: 'bludgeoning',
     armorBonus: 0,
-    shieldBonus: 0
+    shieldBonus: 0,
+    startingGoldGp: 50
   }
 ];

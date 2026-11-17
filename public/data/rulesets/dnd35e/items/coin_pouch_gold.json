@@ -1,0 +1,21 @@
+{
+  "coin_pouch_gold": {
+    "id": "coin_pouch_gold",
+    "name": "Pouch of Gold",
+    "unidentifiedName": "Leather Pouch",
+    "description": "A heavy drawstring pouch containing 50 gold pieces (50 gp).",
+    "glyph": "$",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "spriteId": "item_coin_purse",
+    "weight": 1.0,
+    "baseValue": 50,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "gp",
+      "amount": 50
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

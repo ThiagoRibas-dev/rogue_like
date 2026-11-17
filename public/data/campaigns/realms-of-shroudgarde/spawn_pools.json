@@ -1,0 +1,120 @@
+{
+  "town_pop": {
+    "id": "town_pop",
+    "name": "Town Population",
+    "conditions": {
+      "areaTags": [
+        "town"
+      ]
+    },
+    "entities": {
+      "town_guard": 60,
+      "peasant_villager": 40
+    }
+  },
+  "frontier_beasts": {
+    "id": "frontier_beasts",
+    "name": "Frontier Beasts",
+    "conditions": {
+      "areaTags": [
+        "frontier",
+        "outdoor"
+      ]
+    },
+    "entities": {
+      "giant_rat": 35,
+      "dire_wolf": 25,
+      "bandit": 25,
+      "owlbear": 15
+    }
+  },
+  "dungeon_dwellers": {
+    "id": "dungeon_dwellers",
+    "name": "Dungeon Bandits & Vermin",
+    "conditions": {
+      "areaTags": [
+        "dungeon"
+      ]
+    },
+    "entities": {
+      "bandit": 40,
+      "giant_rat": 30,
+      "skeleton": 30
+    }
+  },
+  "cave_warrens": {
+    "id": "cave_warrens",
+    "name": "Cave Warrens",
+    "conditions": {
+      "areaTags": [
+        "cave"
+      ]
+    },
+    "entities": {
+      "goblin": 40,
+      "orc": 30,
+      "bugbear": 20,
+      "ogre": 10
+    }
+  },
+  "crypt_undead": {
+    "id": "crypt_undead",
+    "name": "Crypt Undead",
+    "conditions": {
+      "areaTags": [
+        "crypt"
+      ]
+    },
+    "entities": {
+      "skeleton": 45,
+      "zombie": 35,
+      "ghoul": 20
+    }
+  },
+  "tower_sentinels": {
+    "id": "tower_sentinels",
+    "name": "Tower Sentinels",
+    "conditions": {
+      "areaTags": [
+        "tower"
+      ]
+    },
+    "entities": {
+      "clay_golem": 25,
+      "gargoyle": 25,
+      "air_elemental": 25,
+      "fire_elemental": 25
+    }
+  },
+  "temple_cult": {
+    "id": "temple_cult",
+    "name": "Temple Cultists",
+    "conditions": {
+      "areaTags": [
+        "temple"
+      ]
+    },
+    "entities": {
+      "cultist": 45,
+      "water_elemental": 25,
+      "ghast": 15,
+      "troll": 15
+    }
+  },
+  "deep_monsters": {
+    "id": "deep_monsters",
+    "name": "Deep Megadungeon Monsters",
+    "conditions": {
+      "areaTags": [
+        "megadungeon"
+      ]
+    },
+    "entities": {
+      "orc": 25,
+      "troll": 25,
+      "wraith": 20,
+      "minotaur": 15,
+      "red_dragon": 15
+    }
+  }
+}

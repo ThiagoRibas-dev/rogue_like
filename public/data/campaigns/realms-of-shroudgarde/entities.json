@@ -1,0 +1,2161 @@
+{
+  "player": {
+    "id": "player",
+    "name": "Adventurer",
+    "glyph": "@",
+    "fg": "#00ffff",
+    "bg": "transparent",
+    "spriteId": "actor_rogue",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 4,
+      "defense": 2
+    },
+    "inventoryConfig": {
+      "baseCapacity": 14
+    },
+    "equipmentSlots": [
+      "head",
+      "neck",
+      "torso",
+      "back",
+      "arm",
+      "arm",
+      "hand",
+      "hand",
+      "finger",
+      "finger",
+      "leg",
+      "foot"
+    ],
+    "tags": [
+      "actor"
+    ],
+    "faction": "player",
+    "persistent": true
+  },
+  "stone_floor_portal": {
+    "id": "stone_floor_portal",
+    "name": "Passage Stairs",
+    "glyph": ">",
+    "fg": "#ffffff",
+    "bg": "transparent",
+    "spriteId": "tile_staircase_down",
+    "isActor": false,
+    "tags": [
+      "portal"
+    ],
+    "renderable": true
+  },
+  "wooden_door": {
+    "id": "wooden_door",
+    "name": "Wooden Door",
+    "glyph": "+",
+    "fg": "#8d6e63",
+    "bg": "transparent",
+    "spriteId": "tile_framed_door_1_shut",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid"
+    ],
+    "renderable": true
+  },
+  "iron_gate": {
+    "id": "iron_gate",
+    "name": "Iron Portcullis",
+    "glyph": "#",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "spriteId": "tile_grated_door",
+    "isActor": false,
+    "tags": [
+      "door",
+      "solid"
+    ],
+    "renderable": true
+  },
+  "wooden_chest": {
+    "id": "wooden_chest",
+    "name": "Sturdy Wooden Chest",
+    "glyph": "=",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "spriteId": "tile_chest_closed",
+    "isActor": false,
+    "tags": [
+      "chest"
+    ],
+    "renderable": true
+  },
+  "golden_chest": {
+    "id": "golden_chest",
+    "name": "Gilded Treasure Chest",
+    "glyph": "=",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "spriteId": "tile_chest_closed",
+    "isActor": false,
+    "tags": [
+      "chest"
+    ],
+    "renderable": true
+  },
+  "pile_of_bones": {
+    "id": "pile_of_bones",
+    "name": "Scattered Skeletons",
+    "glyph": "%",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "spriteId": "tile_bone_1",
+    "isActor": false,
+    "tags": [
+      "chest"
+    ],
+    "renderable": true
+  },
+  "fountain": {
+    "id": "fountain",
+    "name": "Sacred Rejuvenating Fountain",
+    "glyph": "{",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "tile_blue_stone_floor_1_blue_bg",
+    "isActor": false,
+    "tags": [
+      "terrain"
+    ],
+    "renderable": true
+  },
+  "altar": {
+    "id": "altar",
+    "name": "Stone Consecration Altar",
+    "glyph": "_",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "spriteId": "tile_sarcophagus_closed",
+    "isActor": false,
+    "tags": [
+      "terrain"
+    ],
+    "renderable": true
+  },
+  "constable_derek": {
+    "id": "constable_derek",
+    "name": "Constable Derek",
+    "glyph": "@",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "actor_knight",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 7,
+      "defense": 5
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "guard"
+    ],
+    "dialogueId": "guard_captain_tree",
+    "defaultEquipment": [
+      {
+        "itemId": "longsword"
+      },
+      {
+        "itemId": "breastplate"
+      },
+      {
+        "itemId": "heavy_steel_shield"
+      }
+    ]
+  },
+  "barkeep_bertram": {
+    "id": "barkeep_bertram",
+    "name": "Barkeep Bertram",
+    "glyph": "@",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "spriteId": "actor_shopkeep",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 3,
+      "defense": 1
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "bertram_trade_tree",
+    "shop": {
+      "markupMultiplier": 1.1,
+      "inventory": [
+        "ration_fresh_bread",
+        "ration_iron",
+        "dagger"
+      ]
+    }
+  },
+  "dwarf_laurent": {
+    "id": "dwarf_laurent",
+    "name": "Gold Dwarf Laurent",
+    "glyph": "d",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "spriteId": "actor_blacksmith",
+    "isActor": true,
+    "speed": 90,
+    "fighter": {
+      "maxHp": 65,
+      "attack": 8,
+      "defense": 6
+    },
+    "archetypeId": "dwarf",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "laurent_smith_tree",
+    "shop": {
+      "markupMultiplier": 1.15,
+      "inventory": [
+        "battleaxe",
+        "warhammer",
+        "chainmail",
+        "breastplate",
+        "heavy_steel_shield"
+      ]
+    },
+    "defaultEquipment": [
+      {
+        "itemId": "warhammer"
+      },
+      {
+        "itemId": "chainmail"
+      }
+    ]
+  },
+  "isabelle_cleric": {
+    "id": "isabelle_cleric",
+    "name": "Aasimar Isabelle",
+    "glyph": "@",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "spriteId": "actor_female_war_cleric",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 5,
+      "defense": 4
+    },
+    "archetypeId": "aasimar",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "isabelle_healer_tree",
+    "shop": {
+      "markupMultiplier": 1.1,
+      "inventory": [
+        "potion_of_cure_light_wounds",
+        "potion_of_bulls_strength",
+        "scroll_of_mage_armor"
+      ]
+    },
+    "defaultEquipment": [
+      {
+        "itemId": "heavy_mace"
+      },
+      {
+        "itemId": "scale_mail"
+      }
+    ]
+  },
+  "luc_ranger": {
+    "id": "luc_ranger",
+    "name": "Wood Elf Luc",
+    "glyph": "e",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "spriteId": "actor_ranger",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 6,
+      "defense": 3
+    },
+    "archetypeId": "elf",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "luc_scout_tree",
+    "shop": {
+      "markupMultiplier": 1.1,
+      "inventory": [
+        "shortbow",
+        "composite_longbow",
+        "dagger",
+        "boots_of_elvenkind"
+      ]
+    },
+    "defaultEquipment": [
+      {
+        "itemId": "shortbow"
+      },
+      {
+        "itemId": "short_sword"
+      },
+      {
+        "itemId": "studded_leather_armor"
+      }
+    ]
+  },
+  "silas_merchant": {
+    "id": "silas_merchant",
+    "name": "Silas the Gem Trader",
+    "glyph": "@",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "spriteId": "actor_shopkeep",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 3,
+      "defense": 1
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "silas_gem_merchant_tree",
+    "shop": {
+      "markupMultiplier": 1.2,
+      "inventory": [
+        "gem_chalcedony",
+        "gem_ruby",
+        "gem_sapphire",
+        "coin_pouch_silver",
+        "coin_pouch_gold"
+      ]
+    }
+  },
+  "archmage_alden": {
+    "id": "archmage_alden",
+    "name": "Archmage Alden",
+    "glyph": "@",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "actor_male_wizard",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 6,
+      "defense": 4
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc",
+      "merchant"
+    ],
+    "dialogueId": "alden_mage_tree",
+    "shop": {
+      "markupMultiplier": 1.25,
+      "inventory": [
+        "wand_of_cure_light_wounds",
+        "wand_of_magic_missile",
+        "scroll_of_mage_armor",
+        "ring_of_protection_plus1"
+      ]
+    },
+    "defaultEquipment": [
+      {
+        "itemId": "quarterstaff"
+      }
+    ]
+  },
+  "elena_scholar": {
+    "id": "elena_scholar",
+    "name": "Elena the Chronicler",
+    "glyph": "@",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "spriteId": "actor_scholar",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 25,
+      "attack": 2,
+      "defense": 1
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "stationary_vendor",
+      "wanders": false
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc"
+    ],
+    "dialogueId": "elena_scholar_tree"
+  },
+  "town_guard": {
+    "id": "town_guard",
+    "name": "Shroudgarde Guard",
+    "glyph": "G",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "spriteId": "actor_shield_knight",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 4,
+      "defense": 3
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "patrol_guard",
+      "aggroRadius": 4,
+      "wanders": true
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "guard"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "side"
+    ],
+    "defaultEquipment": [
+      {
+        "itemId": "longsword"
+      },
+      {
+        "itemId": "scale_mail"
+      },
+      {
+        "itemId": "heavy_steel_shield"
+      }
+    ]
+  },
+  "peasant_villager": {
+    "id": "peasant_villager",
+    "name": "Shroudgarde Commoner",
+    "glyph": "p",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "spriteId": "actor_peasant",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 15,
+      "attack": 1,
+      "defense": 0
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "passive_npc",
+      "wanders": true
+    },
+    "faction": "citizens",
+    "tags": [
+      "actor",
+      "npc"
+    ],
+    "crCost": 2,
+    "roleTags": [
+      "side",
+      "appetizer"
+    ],
+    "dialogueId": "villager_dialogue_tree"
+  },
+  "lareth_the_beautiful": {
+    "id": "lareth_the_beautiful",
+    "name": "Lareth the Beautiful",
+    "glyph": "L",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "spriteId": "actor_fencer",
+    "isActor": true,
+    "speed": 105,
+    "fighter": {
+      "maxHp": 85,
+      "attack": 10,
+      "defense": 6,
+      "xpGiven": 1200
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor",
+      "boss"
+    ],
+    "crCost": 35,
+    "roleTags": [
+      "protein"
+    ],
+    "dialogueId": "lareth_parley_tree",
+    "defaultEquipment": [
+      {
+        "itemId": "breastplate"
+      },
+      {
+        "itemId": "dagger"
+      }
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 10000,
+      "maxAmount": 25000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_ruby",
+        "chance": 0.8
+      },
+      {
+        "itemId": "coin_pouch_gold",
+        "chance": 1
+      },
+      {
+        "itemId": "moathouse_ledger",
+        "chance": 1
+      }
+    ]
+  },
+  "zuggtmoy_queen": {
+    "id": "zuggtmoy_queen",
+    "name": "Zuggtmoy, Demon Queen of Fungi",
+    "glyph": "Z",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "spriteId": "monster_large_myconid",
+    "isActor": true,
+    "speed": 110,
+    "fighter": {
+      "maxHp": 220,
+      "attack": 16,
+      "defense": 10,
+      "xpGiven": 5000
+    },
+    "archetypeId": "balor",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 8,
+      "wanders": false
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor",
+      "boss"
+    ],
+    "crCost": 100,
+    "roleTags": [
+      "protein"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 50000,
+      "maxAmount": 150000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_diamond",
+        "chance": 1
+      },
+      {
+        "itemId": "orb_of_elements",
+        "chance": 1
+      }
+    ]
+  },
+  "crypt_arch_curate": {
+    "id": "crypt_arch_curate",
+    "name": "The Sunless Arch-Curate",
+    "glyph": "L",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "spriteId": "monster_lich",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 95,
+      "attack": 11,
+      "defense": 7,
+      "xpGiven": 1500
+    },
+    "archetypeId": "ghoul",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": false
+    },
+    "faction": "undead",
+    "tags": [
+      "actor",
+      "boss"
+    ],
+    "crCost": 40,
+    "roleTags": [
+      "protein"
+    ],
+    "defaultEquipment": [
+      {
+        "itemId": "amulet_of_natural_armor_plus2"
+      }
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 15000,
+      "maxAmount": 35000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "sunless_relic",
+        "chance": 1
+      },
+      {
+        "itemId": "gem_sapphire",
+        "chance": 0.8
+      }
+    ]
+  },
+  "ogre_chieftain": {
+    "id": "ogre_chieftain",
+    "name": "Korag the Ogre Chieftain",
+    "glyph": "O",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "monster_minotaur",
+    "isActor": true,
+    "speed": 95,
+    "fighter": {
+      "maxHp": 80,
+      "attack": 12,
+      "defense": 5,
+      "xpGiven": 800
+    },
+    "archetypeId": "ogre",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 6,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor",
+      "boss"
+    ],
+    "crCost": 30,
+    "roleTags": [
+      "protein"
+    ],
+    "defaultEquipment": [
+      {
+        "itemId": "greatclub"
+      }
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 5000,
+      "maxAmount": 15000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "coin_pouch_gold",
+        "chance": 0.8
+      }
+    ]
+  },
+  "red_dragon": {
+    "id": "red_dragon",
+    "name": "Pyroclast the Red Wyrm",
+    "glyph": "D",
+    "fg": "#c0392b",
+    "bg": "transparent",
+    "spriteId": "monster_dragon",
+    "isActor": true,
+    "speed": 120,
+    "fighter": {
+      "maxHp": 300,
+      "attack": 18,
+      "defense": 12,
+      "xpGiven": 8000
+    },
+    "archetypeId": "dragon_red",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 8,
+      "wanders": false
+    },
+    "faction": "monster",
+    "tags": [
+      "actor",
+      "boss"
+    ],
+    "crCost": 120,
+    "roleTags": [
+      "protein"
+    ],
+    "dialogueId": "dragon_dialogue_tree",
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 100000,
+      "maxAmount": 300000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_diamond",
+        "chance": 1
+      },
+      {
+        "itemId": "coin_pouch_gold",
+        "chance": 1
+      }
+    ]
+  },
+  "goblin": {
+    "id": "goblin",
+    "name": "Goblin",
+    "glyph": "g",
+    "fg": "#84e6ad",
+    "bg": "transparent",
+    "spriteId": "monster_goblin",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 8,
+      "attack": 2,
+      "defense": 1,
+      "xpGiven": 15
+    },
+    "archetypeId": "goblin",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 5,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 5,
+      "maxAmount": 50,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "goblin_archer": {
+    "id": "goblin_archer",
+    "name": "Goblin Archer",
+    "glyph": "g",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "spriteId": "monster_goblin_archer",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 7,
+      "attack": 3,
+      "defense": 0,
+      "xpGiven": 20
+    },
+    "archetypeId": "goblin",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 6,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 10,
+      "maxAmount": 70,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "goblin_brute": {
+    "id": "goblin_brute",
+    "name": "Goblin Brute",
+    "glyph": "g",
+    "fg": "#27ae60",
+    "bg": "transparent",
+    "spriteId": "monster_goblin_brute",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 16,
+      "attack": 4,
+      "defense": 2,
+      "xpGiven": 35
+    },
+    "archetypeId": "goblin",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 10,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 20,
+      "maxAmount": 120,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "silver_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "goblin_mage": {
+    "id": "goblin_mage",
+    "name": "Goblin Shaman",
+    "glyph": "g",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "monster_goblin_mage",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 45
+    },
+    "archetypeId": "goblin",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 12,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 50,
+      "maxAmount": 200,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "potion_of_cure_light_wounds",
+        "chance": 0.6
+      }
+    ]
+  },
+  "kobold": {
+    "id": "kobold",
+    "name": "Kobold Trapper",
+    "glyph": "k",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "spriteId": "monster_kobold_canine",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 6,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 15
+    },
+    "archetypeId": "kobold",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 4,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 5,
+      "maxAmount": 40,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "orc": {
+    "id": "orc",
+    "name": "Orc Raider",
+    "glyph": "o",
+    "fg": "#2ecc71",
+    "bg": "transparent",
+    "spriteId": "monster_orc",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 15,
+      "attack": 5,
+      "defense": 2,
+      "xpGiven": 35
+    },
+    "archetypeId": "orc",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 10,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 20,
+      "maxAmount": 150,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "short_sword",
+        "chance": 0.6
+      }
+    ]
+  },
+  "orc_archer": {
+    "id": "orc_archer",
+    "name": "Orc Archer",
+    "glyph": "o",
+    "fg": "#27ae60",
+    "bg": "transparent",
+    "spriteId": "monster_orc",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 5,
+      "defense": 1,
+      "xpGiven": 35
+    },
+    "archetypeId": "orc",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 10,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 20,
+      "maxAmount": 120,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "dagger",
+        "chance": 0.6
+      }
+    ]
+  },
+  "orc_blademaster": {
+    "id": "orc_blademaster",
+    "name": "Orc Berserker",
+    "glyph": "o",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "monster_orc_blademaster",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 30,
+      "attack": 7,
+      "defense": 3,
+      "xpGiven": 75
+    },
+    "archetypeId": "orc",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 18,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 50,
+      "maxAmount": 300,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "battleaxe",
+        "chance": 0.6
+      }
+    ]
+  },
+  "orc_warchief": {
+    "id": "orc_warchief",
+    "name": "Orc Warchief",
+    "glyph": "O",
+    "fg": "#c0392b",
+    "bg": "transparent",
+    "spriteId": "monster_orc_warchief",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 9,
+      "defense": 4,
+      "xpGiven": 150
+    },
+    "archetypeId": "orc",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 25,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 200,
+      "maxAmount": 1000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "coin_pouch_silver",
+        "chance": 0.6
+      }
+    ]
+  },
+  "bugbear": {
+    "id": "bugbear",
+    "name": "Bugbear Marauder",
+    "glyph": "b",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "spriteId": "monster_ettin",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 26,
+      "attack": 6,
+      "defense": 3,
+      "xpGiven": 65
+    },
+    "archetypeId": "bugbear",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "goblins",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 15,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 40,
+      "maxAmount": 250,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "warhammer",
+        "chance": 0.6
+      }
+    ]
+  },
+  "ogre": {
+    "id": "ogre",
+    "name": "Ogre Brute",
+    "glyph": "O",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "monster_minotaur",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 9,
+      "defense": 4,
+      "xpGiven": 120
+    },
+    "archetypeId": "ogre",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 22,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 100,
+      "maxAmount": 600,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "greatclub",
+        "chance": 0.6
+      }
+    ]
+  },
+  "troll": {
+    "id": "troll",
+    "name": "Cave Troll",
+    "glyph": "T",
+    "fg": "#16a085",
+    "bg": "transparent",
+    "spriteId": "monster_troll",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 65,
+      "attack": 10,
+      "defense": 5,
+      "xpGiven": 250
+    },
+    "archetypeId": "troll",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 35,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 300,
+      "maxAmount": 1500,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "coin_pouch_silver",
+        "chance": 0.6
+      }
+    ]
+  },
+  "skeleton": {
+    "id": "skeleton",
+    "name": "Restless Skeleton",
+    "glyph": "z",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "spriteId": "monster_skeleton",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 12,
+      "attack": 3,
+      "defense": 2,
+      "xpGiven": 25
+    },
+    "archetypeId": "skeleton",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 7,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 5,
+      "maxAmount": 50,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "skeleton_archer": {
+    "id": "skeleton_archer",
+    "name": "Skeleton Archer",
+    "glyph": "z",
+    "fg": "#bdc3c7",
+    "bg": "transparent",
+    "spriteId": "monster_skeleton_archer",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 10,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 30
+    },
+    "archetypeId": "skeleton",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 10,
+      "maxAmount": 60,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "shortbow",
+        "chance": 0.6
+      }
+    ]
+  },
+  "zombie": {
+    "id": "zombie",
+    "name": "Rotting Zombie",
+    "glyph": "z",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "spriteId": "monster_zombie",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 20,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 35
+    },
+    "archetypeId": "zombie",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 9,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 10,
+      "maxAmount": 80,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "ghoul": {
+    "id": "ghoul",
+    "name": "Crypt Ghoul",
+    "glyph": "g",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "spriteId": "monster_ghoul",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 22,
+      "attack": 5,
+      "defense": 3,
+      "xpGiven": 60
+    },
+    "archetypeId": "ghoul",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 14,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 30,
+      "maxAmount": 200,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "silver_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "ghast": {
+    "id": "ghast",
+    "name": "Dungeon Ghast",
+    "glyph": "g",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "spriteId": "monster_ghoul",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 7,
+      "defense": 4,
+      "xpGiven": 100
+    },
+    "archetypeId": "ghast",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 20,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 80,
+      "maxAmount": 400,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "silver_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "wight": {
+    "id": "wight",
+    "name": "Barrow Wight",
+    "glyph": "w",
+    "fg": "#34495e",
+    "bg": "transparent",
+    "spriteId": "monster_wraith",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 8,
+      "defense": 5,
+      "xpGiven": 150
+    },
+    "archetypeId": "wight",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 25,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 100,
+      "maxAmount": 800,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "coin_pouch_silver",
+        "chance": 0.6
+      }
+    ]
+  },
+  "wraith": {
+    "id": "wraith",
+    "name": "Shadow Wraith",
+    "glyph": "W",
+    "fg": "#2c3e50",
+    "bg": "transparent",
+    "spriteId": "monster_wraith",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 9,
+      "defense": 6,
+      "xpGiven": 200
+    },
+    "archetypeId": "wraith",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 30,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 200,
+      "maxAmount": 1200,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_chalcedony",
+        "chance": 0.6
+      }
+    ]
+  },
+  "mummy": {
+    "id": "mummy",
+    "name": "Ancient Mummy",
+    "glyph": "M",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "spriteId": "monster_zombie",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 10,
+      "defense": 5,
+      "xpGiven": 250
+    },
+    "archetypeId": "mummy",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "undead",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 35,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 500,
+      "maxAmount": 2500,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_ruby",
+        "chance": 0.6
+      }
+    ]
+  },
+  "giant_rat": {
+    "id": "giant_rat",
+    "name": "Giant Rat",
+    "glyph": "r",
+    "fg": "#795548",
+    "bg": "transparent",
+    "spriteId": "monster_giant_rat",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 6,
+      "attack": 2,
+      "defense": 0,
+      "xpGiven": 10
+    },
+    "archetypeId": "dire_rat",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 3,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 0,
+      "maxAmount": 15,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "giant_spider": {
+    "id": "giant_spider",
+    "name": "Giant Cave Spider",
+    "glyph": "s",
+    "fg": "#2c3e50",
+    "bg": "transparent",
+    "spriteId": "monster_giant_spider",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 14,
+      "attack": 4,
+      "defense": 1,
+      "xpGiven": 35
+    },
+    "archetypeId": "giant_spider",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 10,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 10,
+      "maxAmount": 80,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "potion_of_cure_light_wounds",
+        "chance": 0.6
+      }
+    ]
+  },
+  "dire_wolf": {
+    "id": "dire_wolf",
+    "name": "Dire Wolf",
+    "glyph": "w",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "spriteId": "monster_warg_dire_wolf",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 35,
+      "attack": 7,
+      "defense": 3,
+      "xpGiven": 90
+    },
+    "archetypeId": "dire_wolf",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 18,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 20,
+      "maxAmount": 150,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "copper_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "owlbear": {
+    "id": "owlbear",
+    "name": "Ferocious Owlbear",
+    "glyph": "O",
+    "fg": "#8d6e63",
+    "bg": "transparent",
+    "spriteId": "monster_ettin",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 9,
+      "defense": 4,
+      "xpGiven": 180
+    },
+    "archetypeId": "owlbear",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "beasts",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 28,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 50,
+      "maxAmount": 400,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "coin_pouch_silver",
+        "chance": 0.6
+      }
+    ]
+  },
+  "bandit": {
+    "id": "bandit",
+    "name": "Bandit Cutthroat",
+    "glyph": "b",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "actor_bandit",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 15,
+      "attack": 4,
+      "defense": 2,
+      "xpGiven": 30
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "bandits",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 8,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 30,
+      "maxAmount": 200,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "dagger",
+        "chance": 0.6
+      }
+    ]
+  },
+  "cultist": {
+    "id": "cultist",
+    "name": "Elemental Cultist",
+    "glyph": "c",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "spriteId": "monster_cultist",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 20,
+      "attack": 4,
+      "defense": 2,
+      "xpGiven": 45
+    },
+    "archetypeId": "human",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 12,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 40,
+      "maxAmount": 250,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "silver_coin",
+        "chance": 0.6
+      }
+    ]
+  },
+  "gargoyle": {
+    "id": "gargoyle",
+    "name": "Stone Gargoyle",
+    "glyph": "G",
+    "fg": "#7f8c8d",
+    "bg": "transparent",
+    "spriteId": "monster_rock_golem",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 40,
+      "attack": 7,
+      "defense": 6,
+      "xpGiven": 150
+    },
+    "archetypeId": "gargoyle",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 25,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 100,
+      "maxAmount": 600,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_chalcedony",
+        "chance": 0.6
+      }
+    ]
+  },
+  "clay_golem": {
+    "id": "clay_golem",
+    "name": "Clay Golem Sentinel",
+    "glyph": "G",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "spriteId": "monster_rock_golem",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 90,
+      "attack": 12,
+      "defense": 8,
+      "xpGiven": 400
+    },
+    "archetypeId": "clay_golem",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 50,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 500,
+      "maxAmount": 3000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_ruby",
+        "chance": 0.6
+      }
+    ]
+  },
+  "air_elemental": {
+    "id": "air_elemental",
+    "name": "Howling Air Elemental",
+    "glyph": "E",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "spriteId": "monster_forest_spirit",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 8,
+      "defense": 5,
+      "xpGiven": 160
+    },
+    "archetypeId": "elemental_air",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 26,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 100,
+      "maxAmount": 800,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "elemental_gem_air",
+        "chance": 0.6
+      }
+    ]
+  },
+  "fire_elemental": {
+    "id": "fire_elemental",
+    "name": "Blazing Fire Elemental",
+    "glyph": "E",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "monster_imp_devil",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 50,
+      "attack": 9,
+      "defense": 5,
+      "xpGiven": 180
+    },
+    "archetypeId": "elemental_fire",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 28,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 150,
+      "maxAmount": 900,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "elemental_gem_fire",
+        "chance": 0.6
+      }
+    ]
+  },
+  "water_elemental": {
+    "id": "water_elemental",
+    "name": "Crashing Water Elemental",
+    "glyph": "E",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "monster_naga",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 9,
+      "defense": 6,
+      "xpGiven": 200
+    },
+    "archetypeId": "elemental_water",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 30,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 200,
+      "maxAmount": 1000,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "elemental_gem_water",
+        "chance": 0.6
+      }
+    ]
+  },
+  "minotaur": {
+    "id": "minotaur",
+    "name": "Labyrinth Minotaur",
+    "glyph": "M",
+    "fg": "#8d6e63",
+    "bg": "transparent",
+    "spriteId": "monster_minotaur",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 60,
+      "attack": 11,
+      "defense": 5,
+      "xpGiven": 220
+    },
+    "archetypeId": "minotaur",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 32,
+    "roleTags": [
+      "protein",
+      "appetizer"
+    ],
+    "currencyDrop": {
+      "denominationId": "cp",
+      "minAmount": 250,
+      "maxAmount": 1200,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "greataxe",
+        "chance": 0.6
+      }
+    ]
+  }
+}

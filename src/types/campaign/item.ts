@@ -46,6 +46,13 @@ export const ItemDefinitionSchema = z.object({
   tags: z.array(z.string()).default([]),
   weight: z.number().nonnegative(),
   baseValue: z.number().nonnegative().default(0),
+  currencyUnit: z.string().optional(),
+  currencyGrant: z
+    .object({
+      denominationId: z.string().min(1),
+      amount: z.number().int().positive()
+    })
+    .optional(),
   isArtifact: z.boolean().optional(),
   weaponStats: z.unknown().optional(),
   armorStats: z.unknown().optional(),

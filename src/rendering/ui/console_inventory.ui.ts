@@ -18,6 +18,7 @@ export interface ConsoleInventoryData {
   readonly currentWeightLbs: number;
   readonly maxWeightLbs: number;
   readonly goldCurrency: number;
+  readonly currencyFormatted?: string | undefined;
 }
 
 type CategoryFilter = 'all' | 'weapon' | 'armor' | 'consumable' | 'accessory' | 'quest';
@@ -282,9 +283,10 @@ export function renderCompactStashWidget(
   wrap.appendChild(matrix);
 
   const footer = createEl('div', 'crpg-stash-footer');
+  const currencyLabel = data.currencyFormatted ?? `${data.goldCurrency.toLocaleString()} gp`;
   footer.append(
     createEl('span', '', `Carried: ${data.currentWeightLbs.toFixed(1)} / ${data.maxWeightLbs.toFixed(1)} lbs`),
-    createEl('span', 'crpg-gold-Readout', `${data.goldCurrency.toLocaleString()} gp 🪙`)
+    createEl('span', 'crpg-gold-Readout', `${currencyLabel} 🪙`)
   );
   wrap.appendChild(footer);
   container.appendChild(wrap);

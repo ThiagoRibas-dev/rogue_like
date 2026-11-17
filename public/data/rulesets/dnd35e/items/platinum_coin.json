@@ -1,0 +1,21 @@
+{
+  "platinum_coin": {
+    "id": "platinum_coin",
+    "name": "Platinum Piece",
+    "unidentifiedName": "Platinum Piece",
+    "description": "A heavy platinum coin minted for large transactions and aristocratic vaults (1 pp = 10 gp = 1000 cp).",
+    "glyph": "$",
+    "fg": "#e5e4e2",
+    "bg": "transparent",
+    "spriteId": "item_coin",
+    "weight": 0.02,
+    "baseValue": 10,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "pp",
+      "amount": 1
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

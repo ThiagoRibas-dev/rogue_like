@@ -92,7 +92,19 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
     return;
   }
 
-  if (state.uiMode === UIMode.Trade || state.uiMode === UIMode.Services) {
+  if (state.uiMode === UIMode.Trade) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      queuePlayerIntent({
+        type: IntentType.CloseTrade,
+        entityId: playerEntityId,
+        isImmediate: true
+      });
+    }
+    return;
+  }
+
+  if (state.uiMode === UIMode.Services) {
     if (event.key === 'Escape') {
       event.preventDefault();
       setGameState({ ...state, uiMode: UIMode.Game, activeTrade: undefined, activeService: undefined });

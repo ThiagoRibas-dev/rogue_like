@@ -62,6 +62,7 @@ export function processSelectDialogueOptionIntent(
     ]
   };
 
+  const preConseqNodeId = nextState.activeDialogue?.currentNodeId;
   if (option.consequences) {
     const dummyEvent: DialogueSelectedEvent = {
       type: GameEventType.DialogueSelected,
@@ -75,7 +76,21 @@ export function processSelectDialogueOptionIntent(
     }
   }
 
-  if (!option.nextNodeId) {
+  // If a consequence closed dialogue or opened another modal (e.g., Trade/Services), honor it.
+  if (nextState.uiMode !== UIMode.Dialogue || !nextState.activeDialogue) {
+    return { state: nextState, success: false };
+  }
+
+  // If a consequence (such as skill_check) routed dialogue to another node or set a textOverride,
+  // preserve that transition and evaluate dynamic node behaviors on the destination node.
+  const activeDialogue = nextState.activeDialogue;
+  const consequenceRoutedNodeId =
+    activeDialogue !== undefined && activeDialogue.currentNodeId !== preConseqNodeId
+      ? activeDialogue.currentNodeId
+      : undefined;
+
+  const targetNodeId = consequenceRoutedNodeId ?? option.nextNodeId;
+  if (!targetNodeId) {
     // End conversation
     return {
       state: {
@@ -87,8 +102,7 @@ export function processSelectDialogueOptionIntent(
     };
   }
 
-  const nextNodeId = option.nextNodeId;
-  const nextNode = tree.nodes[nextNodeId];
+  const nextNode = tree.nodes[targetNodeId];
   if (nextNode) {
     if (nextNode.dynamicType === 'trade') {
       return {
@@ -134,8 +148,11 @@ export function processSelectDialogueOptionIntent(
       ...nextState,
       activeDialogue: {
         treeId,
-        currentNodeId: option.nextNodeId,
-        npcEntityId
+        currentNodeId: targetNodeId,
+        npcEntityId,
+        ...(consequenceRoutedNodeId !== undefined && activeDialogue?.textOverride !== undefined
+          ? { textOverride: activeDialogue.textOverride }
+          : {})
       }
     },
     success: false

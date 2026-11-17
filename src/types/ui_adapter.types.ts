@@ -149,6 +149,7 @@ export interface UIInventoryModel {
   readonly currentWeightLbs: number;
   readonly maxWeightLbs: number;
   readonly goldCurrency: number;
+  readonly currencyFormatted?: string | undefined;
 }
 
 /**

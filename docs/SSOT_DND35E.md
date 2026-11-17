@@ -4,10 +4,10 @@
 
 ## Table of Contents
 
-- [D&D 3.5e: Cartridge Adapters, Core & Validation (29 files)](#d-d-3-5e-cartridge-adapters-core-validation)
+- [D&D 3.5e: Cartridge Adapters, Core & Validation (30 files)](#d-d-3-5e-cartridge-adapters-core-validation)
 - [D&D 3.5e: Character Builder, Progression & Ledger (24 files)](#d-d-3-5e-character-builder-progression-ledger)
 - [D&D 3.5e: Combat Simulation & Resolution (2 files)](#d-d-3-5e-combat-simulation-resolution)
-- [D&D 3.5e: Core Cartridge & Ruleset Contract (2 files)](#d-d-3-5e-core-cartridge-ruleset-contract)
+- [D&D 3.5e: Core Cartridge & Ruleset Contract (5 files)](#d-d-3-5e-core-cartridge-ruleset-contract)
 - [D&D 3.5e: Layer 1 — Math & Multipliers (2 files)](#d-d-3-5e-layer-1-math-multipliers)
 - [D&D 3.5e: Layer 1 — Math, Bonus Stacking & Stat DAG (6 files)](#d-d-3-5e-layer-1-math-bonus-stacking-stat-dag)
 - [D&D 3.5e: Layer 3 — Spatial Geometry & Senses (5 files)](#d-d-3-5e-layer-3-spatial-geometry-senses)
@@ -22,7 +22,7 @@
 
 ## D&D 3.5e: Cartridge Adapters, Core & Validation
 
-**Modules in this domain:** 29
+**Modules in this domain:** 30
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -48,6 +48,7 @@
 | `src/rulesets/dnd35e/skills/skill_verb_helpers.ts` | `tier2_cartridge` | Shared actor skill-check evaluation, tool-tag inspection, and creature-type-to-Knowledge mapping for skill verbs. | `CREATURE_TYPE_TO_KNOWLEDGE_SKILL`, `evaluateActorSkillCheck` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/skills/skill_verb_helpers.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/skill_verb_helpers.ts. |
 | `src/rulesets/dnd35e/skills/social_combat_skill_verbs.ts` | `tier2_cartridge` | Executes social and combat skill verbs (`persuade`, `intimidate`, `feint`), wand UMD checks, and Monster Lore inspection. | `resolveSocialCombatSkillVerb` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/skills/social_combat_skill_verbs.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/social_combat_skill_verbs.ts. |
 | `src/rulesets/dnd35e/skills/specialized_skill_checks.ts` | `tier2_cartridge` | Pure d20 resolvers for Diplomacy, Monster Lore, Disable Device, Open Lock, Search, Heal, Spellcraft, Demoralize, and Feint. | `resolveDiplomacyCheck`, `resolveMonsterLoreCheck`, `resolveDisableTrapCheck`, `resolveOpenLockCheck`, `resolveDemoralizeCheck`, `resolveFeintCheck` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/skills/specialized_skill_checks.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/specialized_skill_checks.ts. |
+| `src/rulesets/dnd35e/skills/trade_social_checks.ts` | `tier2_cartridge` | Provides D&D 3.5e social skill and trade resolvers: evaluateDnD35eTradePriceModifier, resolveDnD35eTradeSocialSkill (Appraise, Diplomacy, Bluff, Intimidate), and dialogue skill checks. | `evaluateDnD35eTradePriceModifier`, `resolveDnD35eTradeSocialSkill`, `evaluateDnD35eDialogueSkillCheck`, `getDnD35eActorSkillModifier` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/skills/trade_social_checks.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/skills/trade_social_checks.ts. |
 | `src/rulesets/dnd35e/srd_registry.ts` | `tier2_cartridge` | Single Source of Truth for entity data get/set facade, equipped item bonus extraction, damage tag resolution, and system content registry lookups. | `getDnD35EntityData`, `setDnD35EntityData`, `getEquippedItemBonuses`, `resolveDamageTypeFromTags`, `getDnD35Race`, `getDnD35Template`, `getDnD35CreatureTypeEngine`, `getDnD35Subtype` | **Includes:** Retrieving and persisting DnD35EntityData on ECS entities, extracting equipment bonuses, and querying systemContent registries.<br>**Excludes:** Effect bundle evaluation (owned by effect_bundle.ts), live tag projection (owned by semantic_tags.ts), and archetype hydration (owned by archetype_resolver.ts). | • Do not duplicate or bypass exports from src/rulesets/dnd35e/srd_registry.ts. |
 | `src/rulesets/dnd35e/system_content_feat_ids.ts` | `tier2_cartridge` | Canonical SRD Feat ID catalog for modular D&D 3.5e feat JSON loading. | `FEAT_IDS` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/system_content_feat_ids.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/system_content_feat_ids.ts. |
 | `src/rulesets/dnd35e/system_content_files.ts` | `tier2_cartridge` | Canonical list of System Content JSON file descriptors for the `dnd35e` ruleset cartridge. | `DND35E_SYSTEM_CONTENT_FILES` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/system_content_files.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/system_content_files.ts. |
@@ -98,12 +99,15 @@
 
 ## D&D 3.5e: Core Cartridge & Ruleset Contract
 
-**Modules in this domain:** 2
+**Modules in this domain:** 5
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts` | `tier2_cartridge` | Provides Tier 2 D&D 3.5e lifecycle hooks: hydrates per-entity action budgets, evaluates aura entry saves, resolves symmetric round energy costs, checks action availability, and handles hourly nonlethal healing. | `evaluateActorAuraEntrySaves`, `hydrateEntityRoundActionBudget`, `onDnD35eActorTurnStart`, `onDnD35eActorMovementStep`, `resolveDnD35eActionEnergyCost`, `canDnD35eActorPerformIntent`, `hasDnD35eActorActedThisTurn`, `hasDnD35eActorMovementInProgress`, `onDnD35eWorldHourElapsed` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts. |
+| `src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts` | `tier2_cartridge` | Hydrates newly spawned D&D 3.5e actor statblocks, tracks, creature templates, and derived FighterComponent combat HP/BAB/level stats. | `onDnD35eEntitySpawned` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts. |
 | `src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts` | `tier2_cartridge` | Hydrates per-entity 5-tier round action budgets and resolves symmetric TurnBased intent energy costs and availability. | `FULL_ROUND_ENERGY_COST`, `hydrateEntityRoundActionBudget`, `finalizeBudgetAfterAction`, `resolveDnD35eActionEnergyCost`, `canDnD35eActorPerformIntent`, `hasDnD35eActorActedThisTurn`, `hasDnD35eActorMovementInProgress` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/cartridge/dnd35e_turn_budget.ts. |
+| `src/rulesets/dnd35e/currency.ts` | `tier2_cartridge` | Provides the D&D 3.5e canonical monetary standard (cp=1, sp=10, ep=50, gp=100, pp=1000) and default currency config. | `DND35E_CP_PER_SP`, `DND35E_CP_PER_EP`, `DND35E_CP_PER_GP`, `DND35E_CP_PER_PP`, `DND35E_DEFAULT_CURRENCY_CONFIG` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/currency.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/currency.ts. |
+| `src/rulesets/dnd35e/progression/cr_xp_table.ts` | `tier2_cartridge` | Implements pure D&D 3.5e DMG Table 2-6 Challenge Rating vs ECL XP calculation and kill reward resolution. | `computeDnD35eCrXp`, `resolveDnD35eEntityCr`, `resolveDnD35eKillXpReward` | **Includes:** Pure implementation and exports for src/rulesets/dnd35e/progression/cr_xp_table.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/rulesets/dnd35e/progression/cr_xp_table.ts. |
 
 ## D&D 3.5e: Layer 1 — Math & Multipliers
 

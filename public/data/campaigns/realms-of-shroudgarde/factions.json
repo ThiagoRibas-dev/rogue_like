@@ -1,0 +1,122 @@
+{
+  "player": {
+    "player": "friendly",
+    "citizens": "friendly",
+    "monster": "hostile",
+    "neutral": "neutral",
+    "bandits": "hostile",
+    "beasts": "hostile",
+    "cultists": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "undead": "hostile"
+  },
+  "citizens": {
+    "player": "friendly",
+    "citizens": "friendly",
+    "monster": "hostile",
+    "neutral": "friendly",
+    "bandits": "hostile",
+    "beasts": "hostile",
+    "cultists": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "undead": "hostile"
+  },
+  "monster": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "hostile",
+    "beasts": "neutral",
+    "cultists": "neutral",
+    "goblins": "neutral",
+    "orcs": "neutral",
+    "undead": "neutral"
+  },
+  "neutral": {
+    "player": "neutral",
+    "citizens": "friendly",
+    "monster": "neutral",
+    "neutral": "friendly",
+    "bandits": "neutral",
+    "beasts": "neutral",
+    "cultists": "neutral",
+    "goblins": "neutral",
+    "orcs": "neutral",
+    "undead": "neutral"
+  },
+  "bandits": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "hostile",
+    "neutral": "neutral",
+    "bandits": "friendly",
+    "beasts": "hostile",
+    "cultists": "neutral",
+    "goblins": "neutral",
+    "orcs": "neutral",
+    "undead": "hostile"
+  },
+  "beasts": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "hostile",
+    "beasts": "friendly",
+    "cultists": "hostile",
+    "goblins": "hostile",
+    "orcs": "hostile",
+    "undead": "neutral"
+  },
+  "cultists": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "neutral",
+    "beasts": "hostile",
+    "cultists": "friendly",
+    "goblins": "friendly",
+    "orcs": "friendly",
+    "undead": "friendly"
+  },
+  "goblins": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "neutral",
+    "beasts": "neutral",
+    "cultists": "friendly",
+    "goblins": "friendly",
+    "orcs": "hostile",
+    "undead": "neutral"
+  },
+  "orcs": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "neutral",
+    "beasts": "neutral",
+    "cultists": "friendly",
+    "goblins": "hostile",
+    "orcs": "friendly",
+    "undead": "neutral"
+  },
+  "undead": {
+    "player": "hostile",
+    "citizens": "hostile",
+    "monster": "neutral",
+    "neutral": "neutral",
+    "bandits": "hostile",
+    "beasts": "hostile",
+    "cultists": "friendly",
+    "goblins": "neutral",
+    "orcs": "neutral",
+    "undead": "friendly"
+  }
+}

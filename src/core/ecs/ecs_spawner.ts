@@ -321,6 +321,7 @@ export function spawnEntity(
   }
 
   nextState = equipActorDefaultArmaments(nextState, entityId, templateId, x, y);
+  nextState = getActiveRuleset(nextState).onEntitySpawned?.(nextState, entityId) ?? nextState;
   nextState = getActiveRuleset(nextState).syncActorSpatialFootprint?.(nextState, entityId) ?? nextState;
 
   return [nextState, entityId];

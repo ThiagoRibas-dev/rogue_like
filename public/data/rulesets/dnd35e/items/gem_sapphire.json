@@ -1,0 +1,17 @@
+{
+  "gem_sapphire": {
+    "id": "gem_sapphire",
+    "name": "Deep Blue Sapphire",
+    "unidentifiedName": "Blue Gemstone",
+    "description": "A radiant deep azure sapphire reflecting light in celestial hues (worth 1000 gp).",
+    "glyph": "*",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.1,
+    "baseValue": 1000,
+    "currencyUnit": "gp",
+    "category": "tool",
+    "isArtifact": false
+  }
+}

@@ -84,6 +84,22 @@ export const ConditionPredicateSchema = z.discriminatedUnion('type', [
     axis: z.string(),
     operator: z.enum(['>=', '<=', '==']),
     value: z.number().int()
+  }),
+  z.object({
+    type: z.literal('has_currency'),
+    amount: z.number().int().nonnegative(),
+    denominationId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('attitude_tier'),
+    operator: z.enum(['>=', '<=', '==']),
+    attitude: z.enum(['hostile', 'unfriendly', 'indifferent', 'neutral', 'friendly', 'helpful'])
+  }),
+  z.object({
+    type: z.literal('skill_modifier'),
+    skillId: z.string().min(1),
+    operator: z.enum(['>=', '<=', '==']),
+    value: z.number().int()
   })
 ]);
 
@@ -247,6 +263,31 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('order_companion_target'),
     targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('modify_currency'),
+    amount: z.number().int(),
+    denominationId: z.string().optional(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('set_attitude'),
+    attitude: z.enum(['hostile', 'unfriendly', 'indifferent', 'neutral', 'friendly', 'helpful']),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('modify_session_markup'),
+    delta: z.number(),
+    targetId: z.string().optional()
+  }),
+  z.object({
+    type: z.literal('skill_check'),
+    skillId: z.string().min(1),
+    dc: z.number().int(),
+    onSuccessNodeId: z.string().optional(),
+    onFailureNodeId: z.string().optional(),
+    successConsequences: z.array(z.record(z.string(), z.unknown())).optional(),
+    failureConsequences: z.array(z.record(z.string(), z.unknown())).optional()
   })
 ]);
 

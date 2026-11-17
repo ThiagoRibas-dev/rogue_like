@@ -6,7 +6,11 @@ import { ComponentType } from '../../types/components.types.ts';
 import type { MemoryComponent, FactionComponent } from '../../types/components.types.ts';
 import type { ApplyIntentTarget } from '../../types/intents/interaction.intents.ts';
 import { getComponent, addComponent } from '../../core/ecs.ts';
-import { executeSay } from '../message.system.ts';
+import { rng } from '../../core/rng.ts';
+import { getActiveRuleset } from '../../rulesets/registry.ts';
+import { resolveDialogueTree } from '../dialogue.system.ts';
+import { addEntityCurrency, formatCurrency, resolveCurrencyConfig, toBaseUnits } from '../currency.system.ts';
+import { addMessage, executeSay, MessageLogCategory } from '../message.system.ts';
 import { transferKnowledge } from '../knowledge.system.ts';
 import {
   assignCompanionCommandTarget,
@@ -256,6 +260,133 @@ export const socialConsequences = {
     const specificId =
       npcId !== undefined && isPlayerControlledCompanion(state, controllerId, npcId) ? npcId : undefined;
     return beginCompanionTargetSelection(state, controllerId, specificId);
+  },
+
+  modify_currency: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'modify_currency' }>
+  ): GameState => {
+    const resolvedTarget =
+      consequence.targetId !== undefined
+        ? resolveConsequenceTargetEntityId(event, consequence.targetId)
+        : (consequence._playerEntityId ??
+          state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined));
+    if (resolvedTarget === undefined || Number.isNaN(resolvedTarget)) return state;
+
+    const cfg = resolveCurrencyConfig(state);
+    const denomId = consequence.denominationId ?? cfg.defaultValueDenominationId ?? cfg.baseUnitId;
+    const deltaUnits = toBaseUnits(consequence.amount, denomId, cfg);
+    const result = addEntityCurrency(state, resolvedTarget, deltaUnits);
+    if (!result.success) return state;
+
+    const absFormatted = formatCurrency(Math.abs(deltaUnits), cfg);
+    return addMessage(
+      result.state,
+      deltaUnits >= 0 ? `Received ${absFormatted}.` : `Paid ${absFormatted}.`,
+      MessageLogCategory.System
+    );
+  },
+
+  set_attitude: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'set_attitude' }>
+  ): GameState => {
+    const npcId =
+      consequence._npcEntityId ?? resolveConsequenceTargetEntityId(event, consequence.targetId) ?? consequence.entityId;
+    if (npcId === undefined || Number.isNaN(npcId)) return state;
+    return addComponent(state, npcId, {
+      type: ComponentType.Attitude,
+      attitude: consequence.attitude
+    });
+  },
+
+  modify_session_markup: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'modify_session_markup' }>
+  ): GameState => {
+    const npcId =
+      consequence._npcEntityId ?? resolveConsequenceTargetEntityId(event, consequence.targetId) ?? consequence.entityId;
+    if (npcId === undefined || Number.isNaN(npcId)) return state;
+    const memory = getComponent(state, npcId, ComponentType.Memory) as MemoryComponent | undefined;
+    if (!memory) return state;
+    const current = memory.sessionMarkupModifier ?? 0;
+    const nextMod = Math.max(-0.5, Math.min(1.0, current + consequence.delta));
+    return addComponent(state, npcId, {
+      ...memory,
+      sessionMarkupModifier: nextMod
+    });
+  },
+
+  skill_check: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'skill_check' }>,
+    apply: (state: GameState, event: GameEvent, consequence: ConsequenceAction) => GameState
+  ): GameState => {
+    const actorId =
+      consequence._playerEntityId ??
+      consequence.entityId ??
+      state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+    if (actorId === undefined) return state;
+
+    const rulesetResult = getActiveRuleset(state).evaluateDialogueSkillCheck?.(
+      state,
+      actorId,
+      consequence._npcEntityId,
+      consequence.skillId,
+      consequence.dc
+    );
+    const checkResult =
+      rulesetResult ??
+      (() => {
+        const roll = rng.getUniformInt(1, 20);
+        const total = roll;
+        const success = total >= consequence.dc;
+        return {
+          success,
+          roll,
+          modifier: 0,
+          total,
+          dc: consequence.dc,
+          breakdown: `[${consequence.skillId}: d20(${roll}) = ${total} vs DC ${consequence.dc} -> ${success ? 'SUCCESS' : 'FAILURE'}]`
+        };
+      })();
+
+    let nextState = addMessage(state, checkResult.breakdown, MessageLogCategory.System);
+    const branchList = checkResult.success ? consequence.successConsequences : consequence.failureConsequences;
+    if (branchList && branchList.length > 0) {
+      for (const nested of branchList) {
+        const evalNested = {
+          ...nested,
+          ...(consequence._npcEntityId !== undefined ? { _npcEntityId: consequence._npcEntityId } : {}),
+          _playerEntityId: actorId
+        } as unknown as ConsequenceAction;
+        nextState = apply(nextState, event, evalNested);
+      }
+    }
+
+    const nextNodeId = checkResult.success ? consequence.onSuccessNodeId : consequence.onFailureNodeId;
+    if (nextNodeId !== undefined && nextState.activeDialogue) {
+      const tree = resolveDialogueTree(
+        nextState,
+        nextState.activeDialogue.treeId,
+        nextState.activeDialogue.npcEntityId
+      );
+      const targetNode = tree?.nodes[nextNodeId];
+      nextState = {
+        ...nextState,
+        activeDialogue: {
+          ...nextState.activeDialogue,
+          currentNodeId: nextNodeId,
+          textOverride: targetNode ? `${checkResult.breakdown}\n\n${targetNode.text}` : checkResult.breakdown
+        }
+      };
+    }
+
+    return nextState;
   }
 } satisfies Partial<
   Record<

@@ -1,0 +1,21 @@
+{
+  "copper_coin": {
+    "id": "copper_coin",
+    "name": "Copper Piece",
+    "unidentifiedName": "Copper Piece",
+    "description": "A standard copper coin commonly circulated in the realms (1 cp).",
+    "glyph": "$",
+    "fg": "#b87333",
+    "bg": "transparent",
+    "spriteId": "item_coin",
+    "weight": 0.02,
+    "baseValue": 0.01,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "cp",
+      "amount": 1
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

@@ -184,6 +184,16 @@ export function dispatchAction(
       return processSelectDialogueOptionIntent(state, intent);
     case IntentType.CloseDialogue:
       return processCloseDialogueIntent(state, intent);
+    case IntentType.CloseTrade:
+      return {
+        state: {
+          ...state,
+          uiMode: UIMode.Game,
+          activeTrade: undefined,
+          activeService: undefined
+        },
+        success: false
+      };
     case IntentType.AskAbout:
       return processAskAboutIntent(state, intent);
     case IntentType.Gossip:

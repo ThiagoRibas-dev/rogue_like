@@ -1,0 +1,642 @@
+{
+  "explosive": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Highly volatile. Will explode on impact."
+  },
+  "flask": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "A fragile glass container."
+  },
+  "key:bronze": {
+    "category": "item",
+    "color": "#cd7f32",
+    "description": "A simple bronze key."
+  },
+  "tool:lockpick": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Used to bypass mechanical locks."
+  },
+  "actor": {
+    "category": "entity",
+    "color": "#ffffff",
+    "description": "An entity capable of taking actions."
+  },
+  "consumable": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "An item that is destroyed upon use."
+  },
+  "portal": {
+    "category": "terrain",
+    "color": "#9b59b6",
+    "description": "A gateway to another area."
+  },
+  "door": {
+    "category": "terrain",
+    "color": "#d35400",
+    "description": "A door that can be opened or closed."
+  },
+  "solid": {
+    "category": "physical",
+    "color": "#7f8c8d",
+    "description": "A physical object that blocks movement."
+  },
+  "chest": {
+    "category": "terrain",
+    "color": "#f39c12",
+    "description": "A container for holding items."
+  },
+  "water": {
+    "category": "elemental",
+    "color": "#3498db",
+    "description": "Water or aquatic terrain."
+  },
+  "field:fire": {
+    "category": "field",
+    "color": "#e67e22",
+    "description": "A burning area of effect."
+  },
+  "fountain": {
+    "category": "terrain",
+    "color": "#00cec9",
+    "description": "A decorative source of liquid."
+  },
+  "altar": {
+    "category": "terrain",
+    "color": "#dfe6e9",
+    "description": "A religious or magical focal point."
+  },
+  "water_source": {
+    "category": "terrain",
+    "color": "#0984e3",
+    "description": "Provides drinkable water."
+  },
+  "spider_nest": {
+    "category": "biome",
+    "color": "#8e44ad",
+    "description": "Infested with spiders and webbing."
+  },
+  "flooded": {
+    "category": "biome",
+    "color": "#3498db",
+    "description": "Partially submerged in water."
+  },
+  "bones": {
+    "category": "terrain",
+    "color": "#bdc3c7",
+    "description": "The skeletal remains of a fallen creature."
+  },
+  "remains": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "Leftover remains or debris."
+  },
+  "elite": {
+    "category": "trait",
+    "color": "#f1c40f",
+    "description": "A superior variant with enhanced stats."
+  },
+  "regenerating": {
+    "category": "trait",
+    "color": "#2ecc71",
+    "description": "Slowly recovers health over time."
+  },
+  "hub": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "A safe hub area where the player begins."
+  },
+  "safe": {
+    "category": "area",
+    "color": "#27ae60",
+    "description": "An area with no hostile encounters."
+  },
+  "early_game": {
+    "category": "area",
+    "color": "#3498db",
+    "description": "Early game areas with easier content."
+  },
+  "mid_game": {
+    "category": "area",
+    "color": "#f39c12",
+    "description": "Mid game areas with moderate difficulty."
+  },
+  "dungeon": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "Underground dungeon or subterranean complex."
+  },
+  "cave": {
+    "category": "area",
+    "color": "#8e44ad",
+    "description": "Subterranean cavern or natural grotto."
+  },
+  "camp": {
+    "category": "area",
+    "color": "#d35400",
+    "description": "An outdoor camp or encampment."
+  },
+  "boss": {
+    "category": "entity",
+    "color": "#e74c3c",
+    "description": "Legendary adversary or dungeon lord."
+  },
+  "protein": {
+    "category": "role",
+    "color": "#c0392b",
+    "description": "Primary combat threat."
+  },
+  "dessert": {
+    "category": "role",
+    "color": "#8e44ad",
+    "description": "Chaotic disruptor or wild card."
+  },
+  "side": {
+    "category": "role",
+    "color": "#f39c12",
+    "description": "Hazard, obstacle, or support."
+  },
+  "appetizer": {
+    "category": "role",
+    "color": "#2ecc71",
+    "description": "Loot, advantage, or optimizer."
+  },
+  "opaque": {
+    "category": "physical",
+    "color": "#2c3e50",
+    "description": "Blocks line of sight."
+  },
+  "liquid": {
+    "category": "elemental",
+    "color": "#3498db",
+    "description": "Liquid body."
+  },
+  "terrain": {
+    "category": "terrain",
+    "color": "#95a5a6",
+    "description": "A base environmental feature."
+  },
+  "flammable": {
+    "category": "physical",
+    "color": "#e67e22",
+    "description": "Easily ignitable substance or environment."
+  },
+  "divine": {
+    "category": "magic",
+    "color": "#f1c40f",
+    "description": "Of holy or divine origin."
+  },
+  "orc_camp": {
+    "category": "biome",
+    "color": "#c0392b",
+    "description": "A savage encampment."
+  },
+  "corrupted": {
+    "category": "physical",
+    "color": "#8e44ad",
+    "description": "Tainted by abyssal trance or fungal rot."
+  },
+  "shrine_vault": {
+    "category": "biome",
+    "color": "#f1c40f",
+    "description": "An ancient, protected sanctuary."
+  },
+  "town": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "Safe civil town or village settlement."
+  },
+  "bandit": {
+    "category": "entity",
+    "color": "#e74c3c",
+    "description": "A rogue or outlaw."
+  },
+  "warlord": {
+    "category": "entity",
+    "color": "#c0392b",
+    "description": "A powerful leader of outlaws."
+  },
+  "sigil": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "A symbolic mark or token."
+  },
+  "quest_item": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Crucial item for quest progression."
+  },
+  "note": {
+    "category": "item",
+    "color": "#ecf0f1",
+    "description": "A written message."
+  },
+  "journal": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "A book of records."
+  },
+  "weapon": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "A martial or simple weapon."
+  },
+  "armor": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Protective body armor."
+  },
+  "shield": {
+    "category": "item",
+    "color": "#a67c52",
+    "description": "A defensive shield."
+  },
+  "slashing": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Deals slashing damage."
+  },
+  "bludgeoning": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Deals bludgeoning damage."
+  },
+  "piercing": {
+    "category": "item",
+    "color": "#f39c12",
+    "description": "Deals piercing damage."
+  },
+  "light": {
+    "category": "item",
+    "color": "#2ecc71",
+    "description": "Light weapon or armor."
+  },
+  "medium": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Medium armor."
+  },
+  "heavy": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Heavy armor."
+  },
+  "one_handed": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "One-handed weapon."
+  },
+  "two_handed": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Two-handed weapon."
+  },
+  "weaponDice:1d6": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Base weapon damage 1d6."
+  },
+  "weaponDice:1d8": {
+    "category": "item",
+    "color": "#bdc3c7",
+    "description": "Base weapon damage 1d8."
+  },
+  "critThreatMin:19": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical threat range 19-20."
+  },
+  "critThreatMin:20": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical threat range 20."
+  },
+  "critMultiplier:2": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Critical damage multiplier x2."
+  },
+  "armorBonus:0": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +0."
+  },
+  "armorBonus:4": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +4."
+  },
+  "armorBonus:5": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Armor bonus +5."
+  },
+  "shieldBonus:2": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "Shield bonus +2."
+  },
+  "acp:0": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty 0."
+  },
+  "acp:2": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -2."
+  },
+  "acp:4": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -4."
+  },
+  "acp:5": {
+    "category": "item",
+    "color": "#7f8c8d",
+    "description": "Armor check penalty -5."
+  },
+  "double_weapon": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Double weapon capable of being wielded two-handed or as one-handed primary + light off-hand."
+  },
+  "cannot_two_hand_str": {
+    "category": "item",
+    "color": "#e67e22",
+    "description": "Cannot apply 1.5x Strength or 2x Power Attack damage bonus when wielded in two hands."
+  },
+  "exotic_1h_martial_2h": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Requires Exotic Weapon Proficiency in one hand (-4 penalty without) or Martial Weapon Proficiency in two hands."
+  },
+  "simple": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: simple."
+  },
+  "unarmed": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: unarmed."
+  },
+  "martial": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: martial."
+  },
+  "exotic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: exotic."
+  },
+  "bypass:cold_iron": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:cold_iron."
+  },
+  "bypass:silver": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:silver."
+  },
+  "bypass:adamantine": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:adamantine."
+  },
+  "bypass:hardness_20": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:hardness_20."
+  },
+  "magic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: magic."
+  },
+  "bypass:magic": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: bypass:magic."
+  },
+  "ghost_touch": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: ghost_touch."
+  },
+  "metal": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metal."
+  },
+  "material:mithral": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:mithral."
+  },
+  "material:adamantine": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:adamantine."
+  },
+  "tower_shield": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: tower_shield."
+  },
+  "material:darkwood": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: material:darkwood."
+  },
+  "animated": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: animated."
+  },
+  "wondrous": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: wondrous."
+  },
+  "slot:torso": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:torso."
+  },
+  "slot:arm": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:arm."
+  },
+  "slot:neck": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:neck."
+  },
+  "slot:head": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:head."
+  },
+  "slot:back": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:back."
+  },
+  "slot:finger": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:finger."
+  },
+  "slot:foot": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: slot:foot."
+  },
+  "rod": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: rod."
+  },
+  "metamagic_rod:empower": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:empower."
+  },
+  "metamagic_rod:extend": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:extend."
+  },
+  "metamagic_rod:quicken": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: metamagic_rod:quicken."
+  },
+  "staff": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: staff."
+  },
+  "wand": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: wand."
+  },
+  "spell:cure_light_wounds": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:cure_light_wounds."
+  },
+  "spell:magic_missile": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:magic_missile."
+  },
+  "potion": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: potion."
+  },
+  "spell:bulls_strength": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:bulls_strength."
+  },
+  "scroll": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: scroll."
+  },
+  "spell:mage_armor": {
+    "category": "item",
+    "color": "#3498db",
+    "description": "SRD item property tag: spell:mage_armor."
+  },
+  "floor": {
+    "category": "terrain",
+    "color": "#666666",
+    "description": "Walkable floor terrain."
+  },
+  "chasm": {
+    "category": "terrain",
+    "color": "#000000",
+    "description": "Deep impassable pit or abyss."
+  },
+  "frontier": {
+    "category": "area",
+    "color": "#f39c12",
+    "description": "Borderlands wilderness and roads."
+  },
+  "tower": {
+    "category": "area",
+    "color": "#3498db",
+    "description": "Vertical fortress tower or spire."
+  },
+  "crypt": {
+    "category": "area",
+    "color": "#9b59b6",
+    "description": "Ancient tomb, reliquary, or shallow catacomb."
+  },
+  "temple": {
+    "category": "area",
+    "color": "#e74c3c",
+    "description": "Sacred or unholy subterranean temple complex."
+  },
+  "megadungeon": {
+    "category": "area",
+    "color": "#e67e22",
+    "description": "Deep multi-tiered megadungeon level."
+  },
+  "deep_vault": {
+    "category": "area",
+    "color": "#c0392b",
+    "description": "Abyssal vault or high-danger subterranean rift."
+  },
+  "outdoor": {
+    "category": "area",
+    "color": "#2ecc71",
+    "description": "Open air or wilderness exterior area."
+  },
+  "npc": {
+    "category": "entity",
+    "color": "#3498db",
+    "description": "Friendly or interactive non-player character."
+  },
+  "merchant": {
+    "category": "entity",
+    "color": "#ffd700",
+    "description": "Vendor buying and selling trade goods."
+  },
+  "guard": {
+    "category": "entity",
+    "color": "#95a5a6",
+    "description": "Law enforcer or fort defender."
+  },
+  "key": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Key opening specific locked doors or chests."
+  },
+  "relic": {
+    "category": "item",
+    "color": "#9b59b6",
+    "description": "Sacred or arcane relic of great significance."
+  },
+  "artifact": {
+    "category": "item",
+    "color": "#e74c3c",
+    "description": "Mythical artifact wielding supreme powers."
+  },
+  "tool": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Utilitarian tool, key, or device."
+  }
+}

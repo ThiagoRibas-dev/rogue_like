@@ -4,7 +4,11 @@ import { GameEventType, type GameEvent } from '../types/events.types.ts';
 import {
   ComponentType,
   type DeathComponent,
+  type EquipmentComponent,
+  type InventoryComponent,
+  type ItemComponent,
   type PositionComponent,
+  type ShopComponent,
   type TagsComponent,
   type TemplateComponent,
   type NemesisComponent,
@@ -12,6 +16,12 @@ import {
   type AgreementComponent
 } from '../types/components.types.ts';
 import { getComponent, removeEntity, addComponent, spawnItem, resolveEntityDisplayName } from '../core/ecs.ts';
+import {
+  decomposeToCoins,
+  formatCurrency,
+  getEntityCurrencyBalance,
+  resolveCurrencyConfig
+} from './currency.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor, addActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
@@ -128,9 +138,15 @@ export function processDeathSystem(state: GameState): GameState {
         };
       }
 
-      // Grant XP to killer if applicable
-      if (deathComp.killerId !== undefined && fighter && fighter.xpGiven > 0) {
-        nextState = grantXp(nextState, deathComp.killerId, fighter.xpGiven);
+      // Grant XP to killer if applicable (using Cartridge CR-vs-ECL hook when implemented)
+      if (deathComp.killerId !== undefined) {
+        const xpToGrant =
+          getActiveRuleset(nextState).resolveKillXpReward?.(nextState, deathComp.killerId, entityId) ??
+          fighter?.xpGiven ??
+          0;
+        if (xpToGrant > 0) {
+          nextState = grantXp(nextState, deathComp.killerId, xpToGrant);
+        }
 
         // Notify quest system if player killed it
         if (deathComp.killerId === state.entities.find((e) => getComponent(state, e, ComponentType.Player))) {
@@ -142,20 +158,130 @@ export function processDeathSystem(state: GameState): GameState {
         }
       }
 
-      // Let the Trigger system handle clue drops and narrative consequences.
-      // E.g., `EntityDiedEvent` is evaluated by `processGlobalTriggers`.
+      const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
+      const deadTemplateComp = getComponent(nextState, entityId, ComponentType.Template) as
+        TemplateComponent | undefined;
+      const deadTemplate = deadTemplateComp ? nextState.campaign.entities[deadTemplateComp.templateId] : undefined;
 
-      // Contextual loot drop: roll on the global loot table at configured chance
-      const lootTable = nextState.campaign.rules.spawning.lootTable;
-      const lootDropChance = nextState.campaign.rules.spawning.lootDropChance;
-      if (Object.keys(lootTable).length > 0 && rng.getUniform() < lootDropChance) {
-        const pos = getComponent(nextState, entityId, ComponentType.Position) as PositionComponent | undefined;
-        if (pos) {
-          const itemId = rng.getWeightedValue(lootTable as Record<string, number>);
-          if (itemId && nextState.campaign.items[itemId]) {
-            const itemDef = nextState.campaign.items[itemId]!;
-            [nextState] = spawnItem(nextState, itemId, pos.x, pos.y);
-            nextState = addMessage(nextState, `${name} drops ${itemDef.name}.`, MessageLogCategory.CombatDeath);
+      if (pos) {
+        const isShopkeeper = getComponent(nextState, entityId, ComponentType.Shop) as ShopComponent | undefined;
+        const deadInv = getComponent(nextState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+        const deadEquip = getComponent(nextState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+
+        // 1. Drop carried & equipped items (excluding ShopComponent.inventory and 'no_drop' natural armaments)
+        const droppedEntityIds = new Set<EntityId>();
+        const candidateIds: EntityId[] = [...(deadInv?.items ?? [])];
+        if (deadEquip) {
+          for (const slot of deadEquip.slots) {
+            if (slot.equippedItem !== null && !candidateIds.includes(slot.equippedItem)) {
+              candidateIds.push(slot.equippedItem);
+            }
+          }
+        }
+
+        const remainingInvIds: EntityId[] = [];
+        for (const itemEntityId of candidateIds) {
+          const itemTags = getComponent(nextState, itemEntityId, ComponentType.Tags) as TagsComponent | undefined;
+          if (itemTags?.tags.includes('no_drop')) {
+            remainingInvIds.push(itemEntityId);
+            continue;
+          }
+          const itemComp = getComponent(nextState, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+          const itemDef = itemComp ? nextState.campaign.items[itemComp.itemId] : undefined;
+          if (!itemComp || !itemDef) continue;
+
+          nextState = addComponent(nextState, itemEntityId, { type: ComponentType.Position, x: pos.x, y: pos.y });
+          droppedEntityIds.add(itemEntityId);
+          nextState = addMessage(nextState, `${name} drops ${itemDef.name}.`, MessageLogCategory.CombatDeath);
+        }
+
+        if (deadInv && droppedEntityIds.size > 0) {
+          nextState = addComponent(nextState, entityId, {
+            ...deadInv,
+            items: remainingInvIds
+          });
+        }
+
+        // 2. Roll template-declared lootDrops (or fall back to global campaign lootTable)
+        if (deadTemplate?.lootDrops && deadTemplate.lootDrops.length > 0) {
+          for (const drop of deadTemplate.lootDrops) {
+            if (!nextState.campaign.items[drop.itemId]) continue;
+            if (rng.getUniform() > drop.chance) continue;
+            const count =
+              drop.maxCount <= drop.minCount ? drop.minCount : rng.getUniformInt(drop.minCount, drop.maxCount);
+            const dropDef = nextState.campaign.items[drop.itemId]!;
+            for (let i = 0; i < count; i++) {
+              [nextState] = spawnItem(nextState, drop.itemId, pos.x, pos.y);
+            }
+            const qtyLabel = count > 1 ? `${count}x ` : '';
+            nextState = addMessage(
+              nextState,
+              `${name} drops ${qtyLabel}${dropDef.name}.`,
+              MessageLogCategory.CombatDeath
+            );
+          }
+        } else {
+          const lootTable = nextState.campaign.rules.spawning.lootTable;
+          const lootDropChance = nextState.campaign.rules.spawning.lootDropChance;
+          if (Object.keys(lootTable).length > 0 && rng.getUniform() < lootDropChance) {
+            const itemId = rng.getWeightedValue(lootTable as Record<string, number>);
+            if (itemId && nextState.campaign.items[itemId]) {
+              const itemDef = nextState.campaign.items[itemId]!;
+              [nextState] = spawnItem(nextState, itemId, pos.x, pos.y);
+              nextState = addMessage(nextState, `${name} drops ${itemDef.name}.`, MessageLogCategory.CombatDeath);
+            }
+          }
+        }
+
+        // 3. Roll template currencyDrop or drop carried non-shop wallet balance
+        const currencyCfg = resolveCurrencyConfig(nextState);
+        const dropCurrencyBucket = (denominationId: string, amount: number): void => {
+          if (amount <= 0) return;
+          const matchingCoinDef =
+            Object.values(nextState.campaign.items).find(
+              (def) => def.currencyGrant?.denominationId === denominationId && def.currencyGrant.amount === 1
+            ) ??
+            Object.values(nextState.campaign.items).find((def) => def.currencyGrant?.denominationId === denominationId);
+          if (!matchingCoinDef) return;
+          const [afterSpawn, coinEntityId] = spawnItem(nextState, matchingCoinDef.id, pos.x, pos.y);
+          nextState = afterSpawn;
+          const coinComp = getComponent(nextState, coinEntityId, ComponentType.Item) as ItemComponent | undefined;
+          if (coinComp) {
+            const denomUnitAmount = Math.max(1, matchingCoinDef.currencyGrant?.amount ?? 1);
+            const charges = Math.max(1, Math.round(amount / denomUnitAmount));
+            nextState = addComponent(nextState, coinEntityId, { ...coinComp, charges });
+          }
+          nextState = addMessage(
+            nextState,
+            `${name} drops ${amount} ${denominationId}.`,
+            MessageLogCategory.CombatDeath
+          );
+        };
+
+        if (deadTemplate?.currencyDrop && rng.getUniform() <= deadTemplate.currencyDrop.chance) {
+          const { denominationId, minAmount, maxAmount } = deadTemplate.currencyDrop;
+          const rolled = maxAmount <= minAmount ? minAmount : rng.getUniformInt(minAmount, maxAmount);
+          dropCurrencyBucket(denominationId, rolled);
+        }
+
+        if (!isShopkeeper) {
+          const carriedBalance = getEntityCurrencyBalance(nextState, entityId);
+          if (carriedBalance > 0) {
+            const buckets = decomposeToCoins(carriedBalance, currencyCfg);
+            let droppedAny = false;
+            for (const bucket of buckets) {
+              if (bucket.amount > 0) {
+                dropCurrencyBucket(bucket.id, bucket.amount);
+                droppedAny = true;
+              }
+            }
+            if (!droppedAny) {
+              nextState = addMessage(
+                nextState,
+                `${name} carried ${formatCurrency(carriedBalance, currencyCfg)}.`,
+                MessageLogCategory.CombatDeath
+              );
+            }
           }
         }
       }

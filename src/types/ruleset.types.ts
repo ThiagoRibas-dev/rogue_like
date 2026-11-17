@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Verb } from '../constants/verbs.constants.ts';
-import type { CampaignData } from './campaign.types.ts';
+import type { CampaignData, CurrencyConfig } from './campaign.types.ts';
 import type { CardinalFacing } from './components/world_components.types.ts';
 import type { GameEvent } from './events.types.ts';
 import type { EntityId, GameState, TargetingContext } from './game-state.types.ts';
@@ -366,4 +366,87 @@ export interface RulesetContract {
    * @returns Updated GameState.
    */
   onWorldHourElapsed?(state: GameState, hoursElapsed: number): GameState;
+
+  /**
+   * Optional hook returning the ruleset's canonical multi-denomination currency configuration
+   * when a campaign's `rules.json` does not supply an explicit override.
+   */
+  getDefaultCurrencyConfig?(): CurrencyConfig;
+
+  /**
+   * Optional hook allowing a ruleset cartridge to adjust shop buy/sell pricing
+   * (e.g. Appraise accuracy, Charisma/Diplomacy discounts, Alignment/Guild bias).
+   */
+  evaluateTradePriceModifier?(state: GameState, context: TradePriceModifierContext): TradePriceModifierResult | null;
+
+  /**
+   * Optional hook resolving a cartridge-specific social haggle skill check during trade
+   * (`appraise`, `diplomacy`, `bluff`, `intimidate`).
+   */
+  resolveTradeSocialSkill?(
+    state: GameState,
+    actorId: EntityId,
+    npcId: EntityId,
+    skillId: string
+  ): TradeSocialSkillResult | null;
+
+  /**
+   * Optional hook evaluating a skill check triggered inside branching dialogue nodes (`skill_check`).
+   */
+  evaluateDialogueSkillCheck?(
+    state: GameState,
+    actorId: EntityId,
+    npcId: EntityId | undefined,
+    skillId: string,
+    dc: number
+  ): DialogueSkillCheckResult;
+
+  /**
+   * Optional hook returning an actor's static skill modifier for declarative `skill_modifier` predicates.
+   */
+  getActorSkillModifier?(state: Readonly<GameState>, actorId: EntityId, skillId: string): number;
+
+  /**
+   * Optional hook invoked at the end of `spawnEntity` to hydrate ruleset components,
+   * combat HP/BAB/level, and spatial footprints from templates and archetypes.
+   */
+  onEntitySpawned?(state: GameState, entityId: EntityId): GameState;
+
+  /**
+   * Optional hook computing kill XP reward according to ruleset laws (e.g. DMG Table 2-6 CR vs ECL).
+   */
+  resolveKillXpReward?(state: Readonly<GameState>, killerId: EntityId, victimId: EntityId): number;
+}
+
+/** Context passed to `RulesetContract.evaluateTradePriceModifier`. */
+export interface TradePriceModifierContext {
+  readonly shopEntityId: EntityId;
+  readonly buyerEntityId: EntityId;
+  readonly isSellingToShop: boolean;
+}
+
+/** Price multiplier adjustments contributed by the active ruleset cartridge. */
+export interface TradePriceModifierResult {
+  readonly markupDelta: number;
+  readonly sellMultiplierBonus?: number | undefined;
+  readonly annotations?: ReadonlyArray<string> | undefined;
+}
+
+/** Outcome of a ruleset-driven social skill attempt inside a trade session. */
+export interface TradeSocialSkillResult {
+  readonly state: GameState;
+  readonly success: boolean;
+  readonly rollTotal: number;
+  readonly dc: number;
+  readonly message: string;
+}
+
+/** Outcome of a ruleset-driven `skill_check` consequence inside dialogue. */
+export interface DialogueSkillCheckResult {
+  readonly state: GameState;
+  readonly success: boolean;
+  readonly rollTotal: number;
+  readonly dc: number;
+  readonly margin: number;
+  readonly breakdown: string;
 }

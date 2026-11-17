@@ -10,6 +10,7 @@ import type {
   CoatingComponent
 } from '../../types/components.types.ts';
 import { getComponent, addComponent, removeEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
+import { getEntityCurrencyBalance, resolveCurrencyConfig, toBaseUnits } from '../currency.system.ts';
 import { applyItemEffect } from '../effects.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 
@@ -47,6 +48,22 @@ export const playerConditions = {
       }
     }
     return false;
+  },
+  has_currency: (
+    state: Readonly<GameState>,
+    _event: GameEvent,
+    condition: Extract<ConditionPredicate, { type: 'has_currency' }>
+  ): boolean => {
+    const entityId =
+      condition._playerEntityId ??
+      condition.entityId ??
+      state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+    if (entityId === undefined) return false;
+
+    const cfg = resolveCurrencyConfig(state);
+    const denomId = condition.denominationId ?? cfg.defaultValueDenominationId ?? cfg.baseUnitId;
+    const requiredBaseUnits = toBaseUnits(condition.amount, denomId, cfg);
+    return getEntityCurrencyBalance(state, entityId) >= requiredBaseUnits;
   }
 } satisfies Partial<
   Record<ConditionPredicate['type'], (state: Readonly<GameState>, event: GameEvent, condition: never) => boolean>

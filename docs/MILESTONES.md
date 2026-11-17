@@ -2155,3 +2155,61 @@ Eliminate hot-path simulation and DOM redraw bottlenecks identified from live `p
   - Gated `renderMenus` in `presenter.ts` to execute only when `state.uiMode !== UIMode.Game`.
   - Expanded `#ruleset-selection-overlay` and `#campaign-selection-overlay` modals to `50vw x 100vh` centered with scrollable content panes (`index.html`), verified with `tests/dirty_domains.test.ts` and full 8-stage `./verify.sh` (`295/295` passing tests across 41 suites, `471` SSOT files).
 
+---
+
+# 🚀 Phase 40: Multi-Denomination Currency Engine, Pluggable Trade & Social Systems, Statblock Hydration, CR-to-XP Scaling, Monetary Items & Flagship "Realms of Shroudgarde" Mega-Campaign
+
+Establish a modular, multi-denomination currency engine, overhaul trade and barter with Cartridge-pluggable social skill mechanics (Appraise, Diplomacy, Bluff, Intimidate), implement post-spawn statblock hydration, DMG Table 2-6 CR-to-XP scaling, death drops (loot, gear, currency), author D&D 3.5e monetary items & gemstones, and synthesize the flagship mega-campaign **`realms-of-shroudgarde`** (~75 interconnected areas, towns, roads, towers, shallow/deep dungeons).
+
+## 🟢 Milestone 142: Multi-Denomination Currency Engine, D&D 3.5e Monetary Standards & Auto-Absorbing Purse Balance (Complete)
+
+- [x] **Tier 1 Multi-Denomination Currency Engine (`src/types/campaign/meta.ts`, `src/types/campaign/item.ts`, `src/types/components/item_components.types.ts`, `src/systems/currency.system.ts`)**:
+  - Implemented base-unit multi-denomination currency math (`CurrencyDenominationSchema`, `CurrencyConfigSchema`, `RulesConfigSchema.currency`).
+  - Added pure conversion and formatting helpers (`toBaseUnits`, `convertCurrency`, `decomposeToCoins`, `formatCurrency`, `resolveItemBaseValueInBaseUnits`, `getEntityCurrencyBalance`, `setEntityCurrencyBalance`, `addEntityCurrency`, `transferEntityCurrency`).
+- [x] **D&D 3.5e Monetary Standards & UI Adapter Projections (`src/rulesets/dnd35e/currency.ts`, `src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts`, `src/rulesets/classic/ui/classic_ui_adapter.ts`, `src/rendering/ui/console_inventory.ui.ts`)**:
+  - Authored canonical D&D 3.5e exchange ratios (`1 pp = 10 gp = 20 ep = 100 sp = 1000 cp`).
+  - Auto-absorbs picked up `currencyGrant` items into actor purse balance in `inventory.system.ts`.
+  - Initialized starting gold packages (`startingGoldGp * 100` cp) during character creation and hydrator passes.
+  - Projected formatted currency purse balances onto UI adapter and rendered them in the inventory footer.
+
+## 🟢 Milestone 143: Pluggable Trade & Barter System, TradePriceBreakdown, Merchant Social Dynamics & D&D 3.5e Dialogue Skill Checks (Complete)
+
+- [x] **Cartridge-Pluggable Trade & Social Contracts (`src/types/ruleset.types.ts`, `src/constants/verbs.constants.ts`, `src/types/intents/intent.enum.ts`, `src/types/intents/intent.union.ts`, `src/actions/action.registry.ts`)**:
+  - Added `RulesetContract` hooks: `getDefaultCurrencyConfig`, `evaluateTradePriceModifier`, `resolveTradeSocialSkill`, `evaluateDialogueSkillCheck`, `getActorSkillModifier`.
+  - Added trade verbs (`buy`, `sell`, `appraise`, `haggle`) and `CloseTrade` intent closing `UIMode.Trade`.
+- [x] **Social Triggers & Consequences (`src/types/trigger.types.ts`, `src/systems/trigger/player.ts`, `src/systems/trigger/social.ts`, `src/systems/trigger/social_consequences.ts`, `src/actions/dialogue.actions.ts`)**:
+  - Implemented `has_currency`, `attitude_tier`, and `skill_modifier` trigger conditions.
+  - Implemented `modify_currency`, `set_attitude`, `modify_session_markup`, and `skill_check` trigger consequences.
+- [x] **D&D 3.5e Social Trade Resolvers (`src/rulesets/dnd35e/skills/trade_social_checks.ts`, `src/utils/trade.ts`, `src/systems/shop.system.ts`, `src/rendering/ui/trade.ui.ts`)**:
+  - Implemented `evaluateDnD35eTradePriceModifier`, `resolveDnD35eTradeSocialSkill` (Appraise, Diplomacy, Bluff, Intimidate), and `evaluateDnD35eDialogueSkillCheck`.
+  - Implemented `TradePriceBreakdown` with attitude, hierarchy vacancy, memory facets, and cartridge modifiers.
+  - Rewrote `shop.system.ts` and `trade.ui.ts` with transparent breakdown annotations, merchant attitude, and Cartridge action buttons.
+
+## 🟢 Milestone 144: Pre-Combat/Post-Spawn Statblock Hydration, DMG Table 2-6 CR-to-XP Scaling & Death Drops (Complete)
+
+- [x] **Template Schemas & Referential Validation (`src/types/campaign/entity.ts`, `src/editor/validator/entity.validator.ts`)**:
+  - Added declarative `defaultEquipment`, `lootDrops`, and `currencyDrop` to `EntityTemplateSchema` with referential integrity validation.
+- [x] **DMG Table 2-6 CR-to-XP Scaling Table (`src/rulesets/dnd35e/progression/cr_xp_table.ts`)**:
+  - Implemented exact DMG Table 2-6 CR-vs-ECL calculation (`computeDnD35eCrXp`, `resolveDnD35eEntityCr`, `resolveDnD35eKillXpReward`).
+- [x] **Post-Spawn Statblock Hydration & Death Drop Processing (`src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`, `src/core/ecs/ecs_spawner.ts`, `src/systems/death.system.ts`)**:
+  - Hydrated `RulesetDataComponent` from archetype/template, computed DAG HP (HD + CON + feats), updated `FighterComponent`, and synced spatial footprint on entity spawn.
+  - Distributed DMG kill XP, dropped non-`no_drop` inventory/equipped items, rolled `lootDrops`, and dropped rolled `currencyDrop` coins on actor death.
+
+## 🟢 Milestone 145: Canonical D&D 3.5e Monetary Coins, Gemstones & Coin Pouches System Content Compendium (Complete)
+
+- [x] **Monetary Items & Gemstone System Content (`public/data/rulesets/dnd35e/items/*.json`, `src/rulesets/dnd35e/system_content_item_ids.ts`)**:
+  - Authored 11 canonical monetary and gemstone items: `copper_coin`, `silver_coin`, `electrum_coin`, `gold_coin`, `platinum_coin`, `coin_pouch_silver`, `coin_pouch_gold`, `gem_chalcedony`, `gem_ruby`, `gem_diamond`, `gem_sapphire`.
+  - Registered all items in `system_content_item_ids.ts`, passing 779 modular ruleset files with zero orphans and 100% key parity.
+
+## 🟢 Milestone 146: Flagship Mega-Campaign "The Realms of Shroudgarde" (Complete)
+
+- [x] **Campaign Generation & Registration (`scripts/build-realms-of-shroudgarde.ts`, `public/data/campaigns.json`, `public/data/campaigns/realms-of-shroudgarde/`)**:
+  - Authored automated generator synthesizing 34 campaign JSON files under `realms-of-shroudgarde` using `dnd35e` ruleset.
+  - Built 75 interconnected areas (Hub, Towns, Wilderness Roads, Caves of Chaos, 3 multi-floor Towers, Sunless Crypts, Moathouse, TOEE Levels 1–4, Zuggtmoy Fane, NetHack Dungeons of Doom, Incursion Goblin Warrens & deep vaults).
+  - Authored 56 entity templates (player, vendors, guards, bosses, bestiary humanoids, undead, beasts, elementals), 11 skill-keyed dialogue trees, 16 quests, villains, and factions.
+- [x] **Parity, Topology & Regression Verification (`verify.sh`, `scripts/run-validator.ts`, `scripts/map-codebase.ts`, `docs/CAMPAIGN_TOPOLOGIES.md`, `tests/currency_trade_and_campaign.test.ts`)**:
+  - All 5 campaigns passed validation with 0 errors and 0 warnings.
+  - Mapped complete campaign topology into `docs/CAMPAIGN_TOPOLOGIES.md`.
+  - Added comprehensive 10-test suite `tests/currency_trade_and_campaign.test.ts` (310/310 passing across 43 test suites).
+
+

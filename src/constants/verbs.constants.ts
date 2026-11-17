@@ -21,6 +21,10 @@ export type Verb =
   | 'drink'
   | 'impact'
   | 'barter'
+  | 'buy'
+  | 'sell'
+  | 'appraise'
+  | 'haggle'
   | 'intimidate'
   | 'persuade'
   | 'spare'
@@ -61,6 +65,10 @@ export const VERBS: ReadonlyArray<Verb> = [
   'drink',
   'impact',
   'barter',
+  'buy',
+  'sell',
+  'appraise',
+  'haggle',
   'intimidate',
   'persuade',
   'spare',

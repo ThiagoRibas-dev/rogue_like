@@ -40,6 +40,12 @@ export interface CloseDialogueIntent extends BaseIntent {
   readonly isImmediate: true;
 }
 
+/** Intent to close the active Trade or Services modal overlay. */
+export interface CloseTradeIntent extends BaseIntent {
+  readonly type: IntentType.CloseTrade;
+  readonly isImmediate: true;
+}
+
 /** Intent to toggle the quest log dashboard overlay. */
 export interface ToggleQuestsIntent extends BaseIntent {
   readonly type: IntentType.ToggleQuests;

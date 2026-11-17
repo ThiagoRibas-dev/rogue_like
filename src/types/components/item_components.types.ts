@@ -51,6 +51,7 @@ export interface InventoryComponent {
   readonly type: ComponentType.Inventory;
   readonly items: ReadonlyArray<EntityId>;
   readonly baseCapacity: number;
+  readonly currencyBalance?: number | undefined;
 }
 
 /**

@@ -1,0 +1,713 @@
+{
+  "guard_captain_tree": {
+    "id": "guard_captain_tree",
+    "title": "Constable Derek",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Stand, traveler! The Borderlands are under martial watch. Between the cultist incursions and the trance affliction, I cannot allow careless wanderers through.",
+        "options": [
+          {
+            "id": "opt_diplomacy",
+            "text": "[Diplomacy DC 14] I am an able adventurer here to aid Shroudgarde in securing the frontier.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "diplomacy",
+                "dc": 14,
+                "onSuccessNodeId": "node_diplo_pass",
+                "onFailureNodeId": "node_diplo_fail"
+              }
+            ]
+          },
+          {
+            "id": "opt_intimidate",
+            "text": "[Intimidate DC 16] Out of my way, Constable. I have slain deadlier threats than you.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "intimidate",
+                "dc": 16,
+                "onSuccessNodeId": "node_intim_pass",
+                "onFailureNodeId": "node_intim_fail"
+              }
+            ]
+          },
+          {
+            "id": "opt_leave",
+            "text": "Forgive me, Constable. I will take my leave."
+          }
+        ]
+      },
+      "node_diplo_pass": {
+        "id": "node_diplo_pass",
+        "text": "Well spoken. We need all the steel we can muster. Take this Guard Signet — it proves your authority to explore the ruins and report back.",
+        "options": [
+          {
+            "id": "opt_accept_signet",
+            "text": "Thank you, Constable. I will not fail.",
+            "consequences": [
+              {
+                "type": "set_attitude",
+                "attitude": "friendly"
+              }
+            ]
+          }
+        ]
+      },
+      "node_diplo_fail": {
+        "id": "node_diplo_fail",
+        "text": "Pretty words do not swing a blade against an orc warband. Come back when you have proven your mettle.",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Understood.",
+            "nextNodeId": "root"
+          }
+        ]
+      },
+      "node_intim_pass": {
+        "id": "node_intim_pass",
+        "text": "T-there is no need for hostility! Pass through if you must, but whatever happens out there is on your own head!",
+        "options": [
+          {
+            "id": "opt_pass",
+            "text": "Hmph. Wise choice."
+          }
+        ]
+      },
+      "node_intim_fail": {
+        "id": "node_intim_fail",
+        "text": "You threaten a sworn officer of the realm? Watch your tongue before I have you clapped in irons!",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Step back.",
+            "nextNodeId": "root"
+          }
+        ]
+      }
+    }
+  },
+  "bertram_trade_tree": {
+    "id": "bertram_trade_tree",
+    "title": "Barkeep Bertram",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Welcome to the Golden Grain, stranger! Finest ale and warmest hearth in the Borderlands. What can I fetch you?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "Show me your rations and provisions.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_appraise",
+            "text": "[Appraise DC 12] Your supplier from Orlane overcharged you on that batch of wheat.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "appraise",
+                "dc": 12,
+                "onSuccessNodeId": "node_appraise_win",
+                "onFailureNodeId": "node_appraise_loss"
+              }
+            ]
+          },
+          {
+            "id": "opt_bluff",
+            "text": "[Bluff DC 14] Constable Derek sent me for complimentary provisions for our patrol.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "bluff",
+                "dc": 14,
+                "onSuccessNodeId": "node_bluff_win",
+                "onFailureNodeId": "node_bluff_loss"
+              }
+            ]
+          },
+          {
+            "id": "opt_rumors",
+            "text": "Any rumors of the surrounding ruins?",
+            "nextNodeId": "node_rumors"
+          }
+        ]
+      },
+      "node_appraise_win": {
+        "id": "node_appraise_win",
+        "text": "By the gods, you are right! The grain sacks are cut with chaff. You have sharp eyes! Here, take a 15% discount on anything in my tavern.",
+        "options": [
+          {
+            "id": "opt_trade_disc",
+            "text": "Much appreciated, Bertram. Let me see your wares.",
+            "consequences": [
+              {
+                "type": "modify_session_markup",
+                "delta": -0.15
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_appraise_loss": {
+        "id": "node_appraise_loss",
+        "text": "Nonsense! Bertram knows good barley when he sees it. No discounts for amateur critics!",
+        "options": [
+          {
+            "id": "opt_trade_std",
+            "text": "Fair enough. Show me what you have.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_bluff_win": {
+        "id": "node_bluff_win",
+        "text": "Ah, Derek`s boys! Never let it be said Bertram neglected the town guard. Here is a fresh loaf of crusty bread on the house!",
+        "options": [
+          {
+            "id": "opt_trade_free",
+            "text": "Much obliged.",
+            "consequences": [
+              {
+                "type": "modify_currency",
+                "amount": 50
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_bluff_loss": {
+        "id": "node_bluff_loss",
+        "text": "Derek pays in coin like everyone else! Do you take me for a fool?",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Never mind.",
+            "nextNodeId": "root"
+          }
+        ]
+      },
+      "node_rumors": {
+        "id": "node_rumors",
+        "text": "They say dark chanting echoes from the old Moathouse at midnight. And deeper still, past the Sunless Crypts, lies an endless subterranean abyss...",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Thank you for the warning.",
+            "nextNodeId": "root"
+          }
+        ]
+      }
+    }
+  },
+  "laurent_smith_tree": {
+    "id": "laurent_smith_tree",
+    "title": "Gold Dwarf Laurent",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Clang and sparks! Keep back from the forge coals, surface-dweller. Looking for dwarf-forged iron that will not shatter against goblin bone?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "Let me see your weapons and armor.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_appraise",
+            "text": "[Appraise DC 15] This breastplate has exceptional fold-welding. You take immense pride in your craft.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "appraise",
+                "dc": 15,
+                "onSuccessNodeId": "node_smith_praise_pass",
+                "onFailureNodeId": "node_smith_praise_fail"
+              }
+            ]
+          },
+          {
+            "id": "opt_adamantine",
+            "text": "Can you forge adamantine gear?",
+            "nextNodeId": "node_ore"
+          }
+        ]
+      },
+      "node_smith_praise_pass": {
+        "id": "node_smith_praise_pass",
+        "text": "Ha! A surface-dweller with genuine appreciation for proper metallurgy! It is rare to meet someone who understands temper and quench. For you, artisan discount!",
+        "options": [
+          {
+            "id": "opt_trade_pass",
+            "text": "Show me your armory, Master Laurent.",
+            "consequences": [
+              {
+                "type": "modify_session_markup",
+                "delta": -0.1
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_smith_praise_fail": {
+        "id": "node_smith_praise_fail",
+        "text": "Do not flatter me to get a coin shaved off! Good steel costs what it costs.",
+        "options": [
+          {
+            "id": "opt_trade_std",
+            "text": "Fair enough. Let me browse.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_ore": {
+        "id": "node_ore",
+        "text": "If you bring me pure adamantine ore from the deepest vaults beneath the Dungeons of Doom, I will forge weapons worthy of kings!",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "I will remember that.",
+            "nextNodeId": "root"
+          }
+        ]
+      }
+    }
+  },
+  "isabelle_healer_tree": {
+    "id": "isabelle_healer_tree",
+    "title": "Aasimar Isabelle",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "May the light guide your steps, traveler. The wounded from the borders arrive daily. How may the sanctuary aid you?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "I need restorative potions and divine blessings.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_diplomacy",
+            "text": "[Diplomacy DC 13] The road is perilous, sister. A blessing for our quest would save many lives.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "diplomacy",
+                "dc": 13,
+                "onSuccessNodeId": "node_heal_pass",
+                "onFailureNodeId": "node_heal_fail"
+              }
+            ]
+          }
+        ]
+      },
+      "node_heal_pass": {
+        "id": "node_heal_pass",
+        "text": "Your heart is pure. Go with the Dawnfather`s blessing, and take these consecrated elixirs at sanctuary cost.",
+        "options": [
+          {
+            "id": "opt_trade_bless",
+            "text": "Thank you, Sister Isabelle.",
+            "consequences": [
+              {
+                "type": "modify_session_markup",
+                "delta": -0.15
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_heal_fail": {
+        "id": "node_heal_fail",
+        "text": "Our supplies are stretched thin caring for refugees. I can only offer what is listed in our apothecary.",
+        "options": [
+          {
+            "id": "opt_trade_std",
+            "text": "I understand.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "luc_scout_tree": {
+    "id": "luc_scout_tree",
+    "title": "Wood Elf Luc",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Step lightly. The woods have eyes, and not all of them belong to birds. Need bows, quivers, or scouts` gear?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "Show me your archery equipment.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_tracks",
+            "text": "What trails lead towards the Ravine of Chaos?",
+            "nextNodeId": "node_tracks"
+          }
+        ]
+      },
+      "node_tracks": {
+        "id": "node_tracks",
+        "text": "Follow the northern deer paths through La Forêt Hantée. Watch the canopy — giant spiders nest above the moss line.",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "I will watch my head.",
+            "nextNodeId": "root"
+          }
+        ]
+      }
+    }
+  },
+  "silas_gem_merchant_tree": {
+    "id": "silas_gem_merchant_tree",
+    "title": "Silas the Gem Trader",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Rubies, sapphires, uncut chalcedony! Currency of empires and wizards alike. Are you buying or selling precious stones today?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "Let me trade in gems and coin pouches.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_appraise",
+            "text": "[Appraise DC 16] Your rubies from the south carry high refraction. Let us make an equitable deal.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "appraise",
+                "dc": 16,
+                "onSuccessNodeId": "node_gem_pass",
+                "onFailureNodeId": "node_gem_fail"
+              }
+            ]
+          }
+        ]
+      },
+      "node_gem_pass": {
+        "id": "node_gem_pass",
+        "text": "Splendid! A true connoisseur of gemstones! I will pay top coin for any jewels you unearth in the tombs.",
+        "options": [
+          {
+            "id": "opt_trade_boost",
+            "text": "Let us negotiate.",
+            "consequences": [
+              {
+                "type": "modify_session_markup",
+                "delta": -0.15
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_gem_fail": {
+        "id": "node_gem_fail",
+        "text": "My prices reflect the standard guild tariff. Not a copper less!",
+        "options": [
+          {
+            "id": "opt_trade_std",
+            "text": "Understood. Open the wares.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "alden_mage_tree": {
+    "id": "alden_mage_tree",
+    "title": "Archmage Alden",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Ah, a wanderer entering my tower without triggering the warding runes. Impressive. Do you seek arcane knowledge, scrolls, or wands?",
+        "options": [
+          {
+            "id": "opt_trade",
+            "text": "I seek magical scrolls and wands.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          },
+          {
+            "id": "opt_bluff",
+            "text": "[Bluff DC 15] I am an emissary from the High Arcane Synod evaluating frontier towers.",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "bluff",
+                "dc": 15,
+                "onSuccessNodeId": "node_mage_pass",
+                "onFailureNodeId": "node_mage_fail"
+              }
+            ]
+          }
+        ]
+      },
+      "node_mage_pass": {
+        "id": "node_mage_pass",
+        "text": "The Synod? I was not notified! Of course, my facilities are at the disposal of esteemed colleagues.",
+        "options": [
+          {
+            "id": "opt_trade_pass",
+            "text": "Show me your grimoires.",
+            "consequences": [
+              {
+                "type": "modify_session_markup",
+                "delta": -0.2
+              },
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      },
+      "node_mage_fail": {
+        "id": "node_mage_fail",
+        "text": "The Synod uses celestial seals, charlatan. Do not insult my centuries of study with crude deception!",
+        "options": [
+          {
+            "id": "opt_trade_std",
+            "text": "My apologies. Let me view your inventory.",
+            "consequences": [
+              {
+                "type": "open_barter"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "elena_scholar_tree": {
+    "id": "elena_scholar_tree",
+    "title": "Elena the Chronicler",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "I transcribe the histories of Shroudgarde and the fallen temples. What lore do you seek?",
+        "options": [
+          {
+            "id": "opt_toee",
+            "text": "Tell me of the Temple of Elemental Evil.",
+            "nextNodeId": "node_toee"
+          },
+          {
+            "id": "opt_trance",
+            "text": "What is the trance affliction gripping the peasants?",
+            "nextNodeId": "node_trance"
+          }
+        ]
+      },
+      "node_toee": {
+        "id": "node_toee",
+        "text": "Built atop a subterranean tear into the Lower Planes, the Temple was sealed decades ago. Yet rumors say cultists reassemble in the ruins of the Moathouse to breach the seals...",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Thank you, Elena.",
+            "nextNodeId": "root"
+          }
+        ]
+      },
+      "node_trance": {
+        "id": "node_trance",
+        "text": "The afflicted wander as if dreaming, muttering of a fungal goddess in the deep fane. It is no natural disease; it is the spores of Zuggtmoy.",
+        "options": [
+          {
+            "id": "opt_back",
+            "text": "Frightening. I must be careful.",
+            "nextNodeId": "root"
+          }
+        ]
+      }
+    }
+  },
+  "villager_dialogue_tree": {
+    "id": "villager_dialogue_tree",
+    "title": "Shroudgarde Commoner",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Please, traveler... keep the monsters away from our thatched roofs. The night howls grow louder every moon.",
+        "options": [
+          {
+            "id": "opt_comfort",
+            "text": "Stay safe inside the walls. We will handle the menace."
+          }
+        ]
+      }
+    }
+  },
+  "lareth_parley_tree": {
+    "id": "lareth_parley_tree",
+    "title": "Lareth the Beautiful",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "Another mercenary sent by Constable Derek? How tragic that such vitality must end so brutally in the mud.",
+        "options": [
+          {
+            "id": "opt_intimidate",
+            "text": "[Intimidate DC 17] Yield the Moathouse, Lareth, or Derek will display your head on the gate!",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "intimidate",
+                "dc": 17,
+                "onSuccessNodeId": "node_lareth_shake",
+                "onFailureNodeId": "node_lareth_laugh"
+              }
+            ]
+          },
+          {
+            "id": "opt_fight",
+            "text": "Draw your blade, cultist scum!"
+          }
+        ]
+      },
+      "node_lareth_shake": {
+        "id": "node_lareth_shake",
+        "text": "You... you are stronger than the others. Perhaps we can reach an accommodation before steel is drawn...",
+        "options": [
+          {
+            "id": "opt_strike",
+            "text": "No accommodations with the servants of evil!"
+          }
+        ]
+      },
+      "node_lareth_laugh": {
+        "id": "node_lareth_laugh",
+        "text": "Hahaha! Empty bravado! The Temple of Elemental Evil will swallow your pathetic bones!",
+        "options": [
+          {
+            "id": "opt_strike",
+            "text": "Have at you!"
+          }
+        ]
+      }
+    }
+  },
+  "dragon_dialogue_tree": {
+    "id": "dragon_dialogue_tree",
+    "title": "Pyroclast the Red Wyrm",
+    "startNodeId": "root",
+    "nodes": {
+      "root": {
+        "id": "root",
+        "text": "A mortal worm dares trespass upon my golden hoard? Speak your final words before you are reduced to cinder and ash!",
+        "options": [
+          {
+            "id": "opt_diplomacy",
+            "text": "[Diplomacy DC 20] O Great Pyroclast, I bring offerings and tribute from the surface lords!",
+            "consequences": [
+              {
+                "type": "skill_check",
+                "skillId": "diplomacy",
+                "dc": 20,
+                "onSuccessNodeId": "node_dragon_pass",
+                "onFailureNodeId": "node_dragon_fail"
+              }
+            ]
+          },
+          {
+            "id": "opt_fight",
+            "text": "I come not to bow, but to claim your hoard and slay you!"
+          }
+        ]
+      },
+      "node_dragon_pass": {
+        "id": "node_dragon_pass",
+        "text": "Hmm. You show proper reverence, tiny creature. Drop your tribute and crawl away, while my mercy endures.",
+        "options": [
+          {
+            "id": "opt_flee",
+            "text": "Tread carefully backward."
+          }
+        ]
+      },
+      "node_dragon_fail": {
+        "id": "node_dragon_fail",
+        "text": "Fool! Your tribute is pitiful and your arrogance is fatal! BURN!",
+        "options": [
+          {
+            "id": "opt_combat",
+            "text": "Brace for flame!"
+          }
+        ]
+      }
+    }
+  }
+}

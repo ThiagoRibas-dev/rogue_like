@@ -1,0 +1,259 @@
+{
+  "key_iron": {
+    "id": "key_iron",
+    "name": "Iron Dungeon Key",
+    "unidentifiedName": "Heavy Key",
+    "description": "A sturdy iron key used for dungeon doors.",
+    "glyph": "$",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "spriteId": "item_metal_key",
+    "weight": 0.2,
+    "baseValue": 5,
+    "category": "tool",
+    "tags": [
+      "key",
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "key_bronze": {
+    "id": "key_bronze",
+    "name": "Bronze Crypt Key",
+    "unidentifiedName": "Bronze Key",
+    "description": "An ancient verdigris-coated bronze key for crypt vaults.",
+    "glyph": "$",
+    "fg": "#cd7f32",
+    "bg": "transparent",
+    "spriteId": "item_primitive_key",
+    "weight": 0.2,
+    "baseValue": 10,
+    "category": "tool",
+    "tags": [
+      "key",
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "key_gold": {
+    "id": "key_gold",
+    "name": "Ornate Golden Key",
+    "unidentifiedName": "Golden Key",
+    "description": "A gilded master key opening high sanctum locks.",
+    "glyph": "$",
+    "fg": "#f1c40f",
+    "bg": "transparent",
+    "spriteId": "item_gold_key",
+    "weight": 0.3,
+    "baseValue": 50,
+    "category": "tool",
+    "tags": [
+      "key",
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "key_water_temple": {
+    "id": "key_water_temple",
+    "name": "Valve Spanner Key",
+    "unidentifiedName": "Heavy Brass Tool",
+    "description": "Heavy mechanical spanner used to unlock the flooded drainage valves.",
+    "glyph": "$",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "spriteId": "item_metal_key",
+    "weight": 2,
+    "baseValue": 20,
+    "category": "tool",
+    "tags": [
+      "key",
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "elemental_gem_air": {
+    "id": "elemental_gem_air",
+    "name": "Air Spire Crystal",
+    "unidentifiedName": "Zephyr Gem",
+    "description": "A gem infused with the essence of howling mountain gales.",
+    "glyph": "*",
+    "fg": "#ecf0f1",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.5,
+    "baseValue": 500,
+    "category": "tool",
+    "tags": [
+      "relic",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "elemental_gem_earth": {
+    "id": "elemental_gem_earth",
+    "name": "Earth Spire Core",
+    "unidentifiedName": "Ochre Stone",
+    "description": "A dense stone vibrating with subterranean resonance.",
+    "glyph": "*",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 1,
+    "baseValue": 500,
+    "category": "tool",
+    "tags": [
+      "relic",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "elemental_gem_fire": {
+    "id": "elemental_gem_fire",
+    "name": "Fire Spire Ember",
+    "unidentifiedName": "Fiery Ruby",
+    "description": "An ember burning eternally with elemental flame.",
+    "glyph": "*",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.5,
+    "baseValue": 500,
+    "category": "tool",
+    "tags": [
+      "relic",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "elemental_gem_water": {
+    "id": "elemental_gem_water",
+    "name": "Water Spire Pearl",
+    "unidentifiedName": "Azure Pearl",
+    "description": "A radiant pearl containing pure elemental moisture.",
+    "glyph": "*",
+    "fg": "#3498db",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.5,
+    "baseValue": 500,
+    "category": "tool",
+    "tags": [
+      "relic",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "orb_of_elements": {
+    "id": "orb_of_elements",
+    "name": "Orb of the Elemental Spheres",
+    "unidentifiedName": "Ancient Spherical Artifact",
+    "description": "A mythical orb capable of quelling the primal forces of Chaos.",
+    "glyph": "*",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 3,
+    "baseValue": 5000,
+    "category": "tool",
+    "tags": [
+      "artifact",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "sunless_relic": {
+    "id": "sunless_relic",
+    "name": "Sunless Curate Reliquary",
+    "unidentifiedName": "Ivory Relic",
+    "description": "The sacred holy relic of the ancient cathedral buried beneath Shroudgarde.",
+    "glyph": "*",
+    "fg": "#ffffff",
+    "bg": "transparent",
+    "spriteId": "item_ankh",
+    "weight": 2,
+    "baseValue": 1200,
+    "category": "tool",
+    "tags": [
+      "relic",
+      "tool"
+    ],
+    "isArtifact": true
+  },
+  "moathouse_ledger": {
+    "id": "moathouse_ledger",
+    "name": "Clandestine Ledger",
+    "unidentifiedName": "Leather Tome",
+    "description": "Documents tracking illicit arms shipments between the Moathouse and the Temple.",
+    "glyph": "?",
+    "fg": "#e67e22",
+    "bg": "transparent",
+    "spriteId": "item_book",
+    "weight": 1,
+    "baseValue": 100,
+    "category": "tool",
+    "tags": [
+      "quest_item",
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "shroudgarde_signet": {
+    "id": "shroudgarde_signet",
+    "name": "Shroudgarde Guard Signet",
+    "unidentifiedName": "Iron Ring",
+    "description": "Official seal of Constable Derek granting passage beyond the gates.",
+    "glyph": "=",
+    "fg": "#34495e",
+    "bg": "transparent",
+    "spriteId": "item_silver_signet_ring",
+    "weight": 0.1,
+    "baseValue": 50,
+    "category": "tool",
+    "tags": [
+      "tool"
+    ],
+    "isArtifact": false
+  },
+  "ration_iron": {
+    "id": "ration_iron",
+    "name": "Iron Rations",
+    "unidentifiedName": "Dried Rations",
+    "description": "Salted meats and hardtack for long dungeon excursions.",
+    "glyph": "%",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "spriteId": "item_bread",
+    "weight": 1,
+    "baseValue": 0.5,
+    "category": "consumable",
+    "tags": [
+      "consumable"
+    ],
+    "consumable": {
+      "effectId": "satiate_500",
+      "charges": 2
+    },
+    "isArtifact": false
+  },
+  "ration_fresh_bread": {
+    "id": "ration_fresh_bread",
+    "name": "Fresh Crusty Bread",
+    "unidentifiedName": "Loaf of Bread",
+    "description": "Warm bread baked daily by Shroudgarde commoners.",
+    "glyph": "%",
+    "fg": "#f39c12",
+    "bg": "transparent",
+    "spriteId": "item_bread",
+    "weight": 0.5,
+    "baseValue": 0.05,
+    "category": "consumable",
+    "tags": [
+      "consumable"
+    ],
+    "consumable": {
+      "effectId": "satiate_500",
+      "charges": 1
+    },
+    "isArtifact": false
+  }
+}

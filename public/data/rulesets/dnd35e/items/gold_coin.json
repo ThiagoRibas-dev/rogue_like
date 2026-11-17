@@ -1,0 +1,21 @@
+{
+  "gold_coin": {
+    "id": "gold_coin",
+    "name": "Gold Piece",
+    "unidentifiedName": "Gold Piece",
+    "description": "A polished gold piece, the standard currency of adventuring merchants (1 gp = 100 cp).",
+    "glyph": "$",
+    "fg": "#ffd700",
+    "bg": "transparent",
+    "spriteId": "item_coin",
+    "weight": 0.02,
+    "baseValue": 1,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "gp",
+      "amount": 1
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

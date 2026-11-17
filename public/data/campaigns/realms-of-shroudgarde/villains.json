@@ -1,0 +1,42 @@
+{
+  "zuggtmoy": {
+    "id": "zuggtmoy",
+    "name": "Zuggtmoy, Demon Queen of Fungi",
+    "goals": [
+      "spread_fungal_trance",
+      "consume_realms"
+    ],
+    "recruitmentPreferences": {
+      "targetTags": [
+        "corrupted",
+        "cultist"
+      ],
+      "leverageWeight": {
+        "money": 1,
+        "ideology": 5,
+        "coercion": 4,
+        "ego": 2
+      }
+    }
+  },
+  "lareth": {
+    "id": "lareth",
+    "name": "Lareth the Beautiful",
+    "goals": [
+      "reopen_temple_seals",
+      "dominate_borderlands"
+    ],
+    "recruitmentPreferences": {
+      "targetTags": [
+        "cultist",
+        "bandit"
+      ],
+      "leverageWeight": {
+        "money": 4,
+        "ideology": 2,
+        "coercion": 3,
+        "ego": 5
+      }
+    }
+  }
+}

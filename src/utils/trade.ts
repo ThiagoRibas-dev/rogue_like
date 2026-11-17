@@ -1,5 +1,8 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
+import type { ItemDefinition } from '../types/campaign.types.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getActiveRuleset } from '../rulesets/registry.ts';
+import { resolveCurrencyConfig, resolveItemBaseValueInBaseUnits } from '../systems/currency.system.ts';
 import { ComponentType } from '../types/components.types.ts';
 import type { ShopComponent, MemoryComponent, FactionComponent } from '../types/components.types.ts';
 
@@ -52,9 +55,18 @@ export const MIN_TRADE_MULTIPLIER = 0.1;
 export const BASE_SELL_TO_SHOP_MULTIPLIER = 0.25;
 
 /**
- * Minimum sell-to-shop multiplier allowed to prevent items being sold for 0 gold.
+ * Minimum sell-to-shop multiplier allowed to prevent items being sold for 0 coins.
  */
 export const MIN_SELL_TO_SHOP_MULTIPLIER = 0.05;
+
+/**
+ * Detailed trade pricing breakdown showing final multiplier and contributor annotations.
+ */
+export interface TradePriceBreakdown {
+  readonly finalBuyMultiplier: number;
+  readonly finalSellMultiplier: number;
+  readonly annotations: ReadonlyArray<string>;
+}
 
 /**
  * Checks if there is a vacancy in any of the top-tier ranks of the specified hierarchy.
@@ -78,73 +90,67 @@ export function hasTopTierVacancy(state: GameState, hierarchyId: string): boolea
 }
 
 /**
- * Calculates the effective price of an item given its base value,
- * applying the merchant's markup, social modifiers, and faction standing.
- *
- * @param state The current GameState.
- * @param baseValue The base value of the item.
- * @param shopEntityId The entity ID of the NPC merchant.
- * @param buyerEntityId The entity ID of the player/buyer.
- * @param isSellingToShop True if the player is selling an item to the merchant.
- * @returns The final calculated gold price.
+ * Computes the effective buy/sell price multipliers and human-readable factor annotations
+ * combining merchant markup, nemesis hierarchy vacancies, NPC social memory, and Cartridge hooks.
  */
-export function getEffectivePrice(
+export function getTradePriceBreakdown(
   state: GameState,
-  baseValue: number,
   shopEntityId: EntityId,
   buyerEntityId: EntityId,
   isSellingToShop = false
-): number {
-  if (baseValue <= 0) return 0;
-
+): TradePriceBreakdown {
   const shop = getComponent(state, shopEntityId, ComponentType.Shop) as ShopComponent | undefined;
-  if (!shop) return baseValue;
-
-  let multiplier = shop.markupMultiplier;
-
-  // Apply economic hierarchy penalty if supplier has top-tier vacancies
-  if (shop.supplierHierarchyId && hasTopTierVacancy(state, shop.supplierHierarchyId)) {
-    multiplier += HIERARCHY_VACANCY_MARKUP_PENALTY;
+  if (!shop) {
+    return {
+      finalBuyMultiplier: 1.0,
+      finalSellMultiplier: BASE_SELL_TO_SHOP_MULTIPLIER,
+      annotations: []
+    };
   }
 
-  // Apply temporary session modifier (from intimidate/persuade)
+  let multiplier = shop.markupMultiplier;
+  const annotations: string[] = [];
+
+  if (shop.supplierHierarchyId && hasTopTierVacancy(state, shop.supplierHierarchyId)) {
+    multiplier += HIERARCHY_VACANCY_MARKUP_PENALTY;
+    annotations.push(`Supply Shortage (+${Math.round(HIERARCHY_VACANCY_MARKUP_PENALTY * 100)}%)`);
+  }
+
   const memory = getComponent(state, shopEntityId, ComponentType.Memory) as MemoryComponent | undefined;
   if (memory) {
-    if (memory.sessionMarkupModifier !== undefined) {
+    if (memory.sessionMarkupModifier !== undefined && memory.sessionMarkupModifier !== 0) {
       multiplier += memory.sessionMarkupModifier;
+      const pct = Math.round(memory.sessionMarkupModifier * 100);
+      annotations.push(`Haggling (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
     }
 
-    // Apply social state modifiers (M45)
     if (memory.annoyedDuration && memory.annoyedDuration > 0) {
       multiplier += ANNOYED_MARKUP_MODIFIER;
+      annotations.push(`Annoyed (+${Math.round(ANNOYED_MARKUP_MODIFIER * 100)}%)`);
     } else if (memory.gratefulDuration && memory.gratefulDuration > 0) {
       multiplier -= GRATEFUL_DISCOUNT_MODIFIER;
+      annotations.push(`Grateful (-${Math.round(GRATEFUL_DISCOUNT_MODIFIER * 100)}%)`);
     }
 
-    // Apply faction standing
     const buyerFaction = getComponent(state, buyerEntityId, ComponentType.Faction) as FactionComponent | undefined;
     if (buyerFaction) {
       const standing = memory.factionStandings[buyerFaction.factionId] ?? 0;
-      // Convert standing to a modifier. e.g. +100 standing = -20% discount.
       const standingModifier = -(standing / FACTION_STANDING_PRICE_DIVISOR);
-      multiplier += standingModifier;
+      if (standingModifier !== 0) {
+        multiplier += standingModifier;
+        const pct = Math.round(standingModifier * 100);
+        annotations.push(`Standing (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
+      }
     }
 
-    // Apply personality modifiers (M43)
     if (memory.facets) {
       const greedy = memory.facets['greedy'] ?? PERSONALITY_FACET_NEUTRAL_VAL;
       const generous = memory.facets['generous'] ?? PERSONALITY_FACET_NEUTRAL_VAL;
-
-      // facets are 0-100. 50 is neutral.
-      // 100 greedy = +20% markup.
       const greedyModifier = (greedy - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
-      // 100 generous = -20% markup.
       const generousModifier = -(generous - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
-
       multiplier += greedyModifier + generousModifier;
     }
 
-    // Apply relationship axes
     if (memory.relationshipAxes) {
       const loyalty = memory.relationshipAxes['loyalty'] ?? 0;
       const fear = memory.relationshipAxes['fear'] ?? 0;
@@ -158,17 +164,65 @@ export function getEffectivePrice(
     }
   }
 
-  // Ensure multiplier doesn't drop below a minimum threshold
-  const finalMultiplier = Math.max(MIN_TRADE_MULTIPLIER, multiplier);
-
-  if (isSellingToShop) {
-    // When the player sells to the shop, the base offer is 25% of the value.
-    // If the merchant has a high markup (greedy, annoyed), they offer less.
-    // If they have a low markup (generous, grateful), they offer more.
-    const sellMultiplier = Math.max(MIN_SELL_TO_SHOP_MULTIPLIER, BASE_SELL_TO_SHOP_MULTIPLIER * (1 / finalMultiplier));
-    return Math.max(1, Math.floor(baseValue * sellMultiplier));
+  let sellMultiplierBonus = 0;
+  const rulesetMod = getActiveRuleset(state).evaluateTradePriceModifier?.(state, {
+    shopEntityId,
+    buyerEntityId,
+    isSellingToShop
+  });
+  if (rulesetMod) {
+    multiplier += rulesetMod.markupDelta;
+    sellMultiplierBonus += rulesetMod.sellMultiplierBonus ?? 0;
+    if (rulesetMod.annotations) {
+      annotations.push(...rulesetMod.annotations);
+    }
   }
 
-  // When buying from the shop
-  return Math.max(1, Math.floor(baseValue * finalMultiplier));
+  const finalBuyMultiplier = Math.max(MIN_TRADE_MULTIPLIER, multiplier);
+  const finalSellMultiplier = Math.max(
+    MIN_SELL_TO_SHOP_MULTIPLIER,
+    (BASE_SELL_TO_SHOP_MULTIPLIER + sellMultiplierBonus) * (1 / finalBuyMultiplier)
+  );
+
+  return {
+    finalBuyMultiplier,
+    finalSellMultiplier,
+    annotations
+  };
+}
+
+/**
+ * Calculates the effective price of an item given its base value (in active base currency units),
+ * applying the merchant's markup, social modifiers, faction standing, and Cartridge ruleset modifiers.
+ */
+export function getEffectivePrice(
+  state: GameState,
+  baseValueInBaseUnits: number,
+  shopEntityId: EntityId,
+  buyerEntityId: EntityId,
+  isSellingToShop = false
+): number {
+  if (baseValueInBaseUnits <= 0) return 0;
+
+  const breakdown = getTradePriceBreakdown(state, shopEntityId, buyerEntityId, isSellingToShop);
+  if (isSellingToShop) {
+    return Math.max(1, Math.floor(baseValueInBaseUnits * breakdown.finalSellMultiplier));
+  }
+  return Math.max(1, Math.floor(baseValueInBaseUnits * breakdown.finalBuyMultiplier));
+}
+
+/**
+ * Resolves an item definition's `baseValue` (honoring `currencyUnit` vs `defaultValueDenominationId`)
+ * into effective buy/sell base currency units for a given merchant and buyer.
+ */
+export function getEffectiveItemPriceInBaseUnits(
+  state: GameState,
+  itemDef: Pick<ItemDefinition, 'baseValue' | 'currencyUnit'>,
+  shopEntityId: EntityId,
+  buyerEntityId: EntityId,
+  isSellingToShop = false
+): number {
+  const currencyConfig = resolveCurrencyConfig(state);
+  const baseValueUnits = resolveItemBaseValueInBaseUnits(itemDef, currencyConfig);
+  return getEffectivePrice(state, baseValueUnits, shopEntityId, buyerEntityId, isSellingToShop);
 }

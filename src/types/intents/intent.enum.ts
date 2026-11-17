@@ -31,6 +31,7 @@ export const enum IntentType {
   StartDialogue = 'StartDialogue',
   SelectDialogueOption = 'SelectDialogueOption',
   CloseDialogue = 'CloseDialogue',
+  CloseTrade = 'CloseTrade',
   ToggleQuests = 'ToggleQuests',
   ToggleInvestigation = 'ToggleInvestigation',
   ToggleDebug = 'ToggleDebug',

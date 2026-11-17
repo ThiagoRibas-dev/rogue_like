@@ -1,0 +1,17 @@
+{
+  "id": "realms-of-shroudgarde",
+  "name": "The Realms of Shroudgarde",
+  "version": "1.0.0",
+  "rulesetId": "dnd35e",
+  "startingAreaId": "shroudgarde_courtyard",
+  "description": "The definitive D&D 3.5e flagship campaign merging towns, wilderness roads, towers, shallow crypts, and deep subterranean vaults.",
+  "author": "D&D 3.5e Realms Team",
+  "tags": [
+    "dnd35e",
+    "flagship",
+    "sandbox",
+    "megadungeon",
+    "srd35"
+  ],
+  "schemaVersion": 1
+}

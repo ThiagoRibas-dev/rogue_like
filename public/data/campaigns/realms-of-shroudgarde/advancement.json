@@ -1,0 +1,72 @@
+[
+  {
+    "level": 1,
+    "requiredXp": 0,
+    "hpGain": 0,
+    "attackGain": 0,
+    "defenseGain": 0
+  },
+  {
+    "level": 2,
+    "requiredXp": 1000,
+    "hpGain": 6,
+    "attackGain": 1,
+    "defenseGain": 0
+  },
+  {
+    "level": 3,
+    "requiredXp": 3000,
+    "hpGain": 6,
+    "attackGain": 1,
+    "defenseGain": 1
+  },
+  {
+    "level": 4,
+    "requiredXp": 6000,
+    "hpGain": 6,
+    "attackGain": 2,
+    "defenseGain": 0
+  },
+  {
+    "level": 5,
+    "requiredXp": 10000,
+    "hpGain": 8,
+    "attackGain": 2,
+    "defenseGain": 1
+  },
+  {
+    "level": 6,
+    "requiredXp": 15000,
+    "hpGain": 8,
+    "attackGain": 2,
+    "defenseGain": 1
+  },
+  {
+    "level": 7,
+    "requiredXp": 21000,
+    "hpGain": 8,
+    "attackGain": 3,
+    "defenseGain": 2
+  },
+  {
+    "level": 8,
+    "requiredXp": 28000,
+    "hpGain": 10,
+    "attackGain": 3,
+    "defenseGain": 2
+  },
+  {
+    "level": 9,
+    "requiredXp": 36000,
+    "hpGain": 10,
+    "attackGain": 4,
+    "defenseGain": 2
+  },
+  {
+    "level": 10,
+    "requiredXp": 45000,
+    "hpGain": 12,
+    "attackGain": 5,
+    "defenseGain": 3
+  }
+]

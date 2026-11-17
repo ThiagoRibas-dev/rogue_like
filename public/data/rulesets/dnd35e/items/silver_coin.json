@@ -1,0 +1,21 @@
+{
+  "silver_coin": {
+    "id": "silver_coin",
+    "name": "Silver Piece",
+    "unidentifiedName": "Silver Piece",
+    "description": "A minted silver coin widely used for everyday commerce (1 sp = 10 cp).",
+    "glyph": "$",
+    "fg": "#c0c0c0",
+    "bg": "transparent",
+    "spriteId": "item_coin",
+    "weight": 0.02,
+    "baseValue": 0.1,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "sp",
+      "amount": 1
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}

@@ -1,10 +1,11 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import { ComponentType, type InventoryComponent, type ClueComponent } from '../types/components.types.ts';
-import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent, removeEntity } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
 import { processQuestEvent } from './quest.system.ts';
 import type { ActionResult } from '../types/intents/intent.union.ts';
+import { addEntityCurrency, formatCurrency, resolveCurrencyConfig, toBaseUnits } from './currency.system.ts';
 import {
   processEquipItemIntent,
   processUnequipItemIntent,
@@ -47,8 +48,8 @@ export function getEffectiveCapacity(state: GameState, entityId: EntityId): numb
 
 /**
  * Processes a PickUp intent.
- * Finds the first item entity at the actor's position, validates inventory capacity,
- * removes its PositionComponent (taking it off the map), and adds it to inventory.
+ * Finds the first item entity at the actor's position, absorbs currency items directly into wallet,
+ * or validates inventory capacity, removes PositionComponent, and adds to inventory.
  *
  * @param state The current GameState.
  * @param entityId The entity picking up the item.
@@ -80,15 +81,6 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
   const inventory = getComponent(state, entityId, ComponentType.Inventory);
   if (!inventory) return { state, success: false, energyCost: 0 };
 
-  const effectiveCapacity = getEffectiveCapacity(state, entityId);
-  if (inventory.items.length >= effectiveCapacity) {
-    return {
-      state: addMessage(state, 'Your inventory is full!', MessageLogCategory.System),
-      success: false,
-      energyCost: 0
-    };
-  }
-
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   if (!itemComp) return { state, success: false, energyCost: 0 };
 
@@ -97,6 +89,34 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
   const isIdentified = state.identifiedItems.has(def.id);
   const itemName =
     (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
+
+  if (def.currencyGrant) {
+    const currencyCfg = resolveCurrencyConfig(state);
+    const totalCount = def.currencyGrant.amount * (itemComp.charges ?? 1);
+    const amountBaseUnits = toBaseUnits(totalCount, def.currencyGrant.denominationId, currencyCfg);
+    const credit = addEntityCurrency(state, entityId, amountBaseUnits);
+    let nextState = removeComponent(credit.state, itemEntityId, ComponentType.Position);
+    nextState = removeEntity(nextState, itemEntityId);
+    if (getComponent(nextState, entityId, ComponentType.Player)) {
+      nextState = processQuestEvent(nextState, 'gather', itemComp.itemId, totalCount);
+    }
+    const formattedAmount = formatCurrency(amountBaseUnits, currencyCfg);
+    return {
+      state: addMessage(nextState, `You collect ${formattedAmount} (${itemName}).`, MessageLogCategory.System),
+      success: true,
+      energyCost: 100,
+      events: []
+    };
+  }
+
+  const effectiveCapacity = getEffectiveCapacity(state, entityId);
+  if (inventory.items.length >= effectiveCapacity) {
+    return {
+      state: addMessage(state, 'Your inventory is full!', MessageLogCategory.System),
+      success: false,
+      energyCost: 0
+    };
+  }
 
   let nextState = removeComponent(state, itemEntityId, ComponentType.Position);
 

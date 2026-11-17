@@ -1,0 +1,148 @@
+{
+  "stone_floor": {
+    "spriteId": "tile_floor_stone_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#1a1d24",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "stone_wall": {
+    "spriteId": "tile_rough_stone_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#4a4d53",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "solid"
+    ]
+  },
+  "stairs_up": {
+    "spriteId": "tile_staircase_up",
+    "walkable": true,
+    "transparent": true,
+    "glyph": "<",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "portal"
+    ]
+  },
+  "stairs_down": {
+    "spriteId": "tile_staircase_down",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ">",
+    "fg": "#ffffff",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "portal"
+    ]
+  },
+  "empty_space": {
+    "spriteId": "tile_empty",
+    "walkable": false,
+    "transparent": false,
+    "glyph": " ",
+    "fg": "#000000",
+    "bg": "#000000",
+    "tags": [
+      "terrain"
+    ]
+  },
+  "shallow_water": {
+    "spriteId": "tile_blue_stone_floor_1_blue_bg",
+    "walkable": true,
+    "transparent": true,
+    "glyph": "~",
+    "fg": "#3498db",
+    "bg": "#000000",
+    "movementCost": 200,
+    "tags": [
+      "terrain",
+      "liquid",
+      "water"
+    ]
+  },
+  "grass_floor": {
+    "spriteId": "tile_grass_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#2d5a27",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "dense_trees": {
+    "spriteId": "tile_tree",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "T",
+    "fg": "#1b4d3e",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "solid"
+    ]
+  },
+  "swamp_floor": {
+    "spriteId": "tile_dirt_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ";",
+    "fg": "#4a5d4e",
+    "bg": "#000000",
+    "movementCost": 150,
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "dirt_floor": {
+    "spriteId": "tile_dirt_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#5d4037",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "wood_floor": {
+    "spriteId": "tile_floor_stone_2",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#8d6e63",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "chasm": {
+    "spriteId": "tile_pit",
+    "walkable": false,
+    "transparent": true,
+    "glyph": " ",
+    "fg": "#000000",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "chasm"
+    ]
+  }
+}

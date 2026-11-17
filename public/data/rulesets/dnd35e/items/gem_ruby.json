@@ -1,0 +1,17 @@
+{
+  "gem_ruby": {
+    "id": "gem_ruby",
+    "name": "Brilliant Ruby",
+    "unidentifiedName": "Red Gemstone",
+    "description": "A fiery red crimson ruby of exceptional cut and clarity (worth 500 gp).",
+    "glyph": "*",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "item_crystal_pendant",
+    "weight": 0.1,
+    "baseValue": 500,
+    "currencyUnit": "gp",
+    "category": "tool",
+    "isArtifact": false
+  }
+}

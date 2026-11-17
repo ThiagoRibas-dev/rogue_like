@@ -2,12 +2,23 @@ import type { GameState, EntityId } from '../../types/game-state.types.ts';
 import type { GameEvent } from '../../types/events.types.ts';
 import type { ConditionPredicate } from '../../types/trigger.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
-import type { MemoryComponent } from '../../types/components.types.ts';
+import type { AttitudeComponent, MemoryComponent } from '../../types/components.types.ts';
 import { getComponent } from '../../core/ecs.ts';
+import { getActiveRuleset } from '../../rulesets/registry.ts';
 import { assertNever } from '../../utils/assert.ts';
 import { socialConsequences } from './social_consequences.ts';
 
 export { socialConsequences };
+
+/** Canonical attitude rank ordering for threshold comparisons. */
+const ATTITUDE_RANK: Readonly<Record<string, number>> = {
+  hostile: 0,
+  unfriendly: 1,
+  indifferent: 2,
+  neutral: 2,
+  friendly: 3,
+  helpful: 4
+};
 
 /**
  * Condition evaluators specific to NPCs, social interactions, and memory.
@@ -227,6 +238,37 @@ export const socialConditions = {
     if (condition.operator === '>=') return axisVal >= condition.value;
     if (condition.operator === '<=') return axisVal <= condition.value;
     return axisVal === condition.value;
+  },
+
+  attitude_tier: (
+    state: Readonly<GameState>,
+    _event: GameEvent,
+    condition: Extract<ConditionPredicate, { type: 'attitude_tier' }>
+  ): boolean => {
+    const npcId = condition._npcEntityId ?? condition.entityId;
+    if (npcId === undefined) return false;
+    const attComp = getComponent(state, npcId, ComponentType.Attitude) as AttitudeComponent | undefined;
+    const currentRank = ATTITUDE_RANK[attComp?.attitude ?? 'indifferent'] ?? 2;
+    const targetRank = ATTITUDE_RANK[condition.attitude] ?? 2;
+    if (condition.operator === '>=') return currentRank >= targetRank;
+    if (condition.operator === '<=') return currentRank <= targetRank;
+    return currentRank === targetRank;
+  },
+
+  skill_modifier: (
+    state: Readonly<GameState>,
+    _event: GameEvent,
+    condition: Extract<ConditionPredicate, { type: 'skill_modifier' }>
+  ): boolean => {
+    const actorId =
+      condition._playerEntityId ??
+      condition.entityId ??
+      state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
+    if (actorId === undefined) return false;
+    const mod = getActiveRuleset(state as GameState).getActorSkillModifier?.(state, actorId, condition.skillId) ?? 0;
+    if (condition.operator === '>=') return mod >= condition.value;
+    if (condition.operator === '<=') return mod <= condition.value;
+    return mod === condition.value;
   }
 } satisfies Partial<
   Record<ConditionPredicate['type'], (state: Readonly<GameState>, event: GameEvent, condition: never) => boolean>

@@ -10,7 +10,7 @@
 - [Core Console: Campaign Editor Subsystem (27 files)](#core-console-campaign-editor-subsystem)
 - [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
-- [Core Console: ECS Systems & Simulation (61 files)](#core-console-ecs-systems-simulation)
+- [Core Console: ECS Systems & Simulation (62 files)](#core-console-ecs-systems-simulation)
 - [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
@@ -133,7 +133,7 @@
 
 ## Core Console: ECS Systems & Simulation
 
-**Modules in this domain:** 61
+**Modules in this domain:** 62
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -142,6 +142,7 @@
 | `src/systems/chronicle.system.ts` | `tier1_console` | Records a reference to an important ledger event in an entity's chronicle. | `recordChronicleEvent`, `promoteEntity` | **Includes:** Pure implementation and exports for src/systems/chronicle.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/chronicle.system.ts. |
 | `src/systems/combat.system.ts` | `tier1_console` | Processes a MeleeAttackIntent by delegating to the active ruleset cartridge. | `processMeleeAttackIntent` | **Includes:** Pure implementation and exports for src/systems/combat.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/combat.system.ts. |
 | `src/systems/companion_commands.system.ts` | `tier1_console` | Companion command verbs, tactical stance switching, focus-target directives, and dynamic companion orders dialogue synthesis. | `isPlayerControlledCompanion`, `getPlayerCompanions`, `setCompanionStance`, `assignCompanionCommandTarget`, `buildCompanionOrdersDialogueTree`, `getValidCompanionVerbsForTarget`, `beginCompanionTargetSelection`, `processCompanionVerbIntent` | **Includes:** Pure implementation and exports for src/systems/companion_commands.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/companion_commands.system.ts. |
+| `src/systems/currency.system.ts` | `tier1_console` | Provides Tier 1 Console multi-denomination currency arithmetic, coin decomposition, balance management, wallet transactions, and item base value scaling. | `DEFAULT_CONSOLE_CURRENCY_CONFIG`, `resolveCurrencyConfig`, `findCurrencyDenomination`, `getDenominationMultiplier`, `toBaseUnits`, `convertCurrency`, `resolveItemBaseValueInBaseUnits`, `decomposeToCoins`, `formatCurrency`, `getEntityCurrencyBalance`, `setEntityCurrencyBalance`, `addEntityCurrency`, `transferEntityCurrency` | **Includes:** Pure implementation and exports for src/systems/currency.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/currency.system.ts. |
 | `src/systems/damage.system.ts` | `tier1_console` | Duration in milliseconds for floating combat text overlays. | `addFloatingText`, `processDamageSystem` | **Includes:** Pure implementation and exports for src/systems/damage.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/damage.system.ts. |
 | `src/systems/death.system.ts` | `tier1_console` | Helper to grant XP to an entity and handle level ups by delegating to the | `grantXp`, `processDeathSystem` | **Includes:** Pure implementation and exports for src/systems/death.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/death.system.ts. |
 | `src/systems/dialogue.system.ts` | `tier1_console` | Initializes and transitions the game state into an active dialogue tree session with an NPC. | `resolveDialogueTree`, `startDialogue` | **Includes:** Pure implementation and exports for src/systems/dialogue.system.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/systems/dialogue.system.ts. |

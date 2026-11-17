@@ -24,6 +24,7 @@ import type {
   StartDialogueIntent,
   SelectDialogueOptionIntent,
   CloseDialogueIntent,
+  CloseTradeIntent,
   ToggleQuestsIntent,
   ToggleInvestigationIntent,
   ToggleDebugIntent,
@@ -79,6 +80,7 @@ export type Intent =
   | StartDialogueIntent
   | SelectDialogueOptionIntent
   | CloseDialogueIntent
+  | CloseTradeIntent
   | ToggleQuestsIntent
   | ToggleInvestigationIntent
   | ToggleDebugIntent

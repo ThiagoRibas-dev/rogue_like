@@ -1,0 +1,21 @@
+{
+  "coin_pouch_silver": {
+    "id": "coin_pouch_silver",
+    "name": "Pouch of Silver",
+    "unidentifiedName": "Leather Pouch",
+    "description": "A tied leather pouch containing 50 silver pieces (50 sp).",
+    "glyph": "$",
+    "fg": "#c0c0c0",
+    "bg": "transparent",
+    "spriteId": "item_coin_purse",
+    "weight": 1.0,
+    "baseValue": 5,
+    "currencyUnit": "gp",
+    "currencyGrant": {
+      "denominationId": "sp",
+      "amount": 50
+    },
+    "category": "tool",
+    "isArtifact": false
+  }
+}
