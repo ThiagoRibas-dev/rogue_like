@@ -5,12 +5,11 @@
  * and expends a counterable spell slot (`resolveCounterspellAttempt`) to fizzle the enemy spell.
  */
 
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import {
   ComponentType,
   type FighterComponent,
-  type IdentityComponent,
   type PositionComponent,
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
@@ -213,8 +212,7 @@ export function evaluateReactiveCounterspellInterrupt(
       actionBudget: immRes.allowed ? immRes.budget : activeBudget
     });
 
-    const reactorName =
-      (getComponent(nextState, candId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Spellcaster';
+    const reactorName = resolveEntityDisplayName(nextState, candId, 'Spellcaster');
     const counterSpellName = sysContent?.spells?.[selectedSlot.counterSpellId]?.name ?? selectedSlot.counterSpellId;
     nextState = addMessage(
       nextState,

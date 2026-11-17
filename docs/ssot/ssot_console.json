@@ -740,7 +740,7 @@
   "src/core/ecs/ecs_core.ts": {
     "domain": "Core Console: ECS, Loop, RNG & Loader",
     "tier": "tier1_console",
-    "responsibility": "Core entity lifecycle, component store, spatial index, and query operations.",
+    "responsibility": "Core entity lifecycle, component store, spatial index, query operations, and canonical Name->ID->Icon entity display name resolution.",
     "canonicalEntryPoints": [
       "createEntity",
       "updateSpatialIndex",
@@ -748,7 +748,8 @@
       "removeComponent",
       "getComponent",
       "queryEntities",
-      "removeEntity"
+      "removeEntity",
+      "resolveEntityDisplayName"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/core/ecs/ecs_core.ts.",
@@ -1169,6 +1170,8 @@
       "lockEngine",
       "unlockEngine",
       "isTurnProcessingActive",
+      "getActiveTurnActorId",
+      "getActorRemainingScheduleTime",
       "switchEngineMode",
       "addActor",
       "removeActor",
@@ -2748,8 +2751,10 @@
   "src/rendering/ui/hud_alerts.ui.ts": {
     "domain": "Core Console: Rendering & UI Views",
     "tier": "tier1_console",
-    "responsibility": "low health, starvation, detrimental status effects, and active quests.",
+    "responsibility": "Perception-gated RimWorld-style Current Turn / RTwP readiness ribbon plus alerts for low health, visible hostiles, starvation, status effects, and active quests.",
     "canonicalEntryPoints": [
+      "isActorPerceivedByPlayer",
+      "buildTurnStatusRibbon",
       "renderHudAlerts"
     ],
     "ownershipBoundary": {
@@ -4398,7 +4403,7 @@
   "src/systems/world_clock.system.ts": {
     "domain": "Core Console: ECS Systems & Simulation",
     "tier": "tier1_console",
-    "responsibility": "Diurnal World Clock phase reading, area environment profile resolution, time-to-phase calculation, and visible-hostile rest gating.",
+    "responsibility": "Diurnal World Clock phase reading, area environment profile resolution, time-to-phase calculation, visible-hostile rest gating, and hourly ruleset hook dispatch.",
     "canonicalEntryPoints": [
       "DEFAULT_WORLD_CLOCK_CONFIG",
       "getEffectiveWorldClockConfig",
@@ -4407,7 +4412,8 @@
       "formatWorldClockShort",
       "resolveAreaEnvironmentProfile",
       "computeTurnsUntilPhase",
-      "isActorThreatenedByVisibleHostiles"
+      "isActorThreatenedByVisibleHostiles",
+      "applyElapsedWorldHours"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/systems/world_clock.system.ts.",

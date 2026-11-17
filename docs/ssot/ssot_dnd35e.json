@@ -477,8 +477,10 @@
   "src/rendering/ui/dnd35e_rest_actions.ts": {
     "domain": "D&D 3.5e: Tactical UI & Character Sheet",
     "tier": "tier2_ui",
-    "responsibility": "Executes 8-hour rest and configurable wait-until-phase actions with hostile gating, bulk world time advancement, and loading overlay progress.",
+    "responsibility": "Executes 8-hour rest and configurable wait-until-phase actions with full party safety gating, bulk world time advancement + mid-rest interruption, spell/pool recovery, and loading overlay progress.",
     "canonicalEntryPoints": [
+      "RestSafetyEvaluation",
+      "evaluateActorRestSafety",
       "executeEightHourRest",
       "executeWaitUntilPhase",
       "applyRestActionAsync",
@@ -490,6 +492,23 @@
     },
     "antiPatterns": [
       "Do not duplicate rest time advancement outside dnd35e_rest_actions.ts."
+    ]
+  },
+  "src/rendering/ui/dnd35e_rest_recovery.ts": {
+    "domain": "D&D 3.5e: Tactical UI & Character Sheet",
+    "tier": "tier2_ui",
+    "responsibility": "Evaluates party-wide rest safety predicates and applies 8-hour rest recovery (ability damage, living HP, Vancian/spontaneous spellbook refresh with 8h retention, fatigue downgrade/removal, resource pools, and round action budgets) symmetrically across the player and controlled companions.",
+    "canonicalEntryPoints": [
+      "RestSafetyEvaluation",
+      "evaluateActorRestSafety",
+      "applyEightHourRestToActor"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure rest safety predicate evaluation and per-actor 8-hour rest state transformation.",
+      "excludes": "Bulk time skipping or loading overlay DOM manipulation."
+    },
+    "antiPatterns": [
+      "Do not duplicate rest safety or per-actor recovery logic outside dnd35e_rest_recovery.ts."
     ]
   },
   "src/rendering/ui/dnd35e_ui_registration.ts": {
@@ -912,7 +931,7 @@
   "src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts": {
     "domain": "D&D 3.5e: Core Cartridge & Ruleset Contract",
     "tier": "tier2_cartridge",
-    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: hydrates per-entity action budgets from traits/conditions/StatModifiers, evaluates aura entry saves, resolves symmetric round energy costs, and checks action availability.",
+    "responsibility": "Provides Tier 2 D&D 3.5e lifecycle hooks: hydrates per-entity action budgets, evaluates aura entry saves, resolves symmetric round energy costs, checks action availability, and handles hourly nonlethal healing.",
     "canonicalEntryPoints": [
       "evaluateActorAuraEntrySaves",
       "hydrateEntityRoundActionBudget",
@@ -921,7 +940,8 @@
       "resolveDnD35eActionEnergyCost",
       "canDnD35eActorPerformIntent",
       "hasDnD35eActorActedThisTurn",
-      "hasDnD35eActorMovementInProgress"
+      "hasDnD35eActorMovementInProgress",
+      "onDnD35eWorldHourElapsed"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts.",
@@ -1526,14 +1546,18 @@
   "src/rulesets/dnd35e/magic/aoe_rest.ts": {
     "domain": "D&D 3.5e: Layer 6 — Vancian Magic & Fields",
     "tier": "tier2_cartridge",
-    "responsibility": "Number of 6-second combat rounds in 8 hours (`8 * 60 * 10 = 4800` rounds).",
+    "responsibility": "Computes AoE affected grid squares, 8-hour spellbook recovery (including recent-cast slot retention), and 15-minute open-slot preparation.",
     "canonicalEntryPoints": [
       "EIGHT_HOURS_IN_ROUNDS",
       "OPEN_SLOT_PREPARATION_ROUNDS",
+      "STANDARD_NATURAL_HEAL_MULTIPLIER",
+      "LONG_TERM_CARE_HEAL_MULTIPLIER",
       "AoETemplateShape",
       "computeAoEAffectedSquares",
       "resolveEightHourRest",
-      "prepareOpenSpellSlot"
+      "prepareOpenSpellSlot",
+      "resolveSpellbookEightHourRest",
+      "prepareOpenDnD35Slot"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/magic/aoe_rest.ts.",

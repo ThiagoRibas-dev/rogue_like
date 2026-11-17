@@ -189,7 +189,11 @@ export function refreshResourcePools(state: GameState, entityId: EntityId, cycle
   let changed = false;
 
   for (const [poolId, entry] of Object.entries(poolComp.pools)) {
-    const matchesCycle = entry.refreshCycle === cycle || (cycle === 'rest_8h' && entry.resetOnRest === true);
+    const matchesCycle =
+      entry.refreshCycle === cycle ||
+      cycle === 'rest_8h' ||
+      (cycle === 'short_rest' && (entry.refreshCycle === 'encounter' || entry.refreshCycle === 'round')) ||
+      (cycle === 'encounter' && entry.refreshCycle === 'round');
     if (matchesCycle && entry.current !== entry.max) {
       nextPools[poolId] = { ...entry, current: entry.max };
       changed = true;

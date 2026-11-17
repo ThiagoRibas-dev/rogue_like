@@ -60,7 +60,7 @@ export function renderSharedSkillsStep(
   const filterBar = document.createElement('div');
   filterBar.className = 'dnd35-filter-bar';
   const budgetBadge = document.createElement('strong');
-  budgetBadge.style.color = remaining > 0 ? 'var(--crpg-gold, #f1c40f)' : 'var(--crpg-success, #2ecc71)';
+  budgetBadge.style.color = remaining > 0 ? 'var(--crpg-gold, #7a4f0d)' : 'var(--crpg-success, #145a28)';
   budgetBadge.textContent = `Points Remaining: ${remaining} / ${config.budget} (Spent: ${spent})`;
   filterBar.appendChild(budgetBadge);
 
@@ -79,7 +79,7 @@ export function renderSharedSkillsStep(
     fBtn.className = 'modal-btn';
     fBtn.style.padding = '3px 7px';
     fBtn.style.fontSize = '0.72rem';
-    fBtn.style.borderColor = skillFilterMode === m.id ? 'var(--crpg-gold, #f1c40f)' : 'var(--border-color)';
+    fBtn.style.borderColor = skillFilterMode === m.id ? 'var(--crpg-gold, #7a4f0d)' : 'var(--border-color)';
     fBtn.textContent = m.label;
     fBtn.addEventListener('click', () => {
       skillFilterMode = m.id;
@@ -138,10 +138,10 @@ export function renderSharedSkillsStep(
     const subSpan = document.createElement('span');
     subSpan.style.fontSize = '0.73rem';
     subSpan.style.color = isActiveClass
-      ? 'var(--crpg-success, #2ecc71)'
+      ? 'var(--crpg-success, #145a28)'
       : isEverClass
-        ? 'var(--crpg-gold, #f1c40f)'
-        : 'var(--crpg-text-dim, #9da7b3)';
+        ? 'var(--crpg-gold, #7a4f0d)'
+        : 'var(--crpg-text-dim, #4d3f31)';
     const costLabel = isActiveClass
       ? 'Class (1pt/rk)'
       : isEverClass

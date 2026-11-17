@@ -12,7 +12,7 @@ import {
   type EntityDiedEvent,
   type ApplyResolvedEvent
 } from '../types/events.types.ts';
-import { addComponent, getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { promoteEntity } from './chronicle.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import {
@@ -35,28 +35,25 @@ export function processPersonalitySystem(state: GameState): GameState {
     if (event.type === GameEventType.EntityDamaged) {
       const e = event as EntityDamagedEvent;
       if (e.sourceEntityId !== undefined && e.amount >= 5) {
-        nextState = recordThought(
-          nextState,
-          e.entityId,
-          `Harmed by Entity #${e.sourceEntityId}`,
-          e.amount,
-          e.sourceEntityId
-        );
+        const sourceName = resolveEntityDisplayName(nextState, e.sourceEntityId, `Entity #${e.sourceEntityId}`);
+        nextState = recordThought(nextState, e.entityId, `Harmed by ${sourceName}`, e.amount, e.sourceEntityId);
       }
     } else if (event.type === GameEventType.EntityDied) {
       const e = event as EntityDiedEvent;
       if (e.killerId !== undefined) {
-        nextState = recordThought(nextState, e.killerId, `Defeated Entity #${e.victimId}`, -5, e.victimId);
+        const victimName = resolveEntityDisplayName(nextState, e.victimId, `Entity #${e.victimId}`);
+        nextState = recordThought(nextState, e.killerId, `Defeated ${victimName}`, -5, e.victimId);
       }
     } else if (event.type === GameEventType.ApplyResolved) {
       const e = event as ApplyResolvedEvent;
       if (e.verb === 'kick' && e.target && typeof e.target === 'object') {
         const targetObj = e.target as { type: string; entityId?: number };
         if (targetObj.type === 'entity' && typeof targetObj.entityId === 'number') {
+          const kickerName = resolveEntityDisplayName(nextState, e.entityId, `Entity #${e.entityId}`);
           nextState = recordThought(
             nextState,
             targetObj.entityId as EntityId,
-            `Kicked by Entity #${e.entityId}`,
+            `Kicked by ${kickerName}`,
             15,
             e.entityId
           );
@@ -214,7 +211,7 @@ function promoteToCoreMemory(state: GameState, entityId: EntityId): GameState {
     };
     nextState = addComponent(nextState, entityId, nextChronicle);
 
-    const identityStr = identity ? identity.name : 'An entity';
+    const identityStr = resolveEntityDisplayName(nextState, entityId, 'An entity');
     nextState = addMessage(nextState, `${identityStr} internalizes a core memory.`, MessageLogCategory.System);
   }
 

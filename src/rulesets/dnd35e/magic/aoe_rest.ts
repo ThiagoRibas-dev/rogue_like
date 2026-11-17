@@ -1,6 +1,7 @@
 import { dndFloor } from '../math/multipliers.ts';
 import { evaluateCover } from '../spatial/cover_senses.ts';
 import { FEET_PER_GRID_SQUARE, measureDnD35DistanceFt } from '../spatial/grid_geometry.ts';
+import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../types/dnd35e.types.ts';
 import type { PreparedSpellSlot } from './spellcasting.ts';
 
 /** Number of 6-second combat rounds in 8 hours (`8 * 60 * 10 = 4800` rounds). */
@@ -238,6 +239,145 @@ export function prepareOpenSpellSlot(
       spellLevel: slot.spellLevel,
       status: 'prepared',
       preparedSpellId: spellId
+    }
+  };
+}
+
+/**
+ * Resolves 8-hour rest recovery on a `DnD35ClassSpellbookState` by delegating prepared slot refresh
+ * to `resolveEightHourRest` (enforcing the 8-hour recent-cast retention rule for both prepared and
+ * spontaneous slots) while preserving slot IDs and prepared slot assignments that refreshed cleanly.
+ *
+ * @param options Spellbook rest resolution parameters.
+ * @returns Updated `DnD35ClassSpellbookState`, retained recent-cast count, and natural healing amounts.
+ */
+export function resolveSpellbookEightHourRest(options: {
+  readonly book: DnD35ClassSpellbookState;
+  readonly restCompletionTurn: number;
+  readonly characterLevel: number;
+  readonly isThreatened: boolean;
+  readonly hasLongTermCare?: boolean;
+}): {
+  readonly restSucceeded: boolean;
+  readonly updatedBook: DnD35ClassSpellbookState;
+  readonly retainedRecentCastCount: number;
+  readonly naturalHpHealed: number;
+  readonly abilityDamageHealedPerStat: number;
+} {
+  const { book, restCompletionTurn, characterLevel, isThreatened, hasLongTermCare } = options;
+  const sourceSlots = book.preparedSlots ?? [];
+  const mappedSlots: PreparedSpellSlot[] = sourceSlots.map((entry) => ({
+    spellLevel: entry.spellLevel,
+    status: entry.expended ? 'expended' : entry.preparedSpellId !== undefined ? 'prepared' : 'open',
+    ...(entry.preparedSpellId !== undefined ? { preparedSpellId: entry.preparedSpellId } : {}),
+    ...(entry.castTimestampTurn !== undefined ? { castTimestampTurn: entry.castTimestampTurn } : {})
+  }));
+
+  const restRes = resolveEightHourRest({
+    slots: mappedSlots,
+    restCompletionTurn,
+    characterLevel,
+    isThreatened,
+    ...(hasLongTermCare !== undefined ? { hasLongTermCare } : {})
+  });
+
+  if (!restRes.restSucceeded) {
+    return {
+      restSucceeded: false,
+      updatedBook: book,
+      retainedRecentCastCount: 0,
+      naturalHpHealed: 0,
+      abilityDamageHealedPerStat: 0
+    };
+  }
+
+  let retainedRecentCastCount = restRes.retainedRecentCastCount;
+  const refreshedSlots: DnD35PreparedSlotEntry[] = sourceSlots.map((entry, idx) => {
+    const postSlot = restRes.refreshedSlots[idx];
+    if (!entry.expended) {
+      return entry;
+    }
+    if (postSlot?.status === 'expended') {
+      return entry;
+    }
+    return {
+      slotId: entry.slotId,
+      spellLevel: entry.spellLevel,
+      slotKind: entry.slotKind,
+      ...(entry.preparedSpellId !== undefined ? { preparedSpellId: entry.preparedSpellId } : {}),
+      expended: false
+    };
+  });
+
+  const nextSpontUsed: Record<string, number> = {};
+  const nextSpontStamps: Record<string, ReadonlyArray<number>> = {};
+  const rawStamps = book.spontaneousCastTimestampsByLevel ?? {};
+
+  for (const [lvlKey, stamps] of Object.entries(rawStamps)) {
+    const recent = stamps.filter((ts) => restCompletionTurn - ts < EIGHT_HOURS_IN_ROUNDS);
+    if (recent.length > 0) {
+      nextSpontStamps[lvlKey] = recent;
+      nextSpontUsed[lvlKey] = recent.length;
+      retainedRecentCastCount += recent.length;
+    }
+  }
+
+  const preparedSpellIds = refreshedSlots
+    .filter((s) => s.preparedSpellId !== undefined && !s.expended)
+    .map((s) => s.preparedSpellId!);
+
+  return {
+    restSucceeded: true,
+    updatedBook: {
+      ...book,
+      ...(book.preparedSlots !== undefined ? { preparedSlots: refreshedSlots, preparedSpellIds } : {}),
+      spontaneousSlotsUsedByLevel: nextSpontUsed,
+      spontaneousCastTimestampsByLevel: nextSpontStamps
+    },
+    retainedRecentCastCount,
+    naturalHpHealed: restRes.naturalHpHealed,
+    abilityDamageHealedPerStat: restRes.abilityDamageHealedPerStat
+  };
+}
+
+/**
+ * Prepares a spell into an open `DnD35PreparedSlotEntry` using `prepareOpenSpellSlot` (15 minutes = 150 rounds).
+ *
+ * @param slot Target `DnD35PreparedSlotEntry` (must be open and non-expended).
+ * @param spellId Spell ID to memorize.
+ * @param spellLevel Spell level (`<= slot.spellLevel`).
+ * @param isThreatened True if unsafe/threatened.
+ * @returns `{ success, roundsSpent, entry }`.
+ */
+export function prepareOpenDnD35Slot(
+  slot: DnD35PreparedSlotEntry,
+  spellId: string,
+  spellLevel: number,
+  isThreatened = false
+): {
+  readonly success: boolean;
+  readonly roundsSpent: number;
+  readonly entry: DnD35PreparedSlotEntry;
+} {
+  const mapped: PreparedSpellSlot = {
+    spellLevel: slot.spellLevel,
+    status: slot.expended ? 'expended' : slot.preparedSpellId !== undefined ? 'prepared' : 'open',
+    ...(slot.preparedSpellId !== undefined ? { preparedSpellId: slot.preparedSpellId } : {}),
+    ...(slot.castTimestampTurn !== undefined ? { castTimestampTurn: slot.castTimestampTurn } : {})
+  };
+  const res = prepareOpenSpellSlot(mapped, spellId, spellLevel, isThreatened);
+  if (!res.success) {
+    return { success: false, roundsSpent: 0, entry: slot };
+  }
+  return {
+    success: true,
+    roundsSpent: res.roundsSpent,
+    entry: {
+      slotId: slot.slotId,
+      spellLevel: slot.spellLevel,
+      slotKind: slot.slotKind,
+      preparedSpellId: spellId,
+      expended: false
     }
   };
 }

@@ -14,6 +14,9 @@ export const RTWP_MS_PER_100_DURATION = 500;
 /** Base turn duration for actor steps. */
 export const DEFAULT_ACTOR_TURN_DURATION = 100;
 
+/** Fallback energy duration when an active turn concludes without a specific speed cost (`10`). */
+export const RTWP_IDLE_WAIT_DURATION = 10;
+
 /** Cap for accumulated RTwP time to prevent spiral of death after background tab pauses. */
 export const MAX_ACCUMULATED_RTWP_TIME = MAX_RTWP_DRAIN_ITERATIONS * DEFAULT_ACTOR_TURN_DURATION;
 

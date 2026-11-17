@@ -50,6 +50,7 @@ export { type StartingEquipmentPackage, STARTING_EQUIPMENT_PACKAGES } from './st
 
 /** Draft state for the 7-Step D&D 3.5e Character Creation Wizard. */
 export interface CharacterCreationDraft {
+  readonly characterName?: string | undefined;
   readonly raceId: string;
   readonly classId: string;
   readonly alignment: DnD35Alignment;

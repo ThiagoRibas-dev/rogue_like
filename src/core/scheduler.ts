@@ -11,6 +11,7 @@ import {
   MAX_ACCUMULATED_RTWP_TIME
 } from '../constants/scheduler.constants.ts';
 import { recordSchedulerSliceYield } from './performance.ts';
+import { markDomainDirty, PresentationDomain } from './presentation_queue.ts';
 
 class SchedulerActor {
   constructor(public readonly id: EntityId) {}
@@ -78,6 +79,7 @@ export function lockEngine(): void {
     clearTimeout(sliceYieldTimerId);
     sliceYieldTimerId = null;
   }
+  markDomainDirty(PresentationDomain.HUD);
 }
 
 /**
@@ -99,6 +101,31 @@ export function unlockEngine(): void {
  */
 export function isTurnProcessingActive(): boolean {
   return isTurnProcessing;
+}
+
+/**
+ * Returns the EntityId of the actor currently executing a turn in the scheduler, if any.
+ *
+ * @returns Active actor EntityId or null.
+ */
+export function getActiveTurnActorId(): EntityId | null {
+  return currentScheduleActor?.id ?? null;
+}
+
+/**
+ * Returns remaining scheduled energy/cooldown ticks until `entityId`'s next turn in `ROT.Scheduler.Action`.
+ * Returns `0` if the actor is currently acting or not waiting in the queue.
+ *
+ * @param entityId Target actor ID.
+ * @returns Remaining scheduler ticks (`>= 0`).
+ */
+export function getActorRemainingScheduleTime(entityId: EntityId): number {
+  if (currentScheduleActor?.id === entityId) return 0;
+  const actor = actors.get(entityId);
+  if (!actor) return 0;
+  const scheduledAt = scheduler.getTimeOf(actor);
+  if (scheduledAt === undefined) return 0;
+  return Math.max(0, scheduledAt - scheduler.getTime());
 }
 
 /**
@@ -142,12 +169,14 @@ function runTurnBasedLoop(): void {
     // Exceeded frame budget: yield cooperatively to browser
     if (performance.now() - sliceStart >= FRAME_BUDGET_MS) {
       recordSchedulerSliceYield();
+      markDomainDirty(PresentationDomain.HUD);
       sliceYieldTimerId = setTimeout(() => {
         sliceYieldTimerId = null;
         if (!isEngineLocked) {
           runTurnBasedLoop();
         } else {
           isTurnProcessing = false;
+          markDomainDirty(PresentationDomain.HUD);
         }
       }, 0);
       return;
@@ -168,6 +197,7 @@ function runTurnBasedLoop(): void {
   }
 
   isTurnProcessing = false;
+  markDomainDirty(PresentationDomain.HUD);
 }
 
 /**
@@ -224,6 +254,10 @@ function rtwpLoop(time: number): void {
     const newTime = scheduler.getTime();
     accumulatedTime -= Math.max(0, newTime - prevTime);
     iterations++;
+  }
+
+  if (iterations > 0) {
+    markDomainDirty(PresentationDomain.HUD);
   }
 }
 

@@ -640,4 +640,24 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Updated `markDirtyFromStateDiff` (`classifyPresentationComponentDiff`) so off-screen NPC component mutations no longer mark `Entities`, `HUD`, or `Inventory` dirty, and gated `renderMenus` in `presenter.ts` to `state.uiMode !== UIMode.Game`.
   - *Rationale*: Eliminates duplicate turn-end stabilization passes, `500+` redundant HUD/DOM redraws across 6 player rounds, and synchronous `localStorage` JSON serialization stalls on every 5-ft tile step.
 
+---
+
+### Display Name Fallback, Perception-Gated Turn Ribbon, Rest Safety & Theme Contrast Tokens
+
+- **Decision 1: Reactive `resolveEntityDisplayName` Cascade (`Name -> ID -> Icon`) in Core ECS (`src/core/ecs/ecs_core.ts`)**:
+  - Centralized all entity, item, field, and portal log/UI naming onto `resolveEntityDisplayName(state, entityId, fallback)` following the strict hierarchy: `Identity.name` (+ optional `title`) -> identified/unidentified `Item` name or `itemId` -> `Field` name or `fieldType` -> `Template` name or `templateId` -> `'Adventurer'` (player fallback) -> `Renderable.glyph` -> domain fallback. Added a persistent `characterName` field in D&D 3.5e Character Creation (`builder_core.ts`, `dnd35e_char_builder.ui.ts`) hydrating `IdentityComponent`.
+  - *Rationale*: Eliminated scattered glyph-only fallbacks (`"@ dies!"`, `"@ hits g"`) while keeping display labels strictly reactive to identification state and character naming without mutating template data.
+
+- **Decision 2: Perception-Gated RimWorld Turn & RTwP Readiness Ribbon (`src/core/scheduler.ts`, `src/rendering/ui/hud_alerts.ui.ts`)**:
+  - Exposed read-only `getActiveTurnActorId()` and `getActorRemainingScheduleTime(entityId)` on `scheduler.ts` plus HUD dirty notifications across yielded turn-loop slices. In `TurnBased` mode, non-player acting entities show their resolved name (and click-to-focus) **only** when `isActorPerceivedByPlayer()` confirms a visible footprint tile and absence of `'invisible'` status/condition; otherwise the ribbon displays `Turn: ???` with click focus disabled. In `RTwP` mode, the ribbon projects `⏸ Tactical Pause`, `⏳ Recovering: X.Xs`, or `🟢 Ready`.
+  - *Rationale*: Communicates turn ownership and cooldown wait times immediately so players know when AI cascades are resolving without leaking hidden or invisible actor identities or positions.
+
+- **Decision 3: Declarative Party Rest Safety, Full 8-Hour Recovery, 15-Minute Open-Slot Prep & Hourly Nonlethal Healing (`dnd35e_rest_actions.ts`, `dnd35e_spellbook_actions.ts`, `aoe_rest.ts`, `world_clock.system.ts`)**:
+  - Gated 8-hour rest (also reachable from the HUD Command Dock via `t` for non-casters) and spell preparation behind `evaluateActorRestSafety` (checking visible hostiles, active `perTurnDamage > 0` status effects on player or companions, hazardous floor fields, and starvation) with mid-skip interruption in `advanceWorldTimeBulk` / `advanceWorldTimeBulkAsync`.
+  - Delegated rest slot recovery to `resolveSpellbookEightHourRest` (enforcing the 8-hour `castTimestampTurn` recent-casting rule), refreshed all resource pool cycles (`refreshCycle === 'rest_8h' | 'short_rest' | 'encounter' | 'round'`) after ability damage healing, applied recovery symmetrically to companions, and dispatched hourly `onWorldHourElapsed` (`ROUNDS_PER_HOUR = 600`) for natural nonlethal healing on living (`con.effectiveScore !== null`) creatures alongside magical healing nonlethal reduction (`spell_cast_effects.ts`).
+
+- **Decision 4: Parchment & Retro-CRT Contrast Token Parity (`console_prototype.css`, `modals.css`, `dnd35e_inspector.ui.ts`, `dnd35e_char_builder_skills.ui.ts`)**:
+  - Defined missing `--crpg-text`, `--crpg-border-subtle`, `--crpg-bg-card-hover`, and semantic `--crpg-chip-*` tokens in both `[data-console-theme='parchment']` and `[data-console-theme='retro-crt']`, darkened Parchment gold/green/dim ink colors for legibility on `#dcd2be` parchment, and styled `.dnd35-fullscreen-modal .modal-close-btn` for crisp `×` button contrast.
+
+
 

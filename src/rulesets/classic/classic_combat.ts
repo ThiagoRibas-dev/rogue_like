@@ -1,4 +1,4 @@
-import { addComponent, getComponent, removeComponent } from '../../core/ecs.ts';
+import { addComponent, getComponent, removeComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { rng } from '../../core/rng.ts';
 import { getSettings } from '../../core/settings.ts';
 import { NEMESIS_ENCOUNTER_COOLDOWN_TURNS } from '../../constants/nemesis.constants.ts';
@@ -16,7 +16,6 @@ import {
   type EquipmentComponent,
   type FactionComponent,
   type FighterComponent,
-  type IdentityComponent,
   type ItemComponent,
   type MemoryComponent,
   type NemesisComponent
@@ -63,15 +62,13 @@ export function resolveClassicMeleeAttack(
 
   const attackerFighter = getComponent(state, entityId, ComponentType.Fighter);
   const defenderFighter = getComponent(state, defenderId, ComponentType.Fighter);
-  const attackerRenderable = getComponent(state, entityId, ComponentType.Renderable);
-  const defenderRenderable = getComponent(state, defenderId, ComponentType.Renderable);
 
   if (!attackerFighter || !defenderFighter) {
     return { state, success: false };
   }
 
-  const attackerName = attackerRenderable ? attackerRenderable.glyph : 'Someone';
-  const defenderName = defenderRenderable ? defenderRenderable.glyph : 'Someone';
+  const attackerName = resolveEntityDisplayName(state, entityId, 'Someone');
+  const defenderName = resolveEntityDisplayName(state, defenderId, 'Someone');
 
   const attackerStats = computeClassicEffectiveStats(state, entityId);
   const defenderStats = computeClassicEffectiveStats(state, defenderId);
@@ -256,9 +253,7 @@ export function processClassicDamage(state: GameState): GameState {
               }
             }
             if (chronicle) {
-              const victimIdentity = getComponent(nextState, entityId, ComponentType.Identity) as
-                IdentityComponent | undefined;
-              const victimName = victimIdentity ? victimIdentity.name : 'an enemy';
+              const victimName = resolveEntityDisplayName(nextState, entityId, 'an enemy');
               const eventId = `evt_${nextState.globalTurn}_kill_${Math.floor(rng.getUniform() * KILL_EVENT_ID_MAX)}`;
               nextState = {
                 ...nextState,

@@ -7,16 +7,23 @@
 import { addComponent } from '../../core/ecs.ts';
 import { setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
+import { OPEN_SLOT_PREPARATION_ROUNDS, prepareOpenDnD35Slot } from '../../rulesets/dnd35e/magic/aoe_rest.ts';
 import { computeClassLevelSlotSummaries, reconcilePreparedSlots } from '../../rulesets/dnd35e/magic/spellbook_slots.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import type { DnD35ClassSpellbookState, DnD35PreparedSlotEntry } from '../../rulesets/dnd35e/types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../../rulesets/dnd35e/types/dnd35e_system.types.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
+import { advanceWorldTimeBulk } from '../../systems/world_time_skip.ts';
 import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
-import { executeEightHourRest } from './dnd35e_rest_actions.ts';
+import { evaluateActorRestSafety, executeEightHourRest } from './dnd35e_rest_actions.ts';
 
 export { executeEightHourRest };
+
+function resolveSpellDisplayName(state: GameState, spellId: string): string {
+  const sys = getDnD35SystemContent(state.campaign);
+  return sys?.spells?.[spellId]?.name ?? spellId.replace(/_/g, ' ');
+}
 
 function ensureHydratedClassSlots(
   state: GameState,
@@ -53,7 +60,8 @@ function persistUpdatedSpellbookSlots(
 }
 
 /**
- * Prepares a spell into a specific slot ID.
+ * Prepares a spell into a specific slot ID. Memorizing into an open slot requires safe surroundings
+ * and advances world time by 15 minutes (`OPEN_SLOT_PREPARATION_ROUNDS = 150` rounds).
  */
 export function prepareSpellIntoSpecificSlot(
   state: GameState,
@@ -62,22 +70,67 @@ export function prepareSpellIntoSpecificSlot(
   slotId: string,
   spellId: string
 ): GameState {
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'Cannot prepare spells right now.', MessageLogCategory.System);
+  }
+
   const dndData = getDnD35EntityData(state, playerId);
   const book = (dndData.spellbooksByClass ?? {})[classId];
   if (!book) return state;
 
-  const currentSlots = [...ensureHydratedClassSlots(state, playerId, book)];
-  const slotIdx = currentSlots.findIndex((s) => s.slotId === slotId);
+  const initialSlots = [...ensureHydratedClassSlots(state, playerId, book)];
+  const slotIdx = initialSlots.findIndex((s) => s.slotId === slotId);
   if (slotIdx === -1) return state;
 
-  currentSlots[slotIdx] = { ...currentSlots[slotIdx]!, preparedSpellId: spellId, expended: false };
-  const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, currentSlots);
+  const oldSlot = initialSlots[slotIdx]!;
+  if (oldSlot.expended) {
+    return addMessage(
+      state,
+      'Cannot prepare into an expended spell slot before resting for 8 hours.',
+      MessageLogCategory.System
+    );
+  }
 
-  return addMessage(
-    nextState,
-    `Memorized ${spellId.replace(/_/g, ' ')} into slot [${slotId}]`,
-    MessageLogCategory.System
-  );
+  const spellDisplayName = resolveSpellDisplayName(state, spellId);
+  const isOpenSlot = oldSlot.preparedSpellId === undefined;
+
+  if (isOpenSlot) {
+    const bulkRes = advanceWorldTimeBulk(state, OPEN_SLOT_PREPARATION_ROUNDS, playerId, (current) => {
+      const check = evaluateActorRestSafety(current, playerId);
+      return check.safe ? undefined : check.reason;
+    });
+    if (bulkRes.interruptedReason !== undefined) {
+      return addMessage(
+        bulkRes.state,
+        `Spell preparation interrupted: ${bulkRes.interruptedReason}`,
+        MessageLogCategory.System
+      );
+    }
+
+    const postDnd = getDnD35EntityData(bulkRes.state, playerId);
+    const postBook = (postDnd.spellbooksByClass ?? {})[classId];
+    if (!postBook) return bulkRes.state;
+    const postSlots = [...ensureHydratedClassSlots(bulkRes.state, playerId, postBook)];
+    const postIdx = postSlots.findIndex((s) => s.slotId === slotId);
+    if (postIdx === -1) return bulkRes.state;
+
+    const prepRes = prepareOpenDnD35Slot(postSlots[postIdx]!, spellId, postSlots[postIdx]!.spellLevel, false);
+    if (!prepRes.success) return bulkRes.state;
+
+    postSlots[postIdx] = prepRes.entry;
+    const nextState = persistUpdatedSpellbookSlots(bulkRes.state, playerId, postDnd, classId, postBook, postSlots);
+    return addMessage(
+      nextState,
+      `Memorized ${spellDisplayName} into open slot [${slotId}] (15 min elapsed).`,
+      MessageLogCategory.System
+    );
+  }
+
+  initialSlots[slotIdx] = { ...oldSlot, preparedSpellId: spellId, expended: false };
+  const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, initialSlots);
+
+  return addMessage(nextState, `Memorized ${spellDisplayName} into slot [${slotId}]`, MessageLogCategory.System);
 }
 
 /**
@@ -91,6 +144,11 @@ export function prepareSpellIntoSlot(
   slotKind: 'general' | 'domain' | 'specialist' = 'general',
   spellLevel = 0
 ): GameState {
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'Cannot prepare spells right now.', MessageLogCategory.System);
+  }
+
   const dndData = getDnD35EntityData(state, playerId);
   const classBooks = dndData.spellbooksByClass ?? {};
   const book = classBooks[classId];
@@ -98,7 +156,7 @@ export function prepareSpellIntoSlot(
 
   const slots = ensureHydratedClassSlots(state, playerId, book);
   const openSlot = slots.find(
-    (s) => s.spellLevel === spellLevel && s.slotKind === slotKind && (!s.preparedSpellId || s.expended)
+    (s) => s.spellLevel === spellLevel && s.slotKind === slotKind && !s.preparedSpellId && !s.expended
   );
 
   if (openSlot) {
@@ -116,11 +174,15 @@ export function prepareSpellIntoSlot(
     payload: { ...dndData, spellbooksByClass: { ...classBooks, [classId]: updatedBook } }
   } as RulesetDataComponent);
 
-  return addMessage(nextState, `Prepared spell: ${spellId}`, MessageLogCategory.System);
+  return addMessage(
+    nextState,
+    `Prepared spell: ${resolveSpellDisplayName(nextState, spellId)}`,
+    MessageLogCategory.System
+  );
 }
 
 /**
- * Clears the prepared spell from a specific slot.
+ * Clears the prepared spell from a specific slot when safe.
  */
 export function unprepareSpecificSlot(
   state: GameState,
@@ -128,6 +190,11 @@ export function unprepareSpecificSlot(
   classId: string,
   slotId: string
 ): GameState {
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'Cannot modify spell preparation right now.', MessageLogCategory.System);
+  }
+
   const dndData = getDnD35EntityData(state, playerId);
   const book = (dndData.spellbooksByClass ?? {})[classId];
   if (!book) return state;
@@ -137,7 +204,8 @@ export function unprepareSpecificSlot(
   if (slotIdx === -1) return state;
 
   const oldSlot = currentSlots[slotIdx]!;
-  const removedName = oldSlot.preparedSpellId;
+  const removedId = oldSlot.preparedSpellId;
+  const removedLabel = removedId !== undefined ? resolveSpellDisplayName(state, removedId) : 'empty';
   currentSlots[slotIdx] = {
     slotId: oldSlot.slotId,
     spellLevel: oldSlot.spellLevel,
@@ -146,11 +214,11 @@ export function unprepareSpecificSlot(
   };
 
   const nextState = persistUpdatedSpellbookSlots(state, playerId, dndData, classId, book, currentSlots);
-  return addMessage(nextState, `Unprepared slot [${slotId}] (${removedName ?? 'empty'})`, MessageLogCategory.System);
+  return addMessage(nextState, `Unprepared slot [${slotId}] (${removedLabel})`, MessageLogCategory.System);
 }
 
 /**
- * Legacy unprepare function for index-based removal.
+ * Legacy unprepare function for index-based removal when safe.
  */
 export function unprepareSpellSlot(
   state: GameState,
@@ -158,6 +226,11 @@ export function unprepareSpellSlot(
   classId: string,
   slotIndex: number
 ): GameState {
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'Cannot modify spell preparation right now.', MessageLogCategory.System);
+  }
+
   const dndData = getDnD35EntityData(state, playerId);
   const classBooks = dndData.spellbooksByClass ?? {};
   const book = classBooks[classId];
@@ -175,7 +248,8 @@ export function unprepareSpellSlot(
     payload: updatedDndData
   } as RulesetDataComponent);
 
-  return addMessage(nextState, `Unprepared spell: ${removed[0]}`, MessageLogCategory.System);
+  const removedLabel = removed[0] !== undefined ? resolveSpellDisplayName(nextState, removed[0]) : 'empty';
+  return addMessage(nextState, `Unprepared spell: ${removedLabel}`, MessageLogCategory.System);
 }
 
 /**

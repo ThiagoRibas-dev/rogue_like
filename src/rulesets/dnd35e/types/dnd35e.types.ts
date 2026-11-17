@@ -78,6 +78,7 @@ export interface DnD35PreparedSlotEntry {
   readonly slotKind: DnD35SpellSlotKind;
   readonly preparedSpellId?: string | undefined;
   readonly expended: boolean;
+  readonly castTimestampTurn?: number | undefined;
 }
 
 /** Per-class isolated spellbook / spellcasting state for multiclass casters. */
@@ -95,6 +96,7 @@ export interface DnD35ClassSpellbookState {
   readonly domainSpellSlots?: Readonly<Record<string, number>> | undefined;
   readonly preparedSlots?: ReadonlyArray<DnD35PreparedSlotEntry> | undefined;
   readonly spontaneousSlotsUsedByLevel?: Readonly<Record<string, number>> | undefined;
+  readonly spontaneousCastTimestampsByLevel?: Readonly<Record<string, ReadonlyArray<number>>> | undefined;
 }
 
 /** 6-second round 5-tier action economy and AoO budget state. */

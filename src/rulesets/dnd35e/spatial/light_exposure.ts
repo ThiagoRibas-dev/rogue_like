@@ -1,11 +1,6 @@
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
-import {
-  ComponentType,
-  type IdentityComponent,
-  type PositionComponent,
-  type TagsComponent
-} from '../../../types/components.types.ts';
+import { ComponentType, type PositionComponent, type TagsComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { resolveEntitySituationalTagContext } from '../semantic_tags_context.ts';
 import { projectDnD35ActorSemanticTags } from '../semantic_tags.ts';
@@ -71,8 +66,7 @@ export function evaluateActorLightExposure(
       conditions: nextConditions,
       lightExposure: 'blinded'
     });
-    const identity = getComponent(nextState, entityId, ComponentType.Identity) as IdentityComponent | undefined;
-    const actorName = identity?.name ?? `Actor #${entityId}`;
+    const actorName = resolveEntityDisplayName(nextState, entityId, `Actor #${entityId}`);
     return addMessage(
       nextState,
       `${actorName} is blinded for 1 round by abrupt exposure to bright light!`,

@@ -60,8 +60,9 @@ export function renderFactionsPanel(state: GameState): void {
     row.style.background = 'rgba(255,255,255,0.05)';
     row.style.borderRadius = '4px';
 
+    const factionDef = state.campaign.factions[factionId];
     const nameSpan = document.createElement('span');
-    nameSpan.textContent = factionId.charAt(0).toUpperCase() + factionId.slice(1);
+    nameSpan.textContent = factionDef?.name ?? factionId;
     nameSpan.style.fontWeight = 'bold';
 
     const valSpan = document.createElement('span');

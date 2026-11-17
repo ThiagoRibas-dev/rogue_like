@@ -6,7 +6,7 @@ import {
   type IdentityComponent,
   type NemesisComponent
 } from '../../types/components.types.ts';
-import { getComponent } from '../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 
 /**
  * Renders the Nemesis Hierarchies grid and Player Chronicle Timeline into the Dossier UI.
@@ -100,7 +100,7 @@ export function renderDossierHierarchiesAndTimeline(state: GameState, entityList
               }
             }
 
-            const name = identity ? `${identity.name} ${identity.title || ''}`.trim() : `Nemesis #${occupantId}`;
+            const name = resolveEntityDisplayName(state, occupantId, `Nemesis #${occupantId}`);
             const color = identity?.colorOverride || '#f1c40f';
             const statusText = inLimbo ? 'Missing' : isAlive ? 'Active' : 'Dead';
             const statusColor = inLimbo ? '#f39c12' : isAlive ? '#2ecc71' : '#e74c3c';

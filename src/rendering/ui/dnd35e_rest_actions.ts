@@ -1,16 +1,14 @@
-import { addComponent, getComponent, refreshResourcePools } from '../../core/ecs.ts';
 import { getGameState, setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty } from '../../core/presentation_queue.ts';
 import { BULK_REST_PROGRESS_DOTS, CLOCK_PHASE_ICONS } from '../../constants/world_clock.constants.ts';
 import { EIGHT_HOURS_IN_ROUNDS } from '../../rulesets/dnd35e/magic/aoe_rest.ts';
-import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
+import { getPlayerCompanions } from '../../systems/companion_commands.system.ts';
 import { triggerActiveAreaRespawnIfDue } from '../../systems/map/map_wake_respawn.ts';
 import { addMessage, MessageLogCategory } from '../../systems/message.system.ts';
 import {
   computeTurnsUntilPhase,
   formatWorldClockShort,
   getClockPhaseLabel,
-  isActorThreatenedByVisibleHostiles,
   readWorldClock
 } from '../../systems/world_clock.system.ts';
 import {
@@ -18,9 +16,15 @@ import {
   advanceWorldTimeBulkAsync,
   type BulkTimeAdvanceResult
 } from '../../systems/world_time_skip.ts';
-import { ComponentType, type RulesetDataComponent } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import {
+  applyEightHourRestToActor,
+  evaluateActorRestSafety,
+  type RestSafetyEvaluation
+} from './dnd35e_rest_recovery.ts';
 import { hideLoadingOverlay, showLoadingOverlay, updateLoadingProgress } from './loading_overlay.ui.ts';
+
+export { evaluateActorRestSafety, type RestSafetyEvaluation };
 
 /** Maximum world event summary lines appended to the message log after resting or waiting. */
 const MAX_REST_DIGEST_LINES = 5;
@@ -52,98 +56,83 @@ function finalizeBulkTimeEventsAndRespawn(
 
 /**
  * Applies post-bulk-time-advance rest recovery (natural healing, 1 pt ability damage healing,
- * spell slot refresh, `rest_8h` pool recharge, active-area respawn, and world event digest).
+ * spell slot refresh with 8h retention, `rest_8h` pool recharge, fatigue removal, companion recovery,
+ * active-area respawn, and world event digest), or reports interruption when aborted mid-rest.
  */
 function finalizeEightHourRestRecovery(bulkRes: BulkTimeAdvanceResult, playerId: EntityId): GameState {
-  let nextState = bulkRes.state;
-  const dndData = getDnD35EntityData(nextState, playerId);
-  const fighter = getComponent(nextState, playerId, ComponentType.Fighter);
-  if (!fighter) return nextState;
-
-  const totalTrackLevels = dndData.tracks.reduce((sum, t) => sum + t.levels, 0);
-  const effectiveLevel = Math.max(1, totalTrackLevels > 0 ? totalTrackLevels : fighter.level || 1);
-  const healedHp = Math.min(fighter.maxHp, fighter.hp + effectiveLevel);
-  nextState = addComponent(nextState, playerId, { ...fighter, hp: healedHp });
-
-  const abilities = dndData.abilityScores;
-  const healedAbilities = {
-    str: { ...abilities.str, damage: Math.max(0, abilities.str.damage - 1) },
-    dex: { ...abilities.dex, damage: Math.max(0, abilities.dex.damage - 1) },
-    con: { ...abilities.con, damage: Math.max(0, abilities.con.damage - 1) },
-    int: { ...abilities.int, damage: Math.max(0, abilities.int.damage - 1) },
-    wis: { ...abilities.wis, damage: Math.max(0, abilities.wis.damage - 1) },
-    cha: { ...abilities.cha, damage: Math.max(0, abilities.cha.damage - 1) }
-  };
-
-  const classBooks = dndData.spellbooksByClass ?? {};
-  const refreshedBooks: Record<string, (typeof classBooks)[string]> = {};
-  let booksChanged = false;
-
-  for (const [cid, book] of Object.entries(classBooks)) {
-    let slots = book.preparedSlots;
-    if (slots && slots.length > 0) {
-      slots = slots.map((s) => (s.expended ? { ...s, expended: false } : s));
-    }
-    const preparedSpellIds = slots
-      ? slots.filter((s) => s.preparedSpellId !== undefined).map((s) => s.preparedSpellId!)
-      : book.preparedSpellIds;
-
-    refreshedBooks[cid] = {
-      ...book,
-      preparedSlots: slots,
-      preparedSpellIds,
-      spontaneousSlotsUsedByLevel: {}
-    };
-    booksChanged = true;
+  if (bulkRes.interruptedReason !== undefined) {
+    const respawnedState = finalizeBulkTimeEventsAndRespawn(bulkRes.state, bulkRes.summaryEvents, 'rested');
+    return addMessage(
+      respawnedState,
+      `Rest interrupted at ${formatWorldClockShort(readWorldClock(respawnedState))}: ${bulkRes.interruptedReason}`,
+      MessageLogCategory.System
+    );
   }
 
-  const updatedDndData = {
-    ...dndData,
-    abilityScores: healedAbilities,
-    ...(booksChanged ? { spellbooksByClass: refreshedBooks } : {})
-  };
-  nextState = addComponent(nextState, playerId, {
-    type: ComponentType.RulesetData,
-    rulesetId: 'dnd35e',
-    payload: updatedDndData
-  } as RulesetDataComponent);
+  let nextState = bulkRes.state;
+  const partyIds = Array.from(new Set<EntityId>([playerId, ...getPlayerCompanions(nextState, playerId)]));
+  let totalRetainedRecentCasts = 0;
 
-  nextState = refreshResourcePools(nextState, playerId, 'rest_8h');
+  for (const actorId of partyIds) {
+    const recovered = applyEightHourRestToActor(nextState, actorId);
+    nextState = recovered.state;
+    totalRetainedRecentCasts += recovered.retainedRecentCastCount;
+  }
+
   nextState = finalizeBulkTimeEventsAndRespawn(nextState, bulkRes.summaryEvents, 'rested');
 
+  const retentionNote =
+    totalRetainedRecentCasts > 0
+      ? ` (${totalRetainedRecentCasts} slot(s) cast within the last 8 hours remained expended.)`
+      : '';
   return addMessage(
     nextState,
-    `Rest completed (8 hours). It is now ${formatWorldClockShort(readWorldClock(nextState))}. All daily spell slots and abilities refreshed.`,
+    `Rest completed (8 hours). It is now ${formatWorldClockShort(readWorldClock(nextState))}. All eligible daily spell slots and abilities refreshed.${retentionNote}`,
     MessageLogCategory.System
   );
 }
 
 /**
- * Performs an 8-hour rest synchronously when unthreatened by visible hostiles.
+ * Performs an 8-hour rest synchronously when safe, interrupting cleanly if a hazard emerges mid-rest.
  */
 export function executeEightHourRest(state: GameState, playerId: EntityId): GameState {
-  if (isActorThreatenedByVisibleHostiles(state, playerId)) {
-    return addMessage(state, 'You cannot rest while hostile creatures are visible!', MessageLogCategory.System);
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'You cannot rest right now!', MessageLogCategory.System);
   }
-  const bulkRes = advanceWorldTimeBulk(state, EIGHT_HOURS_IN_ROUNDS, playerId);
+  const bulkRes = advanceWorldTimeBulk(state, EIGHT_HOURS_IN_ROUNDS, playerId, (current) => {
+    const check = evaluateActorRestSafety(current, playerId);
+    return check.safe ? undefined : check.reason;
+  });
   return finalizeEightHourRestRecovery(bulkRes, playerId);
 }
 
 /**
  * Waits synchronously until the next occurrence of `targetPhaseId` (from `rules.worldClock.waitTargets`),
- * advancing world time and macro simulations in bulk unless threatened by visible hostiles.
+ * advancing world time and macro simulations in bulk unless unsafe or interrupted.
  */
 export function executeWaitUntilPhase(state: GameState, playerId: EntityId, targetPhaseId: string): GameState {
-  if (isActorThreatenedByVisibleHostiles(state, playerId)) {
-    return addMessage(state, 'You cannot wait while hostile creatures are visible!', MessageLogCategory.System);
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    return addMessage(state, safety.reason ?? 'You cannot wait right now!', MessageLogCategory.System);
   }
   const turns = computeTurnsUntilPhase(state, targetPhaseId);
   if (turns === undefined) {
     return addMessage(state, `Unknown time phase "${targetPhaseId}".`, MessageLogCategory.System);
   }
 
-  const bulkRes = advanceWorldTimeBulk(state, turns, playerId);
+  const bulkRes = advanceWorldTimeBulk(state, turns, playerId, (current) => {
+    const check = evaluateActorRestSafety(current, playerId);
+    return check.safe ? undefined : check.reason;
+  });
   let nextState = finalizeBulkTimeEventsAndRespawn(bulkRes.state, bulkRes.summaryEvents, 'waited');
+  if (bulkRes.interruptedReason !== undefined) {
+    return addMessage(
+      nextState,
+      `Waiting interrupted at ${formatWorldClockShort(readWorldClock(nextState))}: ${bulkRes.interruptedReason}`,
+      MessageLogCategory.System
+    );
+  }
   const phaseLabel = getClockPhaseLabel(nextState, targetPhaseId);
   nextState = addMessage(
     nextState,
@@ -161,12 +150,9 @@ export async function applyRestActionAsync(
   playerId: EntityId,
   onComplete?: () => void
 ): Promise<void> {
-  if (isActorThreatenedByVisibleHostiles(state, playerId)) {
-    const blocked = addMessage(
-      state,
-      'You cannot rest while hostile creatures are visible!',
-      MessageLogCategory.System
-    );
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    const blocked = addMessage(state, safety.reason ?? 'You cannot rest right now!', MessageLogCategory.System);
     setGameState(blocked);
     markAllDomainsDirty();
     onComplete?.();
@@ -176,11 +162,20 @@ export async function applyRestActionAsync(
   showLoadingOverlay('Resting for 8 Hours...');
   let dotIdx = 0;
   try {
-    const bulkRes = await advanceWorldTimeBulkAsync(state, EIGHT_HOURS_IN_ROUNDS, playerId, (fraction) => {
-      const dots = BULK_REST_PROGRESS_DOTS[dotIdx % BULK_REST_PROGRESS_DOTS.length] ?? '...';
-      dotIdx++;
-      updateLoadingProgress({ progress: fraction, message: `The world stirs${dots}` });
-    });
+    const bulkRes = await advanceWorldTimeBulkAsync(
+      state,
+      EIGHT_HOURS_IN_ROUNDS,
+      playerId,
+      (fraction) => {
+        const dots = BULK_REST_PROGRESS_DOTS[dotIdx % BULK_REST_PROGRESS_DOTS.length] ?? '...';
+        dotIdx++;
+        updateLoadingProgress({ progress: fraction, message: `The world stirs${dots}` });
+      },
+      (current) => {
+        const check = evaluateActorRestSafety(current, playerId);
+        return check.safe ? undefined : check.reason;
+      }
+    );
     const finalState = finalizeEightHourRestRecovery(bulkRes, playerId);
     setGameState(finalState);
     markAllDomainsDirty();
@@ -199,12 +194,9 @@ export async function applyWaitUntilPhaseAsync(
   targetPhaseId: string,
   onComplete?: () => void
 ): Promise<void> {
-  if (isActorThreatenedByVisibleHostiles(state, playerId)) {
-    const blocked = addMessage(
-      state,
-      'You cannot wait while hostile creatures are visible!',
-      MessageLogCategory.System
-    );
+  const safety = evaluateActorRestSafety(state, playerId);
+  if (!safety.safe) {
+    const blocked = addMessage(state, safety.reason ?? 'You cannot wait right now!', MessageLogCategory.System);
     setGameState(blocked);
     markAllDomainsDirty();
     onComplete?.();
@@ -218,17 +210,34 @@ export async function applyWaitUntilPhaseAsync(
   showLoadingOverlay(`${icon} Waiting until ${phaseLabel}...`);
   let dotIdx = 0;
   try {
-    const bulkRes = await advanceWorldTimeBulkAsync(state, turns, playerId, (fraction) => {
-      const dots = BULK_REST_PROGRESS_DOTS[dotIdx % BULK_REST_PROGRESS_DOTS.length] ?? '...';
-      dotIdx++;
-      updateLoadingProgress({ progress: fraction, message: `Time passes${dots}` });
-    });
-    let nextState = finalizeBulkTimeEventsAndRespawn(bulkRes.state, bulkRes.summaryEvents, 'waited');
-    nextState = addMessage(
-      nextState,
-      `Waited until ${phaseLabel}. It is now ${formatWorldClockShort(readWorldClock(nextState))}.`,
-      MessageLogCategory.System
+    const bulkRes = await advanceWorldTimeBulkAsync(
+      state,
+      turns,
+      playerId,
+      (fraction) => {
+        const dots = BULK_REST_PROGRESS_DOTS[dotIdx % BULK_REST_PROGRESS_DOTS.length] ?? '...';
+        dotIdx++;
+        updateLoadingProgress({ progress: fraction, message: `Time passes${dots}` });
+      },
+      (current) => {
+        const check = evaluateActorRestSafety(current, playerId);
+        return check.safe ? undefined : check.reason;
+      }
     );
+    let nextState = finalizeBulkTimeEventsAndRespawn(bulkRes.state, bulkRes.summaryEvents, 'waited');
+    if (bulkRes.interruptedReason !== undefined) {
+      nextState = addMessage(
+        nextState,
+        `Waiting interrupted at ${formatWorldClockShort(readWorldClock(nextState))}: ${bulkRes.interruptedReason}`,
+        MessageLogCategory.System
+      );
+    } else {
+      nextState = addMessage(
+        nextState,
+        `Waited until ${phaseLabel}. It is now ${formatWorldClockShort(readWorldClock(nextState))}.`,
+        MessageLogCategory.System
+      );
+    }
     setGameState(nextState);
     markAllDomainsDirty();
     onComplete?.();

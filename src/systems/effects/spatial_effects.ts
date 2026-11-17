@@ -1,4 +1,4 @@
-import { getComponent, addComponent } from '../../core/ecs.ts';
+import { getComponent, addComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import {
   ComponentType,
   type DamageComponent,
@@ -86,8 +86,7 @@ export function resolveDamageNearestEffect(
   const targetFighter = getComponent(state, nearestId, ComponentType.Fighter);
   if (!targetFighter) return state;
 
-  const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
-  const targetName = targetRenderable?.glyph ?? 'target';
+  const targetName = resolveEntityDisplayName(state, nearestId, 'target');
 
   const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
   const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
@@ -137,8 +136,7 @@ export function resolveDamageAreaEffect(
     const dist = Math.sqrt(Math.pow(targetPos.x - userPos.x, 2) + Math.pow(targetPos.y - userPos.y, 2));
     if (dist <= radius) {
       hitSomeone = true;
-      const targetRenderable = getComponent(state, id, ComponentType.Renderable);
-      const targetName = targetRenderable?.glyph ?? 'target';
+      const targetName = resolveEntityDisplayName(nextState, id, 'target');
       const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
       nextState = addMessage(nextState, msg, MessageLogCategory.CombatHit);
 
@@ -184,9 +182,8 @@ export function resolveApplyStatusEffect(
   if (explicitTargetId !== undefined) {
     if (!matchesTargetFilters(state, userId, explicitTargetId, effectDef)) return state;
 
-    const targetRenderable = getComponent(state, explicitTargetId, ComponentType.Renderable);
     const isPlayer = getComponent(state, explicitTargetId, ComponentType.Player) !== undefined;
-    const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
+    const targetName = isPlayer ? 'You' : resolveEntityDisplayName(state, explicitTargetId, 'target');
     const msg = effectDef.message.replace('{target}', targetName);
 
     let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
@@ -220,9 +217,8 @@ export function resolveApplyStatusEffect(
       return addMessage(state, 'The magic crackles... but finds no target.', MessageLogCategory.System);
     }
 
-    const targetRenderable = getComponent(state, nearestId, ComponentType.Renderable);
     const isPlayer = getComponent(state, nearestId, ComponentType.Player) !== undefined;
-    const targetName = isPlayer ? 'You' : (targetRenderable?.glyph ?? 'target');
+    const targetName = isPlayer ? 'You' : resolveEntityDisplayName(state, nearestId, 'target');
     const msg = effectDef.message.replace('{target}', targetName);
 
     let nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
@@ -234,7 +230,7 @@ export function resolveApplyStatusEffect(
     return addMessage(state, `The magic fizzles, having no effect on you.`, MessageLogCategory.System);
   }
   const isPlayer = getComponent(state, userId, ComponentType.Player) !== undefined;
-  const targetName = isPlayer ? 'You' : (getComponent(state, userId, ComponentType.Renderable)?.glyph ?? 'Something');
+  const targetName = isPlayer ? 'You' : resolveEntityDisplayName(state, userId, 'Something');
   const msg = effectDef.message.replace('{item}', itemName).replace('{target}', targetName);
   let nextState = addMessage(state, msg, MessageLogCategory.System);
   nextState = applyStatusEffect(nextState, userId, effectDef.statusId, effectDef.duration, userId);

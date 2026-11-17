@@ -1,10 +1,9 @@
-import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import {
   ComponentType,
   type DamageComponent,
   type FighterComponent,
-  type IdentityComponent,
   type PositionComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
@@ -192,8 +191,7 @@ export function resolveOnDropCleaveFollowup(
     );
     if (candDistFt <= attackerReachFt && isHostile(state, attackerId, candId)) {
       cleaveTargetId = candId;
-      const candIdentity = getComponent(state, candId, ComponentType.Identity) as IdentityComponent | undefined;
-      if (candIdentity?.name) cleaveTargetName = candIdentity.name;
+      cleaveTargetName = resolveEntityDisplayName(state, candId, 'foe');
       break;
     }
   }

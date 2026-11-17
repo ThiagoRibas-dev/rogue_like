@@ -3,16 +3,14 @@
  * Companions, Familiars, Cohorts & Summons roster table.
  */
 
-import { getComponent } from '../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import { getPlayerCompanions } from '../../systems/companion_commands.system.ts';
 import {
   ComponentType,
   type ControllerLinkComponent,
   type FighterComponent,
-  type IdentityComponent,
-  type PositionComponent,
-  type TemplateComponent
+  type PositionComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
 
@@ -69,14 +67,12 @@ export function renderSheetCompanionsTab(container: HTMLElement, state: GameStat
   const tbody = document.createElement('tbody');
 
   for (const compId of companions) {
-    const identity = getComponent(state, compId, ComponentType.Identity) as IdentityComponent | undefined;
-    const template = getComponent(state, compId, ComponentType.Template) as TemplateComponent | undefined;
     const fighter = getComponent(state, compId, ComponentType.Fighter) as FighterComponent | undefined;
     const link = getComponent(state, compId, ComponentType.ControllerLink) as ControllerLinkComponent | undefined;
     const cPos = getComponent(state, compId, ComponentType.Position) as PositionComponent | undefined;
     const dndData = getDnD35EntityData(state, compId);
 
-    const name = identity?.name ?? template?.templateId?.replace(/_/g, ' ') ?? 'Companion';
+    const name = resolveEntityDisplayName(state, compId, 'Companion');
     const trackDesc =
       dndData.tracks.map((t) => `${t.trackId.toUpperCase()} ${t.levels} HD`).join(', ') ||
       (dndData.raceId ? `${dndData.raceId.toUpperCase()}` : 'Ally');

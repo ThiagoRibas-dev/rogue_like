@@ -226,7 +226,11 @@ export function expendCasterSpellSlot(
     if (targetIdx === -1) {
       return { ok: false, updatedBook: book, reason: `No unexpended prepared slot available for ${spell.name}.` };
     }
-    hydratedSlots[targetIdx] = { ...hydratedSlots[targetIdx]!, expended: true };
+    hydratedSlots[targetIdx] = {
+      ...hydratedSlots[targetIdx]!,
+      expended: true,
+      castTimestampTurn: state.globalTurn
+    };
     const preparedSpellIds = hydratedSlots
       .filter((s) => s.preparedSpellId !== undefined && !s.expended)
       .map((s) => s.preparedSpellId!);
@@ -249,11 +253,16 @@ export function expendCasterSpellSlot(
   if (maxDaily > 0 && used >= maxDaily) {
     return { ok: false, updatedBook: book, reason: `No Level ${effectiveLevel} spell slots remaining.` };
   }
+  const prevStamps = book.spontaneousCastTimestampsByLevel?.[lvlKey] ?? [];
   return {
     ok: true,
     updatedBook: {
       ...book,
-      spontaneousSlotsUsedByLevel: { ...(book.spontaneousSlotsUsedByLevel ?? {}), [lvlKey]: used + 1 }
+      spontaneousSlotsUsedByLevel: { ...(book.spontaneousSlotsUsedByLevel ?? {}), [lvlKey]: used + 1 },
+      spontaneousCastTimestampsByLevel: {
+        ...(book.spontaneousCastTimestampsByLevel ?? {}),
+        [lvlKey]: [...prevStamps, state.globalTurn]
+      }
     }
   };
 }

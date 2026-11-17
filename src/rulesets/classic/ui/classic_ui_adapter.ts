@@ -4,7 +4,7 @@
  * `StatusEffects`, `Tags`) into unified Tier 1 Console UI models using the `'retro-crt'` skin.
  */
 
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import {
   ComponentType,
   type ActorComponent,
@@ -167,7 +167,9 @@ export class DefaultSciFiUIAdapter implements ICartridgeUIAdapter {
     ];
 
     return {
-      name: identity?.name ?? (typeof raw['name'] === 'string' ? raw['name'] : 'Adventurer'),
+      name: ctx
+        ? resolveEntityDisplayName(ctx.state, ctx.entityId, 'Adventurer')
+        : (identity?.name ?? (typeof raw['name'] === 'string' ? raw['name'] : 'Adventurer')),
       levelSummary: `Level ${lvl}`,
       raceName: 'Adventurer',
       xpCurrent: fighter?.xp ?? 0,

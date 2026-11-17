@@ -1,9 +1,8 @@
-import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import {
   ComponentType,
   type DamageComponent,
-  type IdentityComponent,
   type PositionComponent,
   type TagsComponent
 } from '../../../types/components.types.ts';
@@ -155,10 +154,8 @@ export function resolveBullRushImpact(
     ...(params.forcedOpposedRolls !== undefined ? { forcedOpposedRolls: params.forcedOpposedRolls } : {})
   });
 
-  const atkName =
-    (getComponent(state, attackerId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Attacker';
-  const defName =
-    (getComponent(state, defenderId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Defender';
+  const atkName = resolveEntityDisplayName(state, attackerId, 'Attacker');
+  const defName = resolveEntityDisplayName(state, defenderId, 'Defender');
 
   if (!maneuverRes.opposedSuccess) {
     const missState = addMessage(

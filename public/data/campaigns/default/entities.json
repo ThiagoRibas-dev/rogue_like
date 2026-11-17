@@ -2,7 +2,7 @@
   "player": {
     "spriteId": "actor_rogue",
     "id": "player",
-    "name": "Player",
+    "name": "Adventurer",
     "glyph": "@",
     "fg": "#00ffff",
     "bg": "transparent",

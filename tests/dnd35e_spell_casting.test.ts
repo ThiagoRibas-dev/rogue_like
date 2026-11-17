@@ -193,17 +193,17 @@ describe('D&D 3.5e End-to-End Spell Casting & Quickcast Matrix', () => {
     state = ensureWalkableLine(state, pPos.x, pPos.y, 3);
     const f = getComponent(state, playerId, ComponentType.Fighter) as FighterComponent;
     state = addComponent(state, playerId, { ...f, hp: Math.max(1, f.maxHp - 6) });
-    const [sWithSkel, skelId] = spawnEntity(state, 'skeleton', pPos.x + 2, pPos.y);
-    state = sWithSkel;
-    const skelHpBefore = (getComponent(state, skelId, ComponentType.Fighter) as FighterComponent).hp;
-
-    // Cleric prepares two general lv1 slots then spontaneously converts to Cure Light Wounds
+    // Cleric prepares two general lv1 slots while safe, then hostile skeleton appears and Cleric converts to Cure Light Wounds
     state = prepareSpellIntoSlot(state, playerId, 'cleric', 'bless', 'general', 1);
     state = prepareSpellIntoSlot(state, playerId, 'cleric', 'bless', 'general', 1);
     const preparedGeneral = getDnD35EntityData(state, playerId).spellbooksByClass!['cleric']!.preparedSlots!.filter(
       (s) => s.spellLevel === 1 && s.slotKind === 'general' && s.preparedSpellId === 'bless' && !s.expended
     );
     expect(preparedGeneral.length).toBeGreaterThanOrEqual(2);
+
+    const [sWithSkel, skelId] = spawnEntity(state, 'skeleton', pPos.x + 2, pPos.y);
+    state = sWithSkel;
+    const skelHpBefore = (getComponent(state, skelId, ComponentType.Fighter) as FighterComponent).hp;
 
     state = executeDnD35eSpellCast(state, playerId, { x: pPos.x, y: pPos.y }, {
       classId: 'cleric',

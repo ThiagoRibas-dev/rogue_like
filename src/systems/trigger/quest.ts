@@ -11,7 +11,7 @@ import type {
 } from '../../types/components.types.ts';
 import { toItemInstanceId } from '../../types/components.types.ts';
 import type { EntityDiedEvent } from '../../types/events.types.ts';
-import { getComponent, addComponent, createEntity } from '../../core/ecs.ts';
+import { getComponent, addComponent, createEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { completeQuest, failQuest, grantQuest } from '../quest.system.ts';
 import { generateProceduralQuest } from '../procedural-quest.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
@@ -68,8 +68,7 @@ export const questConsequences = {
 
     const agreement = getComponent(state, victimId, ComponentType.Agreement) as AgreementComponent | undefined;
     const pos = getComponent(state, victimId, ComponentType.Position) as PositionComponent | undefined;
-    const renderable = getComponent(state, victimId, ComponentType.Renderable);
-    const name = renderable ? renderable.glyph : 'Someone';
+    const name = resolveEntityDisplayName(state, victimId, 'Someone');
 
     if (!agreement || !pos) return state;
 

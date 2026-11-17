@@ -1,7 +1,7 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { getComponent, addComponent, spawnItem, removeComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, spawnItem, removeComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { ComponentType } from '../types/components.types.ts';
-import type { ShopComponent, RenderableComponent } from '../types/components.types.ts';
+import type { ShopComponent } from '../types/components.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 import { rng } from '../core/rng.ts';
 import { grantQuest } from './quest.system.ts';
@@ -55,8 +55,7 @@ export function restockShop(state: GameState, shopEntityId: EntityId): GameState
 
     const questId = `dyn_restock_${shopEntityId}_${nextState.nextQuestId}`;
 
-    const rend = getComponent(nextState, shopEntityId, ComponentType.Renderable) as RenderableComponent | undefined;
-    const shopName = rend?.glyph ?? 'Merchant';
+    const shopName = resolveEntityDisplayName(nextState, shopEntityId, 'Merchant');
 
     const quest: Quest = {
       id: questId,

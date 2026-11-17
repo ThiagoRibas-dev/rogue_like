@@ -283,7 +283,10 @@ export function renderHudDock(state: GameState): void {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.id = `dock-btn-cartridge-${cmd.id}`;
-      const isActive = state.uiMode === UIMode.CartridgeModal && state.activeCartridgeModalId === cmd.modalId;
+      const isActive =
+        cmd.modalId !== undefined &&
+        state.uiMode === UIMode.CartridgeModal &&
+        state.activeCartridgeModalId === cmd.modalId;
       btn.className = isActive ? 'dock-cmd-btn active' : 'dock-cmd-btn';
 
       const iconSpan = document.createElement('span');
@@ -303,7 +306,11 @@ export function renderHudDock(state: GameState): void {
       btn.appendChild(keyBadge);
 
       btn.addEventListener('click', () => {
-        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+        if (cmd.onTrigger) {
+          cmd.onTrigger(state, playerEntityId);
+        } else if (cmd.modalId !== undefined) {
+          queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+        }
       });
 
       container.appendChild(btn);

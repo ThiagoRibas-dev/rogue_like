@@ -1,11 +1,10 @@
-import { addComponent, consumeResourcePool, getComponent } from '../../../core/ecs.ts';
+import { addComponent, consumeResourcePool, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
 import {
   ComponentType,
   type FighterComponent,
-  type IdentityComponent,
   type PositionComponent,
   type ResourcePoolComponent,
   type StatusEffectsComponent,
@@ -201,7 +200,7 @@ export function executeAbruptJauntTeleport(
   });
   if (getComponent(next, actorId, ComponentType.Player) !== undefined) next = { ...next, fovNeedsUpdate: true };
   next = syncSpatialFlankingGraph(next);
-  const name = (getComponent(next, actorId, ComponentType.Identity) as IdentityComponent | undefined)?.name ?? 'Actor';
+  const name = resolveEntityDisplayName(next, actorId, 'Actor');
   const distFt = Math.max(Math.abs(targetX - actorPos.x), Math.abs(targetY - actorPos.y)) * FEET_PER_GRID_SQUARE;
   next = addFloatingText(next, actorId, 'JAUNT!', '#74b9ff');
   const log = `[Immediate Action] ${name} abruptly jaunts ${distFt} ft to (${targetX}, ${targetY})!`;

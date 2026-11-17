@@ -1,11 +1,10 @@
-import { addComponent, consumeResourcePool, getComponent } from '../../../core/ecs.ts';
+import { addComponent, consumeResourcePool, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addFloatingText } from '../../../systems/damage.system.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { applyStatusEffect } from '../../../systems/status-effect.system.ts';
 import {
   ComponentType,
   type FighterComponent,
-  type IdentityComponent,
   type PositionComponent,
   type ResourcePoolComponent
 } from '../../../types/components.types.ts';
@@ -161,12 +160,11 @@ function resolveTurnUndeadPool(state: GameState, actorId: EntityId, poolId: stri
     const undeadCheck = isTargetUndead(nextState, candId);
     if (!undeadCheck.undead) continue;
 
-    const ident = getComponent(nextState, candId, ComponentType.Identity) as IdentityComponent | undefined;
     candidates.push({
       id: candId,
       distFt,
       hd: undeadCheck.hd,
-      name: ident?.name ?? `Undead #${candId}`
+      name: resolveEntityDisplayName(nextState, candId, `Undead #${candId}`)
     });
   }
 

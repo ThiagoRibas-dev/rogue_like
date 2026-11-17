@@ -599,6 +599,12 @@
   border-left-color: #78a5d4;
 }
 
+.hud-alert-ribbon.alert-turn-ready {
+  border-color: #2f7a46;
+  border-left-color: #46c96e;
+  background: linear-gradient(90deg, #102b18 0%, #0d1612 100%);
+}
+
 .hud-alert-title {
   font-weight: 700;
   color: #fff;

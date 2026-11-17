@@ -1,4 +1,4 @@
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getHoverState } from '../core/hover_state.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import {
@@ -8,20 +8,20 @@ import {
   type ControllerLinkComponent,
   type FieldComponent,
   type FighterComponent,
-  type IdentityComponent,
   type ItemComponent,
   type LockComponent,
   type MemoryComponent,
   type NemesisComponent,
   type PortalComponent,
-  type ShopComponent,
-  type TemplateComponent
+  type ShopComponent
 } from '../types/components.types.ts';
 import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { FACET_DOMINANT_HIGH_THRESHOLD, FACET_DOMINANT_LOW_THRESHOLD } from '../constants/personality.constants.ts';
 import type { InspectSectionDTO, InspectTooltipDTO } from './viewport_snapshot.types.ts';
+
+export { resolveEntityDisplayName };
 
 /** Default patience threshold when none is explicitly set on a MemoryComponent. */
 const DEFAULT_PATIENCE_THRESHOLD = 5;
@@ -32,52 +32,6 @@ const STANCE_TOOLTIP_LABELS: Readonly<Record<CompanionStance, string>> = {
   passive: 'Passive',
   hold: 'Hold Position'
 };
-
-/**
- * Resolves the human-readable display name for any entity reactively from its ECS components
- * (`IdentityComponent`, `ItemComponent`, `FieldComponent`, `TemplateComponent`, `PortalComponent`).
- *
- * @param state The current GameState.
- * @param entityId The target entity ID.
- * @returns The resolved display name string.
- */
-export function resolveEntityDisplayName(state: GameState, entityId: EntityId): string {
-  const identity = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
-  if (identity) {
-    return `${identity.name} ${identity.title ?? ''}`.trim();
-  }
-
-  const item = getComponent(state, entityId, ComponentType.Item) as ItemComponent | undefined;
-  if (item) {
-    const itemDef = state.campaign.items[item.itemId];
-    const isIdentified = state.identifiedItems.has(item.itemId);
-    const resolvedItemName = isIdentified
-      ? itemDef?.name
-      : (state.itemUnidentifiedNames.get(item.itemId) ?? itemDef?.unidentifiedName ?? item.itemId);
-    return resolvedItemName || 'Item';
-  }
-
-  const field = getComponent(state, entityId, ComponentType.Field) as FieldComponent | undefined;
-  if (field) {
-    return state.campaign.fields[field.fieldType]?.name ?? field.fieldType;
-  }
-
-  const template = getComponent(state, entityId, ComponentType.Template) as TemplateComponent | undefined;
-  if (template) {
-    const templateDef = state.campaign.entities[template.templateId];
-    if (templateDef?.name) {
-      return templateDef.name;
-    }
-  }
-
-  const portal = getComponent(state, entityId, ComponentType.Portal) as PortalComponent | undefined;
-  if (portal) {
-    const targetAreaName = state.campaign.areas[portal.targetAreaId]?.name ?? portal.targetAreaId;
-    return `Passage (${targetAreaName})`;
-  }
-
-  return getComponent(state, entityId, ComponentType.Actor) ? 'Actor' : 'Feature';
-}
 
 /**
  * Appends component-reactive inspection sections for a single entity onto `sections`.

@@ -1,7 +1,7 @@
 import type { GameState } from '../types/game-state.types.ts';
 import type { ApplyIntent } from '../types/intents/interaction.intents.ts';
 import { ComponentType, type ItemComponent, type PositionComponent } from '../types/components.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getBresenhamLine } from '../utils/grid.ts';
@@ -53,7 +53,7 @@ export function processWandZap(state: GameState, intent: ApplyIntent): { state: 
   }
 
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  const userName = isPlayer ? 'You' : 'Something';
+  const userName = isPlayer ? 'You' : resolveEntityDisplayName(state, intent.entityId, 'Something');
   const verb = isPlayer ? 'zap' : 'zaps';
   const itemName = state.identifiedItems.has(itemComp.itemId)
     ? itemDef.name

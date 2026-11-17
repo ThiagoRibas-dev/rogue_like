@@ -10,9 +10,10 @@ export interface CartridgeDockCommandDescriptor {
   readonly id: string;
   readonly label: string;
   readonly icon?: string | undefined;
-  readonly modalId: string;
+  readonly modalId?: string | undefined;
   readonly defaultKey: string;
   readonly isAvailable?: ((state: GameState, playerId: EntityId) => boolean) | undefined;
+  readonly onTrigger?: ((state: GameState, playerId: EntityId) => void) | undefined;
 }
 
 /**

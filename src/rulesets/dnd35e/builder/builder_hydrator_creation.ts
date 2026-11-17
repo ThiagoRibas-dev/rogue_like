@@ -186,6 +186,14 @@ export function applyCharacterCreationToPlayer(
   const conMod = computeAbilityModifier(computeEffectiveAbilityScore(updatedData.abilityScores.con));
   const chassis = aggregateProgressionChassis(updatedData.tracks, conMod, updatedData.levelAdjustment ?? 0);
   let runningState = setDnD35EntityData(state, entityId, updatedData);
+  const resolvedCharName = (draft.characterName ?? '').trim() || 'Adventurer';
+  const existingIdentity = getComponent(runningState, entityId, ComponentType.Identity);
+  runningState = addComponent(runningState, entityId, {
+    ...existingIdentity,
+    type: ComponentType.Identity,
+    name: resolvedCharName,
+    mannerisms: existingIdentity?.mannerisms ?? []
+  });
   runningState = syncActorResourcePoolsComponent(runningState, entityId, updatedData, sysContent);
 
   const inventory = getComponent(runningState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;

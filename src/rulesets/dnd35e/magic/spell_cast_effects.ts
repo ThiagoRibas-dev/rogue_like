@@ -225,6 +225,13 @@ function applySingleSpellUnit(ctx: ApplySpellEffectsContext, unit: DnD35SpellEff
       const nextHp = Math.min(maxHp, fighter.hp + amount);
       const restored = Math.max(0, nextHp - fighter.hp);
       runningState = addComponent(runningState, targetId, { ...fighter, hp: nextHp });
+      if (targetDnd.nonlethalDamage > 0 && amount > 0) {
+        const reducedNonlethal = Math.min(targetDnd.nonlethalDamage, amount);
+        runningState = setDnD35EntityData(runningState, targetId, {
+          ...targetDnd,
+          nonlethalDamage: targetDnd.nonlethalDamage - reducedNonlethal
+        });
+      }
       if (restored > 0) {
         runningState = addFloatingText(runningState, targetId, `+${restored}`, '#4ade80');
       }

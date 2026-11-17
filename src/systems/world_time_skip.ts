@@ -23,6 +23,7 @@ import { processKnowledgePropagationEvents, tickPendingKnowledge } from './knowl
 import { processNemesisSystem } from './nemesis.system.ts';
 import { processPersonalitySystem } from './personality.system.ts';
 import { processRivalries } from './rivalry.system.ts';
+import { applyElapsedWorldHours } from './world_clock.system.ts';
 import { processWorldEvents } from './world_events.system.ts';
 
 /** Result returned after advancing world time in bulk (for rest or waiting). */
@@ -30,6 +31,7 @@ export interface BulkTimeAdvanceResult {
   readonly state: GameState;
   readonly turnsAdvanced: number;
   readonly summaryEvents: ReadonlyArray<string>;
+  readonly interruptedReason?: string | undefined;
 }
 
 /**
@@ -130,7 +132,8 @@ function stepBulkMacroCadence(
     nextState = stepped;
   }
 
-  return nextState.globalTurn === targetTurn ? nextState : { ...nextState, globalTurn: targetTurn };
+  const finalizedTurnState = nextState.globalTurn === targetTurn ? nextState : { ...nextState, globalTurn: targetTurn };
+  return applyElapsedWorldHours(finalizedTurnState, prevTurn, targetTurn);
 }
 
 /**
@@ -138,8 +141,14 @@ function stepBulkMacroCadence(
  * 1. Advances `globalTurn`, Drama Budget, and Tier 2/3 macro simulations (`Nemesis`, `Rivalry`, `World Events`, `Rumors`).
  * 2. Fast-forwards status/field/overlay/summon durations in O(entities).
  * 3. Applies normal hunger progression (`rules.hunger.satiationLossPerStandardTurn`) for the player.
+ * 4. Aborts cleanly if `shouldInterrupt` returns a non-empty interruption reason.
  */
-export function advanceWorldTimeBulk(state: GameState, turns: number, playerId?: EntityId): BulkTimeAdvanceResult {
+export function advanceWorldTimeBulk(
+  state: GameState,
+  turns: number,
+  playerId?: EntityId,
+  shouldInterrupt?: (currentState: GameState) => string | undefined
+): BulkTimeAdvanceResult {
   if (turns <= 0) {
     return { state, turnsAdvanced: 0, summaryEvents: [] };
   }
@@ -148,23 +157,33 @@ export function advanceWorldTimeBulk(state: GameState, turns: number, playerId?:
   const seenEventIds = new Set<string>();
   let nextState = state;
   let remaining = turns;
+  let advanced = 0;
+  let interruptedReason: string | undefined;
 
   while (remaining > 0) {
     const step = Math.min(BULK_CADENCE_STEP_SIZE, remaining);
     nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
     remaining -= step;
+    advanced += step;
+
+    const reason = shouldInterrupt?.(nextState);
+    if (reason) {
+      interruptedReason = reason;
+      break;
+    }
   }
 
-  nextState = fastForwardEntityDurations(nextState, turns);
+  nextState = fastForwardEntityDurations(nextState, advanced);
 
-  if (playerId !== undefined) {
-    nextState = processHungerTick(nextState, playerId, turns * STANDARD_ENERGY_PER_TURN);
+  if (playerId !== undefined && advanced > 0) {
+    nextState = processHungerTick(nextState, playerId, advanced * STANDARD_ENERGY_PER_TURN);
   }
 
   return {
     state: nextState,
-    turnsAdvanced: turns,
-    summaryEvents
+    turnsAdvanced: advanced,
+    summaryEvents,
+    ...(interruptedReason !== undefined ? { interruptedReason } : {})
   };
 }
 
@@ -176,7 +195,8 @@ export async function advanceWorldTimeBulkAsync(
   state: GameState,
   turns: number,
   playerId: EntityId | undefined,
-  onProgress?: (fraction: number) => void
+  onProgress?: (fraction: number) => void,
+  shouldInterrupt?: (currentState: GameState) => string | undefined
 ): Promise<BulkTimeAdvanceResult> {
   if (turns <= 0) {
     onProgress?.(1);
@@ -187,30 +207,38 @@ export async function advanceWorldTimeBulkAsync(
   const seenEventIds = new Set<string>();
   let nextState = state;
   let completed = 0;
+  let interruptedReason: string | undefined;
 
-  while (completed < turns) {
+  while (completed < turns && interruptedReason === undefined) {
     const chunk = Math.min(BULK_REST_CHUNK_TURNS, turns - completed);
     let chunkRemaining = chunk;
     while (chunkRemaining > 0) {
       const step = Math.min(BULK_CADENCE_STEP_SIZE, chunkRemaining);
       nextState = stepBulkMacroCadence(nextState, step, summaryEvents, seenEventIds);
       chunkRemaining -= step;
+      completed += step;
+
+      const reason = shouldInterrupt?.(nextState);
+      if (reason) {
+        interruptedReason = reason;
+        break;
+      }
     }
-    completed += chunk;
-    onProgress?.(completed / turns);
-    if (completed < turns) {
+    onProgress?.(Math.min(1, completed / turns));
+    if (completed < turns && interruptedReason === undefined) {
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }
 
-  nextState = fastForwardEntityDurations(nextState, turns);
-  if (playerId !== undefined) {
-    nextState = processHungerTick(nextState, playerId, turns * STANDARD_ENERGY_PER_TURN);
+  nextState = fastForwardEntityDurations(nextState, completed);
+  if (playerId !== undefined && completed > 0) {
+    nextState = processHungerTick(nextState, playerId, completed * STANDARD_ENERGY_PER_TURN);
   }
 
   return {
     state: nextState,
-    turnsAdvanced: turns,
-    summaryEvents
+    turnsAdvanced: completed,
+    summaryEvents,
+    ...(interruptedReason !== undefined ? { interruptedReason } : {})
   };
 }

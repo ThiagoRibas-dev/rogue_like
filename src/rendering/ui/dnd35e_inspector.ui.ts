@@ -116,7 +116,7 @@ export function renderSkillInspector(
 
   const title = document.createElement('h3');
   title.style.margin = '0 0 4px 0';
-  title.style.color = 'var(--crpg-gold, #f1c40f)';
+  title.style.color = 'var(--crpg-gold, #7a4f0d)';
   title.textContent = `${skill.name} (${skill.keyAbility.toUpperCase()})`;
   pane.appendChild(title);
 
@@ -127,18 +127,18 @@ export function renderSkillInspector(
   metaRow.appendChild(
     createInspectorBadge(
       isClassSkill ? 'Class Skill (1 pt/rank)' : 'Cross-Class (2 pts/rank)',
-      isClassSkill ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-warning, #f39c12)'
+      isClassSkill ? 'var(--crpg-success, #145a28)' : 'var(--crpg-warning, #7d3c08)'
     )
   );
   metaRow.appendChild(
     createInspectorBadge(
       skill.trainedOnly ? 'Trained Only' : 'Usable Untrained',
-      skill.trainedOnly ? 'var(--crpg-warning, #e67e22)' : 'var(--crpg-info, #58a6ff)'
+      skill.trainedOnly ? 'var(--crpg-warning, #7d3c08)' : 'var(--crpg-info, #154360)'
     )
   );
   if (skill.acpMultiplier > 0) {
     metaRow.appendChild(
-      createInspectorBadge(`Armor Check Penalty: ${skill.acpMultiplier}x`, 'var(--crpg-danger, #e74c3c)')
+      createInspectorBadge(`Armor Check Penalty: ${skill.acpMultiplier}x`, 'var(--crpg-danger, #7f1d1d)')
     );
   }
   metaRow.appendChild(createInspectorBadge(`Take 10: ${skill.take10Allowed ? 'Yes' : 'No'}`));
@@ -155,15 +155,15 @@ export function renderSkillInspector(
   breakdownBox.style.gridTemplateColumns = '1fr auto';
   breakdownBox.style.gap = '4px 12px';
   breakdownBox.style.padding = '8px';
-  breakdownBox.style.background = 'var(--crpg-bg-card, rgba(0, 0, 0, 0.25))';
-  breakdownBox.style.border = '1px solid var(--crpg-border-subtle, #333947)';
+  breakdownBox.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
+  breakdownBox.style.border = '1px solid var(--crpg-border-subtle, rgba(110, 85, 54, 0.35))';
   breakdownBox.style.fontSize = '0.84rem';
 
   const addBreakRow = (label: string, valStr: string, highlight = false): void => {
     const l = document.createElement('span');
     l.textContent = label;
     const v = document.createElement('strong');
-    v.style.color = highlight ? 'var(--crpg-gold, #f1c40f)' : 'var(--crpg-text, #c9d1d9)';
+    v.style.color = highlight ? 'var(--crpg-gold, #7a4f0d)' : 'var(--crpg-text-main, #261d14)';
     v.textContent = valStr;
     breakdownBox.appendChild(l);
     breakdownBox.appendChild(v);
@@ -190,7 +190,7 @@ export function renderSkillInspector(
       const srcRanks = Math.floor(allRanks[srcId] ?? 0);
       const unlocked = srcRanks >= SYNERGY_RANK_THRESHOLD;
       const item = document.createElement('div');
-      item.style.color = unlocked ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-text-dim, #8b949e)';
+      item.style.color = unlocked ? 'var(--crpg-success, #145a28)' : 'var(--crpg-text-dim, #4d3f31)';
       item.textContent = `${unlocked ? '✔' : '○'} Receives +2 from ${srcName} (${srcRanks}/${SYNERGY_RANK_THRESHOLD} ranks)`;
       synBox.appendChild(item);
     }
@@ -200,13 +200,13 @@ export function renderSkillInspector(
     const tgtName = sys.skills[tgtId]?.name ?? tgtId;
     const active = wholeRanks >= SYNERGY_RANK_THRESHOLD;
     const item = document.createElement('div');
-    item.style.color = active ? 'var(--crpg-success, #2ecc71)' : 'var(--crpg-info, #58a6ff)';
+    item.style.color = active ? 'var(--crpg-success, #145a28)' : 'var(--crpg-info, #154360)';
     item.textContent = `→ 5+ ranks grants +2 synergy to ${tgtName}`;
     synBox.appendChild(item);
   }
   if (skill.synergyNotes) {
     const note = document.createElement('div');
-    note.style.color = 'var(--crpg-text, #c9d1d9)';
+    note.style.color = 'var(--crpg-text-main, #261d14)';
     note.style.marginTop = '2px';
     note.textContent = skill.synergyNotes;
     synBox.appendChild(note);
@@ -218,15 +218,15 @@ export function renderSkillInspector(
     for (const act of skill.actions) {
       const card = document.createElement('div');
       card.style.padding = '6px 8px';
-      card.style.border = '1px solid var(--crpg-border-subtle, #303644)';
-      card.style.background = 'var(--crpg-bg-card, rgba(0,0,0,0.35))';
+      card.style.border = '1px solid var(--crpg-border-subtle, rgba(110, 85, 54, 0.35))';
+      card.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
       card.style.fontSize = '0.8rem';
       const head = document.createElement('strong');
       const dcText =
         act.dc !== undefined ? `DC ${act.dc}` : act.opposedBySkill ? `Opposed by ${act.opposedBySkill}` : 'Check';
       head.textContent = `${act.name} [${act.actionCost} | ${dcText}]`;
       const desc = document.createElement('div');
-      desc.style.color = 'var(--crpg-text-dim, #9da7b3)';
+      desc.style.color = 'var(--crpg-text-dim, #4d3f31)';
       desc.textContent = act.description;
       card.appendChild(head);
       card.appendChild(desc);

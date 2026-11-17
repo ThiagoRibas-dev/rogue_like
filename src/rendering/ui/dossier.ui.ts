@@ -1,4 +1,4 @@
-import { type GameState, UIMode } from '../../types/game-state.types.ts';
+import { type EntityId, type GameState, UIMode } from '../../types/game-state.types.ts';
 import {
   ComponentType,
   type ChronicleComponent,
@@ -6,7 +6,7 @@ import {
   type IdentityComponent,
   type MemoryComponent
 } from '../../types/components.types.ts';
-import { getComponent } from '../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { renderDossierHierarchiesAndTimeline } from './dossier_hierarchies.ui.ts';
 
 export * from './dossier_hierarchies.ui.ts';
@@ -30,7 +30,7 @@ export function renderDossierUI(state: GameState): void {
   entityList.replaceChildren();
 
   const entitiesWithChronicle: {
-    id: number;
+    id: EntityId;
     identity?: IdentityComponent | undefined;
     chronicle: ChronicleComponent;
     memory?: MemoryComponent | undefined;
@@ -101,9 +101,7 @@ export function renderDossierUI(state: GameState): void {
     el.style.paddingBottom = '12px';
     el.style.marginBottom = '12px';
 
-    const nameStr = data.identity
-      ? `${data.identity.name} ${data.identity.title ?? ''}`.trim()
-      : `Unknown Entity #${data.id}`;
+    const nameStr = resolveEntityDisplayName(state, data.id, `Unknown Entity #${data.id}`);
 
     const excerptsHtml = data.chronicle.eventExcerpts
       .map((eventId) => {

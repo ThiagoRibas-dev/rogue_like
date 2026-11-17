@@ -97,7 +97,7 @@ export function renderKnownSpellsPane(
         const slots = book.preparedSlots ?? [];
         const openGenCount = slots.filter(
           (s: DnD35PreparedSlotEntry) =>
-            s.spellLevel === sum.spellLevel && s.slotKind === 'general' && !s.preparedSpellId
+            s.spellLevel === sum.spellLevel && s.slotKind === 'general' && !s.preparedSpellId && !s.expended
         ).length;
 
         const prepBtn = document.createElement('button');
@@ -118,7 +118,7 @@ export function renderKnownSpellsPane(
           if (isDomainEligible) {
             const openDomSlot = slots.find(
               (s: DnD35PreparedSlotEntry) =>
-                s.spellLevel === sum.spellLevel && s.slotKind === 'domain' && !s.preparedSpellId
+                s.spellLevel === sum.spellLevel && s.slotKind === 'domain' && !s.preparedSpellId && !s.expended
             );
             const domPrepBtn = document.createElement('button');
             domPrepBtn.type = 'button';
@@ -138,7 +138,7 @@ export function renderKnownSpellsPane(
         if (classId === 'wizard' && sum.specialistSlots > 0 && sp.school === dndData.arcaneSchool) {
           const openSpecSlot = slots.find(
             (s: DnD35PreparedSlotEntry) =>
-              s.spellLevel === sum.spellLevel && s.slotKind === 'specialist' && !s.preparedSpellId
+              s.spellLevel === sum.spellLevel && s.slotKind === 'specialist' && !s.preparedSpellId && !s.expended
           );
           const specPrepBtn = document.createElement('button');
           specPrepBtn.type = 'button';

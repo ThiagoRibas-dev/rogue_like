@@ -6,7 +6,8 @@ export {
   removeComponent,
   getComponent,
   queryEntities,
-  removeEntity
+  removeEntity,
+  resolveEntityDisplayName
 } from './ecs/ecs_core.ts';
 
 // Re-export entity spawning, item creation, and promotion

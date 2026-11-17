@@ -10,6 +10,7 @@ import { processLedgerSystem } from './ledger.system.ts';
 import { resetTriggeredReactionsForNewRound } from './stance.system.ts';
 import { processStatusEffectsTick } from './status-effect.system.ts';
 import { processTraps } from './trigger.system.ts';
+import { applyElapsedWorldHours } from './world_clock.system.ts';
 
 /**
  * Universal Tier 1 Console Actor Turn-Start lifecycle window:
@@ -56,7 +57,9 @@ export function runActorTurnStart(state: GameState, entityId: EntityId): GameSta
   if (getComponent(nextState, entityId, ComponentType.Player) !== undefined) {
     nextState = tickControllerLinksAndOverlays(nextState);
     nextState = processTier2LocalCadence(nextState, true);
+    const prevGlobalTurn = nextState.globalTurn || 0;
     nextState = processTier3GlobalCadence(nextState, true);
+    nextState = applyElapsedWorldHours(nextState, prevGlobalTurn, nextState.globalTurn || 0);
     nextState = processLedgerSystem(nextState, true);
   }
 

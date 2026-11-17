@@ -7,7 +7,7 @@ import {
   type DamageComponent,
   type CoatingComponent
 } from '../types/components.types.ts';
-import { getComponent, addComponent, removeComponent, removeEntity } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent, removeEntity, resolveEntityDisplayName } from '../core/ecs.ts';
 import { processReactions } from './reaction.system.ts';
 import { rng } from '../core/rng.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
@@ -155,7 +155,7 @@ export function processProjectileThrow(state: GameState, intent: ApplyIntent): {
     : (state.itemUnidentifiedNames.get(itemComp.itemId) ?? itemDef.unidentifiedName ?? itemComp.itemId);
 
   const isPlayerThrowing = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  const throwerName = isPlayerThrowing ? 'You' : 'Something';
+  const throwerName = isPlayerThrowing ? 'You' : resolveEntityDisplayName(state, intent.entityId, 'Something');
   const verb = isPlayerThrowing ? 'throw' : 'throws';
 
   nextState = addMessage(nextState, `${throwerName} ${verb} the ${itemName}.`, MessageLogCategory.System);

@@ -123,7 +123,11 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
           return;
         }
         event.preventDefault();
-        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, match.modalId));
+        if (match.onTrigger) {
+          match.onTrigger(state, playerEntityId);
+        } else if (match.modalId !== undefined) {
+          queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, match.modalId));
+        }
         return;
       }
     }

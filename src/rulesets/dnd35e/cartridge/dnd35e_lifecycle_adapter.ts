@@ -1,4 +1,4 @@
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { queryActiveFieldsAtPosition } from '../../../systems/field.system.ts';
 import {
@@ -141,22 +141,23 @@ export function evaluateActorAuraEntrySaves(state: GameState, occupantId: Entity
       });
       runningState = nextState;
 
+      const occupantName = resolveEntityDisplayName(runningState, occupantId, `Creature #${occupantId}`);
       if (outcome === 'saved') {
         runningState = addMessage(
           runningState,
-          `Entity #${occupantId} resists ${spell.name} emanation (Save Success)!`,
+          `${occupantName} resists ${spell.name} emanation (Save Success)!`,
           MessageLogCategory.CombatHit
         );
       } else if (outcome === 'sr_blocked') {
         runningState = addMessage(
           runningState,
-          `Entity #${occupantId}'s Spell Resistance repels ${spell.name} emanation!`,
+          `${occupantName}'s Spell Resistance repels ${spell.name} emanation!`,
           MessageLogCategory.CombatHit
         );
       } else {
         runningState = addMessage(
           runningState,
-          `Entity #${occupantId} succumbs to ${spell.name} emanation (Save Failed)!`,
+          `${occupantName} succumbs to ${spell.name} emanation (Save Failed)!`,
           MessageLogCategory.CombatHit
         );
       }
@@ -244,6 +245,44 @@ export function onDnD35eActorMovementStep(
   }
   nextState = evaluateActorLightExposure(nextState, entityId, 'move_or_field');
   nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
+
+  return nextState;
+}
+
+/**
+ * D&D 3.5e World-Hour-Elapsed hook:
+ * Recovers nonlethal damage naturally at `1 * totalHD` points per hour for all living actors
+ * (`CON` not a non-ability) per PHB p. 146.
+ *
+ * @param state Current immutable GameState.
+ * @param hoursElapsed Positive count of whole game hours crossed.
+ * @returns Updated GameState.
+ */
+export function onDnD35eWorldHourElapsed(state: GameState, hoursElapsed: number): GameState {
+  if (hoursElapsed <= 0) return state;
+  let nextState = state;
+
+  for (const entityId of nextState.entities) {
+    const fighter = getComponent(nextState, entityId, ComponentType.Fighter) as FighterComponent | undefined;
+    if (!fighter || fighter.hp <= 0) continue;
+
+    const dndData = getDnD35EntityData(nextState, entityId);
+    if (dndData.nonlethalDamage <= 0) continue;
+    if (dndData.abilityScores?.con?.base === null) continue;
+
+    const dag = evaluateDnD35eEntityDAG(nextState, entityId);
+    if (dag?.dagResult.abilityBreakdowns?.con?.effectiveScore === null) continue;
+
+    const trackLevels = dndData.tracks.reduce((sum, t) => sum + t.levels, 0);
+    const totalHd = Math.max(1, trackLevels > 0 ? trackLevels : fighter.level || 1);
+    const healedNonlethal = Math.min(dndData.nonlethalDamage, totalHd * hoursElapsed);
+    if (healedNonlethal <= 0) continue;
+
+    nextState = setDnD35EntityData(nextState, entityId, {
+      ...dndData,
+      nonlethalDamage: dndData.nonlethalDamage - healedNonlethal
+    });
+  }
 
   return nextState;
 }

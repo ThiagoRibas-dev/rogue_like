@@ -9,7 +9,7 @@ import type {
   PositionComponent,
   CoatingComponent
 } from '../../types/components.types.ts';
-import { getComponent, addComponent, removeEntity } from '../../core/ecs.ts';
+import { getComponent, addComponent, removeEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { applyItemEffect } from '../effects.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 
@@ -204,7 +204,7 @@ export const playerConsequences = {
 
     const nextState = addComponent(state, eId, newCoating);
 
-    const itemName = getComponent(nextState, eId, ComponentType.Renderable)?.glyph ?? 'The item';
+    const itemName = resolveEntityDisplayName(nextState, eId, 'The item');
     return addMessage(nextState, `${itemName} is now coated!`, MessageLogCategory.System);
   }
 } satisfies Partial<

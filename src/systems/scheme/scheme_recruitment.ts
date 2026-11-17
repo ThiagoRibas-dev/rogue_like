@@ -8,7 +8,15 @@ import {
   type ClueComponent,
   toItemInstanceId
 } from '../../types/components.types.ts';
-import { getComponent, addComponent, createEntity, removeComponent, moveToLimbo, spawnEntity } from '../../core/ecs.ts';
+import {
+  getComponent,
+  addComponent,
+  createEntity,
+  removeComponent,
+  moveToLimbo,
+  spawnEntity,
+  resolveEntityDisplayName
+} from '../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { rng } from '../../core/rng.ts';
 import type { VillainArchetype } from '../../types/campaign.types.ts';
@@ -96,8 +104,7 @@ export function evaluateMinionMoraleAndAwareness(
                 implicatesEntityId: agreement.mastermindId
               } as ClueComponent);
 
-              const renderable = getComponent(nextState, minionId, ComponentType.Renderable);
-              const name = renderable ? renderable.glyph : 'Someone';
+              const name = resolveEntityDisplayName(nextState, minionId, 'Someone');
               nextState = addMessage(
                 nextState,
                 `${name} dropped something suspicious while fleeing!`,

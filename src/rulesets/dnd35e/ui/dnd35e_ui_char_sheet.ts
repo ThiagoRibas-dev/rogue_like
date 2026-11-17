@@ -3,7 +3,7 @@
  * Evaluates actor DAG, chassis, skills, attack groups, saving throws, and level matrix.
  */
 
-import { getComponent } from '../../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import {
   ComponentType,
   type EquipmentSlotInstance,
@@ -206,8 +206,13 @@ export function projectCharacterSheetData(actor: unknown): UICharacterSheetModel
   const ac = evalResult?.dagResult.acBreakdown;
   const saves = evalResult?.dagResult.saves;
 
+  const resolvedName =
+    state && entityId !== undefined
+      ? resolveEntityDisplayName(state, entityId, dndData.name ?? 'Adventurer')
+      : (identity?.name ?? dndData.name ?? 'Adventurer');
+
   return {
-    name: identity?.name ?? dndData.name ?? 'Adventurer',
+    name: resolvedName,
     levelSummary: tracks.map((t) => `${t.trackId} ${t.levels}`).join(' / ') || 'Level 1',
     raceName: (dndData.raceId ?? 'human').toUpperCase(),
     alignmentName: (dndData.alignment ?? 'NG').toUpperCase().replace(/_/g, ' '),

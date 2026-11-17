@@ -4,9 +4,11 @@ import {
   DEFAULT_HOURS_PER_DAY,
   DEFAULT_SECONDS_PER_TURN,
   MINUTES_PER_HOUR,
+  ROUNDS_PER_HOUR,
   SECONDS_PER_MINUTE
 } from '../constants/world_clock.constants.ts';
 import { getComponent } from '../core/ecs.ts';
+import { getRuleset } from '../rulesets/registry.ts';
 import type { AreaEnvironmentType, AreaIllumination, WorldClockConfig } from '../types/campaign.types.ts';
 import { ComponentType, type FighterComponent, type PositionComponent } from '../types/components.types.ts';
 import type { EntityId, GameState } from '../types/game-state.types.ts';
@@ -218,4 +220,23 @@ export function isActorThreatenedByVisibleHostiles(state: GameState, actorId: En
   }
 
   return false;
+}
+
+/**
+ * Checks whether one or more whole clock hours (`ROUNDS_PER_HOUR`) were crossed between
+ * `prevTurn` and `nextTurn` and invokes the active ruleset's `onWorldHourElapsed` hook.
+ *
+ * @param state Current GameState at `nextTurn`.
+ * @param prevTurn Turn index prior to advancing.
+ * @param nextTurn Turn index after advancing.
+ * @returns Updated GameState.
+ */
+export function applyElapsedWorldHours(state: GameState, prevTurn: number, nextTurn: number): GameState {
+  const prevHours = Math.floor(Math.max(0, prevTurn) / ROUNDS_PER_HOUR);
+  const nextHours = Math.floor(Math.max(0, nextTurn) / ROUNDS_PER_HOUR);
+  const hoursElapsed = nextHours - prevHours;
+  if (hoursElapsed <= 0) return state;
+
+  const ruleset = getRuleset(state.campaign?.manifest?.rulesetId);
+  return ruleset.onWorldHourElapsed ? ruleset.onWorldHourElapsed(state, hoursElapsed) : state;
 }

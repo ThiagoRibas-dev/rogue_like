@@ -144,7 +144,11 @@ export function handleGameShortcutKey(event: KeyboardEvent, playerEntityId: Enti
           continue;
         }
         event.preventDefault();
-        queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+        if (cmd.onTrigger) {
+          cmd.onTrigger(state, playerEntityId);
+        } else if (cmd.modalId !== undefined) {
+          queuePlayerIntent(createToggleCartridgeModalAction(playerEntityId, cmd.modalId));
+        }
         return true;
       }
     }

@@ -1,10 +1,9 @@
-import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../../../core/ecs.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import { canUseTriggeredReactionThisRound, incrementTriggeredReactionUse } from '../../../systems/stance.system.ts';
 import {
   ComponentType,
   type DamageComponent,
-  type IdentityComponent,
   type PositionComponent,
   type TacticalDoctrineComponent
 } from '../../../types/components.types.ts';
@@ -148,12 +147,8 @@ export function applyPostStrikeRetaliationPhase(
       : 1;
   const defenderDoctrine = getComponent(runningState, defenderId, ComponentType.TacticalDoctrine) as
     TacticalDoctrineComponent | undefined;
-  const attackerName =
-    (getComponent(runningState, attackerId, ComponentType.Identity) as IdentityComponent | undefined)?.name ??
-    'Attacker';
-  const defenderName =
-    (getComponent(runningState, defenderId, ComponentType.Identity) as IdentityComponent | undefined)?.name ??
-    'Defender';
+  const attackerName = resolveEntityDisplayName(runningState, attackerId, 'Attacker');
+  const defenderName = resolveEntityDisplayName(runningState, defenderId, 'Defender');
 
   const retResult = resolveRetaliationRiders({
     activeRiders: defenderAuraContrib.retaliationRiders,

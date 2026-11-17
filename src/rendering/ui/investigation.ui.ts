@@ -4,10 +4,9 @@ import {
   type Component,
   type FighterComponent,
   type KnowledgeItem,
-  type MemoryComponent,
-  type RenderableComponent
+  type MemoryComponent
 } from '../../types/components.types.ts';
-import { getComponent } from '../../core/ecs.ts';
+import { getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
 import {
   INVESTIGATION_EMPTY_CLUES,
   INVESTIGATION_EMPTY_CLUES_FILTERED,
@@ -209,13 +208,8 @@ function resolveSuspectDetails(state: GameState, actorId: EntityId): { name: str
     return { name: 'Deceased Suspect', isAlive: false };
   }
 
-  const renderable = components[ComponentType.Renderable] as RenderableComponent | undefined;
   const fighter = components[ComponentType.Fighter] as FighterComponent | undefined;
-
-  let name = 'A Shadowy Figure';
-  if (renderable !== undefined) {
-    name = renderable.glyph === '@' ? 'The Mastermind' : `Suspect (${renderable.glyph})`;
-  }
+  const name = resolveEntityDisplayName(state, actorId, 'A Shadowy Figure');
 
   return { name, isAlive: fighter !== undefined && fighter.hp > 0 };
 }

@@ -16,6 +16,9 @@ export const SECONDS_PER_MINUTE = 60;
 /** Standard action energy equivalence for 1 full turn (`100`). */
 export const STANDARD_ENERGY_PER_TURN = 100;
 
+/** Number of 6-second global turns in 1 game hour (`60 * 10 = 600` rounds). */
+export const ROUNDS_PER_HOUR = (MINUTES_PER_HOUR * SECONDS_PER_MINUTE) / DEFAULT_SECONDS_PER_TURN;
+
 /** GCD cadence step size matching Local Narrative (`10`), Nemesis (`25`), Rivalry (`25`), World Events (`100`). */
 export const BULK_CADENCE_STEP_SIZE = 5;
 

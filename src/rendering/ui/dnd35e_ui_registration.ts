@@ -22,6 +22,7 @@ import { renderDnD35eCharBuilderModal, resetDnD35eCharBuilderDraft } from './dnd
 import { applyDoctrineUpdate, toggleDnD35eActorStance } from './dnd35e_doctrine_actions.ts';
 import { canPlayerLevelUpDnD35e, renderDnD35eLevelUpModal } from './dnd35e_level_up.ui.ts';
 import { renderDnD35eQuickcastModal } from './dnd35e_quickcast.ui.ts';
+import { applyRestActionAsync } from './dnd35e_rest_actions.ts';
 import { renderDnD35eSheetModal as renderSheetModalImpl } from './dnd35e_sheet.ui.ts';
 import { initiateSpellCastFromUI } from './dnd35e_spell_cast_ui.ts';
 import { renderDnD35eSpellbookModal as renderSpellbookModalImpl } from './dnd35e_spellbook.ui.ts';
@@ -127,6 +128,15 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       isAvailable: (state: GameState, playerId: EntityId): boolean => {
         const dndData = getDnD35EntityData(state, playerId);
         return Object.keys(dndData.spellbooksByClass ?? {}).length > 0;
+      }
+    },
+    {
+      id: 'dnd35e_rest_8h',
+      label: 'Rest (8h)',
+      icon: '💤',
+      defaultKey: 't',
+      onTrigger: (state: GameState, playerId: EntityId): void => {
+        void applyRestActionAsync(state, playerId);
       }
     },
     {

@@ -663,8 +663,8 @@ body[data-no-animations='true'] * {
 }
 
 .dnd35-list-item:hover {
-  border-color: var(--crpg-border-gold, #b88a36);
-  background: rgba(244, 238, 225, 0.98);
+  border-color: var(--crpg-border-gold, #9a6c1e);
+  background: var(--crpg-bg-card-hover, rgba(244, 238, 225, 0.98));
 }
 
 .dnd35-list-item.selected {
@@ -710,7 +710,7 @@ body[data-no-animations='true'] * {
   font-family: var(--font-mono, monospace);
   font-size: 0.85rem;
   font-weight: 700;
-  color: #f1c40f;
+  color: var(--crpg-gold, #7a4f0d);
 }
 
 .dnd35-badge {
@@ -730,7 +730,7 @@ body[data-no-animations='true'] * {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-brass);
+  border-bottom: 1px solid var(--crpg-border-gold, #9a6c1e);
   padding-bottom: 8px;
   margin-bottom: 12px;
 }
@@ -749,6 +749,19 @@ body[data-no-animations='true'] * {
 .modal-close-btn:hover {
   background: rgba(241, 196, 15, 0.15);
   color: #f1c40f;
+}
+
+.dnd35-fullscreen-modal .modal-close-btn {
+  background: var(--crpg-bg-subpanel, #d9cfbc);
+  border: 1px solid var(--crpg-border-outer, #5c4730);
+  color: var(--crpg-text-header, #3b2818);
+  font-weight: 700;
+}
+
+.dnd35-fullscreen-modal .modal-close-btn:hover {
+  background: var(--crpg-accent-fill, #8c2620);
+  border-color: var(--crpg-border-gold, #9a6c1e);
+  color: #fff5d6;
 }
 
 .dnd35-sheet-tabs,

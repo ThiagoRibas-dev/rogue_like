@@ -356,4 +356,14 @@ export interface RulesetContract {
    * @param entityId The entity ID to synchronize.
    */
   syncActorSpatialFootprint?(state: GameState, entityId: EntityId): GameState;
+
+  /**
+   * Optional hook invoked whenever one or more full game hours elapse on the world clock
+   * (e.g., hourly nonlethal natural healing).
+   *
+   * @param state The current GameState.
+   * @param hoursElapsed Positive integer count of hours crossed.
+   * @returns Updated GameState.
+   */
+  onWorldHourElapsed?(state: GameState, hoursElapsed: number): GameState;
 }

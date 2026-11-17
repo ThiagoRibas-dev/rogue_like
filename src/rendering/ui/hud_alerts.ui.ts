@@ -4,11 +4,14 @@
  */
 
 import { createToggleQuestsAction } from '../../actions/core.actions.ts';
+import { DEFAULT_ACTOR_TURN_DURATION, RTWP_IDLE_WAIT_DURATION } from '../../constants/scheduler.constants.ts';
 import { ALERT_CRITICAL_HP_RATIO, ALERT_LOW_HP_RATIO } from '../../constants/ui.constants.ts';
 import { getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { setHoveredTile } from '../../core/hover_state.ts';
+import { hasPendingIntents } from '../../core/input_queue.ts';
 import { markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
+import { getActiveTurnActorId, getActorRemainingScheduleTime, isTurnProcessingActive } from '../../core/scheduler.ts';
 import { resolveEntityDisplayName } from '../inspect_tooltip.ts';
 import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
 import { getHungerState } from '../../systems/hunger.system.ts';
@@ -21,15 +24,18 @@ import {
   type QuestLogComponent,
   type StatusEffectsComponent
 } from '../../types/components.types.ts';
-import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { EngineMode, type EntityId, type GameState } from '../../types/game-state.types.ts';
 import { isHostile } from '../../utils/faction.ts';
 import { coordToIndex } from '../../utils/grid.ts';
 import { getEffectiveStats } from '../../utils/stats.ts';
 
+/** Minimum RTwP speed multiplier divisor preventing division-by-zero when formatting cooldown seconds. */
+const MIN_RTWP_SPEED_MULTIPLIER = 0.1;
+
 /**
  * Severity level for RimWorld-style HUD alert ribbons.
  */
-type AlertSeverity = 'critical' | 'warning' | 'info';
+type AlertSeverity = 'critical' | 'warning' | 'info' | 'turn-ready';
 
 /**
  * Descriptor for a single floating alert ribbon.
@@ -39,6 +45,134 @@ interface HudAlertDescriptor {
   readonly detail: string;
   readonly severity: AlertSeverity;
   readonly onClick?: (() => void) | undefined;
+}
+
+/**
+ * Checks whether `actorId` can currently be perceived by the player (same entity,
+ * visible footprint tile in FOV/explored map, and not concealed by invisibility).
+ *
+ * @param state The current GameState.
+ * @param actorId The actor whose turn is active.
+ * @param playerId The player EntityId.
+ * @returns True when the actor's identity and location are known to the player.
+ */
+export function isActorPerceivedByPlayer(state: GameState, actorId: EntityId, playerId: EntityId): boolean {
+  if (actorId === playerId) return true;
+
+  const pos = getComponent(state, actorId, ComponentType.Position) as PositionComponent | undefined;
+  if (!pos) return false;
+
+  const width = Math.max(1, pos.footprintWidth ?? 1);
+  const height = Math.max(1, pos.footprintHeight ?? 1);
+  let anyTileVisible = state.map.isFullyExplored;
+  if (!anyTileVisible) {
+    for (let dy = 0; dy < height && !anyTileVisible; dy++) {
+      for (let dx = 0; dx < width; dx++) {
+        const idx = coordToIndex(pos.x + dx, pos.y + dy, state.map.width);
+        if (state.cachedFov.has(idx)) {
+          anyTileVisible = true;
+          break;
+        }
+      }
+    }
+  }
+  if (!anyTileVisible) return false;
+
+  const statuses = getComponent(state, actorId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  if (statuses?.activeEffects.some((e) => e.effectId === 'invisible' || e.effectId === 'invisible_active')) {
+    return false;
+  }
+
+  const rulesetComp = getComponent(state, actorId, ComponentType.RulesetData);
+  const conditions = (rulesetComp?.payload as { readonly conditions?: ReadonlyArray<string> } | undefined)?.conditions;
+  if (conditions?.includes('invisible')) {
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Builds the pinned top-right RimWorld-style Turn / RTwP Action Readiness ribbon descriptor.
+ *
+ * @param state The current GameState.
+ * @param playerId The player EntityId.
+ * @returns The Turn / Readiness HudAlertDescriptor.
+ */
+export function buildTurnStatusRibbon(state: GameState, playerId: EntityId): HudAlertDescriptor {
+  const playerName = resolveEntityDisplayName(state, playerId, 'Adventurer');
+  const focusPos = (targetId: EntityId): (() => void) | undefined => {
+    const pos = getComponent(state, targetId, ComponentType.Position) as PositionComponent | undefined;
+    if (!pos) return undefined;
+    return () => {
+      if (setHoveredTile({ x: pos.x, y: pos.y })) {
+        markDomainDirty(PresentationDomain.Map);
+        markDomainDirty(PresentationDomain.HUD);
+      }
+    };
+  };
+
+  if (state.engineMode === EngineMode.RTwP) {
+    const remainingEnergy = getActorRemainingScheduleTime(playerId);
+    const queued = hasPendingIntents();
+    if (state.rtwpState.paused) {
+      return {
+        label: `⏸ Tactical Pause (${playerName})`,
+        detail: `Round ${state.globalTurn} • ${queued ? 'Action Queued (Unpause to act)' : 'Issue command or unpause'}`,
+        severity: 'info',
+        onClick: focusPos(playerId)
+      };
+    }
+
+    if (remainingEnergy > RTWP_IDLE_WAIT_DURATION) {
+      const speed = Math.max(MIN_RTWP_SPEED_MULTIPLIER, state.rtwpState.speedMultiplier);
+      const remainingSec = (remainingEnergy / DEFAULT_ACTOR_TURN_DURATION / speed).toFixed(1);
+      return {
+        label: `⏳ Recovering: ${remainingSec}s`,
+        detail: `Round ${state.globalTurn} • ${queued ? 'Next action queued...' : 'Waiting for next turn...'}`,
+        severity: 'warning',
+        onClick: focusPos(playerId)
+      };
+    }
+
+    return {
+      label: `🟢 Ready: ${playerName}`,
+      detail: `Round ${state.globalTurn} • Real-Time (${state.rtwpState.speedMultiplier}x)`,
+      severity: 'turn-ready',
+      onClick: focusPos(playerId)
+    };
+  }
+
+  const activeActorId = getActiveTurnActorId();
+  const processing = isTurnProcessingActive();
+  if ((activeActorId === null || activeActorId === playerId) && !processing) {
+    return {
+      label: `Your Turn: ${playerName}`,
+      detail: `Round ${state.globalTurn} • Ready for command`,
+      severity: 'turn-ready',
+      onClick: focusPos(playerId)
+    };
+  }
+
+  if (
+    activeActorId !== null &&
+    activeActorId !== playerId &&
+    isActorPerceivedByPlayer(state, activeActorId, playerId)
+  ) {
+    const activeName = resolveEntityDisplayName(state, activeActorId, 'Creature');
+    return {
+      label: `Turn: ${activeName}`,
+      detail: `Round ${state.globalTurn} • Acting — please wait...`,
+      severity: 'warning',
+      onClick: focusPos(activeActorId)
+    };
+  }
+
+  return {
+    label: 'Turn: ???',
+    detail: `Round ${state.globalTurn} • Unseen activity — please wait...`,
+    severity: 'warning'
+  };
 }
 
 /**
@@ -55,7 +189,7 @@ export function renderHudAlerts(state: GameState): void {
   const playerEntityId = state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined);
   if (playerEntityId === undefined) return;
 
-  const alerts: HudAlertDescriptor[] = [];
+  const alerts: HudAlertDescriptor[] = [buildTurnStatusRibbon(state, playerEntityId)];
 
   // 1. Check Player Health
   const fighter = getComponent(state, playerEntityId, ComponentType.Fighter) as FighterComponent | undefined;

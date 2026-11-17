@@ -5,7 +5,7 @@ import {
   type StatusEffectsComponent,
   type ActiveStatusEffect
 } from '../types/components.types.ts';
-import { getComponent, addComponent, removeComponent } from '../core/ecs.ts';
+import { getComponent, addComponent, removeComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
@@ -30,8 +30,7 @@ export function processStatusEffectsTick(state: GameState, entityId: EntityId): 
   let healthGained = 0;
 
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-  const renderable = getComponent(state, entityId, ComponentType.Renderable);
-  const name = renderable ? renderable.glyph : 'Someone';
+  const name = resolveEntityDisplayName(state, entityId, 'Someone');
 
   let xpToGrant: { source: EntityId; amount: number } | null = null;
 

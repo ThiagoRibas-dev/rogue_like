@@ -1,4 +1,4 @@
-import { addComponent, getComponent } from '../core/ecs.ts';
+import { addComponent, getComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import {
   ComponentType,
   type MovementModes,
@@ -289,8 +289,7 @@ export function processMoveIntent(
         const isPlayerMover = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
         if (isPlayerMover) {
           nextState = { ...nextState, fovNeedsUpdate: true };
-          const identity = getComponent(nextState, blockedByEntityId, ComponentType.Identity);
-          const companionName = identity ? identity.name : 'your ally';
+          const companionName = resolveEntityDisplayName(nextState, blockedByEntityId, 'your ally');
           nextState = addMessage(nextState, `You swap places with ${companionName}.`, MessageLogCategory.System);
         }
 

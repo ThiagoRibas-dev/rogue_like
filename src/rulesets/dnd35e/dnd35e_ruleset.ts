@@ -34,6 +34,7 @@ import {
   hasDnD35eActorMovementInProgress,
   onDnD35eActorMovementStep,
   onDnD35eActorTurnStart,
+  onDnD35eWorldHourElapsed,
   resolveDnD35eActionEnergyCost
 } from './cartridge/dnd35e_lifecycle_adapter.ts';
 
@@ -195,5 +196,6 @@ export const dnd35eRulesetContract: RulesetContract = {
     return null;
   },
   resolveActorSpatialProfile: resolveDnD35eActorSpatialProfile,
-  syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint
+  syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint,
+  onWorldHourElapsed: onDnD35eWorldHourElapsed
 };

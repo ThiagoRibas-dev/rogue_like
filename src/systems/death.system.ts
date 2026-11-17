@@ -11,7 +11,7 @@ import {
   type SchemeComponent,
   type AgreementComponent
 } from '../types/components.types.ts';
-import { getComponent, removeEntity, addComponent, spawnItem } from '../core/ecs.ts';
+import { getComponent, removeEntity, addComponent, spawnItem, resolveEntityDisplayName } from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor, addActor } from '../core/scheduler.ts';
 import { deleteSave } from '../core/save.ts';
@@ -50,11 +50,10 @@ export function processDeathSystem(state: GameState): GameState {
     const deathComp = getComponent(nextState, entityId, ComponentType.Death) as DeathComponent | undefined;
     if (!deathComp) continue;
 
-    const renderable = getComponent(nextState, entityId, ComponentType.Renderable);
     const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
     const fighter = getComponent(nextState, entityId, ComponentType.Fighter);
 
-    const name = renderable ? renderable.glyph : 'Someone';
+    const name = resolveEntityDisplayName(nextState, entityId, 'Someone');
 
     nextState = addMessage(nextState, `${name} dies!`, MessageLogCategory.CombatDeath);
 
@@ -89,8 +88,7 @@ export function processDeathSystem(state: GameState): GameState {
           if (barks.length > 0) {
             const bark = rng.getItem(barks);
             if (bark) {
-              const killerRenderable = getComponent(nextState, deathComp.killerId, ComponentType.Renderable);
-              const killerName = killerRenderable ? killerRenderable.glyph : 'Someone';
+              const killerName = resolveEntityDisplayName(nextState, deathComp.killerId, 'Someone');
               nextState = addMessage(nextState, `${killerName} taunts: "${bark}"`, MessageLogCategory.Flavor);
             }
           }
@@ -196,9 +194,11 @@ export function processDeathSystem(state: GameState): GameState {
         nextState = addComponent(nextState, newLeaderId, { type: ComponentType.Actor, speed: 100 });
         addActor(newLeaderId);
 
+        const mastermindName = resolveEntityDisplayName(nextState, entityId, `Mastermind #${entityId}`);
+        const newLeaderName = resolveEntityDisplayName(nextState, newLeaderId, `Minion #${newLeaderId}`);
         nextState = addMessage(
           nextState,
-          `[DEBUG] Mastermind ${entityId} died! Transferring scheme ${schemeComp.recipeId} to minion ${newLeaderId} (leaderless state).`,
+          `[DEBUG] Mastermind ${mastermindName} died! Transferring scheme ${schemeComp.recipeId} to minion ${newLeaderName} (leaderless state).`,
           MessageLogCategory.System
         );
       }

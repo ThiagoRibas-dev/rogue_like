@@ -9,7 +9,7 @@ import { addActor, lockEngine, setTurnDuration, unlockEngine } from './scheduler
 import { enqueueIntent, dequeueIntent, hasPendingIntents, clearInputQueue } from './input_queue.ts';
 import { markDirtyFromStateDiff } from './presentation_queue.ts';
 import { scheduleDebouncedSave, saveCheckpoint, checkpointGameOver } from './persistence_service.ts';
-import { DEFAULT_ACTOR_TURN_DURATION } from '../constants/scheduler.constants.ts';
+import { DEFAULT_ACTOR_TURN_DURATION, RTWP_IDLE_WAIT_DURATION } from '../constants/scheduler.constants.ts';
 import { getEffectiveStats } from '../utils/stats.ts';
 import { processHungerTick } from '../systems/hunger.system.ts';
 import { shouldSkipTurn } from '../systems/status-effect.system.ts';
@@ -26,9 +26,6 @@ export { applyIntentWithCost };
 
 /** Safety cap preventing infinite synchronous AI intra-turn loops (`24`). */
 const MAX_INTRA_TURN_ACTIONS = 24;
-
-/** Fallback energy duration when an active turn concludes without a specific speed cost (`10`). */
-const RTWP_IDLE_WAIT_DURATION = 10;
 
 let currentState: GameState | null = null;
 let stateChangeCallback: ((state: GameState) => void) | null = null;

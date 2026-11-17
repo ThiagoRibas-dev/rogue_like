@@ -76,6 +76,7 @@ let draftState: CharacterCreationDraft = createDefaultDraft();
 
 function createDefaultDraft(): CharacterCreationDraft {
   return {
+    characterName: 'Adventurer',
     raceId: 'human',
     classId: 'fighter',
     alignment: 'NG',
@@ -183,6 +184,45 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     return true;
   };
 
+  const topRow = document.createElement('div');
+  topRow.style.display = 'flex';
+  topRow.style.flexWrap = 'wrap';
+  topRow.style.alignItems = 'center';
+  topRow.style.justifyContent = 'space-between';
+  topRow.style.gap = '10px';
+
+  const nameGroup = document.createElement('div');
+  nameGroup.style.display = 'flex';
+  nameGroup.style.alignItems = 'center';
+  nameGroup.style.gap = '6px';
+
+  const nameLabel = document.createElement('label');
+  nameLabel.htmlFor = 'char-builder-name-input';
+  nameLabel.style.fontSize = '0.82rem';
+  nameLabel.style.fontWeight = '700';
+  nameLabel.style.color = 'var(--crpg-text-header, #3b2818)';
+  nameLabel.textContent = 'Name:';
+
+  const nameInput = document.createElement('input');
+  nameInput.id = 'char-builder-name-input';
+  nameInput.type = 'text';
+  nameInput.maxLength = 32;
+  nameInput.placeholder = 'Adventurer';
+  nameInput.value = draftState.characterName ?? 'Adventurer';
+  nameInput.style.padding = '5px 8px';
+  nameInput.style.fontSize = '0.82rem';
+  nameInput.style.fontWeight = '600';
+  nameInput.style.width = '180px';
+  nameInput.style.background = 'var(--crpg-bg-card, rgba(235, 227, 212, 0.96))';
+  nameInput.style.color = 'var(--crpg-text-main, #261d14)';
+  nameInput.style.border = '1px solid var(--crpg-border-outer, #5c4730)';
+  nameInput.addEventListener('input', () => {
+    draftState = { ...draftState, characterName: nameInput.value };
+  });
+
+  nameGroup.appendChild(nameLabel);
+  nameGroup.appendChild(nameInput);
+
   const stepBar = document.createElement('div');
   stepBar.style.display = 'flex';
   stepBar.style.gap = '6px';
@@ -194,7 +234,12 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     tab.style.padding = '6px 12px';
     tab.style.fontSize = '0.8rem';
     const stepValid = validateCharacterCreationStep(draftState, stepDesc.id, sys).valid;
-    tab.style.borderColor = idx === currentStepIndex ? '#f1c40f' : stepValid ? 'var(--border-color)' : '#e67e22';
+    tab.style.borderColor =
+      idx === currentStepIndex
+        ? 'var(--crpg-border-gold, #b88a36)'
+        : stepValid
+          ? 'var(--border-color)'
+          : 'var(--crpg-warning, #8b4513)';
     tab.textContent = stepDesc.label;
     tab.disabled = !canNavigateToStep(idx);
     tab.addEventListener('click', () => {
@@ -204,7 +249,9 @@ export function renderDnD35eCharBuilderModal(state: GameState): void {
     });
     stepBar.appendChild(tab);
   });
-  content.appendChild(stepBar);
+  topRow.appendChild(stepBar);
+  topRow.appendChild(nameGroup);
+  content.appendChild(topRow);
 
   const stageHost = document.createElement('div');
   stageHost.style.flex = '1';

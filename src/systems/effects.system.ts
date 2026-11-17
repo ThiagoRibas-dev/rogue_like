@@ -1,4 +1,4 @@
-import { getComponent, removeEntity, addComponent } from '../core/ecs.ts';
+import { getComponent, removeEntity, addComponent, resolveEntityDisplayName } from '../core/ecs.ts';
 import {
   ComponentType,
   type FighterComponent,
@@ -63,7 +63,10 @@ export function applyItemEffect(
       const nextFighter: FighterComponent = { ...fighter, hp: fighter.hp + healed };
       const nextState = addComponent(state, userId, nextFighter);
 
-      const targetName = getComponent(state, userId, ComponentType.Player) !== undefined ? 'You' : 'Something';
+      const targetName =
+        getComponent(state, userId, ComponentType.Player) !== undefined
+          ? 'You'
+          : resolveEntityDisplayName(state, userId, 'Something');
       const msg = effectDef.message
         .replace('{item}', itemName)
         .replace('{value}', String(healed))
@@ -79,8 +82,7 @@ export function applyItemEffect(
 
       if (!matchesTargetFilters(state, userId, explicitTargetId, effectDef)) return state;
 
-      const targetRenderable = getComponent(state, explicitTargetId, ComponentType.Renderable);
-      const targetName = targetRenderable?.glyph ?? 'target';
+      const targetName = resolveEntityDisplayName(state, explicitTargetId, 'target');
 
       const msg = effectDef.message.replace('{target}', targetName).replace('{value}', String(effectDef.value));
       const nextState = addMessage(state, msg, MessageLogCategory.CombatHit);
@@ -195,7 +197,7 @@ export function processUseItemIntent(
     def.name;
 
   const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
-  const userName = isPlayer ? 'You' : (getComponent(state, entityId, ComponentType.Renderable)?.glyph ?? 'Something');
+  const userName = isPlayer ? 'You' : resolveEntityDisplayName(state, entityId, 'Something');
   const verb = isPlayer ? 'use' : 'uses';
   nextState = addMessage(nextState, `${userName} ${verb} the ${itemNameFinal}.`, MessageLogCategory.System);
 
@@ -239,9 +241,7 @@ export function processUseAbilityIntent(
   }
 
   const isPlayer = getComponent(state, intent.entityId, ComponentType.Player) !== undefined;
-  const userName = isPlayer
-    ? 'You'
-    : (getComponent(state, intent.entityId, ComponentType.Renderable)?.glyph ?? 'Something');
+  const userName = isPlayer ? 'You' : resolveEntityDisplayName(state, intent.entityId, 'Something');
   const verb = isPlayer ? 'cast' : 'casts';
   let nextState = addMessage(state, `${userName} ${verb} ${intent.abilityName}.`, MessageLogCategory.System);
 

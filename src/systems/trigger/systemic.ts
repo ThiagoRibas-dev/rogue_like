@@ -6,7 +6,7 @@ import { GameEventType } from '../../types/events.types.ts';
 import type { ConsequenceAction, RunScriptConsequenceFn } from '../../types/trigger.types.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type { TrapComponent, DamageComponent, DamageInstance, PortalComponent } from '../../types/components.types.ts';
-import { getComponent, addComponent, removeEntity } from '../../core/ecs.ts';
+import { getComponent, addComponent, removeEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { processChangeAreaIntent } from '../map.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
@@ -56,7 +56,7 @@ export function processTraps(state: GameState, entityId: EntityId): GameState {
       }
 
       const isPlayer = getComponent(nextState, entityId, ComponentType.Player) !== undefined;
-      const targetName = isPlayer ? 'You' : 'Something';
+      const targetName = isPlayer ? 'You' : resolveEntityDisplayName(nextState, entityId, 'Something');
       nextState = addMessage(nextState, `${targetName} triggered a trap!`, MessageLogCategory.System);
 
       nextState = {

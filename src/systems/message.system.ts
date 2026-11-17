@@ -1,6 +1,5 @@
 import { type EntityId, type GameState } from '../types/game-state.types.ts';
-import { getComponent } from '../core/ecs.ts';
-import { ComponentType } from '../types/components.types.ts';
+import { resolveEntityDisplayName } from '../core/ecs.ts';
 import { GameEventType, type SayResolvedEvent } from '../types/events.types.ts';
 
 /** The maximum number of messages to keep in the GameState history. */
@@ -66,8 +65,7 @@ export function executeSay(
   entityId: EntityId,
   message: string
 ): { state: GameState; event: SayResolvedEvent } {
-  const identity = getComponent(state, entityId, ComponentType.Identity);
-  const name = identity ? identity.name : 'Someone';
+  const name = resolveEntityDisplayName(state, entityId, 'Someone');
 
   const logMessage = `"${message}" - ${name}`;
   const nextState = addMessage(state, logMessage, MessageLogCategory.Flavor);
