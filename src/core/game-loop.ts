@@ -15,9 +15,12 @@ import { processHungerTick } from '../systems/hunger.system.ts';
 import { shouldSkipTurn } from '../systems/status-effect.system.ts';
 import { addMessage, MessageLogCategory } from '../systems/message.system.ts';
 import { processAITurn } from '../systems/ai.system.ts';
+import { processFieldsTick } from '../systems/field.system.ts';
 import { resolveActorActionEnergyCost, runActorTurnStart } from '../systems/lifecycle.system.ts';
+import { updateExploredTiles } from '../systems/map.system.ts';
 import { processSchemeTurn } from '../systems/scheme.system.ts';
 import { applyIntentWithCost } from './loop/intent_cost_resolver.ts';
+import { resolveStateStabilization } from './state_stabilizer.ts';
 
 export { applyIntentWithCost };
 
@@ -131,6 +134,33 @@ function concludeSkippedTurn(state: GameState, entityId: EntityId): GameState {
   return waitCost.state;
 }
 
+function settleRemainingActorTurn(
+  state: GameState,
+  entityId: EntityId
+): { readonly state: GameState; readonly energyCost: number } {
+  const waitCost = resolveActorActionEnergyCost(
+    state,
+    { type: IntentType.Wait, entityId },
+    DEFAULT_ACTOR_TURN_DURATION
+  );
+  let nextState = waitCost.state;
+  let energyCost = waitCost.energyCost > 0 ? waitCost.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+  const actor = getComponent(nextState, entityId, ComponentType.Actor);
+  if (actor) {
+    const stats = getEffectiveStats(nextState, entityId);
+    const speed = Math.max(1, stats.speed);
+    energyCost = Math.max(1, Math.round((energyCost * DEFAULT_ACTOR_TURN_DURATION) / speed));
+  }
+  const stateAfterFields = processFieldsTick(nextState);
+  if (stateAfterFields !== nextState) {
+    nextState = resolveStateStabilization(stateAfterFields);
+    if (nextState.fovNeedsUpdate) {
+      nextState = updateExploredTiles(nextState);
+    }
+  }
+  return { state: nextState, energyCost };
+}
+
 /**
  * Called by ROT.Engine when it is an actor's turn.
  */
@@ -207,7 +237,6 @@ export function processTurn(entityId: EntityId): void {
 
           if (nextState !== state) {
             updateState(nextState);
-            saveCheckpoint(nextState);
           }
         } catch (e) {
           console.error(`Error processing player intent:`, e);
@@ -256,11 +285,13 @@ export function processTurn(entityId: EntityId): void {
     const aiTime0 = performance.now();
     const hitCap = intraTurnActionCount >= MAX_INTRA_TURN_ACTIONS;
     const aiResult = hitCap ? { intent: null, state: aiTurnState } : processAITurn(aiTurnState, entityId);
-    recordAISample({
-      entityId,
-      durationMs: performance.now() - aiTime0,
-      intentType: aiResult.intent?.type ?? 'none'
-    });
+    if (aiResult.intent !== null || intraTurnActionCount === 0) {
+      recordAISample({
+        entityId,
+        durationMs: performance.now() - aiTime0,
+        intentType: aiResult.intent?.type ?? 'none'
+      });
+    }
 
     aiTurnState = aiResult.state;
     const intent = aiResult.intent;
@@ -291,11 +322,21 @@ export function processTurn(entityId: EntityId): void {
       return;
     }
 
-    const waitResult = applyIntentWithCost(aiTurnState, { type: IntentType.Wait, entityId });
-    const endDuration = waitResult.energyCost > 0 ? waitResult.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+    let endState: GameState;
+    let endDuration: number;
+    if (intraTurnActionCount > 0) {
+      const settled = settleRemainingActorTurn(aiTurnState, entityId);
+      endState = settled.state;
+      endDuration = settled.energyCost;
+    } else {
+      const waitResult = applyIntentWithCost(aiTurnState, { type: IntentType.Wait, entityId });
+      endState = waitResult.state;
+      endDuration = waitResult.energyCost > 0 ? waitResult.energyCost : DEFAULT_ACTOR_TURN_DURATION;
+    }
+
     turnStartProcessedForActor = null;
     intraTurnActionCount = 0;
-    const nextState = processHungerTick(waitResult.state, entityId, endDuration);
+    const nextState = processHungerTick(endState, entityId, endDuration);
     if (nextState !== state) {
       updateState(nextState);
     }

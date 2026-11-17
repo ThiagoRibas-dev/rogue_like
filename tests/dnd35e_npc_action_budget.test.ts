@@ -11,6 +11,7 @@ import {
   onDnD35eActorTurnStart,
   resolveDnD35eActionEnergyCost
 } from '../src/rulesets/dnd35e/cartridge/dnd35e_lifecycle_adapter.ts';
+import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/cartridge/dnd35e_dag_adapter.ts';
 import { resolveDnD35eMeleeAttack } from '../src/rulesets/dnd35e/cartridge/dnd35e_combat_adapter.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import type { NaturalWeaponDescriptor } from '../src/rulesets/dnd35e/types/dnd35e.types.ts';
@@ -440,5 +441,38 @@ describe('D&D 3.5e NPC Symmetric Action Budget & AI Integration', () => {
     const posAfter = getComponent(res1.state, spawned.npcId, ComponentType.Position)!;
     expect(posAfter.x).toBe(6);
     expect(posAfter.y).toBe(5);
+  });
+
+  test('6. evaluateDnD35eEntityDAG hits cross-state cache across actionBudget & unrelated NPC mutations, invalidating on status changes', () => {
+    let { state, playerId } = buildOpenArenaState();
+    const spawned = spawnHostileNpc(state, 12, 12, { profileId: 'test_hunter' });
+    state = onDnD35eActorTurnStart(spawned.state, playerId);
+
+    const dag1 = evaluateDnD35eEntityDAG(state, playerId)!;
+    expect(dag1).toBeDefined();
+
+    // Mutate an unrelated entity
+    const unrelatedUpdated = addComponent(state, spawned.npcId, {
+      type: ComponentType.Hunger,
+      satiation: 300
+    });
+    const dag2 = evaluateDnD35eEntityDAG(unrelatedUpdated, playerId)!;
+    expect(dag2.dagResult).toBe(dag1.dagResult);
+
+    // Take a 5-ft step on player (mutates transient actionBudget & Position without touching stats/statuses)
+    const moveRes = applyIntentWithCost(unrelatedUpdated, { type: IntentType.Move, entityId: playerId, dx: 1, dy: 0 });
+    expect(moveRes.energyCost).toBe(0);
+    const dag3 = evaluateDnD35eEntityDAG(moveRes.state, playerId)!;
+    expect(dag3.dagResult).toBe(dag1.dagResult);
+    expect(dag3.dndData.actionBudget?.distanceMovedThisRoundFt).toBe(5);
+
+    // Add a StatusEffects mutation -> must invalidate cache and recompute AC penalty
+    const statusUpdated = addComponent(moveRes.state, playerId, {
+      type: ComponentType.StatusEffects,
+      activeEffects: [{ effectId: 'stunned', duration: 1 }]
+    });
+    const dag4 = evaluateDnD35eEntityDAG(statusUpdated, playerId)!;
+    expect(dag4.dagResult).not.toBe(dag1.dagResult);
+    expect(dag4.selfTags).toContain('status:stunned');
   });
 });

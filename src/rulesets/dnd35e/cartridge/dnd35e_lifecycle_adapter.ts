@@ -45,6 +45,41 @@ const DEFAULT_CASTER_LEVEL = 1;
 const BASE_SPELL_DC = 10;
 
 /**
+ * Maximum Chebyshev tile radius (`12` = 60 ft, covering Colossal footprints + 30 ft reach) within which
+ * another living combatant triggers flanking graph recalculation on a 5-ft movement step.
+ */
+const MAX_FLANKING_STEP_CHECK_RADIUS_TILES = 12;
+
+function hasRelevantFlankingNeighborForStep(
+  state: GameState,
+  entityId: EntityId,
+  fromPos: { readonly x: number; readonly y: number },
+  toPos: { readonly x: number; readonly y: number }
+): boolean {
+  const moverData = getDnD35EntityData(state, entityId);
+  if (
+    (moverData.flankingRelations?.flankingTargetIds.length ?? 0) > 0 ||
+    (moverData.flankingRelations?.flankedByEntityIds.length ?? 0) > 0
+  ) {
+    return true;
+  }
+
+  for (const otherId of state.entities) {
+    if (otherId === entityId) continue;
+    const otherFighter = getComponent(state, otherId, ComponentType.Fighter) as FighterComponent | undefined;
+    const otherPos = getComponent(state, otherId, ComponentType.Position) as PositionComponent | undefined;
+    if (!otherFighter || otherFighter.hp <= 0 || !otherPos) continue;
+
+    const distFrom = Math.max(Math.abs(otherPos.x - fromPos.x), Math.abs(otherPos.y - fromPos.y));
+    const distTo = Math.max(Math.abs(otherPos.x - toPos.x), Math.abs(otherPos.y - toPos.y));
+    if (distFrom <= MAX_FLANKING_STEP_CHECK_RADIUS_TILES || distTo <= MAX_FLANKING_STEP_CHECK_RADIUS_TILES) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Evaluates active spell emanation fields covering `occupantId` and automatically triggers
  * first-entry saving throw and Spell Resistance checks for any hostile/save-requiring units
  * not yet recorded in `field.auraSaveMemory`.
@@ -204,7 +239,9 @@ export function onDnD35eActorMovementStep(
     }
   }
 
-  nextState = syncSpatialFlankingGraph(nextState);
+  if (hasRelevantFlankingNeighborForStep(nextState, entityId, _fromPos, toPos)) {
+    nextState = syncSpatialFlankingGraph(nextState);
+  }
   nextState = evaluateActorLightExposure(nextState, entityId, 'move_or_field');
   nextState = evaluateAdjacentEnemyReactionsOnMove(nextState, entityId, toPos);
 

@@ -271,6 +271,9 @@ export function evaluateEntityFlankingTarget(params: {
   return false;
 }
 
+/** Multiplier over natural reach to conservatively cover reach weapons when pre-filtering flanking pairs. */
+const MAX_TACTICAL_REACH_MULTIPLIER = 2;
+
 /**
  * Recomputes relational flanking pairs (`flankingTargetIds`, `flankedByEntityIds`) across all living
  * combatants in `GameState`, persisting `flankingRelations` on `DnD35EntityData` and synchronizing
@@ -278,33 +281,49 @@ export function evaluateEntityFlankingTarget(params: {
  */
 export function syncSpatialFlankingGraph(state: GameState): GameState {
   const sysContent = getDnD35SystemContent(state.campaign);
-  const combatants: Array<{
+  interface FlankingCombatantSnapshot {
     readonly id: EntityId;
     readonly pos: PositionComponent;
     readonly data: DnD35EntityData;
-    readonly tags: ReadonlyArray<string>;
-  }> = [];
+    readonly maxReachFt: number;
+  }
 
+  const combatants: FlankingCombatantSnapshot[] = [];
   for (const id of state.entities) {
     const fighter = getComponent(state, id, ComponentType.Fighter) as FighterComponent | undefined;
     const pos = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
     if (!fighter || fighter.hp <= 0 || !pos) continue;
 
     const data = getDnD35EntityData(state, id);
-    const sit = resolveEntitySituationalTagContext(state, id, data);
-    const rawTags = (getComponent(state, id, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
-    const statusTags = getActiveStatusIds(state, id).map((s) => `status:${s}`);
-    const tags = projectDnD35ActorSemanticTags(
-      data,
+    const baseReachFt = SIZE_METRICS[data.sizeCategory ?? 'medium']?.naturalReachTallFt ?? FEET_PER_GRID_SQUARE;
+    const maxReachFt = Math.max(
+      FEET_PER_GRID_SQUARE * MAX_TACTICAL_REACH_MULTIPLIER,
+      baseReachFt * MAX_TACTICAL_REACH_MULTIPLIER
+    );
+    combatants.push({ id, pos, data, maxReachFt });
+  }
+
+  const tagsCache = new Map<EntityId, ReadonlyArray<string>>();
+  const getTags = (combatant: FlankingCombatantSnapshot): ReadonlyArray<string> => {
+    const cached = tagsCache.get(combatant.id);
+    if (cached !== undefined) return cached;
+
+    const sit = resolveEntitySituationalTagContext(state, combatant.id, combatant.data);
+    const rawTags = (getComponent(state, combatant.id, ComponentType.Tags) as TagsComponent | undefined)?.tags ?? [];
+    const statusTags = getActiveStatusIds(state, combatant.id).map((s) => `status:${s}`);
+    const projected = projectDnD35ActorSemanticTags(
+      combatant.data,
       [...rawTags, ...statusTags],
       sit,
       sysContent?.classes,
       sysContent?.skills,
       sysContent?.domains,
-      sysContent?.feats
+      sysContent?.feats,
+      sysContent?.conditionEffects
     );
-    combatants.push({ id, pos, data, tags });
-  }
+    tagsCache.set(combatant.id, projected);
+    return projected;
+  };
 
   const flankingMap = new Map<EntityId, number[]>();
   const flankedByMap = new Map<EntityId, number[]>();
@@ -316,6 +335,19 @@ export function syncSpatialFlankingGraph(state: GameState): GameState {
   for (const atk of combatants) {
     for (const def of combatants) {
       if (atk.id === def.id || !isHostile(state, atk.id, def.id)) continue;
+
+      const distFt = measureFootprintToFootprintDistanceFt(
+        atk.pos.x,
+        atk.pos.y,
+        atk.pos.footprintWidth ?? 1,
+        atk.pos.footprintHeight ?? 1,
+        def.pos.x,
+        def.pos.y,
+        def.pos.footprintWidth ?? 1,
+        def.pos.footprintHeight ?? 1
+      );
+      if (distFt > atk.maxReachFt) continue;
+
       const isFlank = evaluateEntityFlankingTarget({
         state,
         attackerId: atk.id,
@@ -324,8 +356,8 @@ export function syncSpatialFlankingGraph(state: GameState): GameState {
         defenderPos: def.pos,
         attackerData: atk.data,
         defenderData: def.data,
-        attackerSelfTags: atk.tags,
-        defenderSelfTags: def.tags
+        attackerSelfTags: getTags(atk),
+        defenderSelfTags: getTags(def)
       });
       if (isFlank) {
         flankingMap.get(atk.id)!.push(def.id);

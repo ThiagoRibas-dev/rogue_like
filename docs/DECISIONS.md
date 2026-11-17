@@ -599,3 +599,21 @@ This document records architectural decisions whose rationale is **non-obvious o
   - Avoided tag-guessing (which misclassifies underground fortress areas carrying `"camp"` director tags) in favor of explicit `environmentType` (`'outdoors' | 'indoors' | 'underground'`, omitting defaults to `'indoors'`/`'bright'` for legacy compatibility), paired with `rules.hunger.satiationLossPerStandardTurn` (`0.035` default = 1 daily ration of `500` satiation / 24h; `apple` = `125`), lazy respawn CR escalation across elapsed cycles, and bulk rest/wait cadence replay with `"While you rested:"` message digests.
   - *Future Milestone Note*: Quest deadlines and expiration timers are slated for a future milestone integrating directly with `advanceWorldTimeBulk`.
 
+---
+
+### Telemetry-Driven Turn & Render Loop Performance Optimization
+
+- **Decision 1: Cross-State, Budget-Resilient `evaluateDnD35eEntityDAG` Memoization Keyed by `CampaignData` (`dnd35e_dag_adapter.ts`)**:
+  - Replaced `WeakMap<GameState, ...>` in `evaluateDnD35eEntityDAG` with `campaignEntityDagCache` (`WeakMap<object, Map<EntityId, CachedEntityDAGEntry>>`) keyed by `state.campaign`, caching per-entity DAG results across immutable `GameState` updates via component reference signatures, equipped item refs, active `Field` snapshots, environment profile, and structural `DnD35EntityData` checks (`isSameStructuralDndData` ignoring transient `actionBudget` and `flankingRelations`).
+  - *Rationale*: Live telemetry (`dnd35e-crypt`, turns `4906 -> 4912`) showed that per-`GameState` caching suffered a 100% miss rate whenever any unrelated actor moved or expended 5 ft of movement. Returning `{ ...cached.result, dndData: mergeTransientDndData(...) }` eliminates redundant 4-stage DAG recomputations during multi-step movement and NPC turns while guaranteeing callers always receive fresh `actionBudget` and `flankingRelations`.
+
+- **Decision 2: Spatial Reach Pre-Filtering & Movement-Step Fast-Skip for `syncSpatialFlankingGraph` (`flanking_graph.ts`, `dnd35e_lifecycle_adapter.ts`)**:
+  - Deferred `resolveEntitySituationalTagContext` + `projectDnD35ActorSemanticTags` in `syncSpatialFlankingGraph` into a lazy `tagsCache` invoked only for hostile pairs within `maxReachFt`, and guarded step-level calls in `onDnD35eActorMovementStep` behind `hasRelevantFlankingNeighborForStep` (`MAX_FLANKING_STEP_CHECK_RADIUS_TILES = 12` = 60 ft or existing `flankingRelations`).
+  - *Rationale*: Eagerly projecting semantic tags for 28+ living actors on every 5-ft step and every turn start caused non-combat exploration `Move` actions to consume `10–33ms` per tick.
+
+- **Decision 3: Direct Intra-Turn Settlement, Viewport/Player-Scoped Dirty Domains & Debounced Step Persistence (`game-loop.ts`, `presentation_queue.ts`, `presenter.ts`)**:
+  - Added `settleRemainingActorTurn` in `game-loop.ts` so AI actors finishing an intra-turn action with `intent: null` clear `actionBudget` without dispatching a duplicate `applyIntentWithCost(Wait)` pass; removed synchronous per-step `saveCheckpoint(nextState)` (already debounced by `updateState` and checkpointed on area transitions/game-over).
+  - Updated `markDirtyFromStateDiff` (`classifyPresentationComponentDiff`) so off-screen NPC component mutations no longer mark `Entities`, `HUD`, or `Inventory` dirty, and gated `renderMenus` in `presenter.ts` to `state.uiMode !== UIMode.Game`.
+  - *Rationale*: Eliminates duplicate turn-end stabilization passes, `500+` redundant HUD/DOM redraws across 6 player rounds, and synchronous `localStorage` JSON serialization stalls on every 5-ft tile step.
+
+

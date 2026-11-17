@@ -179,7 +179,9 @@ export function renderPresenterFrame(
     }
     renderRTwPControls(state);
     renderViewControls(state);
-    renderMenus(state, hasSaveGame());
+    if (state.uiMode !== UIMode.Game) {
+      renderMenus(state, hasSaveGame());
+    }
     hudDomainMs = performance.now() - tHud0;
   }
 

@@ -1,10 +1,20 @@
 import { getComponent } from '../../../core/ecs.ts';
+import { resolveAreaEnvironmentProfile } from '../../../systems/world_clock.system.ts';
 import {
   ComponentType,
+  type EquipmentComponent,
+  type FactionComponent,
+  type FieldComponent,
   type FighterComponent,
+  type IdentityComponent,
+  type ItemComponent,
+  type PositionComponent,
   type PropertyOverlayComponent,
+  type RulesetDataComponent,
+  type StatusEffectsComponent,
   type TacticalDoctrineComponent,
-  type TagsComponent
+  type TagsComponent,
+  type TemplateComponent
 } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { EffectiveStats } from '../../../types/ruleset.types.ts';
@@ -67,12 +77,142 @@ export interface DnD35EntityDAGResult {
   readonly statModifiers?: ReadonlyArray<StatModifier> | undefined;
 }
 
+interface ActiveFieldSnapshotEntry {
+  readonly entityId: EntityId;
+  readonly field: FieldComponent;
+  readonly pos: PositionComponent | undefined;
+  readonly sourceFactionId: string | undefined;
+}
+
 interface CachedEntityDAGEntry {
-  readonly entityMapRef: unknown;
+  readonly rawDndData: DnD35EntityData | undefined;
+  readonly isPlayer: boolean;
+  readonly fighterLevel: number;
+  readonly fighterAttack: number;
+  readonly fighterDefense: number;
+  readonly fighterMaxHp: number;
+  readonly actorSpeed: number | undefined;
+  readonly overlayRef: PropertyOverlayComponent | undefined;
+  readonly tagsRef: TagsComponent | undefined;
+  readonly doctrineRef: TacticalDoctrineComponent | undefined;
+  readonly statusRef: StatusEffectsComponent | undefined;
+  readonly equipmentRef: EquipmentComponent | undefined;
+  readonly equippedItemRefs: ReadonlyArray<ItemComponent | undefined>;
+  readonly templateRef: TemplateComponent | undefined;
+  readonly identityName: string | undefined;
+  readonly factionRef: FactionComponent | undefined;
+  readonly isSqueezing: boolean;
+  readonly posX: number | undefined;
+  readonly posY: number | undefined;
+  readonly areaId: string;
+  readonly envType: string;
+  readonly envIllum: string;
+  readonly envSun: boolean;
+  readonly envPhase: string;
+  readonly fieldEntries: ReadonlyArray<ActiveFieldSnapshotEntry>;
   readonly result: DnD35EntityDAGResult | undefined;
 }
 
-const defaultEntityDagCache = new WeakMap<GameState, Map<EntityId, CachedEntityDAGEntry>>();
+const activeFieldsByComponentsCache = new WeakMap<object, ReadonlyArray<ActiveFieldSnapshotEntry>>();
+const campaignEntityDagCache = new WeakMap<object, Map<EntityId, CachedEntityDAGEntry>>();
+
+function getActiveFieldsForComponents(state: GameState): ReadonlyArray<ActiveFieldSnapshotEntry> {
+  const cached = activeFieldsByComponentsCache.get(state.components);
+  if (cached !== undefined) return cached;
+
+  const entries: ActiveFieldSnapshotEntry[] = [];
+  for (const id of state.entities) {
+    const field = getComponent(state, id, ComponentType.Field) as FieldComponent | undefined;
+    if (!field) continue;
+    const pos = getComponent(state, id, ComponentType.Position) as PositionComponent | undefined;
+    const sourceFactionId =
+      field.sourceEntityId !== undefined
+        ? (getComponent(state, field.sourceEntityId, ComponentType.Faction) as FactionComponent | undefined)?.factionId
+        : undefined;
+    entries.push({ entityId: id, field, pos, sourceFactionId });
+  }
+  activeFieldsByComponentsCache.set(state.components, entries);
+  return entries;
+}
+
+function isSameStructuralDndData(a: DnD35EntityData | undefined, b: DnD35EntityData | undefined): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  const aRec = a as unknown as Record<string, unknown>;
+  const bRec = b as unknown as Record<string, unknown>;
+  const keysA = Object.keys(aRec);
+  const keysB = Object.keys(bRec);
+  for (const key of keysA) {
+    if (key === 'actionBudget' || key === 'flankingRelations') continue;
+    if (aRec[key] !== bRec[key]) return false;
+  }
+  for (const key of keysB) {
+    if (key === 'actionBudget' || key === 'flankingRelations') continue;
+    if (aRec[key] !== bRec[key]) return false;
+  }
+  return true;
+}
+
+function areFieldSnapshotsEqual(
+  a: ReadonlyArray<ActiveFieldSnapshotEntry>,
+  b: ReadonlyArray<ActiveFieldSnapshotEntry>
+): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const ea = a[i]!;
+    const eb = b[i]!;
+    if (
+      ea.entityId !== eb.entityId ||
+      ea.field !== eb.field ||
+      ea.pos !== eb.pos ||
+      ea.sourceFactionId !== eb.sourceFactionId
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function areEquippedItemsEqual(
+  a: ReadonlyArray<ItemComponent | undefined>,
+  b: ReadonlyArray<ItemComponent | undefined>
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+function collectEquippedItemRefs(
+  state: GameState,
+  equipment: EquipmentComponent | undefined
+): ReadonlyArray<ItemComponent | undefined> {
+  if (!equipment || !Array.isArray(equipment.slots) || equipment.slots.length === 0) return [];
+  const refs: Array<ItemComponent | undefined> = [];
+  for (const slot of equipment.slots) {
+    if (slot.equippedItem === null) continue;
+    refs.push(getComponent(state, slot.equippedItem, ComponentType.Item) as ItemComponent | undefined);
+  }
+  return refs;
+}
+
+function mergeTransientDndData(base: DnD35EntityData, fresh: DnD35EntityData | undefined): DnD35EntityData {
+  if (!fresh || fresh === base) return base;
+  const next: Record<string, unknown> = { ...base };
+  if (fresh.actionBudget !== undefined) {
+    next['actionBudget'] = fresh.actionBudget;
+  } else {
+    delete next['actionBudget'];
+  }
+  if (fresh.flankingRelations !== undefined) {
+    next['flankingRelations'] = fresh.flankingRelations;
+  } else {
+    delete next['flankingRelations'];
+  }
+  return next as unknown as DnD35EntityData;
+}
 
 /**
  * Evaluates the full 4-Stage Topological Sub-Stat DAG for an entity in `GameState`,
@@ -86,24 +226,110 @@ export function evaluateDnD35eEntityDAG(
   prehydrated?: { readonly dndData: DnD35EntityData; readonly selfTags: ReadonlyArray<string> }
 ): DnD35EntityDAGResult | undefined {
   const canUseCache = contextOverride === undefined && prehydrated === undefined;
-  const entityMapRef = state.components.get(entityId);
-  if (canUseCache) {
-    const stateCache = defaultEntityDagCache.get(state);
-    const cached = stateCache?.get(entityId);
-    if (cached !== undefined && cached.entityMapRef === entityMapRef) {
+  if (!canUseCache) {
+    return evaluateDnD35eEntityDAGInternal(state, entityId, contextOverride, prehydrated);
+  }
+
+  const fighter = getComponent(state, entityId, ComponentType.Fighter) as FighterComponent | undefined;
+  if (!fighter) return undefined;
+
+  const actor = getComponent(state, entityId, ComponentType.Actor);
+  const rulesetComp = getComponent(state, entityId, ComponentType.RulesetData) as RulesetDataComponent | undefined;
+  const rawDndData =
+    rulesetComp && rulesetComp.rulesetId === 'dnd35e' && rulesetComp.payload['archetypeId'] !== undefined
+      ? (rulesetComp.payload as unknown as DnD35EntityData)
+      : undefined;
+  const isPlayer = getComponent(state, entityId, ComponentType.Player) !== undefined;
+  const overlayRef = getComponent(state, entityId, ComponentType.PropertyOverlay) as
+    PropertyOverlayComponent | undefined;
+  const tagsRef = getComponent(state, entityId, ComponentType.Tags) as TagsComponent | undefined;
+  const doctrineRef = getComponent(state, entityId, ComponentType.TacticalDoctrine) as
+    TacticalDoctrineComponent | undefined;
+  const statusRef = getComponent(state, entityId, ComponentType.StatusEffects) as StatusEffectsComponent | undefined;
+  const equipmentRef = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  const equippedItemRefs = collectEquippedItemRefs(state, equipmentRef);
+  const templateRef = getComponent(state, entityId, ComponentType.Template) as TemplateComponent | undefined;
+  const identityRef = getComponent(state, entityId, ComponentType.Identity) as IdentityComponent | undefined;
+  const factionRef = getComponent(state, entityId, ComponentType.Faction) as FactionComponent | undefined;
+  const posRef = getComponent(state, entityId, ComponentType.Position) as PositionComponent | undefined;
+  const isSqueezing = posRef?.isSqueezing === true;
+  const envProfile = resolveAreaEnvironmentProfile(state);
+  const fieldEntries = getActiveFieldsForComponents(state);
+  const hasAnyFields = fieldEntries.length > 0;
+  const posX = hasAnyFields ? posRef?.x : undefined;
+  const posY = hasAnyFields ? posRef?.y : undefined;
+
+  const stateCache = campaignEntityDagCache.get(state.campaign);
+  const cached = stateCache?.get(entityId);
+  if (
+    cached !== undefined &&
+    cached.isPlayer === isPlayer &&
+    cached.fighterLevel === fighter.level &&
+    cached.fighterAttack === fighter.attack &&
+    cached.fighterDefense === fighter.defense &&
+    cached.fighterMaxHp === fighter.maxHp &&
+    cached.actorSpeed === actor?.speed &&
+    cached.overlayRef === overlayRef &&
+    cached.tagsRef === tagsRef &&
+    cached.doctrineRef === doctrineRef &&
+    cached.statusRef === statusRef &&
+    cached.equipmentRef === equipmentRef &&
+    cached.templateRef === templateRef &&
+    cached.identityName === identityRef?.name &&
+    cached.isSqueezing === isSqueezing &&
+    cached.areaId === state.currentAreaId &&
+    cached.envType === envProfile.environmentType &&
+    cached.envIllum === envProfile.illumination &&
+    cached.envSun === envProfile.isNaturalSunlight &&
+    cached.envPhase === envProfile.clock.phaseId &&
+    (!hasAnyFields || (cached.factionRef === factionRef && cached.posX === posX && cached.posY === posY)) &&
+    areFieldSnapshotsEqual(cached.fieldEntries, fieldEntries) &&
+    areEquippedItemsEqual(cached.equippedItemRefs, equippedItemRefs) &&
+    isSameStructuralDndData(cached.rawDndData, rawDndData)
+  ) {
+    if (!cached.result || cached.rawDndData === rawDndData) {
       return cached.result;
     }
+    return {
+      ...cached.result,
+      dndData: mergeTransientDndData(cached.result.dndData, rawDndData)
+    };
   }
 
   const result = evaluateDnD35eEntityDAGInternal(state, entityId, contextOverride, prehydrated);
-  if (canUseCache) {
-    let stateCache = defaultEntityDagCache.get(state);
-    if (!stateCache) {
-      stateCache = new Map<EntityId, CachedEntityDAGEntry>();
-      defaultEntityDagCache.set(state, stateCache);
-    }
-    stateCache.set(entityId, { entityMapRef, result });
+  let targetCache = stateCache;
+  if (!targetCache) {
+    targetCache = new Map<EntityId, CachedEntityDAGEntry>();
+    campaignEntityDagCache.set(state.campaign, targetCache);
   }
+  targetCache.set(entityId, {
+    rawDndData,
+    isPlayer,
+    fighterLevel: fighter.level,
+    fighterAttack: fighter.attack,
+    fighterDefense: fighter.defense,
+    fighterMaxHp: fighter.maxHp,
+    actorSpeed: actor?.speed,
+    overlayRef,
+    tagsRef,
+    doctrineRef,
+    statusRef,
+    equipmentRef,
+    equippedItemRefs,
+    templateRef,
+    identityName: identityRef?.name,
+    factionRef,
+    isSqueezing,
+    posX,
+    posY,
+    areaId: state.currentAreaId,
+    envType: envProfile.environmentType,
+    envIllum: envProfile.illumination,
+    envSun: envProfile.isNaturalSunlight,
+    envPhase: envProfile.clock.phaseId,
+    fieldEntries,
+    result
+  });
   return result;
 }
 

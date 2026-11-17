@@ -1,4 +1,11 @@
-import { type GameState, UIMode } from '../types/game-state.types.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type InventoryComponent,
+  type PositionComponent
+} from '../types/components.types.ts';
+import { type EntityId, type GameState, UIMode } from '../types/game-state.types.ts';
+import { coordToIndex } from '../utils/grid.ts';
 import { recordDomainMarkedDirty } from './performance.ts';
 
 /**
@@ -22,6 +29,118 @@ export enum PresentationDomain {
 export interface PresentationEvent {
   readonly type: 'floating_text' | 'screen_shake' | 'sound_cue';
   readonly payload: unknown;
+}
+
+interface ComponentDiffResult {
+  readonly entitiesDirty: boolean;
+  readonly hudDirty: boolean;
+  readonly inventoryDirty: boolean;
+}
+
+function isFootprintInFov(pos: PositionComponent | undefined, mapWidth: number, fov: ReadonlySet<number>): boolean {
+  if (!pos) return false;
+  const w = pos.footprintWidth ?? 1;
+  const h = pos.footprintHeight ?? 1;
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) {
+      if (fov.has(coordToIndex(pos.x + dx, pos.y + dy, mapWidth))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function collectPlayerOwnedItems(compMap: Readonly<Record<string, unknown>> | undefined, out: Set<EntityId>): void {
+  if (!compMap) return;
+  const inv = compMap[ComponentType.Inventory] as InventoryComponent | undefined;
+  if (inv) {
+    for (const itemId of inv.items) {
+      out.add(itemId);
+    }
+  }
+  const equip = compMap[ComponentType.Equipment] as EquipmentComponent | undefined;
+  if (equip) {
+    for (const slot of equip.slots) {
+      if (slot.equippedItem !== null) {
+        out.add(slot.equippedItem);
+      }
+    }
+  }
+}
+
+function classifyPresentationComponentDiff(prev: GameState, next: GameState): ComponentDiffResult {
+  if (prev.entities !== next.entities) {
+    return { entitiesDirty: true, hudDirty: true, inventoryDirty: true };
+  }
+
+  let entitiesDirty = next.map.isFullyExplored === true && prev.components !== next.components;
+  let hudDirty = prev.cachedFov !== next.cachedFov;
+  let inventoryDirty =
+    prev.identifiedItems !== next.identifiedItems || prev.itemUnidentifiedNames !== next.itemUnidentifiedNames;
+
+  let playerId: EntityId | undefined;
+  for (const id of next.entities) {
+    if (next.components.get(id)?.[ComponentType.Player] !== undefined) {
+      playerId = id;
+      break;
+    }
+  }
+
+  const playerItemIds = new Set<EntityId>();
+  if (playerId !== undefined) {
+    collectPlayerOwnedItems(prev.components.get(playerId), playerItemIds);
+    collectPlayerOwnedItems(next.components.get(playerId), playerItemIds);
+  }
+
+  const nextWidth = next.map.width;
+  const prevWidth = prev.map.width;
+
+  for (const id of next.entities) {
+    const pMap = prev.components.get(id);
+    const nMap = next.components.get(id);
+    if (pMap === nMap) continue;
+
+    if (id === playerId) {
+      entitiesDirty = true;
+      hudDirty = true;
+      inventoryDirty = true;
+      continue;
+    }
+
+    if (playerItemIds.has(id)) {
+      hudDirty = true;
+      inventoryDirty = true;
+      continue;
+    }
+
+    if (pMap?.[ComponentType.Field] !== undefined || nMap?.[ComponentType.Field] !== undefined) {
+      entitiesDirty = true;
+      hudDirty = true;
+      continue;
+    }
+
+    if (pMap?.[ComponentType.ControllerLink] !== undefined || nMap?.[ComponentType.ControllerLink] !== undefined) {
+      hudDirty = true;
+    }
+
+    const pPos = pMap?.[ComponentType.Position] as PositionComponent | undefined;
+    const nPos = nMap?.[ComponentType.Position] as PositionComponent | undefined;
+    if (
+      isFootprintInFov(nPos, nextWidth, next.cachedFov) ||
+      isFootprintInFov(pPos, nextWidth, next.cachedFov) ||
+      isFootprintInFov(pPos, prevWidth, prev.cachedFov)
+    ) {
+      entitiesDirty = true;
+      hudDirty = true;
+    }
+  }
+
+  if (!entitiesDirty && prev.spatialIndex !== next.spatialIndex && prev.components === next.components) {
+    entitiesDirty = true;
+  }
+
+  return { entitiesDirty, hudDirty, inventoryDirty };
 }
 
 /**
@@ -111,12 +230,25 @@ class PresentationEventQueue {
     if (
       prev.components !== next.components ||
       prev.entities !== next.entities ||
-      prev.spatialIndex !== next.spatialIndex
+      prev.spatialIndex !== next.spatialIndex ||
+      prev.cachedFov !== next.cachedFov ||
+      prev.identifiedItems !== next.identifiedItems ||
+      prev.itemUnidentifiedNames !== next.itemUnidentifiedNames
     ) {
-      this.markDirty(PresentationDomain.Entities);
-      this.markDirty(PresentationDomain.HUD);
-      this.markDirty(PresentationDomain.Inventory);
-      if (next.uiMode === UIMode.CartridgeModal || next.uiMode === UIMode.Inventory) {
+      const diff = classifyPresentationComponentDiff(prev, next);
+      if (diff.entitiesDirty) {
+        this.markDirty(PresentationDomain.Entities);
+      }
+      if (diff.hudDirty) {
+        this.markDirty(PresentationDomain.HUD);
+      }
+      if (diff.inventoryDirty) {
+        this.markDirty(PresentationDomain.Inventory);
+      }
+      if (
+        (prev.components !== next.components || prev.entities !== next.entities) &&
+        (next.uiMode === UIMode.CartridgeModal || next.uiMode === UIMode.Inventory)
+      ) {
         this.markDirty(PresentationDomain.Modals);
       }
     }
