@@ -56,7 +56,8 @@ export function buildActorStanceModes(
   _resourcePools?: ResourcePoolComponent,
   sysFeats?: Readonly<Record<string, DnD35FeatDefinition>>,
   auraStanceOptions?: ReadonlyArray<ConsoleStanceGroupOption>,
-  sysClasses?: Readonly<Record<string, DnD35ClassDefinition>>
+  sysClasses?: Readonly<Record<string, DnD35ClassDefinition>>,
+  canToggle2HGrip = false
 ): ReadonlyArray<UIStanceModeEntry> {
   const modes: UIStanceModeEntry[] = [];
   const addedModeIds = new Set<string>();
@@ -92,7 +93,9 @@ export function buildActorStanceModes(
   const tDef = doctrine?.totalDefense ?? false;
   addMode('fighting_defensively', 'Fighting Def', fDef, 'Fighting Defensively (-4 Atk, +2 AC)');
   addMode('total_defense', 'Total Def', tDef, 'Total Defense (+4 Dodge AC, Standard)');
-  addMode('two_handed_grip', is2H ? '2H Grip' : '1H Grip', is2H, 'Toggle Grip Mode');
+  if (canToggle2HGrip) {
+    addMode('two_handed_grip', is2H ? '2H Grip' : '1H Grip', is2H, 'Toggle Grip Mode (1H vs 2H)');
+  }
 
   const activeGroups = doctrine?.activeStanceGroups ?? {};
   const effectiveClasses = sysClasses ?? getLastLoadedDnD35SystemContent()?.classes;

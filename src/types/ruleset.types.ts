@@ -368,6 +368,15 @@ export interface RulesetContract {
   onWorldHourElapsed?(state: GameState, hoursElapsed: number): GameState;
 
   /**
+   * Optional hook returning the number of hands/limbs required to wield/equip an item (and optional block reason if unwieldable).
+   */
+  resolveItemHandRequirement?(
+    state: GameState,
+    entityId: EntityId,
+    itemEntityId: EntityId
+  ): { readonly requiredHands: number; readonly blockedReason?: string };
+
+  /**
    * Optional hook returning the ruleset's canonical multi-denomination currency configuration
    * when a campaign's `rules.json` does not supply an explicit override.
    */

@@ -23,6 +23,7 @@ import type {
 } from '../../../types/ui_adapter.types.ts';
 import { convertCurrency, formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
+import { canToggleTwoHandedGrip } from '../equipment_physics.ts';
 import { DND35E_CP_PER_GP, DND35E_DEFAULT_CURRENCY_CONFIG } from '../currency.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
@@ -141,6 +142,7 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     const sys = state ? getDnD35SystemContent(state.campaign) : undefined;
     const auraContrib =
       state && entityId !== undefined ? evaluateActiveSpellAuraContributions(state, entityId) : undefined;
+    const allow2HGrip = state && entityId !== undefined ? canToggleTwoHandedGrip(state, entityId) : false;
     return {
       activeBank,
       totalBanks: TOTAL_HOTBAR_BANKS,
@@ -151,7 +153,8 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
         undefined,
         sys?.feats,
         auraContrib?.stanceGroupOptions,
-        sys?.classes
+        sys?.classes,
+        allow2HGrip
       ),
       slots: buildActorHotbarSlots(dndData, state, entityId, resourcePools),
       actionPips: buildActorActionPips(dndData)

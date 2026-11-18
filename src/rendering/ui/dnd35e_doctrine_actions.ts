@@ -7,6 +7,7 @@
 import { addComponent, getComponent } from '../../core/ecs.ts';
 import { queuePlayerIntent, setGameState } from '../../core/game-loop.ts';
 import { markAllDomainsDirty, markDomainDirty, PresentationDomain } from '../../core/presentation_queue.ts';
+import { canToggleTwoHandedGrip } from '../../rulesets/dnd35e/equipment_physics.ts';
 import { SHAPESHIFT_STANCE_GROUP_ID } from '../../rulesets/dnd35e/shapeshift.ts';
 import { getDnD35EntityData } from '../../rulesets/dnd35e/srd_registry.ts';
 import {
@@ -138,6 +139,7 @@ export function toggleDnD35eActorStance(
     return;
   }
   if (stanceId === 'two_handed_grip') {
+    if (!canToggleTwoHandedGrip(state, playerId)) return;
     applyDoctrineUpdate(state, playerId, {
       gripMode: currentGrip === 'two_handed' ? 'one_handed' : 'two_handed'
     });

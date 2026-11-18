@@ -5,7 +5,7 @@ import {
   type ItemComponent,
   type WeaponGripMode
 } from '../../../types/components.types.ts';
-import type { GameState } from '../../../types/game-state.types.ts';
+import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import { SIZE_METRICS } from '../spatial/grid_geometry.ts';
 import type {
   CreatureSizeCategory,
@@ -123,6 +123,52 @@ export function buildUnarmedProfile(wielderSize: CreatureSizeCategory, isOffHand
 }
 
 /**
+ * Collects the merged, deduplicated tag list for an item instance by combining its effective
+ * definition tags, per-instance tags on `ItemComponent`, and any entity-level `Tags` component.
+ */
+export function collectEffectiveItemTags(
+  state: GameState,
+  itemEntityId: EntityId | null,
+  itemComp: ItemComponent,
+  baseItemDef: DnD35ItemDefinition
+): ReadonlyArray<string> {
+  const entityTagsComp =
+    itemEntityId !== null
+      ? (getComponent(state, itemEntityId, ComponentType.Tags) as { tags?: ReadonlyArray<string> } | undefined)
+      : undefined;
+  const dynamicItemTags = (itemComp as { tags?: ReadonlyArray<string> }).tags ?? entityTagsComp?.tags ?? [];
+  return Array.from(new Set([...(baseItemDef.tags ?? []), ...dynamicItemTags]));
+}
+
+/**
+ * Resolves a weapon's effective size category, base effort, and scaling wieldability profile
+ * from its item definition, tags, and wielder size.
+ */
+export function resolveWeaponWieldabilityFromTags(
+  baseItemDef: DnD35ItemDefinition,
+  itemTags: ReadonlyArray<string>,
+  wielderSize: CreatureSizeCategory
+): {
+  readonly weaponSize: CreatureSizeCategory;
+  readonly inherentEffort: 'light' | 'one_handed' | 'two_handed';
+  readonly wieldProfile: ReturnType<typeof evaluateWeaponWieldingProfile>;
+} {
+  let weaponSize: CreatureSizeCategory = wielderSize;
+  const sizeTag = itemTags.find((t) => t.startsWith('weaponSize:') || t.startsWith('size:'));
+  if (sizeTag) {
+    const raw = sizeTag.replace(/^(?:weaponSize:|size:)/, '');
+    if (Object.prototype.hasOwnProperty.call(SIZE_METRICS, raw)) {
+      weaponSize = raw as CreatureSizeCategory;
+    }
+  }
+  const inherentEffort: 'light' | 'one_handed' | 'two_handed' =
+    baseItemDef.weaponStats?.effort ??
+    (itemTags.includes('two_handed') ? 'two_handed' : itemTags.includes('light') ? 'light' : 'one_handed');
+  const wieldProfile = evaluateWeaponWieldingProfile(weaponSize, inherentEffort, wielderSize);
+  return { weaponSize, inherentEffort, wieldProfile };
+}
+
+/**
  * Parses an equipped weapon item into an `EquippedWeaponProfile` using declarative `weaponStats`,
  * `specialMaterial`, and `magicalProperties` from `DnD35ItemDefinition` (with tag fallbacks for custom items).
  */
@@ -142,10 +188,7 @@ export function parseEquippedItem(
   const baseItemDef = resolveEffectiveItemDefinition(rawItemDef, state.campaign.items, itemComp);
   const baseWeaponId = baseItemDef.baseItemId ?? baseItemDef.id;
 
-  const entityTagsComp = getComponent(state, slot.equippedItem, ComponentType.Tags) as
-    { tags?: ReadonlyArray<string> } | undefined;
-  const dynamicItemTags = (itemComp as { tags?: ReadonlyArray<string> }).tags ?? entityTagsComp?.tags ?? [];
-  const itemTags = Array.from(new Set([...(baseItemDef.tags ?? []), ...dynamicItemTags]));
+  const itemTags = collectEffectiveItemTags(state, slot.equippedItem, itemComp, baseItemDef);
   const weaponStats = baseItemDef.weaponStats;
   const magicalProps = baseItemDef.magicalProperties;
 
@@ -196,14 +239,11 @@ export function parseEquippedItem(
     });
   }
 
-  let weaponSize: CreatureSizeCategory = wielderSize;
-  const sizeTag = itemTags.find((t) => t.startsWith('weaponSize:') || t.startsWith('size:'));
-  if (sizeTag) {
-    const raw = sizeTag.replace(/^(?:weaponSize:|size:)/, '');
-    if (Object.prototype.hasOwnProperty.call(SIZE_METRICS, raw)) {
-      weaponSize = raw as CreatureSizeCategory;
-    }
-  }
+  const { weaponSize, inherentEffort, wieldProfile } = resolveWeaponWieldabilityFromTags(
+    baseItemDef,
+    itemTags,
+    wielderSize
+  );
 
   const diceTag = itemTags.find((t) => t.startsWith('weaponDice:') || t.startsWith('dice:'));
   const baseDice =
@@ -262,11 +302,6 @@ export function parseEquippedItem(
       ? parsedCritMult
       : (weaponStats?.critMultiplier ?? DEFAULT_CRIT_MULTIPLIER);
 
-  const inherentEffort: 'light' | 'one_handed' | 'two_handed' =
-    weaponStats?.effort ??
-    (itemTags.includes('two_handed') ? 'two_handed' : itemTags.includes('light') ? 'light' : 'one_handed');
-
-  const wieldProfile = evaluateWeaponWieldingProfile(weaponSize, inherentEffort, wielderSize);
   const effectiveEffort = wieldProfile.effectiveHandedness ?? inherentEffort;
   const isDoubleWeapon = weaponStats?.isDoubleWeapon === true || itemTags.includes('double_weapon');
   const cannotTwoHandStr = weaponStats?.cannotTwoHandStr === true || itemTags.includes('cannot_two_hand_str');

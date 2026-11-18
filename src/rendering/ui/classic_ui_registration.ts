@@ -116,12 +116,14 @@ export const classicUIDefinition: CartridgeUIDefinition = {
       modalId: 'character_sheet',
       overlayElementId: 'dnd35e-sheet-overlay',
       allowEscapeClose: true,
+      handlesInventoryHotkeys: true,
       render: renderClassicSheetModal
     },
     inventory: {
       modalId: 'inventory',
       overlayElementId: 'dnd35e-sheet-overlay',
       allowEscapeClose: true,
+      handlesInventoryHotkeys: true,
       render: renderClassicSheetModal
     }
   }

@@ -1,9 +1,14 @@
 import { describe, expect, test } from 'bun:test';
-import { addComponent, createEntity, queryEntities } from '../src/core/ecs.ts';
+import { addComponent, createEntity, getComponent, queryEntities, removeComponent } from '../src/core/ecs.ts';
+import { getGameState, setGameState } from '../src/core/game-loop.ts';
+import { handleModalKey } from '../src/core/input/modal_input.ts';
+import { clearInputQueue } from '../src/core/input_queue.ts';
+import { initEngine } from '../src/core/scheduler.ts';
 import { applyCharacterCreationToPlayer } from '../src/rulesets/dnd35e/character_builder.ts';
 import { evaluateDnD35eEntityDAG } from '../src/rulesets/dnd35e/dnd35e_ruleset.ts';
 import { checkDnD35eRuleset } from '../src/rulesets/dnd35e/dnd35e_validator.ts';
 import {
+  canToggleTwoHandedGrip,
   getCanonicalBaseWeapons,
   resolveAllEquippedWeaponProfiles,
   resolveEffectiveItemDefinition,
@@ -19,8 +24,21 @@ import {
 } from '../src/rulesets/dnd35e/semantic_tags.ts';
 import { getDnD35EntityData, setDnD35EntityData } from '../src/rulesets/dnd35e/srd_registry.ts';
 import { getDnD35SystemContent } from '../src/rulesets/dnd35e/types/dnd35e_system.types.ts';
-import { ComponentType, type ItemComponent, toItemInstanceId } from '../src/types/components.types.ts';
-import type { EntityId } from '../src/types/game-state.types.ts';
+import { registerDnD35eUIAdapter } from '../src/rendering/ui/dnd35e_ui_registration.ts';
+import { DnD35UIAdapter } from '../src/rulesets/dnd35e/ui/dnd35e_ui_adapter.ts';
+import {
+  buildAnatomyEquipmentSlots,
+  processEquipItemIntent,
+  processUnequipItemIntent
+} from '../src/systems/inventory.system.ts';
+import {
+  ComponentType,
+  type EquipmentComponent,
+  type InventoryComponent,
+  type ItemComponent,
+  toItemInstanceId
+} from '../src/types/components.types.ts';
+import { type EntityId, type GameState, UIMode } from '../src/types/game-state.types.ts';
 import { buildGameState, loadCampaignFromDisk } from './helpers.ts';
 
 describe('Milestone 115: Complete SRD Weapons, Armors, Special Materials, Magic Item Compendium & Data-Driven Weapon Profile Parser', () => {
@@ -786,5 +804,284 @@ describe('Milestone 115: Complete SRD Weapons, Armors, Special Materials, Magic 
 
     const tripMod = featMods.find((m) => m.targetStat === 'trip');
     expect(tripMod?.value).toBe(4);
+  });
+});
+
+describe('Two-Handed Hand-Count Enforcement, 2H Grip Toggle Visibility & Backpack Hotkeys', () => {
+  const campaign = loadCampaignFromDisk('dnd35e-crypt');
+
+  function addItemToInventory(state: GameState, ownerId: EntityId, itemId: string, tags?: string[]): [GameState, EntityId] {
+    let nextState = state;
+    let itemEntId: EntityId;
+    [nextState, itemEntId] = createEntity(nextState);
+    nextState = addComponent(nextState, itemEntId, {
+      type: ComponentType.Item,
+      itemId
+    });
+    if (tags && tags.length > 0) {
+      nextState = addComponent(nextState, itemEntId, {
+        type: ComponentType.Tags,
+        tags
+      });
+    }
+    const inv = getComponent(nextState, ownerId, ComponentType.Inventory) as InventoryComponent | undefined;
+    nextState = addComponent(nextState, ownerId, {
+      type: ComponentType.Inventory,
+      items: [...(inv?.items ?? []), itemEntId],
+      maxCapacity: inv?.maxCapacity ?? 26
+    });
+    return [nextState, itemEntId];
+  }
+
+  function makeModalKeyEvent(key: string): KeyboardEvent {
+    let prevented = false;
+    return {
+      key,
+      shiftKey: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      preventDefault: (): void => {
+        prevented = true;
+      },
+      get defaultPrevented(): boolean {
+        return prevented;
+      }
+    } as unknown as KeyboardEvent;
+  }
+
+  test('Option A auto-unequips conflicting hands when equipping two-handed weapon or shield and stamps/clears 2H Grip', () => {
+    let state = buildGameState(campaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: buildAnatomyEquipmentSlots('humanoid_biped')
+    });
+    state = addComponent(state, playerId, {
+      type: ComponentType.Inventory,
+      items: [],
+      maxCapacity: 26
+    });
+
+    let longswordId: EntityId;
+    let shieldId: EntityId;
+    let greataxeId: EntityId;
+    [state, longswordId] = addItemToInventory(state, playerId, 'longsword');
+    [state, shieldId] = addItemToInventory(state, playerId, 'heavy_steel_shield');
+    [state, greataxeId] = addItemToInventory(state, playerId, 'greataxe');
+
+    // 1. Equip longsword (0) + heavy steel shield (1) -> occupies both hands cleanly
+    state = processEquipItemIntent(state, playerId, 0).state;
+    state = processEquipItemIntent(state, playerId, 1).state;
+
+    let equipComp = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent;
+    const armedCount1 = equipComp.slots.filter((s) => s.equippedItem !== null).length;
+    expect(armedCount1).toBe(2);
+
+    // 2. Equipping greataxe auto-unequips both longsword and shield, occupies one hand, and stamps occupiedBySlotId on the other
+    const invBeforeAxe = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    const axeIdx = invBeforeAxe.items.indexOf(greataxeId);
+    const axeRes = processEquipItemIntent(state, playerId, axeIdx);
+    expect(axeRes.success).toBe(true);
+    state = axeRes.state;
+
+    equipComp = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent;
+    const axeSlot = equipComp.slots.find((s) => s.equippedItem === greataxeId);
+    expect(axeSlot).toBeDefined();
+    expect(equipComp.slots.some((s) => s.equippedItem === longswordId)).toBe(false);
+    expect(equipComp.slots.some((s) => s.equippedItem === shieldId)).toBe(false);
+    expect(equipComp.slots.filter((s) => s.equippedItem !== null).length).toBe(1);
+    const lockedSlot = equipComp.slots.find((s) => s.occupiedBySlotId === axeSlot?.id);
+    expect(lockedSlot).toBeDefined();
+
+    const invAfterAxe = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    expect(invAfterAxe.items).toContain(longswordId);
+    expect(invAfterAxe.items).toContain(shieldId);
+    expect(invAfterAxe.items).toContain(greataxeId);
+
+    // 3. Equipping heavy steel shield while wielding greataxe auto-unequips greataxe and clears 2H Grip lock
+    const shieldIdx = invAfterAxe.items.indexOf(shieldId);
+    const shieldRes = processEquipItemIntent(state, playerId, shieldIdx);
+    expect(shieldRes.success).toBe(true);
+    state = shieldRes.state;
+
+    equipComp = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent;
+    expect(equipComp.slots.some((s) => s.equippedItem === greataxeId)).toBe(false);
+    expect(equipComp.slots.some((s) => s.equippedItem === shieldId)).toBe(true);
+    expect(equipComp.slots.some((s) => s.occupiedBySlotId !== undefined)).toBe(false);
+
+    // 4. Re-equipping greataxe then explicitly unequipping it also clears occupiedBySlotId
+    const invBeforeAxe2 = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    state = processEquipItemIntent(state, playerId, invBeforeAxe2.items.indexOf(greataxeId)).state;
+    equipComp = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent;
+    const equippedAxeSlotId = equipComp.slots.find((s) => s.equippedItem === greataxeId)!.id;
+    const unequipRes = processUnequipItemIntent(state, playerId, equippedAxeSlotId);
+    expect(unequipRes.success).toBe(true);
+    const equipAfterUnequip = getComponent(unequipRes.state, playerId, ComponentType.Equipment) as EquipmentComponent;
+    expect(equipAfterUnequip.slots.some((s) => s.occupiedBySlotId !== undefined)).toBe(false);
+  });
+
+  test('refuses hand-wield equip when actor physically lacks hands or weapon size exceeds wieldable bounds', () => {
+    let state = buildGameState(campaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+
+    // Quadruped anatomy has 0 physical hands
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: buildAnatomyEquipmentSlots('quadruped')
+    });
+    state = addComponent(state, playerId, {
+      type: ComponentType.Inventory,
+      items: [],
+      maxCapacity: 26
+    });
+    [state] = addItemToInventory(state, playerId, 'longsword');
+    const quadRes = processEquipItemIntent(state, playerId, 0);
+    expect(quadRes.success).toBe(false);
+
+    // Humanoid Medium actor trying to equip a Huge two-handed weapon
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: buildAnatomyEquipmentSlots('humanoid_biped')
+    });
+    let hugeAxeId: EntityId;
+    [state, hugeAxeId] = addItemToInventory(state, playerId, 'greataxe', ['size:huge']);
+    const inv = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    const hugeRes = processEquipItemIntent(state, playerId, inv.items.indexOf(hugeAxeId));
+    expect(hugeRes.success).toBe(false);
+  });
+
+  test('canToggleTwoHandedGrip and hotbar stanceModes omit or show two_handed_grip based on armed hands', () => {
+    let state = buildGameState(campaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: buildAnatomyEquipmentSlots('humanoid_biped')
+    });
+    state = addComponent(state, playerId, {
+      type: ComponentType.Inventory,
+      items: [],
+      maxCapacity: 26
+    });
+
+    const adapter = new DnD35UIAdapter();
+
+    // 1. Unarmed -> omitted
+    expect(canToggleTwoHandedGrip(state, playerId)).toBe(false);
+    expect(
+      adapter.getHotbarData({ state, entityId: playerId }).stanceModes.some((m) => m.id === 'two_handed_grip')
+    ).toBe(false);
+
+    let longswordId: EntityId;
+    let shieldId: EntityId;
+    let greataxeId: EntityId;
+    [state, longswordId] = addItemToInventory(state, playerId, 'longsword');
+    [state, shieldId] = addItemToInventory(state, playerId, 'heavy_steel_shield');
+    [state, greataxeId] = addItemToInventory(state, playerId, 'greataxe');
+
+    // 2. Longsword + free hand -> shown
+    let inv = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    state = processEquipItemIntent(state, playerId, inv.items.indexOf(longswordId)).state;
+    expect(canToggleTwoHandedGrip(state, playerId)).toBe(true);
+    expect(
+      adapter.getHotbarData({ state, entityId: playerId }).stanceModes.some((m) => m.id === 'two_handed_grip')
+    ).toBe(true);
+
+    // 3. Longsword + heavy steel shield -> omitted
+    inv = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    state = processEquipItemIntent(state, playerId, inv.items.indexOf(shieldId)).state;
+    expect(canToggleTwoHandedGrip(state, playerId)).toBe(false);
+    expect(
+      adapter.getHotbarData({ state, entityId: playerId }).stanceModes.some((m) => m.id === 'two_handed_grip')
+    ).toBe(false);
+
+    // 4. Greataxe (2H weapon) -> omitted
+    inv = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent;
+    state = processEquipItemIntent(state, playerId, inv.items.indexOf(greataxeId)).state;
+    expect(canToggleTwoHandedGrip(state, playerId)).toBe(false);
+    expect(
+      adapter.getHotbarData({ state, entityId: playerId }).stanceModes.some((m) => m.id === 'two_handed_grip')
+    ).toBe(false);
+  });
+
+  test('backpack [a-z] keyboard shortcuts work in character_sheet & inventory modals even on dockCommand letters (b, c)', async () => {
+    const flushTurnSlice = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 20));
+    let state = buildGameState(campaign);
+    const playerId = queryEntities(state, [ComponentType.Player])[0]!;
+    for (const actorId of queryEntities(state, [ComponentType.Actor])) {
+      if (actorId !== playerId) {
+        state = removeComponent(state, actorId, ComponentType.Actor);
+      }
+    }
+    state = addComponent(state, playerId, {
+      type: ComponentType.Equipment,
+      slots: buildAnatomyEquipmentSlots('humanoid_biped')
+    });
+    state = addComponent(state, playerId, {
+      type: ComponentType.Inventory,
+      items: [],
+      maxCapacity: 26
+    });
+
+    // index 0 ('a') = consumable potion, index 1 ('b') = longsword, index 2 ('c') = heavy_steel_shield
+    let potionId: EntityId;
+    let longswordId: EntityId;
+    let shieldId: EntityId;
+    [state, potionId] = addItemToInventory(state, playerId, 'potion_of_cure_light_wounds');
+    [state, longswordId] = addItemToInventory(state, playerId, 'longsword');
+    [state, shieldId] = addItemToInventory(state, playerId, 'heavy_steel_shield');
+
+    const modalState: GameState = {
+      ...state,
+      uiMode: UIMode.CartridgeModal,
+      activeCartridgeModalId: 'character_sheet'
+    };
+
+    initEngine();
+    clearInputQueue();
+    registerDnD35eUIAdapter();
+    setGameState(modalState);
+
+    // Press 'b' (collides with Bestiary dockCommand) -> equips index 1 (longsword) and stays in character_sheet
+    handleModalKey(makeModalKeyEvent('b'), getGameState(), playerId);
+    await flushTurnSlice();
+    const afterB = getGameState();
+    expect(afterB.activeCartridgeModalId).toBe('character_sheet');
+    expect(
+      (getComponent(afterB, playerId, ComponentType.Equipment) as EquipmentComponent).slots.some(
+        (s) => s.equippedItem === longswordId
+      )
+    ).toBe(true);
+
+    // Press 'c' (collides with Character Sheet dockCommand) -> equips index 2 (shield) instead of closing modal
+    handleModalKey(makeModalKeyEvent('c'), getGameState(), playerId);
+    await flushTurnSlice();
+    const afterC = getGameState();
+    expect(afterC.uiMode).toBe(UIMode.CartridgeModal);
+    expect(
+      (getComponent(afterC, playerId, ComponentType.Equipment) as EquipmentComponent).slots.some(
+        (s) => s.equippedItem === shieldId
+      )
+    ).toBe(true);
+
+    // Press 'b' again -> unequips longsword
+    handleModalKey(makeModalKeyEvent('b'), getGameState(), playerId);
+    await flushTurnSlice();
+    expect(
+      (getComponent(getGameState(), playerId, ComponentType.Equipment) as EquipmentComponent).slots.some(
+        (s) => s.equippedItem === longswordId
+      )
+    ).toBe(false);
+
+    // Press 'a' -> applies/consumes potion index 0 (or queues Use Potion) without triggering dock commands
+    const msgsBeforeA = getGameState().messages.length;
+    handleModalKey(makeModalKeyEvent('a'), getGameState(), playerId);
+    await flushTurnSlice();
+    const afterA = getGameState();
+    const invAfterA = getComponent(afterA, playerId, ComponentType.Inventory) as InventoryComponent;
+    expect(invAfterA.items.includes(potionId) && afterA.messages.length === msgsBeforeA).toBe(false);
+
+    initEngine();
+    clearInputQueue();
   });
 });

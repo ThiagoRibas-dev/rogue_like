@@ -255,6 +255,7 @@ export const dnd35eUIDefinition: CartridgeUIDefinition = {
       modalId: 'character_sheet',
       overlayElementId: 'dnd35e-sheet-overlay',
       allowEscapeClose: true,
+      handlesInventoryHotkeys: true,
       render: renderDnD35eSheetModal
     },
     spellbook: {

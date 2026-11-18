@@ -1419,6 +1419,8 @@
     "canonicalEntryPoints": [
       "resolveAllEquippedWeaponProfiles",
       "resolveEquippedWeaponProfile",
+      "resolveDnD35eItemHandRequirement",
+      "canToggleTwoHandedGrip",
       "evaluateWeaponWieldingProfile",
       "scaleWeaponDamageDice",
       "applyMaterialPhysics",
@@ -1474,7 +1476,9 @@
     "responsibility": "Parses equipped item definitions and tags into ResolvedActorWeapons with effort ladder and double-weapon splitting.",
     "canonicalEntryPoints": [
       "EquippedWeaponProfile",
-      "ResolvedActorWeapons"
+      "ResolvedActorWeapons",
+      "collectEffectiveItemTags",
+      "resolveWeaponWieldabilityFromTags"
     ],
     "ownershipBoundary": {
       "includes": "Pure implementation and exports for src/rulesets/dnd35e/equipment/weapon_profile_parser.ts.",

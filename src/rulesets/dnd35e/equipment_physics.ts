@@ -7,12 +7,15 @@ import {
   type TacticalDoctrineComponent
 } from '../../types/components.types.ts';
 import type { EntityId, GameState } from '../../types/game-state.types.ts';
+import { getSlotLimbGroupKey, isHandWieldSlot, isItemAnimatedHandFree } from '../../utils/equipment.ts';
 import { evaluateNonproficiencyPenalty, resolveEffectiveItemDefinition } from './equipment/item_inheritance.ts';
 import {
   buildUnarmedProfile,
+  collectEffectiveItemTags,
   type EquippedWeaponProfile,
   parseEquippedItem,
-  type ResolvedActorWeapons
+  type ResolvedActorWeapons,
+  resolveWeaponWieldabilityFromTags
 } from './equipment/weapon_profile_parser.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
 import type { CreatureSizeCategory, DnD35EntityData } from './types/dnd35e.types.ts';
@@ -47,21 +50,7 @@ export function resolveAllEquippedWeaponProfiles(
 
   const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
 
-  const isHandSlot = (s: EquipmentSlotInstance): boolean =>
-    s.suppressed !== true &&
-    (s.slotType === 'held' ||
-      s.slotType === 'hand' ||
-      s.slotType === 'main_hand' ||
-      s.slotType === 'off_hand' ||
-      s.id.startsWith('hand_') ||
-      s.id.startsWith('main_hand') ||
-      s.id.startsWith('off_hand'));
-
-  const handSlots = (equipment?.slots ?? []).filter(isHandSlot);
-
-  const primarySlot =
-    handSlots.find((s) => s.equippedItem !== null && (s.slotType === 'main_hand' || s.id === 'main_hand_1')) ??
-    handSlots.find((s) => s.equippedItem !== null);
+  const handSlots = (equipment?.slots ?? []).filter((s) => s.suppressed !== true && isHandWieldSlot(s));
 
   const isSlotHandFreed = (s: EquipmentSlotInstance): boolean => {
     if (s.equippedItem === null) return true;
@@ -69,30 +58,32 @@ export function resolveAllEquippedWeaponProfiles(
     if (!itemComp) return true;
     const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
     if (!rawDef) return false;
-    const itemDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
-    const tags = itemDef.tags ?? [];
-    const ensh = [...(itemDef.enhancements ?? []), ...(itemDef.magicalProperties?.enhancements ?? [])];
-    return (
-      itemDef.magicalProperties?.animated === true ||
-      tags.includes('animated') ||
-      tags.includes('shield:animated') ||
-      ensh.includes('animated')
-    );
+    return isItemAnimatedHandFree(resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp));
   };
 
-  const otherHandSlots = handSlots.filter((s) => s !== primarySlot);
-  const emptyHandSlots = otherHandSlots.filter((s) => isSlotHandFreed(s));
-  const hasFreeHand = emptyHandSlots.length > 0;
+  const primarySlot = pickPrimaryWeaponHandSlot(handSlots, state, wielderSize, dndData, true);
 
   const occupiedLimbGroups = new Set<string>();
   for (const s of equipment?.slots ?? []) {
     if (s.equippedItem !== null && s.suppressed !== true && s.limbGroupId) {
-      if (isHandSlot(s) && isSlotHandFreed(s)) {
+      if (isHandWieldSlot(s) && isSlotHandFreed(s)) {
         continue;
       }
       occupiedLimbGroups.add(s.limbGroupId);
     }
   }
+
+  const primaryLimbKey = primarySlot ? getSlotLimbGroupKey(primarySlot) : undefined;
+  const otherHandSlots = handSlots.filter(
+    (s) => s !== primarySlot && (primaryLimbKey === undefined || getSlotLimbGroupKey(s) !== primaryLimbKey)
+  );
+  const emptyHandSlots = otherHandSlots.filter(
+    (s) =>
+      s.occupiedBySlotId === undefined &&
+      isSlotHandFreed(s) &&
+      (!s.limbGroupId || !occupiedLimbGroups.has(s.limbGroupId))
+  );
+  const hasFreeHand = emptyHandSlots.length > 0;
 
   // Branch 1: Unarmed
   if (!primarySlot || primarySlot.equippedItem === null) {
@@ -266,4 +257,112 @@ export function resolveEquippedWeaponProfile(
     return resolved.primaryWeapon;
   }
   return resolved.offHandWeapons[0] ?? buildUnarmedProfile(resolved.primaryWeapon.weaponSize, true);
+}
+
+function pickPrimaryWeaponHandSlot(
+  handSlots: ReadonlyArray<EquipmentSlotInstance>,
+  state: GameState,
+  wielderSize: CreatureSizeCategory,
+  dndData?: Partial<DnD35EntityData>,
+  allowFallbackNonWeapon = false
+): EquipmentSlotInstance | undefined {
+  return (
+    handSlots.find(
+      (s) =>
+        s.equippedItem !== null &&
+        (s.slotType === 'main_hand' || s.id === 'main_hand_1') &&
+        parseEquippedItem(state, s, wielderSize, dndData) !== undefined
+    ) ??
+    handSlots.find((s) => s.equippedItem !== null && parseEquippedItem(state, s, wielderSize, dndData) !== undefined) ??
+    (allowFallbackNonWeapon
+      ? (handSlots.find((s) => s.equippedItem !== null && (s.slotType === 'main_hand' || s.id === 'main_hand_1')) ??
+        handSlots.find((s) => s.equippedItem !== null))
+      : undefined)
+  );
+}
+
+/**
+ * Evaluates how many hands/limbs an item requires under D&D 3.5e wielding rules
+ * (accounting for weapon effort, animated shields, and actor size category).
+ */
+export function resolveDnD35eItemHandRequirement(
+  state: GameState,
+  entityId: EntityId,
+  itemEntityId: EntityId
+): { readonly requiredHands: number; readonly blockedReason?: string } {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item) as ItemComponent | undefined;
+  if (!itemComp) return { requiredHands: 1 };
+
+  const rawDef = state.campaign.items[itemComp.itemId] as DnD35ItemDefinition | undefined;
+  if (!rawDef) return { requiredHands: 1 };
+
+  const effectiveDef = resolveEffectiveItemDefinition(rawDef, state.campaign.items, itemComp);
+  if (isItemAnimatedHandFree(effectiveDef)) {
+    return { requiredHands: 0 };
+  }
+
+  const itemTags = collectEffectiveItemTags(state, itemEntityId, itemComp, effectiveDef);
+  if (effectiveDef.category === 'weapon' || effectiveDef.weaponStats !== undefined) {
+    const dndData = getDnD35EntityData(state, entityId);
+    const wielderSize = dndData?.sizeCategory ?? 'medium';
+    const { wieldProfile } = resolveWeaponWieldabilityFromTags(effectiveDef, itemTags, wielderSize);
+    if (!wieldProfile.wieldable) {
+      return {
+        requiredHands: 2,
+        blockedReason: wieldProfile.reason ?? `${effectiveDef.name} cannot be wielded at your current size.`
+      };
+    }
+    if (wieldProfile.effectiveHandedness === 'two_handed') {
+      return { requiredHands: 2 };
+    }
+    return { requiredHands: 1 };
+  }
+
+  if (effectiveDef.equippable?.slot === 'two_handed' || itemTags.includes('two_handed')) {
+    return { requiredHands: 2 };
+  }
+  return { requiredHands: 1 };
+}
+
+/**
+ * Returns true only when toggling between 1-handed and 2-handed grip is mechanically valid
+ * (wielding an armed, wieldable one-handed weapon with at least one other free hand).
+ */
+export function canToggleTwoHandedGrip(state: GameState, entityId: EntityId): boolean {
+  const equipment = getComponent(state, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  if (!equipment) return false;
+
+  const dndData = getDnD35EntityData(state, entityId);
+  const wielderSize = dndData?.sizeCategory ?? 'medium';
+
+  const handSlots = equipment.slots.filter((s) => s.suppressed !== true && isHandWieldSlot(s));
+  const primarySlot = pickPrimaryWeaponHandSlot(handSlots, state, wielderSize, dndData);
+  if (!primarySlot) return false;
+
+  const parsedPrimary = parseEquippedItem(state, primarySlot, wielderSize, dndData);
+  if (
+    !parsedPrimary ||
+    !parsedPrimary.isArmed ||
+    !parsedPrimary.wieldable ||
+    parsedPrimary.isDoubleWeapon ||
+    parsedPrimary.cannotTwoHandStr ||
+    parsedPrimary.effectiveEffort !== 'one_handed'
+  ) {
+    return false;
+  }
+
+  const primaryLimbKey = getSlotLimbGroupKey(primarySlot);
+  const occupiedLimbKeys = new Set<string>();
+  for (const s of handSlots) {
+    if (s.equippedItem === null) continue;
+    const req = resolveDnD35eItemHandRequirement(state, entityId, s.equippedItem);
+    if (req.requiredHands > 0) {
+      occupiedLimbKeys.add(getSlotLimbGroupKey(s));
+    }
+  }
+
+  return handSlots.some((s) => {
+    const limbKey = getSlotLimbGroupKey(s);
+    return limbKey !== primaryLimbKey && s.occupiedBySlotId === undefined && !occupiedLimbKeys.has(limbKey);
+  });
 }

@@ -258,7 +258,7 @@ export function renderCompactStashWidget(
     const cell = createEl('div', item ? 'crpg-stash-cell occupied' : 'crpg-stash-cell');
     if (item) {
       cell.title = item.hotkeyLabel
-        ? `[${item.hotkeyLabel}] ${item.name} (${item.category === 'consumable' ? 'Click or press key to Use' : 'Click to Equip, Alt+Key to Equip, Shift+Key to Drop'})`
+        ? `[${item.hotkeyLabel}] ${item.name} (${item.category === 'consumable' ? 'Click or [Key] to Use' : 'Click or [Key] to Equip/Unequip'}, Shift+Key to Drop)`
         : item.name;
       cell.addEventListener('mouseenter', (e) => callbacks.onHoverItem?.(item, e));
       cell.addEventListener('mouseleave', (e) => callbacks.onHoverItem?.(null, e));

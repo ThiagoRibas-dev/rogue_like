@@ -125,6 +125,16 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       return;
     }
 
+    const handlesInventoryHotkeys = descriptor?.handlesInventoryHotkeys === true;
+
+    if (handlesInventoryHotkeys) {
+      const isLetterKey = event.key.length === 1 && /^[a-z]$/i.test(event.key) && !event.ctrlKey && !event.metaKey;
+      if (isLetterKey) {
+        handleInventoryKey(event, state, playerEntityId);
+        return;
+      }
+    }
+
     const hasModifierKey = event.shiftKey || event.altKey || event.ctrlKey || event.metaKey;
     if (!hasModifierKey && cartridgeUI?.dockCommands) {
       const match = cartridgeUI.dockCommands.find(
@@ -155,7 +165,7 @@ export function handleModalKey(event: KeyboardEvent, state: GameState, playerEnt
       }
     }
 
-    if (activeModalId === 'inventory' || activeModalId === 'character_sheet') {
+    if (handlesInventoryHotkeys) {
       handleInventoryKey(event, state, playerEntityId);
     }
     return;

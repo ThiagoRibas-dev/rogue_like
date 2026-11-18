@@ -18,7 +18,7 @@
 - [Core Console: Map Generation & Spatial (2 files)](#core-console-map-generation-spatial)
 - [Core Console: Rendering & UI Views (80 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
-- [Core Console: Utility Helpers (10 files)](#core-console-utility-helpers)
+- [Core Console: Utility Helpers (11 files)](#core-console-utility-helpers)
 - [Core Console: Web Workers & Async Simulation (4 files)](#core-console-web-workers-async-simulation)
 - [Ruleset Cartridge: Classic Sci-Fi (6 files)](#ruleset-cartridge-classic-sci-fi)
 
@@ -418,13 +418,14 @@
 
 ## Core Console: Utility Helpers
 
-**Modules in this domain:** 10
+**Modules in this domain:** 11
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `src/utils/a11y.ts` | `tier1_console` | Traps keyboard focus within the specified container element. | `trapFocus` | **Includes:** Pure implementation and exports for src/utils/a11y.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/a11y.ts. |
 | `src/utils/assert.ts` | `tier1_console` | Asserts that a value is not null or undefined. | `assertDefined`, `assertNever` | **Includes:** Pure implementation and exports for src/utils/assert.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/assert.ts. |
 | `src/utils/direction.ts` | `tier1_console` | Enum of possible movement directions. | `Direction`, `DirectionDelta`, `getDirectionDelta` | **Includes:** Pure implementation and exports for src/utils/direction.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/direction.ts. |
+| `src/utils/equipment.ts` | `tier1_console` | Shared equipment hand-slot classification, limb-group deduplication, and animated hand-free item helpers. | `HAND_WIELD_SLOT_TYPES`, `AnimatedHandFreeItemShape`, `isHandWieldSlot`, `getSlotLimbGroupKey`, `isItemAnimatedHandFree` | **Includes:** Pure implementation and exports for src/utils/equipment.ts.<br>**Excludes:** Ruleset-specific weapon sizing or damage math. | • Do not duplicate hand-slot predicates or limb-group key resolution outside src/utils/equipment.ts. |
 | `src/utils/faction.ts` | `tier1_console` | Gets the faction relation between two entities. | `getFactionRelation`, `isHostile` | **Includes:** Pure implementation and exports for src/utils/faction.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/faction.ts. |
 | `src/utils/grid.ts` | `tier1_console` | Converts 2D grid coordinates to a 1D flat array index. | `coordToIndex`, `isInBounds`, `getBresenhamLine` | **Includes:** Pure implementation and exports for src/utils/grid.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/grid.ts. |
 | `src/utils/json-patch.ts` | `tier1_console` | Represents a single JSON Patch operation (RFC 6902 subset). | `PatchOperation`, `applyPatch`, `generateInversePatch` | **Includes:** Pure implementation and exports for src/utils/json-patch.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/json-patch.ts. |

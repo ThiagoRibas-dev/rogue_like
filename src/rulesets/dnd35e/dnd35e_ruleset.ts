@@ -13,6 +13,7 @@ import { computeDnD35eEffectiveStats } from './cartridge/dnd35e_dag_adapter.ts';
 import { onDnD35eEntitySpawned } from './cartridge/dnd35e_spawn_hydrator.ts';
 import { DND35E_DEFAULT_CURRENCY_CONFIG } from './currency.ts';
 import { checkDnD35eRuleset } from './dnd35e_validator.ts';
+import { resolveDnD35eItemHandRequirement } from './equipment_physics.ts';
 import { DND35E_BASE_AC } from './modifiers.ts';
 import { calculateMulticlassXpMultiplier, computeXpThresholdForLevel } from './progression.ts';
 import { resolveDnD35eKillXpReward } from './progression/cr_xp_table.ts';
@@ -208,6 +209,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   resolveActorSpatialProfile: resolveDnD35eActorSpatialProfile,
   syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint,
   onWorldHourElapsed: onDnD35eWorldHourElapsed,
+  resolveItemHandRequirement: resolveDnD35eItemHandRequirement,
   getDefaultCurrencyConfig: () => DND35E_DEFAULT_CURRENCY_CONFIG,
   getTradeSocialActions: getDnD35eTradeSocialActions,
   evaluateTradePriceModifier: evaluateDnD35eTradePriceModifier,

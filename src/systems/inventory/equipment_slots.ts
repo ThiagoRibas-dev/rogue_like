@@ -1,13 +1,90 @@
 import type { GameState, EntityId } from '../../types/game-state.types.ts';
 import { ComponentType, type EquipmentComponent, type EquipmentSlotInstance } from '../../types/components.types.ts';
 import { getComponent, addComponent } from '../../core/ecs.ts';
+import { getActiveRuleset } from '../../rulesets/registry.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
 import { GameEventType, type GameEvent } from '../../types/events.types.ts';
+import {
+  getSlotLimbGroupKey,
+  HAND_WIELD_SLOT_TYPES,
+  isHandWieldSlot,
+  isItemAnimatedHandFree
+} from '../../utils/equipment.ts';
+
+const SINGLE_HAND_FALLBACK_REQUIRED = 1;
+const TWO_HAND_REQUIRED = 2;
+
+function clearGripLockIfMatching(
+  slot: EquipmentSlotInstance,
+  releasedParentIds: ReadonlySet<string>
+): EquipmentSlotInstance {
+  if (slot.occupiedBySlotId === undefined || !releasedParentIds.has(slot.occupiedBySlotId)) {
+    return slot;
+  }
+  const { occupiedBySlotId: _cleared, ...rest } = slot;
+  return rest;
+}
+
+function resolveDisplayItemName(state: GameState, itemEntityId: EntityId): string {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+  if (!itemComp) return 'item';
+  const def = state.campaign.items[itemComp.itemId];
+  const isIdentified = state.identifiedItems.has(def?.id ?? itemComp.itemId);
+  return (
+    (isIdentified
+      ? def?.name
+      : (state.itemUnidentifiedNames.get(def?.id ?? itemComp.itemId) ?? def?.unidentifiedName)) ?? itemComp.itemId
+  );
+}
+
+function resolveHandRequirementFallback(
+  state: GameState,
+  itemEntityId: EntityId
+): {
+  readonly requiredHands: number;
+  readonly blockedReason?: string;
+} {
+  const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
+  const def = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
+  const tags = def?.tags ?? [];
+  if (isItemAnimatedHandFree(def)) {
+    return { requiredHands: 0 };
+  }
+  if (def?.equippable?.slot === 'two_handed' || tags.includes('two_handed')) {
+    return { requiredHands: TWO_HAND_REQUIRED };
+  }
+  return { requiredHands: SINGLE_HAND_FALLBACK_REQUIRED };
+}
+
+function resolveItemHands(
+  state: GameState,
+  entityId: EntityId,
+  itemEntityId: EntityId
+): { readonly requiredHands: number; readonly blockedReason?: string } {
+  const hook = getActiveRuleset(state).resolveItemHandRequirement;
+  if (hook) {
+    return hook(state, entityId, itemEntityId);
+  }
+  return resolveHandRequirementFallback(state, itemEntityId);
+}
+
+function findMatchingSlotsForRequestedType(
+  slots: ReadonlyArray<EquipmentSlotInstance>,
+  slotType: string
+): EquipmentSlotInstance[] {
+  const active = slots.filter((s) => s.suppressed !== true);
+  const exact = active.filter((s) => s.slotType === slotType);
+  if (exact.length > 0) return exact;
+  if (slotType === 'two_handed' || slotType === 'main_hand' || slotType === 'off_hand') {
+    return active.filter((s) => s.slotType === 'hand' || s.slotType === 'held' || s.slotType === 'main_hand');
+  }
+  return [];
+}
 
 /**
  * Processes an EquipItem intent.
- * Moves the item from inventory into the appropriate equipment slot.
- * If a slot is already occupied, the old item is swapped back to inventory.
+ * Moves the item from inventory into the appropriate equipment slot, enforcing hand-count and
+ * two-handed grip constraints (auto-unequipping conflicting hand items when enough hands exist).
  *
  * @param state The current GameState.
  * @param entityId The entity equipping the item.
@@ -30,11 +107,8 @@ export function processEquipItemIntent(
   if (!itemComp) return { state, success: false };
 
   const def = state.campaign.items[itemComp.itemId];
+  const itemName = resolveDisplayItemName(state, itemEntityId);
   if (!def?.equippable) {
-    const isIdentified = state.identifiedItems.has(def?.id ?? '');
-    const itemName =
-      (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def?.id ?? '') ?? def?.unidentifiedName)) ??
-      itemComp.itemId;
     return {
       state: addMessage(state, `The ${itemName} cannot be equipped.`, MessageLogCategory.System),
       success: false
@@ -42,11 +116,7 @@ export function processEquipItemIntent(
   }
 
   const slotType = def.equippable.slot;
-  const isIdentified = state.identifiedItems.has(def.id);
-  const itemName =
-    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
-
-  const matchingSlots = equipment.slots.filter((s) => s.slotType === slotType && s.suppressed !== true);
+  const matchingSlots = findMatchingSlotsForRequestedType(equipment.slots, slotType);
   if (matchingSlots.length === 0) {
     return {
       state: addMessage(
@@ -58,35 +128,164 @@ export function processEquipItemIntent(
     };
   }
 
-  let targetSlot = matchingSlots.find((s) => s.equippedItem === null);
-  if (!targetSlot) {
-    targetSlot = matchingSlots[0]!;
+  if (matchingSlots.some((s) => s.equippedItem === itemEntityId)) {
+    return {
+      state: addMessage(state, `The ${itemName} is already equipped.`, MessageLogCategory.System),
+      success: false
+    };
   }
 
-  let nextState = state;
-  if (targetSlot.equippedItem !== null && targetSlot.equippedItem !== itemEntityId) {
-    const oldDef = state.campaign.items[getComponent(state, targetSlot.equippedItem, ComponentType.Item)?.itemId ?? ''];
-    const oldName = oldDef?.name ?? 'item';
-    nextState = addMessage(nextState, `You unequip the ${oldName}.`, MessageLogCategory.System);
+  if (!HAND_WIELD_SLOT_TYPES.has(slotType)) {
+    let targetSlot = matchingSlots.find((s) => s.equippedItem === null);
+    if (!targetSlot) {
+      targetSlot = matchingSlots[0]!;
+    }
+    let nextState = state;
+    const events: GameEvent[] = [];
+    if (targetSlot.equippedItem !== null && targetSlot.equippedItem !== itemEntityId) {
+      const oldName = resolveDisplayItemName(nextState, targetSlot.equippedItem);
+      nextState = addMessage(nextState, `You unequip the ${oldName}.`, MessageLogCategory.System);
+      events.push({ type: GameEventType.ItemUnequipped, entityId, itemId: targetSlot.equippedItem });
+    }
+    const nextEquipment: EquipmentComponent = {
+      ...equipment,
+      slots: equipment.slots.map((s) => (s.id === targetSlot!.id ? { ...s, equippedItem: itemEntityId } : s))
+    };
+    nextState = addComponent(nextState, entityId, nextEquipment);
+    events.push({ type: GameEventType.ItemEquipped, entityId, itemId: itemEntityId });
+    return {
+      state: addMessage(nextState, `You equip the ${itemName}.`, MessageLogCategory.System),
+      success: true,
+      events
+    };
   }
+
+  const handReq = resolveItemHands(state, entityId, itemEntityId);
+  if (handReq.blockedReason) {
+    return {
+      state: addMessage(state, handReq.blockedReason, MessageLogCategory.System),
+      success: false
+    };
+  }
+
+  const allHandSlots = equipment.slots.filter((s) => s.suppressed !== true && isHandWieldSlot(s));
+  const distinctHands = new Set<string>(allHandSlots.map(getSlotLimbGroupKey));
+  if (handReq.requiredHands > distinctHands.size) {
+    return {
+      state: addMessage(
+        state,
+        `You do not have enough free hands to equip the ${itemName}.`,
+        MessageLogCategory.System
+      ),
+      success: false
+    };
+  }
+
+  const targetSlot =
+    matchingSlots.find((s) => s.equippedItem === null && s.occupiedBySlotId === undefined) ??
+    matchingSlots.find((s) => s.equippedItem === null) ??
+    matchingSlots[0]!;
+
+  const companionSlots: EquipmentSlotInstance[] = [];
+  if (handReq.requiredHands >= TWO_HAND_REQUIRED) {
+    const usedLimbKeys = new Set<string>([getSlotLimbGroupKey(targetSlot)]);
+    const neededExtra = handReq.requiredHands - 1;
+    const preferredOrder = [
+      ...allHandSlots.filter((s) => s.equippedItem === null && s.occupiedBySlotId === undefined),
+      ...allHandSlots.filter((s) => s.equippedItem === null && s.occupiedBySlotId !== undefined),
+      ...allHandSlots
+    ];
+    for (const candidate of preferredOrder) {
+      if (companionSlots.length >= neededExtra) break;
+      const limbKey = getSlotLimbGroupKey(candidate);
+      if (usedLimbKeys.has(limbKey)) continue;
+      usedLimbKeys.add(limbKey);
+      companionSlots.push(candidate);
+    }
+    if (companionSlots.length < neededExtra) {
+      return {
+        state: addMessage(
+          state,
+          `You do not have enough free hands to equip the ${itemName}.`,
+          MessageLogCategory.System
+        ),
+        success: false
+      };
+    }
+  }
+
+  const consumedHandsByTarget = handReq.requiredHands;
+  const slotsToClear = new Set<string>();
+  const limbsBeingClaimed = new Set<string>();
+  if (consumedHandsByTarget > 0) {
+    limbsBeingClaimed.add(getSlotLimbGroupKey(targetSlot));
+    for (const comp of companionSlots) {
+      limbsBeingClaimed.add(getSlotLimbGroupKey(comp));
+    }
+  }
+
+  if (targetSlot.equippedItem !== null) {
+    slotsToClear.add(targetSlot.id);
+  }
+  if (consumedHandsByTarget > 0 && targetSlot.occupiedBySlotId !== undefined) {
+    slotsToClear.add(targetSlot.occupiedBySlotId);
+  }
+
+  for (const s of allHandSlots) {
+    if (limbsBeingClaimed.has(getSlotLimbGroupKey(s)) && s.occupiedBySlotId !== undefined) {
+      slotsToClear.add(s.occupiedBySlotId);
+    }
+    if (s.equippedItem === null || s.id === targetSlot.id) continue;
+    if (!limbsBeingClaimed.has(getSlotLimbGroupKey(s))) continue;
+    const existingReq = resolveItemHands(state, entityId, s.equippedItem);
+    if (existingReq.requiredHands > 0) {
+      slotsToClear.add(s.id);
+    }
+  }
+
+  const releasedParentIds = new Set<string>([targetSlot.id, ...slotsToClear]);
+  const companionLimbKeys = new Set<string>(companionSlots.map(getSlotLimbGroupKey));
+
+  let nextState = state;
+  const events: GameEvent[] = [];
+  for (const slot of equipment.slots) {
+    if (slotsToClear.has(slot.id) && slot.equippedItem !== null && slot.equippedItem !== itemEntityId) {
+      const oldName = resolveDisplayItemName(nextState, slot.equippedItem);
+      nextState = addMessage(nextState, `You unequip the ${oldName}.`, MessageLogCategory.System);
+      events.push({ type: GameEventType.ItemUnequipped, entityId, itemId: slot.equippedItem });
+    }
+  }
+
+  const updatedSlots = equipment.slots.map((s) => {
+    const unlocked = clearGripLockIfMatching(s, releasedParentIds);
+    if (unlocked.id === targetSlot.id) {
+      return { ...unlocked, equippedItem: itemEntityId };
+    }
+    const base = slotsToClear.has(unlocked.id) ? { ...unlocked, equippedItem: null } : unlocked;
+    if (isHandWieldSlot(base) && base.suppressed !== true && companionLimbKeys.has(getSlotLimbGroupKey(base))) {
+      return { ...base, occupiedBySlotId: targetSlot.id };
+    }
+    return base;
+  });
 
   const nextEquipment: EquipmentComponent = {
     ...equipment,
-    slots: equipment.slots.map((s) => (s.id === targetSlot!.id ? { ...s, equippedItem: itemEntityId } : s))
+    slots: updatedSlots
   };
 
   nextState = addComponent(nextState, entityId, nextEquipment);
+  events.push({ type: GameEventType.ItemEquipped, entityId, itemId: itemEntityId });
 
   return {
     state: addMessage(nextState, `You equip the ${itemName}.`, MessageLogCategory.System),
     success: true,
-    events: [{ type: GameEventType.ItemEquipped, entityId, itemId: itemEntityId }]
+    events
   };
 }
 
 /**
  * Processes an UnequipItem intent.
- * Moves the item in the given slot back to inventory, if capacity allows.
+ * Moves the item in the given slot back to inventory, clearing any linked 2H grip locks.
  *
  * @param state The current GameState.
  * @param entityId The entity unequipping the item.
@@ -110,13 +309,15 @@ export function processUnequipItemIntent(
   const itemComp = getComponent(state, itemEntityId, ComponentType.Item);
   const def = itemComp ? state.campaign.items[itemComp.itemId] : undefined;
   if (!itemComp || !def) return { state, success: false };
-  const isIdentified = state.identifiedItems.has(def.id);
-  const itemName =
-    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
+  const itemName = resolveDisplayItemName(state, itemEntityId);
 
+  const releasedParents = new Set<string>([slotId]);
   const nextEquipment: EquipmentComponent = {
     ...equipment,
-    slots: equipment.slots.map((s) => (s.id === slotId ? { ...s, equippedItem: null } : s))
+    slots: equipment.slots.map((s) => {
+      const unlocked = clearGripLockIfMatching(s, releasedParents);
+      return unlocked.id === slotId ? { ...unlocked, equippedItem: null } : unlocked;
+    })
   };
 
   const nextState = addComponent(state, entityId, nextEquipment);

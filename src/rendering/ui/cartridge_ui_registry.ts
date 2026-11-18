@@ -33,6 +33,7 @@ export interface CartridgeModalDescriptor {
   readonly modalId: string;
   readonly overlayElementId?: string | undefined;
   readonly allowEscapeClose: boolean;
+  readonly handlesInventoryHotkeys?: boolean | undefined;
   readonly render: (state: GameState) => void;
 }
 

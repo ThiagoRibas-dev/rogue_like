@@ -26,7 +26,8 @@ const SLOT_KEY_MAX_CHAR_CODE = 122;
  * Handles a keypress while the inventory panel is open.
  *
  * Supports closing with Escape, plus per-slot letter keys:
- * plain letter uses the item, Shift+letter drops it, Alt+letter equips or unequips it.
+ * plain letter equips/unequips equippables or uses consumables/tools, Shift+letter drops it,
+ * Alt+letter equips or unequips it.
  *
  * @param event The originating KeyboardEvent.
  * @param state The current GameState.
@@ -66,20 +67,27 @@ export function handleInventoryKey(event: KeyboardEvent, state: GameState, playe
       : (state.itemUnidentifiedNames.get(itemComponent.itemId) ?? definition.unidentifiedName ?? itemComponent.itemId);
   }
 
+  const isEquipped =
+    itemEntityId !== undefined && equipment !== undefined
+      ? equipment.slots.some((slot) => slot.equippedItem === itemEntityId)
+      : false;
+  const equippedSlot =
+    isEquipped && itemEntityId !== undefined && equipment !== undefined
+      ? equipment.slots.find((slot) => slot.equippedItem === itemEntityId)
+      : undefined;
+
   if (event.shiftKey) {
     setGameState(addMessage(state, `Queued: Drop ${itemName}`, MessageLogCategory.System));
     queuePlayerIntent(createDropAction(playerEntityId, slotIndex));
     return;
   }
 
-  if (event.altKey) {
-    if (itemEntityId !== undefined && equipment !== undefined && definition?.equippable) {
-      const equippedSlot = equipment.slots.find((slot) => slot.equippedItem === itemEntityId);
-      if (equippedSlot !== undefined) {
-        setGameState(addMessage(state, `Queued: Unequip ${itemName}`, MessageLogCategory.System));
-        queuePlayerIntent(createUnequipItemAction(playerEntityId, equippedSlot.id));
-        return;
-      }
+  const isConsumable = definition?.category === 'consumable' || definition?.consumable !== undefined;
+  if (event.altKey || (!isConsumable && definition?.equippable !== undefined)) {
+    if (equippedSlot !== undefined) {
+      setGameState(addMessage(state, `Queued: Unequip ${itemName}`, MessageLogCategory.System));
+      queuePlayerIntent(createUnequipItemAction(playerEntityId, equippedSlot.id));
+      return;
     }
 
     setGameState(addMessage(state, `Queued: Equip ${itemName}`, MessageLogCategory.System));

@@ -5330,6 +5330,25 @@
       "Do not duplicate or bypass exports from src/utils/direction.ts."
     ]
   },
+  "src/utils/equipment.ts": {
+    "domain": "Core Console: Utility Helpers",
+    "tier": "tier1_console",
+    "responsibility": "Shared equipment hand-slot classification, limb-group deduplication, and animated hand-free item helpers.",
+    "canonicalEntryPoints": [
+      "HAND_WIELD_SLOT_TYPES",
+      "AnimatedHandFreeItemShape",
+      "isHandWieldSlot",
+      "getSlotLimbGroupKey",
+      "isItemAnimatedHandFree"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/utils/equipment.ts.",
+      "excludes": "Ruleset-specific weapon sizing or damage math."
+    },
+    "antiPatterns": [
+      "Do not duplicate hand-slot predicates or limb-group key resolution outside src/utils/equipment.ts."
+    ]
+  },
   "src/utils/faction.ts": {
     "domain": "Core Console: Utility Helpers",
     "tier": "tier1_console",
