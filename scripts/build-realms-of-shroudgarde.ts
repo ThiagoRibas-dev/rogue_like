@@ -135,7 +135,13 @@ writeJson('theme.json', {
   colors: cryptTheme.colors,
   glyphs: cryptTheme.glyphs,
   ui: cryptTheme.ui,
-  spritePacks: cryptTheme.spritePacks ?? ['32rogues']
+  spritePacks: cryptTheme.spritePacks ?? [
+    {
+      packId: 'dcss',
+      includeSheets: ['dungeon', 'monsters', 'items', 'actors', 'effects', 'spells', 'misc']
+    },
+    '32rogues'
+  ]
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

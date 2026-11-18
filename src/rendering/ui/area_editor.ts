@@ -1,6 +1,6 @@
 import { type AreaDefinition, AreaDefinitionSchema } from '../../types/campaign.types.ts';
-import { resolveThemeSpriteSheets } from '../../utils/sprite_pack.ts';
 import { createDisplay, drawCell } from '../display.ts';
+import { isEffectiveSpriteMode } from '../procedural_sprites.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { renderStaticAreaPainter } from './area_static_painter.ts';
 import { renderFormForZodSchema } from './zod_form_renderer.ts';
@@ -56,7 +56,7 @@ export function renderAreaEditor(
     })
       .then((display) => {
         sandboxContainer.appendChild(display.getContainer() as HTMLElement);
-        const isSpriteMode = resolveThemeSpriteSheets(doc.theme) !== undefined;
+        const isSpriteMode = isEffectiveSpriteMode(doc);
 
         const generateAndDraw = (): void => {
           display.clear();

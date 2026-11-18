@@ -408,6 +408,12 @@
             </select>
           </label>
           <label class="settings-label">
+            <span>Tileset Pack</span>
+            <select id="setting-sprite-pack" class="settings-select">
+              <option value="auto">Auto (Campaign Default)</option>
+            </select>
+          </label>
+          <label class="settings-label">
             <input type="checkbox" id="setting-high-contrast" />
             High Contrast Mode
           </label>
@@ -415,6 +421,16 @@
             <input type="checkbox" id="setting-disable-animations" />
             Disable Animations
           </label>
+        </div>
+
+        <div class="settings-group">
+          <h3 class="settings-group-title">Credits &amp; Attributions</h3>
+          <div
+            id="settings-attributions-container"
+            style="font-size: 0.85rem; line-height: 1.45; max-height: 220px; overflow-y: auto; padding-right: 4px;"
+          >
+            <!-- settings.ui.ts populates this declaratively -->
+          </div>
         </div>
 
         <div class="modal-buttons" style="margin-top: 24px; display: flex; gap: 8px; flex-wrap: wrap;">

@@ -5,10 +5,11 @@ import {
   GAME_ASPECT_RATIO,
   MIN_ASCII_FONT_SIZE_PX
 } from '../constants/display.constants.ts';
+import { hydrateCampaignSpritePacksForTheme, loadSpritePackCatalog } from '../core/loader/sprite_pack_loader.ts';
 import { type CampaignData } from '../types/campaign.types.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { recordDrawCommand } from './render_debug.ts';
-import { buildProceduralSpriteAtlas, isEffectiveSpriteMode } from './procedural_sprites.ts';
+import { buildProceduralSpriteAtlas, isEffectiveSpriteMode, resolvePlaybackThemeConfig } from './procedural_sprites.ts';
 import { compositeAtlas, mountDisplayWithFogOverlay } from './sprite_atlas.ts';
 
 export * from './sprite_atlas.ts';
@@ -79,8 +80,18 @@ export async function configureDisplayForCampaign(
   campaign: CampaignData,
   basePath: string
 ): Promise<boolean> {
-  const useSprites = isEffectiveSpriteMode(campaign);
-  const sheets = resolveThemeSpriteSheets(campaign.theme);
+  await loadSpritePackCatalog().catch(() => ({ packs: [] }));
+  const initialTheme = resolvePlaybackThemeConfig(campaign);
+  let hydratedCampaign = campaign;
+  try {
+    hydratedCampaign = await hydrateCampaignSpritePacksForTheme(campaign, initialTheme);
+  } catch (err) {
+    console.warn('Failed to hydrate preferred sprite packs; using available sheets:', err);
+  }
+
+  const useSprites = isEffectiveSpriteMode(hydratedCampaign);
+  const effectiveTheme = resolvePlaybackThemeConfig(hydratedCampaign);
+  const sheets = resolveThemeSpriteSheets(effectiveTheme);
 
   display.clear();
 
@@ -98,14 +109,14 @@ export async function configureDisplayForCampaign(
           tileColorize: false,
           bg: 'transparent'
         });
-        mountDisplayWithFogOverlay(display, campaign);
+        mountDisplayWithFogOverlay(display, hydratedCampaign);
         return true;
       } catch (err) {
         console.error('Sprite loading failed, falling back to procedural sprite atlas:', err);
       }
     }
 
-    const { atlas, mergedTileMap, tileWidth, tileHeight } = buildProceduralSpriteAtlas(campaign);
+    const { atlas, mergedTileMap, tileWidth, tileHeight } = buildProceduralSpriteAtlas(hydratedCampaign);
     display.clear();
     display.setOptions({
       layout: 'tile',
@@ -116,16 +127,16 @@ export async function configureDisplayForCampaign(
       tileColorize: false,
       bg: 'transparent'
     });
-    mountDisplayWithFogOverlay(display, campaign);
+    mountDisplayWithFogOverlay(display, hydratedCampaign);
     return true;
   }
 
   display.setOptions({
     layout: 'rect',
-    fontSize: campaign.theme.ui.fontSize,
-    fontFamily: campaign.theme.ui.fontFamily
+    fontSize: hydratedCampaign.theme.ui.fontSize,
+    fontFamily: hydratedCampaign.theme.ui.fontFamily
   });
-  mountDisplayWithFogOverlay(display, campaign);
+  mountDisplayWithFogOverlay(display, hydratedCampaign);
   return false;
 }
 
@@ -213,7 +224,7 @@ export function drawCell(
  * @returns void
  */
 export function syncDisplayLayout(display: ROT.Display, state: GameState): void {
-  const theme = state.campaign.theme;
+  const theme = resolvePlaybackThemeConfig(state.campaign);
   const baseFontSize = theme.ui.fontSize;
   const fontFamily = theme.ui.fontFamily;
   const spriteConfig = resolveThemeSpriteSheets(theme);

@@ -7,7 +7,7 @@
  * campaign validator can never disagree.
  */
 
-import type { CampaignData } from '../types/campaign.types.ts';
+import type { CampaignData, ThemeConfig } from '../types/campaign.types.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 
 const availableKeysCache = new WeakMap<CampaignData, ReadonlySet<string>>();
@@ -18,19 +18,24 @@ const availableKeysCache = new WeakMap<CampaignData, ReadonlySet<string>>();
  * the renderer builds its composite atlas).
  *
  * @param campaign The campaign definition.
+ * @param themeOverride Optional effective theme (e.g., with user pack preference applied).
  * @returns Readonly set of drawable sprite keys (empty when the campaign is ASCII).
  */
-export function getAvailableSpriteKeys(campaign: CampaignData): ReadonlySet<string> {
-  const cached = availableKeysCache.get(campaign);
-  if (cached) return cached;
+export function getAvailableSpriteKeys(campaign: CampaignData, themeOverride?: ThemeConfig): ReadonlySet<string> {
+  if (!themeOverride) {
+    const cached = availableKeysCache.get(campaign);
+    if (cached) return cached;
+  }
 
   const keys = new Set<string>();
-  const resolvedSheets = resolveThemeSpriteSheets(campaign.theme);
+  const resolvedSheets = resolveThemeSpriteSheets(themeOverride ?? campaign.theme);
   for (const sheet of Object.values(resolvedSheets ?? {})) {
     for (const key of Object.keys(sheet.tileMap ?? {})) keys.add(key);
   }
 
-  availableKeysCache.set(campaign, keys);
+  if (!themeOverride) {
+    availableKeysCache.set(campaign, keys);
+  }
   return keys;
 }
 

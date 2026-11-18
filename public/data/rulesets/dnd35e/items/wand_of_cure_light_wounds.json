@@ -15,6 +15,6 @@
       "wand",
       "spell:cure_light_wounds"
     ],
-    "spriteId": "item_blue_staff"
+    "spriteId": "dcss_item_wand_gem_bone_new"
   }
 }

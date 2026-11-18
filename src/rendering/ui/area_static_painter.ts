@@ -1,6 +1,6 @@
 import type { AreaDefinition, CampaignData } from '../../types/campaign.types.ts';
-import { resolveThemeSpriteSheets } from '../../utils/sprite_pack.ts';
 import { createDisplay, drawCell } from '../display.ts';
+import { isEffectiveSpriteMode } from '../procedural_sprites.ts';
 import { editorState } from '../editor/editor_state.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { renderPlaytestMenu } from './area_playtest_menu.ui.ts';
@@ -137,7 +137,7 @@ export function renderStaticAreaPainter(
   })
     .then((display) => {
       rotContainer.appendChild(display.getContainer() as HTMLElement);
-      const isSpriteMode = resolveThemeSpriteSheets(doc.theme) !== undefined;
+      const isSpriteMode = isEffectiveSpriteMode(doc);
 
       const drawMap = (): void => {
         display.clear();

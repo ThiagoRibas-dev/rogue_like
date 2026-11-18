@@ -18,6 +18,10 @@
     "fontFamily": "JetBrains Mono, Courier New, monospace"
   },
   "spritePacks": [
+    {
+      "packId": "dcss",
+      "includeSheets": ["dungeon", "monsters", "items", "actors", "effects", "spells", "misc"]
+    },
     "32rogues"
   ]
 }

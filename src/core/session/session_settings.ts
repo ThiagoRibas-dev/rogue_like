@@ -9,6 +9,7 @@ import { createToggleSettingsAction } from '../../actions/core.actions.ts';
 import { UIMode } from '../../types/game-state.types.ts';
 import { buildTelemetryExportPayload } from '../performance.ts';
 import { getRenderDebugMetrics } from '../../rendering/render_debug.ts';
+import { applyDisplaySettingsUpdate } from '../../rendering/ui/hud_dock.ui.ts';
 
 export let rebindingAction: ActionType | null = null;
 
@@ -109,6 +110,22 @@ export function bindSettingsControls(): void {
   bindSetting('setting-high-contrast', 'highContrast', 'accessibility');
   bindSetting('setting-disable-animations', 'disableAnimations', 'accessibility');
 
+  document.getElementById('setting-sprite-pack')?.addEventListener('change', (e) => {
+    const select = e.target as HTMLSelectElement;
+    const current = getSettings();
+    updateSettings({
+      visualFeedback: {
+        ...current.visualFeedback,
+        preferredSpritePack: select.value
+      }
+    });
+    try {
+      applyDisplaySettingsUpdate(getGameState());
+    } catch {
+      // No active game state yet (e.g., Settings opened from Main Menu)
+    }
+  });
+
   const rebindingOverlay = document.getElementById('rebinding-overlay');
   const rebindingActionName = document.getElementById('rebinding-action-name');
 
@@ -127,7 +144,13 @@ export function bindSettingsControls(): void {
 
   document.getElementById('btn-reset-keybinds')?.addEventListener('click', () => {
     resetSettings();
+    applySettingsToDOM();
     renderSettingsMenu();
+    try {
+      applyDisplaySettingsUpdate(getGameState());
+    } catch {
+      // No active game state yet (e.g., Settings opened from Main Menu)
+    }
   });
 
   document.getElementById('btn-export-save')?.addEventListener('click', () => {

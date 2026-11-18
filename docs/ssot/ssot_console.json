@@ -989,7 +989,11 @@
     "responsibility": "Fetches, validates, and hydrates shared sprite pack bundles referenced by campaigns.",
     "canonicalEntryPoints": [
       "buildSpritePackBaseUrl",
+      "loadSpritePackCatalog",
+      "getCachedSpritePackCatalog",
+      "getCachedSpritePack",
       "loadSpritePack",
+      "hydrateCampaignSpritePacksForTheme",
       "hydrateCampaignSpritePacks"
     ],
     "ownershipBoundary": {
@@ -2153,6 +2157,7 @@
     "tier": "tier1_console",
     "responsibility": "graphical tile rendering on ASCII campaigns or unmapped glyphs.",
     "canonicalEntryPoints": [
+      "resolvePlaybackThemeConfig",
       "isEffectiveSpriteMode",
       "buildProceduralSpriteAtlas"
     ],
@@ -2805,6 +2810,7 @@
     "responsibility": "2D Tiles vs. ASCII runtime toggle, and foldable side-panel controls.",
     "canonicalEntryPoints": [
       "setHudDockDisplayRef",
+      "applyDisplaySettingsUpdate",
       "toggleRenderMode",
       "renderHudDock"
     ],
@@ -3039,6 +3045,22 @@
     },
     "antiPatterns": [
       "Do not duplicate or bypass exports from src/rendering/ui/settings.ui.ts."
+    ]
+  },
+  "src/rendering/ui/settings_attributions.ts": {
+    "domain": "Core Console: Rendering & UI Views",
+    "tier": "tier1_console",
+    "responsibility": "Renders data-driven sprite pack, archived asset, and third-party library attribution cards inside Settings.",
+    "canonicalEntryPoints": [
+      "renderAttributionsPanel",
+      "hydrateAttributionContributorsAndRender"
+    ],
+    "ownershipBoundary": {
+      "includes": "Pure implementation and exports for src/rendering/ui/settings_attributions.ts.",
+      "excludes": "External state mutation or unrelated subsystem logic."
+    },
+    "antiPatterns": [
+      "Do not hardcode sprite pack attributions outside catalog.json, pack.json, and settings_attributions.ts."
     ]
   },
   "src/rendering/ui/tactical_overlay.ui.ts": {
@@ -5389,9 +5411,12 @@
     "canonicalEntryPoints": [
       "SPRITE_PACKS_DATA_SUBPATH",
       "SPRITE_PACK_MANIFEST_FILENAME",
+      "SPRITE_PACKS_CATALOG_FILENAME",
+      "DEFAULT_PREFERRED_SPRITE_PACK",
       "normalizeSpritePackRef",
       "getReferencedSpritePackIds",
       "stampSpritePackBasePath",
+      "resolveEffectiveThemeWithPreference",
       "resolveThemeSpriteSheets",
       "attachLoadedSpritePacks",
       "stripTransientThemeHydration"

@@ -659,5 +659,23 @@ This document records architectural decisions whose rationale is **non-obvious o
 - **Decision 4: Parchment & Retro-CRT Contrast Token Parity (`console_prototype.css`, `modals.css`, `dnd35e_inspector.ui.ts`, `dnd35e_char_builder_skills.ui.ts`)**:
   - Defined missing `--crpg-text`, `--crpg-border-subtle`, `--crpg-bg-card-hover`, and semantic `--crpg-chip-*` tokens in both `[data-console-theme='parchment']` and `[data-console-theme='retro-crt']`, darkened Parchment gold/green/dim ink colors for legibility on `#dcd2be` parchment, and styled `.dnd35-fullscreen-modal .modal-close-btn` for crisp `×` button contrast.
 
+---
+
+### Shared Sprite Packs, DCSS CC0 Primary Atlas, Per-`spriteId` Fallback & In-Game Attributions
+
+- **Decision 1: Make `dcss` (`CC0 1.0`, 6,185 Sprites) the Primary Shared Pack and Layer `32rogues` as Secondary Fallback (`public/data/sprite_packs/dcss/`, `scripts/pack-dcss-sprites.ts`)**:
+  - Packed all `6,029` `32×32` PNGs from `Dungeon Crawl Stone Soup Full/` plus `156` `32×32` spell icons from `crawl-tiles Oct-5-2010/spells/` into 9 categorized atlases (`dungeon`, `monsters`, `items`, `actors`, `effects`, `spells`, `misc`, `gui`, `player_layers`), with **118 canonical aliases** covering all campaign & SRD legacy IDs (`tile_*`, `actor_*`, `monster_*`, `item_*`, plus open-door/chest/coin swaps) and upgraded 75 generic D&D 3.5e SRD item `spriteId`s to distinct DCSS icons.
+  - Expanded `32rogues` (`scripts/generate_sprite_mappings.ts`) to include `animals`, `animated_tiles`, `autotiles`, and `items_palette_swaps` (fixing two upstream row typos in `rogues.txt` and `animals.txt` caught by the new PNG bounds validator) and configured `default`, `dnd35e-crypt`, and `realms-of-shroudgarde` with `dcss` primary + `32rogues` fallback.
+  - *Rationale*: `dcss` provides broad D&D/fantasy item, spell, and monster variety under permissive `CC0 1.0` licensing, while preserving `32rogues` cleanly as a selectable style & fallback pack without breaking any existing campaign or reaction swap.
+
+- **Decision 2: Reverse-Stack `theme.spritePacks` Inside `resolveThemeSpriteSheets` for Per-`spriteId` Fallback & Support Live Settings Pack Overrides (`src/utils/sprite_pack.ts`, `src/rendering/ui/settings_attributions.ts`)**:
+  - Instead of clobbering identically named sheet keys (`tiles`, `monsters`, `items`) across packs, `resolveThemeSpriteSheets` composites fallback packs underneath higher-priority packs with `<packId>__<sheetId>` scoping when shadowed so `compositeAtlas` overwrites per `spriteId` rather than erasing entire sheets, while campaign `theme.spriteSheets` overrides still apply last.
+  - Added `public/data/sprite_packs/catalog.json`, `preferredSpritePack` in `PlayerSettings`, on-demand `hydrateCampaignSpritePacksForTheme` in `display.ts`, a data-driven Tileset Pack `<select>` + **Credits & Attributions** panel in Settings (`settings_attributions.ts`), and `CREDITS.md` documenting Seth Boyles' `32rogues` terms (`Copyright 2024 Seth Boyles`, no NFT/AI-ML/redistribution), DCSS contributors, `RLTiles`, and `ROT.js`.
+  - *Rationale*: Lets players switch visual packs cleanly in Settings while guaranteeing any pack missing extended sprites falls back gracefully to `dcss`, and honors Rule 21 by keeping all pack names and attributions data-driven in JSON.
+
+- **Decision 3: Archive `rltiles-pack` (`64×64` Isometric) Under `docs/archive/rltiles-pack/`**:
+  - *Rationale*: Visual inspection showed `rltiles-pack` terrain uses 45-degree isometric diamond geometry that leaves transparent corner wedges when downscaled onto an orthogonal `32×32` `ROT.Display` grid, whereas its standalone creature/feature descendants are already redrawn natively at `32×32` inside `dcss`. Archiving it preserves assets and `RLTiles` attribution cleanly for future isometric camera work without degrading the orthogonal renderer.
+
+
 
 

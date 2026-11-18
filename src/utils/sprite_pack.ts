@@ -11,6 +11,12 @@ export const SPRITE_PACKS_DATA_SUBPATH = 'data/sprite_packs';
 /** Manifest filename inside each shared sprite pack bundle folder. */
 export const SPRITE_PACK_MANIFEST_FILENAME = 'pack.json';
 
+/** Catalog filename enumerating discoverable shared sprite packs and attributions. */
+export const SPRITE_PACKS_CATALOG_FILENAME = 'catalog.json';
+
+/** Default player setting delegating tileset selection to the active campaign's `theme.spritePacks`. */
+export const DEFAULT_PREFERRED_SPRITE_PACK = 'auto';
+
 /**
  * Normalized descriptor parsed from a `SpritePackRef` union entry.
  */
@@ -74,8 +80,63 @@ export function stampSpritePackBasePath(pack: SpritePack, packBasePath: string):
 }
 
 /**
- * Merges hydrated shared sprite packs (resolved in declared `theme.spritePacks` order, respecting optional
- * `includeSheets` filters) with campaign-local `theme.spriteSheets` overrides layered on top.
+ * Resolves an effective `ThemeConfig` prioritizing a player's `preferredSpritePack` override
+ * (keeping campaign packs and catalog fallbacks underneath it) when sprite art is enabled.
+ * ASCII-only campaigns (no `spritePacks` and no `spriteSheets`) are returned untouched.
+ *
+ * @param theme Authored or hydrated campaign theme configuration.
+ * @param preferredSpritePack Player's Settings tileset preference (`'auto'` or a pack ID).
+ * @param catalogFallbacks Optional default fallback pack IDs defined for `preferredSpritePack` in `catalog.json`.
+ * @param preferredIncludeSheets Optional default sheet subset for `preferredSpritePack` when not already scoped in `theme.spritePacks`.
+ * @returns Effective `ThemeConfig` with `spritePacks` ordered primary-first, fallback-last.
+ */
+export function resolveEffectiveThemeWithPreference(
+  theme: ThemeConfig,
+  preferredSpritePack: string | undefined,
+  catalogFallbacks?: ReadonlyArray<string>,
+  preferredIncludeSheets?: ReadonlyArray<string>
+): ThemeConfig {
+  if (!preferredSpritePack || preferredSpritePack === DEFAULT_PREFERRED_SPRITE_PACK) {
+    return theme;
+  }
+  const hasNativeSprites =
+    (theme.spritePacks !== undefined && theme.spritePacks.length > 0) ||
+    (theme.spriteSheets !== undefined && Object.keys(theme.spriteSheets).length > 0);
+  if (!hasNativeSprites) {
+    return theme;
+  }
+
+  const existingPreferredRef = (theme.spritePacks ?? []).find(
+    (ref) => normalizeSpritePackRef(ref).packId === preferredSpritePack
+  );
+  const primaryRef: SpritePackRef =
+    existingPreferredRef ??
+    (preferredIncludeSheets && preferredIncludeSheets.length > 0
+      ? { packId: preferredSpritePack, includeSheets: [...preferredIncludeSheets] }
+      : preferredSpritePack);
+
+  const orderedRefs: SpritePackRef[] = [primaryRef];
+  const seenIds = new Set<string>([preferredSpritePack]);
+  for (const ref of theme.spritePacks ?? []) {
+    const id = normalizeSpritePackRef(ref).packId;
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      orderedRefs.push(ref);
+    }
+  }
+  for (const fbId of catalogFallbacks ?? []) {
+    if (!seenIds.has(fbId)) {
+      seenIds.add(fbId);
+      orderedRefs.push(fbId);
+    }
+  }
+  return { ...theme, spritePacks: orderedRefs };
+}
+
+/**
+ * Merges hydrated shared sprite packs (layering fallback -> primary so primary pack entries
+ * override per `spriteId` inside `compositeAtlas` while preserving un-overwritten fallback sprites)
+ * with campaign-local `theme.spriteSheets` overrides layered on top.
  *
  * @param theme Theme config (or minimal `{ spritePacks, loadedSpritePacks, spriteSheets }` slice).
  * @returns Merged spritesheet dictionary, or `undefined` if no sheets are configured.
@@ -87,24 +148,40 @@ export function resolveThemeSpriteSheets(
 
   const merged: Record<string, SpriteSheetSource> = {};
   const loadedPacks = theme.loadedSpritePacks ?? {};
+  const overrideSheetIds = new Set<string>(Object.keys(theme.spriteSheets ?? {}));
 
   if (theme.spritePacks) {
-    for (const rawRef of theme.spritePacks) {
-      const { packId, includeSheets } = normalizeSpritePackRef(rawRef);
+    // Identify which pack (lowest index = highest priority) owns each bare sheetId name.
+    const highestPriorityOwnerBySheetId = new Map<string, number>();
+    for (let i = 0; i < theme.spritePacks.length; i++) {
+      const { packId, includeSheets } = normalizeSpritePackRef(theme.spritePacks[i]!);
+      const pack = loadedPacks[packId];
+      if (!pack) continue;
+      const sheetIds = includeSheets && includeSheets.length > 0 ? includeSheets : Object.keys(pack.spriteSheets);
+      for (const sheetId of sheetIds) {
+        if (
+          !overrideSheetIds.has(sheetId) &&
+          pack.spriteSheets[sheetId] &&
+          !highestPriorityOwnerBySheetId.has(sheetId)
+        ) {
+          highestPriorityOwnerBySheetId.set(sheetId, i);
+        }
+      }
+    }
+
+    // Layer from lowest-priority fallback -> index 0 primary so primary pack wins per spriteId.
+    for (let i = theme.spritePacks.length - 1; i >= 0; i--) {
+      const { packId, includeSheets } = normalizeSpritePackRef(theme.spritePacks[i]!);
       const pack = loadedPacks[packId];
       if (!pack) continue;
 
-      if (includeSheets && includeSheets.length > 0) {
-        for (const sheetId of includeSheets) {
-          const sheet = pack.spriteSheets[sheetId];
-          if (sheet) {
-            merged[sheetId] = sheet;
-          }
-        }
-      } else {
-        for (const [sheetId, sheet] of Object.entries(pack.spriteSheets)) {
-          merged[sheetId] = sheet;
-        }
+      const sheetIds = includeSheets && includeSheets.length > 0 ? includeSheets : Object.keys(pack.spriteSheets);
+      for (const sheetId of sheetIds) {
+        if (overrideSheetIds.has(sheetId)) continue;
+        const sheet = pack.spriteSheets[sheetId];
+        if (!sheet) continue;
+        const outputKey = highestPriorityOwnerBySheetId.get(sheetId) === i ? sheetId : `${packId}__${sheetId}`;
+        merged[outputKey] = sheet;
       }
     }
   }

@@ -1,9 +1,13 @@
 import { type GameState, UIMode } from '../../types/game-state.types.ts';
 import { getSettings, updateAutoPause } from '../../core/settings.ts';
 import { getGameState } from '../../core/game-loop.ts';
+import { getCachedSpritePackCatalog, loadSpritePackCatalog } from '../../core/loader/sprite_pack_loader.ts';
 import { MAX_LOW_HEALTH_PERCENT, MIN_LOW_HEALTH_PERCENT } from '../../constants/autopause.constants.ts';
+import type { SpritePackCatalog } from '../../types/campaign.types.ts';
+import { DEFAULT_PREFERRED_SPRITE_PACK } from '../../utils/sprite_pack.ts';
 import { setConsoleThemeMode } from './console_theme.ts';
 import { getActiveCartridgeUI } from './cartridge_ui_registry.ts';
+import { hydrateAttributionContributorsAndRender } from './settings_attributions.ts';
 
 /**
  * Applies the current settings to the DOM (e.g. data attributes for CSS).
@@ -108,6 +112,7 @@ export function renderSettingsMenu(state?: GameState): void {
 
   const uiScale = document.getElementById('setting-ui-scale') as HTMLSelectElement;
   const themeSelect = document.getElementById('setting-console-theme') as HTMLSelectElement | null;
+  const spritePackSelect = document.getElementById('setting-sprite-pack') as HTMLSelectElement | null;
   const highContrast = document.getElementById('setting-high-contrast') as HTMLInputElement;
   const disableAnim = document.getElementById('setting-disable-animations') as HTMLInputElement;
 
@@ -116,7 +121,53 @@ export function renderSettingsMenu(state?: GameState): void {
   if (highContrast) highContrast.checked = settings.accessibility.highContrast;
   if (disableAnim) disableAnim.checked = settings.accessibility.disableAnimations;
 
+  const preferredPack = settings.visualFeedback.preferredSpritePack ?? DEFAULT_PREFERRED_SPRITE_PACK;
+  const cachedCatalog = getCachedSpritePackCatalog();
+  if (cachedCatalog) {
+    renderSpritePackSelectOptions(spritePackSelect, cachedCatalog, preferredPack);
+    void hydrateAttributionContributorsAndRender(cachedCatalog);
+  } else {
+    void loadSpritePackCatalog().then((catalog) => {
+      renderSpritePackSelectOptions(
+        document.getElementById('setting-sprite-pack') as HTMLSelectElement | null,
+        catalog,
+        getSettings().visualFeedback.preferredSpritePack ?? DEFAULT_PREFERRED_SPRITE_PACK
+      );
+      void hydrateAttributionContributorsAndRender(catalog);
+    });
+  }
+
   renderAutoPauseSettings();
+}
+
+function renderSpritePackSelectOptions(
+  selectEl: HTMLSelectElement | null,
+  catalog: SpritePackCatalog,
+  selectedPackId: string
+): void {
+  if (!selectEl) return;
+  selectEl.replaceChildren();
+
+  const autoOpt = document.createElement('option');
+  autoOpt.value = DEFAULT_PREFERRED_SPRITE_PACK;
+  autoOpt.textContent = 'Auto (Campaign Default)';
+  selectEl.appendChild(autoOpt);
+
+  for (const entry of catalog.packs) {
+    if (!entry.selectableInSettings) continue;
+    const opt = document.createElement('option');
+    opt.value = entry.id;
+    opt.textContent = entry.name;
+    if (entry.description) {
+      opt.title = entry.description;
+    }
+    selectEl.appendChild(opt);
+  }
+
+  selectEl.value = selectedPackId;
+  if (selectEl.value !== selectedPackId) {
+    selectEl.value = DEFAULT_PREFERRED_SPRITE_PACK;
+  }
 }
 
 /** Metadata for one boolean auto-pause toggle row. */

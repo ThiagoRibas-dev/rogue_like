@@ -22,11 +22,17 @@ import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { CampaignData, SpritePack } from '../src/types/campaign.types.ts';
-import { CampaignDataSchema, CampaignCategorySchemas, SpritePackSchema } from '../src/types/campaign.types.ts';
+import {
+  CampaignDataSchema,
+  CampaignCategorySchemas,
+  SpritePackCatalogSchema,
+  SpritePackSchema
+} from '../src/types/campaign.types.ts';
 import type { ValidationError } from '../src/editor/validator/validator.types.ts';
 import { validateCampaign } from '../src/editor/campaign_validator.ts';
 import { collectMissingSpriteMappings } from '../src/rendering/sprite_keys.ts';
 import {
+  SPRITE_PACKS_CATALOG_FILENAME,
   SPRITE_PACKS_DATA_SUBPATH,
   SPRITE_PACK_MANIFEST_FILENAME,
   attachLoadedSpritePacks,
@@ -613,9 +619,19 @@ function validateRulesetDiskParity(): { readonly errors: ReadonlyArray<string>; 
   return { errors, checkedFiles };
 }
 
+function readPngDimensions(assetPath: string): { readonly width: number; readonly height: number } | undefined {
+  const buf = readFileSync(assetPath);
+  if (buf.length < 24 || buf.readUInt32BE(0) !== 0x89504e47) return undefined;
+  return {
+    width: buf.readUInt32BE(16),
+    height: buf.readUInt32BE(20)
+  };
+}
+
 /**
- * Validates all shared sprite packs under `public/data/sprite_packs/<packId>/pack.json`
- * and checks that every referenced spritesheet/tileset image exists on disk.
+ * Validates all shared sprite packs under `public/data/sprite_packs/<packId>/pack.json`,
+ * checks the central `catalog.json` manifest, verifies every referenced PNG asset exists
+ * on disk, and ensures all `tileMap` coordinates stay inside image bounds.
  */
 function validateSpritePacksDiskParity(): { readonly errors: ReadonlyArray<string>; readonly checkedPacks: number } {
   const errors: string[] = [];
@@ -623,6 +639,7 @@ function validateSpritePacksDiskParity(): { readonly errors: ReadonlyArray<strin
   const packsRoot = join(PROJECT_ROOT, 'public', SPRITE_PACKS_DATA_SUBPATH);
   if (!existsSync(packsRoot)) return { errors, checkedPacks };
 
+  const discoveredPackIds = new Set<string>();
   const packDirs = readdirSync(packsRoot)
     .filter((e) => statSync(join(packsRoot, e)).isDirectory())
     .sort();
@@ -645,17 +662,62 @@ function validateSpritePacksDiskParity(): { readonly errors: ReadonlyArray<strin
           `Sprite pack "${packDirName}" manifest id "${parsed.data.id}" must match directory name "${packDirName}"`
         );
       }
+      discoveredPackIds.add(parsed.data.id);
       for (const [sheetId, sheet] of Object.entries(parsed.data.spriteSheets)) {
         const assetPath = join(packDir, sheet.src);
         if (!existsSync(assetPath)) {
           errors.push(
             `Sprite pack "${packDirName}" sheet "${sheetId}" references missing asset "${sheet.src}" at ${assetPath}`
           );
+          continue;
+        }
+        const dims = readPngDimensions(assetPath);
+        if (!dims) {
+          errors.push(`Sprite pack "${packDirName}" sheet "${sheetId}" asset "${sheet.src}" is not a valid PNG`);
+          continue;
+        }
+        for (const [spriteId, coord] of Object.entries(sheet.tileMap)) {
+          const coords = Array.isArray(coord)
+            ? [coord]
+            : [coord.default, ...(coord.commonAlts ?? []), ...(coord.rareAlts ?? [])];
+          for (const [x, y] of coords) {
+            if (x < 0 || y < 0 || x + sheet.tileWidth > dims.width || y + sheet.tileHeight > dims.height) {
+              errors.push(
+                `Sprite pack "${packDirName}" sheet "${sheetId}" key "${spriteId}" at [${x}, ${y}] exceeds PNG bounds ${dims.width}x${dims.height}`
+              );
+              break;
+            }
+          }
         }
       }
     } catch (err) {
       errors.push(`Sprite pack "${packDirName}" failed to parse ${SPRITE_PACK_MANIFEST_FILENAME}: ${(err as Error).message}`);
     }
+  }
+
+  const catalogPath = join(packsRoot, SPRITE_PACKS_CATALOG_FILENAME);
+  if (existsSync(catalogPath)) {
+    try {
+      const catalogParsed = SpritePackCatalogSchema.safeParse(JSON.parse(readFileSync(catalogPath, 'utf-8')));
+      if (!catalogParsed.success) {
+        errors.push(`Sprite pack catalog failed schema validation: ${catalogParsed.error.message}`);
+      } else {
+        for (const entry of catalogParsed.data.packs) {
+          if (!discoveredPackIds.has(entry.id)) {
+            errors.push(`Sprite pack catalog references missing pack directory "${entry.id}"`);
+          }
+          for (const fb of entry.fallbackPackIds ?? []) {
+            if (!discoveredPackIds.has(fb)) {
+              errors.push(`Sprite pack catalog entry "${entry.id}" references missing fallbackPackId "${fb}"`);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      errors.push(`Failed to parse ${SPRITE_PACKS_CATALOG_FILENAME}: ${(err as Error).message}`);
+    }
+  } else {
+    errors.push(`Missing central sprite pack catalog at ${catalogPath}`);
   }
 
   return { errors, checkedPacks };

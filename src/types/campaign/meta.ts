@@ -158,15 +158,56 @@ export const SpriteSheetSourceSchema = z.object({
 /** Inferred type for a spritesheet source configuration. */
 export type SpriteSheetSource = z.infer<typeof SpriteSheetSourceSchema>;
 
+/** Zod schema describing creator, license, and credit metadata for a shared sprite pack. */
+export const SpritePackAttributionSchema = z.object({
+  author: z.string().min(1).describe('Creator or collective project name'),
+  license: z.string().min(1).describe('Short license label (e.g., CC0-1.0, Custom Free-Use)'),
+  licenseUrl: z.string().optional().describe('Optional reference URL for full license text'),
+  sourceUrl: z.string().optional().describe('Optional upstream project URL'),
+  restrictions: z.array(z.string()).optional().describe('Explicit usage restrictions or terms'),
+  notes: z.string().optional().describe('Additional attribution or distribution context'),
+  contributors: z.array(z.string()).optional().describe('Optional individual contributor list')
+});
+/** Inferred type for sprite pack attribution metadata. */
+export type SpritePackAttribution = z.infer<typeof SpritePackAttributionSchema>;
+
 /** Zod schema for a shared sprite pack bundle definition (`public/data/sprite_packs/<id>/pack.json`). */
 export const SpritePackSchema = z.object({
   id: z.string().min(1).describe('Unique Sprite Pack Identifier'),
   name: z.string().min(1).describe('Human-readable Sprite Pack Name'),
   description: z.string().optional().describe('Optional Sprite Pack Description'),
+  attribution: SpritePackAttributionSchema.optional().describe('Creator, license, and attribution details'),
   spriteSheets: z.record(z.string(), SpriteSheetSourceSchema)
 });
 /** Inferred type for a shared sprite pack bundle. */
 export type SpritePack = z.infer<typeof SpritePackSchema>;
+
+/** Zod schema for one discoverable entry in `public/data/sprite_packs/catalog.json`. */
+export const SpritePackCatalogEntrySchema = z.object({
+  id: z.string().min(1).describe('Unique Sprite Pack Identifier matching pack directory'),
+  name: z.string().min(1).describe('Human-readable label shown in Settings'),
+  description: z.string().optional().describe('Short summary shown in Settings'),
+  selectableInSettings: z.boolean().default(true).describe('Whether players can choose this pack in Settings'),
+  defaultIncludeSheets: z
+    .array(z.string().min(1))
+    .min(1)
+    .optional()
+    .describe('Optional default sheet subset when this pack is selected in Settings without a campaign ref'),
+  fallbackPackIds: z
+    .array(z.string().min(1))
+    .optional()
+    .describe('Fallback pack IDs layered underneath when the player selects this pack'),
+  attribution: SpritePackAttributionSchema.optional().describe('License and creator attribution metadata')
+});
+/** Inferred type for a sprite pack catalog entry. */
+export type SpritePackCatalogEntry = z.infer<typeof SpritePackCatalogEntrySchema>;
+
+/** Zod schema for the central shared sprite pack catalog (`public/data/sprite_packs/catalog.json`). */
+export const SpritePackCatalogSchema = z.object({
+  packs: z.array(SpritePackCatalogEntrySchema)
+});
+/** Inferred type for the sprite pack catalog. */
+export type SpritePackCatalog = z.infer<typeof SpritePackCatalogSchema>;
 
 /** Zod schema for referencing a shared sprite pack (whole bundle ID or selective sheet cherry-pick). */
 export const SpritePackRefSchema = z.union([

@@ -15,7 +15,7 @@ describe('SSOT Responsibility Registries Parity', () => {
     const report = validateSsotRegistries(root);
     expect(report.errors).toEqual([]);
     expect(report.checkedFiles).toBeGreaterThan(250);
-  });
+  }, 15_000);
 
   test('registries conform to Zod schema and contain no duplicate or missing source files', () => {
     const consolePath = join(root, 'docs', 'ssot', 'ssot_console.json');

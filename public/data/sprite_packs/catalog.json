@@ -1,0 +1,37 @@
+{
+  "packs": [
+    {
+      "id": "dcss",
+      "name": "Dungeon Crawl Stone Soup (CC0 32x32)",
+      "description": "Comprehensive 6,185-sprite CC0 32x32 orthogonal tileset covering dungeon terrain, monsters, weapons, armor, spells, effects, and GUI icons.",
+      "selectableInSettings": true,
+      "defaultIncludeSheets": ["dungeon", "monsters", "items", "actors", "effects", "spells", "misc"],
+      "fallbackPackIds": ["32rogues"],
+      "attribution": {
+        "author": "Dungeon Crawl Stone Soup Tile Artists",
+        "license": "CC0-1.0",
+        "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "sourceUrl": "https://github.com/crawl/tiles/tree/master/releases",
+        "notes": "Public domain (CC0 1.0) combined from Dungeon Crawl Stone Soup Full & crawl-tiles Oct-5-2010 spells, descended from RLTiles (http://rltiles.sf.net)."
+      }
+    },
+    {
+      "id": "32rogues",
+      "name": "32rogues Fantasy Tileset (Seth Boyles)",
+      "description": "Minimalist 32x32 fantasy pixel art with animals, animated dungeon props, autotiles, and classic rogue actors (uses DCSS fallback for extended content).",
+      "selectableInSettings": true,
+      "fallbackPackIds": ["dcss"],
+      "attribution": {
+        "author": "Seth Boyles",
+        "license": "32rogues Free-Use License (Non-Redistributable)",
+        "restrictions": [
+          "Free for non-commercial and commercial game projects",
+          "Excluded: NFT or blockchain-related projects",
+          "Excluded: generative artificial intelligence or machine learning projects",
+          "Modifications allowed; redistribution or resale of standalone tileset files is prohibited"
+        ],
+        "notes": "Copyright 2024 Seth Boyles. Credit appreciated."
+      }
+    }
+  ]
+}

@@ -150,27 +150,14 @@ export function setHudDockDisplayRef(display: ROT.Display): void {
 }
 
 /**
- * Cycles or toggles between 2D Sprite Tiles mode and Classic ASCII mode at runtime.
+ * Re-configures the mounted ROT.Display and invalidates viewport snapshots after visual display
+ * settings (`renderMode` or `preferredSpritePack`) change at runtime.
  *
  * @param state The current GameState.
  */
-export function toggleRenderMode(state: GameState): void {
-  const currentlySprites = isEffectiveSpriteMode(state.campaign);
-  const nextMode = currentlySprites ? 'ascii' : 'sprites';
-  const currentSettings = getSettings();
-
+export function applyDisplaySettingsUpdate(state: GameState): void {
   if (activeDisplayRef) {
     activeDisplayRef.clear();
-  }
-
-  updateSettings({
-    visualFeedback: {
-      ...currentSettings.visualFeedback,
-      renderMode: nextMode
-    }
-  });
-
-  if (activeDisplayRef) {
     const basePath = `${import.meta.env.BASE_URL}data/campaigns/${state.campaignId}`;
     configureDisplayForCampaign(activeDisplayRef, state.campaign, basePath)
       .then(() => {
@@ -185,6 +172,26 @@ export function toggleRenderMode(state: GameState): void {
     invalidateViewportSnapshot();
     markAllDomainsDirty();
   }
+}
+
+/**
+ * Cycles or toggles between 2D Sprite Tiles mode and Classic ASCII mode at runtime.
+ *
+ * @param state The current GameState.
+ */
+export function toggleRenderMode(state: GameState): void {
+  const currentlySprites = isEffectiveSpriteMode(state.campaign);
+  const nextMode = currentlySprites ? 'ascii' : 'sprites';
+  const currentSettings = getSettings();
+
+  updateSettings({
+    visualFeedback: {
+      ...currentSettings.visualFeedback,
+      renderMode: nextMode
+    }
+  });
+
+  applyDisplaySettingsUpdate(state);
 }
 
 /**

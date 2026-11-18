@@ -3,12 +3,63 @@
  * graphical tile rendering on ASCII campaigns or unmapped glyphs.
  */
 
+import {
+  getCachedSpritePack,
+  getCachedSpritePackCatalog,
+  buildSpritePackBaseUrl
+} from '../core/loader/sprite_pack_loader.ts';
 import { getSettings } from '../core/settings.ts';
-import type { CampaignData } from '../types/campaign.types.ts';
-import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
+import type { CampaignData, ThemeConfig } from '../types/campaign.types.ts';
+import {
+  DEFAULT_PREFERRED_SPRITE_PACK,
+  attachLoadedSpritePacks,
+  resolveEffectiveThemeWithPreference,
+  resolveThemeSpriteSheets
+} from '../utils/sprite_pack.ts';
 
 /** Standard pixel dimension for procedural 2D tile cells. */
 const PROCEDURAL_TILE_SIZE = 32;
+
+/**
+ * Resolves the effective playback `ThemeConfig` for `campaign` incorporating the player's
+ * Settings `preferredSpritePack` and any cached pack/catalog definitions.
+ *
+ * @param campaign Active CampaignData.
+ * @returns Effective `ThemeConfig` ready for `resolveThemeSpriteSheets`.
+ */
+export function resolvePlaybackThemeConfig(campaign: CampaignData): ThemeConfig {
+  const prefPack = getSettings().visualFeedback.preferredSpritePack;
+  if (!prefPack || prefPack === DEFAULT_PREFERRED_SPRITE_PACK) {
+    return campaign.theme;
+  }
+
+  const catalog = getCachedSpritePackCatalog();
+  const catalogEntry = catalog?.packs.find((p) => p.id === prefPack);
+  const catalogFallbacks = catalogEntry?.fallbackPackIds;
+  let effectiveTheme = resolveEffectiveThemeWithPreference(
+    campaign.theme,
+    prefPack,
+    catalogFallbacks,
+    catalogEntry?.defaultIncludeSheets
+  );
+
+  const missingPacks: Record<
+    string,
+    { readonly pack: NonNullable<ReturnType<typeof getCachedSpritePack>>; readonly packBasePath: string }
+  > = {};
+  for (const packId of [prefPack, ...(catalogFallbacks ?? [])]) {
+    if (effectiveTheme.loadedSpritePacks?.[packId]) continue;
+    const cached = getCachedSpritePack(packId);
+    if (cached) {
+      missingPacks[packId] = { pack: cached, packBasePath: buildSpritePackBaseUrl(packId) };
+    }
+  }
+  if (Object.keys(missingPacks).length > 0) {
+    effectiveTheme = attachLoadedSpritePacks(effectiveTheme, missingPacks);
+  }
+
+  return effectiveTheme;
+}
 
 /**
  * Determines whether the engine should render in 2D tile/sprite mode based on
@@ -25,7 +76,7 @@ export function isEffectiveSpriteMode(campaign: CampaignData): boolean {
   if (pref === 'sprites') {
     return true;
   }
-  const effectiveSheets = resolveThemeSpriteSheets(campaign.theme);
+  const effectiveSheets = resolveThemeSpriteSheets(resolvePlaybackThemeConfig(campaign));
   return Boolean(effectiveSheets && Object.keys(effectiveSheets).length > 0);
 }
 

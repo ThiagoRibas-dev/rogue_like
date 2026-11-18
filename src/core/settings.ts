@@ -4,6 +4,7 @@ import {
   MIN_LOW_HEALTH_PERCENT,
   type AutoPauseSettings
 } from '../constants/autopause.constants.ts';
+import { DEFAULT_PREFERRED_SPRITE_PACK } from '../utils/sprite_pack.ts';
 
 /**
  * Type union representing all configurable keyboard command actions in the game.
@@ -47,6 +48,7 @@ export interface VisualFeedbackSettings {
   showDangerTelegraphs: boolean;
   reduceDramaticDelays: boolean;
   renderMode: RenderModePreference;
+  preferredSpritePack: string;
 }
 
 /**
@@ -111,7 +113,8 @@ const DEFAULT_SETTINGS: PlayerSettings = {
     showStatusText: true,
     showDangerTelegraphs: true,
     reduceDramaticDelays: false,
-    renderMode: 'auto'
+    renderMode: 'auto',
+    preferredSpritePack: DEFAULT_PREFERRED_SPRITE_PACK
   },
   accessibility: {
     uiScale: 'large',

@@ -17,7 +17,7 @@ import { coordToIndex } from '../utils/grid.ts';
 import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { getCameraOffset } from './camera.ts';
 import { buildTacticalViewportData } from './tactical_snapshot.ts';
-import { isEffectiveSpriteMode } from './procedural_sprites.ts';
+import { isEffectiveSpriteMode, resolvePlaybackThemeConfig } from './procedural_sprites.ts';
 import { buildInspectTooltip } from './inspect_tooltip.ts';
 import type {
   EntityRenderDTO,
@@ -42,10 +42,12 @@ export * from './inspect_tooltip.ts';
 export function buildViewportSnapshot(state: GameState, viewportW: number, viewportH: number): ViewportSnapshot {
   const { x: cameraX, y: cameraY } = getCameraOffset(state, viewportW, viewportH);
   const visibleIndices: ReadonlySet<number> = state.cachedFov;
-  const effectiveSheets = resolveThemeSpriteSheets(state.campaign.theme);
+  const effectiveTheme = resolvePlaybackThemeConfig(state.campaign);
+  const effectiveSheets = resolveThemeSpriteSheets(effectiveTheme);
   const hasNativeSheets = Boolean(effectiveSheets && Object.keys(effectiveSheets).length > 0);
   const isSpriteMode = isEffectiveSpriteMode(state.campaign);
-  const availableSpriteKeys = isSpriteMode && hasNativeSheets ? getAvailableSpriteKeys(state.campaign) : undefined;
+  const availableSpriteKeys =
+    isSpriteMode && hasNativeSheets ? getAvailableSpriteKeys(state.campaign, effectiveTheme) : undefined;
 
   const cells: ViewportCellDTO[] = [];
   const fogCells: FogOverlayCellDTO[] = [];

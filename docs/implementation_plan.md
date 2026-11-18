@@ -1,24 +1,27 @@
-# Implementation Plan — Shared Sprite Pack Repository & Per-Campaign Override Architecture
+# Implementation Plan — DCSS Master Sprite Pack, Multi-Pack Per-Sprite Fallback, Settings Tileset Selector & In-Game Attributions
 
 ## 1. Architectural Rules & Standards Reiteration
 
-- **Rule 11 & 12 (Strict TypeScript & Zero Magic Values):** Zero `any` casts, obey `exactOptionalPropertyTypes: true` (conditionally spread optional properties rather than assigning `undefined`), explicit return types on all functions, and named constants for shared paths (`SPRITE_PACKS_SUBPATH`, `SPRITE_PACK_MANIFEST_FILENAME`, `DEFAULT_CAMPAIGN_SEGMENT`).
-- **Rule 15 (Cascading Effects Matrix):** All schema, loader, compositor, editor, ZIP export, generator, parity, and test impacts are mapped in Section 4.
+- **Rules 11 & 12 (Strict TypeScript & Zero Magic Values):** Zero `any`, obey `exactOptionalPropertyTypes: true` (conditional spreads instead of `undefined` assignments), explicit return types on every function, and named constants (`DEFAULT_PREFERRED_SPRITE_PACK = 'auto'`, `SPRITE_PACKS_CATALOG_FILENAME = 'catalog.json'`, `DEFAULT_PACK_TILE_PX = 32`).
+- **Rule 9 (Engineering Design Decision — Isometric 64×64 `rltiles-pack` Archived):**
+  Visual inspection of [`brick.png`](../scratch/%20rltiles-pack/rltiles-pack/brick.png) and [`64x64.png`](../scratch/%20rltiles-pack/rltiles-pack/64x64.png) confirms `rltiles-pack` uses **45-degree isometric diamond floors and walls**, which cannot tile cleanly inside our orthogonal `32×32` `ROT.Display` grid without a dedicated isometric renderer, while its standalone monsters, portals, statues, and bursts already exist redrawn in crisp native `32×32` orthogonal pixel art inside `DCSS Full`.
+  - **Agreed Action:** Archive `scratch/ rltiles-pack/` into [`docs/archive/rltiles-pack/`](../docs/archive/) (preserving the 26 PNG sheets, `attribution.txt`, and a short `README.md` note for future isometric renderer work) and document `RLTiles` attribution in [`CREDITS.md`](../CREDITS.md), keeping it out of runtime `public/data/sprite_packs/`.
 - **Rule 16 & 21 (Three-Tier Placement & Zero Hardcoding):**
-  - **Tier 1 Console (`src/types/`, `src/utils/`, `src/core/loader/`, `src/rendering/`, `src/editor/`):** Generic `SpritePackSchema`, `spritePackId` lookup, `resolveThemeSpriteSheets` merge, `srcBasePath` resolution, and ZIP round-trip stripping. Zero pack IDs (`'32rogues'`) or PNG filenames hardcoded in `.ts` engine code.
-  - **Tier 3 Content (`public/data/sprite_packs/32rogues/`, `public/data/campaigns/*/theme.json`):** Declarative pack bundle and lightweight campaign references/overrides.
-- **Module Layering (`.dependency-cruiser.cjs`):** Pure pack resolution helpers reside in [`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts) (importing only `src/types/`), preserving strict downward imports for `src/core/`, `src/rendering/`, and `src/editor/`.
+  - **Tier 1 (Core Console):** Generic `SpritePackAttributionSchema`, `SpritePackCatalogSchema`, priority-ordered per-`spriteId` fallback in [`resolveThemeSpriteSheets`](../src/utils/sprite_pack.ts), `preferredSpritePack` setting + on-demand pack hydration in [`sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts) & [`display.ts`](../src/rendering/display.ts), and data-driven Settings Tileset Selector + Attributions panel. Zero pack IDs (`'dcss'`, `'32rogues'`) hardcoded in `.ts`!
+  - **Tier 3 (System Content):** `public/data/sprite_packs/catalog.json`, `public/data/sprite_packs/dcss/` (`CC0 1.0`), expanded `public/data/sprite_packs/32rogues/` (adding `animals`, `animated-tiles`, `autotiles`, `items-palette-swaps`), campaign `theme.json` defaults (`["dcss", "32rogues"]`), SRD item `spriteId` upgrades, and `CREDITS.md`.
+- **Module Layering (`.dependency-cruiser.cjs`):** Pure pack/preference resolution stays inside [`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts) (importing only `src/types/`). Runtime hydration stays in [`src/core/loader/sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts); DOM rendering stays in [`src/rendering/ui/settings.ui.ts`](../src/rendering/ui/settings.ui.ts).
 
 ---
 
 ## 2. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility | Canonical SSOT Owner | Duplicated / Split-Brain Pattern Being Evicted |
+| Responsibility | Canonical SSOT Owner | Duplicated / Split-Brain Pattern Being Replaced |
 | :--- | :--- | :--- |
-| **Shared Tileset & Sprite Sheet Storage** | [`public/data/sprite_packs/32rogues/pack.json`](../public/data/sprite_packs/32rogues/pack.json) + `tiles/` & `sprites/` PNGs | Copying identical `tiles.png`, `rogues.png`, `monsters.png`, `items.png` (`12` PNGs) + `1,590`-line `spriteSheets` blocks across `default`, `dnd35e-crypt`, `realms-of-shroudgarde` |
-| **Effective Sheet Resolution (Pack + Overrides)** | [`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts) (`resolveThemeSpriteSheets`, `stripTransientThemeHydration`) | Direct scattered reads of `campaign.theme.spriteSheets` across renderer, viewport snapshot, sprite diagnostics, and editor UI |
-| **Runtime Pack Fetch & Browser Hydration** | [`src/core/loader/sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts) (`loadSpritePack`, `hydrateCampaignThemeSpritePack`) | Missing pack loading on disk/installed/editor campaigns; blind 404 on per-campaign PNGs |
-| **Atlas Composition with Per-Sheet Origin** | [`src/rendering/sprite_atlas.ts`](../src/rendering/sprite_atlas.ts) (`compositeAtlas`) | Single `basePath` assumption unable to stitch pack PNGs with campaign-local override PNGs |
+| **Pack Priority & Per-`spriteId` Fallback Resolution** | [`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts) (`resolveThemeSpriteSheets`, `resolveThemeWithPreferredPack`) | Current `merged[sheetId] = sheet` clobbers whole sheets across packs (preventing `32rogues` fallback under `dcss` when sheets share names) |
+| **Available Packs & License/Credit Catalog** | [`public/data/sprite_packs/catalog.json`](../public/data/sprite_packs/catalog.json) + `pack.json` `attribution` (`SpritePackAttributionSchema`) | Unattributed tilesets in UI/repo; any hardcoded pack dropdown options in `index.html` or `settings.ui.ts` |
+| **DCSS Atlas Build & Canonical ID Aliases** | [`scripts/pack-dcss-sprites.ts`](../scripts/pack-dcss-sprites.ts) -> `public/data/sprite_packs/dcss/pack.json` | Manual pixel-coordinate tables or copying `ProjectUtumno_full.png` without semantic metadata |
+| **32rogues Full Pack Sync (incl. Animals & Animated Tiles)** | [`scripts/generate_sprite_mappings.ts`](../scripts/generate_sprite_mappings.ts) -> `public/data/sprite_packs/32rogues/` | Missing `animals.png`, `animated-tiles.png`, `autotiles.png`, `items-palette-swaps.png` from `32rogues/pack.json` |
+| **Live User Tileset Switching & Hydration** | [`src/core/loader/sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts) + [`src/rendering/display.ts`](../src/rendering/display.ts) (`configureDisplayForCampaign`) | Hydrating only `campaign.theme.spritePacks`, failing if Settings selects another installed pack at runtime |
 
 ---
 
@@ -26,10 +29,10 @@
 
 | Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| **Selecting shared sprite bundle** | `if (campaignId === 'dnd35e-crypt' \|\| ...)` fallback in TS | `theme.json` field `"spritePackId": "32rogues"` resolved via `public/data/sprite_packs/<packId>/pack.json` | Yes — adding `"my_pack"` requires zero TS edits |
-| **Organizing tiles vs actor/item sheets** | Hardcoding `'tiles/'` or `'sprites/'` subdirectories in `compositeAtlas` | Relative `sheet.src` in `pack.json` (`"tiles/tiles.png"`, `"sprites/monsters.png"`) resolved against `sheet.srcBasePath ?? basePath` | Yes — any folder layout inside a pack or campaign works |
-| **Overriding a whole sheet or single sprite** | Special override lookup table or hardcoded merge flags | Standard `theme.spriteSheets` dictionary merged atop pack sheets in order (same sheet ID replaces sheet; extra sheet e.g. `overrides` overwrites specific `spriteId` keys in `mergedTileMap`) | Yes — campaigns author standard `SpriteSheetSource` JSON entries |
-| **Preserving clean authoring on export** | Re-serializing 28 KB pack maps on ZIP export | Transient `loadedSpritePack` stripped by `stripTransientThemeHydration` in `writeCampaignToZip` | Yes — works uniformly for all pack-backed campaigns |
+| **Populating Settings Tileset Dropdown** | Hardcoding `<option value="dcss">` and `<option value="32rogues">` in HTML/TS | Load `public/data/sprite_packs/catalog.json` validated by `SpritePackCatalogSchema` and build `<option>`s from `catalog.packs` | Yes — adding a new pack to `catalog.json` shows it in Settings immediately |
+| **Rendering Attributions & Licenses** | Hardcoding credit paragraphs in `settings.ui.ts` | Read `attribution` (`author`, `license`, `licenseUrl`, `sourceUrl`, `restrictions`, `contributors`) from `catalog.json` / `pack.json` | Yes — any modded pack supplies its own attribution cleanly |
+| **Primary + Fallback Pack Resolution** | `if (pack === '32rogues') fallback = 'dcss'` in TS | Ordered `theme.spritePacks` (`["dcss", "32rogues"]`) + `catalog.defaultFallbackPackIds` stacked lowest-to-highest priority in `resolveThemeSpriteSheets` | Yes — works identically for any custom pack chain |
+| **Preserving ASCII-Only Campaigns** | Overriding ASCII campaigns when `preferredSpritePack !== 'auto'` | Apply `preferredSpritePack` only when campaign already uses native sprites (`theme.spritePacks?.length \|\| theme.spriteSheets`) or explicit `renderMode === 'sprites'` | Yes — `shroudgarde` & `megacampaign` remain ASCII by default |
 
 ---
 
@@ -37,262 +40,200 @@
 
 | Change | Upstream | Downstream | Lateral |
 | :--- | :--- | :--- | :--- |
-| **Add `SpritePackSchema`, `spritePackId`, `loadedSpritePack`, `SpriteSheetSource.srcBasePath`** ([`src/types/campaign/meta.ts`](../src/types/campaign/meta.ts)) | Authored `theme.json` & `pack.json` data; Zod schema validators | `CampaignDataSchema` parsing in [`loader.ts`](../src/core/loader.ts), [`workspace_file_service.ts`](../src/editor/workspace_file_service.ts), [`tests/helpers.ts`](../tests/helpers.ts), [`scripts/run-validator.ts`](../scripts/run-validator.ts) | `BlankSlateCampaign` & `ai-prompt-kit/schema-contract.md` remain schema-compatible (`spritePackId` optional) |
-| **Add `resolveThemeSpriteSheets` & `stripTransientThemeHydration`** ([`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts)) | Populated `theme.loadedSpritePack` and/or `theme.spriteSheets` | [`display.ts`](../src/rendering/display.ts), [`procedural_sprites.ts`](../src/rendering/procedural_sprites.ts), [`sprite_keys.ts`](../src/rendering/sprite_keys.ts), [`viewport_snapshot.ts`](../src/rendering/viewport_snapshot.ts), [`ui_utils.ts`](../src/rendering/ui/ui_utils.ts), [`area_editor.ts`](../src/rendering/ui/area_editor.ts), [`area_static_painter.ts`](../src/rendering/ui/area_static_painter.ts), [`workspace_file_service.ts`](../src/editor/workspace_file_service.ts) | Single SSOT entry point prevents editor/validator/renderer divergence; must register in `docs/ssot/ssot_console.json` |
-| **Hydrate `loadedSpritePack` at all campaign entrypoints** ([`sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts), [`loader.ts`](../src/core/loader.ts), [`workspace_file_service.ts`](../src/editor/workspace_file_service.ts), [`tests/helpers.ts`](../tests/helpers.ts), [`run-validator.ts`](../scripts/run-validator.ts)) | `spritePackId` in JSON, `editor_active_document` in `sessionStorage`, IndexedDB `installedCampaign`, or ZIP upload | All `resolveThemeSpriteSheets(campaign.theme)` readers see complete merged tilemaps immediately | Offline validators/tests load from `public/data/sprite_packs/<id>/pack.json` synchronously on disk without network fetch; must register new file in `docs/ssot/ssot_console.json` |
-| **Per-sheet `srcBasePath` resolution in `compositeAtlas`** ([`src/rendering/sprite_atlas.ts`](../src/rendering/sprite_atlas.ts)) | [`configureDisplayForCampaign`](../src/rendering/display.ts) passing `resolveThemeSpriteSheets(campaign.theme)` | Browser HTML5 canvas atlas composition loads pack sheets from `data/sprite_packs/<id>/...` and override sheets from `data/campaigns/<id>/...` | Unpacks cleanly even on subpath Vite `BASE_URL` deployments (e.g. itch.io); keeps procedural fallback if missing |
-| **Consolidate PNGs & `pack.json` into `public/data/sprite_packs/32rogues/`** | [`scripts/generate_sprite_mappings.ts`](../scripts/generate_sprite_mappings.ts) -> writes `pack.json`; [`scripts/build-realms-of-shroudgarde.ts`](../scripts/build-realms-of-shroudgarde.ts) -> references `spritePackId: '32rogues'` | Removes duplicate `.png`s and inline `spriteSheets` from `default`, `dnd35e-crypt`, `realms-of-shroudgarde` | Must regenerate `ai-prompt-kit` via `bun scripts/generate-ai-prompt-kit.ts` so `run-validator.ts` parity passes; update [`tests/sprite_mapping.test.ts`](../tests/sprite_mapping.test.ts) disk PNG assertion |
+| **Extend `SpritePackSchema` (`attribution`) & add `SpritePackCatalogSchema`** ([`src/types/campaign/meta.ts`](../src/types/campaign/meta.ts)) | `public/data/sprite_packs/catalog.json`, `*/pack.json` | `loadSpritePack`, `loadSpritePackCatalog`, `validateSpritePacksDiskParity` | Optional fields keep `32rogues` / mod packs backwards-compatible if `attribution` is initially validated gently or populated across all repo packs |
+| **Priority-ordered per-`spriteId` fallback in `resolveThemeSpriteSheets` + `resolveThemeWithPreferredPack`** ([`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts)) | `campaign.theme` + optional `preferredSpritePack` (`settings.ts`) | `compositeAtlas`, `getAvailableSpriteKeys`, `collectMissingSpriteMappings`, `isEffectiveSpriteMode`, `viewport_snapshot`, `editor` | Sheet keys from `spritePacks` are pack-scoped (`packId__sheetId`) in reverse order so higher-priority packs overwrite `tileMap[spriteId]`, while same-name `theme.spriteSheets` replace shadowed pack sheets cleanly |
+| **Add `preferredSpritePack` to `VisualFeedbackSettings`** ([`src/core/settings.ts`](../src/core/settings.ts)) | `DEFAULT_SETTINGS`, `localStorage` persisted settings | `bindSettingsControls` ([`session_settings.ts`](../src/core/session/session_settings.ts)), [`settings.ui.ts`](../src/rendering/ui/settings.ui.ts), [`display.ts`](../src/rendering/display.ts), `viewport_snapshot.ts` | Missing key in old saved `localStorage` defaults cleanly to `'auto'` (`Campaign Default`) via merge in `loadSettings` |
+| **Pack `dcss` (`scripts/pack-dcss-sprites.ts`) + expand `32rogues` (`generate_sprite_mappings.ts`)** | `scratch/crawl-tiles/` (`DCSS Full` + `Oct-5-2010/spells`), `references/tilesets/32rogues/` | `public/data/sprite_packs/dcss/*`, `public/data/sprite_packs/32rogues/*`, `public/data/sprite_packs/catalog.json` | Canonical `32rogues` aliases in `dcss/pack.json` ensure `default`, `dnd35e-crypt`, `realms-of-shroudgarde`, and 160 `dnd35e` SRD items have `0` missing sprites on `dcss` alone OR `["dcss", "32rogues"]` |
+| **Update campaigns (`["dcss", "32rogues"]`) & SRD item sprites** | `default`, `dnd35e-crypt`, `realms-of-shroudgarde`, `build-realms-of-shroudgarde.ts` | `scripts/generate-ai-prompt-kit.ts` -> updates `ai-prompt-kit/default-campaign/theme.json` | Must run `bun scripts/generate-ai-prompt-kit.ts` so `run-validator.ts` Stage `[8/8]` parity passes; add regression checks in [`tests/sprite_mapping.test.ts`](../tests/sprite_mapping.test.ts) |
+| **Attributions panel in Settings (`index.html`, `settings.ui.ts`) & `CREDITS.md`** | `catalog.json` + `pack.json` `attribution` + engine notice (`ROT.js`) | Rendered safely (`textContent` / sanitized links) in Settings overlay (`#settings-attributions-container`) | Covers all 32rogues terms (`Copyright 2024 Seth Boyles`, no NFT/AI-ML, no redistribution), ~60 DCSS CC0 artists, and RLTiles notice |
 
 ---
 
-## 5. Step-by-Step Implementation & Diffs
+## 5. Step-by-Step Implementation Plan & Integration Snippets
 
-### Step 1: Extend Theme & Sprite Pack Schemas ([`src/types/campaign/meta.ts`](../src/types/campaign/meta.ts))
-
-Add optional `srcBasePath` to `SpriteSheetSourceSchema`, define `SpritePackSchema` (`SpritePack`), and add optional `spritePackId` and `loadedSpritePack` to `ThemeConfigSchema`:
+### Step 1 — Schemas for Attribution & Pack Catalog ([`src/types/campaign/meta.ts`](../src/types/campaign/meta.ts))
+Add `SpritePackAttributionSchema`, attach optional `attribution` to `SpritePackSchema`, and define `SpritePackCatalogSchema`:
 
 ```ts
-export const SpriteSheetSourceSchema = z.object({
-  src: z.string().describe('Image filename or subpath relative to its pack or campaign folder (e.g., "tiles/tiles.png")'),
-  srcBasePath: z
-    .string()
-    .optional()
-    .describe('Runtime-resolved base URL or disk subpath when hydrated from a shared sprite pack'),
-  tileWidth: z.number().int().positive().describe('Tile Width (px)'),
-  tileHeight: z.number().int().positive().describe('Tile Height (px)'),
-  tileMap: z
-    // ...unchanged...
+/** Zod schema describing license and author attribution metadata for a sprite pack. */
+export const SpritePackAttributionSchema = z.object({
+  author: z.string().min(1).describe('Creator or project collective name'),
+  license: z.string().min(1).describe('Short SPDX or license label (e.g., CC0-1.0, Custom Non-Redistributable)'),
+  licenseUrl: z.string().optional().describe('Optional reference URL for full license text'),
+  sourceUrl: z.string().optional().describe('Optional upstream URL for the tileset'),
+  restrictions: z.array(z.string()).optional().describe('Explicit license constraints (e.g., No NFT/AI-ML)'),
+  notes: z.string().optional().describe('Additional attribution or distribution notes'),
+  contributors: z.array(z.string()).optional().describe('Optional individual contributor list')
 });
+export type SpritePackAttribution = z.infer<typeof SpritePackAttributionSchema>;
 
 export const SpritePackSchema = z.object({
   id: z.string().min(1).describe('Unique Sprite Pack Identifier'),
   name: z.string().min(1).describe('Human-readable Sprite Pack Name'),
   description: z.string().optional().describe('Optional Sprite Pack Description'),
+  attribution: SpritePackAttributionSchema.optional().describe('Creator, license, and credit metadata'),
   spriteSheets: z.record(z.string(), SpriteSheetSourceSchema)
 });
-export type SpritePack = z.infer<typeof SpritePackSchema>;
 
-export const ThemeConfigSchema = z.object({
-  colors: z.object({ /* ... */ }),
-  glyphs: z.object({ /* ... */ }),
-  ui: z.object({ /* ... */ }),
-  spritePackId: z.string().min(1).optional().describe('Optional shared sprite pack ID from data/sprite_packs/'),
-  spriteSheets: z.record(z.string(), SpriteSheetSourceSchema).optional(),
-  loadedSpritePack: SpritePackSchema.optional().describe('Transient hydrated shared pack loaded at runtime')
+/** Catalog entry listing a discoverable sprite pack in `public/data/sprite_packs/catalog.json`. */
+export const SpritePackCatalogEntrySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  selectableInSettings: z.boolean().default(true),
+  fallbackPackIds: z.array(z.string().min(1)).optional(),
+  attribution: SpritePackAttributionSchema.optional()
 });
+
+export const SpritePackCatalogSchema = z.object({
+  packs: z.array(SpritePackCatalogEntrySchema)
+});
+export type SpritePackCatalog = z.infer<typeof SpritePackCatalogSchema>;
 ```
 
-Wait — also re-export `SpritePackSchema` & `SpritePack` through `src/types/campaign.types.ts` (already does `export * from './campaign/meta.ts'`? Verify before editing!).
+Re-export `SpritePackAttribution`, `SpritePackAttributionSchema`, `SpritePackCatalog`, `SpritePackCatalogEntry`, and `SpritePackCatalogSchema` from [`src/types/campaign.types.ts`](../src/types/campaign.types.ts).
 
 ---
 
-### Step 2: Create Tier 1 Pure Resolution Utility ([`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts))
-
-Centralize pack/override merging and transient stripping without violating `.dependency-cruiser.cjs`:
+### Step 2 — Priority-Ordered Per-`spriteId` Fallback & User Pack Preference Resolution ([`src/utils/sprite_pack.ts`](../src/utils/sprite_pack.ts))
+Fix whole-sheet clobbering so `spritePacks` (`["dcss", "32rogues"]`) stacks **fallback -> primary** into `compositeAtlas` (higher-priority pack overwrites individual `spriteId` coordinates while preserving every fallback sprite not redefined), and add pure `resolveEffectiveThemeWithPreference`:
 
 ```ts
-import type { SpritePack, SpriteSheetSource, ThemeConfig } from '../types/campaign.types.ts';
-
-/** Standard relative folder under `data/` holding shared sprite pack bundles. */
-export const SPRITE_PACKS_DATA_SUBPATH = 'data/sprite_packs';
-
-/** Manifest filename inside each shared sprite pack bundle folder. */
-export const SPRITE_PACK_MANIFEST_FILENAME = 'pack.json';
+export const DEFAULT_PREFERRED_SPRITE_PACK = 'auto';
+export const SPRITE_PACKS_CATALOG_FILENAME = 'catalog.json';
 
 /**
- * Stamps every sheet in a `SpritePack` with its pack `srcBasePath`, preserving any existing override base path.
+ * Returns an effective `ThemeConfig` prioritizing a player's `preferredSpritePack` override
+ * (keeping the campaign's declared packs behind it as fallbacks) when sprite mode is active.
  */
-export function stampSpritePackBasePath(pack: SpritePack, packBasePath: string): SpritePack {
-  const normalizedBase = packBasePath.replace(/\/+$/, '');
-  const stampedSheets: Record<string, SpriteSheetSource> = {};
-  for (const [sheetId, sheet] of Object.entries(pack.spriteSheets)) {
-    stampedSheets[sheetId] = {
-      ...sheet,
-      srcBasePath: sheet.srcBasePath ?? normalizedBase
-    };
+export function resolveEffectiveThemeWithPreference(
+  theme: ThemeConfig,
+  preferredSpritePack: string | undefined,
+  catalogFallbacks?: ReadonlyArray<string>
+): ThemeConfig {
+  if (!preferredSpritePack || preferredSpritePack === DEFAULT_PREFERRED_SPRITE_PACK) {
+    return theme;
   }
-  return { ...pack, spriteSheets: stampedSheets };
-}
-
-/**
- * Resolves the effective spritesheet dictionary for a theme by layering campaign-local `theme.spriteSheets`
- * atop `theme.loadedSpritePack?.spriteSheets` (per-sheet key replacement or additive override sheets).
- */
-export function resolveThemeSpriteSheets(
-  theme: Pick<ThemeConfig, 'spriteSheets' | 'loadedSpritePack'> | undefined
-): Readonly<Record<string, SpriteSheetSource>> | undefined {
-  if (!theme) return undefined;
-  const packSheets = theme.loadedSpritePack?.spriteSheets;
-  const localSheets = theme.spriteSheets;
-  if (!packSheets && !localSheets) return undefined;
-  const merged: Record<string, SpriteSheetSource> = {
-    ...(packSheets ?? {}),
-    ...(localSheets ?? {})
-  };
-  return Object.keys(merged).length > 0 ? merged : undefined;
-}
-
-/**
- * Attaches a hydrated `loadedSpritePack` to a `ThemeConfig` cleanly under `exactOptionalPropertyTypes`.
- */
-export function withLoadedSpritePack(theme: ThemeConfig, pack: SpritePack, packBasePath: string): ThemeConfig {
-  return {
-    ...theme,
-    loadedSpritePack: stampSpritePackBasePath(pack, packBasePath)
-  };
-}
-
-/**
- * Strips runtime-only hydration fields (`loadedSpritePack` and synthetic `srcBasePath`) before exporting JSON.
- */
-export function stripTransientThemeHydration(theme: ThemeConfig): ThemeConfig {
-  const { loadedSpritePack: _omitted, spriteSheets, ...restTheme } = theme;
-  if (!spriteSheets) {
-    return restTheme;
+  const hasNativeSprites =
+    (theme.spritePacks !== undefined && theme.spritePacks.length > 0) ||
+    (theme.spriteSheets !== undefined && Object.keys(theme.spriteSheets).length > 0);
+  if (!hasNativeSprites) {
+    return theme;
   }
-  const cleanSheets: Record<string, SpriteSheetSource> = {};
-  for (const [sheetId, sheet] of Object.entries(spriteSheets)) {
-    const { srcBasePath: _baseOmitted, ...cleanSheet } = sheet;
-    cleanSheets[sheetId] = cleanSheet;
+
+  const orderedRefs: SpritePackRef[] = [preferredSpritePack];
+  const seenIds = new Set<string>([preferredSpritePack]);
+  for (const ref of theme.spritePacks ?? []) {
+    const id = normalizeSpritePackRef(ref).packId;
+    if (!seenIds.has(id)) {
+      seenIds.add(id);
+      orderedRefs.push(ref);
+    }
   }
-  return {
-    ...restTheme,
-    spriteSheets: cleanSheets
-  };
+  for (const fbId of catalogFallbacks ?? []) {
+    if (!seenIds.has(fbId)) {
+      seenIds.add(fbId);
+      orderedRefs.push(fbId);
+    }
+  }
+  return { ...theme, spritePacks: orderedRefs };
 }
 ```
 
----
-
-### Step 3: Browser Pack Loader & Campaign Hydration ([`src/core/loader/sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts), [`src/core/loader.ts`](../src/core/loader.ts), [`src/editor/workspace_file_service.ts`](../src/editor/workspace_file_service.ts))
-
-Create `src/core/loader/sprite_pack_loader.ts`:
-
+And in `resolveThemeSpriteSheets(theme)`:
 ```ts
-import { SpritePackSchema, type CampaignData, type SpritePack } from '../../types/campaign.types.ts';
-import {
-  SPRITE_PACKS_DATA_SUBPATH,
-  SPRITE_PACK_MANIFEST_FILENAME,
-  withLoadedSpritePack
-} from '../../utils/sprite_pack.ts';
+  const overrideSheetIds = new Set<string>(Object.keys(theme.spriteSheets ?? {}));
 
-const spritePackCache = new Map<string, SpritePack>();
+  if (theme.spritePacks) {
+    // Iterate lowest-priority fallback -> index 0 primary so compositeAtlas draws/maps
+    // fallback sprites first and lets primary pack entries override per spriteId cleanly.
+    for (let i = theme.spritePacks.length - 1; i >= 0; i--) {
+      const { packId, includeSheets } = normalizeSpritePackRef(theme.spritePacks[i]!);
+      const pack = loadedPacks[packId];
+      if (!pack) continue;
 
-/**
- * Resolves the base URL path (without trailing slash) for a shared sprite pack.
- */
-export function buildSpritePackBaseUrl(packId: string, baseUrl: string = import.meta.env?.BASE_URL ?? '/'): string {
-  const normalizedRoot = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  return `${normalizedRoot}${SPRITE_PACKS_DATA_SUBPATH}/${packId}`;
-}
-
-/**
- * Fetches and Zod-validates a shared sprite pack manifest (`pack.json`) with in-memory caching.
- */
-export async function loadSpritePack(packId: string): Promise<SpritePack> {
-  const cached = spritePackCache.get(packId);
-  if (cached) return cached;
-
-  const packBase = buildSpritePackBaseUrl(packId);
-  const res = await fetch(`${packBase}/${SPRITE_PACK_MANIFEST_FILENAME}`);
-  if (!res.ok) {
-    throw new Error(`Failed to load sprite pack "${packId}" (${res.status} ${res.statusText})`);
+      const sheetIds =
+        includeSheets && includeSheets.length > 0 ? includeSheets : Object.keys(pack.spriteSheets);
+      for (const sheetId of sheetIds) {
+        if (overrideSheetIds.has(sheetId)) continue; // Campaign sheet with same ID replaces pack sheet
+        const sheet = pack.spriteSheets[sheetId];
+        if (sheet) {
+          merged[`${packId}__${sheetId}`] = sheet;
+        }
+      }
+    }
   }
-  const json: unknown = await res.json();
-  const parsed = SpritePackSchema.safeParse(json);
-  if (!parsed.success) {
-    throw new Error(`Invalid sprite pack "${packId}": ${parsed.error.message}`);
-  }
-  spritePackCache.set(packId, parsed.data);
-  return parsed.data;
-}
-
-/**
- * Hydrates `campaign.theme.loadedSpritePack` when `spritePackId` is configured (or when matching pack is missing).
- */
-export async function hydrateCampaignSpritePack(campaign: CampaignData): Promise<CampaignData> {
-  const packId = campaign.theme.spritePackId;
-  if (!packId) return campaign;
-  if (campaign.theme.loadedSpritePack?.id === packId) return campaign;
-
-  const pack = await loadSpritePack(packId);
-  return {
-    ...campaign,
-    theme: withLoadedSpritePack(campaign.theme, pack, buildSpritePackBaseUrl(packId))
-  };
-}
 ```
-
-Wire `hydrateCampaignSpritePack(...)` into **all** load paths:
-- [`src/core/loader.ts`](../src/core/loader.ts): after resolving `editorDoc`, `installedCampaign`, or fetched `campaignData` cleanly before returning!
-- [`src/editor/workspace_file_service.ts`](../src/editor/workspace_file_service.ts): call `await hydrateCampaignSpritePack(campaign)` in `readCampaignFromZip()`, and use `stripTransientThemeHydration(data.theme)` when writing `theme.json` in `writeCampaignToZip()`!
-
----
-
-### Step 4: Offline Disk Hydration (`tests/helpers.ts` & `scripts/run-validator.ts`)
-
-Both `tests/helpers.ts` (`loadCampaignFromDisk`) and `scripts/run-validator.ts` (`loadAndValidateZod`) load campaign files via `node:fs`. Add a small shared or matching disk pack loader (`public/data/sprite_packs/<packId>/pack.json`):
-
-```ts
-const packId = assembledTheme['spritePackId'];
-if (typeof packId === 'string' && packId.length > 0) {
-  const packPath = join(ROOT, 'public', SPRITE_PACKS_DATA_SUBPATH, packId, SPRITE_PACK_MANIFEST_FILENAME);
-  if (!existsSync(packPath)) {
-    throw new Error(`Missing sprite pack "${packId}" at ${packPath}`);
-  }
-  const pack = SpritePackSchema.parse(JSON.parse(readFileSync(packPath, 'utf-8')));
-  assembled['theme'] = withLoadedSpritePack(parsedTheme, pack, `/${SPRITE_PACKS_DATA_SUBPATH}/${packId}`);
-}
-```
+Notice this preserves **both**:
+1. Campaign-local sheet replacement (if a campaign declares `spriteSheets.monsters`, it cleanly replaces any pack's `monsters` sheet and renders last).
+2. Cross-pack per-`spriteId` fallback (e.g., `32rogues__monsters` draws first, `dcss__monsters` overlays `monster_goblin` with DCSS art while `32rogues`'s fallback-only IDs stay mapped in `mergedTileMap`!).
 
 ---
 
-### Step 5: Update Rendering, Diagnostics & Editor UI to Consume `resolveThemeSpriteSheets`
-
-1. [`src/rendering/sprite_atlas.ts`](../src/rendering/sprite_atlas.ts):
-   - In `compositeAtlas(sheets, basePath, fallbackBasePath)`, compute per sheet:
-     ```ts
-     const sheetBase = (sheet.srcBasePath ?? basePath).replace(/\/+$/, '');
-     const primaryUrl = `${sheetBase}/${sheet.src}`;
-     const fallbackUrl =
-       sheet.srcBasePath !== undefined
-         ? undefined
-         : resolveDefaultSpritesheetFallbackUrl(basePath, sheet.src, fallbackBasePath);
-     ```
-     Because `Object.entries(sheets)` iterates pack sheets followed by campaign override sheets, any override `spriteId` written later overwrites `mergedTileMap[spriteId]`, while pack sheets still load from `data/sprite_packs/<packId>/...` and campaign override sheets load from `data/campaigns/<campaignId>/...`.
-2. Update all remaining readers to call `resolveThemeSpriteSheets(campaign.theme)`:
-   - [`src/rendering/display.ts`](../src/rendering/display.ts) (`configureDisplayForCampaign`, `syncDisplayLayout`)
-   - [`src/rendering/procedural_sprites.ts`](../src/rendering/procedural_sprites.ts) (`isEffectiveSpriteMode`)
-   - [`src/rendering/sprite_keys.ts`](../src/rendering/sprite_keys.ts) (`getAvailableSpriteKeys`)
-   - [`src/rendering/viewport_snapshot.ts`](../src/rendering/viewport_snapshot.ts)
-   - [`src/rendering/ui/ui_utils.ts`](../src/rendering/ui/ui_utils.ts)
-   - [`src/rendering/ui/area_editor.ts`](../src/rendering/ui/area_editor.ts)
-   - [`src/rendering/ui/area_static_painter.ts`](../src/rendering/ui/area_static_painter.ts)
+### Step 3 — User Setting + On-Demand Pack Hydration + Live Re-Render
+1. **[`src/core/settings.ts`](../src/core/settings.ts):**
+   - Add `preferredSpritePack: string` to `VisualFeedbackSettings` (default: `DEFAULT_PREFERRED_SPRITE_PACK`, `'auto'`).
+2. **[`src/core/loader/sprite_pack_loader.ts`](../src/core/loader/sprite_pack_loader.ts):**
+   - Add `loadSpritePackCatalog(): Promise<SpritePackCatalog>` (fetches `${SPRITE_PACKS_DATA_SUBPATH}/${SPRITE_PACKS_CATALOG_FILENAME}`, cached cleanly, returns `{ packs: [] }` on 404 in legacy test fixtures).
+   - Add `hydrateCampaignSpritePacksForTheme(campaign: CampaignData, theme: ThemeConfig): Promise<CampaignData>` so any pack IDs injected by `preferredSpritePack` (and `catalog.fallbackPackIds`) are hydrated before atlas composition.
+3. **[`src/rendering/display.ts`](../src/rendering/display.ts) & [`src/rendering/procedural_sprites.ts`](../src/rendering/procedural_sprites.ts) & [`src/rendering/viewport_snapshot.ts`](../src/rendering/viewport_snapshot.ts):**
+   - Resolve `effectiveTheme = resolveEffectiveThemeWithPreference(campaign.theme, getSettings().visualFeedback.preferredSpritePack)` for playback rendering (while Editor & Validator keep using raw `campaign.theme` directly!).
+   - In [`src/core/session/session_settings.ts`](../src/core/session/session_settings.ts) (`bindSettingsControls`), when `setting-sprite-pack` changes mid-run: persist setting, hydrate selected pack onto active campaign via `hydrateCampaignSpritePacksForTheme`, call `configureDisplayForCampaign` + `syncFogOverlayCanvas` + `syncDisplayLayout`, `invalidateViewportSnapshot()`, and `markAllDomainsDirty()`.
 
 ---
 
-### Step 6: Consolidate Assets, Update Generators, Parity, SSOT & Tests
-
-1. Create `public/data/sprite_packs/32rogues/`:
-   - `tiles/tiles.png` (moved from `default/tiles.png`)
-   - `sprites/rogues.png`, `sprites/monsters.png`, `sprites/items.png` (moved from `default/`)
-   - `pack.json`: `{ id: '32rogues', name: '32rogues Fantasy Tileset & Sprites', description: '...', spriteSheets: { tiles: { src: 'tiles/tiles.png', ... }, rogues: { src: 'sprites/rogues.png', ... }, monsters: { src: 'sprites/monsters.png', ... }, items: { src: 'sprites/items.png', ... } } }`
-2. Slim `theme.json` in `default`, `dnd35e-crypt`, and `realms-of-shroudgarde` (`scripts/build-realms-of-shroudgarde.ts`):
-   - Remove the inline 28 KB `spriteSheets` block; set `"spritePackId": "32rogues"`.
-   - Remove the 12 duplicate `.png` files under `public/data/campaigns/{default,dnd35e-crypt,realms-of-shroudgarde}/`.
-   - Update [`scripts/generate_sprite_mappings.ts`](../scripts/generate_sprite_mappings.ts) to target `public/data/sprite_packs/32rogues/pack.json` with `tiles/tiles.png` & `sprites/{rogues,monsters,items}.png`.
-   - Update [`scripts/build-realms-of-shroudgarde.ts`](../scripts/build-realms-of-shroudgarde.ts) so it preserves `spritePackId` cleanly instead of copying `.png` binaries.
-3. Run `bun scripts/generate-ai-prompt-kit.ts` to refresh `ai-prompt-kit/` parity with `default/theme.json`.
-4. Update [`docs/ssot/ssot_console.json`](../docs/ssot/ssot_console.json) for `src/utils/sprite_pack.ts` and `src/core/loader/sprite_pack_loader.ts`, regenerate `docs/SSOT_CONSOLE.md` via `bun scripts/map-codebase.ts`, and verify 0 SSOT errors.
-5. Update [`tests/sprite_mapping.test.ts`](../tests/sprite_mapping.test.ts):
-   - Resolve `sheet.srcBasePath` relative to `public/` (when present) or `campaignDir` (for campaign overrides) and verify every referenced PNG exists on disk.
-   - Add unit tests for `resolveThemeSpriteSheets` (whole-sheet replacement & partial `overrides` sheet layering), `stripTransientThemeHydration`, and per-sheet `srcBasePath` isolation.
+### Step 4 — Offline Content & Asset Packers
+1. **Pure PNG Stitcher & Pack Builder ([`scripts/pack-dcss-sprites.ts`](../scripts/pack-dcss-sprites.ts)):**
+   - Zero-dependency pure TypeScript PNG decoder/encoder using `node:zlib` (`inflateSync` / `deflateSync`, supporting all PNG filter modes `0–4` and color types `0/2/3/4/6`, normalizing every tile to `32×32` RGBA).
+   - Reads **all** `32×32` PNGs from:
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/dungeon/` -> `sheets/dungeon.png` (`dungeon` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/monster/` -> `sheets/monsters.png` (`monsters` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/item/` -> `sheets/items.png` (`items` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/player/base/` + iconic presets -> `sheets/actors.png` (`actors` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/player/` (all `975` modular paperdoll layers) -> `sheets/player_layers.png` (`player_layers` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/effect/` -> `sheets/effects.png` (`effects` sheet)
+     - `scratch/crawl-tiles/crawl-tiles Oct-5-2010/spells/` (`156`) + `DCSS Full/gui/spells/` -> `sheets/spells.png` (`spells` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/misc/` + `emissaries/` -> `sheets/misc.png` (`misc` sheet)
+     - `scratch/crawl-tiles/Dungeon Crawl Stone Soup Full/gui/` -> `sheets/gui.png` (`gui` sheet)
+   - Emits canonical IDs (`dcss_<category>_<path_slug>`) **plus** explicit semantic aliases matching every `tile_*`, `actor_*`, `monster_*`, and `item_*` referenced in `default`, `dnd35e-crypt`, `realms-of-shroudgarde`, and `public/data/rulesets/dnd35e/items/` so **all existing campaigns pass `collectMissingSpriteMappings` with 0 missing sprites under `dcss` alone**.
+   - Parses the full artist list from [`Dungeon Crawl Stone Soup Full/README.txt`](../scratch/crawl-tiles/Dungeon%20Crawl%20Stone%20Soup%20Full/README.txt) into `dcss/pack.json`'s `attribution.contributors` + writes `public/data/sprite_packs/dcss/LICENSE.txt` and `NOTICE.txt`.
+2. **Expand `32rogues` Pack ([`scripts/generate_sprite_mappings.ts`](../scripts/generate_sprite_mappings.ts)):**
+   - Copy `animals.png`, `animated-tiles.png`, `autotiles.png`, `items-palette-swaps.png` from `references/tilesets/32rogues/` to `public/data/sprite_packs/32rogues/sprites/` (or `tiles/`), parse `animals.txt`, `animated-tiles.txt` (`32×32` cell parsing with dimension verification!), and add `32rogues` full `attribution` (`Copyright 2024 Seth Boyles`, constraints, source info) into `public/data/sprite_packs/32rogues/pack.json`.
+   - Keep `spriteSheets` keys clean (`tiles`, `rogues`, `monsters`, `items`, `animals`, `animated_tiles`) and verify every PNG cell coordinate stays within image bounds!
+3. **Pack Catalog ([`public/data/sprite_packs/catalog.json`](../public/data/sprite_packs/catalog.json)), [`CREDITS.md`](../CREDITS.md) & `rltiles-pack` Archive:**
+   - List `dcss` (`"DCSS Stone Soup (CC0 32×32)"`) and `32rogues` (`"32rogues Fantasy Set (Fallback)"`, `fallbackPackIds: ["dcss"]`), plus complete attribution entries for Seth Boyles (`32rogues`), Dungeon Crawl Stone Soup contributors (`~60` names), `RLTiles`, and `ROT.js`.
+   - Copy/move [`scratch/ rltiles-pack/`](../scratch/%20rltiles-pack/) into `docs/archive/rltiles-pack/` (retaining `attribution.txt` + all 26 PNG sheets + a brief `README.md` note on future isometric renderer support).
 
 ---
 
-## 6. Confirmation Checkpoints
+### Step 5 — Campaigns & D&D 3.5e SRD Sprite Upgrades
+- Update `theme.json` in `public/data/campaigns/default/`, `dnd35e-crypt/`, `realms-of-shroudgarde/` + [`scripts/build-realms-of-shroudgarde.ts`](../scripts/build-realms-of-shroudgarde.ts):
+  ```json
+  "spritePacks": [
+    {
+      "packId": "dcss",
+      "includeSheets": ["dungeon", "monsters", "items", "actors", "effects", "spells", "misc"]
+    },
+    "32rogues"
+  ]
+  ```
+  *(Omits heavy `gui` and `player_layers` sheets from default atlas boot unless opted in, keeping browser startup lean while `dcss` & `32rogues` provide complete sprite coverage.)*
+- Upgrade duplicated SRD item `spriteId`s in `public/data/rulesets/dnd35e/items/` (e.g. distinct DCSS sprites for greataxes, battleaxes, halberds, shields, belts, boots, rings, amulets, wands, staves, potions, scrolls) and optionally assign richer `dcss_*` sprites to campaign doors, altars, fountains, bosses, and creatures in `dnd35e-crypt` and `realms-of-shroudgarde` — every `dcss_*` ID works identically whether the player selects `dcss` or `32rogues` (via fallback to `dcss`!).
+- Regenerate `ai-prompt-kit` via `bun scripts/generate-ai-prompt-kit.ts`.
 
-Before executing:
-1. Confirm pack layout `public/data/sprite_packs/32rogues/` with `pack.json`, `tiles/tiles.png`, and `sprites/{rogues,monsters,items}.png`.
-2. Confirm deleting the 12 duplicate `.png` files in `default/`, `dnd35e-crypt/`, and `realms-of-shroudgarde/` once `32rogues` is wired.
-3. Confirm whether `createBlankSlateCampaign()` should remain minimal ASCII-by-default or opt into `spritePackId: '32rogues'`.
+---
+
+### Step 6 — Settings UI (`Tileset Pack` Selector + `Credits & Attributions` Section) & Validator Parity
+- **[`index.html`](../index.html) & [`src/rendering/ui/settings.ui.ts`](../src/rendering/ui/settings.ui.ts):**
+  - Add `<label class="settings-label"><span>Tileset Pack</span><select id="setting-sprite-pack" class="settings-select"><option value="auto">Auto (Campaign Default)</option></select></label>` inside Accessibility & Visuals, dynamically populated from `loadSpritePackCatalog()`.
+  - Add `<div class="settings-group"><h3 class="settings-group-title">Credits &amp; Attributions</h3><div id="settings-attributions-container"></div></div>` displaying pack licenses, restrictions (`NO NFT/AI/ML`, `No Redistribution` for `32rogues`, `CC0 1.0` for `DCSS`), upstream links, and expandable contributor lists cleanly from `catalog.json` / `pack.json`.
+- **[`scripts/run-validator.ts`](../scripts/run-validator.ts) & [`tests/sprite_mapping.test.ts`](../tests/sprite_mapping.test.ts):**
+  - Validate `public/data/sprite_packs/catalog.json` against `SpritePackCatalogSchema`, check all catalog entries exist on disk, verify every `tileMap` pixel coordinate lies inside its PNG's actual dimensions, and test both `resolveThemeWithPreference` and per-`spriteId` fallback merging (`["dcss", "32rogues"]` vs `["32rogues", "dcss"]`).
+  - Verify `realms-of-shroudgarde`, `dnd35e-crypt`, and `default` pass `collectMissingSpriteMappings` with `0` errors both with `dcss` alone and with `["32rogues", "dcss"]`.
+
+---
+
+## 6. Verification Plan (Before Marking Complete)
+1. Generate `public/data/sprite_packs/dcss/` (`bun run scripts/pack-dcss-sprites.ts`), sync `32rogues` (`bun run scripts/generate_sprite_mappings.ts`), and sync `ai-prompt-kit`.
+2. Update `docs/ssot/ssot_console.json` if any new `src/` files are added, and run `bun scripts/map-codebase.ts`.
+3. Run `./verify.sh` across all 8 stages (`tsc`, `format`, `lint`, `lint:arch`, `lint:deadcode`, `bun test`, `build`, `run-validator.ts`).

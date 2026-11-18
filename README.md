@@ -14,6 +14,7 @@ Latest live deployment playable in your browser at **[https://thiagoribas-dev.gi
 - **Tactical Companion AI, Stances & Orders (`ControllerLinkComponent`, `companion_commands.system.ts`)** — Spawned allies, animal companions, familiars, and summons follow their master (`follow` behavior), respect tactical stances (`aggressive`, `defensive`, `passive`, `hold`), execute focus-target commands (`order_target` via right-click verbs, targeting mode, or synthetic `__companion_orders__` dialogue), and swap tiles seamlessly in corridors.
 - **Console Stance Groups, Dock & Master Dossier** — Data-driven stance groups (`stance.system.ts`), bottom command dock (`hud_bottom_dock.ui.ts`), hotbar (`console_hotbar.ui.ts`), symmetrical Paper Doll (`console_inventory.ui.ts`), and Master Character Dossier (`console_dossier.ui.ts`).
 - **Viewport-Proportional Zoom & Theme System** — Dynamic resolution-independent tile sizing (`DEFAULT_VIEWPORT_TILE_HEIGHT_PERCENT`, 0.5×–3.0× zoom), optional 45°/3D perspective transforms, and switchable skins/font scaling (`console_theme.ts`).
+- **Shared Sprite Packs, Per-`spriteId` Fallback & Live Tileset Selection (`sprite_pack.ts`, `sprite_pack_loader.ts`)** — Centralized `32×32` atlas bundles in [`public/data/sprite_packs/`](./public/data/sprite_packs/) powered by **Dungeon Crawl Stone Soup (`dcss`, CC0 1.0 — 6,185 sprites + canonical aliases)** as the primary pack with **32rogues (`32rogues` — 8 sheets incl. animals & animated tiles)** as fallback/alternate, data-driven `catalog.json` discovery, live Settings Tileset Pack switching, and an in-game Credits & Attributions panel (`settings_attributions.ts`).
 - **Diurnal World Clock, Environment Lighting & Rest Simulation** — Configurable 6-second turn clock (`dawn`/`day`/`dusk`/`night`), explicit area `environmentType` (`outdoors`/`indoors`/`underground`), sync/async bulk rest & configurable `waitTargets` (`world_time_skip.ts`) with SRD hunger drain, `"While you rested:"` world event digests, and lazy cross-area respawn CR escalation (`map_wake_respawn.ts`).
 - **Multi-Tile Footprints & Pass-Through Physics (`movement_footprint.ts`)** — True $W \times H$ grid occupancy and cardinal auto-rotation synchronized live in `spatialIndex`, plus friendly, helpless, $\ge 3$ size-delta, and Tiny 0-ft reach pass-through rules.
 - **Performance Telemetry & Web Worker Concurrency** — Heavy procedural dungeon generation (`map.worker.ts`) and headless campaign fuzzing (`fuzzer.worker.ts`) run off the main thread; sub-domain turn/render telemetry (`perfTracker`) exports JSON diagnostics from Settings; viewport/player-scoped dirty-domain diffing (`presentation_queue.ts`) and menu gating (`presenter.ts`) prevent off-screen DOM redraws.
@@ -43,11 +44,12 @@ Latest live deployment playable in your browser at **[https://thiagoribas-dev.gi
 - **Multi-Mode Terrain Traversal** — Land, Climb, Swim, Fly (with maneuverability grades), and Burrow movement speeds allow flying/swimming actors to cross chasms, pits, and deep water.
 - **Field of View, Vision Modes & Stealth** — Shadowcasting FOV, Low-Light Vision, Darkvision, Blindsense/Blindsight, Tremorsense, Concealment miss chances, and opposed Hide/Move Silently vs. Spot/Listen detection.
 - **Encounter Director** — Spends Challenge Rating (CR) budgets across tactical objectives, hazards, and monster groups with Hot Path Dijkstra routing.
-- **4 Built-in Campaigns**:
+- **5 Built-in Campaigns**:
   - **Descent (`default`)** — Classic systemic roguelike showcase campaign.
   - **The Sunless Reliquary (`dnd35e-crypt`)** — Multi-zone D&D 3.5e SRD tactical dungeon crawl.
-  - **The Shroudgarde Borderlands (`shroudgarde`)** — Open-ended borderlands investigation and faction campaign.
-  - **The Megadungeon (`megacampaign`)** — Multi-branch deep dungeon crawl.
+  - **The Realms of Shroudgarde (`realms-of-shroudgarde`)** — Full D&D 3.5e open-realm & dungeon campaign showcasing towns, companions, doors, chests, and systemic narrative.
+  - **The Shroudgarde Borderlands (`shroudgarde`)** — Open-ended classic borderlands investigation and faction campaign (ASCII default).
+  - **The Megadungeon (`megacampaign`)** — Multi-branch classic deep dungeon crawl (ASCII default).
 
 ### 💬 Systemic Narrative, Rivalry & Villains
 - **Rivalry & Nemesis Ecosystem (`N`)** — Enemies that defeat or escape the player promote into persistent Rivals with procedural titles, scars, grudges, traits, and ambush behaviors, tracked on a hierarchical Nemesis Pyramid.
@@ -100,7 +102,7 @@ This codebase enforces strict architectural guardrails verified automatically on
   - **Tier 3 — System Content (`public/data/rulesets/dnd35e/`)**: **768** modular JSON files across 11 subfolders (plus `item_enhancements.json` and 11 root barrel JSONs = **780** total JSON files) parameterizing classes (26), races/bestiary (75), spells (254), conditions (19), templates (13), feats (125), items (149 + 16 enhancements), domains (22), skills (50), creature types (15), and subtypes (20).
 - **Unified Effect Providers & Hierarchical Provenance (`sourcePath`)**: Every mechanical emitter (size, creature type, subtype, race, template, class, feat, skill threshold, item enhancement, condition, armor/load, tactical stance, spatial field) projects semantic tags and emits `StatModifier`s / `RuleOverride`s carrying a slash-delimited `sourcePath` for atomic revocation.
 - **Programmatic SSOT Registries & Continuous Parity**:
-  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` (**311 files**) or `docs/ssot/ssot_dnd35e.json` (**160 files**) — **471 source files** total with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
+  - Every `.ts` file under `src/` is registered in either `docs/ssot/ssot_console.json` or `docs/ssot/ssot_dnd35e.json` (**481 source files** total) with primary responsibility, canonical exported entry points, ownership boundaries, and forbidden anti-patterns.
   - Human-readable maps (`docs/SSOT_CONSOLE.md` and `docs/SSOT_DND35E.md`) are generated programmatically via `bun run map:ssot` and verified for 100% disk and export parity by `scripts/run-validator.ts` and `tests/ssot_registry_parity.test.ts`.
 
 ---
@@ -109,24 +111,26 @@ This codebase enforces strict architectural guardrails verified automatically on
 
 ```text
 ├── AGENTS.md                                 # Coding standards, Golden Rules, and 6-Step Workflow
-├── verify.sh / verify.bat                    # Verification pipeline (TS, Format, Lint, Arch, File Length, Knip, Test, Build, Validator)
+├── CREDITS.md                                # Third-party library, tileset (DCSS CC0, 32rogues, RLTiles), and contributor attributions
+├── verify.sh / verify.bat                    # Verification pipeline (TS, Format, Lint, Arch, Knip, Test, Build, Validator)
 ├── docs/
 │   ├── ARCHITECTURE.md                       # Comprehensive subsystem architecture reference
 │   ├── DECISIONS.md                          # Architectural Decision Records (ADRs)
 │   ├── MILESTONES.md                         # Project roadmap and completed milestones
 │   ├── QUEST_AND_NARRATIVE_ARCHITECTURE.md   # Deep-dive quest, dialogue, and narrative dataflow spec
 │   ├── UI_UX_STANDARDS.md                    # Dark-fantasy UI/UX constitution & Cartridge UI Adapter standards
-│   ├── SSOT_CONSOLE.md                       # Auto-generated Core Console SSOT responsibility map (311 files)
-│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map (160 files)
+│   ├── SSOT_CONSOLE.md                       # Auto-generated Core Console SSOT responsibility map
+│   ├── SSOT_DND35E.md                        # Auto-generated D&D 3.5e Cartridge SSOT responsibility map
 │   ├── ssot/                                 # Authoritative JSON SSOT registries (ssot_console.json, ssot_dnd35e.json)
 │   ├── dnd35e/                               # D&D 3.5e SRD domain reference specs
 │   ├── guides/                               # Campaign authoring and ruleset developer guides
-│   └── archive/                              # Historical audits and design scratchpads
+│   └── archive/                              # Historical audits, design scratchpads, and archived 64x64 isometric rltiles-pack
 ├── public/data/
-│   ├── campaigns/                            # Built-in campaigns (default, dnd35e-crypt, megacampaign, shroudgarde)
-│   └── rulesets/dnd35e/                      # 768 modular D&D 3.5e SRD JSON files (+ 12 root files = 780 total)
-├── scripts/                                  # Campaign validator, SSOT parity engine, file-length checker, and codebase mapper
-├── tests/                                    # Bun regression test suites (295 tests across 41 suites)
+│   ├── campaigns/                            # Built-in campaigns (default, dnd35e-crypt, megacampaign, realms-of-shroudgarde, shroudgarde)
+│   ├── sprite_packs/                         # Shared 32x32 sprite bundles (catalog.json, dcss/ CC0 primary, 32rogues/ fallback)
+│   └── rulesets/dnd35e/                      # Modular D&D 3.5e SRD JSON registries (classes, races, spells, feats, items, conditions)
+├── scripts/                                  # Campaign validator, sprite packers, SSOT parity engine, and codebase mapper
+├── tests/                                    # Bun regression test suites (331 tests across 43 files)
 └── src/
     ├── actions/                              # Action handlers and verb dispatch registry
     ├── ai/                                   # Composable AI behaviors (hunt, ranged, spell, follow, flee, wander) & companion targeting
@@ -138,7 +142,7 @@ This codebase enforces strict architectural guardrails verified automatically on
     ├── rulesets/                             # RulesetContract registry, classic/ cartridge, and dnd35e/ cartridge
     ├── systems/                              # Pure ECS systems (lifecycle, combat, movement, stances, companion orders, fields, quests)
     ├── types/                                # Branded IDs, ECS component schemas, and Zod campaign types
-    ├── utils/                                # Grid math, pathfinding, faction hostility, text parsing, and stat helpers
+    ├── utils/                                # Grid math, equipment slot helpers, sprite pack merger, faction, text, and stat helpers
     ├── worker/                               # Off-thread Web Workers (map generation and fuzzer)
     └── main.ts                               # Application bootstrap entry point
 ```
@@ -147,6 +151,7 @@ This codebase enforces strict architectural guardrails verified automatically on
 
 ## 📖 Documentation
 
+- **[`CREDITS.md`](./CREDITS.md)** — Licenses, contributor credits, and attribution notices (`DCSS` CC0 1.0, `32rogues`, `RLTiles`, `ROT.js`).
 - **[`AGENTS.md`](./AGENTS.md)** — Golden Rules, TypeScript strictness standards, and development workflow.
 - **[`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)** — Deep-dive system design and data flow across all engine subsystems.
 - **[`docs/DECISIONS.md`](./docs/DECISIONS.md)** — Architectural tradeoffs and rationale (Decisions 1–21 plus M112.9–M141 ADRs).
