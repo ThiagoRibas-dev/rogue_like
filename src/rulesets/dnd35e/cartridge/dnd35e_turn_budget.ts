@@ -27,6 +27,21 @@ import type { DnD35ActionBudget, StatModifier } from '../types/dnd35e.types.ts';
 import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 import { evaluateDnD35eEntityDAG } from './dnd35e_dag_adapter.ts';
 
+/** Verbs permitted instantaneously without turn action costs while in Trade UI mode. */
+const TRADE_MODE_FREE_VERBS: ReadonlySet<string> = new Set([
+  'buy',
+  'sell',
+  'barter',
+  'haggle',
+  'appraise',
+  'persuade',
+  'intimidate'
+]);
+
+function isFreeTradeModeIntent(state: GameState, intent: Intent): boolean {
+  return state.uiMode === UIMode.Trade && intent.type === IntentType.Apply && TRADE_MODE_FREE_VERBS.has(intent.verb);
+}
+
 /** Standard full round energy cost (`100`). */
 export const FULL_ROUND_ENERGY_COST = 100;
 
@@ -271,20 +286,8 @@ export function resolveDnD35eActionEnergyCost(
     case IntentType.MeleeAttack:
     case IntentType.FireAimed:
     case IntentType.Apply: {
-      if (
-        intent.type === IntentType.Apply &&
-        state.uiMode === UIMode.Trade &&
-        (intent.verb === 'buy' ||
-          intent.verb === 'sell' ||
-          intent.verb === 'barter' ||
-          intent.verb === 'haggle' ||
-          intent.verb === 'appraise' ||
-          intent.verb === 'persuade' ||
-          intent.verb === 'intimidate')
-      ) {
-        return hasAnyRoundActionsRemaining(currentBudget)
-          ? { state, energyCost: 0 }
-          : clearBudgetAndEndRound(state, intent.entityId, dndData);
+      if (isFreeTradeModeIntent(state, intent)) {
+        return { state, energyCost: 0 };
       }
       if (budgetAlreadyMutated) return finalizeBudgetAfterAction(state, intent.entityId, dndData, currentBudget);
       const stdRes = consumeStandardActionFromBudget(currentBudget);
@@ -370,17 +373,7 @@ export function canDnD35eActorPerformIntent(state: GameState, intent: Intent): b
     }
     case IntentType.MeleeAttack:
     case IntentType.Apply:
-      if (
-        intent.type === IntentType.Apply &&
-        state.uiMode === UIMode.Trade &&
-        (intent.verb === 'buy' ||
-          intent.verb === 'sell' ||
-          intent.verb === 'barter' ||
-          intent.verb === 'haggle' ||
-          intent.verb === 'appraise' ||
-          intent.verb === 'persuade' ||
-          intent.verb === 'intimidate')
-      ) {
+      if (isFreeTradeModeIntent(state, intent)) {
         return true;
       }
       return budget.standardRemaining >= 1;

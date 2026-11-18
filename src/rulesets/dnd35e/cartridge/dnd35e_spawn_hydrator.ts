@@ -15,6 +15,7 @@ import { syncDnD35eActorSpatialFootprint } from '../spatial/footprint_resolver.t
 import { getDnD35Race, getDnD35Template, setDnD35EntityData } from '../srd_registry.ts';
 import { applyCreatureTemplate } from '../templates.ts';
 import type { AbilityScoresRecord, DnD35EntityData } from '../types/dnd35e.types.ts';
+import { getDnD35SystemContent } from '../types/dnd35e_system.types.ts';
 
 interface RawClassLevelSpec {
   readonly classId: string;
@@ -98,7 +99,8 @@ export function onDnD35eEntitySpawned(state: GameState, entityId: EntityId): Gam
 
   let dndData: DnD35EntityData = {
     ...baseData,
-    archetypeId: template.archetypeId ?? baseData.archetypeId
+    archetypeId: template.archetypeId ?? baseData.archetypeId,
+    ...(resolvedCr !== undefined ? { cr: resolvedCr } : {})
   };
 
   if (rawRulesetData) {
@@ -109,6 +111,7 @@ export function onDnD35eEntitySpawned(state: GameState, entityId: EntityId): Gam
     };
   }
 
+  const parsedSysContent = getDnD35SystemContent(state.campaign);
   const templateIds = Array.isArray(rawRulesetData?.['templates'])
     ? (rawRulesetData['templates'] as ReadonlyArray<string>)
     : undefined;
@@ -116,14 +119,18 @@ export function onDnD35eEntitySpawned(state: GameState, entityId: EntityId): Gam
     for (const tplId of templateIds) {
       const tplDef = getDnD35Template(sysContent, tplId);
       if (tplDef) {
-        dndData = applyCreatureTemplate(dndData, tplDef, { sysContent: sysContent as never });
+        dndData = applyCreatureTemplate(
+          dndData,
+          tplDef,
+          parsedSysContent ? { sysContent: parsedSysContent } : undefined
+        );
       }
     }
   }
 
-  const explicitCr = typeof rawRulesetData?.['cr'] === 'number' ? rawRulesetData['cr'] : (resolvedCr ?? undefined);
-  if (explicitCr !== undefined) {
-    dndData = { ...dndData, cr: explicitCr };
+  const finalCr = typeof rawRulesetData?.['cr'] === 'number' ? rawRulesetData['cr'] : dndData.cr;
+  if (finalCr !== undefined) {
+    dndData = { ...dndData, cr: finalCr };
   }
 
   let nextState = setDnD35EntityData(state, entityId, dndData);
@@ -139,7 +146,7 @@ export function onDnD35eEntitySpawned(state: GameState, entityId: EntityId): Gam
     const evaluated = evaluateDnD35eEntityDAG(scratchState, entityId);
     const chassis = aggregateProgressionChassis(dndData.tracks, 0, dndData.levelAdjustment ?? 0);
     const ecl = Math.max(1, chassis.ecl);
-    const effectiveCr = explicitCr ?? ecl;
+    const effectiveCr = finalCr ?? ecl;
 
     const syncedMaxHp = evaluated ? Math.max(1, evaluated.dagResult.maxHp) : Math.max(1, fighter.maxHp);
     const syncedAttack = evaluated ? evaluated.dagResult.attackBonus : fighter.attack;

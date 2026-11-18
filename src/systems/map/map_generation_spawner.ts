@@ -1,5 +1,6 @@
 import { addComponent, createEntity, spawnEntity, spawnItem } from '../../core/ecs.ts';
 import { generateArea } from '../../map/generator.ts';
+import { coordToIndex } from '../../utils/grid.ts';
 import type { RoomBounds } from '../../types/encounter.types.ts';
 import {
   ComponentType,
@@ -17,6 +18,62 @@ import {
   type PersistentEntityRecord
 } from '../../types/game-state.types.ts';
 import { buildAreaDirectorContext } from './map_wake_respawn.ts';
+
+const PLACEMENT_NEIGHBOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [1, -1],
+  [1, 1],
+  [-1, 1],
+  [-1, -1]
+];
+
+function isMapTileWalkable(state: Readonly<GameState>, map: Readonly<GameMap>, x: number, y: number): boolean {
+  if (x < 0 || x >= map.width || y < 0 || y >= map.height) return false;
+  const tile = map.tiles[coordToIndex(x, y, map.width)];
+  return tile !== undefined && Boolean(state.campaign.tiles[tile.tileId]?.walkable);
+}
+
+function resolveSafePlacedCoords(
+  state: Readonly<GameState>,
+  map: Readonly<GameMap>,
+  occupiedCoords: Set<string>,
+  desiredX: number,
+  desiredY: number
+): { readonly x: number; readonly y: number } | null {
+  const clampedX = Math.max(0, Math.min(map.width - 1, desiredX));
+  const clampedY = Math.max(0, Math.min(map.height - 1, desiredY));
+  const initialKey = `${clampedX},${clampedY}`;
+
+  if (isMapTileWalkable(state, map, clampedX, clampedY) && !occupiedCoords.has(initialKey)) {
+    occupiedCoords.add(initialKey);
+    return { x: clampedX, y: clampedY };
+  }
+
+  const visited = new Set<string>([initialKey]);
+  const queue: Array<{ readonly x: number; readonly y: number }> = [{ x: clampedX, y: clampedY }];
+  let head = 0;
+
+  while (head < queue.length) {
+    const cur = queue[head++]!;
+    for (const [dx, dy] of PLACEMENT_NEIGHBOR_OFFSETS) {
+      const nx = cur.x + dx;
+      const ny = cur.y + dy;
+      if (nx < 0 || nx >= map.width || ny < 0 || ny >= map.height) continue;
+      const key = `${nx},${ny}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+      if (isMapTileWalkable(state, map, nx, ny) && !occupiedCoords.has(key)) {
+        occupiedCoords.add(key);
+        return { x: nx, y: ny };
+      }
+      queue.push({ x: nx, y: ny });
+    }
+  }
+  return null;
+}
 
 /**
  * Generates a fresh area floor, instantiating portals and placed entities via ECS.
@@ -120,9 +177,18 @@ export function generateAndPopulateAreaFloor(
   }
 
   if (generated.placedEntities) {
+    const occupiedCoords = new Set<string>([`${spawnX},${spawnY}`]);
+    for (const portal of generated.portals) {
+      occupiedCoords.add(`${portal.x},${portal.y}`);
+    }
+
     for (const ent of generated.placedEntities) {
+      const placement = resolveSafePlacedCoords(tempState, targetMap, occupiedCoords, ent.x, ent.y);
+      const px = placement?.x ?? ent.x;
+      const py = placement?.y ?? ent.y;
+
       if (state.campaign.items[ent.templateId]) {
-        [tempState] = spawnItem(tempState, ent.templateId, ent.x, ent.y);
+        [tempState] = spawnItem(tempState, ent.templateId, px, py);
       } else if (state.campaign.entities[ent.templateId]) {
         if (ent.preExistingEntityId !== undefined) {
           const minionId = ent.preExistingEntityId;
@@ -134,7 +200,7 @@ export function generateAndPopulateAreaFloor(
             };
             const finalComps = {
               ...minionComps,
-              [ComponentType.Position]: { type: ComponentType.Position, x: ent.x, y: ent.y } as PositionComponent,
+              [ComponentType.Position]: { type: ComponentType.Position, x: px, y: py } as PositionComponent,
               [ComponentType.Agreement]: updatedAgreement
             };
             tempState = {
@@ -145,7 +211,7 @@ export function generateAndPopulateAreaFloor(
             nextPersistentEntities.delete(minionId);
           }
         } else {
-          [tempState] = spawnEntity(tempState, ent.templateId, ent.x, ent.y, ent.dynamicTraits, ent.inventory);
+          [tempState] = spawnEntity(tempState, ent.templateId, px, py, ent.dynamicTraits, ent.inventory);
         }
       } else {
         console.warn(`Placed entity template ${ent.templateId} not found in items or entities registries.`);

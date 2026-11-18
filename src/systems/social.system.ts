@@ -8,6 +8,11 @@ import { addMessage, MessageLogCategory } from './message.system.ts';
 import { applyConsequence } from './trigger.system.ts';
 import { GameEventType, type ApplyResolvedEvent, type GameEvent } from '../types/events.types.ts';
 import { rng } from '../core/rng.ts';
+import { clampSessionMarkup } from '../utils/trade.ts';
+
+const SOCIAL_RNG_ROLL_RANGE = 20;
+const SOCIAL_FAVORABLE_MARKUP_DELTA = -0.2;
+const SOCIAL_UNFAVORABLE_MARKUP_DELTA = 0.2;
 
 /**
  * Intercepts 'intimidate', 'persuade', and 'feint' verbs from ApplyIntent
@@ -76,13 +81,14 @@ export function processSocialIntent(
   }
 
   // Add RNG variance (0-20)
-  const roll = rng.getUniform() * 20;
+  const roll = rng.getUniform() * SOCIAL_RNG_ROLL_RANGE;
 
   const success = playerPower + roll >= npcResistance;
 
   let nextState = state;
   let message = '';
 
+  const currentMod = npcMemory.sessionMarkupModifier ?? 0;
   const newMemory = { ...npcMemory };
 
   if (success) {
@@ -91,16 +97,18 @@ export function processSocialIntent(
         ? 'You successfully intimidate them. Prices drop for now.'
         : 'You successfully persuade them. Prices drop for now.';
 
-    // Set favorable session markup modifier (-20%)
-    newMemory.sessionMarkupModifier = -0.2;
+    newMemory.sessionMarkupModifier = clampSessionMarkup(
+      Math.min(currentMod, currentMod + SOCIAL_FAVORABLE_MARKUP_DELTA)
+    );
   } else {
     message =
       intent.verb === 'intimidate'
         ? 'They are not intimidated by you. Prices rise!'
         : 'They are not persuaded by you. Prices rise!';
 
-    // Set unfavorable session markup modifier (+20%)
-    newMemory.sessionMarkupModifier = +0.2;
+    newMemory.sessionMarkupModifier = clampSessionMarkup(
+      Math.max(currentMod, currentMod + SOCIAL_UNFAVORABLE_MARKUP_DELTA)
+    );
   }
 
   nextState = addComponent(nextState, npcId, newMemory);

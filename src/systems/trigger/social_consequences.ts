@@ -19,6 +19,9 @@ import {
   setCompanionStance
 } from '../companion_commands.system.ts';
 
+const D20_MIN_ROLL = 1;
+const D20_MAX_ROLL = 20;
+
 function getTargetMemory(
   state: GameState,
   consequence: { readonly _npcEntityId?: EntityId | undefined; readonly entityId?: EntityId | undefined }
@@ -342,20 +345,21 @@ export const socialConsequences = {
     const checkResult =
       rulesetResult ??
       (() => {
-        const roll = rng.getUniformInt(1, 20);
+        const roll = rng.getUniformInt(D20_MIN_ROLL, D20_MAX_ROLL);
         const total = roll;
         const success = total >= consequence.dc;
+        const breakdown = `[${consequence.skillId}: d20(${roll}) = ${total} vs DC ${consequence.dc} -> ${success ? 'SUCCESS' : 'FAILURE'}]`;
         return {
+          state: addMessage(state, breakdown, MessageLogCategory.System),
           success,
-          roll,
-          modifier: 0,
-          total,
+          rollTotal: total,
           dc: consequence.dc,
-          breakdown: `[${consequence.skillId}: d20(${roll}) = ${total} vs DC ${consequence.dc} -> ${success ? 'SUCCESS' : 'FAILURE'}]`
+          margin: total - consequence.dc,
+          breakdown
         };
       })();
 
-    let nextState = addMessage(state, checkResult.breakdown, MessageLogCategory.System);
+    let nextState = checkResult.state;
     const branchList = checkResult.success ? consequence.successConsequences : consequence.failureConsequences;
     if (branchList && branchList.length > 0) {
       for (const nested of branchList) {

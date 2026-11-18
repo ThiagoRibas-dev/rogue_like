@@ -1,28 +1,29 @@
-# Implementation Plan — Phase 40 (Milestones 142–146): Multi-Denomination Currency Engine, Pluggable Trade/Barter & Skill-Keyed Social System, Post-Spawn Statblock/CR/Loot Overhaul, and `realms-of-shroudgarde` Campaign
+# Implementation Plan — Phase 40 Audit Remediation (Economy, Haggling, Dialogue Routing, Hydration, Boss Drops & Flagship Campaign)
 
 ## 1. Architectural Rules & Standards Reiteration
 
-- **Rule 11 & 12 (Strict TypeScript & Zero Magic Values):** Zero `any`, `exactOptionalPropertyTypes: true` compliance, explicit return types on all functions, exhaustive `switch` statements with `assertNever`, and named constants or schema fields for all monetary, XP, and drop parameters.
-- **Rule 15 (Cascading Effects Matrix):** All schema, ECS component, `RulesetContract`, UI, and campaign data changes are mapped across Upstream, Downstream, and Lateral axes below.
-- **Rule 16 (Three-Tier Placement Heuristic):**
-  - **Tier 1 — Core Console Engine (`src/core/`, `src/systems/`, `src/types/`, `src/utils/`, `src/rendering/`):** System-agnostic base-coin + multi-denomination currency math (`src/systems/currency.system.ts`), `InventoryComponent.currencyBalance` (in base units), currency item auto-absorption on pickup, Buy/Sell/Barter transaction execution (`src/systems/shop.system.ts`, `src/utils/trade.ts`), interactive `trade.ui.ts`, template `defaultEquipment` / `lootDrops` / `currencyDrop`, and `RulesetContract` hooks (`getCurrencyConfig`, `evaluateTradePriceModifier`, `resolveSocialTradeAction`, `onEntitySpawned`, `resolveKillXpReward`).
-  - **Tier 2 — Ruleset Cartridge (`src/rulesets/dnd35e/`):** Canonical D&D 3.5e 5-coin monetary table (`cp=1, sp=10, ep=50, gp=100, pp=1000`), `Appraise` / `Diplomacy` / `Bluff` / `Intimidate` / `Sense Motive` trade & dialogue skill checks (`src/rulesets/dnd35e/skills/trade_social_checks.ts`), post-spawn actor statblock hydration (`src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`), and DMG Table 2-6 CR-vs-ECL XP calculation (`src/rulesets/dnd35e/progression/cr_xp_table.ts`).
-  - **Tier 3 — System Content & Campaign Data (`public/data/rulesets/dnd35e/`, `public/data/campaigns/realms-of-shroudgarde/`):** Curated D&D 3.5e bestiary, named NPCs, monetary/treasure items, ~75-area multi-layered world, quests, and skill-keyed dialogues.
-- **Rule 21 (Zero Content-ID Branching):** No `.ts` file branches on specific item IDs, monster IDs, or NPC IDs. Coin items declare `currencyDenominationId` and `currencyAmount` on `ItemDefinitionSchema`; monsters declare `archetypeId`, `rulesetData`, `defaultEquipment`, `lootDrops`, and `currencyDrop` on `EntityTemplateSchema`.
+- **Rule 11 & 12 (Strict TypeScript & Zero Magic Values):** Zero `any` and zero `as never` type escapes; obey `exactOptionalPropertyTypes: true`; explicit return types on all functions; name every numeric gameplay threshold or ratio as a typed constant or schema field.
+- **Rule 15 (Cascading Effects Matrix):** All schema, ECS, trigger, pricing, hydration, and campaign-generator changes are mapped across Upstream, Downstream, and Lateral axes in Section 4.
+- **Rule 16 & 19 (Three-Tier Placement & 4-Layer Decision Matrix):**
+  - **Tier 1 Console (`src/core/`, `src/systems/`, `src/utils/`, `src/types/`, `src/actions/`):** Arbitrage price cap (`src/utils/trade.ts`), `!currencyGrant` enforcement and haggle lock in `src/systems/shop.system.ts`, default `MemoryComponent` initialization on `shop`/`dialogueId` actors (`src/core/ecs/ecs_spawner.ts`), `give_item` consequence + `skill_check` state preservation (`src/types/trigger.types.ts`, `src/systems/trigger/`), self-loop routing flag (`src/actions/dialogue.actions.ts`), and `no_drop`/shop entity cleanup & coin drop rounding (`src/systems/death.system.ts`).
+  - **Tier 2 Cartridge (`src/rulesets/dnd35e/`):** Per-merchant haggle lock and DAG `effectiveAbilityModifiers.wis` lookup (`src/rulesets/dnd35e/skills/trade_social_checks.ts`), template `crAdjustment` calculation (`src/rulesets/dnd35e/templates.ts`, `creature_system.types.ts`), hydration CR ordering + removing `as never` (`src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`), named DMG XP constants (`src/rulesets/dnd35e/progression/cr_xp_table.ts`), and config-driven `toBaseUnits` starting gold (`src/rulesets/dnd35e/builder/builder_hydrator_creation.ts`).
+  - **Tier 3 Data & Generators (`scripts/build-realms-of-shroudgarde.ts`, `public/data/campaigns/realms-of-shroudgarde/`, `ai-prompt-kit/`):** Wire `grant_quest` & `give_item` consequences + `not_has_fact`/`set_fact` guards in dialogues, add `memory` + explicit `equipSlot` + balanced `gp`/`sp` `currencyDrop` definitions, regenerate campaign JSONs, and sync `ai-prompt-kit`.
+- **Rule 21 (Zero Content-ID Branching):** All fixes use generic schema fields (`give_item`, `crAdjustment`, `currencyGrant`, `equipSlot`, `MemoryComponent.facts`)—zero item, NPC, or quest IDs hardcoded in `.ts`.
 
 ---
 
 ## 2. SSOT Ownership & Old-Brain Eviction Table
 
-| Responsibility | Canonical SSOT Owner | Legacy / Broken Code Evicted or Replaced |
+| Responsibility | Canonical SSOT Owner | Defect / Split-Brain Being Evicted |
 | :--- | :--- | :--- |
-| **Multi-Denomination Currency Math, Conversion & Formatting** | `src/systems/currency.system.ts` (Tier 1 Console) + `src/types/campaign/meta.ts` (`CurrencyConfigSchema`) | Unconnected `dndData.goldCurrency ?? 0` stub in `dnd35e_ui_adapter.ts:106` and `classic_ui_adapter.ts:209` |
-| **D&D 3.5e Monetary Config (`cp/sp/ep/gp/pp`) & Starting Purse** | `src/rulesets/dnd35e/currency.ts` (or `dnd35e_ruleset.ts` `getCurrencyConfig`) + `starting_packages.ts` (`startingGoldGp`) | Hardcoded `0 gp` in Character Creation (`builder_hydrator_creation.ts`) |
-| **Merchant Stock vs. Personal Inventory & Trade Transactions** | `src/systems/shop.system.ts` (`executeBuyItem`, `executeSellItem`, `executeTradeHaggle`) + `src/utils/trade.ts` + `src/rendering/ui/trade.ui.ts` | Broken `npcInventory.items` iteration and empty `buyBtn.onclick = () => {}` stub in `src/rendering/ui/trade.ui.ts:68-97` |
-| **Cartridge Trade Pricing & Skill-Keyed Social/Dialogue Checks** | `RulesetContract` (`evaluateTradePriceModifier`, `resolveSocialSkillCheck`) + `src/rulesets/dnd35e/skills/social_combat_skill_verbs.ts` + `src/systems/trigger/social*.ts` | Disconnected `barter` verb with no handler in `apply.system.ts` |
-| **Post-Spawn Actor Statblock Hydration (`maxHp`, `hp`, `level`, `RulesetData`)** | `RulesetContract.onEntitySpawned` + `src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts` | Raw `template.fighter.maxHp` overriding `chassis.maxHp` for `archetypeId` actors at spawn (`ecs_spawner.ts:81-93`, `dnd35e_dag_adapter.ts:462`) |
-| **DMG Table 2-6 CR-vs-ECL XP Calculation** | `RulesetContract.resolveKillXpReward` + `src/rulesets/dnd35e/progression/cr_xp_table.ts` | Static classic `fighter.xpGiven` (`10`, `50`, `150`) passed directly in `death.system.ts:132` |
-| **Template `defaultEquipment`, `lootDrops` & Death Equipment/Coin Drops** | `src/types/campaign/entity.ts` + `src/core/ecs/ecs_spawner_equipment.ts` + `src/systems/death.system.ts` | Race-only `defaultEquipment` lookup (`ecs_spawner_equipment.ts:106`) and global-only `lootTable` roll that destroyed carried gear (`death.system.ts:148-161`) |
+| **Buy/Sell Multiplier Arbitrage Invariant** | [`src/utils/trade.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/utils/trade.ts) (`getTradePriceBreakdown`) | Uncapped reciprocal `(BASE_SELL + bonus) / finalBuyMultiplier` allowing `finalSellMultiplier > finalBuyMultiplier` (`250%–400%` resale vs `10%` purchase) |
+| **Shop Sale Validation & Fallback Haggle** | [`src/systems/shop.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/shop.system.ts) (`executeSellItem`, `executeTradeSocialAction`) | Missing `!itemDef.currencyGrant` engine check; uncapped repeat haggle in Console fallback |
+| **Merchant/Dialogue `MemoryComponent` Guarantee** | [`src/core/ecs/ecs_spawner.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/core/ecs/ecs_spawner.ts) + shared `createDefaultMemoryComponent` | Merchants/NPCs without `"memory"` in JSON silently dropping `sessionMarkupModifier`, `annoyedDuration`, and `timesTraded` |
+| **D&D 3.5e Trade Haggle & Dialogue Checks** | [`src/rulesets/dnd35e/skills/trade_social_checks.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/skills/trade_social_checks.ts) | Risk-free infinite `Appraise` / `Diplomacy` spam; polluted `npcWisMod` subtraction; `dc <= 0` Intimidate using Sense Motive instead of Demoralize (`10 + HD + Wis`) |
+| **Dialogue Consequence Execution & Routing** | [`src/systems/trigger/social_consequences.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/trigger/social_consequences.ts) + [`src/actions/dialogue.actions.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/actions/dialogue.actions.ts) + [`src/systems/trigger/player.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/trigger/player.ts) | `skill_check` discarding `checkResult.state`; `dialogue.actions.ts` missing same-node transitions; missing declarative `give_item` consequence |
+| **Template CR & Post-Spawn Hydration** | [`src/rulesets/dnd35e/templates.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/templates.ts) + [`src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts) | Template CR ignored; `rawRulesetData.cr ?? resolvedCr` overwriting template results post-application; `sysContent as never` cast |
+| **Death Loot Rounding & Entity Cleanup** | [`src/systems/death.system.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/src/systems/death.system.ts) | Coarse `currencyGrant` rounding inflating small drops (`10 gp -> 50 gp`); orphaned `no_drop` and `ShopComponent.inventory` entities |
+| **Flagship Campaign Generator & Kit Parity** | [`scripts/build-realms-of-shroudgarde.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/scripts/build-realms-of-shroudgarde.ts) + `scripts/generate-ai-prompt-kit.ts` | Ungranted quests, missing `equipSlot`, `cp` boss hoards, unguarded repeat dialogues, missing `memory`, stale `ai-prompt-kit/default-campaign/entities.json` |
 
 ---
 
@@ -30,262 +31,235 @@
 
 | Behavior | Rejected Imperative Shortcut | Chosen Declarative Schema / JSON Mechanism | Passes "New Content Mod" Litmus Test? |
 | :--- | :--- | :--- | :--- |
-| **Recognizing coin / currency items on pickup** | `if (itemId === 'gold_coin' \|\| itemId.startsWith('coin_'))` | `ItemDefinitionSchema.currencyGrant?: { denominationId: string; amount: number }` | **Yes** — any modder can author a new currency token or pouch in `items.json` with zero `.ts` edits |
-| **Defining coin denominations & exchange rates** | Hardcoding `cp = 1, sp = 10, gp = 100` inside `trade.ui.ts` | `RulesConfigSchema.currency?: CurrencyConfigSchema` + `RulesetContract.getDefaultCurrencyConfig()` | **Yes** — any campaign or ruleset can define custom denominations (`credits`, `shells`, `cp/sp/ep/gp/pp`) |
-| **Equippable loadouts for monster/NPC variants** | `if (templateId === 'goblin_archer') equip('shortbow')` | `EntityTemplateSchema.defaultEquipment?: Array<{ itemId: string; equipSlot?: EquipmentSlot; dropOnDeath?: boolean }>` | **Yes** — any variant entity template declares its own loadout in `entities.json` |
-| **Per-creature loot & coin purse drops on death** | `if (templateId === 'bandit_king') spawn('gold_chest')` | `EntityTemplateSchema.lootDrops?: Array<{ itemId: string; chance: number; minCount?: number; maxCount?: number }>` + `currencyDrop?: { minBaseUnits: number; maxBaseUnits: number; chance: number; coinItemId?: string }` | **Yes** — purely data-driven in `entities.json` |
-| **Dialogue skill checks & price/attitude consequences** | Hardcoding NPC dialogue IDs in `dialogue.actions.ts` | Declarative `ConditionPredicateSchema` (`skill_rank`, `has_currency`, `attitude_tier`) & `ConsequenceActionSchema` (`skill_check`, `modify_currency`, `set_attitude`, `modify_session_markup`) | **Yes** — any dialogue node/option in `dialogues.json` can gate or branch on any skill or coin amount |
+| **Preventing sell-back gold arbitrage** | `if (itemId === 'gem_ruby') capPrice()` | Generic ratio invariant `finalSellMultiplier <= finalBuyMultiplier * MAX_SELL_TO_BUY_RATIO` in `trade.ts` | **Yes** — protects all existing and future items automatically |
+| **Preventing repeat haggling per merchant** | `if (npcId === 'barkeep_bertram') lock()` | Store `'trade_tried:<skillId>'` facts in `MemoryComponent.facts` (and `not_has_fact`/`set_fact` in dialogue JSON) | **Yes** — works uniformly for any merchant or NPC |
+| **Granting items in dialogue (`Guard Signet`, `Bread`)** | Hardcoding `if (dialogueId === 'guard_captain_tree')` | Declarative `give_item` member in `ConsequenceActionSchema` (`{ type: 'give_item', itemId, amount }`) | **Yes** — any dialogue or trigger can award any item |
+| **Template Challenge Rating adjustments** | `if (templateId === 'half_dragon') cr += 2` | Optional `crAdjustment` on `DnD35TemplateSchema` + `DnD35TemplateHdTierSchema` resolved inside `applyCreatureTemplate` | **Yes** — modders author CR shifts directly in template JSON |
+| **Starting package currency scaling** | `startingGoldGp * 100` hardcoded | `toBaseUnits(equipPkg.startingGoldGp, 'gp', resolveCurrencyConfig(state))` | **Yes** — respects any custom `CurrencyConfig` |
 
 ---
 
 ## 4. Cascading Effects Matrix (Rule 15)
 
-| Change | Upstream (Callers / Authors / Data) | Downstream (Consumers / UI / Validators) | Lateral (Mirrors / Sibling Registries) |
+| Change | Upstream | Downstream | Lateral |
 | :--- | :--- | :--- | :--- |
-| **1. `CurrencyConfigSchema` & `InventoryComponent.currencyBalance`** | `rules.json`, `RulesetContract.getDefaultCurrencyConfig`, `ecs_spawner.ts`, `builder_hydrator_creation.ts`, `inventory.system.ts` (coin pickup) | `currency.system.ts`, `trade.ts`, `trade.ui.ts`, `dnd35e_ui_adapter.ts`, `classic_ui_adapter.ts`, `console_inventory.ui.ts`, `save.ts` (JSON serializable `number`) | `UIInventoryModel.goldCurrency` + new `currencyFormatted?: string` / `currencyBreakdown?: ReadonlyArray<{ label: string; amount: number }>` |
-| **2. Trade / Barter Actions & `RulesetContract` Social/Price Hooks** | `trade.ui.ts`, `dialogue.actions.ts`, `apply.system.ts` (`verb: 'barter' \| 'buy' \| 'sell' \| 'haggle'`), `social.system.ts` | `shop.system.ts` (`ShopComponent.inventory`, `InventoryComponent`), `MemoryComponent.sessionMarkupModifier`, `AttitudeComponent`, `MessageLog` | `ConditionPredicateSchema` & `ConsequenceActionSchema` in `trigger.types.ts`, `condition_evaluators.ts`, `consequence_appliers.ts` |
-| **3. `RulesetContract.onEntitySpawned` & `resolveKillXpReward`** | `ecs_spawner.ts` (`spawnEntity`), `death.system.ts` (`processDeathSystem`) | `FighterComponent` (`maxHp`, `hp`, `level`), `RulesetDataComponent`, `dnd35e_dag_adapter.ts`, `grantDnD35eXp` | `classic_ruleset.ts` leaves hooks `undefined` so `default`, `shroudgarde`, and `megacampaign` behave identically to before |
-| **4. `EntityTemplateSchema` (`defaultEquipment`, `lootDrops`, `currencyDrop`)** | `entities.json`, `ecs_spawner_equipment.ts`, `death.system.ts` | `entity.validator.ts` (verifies every `defaultEquipment[].itemId`, `lootDrops[].itemId`, and `currencyDrop.coinItemId` exists in `campaign.items`) | `DnD35RaceDefinition.defaultEquipment` remains fallback when `template.defaultEquipment` is omitted |
-| **5. New Campaign `realms-of-shroudgarde`** | `public/data/campaigns.json`, `public/data/campaigns/realms-of-shroudgarde/*.json` | `scripts/run-validator.ts`, `validateReachability`, `checkDnD35eRuleset`, `narrative_fuzzer`, `scripts/visualize-campaign.ts`, `docs/CAMPAIGN_TOPOLOGIES.md` | Existing 4 campaigns (`default`, `dnd35e-crypt`, `shroudgarde`, `megacampaign`) and `ai-prompt-kit/default-campaign` remain untouched |
+| **1. `trade.ts` `MAX_SELL_TO_BUY_RATIO` cap & `shop.system.ts` `!currencyGrant` check** | None (signature unchanged) | `getEffectivePrice`, `getEffectiveItemPriceInBaseUnits`, `trade.ui.ts`, `shop.system.ts` | `tests/currency_trade_and_campaign.test.ts` (add arbitrage invariant test) |
+| **2. `ecs_spawner.ts` default `MemoryComponent` for `shop` / `dialogueId`** | Any entity spawned with `shop` or `dialogueId` | `trade_social_checks.ts`, `shop.system.ts`, `social_consequences.ts`, `inspect_tooltip.ts` | All 5 campaigns (merchants gain working `sessionMarkupModifier`/`timesTraded` without JSON breakage) |
+| **3. Per-merchant haggle fact lock + DAG `effectiveAbilityModifiers.wis` + Demoralize DC alignment** | `apply.system.ts`, `trade.ui.ts`, `dialogue.actions.ts` | `trade_social_checks.ts`, `shop.system.ts`, `MemoryComponent.facts`, `tests/currency_trade_and_campaign.test.ts` | `social_combat_skill_verbs.ts` (combat social verbs remain separate; trade UI haggles follow consistent rule) |
+| **4. `give_item` consequence + `skill_check` state fix + self-loop transition tracking** | `ConsequenceActionSchema` (`trigger.types.ts`) | `trigger.system.ts` (`ConsequenceApplierMap`), `player.ts`, `social_consequences.ts`, `dialogue.actions.ts` | Campaign dialogues using `skill_check` (`default`, `dnd35e-crypt`, `realms-of-shroudgarde`) |
+| **5. `DnD35Template.crAdjustment`, `applyCreatureTemplate` CR propagation, `dnd35e_spawn_hydrator.ts` CR order & type fix** | `templates/*.json`, `DnD35TemplateSchema` | `onDnD35eEntitySpawned`, `resolveDnD35eKillXpReward`, `FighterComponent.xpGiven` | `tests/dnd35e_phase22_bestiary.test.ts`, `scripts/run-validator.ts` (`DnD35SystemContentSchema`) |
+| **6. `death.system.ts` coarse coin drop splitting & orphaned entity cleanup** | `EntityTemplate.currencyDrop`, `defaultEquipment.dropOnDeath` | `state.entities`, `state.components`, `inventory.system.ts` (`pickup`) | `tests/save_roundtrip.test.ts` (fewer orphans left before save) |
+| **7. `build-realms-of-shroudgarde.ts` fixes & `generate-ai-prompt-kit.ts`** | Campaign source generator | `public/data/campaigns/realms-of-shroudgarde/*.json`, `ai-prompt-kit/` | `scripts/run-validator.ts` (`[8/8]` parity pass) |
 
 ---
 
-## 5. Phased Implementation Plan & Code Specifications
+## 5. Step-by-Step Implementation Plan & Code Snippets
 
-### Phase 1 (Milestone 142): Tier 1 Console Multi-Denomination Currency Engine & Tier 2 D&D 3.5e Monetary Standard
+### Phase 1: Trade Economy & Haggling Safeguards (`B1`, `B2`, `B6`, `M1`)
 
-#### 1.1 Schema & Component Additions (`src/types/campaign/meta.ts`, `src/types/campaign/item.ts`, `src/types/components/item_components.types.ts`)
-- In `src/types/campaign/meta.ts`, define `CurrencyDenominationSchema` and `CurrencyConfigSchema` and attach optional `currency?: CurrencyConfigSchema` to `RulesConfigSchema`:
+#### Step 1.1 — Cap `finalSellMultiplier` strictly below `finalBuyMultiplier` in `src/utils/trade.ts`
+Add named upper constants and clamp `finalSellMultiplier`:
 ```ts
-/** Zod schema for a single monetary denomination relative to the campaign's base coin (`valueInBaseUnits = 1`). */
-export const CurrencyDenominationSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  shortLabel: z.string().min(1),
-  valueInBaseUnits: z.number().int().positive(),
-  weightLbsPerCoin: z.number().nonnegative().default(0.02)
-});
-export type CurrencyDenomination = z.infer<typeof CurrencyDenominationSchema>;
+/** Maximum sell-to-shop price multiplier allowed as an absolute ceiling (DMG/PHB 50% fair resale + expert appraisal headroom). */
+export const MAX_SELL_TO_SHOP_MULTIPLIER = 0.75;
 
-/** Zod schema for system-agnostic multi-denomination currency configuration. */
-export const CurrencyConfigSchema = z.object({
-  baseDenominationId: z.string().min(1),
-  standardPriceDenominationId: z.string().min(1),
-  denominations: z.array(CurrencyDenominationSchema).min(1)
-});
-export type CurrencyConfig = z.infer<typeof CurrencyConfigSchema>;
+/** Maximum allowed ratio between merchant sell-back price and purchase price to prevent buy/sell arbitrage loops. */
+export const MAX_SELL_TO_BUY_RATIO = 0.85;
 ```
-- In `src/types/campaign/item.ts`, add optional `currencyUnit?: string` (defaults to `currency.standardPriceDenominationId`, e.g., `'gp'` in D&D 3.5e) and optional `currencyGrant?: { denominationId: string; amount: number }` (so coin pouches/piles auto-convert into the actor's wallet on pickup).
-- In `src/types/components/item_components.types.ts`, extend `InventoryComponent`:
+Inside `getTradePriceBreakdown`:
 ```ts
-export interface InventoryComponent {
-  readonly type: ComponentType.Inventory;
-  readonly items: ReadonlyArray<EntityId>;
-  readonly baseCapacity: number;
-  /** Total actor wealth stored in canonical base currency units (e.g. copper pieces `cp` in D&D 3.5e). */
-  readonly currencyBalance?: number | undefined;
-}
+  const finalBuyMultiplier = Math.max(MIN_TRADE_MULTIPLIER, multiplier);
+  const uncappedSellMultiplier = (BASE_SELL_TO_SHOP_MULTIPLIER + sellMultiplierBonus) * (1 / finalBuyMultiplier);
+  const maxSellAllowed = Math.min(MAX_SELL_TO_SHOP_MULTIPLIER, finalBuyMultiplier * MAX_SELL_TO_BUY_RATIO);
+  const finalSellMultiplier = Math.max(
+    MIN_SELL_TO_SHOP_MULTIPLIER,
+    Math.min(maxSellAllowed, uncappedSellMultiplier)
+  );
 ```
+Wait: note that when `finalBuyMultiplier = 0.1` (`MIN_TRADE_MULTIPLIER`), `finalBuyMultiplier * MAX_SELL_TO_BUY_RATIO = 0.085 > MIN_SELL_TO_SHOP_MULTIPLIER (0.05)`, so `finalSellMultiplier <= 0.085 < 0.1` always holds! And for small items where integer flooring could still yield `sellPrice === buyPrice === 1`, `getEffectivePrice` in `trade.ts` (when `isSellingToShop`) stays at `1` cp (0 profit, no infinite loop).
 
-#### 1.2 Tier 1 Console Currency Engine (`src/systems/currency.system.ts`)
-- Create `src/systems/currency.system.ts` providing pure, deterministic functions:
-  - `resolveCurrencyConfig(state: Readonly<GameState>): CurrencyConfig` (reads `state.campaign.rules.currency ?? getActiveRuleset(state).getDefaultCurrencyConfig?.() ?? DEFAULT_CONSOLE_CURRENCY_CONFIG`).
-  - `toBaseCurrencyUnits(amount: number, denominationId: string, config: CurrencyConfig): number`
-  - `convertBetweenDenominations(amount: number, fromId: string, toId: string, config: CurrencyConfig): number`
-  - `resolveItemValueInBaseUnits(itemDef: ItemDefinition, config: CurrencyConfig): number` (converts `itemDef.baseValue` from `itemDef.currencyUnit ?? config.standardPriceDenominationId` into integer base units).
-  - `decomposeBaseUnitsToCoins(totalBaseUnits: number, config: CurrencyConfig, includeElectrum?: boolean): ReadonlyArray<{ readonly denomination: CurrencyDenomination; readonly count: number }>`
-  - `formatCurrencyCompact(totalBaseUnits: number, config: CurrencyConfig): string` (e.g. `"15 gp, 4 sp, 2 cp"` or `"0 gp"`).
-  - `getActorCurrencyBalance(state: Readonly<GameState>, entityId: EntityId): number`
-  - `addActorCurrency(state: GameState, entityId: EntityId, deltaBaseUnits: number): GameState`
-  - `trySpendActorCurrency(state: GameState, entityId: EntityId, costBaseUnits: number): { readonly state: GameState; readonly success: boolean }`
+#### Step 1.2 — Guard `currencyGrant`, extract Console haggle constants, and enforce attempt limits in `src/systems/shop.system.ts`
+1. In `executeSellItem` (`shop.system.ts:164-171`), guard currency items just like `trade.ui.ts:187`:
+   ```ts
+   const isBuyable =
+     !itemDef.currencyGrant &&
+     (shop.buyTags.length === 0 || (itemDef.tags !== undefined && itemDef.tags.some((t) => shop.buyTags.includes(t))));
+   ```
+2. Extract named constants for the Console haggle fallback (`CONSOLE_APPRAISE_DC_PERCENT = 45`, `CONSOLE_HAGGLE_DC_PERCENT = 50`, `CONSOLE_HAGGLE_DISCOUNT_DELTA = -0.15`, `CONSOLE_HAGGLE_PENALTY_DELTA = 0.15`, `CONSOLE_MIN_SESSION_MARKUP = -0.35`, `CONSOLE_MAX_SESSION_MARKUP = 0.5`) and add a shared `MemoryComponent.facts` attempt guard (`trade_haggled:${skillId}`) if `!getActiveRuleset(state).resolveTradeSocialSkill`.
 
-#### 1.3 Tier 2 D&D 3.5e Monetary Standard (`src/rulesets/dnd35e/currency.ts`, `builder/starting_packages.ts`, `ui/dnd35e_ui_adapter.ts`)
-- Define `DND35E_DEFAULT_CURRENCY_CONFIG`:
-  - `baseDenominationId: 'cp'`, `standardPriceDenominationId: 'gp'`
-  - Denominations:
-    - `pp` (Platinum Piece, `valueInBaseUnits: 1000`, `0.02 lbs`)
-    - `gp` (Gold Piece, `valueInBaseUnits: 100`, `0.02 lbs`)
-    - `ep` (Electrum Piece, `valueInBaseUnits: 50`, `0.02 lbs`)
-    - `sp` (Silver Piece, `valueInBaseUnits: 10`, `0.02 lbs`)
-    - `cp` (Copper Piece, `valueInBaseUnits: 1`, `0.02 lbs`)
-- Add `startingGoldGp: number` (e.g., `25 gp`–`40 gp` pocket coin after kit purchase) to `StartingEquipmentPackage` in `src/rulesets/dnd35e/builder/starting_packages.ts` and credit `startingGoldGp * 100` base units (`cp`) onto `InventoryComponent.currencyBalance` (and `dndData.goldCurrency`) in `applyCharacterCreationToPlayer` (`src/rulesets/dnd35e/builder/builder_hydrator_creation.ts`) and default spawn.
-- Update `src/systems/inventory.system.ts` (`processPickupIntent`): when picking up an item whose `ItemDefinition.currencyGrant` is defined, credit `toBaseCurrencyUnits(grant.amount, grant.denominationId, config)` to `InventoryComponent.currencyBalance`, log `"You pick up <name> (<formatted value>)."`, and remove the picked-up coin entity cleanly instead of cluttering a backpack slot.
-- Project `currencyFormatted` (e.g., `"25 gp, 4 sp"`) and `goldCurrency` in `UIInventoryModel` (`src/types/ui_adapter.types.ts`, `dnd35e_ui_adapter.ts`, `console_inventory.ui.ts`).
+#### Step 1.3 — Default `MemoryComponent`, Shared UI/Currency SSOT Helpers & Removing `id === 'dnd35e'` Hardcoding (`B6`, `S1`, `S3`, `S4`, `S5`)
+1. **Default `MemoryComponent` (`src/core/ecs/ecs_spawner.ts`):** Ensure any spawned actor with `template.shop` or `template.dialogueId` receives a default `MemoryComponent` when `!template.memory`:
+   ```ts
+   if (!getComponent(nextState, entityId, ComponentType.Memory) && (templateId === 'player' || template.shop || template.dialogueId)) {
+     nextState = addComponent(nextState, entityId, {
+       type: ComponentType.Memory,
+       factionStandings: {},
+       grudges: [],
+       facts: [],
+       knowledge: {}
+     });
+   }
+   ```
+2. **Eliminate `rulesetId === 'dnd35e'`, Mount Trade Overlay, Fix Reactivity & Immediate Actions (`S1`, `X1`–`X3`):**
+   - Add optional `getTradeSocialActions?(): ReadonlyArray<TradeSocialActionDescriptor>` to `RulesetContract` (`src/types/ruleset.types.ts`) with Console default `[Persuade, Intimidate]` in `trade.ui.ts` and D&D 3.5e returning `[Diplomacy, Appraise, Bluff (Haggle), Intimidate]` in `dnd35e_ruleset.ts` (`S1`).
+   - Add `renderTradeOverlay(state)` (reusing `#trade-overlay` in `document.body` via `renderTradeUI(state, queuePlayerIntent)`, preserving list `scrollTop` across Buy/Sell/Haggle refreshes and hiding when `null` (`G3`)), replace non-existent `--panel-bg` / `--panel-fg` CSS variables with `var(--bg-card, #16181f)` / `var(--text-main, #e2d9c8)` (`P7-1`), visually disable exhausted/locked haggle buttons (`trade_locked:*` / `trade_win:*` cap (`G5`)), and invoke `renderTradeOverlay(state)` inside `src/rendering/presenter.ts:203-215` (`X1`).
+   - Include `next.uiMode === UIMode.Trade` in `src/core/presentation_queue.ts:250` so `components`/`entities` updates refresh purse, stock, and prices immediately (`X2`).
+   - Pass `isImmediate: true` on Buy, Sell, and Trade Social intents in `trade.ui.ts` (matching `dialogue.ui.ts:179` & `CloseTrade`), and keep `dnd35e_turn_budget.ts:285-287` returning `{ state, energyCost: 0 }` cleanly during `UIMode.Trade` (`X3`).
+3. **Single Point of Entry for Currency Grants & Denomination Items (`S3`, `S4`, `S5`):**
+   - In `src/systems/currency.system.ts`, add `!Number.isFinite(...)` guards in `setEntityCurrencyBalance` and `addEntityCurrency` (`F4`), and extract `resolveCurrencyItemDefinition(state, denominationId, config)` (resolving `findCurrencyDenomination(config, denominationId)?.itemId` first, then falling back to `currencyGrant.denominationId` scan) and `absorbCurrencyItemGrant(state, entityId, itemDef, stackCount)`.
+   - In `src/utils/trade.ts`, emit concise `Personality` / `Relationship` factor annotations (`facets`, `relationshipAxes`) so Trade UI percentages remain fully observable (`F4`).
+   - Route player-owned item naming in `trade.ui.ts:200`, `shop.system.ts:205`, and `inventory.system.ts:89-91` through `resolveEntityDisplayName` (`ecs_core.ts`) so unidentified items are never spoiled (`V2`).
+   - In `src/systems/inventory.system.ts`, extract `grantItemToActorInventory(state, recipientId, itemId, count)` calling `absorbCurrencyItemGrant` for `currencyGrant` items (or adding to `InventoryComponent.items` within capacity / dropping on ground), and reuse it across **pickup**, **`quest.system.ts` item rewards**, and **`playerConsequences.give_item`** — fixing the `50x silver_coin` quest bag overflow!
+   - In `dnd35e_ui_adapter.ts:112`, replace `Math.floor(balanceBaseUnits / DND35E_CP_PER_GP)` with `convertCurrency(balanceBaseUnits, currencyCfg.baseUnitId, currencyCfg.defaultValueDenominationId ?? currencyCfg.baseUnitId, currencyCfg)` and remove the hardcoded `' gp'` suffix fallback in `console_inventory.ui.ts:286`.
 
----
-
-### Phase 2 (Milestone 143): Pluggable Trade/Barter System, Interactive Trade UI & Skill-Keyed Social/Dialogue Checks
-
-#### 2.1 `RulesetContract` Trade & Social Skill Hooks (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/dnd35e_ruleset.ts`)
-- Extend `RulesetContract` in `src/types/ruleset.types.ts`:
-```ts
-export interface RulesetTradePriceEvaluation {
-  /** Additive modifier to the merchant's markup multiplier (negative = better prices for buyer). */
-  readonly markupDelta: number;
-  /** Human-readable breakdown badges shown in the Trade UI (e.g. "Attitude (Friendly): -10%", "Appraise (+6): -5%"). */
-  readonly breakdownLabels: ReadonlyArray<string>;
-}
-
-export interface RulesetSocialTradeActionResult {
-  readonly state: GameState;
-  readonly success: boolean;
-  readonly message: string;
-}
-```
-- Add optional methods to `RulesetContract`:
-  - `getDefaultCurrencyConfig?(): CurrencyConfig;`
-  - `evaluateTradePriceModifier?(state: Readonly<GameState>, shopEntityId: EntityId, buyerEntityId: EntityId, isSellingToShop: boolean): RulesetTradePriceEvaluation;`
-  - `resolveTradeSocialSkill?(state: GameState, buyerEntityId: EntityId, shopEntityId: EntityId, actionId: 'appraise' | 'persuade' | 'bluff' | 'intimidate'): RulesetSocialTradeActionResult;`
-  - `evaluateDialogueSkillCheck?(state: GameState, playerEntityId: EntityId, npcEntityId: EntityId, skillId: string, dc: number, mode?: 'roll' | 'take10'): { readonly state: GameState; readonly success: boolean; readonly totalRoll: number; readonly dc: number };`
-
-#### 2.2 D&D 3.5e Trade Pricing & Haggle Implementation (`src/rulesets/dnd35e/skills/trade_social_checks.ts`)
-- Implement `evaluateDnD35eTradePriceModifier`:
-  - Evaluates NPC `AttitudeTier` (`helpful: -0.20`, `friendly: -0.10`, `indifferent: 0`, `unfriendly: +0.25`, `hostile: +1.00`).
-  - Evaluates passive `Appraise` synergy (`Take 10 + Appraise modifier` vs DC 15: `>= 15` grants `-0.05` markup modifier and reveals true base value; `< 10` untrained adds `+0.05` markup).
-- Implement `resolveDnD35eTradeSocialSkill` (usable once per merchant per day, tracked in `MemoryComponent.facts` with day stamp or `sessionMarkupModifier`):
-  - **`appraise` (Appraise vs Merchant Appraise/DC 15):** Identifies true item value and shaves `10%` off markup spread.
-  - **`persuade` (Diplomacy check per SRD `resolveDiplomacyCheck`):** Shifts merchant `AttitudeComponent` (`indifferent -> friendly -> helpful`), improves `sessionMarkupModifier` by `-0.15`, and boosts `relationshipAxes.respect` (`+15`). Failing by 5+ worsens markup by `+0.15`.
-  - **`bluff` (Bluff vs Merchant Sense Motive `Take 10 + mod`):** Fast-talks merchant into `-0.20` discount on next trade; failure annoys merchant (`annoyedDuration: 10`, `+0.20` markup).
-  - **`intimidate` (Intimidate vs `10 + HD + WIS mod`):** Demoralizes merchant into `-0.15` discount (`fear +20`, `resentment +15`).
-
-#### 2.3 Fix `trade.ui.ts`, `utils/trade.ts` & `shop.system.ts` Buy / Sell / Barter Loop
-- Update `getEffectivePriceInBaseUnits(state, itemDef, shopEntityId, buyerEntityId, isSellingToShop)` in `src/utils/trade.ts` to combine Console social/faction/hierarchy modifiers with `getActiveRuleset(state).evaluateTradePriceModifier?.(...)` and return prices in canonical **base currency units** (formatted via `formatCurrencyCompact`).
-- Fix `src/rendering/ui/trade.ui.ts`:
-  - Read merchant wares directly from `shop.inventory` (fallback to `npcInventory.items` if `shop.inventory` is empty).
-  - Display Player Purse (`pp / gp / sp / cp` breakdown), Merchant Disposition badge (`Attitude`, `Markup %`, active Ruleset price breakdown tags), and interactive Cartridge Social Action buttons (`[Diplomacy: Haggle]`, `[Appraise Wares]`, `[Bluff]`, `[Intimidate]`).
-  - Wire `[Buy]` button -> dispatches `ApplyIntent` (`verb: 'buy'`, `toolEntityId: itemEntityId`, `target: { type: 'entity', entityId: npcId }`, `isImmediate: true`).
-  - Wire `[Sell]` button -> dispatches `ApplyIntent` (`verb: 'sell'` or `'barter'`, `toolEntityId: itemEntityId`, `target: { type: 'entity', entityId: npcId }`, `isImmediate: true`).
-- Handle `'buy'`, `'sell'`, `'barter'`, and `'haggle'` inside `src/systems/shop.system.ts` (invoked from `src/systems/apply.system.ts` and `VERBS` in `src/constants/verbs.constants.ts`):
-  - **`buy`**: Checks `trySpendActorCurrency(state, buyerId, priceBaseUnits)`, removes `itemEntityId` from `shop.inventory`, appends `itemEntityId` to `playerInventory.items`, increments `memory.timesTraded`, and logs purchase.
-  - **`sell` / `barter`**: Verifies `shop.buyTags` (or universal buy if `buyTags` includes `'all'` or item category/tags match), removes `itemEntityId` from `playerInventory.items` (and unequips if equipped), adds `itemEntityId` to `shop.inventory`, credits `sellPriceBaseUnits` to `playerInventory.currencyBalance`, and logs sale.
-
-#### 2.4 Skill-Keyed Dialogue Conditions & Consequences (`src/types/trigger.types.ts`, `src/systems/trigger/social.ts`, `src/systems/trigger/social_consequences.ts`)
-- Extend `ConditionPredicateSchema` (`src/types/trigger.types.ts`):
-  - `has_currency`: `{ type: 'has_currency', amount: number, denominationId?: string }`
-  - `attitude_tier`: `{ type: 'attitude_tier', operator: '>=' | '<=' | '==', tier: 'hostile' | 'unfriendly' | 'indifferent' | 'neutral' | 'friendly' | 'helpful' }`
-  - `skill_modifier`: `{ type: 'skill_modifier', skillId: string, operator: '>=' | '<=' | '==', value: number }`
-- Extend `ConsequenceActionSchema` (`src/types/trigger.types.ts`):
-  - `modify_currency`: `{ type: 'modify_currency', amount: number, denominationId?: string }` (positive grants coins, negative spends coins)
-  - `set_attitude`: `{ type: 'set_attitude', attitude: 'hostile' | 'unfriendly' | 'indifferent' | 'neutral' | 'friendly' | 'helpful', targetId?: string }`
-  - `modify_session_markup`: `{ type: 'modify_session_markup', delta: number }`
-  - `skill_check`: `{ type: 'skill_check', skillId: string, dc: number, mode?: 'roll' | 'take10', onSuccess: Array<Record<string, unknown>>, onFailure?: Array<Record<string, unknown>> }` — evaluates `getActiveRuleset(state).evaluateDialogueSkillCheck`, logs the roll vs DC to the message log, and executes `onSuccess` or `onFailure` consequence arrays!
+#### Step 1.4 — Fix `trade_social_checks.ts` & Deduplicate `npcWisMod` / Session Markup Helpers (`B2`, `M1`, `S2`, `Rule 12`)
+1. Extract shared `resolveActorWisModFromDAG(state, entityId)` in `src/rulesets/dnd35e/skills/skill_verb_helpers.ts` (replacing BOTH duplicate subtractions in `trade_social_checks.ts:199` and `social_combat_skill_verbs.ts:110`) and share a clamped session markup helper so `social_combat_skill_verbs.ts` / `social.system.ts` don't clobber deeper trade discounts.
+2. Add named constants replacing inline literals and governing repeat-until-fail-or-cap haggling:
+   ```ts
+   const APPRAISE_RESALE_BONUS_HIGH = 0.15;
+   const APPRAISE_RESALE_BONUS_LOW = 0.08;
+   const APPRAISE_TRADE_PENALTY = 0.08;
+   const APPRAISE_FAIL_PENALTY_CHANCE = 0.5;
+   const DIPLOMACY_HAGGLE_DC_HIGH = 20;
+   const DIPLOMACY_HAGGLE_DC_STANDARD = 15;
+   const DIPLOMACY_FAIL_ANNOYED_CHANCE = 0.5;
+   const SENSE_MOTIVE_PASSIVE_BASE = 10;
+   const MAX_HAGGLE_WINS_PER_SKILL = 2;
+   const TRADE_LOCKED_FACT_PREFIX = 'trade_locked:';
+   const TRADE_WIN_FACT_PREFIX = 'trade_win:';
+   ```
+2. In `resolveDnD35eTradeSocialSkill` (and mirrored cleanly in Console fallback `shop.system.ts`):
+   - **Repeat until fail or cap:** Each skill (`appraise`, `diplomacy`, `bluff`, `intimidate`) may be repeated against a merchant while:
+     1. `!facts.includes('trade_locked:<skillId>')` (no prior failure on that tactic),
+     2. win count for that skill (`trade_win:<skillId>:1..N`) is `< MAX_HAGGLE_WINS_PER_SKILL` (`2`), and
+     3. `currentSessionMod > MIN_SESSION_MARKUP_MOD` (`-0.4`, not yet at cap).
+   - **On success:** Applies the discount (`clampSessionMarkup(...)`) and appends `trade_win:<skillId>:<nextCount>` to `MemoryComponent.facts`.
+   - **On failure (chance of negative results + lockout):** Locks `'trade_locked:<skillId>'` in `MemoryComponent.facts` so that tactic cannot be retried on that merchant, AND applies negative consequences:
+     - `appraise`: rolls `rng.getUniform() < APPRAISE_FAIL_PENALTY_CHANCE` (`50%`) to offend the merchant (`+APPRAISE_TRADE_PENALTY` markup).
+     - `diplomacy`: applies `+DIPLOMACY_HAGGLE_PENALTY` (`+10%`) markup and rolls `rng.getUniform() < DIPLOMACY_FAIL_ANNOYED_CHANCE` (`50%`) to trigger `annoyedDuration: HAGGLE_ANNOYED_DURATION`.
+     - `bluff` / `intimidate`: applies markup penalty (`+15%` / `+25%`) and sets `annoyedDuration: HAGGLE_ANNOYED_DURATION`.
+3. Fix `npcWisMod` in `case 'intimidate'` (`trade_social_checks.ts:191-201`) using DAG directly:
+   ```ts
+   const npcEval = evaluateDnD35eEntityDAG(state, npcId);
+   const npcDnd = npcEval?.dndData ?? getDnD35EntityData(state, npcId);
+   const npcChassis = aggregateProgressionChassis(npcDnd.tracks, 0);
+   const npcWisMod = npcEval?.dagResult.effectiveAbilityModifiers.wis ?? 0;
+   const opposeDc = DEMORALIZE_BASE_DC + Math.max(1, npcChassis.totalHD) + npcWisMod;
+   const success = resolveDemoralizeCheck(intimidateCheck.totalRoll, Math.max(1, npcChassis.totalHD), npcWisMod);
+   ```
+4. Align `evaluateDnD35eDialogueSkillCheck` (`trade_social_checks.ts:236-240`) so `dc <= 0` for `'intimidate'` uses `DEMORALIZE_BASE_DC + Math.max(1, npcChassis.totalHD) + npcWisMod` while `'bluff'` uses `SENSE_MOTIVE_PASSIVE_BASE + npcSenseCheck.totalModifier`.
 
 ---
 
-### Phase 3 (Milestone 144): Post-Spawn Statblock Hydration, DMG Table 2-6 CR-to-XP & Declarative Equipment/Loot/Currency Death Drops
+### Phase 2: Dialogue Consequences & Routing (`B2`, `B4`)
 
-#### 3.1 `EntityTemplateSchema` Equipment, Loot & Currency Drop Extensions (`src/types/campaign/entity.ts`, `src/editor/validator/entity.validator.ts`)
-- Extend `EntityTemplateSchema` in `src/types/campaign/entity.ts`:
-```ts
-  defaultEquipment: z
-    .array(
-      z.object({
-        itemId: z.string(),
-        equipSlot: EquipmentSlotEnum.optional(),
-        dropOnDeath: z.boolean().default(true)
-      })
-    )
-    .optional(),
-  lootDrops: z
-    .array(
-      z.object({
-        itemId: z.string(),
-        chance: z.number().min(0).max(1).default(1),
-        minCount: z.number().int().positive().default(1),
-        maxCount: z.number().int().positive().default(1)
-      })
-    )
-    .optional(),
-  currencyDrop: z
-    .object({
-      minBaseUnits: z.number().int().nonnegative(),
-      maxBaseUnits: z.number().int().nonnegative(),
-      chance: z.number().min(0).max(1).default(1),
-      coinItemId: z.string().optional()
-    })
-    .optional(),
-```
-- Update `src/core/ecs/ecs_spawner_equipment.ts` (`equipActorDefaultArmaments`):
-  - Check `template?.defaultEquipment` first, falling back to `sysRaces?.[archetypeKey]?.defaultEquipment ?? sysArchetypes?.[archetypeKey]?.defaultEquipment ?? []`.
-- Update `src/editor/validator/entity.validator.ts`:
-  - Validate that every `itemId` in `entity.defaultEquipment` and `entity.lootDrops` (and `entity.currencyDrop.coinItemId` if specified) exists in `campaign.items`.
+#### Step 2.1 — Add declarative `give_item` consequence (`src/types/trigger.types.ts`, `src/systems/trigger/player.ts`)
+1. In `ConsequenceActionSchema` (`src/types/trigger.types.ts`):
+   ```ts
+   z.object({
+     type: z.literal('give_item'),
+     itemId: z.string().min(1),
+     amount: z.number().int().positive().default(1),
+     targetId: z.string().optional()
+   }),
+   ```
+2. In `playerConsequences` (`src/systems/trigger/player.ts`):
+   - Resolve recipient (`consequence._playerEntityId ?? consequence.entityId ?? player`).
+   - Loop `count` times spawning via `spawnItem(nextState, consequence.itemId, pos.x, pos.y)`: if recipient has `InventoryComponent` below `getEffectiveCapacity(nextState, recipientId)`, remove `PositionComponent` and append to `InventoryComponent.items`; otherwise drop on ground at recipient coordinates; call `processQuestEvent(nextState, 'gather', consequence.itemId, 1)` if player; log receipt message.
 
-#### 3.2 Death System Equipment, Loot & Coin Pouch Drops (`src/systems/death.system.ts`)
-- In `processDeathSystem` (`src/systems/death.system.ts`), before `removeEntity(nextState, entityId)`:
-  1. **Equipped & Carried Item Drops:** Inspect victim's `InventoryComponent.items` (note: merchant `ShopComponent.inventory` is separate and never dropped). For each item entity in `inventory.items`, check if `template?.defaultEquipment` explicitly set `dropOnDeath: false` for that `itemId`; otherwise, attach `PositionComponent({ x: pos.x, y: pos.y })` to the existing item entity (and remove it from `inventory.items` / `equipment.slots`) so the exact item instance (including any coatings/enhancements/charges) drops onto the ground tile instead of being destroyed by `removeEntity`!
-  2. **Template `lootDrops`:** Roll each entry in `template.lootDrops` using `rng.getUniform() < entry.chance` and spawn `rng.getUniformInt(entry.minCount, entry.maxCount)` instances at `(pos.x, pos.y)`.
-  3. **Template `currencyDrop` (or Victim `currencyBalance`):** If `template.currencyDrop` rolls `< chance` (or victim had `inventory.currencyBalance > 0`), compute dropped `baseUnits`, spawn a coin pouch item (`coinItemId ?? 'gold_pouch'`) at `(pos.x, pos.y)` or credit/encode the dynamic coin amount on `ItemComponent.charges` (with `processPickupIntent` multiplying `currencyGrant.amount * (itemComp.charges ?? 1)`!).
-  4. **Global `lootTable` Fallback:** Only roll global `campaign.rules.spawning.lootTable` if the entity had no template `lootDrops` and dropped 0 equipped items.
-
-#### 3.3 Post-Spawn Statblock Hydration & DMG Table 2-6 CR-to-XP (`src/types/ruleset.types.ts`, `src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`, `src/rulesets/dnd35e/progression/cr_xp_table.ts`)
-- Add `onEntitySpawned?(state: GameState, entityId: EntityId): GameState` and `resolveKillXpReward?(state: Readonly<GameState>, killerId: EntityId, victimId: EntityId): number` to `RulesetContract`.
-- Invoke `getActiveRuleset(nextState).onEntitySpawned?.(nextState, entityId)` at the end of `spawnEntity` (`src/core/ecs/ecs_spawner.ts:324`).
-- In `src/rulesets/dnd35e/cartridge/dnd35e_spawn_hydrator.ts`:
-  - For non-player actors with `FighterComponent` and a resolvable D&D 3.5e archetype/race or `rulesetData`:
-    - Resolve `dndData = getDnD35EntityData(state, entityId)` (incorporating `template.rulesetData` overrides like `tracks`, `templates`, `abilityScores`, `feats`, `cr`).
-    - Compute `conMod` (0 if `con.base === null`) and `chassis = aggregateProgressionChassis(dndData.tracks, conMod, dndData.levelAdjustment ?? 0)`.
-    - Persist `setDnD35EntityData(state, entityId, dndData)` and sync `syncActorResourcePoolsComponent`.
-    - Update `FighterComponent` with `maxHp: Math.max(1, chassis.maxHp)`, `hp: Math.max(1, chassis.maxHp)`, `level: Math.max(1, chassis.ecl)`, `attack: chassis.totalBab` (unless `template.rulesetData?.['lockFighterMaxHp'] === true`).
-- In `src/rulesets/dnd35e/progression/cr_xp_table.ts`:
-  - Implement D&D 3.5e **DMG Table 2-6** (`computeDnD35eKillXp(killerEcl: number, victimCr: number): number`):
-    - Base XP for an even-match encounter (`CR === ECL`, with `effectiveEcl = Math.max(3, killerEcl)` per DMG Table 2-6 footnote for ECL 1–3): `300 * effectiveEcl` XP.
-    - Fractional CRs (`CR < 1`, e.g., `0.5`, `0.33`, `0.25`, `0.125`): scales `computeDnD35eKillXp(effectiveEcl, 1) * victimCr` (`CR 1/2 = 150 XP`, `CR 1/3 = 100 XP`, `CR 1/4 = 75 XP` at ECL 1–3).
-    - Relative CR difference (`delta = Math.round(victimCr) - effectiveEcl`): doubles every `+2 CR` (`* 2^(delta/2)`), halves every `-2 CR`, and returns `0 XP` if `delta <= -8` (trivial threat).
-  - Wire `resolveKillXpReward` in `dnd35e_ruleset.ts` and call `const xpReward = getActiveRuleset(nextState).resolveKillXpReward?.(nextState, deathComp.killerId, entityId) ?? fighter.xpGiven;` in `src/systems/death.system.ts:132`.
+#### Step 2.2 — Fix `socialConsequences.skill_check`, `open_barter` `_npcEntityId`, & self-loop transitions (`B4`, `F1`)
+1. In `src/systems/trigger/social_consequences.ts:358`:
+   ```ts
+   let nextState = rulesetResult
+     ? checkResult.state
+     : addMessage(state, checkResult.breakdown, MessageLogCategory.System);
+   ```
+2. In `src/actions/dialogue.actions.ts:65-93`, check whether `skill_check` (or another consequence) explicitly set `activeDialogue.textOverride` OR changed `currentNodeId` (`const didConsequenceRoute = activeDialogue !== undefined && (activeDialogue.currentNodeId !== preConseqNodeId || activeDialogue.textOverride !== undefined);`) so same-node failure transitions preserve `currentNodeId` and `textOverride` instead of closing the conversation.
+3. In `src/systems/trigger/systemic.ts:173-195` (`open_barter`), resolve `npcId` from `consequence._npcEntityId` as well (`consequence._npcEntityId ?? ...`), verify `getComponent(state, npcId, ComponentType.Shop)` exists, and clear `activeDialogue: undefined` cleanly when switching to `UIMode.Trade`.
 
 ---
 
-### Phase 4 (Milestone 145): Curated D&D 3.5e Creature & NPC Catalogue, Monetary Items & 385-Sprite Atlas Binding
+### Phase 3: Template CR Propagation, Spawn Hydration, XP Constants & Death Drops (`M2`, `M3`, `M4`, `A1`, `A2`)
 
-- Author currency & treasure items in `public/data/rulesets/dnd35e/items/` (or campaign `items.json`):
-  - `copper_coins` (`currencyGrant: { denominationId: 'cp', amount: 1 }`), `silver_coins` (`sp: 1`), `electrum_coins` (`ep: 1`), `gold_coins` (`gp: 1`), `platinum_coins` (`pp: 1`), `silver_pouch` (`sp: 25`), `gold_pouch` (`gp: 25`), `royal_platinum_chest` (`pp: 10`), plus tradeable gemstones (`onyx_gem` 50 gp, `sapphire_gem` 250 gp, `ruby_gem` 500 gp, `diamond_gem` 1000 gp) and campaign quest relics (`trance_antidote`, `blessed_chalice`, `tribal_banner`, `soul_gem_inert`, `water_temple_key`, `serpent_signet`, `lareth_diary`, `orb_of_golden_death`).
-- Curate **~140+ D&D 3.5e Entities** in `public/data/campaigns/realms-of-shroudgarde/entities.json`:
-  - **Every single entity** has:
-    - Valid `spriteId` mapped from the 385-sprite atlas (`monsters.png`, `rogues.png`, `tiles.png`, `items.png`) — **0 missing-sprite warnings**!
-    - Valid `archetypeId` (`goblin`, `kobold`, `orc`, `hobgoblin`, `bugbear`, `gnoll`, `lizardfolk`, `troglodyte`, `ogre`, `troll`, `hill_giant`, `fire_giant`, `stone_giant`, `frost_giant`, `ettin`, `minotaur`, `medusa`, `gargoyle`, `harpy`, `manticore`, `chimera`, `hydra`, `basilisk`, `cockatrice`, `bulette`, `owlbear`, `displacer_beast`, `phase_spider`, `giant_spider`, `wolf`, `dire_wolf`, `worg`, `winter_wolf`, `dire_rat`, `giant_ant`, `giant_bee`, `giant_beetle`, `carrion_crawler`, `rust_monster`, `umber_hulk`, `mind_flayer`, `aboleth`, `beholder`, `mimic`, `gelatinous_cube`, `ochre_jelly`, `black_pudding`, `skeleton`, `zombie`, `ghoul`, `ghast`, `wight`, `wraith`, `shadow`, `spectre`, `mummy`, `vampire_spawn`, `clay_golem`, `flesh_golem`, `stone_golem`, `iron_golem`, `salamander`, `imp`, `quasit`, `dretch`, `vrock`, `glabrezu`, `marilith`, `balor`, `succubus`, `lemure`, `bearded_devil`, `bone_devil`, `horned_devil`, `ice_devil`, `pit_fiend`, `hound_archon`, `astral_deva`, `dragon_red_young`, `dragon_black_adult`, `dragon_white_juvenile`, `dragon_green_young_adult`, `dragon_blue_old`, `elemental_air_large`, `elemental_earth_large`, `elemental_fire_large`, `elemental_water_large`, `human`, `dwarf`, `elf`, `halfling`, `gnome`, `half_orc`).
-    - Explicit `rulesetData` (`cr`, `tracks` for NPC/PC classes like `warrior`, `expert`, `adept`, `aristocrat`, `commoner`, `fighter`, `cleric`, `wizard`, `rogue`, `druid`, `barbarian`, `ranger`, `paladin`, `monk`, plus `templates` like `skeleton`, `zombie`, `fiendish`, `celestial`, `vampire`, `lich`, `ghost`, `half_dragon`).
-    - Authentic `defaultEquipment` (weapons, shields, armor, potions, scrolls, wands), `lootDrops`, and `currencyDrop`.
-  - **Memorable Named NPCs & Bosses:**
-    - *Sanctuary Outpost:* `barkeeper` (Expert 3), `merchant` (Expert 4, General Outfitter Shop), `armorer_garrick` (Dwarf Expert 5, Weapons & Armor Shop), `scholar` (Wizard 5 / Lorekeeper), `scout` (Ranger 4).
-    - *Shroudgarde Keep & Orlane:* `gold_dwarf_laurent` (Aristocrat 4 / Fighter 2, Mayor), `aasimar_isabelle` (Cleric 6 of Pelor, Temple Healer & Divine Shop), `constable_derek` (Fighter 5, Watch Captain), `wood_elf_luc` (Druid 5, Herbalist Shop), `barkeep_bertram` (Expert 3, Golden Grain Innkeeper & Tavern Shop), `elan_villager`, `villager_scared`, `villager_subverted`.
-    - *Nulb Smuggler Town:* `nulb_innkeeper_wat` (Rogue 4 / Expert 2, Black-Market Fence Shop), `pirate_tolub` (Barbarian 5), `mother_screaming` (Adept 6, Witch-Trader Shop).
-    - *Named Bosses & Masterminds:* `bandit_king` (Human Fighter 4 / Rogue 2, CR 6), `lareth_beautiful` (Human Cleric 5 of Lolth, CR 5, Masterwork Plate + Staff of Striking), `duthkagith_priest` (Half-Dragon Hobgoblin Cleric 7, CR 8), `sentinel_imues` (Water Elemental Gargantuan / Guardian CR 9), `vodyanoi_boss` (Aquatic Umber Hulk / Vodyanoi King CR 8), `arch_lich_inverness` (Human Lich Wizard 11, CR 13, Ghost Tower Pinnacle), `goblin_high_king_rug` (Goblin Barbarian 6 / Fighter 2, CR 7), `zuggtmoy_boss` (Demon Queen of Fungi, Outsider 16 HD, CR 15).
+#### Step 3.1 — Add declarative `crAdjustment` to `DnD35TemplateSchema` & `applyCreatureTemplate`
+1. In `src/rulesets/dnd35e/types/system/creature_system.types.ts`:
+   Add `crAdjustment: z.number().optional()` to `DnD35TemplateSchema` (alongside existing `DnD35TemplateHdTierSchema.crAdjustment`).
+2. In `src/rulesets/dnd35e/templates.ts`:
+   Compute CR inside `applyCreatureTemplate` when `base.cr !== undefined` (adding top-level `template.crAdjustment ?? 0` and any matching `hdTier?.crAdjustment ?? 0` after `hdMultiplier`/`bonusHitDice`), preserving `cr` on the returned `DnD35EntityData` with `exactOptionalPropertyTypes` safety.
+
+#### Step 3.2 — Fix `dnd35e_spawn_hydrator.ts` CR order, `race_hydrator.ts` class-level CR, & eliminate `as never` (`T2`, `G4`)
+1. In `src/rulesets/dnd35e/archetype/race_hydrator.ts:156-158`, compute `computedCr` properly when `options?.classLevels` are applied—without disturbing races that rely on `raceDef.cr` (`goblin`, `hobgoblin`, `kobold`, `orc`) when no `options.classLevels` override is passed:
+   ```ts
+   const totalPcAndPrestigeLevels = tracks
+     .filter((t) => t.trackCategory === 'pc' || t.trackCategory === 'prestige')
+     .reduce((s, t) => s + t.levels, 0);
+   const totalNpcLevels = tracks.filter((t) => t.trackCategory === 'npc').reduce((s, t) => s + t.levels, 0);
+   const hasExplicitClassLevels = (options?.classLevels?.length ?? 0) > 0;
+   const classCrContribution =
+     totalPcAndPrestigeLevels + computeNpcClassCrContribution(totalNpcLevels, baseHdCount > 0);
+   const computedCr = hasExplicitClassLevels
+     ? baseHdCount === 0
+       ? classCrContribution
+       : (raceDef.cr ?? 1) + classCrContribution
+     : (raceDef.cr ?? (baseHdCount === 0 && totalNpcLevels > 0 ? computeNpcClassCrContribution(totalNpcLevels, false) : 1));
+   ```
+2. In `dnd35e_spawn_hydrator.ts`, use `getDnD35SystemContent(state.campaign) ?? undefined` instead of `sysContent as never`, and allow `template.fighter.xpGiven` to defer to `computeDnD35eCrXp` when campaign bosses align with DMG CR XP (`G4`).
+3. Resolve `explicitCr = typeof rawRulesetData?.['cr'] === 'number' ? rawRulesetData['cr'] : (dndData.cr ?? resolvedCr);` so template and `classLevels` CR updates are preserved unless explicitly overridden in campaign JSON.
+4. Replace `equipPkg.startingGoldGp * 100` in `builder_hydrator_creation.ts:231, 243` with `toBaseUnits(equipPkg.startingGoldGp, 'gp', resolveCurrencyConfig(runningState))`.
+5. Extract named DMG XP constants in `cr_xp_table.ts`.
+
+#### Step 3.3 — Fix `death.system.ts` coin rounding & orphan cleanup (`M4`)
+1. In `dropCurrencyBucket` (`src/systems/death.system.ts:238-259`):
+   If the matched coin definition's `currencyGrant.amount > amount`, fall back to `currencyCfg.denominations` decomposition via `toBaseUnits(amount, denominationId, currencyCfg)` + `decomposeToCoins` so a `10 gp` drop never rounds up into a `50 gp` coin pouch (`charges = 1`).
+2. Clean up orphaned item entities on actor death (`death.system.ts:185-203` & `333`):
+   - Call `removeEntity(nextState, itemEntityId)` for `'no_drop'` items instead of leaving them unreferenced in `GameState`.
+   - When `isShopkeeper` dies, also `removeEntity(nextState, shopItemId)` for unpositioned `isShopkeeper.inventory` entities.
+
+---
+
+### Phase 4: Flagship Campaign (`scripts/build-realms-of-shroudgarde.ts`), `ai-prompt-kit` Parity & Tests (`B2`, `B3`, `B5`, `B6`, `M2`)
+
+#### Step 4.1 — Fix `map_generation_spawner.ts` walkability & update `scripts/build-realms-of-shroudgarde.ts` (`B2`, `B3`, `B6`, `M2`, `T1`)
+0. **Walkable-tile snap + collision avoidance for procedural `placedEntities` (`src/systems/map/map_generation_spawner.ts:122-154`, `G2`):** Track occupied coordinates (`spawnX, spawnY`, portals, and already-placed entities) and if a `placedEntities` entry resolves to an out-of-bounds, non-walkable, or already-occupied tile, BFS/spiral-snap it to the nearest unoccupied walkable floor tile so town NPCs and bosses never stack on each other, on `(spawnX, spawnY)`, or inside solid walls.
+1. **Fix town pool collisions (`F2`), replace currency tokens in shop stock (`G1`), set `environmentType` + `proceduralPalette` across all 75 areas (`V1`, `P8-1`), & place all 8 named NPCs + 5 bosses via `placedEntities` (`T1`):**
+   - Replace `coin_pouch_silver` / `coin_pouch_gold` in `silas_merchant.shop.inventory` with non-`currencyGrant` jeweler items (`gem_chalcedony`, `gem_ruby`, `gem_sapphire`, `gem_diamond`, `ring_of_protection_plus1`), and ensure `restockShop` excludes `item.currencyGrant` definitions (`G1`).
+   - Set `environmentType: 'outdoors' | 'indoors' | 'underground'` and biome-appropriate `proceduralPalette` (`grass_floor`/`dense_trees` forests, `swamp_floor`/`tile_dirt_1_green_bg` marshes, `dirt_floor`/`grass_floor` wilderness roads, `wood_floor` inns/keeps, skull-wall catacombs, cave dirt/rock, etc.) across areas in `scripts/build-realms-of-shroudgarde.ts`, and remove `"outdoor"` / `"frontier"` tag collisions from `shroudgarde_courtyard`, `shroudgarde_gate`, and `orlane_east` so `frontier_beasts` never spawns hostile bandits/owlbears inside safe towns on Turn 1.
+   - Author explicit `placedEntities` in `scripts/build-realms-of-shroudgarde.ts` placing `constable_derek` (`shroudgarde_courtyard` / `shroudgarde_gate`), `barkeep_bertram` (`golden_grain_inn`), `dwarf_laurent` & `isabelle_cleric` & `luc_ranger` & `silas_merchant` & `elena_scholar` across Shroudgarde town/keep/hub areas, `archmage_alden` (`wizard_tower_f1`), `ogre_chieftain` (`ravine_chaos`), `crypt_arch_curate` (`dungeon_5` / `dungeon_3`), `lareth_the_beautiful` (`moathouse_dungeon`), `zuggtmoy_queen` (`toee_zuggtmoy_fane`), and `red_dragon` (`incursion_lesser_vault_2`). Also add `"memory"` objects (`factionStandings`, `grudges`, `facts`, `knowledge`) on all named NPCs & merchants.
+2. **Wire all quests in `quests.json` to `dialogues.json` (`B3`):**
+   - `guard_captain_tree` (`constable_derek`): grant `quest_cleanse_crypts` and `quest_caves_of_chaos` via `{ type: 'grant_quest', questId: ... }` on acceptance, and award `{ type: 'give_item', itemId: 'shroudgarde_signet', amount: 1 }` on `opt_accept_signet` (with `not_has_fact` / `set_fact` guards against repeat signet farming & failure retry locks).
+   - `elena_scholar_tree`: grant `quest_investigate_trance` and `quest_watchtower_defense` (or `alden_mage_tree` / `constable_derek`) so every quest in `quests.json` has an in-game `grant_quest` source (`quest_gem_appraisal` via `silas_gem_merchant_tree`, `quest_slay_dragon_pyroclast` via `alden_mage_tree` / `elena_scholar_tree`, etc.).
+3. **Fix dialogue exploits & flavor mismatch (`B2`):**
+   - `bertram_trade_tree`: `node_bluff_win` grants `{ type: 'give_item', itemId: 'ration_fresh_bread', amount: 1 }` + `{ type: 'set_fact', target: 'bertram_bread_claimed' }`; `opt_appraise` & `opt_bluff` gated by `not_has_fact` + `set_fact`.
+   - Gate repeat skill-check discount options in `laurent_smith_tree`, `isabelle_healer_tree`, `silas_gem_merchant_tree`, `alden_mage_tree` with `not_has_fact` / `set_fact` (and fix backtick typos `Derek\`s` -> `Derek's`, `Jeweler\`s` -> `Jeweler's`).
+4. **Add explicit `equipSlot` on `defaultEquipment`, flesh out a true CR 1–20 encounter & boss curve (`Option 1`), and fix `currencyDrop` denominations (`M2`):**
+   - Add `equipSlot: 'main_hand' | 'off_hand' | 'torso' | 'neck'` matching each item on `constable_derek`, `dwarf_laurent`, `isabelle_cleric`, `luc_ranger`, `archmage_alden`, `town_guard`, `lareth_the_beautiful`, `crypt_arch_curate`, and `ogre_chieftain`.
+   - Keep `zuggtmoy_queen` at true CR `20` (`archetypeId: 'balor'`), upgrade `red_dragon` ("Pyroclast the Red Wyrm") to `dragon_red_old` (CR `18`) or `dragon_red_very_old` (CR `19`), give `classLevels` to named/tiered humanoid bosses (`lareth_the_beautiful`: Cleric `7`, `crypt_arch_curate`: Cleric `9` on `ghoul`, `orc_warchief`: Fighter `5` on `orc`, `orc_blademaster`: Fighter `3` on `orc`, `bandit`: Rogue `2`, `cultist`: Adept `3`), and add CR `6–17` SRD monsters already present in `public/data/rulesets/dnd35e/races/` (`ettin` CR 6, `chimera` / `hill_giant` / `medusa` / `flesh_golem` / `elemental_*_huge` CR 7, `mind_flayer` / `stone_giant` / `dragon_red_juvenile` CR 8, `frost_giant` / `elemental_*_greater` CR 9, `fire_giant` CR 10, `stone_golem` / `elemental_*_elder` / `dragon_red_young_adult` CR 11, `beholder` / `iron_golem` CR 13, `dragon_red_adult` CR 14, `dragon_red_mature_adult` CR 16, `marilith` CR 17) across mid-tier and deep megadungeon `spawnPools` (`tower_sentinels`, `temple_cult`, `deep_monsters`, and a new `deep_vault_horrors` pool for `deep_vault` areas) so a player can genuinely progress to Level `20` to fight Zuggtmoy.
+   - Convert large/boss `currencyDrop` entries (`>= 100 cp`) from `'cp'` stacks into appropriate `'sp'`, `'gp'`, or `'pp'` denominations, and remove/disable coin drops on mindless beasts and mindless undead (`giant_rat`, `giant_spider`, `dire_wolf`, `owlbear`, `skeleton`, `zombie`).
+   - Run `bun scripts/build-realms-of-shroudgarde.ts`.
+
+#### Step 4.2 — Regenerate `ai-prompt-kit` & expand `tests/currency_trade_and_campaign.test.ts`
+1. Run `bun scripts/generate-ai-prompt-kit.ts` to resolve the stale `ai-prompt-kit/default-campaign/entities.json` parity error (`B5`).
+2. Clean up `as any` casts in `tests/currency_trade_and_campaign.test.ts` (`L109`, `L243`), add `'realms-of-shroudgarde'` to [`tests/sprite_mapping.test.ts`](file:///export/DownloadsSSD/Projects/Game%20Dev/rogue-like/tests/sprite_mapping.test.ts#L7), and add runtime integration tests covering:
+   - Arbitrage invariant (`finalSellMultiplier < finalBuyMultiplier` even at max stacked discounts; `sellPrice < buyPrice` on standard items).
+   - `executeBuyItem`, `executeSellItem` (including rejecting `currencyGrant` items), and repeat-until-fail-or-cap haggle behavior (`trade_win:*` up to cap, `trade_locked:*` + negative penalty/annoyance chance on failure).
+   - `ecs_spawner.ts` default `MemoryComponent` creation for `shop`/`dialogueId` actors and `onDnD35eEntitySpawned` hydration of stats/equipment/classLevels/template CR (`zuggtmoy_queen` CR `20`, boss `classLevels`, CR 6–17 monsters).
+   - `death.system.ts` coin decomposition/drop + `inventory.system.ts` pickup absorption + `isShopkeeper` exclusion.
+   - `socialConsequences.skill_check` preserving `checkResult.state` & self-loop routing, plus `realms-of-shroudgarde` static check verifying every quest in `quests.json` is granted by at least one dialogue or trigger and CR tiers span `<= 1` through `20`.
+3. Run `./verify.sh` end-to-end and verify **all 8 stages pass with 0 errors**.
 
 ---
 
-### Phase 5 (Milestone 146): `realms-of-shroudgarde` Multi-Layered World Topology (~75 Areas), Quests, Dialogues & Verification
+## 6. Confirmed Design Decisions
 
-#### 5.1 Multi-Layered World Graph (`public/data/campaigns/realms-of-shroudgarde/areas.json` — ~75 Interconnected Areas)
-1. **Surface Layer — Cities, Towns & Roadside Inns (9 Areas):**
-   - `outer_crossroads` (Outdoors Digger) ↔ `safe_hub` (Sanctuary Outpost, Indoors Static, Starting Area) ↔ `shrine_vault_hub` (Underground Static).
-   - `borderland_highroad` (Outdoors Cellular road) linking `outer_crossroads` ↔ `shroudgarde_gate` (Outdoors Static).
-   - `shroudgarde_gate` ↔ `shroudgarde_courtyard` (Outdoors Static) ↔ `shroudgarde_inner_keep` (Indoors Static) & `orlane_east` (Outdoors Digger).
-   - `golden_grain_inn` (Indoors Static) off `marsh_mirrored`.
-   - `nulb_village` (Outdoors Static smuggler river-town) + `nulb_waterside_hostel` (Indoors Static tavern/fence) along `road_to_nulb`.
-2. **Surface Layer — Interconnected Outdoor Wilderness Regions (7 Areas):**
-   - `outer_crossroads`, `borderland_highroad`, `forest_haunted` (La Forêt Hantée), `corrupted_thicket` (Corrupted Treant & Spider Broodmother woods linking `forest_haunted` ↔ `outer_crossroads`), `ravine_chaos` (Ravine of Chaos surface hub), `marsh_mirrored` (Mirrored Marsh), `road_to_nulb` (River Road), and `northern_crags` (Mountain pass linking `ravine_chaos` ↔ `megadungeon_hub` & `ghost_tower_courtyard`).
-3. **Multi-Floor Vertical Towers (3 Towers, 14 Areas):**
-   - **Tower 1 — The Elemental Spire (`5` floors):** `spire_level_air` ↔ `spire_level_earth` (also links underground to `cave_scro`) ↔ `spire_level_fire` ↔ `spire_level_water` ↔ `spire_gem_chamber`.
-   - **Tower 2 — The Ghost Tower of Inverness (`5` floors):** `ghost_tower_courtyard` (off `northern_crags` / `marsh_mirrored`) → `ghost_tower_1_gallery` → `ghost_tower_2_clockwork` → `ghost_tower_3_astral` → `ghost_tower_4_pinnacle` (Arch-Lich of Inverness & Soul Gem Vault), plus basement stair down to `nethack_doom_4`.
-   - **Tower 3 — The Sunless Watchtower (`4` floors):** `watchtower_ground` (off `outer_crossroads`) → `watchtower_barracks` → `watchtower_armory` → `watchtower_observatory`.
-4. **Underground Layer 1 — Crypts, Caverns, Sewers & Temples (24 Areas):**
-   - **Sunless Reliquary:** `dungeon_1` → `dungeon_2` → `bandit_stronghold` (with smuggling tunnel to `shroudgarde_inn_cellar`).
-   - **Caves of Chaos:** `cave_kobolds` ↔ `cave_norkers` (with lateral warren), `cave_bugbears` (links down to `incursion_goblin_1`), `cave_scro` (links to `spire_level_earth`), `cave_ogre`.
-   - **Inn Cellar & Flooded Cult Caverns:** `shroudgarde_inn_cellar` → `wet_caverns` → `reptile_temple` → flooded passage to `water_temple_lower`.
-   - **Water Temple Complex:** `water_temple_upper` ↔ `water_temple_lower` ↔ `water_temple_core` ↔ `water_temple_valve_room`.
-   - **Moathouse & Temple of Elemental Evil:** `moathouse_surface` → `moathouse_dungeons` (with smuggler sewer to `nulb_village`) → `toee_level_1` → `toee_level_2` → `toee_level_3` (cross-tunnel to `nethack_doom_7`) → `toee_level_4` → `toee_zuggtmoy_fane`.
-5. **Underground Layer 2 & 3 — Deep Megadungeon Strata & Woven Incursion Vaults (32 Areas):**
-   - **Incursion Goblin Caves (`incursion_goblin_1..10` + 4 Vaults):**
-     - Entered from `cave_bugbears` / `ravine_chaos`.
-     - `incursion_place_of_sanctuary` off Goblin 2; `incursion_the_goblin_encampment` off Goblin 4; `incursion_lesser_vault_1` off Goblin 6; `incursion_arena_chamber` off Goblin 8; Goblin 10 connects laterally to `nethack_doom_6`.
-   - **Dungeons of Doom (`megadungeon_hub` + `nethack_doom_1..10` + 7 Vaults):**
-     - Entered from `northern_crags` → `megadungeon_hub` (with non-overlapping, walkable portals!).
-     - `incursion_entry_chamber` off `megadungeon_hub` / Doom 1; `incursion_parthenion` off Doom 3; `incursion_lesser_vault_2` off Doom 4; `incursion_floating_rock_1` off Doom 5; `incursion_unholy_sepulchre` off Doom 6; `incursion_entry_chamber_hells` off Doom 8; `incursion_hellish_rift` off Doom 10.
-
-#### 5.2 Merged Quests, Skill-Keyed Dialogues, Schemes & Documentation
-- Combine & upgrade all quests from `dnd35e-crypt` (`4` quests) and `shroudgarde` (`9` quests) plus `3` new overarching regional quests (*The Ghost Tower of Inverness*, *The Goblin Under-Empire*, *The Infernal Rift of Doom*) = **16 Quests** in `quests.json`.
-- Merge all dialogue trees (`15+` dialogues) and enrich merchant/leader dialogues (`merchant_tree`, `mayor_dialogue`, `constable_dialogue`, `lareth_dialogue`, `barkeep_dialogue`, `hermit_dialogue`, `priest_dialogue`) with **D&D 3.5e skill-check options** (`Diplomacy`, `Bluff`, `Intimidate`, `Knowledge (Arcana/Religion/Local)`, `Sense Motive`) and coin bribes (`has_currency` / `modify_currency`)!
-- Register `realms-of-shroudgarde` in `public/data/campaigns.json`, copy the 4 spritesheet PNGs (`tiles.png`, `rogues.png`, `monsters.png`, `items.png`), regenerate `docs/CAMPAIGN_TOPOLOGIES.md` (`bun run map:campaign --write`), update `docs/MILESTONES.md`, `docs/SSOT_CONSOLE.md`, `docs/SSOT_DND35E.md`, `docs/DECISIONS.md`, write comprehensive unit/integration tests (`tests/currency_trade_and_campaign.test.ts`), and pass all 8 stages of `./verify.sh`.
+1. **Trade Arbitrage Ceiling (Confirmed):** `finalSellMultiplier` is capped strictly below `finalBuyMultiplier` (`MAX_SELL_TO_SHOP_MULTIPLIER = 0.75`, `MAX_SELL_TO_BUY_RATIO = 0.85`).
+2. **Haggle Repeat Policy (Confirmed):** Players may repeat negotiation tactics (`appraise`, `diplomacy`, `bluff`, `intimidate`) up to `MAX_HAGGLE_WINS_PER_SKILL = 2` (or `MIN_SESSION_MARKUP_MOD = -0.4`), locking that tactic for the merchant upon failure and applying a chance of negative fallout (markup increase / annoyance) on failure.
+3. **True 1–20 Progression & Boss/Beast Tuning (Confirmed Option 1):** Keep `zuggtmoy_queen` as CR `20` (`balor`), scale Pyroclast (`red_dragon`) to Wyrm/Old tier (`CR 18–19`), hydrate humanoid/boss `classLevels`, populate CR `6–17` enemies from existing `races/` & tiered elementals/dragons across mid/deep spawn pools, and remove coin drops from mindless beasts/undead (`giant_rat`, `giant_spider`, `dire_wolf`, `owlbear`, `skeleton`, `zombie`).
 
 ---
-**STOPPING HERE per `AGENTS.md` §1 Step 5:** Please review this phased Implementation Plan and confirm if I have your approval to begin executing Phase 1 through Phase 5.
+
+## 7. Implementation Status & Post-Audit Adjustments (Completed)
+
+- [x] **Phase 1 (Trade, Currency, UI & Turn Budget):** Completed with declarative `RulesetContract.getTradeSocialActions()`, `renderTradeOverlay()` mounted in `presenter.ts`, `UIMode.Trade` dirty checks in `presentation_queue.ts`, `createDefaultMemoryComponent()` canonicalized in `src/core/ecs/ecs_core.ts`, `resolveActorWisModFromDAG()` reusing `computeAbilityModifier`/`computeEffectiveAbilityScore`, and `TRADE_MODE_FREE_VERBS` deduplicated in `dnd35e_turn_budget.ts`.
+- [x] **Phase 2 (Dialogue Consequences & Routing):** Completed with `give_item` schema (`ConsequenceActionSchema`) & `grantItemToActorInventory` integration (supporting `'event.entityId'` and `player`), `skill_check` state preservation + lookup-table opposed DC resolvers, same-node `textOverride` routing, and `open_barter` `_npcEntityId` + shop validation.
+- [x] **Phase 3 (CR Math, Templates, Hydration & Death Drops):** Completed with `DnD35TemplateSchema.crAdjustment`, `race_hydrator.ts` PC/Prestige & monster `classLevels` CR math, `dnd35e_spawn_hydrator.ts` template CR order (`getDnD35SystemContent`), `builder_hydrator_creation.ts` `toBaseUnits`, and `death.system.ts` sub-coin subdivision + `cleanupDeadEntityOrphans`.
+- [x] **Phase 4 (Map Spawning, `realms-of-shroudgarde`, Kit Parity & Tests):** Completed with BFS `resolveSafePlacedCoords` in `map_generation_spawner.ts`, all 75 areas outfitted with `environmentType` + biome `proceduralPalette`, all 8 NPCs & 5 bosses placed via `placedEntities`, `red_dragon` scaled to `dragon_red_very_old` (CR 19) and `crypt_arch_curate` to `mummy` + `cleric 4` (CR 9), all 16 quests wired, dialogue discount skill checks locked via `not_has_fact` + `set_fact`, `ai-prompt-kit` synced, and expanded integration tests in `tests/currency_trade_and_campaign.test.ts` + `tests/sprite_mapping.test.ts`.

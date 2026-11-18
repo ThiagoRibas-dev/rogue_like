@@ -5,11 +5,29 @@
     "generatorType": "digger",
     "dangerRating": 0,
     "tags": [
-      "town",
-      "outdoor"
+      "town"
     ],
     "crBudget": 10,
     "encounterProfileId": "town_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "town_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "silas_merchant",
+        "x": 35,
+        "y": 22
+      },
+      {
+        "templateId": "elena_scholar",
+        "x": 45,
+        "y": 22
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "shroudgarde_gate",
@@ -43,11 +61,24 @@
     "generatorType": "digger",
     "dangerRating": 0,
     "tags": [
-      "town",
-      "outdoor"
+      "town"
     ],
     "crBudget": 15,
     "encounterProfileId": "town_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "town_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "constable_derek",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
@@ -76,6 +107,25 @@
     ],
     "crBudget": 25,
     "encounterProfileId": "town_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "wood_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "isabelle_cleric",
+        "x": 37,
+        "y": 24
+      },
+      {
+        "templateId": "dwarf_laurent",
+        "x": 43,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
@@ -94,6 +144,20 @@
     ],
     "crBudget": 10,
     "encounterProfileId": "town_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "wood_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "barkeep_bertram",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
@@ -113,6 +177,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
@@ -135,6 +206,13 @@
     ],
     "crBudget": 25,
     "encounterProfileId": "wilderness_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "shroudgarde_gate",
@@ -169,6 +247,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "wilderness_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "shroudgarde_courtyard",
@@ -193,11 +278,24 @@
     "generatorType": "digger",
     "dangerRating": 1,
     "tags": [
-      "town",
-      "frontier"
+      "town"
     ],
     "crBudget": 20,
     "encounterProfileId": "town_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "town_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "luc_ranger",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "shroudgarde_gate",
@@ -222,6 +320,13 @@
     ],
     "crBudget": 50,
     "encounterProfileId": "wilderness_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "swamp_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "orlane_east",
@@ -250,6 +355,13 @@
     ],
     "crBudget": 40,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "forest_haunted",
@@ -284,6 +396,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "wilderness_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "outer_crossroads",
@@ -307,6 +426,13 @@
     ],
     "crBudget": 30,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "ravine_chaos",
@@ -330,6 +456,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "ravine_chaos",
@@ -353,6 +486,13 @@
     ],
     "crBudget": 45,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "ravine_chaos",
@@ -371,6 +511,13 @@
     ],
     "crBudget": 50,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "cave_kobolds",
@@ -389,6 +536,20 @@
     ],
     "crBudget": 65,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "ogre_chieftain",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "cave_norkers",
@@ -407,6 +568,13 @@
     ],
     "crBudget": 25,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "outer_crossroads",
@@ -429,6 +597,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "watchtower_f1",
@@ -450,6 +625,13 @@
     ],
     "crBudget": 45,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "watchtower_f2",
@@ -468,6 +650,13 @@
     ],
     "crBudget": 60,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "marsh_mirrored",
@@ -491,6 +680,13 @@
     ],
     "crBudget": 65,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "spire_level_air",
@@ -513,6 +709,13 @@
     ],
     "crBudget": 75,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "spire_level_earth",
@@ -535,6 +738,13 @@
     ],
     "crBudget": 80,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "spire_level_fire",
@@ -557,6 +767,13 @@
     ],
     "crBudget": 100,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "spire_level_water",
@@ -574,6 +791,20 @@
     ],
     "crBudget": 30,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "wood_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "archmage_alden",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "forest_haunted",
@@ -596,6 +827,13 @@
     ],
     "crBudget": 45,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "wizard_tower_f1",
@@ -617,6 +855,13 @@
     ],
     "crBudget": 60,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "wizard_tower_f2",
@@ -638,6 +883,13 @@
     ],
     "crBudget": 80,
     "encounterProfileId": "tower_encounter",
+    "environmentType": "indoors",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "wizard_tower_f3",
@@ -655,6 +907,13 @@
     ],
     "crBudget": 20,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "outer_crossroads",
@@ -678,6 +937,13 @@
     ],
     "crBudget": 35,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "safe_hub",
@@ -705,6 +971,20 @@
     ],
     "crBudget": 50,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "crypt_arch_curate",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "dungeon_1",
@@ -726,6 +1006,13 @@
     ],
     "crBudget": 40,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "dungeon_1",
@@ -745,6 +1032,13 @@
     ],
     "crBudget": 70,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "dungeon_2",
@@ -762,11 +1056,17 @@
     "generatorType": "digger",
     "dangerRating": 2,
     "tags": [
-      "dungeon",
-      "outdoor"
+      "dungeon"
     ],
     "crBudget": 35,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "outdoors",
+    "proceduralPalette": {
+      "floor": "grass_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "road_to_nulb",
@@ -789,6 +1089,20 @@
     ],
     "crBudget": 55,
     "encounterProfileId": "shallow_crypt_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "lareth_the_beautiful",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "moathouse_surface",
@@ -811,6 +1125,13 @@
     ],
     "crBudget": 45,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "swamp_floor",
+      "wall": "dense_trees",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "marsh_mirrored",
@@ -833,6 +1154,13 @@
     ],
     "crBudget": 60,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "wet_caverns",
@@ -857,6 +1185,13 @@
     ],
     "crBudget": 65,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "reptile_temple",
@@ -880,6 +1215,13 @@
     ],
     "crBudget": 75,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "water_temple_upper",
@@ -903,6 +1245,13 @@
     ],
     "crBudget": 85,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "water_temple_lower",
@@ -925,6 +1274,13 @@
     ],
     "crBudget": 90,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "water_temple_core",
@@ -943,6 +1299,13 @@
     ],
     "crBudget": 70,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "moathouse_dungeons",
@@ -965,6 +1328,13 @@
     ],
     "crBudget": 85,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "toee_level_1",
@@ -987,6 +1357,13 @@
     ],
     "crBudget": 100,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "toee_level_2",
@@ -1009,6 +1386,13 @@
     ],
     "crBudget": 120,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "toee_level_3",
@@ -1036,6 +1420,20 @@
     ],
     "crBudget": 150,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "zuggtmoy_queen",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "toee_level_4",
@@ -1054,6 +1452,13 @@
     ],
     "crBudget": 60,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "shroudgarde_inn_cellar",
@@ -1092,6 +1497,13 @@
     ],
     "crBudget": 50,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "megadungeon_hub",
@@ -1115,6 +1527,13 @@
     ],
     "crBudget": 60,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_1",
@@ -1137,6 +1556,13 @@
     ],
     "crBudget": 70,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_2",
@@ -1159,6 +1585,13 @@
     ],
     "crBudget": 80,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_3",
@@ -1181,6 +1614,13 @@
     ],
     "crBudget": 90,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_4",
@@ -1203,6 +1643,13 @@
     ],
     "crBudget": 100,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_5",
@@ -1225,6 +1672,13 @@
     ],
     "crBudget": 110,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_6",
@@ -1247,6 +1701,13 @@
     ],
     "crBudget": 120,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_7",
@@ -1269,6 +1730,13 @@
     ],
     "crBudget": 130,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_8",
@@ -1291,6 +1759,13 @@
     ],
     "crBudget": 140,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_9",
@@ -1313,6 +1788,13 @@
     ],
     "crBudget": 55,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "megadungeon_hub",
@@ -1336,6 +1818,13 @@
     ],
     "crBudget": 65,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_1",
@@ -1358,6 +1847,13 @@
     ],
     "crBudget": 75,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_2",
@@ -1380,6 +1876,13 @@
     ],
     "crBudget": 85,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_3",
@@ -1402,6 +1905,13 @@
     ],
     "crBudget": 95,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_4",
@@ -1424,6 +1934,13 @@
     ],
     "crBudget": 105,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_5",
@@ -1446,6 +1963,13 @@
     ],
     "crBudget": 115,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_6",
@@ -1468,6 +1992,13 @@
     ],
     "crBudget": 125,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_7",
@@ -1490,6 +2021,13 @@
     ],
     "crBudget": 135,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_8",
@@ -1512,6 +2050,13 @@
     ],
     "crBudget": 145,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_9",
@@ -1534,6 +2079,13 @@
     ],
     "crBudget": 110,
     "encounterProfileId": "cave_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "dirt_floor",
+      "wall": "stone_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_goblin_10",
@@ -1557,6 +2109,13 @@
     ],
     "crBudget": 120,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_the_goblin_encampment",
@@ -1580,6 +2139,13 @@
     ],
     "crBudget": 90,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_arena_chamber",
@@ -1603,6 +2169,13 @@
     ],
     "crBudget": 100,
     "encounterProfileId": "temple_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "stone_floor",
+      "wall": "town_wall",
+      "door": "wooden_door",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_place_of_sanctuary",
@@ -1627,6 +2200,13 @@
     ],
     "crBudget": 130,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_parthenion",
@@ -1651,6 +2231,13 @@
     ],
     "crBudget": 140,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "crypt_floor",
+      "wall": "crypt_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "incursion_unholy_sepulchre",
@@ -1675,6 +2262,20 @@
     ],
     "crBudget": 160,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
+    "placedEntities": [
+      {
+        "templateId": "red_dragon",
+        "x": 40,
+        "y": 24
+      }
+    ],
     "connections": [
       {
         "targetAreaId": "incursion_lesser_vault_1",
@@ -1698,6 +2299,13 @@
     ],
     "crBudget": 200,
     "encounterProfileId": "deep_megadungeon_encounter",
+    "environmentType": "underground",
+    "proceduralPalette": {
+      "floor": "abyss_floor",
+      "wall": "abyss_wall",
+      "door": "iron_gate",
+      "water": "shallow_water"
+    },
     "connections": [
       {
         "targetAreaId": "nethack_doom_10",

@@ -21,7 +21,7 @@ import type {
   UIInventoryItem,
   UIInventoryModel
 } from '../../../types/ui_adapter.types.ts';
-import { formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
+import { convertCurrency, formatCurrency, resolveCurrencyConfig } from '../../../systems/currency.system.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { DND35E_CP_PER_GP, DND35E_DEFAULT_CURRENCY_CONFIG } from '../currency.ts';
 import { evaluateActiveSpellAuraContributions } from '../magic/spell_aura_resolver.ts';
@@ -100,6 +100,10 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
     const balanceBaseUnits =
       inventory?.currencyBalance ?? (dndData.goldCurrency ?? DEFAULT_GOLD_CURRENCY) * DND35E_CP_PER_GP;
     const currencyCfg = state ? resolveCurrencyConfig(state) : DND35E_DEFAULT_CURRENCY_CONFIG;
+    const defaultDenomId = currencyCfg.defaultValueDenominationId ?? currencyCfg.baseUnitId;
+    const goldCurrency = Math.floor(
+      convertCurrency(balanceBaseUnits, currencyCfg.baseUnitId, defaultDenomId, currencyCfg)
+    );
 
     return {
       equippedSlots,
@@ -109,7 +113,7 @@ export class DnD35UIAdapter implements ICartridgeUIAdapter {
       stashItems,
       currentWeightLbs,
       maxWeightLbs: strScore * LIGHT_LOAD_MULTIPLIER_LBS,
-      goldCurrency: Math.floor(balanceBaseUnits / DND35E_CP_PER_GP),
+      goldCurrency,
       currencyFormatted: formatCurrency(balanceBaseUnits, currencyCfg)
     };
   }

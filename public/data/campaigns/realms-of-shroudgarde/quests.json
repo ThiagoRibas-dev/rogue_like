@@ -307,8 +307,8 @@
   },
   "quest_alden_lost_tome": {
     "id": "quest_alden_lost_tome",
-    "title": "The Archmage`s Grimoire",
-    "description": "Retrieve Archmage Alden`s lost celestial grimoire from the top of his tower.",
+    "title": "The Archmage's Grimoire",
+    "description": "Retrieve Archmage Alden's lost celestial grimoire from the top of his tower.",
     "objectives": [
       {
         "id": "obj_1",
@@ -382,7 +382,7 @@
   },
   "quest_gem_appraisal": {
     "id": "quest_gem_appraisal",
-    "title": "The Jeweler`s Challenge",
+    "title": "The Jeweler's Challenge",
     "description": "Bring rare gemstones to Silas for master appraisal.",
     "objectives": [
       {

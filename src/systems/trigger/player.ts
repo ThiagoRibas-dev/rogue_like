@@ -12,7 +12,10 @@ import type {
 import { getComponent, addComponent, removeEntity, resolveEntityDisplayName } from '../../core/ecs.ts';
 import { getEntityCurrencyBalance, resolveCurrencyConfig, toBaseUnits } from '../currency.system.ts';
 import { applyItemEffect } from '../effects.system.ts';
+import { grantItemToActorInventory } from '../inventory.system.ts';
 import { addMessage, MessageLogCategory } from '../message.system.ts';
+
+const DEFAULT_GIVE_ITEM_QUANTITY = 1;
 
 /**
  * Condition evaluators specific to the player entity and item usage.
@@ -223,6 +226,37 @@ export const playerConsequences = {
 
     const itemName = resolveEntityDisplayName(nextState, eId, 'The item');
     return addMessage(nextState, `${itemName} is now coated!`, MessageLogCategory.System);
+  },
+
+  give_item: (
+    state: GameState,
+    event: GameEvent,
+    consequence: Extract<ConsequenceAction, { type: 'give_item' }>
+  ): GameState => {
+    const eventActorId = 'entityId' in event ? (event as unknown as { entityId: EntityId }).entityId : undefined;
+    const recipientId: EntityId | undefined =
+      consequence.targetId === 'event.entityId'
+        ? eventActorId
+        : consequence.targetId && consequence.targetId !== 'player'
+          ? (parseInt(consequence.targetId, 10) as EntityId)
+          : (consequence._playerEntityId ??
+            eventActorId ??
+            state.entities.find((id) => getComponent(state, id, ComponentType.Player) !== undefined));
+
+    if (recipientId === undefined || Number.isNaN(recipientId)) {
+      return state;
+    }
+
+    const quantity = consequence.quantity ?? DEFAULT_GIVE_ITEM_QUANTITY;
+    const grant = grantItemToActorInventory(state, recipientId, consequence.itemId, quantity);
+    if (grant.absorbedCurrencyFormatted) {
+      return addMessage(grant.state, `Received ${grant.absorbedCurrencyFormatted}.`, MessageLogCategory.System);
+    }
+    const qtyLabel = quantity > 1 ? ` x${quantity}` : '';
+    const msg = grant.droppedOnGround
+      ? `Inventory full; ${grant.itemName}${qtyLabel} was placed at your feet.`
+      : `Received ${grant.itemName}${qtyLabel}.`;
+    return addMessage(grant.state, msg, MessageLogCategory.System);
   }
 } satisfies Partial<
   Record<ConsequenceAction['type'], (state: GameState, event: GameEvent, consequence: never) => GameState>

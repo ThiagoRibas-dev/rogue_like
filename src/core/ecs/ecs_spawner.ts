@@ -18,7 +18,7 @@ import { IntentType } from '../../types/intents/intent.enum.ts';
 import type { StartDialogueIntent } from '../../types/intents/ui.intents.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
 import { rollFacetValue, rollPersonalityValue } from '../rng.ts';
-import { addComponent, createEntity, getComponent, removeComponent } from './ecs_core.ts';
+import { addComponent, createDefaultMemoryComponent, createEntity, getComponent, removeComponent } from './ecs_core.ts';
 import { spawnItem, promoteEntity } from './ecs_item_promoter.ts';
 import { equipActorDefaultArmaments, initializeActorEquipmentAndInventory } from './ecs_spawner_equipment.ts';
 
@@ -278,21 +278,18 @@ export function spawnEntity(
       satiation: 1000
     });
 
-    if (!template.memory) {
-      nextState = addComponent(nextState, entityId, {
-        type: ComponentType.Memory,
-        factionStandings: {},
-        grudges: [],
-        facts: [],
-        knowledge: {}
-      });
-    }
-
     const questLog: QuestLogComponent = {
       type: ComponentType.QuestLog,
       quests: {}
     };
     nextState = addComponent(nextState, entityId, questLog);
+  }
+
+  if (
+    !getComponent(nextState, entityId, ComponentType.Memory) &&
+    (templateId === 'player' || template.shop !== undefined || template.dialogueId !== undefined)
+  ) {
+    nextState = addComponent(nextState, entityId, createDefaultMemoryComponent());
   }
 
   if (staticInventory && staticInventory.length > 0) {

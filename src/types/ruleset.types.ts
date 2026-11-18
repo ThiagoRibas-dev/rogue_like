@@ -380,6 +380,11 @@ export interface RulesetContract {
   evaluateTradePriceModifier?(state: GameState, context: TradePriceModifierContext): TradePriceModifierResult | null;
 
   /**
+   * Optional hook declaring the social haggling actions exposed in the Trade UI for this ruleset.
+   */
+  getTradeSocialActions?(): ReadonlyArray<TradeSocialActionDescriptor>;
+
+  /**
    * Optional hook resolving a cartridge-specific social haggle skill check during trade
    * (`appraise`, `diplomacy`, `bluff`, `intimidate`).
    */
@@ -430,6 +435,13 @@ export interface TradePriceModifierResult {
   readonly markupDelta: number;
   readonly sellMultiplierBonus?: number | undefined;
   readonly annotations?: ReadonlyArray<string> | undefined;
+}
+
+/** Declarative button descriptor for a ruleset-supported trade haggle verb in the Trade UI. */
+export interface TradeSocialActionDescriptor {
+  readonly verb: 'persuade' | 'appraise' | 'haggle' | 'intimidate';
+  readonly skillId: string;
+  readonly label: string;
 }
 
 /** Outcome of a ruleset-driven social skill attempt inside a trade session. */

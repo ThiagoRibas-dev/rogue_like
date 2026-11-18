@@ -247,7 +247,7 @@ class PresentationEventQueue {
       }
       if (
         (prev.components !== next.components || prev.entities !== next.entities) &&
-        (next.uiMode === UIMode.CartridgeModal || next.uiMode === UIMode.Inventory)
+        (next.uiMode === UIMode.CartridgeModal || next.uiMode === UIMode.Inventory || next.uiMode === UIMode.Trade)
       ) {
         this.markDirty(PresentationDomain.Modals);
       }

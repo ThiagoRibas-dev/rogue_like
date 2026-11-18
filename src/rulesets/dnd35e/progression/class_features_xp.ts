@@ -2,7 +2,7 @@ import { dndFloor } from '../math/multipliers.ts';
 import type { DnD35ClassDefinition } from '../types/dnd35e_system.types.ts';
 
 /** CR contribution for a 1st-level NPC class character (`0.5` per DMG p. 38). */
-const NPC_CLASS_LEVEL_1_CR = 0.5;
+export const NPC_CLASS_LEVEL_1_CR = 0.5;
 
 /** CR contribution per NPC class level when added to a monster with Racial HD (`0.5` per MM p. 294). */
 const MONSTER_NONASSOCIATED_NPC_CR_PER_LEVEL = 0.5;

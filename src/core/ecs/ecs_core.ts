@@ -1,4 +1,4 @@
-import { type Component, ComponentType } from '../../types/components.types.ts';
+import { type Component, ComponentType, type MemoryComponent } from '../../types/components.types.ts';
 import { type EntityId, type GameState, toEntityId } from '../../types/game-state.types.ts';
 
 /**
@@ -241,4 +241,17 @@ export function resolveEntityDisplayName(state: GameState, entityId: EntityId, f
   }
 
   return readComp(ComponentType.Actor) !== undefined ? 'Actor' : 'Feature';
+}
+
+/**
+ * Returns an initialized default `MemoryComponent` for players, merchants, and dialogue NPCs.
+ */
+export function createDefaultMemoryComponent(): MemoryComponent {
+  return {
+    type: ComponentType.Memory,
+    factionStandings: {},
+    grudges: [],
+    facts: [],
+    knowledge: {}
+  };
 }

@@ -20,6 +20,7 @@ import { renderRTwPControls, renderViewControls } from './ui/controls.ui.ts';
 import { renderSettingsMenu } from './ui/settings.ui.ts';
 import { renderFactionsPanel } from './ui/factions.ui.ts';
 import { renderDialoguePanel } from './ui/dialogue.ui.ts';
+import { renderTradeOverlay } from './ui/trade.ui.ts';
 import { renderQuestJournal } from './ui/quest.ui.ts';
 import { renderInvestigationBoard } from './ui/investigation.ui.ts';
 import { renderDebugOverlay } from './ui/debug.ui.ts';
@@ -203,6 +204,7 @@ export function renderPresenterFrame(
   if (dirtyDomains.has(PresentationDomain.Modals)) {
     const tMod0 = performance.now();
     renderDialoguePanel(state);
+    renderTradeOverlay(state);
     renderVerbMenu(state);
     renderSettingsMenu(state);
     renderFactionsPanel(state);

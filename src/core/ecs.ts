@@ -7,7 +7,8 @@ export {
   getComponent,
   queryEntities,
   removeEntity,
-  resolveEntityDisplayName
+  resolveEntityDisplayName,
+  createDefaultMemoryComponent
 } from './ecs/ecs_core.ts';
 
 // Re-export entity spawning, item creation, and promotion

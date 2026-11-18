@@ -23,6 +23,78 @@
       "solid"
     ]
   },
+  "town_floor": {
+    "spriteId": "tile_floor_stone_2",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#a1887f",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "town_wall": {
+    "spriteId": "tile_stone_brick_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#7f8c8d",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "solid"
+    ]
+  },
+  "crypt_floor": {
+    "spriteId": "tile_stone_floor_1",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#95a5a6",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "crypt_wall": {
+    "spriteId": "tile_catacombs_skull_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#bdc3c7",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "solid"
+    ]
+  },
+  "abyss_floor": {
+    "spriteId": "tile_red_stone_floor_1_red_bg",
+    "walkable": true,
+    "transparent": true,
+    "glyph": ".",
+    "fg": "#c0392b",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "floor"
+    ]
+  },
+  "abyss_wall": {
+    "spriteId": "tile_igneous_wall_top",
+    "walkable": false,
+    "transparent": false,
+    "glyph": "#",
+    "fg": "#7f1d1d",
+    "bg": "#000000",
+    "tags": [
+      "terrain",
+      "solid"
+    ]
+  },
   "stairs_up": {
     "spriteId": "tile_staircase_up",
     "walkable": true,
@@ -97,7 +169,7 @@
     ]
   },
   "swamp_floor": {
-    "spriteId": "tile_dirt_1",
+    "spriteId": "tile_dirt_1_green_bg",
     "walkable": true,
     "transparent": true,
     "glyph": ";",

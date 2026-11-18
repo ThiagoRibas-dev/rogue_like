@@ -51,10 +51,12 @@
       ]
     },
     "entities": {
-      "goblin": 40,
-      "orc": 30,
+      "goblin": 30,
+      "orc": 25,
       "bugbear": 20,
-      "ogre": 10
+      "ogre": 10,
+      "manticore": 10,
+      "ettin": 5
     }
   },
   "crypt_undead": {
@@ -80,10 +82,11 @@
       ]
     },
     "entities": {
-      "clay_golem": 25,
+      "clay_golem": 20,
+      "stone_golem": 15,
       "gargoyle": 25,
-      "air_elemental": 25,
-      "fire_elemental": 25
+      "air_elemental": 20,
+      "fire_elemental": 20
     }
   },
   "temple_cult": {
@@ -95,10 +98,11 @@
       ]
     },
     "entities": {
-      "cultist": 45,
-      "water_elemental": 25,
+      "cultist": 40,
+      "water_elemental": 20,
       "ghast": 15,
-      "troll": 15
+      "troll": 15,
+      "medusa": 10
     }
   },
   "deep_monsters": {
@@ -110,11 +114,29 @@
       ]
     },
     "entities": {
-      "orc": 25,
-      "troll": 25,
-      "wraith": 20,
+      "orc_warchief": 15,
+      "troll": 20,
+      "wraith": 15,
       "minotaur": 15,
-      "red_dragon": 15
+      "ettin": 15,
+      "medusa": 10,
+      "mind_flayer": 10
+    }
+  },
+  "deep_vault_horrors": {
+    "id": "deep_vault_horrors",
+    "name": "Deep Vault Horrors",
+    "conditions": {
+      "areaTags": [
+        "deep_vault"
+      ]
+    },
+    "entities": {
+      "mind_flayer": 25,
+      "fire_giant": 25,
+      "beholder": 20,
+      "iron_golem": 20,
+      "marilith": 10
     }
   }
 }

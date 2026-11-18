@@ -12,6 +12,13 @@ import { getDnD35EntityData } from '../srd_registry.ts';
 
 /** Standard XP unit multiplier for equal-CR encounters (`300 XP` per Effective Character Level at ECL >= 3, or CR * 300 at ECL 1-3). */
 const DMG_BASE_XP_PER_ECL = 300;
+const DMG_EARLY_ECL_CAP = 3;
+const DMG_MIN_CREATURE_CR = 0.125;
+const DMG_LOW_CR_MIN_XP = 10;
+const DMG_CR_STEP_BASE_UP = 2;
+const DMG_CR_ODD_STEP_UP = 1.5;
+const DMG_CR_STEP_BASE_DOWN = 0.5;
+const DMG_CR_ODD_STEP_DOWN = 2 / 3;
 
 /** Max CR difference above or below killer ECL before Table 2-6 caps out (trivial <= -8 awards 0 XP). */
 const DMG_MAX_LOWER_CR_DELTA = -8;
@@ -26,9 +33,9 @@ function getCrDeltaMultiplier(delta: number): number {
   const hasOdd = absDelta % 2 === 1;
 
   if (clampedDelta >= 0) {
-    return Math.pow(2, halfSteps) * (hasOdd ? 1.5 : 1);
+    return Math.pow(DMG_CR_STEP_BASE_UP, halfSteps) * (hasOdd ? DMG_CR_ODD_STEP_UP : 1);
   }
-  const factor = Math.pow(0.5, halfSteps) * (hasOdd ? 2 / 3 : 1);
+  const factor = Math.pow(DMG_CR_STEP_BASE_DOWN, halfSteps) * (hasOdd ? DMG_CR_ODD_STEP_DOWN : 1);
   return factor;
 }
 
@@ -42,18 +49,18 @@ function getCrDeltaMultiplier(delta: number): number {
  */
 export function computeDnD35eCrXp(cr: number, killerEcl: number): number {
   const safeEcl = Math.max(1, Math.floor(killerEcl));
-  const safeCr = Math.max(0.125, cr);
+  const safeCr = Math.max(DMG_MIN_CREATURE_CR, cr);
 
   // DMG Table 2-6 treats ECL 1-3 identically for CR 1-3 (300 * CR) and scales CR >= 4 from column L=3.
-  if (safeEcl <= 3) {
+  if (safeEcl <= DMG_EARLY_ECL_CAP) {
     if (safeCr < 1) {
-      return Math.max(10, Math.round(DMG_BASE_XP_PER_ECL * safeCr));
+      return Math.max(DMG_LOW_CR_MIN_XP, Math.round(DMG_BASE_XP_PER_ECL * safeCr));
     }
-    if (safeCr <= 3) {
+    if (safeCr <= DMG_EARLY_ECL_CAP) {
       return Math.round(DMG_BASE_XP_PER_ECL * safeCr);
     }
-    const baseAtCol3 = DMG_BASE_XP_PER_ECL * 3;
-    const mult = getCrDeltaMultiplier(Math.round(safeCr) - 3);
+    const baseAtCol3 = DMG_BASE_XP_PER_ECL * DMG_EARLY_ECL_CAP;
+    const mult = getCrDeltaMultiplier(Math.round(safeCr) - DMG_EARLY_ECL_CAP);
     return Math.max(0, Math.round(baseAtCol3 * mult));
   }
 

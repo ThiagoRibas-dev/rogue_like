@@ -168,6 +168,12 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
     targetId: z.string().optional() // "target" is the item to consume
   }),
   z.object({
+    type: z.literal('give_item'),
+    itemId: z.string().min(1),
+    quantity: z.number().int().positive().default(1),
+    targetId: z.string().optional()
+  }),
+  z.object({
     type: z.literal('spill_inventory'),
     targetId: z.string().optional() // Optional target entity. If omitted, applies to the reaction target.
   }),

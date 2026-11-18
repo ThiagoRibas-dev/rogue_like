@@ -1,11 +1,23 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
-import { ComponentType, type InventoryComponent, type ClueComponent } from '../types/components.types.ts';
-import { getComponent, addComponent, removeComponent, removeEntity } from '../core/ecs.ts';
+import {
+  ComponentType,
+  type InventoryComponent,
+  type ClueComponent,
+  type PositionComponent
+} from '../types/components.types.ts';
+import {
+  getComponent,
+  addComponent,
+  removeComponent,
+  removeEntity,
+  spawnItem,
+  resolveEntityDisplayName
+} from '../core/ecs.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { GameEventType, type GameEvent } from '../types/events.types.ts';
 import { processQuestEvent } from './quest.system.ts';
 import type { ActionResult } from '../types/intents/intent.union.ts';
-import { addEntityCurrency, formatCurrency, resolveCurrencyConfig, toBaseUnits } from './currency.system.ts';
+import { absorbCurrencyItemGrant, formatCurrency } from './currency.system.ts';
 import {
   processEquipItemIntent,
   processUnequipItemIntent,
@@ -86,21 +98,18 @@ export function processPickUpIntent(state: GameState, entityId: EntityId): Actio
 
   const def = state.campaign.items[itemComp.itemId];
   if (!def) return { state, success: false, energyCost: 0 };
-  const isIdentified = state.identifiedItems.has(def.id);
-  const itemName =
-    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
+  const itemName = resolveEntityDisplayName(state, itemEntityId, itemComp.itemId);
 
   if (def.currencyGrant) {
-    const currencyCfg = resolveCurrencyConfig(state);
-    const totalCount = def.currencyGrant.amount * (itemComp.charges ?? 1);
-    const amountBaseUnits = toBaseUnits(totalCount, def.currencyGrant.denominationId, currencyCfg);
-    const credit = addEntityCurrency(state, entityId, amountBaseUnits);
+    const stackCount = itemComp.charges ?? 1;
+    const totalCount = def.currencyGrant.amount * stackCount;
+    const credit = absorbCurrencyItemGrant(state, entityId, def, stackCount);
     let nextState = removeComponent(credit.state, itemEntityId, ComponentType.Position);
     nextState = removeEntity(nextState, itemEntityId);
     if (getComponent(nextState, entityId, ComponentType.Player)) {
       nextState = processQuestEvent(nextState, 'gather', itemComp.itemId, totalCount);
     }
-    const formattedAmount = formatCurrency(amountBaseUnits, currencyCfg);
+    const formattedAmount = formatCurrency(credit.amountBaseUnits, credit.currencyCfg);
     return {
       state: addMessage(nextState, `You collect ${formattedAmount} (${itemName}).`, MessageLogCategory.System),
       success: true,
@@ -176,9 +185,7 @@ export function processDropIntent(
 
   const def = state.campaign.items[itemComp.itemId];
   if (!def) return { state, success: false };
-  const isIdentified = state.identifiedItems.has(def.id);
-  const itemName =
-    (isIdentified ? def?.name : (state.itemUnidentifiedNames.get(def.id) ?? def?.unidentifiedName)) ?? itemComp.itemId;
+  const itemName = resolveEntityDisplayName(state, itemEntityId, itemComp.itemId);
 
   const equipment = getComponent(state, entityId, ComponentType.Equipment);
   if (equipment && equipment.slots.some((s) => s.equippedItem === itemEntityId)) {
@@ -203,4 +210,73 @@ export function processDropIntent(
     state: addMessage(nextState, `You drop the ${itemName}.`, MessageLogCategory.System),
     success: true
   };
+}
+
+/**
+ * Grants `count` instances of an item definition directly to an actor's wallet (when `currencyGrant`
+ * is present) or inventory (dropping excess items at the actor's coordinates if capacity is full).
+ */
+export function grantItemToActorInventory(
+  state: GameState,
+  recipientId: EntityId,
+  itemId: string,
+  count = 1
+): {
+  readonly state: GameState;
+  readonly droppedOnGround: boolean;
+  readonly absorbedCurrencyFormatted?: string | undefined;
+  readonly itemName: string;
+} {
+  const safeCount = Math.max(0, Math.floor(count));
+  const itemDef = state.campaign.items[itemId];
+  const itemName = itemDef?.name ?? itemId;
+  if (!itemDef || safeCount <= 0) {
+    return { state, droppedOnGround: false, itemName };
+  }
+
+  const isPlayer = getComponent(state, recipientId, ComponentType.Player) !== undefined;
+  if (itemDef.currencyGrant) {
+    const credit = absorbCurrencyItemGrant(state, recipientId, itemDef, safeCount);
+    let nextState = credit.state;
+    if (isPlayer) {
+      nextState = processQuestEvent(nextState, 'gather', itemId, itemDef.currencyGrant.amount * safeCount);
+    }
+    const formatted = formatCurrency(credit.amountBaseUnits, credit.currencyCfg);
+    return {
+      state: nextState,
+      droppedOnGround: false,
+      absorbedCurrencyFormatted: formatted,
+      itemName
+    };
+  }
+
+  let nextState = state;
+  const inventory = getComponent(nextState, recipientId, ComponentType.Inventory) as InventoryComponent | undefined;
+  const pos = getComponent(nextState, recipientId, ComponentType.Position) as PositionComponent | undefined;
+  const px = pos?.x ?? 0;
+  const py = pos?.y ?? 0;
+
+  const currentInventoryItems = inventory ? [...inventory.items] : [];
+  const capacity = getEffectiveCapacity(nextState, recipientId);
+  let droppedOnGround = false;
+
+  for (let i = 0; i < safeCount; i++) {
+    let itemEntityId: EntityId;
+    [nextState, itemEntityId] = spawnItem(nextState, itemId, px, py);
+    if (inventory && currentInventoryItems.length < capacity) {
+      nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
+      currentInventoryItems.push(itemEntityId);
+    } else {
+      droppedOnGround = true;
+    }
+  }
+
+  if (inventory) {
+    nextState = addComponent(nextState, recipientId, { ...inventory, items: currentInventoryItems });
+  }
+  if (isPlayer) {
+    nextState = processQuestEvent(nextState, 'gather', itemId, safeCount);
+  }
+
+  return { state: nextState, droppedOnGround, itemName };
 }

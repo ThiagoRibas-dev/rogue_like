@@ -11,6 +11,12 @@
           {
             "id": "opt_diplomacy",
             "text": "[Diplomacy DC 14] I am an able adventurer here to aid Shroudgarde in securing the frontier.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "received_derek_signet"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
@@ -35,6 +41,11 @@
             ]
           },
           {
+            "id": "opt_bounties",
+            "text": "What bounties or duties are posted for Shroudgarde defenders?",
+            "nextNodeId": "node_bounties"
+          },
+          {
             "id": "opt_leave",
             "text": "Forgive me, Constable. I will take my leave."
           }
@@ -47,12 +58,32 @@
           {
             "id": "opt_accept_signet",
             "text": "Thank you, Constable. I will not fail.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "received_derek_signet"
+              }
+            ],
             "consequences": [
               {
                 "type": "set_attitude",
                 "attitude": "friendly"
+              },
+              {
+                "type": "give_item",
+                "itemId": "shroudgarde_signet",
+                "quantity": 1
+              },
+              {
+                "type": "set_fact",
+                "target": "received_derek_signet"
               }
             ]
+          },
+          {
+            "id": "opt_back_signed",
+            "text": "Return to duties.",
+            "nextNodeId": "root"
           }
         ]
       },
@@ -87,6 +118,93 @@
             "nextNodeId": "root"
           }
         ]
+      },
+      "node_bounties": {
+        "id": "node_bounties",
+        "text": "Several urgent threats loom across the frontier. Which assignment will you accept?",
+        "options": [
+          {
+            "id": "opt_q_crypts",
+            "text": "[Quest] Cleanse the Sunless Crypts of the restless dead.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_cleanse_crypts",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_cleanse_crypts"
+              }
+            ],
+            "nextNodeId": "node_bounties"
+          },
+          {
+            "id": "opt_q_watchtower",
+            "text": "[Quest] Drive the bandit cutthroats from the High Watchtower.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_watchtower_defense",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_watchtower_defense"
+              }
+            ],
+            "nextNodeId": "node_bounties"
+          },
+          {
+            "id": "opt_q_caves",
+            "text": "[Quest] Root out the Ravine of Chaos and slay Korag the Ogre Chieftain.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_caves_of_chaos",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_caves_of_chaos"
+              }
+            ],
+            "nextNodeId": "node_bounties"
+          },
+          {
+            "id": "opt_q_moathouse",
+            "text": "[Quest] Infiltrate the Moathouse and defeat Lareth the Beautiful.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_moathouse_incursion",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_moathouse_incursion"
+              }
+            ],
+            "nextNodeId": "node_bounties"
+          },
+          {
+            "id": "opt_bounties_back",
+            "text": "Back to the gatehouse.",
+            "nextNodeId": "root"
+          }
+        ]
       }
     }
   },
@@ -109,28 +227,83 @@
             ]
           },
           {
+            "id": "opt_quest_supplies",
+            "text": "[Quest] Need a hand sorting provisions for the Golden Grain?",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_barkeep_supplies",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_barkeep_supplies"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
             "id": "opt_appraise",
             "text": "[Appraise DC 12] Your supplier from Orlane overcharged you on that batch of wheat.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "bertram_appraise_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "appraise",
                 "dc": 12,
                 "onSuccessNodeId": "node_appraise_win",
-                "onFailureNodeId": "node_appraise_loss"
+                "onFailureNodeId": "node_appraise_loss",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "bertram_appraise_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "bertram_appraise_used"
+                  }
+                ]
               }
             ]
           },
           {
             "id": "opt_bluff",
             "text": "[Bluff DC 14] Constable Derek sent me for complimentary provisions for our patrol.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "bertram_bread_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "bluff",
                 "dc": 14,
                 "onSuccessNodeId": "node_bluff_win",
-                "onFailureNodeId": "node_bluff_loss"
+                "onFailureNodeId": "node_bluff_loss",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "bertram_bread_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "bertram_bread_used"
+                  }
+                ]
               }
             ]
           },
@@ -148,10 +321,20 @@
           {
             "id": "opt_trade_disc",
             "text": "Much appreciated, Bertram. Let me see your wares.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "bertram_discount_applied"
+              }
+            ],
             "consequences": [
               {
                 "type": "modify_session_markup",
                 "delta": -0.15
+              },
+              {
+                "type": "set_fact",
+                "target": "bertram_discount_applied"
               },
               {
                 "type": "open_barter"
@@ -177,15 +360,26 @@
       },
       "node_bluff_win": {
         "id": "node_bluff_win",
-        "text": "Ah, Derek`s boys! Never let it be said Bertram neglected the town guard. Here is a fresh loaf of crusty bread on the house!",
+        "text": "Ah, Derek's boys! Never let it be said Bertram neglected the town guard. Here is a fresh loaf of crusty bread on the house!",
         "options": [
           {
             "id": "opt_trade_free",
             "text": "Much obliged.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "received_bertram_bread"
+              }
+            ],
             "consequences": [
               {
-                "type": "modify_currency",
-                "amount": 50
+                "type": "give_item",
+                "itemId": "ration_fresh_bread",
+                "quantity": 1
+              },
+              {
+                "type": "set_fact",
+                "target": "received_bertram_bread"
               },
               {
                 "type": "open_barter"
@@ -239,15 +433,52 @@
           {
             "id": "opt_appraise",
             "text": "[Appraise DC 15] This breastplate has exceptional fold-welding. You take immense pride in your craft.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "laurent_appraise_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "appraise",
                 "dc": 15,
                 "onSuccessNodeId": "node_smith_praise_pass",
-                "onFailureNodeId": "node_smith_praise_fail"
+                "onFailureNodeId": "node_smith_praise_fail",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "laurent_appraise_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "laurent_appraise_used"
+                  }
+                ]
               }
             ]
+          },
+          {
+            "id": "opt_q_warrens",
+            "text": "[Quest] Tell me about the Goblin Warrens threatening the deep roads.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_goblin_warrens",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_goblin_warrens"
+              }
+            ],
+            "nextNodeId": "root"
           },
           {
             "id": "opt_adamantine",
@@ -263,10 +494,20 @@
           {
             "id": "opt_trade_pass",
             "text": "Show me your armory, Master Laurent.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "laurent_discount_applied"
+              }
+            ],
             "consequences": [
               {
                 "type": "modify_session_markup",
                 "delta": -0.1
+              },
+              {
+                "type": "set_fact",
+                "target": "laurent_discount_applied"
               },
               {
                 "type": "open_barter"
@@ -294,6 +535,25 @@
         "id": "node_ore",
         "text": "If you bring me pure adamantine ore from the deepest vaults beneath the Dungeons of Doom, I will forge weapons worthy of kings!",
         "options": [
+          {
+            "id": "opt_q_ore",
+            "text": "[Quest] I will locate the Adamantine Hoard vault.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_laurent_special_ore",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_laurent_special_ore"
+              }
+            ],
+            "nextNodeId": "root"
+          },
           {
             "id": "opt_back",
             "text": "I will remember that.",
@@ -324,29 +584,95 @@
           {
             "id": "opt_diplomacy",
             "text": "[Diplomacy DC 13] The road is perilous, sister. A blessing for our quest would save many lives.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "isabelle_diplomacy_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "diplomacy",
                 "dc": 13,
                 "onSuccessNodeId": "node_heal_pass",
-                "onFailureNodeId": "node_heal_fail"
+                "onFailureNodeId": "node_heal_fail",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "isabelle_diplomacy_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "isabelle_diplomacy_used"
+                  }
+                ]
               }
             ]
+          },
+          {
+            "id": "opt_q_relic",
+            "text": "[Quest] What do you know of the Sunless Arch-Curate and the lost relic?",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_sunless_relic_consecration",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_sunless_relic_consecration"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
+            "id": "opt_q_water",
+            "text": "[Quest] Have the flooded marsh shrines spread corruption inland?",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_water_temple_drain",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_water_temple_drain"
+              }
+            ],
+            "nextNodeId": "root"
           }
         ]
       },
       "node_heal_pass": {
         "id": "node_heal_pass",
-        "text": "Your heart is pure. Go with the Dawnfather`s blessing, and take these consecrated elixirs at sanctuary cost.",
+        "text": "Your heart is pure. Go with the Dawnfather's blessing, and take these consecrated elixirs at sanctuary cost.",
         "options": [
           {
             "id": "opt_trade_bless",
             "text": "Thank you, Sister Isabelle.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "isabelle_discount_applied"
+              }
+            ],
             "consequences": [
               {
                 "type": "modify_session_markup",
                 "delta": -0.15
+              },
+              {
+                "type": "set_fact",
+                "target": "isabelle_discount_applied"
               },
               {
                 "type": "open_barter"
@@ -379,7 +705,7 @@
     "nodes": {
       "root": {
         "id": "root",
-        "text": "Step lightly. The woods have eyes, and not all of them belong to birds. Need bows, quivers, or scouts` gear?",
+        "text": "Step lightly. The woods have eyes, and not all of them belong to birds. Need bows, quivers, or scouts' gear?",
         "options": [
           {
             "id": "opt_trade",
@@ -391,6 +717,25 @@
             ]
           },
           {
+            "id": "opt_q_spire",
+            "text": "[Quest] Tell me about the Elemental Spire past the Mirrored Marsh.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_spire_of_elements",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_spire_of_elements"
+              }
+            ],
+            "nextNodeId": "node_tracks"
+          },
+          {
             "id": "opt_tracks",
             "text": "What trails lead towards the Ravine of Chaos?",
             "nextNodeId": "node_tracks"
@@ -399,11 +744,11 @@
       },
       "node_tracks": {
         "id": "node_tracks",
-        "text": "Follow the northern deer paths through La Forêt Hantée. Watch the canopy — giant spiders nest above the moss line.",
+        "text": "Follow the northern deer paths through La Forêt Hantée for the Ravine, or strike east through the Mirrored Marsh to reach the Elemental Spire. Watch the canopy — giant spiders nest above the moss line.",
         "options": [
           {
             "id": "opt_back",
-            "text": "I will watch my head.",
+            "text": "I will keep my eyes open.",
             "nextNodeId": "root"
           }
         ]
@@ -421,7 +766,7 @@
         "options": [
           {
             "id": "opt_trade",
-            "text": "Let me trade in gems and coin pouches.",
+            "text": "Let me trade in gemstones and wards.",
             "consequences": [
               {
                 "type": "open_barter"
@@ -429,15 +774,52 @@
             ]
           },
           {
+            "id": "opt_q_gems",
+            "text": "[Quest] Interested in commissioning a lapidary appraisal?",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_gem_appraisal",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_gem_appraisal"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
             "id": "opt_appraise",
             "text": "[Appraise DC 16] Your rubies from the south carry high refraction. Let us make an equitable deal.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "silas_appraise_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "appraise",
                 "dc": 16,
                 "onSuccessNodeId": "node_gem_pass",
-                "onFailureNodeId": "node_gem_fail"
+                "onFailureNodeId": "node_gem_fail",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "silas_appraise_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "silas_appraise_used"
+                  }
+                ]
               }
             ]
           }
@@ -450,10 +832,20 @@
           {
             "id": "opt_trade_boost",
             "text": "Let us negotiate.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "silas_discount_applied"
+              }
+            ],
             "consequences": [
               {
                 "type": "modify_session_markup",
                 "delta": -0.15
+              },
+              {
+                "type": "set_fact",
+                "target": "silas_discount_applied"
               },
               {
                 "type": "open_barter"
@@ -498,15 +890,90 @@
             ]
           },
           {
+            "id": "opt_q_tome",
+            "text": "[Quest] I can ascend to the Sanctum Sanctorum and retrieve your celestial grimoire.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_alden_lost_tome",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_alden_lost_tome"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
+            "id": "opt_q_doom",
+            "text": "[Quest] What stirs in the ten depths of the Dungeons of Doom?",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_megadungeon_depths",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_megadungeon_depths"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
+            "id": "opt_q_dragon",
+            "text": "[Quest] Tell me of Pyroclast the Red Wyrm beneath the vaults.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_slay_dragon_pyroclast",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_slay_dragon_pyroclast"
+              }
+            ],
+            "nextNodeId": "root"
+          },
+          {
             "id": "opt_bluff",
             "text": "[Bluff DC 15] I am an emissary from the High Arcane Synod evaluating frontier towers.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "alden_bluff_used"
+              }
+            ],
             "consequences": [
               {
                 "type": "skill_check",
                 "skillId": "bluff",
                 "dc": 15,
                 "onSuccessNodeId": "node_mage_pass",
-                "onFailureNodeId": "node_mage_fail"
+                "onFailureNodeId": "node_mage_fail",
+                "successConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "alden_bluff_used"
+                  }
+                ],
+                "failureConsequences": [
+                  {
+                    "type": "set_fact",
+                    "target": "alden_bluff_used"
+                  }
+                ]
               }
             ]
           }
@@ -519,10 +986,20 @@
           {
             "id": "opt_trade_pass",
             "text": "Show me your grimoires.",
+            "conditions": [
+              {
+                "type": "not_has_fact",
+                "target": "alden_discount_applied"
+              }
+            ],
             "consequences": [
               {
                 "type": "modify_session_markup",
                 "delta": -0.2
+              },
+              {
+                "type": "set_fact",
+                "target": "alden_discount_applied"
               },
               {
                 "type": "open_barter"
@@ -571,8 +1048,27 @@
       },
       "node_toee": {
         "id": "node_toee",
-        "text": "Built atop a subterranean tear into the Lower Planes, the Temple was sealed decades ago. Yet rumors say cultists reassemble in the ruins of the Moathouse to breach the seals...",
+        "text": "Built atop a subterranean tear into the Lower Planes, the Temple was sealed decades ago. Yet rumors say cultists reassemble in the ruins of the Moathouse to breach the seals and awaken Zuggtmoy...",
         "options": [
+          {
+            "id": "opt_q_toee",
+            "text": "[Quest] I will descend into the Temple of Elemental Evil and banish Zuggtmoy.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_temple_of_elemental_evil",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_temple_of_elemental_evil"
+              }
+            ],
+            "nextNodeId": "root"
+          },
           {
             "id": "opt_back",
             "text": "Thank you, Elena.",
@@ -582,8 +1078,27 @@
       },
       "node_trance": {
         "id": "node_trance",
-        "text": "The afflicted wander as if dreaming, muttering of a fungal goddess in the deep fane. It is no natural disease; it is the spores of Zuggtmoy.",
+        "text": "The afflicted wander as if dreaming, muttering of a fungal goddess in the deep fane. It is no natural disease; tracks lead toward the Mirrored Marsh.",
         "options": [
+          {
+            "id": "opt_q_trance",
+            "text": "[Quest] I will investigate the Whispering Trance in the Mirrored Marsh.",
+            "conditions": [
+              {
+                "type": "quest_status",
+                "target": "quest_investigate_trance",
+                "operator": "==",
+                "value": -1
+              }
+            ],
+            "consequences": [
+              {
+                "type": "grant_quest",
+                "questId": "quest_investigate_trance"
+              }
+            ],
+            "nextNodeId": "root"
+          },
           {
             "id": "opt_back",
             "text": "Frightening. I must be careful.",

@@ -1,5 +1,8 @@
 import { synthesizeDragonFromRaceTier, synthesizeElementalFromRaceTier } from '../family_synthesizer.ts';
-import { computeNpcClassCrContribution } from '../progression.ts';
+import { computeNpcClassCrContribution, NPC_CLASS_LEVEL_1_CR } from '../progression.ts';
+
+/** Fallback Challenge Rating (`1`) when neither `raceDef.cr` nor class progression tracks specify a CR. */
+const DEFAULT_CREATURE_CR = 1;
 import type {
   DnD35Archetype,
   DnD35ClassDefinition,
@@ -153,9 +156,22 @@ export function hydrateRaceAsArchetype(
     spellResistance = Math.max(spellResistance ?? 0, computedSr);
   }
 
-  const totalNpcLevels = tracks.filter((t) => t.trackCategory === 'npc').reduce((s, t) => s + t.levels, 0);
+  const pcLevels = tracks
+    .filter((t) => t.trackCategory === 'pc' || t.trackCategory === 'prestige')
+    .reduce((s, t) => s + t.levels, 0);
+  const npcLevels = tracks.filter((t) => t.trackCategory === 'npc').reduce((s, t) => s + t.levels, 0);
+  const hasExplicitClassLevels = Boolean(options?.classLevels && options.classLevels.length > 0);
   const computedCr =
-    raceDef.cr ?? (baseHdCount === 0 && totalNpcLevels > 0 ? computeNpcClassCrContribution(totalNpcLevels, false) : 1);
+    !hasExplicitClassLevels && raceDef.cr !== undefined
+      ? raceDef.cr
+      : baseHdCount > 0 && raceDef.cr !== undefined
+        ? raceDef.cr + pcLevels + computeNpcClassCrContribution(npcLevels, true)
+        : pcLevels > 0 || npcLevels > 0
+          ? Math.max(
+              NPC_CLASS_LEVEL_1_CR,
+              (raceDef.levelAdjustment ?? 0) + pcLevels + computeNpcClassCrContribution(npcLevels, false)
+            )
+          : (raceDef.cr ?? DEFAULT_CREATURE_CR);
 
   return {
     archetypeId: raceDef.id,

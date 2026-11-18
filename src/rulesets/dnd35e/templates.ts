@@ -20,6 +20,9 @@ const MINDLESS_UNDEAD_WIS = 10;
 /** Mindless Undead fixed Charisma score (`1`). */
 const MINDLESS_UNDEAD_CHA = 1;
 
+/** Minimum Challenge Rating (`1/8`) permitted after applying negative template CR adjustments. */
+const MIN_TEMPLATE_ADJUSTED_CR = 0.125;
+
 /**
  * Validates whether a creature (`DnD35EntityData`) satisfies all SRD prerequisites
  * (`targetCreatureTypes`, `allowedAlignments`, and declarative `prerequisites` AST) for a template.
@@ -250,6 +253,7 @@ export function applyCreatureTemplate(
     energyResistance[key] = Math.max(energyResistance[key] ?? 0, val);
   }
 
+  let tierCrAdjustment = 0;
   if (template.hdTieredScaling) {
     for (const tier of template.hdTieredScaling) {
       if (effectiveTotalHd >= tier.minHd && (tier.maxHd === undefined || effectiveTotalHd <= tier.maxHd)) {
@@ -261,6 +265,9 @@ export function applyCreatureTemplate(
         const tierResistances = tier.energyResistances ?? {};
         for (const [key, val] of Object.entries(tierResistances)) {
           energyResistance[key] = Math.max(energyResistance[key] ?? 0, typeof val === 'number' ? val : 0);
+        }
+        if (tier.crAdjustment !== undefined) {
+          tierCrAdjustment = tier.crAdjustment;
         }
       }
     }
@@ -305,6 +312,9 @@ export function applyCreatureTemplate(
     });
   }
 
+  const totalCrDelta = (template.crAdjustment ?? 0) + tierCrAdjustment;
+  const adjustedCr = base.cr !== undefined ? Math.max(MIN_TEMPLATE_ADJUSTED_CR, base.cr + totalCrDelta) : undefined;
+
   return {
     ...base,
     creatureType,
@@ -321,6 +331,7 @@ export function applyCreatureTemplate(
     naturalWeapons,
     levelAdjustment,
     singleActionsOnly,
+    ...(adjustedCr !== undefined ? { cr: adjustedCr } : {}),
     statModifiers: nextStatModifiers
   };
 }

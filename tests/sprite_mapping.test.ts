@@ -3,13 +3,17 @@ import type { CampaignData } from '../src/types/campaign.types.ts';
 import { loadCampaignFromDisk } from './helpers.ts';
 import { campaignUsesSprites, collectMissingSpriteMappings, findSpriteProblem } from '../src/rendering/sprite_keys.ts';
 
-test('sprite campaigns (default, dnd35e-crypt): every tile/entity/item/field resolves a sprite', () => {
-  for (const id of ['default', 'dnd35e-crypt']) {
-    const campaign = loadCampaignFromDisk(id);
-    expect(campaignUsesSprites(campaign)).toBe(true);
-    expect(collectMissingSpriteMappings(campaign)).toEqual([]);
-  }
-});
+for (const id of ['default', 'dnd35e-crypt', 'realms-of-shroudgarde']) {
+  test(
+    `sprite campaign (${id}): every tile/entity/item/field resolves a sprite`,
+    () => {
+      const campaign = loadCampaignFromDisk(id);
+      expect(campaignUsesSprites(campaign)).toBe(true);
+      expect(collectMissingSpriteMappings(campaign)).toEqual([]);
+    },
+    15_000
+  );
+}
 
 test('ASCII campaigns report no sprite issues', () => {
   for (const id of ['megacampaign', 'shroudgarde']) {

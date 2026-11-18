@@ -1,4 +1,5 @@
 import { addComponent, getComponent, removeComponent, spawnItem } from '../../../core/ecs.ts';
+import { resolveCurrencyConfig, toBaseUnits } from '../../../systems/currency.system.ts';
 import {
   ComponentType,
   type EquipmentComponent,
@@ -198,6 +199,9 @@ export function applyCharacterCreationToPlayer(
 
   const inventory = getComponent(runningState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
   const equipment = getComponent(runningState, entityId, ComponentType.Equipment) as EquipmentComponent | undefined;
+  const currencyCfg = resolveCurrencyConfig(runningState);
+  const goldDenomId = currencyCfg.defaultValueDenominationId ?? currencyCfg.baseUnitId;
+  const startingCp = Math.max(0, toBaseUnits(equipPkg.startingGoldGp, goldDenomId, currencyCfg));
 
   if (inventory && equipPkg.items) {
     const spawnedItemIds: EntityId[] = [];
@@ -228,7 +232,6 @@ export function applyCharacterCreationToPlayer(
     const latestInventory = getComponent(runningState, entityId, ComponentType.Inventory) as
       InventoryComponent | undefined;
     const baseBalance = latestInventory?.currencyBalance ?? 0;
-    const startingCp = Math.max(0, Math.round(equipPkg.startingGoldGp * 100));
     if (latestInventory) {
       runningState = addComponent(runningState, entityId, {
         ...latestInventory,
@@ -240,7 +243,6 @@ export function applyCharacterCreationToPlayer(
       runningState = addComponent(runningState, entityId, { ...equipment, slots: updatedSlots });
     }
   } else if (inventory) {
-    const startingCp = Math.max(0, Math.round(equipPkg.startingGoldGp * 100));
     runningState = addComponent(runningState, entityId, {
       ...inventory,
       currencyBalance: (inventory.currencyBalance ?? 0) + startingCp

@@ -194,9 +194,61 @@ export function getEntityCurrencyBalance(state: Readonly<GameState>, entityId: E
 }
 
 /**
+ * Resolves the canonical `ItemDefinition` representing a coin denomination for drops or spawning.
+ * Prefers `CurrencyDenomination.itemId` declared on the config before falling back to scanning
+ * campaign items by `currencyGrant.denominationId`.
+ */
+export function resolveCurrencyItemDefinition(
+  state: Readonly<GameState>,
+  denominationId: string,
+  config: Readonly<CurrencyConfig> = resolveCurrencyConfig(state)
+): ItemDefinition | undefined {
+  const denom = findCurrencyDenomination(config, denominationId);
+  if (denom?.itemId) {
+    const direct = state.campaign.items[denom.itemId];
+    if (direct) return direct;
+  }
+  const items = Object.values(state.campaign.items);
+  return (
+    items.find((def) => def.currencyGrant?.denominationId === denominationId && def.currencyGrant.amount === 1) ??
+    items.find((def) => def.currencyGrant?.denominationId === denominationId)
+  );
+}
+
+/**
+ * Credits an actor's wallet with a currency item grant (`def.currencyGrant`) multiplied by stack/charges.
+ */
+export function absorbCurrencyItemGrant(
+  state: GameState,
+  entityId: EntityId,
+  itemDef: Pick<ItemDefinition, 'currencyGrant'>,
+  stackCount = 1
+): {
+  readonly state: GameState;
+  readonly amountBaseUnits: number;
+  readonly currencyCfg: CurrencyConfig;
+  readonly success: boolean;
+} {
+  const currencyCfg = resolveCurrencyConfig(state);
+  if (!itemDef.currencyGrant || !Number.isFinite(stackCount) || stackCount <= 0) {
+    return { state, amountBaseUnits: 0, currencyCfg, success: false };
+  }
+  const totalCount = itemDef.currencyGrant.amount * Math.max(1, Math.floor(stackCount));
+  const amountBaseUnits = toBaseUnits(totalCount, itemDef.currencyGrant.denominationId, currencyCfg);
+  const credit = addEntityCurrency(state, entityId, amountBaseUnits);
+  return {
+    state: credit.state,
+    amountBaseUnits,
+    currencyCfg,
+    success: credit.success
+  };
+}
+
+/**
  * Sets an entity's base-unit monetary balance directly (clamped to `>= 0`).
  */
 export function setEntityCurrencyBalance(state: GameState, entityId: EntityId, balanceBaseUnits: number): GameState {
+  if (!Number.isFinite(balanceBaseUnits)) return state;
   const inventory = getComponent(state, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
   if (!inventory) return state;
   return addComponent(state, entityId, {
@@ -206,7 +258,7 @@ export function setEntityCurrencyBalance(state: GameState, entityId: EntityId, b
 }
 
 /**
- * Credits or debits an entity's base-unit monetary balance. Rejects debits exceeding current funds.
+ * Credits or debits an entity's base-unit monetary balance. Rejects non-finite deltas or debits exceeding current funds.
  */
 export function addEntityCurrency(
   state: GameState,
@@ -217,7 +269,11 @@ export function addEntityCurrency(
   if (!inventory) {
     return { state, balance: 0, success: false };
   }
-  const current = Math.max(0, Math.floor(inventory.currencyBalance ?? 0));
+  const rawCurrent = inventory.currencyBalance ?? 0;
+  const current = Number.isFinite(rawCurrent) ? Math.max(0, Math.floor(rawCurrent)) : 0;
+  if (!Number.isFinite(deltaBaseUnits)) {
+    return { state, balance: current, success: false };
+  }
   const delta = Math.trunc(deltaBaseUnits);
   const nextBalance = current + delta;
   if (nextBalance < 0) {

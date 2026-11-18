@@ -283,7 +283,7 @@ export function renderCompactStashWidget(
   wrap.appendChild(matrix);
 
   const footer = createEl('div', 'crpg-stash-footer');
-  const currencyLabel = data.currencyFormatted ?? `${data.goldCurrency.toLocaleString()} gp`;
+  const currencyLabel = data.currencyFormatted ?? data.goldCurrency.toLocaleString();
   footer.append(
     createEl('span', '', `Carried: ${data.currentWeightLbs.toFixed(1)} / ${data.maxWeightLbs.toFixed(1)} lbs`),
     createEl('span', 'crpg-gold-Readout', `${currencyLabel} 🪙`)

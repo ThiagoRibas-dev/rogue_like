@@ -84,10 +84,10 @@ export function processSelectDialogueOptionIntent(
   // If a consequence (such as skill_check) routed dialogue to another node or set a textOverride,
   // preserve that transition and evaluate dynamic node behaviors on the destination node.
   const activeDialogue = nextState.activeDialogue;
-  const consequenceRoutedNodeId =
-    activeDialogue !== undefined && activeDialogue.currentNodeId !== preConseqNodeId
-      ? activeDialogue.currentNodeId
-      : undefined;
+  const hasConsequenceRouting =
+    activeDialogue !== undefined &&
+    (activeDialogue.currentNodeId !== preConseqNodeId || activeDialogue.textOverride !== undefined);
+  const consequenceRoutedNodeId = hasConsequenceRouting ? activeDialogue.currentNodeId : undefined;
 
   const targetNodeId = consequenceRoutedNodeId ?? option.nextNodeId;
   if (!targetNodeId) {
@@ -150,7 +150,7 @@ export function processSelectDialogueOptionIntent(
         treeId,
         currentNodeId: targetNodeId,
         npcEntityId,
-        ...(consequenceRoutedNodeId !== undefined && activeDialogue?.textOverride !== undefined
+        ...(hasConsequenceRouting && activeDialogue?.textOverride !== undefined
           ? { textOverride: activeDialogue.textOverride }
           : {})
       }

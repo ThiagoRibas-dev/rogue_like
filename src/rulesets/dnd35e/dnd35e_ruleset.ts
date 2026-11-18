@@ -26,6 +26,7 @@ import {
   evaluateDnD35eDialogueSkillCheck,
   evaluateDnD35eTradePriceModifier,
   getDnD35eActorSkillModifier,
+  getDnD35eTradeSocialActions,
   resolveDnD35eTradeSocialSkill
 } from './skills/trade_social_checks.ts';
 import { getDnD35EntityData } from './srd_registry.ts';
@@ -208,6 +209,7 @@ export const dnd35eRulesetContract: RulesetContract = {
   syncActorSpatialFootprint: syncDnD35eActorSpatialFootprint,
   onWorldHourElapsed: onDnD35eWorldHourElapsed,
   getDefaultCurrencyConfig: () => DND35E_DEFAULT_CURRENCY_CONFIG,
+  getTradeSocialActions: getDnD35eTradeSocialActions,
   evaluateTradePriceModifier: evaluateDnD35eTradePriceModifier,
   resolveTradeSocialSkill: resolveDnD35eTradeSocialSkill,
   evaluateDialogueSkillCheck: evaluateDnD35eDialogueSkillCheck,

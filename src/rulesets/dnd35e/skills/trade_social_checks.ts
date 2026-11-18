@@ -1,4 +1,5 @@
 import { addComponent, getComponent } from '../../../core/ecs.ts';
+import { rng } from '../../../core/rng.ts';
 import { addMessage, MessageLogCategory } from '../../../systems/message.system.ts';
 import {
   type AttitudeComponent,
@@ -11,11 +12,20 @@ import type {
   DialogueSkillCheckResult,
   TradePriceModifierContext,
   TradePriceModifierResult,
+  TradeSocialActionDescriptor,
   TradeSocialSkillResult
 } from '../../../types/ruleset.types.ts';
+import {
+  clampSessionMarkup,
+  createDefaultMemoryComponent,
+  getTradeSkillHaggleStatus,
+  HAGGLE_ANNOYED_DURATION,
+  recordTradeHaggleOutcomeFacts
+} from '../../../utils/trade.ts';
 import { aggregateProgressionChassis } from '../progression.ts';
 import { resolveDemoralizeCheck, resolveDiplomacyCheck } from '../skills.ts';
-import { DEMORALIZE_BASE_DC, evaluateActorSkillCheck } from './skill_verb_helpers.ts';
+import { getDnD35EntityData } from '../srd_registry.ts';
+import { DEMORALIZE_BASE_DC, evaluateActorSkillCheck, resolveActorWisModFromDAG } from './skill_verb_helpers.ts';
 
 const ATTITUDE_PRICE_DELTAS: Readonly<Record<AttitudeTier, number>> = {
   hostile: 0.35,
@@ -28,22 +38,39 @@ const ATTITUDE_PRICE_DELTAS: Readonly<Record<AttitudeTier, number>> = {
 
 const APPRAISE_TRADE_DC = 15;
 const APPRAISE_MARKUP_DISCOUNT = -0.1;
+const APPRAISE_TRADE_PENALTY = 0.08;
+const APPRAISE_FAIL_PENALTY_CHANCE = 0.5;
+const APPRAISE_RESALE_BONUS_HIGH = 0.15;
+const APPRAISE_RESALE_BONUS_LOW = 0.08;
 const BLUFF_TRADE_DISCOUNT = -0.15;
 const BLUFF_TRADE_PENALTY = 0.15;
 const DIPLOMACY_HAGGLE_DISCOUNT = -0.15;
 const DIPLOMACY_HAGGLE_PENALTY = 0.1;
+const DIPLOMACY_HAGGLE_DC_HIGH = 20;
+const DIPLOMACY_HAGGLE_DC_STANDARD = 15;
+const DIPLOMACY_FAIL_ANNOYED_CHANCE = 0.5;
 const INTIMIDATE_HAGGLE_DISCOUNT = -0.2;
 const INTIMIDATE_HAGGLE_PENALTY = 0.25;
-const MIN_SESSION_MARKUP_MOD = -0.4;
-const MAX_SESSION_MARKUP_MOD = 0.6;
-const HAGGLE_ANNOYED_DURATION = 15;
 const APPRAISE_RANK_BONUS_LOW = 4;
 const APPRAISE_RANK_BONUS_HIGH = 8;
 const DIPLOMACY_PASSIVE_DIVISOR = 100;
 const DIPLOMACY_PASSIVE_MAX_DISCOUNT = 0.1;
+const DIPLOMACY_EVEN_RANK_STEP = 2;
+const SENSE_MOTIVE_PASSIVE_BASE = 10;
+const PERCENT_MULTIPLIER = 100;
 
-function clampSessionMarkup(val: number): number {
-  return Math.max(MIN_SESSION_MARKUP_MOD, Math.min(MAX_SESSION_MARKUP_MOD, Number(val.toFixed(2))));
+const DND35E_TRADE_SOCIAL_ACTIONS: ReadonlyArray<TradeSocialActionDescriptor> = [
+  { label: 'Diplomacy', verb: 'persuade', skillId: 'diplomacy' },
+  { label: 'Appraise', verb: 'appraise', skillId: 'appraise' },
+  { label: 'Bluff (Haggle)', verb: 'haggle', skillId: 'bluff' },
+  { label: 'Intimidate', verb: 'intimidate', skillId: 'intimidate' }
+];
+
+/**
+ * Returns the canonical declarative list of social bargaining actions for D&D 3.5e Trade UI.
+ */
+export function getDnD35eTradeSocialActions(): ReadonlyArray<TradeSocialActionDescriptor> {
+  return DND35E_TRADE_SOCIAL_ACTIONS;
 }
 
 /**
@@ -64,7 +91,8 @@ export function evaluateDnD35eTradePriceModifier(
     dipCheck.totalModifier > 0
       ? -Math.min(
           DIPLOMACY_PASSIVE_MAX_DISCOUNT,
-          (Math.floor(dipCheck.totalModifier / 2) * 2) / DIPLOMACY_PASSIVE_DIVISOR
+          (Math.floor(dipCheck.totalModifier / DIPLOMACY_EVEN_RANK_STEP) * DIPLOMACY_EVEN_RANK_STEP) /
+            DIPLOMACY_PASSIVE_DIVISOR
         )
       : 0;
 
@@ -72,22 +100,24 @@ export function evaluateDnD35eTradePriceModifier(
   let sellBonus = 0;
   if (context.isSellingToShop) {
     if (appraiseCheck.totalModifier >= APPRAISE_RANK_BONUS_HIGH) {
-      sellBonus = 0.15;
+      sellBonus = APPRAISE_RESALE_BONUS_HIGH;
     } else if (appraiseCheck.totalModifier >= APPRAISE_RANK_BONUS_LOW) {
-      sellBonus = 0.08;
+      sellBonus = APPRAISE_RESALE_BONUS_LOW;
     }
   }
 
   const annotations: string[] = [];
   if (attitude !== 'indifferent' && attitude !== 'neutral') {
-    const pct = Math.round(attitudeDelta * 100);
+    const pct = Math.round(attitudeDelta * PERCENT_MULTIPLIER);
     annotations.push(`Attitude (${attitude}): ${pct >= 0 ? `+${pct}%` : `${pct}%`}`);
   }
   if (diplomacyDiscount < 0) {
-    annotations.push(`Diplomacy (+${dipCheck.totalModifier}): ${Math.round(diplomacyDiscount * 100)}%`);
+    annotations.push(`Diplomacy (+${dipCheck.totalModifier}): ${Math.round(diplomacyDiscount * PERCENT_MULTIPLIER)}%`);
   }
   if (sellBonus > 0) {
-    annotations.push(`Appraise (+${appraiseCheck.totalModifier}): +${Math.round(sellBonus * 100)}% resale`);
+    annotations.push(
+      `Appraise (+${appraiseCheck.totalModifier}): +${Math.round(sellBonus * PERCENT_MULTIPLIER)}% resale`
+    );
   }
 
   return {
@@ -106,22 +136,48 @@ export function resolveDnD35eTradeSocialSkill(
   npcId: EntityId,
   skillId: string
 ): TradeSocialSkillResult | null {
-  const npcMemory = getComponent(state, npcId, ComponentType.Memory) as MemoryComponent | undefined;
-  const currentSessionMod = npcMemory?.sessionMarkupModifier ?? 0;
+  const npcMemory: MemoryComponent =
+    (getComponent(state, npcId, ComponentType.Memory) as MemoryComponent | undefined) ?? createDefaultMemoryComponent();
+  const currentSessionMod = npcMemory.sessionMarkupModifier ?? 0;
+  const haggleStatus = getTradeSkillHaggleStatus(npcMemory, skillId);
+
+  if (haggleStatus.locked) {
+    const message = `The merchant refuses any further ${skillId} attempts right now.`;
+    return {
+      state: addMessage(state, message, MessageLogCategory.System),
+      success: false,
+      rollTotal: 0,
+      dc: 0,
+      message
+    };
+  }
+  if (!haggleStatus.canAttempt) {
+    const message = `You have already pushed ${skillId} bargaining as far as the merchant will allow.`;
+    return {
+      state: addMessage(state, message, MessageLogCategory.System),
+      success: false,
+      rollTotal: 0,
+      dc: 0,
+      message
+    };
+  }
 
   switch (skillId) {
     case 'appraise': {
       const { check } = evaluateActorSkillCheck(state, actorId, 'appraise', APPRAISE_TRADE_DC, 'roll');
-      let nextState = state;
-      if (check.success && npcMemory) {
-        nextState = addComponent(nextState, npcId, {
-          ...npcMemory,
-          sessionMarkupModifier: clampSessionMarkup(currentSessionMod + APPRAISE_MARKUP_DISCOUNT)
-        });
-      }
+      const penaltyTriggered = !check.success && rng.getUniform() < APPRAISE_FAIL_PENALTY_CHANCE;
+      const markupDelta = check.success ? APPRAISE_MARKUP_DISCOUNT : penaltyTriggered ? APPRAISE_TRADE_PENALTY : 0;
+      const updatedMemory: MemoryComponent = {
+        ...npcMemory,
+        sessionMarkupModifier: clampSessionMarkup(currentSessionMod + markupDelta),
+        facts: recordTradeHaggleOutcomeFacts(npcMemory.facts, 'appraise', check.success)
+      };
+      let nextState = addComponent(state, npcId, updatedMemory);
       const message = check.success
         ? `Appraise check succeeded (${check.totalRoll} vs DC ${APPRAISE_TRADE_DC})! You spot fair market margins (-10% markup).`
-        : `Appraise check failed (${check.totalRoll} vs DC ${APPRAISE_TRADE_DC}). You cannot leverage a sharper valuation.`;
+        : penaltyTriggered
+          ? `Appraise check failed (${check.totalRoll} vs DC ${APPRAISE_TRADE_DC}). Merchant spots your misread (+8% markup) and locks Appraise.`
+          : `Appraise check failed (${check.totalRoll} vs DC ${APPRAISE_TRADE_DC}). You cannot leverage a sharper valuation.`;
       nextState = addMessage(nextState, message, MessageLogCategory.System);
       return { state: nextState, success: check.success, rollTotal: check.totalRoll, dc: APPRAISE_TRADE_DC, message };
     }
@@ -129,23 +185,27 @@ export function resolveDnD35eTradeSocialSkill(
     case 'diplomacy': {
       const attitudeComp = getComponent(state, npcId, ComponentType.Attitude) as AttitudeComponent | undefined;
       const currentAttitude: AttitudeTier = attitudeComp?.attitude ?? 'indifferent';
-      const dc = currentAttitude === 'friendly' || currentAttitude === 'helpful' ? 20 : 15;
+      const dc =
+        currentAttitude === 'friendly' || currentAttitude === 'helpful'
+          ? DIPLOMACY_HAGGLE_DC_HIGH
+          : DIPLOMACY_HAGGLE_DC_STANDARD;
       const { check } = evaluateActorSkillCheck(state, actorId, 'diplomacy', dc, 'roll');
       const result = resolveDiplomacyCheck(currentAttitude, check.totalRoll);
       const success = result.changed || result.newAttitude === 'friendly' || result.newAttitude === 'helpful';
+      const becameAnnoyed = !success && rng.getUniform() < DIPLOMACY_FAIL_ANNOYED_CHANCE;
 
       let nextState = addComponent(state, npcId, {
         type: ComponentType.Attitude,
         attitude: result.newAttitude
       });
-      if (npcMemory) {
-        nextState = addComponent(nextState, npcId, {
-          ...npcMemory,
-          sessionMarkupModifier: clampSessionMarkup(
-            currentSessionMod + (success ? DIPLOMACY_HAGGLE_DISCOUNT : DIPLOMACY_HAGGLE_PENALTY)
-          )
-        });
-      }
+      nextState = addComponent(nextState, npcId, {
+        ...npcMemory,
+        sessionMarkupModifier: clampSessionMarkup(
+          currentSessionMod + (success ? DIPLOMACY_HAGGLE_DISCOUNT : DIPLOMACY_HAGGLE_PENALTY)
+        ),
+        facts: recordTradeHaggleOutcomeFacts(npcMemory.facts, 'diplomacy', success),
+        ...(becameAnnoyed ? { annoyedDuration: HAGGLE_ANNOYED_DURATION } : {})
+      });
       const message = success
         ? `Diplomacy succeeded (${check.totalRoll} vs DC ${dc})! Merchant attitude: ${result.newAttitude} (-15% markup).`
         : `Diplomacy stalled (${check.totalRoll} vs DC ${dc}). Merchant grows impatient (+10% markup).`;
@@ -155,18 +215,16 @@ export function resolveDnD35eTradeSocialSkill(
 
     case 'bluff': {
       const { check: npcSenseCheck } = evaluateActorSkillCheck(state, npcId, 'sense_motive', 0, 'take10');
-      const opposedDc = 10 + npcSenseCheck.totalModifier;
+      const opposedDc = SENSE_MOTIVE_PASSIVE_BASE + npcSenseCheck.totalModifier;
       const { check: bluffCheck } = evaluateActorSkillCheck(state, actorId, 'bluff', opposedDc, 'roll');
-      let nextState = state;
-      if (npcMemory) {
-        nextState = addComponent(nextState, npcId, {
-          ...npcMemory,
-          sessionMarkupModifier: clampSessionMarkup(
-            currentSessionMod + (bluffCheck.success ? BLUFF_TRADE_DISCOUNT : BLUFF_TRADE_PENALTY)
-          ),
-          ...(bluffCheck.success ? {} : { annoyedDuration: HAGGLE_ANNOYED_DURATION })
-        });
-      }
+      let nextState = addComponent(state, npcId, {
+        ...npcMemory,
+        sessionMarkupModifier: clampSessionMarkup(
+          currentSessionMod + (bluffCheck.success ? BLUFF_TRADE_DISCOUNT : BLUFF_TRADE_PENALTY)
+        ),
+        facts: recordTradeHaggleOutcomeFacts(npcMemory.facts, 'bluff', bluffCheck.success),
+        ...(bluffCheck.success ? {} : { annoyedDuration: HAGGLE_ANNOYED_DURATION })
+      });
       const message = bluffCheck.success
         ? `Bluff succeeded (${bluffCheck.totalRoll} vs Sense Motive ${opposedDc})! You talk the merchant into a -15% discount.`
         : `Bluff failed (${bluffCheck.totalRoll} vs Sense Motive ${opposedDc})! Merchant sees through your pitch (+15% markup).`;
@@ -188,28 +246,20 @@ export function resolveDnD35eTradeSocialSkill(
         DEMORALIZE_BASE_DC,
         'roll'
       );
-      const { check: npcSenseCheck, dndData: npcDnd } = evaluateActorSkillCheck(
-        state,
-        npcId,
-        'sense_motive',
-        0,
-        'take10'
-      );
-      const npcChassis = aggregateProgressionChassis(npcDnd.tracks, 0);
-      const npcWisMod = npcSenseCheck.totalModifier - npcSenseCheck.wholeRanks - npcSenseCheck.synergyBonus;
-      const opposeDc = DEMORALIZE_BASE_DC + Math.max(1, npcChassis.totalHD) + npcWisMod;
-      const success = resolveDemoralizeCheck(intimidateCheck.totalRoll, Math.max(1, npcChassis.totalHD), npcWisMod);
+      const npcDnd = getDnD35EntityData(state, npcId);
+      const npcHd = Math.max(1, npcDnd ? aggregateProgressionChassis(npcDnd.tracks, 0).totalHD : 1);
+      const npcWisMod = resolveActorWisModFromDAG(state, npcId);
+      const opposeDc = DEMORALIZE_BASE_DC + npcHd + npcWisMod;
+      const success = resolveDemoralizeCheck(intimidateCheck.totalRoll, npcHd, npcWisMod);
 
-      let nextState = state;
-      if (npcMemory) {
-        nextState = addComponent(nextState, npcId, {
-          ...npcMemory,
-          sessionMarkupModifier: clampSessionMarkup(
-            currentSessionMod + (success ? INTIMIDATE_HAGGLE_DISCOUNT : INTIMIDATE_HAGGLE_PENALTY)
-          ),
-          ...(success ? {} : { annoyedDuration: HAGGLE_ANNOYED_DURATION })
-        });
-      }
+      let nextState = addComponent(state, npcId, {
+        ...npcMemory,
+        sessionMarkupModifier: clampSessionMarkup(
+          currentSessionMod + (success ? INTIMIDATE_HAGGLE_DISCOUNT : INTIMIDATE_HAGGLE_PENALTY)
+        ),
+        facts: recordTradeHaggleOutcomeFacts(npcMemory.facts, 'intimidate', success),
+        ...(success ? {} : { annoyedDuration: HAGGLE_ANNOYED_DURATION })
+      });
       const message = success
         ? `Intimidate succeeded (${intimidateCheck.totalRoll} vs DC ${opposeDc})! Merchant yields a -20% concession.`
         : `Intimidate failed (${intimidateCheck.totalRoll} vs DC ${opposeDc})! Merchant stiffens rates (+25% markup).`;
@@ -222,6 +272,19 @@ export function resolveDnD35eTradeSocialSkill(
   }
 }
 
+const OPPOSED_DIALOGUE_SKILL_DC_RESOLVERS: Readonly<Record<string, (state: GameState, npcId: EntityId) => number>> = {
+  bluff: (state, npcId) => {
+    const { check: npcSenseCheck } = evaluateActorSkillCheck(state, npcId, 'sense_motive', 0, 'take10');
+    return SENSE_MOTIVE_PASSIVE_BASE + npcSenseCheck.totalModifier;
+  },
+  intimidate: (state, npcId) => {
+    const npcDnd = getDnD35EntityData(state, npcId);
+    const npcHd = Math.max(1, npcDnd ? aggregateProgressionChassis(npcDnd.tracks, 0).totalHD : 1);
+    const npcWisMod = resolveActorWisModFromDAG(state, npcId);
+    return DEMORALIZE_BASE_DC + npcHd + npcWisMod;
+  }
+};
+
 /**
  * Evaluates a `skill_check` dialogue consequence using full D&D 3.5e 4-Stage Stat DAG modifiers.
  */
@@ -232,11 +295,9 @@ export function evaluateDnD35eDialogueSkillCheck(
   skillId: string,
   dc: number
 ): DialogueSkillCheckResult {
-  let effectiveDc = dc;
-  if (effectiveDc <= 0 && npcId !== undefined && (skillId === 'bluff' || skillId === 'intimidate')) {
-    const { check: npcSenseCheck } = evaluateActorSkillCheck(state, npcId, 'sense_motive', 0, 'take10');
-    effectiveDc = 10 + npcSenseCheck.totalModifier;
-  }
+  const opposedResolver = npcId !== undefined ? OPPOSED_DIALOGUE_SKILL_DC_RESOLVERS[skillId] : undefined;
+  const effectiveDc =
+    dc <= 0 && opposedResolver !== undefined && npcId !== undefined ? opposedResolver(state, npcId) : dc;
   const { check } = evaluateActorSkillCheck(state, actorId, skillId, effectiveDc, 'roll');
   const label = skillId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   const breakdown = `[${label}: ${check.totalRoll} (d20=${check.naturalRoll} + ${check.totalModifier}) vs DC ${effectiveDc}]`;

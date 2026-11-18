@@ -1,6 +1,7 @@
 import type { GameState } from '../../types/game-state.types.ts';
 import { UIMode } from '../../types/game-state.types.ts';
 import { getComponent, resolveEntityDisplayName } from '../../core/ecs.ts';
+import { queuePlayerIntent } from '../../core/game-loop.ts';
 import { getActiveRuleset } from '../../rulesets/registry.ts';
 import { ComponentType } from '../../types/components.types.ts';
 import type {
@@ -8,12 +9,28 @@ import type {
   EquipmentComponent,
   InventoryComponent,
   ItemComponent,
+  MemoryComponent,
   ShopComponent
 } from '../../types/components.types.ts';
+import type { TradeSocialActionDescriptor } from '../../types/ruleset.types.ts';
 import { formatCurrency, getEntityCurrencyBalance, resolveCurrencyConfig } from '../../systems/currency.system.ts';
-import { getEffectiveItemPriceInBaseUnits, getTradePriceBreakdown } from '../../utils/trade.ts';
+import {
+  getEffectiveItemPriceInBaseUnits,
+  getTradePriceBreakdown,
+  getTradeSkillHaggleStatus
+} from '../../utils/trade.ts';
 import { IntentType } from '../../types/intents/intent.enum.ts';
+import type { ApplyIntent } from '../../types/intents/interaction.intents.ts';
+import type { CloseTradeIntent } from '../../types/intents/ui.intents.ts';
 import type { Intent } from '../../types/intents/intent.union.ts';
+
+const CONSOLE_DEFAULT_TRADE_SOCIAL_ACTIONS: ReadonlyArray<TradeSocialActionDescriptor> = [
+  { label: 'Persuade', verb: 'persuade', skillId: 'persuade' },
+  { label: 'Intimidate', verb: 'intimidate', skillId: 'intimidate' }
+];
+
+const TRADE_OVERLAY_ID = 'trade-overlay';
+const PERCENT_MULTIPLIER = 100;
 
 /**
  * Renders the trading interface for bartering items, buying/selling with multi-denomination currency,
@@ -32,11 +49,12 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   const playerInventory = getComponent(state, playerId, ComponentType.Inventory) as InventoryComponent | undefined;
   const playerEquipment = getComponent(state, playerId, ComponentType.Equipment) as EquipmentComponent | undefined;
   const attitudeComp = getComponent(state, npcId, ComponentType.Attitude) as AttitudeComponent | undefined;
+  const npcMemory = getComponent(state, npcId, ComponentType.Memory) as MemoryComponent | undefined;
   const currencyConfig = resolveCurrencyConfig(state);
   const playerBalance = getEntityCurrencyBalance(state, playerId);
   const merchantName = resolveEntityDisplayName(state, npcId, 'Merchant');
   const buyBreakdown = getTradePriceBreakdown(state, npcId, playerId, false);
-  const isDnd = getActiveRuleset(state).id === 'dnd35e';
+  const socialActions = getActiveRuleset(state).getTradeSocialActions?.() ?? CONSOLE_DEFAULT_TRADE_SOCIAL_ACTIONS;
 
   const container = document.createElement('div');
   container.className = 'trade-ui-container panel';
@@ -45,13 +63,13 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   container.style.left = '8%';
   container.style.width = '84%';
   container.style.height = '84%';
-  container.style.backgroundColor = 'var(--panel-bg)';
-  container.style.color = 'var(--panel-fg)';
+  container.style.backgroundColor = 'var(--bg-card, #16181f)';
+  container.style.color = 'var(--text-main, #e2d9c8)';
   container.style.display = 'flex';
   container.style.flexDirection = 'column';
   container.style.padding = '20px';
   container.style.boxSizing = 'border-box';
-  container.style.border = '1px solid var(--border-color)';
+  container.style.border = '1px solid var(--border-color, #2a2d3d)';
   container.style.zIndex = '1000';
 
   const headerRow = document.createElement('div');
@@ -72,7 +90,7 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   subMeta.style.fontSize = '0.85rem';
   subMeta.style.opacity = '0.85';
   const attitudeText = attitudeComp?.attitude ? `Attitude: ${attitudeComp.attitude}` : 'Attitude: indifferent';
-  const rateText = `Buy Rate: ${Math.round(buyBreakdown.finalBuyMultiplier * 100)}%`;
+  const rateText = `Buy Rate: ${Math.round(buyBreakdown.finalBuyMultiplier * PERCENT_MULTIPLIER)}%`;
   const notesText = buyBreakdown.annotations.length > 0 ? ` | ${buyBreakdown.annotations.join(' · ')}` : '';
   subMeta.textContent = `${attitudeText} · ${rateText}${notesText}`;
   headerTitle.appendChild(subMeta);
@@ -102,6 +120,7 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   npcCol.appendChild(npcHeader);
 
   const npcList = document.createElement('ul');
+  npcList.className = 'trade-npc-list';
   npcList.style.flex = '1';
   npcList.style.overflowY = 'auto';
   npcList.style.listStyle = 'none';
@@ -123,29 +142,31 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
       li.style.alignItems = 'center';
       li.style.gap = '10px';
       li.style.padding = '8px';
-      li.style.borderBottom = '1px solid var(--border-color)';
+      li.style.borderBottom = '1px solid var(--border-color, #2a2d3d)';
 
       const nameSpan = document.createElement('span');
       nameSpan.style.flex = '1';
-      nameSpan.textContent = itemComp.customName ?? def.name ?? itemComp.itemId;
+      nameSpan.textContent = resolveEntityDisplayName(state, itemEntityId, def.name ?? itemComp.itemId);
 
       const priceSpan = document.createElement('span');
       priceSpan.style.minWidth = '110px';
       priceSpan.style.textAlign = 'right';
-      priceSpan.style.color = canAfford ? 'var(--panel-fg)' : '#e74c3c';
+      priceSpan.style.color = canAfford ? 'var(--text-main, #e2d9c8)' : '#e74c3c';
       priceSpan.textContent = formatCurrency(price, currencyConfig);
 
       const buyBtn = document.createElement('button');
       buyBtn.textContent = 'Buy';
       buyBtn.disabled = !canAfford;
       buyBtn.onclick = () => {
-        queueIntent({
+        const buyIntent: ApplyIntent = {
           type: IntentType.Apply,
           entityId: playerId,
           verb: 'buy',
           toolEntityId: itemEntityId,
-          target: { type: 'entity', entityId: npcId }
-        } as Intent);
+          target: { type: 'entity', entityId: npcId },
+          isImmediate: true
+        };
+        queueIntent(buyIntent);
       };
 
       li.append(nameSpan, priceSpan, buyBtn);
@@ -170,6 +191,7 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   playerCol.appendChild(playerHeader);
 
   const playerList = document.createElement('ul');
+  playerList.className = 'trade-player-list';
   playerList.style.flex = '1';
   playerList.style.overflowY = 'auto';
   playerList.style.listStyle = 'none';
@@ -197,7 +219,8 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
 
       const nameSpan = document.createElement('span');
       nameSpan.style.flex = '1';
-      nameSpan.textContent = `${itemComp.customName ?? def.name ?? itemComp.itemId}${isEquipped ? ' [Equipped]' : ''}`;
+      const displayName = resolveEntityDisplayName(state, itemEntityId, def.name ?? itemComp.itemId);
+      nameSpan.textContent = `${displayName}${isEquipped ? ' [Equipped]' : ''}`;
 
       const priceSpan = document.createElement('span');
       priceSpan.style.minWidth = '110px';
@@ -209,13 +232,15 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
         sellBtn.textContent = isEquipped ? 'Equipped' : 'Sell';
         sellBtn.disabled = isEquipped;
         sellBtn.onclick = () => {
-          queueIntent({
+          const sellIntent: ApplyIntent = {
             type: IntentType.Apply,
             entityId: playerId,
             verb: 'sell',
             toolEntityId: itemEntityId,
-            target: { type: 'entity', entityId: npcId }
-          } as Intent);
+            target: { type: 'entity', entityId: npcId },
+            isImmediate: true
+          };
+          queueIntent(sellIntent);
         };
         li.append(nameSpan, priceSpan, sellBtn);
       } else {
@@ -248,39 +273,88 @@ export function renderTradeUI(state: GameState, queueIntent: (intent: Intent) =>
   socialBar.style.display = 'flex';
   socialBar.style.gap = '8px';
 
-  const makeSocialBtn = (label: string, verb: 'persuade' | 'appraise' | 'haggle' | 'intimidate'): HTMLButtonElement => {
+  const makeSocialBtn = (descriptor: TradeSocialActionDescriptor): HTMLButtonElement => {
     const btn = document.createElement('button');
-    btn.textContent = label;
+    const haggleStatus = getTradeSkillHaggleStatus(npcMemory, descriptor.skillId);
+    btn.textContent = haggleStatus.locked
+      ? `${descriptor.label} (Locked)`
+      : !haggleStatus.canAttempt
+        ? `${descriptor.label} (Max)`
+        : descriptor.label;
+    btn.disabled = !haggleStatus.canAttempt;
     btn.onclick = () => {
-      queueIntent({
+      const socialIntent: ApplyIntent = {
         type: IntentType.Apply,
         entityId: playerId,
-        verb,
-        target: { type: 'entity', entityId: npcId }
-      } as Intent);
+        verb: descriptor.verb,
+        target: { type: 'entity', entityId: npcId },
+        isImmediate: true
+      };
+      queueIntent(socialIntent);
     };
     return btn;
   };
 
-  socialBar.appendChild(makeSocialBtn(isDnd ? 'Diplomacy' : 'Persuade', 'persuade'));
-  if (isDnd) {
-    socialBar.appendChild(makeSocialBtn('Appraise', 'appraise'));
-    socialBar.appendChild(makeSocialBtn('Bluff (Haggle)', 'haggle'));
+  for (const descriptor of socialActions) {
+    socialBar.appendChild(makeSocialBtn(descriptor));
   }
-  socialBar.appendChild(makeSocialBtn('Intimidate', 'intimidate'));
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = 'Close [Esc]';
   closeBtn.onclick = () => {
-    queueIntent({
+    const closeIntent: CloseTradeIntent = {
       type: IntentType.CloseTrade,
       entityId: playerId,
       isImmediate: true
-    } as Intent);
+    };
+    queueIntent(closeIntent);
   };
 
   footer.append(socialBar, closeBtn);
   container.appendChild(footer);
 
   return container;
+}
+
+/**
+ * Mounts or tears down the DOM `#trade-overlay` backdrop and Trade panel during `PresentationDomain.Modals`,
+ * preserving shop and inventory scroll offsets across transactions and social haggling attempts.
+ */
+export function renderTradeOverlay(state: GameState): void {
+  const existingOverlay = document.getElementById(TRADE_OVERLAY_ID);
+  if (state.uiMode !== UIMode.Trade || !state.activeTrade) {
+    existingOverlay?.remove();
+    return;
+  }
+
+  const prevNpcScroll = existingOverlay?.querySelector('.trade-npc-list')?.scrollTop ?? 0;
+  const prevPlayerScroll = existingOverlay?.querySelector('.trade-player-list')?.scrollTop ?? 0;
+
+  const panel = renderTradeUI(state, queuePlayerIntent);
+  if (!panel) {
+    existingOverlay?.remove();
+    return;
+  }
+
+  let overlay = existingOverlay;
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = TRADE_OVERLAY_ID;
+    overlay.style.position = 'fixed';
+    overlay.style.inset = '0';
+    overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.65)';
+    overlay.style.zIndex = '999';
+    document.body.appendChild(overlay);
+  }
+
+  overlay.replaceChildren(panel);
+
+  const nextNpcList = overlay.querySelector('.trade-npc-list');
+  if (nextNpcList) {
+    nextNpcList.scrollTop = prevNpcScroll;
+  }
+  const nextPlayerList = overlay.querySelector('.trade-player-list');
+  if (nextPlayerList) {
+    nextPlayerList.scrollTop = prevPlayerScroll;
+  }
 }

@@ -1,6 +1,7 @@
 import type { GameState, EntityId } from '../types/game-state.types.ts';
 import type { ItemDefinition } from '../types/campaign.types.ts';
-import { getComponent } from '../core/ecs.ts';
+import { createDefaultMemoryComponent, getComponent } from '../core/ecs.ts';
+export { createDefaultMemoryComponent };
 import { getActiveRuleset } from '../rulesets/registry.ts';
 import { resolveCurrencyConfig, resolveItemBaseValueInBaseUnits } from '../systems/currency.system.ts';
 import { ComponentType } from '../types/components.types.ts';
@@ -58,6 +59,85 @@ export const BASE_SELL_TO_SHOP_MULTIPLIER = 0.25;
  * Minimum sell-to-shop multiplier allowed to prevent items being sold for 0 coins.
  */
 export const MIN_SELL_TO_SHOP_MULTIPLIER = 0.05;
+
+/**
+ * Maximum sell-to-shop multiplier allowed as a fair resale ceiling above base shop markdown.
+ */
+export const MAX_SELL_TO_SHOP_MULTIPLIER = 0.75;
+
+/**
+ * Maximum ratio between sell-back multiplier and buy multiplier (`sell <= buy * 0.85`),
+ * preventing buy-and-resell arbitrage loops regardless of stacked discounts.
+ */
+export const MAX_SELL_TO_BUY_RATIO = 0.85;
+
+/** Minimum allowed cumulative `sessionMarkupModifier` adjustment (`-40%`). */
+export const MIN_SESSION_MARKUP_MOD = -0.4;
+
+/** Maximum allowed cumulative `sessionMarkupModifier` penalty (`+60%`). */
+export const MAX_SESSION_MARKUP_MOD = 0.6;
+
+/** Maximum successful repeat haggle attempts allowed per negotiation skill against one merchant. */
+export const MAX_TRADE_HAGGLE_WINS_PER_SKILL = 2;
+
+/** Duration (turns) a merchant stays annoyed after a backfired haggle attempt. */
+export const HAGGLE_ANNOYED_DURATION = 15;
+
+const TRADE_LOCKED_FACT_PREFIX = 'trade_locked:';
+const TRADE_WIN_FACT_PREFIX = 'trade_win:';
+const PERCENT_MULTIPLIER = 100;
+
+/**
+ * Clamps a cumulative `sessionMarkupModifier` value to `[MIN_SESSION_MARKUP_MOD, MAX_SESSION_MARKUP_MOD]`
+ * rounded to two decimal places.
+ */
+export function clampSessionMarkup(val: number): number {
+  return Math.max(MIN_SESSION_MARKUP_MOD, Math.min(MAX_SESSION_MARKUP_MOD, Number(val.toFixed(2))));
+}
+
+/**
+ * Evaluates whether a trade negotiation skill (`appraise`, `diplomacy`, `bluff`, `intimidate`)
+ * can still be attempted against a merchant, or whether it is locked by prior failure or capped.
+ */
+export function getTradeSkillHaggleStatus(
+  memory: MemoryComponent | undefined,
+  skillId: string
+): {
+  readonly locked: boolean;
+  readonly wins: number;
+  readonly discountCapped: boolean;
+  readonly canAttempt: boolean;
+} {
+  const facts = memory?.facts ?? [];
+  const locked = facts.includes(`${TRADE_LOCKED_FACT_PREFIX}${skillId}`);
+  const winPrefix = `${TRADE_WIN_FACT_PREFIX}${skillId}:`;
+  const wins = facts.filter((f) => f.startsWith(winPrefix)).length;
+  const discountCapped = (memory?.sessionMarkupModifier ?? 0) <= MIN_SESSION_MARKUP_MOD;
+  return {
+    locked,
+    wins,
+    discountCapped,
+    canAttempt: !locked && wins < MAX_TRADE_HAGGLE_WINS_PER_SKILL && !discountCapped
+  };
+}
+
+/**
+ * Produces the updated `MemoryComponent.facts` array after a trade haggle attempt:
+ * wins append `trade_win:<skillId>:<n>`, failures lock `trade_locked:<skillId>`.
+ */
+export function recordTradeHaggleOutcomeFacts(
+  facts: ReadonlyArray<string>,
+  skillId: string,
+  succeeded: boolean
+): ReadonlyArray<string> {
+  if (succeeded) {
+    const winPrefix = `${TRADE_WIN_FACT_PREFIX}${skillId}:`;
+    const nextCount = facts.filter((f) => f.startsWith(winPrefix)).length + 1;
+    return [...facts, `${winPrefix}${nextCount}`];
+  }
+  const lockFact = `${TRADE_LOCKED_FACT_PREFIX}${skillId}`;
+  return facts.includes(lockFact) ? facts : [...facts, lockFact];
+}
 
 /**
  * Detailed trade pricing breakdown showing final multiplier and contributor annotations.
@@ -148,7 +228,12 @@ export function getTradePriceBreakdown(
       const generous = memory.facets['generous'] ?? PERSONALITY_FACET_NEUTRAL_VAL;
       const greedyModifier = (greedy - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
       const generousModifier = -(generous - PERSONALITY_FACET_NEUTRAL_VAL) / PERSONALITY_FACET_PRICE_DIVISOR;
-      multiplier += greedyModifier + generousModifier;
+      const personalityDelta = greedyModifier + generousModifier;
+      if (personalityDelta !== 0) {
+        multiplier += personalityDelta;
+        const pct = Math.round(personalityDelta * PERCENT_MULTIPLIER);
+        annotations.push(`Personality (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
+      }
     }
 
     if (memory.relationshipAxes) {
@@ -157,10 +242,16 @@ export function getTradePriceBreakdown(
       const debt = memory.relationshipAxes['debt'] ?? 0;
       const resentment = memory.relationshipAxes['resentment'] ?? 0;
 
-      if (loyalty > 0) multiplier -= loyalty / RELATIONSHIP_AXIS_PRICE_DIVISOR;
-      if (fear > 0) multiplier -= fear / RELATIONSHIP_AXIS_PRICE_DIVISOR;
-      if (debt > 0) multiplier -= debt / RELATIONSHIP_AXIS_PRICE_DIVISOR;
-      if (resentment > 0) multiplier += resentment / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      let relationshipDelta = 0;
+      if (loyalty > 0) relationshipDelta -= loyalty / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (fear > 0) relationshipDelta -= fear / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (debt > 0) relationshipDelta -= debt / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (resentment > 0) relationshipDelta += resentment / RELATIONSHIP_AXIS_PRICE_DIVISOR;
+      if (relationshipDelta !== 0) {
+        multiplier += relationshipDelta;
+        const pct = Math.round(relationshipDelta * PERCENT_MULTIPLIER);
+        annotations.push(`Relationship (${pct >= 0 ? `+${pct}%` : `${pct}%`})`);
+      }
     }
   }
 
@@ -179,10 +270,9 @@ export function getTradePriceBreakdown(
   }
 
   const finalBuyMultiplier = Math.max(MIN_TRADE_MULTIPLIER, multiplier);
-  const finalSellMultiplier = Math.max(
-    MIN_SELL_TO_SHOP_MULTIPLIER,
-    (BASE_SELL_TO_SHOP_MULTIPLIER + sellMultiplierBonus) * (1 / finalBuyMultiplier)
-  );
+  const uncappedSellMultiplier = (BASE_SELL_TO_SHOP_MULTIPLIER + sellMultiplierBonus) * (1 / finalBuyMultiplier);
+  const maxSellAllowed = Math.min(MAX_SELL_TO_SHOP_MULTIPLIER, finalBuyMultiplier * MAX_SELL_TO_BUY_RATIO);
+  const finalSellMultiplier = Math.max(MIN_SELL_TO_SHOP_MULTIPLIER, Math.min(maxSellAllowed, uncappedSellMultiplier));
 
   return {
     finalBuyMultiplier,

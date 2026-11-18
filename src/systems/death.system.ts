@@ -20,7 +20,9 @@ import {
   decomposeToCoins,
   formatCurrency,
   getEntityCurrencyBalance,
-  resolveCurrencyConfig
+  resolveCurrencyConfig,
+  resolveCurrencyItemDefinition,
+  toBaseUnits
 } from './currency.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { removeActor, addActor } from '../core/scheduler.ts';
@@ -30,6 +32,30 @@ import { evaluateCheatDeath } from './nemesis.system.ts';
 import { rng } from '../core/rng.ts';
 import { getEntityBarks } from './nemesis.system.ts';
 import { getActiveRuleset } from '../rulesets/registry.ts';
+
+/**
+ * Removes non-positioned inventory orphans and unpositioned merchant stock entities when an entity dies.
+ */
+function cleanupDeadEntityOrphans(state: GameState, entityId: EntityId): GameState {
+  let nextState = state;
+  const inv = getComponent(nextState, entityId, ComponentType.Inventory) as InventoryComponent | undefined;
+  if (inv) {
+    for (const itemId of inv.items) {
+      if (!getComponent(nextState, itemId, ComponentType.Position)) {
+        nextState = removeEntity(nextState, itemId);
+      }
+    }
+  }
+  const shop = getComponent(nextState, entityId, ComponentType.Shop) as ShopComponent | undefined;
+  if (shop) {
+    for (const stockItemId of shop.inventory) {
+      if (!getComponent(nextState, stockItemId, ComponentType.Position)) {
+        nextState = removeEntity(nextState, stockItemId);
+      }
+    }
+  }
+  return nextState;
+}
 
 /**
  * Helper to grant XP to an entity and handle level ups by delegating to the
@@ -235,25 +261,36 @@ export function processDeathSystem(state: GameState): GameState {
 
         // 3. Roll template currencyDrop or drop carried non-shop wallet balance
         const currencyCfg = resolveCurrencyConfig(nextState);
-        const dropCurrencyBucket = (denominationId: string, amount: number): void => {
+        const dropCurrencyBucket = (denominationId: string, amount: number, allowSubdivide = true): void => {
           if (amount <= 0) return;
-          const matchingCoinDef =
-            Object.values(nextState.campaign.items).find(
-              (def) => def.currencyGrant?.denominationId === denominationId && def.currencyGrant.amount === 1
-            ) ??
-            Object.values(nextState.campaign.items).find((def) => def.currencyGrant?.denominationId === denominationId);
+          const matchingCoinDef = resolveCurrencyItemDefinition(nextState, denominationId);
           if (!matchingCoinDef) return;
+          const denomUnitAmount = Math.max(1, matchingCoinDef.currencyGrant?.amount ?? 1);
+          if (allowSubdivide && amount < denomUnitAmount) {
+            const denomBaseUnit = toBaseUnits(1, denominationId, currencyCfg);
+            const smallerDenoms = currencyCfg.denominations.filter((d) => d.baseMultiplier < denomBaseUnit);
+            if (smallerDenoms.length > 0) {
+              const baseValue = toBaseUnits(amount, denominationId, currencyCfg);
+              const subBuckets = decomposeToCoins(baseValue, { ...currencyCfg, denominations: smallerDenoms });
+              for (const sub of subBuckets) {
+                if (sub.amount > 0) {
+                  dropCurrencyBucket(sub.id, sub.amount, false);
+                }
+              }
+            }
+            return;
+          }
+          const charges = Math.max(1, Math.floor(amount / denomUnitAmount));
           const [afterSpawn, coinEntityId] = spawnItem(nextState, matchingCoinDef.id, pos.x, pos.y);
           nextState = afterSpawn;
           const coinComp = getComponent(nextState, coinEntityId, ComponentType.Item) as ItemComponent | undefined;
           if (coinComp) {
-            const denomUnitAmount = Math.max(1, matchingCoinDef.currencyGrant?.amount ?? 1);
-            const charges = Math.max(1, Math.round(amount / denomUnitAmount));
             nextState = addComponent(nextState, coinEntityId, { ...coinComp, charges });
           }
+          const droppedBaseUnits = toBaseUnits(charges * denomUnitAmount, denominationId, currencyCfg);
           nextState = addMessage(
             nextState,
-            `${name} drops ${amount} ${denominationId}.`,
+            `${name} drops ${formatCurrency(droppedBaseUnits, currencyCfg)}.`,
             MessageLogCategory.CombatDeath
           );
         };
@@ -328,6 +365,9 @@ export function processDeathSystem(state: GameState): GameState {
           MessageLogCategory.System
         );
       }
+
+      // Clean up orphaned non-dropped items and dead shopkeeper stock entities before stripping entity
+      nextState = cleanupDeadEntityOrphans(nextState, entityId);
 
       // Strip the dead entity from the world
       nextState = removeEntity(nextState, entityId);

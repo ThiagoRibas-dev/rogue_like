@@ -12,7 +12,14 @@ import type {
 import { GameEventType, type ApplyResolvedEvent, type GameEvent } from '../types/events.types.ts';
 import type { Quest } from '../types/quests.types.ts';
 import { rng } from '../core/rng.ts';
-import { getEffectiveItemPriceInBaseUnits } from '../utils/trade.ts';
+import {
+  clampSessionMarkup,
+  createDefaultMemoryComponent,
+  getEffectiveItemPriceInBaseUnits,
+  getTradeSkillHaggleStatus,
+  HAGGLE_ANNOYED_DURATION,
+  recordTradeHaggleOutcomeFacts
+} from '../utils/trade.ts';
 import {
   addEntityCurrency,
   formatCurrency,
@@ -22,6 +29,22 @@ import {
 import { getEffectiveCapacity } from './inventory.system.ts';
 import { grantQuest, processQuestEvent } from './quest.system.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
+
+const CONSOLE_HAGGLE_ROLL_SCALE = 100;
+const CONSOLE_APPRAISE_SUCCESS_THRESHOLD = 45;
+const CONSOLE_HAGGLE_SUCCESS_THRESHOLD = 50;
+const CONSOLE_HAGGLE_DISCOUNT_DELTA = -0.15;
+const CONSOLE_HAGGLE_PENALTY_DELTA = 0.15;
+const CONSOLE_HAGGLE_FAIL_ANNOYED_CHANCE = 0.5;
+
+const TRADE_SKILL_EVENT_VERB: Readonly<Record<string, ApplyResolvedEvent['verb']>> = {
+  appraise: 'appraise',
+  diplomacy: 'persuade',
+  intimidate: 'intimidate',
+  bluff: 'haggle',
+  persuade: 'persuade',
+  haggle: 'haggle'
+};
 
 /**
  * Executes a purchase of an item from a merchant's `ShopComponent.inventory` by a buyer entity.
@@ -162,7 +185,8 @@ export function executeSellItem(
   }
 
   const isBuyable =
-    shop.buyTags.length === 0 || (itemDef.tags !== undefined && itemDef.tags.some((t) => shop.buyTags.includes(t)));
+    !itemDef.currencyGrant &&
+    (shop.buyTags.length === 0 || (itemDef.tags !== undefined && itemDef.tags.some((t) => shop.buyTags.includes(t))));
   if (!isBuyable) {
     return {
       state: addMessage(state, 'The merchant is not interested in buying that item.', MessageLogCategory.System),
@@ -202,7 +226,7 @@ export function executeSellItem(
   }
 
   const shopName = resolveEntityDisplayName(nextState, shopEntityId, 'Merchant');
-  const itemName = itemDef.name ?? itemComp.itemId;
+  const itemName = resolveEntityDisplayName(nextState, itemEntityId, itemComp.itemId);
   nextState = addMessage(
     nextState,
     `Sold ${itemName} to ${shopName} for ${formatCurrency(sellPrice, currencyCfg)}.`,
@@ -235,29 +259,40 @@ export function executeTradeSocialAction(
     const event: ApplyResolvedEvent = {
       type: GameEventType.ApplyResolved,
       entityId: actorId,
-      verb: skillId === 'diplomacy' ? 'persuade' : skillId === 'intimidate' ? 'intimidate' : 'haggle',
+      verb: TRADE_SKILL_EVENT_VERB[skillId] ?? 'haggle',
       target: { type: 'entity', entityId: shopEntityId }
     };
     return { state: rulesetOutcome.state, success: rulesetOutcome.success, events: [event] };
   }
 
-  const memory = getComponent(state, shopEntityId, ComponentType.Memory) as MemoryComponent | undefined;
-  if (!memory) {
+  const memory =
+    (getComponent(state, shopEntityId, ComponentType.Memory) as MemoryComponent | undefined) ??
+    createDefaultMemoryComponent();
+  const haggleStatus = getTradeSkillHaggleStatus(memory, skillId);
+  if (!haggleStatus.canAttempt) {
+    const refusal = haggleStatus.locked
+      ? 'This merchant refuses to revisit that negotiation tactic.'
+      : 'You cannot press that negotiation further with this merchant.';
     return {
-      state: addMessage(state, 'They refuse to haggle.', MessageLogCategory.System),
+      state: addMessage(state, refusal, MessageLogCategory.System),
       success: false
     };
   }
 
-  const roll = rng.getUniform() * 100;
-  const threshold = skillId === 'appraise' ? 45 : 50;
+  const roll = rng.getUniform() * CONSOLE_HAGGLE_ROLL_SCALE;
+  const threshold = skillId === 'appraise' ? CONSOLE_APPRAISE_SUCCESS_THRESHOLD : CONSOLE_HAGGLE_SUCCESS_THRESHOLD;
   const success = roll >= threshold;
   const currentMod = memory.sessionMarkupModifier ?? 0;
-  const nextMod = success ? Math.max(-0.35, currentMod - 0.15) : Math.min(0.5, currentMod + 0.15);
+  const nextMod = clampSessionMarkup(
+    currentMod + (success ? CONSOLE_HAGGLE_DISCOUNT_DELTA : CONSOLE_HAGGLE_PENALTY_DELTA)
+  );
+  const becameAnnoyed = !success && rng.getUniform() < CONSOLE_HAGGLE_FAIL_ANNOYED_CHANCE;
 
   let nextState = addComponent(state, shopEntityId, {
     ...memory,
-    sessionMarkupModifier: nextMod
+    sessionMarkupModifier: nextMod,
+    facts: recordTradeHaggleOutcomeFacts(memory.facts, skillId, success),
+    ...(becameAnnoyed ? { annoyedDuration: HAGGLE_ANNOYED_DURATION } : {})
   });
   nextState = addMessage(
     nextState,
@@ -281,9 +316,9 @@ export function restockShop(state: GameState, shopEntityId: EntityId): GameState
 
   if (shop.buyTags.length === 0) return state; // Can't procedurally restock if they don't buy anything
 
-  // Find items that match the buyTags
+  // Find items that match the buyTags (excluding monetary tokens)
   const validItems = Object.values(state.campaign.items).filter(
-    (item) => item.tags && item.tags.some((tag) => shop.buyTags.includes(tag))
+    (item) => !item.currencyGrant && item.tags && item.tags.some((tag) => shop.buyTags.includes(tag))
   );
 
   if (validItems.length === 0) return state;

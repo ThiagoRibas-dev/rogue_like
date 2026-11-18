@@ -168,13 +168,19 @@ writeJson('factions.json', factions);
 const tiles = {
   stone_floor: { spriteId: 'tile_floor_stone_1', walkable: true, transparent: true, glyph: '.', fg: '#1a1d24', bg: '#000000', tags: ['terrain', 'floor'] },
   stone_wall: { spriteId: 'tile_rough_stone_wall_top', walkable: false, transparent: false, glyph: '#', fg: '#4a4d53', bg: '#000000', tags: ['terrain', 'solid'] },
+  town_floor: { spriteId: 'tile_floor_stone_2', walkable: true, transparent: true, glyph: '.', fg: '#a1887f', bg: '#000000', tags: ['terrain', 'floor'] },
+  town_wall: { spriteId: 'tile_stone_brick_wall_top', walkable: false, transparent: false, glyph: '#', fg: '#7f8c8d', bg: '#000000', tags: ['terrain', 'solid'] },
+  crypt_floor: { spriteId: 'tile_stone_floor_1', walkable: true, transparent: true, glyph: '.', fg: '#95a5a6', bg: '#000000', tags: ['terrain', 'floor'] },
+  crypt_wall: { spriteId: 'tile_catacombs_skull_wall_top', walkable: false, transparent: false, glyph: '#', fg: '#bdc3c7', bg: '#000000', tags: ['terrain', 'solid'] },
+  abyss_floor: { spriteId: 'tile_red_stone_floor_1_red_bg', walkable: true, transparent: true, glyph: '.', fg: '#c0392b', bg: '#000000', tags: ['terrain', 'floor'] },
+  abyss_wall: { spriteId: 'tile_igneous_wall_top', walkable: false, transparent: false, glyph: '#', fg: '#7f1d1d', bg: '#000000', tags: ['terrain', 'solid'] },
   stairs_up: { spriteId: 'tile_staircase_up', walkable: true, transparent: true, glyph: '<', fg: '#ffffff', bg: '#000000', tags: ['terrain', 'portal'] },
   stairs_down: { spriteId: 'tile_staircase_down', walkable: true, transparent: true, glyph: '>', fg: '#ffffff', bg: '#000000', tags: ['terrain', 'portal'] },
   empty_space: { spriteId: 'tile_empty', walkable: false, transparent: false, glyph: ' ', fg: '#000000', bg: '#000000', tags: ['terrain'] },
   shallow_water: { spriteId: 'tile_blue_stone_floor_1_blue_bg', walkable: true, transparent: true, glyph: '~', fg: '#3498db', bg: '#000000', movementCost: 200, tags: ['terrain', 'liquid', 'water'] },
   grass_floor: { spriteId: 'tile_grass_1', walkable: true, transparent: true, glyph: '.', fg: '#2d5a27', bg: '#000000', tags: ['terrain', 'floor'] },
   dense_trees: { spriteId: 'tile_tree', walkable: false, transparent: false, glyph: 'T', fg: '#1b4d3e', bg: '#000000', tags: ['terrain', 'solid'] },
-  swamp_floor: { spriteId: 'tile_dirt_1', walkable: true, transparent: true, glyph: ';', fg: '#4a5d4e', bg: '#000000', movementCost: 150, tags: ['terrain', 'floor'] },
+  swamp_floor: { spriteId: 'tile_dirt_1_green_bg', walkable: true, transparent: true, glyph: ';', fg: '#4a5d4e', bg: '#000000', movementCost: 150, tags: ['terrain', 'floor'] },
   dirt_floor: { spriteId: 'tile_dirt_1', walkable: true, transparent: true, glyph: '.', fg: '#5d4037', bg: '#000000', tags: ['terrain', 'floor'] },
   wood_floor: { spriteId: 'tile_floor_stone_2', walkable: true, transparent: true, glyph: '.', fg: '#8d6e63', bg: '#000000', tags: ['terrain', 'floor'] },
   chasm: { spriteId: 'tile_pit', walkable: false, transparent: true, glyph: ' ', fg: '#000000', bg: '#000000', tags: ['terrain', 'chasm'] }
@@ -290,6 +296,29 @@ interface AreaConnection {
   direction: 'north' | 'south' | 'east' | 'west' | 'up' | 'down' | 'portal';
 }
 
+interface PlacedEntityDef {
+  templateId: string;
+  x: number;
+  y: number;
+}
+
+interface ProceduralPaletteDef {
+  floor: string;
+  wall: string;
+  door: string;
+  water: string;
+}
+
+const PALETTE_TOWN: ProceduralPaletteDef = { floor: 'town_floor', wall: 'town_wall', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_INDOOR: ProceduralPaletteDef = { floor: 'wood_floor', wall: 'town_wall', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_FOREST: ProceduralPaletteDef = { floor: 'grass_floor', wall: 'dense_trees', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_ROAD: ProceduralPaletteDef = { floor: 'dirt_floor', wall: 'dense_trees', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_SWAMP: ProceduralPaletteDef = { floor: 'swamp_floor', wall: 'dense_trees', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_CAVE: ProceduralPaletteDef = { floor: 'dirt_floor', wall: 'stone_wall', door: 'wooden_door', water: 'shallow_water' };
+const PALETTE_CRYPT: ProceduralPaletteDef = { floor: 'crypt_floor', wall: 'crypt_wall', door: 'iron_gate', water: 'shallow_water' };
+const PALETTE_ABYSS: ProceduralPaletteDef = { floor: 'abyss_floor', wall: 'abyss_wall', door: 'iron_gate', water: 'shallow_water' };
+const PALETTE_TOWER: ProceduralPaletteDef = { floor: 'stone_floor', wall: 'town_wall', door: 'wooden_door', water: 'shallow_water' };
+
 interface AreaDef {
   id: string;
   name: string;
@@ -299,6 +328,9 @@ interface AreaDef {
   connections: AreaConnection[];
   crBudget: number;
   encounterProfileId: string;
+  environmentType: 'outdoors' | 'indoors' | 'underground';
+  proceduralPalette: ProceduralPaletteDef;
+  placedEntities?: PlacedEntityDef[];
 }
 
 const areas: Record<string, unknown> = {};
@@ -333,224 +365,309 @@ function addArea(def: AreaDef): void {
 }
 
 // 1. Hub & Towns
-addArea({ id: 'shroudgarde_courtyard', name: 'Shroudgarde Town Square', generatorType: 'bsp', dangerRating: 0, tags: ['town', 'outdoor'], crBudget: 10, encounterProfileId: 'town_encounter', connections: [
-  { targetAreaId: 'shroudgarde_gate', direction: 'south' },
-  { targetAreaId: 'shroudgarde_inner_keep', direction: 'north' },
-  { targetAreaId: 'golden_grain_inn', direction: 'east' },
-  { targetAreaId: 'shroudgarde_inn_cellar', direction: 'down' },
-  { targetAreaId: 'forest_haunted', direction: 'west' }
-]});
+addArea({
+  id: 'shroudgarde_courtyard', name: 'Shroudgarde Town Square', generatorType: 'bsp', dangerRating: 0,
+  tags: ['town'], crBudget: 10, encounterProfileId: 'town_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_TOWN,
+  placedEntities: [
+    { templateId: 'silas_merchant', x: 35, y: 22 },
+    { templateId: 'elena_scholar', x: 45, y: 22 }
+  ],
+  connections: [
+    { targetAreaId: 'shroudgarde_gate', direction: 'south' },
+    { targetAreaId: 'shroudgarde_inner_keep', direction: 'north' },
+    { targetAreaId: 'golden_grain_inn', direction: 'east' },
+    { targetAreaId: 'shroudgarde_inn_cellar', direction: 'down' },
+    { targetAreaId: 'forest_haunted', direction: 'west' }
+  ]
+});
 
-addArea({ id: 'shroudgarde_gate', name: 'Shroudgarde Southern Gate', generatorType: 'bsp', dangerRating: 0, tags: ['town', 'outdoor'], crBudget: 15, encounterProfileId: 'town_encounter', connections: [
-  { targetAreaId: 'shroudgarde_courtyard', direction: 'north' },
-  { targetAreaId: 'orlane_east', direction: 'east' },
-  { targetAreaId: 'outer_crossroads', direction: 'south' }
-]});
+addArea({
+  id: 'shroudgarde_gate', name: 'Shroudgarde Southern Gate', generatorType: 'bsp', dangerRating: 0,
+  tags: ['town'], crBudget: 15, encounterProfileId: 'town_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_TOWN,
+  placedEntities: [{ templateId: 'constable_derek', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'shroudgarde_courtyard', direction: 'north' },
+    { targetAreaId: 'orlane_east', direction: 'east' },
+    { targetAreaId: 'outer_crossroads', direction: 'south' }
+  ]
+});
 
-addArea({ id: 'shroudgarde_inner_keep', name: 'Shroudgarde Keep Bastion', generatorType: 'bsp', dangerRating: 1, tags: ['town'], crBudget: 25, encounterProfileId: 'town_encounter', connections: [
-  { targetAreaId: 'shroudgarde_courtyard', direction: 'south' }
-]});
+addArea({
+  id: 'shroudgarde_inner_keep', name: 'Shroudgarde Keep Bastion', generatorType: 'bsp', dangerRating: 1,
+  tags: ['town'], crBudget: 25, encounterProfileId: 'town_encounter',
+  environmentType: 'indoors', proceduralPalette: PALETTE_INDOOR,
+  placedEntities: [
+    { templateId: 'isabelle_cleric', x: 37, y: 24 },
+    { templateId: 'dwarf_laurent', x: 43, y: 24 }
+  ],
+  connections: [{ targetAreaId: 'shroudgarde_courtyard', direction: 'south' }]
+});
 
-addArea({ id: 'golden_grain_inn', name: 'Golden Grain Tavern', generatorType: 'bsp', dangerRating: 0, tags: ['town'], crBudget: 10, encounterProfileId: 'town_encounter', connections: [
-  { targetAreaId: 'shroudgarde_courtyard', direction: 'west' }
-]});
+addArea({
+  id: 'golden_grain_inn', name: 'Golden Grain Tavern', generatorType: 'bsp', dangerRating: 0,
+  tags: ['town'], crBudget: 10, encounterProfileId: 'town_encounter',
+  environmentType: 'indoors', proceduralPalette: PALETTE_INDOOR,
+  placedEntities: [{ templateId: 'barkeep_bertram', x: 40, y: 24 }],
+  connections: [{ targetAreaId: 'shroudgarde_courtyard', direction: 'west' }]
+});
 
-addArea({ id: 'shroudgarde_inn_cellar', name: 'Shroudgarde Inn Cellar', generatorType: 'digger', dangerRating: 2, tags: ['dungeon', 'crypt'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter', connections: [
-  { targetAreaId: 'shroudgarde_courtyard', direction: 'up' },
-  { targetAreaId: 'megadungeon_hub', direction: 'down' }
-]});
+addArea({
+  id: 'shroudgarde_inn_cellar', name: 'Shroudgarde Inn Cellar', generatorType: 'digger', dangerRating: 2,
+  tags: ['dungeon', 'crypt'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_CRYPT,
+  connections: [
+    { targetAreaId: 'shroudgarde_courtyard', direction: 'up' },
+    { targetAreaId: 'megadungeon_hub', direction: 'down' }
+  ]
+});
 
 // 2. Wilderness & Roads
-addArea({ id: 'outer_crossroads', name: 'Borderlands Crossroads', generatorType: 'caves', dangerRating: 1, tags: ['frontier', 'outdoor'], crBudget: 25, encounterProfileId: 'wilderness_encounter', connections: [
-  { targetAreaId: 'shroudgarde_gate', direction: 'north' },
-  { targetAreaId: 'safe_hub', direction: 'west' },
-  { targetAreaId: 'road_to_nulb', direction: 'south' },
-  { targetAreaId: 'watchtower_f1', direction: 'east' }
-]});
+addArea({
+  id: 'outer_crossroads', name: 'Borderlands Crossroads', generatorType: 'caves', dangerRating: 1,
+  tags: ['frontier', 'outdoor'], crBudget: 25, encounterProfileId: 'wilderness_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_ROAD,
+  connections: [
+    { targetAreaId: 'shroudgarde_gate', direction: 'north' },
+    { targetAreaId: 'safe_hub', direction: 'west' },
+    { targetAreaId: 'road_to_nulb', direction: 'south' },
+    { targetAreaId: 'watchtower_f1', direction: 'east' }
+  ]
+});
 
-addArea({ id: 'forest_haunted', name: 'La Forêt Hantée', generatorType: 'cellular', dangerRating: 2, tags: ['frontier', 'outdoor'], crBudget: 35, encounterProfileId: 'wilderness_encounter', connections: [
-  { targetAreaId: 'shroudgarde_courtyard', direction: 'east' },
-  { targetAreaId: 'ravine_chaos', direction: 'north' },
-  { targetAreaId: 'wizard_tower_f1', direction: 'west' }
-]});
+addArea({
+  id: 'forest_haunted', name: 'La Forêt Hantée', generatorType: 'cellular', dangerRating: 2,
+  tags: ['frontier', 'outdoor'], crBudget: 35, encounterProfileId: 'wilderness_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_FOREST,
+  connections: [
+    { targetAreaId: 'shroudgarde_courtyard', direction: 'east' },
+    { targetAreaId: 'ravine_chaos', direction: 'north' },
+    { targetAreaId: 'wizard_tower_f1', direction: 'west' }
+  ]
+});
 
-addArea({ id: 'orlane_east', name: 'Eastern Village of Orlane', generatorType: 'bsp', dangerRating: 1, tags: ['town', 'frontier'], crBudget: 20, encounterProfileId: 'town_encounter', connections: [
-  { targetAreaId: 'shroudgarde_gate', direction: 'west' },
-  { targetAreaId: 'marsh_mirrored', direction: 'east' }
-]});
+addArea({
+  id: 'orlane_east', name: 'Eastern Village of Orlane', generatorType: 'bsp', dangerRating: 1,
+  tags: ['town'], crBudget: 20, encounterProfileId: 'town_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_TOWN,
+  placedEntities: [{ templateId: 'luc_ranger', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'shroudgarde_gate', direction: 'west' },
+    { targetAreaId: 'marsh_mirrored', direction: 'east' }
+  ]
+});
 
-addArea({ id: 'marsh_mirrored', name: 'The Mirrored Marsh', generatorType: 'cellular', dangerRating: 3, tags: ['frontier', 'outdoor'], crBudget: 50, encounterProfileId: 'wilderness_encounter', connections: [
-  { targetAreaId: 'orlane_east', direction: 'west' },
-  { targetAreaId: 'wet_caverns', direction: 'down' },
-  { targetAreaId: 'spire_level_air', direction: 'north' }
-]});
+addArea({
+  id: 'marsh_mirrored', name: 'The Mirrored Marsh', generatorType: 'cellular', dangerRating: 3,
+  tags: ['frontier', 'outdoor'], crBudget: 50, encounterProfileId: 'wilderness_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_SWAMP,
+  connections: [
+    { targetAreaId: 'orlane_east', direction: 'west' },
+    { targetAreaId: 'wet_caverns', direction: 'down' },
+    { targetAreaId: 'spire_level_air', direction: 'north' }
+  ]
+});
 
-addArea({ id: 'ravine_chaos', name: 'Ravine of Chaos', generatorType: 'caves', dangerRating: 2, tags: ['frontier', 'cave'], crBudget: 40, encounterProfileId: 'cave_encounter', connections: [
-  { targetAreaId: 'forest_haunted', direction: 'south' },
-  { targetAreaId: 'cave_kobolds', direction: 'north' },
-  { targetAreaId: 'cave_norkers', direction: 'east' },
-  { targetAreaId: 'cave_bugbears', direction: 'west' }
-]});
+addArea({
+  id: 'ravine_chaos', name: 'Ravine of Chaos', generatorType: 'caves', dangerRating: 2,
+  tags: ['frontier', 'cave'], crBudget: 40, encounterProfileId: 'cave_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_CAVE,
+  connections: [
+    { targetAreaId: 'forest_haunted', direction: 'south' },
+    { targetAreaId: 'cave_kobolds', direction: 'north' },
+    { targetAreaId: 'cave_norkers', direction: 'east' },
+    { targetAreaId: 'cave_bugbears', direction: 'west' }
+  ]
+});
 
-addArea({ id: 'road_to_nulb', name: 'Road to Nulb', generatorType: 'cellular', dangerRating: 2, tags: ['frontier', 'outdoor'], crBudget: 35, encounterProfileId: 'wilderness_encounter', connections: [
-  { targetAreaId: 'outer_crossroads', direction: 'north' },
-  { targetAreaId: 'moathouse_surface', direction: 'south' }
-]});
+addArea({
+  id: 'road_to_nulb', name: 'Road to Nulb', generatorType: 'cellular', dangerRating: 2,
+  tags: ['frontier', 'outdoor'], crBudget: 35, encounterProfileId: 'wilderness_encounter',
+  environmentType: 'outdoors', proceduralPalette: PALETTE_ROAD,
+  connections: [
+    { targetAreaId: 'outer_crossroads', direction: 'north' },
+    { targetAreaId: 'moathouse_surface', direction: 'south' }
+  ]
+});
 
 // 3. Caves of Chaos
-addArea({ id: 'cave_kobolds', name: 'Cavern of Kobold Trappers', generatorType: 'caves', dangerRating: 2, tags: ['cave'], crBudget: 30, encounterProfileId: 'cave_encounter', connections: [
+addArea({ id: 'cave_kobolds', name: 'Cavern of Kobold Trappers', generatorType: 'caves', dangerRating: 2, tags: ['cave'], crBudget: 30, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'ravine_chaos', direction: 'south' },
   { targetAreaId: 'cave_scro', direction: 'east' }
 ]});
 
-addArea({ id: 'cave_norkers', name: 'Cavern of the Norkers', generatorType: 'caves', dangerRating: 2, tags: ['cave'], crBudget: 35, encounterProfileId: 'cave_encounter', connections: [
+addArea({ id: 'cave_norkers', name: 'Cavern of the Norkers', generatorType: 'caves', dangerRating: 2, tags: ['cave'], crBudget: 35, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'ravine_chaos', direction: 'west' },
   { targetAreaId: 'cave_ogre', direction: 'north' }
 ]});
 
-addArea({ id: 'cave_bugbears', name: 'Lair of the Bugbears', generatorType: 'digger', dangerRating: 3, tags: ['cave'], crBudget: 45, encounterProfileId: 'cave_encounter', connections: [
+addArea({ id: 'cave_bugbears', name: 'Lair of the Bugbears', generatorType: 'digger', dangerRating: 3, tags: ['cave'], crBudget: 45, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'ravine_chaos', direction: 'east' }
 ]});
 
-addArea({ id: 'cave_scro', name: 'Outpost of the Scro Orcs', generatorType: 'digger', dangerRating: 3, tags: ['cave'], crBudget: 50, encounterProfileId: 'cave_encounter', connections: [
+addArea({ id: 'cave_scro', name: 'Outpost of the Scro Orcs', generatorType: 'digger', dangerRating: 3, tags: ['cave'], crBudget: 50, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'cave_kobolds', direction: 'west' }
 ]});
 
-addArea({ id: 'cave_ogre', name: 'Den of the Ogre Chieftain', generatorType: 'caves', dangerRating: 4, tags: ['cave'], crBudget: 65, encounterProfileId: 'cave_encounter', connections: [
-  { targetAreaId: 'cave_norkers', direction: 'south' }
-]});
+addArea({
+  id: 'cave_ogre', name: 'Den of the Ogre Chieftain', generatorType: 'caves', dangerRating: 4,
+  tags: ['cave'], crBudget: 65, encounterProfileId: 'cave_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_CAVE,
+  placedEntities: [{ templateId: 'ogre_chieftain', x: 40, y: 24 }],
+  connections: [{ targetAreaId: 'cave_norkers', direction: 'south' }]
+});
 
 // 4. Towers (3 Towers: Watchtower 3f, Spire 5f, Wizard Tower 4f)
-// Tower A: High Watchtower
-addArea({ id: 'watchtower_f1', name: 'High Watchtower: Ground Entry', generatorType: 'bsp', dangerRating: 1, tags: ['tower'], crBudget: 25, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'watchtower_f1', name: 'High Watchtower: Ground Entry', generatorType: 'bsp', dangerRating: 1, tags: ['tower'], crBudget: 25, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'outer_crossroads', direction: 'west' },
   { targetAreaId: 'watchtower_f2', direction: 'up' }
 ]});
-addArea({ id: 'watchtower_f2', name: 'High Watchtower: Guard Barracks', generatorType: 'bsp', dangerRating: 2, tags: ['tower'], crBudget: 35, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'watchtower_f2', name: 'High Watchtower: Guard Barracks', generatorType: 'bsp', dangerRating: 2, tags: ['tower'], crBudget: 35, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'watchtower_f1', direction: 'down' },
   { targetAreaId: 'watchtower_f3', direction: 'up' }
 ]});
-addArea({ id: 'watchtower_f3', name: 'High Watchtower: Beacon Peak', generatorType: 'bsp', dangerRating: 3, tags: ['tower'], crBudget: 45, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'watchtower_f3', name: 'High Watchtower: Beacon Peak', generatorType: 'bsp', dangerRating: 3, tags: ['tower'], crBudget: 45, encounterProfileId: 'tower_encounter', environmentType: 'outdoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'watchtower_f2', direction: 'down' }
 ]});
 
-// Tower B: Elemental Spire (5 floors)
-addArea({ id: 'spire_level_air', name: 'Spire of Elements: Tier of Air', generatorType: 'maze', dangerRating: 4, tags: ['tower', 'temple'], crBudget: 60, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'spire_level_air', name: 'Spire of Elements: Tier of Air', generatorType: 'maze', dangerRating: 4, tags: ['tower', 'temple'], crBudget: 60, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'marsh_mirrored', direction: 'south' },
   { targetAreaId: 'spire_level_earth', direction: 'up' }
 ]});
-addArea({ id: 'spire_level_earth', name: 'Spire of Elements: Tier of Earth', generatorType: 'caves', dangerRating: 4, tags: ['tower', 'temple'], crBudget: 65, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'spire_level_earth', name: 'Spire of Elements: Tier of Earth', generatorType: 'caves', dangerRating: 4, tags: ['tower', 'temple'], crBudget: 65, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'spire_level_air', direction: 'down' },
   { targetAreaId: 'spire_level_fire', direction: 'up' }
 ]});
-addArea({ id: 'spire_level_fire', name: 'Spire of Elements: Tier of Fire', generatorType: 'digger', dangerRating: 5, tags: ['tower', 'temple'], crBudget: 75, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'spire_level_fire', name: 'Spire of Elements: Tier of Fire', generatorType: 'digger', dangerRating: 5, tags: ['tower', 'temple'], crBudget: 75, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_ABYSS, connections: [
   { targetAreaId: 'spire_level_earth', direction: 'down' },
   { targetAreaId: 'spire_level_water', direction: 'up' }
 ]});
-addArea({ id: 'spire_level_water', name: 'Spire of Elements: Tier of Water', generatorType: 'cellular', dangerRating: 5, tags: ['tower', 'temple'], crBudget: 80, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'spire_level_water', name: 'Spire of Elements: Tier of Water', generatorType: 'cellular', dangerRating: 5, tags: ['tower', 'temple'], crBudget: 80, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'spire_level_fire', direction: 'down' },
   { targetAreaId: 'spire_gem_chamber', direction: 'up' }
 ]});
-addArea({ id: 'spire_gem_chamber', name: 'Spire Apex: Chamber of Elemental Gems', generatorType: 'bsp', dangerRating: 6, tags: ['tower', 'temple'], crBudget: 100, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'spire_gem_chamber', name: 'Spire Apex: Chamber of Elemental Gems', generatorType: 'bsp', dangerRating: 6, tags: ['tower', 'temple'], crBudget: 100, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'spire_level_water', direction: 'down' }
 ]});
 
-// Tower C: Arcane Wizard Tower (4 floors)
-addArea({ id: 'wizard_tower_f1', name: 'Arcane Tower: Great Library', generatorType: 'bsp', dangerRating: 2, tags: ['tower'], crBudget: 30, encounterProfileId: 'tower_encounter', connections: [
-  { targetAreaId: 'forest_haunted', direction: 'east' },
-  { targetAreaId: 'wizard_tower_f2', direction: 'up' }
-]});
-addArea({ id: 'wizard_tower_f2', name: 'Arcane Tower: Alchemical Laboratory', generatorType: 'bsp', dangerRating: 3, tags: ['tower'], crBudget: 45, encounterProfileId: 'tower_encounter', connections: [
+addArea({
+  id: 'wizard_tower_f1', name: 'Arcane Tower: Great Library', generatorType: 'bsp', dangerRating: 2,
+  tags: ['tower'], crBudget: 30, encounterProfileId: 'tower_encounter',
+  environmentType: 'indoors', proceduralPalette: PALETTE_INDOOR,
+  placedEntities: [{ templateId: 'archmage_alden', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'forest_haunted', direction: 'east' },
+    { targetAreaId: 'wizard_tower_f2', direction: 'up' }
+  ]
+});
+addArea({ id: 'wizard_tower_f2', name: 'Arcane Tower: Alchemical Laboratory', generatorType: 'bsp', dangerRating: 3, tags: ['tower'], crBudget: 45, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'wizard_tower_f1', direction: 'down' },
   { targetAreaId: 'wizard_tower_f3', direction: 'up' }
 ]});
-addArea({ id: 'wizard_tower_f3', name: 'Arcane Tower: Celestial Observatory', generatorType: 'bsp', dangerRating: 4, tags: ['tower'], crBudget: 60, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'wizard_tower_f3', name: 'Arcane Tower: Celestial Observatory', generatorType: 'bsp', dangerRating: 4, tags: ['tower'], crBudget: 60, encounterProfileId: 'tower_encounter', environmentType: 'outdoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'wizard_tower_f2', direction: 'down' },
   { targetAreaId: 'wizard_tower_f4', direction: 'up' }
 ]});
-addArea({ id: 'wizard_tower_f4', name: 'Arcane Tower: Sanctum Sanctorum', generatorType: 'bsp', dangerRating: 5, tags: ['tower'], crBudget: 80, encounterProfileId: 'tower_encounter', connections: [
+addArea({ id: 'wizard_tower_f4', name: 'Arcane Tower: Sanctum Sanctorum', generatorType: 'bsp', dangerRating: 5, tags: ['tower'], crBudget: 80, encounterProfileId: 'tower_encounter', environmentType: 'indoors', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'wizard_tower_f3', direction: 'down' }
 ]});
 
 // 5. Shallow Dungeons & Sunless Crypts
-addArea({ id: 'safe_hub', name: 'Sunless Crypt Encampment', generatorType: 'bsp', dangerRating: 1, tags: ['crypt'], crBudget: 20, encounterProfileId: 'shallow_crypt_encounter', connections: [
+addArea({ id: 'safe_hub', name: 'Sunless Crypt Encampment', generatorType: 'bsp', dangerRating: 1, tags: ['crypt'], crBudget: 20, encounterProfileId: 'shallow_crypt_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'outer_crossroads', direction: 'east' },
   { targetAreaId: 'dungeon_1', direction: 'down' }
 ]});
-addArea({ id: 'dungeon_1', name: 'Sunless Reliquary: Upper Crypts', generatorType: 'digger', dangerRating: 2, tags: ['crypt', 'dungeon'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter', connections: [
+addArea({ id: 'dungeon_1', name: 'Sunless Reliquary: Upper Crypts', generatorType: 'digger', dangerRating: 2, tags: ['crypt', 'dungeon'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'safe_hub', direction: 'up' },
   { targetAreaId: 'dungeon_2', direction: 'down' },
   { targetAreaId: 'bandit_stronghold', direction: 'west' }
 ]});
-addArea({ id: 'dungeon_2', name: 'Sunless Reliquary: Tomb of the Arch-Curate', generatorType: 'digger', dangerRating: 3, tags: ['crypt', 'dungeon'], crBudget: 50, encounterProfileId: 'shallow_crypt_encounter', connections: [
-  { targetAreaId: 'dungeon_1', direction: 'up' },
-  { targetAreaId: 'shrine_vault_hub', direction: 'down' }
-]});
-addArea({ id: 'bandit_stronghold', name: 'Subterranean Bandit Stronghold', generatorType: 'digger', dangerRating: 2, tags: ['dungeon'], crBudget: 40, encounterProfileId: 'shallow_crypt_encounter', connections: [
+addArea({
+  id: 'dungeon_2', name: 'Sunless Reliquary: Tomb of the Arch-Curate', generatorType: 'digger', dangerRating: 3,
+  tags: ['crypt', 'dungeon'], crBudget: 50, encounterProfileId: 'shallow_crypt_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_CRYPT,
+  placedEntities: [{ templateId: 'crypt_arch_curate', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'dungeon_1', direction: 'up' },
+    { targetAreaId: 'shrine_vault_hub', direction: 'down' }
+  ]
+});
+addArea({ id: 'bandit_stronghold', name: 'Subterranean Bandit Stronghold', generatorType: 'digger', dangerRating: 2, tags: ['dungeon'], crBudget: 40, encounterProfileId: 'shallow_crypt_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'dungeon_1', direction: 'east' }
 ]});
-addArea({ id: 'shrine_vault_hub', name: 'Cathedral Vault Hub', generatorType: 'bsp', dangerRating: 4, tags: ['crypt', 'temple'], crBudget: 70, encounterProfileId: 'shallow_crypt_encounter', connections: [
+addArea({ id: 'shrine_vault_hub', name: 'Cathedral Vault Hub', generatorType: 'bsp', dangerRating: 4, tags: ['crypt', 'temple'], crBudget: 70, encounterProfileId: 'shallow_crypt_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'dungeon_2', direction: 'up' },
   { targetAreaId: 'megadungeon_hub', direction: 'down' }
 ]});
 
 // 6. Moathouse & Water Temple
-addArea({ id: 'moathouse_surface', name: 'Ruined Moathouse Courtyard', generatorType: 'bsp', dangerRating: 2, tags: ['dungeon', 'outdoor'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter', connections: [
+addArea({ id: 'moathouse_surface', name: 'Ruined Moathouse Courtyard', generatorType: 'bsp', dangerRating: 2, tags: ['dungeon'], crBudget: 35, encounterProfileId: 'shallow_crypt_encounter', environmentType: 'outdoors', proceduralPalette: PALETTE_FOREST, connections: [
   { targetAreaId: 'road_to_nulb', direction: 'north' },
   { targetAreaId: 'moathouse_dungeons', direction: 'down' }
 ]});
-addArea({ id: 'moathouse_dungeons', name: 'Moathouse Sub-Level (Lareth)', generatorType: 'digger', dangerRating: 3, tags: ['dungeon'], crBudget: 55, encounterProfileId: 'shallow_crypt_encounter', connections: [
-  { targetAreaId: 'moathouse_surface', direction: 'up' },
-  { targetAreaId: 'toee_level_1', direction: 'down' }
-]});
-addArea({ id: 'wet_caverns', name: 'Flooded Marsh Grotto', generatorType: 'caves', dangerRating: 3, tags: ['cave', 'water'], crBudget: 45, encounterProfileId: 'cave_encounter', connections: [
+addArea({
+  id: 'moathouse_dungeons', name: 'Moathouse Sub-Level (Lareth)', generatorType: 'digger', dangerRating: 3,
+  tags: ['dungeon'], crBudget: 55, encounterProfileId: 'shallow_crypt_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_CRYPT,
+  placedEntities: [{ templateId: 'lareth_the_beautiful', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'moathouse_surface', direction: 'up' },
+    { targetAreaId: 'toee_level_1', direction: 'down' }
+  ]
+});
+addArea({ id: 'wet_caverns', name: 'Flooded Marsh Grotto', generatorType: 'caves', dangerRating: 3, tags: ['cave', 'water'], crBudget: 45, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_SWAMP, connections: [
   { targetAreaId: 'marsh_mirrored', direction: 'up' },
   { targetAreaId: 'reptile_temple', direction: 'east' }
 ]});
-addArea({ id: 'reptile_temple', name: 'Ancient Temple of the Reptile God', generatorType: 'bsp', dangerRating: 4, tags: ['temple'], crBudget: 60, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'reptile_temple', name: 'Ancient Temple of the Reptile God', generatorType: 'bsp', dangerRating: 4, tags: ['temple'], crBudget: 60, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'wet_caverns', direction: 'west' },
   { targetAreaId: 'water_temple_upper', direction: 'south' }
 ]});
-addArea({ id: 'water_temple_upper', name: 'Water Temple: Upper Terrace', generatorType: 'cellular', dangerRating: 4, tags: ['temple', 'water'], crBudget: 65, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'water_temple_upper', name: 'Water Temple: Upper Terrace', generatorType: 'cellular', dangerRating: 4, tags: ['temple', 'water'], crBudget: 65, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'reptile_temple', direction: 'north' },
   { targetAreaId: 'water_temple_lower', direction: 'down' }
 ]});
-addArea({ id: 'water_temple_lower', name: 'Water Temple: Sunken Nave', generatorType: 'cellular', dangerRating: 5, tags: ['temple', 'water'], crBudget: 75, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'water_temple_lower', name: 'Water Temple: Sunken Nave', generatorType: 'cellular', dangerRating: 5, tags: ['temple', 'water'], crBudget: 75, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'water_temple_upper', direction: 'up' },
   { targetAreaId: 'water_temple_core', direction: 'east' }
 ]});
-addArea({ id: 'water_temple_core', name: 'Water Temple: Core Reservoir', generatorType: 'caves', dangerRating: 5, tags: ['temple', 'water'], crBudget: 85, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'water_temple_core', name: 'Water Temple: Core Reservoir', generatorType: 'caves', dangerRating: 5, tags: ['temple', 'water'], crBudget: 85, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'water_temple_lower', direction: 'west' },
   { targetAreaId: 'water_temple_valve_room', direction: 'down' }
 ]});
-addArea({ id: 'water_temple_valve_room', name: 'Water Temple: Drainage Valve Chamber', generatorType: 'bsp', dangerRating: 6, tags: ['temple'], crBudget: 90, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'water_temple_valve_room', name: 'Water Temple: Drainage Valve Chamber', generatorType: 'bsp', dangerRating: 6, tags: ['temple'], crBudget: 90, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'water_temple_core', direction: 'up' }
 ]});
 
 // 7. Temple of Elemental Evil (TOEE 1-4 + Zuggtmoy Fane)
-addArea({ id: 'toee_level_1', name: 'Temple of Elemental Evil: Level 1', generatorType: 'digger', dangerRating: 4, tags: ['temple', 'dungeon'], crBudget: 70, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'toee_level_1', name: 'Temple of Elemental Evil: Level 1', generatorType: 'digger', dangerRating: 4, tags: ['temple', 'dungeon'], crBudget: 70, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'moathouse_dungeons', direction: 'up' },
   { targetAreaId: 'toee_level_2', direction: 'down' }
 ]});
-addArea({ id: 'toee_level_2', name: 'Temple of Elemental Evil: Level 2', generatorType: 'digger', dangerRating: 5, tags: ['temple', 'dungeon'], crBudget: 85, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'toee_level_2', name: 'Temple of Elemental Evil: Level 2', generatorType: 'digger', dangerRating: 5, tags: ['temple', 'dungeon'], crBudget: 85, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'toee_level_1', direction: 'up' },
   { targetAreaId: 'toee_level_3', direction: 'down' }
 ]});
-addArea({ id: 'toee_level_3', name: 'Temple of Elemental Evil: Level 3', generatorType: 'digger', dangerRating: 6, tags: ['temple', 'dungeon'], crBudget: 100, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'toee_level_3', name: 'Temple of Elemental Evil: Level 3', generatorType: 'digger', dangerRating: 6, tags: ['temple', 'dungeon'], crBudget: 100, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_ABYSS, connections: [
   { targetAreaId: 'toee_level_2', direction: 'up' },
   { targetAreaId: 'toee_level_4', direction: 'down' }
 ]});
-addArea({ id: 'toee_level_4', name: 'Temple of Elemental Evil: Level 4', generatorType: 'digger', dangerRating: 7, tags: ['temple', 'dungeon'], crBudget: 120, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'toee_level_4', name: 'Temple of Elemental Evil: Level 4', generatorType: 'digger', dangerRating: 7, tags: ['temple', 'dungeon'], crBudget: 120, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_ABYSS, connections: [
   { targetAreaId: 'toee_level_3', direction: 'up' },
   { targetAreaId: 'toee_zuggtmoy_fane', direction: 'north' },
   { targetAreaId: 'megadungeon_hub', direction: 'down' }
 ]});
-addArea({ id: 'toee_zuggtmoy_fane', name: 'Fane of Zuggtmoy, Demon Queen', generatorType: 'bsp', dangerRating: 8, tags: ['temple', 'deep_vault'], crBudget: 150, encounterProfileId: 'temple_encounter', connections: [
-  { targetAreaId: 'toee_level_4', direction: 'south' }
-]});
+addArea({
+  id: 'toee_zuggtmoy_fane', name: 'Fane of Zuggtmoy, Demon Queen', generatorType: 'bsp', dangerRating: 8,
+  tags: ['temple', 'deep_vault'], crBudget: 150, encounterProfileId: 'temple_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_ABYSS,
+  placedEntities: [{ templateId: 'zuggtmoy_queen', x: 40, y: 24 }],
+  connections: [{ targetAreaId: 'toee_level_4', direction: 'south' }]
+});
 
 // 8. Megadungeon Central Hub
-addArea({ id: 'megadungeon_hub', name: 'The Subterranean Crossroads', generatorType: 'bsp', dangerRating: 4, tags: ['megadungeon'], crBudget: 60, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({ id: 'megadungeon_hub', name: 'The Subterranean Crossroads', generatorType: 'bsp', dangerRating: 4, tags: ['megadungeon'], crBudget: 60, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'shroudgarde_inn_cellar', direction: 'up' },
   { targetAreaId: 'shrine_vault_hub', direction: 'west' },
   { targetAreaId: 'toee_level_4', direction: 'north' },
@@ -576,6 +693,8 @@ for (let i = 1; i <= 10; i++) {
     tags: ['megadungeon', 'dungeon'],
     crBudget: 40 + i * 10,
     encounterProfileId: 'deep_megadungeon_encounter',
+    environmentType: 'underground',
+    proceduralPalette: i >= 7 ? PALETTE_ABYSS : PALETTE_CRYPT,
     connections: conns
   });
 }
@@ -598,40 +717,48 @@ for (let i = 1; i <= 10; i++) {
     tags: ['megadungeon', 'cave'],
     crBudget: 45 + i * 10,
     encounterProfileId: 'cave_encounter',
+    environmentType: 'underground',
+    proceduralPalette: PALETTE_CAVE,
     connections: conns
   });
 }
 
 // 11. Incursion Subterranean Special Vaults (8 areas)
-addArea({ id: 'incursion_the_goblin_encampment', name: 'The Great Goblin Citadel', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon'], crBudget: 110, encounterProfileId: 'cave_encounter', connections: [
+addArea({ id: 'incursion_the_goblin_encampment', name: 'The Great Goblin Citadel', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon'], crBudget: 110, encounterProfileId: 'cave_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CAVE, connections: [
   { targetAreaId: 'incursion_goblin_10', direction: 'north' },
   { targetAreaId: 'incursion_arena_chamber', direction: 'east' }
 ]});
-addArea({ id: 'incursion_arena_chamber', name: 'The Subterranean Arena', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon'], crBudget: 120, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({ id: 'incursion_arena_chamber', name: 'The Subterranean Arena', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon'], crBudget: 120, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'incursion_the_goblin_encampment', direction: 'west' },
   { targetAreaId: 'incursion_place_of_sanctuary', direction: 'down' }
 ]});
-addArea({ id: 'incursion_place_of_sanctuary', name: 'Ancient Place of Sanctuary', generatorType: 'bsp', dangerRating: 6, tags: ['megadungeon', 'temple'], crBudget: 90, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({ id: 'incursion_place_of_sanctuary', name: 'Ancient Place of Sanctuary', generatorType: 'bsp', dangerRating: 6, tags: ['megadungeon', 'temple'], crBudget: 90, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'incursion_arena_chamber', direction: 'up' },
   { targetAreaId: 'incursion_parthenion', direction: 'east' }
 ]});
-addArea({ id: 'incursion_parthenion', name: 'The Holy Parthenion', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon', 'temple'], crBudget: 100, encounterProfileId: 'temple_encounter', connections: [
+addArea({ id: 'incursion_parthenion', name: 'The Holy Parthenion', generatorType: 'bsp', dangerRating: 7, tags: ['megadungeon', 'temple'], crBudget: 100, encounterProfileId: 'temple_encounter', environmentType: 'underground', proceduralPalette: PALETTE_TOWER, connections: [
   { targetAreaId: 'incursion_place_of_sanctuary', direction: 'west' },
   { targetAreaId: 'incursion_unholy_sepulchre', direction: 'south' }
 ]});
-addArea({ id: 'incursion_unholy_sepulchre', name: 'The Unholy Sepulchre', generatorType: 'digger', dangerRating: 8, tags: ['megadungeon', 'deep_vault'], crBudget: 130, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({ id: 'incursion_unholy_sepulchre', name: 'The Unholy Sepulchre', generatorType: 'digger', dangerRating: 8, tags: ['megadungeon', 'deep_vault'], crBudget: 130, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'incursion_parthenion', direction: 'north' },
   { targetAreaId: 'incursion_lesser_vault_1', direction: 'east' }
 ]});
-addArea({ id: 'incursion_lesser_vault_1', name: 'Subterranean Vault: Adamantine Hoard', generatorType: 'bsp', dangerRating: 8, tags: ['megadungeon', 'deep_vault'], crBudget: 140, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({ id: 'incursion_lesser_vault_1', name: 'Subterranean Vault: Adamantine Hoard', generatorType: 'bsp', dangerRating: 8, tags: ['megadungeon', 'deep_vault'], crBudget: 140, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_CRYPT, connections: [
   { targetAreaId: 'incursion_unholy_sepulchre', direction: 'west' },
   { targetAreaId: 'incursion_lesser_vault_2', direction: 'south' }
 ]});
-addArea({ id: 'incursion_lesser_vault_2', name: 'Subterranean Vault: Wyrm Cavern', generatorType: 'caves', dangerRating: 9, tags: ['megadungeon', 'deep_vault'], crBudget: 160, encounterProfileId: 'deep_megadungeon_encounter', connections: [
-  { targetAreaId: 'incursion_lesser_vault_1', direction: 'north' },
-  { targetAreaId: 'incursion_hellish_rift', direction: 'down' }
-]});
-addArea({ id: 'incursion_hellish_rift', name: 'The Hellish Abyssal Rift', generatorType: 'caves', dangerRating: 10, tags: ['megadungeon', 'deep_vault'], crBudget: 200, encounterProfileId: 'deep_megadungeon_encounter', connections: [
+addArea({
+  id: 'incursion_lesser_vault_2', name: 'Subterranean Vault: Wyrm Cavern', generatorType: 'caves', dangerRating: 9,
+  tags: ['megadungeon', 'deep_vault'], crBudget: 160, encounterProfileId: 'deep_megadungeon_encounter',
+  environmentType: 'underground', proceduralPalette: PALETTE_ABYSS,
+  placedEntities: [{ templateId: 'red_dragon', x: 40, y: 24 }],
+  connections: [
+    { targetAreaId: 'incursion_lesser_vault_1', direction: 'north' },
+    { targetAreaId: 'incursion_hellish_rift', direction: 'down' }
+  ]
+});
+addArea({ id: 'incursion_hellish_rift', name: 'The Hellish Abyssal Rift', generatorType: 'caves', dangerRating: 10, tags: ['megadungeon', 'deep_vault'], crBudget: 200, encounterProfileId: 'deep_megadungeon_encounter', environmentType: 'underground', proceduralPalette: PALETTE_ABYSS, connections: [
   { targetAreaId: 'nethack_doom_10', direction: 'up' },
   { targetAreaId: 'incursion_lesser_vault_2', direction: 'west' }
 ]});
@@ -657,11 +784,12 @@ const spawnPools = {
   town_pop: { id: 'town_pop', name: 'Town Population', conditions: { areaTags: ['town'] }, entities: { town_guard: 60, peasant_villager: 40 } },
   frontier_beasts: { id: 'frontier_beasts', name: 'Frontier Beasts', conditions: { areaTags: ['frontier', 'outdoor'] }, entities: { giant_rat: 35, dire_wolf: 25, bandit: 25, owlbear: 15 } },
   dungeon_dwellers: { id: 'dungeon_dwellers', name: 'Dungeon Bandits & Vermin', conditions: { areaTags: ['dungeon'] }, entities: { bandit: 40, giant_rat: 30, skeleton: 30 } },
-  cave_warrens: { id: 'cave_warrens', name: 'Cave Warrens', conditions: { areaTags: ['cave'] }, entities: { goblin: 40, orc: 30, bugbear: 20, ogre: 10 } },
+  cave_warrens: { id: 'cave_warrens', name: 'Cave Warrens', conditions: { areaTags: ['cave'] }, entities: { goblin: 30, orc: 25, bugbear: 20, ogre: 10, manticore: 10, ettin: 5 } },
   crypt_undead: { id: 'crypt_undead', name: 'Crypt Undead', conditions: { areaTags: ['crypt'] }, entities: { skeleton: 45, zombie: 35, ghoul: 20 } },
-  tower_sentinels: { id: 'tower_sentinels', name: 'Tower Sentinels', conditions: { areaTags: ['tower'] }, entities: { clay_golem: 25, gargoyle: 25, air_elemental: 25, fire_elemental: 25 } },
-  temple_cult: { id: 'temple_cult', name: 'Temple Cultists', conditions: { areaTags: ['temple'] }, entities: { cultist: 45, water_elemental: 25, ghast: 15, troll: 15 } },
-  deep_monsters: { id: 'deep_monsters', name: 'Deep Megadungeon Monsters', conditions: { areaTags: ['megadungeon'] }, entities: { orc: 25, troll: 25, wraith: 20, minotaur: 15, red_dragon: 15 } }
+  tower_sentinels: { id: 'tower_sentinels', name: 'Tower Sentinels', conditions: { areaTags: ['tower'] }, entities: { clay_golem: 20, stone_golem: 15, gargoyle: 25, air_elemental: 20, fire_elemental: 20 } },
+  temple_cult: { id: 'temple_cult', name: 'Temple Cultists', conditions: { areaTags: ['temple'] }, entities: { cultist: 40, water_elemental: 20, ghast: 15, troll: 15, medusa: 10 } },
+  deep_monsters: { id: 'deep_monsters', name: 'Deep Megadungeon Monsters', conditions: { areaTags: ['megadungeon'] }, entities: { orc_warchief: 15, troll: 20, wraith: 15, minotaur: 15, ettin: 15, medusa: 10, mind_flayer: 10 } },
+  deep_vault_horrors: { id: 'deep_vault_horrors', name: 'Deep Vault Horrors', conditions: { areaTags: ['deep_vault'] }, entities: { mind_flayer: 25, fire_giant: 25, beholder: 20, iron_golem: 20, marilith: 10 } }
 };
 writeJson('spawn_pools.json', spawnPools);
 
@@ -709,11 +837,17 @@ const entities: Record<string, unknown> = {
     speed: 100,
     fighter: { maxHp: 55, attack: 7, defense: 5 },
     archetypeId: 'human',
+    rulesetData: { classLevels: [{ classId: 'fighter', levels: 5 }] },
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'guard'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'guard_captain_tree',
-    defaultEquipment: [{ itemId: 'longsword' }, { itemId: 'breastplate' }, { itemId: 'heavy_steel_shield' }]
+    defaultEquipment: [
+      { itemId: 'longsword', equipSlot: 'main_hand' },
+      { itemId: 'breastplate', equipSlot: 'torso' },
+      { itemId: 'heavy_steel_shield', equipSlot: 'off_hand' }
+    ]
   },
 
   barkeep_bertram: {
@@ -730,6 +864,7 @@ const entities: Record<string, unknown> = {
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'bertram_trade_tree',
     shop: { markupMultiplier: 1.1, inventory: ['ration_fresh_bread', 'ration_iron', 'dagger'] }
   },
@@ -745,12 +880,17 @@ const entities: Record<string, unknown> = {
     speed: 90,
     fighter: { maxHp: 65, attack: 8, defense: 6 },
     archetypeId: 'dwarf',
+    rulesetData: { classLevels: [{ classId: 'fighter', levels: 4 }] },
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'laurent_smith_tree',
     shop: { markupMultiplier: 1.15, inventory: ['battleaxe', 'warhammer', 'chainmail', 'breastplate', 'heavy_steel_shield'] },
-    defaultEquipment: [{ itemId: 'warhammer' }, { itemId: 'chainmail' }]
+    defaultEquipment: [
+      { itemId: 'warhammer', equipSlot: 'main_hand' },
+      { itemId: 'chainmail', equipSlot: 'torso' }
+    ]
   },
 
   isabelle_cleric: {
@@ -764,12 +904,17 @@ const entities: Record<string, unknown> = {
     speed: 100,
     fighter: { maxHp: 45, attack: 5, defense: 4 },
     archetypeId: 'aasimar',
+    rulesetData: { classLevels: [{ classId: 'cleric', levels: 4 }] },
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'isabelle_healer_tree',
     shop: { markupMultiplier: 1.1, inventory: ['potion_of_cure_light_wounds', 'potion_of_bulls_strength', 'scroll_of_mage_armor'] },
-    defaultEquipment: [{ itemId: 'heavy_mace' }, { itemId: 'scale_mail' }]
+    defaultEquipment: [
+      { itemId: 'heavy_mace', equipSlot: 'main_hand' },
+      { itemId: 'scale_mail', equipSlot: 'torso' }
+    ]
   },
 
   luc_ranger: {
@@ -783,12 +928,18 @@ const entities: Record<string, unknown> = {
     speed: 110,
     fighter: { maxHp: 40, attack: 6, defense: 3 },
     archetypeId: 'elf',
+    rulesetData: { classLevels: [{ classId: 'ranger', levels: 4 }] },
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'luc_scout_tree',
     shop: { markupMultiplier: 1.1, inventory: ['shortbow', 'composite_longbow', 'dagger', 'boots_of_elvenkind'] },
-    defaultEquipment: [{ itemId: 'shortbow' }, { itemId: 'short_sword' }, { itemId: 'studded_leather_armor' }]
+    defaultEquipment: [
+      { itemId: 'shortbow', equipSlot: 'ranged' },
+      { itemId: 'short_sword', equipSlot: 'main_hand' },
+      { itemId: 'studded_leather_armor', equipSlot: 'torso' }
+    ]
   },
 
   silas_merchant: {
@@ -805,8 +956,9 @@ const entities: Record<string, unknown> = {
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'silas_gem_merchant_tree',
-    shop: { markupMultiplier: 1.2, inventory: ['gem_chalcedony', 'gem_ruby', 'gem_sapphire', 'coin_pouch_silver', 'coin_pouch_gold'] }
+    shop: { markupMultiplier: 1.2, inventory: ['gem_chalcedony', 'gem_ruby', 'gem_sapphire', 'gem_diamond'] }
   },
 
   archmage_alden: {
@@ -820,12 +972,14 @@ const entities: Record<string, unknown> = {
     speed: 100,
     fighter: { maxHp: 50, attack: 6, defense: 4 },
     archetypeId: 'human',
+    rulesetData: { classLevels: [{ classId: 'wizard', levels: 7 }] },
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc', 'merchant'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'alden_mage_tree',
     shop: { markupMultiplier: 1.25, inventory: ['wand_of_cure_light_wounds', 'wand_of_magic_missile', 'scroll_of_mage_armor', 'ring_of_protection_plus1'] },
-    defaultEquipment: [{ itemId: 'quarterstaff' }]
+    defaultEquipment: [{ itemId: 'quarterstaff', equipSlot: 'two_handed' }]
   },
 
   elena_scholar: {
@@ -842,6 +996,7 @@ const entities: Record<string, unknown> = {
     ai: { profileId: 'stationary_vendor', wanders: false },
     faction: 'citizens',
     tags: ['actor', 'npc'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'elena_scholar_tree'
   },
 
@@ -861,7 +1016,11 @@ const entities: Record<string, unknown> = {
     tags: ['actor', 'guard'],
     crCost: 8,
     roleTags: ['protein', 'side'],
-    defaultEquipment: [{ itemId: 'longsword' }, { itemId: 'scale_mail' }, { itemId: 'heavy_steel_shield' }]
+    defaultEquipment: [
+      { itemId: 'longsword', equipSlot: 'main_hand' },
+      { itemId: 'scale_mail', equipSlot: 'torso' },
+      { itemId: 'heavy_steel_shield', equipSlot: 'off_hand' }
+    ]
   },
 
   peasant_villager: {
@@ -893,17 +1052,22 @@ const entities: Record<string, unknown> = {
     spriteId: 'actor_fencer',
     isActor: true,
     speed: 105,
-    fighter: { maxHp: 85, attack: 10, defense: 6, xpGiven: 1200 },
+    fighter: { maxHp: 85, attack: 10, defense: 6 },
     archetypeId: 'human',
+    rulesetData: { classLevels: [{ classId: 'cleric', levels: 5 }] },
     ai: { profileId: 'melee_aggressive', aggroRadius: 6, wanders: false },
     faction: 'cultists',
     tags: ['actor', 'boss'],
     crCost: 35,
     roleTags: ['protein'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'lareth_parley_tree',
-    defaultEquipment: [{ itemId: 'breastplate' }, { itemId: 'dagger' }],
-    currencyDrop: { denominationId: 'cp', minAmount: 10000, maxAmount: 25000, chance: 1 },
-    lootDrops: [{ itemId: 'gem_ruby', chance: 0.8 }, { itemId: 'coin_pouch_gold', chance: 1 }, { itemId: 'moathouse_ledger', chance: 1 }]
+    defaultEquipment: [
+      { itemId: 'breastplate', equipSlot: 'torso' },
+      { itemId: 'dagger', equipSlot: 'main_hand' }
+    ],
+    currencyDrop: { denominationId: 'gp', minAmount: 80, maxAmount: 200, chance: 1 },
+    lootDrops: [{ itemId: 'gem_ruby', chance: 0.8 }, { itemId: 'moathouse_ledger', chance: 1 }]
   },
 
   zuggtmoy_queen: {
@@ -915,14 +1079,14 @@ const entities: Record<string, unknown> = {
     spriteId: 'monster_large_myconid',
     isActor: true,
     speed: 110,
-    fighter: { maxHp: 220, attack: 16, defense: 10, xpGiven: 5000 },
+    fighter: { maxHp: 220, attack: 16, defense: 10 },
     archetypeId: 'balor',
     ai: { profileId: 'melee_aggressive', aggroRadius: 8, wanders: false },
     faction: 'cultists',
     tags: ['actor', 'boss'],
     crCost: 100,
     roleTags: ['protein'],
-    currencyDrop: { denominationId: 'cp', minAmount: 50000, maxAmount: 150000, chance: 1 },
+    currencyDrop: { denominationId: 'pp', minAmount: 100, maxAmount: 250, chance: 1 },
     lootDrops: [{ itemId: 'gem_diamond', chance: 1 }, { itemId: 'orb_of_elements', chance: 1 }]
   },
 
@@ -935,15 +1099,16 @@ const entities: Record<string, unknown> = {
     spriteId: 'monster_lich',
     isActor: true,
     speed: 100,
-    fighter: { maxHp: 95, attack: 11, defense: 7, xpGiven: 1500 },
-    archetypeId: 'ghoul',
+    fighter: { maxHp: 95, attack: 11, defense: 7 },
+    archetypeId: 'mummy',
+    rulesetData: { classLevels: [{ classId: 'cleric', levels: 4 }] },
     ai: { profileId: 'melee_aggressive', aggroRadius: 6, wanders: false },
     faction: 'undead',
     tags: ['actor', 'boss'],
     crCost: 40,
     roleTags: ['protein'],
-    defaultEquipment: [{ itemId: 'amulet_of_natural_armor_plus2' }],
-    currencyDrop: { denominationId: 'cp', minAmount: 15000, maxAmount: 35000, chance: 1 },
+    defaultEquipment: [{ itemId: 'amulet_of_natural_armor_plus2', equipSlot: 'neck' }],
+    currencyDrop: { denominationId: 'gp', minAmount: 120, maxAmount: 300, chance: 1 },
     lootDrops: [{ itemId: 'sunless_relic', chance: 1 }, { itemId: 'gem_sapphire', chance: 0.8 }]
   },
 
@@ -956,16 +1121,17 @@ const entities: Record<string, unknown> = {
     spriteId: 'monster_minotaur',
     isActor: true,
     speed: 95,
-    fighter: { maxHp: 80, attack: 12, defense: 5, xpGiven: 800 },
+    fighter: { maxHp: 80, attack: 12, defense: 5 },
     archetypeId: 'ogre',
+    rulesetData: { classLevels: [{ classId: 'barbarian', levels: 3 }] },
     ai: { profileId: 'melee_aggressive', aggroRadius: 6, wanders: true },
     faction: 'orcs',
     tags: ['actor', 'boss'],
     crCost: 30,
     roleTags: ['protein'],
-    defaultEquipment: [{ itemId: 'greatclub' }],
-    currencyDrop: { denominationId: 'cp', minAmount: 5000, maxAmount: 15000, chance: 1 },
-    lootDrops: [{ itemId: 'coin_pouch_gold', chance: 0.8 }]
+    defaultEquipment: [{ itemId: 'greatclub', equipSlot: 'two_handed' }],
+    currencyDrop: { denominationId: 'gp', minAmount: 40, maxAmount: 100, chance: 1 },
+    lootDrops: [{ itemId: 'gem_chalcedony', chance: 0.8 }]
   },
 
   red_dragon: {
@@ -977,53 +1143,83 @@ const entities: Record<string, unknown> = {
     spriteId: 'monster_dragon',
     isActor: true,
     speed: 120,
-    fighter: { maxHp: 300, attack: 18, defense: 12, xpGiven: 8000 },
-    archetypeId: 'dragon_red',
+    fighter: { maxHp: 300, attack: 18, defense: 12 },
+    archetypeId: 'dragon_red_very_old',
     ai: { profileId: 'melee_aggressive', aggroRadius: 8, wanders: false },
     faction: 'monster',
     tags: ['actor', 'boss'],
     crCost: 120,
     roleTags: ['protein'],
+    memory: { factionStandings: {}, grudges: [], facts: [], knowledge: {} },
     dialogueId: 'dragon_dialogue_tree',
-    currencyDrop: { denominationId: 'cp', minAmount: 100000, maxAmount: 300000, chance: 1 },
-    lootDrops: [{ itemId: 'gem_diamond', chance: 1 }, { itemId: 'coin_pouch_gold', chance: 1 }]
+    currencyDrop: { denominationId: 'pp', minAmount: 80, maxAmount: 200, chance: 1 },
+    lootDrops: [{ itemId: 'gem_diamond', chance: 1 }, { itemId: 'gem_ruby', chance: 1 }]
   }
 };
 
-// Bestiary definitions (Goblins, Orcs, Undead, Beasts, Elementals, etc.)
-const bestiaryData = [
-  { id: 'goblin', name: 'Goblin', glyph: 'g', fg: '#84e6ad', sprite: 'monster_goblin', archetype: 'goblin', faction: 'goblins', hp: 8, atk: 2, def: 1, xp: 15, cr: 5, minCp: 5, maxCp: 50, loot: 'copper_coin' },
-  { id: 'goblin_archer', name: 'Goblin Archer', glyph: 'g', fg: '#2ecc71', sprite: 'monster_goblin_archer', archetype: 'goblin', faction: 'goblins', hp: 7, atk: 3, def: 0, xp: 20, cr: 6, minCp: 10, maxCp: 70, loot: 'copper_coin' },
-  { id: 'goblin_brute', name: 'Goblin Brute', glyph: 'g', fg: '#27ae60', sprite: 'monster_goblin_brute', archetype: 'goblin', faction: 'goblins', hp: 16, atk: 4, def: 2, xp: 35, cr: 10, minCp: 20, maxCp: 120, loot: 'silver_coin' },
-  { id: 'goblin_mage', name: 'Goblin Shaman', glyph: 'g', fg: '#3498db', sprite: 'monster_goblin_mage', archetype: 'goblin', faction: 'goblins', hp: 12, atk: 4, def: 1, xp: 45, cr: 12, minCp: 50, maxCp: 200, loot: 'potion_of_cure_light_wounds' },
-  { id: 'kobold', name: 'Kobold Trapper', glyph: 'k', fg: '#e67e22', sprite: 'monster_kobold_canine', archetype: 'kobold', faction: 'goblins', hp: 6, atk: 2, def: 0, xp: 15, cr: 4, minCp: 5, maxCp: 40, loot: 'copper_coin' },
-  { id: 'orc', name: 'Orc Raider', glyph: 'o', fg: '#2ecc71', sprite: 'monster_orc', archetype: 'orc', faction: 'orcs', hp: 15, atk: 5, def: 2, xp: 35, cr: 10, minCp: 20, maxCp: 150, loot: 'short_sword' },
-  { id: 'orc_archer', name: 'Orc Archer', glyph: 'o', fg: '#27ae60', sprite: 'monster_orc', archetype: 'orc', faction: 'orcs', hp: 12, atk: 5, def: 1, xp: 35, cr: 10, minCp: 20, maxCp: 120, loot: 'dagger' },
-  { id: 'orc_blademaster', name: 'Orc Berserker', glyph: 'o', fg: '#e74c3c', sprite: 'monster_orc_blademaster', archetype: 'orc', faction: 'orcs', hp: 30, atk: 7, def: 3, xp: 75, cr: 18, minCp: 50, maxCp: 300, loot: 'battleaxe' },
-  { id: 'orc_warchief', name: 'Orc Warchief', glyph: 'O', fg: '#c0392b', sprite: 'monster_orc_warchief', archetype: 'orc', faction: 'orcs', hp: 50, atk: 9, def: 4, xp: 150, cr: 25, minCp: 200, maxCp: 1000, loot: 'coin_pouch_silver' },
-  { id: 'bugbear', name: 'Bugbear Marauder', glyph: 'b', fg: '#d35400', sprite: 'monster_ettin', archetype: 'bugbear', faction: 'goblins', hp: 26, atk: 6, def: 3, xp: 65, cr: 15, minCp: 40, maxCp: 250, loot: 'warhammer' },
-  { id: 'ogre', name: 'Ogre Brute', glyph: 'O', fg: '#e74c3c', sprite: 'monster_minotaur', archetype: 'ogre', faction: 'monster', hp: 45, atk: 9, def: 4, xp: 120, cr: 22, minCp: 100, maxCp: 600, loot: 'greatclub' },
-  { id: 'troll', name: 'Cave Troll', glyph: 'T', fg: '#16a085', sprite: 'monster_troll', archetype: 'troll', faction: 'monster', hp: 65, atk: 10, def: 5, xp: 250, cr: 35, minCp: 300, maxCp: 1500, loot: 'coin_pouch_silver' },
-  { id: 'skeleton', name: 'Restless Skeleton', glyph: 'z', fg: '#ecf0f1', sprite: 'monster_skeleton', archetype: 'skeleton', faction: 'undead', hp: 12, atk: 3, def: 2, xp: 25, cr: 7, minCp: 5, maxCp: 50, loot: 'copper_coin' },
-  { id: 'skeleton_archer', name: 'Skeleton Archer', glyph: 'z', fg: '#bdc3c7', sprite: 'monster_skeleton_archer', archetype: 'skeleton', faction: 'undead', hp: 10, atk: 4, def: 1, xp: 30, cr: 8, minCp: 10, maxCp: 60, loot: 'shortbow' },
-  { id: 'zombie', name: 'Rotting Zombie', glyph: 'z', fg: '#7f8c8d', sprite: 'monster_zombie', archetype: 'zombie', faction: 'undead', hp: 20, atk: 4, def: 1, xp: 35, cr: 9, minCp: 10, maxCp: 80, loot: 'copper_coin' },
-  { id: 'ghoul', name: 'Crypt Ghoul', glyph: 'g', fg: '#95a5a6', sprite: 'monster_ghoul', archetype: 'ghoul', faction: 'undead', hp: 22, atk: 5, def: 3, xp: 60, cr: 14, minCp: 30, maxCp: 200, loot: 'silver_coin' },
-  { id: 'ghast', name: 'Dungeon Ghast', glyph: 'g', fg: '#7f8c8d', sprite: 'monster_ghoul', archetype: 'ghast', faction: 'undead', hp: 35, atk: 7, def: 4, xp: 100, cr: 20, minCp: 80, maxCp: 400, loot: 'silver_coin' },
-  { id: 'wight', name: 'Barrow Wight', glyph: 'w', fg: '#34495e', sprite: 'monster_wraith', archetype: 'wight', faction: 'undead', hp: 40, atk: 8, def: 5, xp: 150, cr: 25, minCp: 100, maxCp: 800, loot: 'coin_pouch_silver' },
-  { id: 'wraith', name: 'Shadow Wraith', glyph: 'W', fg: '#2c3e50', sprite: 'monster_wraith', archetype: 'wraith', faction: 'undead', hp: 45, atk: 9, def: 6, xp: 200, cr: 30, minCp: 200, maxCp: 1200, loot: 'gem_chalcedony' },
-  { id: 'mummy', name: 'Ancient Mummy', glyph: 'M', fg: '#f39c12', sprite: 'monster_zombie', archetype: 'mummy', faction: 'undead', hp: 55, atk: 10, def: 5, xp: 250, cr: 35, minCp: 500, maxCp: 2500, loot: 'gem_ruby' },
-  { id: 'giant_rat', name: 'Giant Rat', glyph: 'r', fg: '#795548', sprite: 'monster_giant_rat', archetype: 'dire_rat', faction: 'beasts', hp: 6, atk: 2, def: 0, xp: 10, cr: 3, minCp: 0, maxCp: 15, loot: 'copper_coin' },
-  { id: 'giant_spider', name: 'Giant Cave Spider', glyph: 's', fg: '#2c3e50', sprite: 'monster_giant_spider', archetype: 'giant_spider', faction: 'beasts', hp: 14, atk: 4, def: 1, xp: 35, cr: 10, minCp: 10, maxCp: 80, loot: 'potion_of_cure_light_wounds' },
-  { id: 'dire_wolf', name: 'Dire Wolf', glyph: 'w', fg: '#95a5a6', sprite: 'monster_warg_dire_wolf', archetype: 'dire_wolf', faction: 'beasts', hp: 35, atk: 7, def: 3, xp: 90, cr: 18, minCp: 20, maxCp: 150, loot: 'copper_coin' },
-  { id: 'owlbear', name: 'Ferocious Owlbear', glyph: 'O', fg: '#8d6e63', sprite: 'monster_ettin', archetype: 'owlbear', faction: 'beasts', hp: 55, atk: 9, def: 4, xp: 180, cr: 28, minCp: 50, maxCp: 400, loot: 'coin_pouch_silver' },
-  { id: 'bandit', name: 'Bandit Cutthroat', glyph: 'b', fg: '#e74c3c', sprite: 'actor_bandit', archetype: 'human', faction: 'bandits', hp: 15, atk: 4, def: 2, xp: 30, cr: 8, minCp: 30, maxCp: 200, loot: 'dagger' },
-  { id: 'cultist', name: 'Elemental Cultist', glyph: 'c', fg: '#9b59b6', sprite: 'monster_cultist', archetype: 'human', faction: 'cultists', hp: 20, atk: 4, def: 2, xp: 45, cr: 12, minCp: 40, maxCp: 250, loot: 'silver_coin' },
-  { id: 'gargoyle', name: 'Stone Gargoyle', glyph: 'G', fg: '#7f8c8d', sprite: 'monster_rock_golem', archetype: 'gargoyle', faction: 'monster', hp: 40, atk: 7, def: 6, xp: 150, cr: 25, minCp: 100, maxCp: 600, loot: 'gem_chalcedony' },
-  { id: 'clay_golem', name: 'Clay Golem Sentinel', glyph: 'G', fg: '#d35400', sprite: 'monster_rock_golem', archetype: 'clay_golem', faction: 'monster', hp: 90, atk: 12, def: 8, xp: 400, cr: 50, minCp: 500, maxCp: 3000, loot: 'gem_ruby' },
-  { id: 'air_elemental', name: 'Howling Air Elemental', glyph: 'E', fg: '#ecf0f1', sprite: 'monster_forest_spirit', archetype: 'elemental_air', faction: 'monster', hp: 45, atk: 8, def: 5, xp: 160, cr: 26, minCp: 100, maxCp: 800, loot: 'elemental_gem_air' },
-  { id: 'fire_elemental', name: 'Blazing Fire Elemental', glyph: 'E', fg: '#e74c3c', sprite: 'monster_imp_devil', archetype: 'elemental_fire', faction: 'monster', hp: 50, atk: 9, def: 5, xp: 180, cr: 28, minCp: 150, maxCp: 900, loot: 'elemental_gem_fire' },
-  { id: 'water_elemental', name: 'Crashing Water Elemental', glyph: 'E', fg: '#3498db', sprite: 'monster_naga', archetype: 'elemental_water', faction: 'monster', hp: 55, atk: 9, def: 6, xp: 200, cr: 30, minCp: 200, maxCp: 1000, loot: 'elemental_gem_water' },
-  { id: 'minotaur', name: 'Labyrinth Minotaur', glyph: 'M', fg: '#8d6e63', sprite: 'monster_minotaur', archetype: 'minotaur', faction: 'monster', hp: 60, atk: 11, def: 5, xp: 220, cr: 32, minCp: 250, maxCp: 1200, loot: 'greataxe' }
+// Bestiary definitions (Goblins, Orcs, Undead, Beasts, Elementals, Planar & Vault Horrors)
+interface BestiarySeed {
+  id: string;
+  name: string;
+  glyph: string;
+  fg: string;
+  sprite: string;
+  archetype: string;
+  faction: string;
+  hp: number;
+  atk: number;
+  def: number;
+  crCost: number;
+  roleTags: string[];
+  minCoin?: number;
+  maxCoin?: number;
+  coinDenom?: 'cp' | 'sp' | 'gp' | 'pp';
+  loot: string;
+  lootChance?: number;
+}
+
+const bestiaryData: BestiarySeed[] = [
+  { id: 'goblin', name: 'Goblin', glyph: 'g', fg: '#84e6ad', sprite: 'monster_goblin', archetype: 'goblin', faction: 'goblins', hp: 8, atk: 2, def: 1, crCost: 3, roleTags: ['appetizer'], minCoin: 5, maxCoin: 25, coinDenom: 'cp', loot: 'dagger', lootChance: 0.2 },
+  { id: 'goblin_archer', name: 'Goblin Archer', glyph: 'g', fg: '#2ecc71', sprite: 'monster_goblin_archer', archetype: 'goblin', faction: 'goblins', hp: 7, atk: 3, def: 0, crCost: 4, roleTags: ['side'], minCoin: 5, maxCoin: 30, coinDenom: 'cp', loot: 'shortbow', lootChance: 0.25 },
+  { id: 'goblin_brute', name: 'Goblin Brute', glyph: 'g', fg: '#27ae60', sprite: 'monster_goblin_brute', archetype: 'goblin', faction: 'goblins', hp: 16, atk: 4, def: 2, crCost: 6, roleTags: ['protein'], minCoin: 2, maxCoin: 10, coinDenom: 'sp', loot: 'short_sword', lootChance: 0.3 },
+  { id: 'goblin_mage', name: 'Goblin Shaman', glyph: 'g', fg: '#3498db', sprite: 'monster_goblin_mage', archetype: 'goblin', faction: 'goblins', hp: 12, atk: 4, def: 1, crCost: 8, roleTags: ['side'], minCoin: 4, maxCoin: 15, coinDenom: 'sp', loot: 'potion_of_cure_light_wounds', lootChance: 0.45 },
+  { id: 'kobold', name: 'Kobold Trapper', glyph: 'k', fg: '#e67e22', sprite: 'monster_kobold_canine', archetype: 'kobold', faction: 'goblins', hp: 6, atk: 2, def: 0, crCost: 2, roleTags: ['appetizer'], minCoin: 3, maxCoin: 18, coinDenom: 'cp', loot: 'dagger', lootChance: 0.2 },
+  { id: 'orc', name: 'Orc Raider', glyph: 'o', fg: '#2ecc71', sprite: 'monster_orc', archetype: 'orc', faction: 'orcs', hp: 15, atk: 5, def: 2, crCost: 5, roleTags: ['protein'], minCoin: 2, maxCoin: 12, coinDenom: 'sp', loot: 'short_sword', lootChance: 0.3 },
+  { id: 'orc_archer', name: 'Orc Archer', glyph: 'o', fg: '#27ae60', sprite: 'monster_orc', archetype: 'orc', faction: 'orcs', hp: 12, atk: 5, def: 1, crCost: 5, roleTags: ['side'], minCoin: 2, maxCoin: 10, coinDenom: 'sp', loot: 'dagger', lootChance: 0.25 },
+  { id: 'orc_blademaster', name: 'Orc Berserker', glyph: 'o', fg: '#e74c3c', sprite: 'monster_orc_blademaster', archetype: 'orc', faction: 'orcs', hp: 30, atk: 7, def: 3, crCost: 12, roleTags: ['protein'], minCoin: 5, maxCoin: 20, coinDenom: 'sp', loot: 'battleaxe', lootChance: 0.35 },
+  { id: 'orc_warchief', name: 'Orc Warchief', glyph: 'O', fg: '#c0392b', sprite: 'monster_orc_warchief', archetype: 'orc', faction: 'orcs', hp: 50, atk: 9, def: 4, crCost: 18, roleTags: ['protein'], minCoin: 5, maxCoin: 18, coinDenom: 'gp', loot: 'battleaxe', lootChance: 0.5 },
+  { id: 'bugbear', name: 'Bugbear Marauder', glyph: 'b', fg: '#d35400', sprite: 'monster_ettin', archetype: 'bugbear', faction: 'goblins', hp: 26, atk: 6, def: 3, crCost: 10, roleTags: ['protein'], minCoin: 3, maxCoin: 16, coinDenom: 'sp', loot: 'warhammer', lootChance: 0.35 },
+  { id: 'ogre', name: 'Ogre Brute', glyph: 'O', fg: '#e74c3c', sprite: 'monster_minotaur', archetype: 'ogre', faction: 'monster', hp: 45, atk: 9, def: 4, crCost: 14, roleTags: ['protein'], minCoin: 6, maxCoin: 24, coinDenom: 'sp', loot: 'greatclub', lootChance: 0.35 },
+  { id: 'troll', name: 'Cave Troll', glyph: 'T', fg: '#16a085', sprite: 'monster_troll', archetype: 'troll', faction: 'monster', hp: 65, atk: 10, def: 5, crCost: 22, roleTags: ['protein'], minCoin: 4, maxCoin: 16, coinDenom: 'gp', loot: 'gem_chalcedony', lootChance: 0.4 },
+  { id: 'skeleton', name: 'Restless Skeleton', glyph: 'z', fg: '#ecf0f1', sprite: 'monster_skeleton', archetype: 'skeleton', faction: 'undead', hp: 12, atk: 3, def: 2, crCost: 3, roleTags: ['appetizer'], loot: 'short_sword', lootChance: 0.2 },
+  { id: 'skeleton_archer', name: 'Skeleton Archer', glyph: 'z', fg: '#bdc3c7', sprite: 'monster_skeleton_archer', archetype: 'skeleton', faction: 'undead', hp: 10, atk: 4, def: 1, crCost: 4, roleTags: ['side'], loot: 'shortbow', lootChance: 0.25 },
+  { id: 'zombie', name: 'Rotting Zombie', glyph: 'z', fg: '#7f8c8d', sprite: 'monster_zombie', archetype: 'zombie', faction: 'undead', hp: 20, atk: 4, def: 1, crCost: 4, roleTags: ['appetizer'], loot: 'dagger', lootChance: 0.15 },
+  { id: 'ghoul', name: 'Crypt Ghoul', glyph: 'g', fg: '#95a5a6', sprite: 'monster_ghoul', archetype: 'ghoul', faction: 'undead', hp: 22, atk: 5, def: 3, crCost: 8, roleTags: ['protein'], loot: 'potion_of_cure_light_wounds', lootChance: 0.25 },
+  { id: 'ghast', name: 'Dungeon Ghast', glyph: 'g', fg: '#7f8c8d', sprite: 'monster_ghoul', archetype: 'ghast', faction: 'undead', hp: 35, atk: 7, def: 4, crCost: 14, roleTags: ['protein'], loot: 'gem_chalcedony', lootChance: 0.3 },
+  { id: 'wight', name: 'Barrow Wight', glyph: 'w', fg: '#34495e', sprite: 'monster_wraith', archetype: 'wight', faction: 'undead', hp: 40, atk: 8, def: 5, crCost: 15, roleTags: ['protein'], minCoin: 3, maxCoin: 12, coinDenom: 'gp', loot: 'longsword', lootChance: 0.35 },
+  { id: 'wraith', name: 'Shadow Wraith', glyph: 'W', fg: '#2c3e50', sprite: 'monster_wraith', archetype: 'wraith', faction: 'undead', hp: 45, atk: 9, def: 6, crCost: 20, roleTags: ['protein'], loot: 'gem_chalcedony', lootChance: 0.4 },
+  { id: 'mummy', name: 'Ancient Mummy', glyph: 'M', fg: '#f39c12', sprite: 'monster_zombie', archetype: 'mummy', faction: 'undead', hp: 55, atk: 10, def: 5, crCost: 22, roleTags: ['protein'], minCoin: 8, maxCoin: 25, coinDenom: 'gp', loot: 'gem_ruby', lootChance: 0.5 },
+  { id: 'giant_rat', name: 'Giant Rat', glyph: 'r', fg: '#795548', sprite: 'monster_giant_rat', archetype: 'dire_rat', faction: 'beasts', hp: 6, atk: 2, def: 0, crCost: 2, roleTags: ['appetizer'], loot: 'ration_iron', lootChance: 0.05 },
+  { id: 'giant_spider', name: 'Giant Cave Spider', glyph: 's', fg: '#2c3e50', sprite: 'monster_giant_spider', archetype: 'giant_spider', faction: 'beasts', hp: 14, atk: 4, def: 1, crCost: 5, roleTags: ['side'], loot: 'potion_of_cure_light_wounds', lootChance: 0.1 },
+  { id: 'dire_wolf', name: 'Dire Wolf', glyph: 'w', fg: '#95a5a6', sprite: 'monster_warg_dire_wolf', archetype: 'dire_wolf', faction: 'beasts', hp: 35, atk: 7, def: 3, crCost: 12, roleTags: ['protein'], loot: 'ration_iron', lootChance: 0.05 },
+  { id: 'owlbear', name: 'Ferocious Owlbear', glyph: 'O', fg: '#8d6e63', sprite: 'monster_ettin', archetype: 'owlbear', faction: 'beasts', hp: 55, atk: 9, def: 4, crCost: 18, roleTags: ['protein'], loot: 'gem_chalcedony', lootChance: 0.15 },
+  { id: 'bandit', name: 'Bandit Cutthroat', glyph: 'b', fg: '#e74c3c', sprite: 'actor_bandit', archetype: 'human', faction: 'bandits', hp: 15, atk: 4, def: 2, crCost: 6, roleTags: ['protein', 'side'], minCoin: 3, maxCoin: 15, coinDenom: 'sp', loot: 'dagger', lootChance: 0.4 },
+  { id: 'cultist', name: 'Elemental Cultist', glyph: 'c', fg: '#9b59b6', sprite: 'monster_cultist', archetype: 'human', faction: 'cultists', hp: 20, atk: 4, def: 2, crCost: 8, roleTags: ['side'], minCoin: 4, maxCoin: 18, coinDenom: 'sp', loot: 'potion_of_cure_light_wounds', lootChance: 0.35 },
+  { id: 'gargoyle', name: 'Stone Gargoyle', glyph: 'G', fg: '#7f8c8d', sprite: 'monster_rock_golem', archetype: 'gargoyle', faction: 'monster', hp: 40, atk: 7, def: 6, crCost: 18, roleTags: ['protein'], loot: 'gem_chalcedony', lootChance: 0.35 },
+  { id: 'clay_golem', name: 'Clay Golem Sentinel', glyph: 'G', fg: '#d35400', sprite: 'monster_rock_golem', archetype: 'clay_golem', faction: 'monster', hp: 90, atk: 12, def: 8, crCost: 34, roleTags: ['protein'], loot: 'gem_ruby', lootChance: 0.5 },
+  { id: 'air_elemental', name: 'Howling Air Elemental', glyph: 'E', fg: '#ecf0f1', sprite: 'monster_forest_spirit', archetype: 'elemental_air', faction: 'monster', hp: 45, atk: 8, def: 5, crCost: 18, roleTags: ['side'], loot: 'elemental_gem_air', lootChance: 0.5 },
+  { id: 'fire_elemental', name: 'Blazing Fire Elemental', glyph: 'E', fg: '#e74c3c', sprite: 'monster_imp_devil', archetype: 'elemental_fire', faction: 'monster', hp: 50, atk: 9, def: 5, crCost: 20, roleTags: ['side'], loot: 'elemental_gem_fire', lootChance: 0.5 },
+  { id: 'water_elemental', name: 'Crashing Water Elemental', glyph: 'E', fg: '#3498db', sprite: 'monster_naga', archetype: 'elemental_water', faction: 'monster', hp: 55, atk: 9, def: 6, crCost: 20, roleTags: ['side'], loot: 'elemental_gem_water', lootChance: 0.5 },
+  { id: 'minotaur', name: 'Labyrinth Minotaur', glyph: 'M', fg: '#8d6e63', sprite: 'monster_minotaur', archetype: 'minotaur', faction: 'monster', hp: 60, atk: 11, def: 5, crCost: 20, roleTags: ['protein'], minCoin: 5, maxCoin: 20, coinDenom: 'gp', loot: 'greataxe', lootChance: 0.5 },
+  { id: 'manticore', name: 'Cavern Manticore', glyph: 'M', fg: '#d35400', sprite: 'monster_manticore', archetype: 'manticore', faction: 'monster', hp: 57, atk: 10, def: 5, crCost: 22, roleTags: ['side'], loot: 'gem_chalcedony', lootChance: 0.3 },
+  { id: 'ettin', name: 'Two-Headed Ettin', glyph: 'E', fg: '#b03a2e', sprite: 'monster_two_headed_ettin', archetype: 'ettin', faction: 'orcs', hp: 65, atk: 12, def: 6, crCost: 26, roleTags: ['protein'], minCoin: 8, maxCoin: 30, coinDenom: 'gp', loot: 'greatclub', lootChance: 0.45 },
+  { id: 'medusa', name: 'Temple Medusa', glyph: 'M', fg: '#1abc9c', sprite: 'monster_gorgon_medusa', archetype: 'medusa', faction: 'cultists', hp: 45, atk: 9, def: 5, crCost: 28, roleTags: ['side'], minCoin: 12, maxCoin: 40, coinDenom: 'gp', loot: 'gem_sapphire', lootChance: 0.5 },
+  { id: 'mind_flayer', name: 'Illithid Mind Flayer', glyph: 'I', fg: '#9b59b6', sprite: 'monster_faceless_monk', archetype: 'mind_flayer', faction: 'cultists', hp: 55, atk: 10, def: 7, crCost: 34, roleTags: ['side'], minCoin: 15, maxCoin: 50, coinDenom: 'gp', loot: 'gem_ruby', lootChance: 0.6 },
+  { id: 'fire_giant', name: 'Obsidian Fire Giant', glyph: 'G', fg: '#e74c3c', sprite: 'monster_orc_warchief', archetype: 'fire_giant', faction: 'monster', hp: 142, atk: 16, def: 10, crCost: 42, roleTags: ['protein'], minCoin: 30, maxCoin: 80, coinDenom: 'gp', loot: 'greatsword', lootChance: 0.6 },
+  { id: 'stone_golem', name: 'Monolith Stone Golem', glyph: 'G', fg: '#95a5a6', sprite: 'monster_rock_golem', archetype: 'stone_golem', faction: 'monster', hp: 115, atk: 17, def: 12, crCost: 45, roleTags: ['protein'], loot: 'gem_sapphire', lootChance: 0.5 },
+  { id: 'beholder', name: 'Tyrant Beholder', glyph: 'B', fg: '#8e44ad', sprite: 'monster_unholy_cardinal', archetype: 'beholder', faction: 'monster', hp: 93, atk: 14, def: 12, crCost: 52, roleTags: ['protein'], minCoin: 50, maxCoin: 120, coinDenom: 'gp', loot: 'gem_diamond', lootChance: 0.7 },
+  { id: 'iron_golem', name: 'Adamantine Iron Golem', glyph: 'G', fg: '#5d6d7e', sprite: 'monster_death_knight', archetype: 'iron_golem', faction: 'monster', hp: 135, atk: 19, def: 14, crCost: 56, roleTags: ['protein'], loot: 'gem_diamond', lootChance: 0.6 },
+  { id: 'marilith', name: 'Six-Armed Marilith', glyph: 'D', fg: '#c0392b', sprite: 'monster_naga', archetype: 'marilith', faction: 'cultists', hp: 216, atk: 22, def: 16, crCost: 70, roleTags: ['protein'], minCoin: 25, maxCoin: 75, coinDenom: 'pp', loot: 'gem_diamond', lootChance: 0.85 }
 ];
 
 for (const b of bestiaryData) {
@@ -1036,15 +1232,17 @@ for (const b of bestiaryData) {
     spriteId: b.sprite,
     isActor: true,
     speed: 100,
-    fighter: { maxHp: b.hp, attack: b.atk, defense: b.def, xpGiven: b.xp },
+    fighter: { maxHp: b.hp, attack: b.atk, defense: b.def },
     archetypeId: b.archetype,
     ai: { profileId: 'melee_aggressive', aggroRadius: 5, wanders: true },
     faction: b.faction,
     tags: ['actor'],
-    crCost: b.cr,
-    roleTags: ['protein', 'appetizer'],
-    currencyDrop: { denominationId: 'cp', minAmount: b.minCp, maxAmount: b.maxCp, chance: 1 },
-    lootDrops: [{ itemId: b.loot, chance: 0.6 }]
+    crCost: b.crCost,
+    roleTags: b.roleTags,
+    ...(b.minCoin !== undefined && b.maxCoin !== undefined && b.coinDenom !== undefined
+      ? { currencyDrop: { denominationId: b.coinDenom, minAmount: b.minCoin, maxAmount: b.maxCoin, chance: 1 } }
+      : {}),
+    lootDrops: [{ itemId: b.loot, chance: b.lootChance ?? 0.5 }]
   };
 }
 
@@ -1064,8 +1262,18 @@ const dialogues = {
         id: 'root',
         text: 'Stand, traveler! The Borderlands are under martial watch. Between the cultist incursions and the trance affliction, I cannot allow careless wanderers through.',
         options: [
-          { id: 'opt_diplomacy', text: '[Diplomacy DC 14] I am an able adventurer here to aid Shroudgarde in securing the frontier.', consequences: [{ type: 'skill_check', skillId: 'diplomacy', dc: 14, onSuccessNodeId: 'node_diplo_pass', onFailureNodeId: 'node_diplo_fail' }] },
-          { id: 'opt_intimidate', text: '[Intimidate DC 16] Out of my way, Constable. I have slain deadlier threats than you.', consequences: [{ type: 'skill_check', skillId: 'intimidate', dc: 16, onSuccessNodeId: 'node_intim_pass', onFailureNodeId: 'node_intim_fail' }] },
+          {
+            id: 'opt_diplomacy',
+            text: '[Diplomacy DC 14] I am an able adventurer here to aid Shroudgarde in securing the frontier.',
+            conditions: [{ type: 'not_has_fact', target: 'received_derek_signet' }],
+            consequences: [{ type: 'skill_check', skillId: 'diplomacy', dc: 14, onSuccessNodeId: 'node_diplo_pass', onFailureNodeId: 'node_diplo_fail' }]
+          },
+          {
+            id: 'opt_intimidate',
+            text: '[Intimidate DC 16] Out of my way, Constable. I have slain deadlier threats than you.',
+            consequences: [{ type: 'skill_check', skillId: 'intimidate', dc: 16, onSuccessNodeId: 'node_intim_pass', onFailureNodeId: 'node_intim_fail' }]
+          },
+          { id: 'opt_bounties', text: 'What bounties or duties are posted for Shroudgarde defenders?', nextNodeId: 'node_bounties' },
           { id: 'opt_leave', text: 'Forgive me, Constable. I will take my leave.' }
         ]
       },
@@ -1073,7 +1281,17 @@ const dialogues = {
         id: 'node_diplo_pass',
         text: 'Well spoken. We need all the steel we can muster. Take this Guard Signet — it proves your authority to explore the ruins and report back.',
         options: [
-          { id: 'opt_accept_signet', text: 'Thank you, Constable. I will not fail.', consequences: [{ type: 'set_attitude', attitude: 'friendly' }] }
+          {
+            id: 'opt_accept_signet',
+            text: 'Thank you, Constable. I will not fail.',
+            conditions: [{ type: 'not_has_fact', target: 'received_derek_signet' }],
+            consequences: [
+              { type: 'set_attitude', attitude: 'friendly' },
+              { type: 'give_item', itemId: 'shroudgarde_signet', quantity: 1 },
+              { type: 'set_fact', target: 'received_derek_signet' }
+            ]
+          },
+          { id: 'opt_back_signed', text: 'Return to duties.', nextNodeId: 'root' }
         ]
       },
       node_diplo_fail: {
@@ -1090,6 +1308,41 @@ const dialogues = {
         id: 'node_intim_fail',
         text: 'You threaten a sworn officer of the realm? Watch your tongue before I have you clapped in irons!',
         options: [{ id: 'opt_back', text: 'Step back.', nextNodeId: 'root' }]
+      },
+      node_bounties: {
+        id: 'node_bounties',
+        text: 'Several urgent threats loom across the frontier. Which assignment will you accept?',
+        options: [
+          {
+            id: 'opt_q_crypts',
+            text: '[Quest] Cleanse the Sunless Crypts of the restless dead.',
+            conditions: [{ type: 'quest_status', target: 'quest_cleanse_crypts', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_cleanse_crypts' }],
+            nextNodeId: 'node_bounties'
+          },
+          {
+            id: 'opt_q_watchtower',
+            text: '[Quest] Drive the bandit cutthroats from the High Watchtower.',
+            conditions: [{ type: 'quest_status', target: 'quest_watchtower_defense', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_watchtower_defense' }],
+            nextNodeId: 'node_bounties'
+          },
+          {
+            id: 'opt_q_caves',
+            text: '[Quest] Root out the Ravine of Chaos and slay Korag the Ogre Chieftain.',
+            conditions: [{ type: 'quest_status', target: 'quest_caves_of_chaos', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_caves_of_chaos' }],
+            nextNodeId: 'node_bounties'
+          },
+          {
+            id: 'opt_q_moathouse',
+            text: '[Quest] Infiltrate the Moathouse and defeat Lareth the Beautiful.',
+            conditions: [{ type: 'quest_status', target: 'quest_moathouse_incursion', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_moathouse_incursion' }],
+            nextNodeId: 'node_bounties'
+          },
+          { id: 'opt_bounties_back', text: 'Back to the gatehouse.', nextNodeId: 'root' }
+        ]
       }
     }
   },
@@ -1104,8 +1357,45 @@ const dialogues = {
         text: 'Welcome to the Golden Grain, stranger! Finest ale and warmest hearth in the Borderlands. What can I fetch you?',
         options: [
           { id: 'opt_trade', text: 'Show me your rations and provisions.', consequences: [{ type: 'open_barter' }] },
-          { id: 'opt_appraise', text: '[Appraise DC 12] Your supplier from Orlane overcharged you on that batch of wheat.', consequences: [{ type: 'skill_check', skillId: 'appraise', dc: 12, onSuccessNodeId: 'node_appraise_win', onFailureNodeId: 'node_appraise_loss' }] },
-          { id: 'opt_bluff', text: '[Bluff DC 14] Constable Derek sent me for complimentary provisions for our patrol.', consequences: [{ type: 'skill_check', skillId: 'bluff', dc: 14, onSuccessNodeId: 'node_bluff_win', onFailureNodeId: 'node_bluff_loss' }] },
+          {
+            id: 'opt_quest_supplies',
+            text: '[Quest] Need a hand sorting provisions for the Golden Grain?',
+            conditions: [{ type: 'quest_status', target: 'quest_barkeep_supplies', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_barkeep_supplies' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_appraise',
+            text: '[Appraise DC 12] Your supplier from Orlane overcharged you on that batch of wheat.',
+            conditions: [{ type: 'not_has_fact', target: 'bertram_appraise_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'appraise',
+                dc: 12,
+                onSuccessNodeId: 'node_appraise_win',
+                onFailureNodeId: 'node_appraise_loss',
+                successConsequences: [{ type: 'set_fact', target: 'bertram_appraise_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'bertram_appraise_used' }]
+              }
+            ]
+          },
+          {
+            id: 'opt_bluff',
+            text: '[Bluff DC 14] Constable Derek sent me for complimentary provisions for our patrol.',
+            conditions: [{ type: 'not_has_fact', target: 'bertram_bread_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'bluff',
+                dc: 14,
+                onSuccessNodeId: 'node_bluff_win',
+                onFailureNodeId: 'node_bluff_loss',
+                successConsequences: [{ type: 'set_fact', target: 'bertram_bread_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'bertram_bread_used' }]
+              }
+            ]
+          },
           { id: 'opt_rumors', text: 'Any rumors of the surrounding ruins?', nextNodeId: 'node_rumors' }
         ]
       },
@@ -1113,7 +1403,16 @@ const dialogues = {
         id: 'node_appraise_win',
         text: 'By the gods, you are right! The grain sacks are cut with chaff. You have sharp eyes! Here, take a 15% discount on anything in my tavern.',
         options: [
-          { id: 'opt_trade_disc', text: 'Much appreciated, Bertram. Let me see your wares.', consequences: [{ type: 'modify_session_markup', delta: -0.15 }, { type: 'open_barter' }] }
+          {
+            id: 'opt_trade_disc',
+            text: 'Much appreciated, Bertram. Let me see your wares.',
+            conditions: [{ type: 'not_has_fact', target: 'bertram_discount_applied' }],
+            consequences: [
+              { type: 'modify_session_markup', delta: -0.15 },
+              { type: 'set_fact', target: 'bertram_discount_applied' },
+              { type: 'open_barter' }
+            ]
+          }
         ]
       },
       node_appraise_loss: {
@@ -1123,9 +1422,18 @@ const dialogues = {
       },
       node_bluff_win: {
         id: 'node_bluff_win',
-        text: 'Ah, Derek`s boys! Never let it be said Bertram neglected the town guard. Here is a fresh loaf of crusty bread on the house!',
+        text: 'Ah, Derek\'s boys! Never let it be said Bertram neglected the town guard. Here is a fresh loaf of crusty bread on the house!',
         options: [
-          { id: 'opt_trade_free', text: 'Much obliged.', consequences: [{ type: 'modify_currency', amount: 50 }, { type: 'open_barter' }] }
+          {
+            id: 'opt_trade_free',
+            text: 'Much obliged.',
+            conditions: [{ type: 'not_has_fact', target: 'received_bertram_bread' }],
+            consequences: [
+              { type: 'give_item', itemId: 'ration_fresh_bread', quantity: 1 },
+              { type: 'set_fact', target: 'received_bertram_bread' },
+              { type: 'open_barter' }
+            ]
+          }
         ]
       },
       node_bluff_loss: {
@@ -1151,7 +1459,29 @@ const dialogues = {
         text: 'Clang and sparks! Keep back from the forge coals, surface-dweller. Looking for dwarf-forged iron that will not shatter against goblin bone?',
         options: [
           { id: 'opt_trade', text: 'Let me see your weapons and armor.', consequences: [{ type: 'open_barter' }] },
-          { id: 'opt_appraise', text: '[Appraise DC 15] This breastplate has exceptional fold-welding. You take immense pride in your craft.', consequences: [{ type: 'skill_check', skillId: 'appraise', dc: 15, onSuccessNodeId: 'node_smith_praise_pass', onFailureNodeId: 'node_smith_praise_fail' }] },
+          {
+            id: 'opt_appraise',
+            text: '[Appraise DC 15] This breastplate has exceptional fold-welding. You take immense pride in your craft.',
+            conditions: [{ type: 'not_has_fact', target: 'laurent_appraise_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'appraise',
+                dc: 15,
+                onSuccessNodeId: 'node_smith_praise_pass',
+                onFailureNodeId: 'node_smith_praise_fail',
+                successConsequences: [{ type: 'set_fact', target: 'laurent_appraise_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'laurent_appraise_used' }]
+              }
+            ]
+          },
+          {
+            id: 'opt_q_warrens',
+            text: '[Quest] Tell me about the Goblin Warrens threatening the deep roads.',
+            conditions: [{ type: 'quest_status', target: 'quest_goblin_warrens', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_goblin_warrens' }],
+            nextNodeId: 'root'
+          },
           { id: 'opt_adamantine', text: 'Can you forge adamantine gear?', nextNodeId: 'node_ore' }
         ]
       },
@@ -1159,7 +1489,16 @@ const dialogues = {
         id: 'node_smith_praise_pass',
         text: 'Ha! A surface-dweller with genuine appreciation for proper metallurgy! It is rare to meet someone who understands temper and quench. For you, artisan discount!',
         options: [
-          { id: 'opt_trade_pass', text: 'Show me your armory, Master Laurent.', consequences: [{ type: 'modify_session_markup', delta: -0.10 }, { type: 'open_barter' }] }
+          {
+            id: 'opt_trade_pass',
+            text: 'Show me your armory, Master Laurent.',
+            conditions: [{ type: 'not_has_fact', target: 'laurent_discount_applied' }],
+            consequences: [
+              { type: 'modify_session_markup', delta: -0.10 },
+              { type: 'set_fact', target: 'laurent_discount_applied' },
+              { type: 'open_barter' }
+            ]
+          }
         ]
       },
       node_smith_praise_fail: {
@@ -1170,7 +1509,16 @@ const dialogues = {
       node_ore: {
         id: 'node_ore',
         text: 'If you bring me pure adamantine ore from the deepest vaults beneath the Dungeons of Doom, I will forge weapons worthy of kings!',
-        options: [{ id: 'opt_back', text: 'I will remember that.', nextNodeId: 'root' }]
+        options: [
+          {
+            id: 'opt_q_ore',
+            text: '[Quest] I will locate the Adamantine Hoard vault.',
+            conditions: [{ type: 'quest_status', target: 'quest_laurent_special_ore', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_laurent_special_ore' }],
+            nextNodeId: 'root'
+          },
+          { id: 'opt_back', text: 'I will remember that.', nextNodeId: 'root' }
+        ]
       }
     }
   },
@@ -1185,14 +1533,52 @@ const dialogues = {
         text: 'May the light guide your steps, traveler. The wounded from the borders arrive daily. How may the sanctuary aid you?',
         options: [
           { id: 'opt_trade', text: 'I need restorative potions and divine blessings.', consequences: [{ type: 'open_barter' }] },
-          { id: 'opt_diplomacy', text: '[Diplomacy DC 13] The road is perilous, sister. A blessing for our quest would save many lives.', consequences: [{ type: 'skill_check', skillId: 'diplomacy', dc: 13, onSuccessNodeId: 'node_heal_pass', onFailureNodeId: 'node_heal_fail' }] }
+          {
+            id: 'opt_diplomacy',
+            text: '[Diplomacy DC 13] The road is perilous, sister. A blessing for our quest would save many lives.',
+            conditions: [{ type: 'not_has_fact', target: 'isabelle_diplomacy_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'diplomacy',
+                dc: 13,
+                onSuccessNodeId: 'node_heal_pass',
+                onFailureNodeId: 'node_heal_fail',
+                successConsequences: [{ type: 'set_fact', target: 'isabelle_diplomacy_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'isabelle_diplomacy_used' }]
+              }
+            ]
+          },
+          {
+            id: 'opt_q_relic',
+            text: '[Quest] What do you know of the Sunless Arch-Curate and the lost relic?',
+            conditions: [{ type: 'quest_status', target: 'quest_sunless_relic_consecration', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_sunless_relic_consecration' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_q_water',
+            text: '[Quest] Have the flooded marsh shrines spread corruption inland?',
+            conditions: [{ type: 'quest_status', target: 'quest_water_temple_drain', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_water_temple_drain' }],
+            nextNodeId: 'root'
+          }
         ]
       },
       node_heal_pass: {
         id: 'node_heal_pass',
-        text: 'Your heart is pure. Go with the Dawnfather`s blessing, and take these consecrated elixirs at sanctuary cost.',
+        text: 'Your heart is pure. Go with the Dawnfather\'s blessing, and take these consecrated elixirs at sanctuary cost.',
         options: [
-          { id: 'opt_trade_bless', text: 'Thank you, Sister Isabelle.', consequences: [{ type: 'modify_session_markup', delta: -0.15 }, { type: 'open_barter' }] }
+          {
+            id: 'opt_trade_bless',
+            text: 'Thank you, Sister Isabelle.',
+            conditions: [{ type: 'not_has_fact', target: 'isabelle_discount_applied' }],
+            consequences: [
+              { type: 'modify_session_markup', delta: -0.15 },
+              { type: 'set_fact', target: 'isabelle_discount_applied' },
+              { type: 'open_barter' }
+            ]
+          }
         ]
       },
       node_heal_fail: {
@@ -1210,16 +1596,23 @@ const dialogues = {
     nodes: {
       root: {
         id: 'root',
-        text: 'Step lightly. The woods have eyes, and not all of them belong to birds. Need bows, quivers, or scouts` gear?',
+        text: 'Step lightly. The woods have eyes, and not all of them belong to birds. Need bows, quivers, or scouts\' gear?',
         options: [
           { id: 'opt_trade', text: 'Show me your archery equipment.', consequences: [{ type: 'open_barter' }] },
+          {
+            id: 'opt_q_spire',
+            text: '[Quest] Tell me about the Elemental Spire past the Mirrored Marsh.',
+            conditions: [{ type: 'quest_status', target: 'quest_spire_of_elements', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_spire_of_elements' }],
+            nextNodeId: 'node_tracks'
+          },
           { id: 'opt_tracks', text: 'What trails lead towards the Ravine of Chaos?', nextNodeId: 'node_tracks' }
         ]
       },
       node_tracks: {
         id: 'node_tracks',
-        text: 'Follow the northern deer paths through La Forêt Hantée. Watch the canopy — giant spiders nest above the moss line.',
-        options: [{ id: 'opt_back', text: 'I will watch my head.', nextNodeId: 'root' }]
+        text: 'Follow the northern deer paths through La Forêt Hantée for the Ravine, or strike east through the Mirrored Marsh to reach the Elemental Spire. Watch the canopy — giant spiders nest above the moss line.',
+        options: [{ id: 'opt_back', text: 'I will keep my eyes open.', nextNodeId: 'root' }]
       }
     }
   },
@@ -1233,15 +1626,46 @@ const dialogues = {
         id: 'root',
         text: 'Rubies, sapphires, uncut chalcedony! Currency of empires and wizards alike. Are you buying or selling precious stones today?',
         options: [
-          { id: 'opt_trade', text: 'Let me trade in gems and coin pouches.', consequences: [{ type: 'open_barter' }] },
-          { id: 'opt_appraise', text: '[Appraise DC 16] Your rubies from the south carry high refraction. Let us make an equitable deal.', consequences: [{ type: 'skill_check', skillId: 'appraise', dc: 16, onSuccessNodeId: 'node_gem_pass', onFailureNodeId: 'node_gem_fail' }] }
+          { id: 'opt_trade', text: 'Let me trade in gemstones and wards.', consequences: [{ type: 'open_barter' }] },
+          {
+            id: 'opt_q_gems',
+            text: '[Quest] Interested in commissioning a lapidary appraisal?',
+            conditions: [{ type: 'quest_status', target: 'quest_gem_appraisal', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_gem_appraisal' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_appraise',
+            text: '[Appraise DC 16] Your rubies from the south carry high refraction. Let us make an equitable deal.',
+            conditions: [{ type: 'not_has_fact', target: 'silas_appraise_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'appraise',
+                dc: 16,
+                onSuccessNodeId: 'node_gem_pass',
+                onFailureNodeId: 'node_gem_fail',
+                successConsequences: [{ type: 'set_fact', target: 'silas_appraise_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'silas_appraise_used' }]
+              }
+            ]
+          }
         ]
       },
       node_gem_pass: {
         id: 'node_gem_pass',
         text: 'Splendid! A true connoisseur of gemstones! I will pay top coin for any jewels you unearth in the tombs.',
         options: [
-          { id: 'opt_trade_boost', text: 'Let us negotiate.', consequences: [{ type: 'modify_session_markup', delta: -0.15 }, { type: 'open_barter' }] }
+          {
+            id: 'opt_trade_boost',
+            text: 'Let us negotiate.',
+            conditions: [{ type: 'not_has_fact', target: 'silas_discount_applied' }],
+            consequences: [
+              { type: 'modify_session_markup', delta: -0.15 },
+              { type: 'set_fact', target: 'silas_discount_applied' },
+              { type: 'open_barter' }
+            ]
+          }
         ]
       },
       node_gem_fail: {
@@ -1262,13 +1686,60 @@ const dialogues = {
         text: 'Ah, a wanderer entering my tower without triggering the warding runes. Impressive. Do you seek arcane knowledge, scrolls, or wands?',
         options: [
           { id: 'opt_trade', text: 'I seek magical scrolls and wands.', consequences: [{ type: 'open_barter' }] },
-          { id: 'opt_bluff', text: '[Bluff DC 15] I am an emissary from the High Arcane Synod evaluating frontier towers.', consequences: [{ type: 'skill_check', skillId: 'bluff', dc: 15, onSuccessNodeId: 'node_mage_pass', onFailureNodeId: 'node_mage_fail' }] }
+          {
+            id: 'opt_q_tome',
+            text: '[Quest] I can ascend to the Sanctum Sanctorum and retrieve your celestial grimoire.',
+            conditions: [{ type: 'quest_status', target: 'quest_alden_lost_tome', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_alden_lost_tome' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_q_doom',
+            text: '[Quest] What stirs in the ten depths of the Dungeons of Doom?',
+            conditions: [{ type: 'quest_status', target: 'quest_megadungeon_depths', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_megadungeon_depths' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_q_dragon',
+            text: '[Quest] Tell me of Pyroclast the Red Wyrm beneath the vaults.',
+            conditions: [{ type: 'quest_status', target: 'quest_slay_dragon_pyroclast', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_slay_dragon_pyroclast' }],
+            nextNodeId: 'root'
+          },
+          {
+            id: 'opt_bluff',
+            text: '[Bluff DC 15] I am an emissary from the High Arcane Synod evaluating frontier towers.',
+            conditions: [{ type: 'not_has_fact', target: 'alden_bluff_used' }],
+            consequences: [
+              {
+                type: 'skill_check',
+                skillId: 'bluff',
+                dc: 15,
+                onSuccessNodeId: 'node_mage_pass',
+                onFailureNodeId: 'node_mage_fail',
+                successConsequences: [{ type: 'set_fact', target: 'alden_bluff_used' }],
+                failureConsequences: [{ type: 'set_fact', target: 'alden_bluff_used' }]
+              }
+            ]
+          }
         ]
       },
       node_mage_pass: {
         id: 'node_mage_pass',
         text: 'The Synod? I was not notified! Of course, my facilities are at the disposal of esteemed colleagues.',
-        options: [{ id: 'opt_trade_pass', text: 'Show me your grimoires.', consequences: [{ type: 'modify_session_markup', delta: -0.20 }, { type: 'open_barter' }] }]
+        options: [
+          {
+            id: 'opt_trade_pass',
+            text: 'Show me your grimoires.',
+            conditions: [{ type: 'not_has_fact', target: 'alden_discount_applied' }],
+            consequences: [
+              { type: 'modify_session_markup', delta: -0.20 },
+              { type: 'set_fact', target: 'alden_discount_applied' },
+              { type: 'open_barter' }
+            ]
+          }
+        ]
       },
       node_mage_fail: {
         id: 'node_mage_fail',
@@ -1293,13 +1764,31 @@ const dialogues = {
       },
       node_toee: {
         id: 'node_toee',
-        text: 'Built atop a subterranean tear into the Lower Planes, the Temple was sealed decades ago. Yet rumors say cultists reassemble in the ruins of the Moathouse to breach the seals...',
-        options: [{ id: 'opt_back', text: 'Thank you, Elena.', nextNodeId: 'root' }]
+        text: 'Built atop a subterranean tear into the Lower Planes, the Temple was sealed decades ago. Yet rumors say cultists reassemble in the ruins of the Moathouse to breach the seals and awaken Zuggtmoy...',
+        options: [
+          {
+            id: 'opt_q_toee',
+            text: '[Quest] I will descend into the Temple of Elemental Evil and banish Zuggtmoy.',
+            conditions: [{ type: 'quest_status', target: 'quest_temple_of_elemental_evil', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_temple_of_elemental_evil' }],
+            nextNodeId: 'root'
+          },
+          { id: 'opt_back', text: 'Thank you, Elena.', nextNodeId: 'root' }
+        ]
       },
       node_trance: {
         id: 'node_trance',
-        text: 'The afflicted wander as if dreaming, muttering of a fungal goddess in the deep fane. It is no natural disease; it is the spores of Zuggtmoy.',
-        options: [{ id: 'opt_back', text: 'Frightening. I must be careful.', nextNodeId: 'root' }]
+        text: 'The afflicted wander as if dreaming, muttering of a fungal goddess in the deep fane. It is no natural disease; tracks lead toward the Mirrored Marsh.',
+        options: [
+          {
+            id: 'opt_q_trance',
+            text: '[Quest] I will investigate the Whispering Trance in the Mirrored Marsh.',
+            conditions: [{ type: 'quest_status', target: 'quest_investigate_trance', operator: '==', value: -1 }],
+            consequences: [{ type: 'grant_quest', questId: 'quest_investigate_trance' }],
+            nextNodeId: 'root'
+          },
+          { id: 'opt_back', text: 'Frightening. I must be careful.', nextNodeId: 'root' }
+        ]
       }
     }
   },
@@ -1476,8 +1965,8 @@ const quests = {
   },
   quest_alden_lost_tome: {
     id: 'quest_alden_lost_tome',
-    title: 'The Archmage`s Grimoire',
-    description: 'Retrieve Archmage Alden`s lost celestial grimoire from the top of his tower.',
+    title: 'The Archmage\'s Grimoire',
+    description: 'Retrieve Archmage Alden\'s lost celestial grimoire from the top of his tower.',
     objectives: [
       { id: 'obj_1', description: 'Reach the Arcane Tower Sanctum Sanctorum.', type: 'explore', targetId: 'wizard_tower_f4', requiredAmount: 1 }
     ],
@@ -1503,7 +1992,7 @@ const quests = {
   },
   quest_gem_appraisal: {
     id: 'quest_gem_appraisal',
-    title: 'The Jeweler`s Challenge',
+    title: 'The Jeweler\'s Challenge',
     description: 'Bring rare gemstones to Silas for master appraisal.',
     objectives: [
       { id: 'obj_1', description: 'Speak with Silas the Gem Trader.', type: 'talk', targetId: 'silas_merchant', requiredAmount: 1 }

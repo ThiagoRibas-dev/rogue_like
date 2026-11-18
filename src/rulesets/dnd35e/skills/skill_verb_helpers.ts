@@ -2,6 +2,7 @@ import { addComponent, getComponent } from '../../../core/ecs.ts';
 import { ComponentType, type PositionComponent, type RulesetDataComponent } from '../../../types/components.types.ts';
 import type { EntityId, GameState } from '../../../types/game-state.types.ts';
 import type { ApplyIntentTarget } from '../../../types/intents/interaction.intents.ts';
+import { computeAbilityModifier, computeEffectiveAbilityScore } from '../abilities.ts';
 import { evaluateDnD35eEntityDAG } from '../cartridge/dnd35e_dag_adapter.ts';
 import { summarizeConditionEffects } from '../combat/maneuvers_conditions.ts';
 import { evaluateDnD35ActorStatDAG } from '../modifiers.ts';
@@ -260,6 +261,22 @@ export function evaluateActorSkillCheck(
   });
 
   return { check, dndData };
+}
+
+/**
+ * Resolves an actor's effective Wisdom modifier from the D&D 3.5e Stat DAG,
+ * falling back to base Wisdom score calculation if DAG evaluation is unavailable.
+ */
+export function resolveActorWisModFromDAG(state: Readonly<GameState>, entityId: EntityId): number {
+  const entityDag = evaluateDnD35eEntityDAG(state as GameState, entityId);
+  if (entityDag) {
+    return entityDag.dagResult.effectiveAbilityModifiers.wis;
+  }
+  const dndData = getDnD35EntityData(state, entityId);
+  if (!dndData) {
+    return 0;
+  }
+  return computeAbilityModifier(computeEffectiveAbilityScore(dndData.abilityScores.wis));
 }
 
 /**

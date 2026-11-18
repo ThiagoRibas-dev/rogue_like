@@ -19,11 +19,13 @@ import {
   resolveFeintCheck
 } from '../skills.ts';
 import type { DnD35ConditionId } from '../types/dnd35e.types.ts';
+import { clampSessionMarkup } from '../../../utils/trade.ts';
 import {
   ANIMAL_INTELLIGENCE_MAX_SCORE,
   DEMORALIZE_BASE_DC,
   evaluateActorSkillCheck,
   FAVORABLE_SOCIAL_MARKUP_MODIFIER,
+  resolveActorWisModFromDAG,
   saveEntityDnD35Data,
   UNFAVORABLE_SOCIAL_MARKUP_MODIFIER
 } from './skill_verb_helpers.ts';
@@ -66,9 +68,13 @@ export function resolveSocialCombatSkillVerb(
 
       const npcMemory = getComponent(nextState, npcId, ComponentType.Memory) as MemoryComponent | undefined;
       if (npcMemory) {
+        const currentMod = npcMemory.sessionMarkupModifier ?? 0;
+        const nextMod = isFavorable
+          ? Math.min(currentMod, FAVORABLE_SOCIAL_MARKUP_MODIFIER)
+          : Math.max(currentMod, UNFAVORABLE_SOCIAL_MARKUP_MODIFIER);
         nextState = addComponent(nextState, npcId, {
           ...npcMemory,
-          sessionMarkupModifier: isFavorable ? FAVORABLE_SOCIAL_MARKUP_MODIFIER : UNFAVORABLE_SOCIAL_MARKUP_MODIFIER
+          sessionMarkupModifier: clampSessionMarkup(nextMod)
         });
       }
 
@@ -99,15 +105,9 @@ export function resolveSocialCombatSkillVerb(
       }
       const npcId = intent.target.entityId;
       const { check } = evaluateActorSkillCheck(state, intent.entityId, 'intimidate', DEMORALIZE_BASE_DC);
-      const { check: targetSenseCheck, dndData: npcDnd } = evaluateActorSkillCheck(
-        state,
-        npcId,
-        'sense_motive',
-        0,
-        'take10'
-      );
+      const { dndData: npcDnd } = evaluateActorSkillCheck(state, npcId, 'sense_motive', 0, 'take10');
       const npcChassis = aggregateProgressionChassis(npcDnd.tracks, 0);
-      const npcWisMod = targetSenseCheck.totalModifier - targetSenseCheck.wholeRanks - targetSenseCheck.synergyBonus;
+      const npcWisMod = resolveActorWisModFromDAG(state, npcId);
 
       const success = resolveDemoralizeCheck(check.totalRoll, Math.max(1, npcChassis.totalHD), npcWisMod);
       let nextState = state;
@@ -124,9 +124,13 @@ export function resolveSocialCombatSkillVerb(
 
       const npcMemory = getComponent(nextState, npcId, ComponentType.Memory) as MemoryComponent | undefined;
       if (npcMemory) {
+        const currentMod = npcMemory.sessionMarkupModifier ?? 0;
+        const nextMod = success
+          ? Math.min(currentMod, FAVORABLE_SOCIAL_MARKUP_MODIFIER)
+          : Math.max(currentMod, UNFAVORABLE_SOCIAL_MARKUP_MODIFIER);
         nextState = addComponent(nextState, npcId, {
           ...npcMemory,
-          sessionMarkupModifier: success ? FAVORABLE_SOCIAL_MARKUP_MODIFIER : UNFAVORABLE_SOCIAL_MARKUP_MODIFIER
+          sessionMarkupModifier: clampSessionMarkup(nextMod)
         });
       }
 

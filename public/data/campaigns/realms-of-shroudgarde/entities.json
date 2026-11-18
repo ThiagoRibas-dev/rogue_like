@@ -157,6 +157,14 @@
       "defense": 5
     },
     "archetypeId": "human",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "fighter",
+          "levels": 5
+        }
+      ]
+    },
     "ai": {
       "profileId": "stationary_vendor",
       "wanders": false
@@ -167,16 +175,25 @@
       "npc",
       "guard"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "guard_captain_tree",
     "defaultEquipment": [
       {
-        "itemId": "longsword"
+        "itemId": "longsword",
+        "equipSlot": "main_hand"
       },
       {
-        "itemId": "breastplate"
+        "itemId": "breastplate",
+        "equipSlot": "torso"
       },
       {
-        "itemId": "heavy_steel_shield"
+        "itemId": "heavy_steel_shield",
+        "equipSlot": "off_hand"
       }
     ]
   },
@@ -205,6 +222,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "bertram_trade_tree",
     "shop": {
       "markupMultiplier": 1.1,
@@ -230,6 +253,14 @@
       "defense": 6
     },
     "archetypeId": "dwarf",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "fighter",
+          "levels": 4
+        }
+      ]
+    },
     "ai": {
       "profileId": "stationary_vendor",
       "wanders": false
@@ -240,6 +271,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "laurent_smith_tree",
     "shop": {
       "markupMultiplier": 1.15,
@@ -253,10 +290,12 @@
     },
     "defaultEquipment": [
       {
-        "itemId": "warhammer"
+        "itemId": "warhammer",
+        "equipSlot": "main_hand"
       },
       {
-        "itemId": "chainmail"
+        "itemId": "chainmail",
+        "equipSlot": "torso"
       }
     ]
   },
@@ -275,6 +314,14 @@
       "defense": 4
     },
     "archetypeId": "aasimar",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "cleric",
+          "levels": 4
+        }
+      ]
+    },
     "ai": {
       "profileId": "stationary_vendor",
       "wanders": false
@@ -285,6 +332,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "isabelle_healer_tree",
     "shop": {
       "markupMultiplier": 1.1,
@@ -296,10 +349,12 @@
     },
     "defaultEquipment": [
       {
-        "itemId": "heavy_mace"
+        "itemId": "heavy_mace",
+        "equipSlot": "main_hand"
       },
       {
-        "itemId": "scale_mail"
+        "itemId": "scale_mail",
+        "equipSlot": "torso"
       }
     ]
   },
@@ -318,6 +373,14 @@
       "defense": 3
     },
     "archetypeId": "elf",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "ranger",
+          "levels": 4
+        }
+      ]
+    },
     "ai": {
       "profileId": "stationary_vendor",
       "wanders": false
@@ -328,6 +391,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "luc_scout_tree",
     "shop": {
       "markupMultiplier": 1.1,
@@ -340,13 +409,16 @@
     },
     "defaultEquipment": [
       {
-        "itemId": "shortbow"
+        "itemId": "shortbow",
+        "equipSlot": "ranged"
       },
       {
-        "itemId": "short_sword"
+        "itemId": "short_sword",
+        "equipSlot": "main_hand"
       },
       {
-        "itemId": "studded_leather_armor"
+        "itemId": "studded_leather_armor",
+        "equipSlot": "torso"
       }
     ]
   },
@@ -375,6 +447,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "silas_gem_merchant_tree",
     "shop": {
       "markupMultiplier": 1.2,
@@ -382,8 +460,7 @@
         "gem_chalcedony",
         "gem_ruby",
         "gem_sapphire",
-        "coin_pouch_silver",
-        "coin_pouch_gold"
+        "gem_diamond"
       ]
     }
   },
@@ -402,6 +479,14 @@
       "defense": 4
     },
     "archetypeId": "human",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "wizard",
+          "levels": 7
+        }
+      ]
+    },
     "ai": {
       "profileId": "stationary_vendor",
       "wanders": false
@@ -412,6 +497,12 @@
       "npc",
       "merchant"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "alden_mage_tree",
     "shop": {
       "markupMultiplier": 1.25,
@@ -424,7 +515,8 @@
     },
     "defaultEquipment": [
       {
-        "itemId": "quarterstaff"
+        "itemId": "quarterstaff",
+        "equipSlot": "two_handed"
       }
     ]
   },
@@ -452,6 +544,12 @@
       "actor",
       "npc"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "elena_scholar_tree"
   },
   "town_guard": {
@@ -486,13 +584,16 @@
     ],
     "defaultEquipment": [
       {
-        "itemId": "longsword"
+        "itemId": "longsword",
+        "equipSlot": "main_hand"
       },
       {
-        "itemId": "scale_mail"
+        "itemId": "scale_mail",
+        "equipSlot": "torso"
       },
       {
-        "itemId": "heavy_steel_shield"
+        "itemId": "heavy_steel_shield",
+        "equipSlot": "off_hand"
       }
     ]
   },
@@ -539,10 +640,17 @@
     "fighter": {
       "maxHp": 85,
       "attack": 10,
-      "defense": 6,
-      "xpGiven": 1200
+      "defense": 6
     },
     "archetypeId": "human",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "cleric",
+          "levels": 5
+        }
+      ]
+    },
     "ai": {
       "profileId": "melee_aggressive",
       "aggroRadius": 6,
@@ -557,29 +665,33 @@
     "roleTags": [
       "protein"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "lareth_parley_tree",
     "defaultEquipment": [
       {
-        "itemId": "breastplate"
+        "itemId": "breastplate",
+        "equipSlot": "torso"
       },
       {
-        "itemId": "dagger"
+        "itemId": "dagger",
+        "equipSlot": "main_hand"
       }
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 10000,
-      "maxAmount": 25000,
+      "denominationId": "gp",
+      "minAmount": 80,
+      "maxAmount": 200,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "gem_ruby",
         "chance": 0.8
-      },
-      {
-        "itemId": "coin_pouch_gold",
-        "chance": 1
       },
       {
         "itemId": "moathouse_ledger",
@@ -599,8 +711,7 @@
     "fighter": {
       "maxHp": 220,
       "attack": 16,
-      "defense": 10,
-      "xpGiven": 5000
+      "defense": 10
     },
     "archetypeId": "balor",
     "ai": {
@@ -618,9 +729,9 @@
       "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 50000,
-      "maxAmount": 150000,
+      "denominationId": "pp",
+      "minAmount": 100,
+      "maxAmount": 250,
       "chance": 1
     },
     "lootDrops": [
@@ -646,10 +757,17 @@
     "fighter": {
       "maxHp": 95,
       "attack": 11,
-      "defense": 7,
-      "xpGiven": 1500
+      "defense": 7
     },
-    "archetypeId": "ghoul",
+    "archetypeId": "mummy",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "cleric",
+          "levels": 4
+        }
+      ]
+    },
     "ai": {
       "profileId": "melee_aggressive",
       "aggroRadius": 6,
@@ -666,13 +784,14 @@
     ],
     "defaultEquipment": [
       {
-        "itemId": "amulet_of_natural_armor_plus2"
+        "itemId": "amulet_of_natural_armor_plus2",
+        "equipSlot": "neck"
       }
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 15000,
-      "maxAmount": 35000,
+      "denominationId": "gp",
+      "minAmount": 120,
+      "maxAmount": 300,
       "chance": 1
     },
     "lootDrops": [
@@ -698,10 +817,17 @@
     "fighter": {
       "maxHp": 80,
       "attack": 12,
-      "defense": 5,
-      "xpGiven": 800
+      "defense": 5
     },
     "archetypeId": "ogre",
+    "rulesetData": {
+      "classLevels": [
+        {
+          "classId": "barbarian",
+          "levels": 3
+        }
+      ]
+    },
     "ai": {
       "profileId": "melee_aggressive",
       "aggroRadius": 6,
@@ -718,18 +844,19 @@
     ],
     "defaultEquipment": [
       {
-        "itemId": "greatclub"
+        "itemId": "greatclub",
+        "equipSlot": "two_handed"
       }
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 5000,
-      "maxAmount": 15000,
+      "denominationId": "gp",
+      "minAmount": 40,
+      "maxAmount": 100,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "coin_pouch_gold",
+        "itemId": "gem_chalcedony",
         "chance": 0.8
       }
     ]
@@ -746,10 +873,9 @@
     "fighter": {
       "maxHp": 300,
       "attack": 18,
-      "defense": 12,
-      "xpGiven": 8000
+      "defense": 12
     },
-    "archetypeId": "dragon_red",
+    "archetypeId": "dragon_red_very_old",
     "ai": {
       "profileId": "melee_aggressive",
       "aggroRadius": 8,
@@ -764,11 +890,17 @@
     "roleTags": [
       "protein"
     ],
+    "memory": {
+      "factionStandings": {},
+      "grudges": [],
+      "facts": [],
+      "knowledge": {}
+    },
     "dialogueId": "dragon_dialogue_tree",
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 100000,
-      "maxAmount": 300000,
+      "denominationId": "pp",
+      "minAmount": 80,
+      "maxAmount": 200,
       "chance": 1
     },
     "lootDrops": [
@@ -777,7 +909,7 @@
         "chance": 1
       },
       {
-        "itemId": "coin_pouch_gold",
+        "itemId": "gem_ruby",
         "chance": 1
       }
     ]
@@ -794,8 +926,7 @@
     "fighter": {
       "maxHp": 8,
       "attack": 2,
-      "defense": 1,
-      "xpGiven": 15
+      "defense": 1
     },
     "archetypeId": "goblin",
     "ai": {
@@ -807,21 +938,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 5,
+    "crCost": 3,
     "roleTags": [
-      "protein",
       "appetizer"
     ],
     "currencyDrop": {
       "denominationId": "cp",
       "minAmount": 5,
-      "maxAmount": 50,
+      "maxAmount": 25,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "dagger",
+        "chance": 0.2
       }
     ]
   },
@@ -837,8 +967,7 @@
     "fighter": {
       "maxHp": 7,
       "attack": 3,
-      "defense": 0,
-      "xpGiven": 20
+      "defense": 0
     },
     "archetypeId": "goblin",
     "ai": {
@@ -850,21 +979,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 6,
+    "crCost": 4,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
     "currencyDrop": {
       "denominationId": "cp",
-      "minAmount": 10,
-      "maxAmount": 70,
+      "minAmount": 5,
+      "maxAmount": 30,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "shortbow",
+        "chance": 0.25
       }
     ]
   },
@@ -880,8 +1008,7 @@
     "fighter": {
       "maxHp": 16,
       "attack": 4,
-      "defense": 2,
-      "xpGiven": 35
+      "defense": 2
     },
     "archetypeId": "goblin",
     "ai": {
@@ -893,21 +1020,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 10,
+    "crCost": 6,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 20,
-      "maxAmount": 120,
+      "denominationId": "sp",
+      "minAmount": 2,
+      "maxAmount": 10,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "silver_coin",
-        "chance": 0.6
+        "itemId": "short_sword",
+        "chance": 0.3
       }
     ]
   },
@@ -923,8 +1049,7 @@
     "fighter": {
       "maxHp": 12,
       "attack": 4,
-      "defense": 1,
-      "xpGiven": 45
+      "defense": 1
     },
     "archetypeId": "goblin",
     "ai": {
@@ -936,21 +1061,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 12,
+    "crCost": 8,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 50,
-      "maxAmount": 200,
+      "denominationId": "sp",
+      "minAmount": 4,
+      "maxAmount": 15,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "potion_of_cure_light_wounds",
-        "chance": 0.6
+        "chance": 0.45
       }
     ]
   },
@@ -966,8 +1090,7 @@
     "fighter": {
       "maxHp": 6,
       "attack": 2,
-      "defense": 0,
-      "xpGiven": 15
+      "defense": 0
     },
     "archetypeId": "kobold",
     "ai": {
@@ -979,21 +1102,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 4,
+    "crCost": 2,
     "roleTags": [
-      "protein",
       "appetizer"
     ],
     "currencyDrop": {
       "denominationId": "cp",
-      "minAmount": 5,
-      "maxAmount": 40,
+      "minAmount": 3,
+      "maxAmount": 18,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "dagger",
+        "chance": 0.2
       }
     ]
   },
@@ -1009,8 +1131,7 @@
     "fighter": {
       "maxHp": 15,
       "attack": 5,
-      "defense": 2,
-      "xpGiven": 35
+      "defense": 2
     },
     "archetypeId": "orc",
     "ai": {
@@ -1022,21 +1143,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 10,
+    "crCost": 5,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 20,
-      "maxAmount": 150,
+      "denominationId": "sp",
+      "minAmount": 2,
+      "maxAmount": 12,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "short_sword",
-        "chance": 0.6
+        "chance": 0.3
       }
     ]
   },
@@ -1052,8 +1172,7 @@
     "fighter": {
       "maxHp": 12,
       "attack": 5,
-      "defense": 1,
-      "xpGiven": 35
+      "defense": 1
     },
     "archetypeId": "orc",
     "ai": {
@@ -1065,21 +1184,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 10,
+    "crCost": 5,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 20,
-      "maxAmount": 120,
+      "denominationId": "sp",
+      "minAmount": 2,
+      "maxAmount": 10,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "dagger",
-        "chance": 0.6
+        "chance": 0.25
       }
     ]
   },
@@ -1095,8 +1213,7 @@
     "fighter": {
       "maxHp": 30,
       "attack": 7,
-      "defense": 3,
-      "xpGiven": 75
+      "defense": 3
     },
     "archetypeId": "orc",
     "ai": {
@@ -1108,21 +1225,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 18,
+    "crCost": 12,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 50,
-      "maxAmount": 300,
+      "denominationId": "sp",
+      "minAmount": 5,
+      "maxAmount": 20,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "battleaxe",
-        "chance": 0.6
+        "chance": 0.35
       }
     ]
   },
@@ -1138,8 +1254,7 @@
     "fighter": {
       "maxHp": 50,
       "attack": 9,
-      "defense": 4,
-      "xpGiven": 150
+      "defense": 4
     },
     "archetypeId": "orc",
     "ai": {
@@ -1151,21 +1266,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 25,
+    "crCost": 18,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 200,
-      "maxAmount": 1000,
+      "denominationId": "gp",
+      "minAmount": 5,
+      "maxAmount": 18,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "coin_pouch_silver",
-        "chance": 0.6
+        "itemId": "battleaxe",
+        "chance": 0.5
       }
     ]
   },
@@ -1181,8 +1295,7 @@
     "fighter": {
       "maxHp": 26,
       "attack": 6,
-      "defense": 3,
-      "xpGiven": 65
+      "defense": 3
     },
     "archetypeId": "bugbear",
     "ai": {
@@ -1194,21 +1307,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 15,
+    "crCost": 10,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 40,
-      "maxAmount": 250,
+      "denominationId": "sp",
+      "minAmount": 3,
+      "maxAmount": 16,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "warhammer",
-        "chance": 0.6
+        "chance": 0.35
       }
     ]
   },
@@ -1224,8 +1336,7 @@
     "fighter": {
       "maxHp": 45,
       "attack": 9,
-      "defense": 4,
-      "xpGiven": 120
+      "defense": 4
     },
     "archetypeId": "ogre",
     "ai": {
@@ -1237,21 +1348,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 22,
+    "crCost": 14,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 100,
-      "maxAmount": 600,
+      "denominationId": "sp",
+      "minAmount": 6,
+      "maxAmount": 24,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "greatclub",
-        "chance": 0.6
+        "chance": 0.35
       }
     ]
   },
@@ -1267,8 +1377,7 @@
     "fighter": {
       "maxHp": 65,
       "attack": 10,
-      "defense": 5,
-      "xpGiven": 250
+      "defense": 5
     },
     "archetypeId": "troll",
     "ai": {
@@ -1280,21 +1389,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 35,
+    "crCost": 22,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 300,
-      "maxAmount": 1500,
+      "denominationId": "gp",
+      "minAmount": 4,
+      "maxAmount": 16,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "coin_pouch_silver",
-        "chance": 0.6
+        "itemId": "gem_chalcedony",
+        "chance": 0.4
       }
     ]
   },
@@ -1310,8 +1418,7 @@
     "fighter": {
       "maxHp": 12,
       "attack": 3,
-      "defense": 2,
-      "xpGiven": 25
+      "defense": 2
     },
     "archetypeId": "skeleton",
     "ai": {
@@ -1323,21 +1430,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 7,
+    "crCost": 3,
     "roleTags": [
-      "protein",
       "appetizer"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 5,
-      "maxAmount": 50,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "short_sword",
+        "chance": 0.2
       }
     ]
   },
@@ -1353,8 +1453,7 @@
     "fighter": {
       "maxHp": 10,
       "attack": 4,
-      "defense": 1,
-      "xpGiven": 30
+      "defense": 1
     },
     "archetypeId": "skeleton",
     "ai": {
@@ -1366,21 +1465,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 8,
+    "crCost": 4,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 10,
-      "maxAmount": 60,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "shortbow",
-        "chance": 0.6
+        "chance": 0.25
       }
     ]
   },
@@ -1396,8 +1488,7 @@
     "fighter": {
       "maxHp": 20,
       "attack": 4,
-      "defense": 1,
-      "xpGiven": 35
+      "defense": 1
     },
     "archetypeId": "zombie",
     "ai": {
@@ -1409,21 +1500,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 9,
+    "crCost": 4,
     "roleTags": [
-      "protein",
       "appetizer"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 10,
-      "maxAmount": 80,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "dagger",
+        "chance": 0.15
       }
     ]
   },
@@ -1439,8 +1523,7 @@
     "fighter": {
       "maxHp": 22,
       "attack": 5,
-      "defense": 3,
-      "xpGiven": 60
+      "defense": 3
     },
     "archetypeId": "ghoul",
     "ai": {
@@ -1452,21 +1535,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 14,
+    "crCost": 8,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 30,
-      "maxAmount": 200,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "silver_coin",
-        "chance": 0.6
+        "itemId": "potion_of_cure_light_wounds",
+        "chance": 0.25
       }
     ]
   },
@@ -1482,8 +1558,7 @@
     "fighter": {
       "maxHp": 35,
       "attack": 7,
-      "defense": 4,
-      "xpGiven": 100
+      "defense": 4
     },
     "archetypeId": "ghast",
     "ai": {
@@ -1495,21 +1570,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 20,
+    "crCost": 14,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 80,
-      "maxAmount": 400,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "silver_coin",
-        "chance": 0.6
+        "itemId": "gem_chalcedony",
+        "chance": 0.3
       }
     ]
   },
@@ -1525,8 +1593,7 @@
     "fighter": {
       "maxHp": 40,
       "attack": 8,
-      "defense": 5,
-      "xpGiven": 150
+      "defense": 5
     },
     "archetypeId": "wight",
     "ai": {
@@ -1538,21 +1605,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 25,
+    "crCost": 15,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 100,
-      "maxAmount": 800,
+      "denominationId": "gp",
+      "minAmount": 3,
+      "maxAmount": 12,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "coin_pouch_silver",
-        "chance": 0.6
+        "itemId": "longsword",
+        "chance": 0.35
       }
     ]
   },
@@ -1568,8 +1634,7 @@
     "fighter": {
       "maxHp": 45,
       "attack": 9,
-      "defense": 6,
-      "xpGiven": 200
+      "defense": 6
     },
     "archetypeId": "wraith",
     "ai": {
@@ -1581,21 +1646,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 30,
+    "crCost": 20,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 200,
-      "maxAmount": 1200,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "gem_chalcedony",
-        "chance": 0.6
+        "chance": 0.4
       }
     ]
   },
@@ -1611,8 +1669,7 @@
     "fighter": {
       "maxHp": 55,
       "attack": 10,
-      "defense": 5,
-      "xpGiven": 250
+      "defense": 5
     },
     "archetypeId": "mummy",
     "ai": {
@@ -1624,21 +1681,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 35,
+    "crCost": 22,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 500,
-      "maxAmount": 2500,
+      "denominationId": "gp",
+      "minAmount": 8,
+      "maxAmount": 25,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "gem_ruby",
-        "chance": 0.6
+        "chance": 0.5
       }
     ]
   },
@@ -1654,8 +1710,7 @@
     "fighter": {
       "maxHp": 6,
       "attack": 2,
-      "defense": 0,
-      "xpGiven": 10
+      "defense": 0
     },
     "archetypeId": "dire_rat",
     "ai": {
@@ -1667,21 +1722,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 3,
+    "crCost": 2,
     "roleTags": [
-      "protein",
       "appetizer"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 0,
-      "maxAmount": 15,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "ration_iron",
+        "chance": 0.05
       }
     ]
   },
@@ -1697,8 +1745,7 @@
     "fighter": {
       "maxHp": 14,
       "attack": 4,
-      "defense": 1,
-      "xpGiven": 35
+      "defense": 1
     },
     "archetypeId": "giant_spider",
     "ai": {
@@ -1710,21 +1757,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 10,
+    "crCost": 5,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 10,
-      "maxAmount": 80,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "potion_of_cure_light_wounds",
-        "chance": 0.6
+        "chance": 0.1
       }
     ]
   },
@@ -1740,8 +1780,7 @@
     "fighter": {
       "maxHp": 35,
       "attack": 7,
-      "defense": 3,
-      "xpGiven": 90
+      "defense": 3
     },
     "archetypeId": "dire_wolf",
     "ai": {
@@ -1753,21 +1792,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 18,
+    "crCost": 12,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 20,
-      "maxAmount": 150,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "copper_coin",
-        "chance": 0.6
+        "itemId": "ration_iron",
+        "chance": 0.05
       }
     ]
   },
@@ -1783,8 +1815,7 @@
     "fighter": {
       "maxHp": 55,
       "attack": 9,
-      "defense": 4,
-      "xpGiven": 180
+      "defense": 4
     },
     "archetypeId": "owlbear",
     "ai": {
@@ -1796,21 +1827,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 28,
+    "crCost": 18,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 50,
-      "maxAmount": 400,
-      "chance": 1
-    },
     "lootDrops": [
       {
-        "itemId": "coin_pouch_silver",
-        "chance": 0.6
+        "itemId": "gem_chalcedony",
+        "chance": 0.15
       }
     ]
   },
@@ -1826,8 +1850,7 @@
     "fighter": {
       "maxHp": 15,
       "attack": 4,
-      "defense": 2,
-      "xpGiven": 30
+      "defense": 2
     },
     "archetypeId": "human",
     "ai": {
@@ -1839,21 +1862,21 @@
     "tags": [
       "actor"
     ],
-    "crCost": 8,
+    "crCost": 6,
     "roleTags": [
       "protein",
-      "appetizer"
+      "side"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 30,
-      "maxAmount": 200,
+      "denominationId": "sp",
+      "minAmount": 3,
+      "maxAmount": 15,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "dagger",
-        "chance": 0.6
+        "chance": 0.4
       }
     ]
   },
@@ -1869,8 +1892,7 @@
     "fighter": {
       "maxHp": 20,
       "attack": 4,
-      "defense": 2,
-      "xpGiven": 45
+      "defense": 2
     },
     "archetypeId": "human",
     "ai": {
@@ -1882,21 +1904,20 @@
     "tags": [
       "actor"
     ],
-    "crCost": 12,
+    "crCost": 8,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 40,
-      "maxAmount": 250,
+      "denominationId": "sp",
+      "minAmount": 4,
+      "maxAmount": 18,
       "chance": 1
     },
     "lootDrops": [
       {
-        "itemId": "silver_coin",
-        "chance": 0.6
+        "itemId": "potion_of_cure_light_wounds",
+        "chance": 0.35
       }
     ]
   },
@@ -1912,8 +1933,7 @@
     "fighter": {
       "maxHp": 40,
       "attack": 7,
-      "defense": 6,
-      "xpGiven": 150
+      "defense": 6
     },
     "archetypeId": "gargoyle",
     "ai": {
@@ -1925,21 +1945,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 25,
+    "crCost": 18,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 100,
-      "maxAmount": 600,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "gem_chalcedony",
-        "chance": 0.6
+        "chance": 0.35
       }
     ]
   },
@@ -1955,8 +1968,7 @@
     "fighter": {
       "maxHp": 90,
       "attack": 12,
-      "defense": 8,
-      "xpGiven": 400
+      "defense": 8
     },
     "archetypeId": "clay_golem",
     "ai": {
@@ -1968,21 +1980,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 50,
+    "crCost": 34,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 500,
-      "maxAmount": 3000,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "gem_ruby",
-        "chance": 0.6
+        "chance": 0.5
       }
     ]
   },
@@ -1998,8 +2003,7 @@
     "fighter": {
       "maxHp": 45,
       "attack": 8,
-      "defense": 5,
-      "xpGiven": 160
+      "defense": 5
     },
     "archetypeId": "elemental_air",
     "ai": {
@@ -2011,21 +2015,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 26,
+    "crCost": 18,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 100,
-      "maxAmount": 800,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "elemental_gem_air",
-        "chance": 0.6
+        "chance": 0.5
       }
     ]
   },
@@ -2041,8 +2038,7 @@
     "fighter": {
       "maxHp": 50,
       "attack": 9,
-      "defense": 5,
-      "xpGiven": 180
+      "defense": 5
     },
     "archetypeId": "elemental_fire",
     "ai": {
@@ -2054,21 +2050,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 28,
+    "crCost": 20,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 150,
-      "maxAmount": 900,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "elemental_gem_fire",
-        "chance": 0.6
+        "chance": 0.5
       }
     ]
   },
@@ -2084,8 +2073,7 @@
     "fighter": {
       "maxHp": 55,
       "attack": 9,
-      "defense": 6,
-      "xpGiven": 200
+      "defense": 6
     },
     "archetypeId": "elemental_water",
     "ai": {
@@ -2097,21 +2085,14 @@
     "tags": [
       "actor"
     ],
-    "crCost": 30,
+    "crCost": 20,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "side"
     ],
-    "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 200,
-      "maxAmount": 1000,
-      "chance": 1
-    },
     "lootDrops": [
       {
         "itemId": "elemental_gem_water",
-        "chance": 0.6
+        "chance": 0.5
       }
     ]
   },
@@ -2127,8 +2108,7 @@
     "fighter": {
       "maxHp": 60,
       "attack": 11,
-      "defense": 5,
-      "xpGiven": 220
+      "defense": 5
     },
     "archetypeId": "minotaur",
     "ai": {
@@ -2140,21 +2120,371 @@
     "tags": [
       "actor"
     ],
-    "crCost": 32,
+    "crCost": 20,
     "roleTags": [
-      "protein",
-      "appetizer"
+      "protein"
     ],
     "currencyDrop": {
-      "denominationId": "cp",
-      "minAmount": 250,
-      "maxAmount": 1200,
+      "denominationId": "gp",
+      "minAmount": 5,
+      "maxAmount": 20,
       "chance": 1
     },
     "lootDrops": [
       {
         "itemId": "greataxe",
+        "chance": 0.5
+      }
+    ]
+  },
+  "manticore": {
+    "id": "manticore",
+    "name": "Cavern Manticore",
+    "glyph": "M",
+    "fg": "#d35400",
+    "bg": "transparent",
+    "spriteId": "monster_manticore",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 57,
+      "attack": 10,
+      "defense": 5
+    },
+    "archetypeId": "manticore",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 22,
+    "roleTags": [
+      "side"
+    ],
+    "lootDrops": [
+      {
+        "itemId": "gem_chalcedony",
+        "chance": 0.3
+      }
+    ]
+  },
+  "ettin": {
+    "id": "ettin",
+    "name": "Two-Headed Ettin",
+    "glyph": "E",
+    "fg": "#b03a2e",
+    "bg": "transparent",
+    "spriteId": "monster_two_headed_ettin",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 65,
+      "attack": 12,
+      "defense": 6
+    },
+    "archetypeId": "ettin",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "orcs",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 26,
+    "roleTags": [
+      "protein"
+    ],
+    "currencyDrop": {
+      "denominationId": "gp",
+      "minAmount": 8,
+      "maxAmount": 30,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "greatclub",
+        "chance": 0.45
+      }
+    ]
+  },
+  "medusa": {
+    "id": "medusa",
+    "name": "Temple Medusa",
+    "glyph": "M",
+    "fg": "#1abc9c",
+    "bg": "transparent",
+    "spriteId": "monster_gorgon_medusa",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 45,
+      "attack": 9,
+      "defense": 5
+    },
+    "archetypeId": "medusa",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 28,
+    "roleTags": [
+      "side"
+    ],
+    "currencyDrop": {
+      "denominationId": "gp",
+      "minAmount": 12,
+      "maxAmount": 40,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_sapphire",
+        "chance": 0.5
+      }
+    ]
+  },
+  "mind_flayer": {
+    "id": "mind_flayer",
+    "name": "Illithid Mind Flayer",
+    "glyph": "I",
+    "fg": "#9b59b6",
+    "bg": "transparent",
+    "spriteId": "monster_faceless_monk",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 55,
+      "attack": 10,
+      "defense": 7
+    },
+    "archetypeId": "mind_flayer",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 34,
+    "roleTags": [
+      "side"
+    ],
+    "currencyDrop": {
+      "denominationId": "gp",
+      "minAmount": 15,
+      "maxAmount": 50,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_ruby",
         "chance": 0.6
+      }
+    ]
+  },
+  "fire_giant": {
+    "id": "fire_giant",
+    "name": "Obsidian Fire Giant",
+    "glyph": "G",
+    "fg": "#e74c3c",
+    "bg": "transparent",
+    "spriteId": "monster_orc_warchief",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 142,
+      "attack": 16,
+      "defense": 10
+    },
+    "archetypeId": "fire_giant",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 42,
+    "roleTags": [
+      "protein"
+    ],
+    "currencyDrop": {
+      "denominationId": "gp",
+      "minAmount": 30,
+      "maxAmount": 80,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "greatsword",
+        "chance": 0.6
+      }
+    ]
+  },
+  "stone_golem": {
+    "id": "stone_golem",
+    "name": "Monolith Stone Golem",
+    "glyph": "G",
+    "fg": "#95a5a6",
+    "bg": "transparent",
+    "spriteId": "monster_rock_golem",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 115,
+      "attack": 17,
+      "defense": 12
+    },
+    "archetypeId": "stone_golem",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 45,
+    "roleTags": [
+      "protein"
+    ],
+    "lootDrops": [
+      {
+        "itemId": "gem_sapphire",
+        "chance": 0.5
+      }
+    ]
+  },
+  "beholder": {
+    "id": "beholder",
+    "name": "Tyrant Beholder",
+    "glyph": "B",
+    "fg": "#8e44ad",
+    "bg": "transparent",
+    "spriteId": "monster_unholy_cardinal",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 93,
+      "attack": 14,
+      "defense": 12
+    },
+    "archetypeId": "beholder",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 52,
+    "roleTags": [
+      "protein"
+    ],
+    "currencyDrop": {
+      "denominationId": "gp",
+      "minAmount": 50,
+      "maxAmount": 120,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_diamond",
+        "chance": 0.7
+      }
+    ]
+  },
+  "iron_golem": {
+    "id": "iron_golem",
+    "name": "Adamantine Iron Golem",
+    "glyph": "G",
+    "fg": "#5d6d7e",
+    "bg": "transparent",
+    "spriteId": "monster_death_knight",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 135,
+      "attack": 19,
+      "defense": 14
+    },
+    "archetypeId": "iron_golem",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "monster",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 56,
+    "roleTags": [
+      "protein"
+    ],
+    "lootDrops": [
+      {
+        "itemId": "gem_diamond",
+        "chance": 0.6
+      }
+    ]
+  },
+  "marilith": {
+    "id": "marilith",
+    "name": "Six-Armed Marilith",
+    "glyph": "D",
+    "fg": "#c0392b",
+    "bg": "transparent",
+    "spriteId": "monster_naga",
+    "isActor": true,
+    "speed": 100,
+    "fighter": {
+      "maxHp": 216,
+      "attack": 22,
+      "defense": 16
+    },
+    "archetypeId": "marilith",
+    "ai": {
+      "profileId": "melee_aggressive",
+      "aggroRadius": 5,
+      "wanders": true
+    },
+    "faction": "cultists",
+    "tags": [
+      "actor"
+    ],
+    "crCost": 70,
+    "roleTags": [
+      "protein"
+    ],
+    "currencyDrop": {
+      "denominationId": "pp",
+      "minAmount": 25,
+      "maxAmount": 75,
+      "chance": 1
+    },
+    "lootDrops": [
+      {
+        "itemId": "gem_diamond",
+        "chance": 0.85
       }
     ]
   }

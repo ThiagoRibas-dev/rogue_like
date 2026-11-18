@@ -1,17 +1,16 @@
 import type { GameState } from '../types/game-state.types.ts';
-import { getComponent, addComponent, spawnItem, removeComponent } from '../core/ecs.ts';
+import { getComponent, addComponent } from '../core/ecs.ts';
 import {
   ComponentType,
-  type QuestLogComponent,
   type InventoryComponent,
-  type PositionComponent,
-  type MemoryComponent,
-  type ItemComponent
+  type ItemComponent,
+  type QuestLogComponent,
+  type MemoryComponent
 } from '../types/components.types.ts';
 import type { Quest, QuestReward } from '../types/quests.types.ts';
 import { addMessage, MessageLogCategory } from './message.system.ts';
 import { grantXp } from './death.system.ts';
-import { getEffectiveCapacity } from './inventory.system.ts';
+import { grantItemToActorInventory } from './inventory.system.ts';
 import {
   GameEventType,
   type QuestCompletedEvent,
@@ -70,37 +69,18 @@ export const QUEST_REWARD_APPLIERS: QuestRewardApplierMap = {
   item: (state, recipientId, reward) => {
     const count = reward.amount ?? 1;
     if (count <= 0) return state;
-    let nextState = state;
-    const inventory = getComponent(nextState, recipientId, ComponentType.Inventory) as InventoryComponent | undefined;
-    const pos = getComponent(nextState, recipientId, ComponentType.Position) as PositionComponent | undefined;
-    const px = pos?.x ?? 0;
-    const py = pos?.y ?? 0;
-
-    const currentInventoryItems = inventory ? [...inventory.items] : [];
-    const capacity = getEffectiveCapacity(nextState, recipientId);
-    let droppedOnGround = false;
-
-    for (let i = 0; i < count; i++) {
-      let itemEntityId: EntityId;
-      [nextState, itemEntityId] = spawnItem(nextState, reward.itemId, px, py);
-      if (inventory && currentInventoryItems.length < capacity) {
-        nextState = removeComponent(nextState, itemEntityId, ComponentType.Position);
-        currentInventoryItems.push(itemEntityId);
-      } else {
-        droppedOnGround = true;
-      }
-    }
-
-    if (inventory) {
-      nextState = addComponent(nextState, recipientId, { ...inventory, items: currentInventoryItems });
-    }
-
-    const itemName = nextState.campaign.items[reward.itemId]?.name ?? reward.itemId;
-    nextState = addMessage(nextState, `Received reward: ${count}x ${itemName}.`, MessageLogCategory.System);
-    if (droppedOnGround) {
+    const grant = grantItemToActorInventory(state, recipientId, reward.itemId, count);
+    let nextState = addMessage(
+      grant.state,
+      grant.absorbedCurrencyFormatted !== undefined
+        ? `Received reward: ${grant.absorbedCurrencyFormatted}.`
+        : `Received reward: ${count}x ${grant.itemName}.`,
+      MessageLogCategory.System
+    );
+    if (grant.droppedOnGround) {
       nextState = addMessage(nextState, `Inventory full! Some items dropped at your feet.`, MessageLogCategory.System);
     }
-    return processQuestEvent(nextState, 'gather', reward.itemId, count);
+    return nextState;
   },
   standing: (state, recipientId, reward) => {
     const amount = reward.amount ?? 0;

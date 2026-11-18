@@ -129,7 +129,8 @@ export const DnD35TemplateSchema = z.object({
   specialQualityBundles: z.array(DnD35EffectBundleSchema).default([]),
   stripNaturalArmor: z.boolean().optional(),
   deflectionBonusFromChaMinOne: z.boolean().optional(),
-  levelAdjustmentDelta: z.number().int().default(0)
+  levelAdjustmentDelta: z.number().int().default(0),
+  crAdjustment: z.number().optional()
 });
 export type DnD35Template = z.infer<typeof DnD35TemplateSchema>;
 

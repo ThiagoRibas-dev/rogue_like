@@ -175,23 +175,30 @@ export const systemicConsequences = {
     event: GameEvent,
     consequence: Extract<ConsequenceAction, { type: 'open_barter' }>
   ): GameState => {
-    let npcId: EntityId | undefined;
-    if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
-      npcId = (event as unknown as { entityId: EntityId }).entityId;
-    } else if (consequence.targetId) {
-      npcId = parseInt(consequence.targetId) as EntityId;
-    } else if ('targetId' in event) {
-      npcId = (event as unknown as { targetId: EntityId }).targetId;
+    let npcId: EntityId | undefined = consequence._npcEntityId;
+    if (npcId === undefined) {
+      if (consequence.targetId === 'event.entityId' && 'entityId' in event) {
+        npcId = (event as unknown as { entityId: EntityId }).entityId;
+      } else if (consequence.targetId) {
+        const parsed = parseInt(consequence.targetId, 10);
+        if (!Number.isNaN(parsed)) {
+          npcId = parsed as EntityId;
+        }
+      } else if ('targetId' in event) {
+        npcId = (event as unknown as { targetId: EntityId }).targetId;
+      }
     }
 
-    if (npcId !== undefined) {
-      return {
-        ...state,
-        uiMode: UIMode.Trade,
-        activeTrade: { npcEntityId: npcId }
-      };
+    if (npcId === undefined || getComponent(state, npcId, ComponentType.Shop) === undefined) {
+      return state;
     }
-    return state;
+
+    return {
+      ...state,
+      uiMode: UIMode.Trade,
+      activeTrade: { npcEntityId: npcId },
+      activeDialogue: undefined
+    };
   },
 
   trigger_service: (
