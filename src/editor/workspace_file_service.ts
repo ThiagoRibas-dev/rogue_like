@@ -1,6 +1,8 @@
 import JSZip from 'jszip';
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
 import { loadRulesetSystemContent } from '../core/loader.ts';
+import { hydrateCampaignSpritePacks } from '../core/loader/sprite_pack_loader.ts';
+import { stripTransientThemeHydration } from '../utils/sprite_pack.ts';
 import type { RulesetId } from '../types/ruleset.types.ts';
 
 export * from './blank_slate_campaign.ts';
@@ -109,7 +111,7 @@ export async function readCampaignFromZip(file: File | Blob): Promise<CampaignDa
     }
   }
 
-  return campaign;
+  return hydrateCampaignSpritePacks(campaign);
 }
 
 /**
@@ -121,7 +123,7 @@ export async function writeCampaignToZip(data: CampaignData): Promise<Blob> {
   const zip = new JSZip();
 
   for (const fileItem of CAMPAIGN_FILES) {
-    const fileContent = data[fileItem.key];
+    const fileContent = fileItem.key === 'theme' ? stripTransientThemeHydration(data.theme) : data[fileItem.key];
     zip.file(fileItem.filename, JSON.stringify(fileContent, null, 2));
   }
 

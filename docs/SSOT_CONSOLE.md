@@ -11,14 +11,14 @@
 - [Core Console: Constants & Dictionaries (17 files)](#core-console-constants-dictionaries)
 - [Core Console: ECS Systems & Game Loop (2 files)](#core-console-ecs-systems-game-loop)
 - [Core Console: ECS Systems & Simulation (62 files)](#core-console-ecs-systems-simulation)
-- [Core Console: ECS, Loop, RNG & Loader (38 files)](#core-console-ecs-loop-rng-loader)
+- [Core Console: ECS, Loop, RNG & Loader (39 files)](#core-console-ecs-loop-rng-loader)
 - [Core Console: Engine Types & Schemas (36 files)](#core-console-engine-types-schemas)
 - [Core Console: Foundation & Data Types (1 files)](#core-console-foundation-data-types)
 - [Core Console: Map Generation & Director (8 files)](#core-console-map-generation-director)
 - [Core Console: Map Generation & Spatial (2 files)](#core-console-map-generation-spatial)
 - [Core Console: Rendering & UI Views (80 files)](#core-console-rendering-ui-views)
 - [Core Console: Ruleset Cartridge Registry (1 files)](#core-console-ruleset-cartridge-registry)
-- [Core Console: Utility Helpers (9 files)](#core-console-utility-helpers)
+- [Core Console: Utility Helpers (10 files)](#core-console-utility-helpers)
 - [Core Console: Web Workers & Async Simulation (4 files)](#core-console-web-workers-async-simulation)
 - [Ruleset Cartridge: Classic Sci-Fi (6 files)](#ruleset-cartridge-classic-sci-fi)
 
@@ -202,7 +202,7 @@
 
 ## Core Console: ECS, Loop, RNG & Loader
 
-**Modules in this domain:** 38
+**Modules in this domain:** 39
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -227,6 +227,7 @@
 | `src/core/input/mouse_input.ts` | `tier1_console` | non-mutating hover tile inspection, left-click move/attack/smart-interact, | `bindCanvasMouseControls`, `toggleAllHudPanelsFolded` | **Includes:** Pure implementation and exports for src/core/input/mouse_input.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/input/mouse_input.ts. |
 | `src/core/input/shortcut_input.ts` | `tier1_console` | Keyboard key that always toggles the debug overlay while in game mode. | `handleGameShortcutKey` | **Includes:** Pure implementation and exports for src/core/input/shortcut_input.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/input/shortcut_input.ts. |
 | `src/core/loader.ts` | `tier1_console` | Loads and validates all JSON files for a given campaign ID. | `loadCampaign`, `loadCampaignRegistry`, `loadRulesetSystemContent`, `loadRulesetBaseContent` | **Includes:** Pure implementation and exports for src/core/loader.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/loader.ts. |
+| `src/core/loader/sprite_pack_loader.ts` | `tier1_console` | Fetches, validates, and hydrates shared sprite pack bundles referenced by campaigns. | `buildSpritePackBaseUrl`, `loadSpritePack`, `hydrateCampaignSpritePacks` | **Includes:** Pure implementation and exports for src/core/loader/sprite_pack_loader.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/loader/sprite_pack_loader.ts. |
 | `src/core/loader/system_content_loader.ts` | `tier1_console` | Loads campaign registries, ruleset base content, and Tier 2 system content files. | `loadCampaignRegistry`, `fetchOptionalJson`, `loadRulesetSystemContent`, `loadRulesetBaseContent` | **Includes:** Pure implementation and exports for src/core/loader/system_content_loader.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/loader/system_content_loader.ts. |
 | `src/core/loop/intent_cost_resolver.ts` | `tier1_console` | Executes an intent, computes its energy cost, and ticks systemic narrative cadences. | `applyIntentWithCost` | **Includes:** Pure implementation and exports for src/core/loop/intent_cost_resolver.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/loop/intent_cost_resolver.ts. |
 | `src/core/modal_manager.ts` | `tier1_console` | A single frame on the transient modal stack. | `pushModal`, `popModal`, `getCurrentModal`, `hasModalsOpen`, `toggleModal`, `clearModals`, `openModal`, `closeTopModal` | **Includes:** Pure implementation and exports for src/core/modal_manager.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/core/modal_manager.ts. |
@@ -417,7 +418,7 @@
 
 ## Core Console: Utility Helpers
 
-**Modules in this domain:** 9
+**Modules in this domain:** 10
 
 | File | Tier | Responsibility | Canonical Entry Points | Ownership Boundary (Includes / Excludes) | Anti-Patterns |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -427,6 +428,7 @@
 | `src/utils/faction.ts` | `tier1_console` | Gets the faction relation between two entities. | `getFactionRelation`, `isHostile` | **Includes:** Pure implementation and exports for src/utils/faction.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/faction.ts. |
 | `src/utils/grid.ts` | `tier1_console` | Converts 2D grid coordinates to a 1D flat array index. | `coordToIndex`, `isInBounds`, `getBresenhamLine` | **Includes:** Pure implementation and exports for src/utils/grid.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/grid.ts. |
 | `src/utils/json-patch.ts` | `tier1_console` | Represents a single JSON Patch operation (RFC 6902 subset). | `PatchOperation`, `applyPatch`, `generateInversePatch` | **Includes:** Pure implementation and exports for src/utils/json-patch.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/json-patch.ts. |
+| `src/utils/sprite_pack.ts` | `tier1_console` | Canonical resolution of ordered shared sprite pack bundles, campaign sheet overrides, and transient hydration stripping. | `SPRITE_PACKS_DATA_SUBPATH`, `SPRITE_PACK_MANIFEST_FILENAME`, `normalizeSpritePackRef`, `getReferencedSpritePackIds`, `stampSpritePackBasePath`, `resolveThemeSpriteSheets`, `attachLoadedSpritePacks`, `stripTransientThemeHydration` | **Includes:** Pure implementation and exports for src/utils/sprite_pack.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not read campaign.theme.spriteSheets directly in renderers or editors when resolveThemeSpriteSheets applies. |
 | `src/utils/stats.ts` | `tier1_console` | Computes the effective combat stats for an entity by delegating to the | `getEffectiveStats` | **Includes:** Pure implementation and exports for src/utils/stats.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/stats.ts. |
 | `src/utils/text.ts` | `tier1_console` | Parses markdown-style wiki links [Text](type:id) into HTML span elements for tooltips. | `WikiSegment`, `parseWikiSegments` | **Includes:** Pure implementation and exports for src/utils/text.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/text.ts. |
 | `src/utils/trade.ts` | `tier1_console` | Economic penalty markup applied when a merchant's supplier hierarchy has a top-tier vacancy. | `HIERARCHY_VACANCY_MARKUP_PENALTY`, `ANNOYED_MARKUP_MODIFIER`, `GRATEFUL_DISCOUNT_MODIFIER`, `FACTION_STANDING_PRICE_DIVISOR`, `PERSONALITY_FACET_PRICE_DIVISOR`, `PERSONALITY_FACET_NEUTRAL_VAL`, `RELATIONSHIP_AXIS_PRICE_DIVISOR`, `MIN_TRADE_MULTIPLIER` | **Includes:** Pure implementation and exports for src/utils/trade.ts.<br>**Excludes:** External state mutation or unrelated subsystem logic. | • Do not duplicate or bypass exports from src/utils/trade.ts. |

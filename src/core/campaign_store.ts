@@ -5,6 +5,7 @@ import {
   INSTALLED_CAMPAIGNS_STORE,
   EDITOR_WORKSPACES_STORE
 } from '../constants/campaign.constants.ts';
+import { stripTransientThemeHydration } from '../utils/sprite_pack.ts';
 
 let dbInstance: IDBDatabase | null = null;
 
@@ -58,10 +59,14 @@ export function openCampaignDB(): Promise<IDBDatabase> {
 
 export async function installCampaign(data: CampaignData): Promise<void> {
   const db = await openCampaignDB();
+  const cleanData: CampaignData = {
+    ...data,
+    theme: stripTransientThemeHydration(data.theme)
+  };
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(INSTALLED_CAMPAIGNS_STORE, 'readwrite');
     const store = transaction.objectStore(INSTALLED_CAMPAIGNS_STORE);
-    const request = store.put(data);
+    const request = store.put(cleanData);
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -145,14 +150,18 @@ export interface WorkspaceRecord {
 
 export async function saveEditorWorkspace(workspaceId: string, data: CampaignData): Promise<void> {
   const db = await openCampaignDB();
+  const cleanData: CampaignData = {
+    ...data,
+    theme: stripTransientThemeHydration(data.theme)
+  };
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(EDITOR_WORKSPACES_STORE, 'readwrite');
     const store = transaction.objectStore(EDITOR_WORKSPACES_STORE);
 
     const record: WorkspaceRecord = {
       id: workspaceId,
-      name: data.manifest.name || 'Unnamed Workspace',
-      data,
+      name: cleanData.manifest.name || 'Unnamed Workspace',
+      data: cleanData,
       lastModified: new Date().toISOString()
     };
 

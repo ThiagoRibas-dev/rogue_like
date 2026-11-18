@@ -624,6 +624,21 @@
     "color": "#f1c40f",
     "description": "Key opening specific locked doors or chests."
   },
+  "key:iron": {
+    "category": "item",
+    "color": "#95a5a6",
+    "description": "Iron key opening iron-locked doors or chests."
+  },
+  "key:gold": {
+    "category": "item",
+    "color": "#f1c40f",
+    "description": "Ornate gold key opening high sanctum locks."
+  },
+  "wood": {
+    "category": "physical",
+    "color": "#8d6e63",
+    "description": "Constructed of sturdy timber or wood."
+  },
   "relic": {
     "category": "item",
     "color": "#9b59b6",

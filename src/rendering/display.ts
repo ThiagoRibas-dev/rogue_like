@@ -6,6 +6,7 @@ import {
   MIN_ASCII_FONT_SIZE_PX
 } from '../constants/display.constants.ts';
 import { type CampaignData } from '../types/campaign.types.ts';
+import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { recordDrawCommand } from './render_debug.ts';
 import { buildProceduralSpriteAtlas, isEffectiveSpriteMode } from './procedural_sprites.ts';
 import { compositeAtlas, mountDisplayWithFogOverlay } from './sprite_atlas.ts';
@@ -79,7 +80,7 @@ export async function configureDisplayForCampaign(
   basePath: string
 ): Promise<boolean> {
   const useSprites = isEffectiveSpriteMode(campaign);
-  const sheets = campaign.theme.spriteSheets;
+  const sheets = resolveThemeSpriteSheets(campaign.theme);
 
   display.clear();
 
@@ -215,7 +216,7 @@ export function syncDisplayLayout(display: ROT.Display, state: GameState): void 
   const theme = state.campaign.theme;
   const baseFontSize = theme.ui.fontSize;
   const fontFamily = theme.ui.fontFamily;
-  const spriteConfig = theme.spriteSheets;
+  const spriteConfig = resolveThemeSpriteSheets(theme);
   const isSpriteMode = isEffectiveSpriteMode(state.campaign);
 
   const viewportBounds = resolveViewportPixelBounds();

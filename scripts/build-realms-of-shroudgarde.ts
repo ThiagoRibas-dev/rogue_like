@@ -8,7 +8,7 @@
  * default equipment, currency drops, loot drops, and 15+ skill-keyed dialogues.
  */
 
-import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const CAMPAIGN_DIR = join(process.cwd(), 'public', 'data', 'campaigns', 'realms-of-shroudgarde');
@@ -123,10 +123,20 @@ const rules = {
 writeJson('rules.json', rules);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. THEME
+// 3. THEME & SHARED SPRITE PACK
 // ─────────────────────────────────────────────────────────────────────────────
-const cryptTheme = JSON.parse(readFileSync(join(DND35E_CRYPT_DIR, 'theme.json'), 'utf-8'));
-writeJson('theme.json', cryptTheme);
+const cryptTheme = JSON.parse(readFileSync(join(DND35E_CRYPT_DIR, 'theme.json'), 'utf-8')) as {
+  readonly colors: Record<string, string>;
+  readonly glyphs: Record<string, string>;
+  readonly ui: Record<string, unknown>;
+  readonly spritePacks?: ReadonlyArray<unknown>;
+};
+writeJson('theme.json', {
+  colors: cryptTheme.colors,
+  glyphs: cryptTheme.glyphs,
+  ui: cryptTheme.ui,
+  spritePacks: cryptTheme.spritePacks ?? ['32rogues']
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 4. ADVANCEMENT
@@ -211,6 +221,9 @@ const extendedTags = {
   guard: { category: 'entity', color: '#95a5a6', description: 'Law enforcer or fort defender.' },
   corrupted: { category: 'physical', color: '#8e44ad', description: 'Tainted by abyssal trance or fungal rot.' },
   key: { category: 'item', color: '#f1c40f', description: 'Key opening specific locked doors or chests.' },
+  'key:iron': { category: 'item', color: '#95a5a6', description: 'Iron key opening iron-locked doors or chests.' },
+  'key:gold': { category: 'item', color: '#f1c40f', description: 'Ornate gold key opening high sanctum locks.' },
+  wood: { category: 'physical', color: '#8d6e63', description: 'Constructed of sturdy timber or wood.' },
   relic: { category: 'item', color: '#9b59b6', description: 'Sacred or arcane relic of great significance.' },
   artifact: { category: 'item', color: '#e74c3c', description: 'Mythical artifact wielding supreme powers.' },
   water: { category: 'elemental', color: '#3498db', description: 'Water or aquatic terrain.' },
@@ -264,16 +277,220 @@ const fields = {
 };
 writeJson('fields.json', fields);
 
-const reactions: unknown[] = [];
+const reactions = [
+  {
+    id: 'use_consumable',
+    verb: 'apply',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['actor'] },
+    targetMatcher: { targetType: 'entity', categories: ['consumable'] },
+    consequences: [{ type: 'apply_item_effect' }, { type: 'consume_item' }]
+  },
+  {
+    id: 'use_portal',
+    verb: 'apply',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['actor'] },
+    targetMatcher: { targetType: 'entity', tags: ['portal'] },
+    consequences: [{ type: 'change_area' }]
+  },
+  {
+    id: 'open_wooden_door',
+    verb: 'open',
+    priority: 110,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['door', 'solid', 'wood'] },
+    consequences: [
+      { type: 'modify_tags', remove: ['solid', 'opaque'] },
+      { type: 'change_glyph', glyph: '/', spriteId: 'tile_framed_door_1_open' },
+      { type: 'change_intents', intents: ['close'] }
+    ],
+    message: 'The door opens.'
+  },
+  {
+    id: 'close_wooden_door',
+    verb: 'close',
+    priority: 110,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['door', 'wood'] },
+    consequences: [
+      { type: 'modify_tags', add: ['solid', 'opaque'] },
+      { type: 'change_glyph', glyph: '+', spriteId: 'tile_framed_door_1_shut' },
+      { type: 'change_intents', intents: ['open'] }
+    ],
+    message: 'The door closes.'
+  },
+  {
+    id: 'open_door',
+    verb: 'open',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['door', 'solid'] },
+    consequences: [
+      { type: 'modify_tags', remove: ['solid', 'opaque'] },
+      { type: 'change_glyph', glyph: '/' },
+      { type: 'change_intents', intents: ['close'] }
+    ],
+    message: 'The door opens.'
+  },
+  {
+    id: 'close_door',
+    verb: 'close',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['door'] },
+    consequences: [
+      { type: 'modify_tags', add: ['solid'] },
+      { type: 'change_glyph', glyph: '+' },
+      { type: 'change_intents', intents: ['open'] }
+    ],
+    message: 'The door closes.'
+  },
+  {
+    id: 'unlock_door_iron',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:iron'] },
+    targetMatcher: { targetType: 'entity', tags: ['door'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the door using the iron key.'
+  },
+  {
+    id: 'unlock_door_bronze',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:bronze'] },
+    targetMatcher: { targetType: 'entity', tags: ['door'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the door using the bronze key.'
+  },
+  {
+    id: 'unlock_door_gold',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:gold'] },
+    targetMatcher: { targetType: 'entity', tags: ['door'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the door using the golden key.'
+  },
+  {
+    id: 'unlock_chest_iron',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:iron'] },
+    targetMatcher: { targetType: 'entity', tags: ['chest'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the chest using the iron key.'
+  },
+  {
+    id: 'unlock_chest_bronze',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:bronze'] },
+    targetMatcher: { targetType: 'entity', tags: ['chest'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the chest using the bronze key.'
+  },
+  {
+    id: 'unlock_chest_gold',
+    verb: 'unlock',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity', tags: ['key:gold'] },
+    targetMatcher: { targetType: 'entity', tags: ['chest'] },
+    consequences: [{ type: 'set_lock_state', locked: false }],
+    message: 'You unlock the gilded chest using the golden key.'
+  },
+  {
+    id: 'open_remains',
+    verb: 'open',
+    priority: 120,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['remains', 'chest'] },
+    consequences: [
+      { type: 'spill_inventory' },
+      { type: 'modify_tags', remove: ['solid'] },
+      { type: 'change_glyph', glyph: '%' },
+      { type: 'change_intents', intents: [] }
+    ],
+    message: 'You rummage through the remains.'
+  },
+  {
+    id: 'open_chest_boxed',
+    verb: 'open',
+    priority: 110,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['chest', 'solid'] },
+    consequences: [
+      { type: 'spill_inventory' },
+      { type: 'change_glyph', glyph: 'C', spriteId: 'tile_chest_open' },
+      { type: 'change_intents', intents: [] }
+    ],
+    message: 'You open the chest and its contents spill out.'
+  },
+  {
+    id: 'open_chest',
+    verb: 'open',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['chest'] },
+    consequences: [
+      { type: 'spill_inventory' },
+      { type: 'change_glyph', glyph: 'C' },
+      { type: 'change_intents', intents: [] }
+    ],
+    message: 'You uncover the contents and gather them from the remains.'
+  },
+  {
+    id: 'kick_door',
+    verb: 'kick',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['door'] },
+    consequences: [
+      { type: 'modify_tags', remove: ['solid', 'opaque'] },
+      { type: 'change_glyph', glyph: '_' },
+      { type: 'change_intents', intents: [] }
+    ],
+    message: 'You kick the door open! It splinters into pieces.'
+  },
+  {
+    id: 'dip_weapon_fountain',
+    verb: 'dip',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['fountain'] },
+    toolMatcher: { targetType: 'entity', tags: ['weapon'] },
+    consequences: [{ type: 'apply_coating', statusId: 'poison', charges: 5, duration: 10 }],
+    message: 'You dip your weapon into the fountain.'
+  },
+  {
+    id: 'drink_fountain',
+    verb: 'drink',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['water_source'] },
+    consequences: [{ type: 'apply_status', statusId: 'regeneration', duration: 30 }],
+    message: 'You drink the cool, sacred water. Your wounds begin to mend.'
+  },
+  {
+    id: 'zap_altar',
+    verb: 'zap',
+    priority: 100,
+    sourceMatcher: { targetType: 'entity' },
+    targetMatcher: { targetType: 'entity', tags: ['altar'] },
+    consequences: [{ type: 'spawn_clue', message: 'Sacred runes flare across the altar, revealing hidden secrets.' }],
+    message: 'The altar absorbs the magical energy and glows brightly!'
+  }
+];
 writeJson('reactions.json', reactions);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 9. ITEMS (Campaign Relics, Keys, Consumables)
 // ─────────────────────────────────────────────────────────────────────────────
 const campaignItems = {
-  key_iron: { id: 'key_iron', name: 'Iron Dungeon Key', unidentifiedName: 'Heavy Key', description: 'A sturdy iron key used for dungeon doors.', glyph: '$', fg: '#95a5a6', bg: 'transparent', spriteId: 'item_metal_key', weight: 0.2, baseValue: 5, category: 'tool', tags: ['key', 'tool'], isArtifact: false },
-  key_bronze: { id: 'key_bronze', name: 'Bronze Crypt Key', unidentifiedName: 'Bronze Key', description: 'An ancient verdigris-coated bronze key for crypt vaults.', glyph: '$', fg: '#cd7f32', bg: 'transparent', spriteId: 'item_primitive_key', weight: 0.2, baseValue: 10, category: 'tool', tags: ['key', 'tool'], isArtifact: false },
-  key_gold: { id: 'key_gold', name: 'Ornate Golden Key', unidentifiedName: 'Golden Key', description: 'A gilded master key opening high sanctum locks.', glyph: '$', fg: '#f1c40f', bg: 'transparent', spriteId: 'item_gold_key', weight: 0.3, baseValue: 50, category: 'tool', tags: ['key', 'tool'], isArtifact: false },
+  key_iron: { id: 'key_iron', name: 'Iron Dungeon Key', unidentifiedName: 'Heavy Key', description: 'A sturdy iron key used for dungeon doors.', glyph: '$', fg: '#95a5a6', bg: 'transparent', spriteId: 'item_metal_key', weight: 0.2, baseValue: 5, category: 'tool', tags: ['key', 'key:iron', 'tool'], isArtifact: false },
+  key_bronze: { id: 'key_bronze', name: 'Bronze Crypt Key', unidentifiedName: 'Bronze Key', description: 'An ancient verdigris-coated bronze key for crypt vaults.', glyph: '$', fg: '#cd7f32', bg: 'transparent', spriteId: 'item_primitive_key', weight: 0.2, baseValue: 10, category: 'tool', tags: ['key', 'key:bronze', 'tool'], isArtifact: false },
+  key_gold: { id: 'key_gold', name: 'Ornate Golden Key', unidentifiedName: 'Golden Key', description: 'A gilded master key opening high sanctum locks.', glyph: '$', fg: '#f1c40f', bg: 'transparent', spriteId: 'item_gold_key', weight: 0.3, baseValue: 50, category: 'tool', tags: ['key', 'key:gold', 'tool'], isArtifact: false },
   key_water_temple: { id: 'key_water_temple', name: 'Valve Spanner Key', unidentifiedName: 'Heavy Brass Tool', description: 'Heavy mechanical spanner used to unlock the flooded drainage valves.', glyph: '$', fg: '#e67e22', bg: 'transparent', spriteId: 'item_metal_key', weight: 2.0, baseValue: 20, category: 'tool', tags: ['key', 'tool'], isArtifact: false },
   elemental_gem_air: { id: 'elemental_gem_air', name: 'Air Spire Crystal', unidentifiedName: 'Zephyr Gem', description: 'A gem infused with the essence of howling mountain gales.', glyph: '*', fg: '#ecf0f1', bg: 'transparent', spriteId: 'item_crystal_pendant', weight: 0.5, baseValue: 500, category: 'tool', tags: ['relic', 'tool'], isArtifact: true },
   elemental_gem_earth: { id: 'elemental_gem_earth', name: 'Earth Spire Core', unidentifiedName: 'Ochre Stone', description: 'A dense stone vibrating with subterranean resonance.', glyph: '*', fg: '#f39c12', bg: 'transparent', spriteId: 'item_crystal_pendant', weight: 1.0, baseValue: 500, category: 'tool', tags: ['relic', 'tool'], isArtifact: true },
@@ -817,13 +1034,13 @@ const entities: Record<string, unknown> = {
 
   // Interactive dungeon props
   stone_floor_portal: { id: 'stone_floor_portal', name: 'Passage Stairs', glyph: '>', fg: '#ffffff', bg: 'transparent', spriteId: 'tile_staircase_down', isActor: false, tags: ['portal'], renderable: true },
-  wooden_door: { id: 'wooden_door', name: 'Wooden Door', glyph: '+', fg: '#8d6e63', bg: 'transparent', spriteId: 'tile_framed_door_1_shut', isActor: false, tags: ['door', 'solid'], renderable: true },
-  iron_gate: { id: 'iron_gate', name: 'Iron Portcullis', glyph: '#', fg: '#7f8c8d', bg: 'transparent', spriteId: 'tile_grated_door', isActor: false, tags: ['door', 'solid'], renderable: true },
-  wooden_chest: { id: 'wooden_chest', name: 'Sturdy Wooden Chest', glyph: '=', fg: '#f39c12', bg: 'transparent', spriteId: 'tile_chest_closed', isActor: false, tags: ['chest'], renderable: true },
-  golden_chest: { id: 'golden_chest', name: 'Gilded Treasure Chest', glyph: '=', fg: '#ffd700', bg: 'transparent', spriteId: 'tile_chest_closed', isActor: false, tags: ['chest'], renderable: true },
-  pile_of_bones: { id: 'pile_of_bones', name: 'Scattered Skeletons', glyph: '%', fg: '#ecf0f1', bg: 'transparent', spriteId: 'tile_bone_1', isActor: false, tags: ['chest'], renderable: true },
-  fountain: { id: 'fountain', name: 'Sacred Rejuvenating Fountain', glyph: '{', fg: '#3498db', bg: 'transparent', spriteId: 'tile_blue_stone_floor_1_blue_bg', isActor: false, tags: ['terrain'], renderable: true },
-  altar: { id: 'altar', name: 'Stone Consecration Altar', glyph: '_', fg: '#f1c40f', bg: 'transparent', spriteId: 'tile_sarcophagus_closed', isActor: false, tags: ['terrain'], renderable: true },
+  wooden_door: { id: 'wooden_door', name: 'Wooden Door', glyph: '+', fg: '#8d6e63', bg: 'transparent', spriteId: 'tile_framed_door_1_shut', isActor: false, tags: ['door', 'solid', 'opaque', 'wood'], lock: { difficulty: 10, locked: false, breakable: true }, renderable: true },
+  iron_gate: { id: 'iron_gate', name: 'Iron Portcullis', glyph: '#', fg: '#7f8c8d', bg: 'transparent', spriteId: 'tile_grated_door', isActor: false, tags: ['door', 'solid'], lock: { difficulty: 25, locked: false, breakable: true }, renderable: true },
+  wooden_chest: { id: 'wooden_chest', name: 'Sturdy Wooden Chest', glyph: 'c', fg: '#f39c12', bg: 'transparent', spriteId: 'tile_chest_closed', isActor: false, tags: ['chest', 'solid'], inventoryConfig: { baseCapacity: 5 }, lock: { difficulty: 15, locked: false, breakable: true }, renderable: true },
+  golden_chest: { id: 'golden_chest', name: 'Gilded Treasure Chest', glyph: 'C', fg: '#ffd700', bg: 'transparent', spriteId: 'tile_chest_closed', isActor: false, tags: ['chest', 'solid'], inventoryConfig: { baseCapacity: 8 }, lock: { difficulty: 30, locked: false, breakable: true }, renderable: true },
+  pile_of_bones: { id: 'pile_of_bones', name: 'Scattered Skeletons', glyph: '%', fg: '#ecf0f1', bg: 'transparent', spriteId: 'tile_bone_1', isActor: false, tags: ['remains', 'bones', 'chest', 'solid'], inventoryConfig: { baseCapacity: 3 }, lock: { difficulty: 5, locked: false, breakable: true }, renderable: true },
+  fountain: { id: 'fountain', name: 'Sacred Rejuvenating Fountain', glyph: '{', fg: '#3498db', bg: 'transparent', spriteId: 'tile_blue_stone_floor_1_blue_bg', isActor: false, tags: ['fountain', 'liquid', 'terrain', 'water_source'], renderable: true },
+  altar: { id: 'altar', name: 'Stone Consecration Altar', glyph: '_', fg: '#f1c40f', bg: 'transparent', spriteId: 'tile_sarcophagus_closed', isActor: false, tags: ['altar', 'divine', 'terrain'], renderable: true },
 
   // Named NPCs & Vendors
   constable_derek: {

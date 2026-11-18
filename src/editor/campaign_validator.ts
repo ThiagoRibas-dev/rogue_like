@@ -15,6 +15,7 @@ import { loadCampaign } from '../core/loader.ts';
 import { compileTrigger } from '../systems/trigger-composer.system.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { getRuleset } from '../rulesets/registry.ts';
+import { normalizeSpritePackRef } from '../utils/sprite_pack.ts';
 
 /**
  * Headless state-diffing runner to validate that a campaign's triggers
@@ -204,7 +205,40 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
   const entityErrs = await validateEntities(campaign);
   const aiPersonalityErrs = validateAIPersonalityModifiers(campaign);
   const triggerTemplateErrs = validateTriggerTemplates(campaign);
+  const themeSpritePackErrs = validateThemeSpritePacks(campaign);
   const rulesetErrs = getRuleset(campaign.manifest?.rulesetId).validateCampaignRuleset?.(campaign) ?? [];
+
+  function validateThemeSpritePacks(target: Readonly<CampaignData>): ValidationError[] {
+    const packErrors: ValidationError[] = [];
+    const spritePacks = target.theme.spritePacks;
+    if (!spritePacks || spritePacks.length === 0) return packErrors;
+
+    const loaded = target.theme.loadedSpritePacks ?? {};
+    for (let i = 0; i < spritePacks.length; i++) {
+      const ref = normalizeSpritePackRef(spritePacks[i]!);
+      const pack = loaded[ref.packId];
+      if (!pack) {
+        packErrors.push({
+          path: `theme.spritePacks[${i}]`,
+          message: `Sprite pack "${ref.packId}" is not loaded or does not exist in public/data/sprite_packs/.`,
+          severity: 'error'
+        });
+        continue;
+      }
+      if (ref.includeSheets) {
+        for (const sheetId of ref.includeSheets) {
+          if (!pack.spriteSheets[sheetId]) {
+            packErrors.push({
+              path: `theme.spritePacks[${i}].includeSheets`,
+              message: `Sprite pack "${ref.packId}" does not contain sheet "${sheetId}".`,
+              severity: 'error'
+            });
+          }
+        }
+      }
+    }
+    return packErrors;
+  }
 
   function validateWithFuzzer(campaign: Readonly<CampaignData>): ValidationError[] {
     const fuzzerErrors: ValidationError[] = [];
@@ -248,6 +282,7 @@ export async function validateCampaign(campaign: Readonly<CampaignData>): Promis
     ...entityErrs,
     ...aiPersonalityErrs,
     ...triggerTemplateErrs,
+    ...themeSpritePackErrs,
     ...rulesetErrs,
     ...fuzzerErrs
   ];

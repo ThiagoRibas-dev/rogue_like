@@ -5,8 +5,14 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
+import { CampaignDataSchema, CampaignCategorySchemas, SpritePackSchema, type SpritePack } from '../src/types/campaign.types.ts';
 import type { CampaignData } from '../src/types/campaign.types.ts';
+import {
+  SPRITE_PACKS_DATA_SUBPATH,
+  SPRITE_PACK_MANIFEST_FILENAME,
+  attachLoadedSpritePacks,
+  getReferencedSpritePackIds
+} from '../src/utils/sprite_pack.ts';
 import { generateArea } from '../src/map/generator.ts';
 import { spawnEntity } from '../src/core/ecs.ts';
 import { initRNG } from '../src/core/rng.ts';
@@ -94,8 +100,25 @@ export function loadCampaignFromDisk(id: string): CampaignData {
   }
 
   const parsed = CampaignDataSchema.parse(assembled);
-  CAMPAIGN_CACHE.set(id, parsed);
-  return structuredClone(parsed);
+  const packIds = getReferencedSpritePackIds(parsed.theme);
+  let finalCampaign = parsed;
+  if (packIds.length > 0) {
+    const packsById: Record<string, { readonly pack: SpritePack; readonly packBasePath: string }> = {};
+    for (const packId of packIds) {
+      const packPath = join(ROOT, 'public', SPRITE_PACKS_DATA_SUBPATH, packId, SPRITE_PACK_MANIFEST_FILENAME);
+      if (!existsSync(packPath)) {
+        throw new Error(`Missing sprite pack "${packId}" at ${packPath}`);
+      }
+      const pack = SpritePackSchema.parse(JSON.parse(readFileSync(packPath, 'utf-8')));
+      packsById[packId] = { pack, packBasePath: `/${SPRITE_PACKS_DATA_SUBPATH}/${packId}` };
+    }
+    finalCampaign = {
+      ...parsed,
+      theme: attachLoadedSpritePacks(parsed.theme, packsById)
+    };
+  }
+  CAMPAIGN_CACHE.set(id, finalCampaign);
+  return structuredClone(finalCampaign);
 }
 
 /**

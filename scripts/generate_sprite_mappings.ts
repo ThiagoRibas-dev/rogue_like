@@ -3,7 +3,7 @@ import path from 'path';
 
 const TILE_SIZE = 32;
 const TILESETS_DIR = path.join(process.cwd(), 'references', 'tilesets', '32rogues');
-const CAMPAIGN_DIR = path.join(process.cwd(), 'public', 'data', 'campaigns', 'default');
+const PACK_DIR = path.join(process.cwd(), 'public', 'data', 'sprite_packs', '32rogues');
 
 function parseTxtFile(filename: string, prefix: string) {
   const filePath = path.join(TILESETS_DIR, filename);
@@ -58,40 +58,40 @@ function parseTxtFile(filename: string, prefix: string) {
 function main() {
   const spriteSheets = {
     tiles: {
-      src: "tiles.png",
+      src: "tiles/tiles.png",
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
       tileMap: parseTxtFile('tiles.txt', 'tile')
     },
     rogues: {
-      src: "rogues.png",
+      src: "sprites/rogues.png",
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
       tileMap: parseTxtFile('rogues.txt', 'actor')
     },
     monsters: {
-      src: "monsters.png",
+      src: "sprites/monsters.png",
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
       tileMap: parseTxtFile('monsters.txt', 'monster')
     },
     items: {
-      src: "items.png",
+      src: "sprites/items.png",
       tileWidth: TILE_SIZE,
       tileHeight: TILE_SIZE,
       tileMap: parseTxtFile('items.txt', 'item')
     }
   };
 
-  const themePath = path.join(CAMPAIGN_DIR, 'theme.json');
-  if (fs.existsSync(themePath)) {
-    const themeStr = fs.readFileSync(themePath, 'utf-8');
-    const theme = JSON.parse(themeStr);
-    theme.spriteSheets = spriteSheets;
-    fs.writeFileSync(themePath, JSON.stringify(theme, null, 2));
-    console.log(`Updated ${themePath} with ${Object.keys(spriteSheets).length} spritesheets.`);
+  const packPath = path.join(PACK_DIR, 'pack.json');
+  if (fs.existsSync(packPath)) {
+    const packStr = fs.readFileSync(packPath, 'utf-8');
+    const pack = JSON.parse(packStr);
+    pack.spriteSheets = spriteSheets;
+    fs.writeFileSync(packPath, JSON.stringify(pack, null, 2) + '\n');
+    console.log(`Updated ${packPath} with ${Object.keys(spriteSheets).length} spritesheets.`);
   } else {
-    console.error(`Could not find theme.json at ${themePath}`);
+    console.error(`Could not find pack.json at ${packPath}`);
   }
 }
 

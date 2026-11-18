@@ -1,6 +1,7 @@
 import * as ROT from 'rot-js';
 import { CURRENT_SCHEMA_VERSION } from '../constants/campaign.constants.ts';
 import { loadEditorWorkspace, saveEditorWorkspace } from '../core/campaign_store.ts';
+import { hydrateCampaignSpritePacks } from '../core/loader/sprite_pack_loader.ts';
 import { runEncounterDirector } from '../map/encounter_director.ts';
 import { generateArea } from '../map/generator.ts';
 import { type CampaignData, CampaignDataSchema } from '../types/campaign.types.ts';
@@ -127,7 +128,8 @@ export class CampaignEditor {
     try {
       const newDoc = await loadEditorWorkspace(workspaceId);
       if (!newDoc) throw new Error('Workspace not found in database.');
-      this.doc = newDoc;
+      const hydratedDoc = await hydrateCampaignSpritePacks(newDoc);
+      this.doc = hydratedDoc;
       this.workspaceId = workspaceId;
       this.undoStack = [];
       this.redoStack = [];
@@ -246,6 +248,7 @@ export class CampaignEditor {
       this.redoStack = [];
 
       this.emitChange();
+      this.refreshSpritePacksIfNeeded(ops);
     } catch (err) {
       console.error('Failed to apply patch operations:', err);
     }
@@ -339,6 +342,20 @@ export class CampaignEditor {
   /** Returns whether the document has unsaved changes. */
   public hasUnsavedChanges(): boolean {
     return this.isDirty;
+  }
+
+  private refreshSpritePacksIfNeeded(ops: ReadonlyArray<PatchOperation>): void {
+    const touchesTheme = ops.some((op) => op.path === '/theme' || op.path.startsWith('/theme/spritePacks'));
+    if (!touchesTheme) return;
+    const expectedPacksKey = JSON.stringify(this.doc.theme.spritePacks ?? []);
+    void hydrateCampaignSpritePacks(this.doc)
+      .then((hydrated) => {
+        if (JSON.stringify(this.doc.theme.spritePacks ?? []) !== expectedPacksKey) return;
+        if (hydrated.theme.loadedSpritePacks === this.doc.theme.loadedSpritePacks) return;
+        this.doc = hydrated;
+        this.emitChange(true);
+      })
+      .catch(console.error);
   }
 
   private emitChange(isCoalesced = false): void {

@@ -186,6 +186,7 @@ export const ConsequenceActionSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('change_glyph'),
     glyph: z.string(),
+    spriteId: z.string().optional(),
     targetId: z.string().optional()
   }),
   z.object({

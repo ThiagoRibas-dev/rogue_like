@@ -21,11 +21,19 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { CampaignData } from '../src/types/campaign.types.ts';
-import { CampaignDataSchema, CampaignCategorySchemas } from '../src/types/campaign.types.ts';
+import type { CampaignData, SpritePack } from '../src/types/campaign.types.ts';
+import { CampaignDataSchema, CampaignCategorySchemas, SpritePackSchema } from '../src/types/campaign.types.ts';
 import type { ValidationError } from '../src/editor/validator/validator.types.ts';
 import { validateCampaign } from '../src/editor/campaign_validator.ts';
 import { collectMissingSpriteMappings } from '../src/rendering/sprite_keys.ts';
+import {
+  SPRITE_PACKS_DATA_SUBPATH,
+  SPRITE_PACK_MANIFEST_FILENAME,
+  attachLoadedSpritePacks,
+  getReferencedSpritePackIds,
+  normalizeSpritePackRef,
+  resolveThemeSpriteSheets
+} from '../src/utils/sprite_pack.ts';
 import { getRuleset } from '../src/rulesets/registry.ts';
 import type { RulesetId } from '../src/types/ruleset.types.ts';
 import { validateSsotRegistries } from './ssot_parity.ts';
@@ -369,10 +377,55 @@ function loadAndValidateZod(dir: string): { data?: CampaignData; errors: number;
     return { errors: result.error.issues.length, errorDetails };
   }
 
+  let hydratedData = result.data;
+  const referencedPackIds = getReferencedSpritePackIds(hydratedData.theme);
+  if (referencedPackIds.length > 0) {
+    const packErrors: string[] = [];
+    const packsById: Record<string, { readonly pack: SpritePack; readonly packBasePath: string }> = {};
+    for (const packId of referencedPackIds) {
+      const packPath = join(PROJECT_ROOT, 'public', SPRITE_PACKS_DATA_SUBPATH, packId, SPRITE_PACK_MANIFEST_FILENAME);
+      if (!existsSync(packPath)) {
+        packErrors.push(`theme.spritePacks: Referenced sprite pack "${packId}" not found at ${packPath}`);
+        continue;
+      }
+      try {
+        const packParsed = SpritePackSchema.safeParse(JSON.parse(readFileSync(packPath, 'utf-8')));
+        if (!packParsed.success) {
+          packErrors.push(`theme.spritePacks: Sprite pack "${packId}" invalid: ${packParsed.error.message}`);
+          continue;
+        }
+        packsById[packId] = { pack: packParsed.data, packBasePath: `/${SPRITE_PACKS_DATA_SUBPATH}/${packId}` };
+      } catch (err) {
+        packErrors.push(`theme.spritePacks: Failed to parse pack "${packId}": ${(err as Error).message}`);
+      }
+    }
+
+    for (const rawRef of hydratedData.theme.spritePacks ?? []) {
+      const { packId, includeSheets } = normalizeSpritePackRef(rawRef);
+      const loaded = packsById[packId];
+      if (!loaded || !includeSheets) continue;
+      for (const sheetId of includeSheets) {
+        if (!loaded.pack.spriteSheets[sheetId]) {
+          packErrors.push(
+            `theme.spritePacks: Pack "${packId}" does not contain requested includeSheets entry "${sheetId}"`
+          );
+        }
+      }
+    }
+
+    if (packErrors.length > 0) {
+      return { errors: packErrors.length, errorDetails: packErrors };
+    }
+    hydratedData = {
+      ...hydratedData,
+      theme: attachLoadedSpritePacks(hydratedData.theme, packsById)
+    };
+  }
+
   console.log(
     `  ✅ Zod schema validation passed (${missingCount > 0 ? `${missingCount} missing file(s) used fallbacks` : 'all files present'})`
   );
-  return { data: result.data, errors: 0, errorDetails: [] };
+  return { data: hydratedData, errors: 0, errorDetails: [] };
 }
 
 async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
@@ -423,6 +476,26 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
   const allErrorDetails: string[] = [];
   let totalCrossErrors = 0;
 
+  // Verify every configured spritesheet / tileset image file resolves on disk
+  const resolvedSheets = resolveThemeSpriteSheets(campaign.theme);
+  const spriteAssetErrors: ValidationError[] = [];
+  if (resolvedSheets) {
+    for (const [sheetId, sheet] of Object.entries(resolvedSheets)) {
+      const imgPath =
+        sheet.srcBasePath !== undefined
+          ? join(PROJECT_ROOT, 'public', sheet.srcBasePath.replace(/^\/+/, ''), sheet.src)
+          : join(dir, sheet.src);
+      if (!existsSync(imgPath)) {
+        spriteAssetErrors.push({
+          path: `theme.spriteSheets.${sheetId}.src`,
+          message: `Missing spritesheet/tileset image "${sheet.src}" on disk (expected at ${imgPath})`,
+          severity: 'error'
+        });
+      }
+    }
+  }
+  const combinedErrors = [...spriteAssetErrors, ...crossErrors];
+
   // Sprite-artibility check. A template with no resolvable sprite is not fatal: it is
   // rendered as its ASCII glyph on the overlay canvas. Unresolved keys are still worth
   // surfacing because they usually indicate a typo.
@@ -439,10 +512,10 @@ async function validateSingleCampaign(dir: string): Promise<CampaignResult> {
     }
   }
 
-  if (crossErrors.length > 0) {
-    console.error(`  ❌ Found ${crossErrors.length} cross-reference error(s):`);
-    for (let i = 0; i < crossErrors.length; i++) {
-      const e = crossErrors[i]!;
+  if (combinedErrors.length > 0) {
+    console.error(`  ❌ Found ${combinedErrors.length} cross-reference error(s):`);
+    for (let i = 0; i < combinedErrors.length; i++) {
+      const e = combinedErrors[i]!;
       console.error(`    [${i + 1}] ${e.severity.toUpperCase()} @ ${e.path} — ${e.message}`);
       allErrorDetails.push(`${e.path}: ${e.message}`);
       totalCrossErrors++;
@@ -540,6 +613,54 @@ function validateRulesetDiskParity(): { readonly errors: ReadonlyArray<string>; 
   return { errors, checkedFiles };
 }
 
+/**
+ * Validates all shared sprite packs under `public/data/sprite_packs/<packId>/pack.json`
+ * and checks that every referenced spritesheet/tileset image exists on disk.
+ */
+function validateSpritePacksDiskParity(): { readonly errors: ReadonlyArray<string>; readonly checkedPacks: number } {
+  const errors: string[] = [];
+  let checkedPacks = 0;
+  const packsRoot = join(PROJECT_ROOT, 'public', SPRITE_PACKS_DATA_SUBPATH);
+  if (!existsSync(packsRoot)) return { errors, checkedPacks };
+
+  const packDirs = readdirSync(packsRoot)
+    .filter((e) => statSync(join(packsRoot, e)).isDirectory())
+    .sort();
+  for (const packDirName of packDirs) {
+    checkedPacks++;
+    const packDir = join(packsRoot, packDirName);
+    const manifestPath = join(packDir, SPRITE_PACK_MANIFEST_FILENAME);
+    if (!existsSync(manifestPath)) {
+      errors.push(`Sprite pack "${packDirName}" is missing ${SPRITE_PACK_MANIFEST_FILENAME}`);
+      continue;
+    }
+    try {
+      const parsed = SpritePackSchema.safeParse(JSON.parse(readFileSync(manifestPath, 'utf-8')));
+      if (!parsed.success) {
+        errors.push(`Sprite pack "${packDirName}" failed schema validation: ${parsed.error.message}`);
+        continue;
+      }
+      if (parsed.data.id !== packDirName) {
+        errors.push(
+          `Sprite pack "${packDirName}" manifest id "${parsed.data.id}" must match directory name "${packDirName}"`
+        );
+      }
+      for (const [sheetId, sheet] of Object.entries(parsed.data.spriteSheets)) {
+        const assetPath = join(packDir, sheet.src);
+        if (!existsSync(assetPath)) {
+          errors.push(
+            `Sprite pack "${packDirName}" sheet "${sheetId}" references missing asset "${sheet.src}" at ${assetPath}`
+          );
+        }
+      }
+    } catch (err) {
+      errors.push(`Sprite pack "${packDirName}" failed to parse ${SPRITE_PACK_MANIFEST_FILENAME}: ${(err as Error).message}`);
+    }
+  }
+
+  return { errors, checkedPacks };
+}
+
 // ──────────────────────────────────────────────
 // Main
 // ──────────────────────────────────────────────
@@ -608,6 +729,16 @@ async function main() {
       );
     }
 
+    // Shared Sprite Packs Disk Parity
+    console.log('');
+    console.log('─── Shared Sprite Packs Parity ───');
+    const spritePackParity = validateSpritePacksDiskParity();
+    if (spritePackParity.errors.length > 0) {
+      for (const err of spritePackParity.errors) console.error(`  ❌ ${err}`);
+    } else {
+      console.log(`  ✅ Validated ${spritePackParity.checkedPacks} shared sprite pack(s) on disk (all PNG assets present)`);
+    }
+
     // ai-prompt-kit parity (generated artifact mirror of the default campaign)
     console.log('');
     console.log('─── ai-prompt-kit parity ───');
@@ -643,7 +774,8 @@ async function main() {
     console.log('═══════════════════════════════════════════');
     console.log('              SUMMARY');
     console.log('═══════════════════════════════════════════');
-    let totalErrors = parityErrors + rulesetParity.errors.length + ssotParity.errors.length;
+    let totalErrors =
+      parityErrors + rulesetParity.errors.length + spritePackParity.errors.length + ssotParity.errors.length;
     let totalWarnings = ssotParity.warnings.length;
     for (const r of results) {
       const errCount = r.zodErrors + r.crossErrors;
@@ -654,6 +786,9 @@ async function main() {
     }
     if (rulesetParity.errors.length > 0) {
       console.log(`  ❌ Ruleset disk parity: ${rulesetParity.errors.length} error(s)`);
+    }
+    if (spritePackParity.errors.length > 0) {
+      console.log(`  ❌ Shared sprite packs parity: ${spritePackParity.errors.length} error(s)`);
     }
     if (parityErrors > 0) {
       console.log(`  ❌ ai-prompt-kit: ${parityErrors} parity error(s)`);

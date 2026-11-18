@@ -14,6 +14,7 @@ import { getAvailableSpriteKeys } from './sprite_keys.ts';
 import { recordMissingSprite } from './render_debug.ts';
 import type { GameState } from '../types/game-state.types.ts';
 import { coordToIndex } from '../utils/grid.ts';
+import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 import { getCameraOffset } from './camera.ts';
 import { buildTacticalViewportData } from './tactical_snapshot.ts';
 import { isEffectiveSpriteMode } from './procedural_sprites.ts';
@@ -41,9 +42,8 @@ export * from './inspect_tooltip.ts';
 export function buildViewportSnapshot(state: GameState, viewportW: number, viewportH: number): ViewportSnapshot {
   const { x: cameraX, y: cameraY } = getCameraOffset(state, viewportW, viewportH);
   const visibleIndices: ReadonlySet<number> = state.cachedFov;
-  const hasNativeSheets = Boolean(
-    state.campaign.theme.spriteSheets && Object.keys(state.campaign.theme.spriteSheets).length > 0
-  );
+  const effectiveSheets = resolveThemeSpriteSheets(state.campaign.theme);
+  const hasNativeSheets = Boolean(effectiveSheets && Object.keys(effectiveSheets).length > 0);
   const isSpriteMode = isEffectiveSpriteMode(state.campaign);
   const availableSpriteKeys = isSpriteMode && hasNativeSheets ? getAvailableSpriteKeys(state.campaign) : undefined;
 

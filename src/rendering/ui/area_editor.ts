@@ -1,4 +1,5 @@
 import { type AreaDefinition, AreaDefinitionSchema } from '../../types/campaign.types.ts';
+import { resolveThemeSpriteSheets } from '../../utils/sprite_pack.ts';
 import { createDisplay, drawCell } from '../display.ts';
 import type { EditorController } from '../editor_ui.ts';
 import { renderStaticAreaPainter } from './area_static_painter.ts';
@@ -55,7 +56,7 @@ export function renderAreaEditor(
     })
       .then((display) => {
         sandboxContainer.appendChild(display.getContainer() as HTMLElement);
-        const isSpriteMode = doc.theme.spriteSheets !== undefined;
+        const isSpriteMode = resolveThemeSpriteSheets(doc.theme) !== undefined;
 
         const generateAndDraw = (): void => {
           display.clear();

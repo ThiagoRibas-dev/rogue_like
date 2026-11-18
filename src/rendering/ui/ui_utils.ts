@@ -1,6 +1,7 @@
 import type { CampaignData } from '../../types/campaign.types.ts';
 import { GameEventType } from '../../types/events.types.ts';
 import { AUTHORING_LEVELS } from '../../constants/campaign.constants.ts';
+import { resolveThemeSpriteSheets } from '../../utils/sprite_pack.ts';
 
 /**
  * Type-safe generic wrapper for querying a DOM element within a parent node.
@@ -129,7 +130,7 @@ export function getReferenceOptions(key: string, doc: CampaignData): { value: st
     }));
   }
   if (key === 'spriteId') {
-    const sheets = doc.theme?.spriteSheets;
+    const sheets = resolveThemeSpriteSheets(doc.theme);
     if (sheets) {
       const options = [{ value: '', label: 'None [ASCII]' }];
       for (const sheet of Object.values(sheets)) {

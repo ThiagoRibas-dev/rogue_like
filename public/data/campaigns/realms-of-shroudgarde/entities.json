@@ -59,8 +59,15 @@
     "isActor": false,
     "tags": [
       "door",
-      "solid"
+      "solid",
+      "opaque",
+      "wood"
     ],
+    "lock": {
+      "difficulty": 10,
+      "locked": false,
+      "breakable": true
+    },
     "renderable": true
   },
   "iron_gate": {
@@ -75,32 +82,55 @@
       "door",
       "solid"
     ],
+    "lock": {
+      "difficulty": 25,
+      "locked": false,
+      "breakable": true
+    },
     "renderable": true
   },
   "wooden_chest": {
     "id": "wooden_chest",
     "name": "Sturdy Wooden Chest",
-    "glyph": "=",
+    "glyph": "c",
     "fg": "#f39c12",
     "bg": "transparent",
     "spriteId": "tile_chest_closed",
     "isActor": false,
     "tags": [
-      "chest"
+      "chest",
+      "solid"
     ],
+    "inventoryConfig": {
+      "baseCapacity": 5
+    },
+    "lock": {
+      "difficulty": 15,
+      "locked": false,
+      "breakable": true
+    },
     "renderable": true
   },
   "golden_chest": {
     "id": "golden_chest",
     "name": "Gilded Treasure Chest",
-    "glyph": "=",
+    "glyph": "C",
     "fg": "#ffd700",
     "bg": "transparent",
     "spriteId": "tile_chest_closed",
     "isActor": false,
     "tags": [
-      "chest"
+      "chest",
+      "solid"
     ],
+    "inventoryConfig": {
+      "baseCapacity": 8
+    },
+    "lock": {
+      "difficulty": 30,
+      "locked": false,
+      "breakable": true
+    },
     "renderable": true
   },
   "pile_of_bones": {
@@ -112,8 +142,19 @@
     "spriteId": "tile_bone_1",
     "isActor": false,
     "tags": [
-      "chest"
+      "remains",
+      "bones",
+      "chest",
+      "solid"
     ],
+    "inventoryConfig": {
+      "baseCapacity": 3
+    },
+    "lock": {
+      "difficulty": 5,
+      "locked": false,
+      "breakable": true
+    },
     "renderable": true
   },
   "fountain": {
@@ -125,7 +166,10 @@
     "spriteId": "tile_blue_stone_floor_1_blue_bg",
     "isActor": false,
     "tags": [
-      "terrain"
+      "fountain",
+      "liquid",
+      "terrain",
+      "water_source"
     ],
     "renderable": true
   },
@@ -138,6 +182,8 @@
     "spriteId": "tile_sarcophagus_closed",
     "isActor": false,
     "tags": [
+      "altar",
+      "divine",
       "terrain"
     ],
     "renderable": true

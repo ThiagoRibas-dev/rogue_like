@@ -8,6 +8,7 @@ import {
   loadRulesetSystemContent,
   loadRulesetBaseContent
 } from './loader/system_content_loader.ts';
+import { hydrateCampaignSpritePacks } from './loader/sprite_pack_loader.ts';
 
 export { loadCampaignRegistry, loadRulesetSystemContent, loadRulesetBaseContent };
 
@@ -50,7 +51,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       const parsed = JSON.parse(editorDoc);
       const result = CampaignDataSchema.safeParse(parsed);
       if (result.success) {
-        return result.data;
+        return hydrateCampaignSpritePacks(result.data);
       }
       console.warn('Invalid editor document in sessionStorage, falling back to disk fetch', result.error);
     } catch (e) {
@@ -67,7 +68,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
       );
     }
     installedCampaign.triggerBuckets = buildTriggerBuckets(installedCampaign.triggers);
-    return installedCampaign;
+    return hydrateCampaignSpritePacks(installedCampaign);
   }
 
   const basePath = `${import.meta.env.BASE_URL}data/campaigns/${campaignId}`;
@@ -226,7 +227,7 @@ export async function loadCampaign(campaignId: string): Promise<CampaignData> {
     }
 
     campaignData.triggerBuckets = buildTriggerBuckets(campaignData.triggers);
-    return campaignData;
+    return hydrateCampaignSpritePacks(campaignData);
   } catch (error) {
     console.error(`Error loading campaign ${campaignId}:`, error);
     throw error;

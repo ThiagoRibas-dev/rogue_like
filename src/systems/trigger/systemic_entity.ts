@@ -108,7 +108,12 @@ export const systemicEntityConsequences = {
     if (eId === undefined) return state;
 
     const rendCmp = getComponent(state, eId, ComponentType.Renderable) as RenderableComponent | undefined;
-    return rendCmp ? addComponent(state, eId, { ...rendCmp, glyph: consequence.glyph }) : state;
+    if (!rendCmp) return state;
+    return addComponent(state, eId, {
+      ...rendCmp,
+      glyph: consequence.glyph,
+      ...(consequence.spriteId !== undefined ? { spriteId: consequence.spriteId } : {})
+    });
   },
 
   set_lock_state: (

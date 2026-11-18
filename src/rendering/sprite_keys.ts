@@ -8,13 +8,14 @@
  */
 
 import type { CampaignData } from '../types/campaign.types.ts';
+import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 
 const availableKeysCache = new WeakMap<CampaignData, ReadonlySet<string>>();
 
 /**
- * Returns the set of sprite keys provided by a campaign's sprite sheets
- * (every sheet's `tileMap` keys, merged — matching how the renderer builds its
- * composite atlas).
+ * Returns the set of sprite keys provided by a campaign's resolved sprite sheets
+ * (every pack sheet + campaign override sheet's `tileMap` keys, merged — matching how
+ * the renderer builds its composite atlas).
  *
  * @param campaign The campaign definition.
  * @returns Readonly set of drawable sprite keys (empty when the campaign is ASCII).
@@ -24,7 +25,8 @@ export function getAvailableSpriteKeys(campaign: CampaignData): ReadonlySet<stri
   if (cached) return cached;
 
   const keys = new Set<string>();
-  for (const sheet of Object.values(campaign.theme.spriteSheets ?? {})) {
+  const resolvedSheets = resolveThemeSpriteSheets(campaign.theme);
+  for (const sheet of Object.values(resolvedSheets ?? {})) {
     for (const key of Object.keys(sheet.tileMap ?? {})) keys.add(key);
   }
 

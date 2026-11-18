@@ -28,7 +28,9 @@ import {
   setEntityCurrencyBalance
 } from '../src/systems/currency.system.ts';
 import { processSelectDialogueOptionIntent } from '../src/actions/dialogue.actions.ts';
+import { processApplyIntent } from '../src/systems/apply.system.ts';
 import { processDeathSystem } from '../src/systems/death.system.ts';
+import { processMoveIntent } from '../src/systems/movement.system.ts';
 import { generateAndPopulateAreaFloor } from '../src/systems/map/map_generation_spawner.ts';
 import { executeBuyItem, executeSellItem } from '../src/systems/shop.system.ts';
 import { applyConsequence } from '../src/systems/trigger.system.ts';
@@ -52,7 +54,17 @@ import {
   resolveDnD35eTradeSocialSkill
 } from '../src/rulesets/dnd35e/skills/trade_social_checks.ts';
 import type { AreaDefinition, ItemDefinition } from '../src/types/campaign.types.ts';
-import { ComponentType, type Component, type InventoryComponent, type MemoryComponent, type PositionComponent } from '../src/types/components.types.ts';
+import {
+  ComponentType,
+  type Component,
+  type InteractableComponent,
+  type InventoryComponent,
+  type LockComponent,
+  type MemoryComponent,
+  type PositionComponent,
+  type RenderableComponent,
+  type TagsComponent
+} from '../src/types/components.types.ts';
 import { GameEventType } from '../src/types/events.types.ts';
 import { IntentType } from '../src/types/intents/intent.enum.ts';
 import { loadCampaignFromDisk, buildGameState } from './helpers.ts';
@@ -685,4 +697,126 @@ describe('Phase 40 Remediation Regressions (Trade Arbitrage, Haggling, Dialogue 
     const uniqueCoords = new Set(actorPositions.map((p) => `${p.x},${p.y}`));
     expect(uniqueCoords.size).toBe(actorPositions.length);
   }, 15_000);
+
+  it('spawns unlocked doors in realms-of-shroudgarde that open on bump and update glyph/spriteId', () => {
+    const campaign = loadCampaignFromDisk('realms-of-shroudgarde');
+    let state = buildGameState(campaign);
+    const playerId = getPlayerId(state);
+    const playerPos = getComponent(state, playerId, ComponentType.Position) as PositionComponent;
+    const doorX = playerPos.x + 1;
+    const doorY = playerPos.y;
+
+    const nextTiles = [...state.map.tiles];
+    nextTiles[playerPos.y * state.map.width + playerPos.x] = {
+      ...nextTiles[playerPos.y * state.map.width + playerPos.x]!,
+      tileId: 'town_floor'
+    };
+    nextTiles[doorY * state.map.width + doorX] = {
+      ...nextTiles[doorY * state.map.width + doorX]!,
+      tileId: 'town_floor'
+    };
+    state = { ...state, map: { ...state.map, tiles: nextTiles } };
+
+    let woodenDoorId: EntityId;
+    [state, woodenDoorId] = spawnEntity(state, 'wooden_door', doorX, doorY);
+
+    const doorLock = getComponent(state, woodenDoorId, ComponentType.Lock) as LockComponent | undefined;
+    expect(doorLock).toBeDefined();
+    expect(doorLock!.locked).toBe(false);
+
+    const doorInteractable = getComponent(state, woodenDoorId, ComponentType.Interactable) as
+      | InteractableComponent
+      | undefined;
+    expect(doorInteractable).toBeDefined();
+    expect(doorInteractable!.intents.some((i) => i.type === IntentType.Apply && i.verb === 'open')).toBe(true);
+
+    const bumpOpen = processMoveIntent(state, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(bumpOpen.success).toBe(true);
+    expect(bumpOpen.state.messages.some((m) => m.text === 'Something is in the way.')).toBe(false);
+
+    const tagsAfterOpen = getComponent(bumpOpen.state, woodenDoorId, ComponentType.Tags) as TagsComponent | undefined;
+    expect(tagsAfterOpen?.tags).not.toContain('solid');
+    expect(tagsAfterOpen?.tags).not.toContain('opaque');
+
+    const renderAfterOpen = getComponent(bumpOpen.state, woodenDoorId, ComponentType.Renderable) as
+      | RenderableComponent
+      | undefined;
+    expect(renderAfterOpen?.glyph).toBe('/');
+    expect(renderAfterOpen?.spriteId).toBe('tile_framed_door_1_open');
+
+    const stepThrough = processMoveIntent(bumpOpen.state, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(stepThrough.success).toBe(true);
+    const posAfterWalk = getComponent(stepThrough.state, playerId, ComponentType.Position) as PositionComponent;
+    expect(posAfterWalk.x).toBe(doorX);
+    expect(posAfterWalk.y).toBe(doorY);
+
+    let ironGateId: EntityId;
+    const gateX = doorX + 1;
+    const gateTiles = [...stepThrough.state.map.tiles];
+    gateTiles[doorY * stepThrough.state.map.width + gateX] = {
+      ...gateTiles[doorY * stepThrough.state.map.width + gateX]!,
+      tileId: 'town_floor'
+    };
+    const stateBeforeGate = { ...stepThrough.state, map: { ...stepThrough.state.map, tiles: gateTiles } };
+    [state, ironGateId] = spawnEntity(stateBeforeGate, 'iron_gate', gateX, doorY);
+
+    const gateLock = getComponent(state, ironGateId, ComponentType.Lock) as LockComponent | undefined;
+    expect(gateLock?.locked).toBe(false);
+    const bumpGate = processMoveIntent(state, {
+      type: IntentType.Move,
+      entityId: playerId,
+      dx: 1,
+      dy: 0
+    });
+    expect(bumpGate.success).toBe(true);
+    const gateRender = getComponent(bumpGate.state, ironGateId, ComponentType.Renderable) as
+      | RenderableComponent
+      | undefined;
+    expect(gateRender?.glyph).toBe('/');
+    expect(gateRender?.spriteId).toBe('tile_grated_door');
+  });
+
+  it('resolves consumables and unlocked chests cleanly via reactions in realms-of-shroudgarde', () => {
+    const campaign = loadCampaignFromDisk('realms-of-shroudgarde');
+    let state = buildGameState(campaign);
+    const playerId = getPlayerId(state);
+
+    let rationId: EntityId;
+    [state, rationId] = spawnItem(state, 'ration_iron', 0, 0);
+    const consumeRes = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'apply',
+      target: { type: 'item', itemEntityId: rationId }
+    });
+    expect(consumeRes.success).toBe(true);
+
+    let chestId: EntityId;
+    [state, chestId] = spawnEntity(consumeRes.state, 'wooden_chest', 5, 5);
+    const chestLock = getComponent(state, chestId, ComponentType.Lock) as LockComponent | undefined;
+    expect(chestLock?.locked).toBe(false);
+
+    const openChestRes = processApplyIntent(state, {
+      type: IntentType.Apply,
+      entityId: playerId,
+      verb: 'open',
+      target: { type: 'entity', entityId: chestId }
+    });
+    expect(openChestRes.success).toBe(true);
+    const chestRender = getComponent(openChestRes.state, chestId, ComponentType.Renderable) as
+      | RenderableComponent
+      | undefined;
+    expect(chestRender?.glyph).toBe('C');
+    expect(chestRender?.spriteId).toBe('tile_chest_open');
+  });
 });

@@ -13,6 +13,7 @@
     "category": "tool",
     "tags": [
       "key",
+      "key:iron",
       "tool"
     ],
     "isArtifact": false
@@ -31,6 +32,7 @@
     "category": "tool",
     "tags": [
       "key",
+      "key:bronze",
       "tool"
     ],
     "isArtifact": false
@@ -49,6 +51,7 @@
     "category": "tool",
     "tags": [
       "key",
+      "key:gold",
       "tool"
     ],
     "isArtifact": false

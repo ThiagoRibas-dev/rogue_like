@@ -4,6 +4,9 @@ import type { ValidationError } from '../../editor/validator/validator.types.ts'
 import type { EditorController } from '../editor_ui.ts';
 import { renderFormForZodSchema } from './zod_form_renderer.ts';
 
+/** Runtime-only transient schema properties managed by loaders, hidden from manual editor forms. */
+const HIDDEN_TRANSIENT_FORM_KEYS = new Set<string>(['loadedSpritePacks', 'srcBasePath']);
+
 /**
  * Renders a collapsible nested object accordion with optional glyph preview and error badge.
  */
@@ -103,6 +106,7 @@ export function renderNestedObjectField(
   }
 
   for (const [key, propSchema] of Object.entries(shape)) {
+    if (HIDDEN_TRANSIENT_FORM_KEYS.has(key)) continue;
     const propPath = `${basePath}/${key}`;
     renderFormForZodSchema(controller, propSchema as z.ZodTypeAny, safeObj[key], propPath, details, errors);
   }
@@ -246,7 +250,9 @@ export function renderArrayField(
     let defaultVal: unknown = {};
     const inner = schema.element;
     if (inner instanceof z.ZodString) defaultVal = '';
-    else if (inner instanceof z.ZodNumber) defaultVal = 0;
+    else if (inner instanceof z.ZodUnion && inner.options.some((opt: z.ZodTypeAny) => opt instanceof z.ZodString)) {
+      defaultVal = '';
+    } else if (inner instanceof z.ZodNumber) defaultVal = 0;
     else if (inner instanceof z.ZodBoolean) defaultVal = false;
     else if (inner instanceof z.ZodEnum) defaultVal = inner.options[0] ?? '';
 

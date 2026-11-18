@@ -5,13 +5,14 @@
 
 import { getSettings } from '../core/settings.ts';
 import type { CampaignData } from '../types/campaign.types.ts';
+import { resolveThemeSpriteSheets } from '../utils/sprite_pack.ts';
 
 /** Standard pixel dimension for procedural 2D tile cells. */
 const PROCEDURAL_TILE_SIZE = 32;
 
 /**
  * Determines whether the engine should render in 2D tile/sprite mode based on
- * the active campaign's spriteSheets and the user's `renderMode` preference.
+ * the active campaign's effective sprite sheets and the user's `renderMode` preference.
  *
  * @param campaign The active CampaignData.
  * @returns True when 2D sprite rendering is active.
@@ -24,7 +25,8 @@ export function isEffectiveSpriteMode(campaign: CampaignData): boolean {
   if (pref === 'sprites') {
     return true;
   }
-  return Boolean(campaign.theme.spriteSheets && Object.keys(campaign.theme.spriteSheets).length > 0);
+  const effectiveSheets = resolveThemeSpriteSheets(campaign.theme);
+  return Boolean(effectiveSheets && Object.keys(effectiveSheets).length > 0);
 }
 
 /**

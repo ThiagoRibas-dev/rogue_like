@@ -135,6 +135,10 @@ export type RulesConfig = z.infer<typeof RulesConfigSchema>;
 /** Zod schema for a single spritesheet source definition. */
 export const SpriteSheetSourceSchema = z.object({
   src: z.string().describe('Relative path to the spritesheet image'),
+  srcBasePath: z
+    .string()
+    .optional()
+    .describe('Runtime-resolved base URL or disk subpath when hydrated from a shared sprite pack'),
   tileWidth: z.number().int().positive().describe('Width of each sprite cell in pixels'),
   tileHeight: z.number().int().positive().describe('Height of each sprite cell in pixels'),
   tileMap: z
@@ -153,6 +157,31 @@ export const SpriteSheetSourceSchema = z.object({
 });
 /** Inferred type for a spritesheet source configuration. */
 export type SpriteSheetSource = z.infer<typeof SpriteSheetSourceSchema>;
+
+/** Zod schema for a shared sprite pack bundle definition (`public/data/sprite_packs/<id>/pack.json`). */
+export const SpritePackSchema = z.object({
+  id: z.string().min(1).describe('Unique Sprite Pack Identifier'),
+  name: z.string().min(1).describe('Human-readable Sprite Pack Name'),
+  description: z.string().optional().describe('Optional Sprite Pack Description'),
+  spriteSheets: z.record(z.string(), SpriteSheetSourceSchema)
+});
+/** Inferred type for a shared sprite pack bundle. */
+export type SpritePack = z.infer<typeof SpritePackSchema>;
+
+/** Zod schema for referencing a shared sprite pack (whole bundle ID or selective sheet cherry-pick). */
+export const SpritePackRefSchema = z.union([
+  z.string().min(1),
+  z.object({
+    packId: z.string().min(1).describe('Target Sprite Pack Identifier'),
+    includeSheets: z
+      .array(z.string().min(1))
+      .min(1)
+      .optional()
+      .describe('Optional subset of sheet keys to import from this pack')
+  })
+]);
+/** Inferred type for a campaign sprite pack reference. */
+export type SpritePackRef = z.infer<typeof SpritePackRefSchema>;
 
 /** Zod schema for theme and display graphics configuration. */
 export const ThemeConfigSchema = z.object({
@@ -174,7 +203,15 @@ export const ThemeConfigSchema = z.object({
     fontSize: z.number().int().positive().describe('Font Size (px)'),
     fontFamily: z.string().describe('Font Family')
   }),
-  spriteSheets: z.record(z.string(), SpriteSheetSourceSchema).optional()
+  spritePacks: z
+    .array(SpritePackRefSchema)
+    .optional()
+    .describe('Ordered list of shared sprite pack references merged left-to-right under campaign overrides'),
+  spriteSheets: z.record(z.string(), SpriteSheetSourceSchema).optional(),
+  loadedSpritePacks: z
+    .record(z.string(), SpritePackSchema)
+    .optional()
+    .describe('Transient hydrated shared sprite packs keyed by pack ID (omitted on export)')
 });
 /** Inferred type for theme configuration properties. */
 export type ThemeConfig = z.infer<typeof ThemeConfigSchema>;

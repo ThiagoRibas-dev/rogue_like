@@ -6,7 +6,7 @@ import { isEffectiveSpriteMode } from './procedural_sprites.ts';
  * Loads all spritesheet images and composites them into one atlas canvas + merged tileMap.
  */
 export async function compositeAtlas(
-  sheets: Record<string, SpriteSheetSource>,
+  sheets: Readonly<Record<string, SpriteSheetSource>>,
   basePath: string
 ): Promise<{
   readonly atlas: HTMLCanvasElement;
@@ -24,9 +24,13 @@ export async function compositeAtlas(
     entries.map(([_, sheet]) => {
       return new Promise<HTMLImageElement>((resolve, reject) => {
         const img = new Image();
+        const sheetBase = (sheet.srcBasePath ?? basePath).replace(/\/+$/, '');
+        const primaryUrl = `${sheetBase}/${sheet.src}`;
         img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error(`Failed to load spritesheet: ${sheet.src}`));
-        img.src = `${basePath}/${sheet.src}`;
+        img.onerror = () => {
+          reject(new Error(`Failed to load spritesheet: ${sheet.src} (${primaryUrl})`));
+        };
+        img.src = primaryUrl;
       });
     })
   );
